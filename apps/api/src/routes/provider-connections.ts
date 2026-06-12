@@ -35,6 +35,7 @@ import { requireSession } from '../middleware/auth.js';
 import { createDb, type Db } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { encryptSecret, decryptSecret } from '../lib/crypto.js';
+import { requireEncryptionKey, soundcloudCreds } from '../lib/music/provider-config.js';
 import { generateCodeVerifier, challengeFromVerifier, randomToken } from '../lib/pkce.js';
 import { musicConnections } from '../db/schema.js';
 
@@ -49,20 +50,6 @@ function parseProvider(raw: string): Provider {
   const parsed = providerSchema.safeParse(raw);
   if (!parsed.success) throw new HttpError(400, 'VALIDATION_ERROR', `Unknown provider '${raw}'.`);
   return parsed.data;
-}
-
-function requireEncryptionKey(env: Env): string {
-  if (!env.ENCRYPTION_KEY) {
-    throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Provider connections are not configured.');
-  }
-  return env.ENCRYPTION_KEY;
-}
-
-function soundcloudCreds(env: Env): { clientId: string; clientSecret: string } {
-  if (!env.SOUNDCLOUD_CLIENT_ID || !env.SOUNDCLOUD_CLIENT_SECRET) {
-    throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'SoundCloud is not configured.');
-  }
-  return { clientId: env.SOUNDCLOUD_CLIENT_ID, clientSecret: env.SOUNDCLOUD_CLIENT_SECRET };
 }
 
 function redirectUriFor(env: Env): string {
