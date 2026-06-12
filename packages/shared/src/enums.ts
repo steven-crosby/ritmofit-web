@@ -42,3 +42,12 @@ export type SharePermission = z.infer<typeof sharePermissionSchema>;
 export const shareResourceTypeValues = ['class'] as const;
 export const shareResourceTypeSchema = z.enum(shareResourceTypeValues);
 export type ShareResourceType = z.infer<typeof shareResourceTypeSchema>;
+
+/**
+ * Effective access a user has to a class — owner ∪ shared-direct ∪ shared-team,
+ * highest wins (see `authorization.md`). Ordered **ascending**, so the tuple index
+ * is the rank used for `minLevel` comparisons. Surfaced by `GET /classes`.
+ */
+export const accessLevelValues = ['none', 'view', 'edit', 'owner'] as const;
+export const accessLevelSchema = z.enum(accessLevelValues);
+export type AccessLevel = z.infer<typeof accessLevelSchema>;
