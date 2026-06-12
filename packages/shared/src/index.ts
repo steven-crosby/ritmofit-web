@@ -13,9 +13,6 @@
 /** API version prefix; the REST surface is mounted under `/api/${API_VERSION}`. */
 export const API_VERSION = 'v1' as const;
 
-/** Run-payload schema version (see `api.md` → run-payload, decision D12). */
-export const RUN_PAYLOAD_SCHEMA_VERSION = 1 as const;
-
 export * from './enums.js';
 export * from './common.js';
 export * from './entities/identity.js';
@@ -25,3 +22,5 @@ export * from './entities/moves.js';
 export * from './entities/choreography.js';
 export * from './entities/sharing.js';
 export * from './entities/music.js';
+// Re-exports RUN_PAYLOAD_SCHEMA_VERSION (the schema version lives with its contract).
+export * from './entities/run-payload.js';

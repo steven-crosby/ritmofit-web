@@ -15,6 +15,7 @@ import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { requireAccess, accessRank } from '../lib/authz.js';
 import { serializeClass } from '../lib/serialize.js';
+import { assembleRunPayload } from '../lib/run-payload.js';
 import { classes, shares, teamMemberships } from '../db/schema.js';
 
 export const classRoutes = new Hono<AppEnv>();
@@ -88,6 +89,18 @@ classRoutes.get('/', async (c) => {
     .map((row) => ({ ...serializeClass(row), accessLevel: levelById.get(row.id)! }))
     .sort((a, b) => b.updatedAt - a.updatedAt);
   return c.json(out);
+});
+
+/**
+ * GET /classes/:id/run-payload — the versioned single-fetch live contract (D12).
+ * VIEW access; assembles class + ordered tracks + provider refs + cues + moves
+ * with server-resolved displayBpm / move names (lib/run-payload.ts).
+ */
+classRoutes.get('/:id/run-payload', async (c) => {
+  const db = createDb(c.env);
+  const id = c.req.param('id');
+  await requireAccess(db, c.get('userId'), id, 'view');
+  return c.json(await assembleRunPayload(db, id));
 });
 
 /** GET /classes/:id — fetch one class (any access); 404 when not visible. */
