@@ -56,7 +56,7 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
   `/api/v1/health`. Better Auth at `/api/auth/*`; REST under `/api/v1`.
 - **Checks:** `pnpm -r typecheck` · `pnpm test` (Vitest, in `apps/api`) · `pnpm --filter @ritmofit/api openapi` regenerates the spec.
 - **Cloudflare (provisioned):** remote D1 `ritmofit` (id `5bf15d82-…` in `wrangler.toml`, **not** a
-  secret) is migrated + seeded; the `ritmofit-api` Worker is deployed at
+  secret) is migrated (through `0004`) + seeded; the `ritmofit-api` Worker is deployed at
   `https://ritmofit-api.steven-crosby09.workers.dev` with a daily Cron Trigger (`17 3 * * *`) for the
   purge sweep. Secrets (`BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`) set via `wrangler secret put`. Local dev
   still uses local D1: `pnpm --filter @ritmofit/api db:migrate:local` + `db:seed:local`; deploy with
@@ -69,7 +69,7 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
   flows + unit tests (purge SQL scoping verified against local D1), not CI. The app-level authz is the
   only access gate. No CI pipeline (lint/typecheck/test) runs on push yet.
 
-**M2 in progress** (music providers, SoundCloud first) — see `ritmofit_dev_plan/milestones.md` and
+**M2 complete** (music providers, SoundCloud first) — see `ritmofit_dev_plan/milestones.md` and
 `music-providers.md`. New package `packages/music` holds the provider adapters.
 
 - **Slice 1 — provider search → track creation** (PR #1, merged): a `MusicProvider` abstraction +
@@ -114,5 +114,28 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
   with redundant encoding (color + bars + label). No in-app audio — playback stays in the provider apps.
   The native iOS live surface (Phase 2) reimplements this against the same run-payload (+ Landscape view).
 
-M1's per-step branches and `main` are on GitHub; M2 slices 1–3 are merged to `main`. Cloudflare
-provisioning + M2 slices 4–7 + all M3 work are on a working branch (not yet merged).
+**All of M1–M3 is merged to `main` and deployed.** (The earlier "on a working branch" note is obsolete.)
+
+**M1–M3 code-review pass (2026-06-12) — merged + deployed (PR #6).** A full review landed 10 bug
+fixes + 4 cleanups. Highlights:
+- **Owner-scoped provider-id uniqueness** — the one schema change: `track_provider_ids` gains
+  `owner_user_id`, and the unique index is now `(owner_user_id, provider, provider_track_id)` so the
+  same provider track can live in multiple users' libraries (was a global unique that 409'd the second
+  importer of any song). **Migration `0004_grey_iron_patriot.sql`** rebuilds the table and backfills
+  owner from `tracks`.
+- Other fixes: `copy` no longer leaks cross-user `track`/`user_move` refs (it clones foreign tracks into
+  the caller's library and snapshots foreign move names); inline-created tracks set `matchKey`; the
+  purge album-art clear is a single atomic `db.batch`; provider failures map to `502` via a typed
+  `ProviderError`; BPM lookup matches the requested title/artist; reactive-401 token refresh hardened
+  (409 not 500, no stale-conn replay); cue/placed-move `anchorMs` is bounded to the track duration; the
+  same-song remix-stripping regex is non-greedy.
+- Cleanups: `buildPatch` helper (replaces the PATCH field ladders), shared `AppTokenCache` (Spotify +
+  SoundCloud client-credentials flow), parallelized run-payload + `listVisibleClasses` queries, and
+  centralized provider creds in `provider-config.ts`.
+- Copy-clone resolution extracted to pure, unit-tested helpers (`lib/copy-class-track.ts`).
+  `typecheck` (4 pkgs) · `lint` · `test` (**132**) green.
+
+**Deployed to prod (2026-06-12):** migration `0004` applied to remote D1 (verified: `owner_user_id`
+present, owner-scoped unique index live); `ritmofit-api` redeployed (version `06a942a4`), health `200`,
+purge Cron intact. The **web app is still not deployed** — `ritmofit.studio` is DNS-only (404) and
+`apps/web` has no Pages/deploy config yet; only the API backend is live.

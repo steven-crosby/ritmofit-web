@@ -3,7 +3,12 @@
 Each step follows the working agreement: **plan → confirm → code → summarize** (see
 `ai-working-rules.md`).
 
-## M1 — Auth + class/cue data model (current)
+> **Status (2026-06-12): M1 ✅ · M2 ✅ · M3 ✅ — all done, merged to `main`, API deployed. M4 is
+> next.** An M1–M3 code-review pass (PR #6) landed 10 bug fixes + 4 cleanups, incl. the one schema
+> change (owner-scoped provider-id uniqueness, migration `0004`). The web app is still a skeleton and
+> is not deployed. See `DEVELOPMENT_PLAN.md` for the rollup.
+
+## M1 — Auth + class/cue data model ✅ done
 
 **Schema-complete, routes-lean** (decision D9). The part fully under our control. **No music-provider
 API calls.** BPM and provider IDs are hand-entered.
@@ -72,7 +77,7 @@ Core builder first (these validate the product), teams/sharing last.
 
 ---
 
-## M2 — Music-provider integration
+## M2 — Music-provider integration ✅ done
 
 > **Progress (behind the mock until live SoundCloud creds + a registered redirect URI land):**
 > - ✅ **Slice 1** — SoundCloud search → track creation. `packages/music` `MusicProvider` abstraction +
@@ -115,7 +120,7 @@ Core builder first (these validate the product), teams/sharing last.
 - Music-connection OAuth + encrypted token storage (`music_connections`, `ENCRYPTION_KEY`).
 - Re-verify each provider's current API terms before building (constraints in `music-providers.md`).
 
-## M3 — Live mode + iOS parity polish
+## M3 — Live mode + iOS parity polish ✅ done
 
 > **Web-repo portion (the live *contract*) is done:**
 > - ✅ **Harden the run-payload** — `class.totalDurationMs` (server-derived assembled length, distinct
@@ -137,7 +142,7 @@ Core builder first (these validate the product), teams/sharing last.
 > **M3 complete for the web repo.** The native **iOS** live surface (Phase 2 / `ritmofit-ios`) will
 > reimplement the prompter against the same run-payload, plus a Landscape view and device-specific polish.
 
-## M4 — Explore / featured / sharing UX
+## M4 — Explore / featured / sharing UX (current / next)
 - Explore feed; eligibility to be featured.
 - Richer team-library and sharing UX on top of the M1 `shares` model.
 
