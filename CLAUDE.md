@@ -61,9 +61,13 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
   purge sweep. Secrets (`BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`) set via `wrangler secret put`. Local dev
   still uses local D1: `pnpm --filter @ritmofit/api db:migrate:local` + `db:seed:local`; deploy with
   `pnpm --filter @ritmofit/api deploy` and `db:migrate` against `--remote`.
+- **Deploys are manual (by design):** the Cloudflare **Workers Builds** git integration was
+  **disconnected (2026-06-12)** so a push to `main` does **not** auto-deploy. Ship with
+  `pnpm --filter @ritmofit/api deploy`. Don't reconnect Workers Builds without deciding you want
+  push-to-deploy CI/CD (and gating it on `pnpm -r typecheck` + `pnpm test`).
 - **Known tech debt:** no automated integration tests yet — the route/SQL layer is verified by manual
   flows + unit tests (purge SQL scoping verified against local D1), not CI. The app-level authz is the
-  only access gate. No CI pipeline wired to the Worker deploy yet.
+  only access gate. No CI pipeline (lint/typecheck/test) runs on push yet.
 
 **M2 in progress** (music providers, SoundCloud first) — see `ritmofit_dev_plan/milestones.md` and
 `music-providers.md`. New package `packages/music` holds the provider adapters.

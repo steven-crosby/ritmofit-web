@@ -107,7 +107,11 @@ Do not redefine entity shapes inside `apps/api` or `apps/web`. Change a shape on
 ## Deployment & environments
 
 - **API:** `wrangler deploy` publishes the Hono Worker with its D1 binding. Migrations applied via
-  `wrangler d1 migrations apply`.
+  `wrangler d1 migrations apply`. **Deploys are intentionally manual** (run `pnpm --filter @ritmofit/api
+  deploy` from a checkout) — the Cloudflare **Workers Builds** git integration was deliberately
+  disconnected (2026-06-12) so a push to `main` does **not** auto-deploy to production. Don't reconnect
+  it without deciding you want push-to-deploy CI/CD; a future CI should gate on `pnpm -r typecheck` +
+  `pnpm test` before any deploy.
 - **Web:** Vite build → Cloudflare Pages (or Workers static assets). The SPA calls the API Worker over
   HTTPS; CORS is restricted to the production origin + local dev (see `conventions.md`).
 - **Local dev:** `wrangler dev` runs the Worker against a local D1; the web app runs via Vite and

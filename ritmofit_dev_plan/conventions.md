@@ -5,7 +5,9 @@
 - **Package manager:** pnpm workspaces (monorepo). One lockfile at root.
 - **Lint/format:** ESLint + Prettier, shared config at root; CI fails on lint errors.
 - **Node:** pin a current LTS in `.nvmrc` / `engines`.
-- **Cloudflare tooling:** `wrangler` for the Worker + D1 (dev, migrations, deploy).
+- **Cloudflare tooling:** `wrangler` for the Worker + D1 (dev, migrations, deploy). **Deploys are
+  manual** (`pnpm --filter @ritmofit/api deploy`) — no push-to-deploy CI; Workers Builds is intentionally
+  disconnected (see `architecture.md` → Deployment).
 
 ## Naming
 - **DB columns:** snake_case (`owner_user_id`, `start_offset_ms`, `anchor_ms`).
