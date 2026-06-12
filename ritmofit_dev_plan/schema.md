@@ -13,9 +13,12 @@ The full M1 data model, resolved into one table set for **Cloudflare D1 (SQLite)
 This file is the human source of truth. The Drizzle definitions in `apps/api/src/db/schema.ts` must
 match it; if they diverge, reconcile here first.
 
-> **Auth tables** (`users` aside) — `accounts`, `sessions`, `verification` etc. — are largely managed
-> by **Better Auth**'s D1 adapter. We extend `users` with our own columns; we don't hand-define the
-> session/account internals. Treat Better Auth's generated tables as owned-but-managed.
+> **Auth tables** (`users` aside) — `sessions`, `accounts`, `verifications` — are **managed by Better
+> Auth**'s D1 adapter (step 4). Their Drizzle definitions live in `apps/api/src/db/auth-schema.ts`,
+> matching Better Auth 1.6.x's canonical models; treat them as owned-but-managed. We extend `users` with
+> our own columns and map Better Auth's `name` / `image` fields onto `display_name` / `image_url`, so the
+> shared `userSchema` contract is unchanged. Better Auth date columns are stored as epoch ms
+> (`timestamp_ms`), consistent with D10.
 
 ---
 
@@ -28,8 +31,9 @@ The canonical user record (Better Auth's user table, extended). Our source of tr
 |---|---|---|
 | id | text (PK) | **The id Better Auth issues** (its D1 adapter creates the row); we do not re-key it. Don't assume UUIDv4 — use whatever Better Auth's config produces |
 | email | text | Unique |
-| display_name | text | Nullable |
-| image_url | text | Nullable |
+| display_name | text | Nullable; Better Auth's `name` field maps here |
+| image_url | text | Nullable; Better Auth's `image` field maps here |
+| email_verified | int (bool) | Better Auth-managed; `0`/`1`, default `0` |
 | created_at / updated_at | int (ms) | |
 
 > **Who creates this row:** Better Auth's D1 adapter **creates** the `users` row on first sign-in.

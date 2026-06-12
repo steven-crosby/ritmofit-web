@@ -1,0 +1,18 @@
+# Copy to `.dev.vars` (git-ignored) for local `wrangler dev`. Prod uses `wrangler secret put`.
+
+# Better Auth — required to boot. Generate a strong secret:  openssl rand -base64 32
+BETTER_AUTH_SECRET=
+# Public base URL of the API Worker, no trailing slash.
+BETTER_AUTH_URL=http://localhost:8787
+# Web SPA origin allowed by CORS (defaults to http://localhost:5173 when unset).
+WEB_ORIGIN=http://localhost:5173
+
+# Optional social sign-in — a provider activates only when BOTH halves are set.
+# Apple SIGN-IN only; unrelated to Apple Music (that's M2, different credentials).
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+APPLE_CLIENT_ID=
+APPLE_CLIENT_SECRET=
+
+# Declared now, used in M2 to encrypt provider tokens (conventions.md). Unused in M1.
+ENCRYPTION_KEY=

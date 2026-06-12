@@ -63,9 +63,16 @@ function timestamps() {
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
+  // Better Auth maps its `name` / `image` fields onto these columns (see lib/auth.ts),
+  // so the shared `userSchema` contract (displayName / imageUrl) is untouched.
   displayName: text('display_name'),
   imageUrl: text('image_url'),
-  ...timestamps(),
+  // The one Better Auth user column beyond schema.md's set; Better Auth-managed.
+  emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
+  // timestamp_ms mode: Better Auth writes/reads `Date`s, stored as epoch ms (D10).
+  // Same `integer` SQL as the other tables — no migration diff, just a TS-level mode.
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 });
 
 export const teams = sqliteTable('teams', {
@@ -313,3 +320,8 @@ export const musicConnections = sqliteTable(
     uniqueIndex('music_connections_user_provider_unique').on(t.userId, t.provider),
   ],
 );
+
+// ── Better Auth-managed tables ──────────────────────────────────────────────
+// Re-exported here so the Drizzle client and drizzle-kit see one combined schema.
+// `users` (above) is ours, extended for Better Auth; these three are managed by it.
+export { sessions, accounts, verifications } from './auth-schema.js';
