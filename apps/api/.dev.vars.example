@@ -26,6 +26,17 @@ SOUNDCLOUD_CLIENT_SECRET=
 # ${BETTER_AUTH_URL}/api/v1/providers/soundcloud/callback when unset.
 SOUNDCLOUD_REDIRECT_URI=http://localhost:8787/api/v1/providers/soundcloud/callback
 
+# Spotify app credentials (M2). Both halves required to enable live search/lookup
+# (client-credentials, server-side). NEVER used for BPM — audio-features is
+# deprecated for new apps (music-providers.md). Blank → mock seam.
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
+
+# Apple Music developer token (ES256 JWT signed from the .p8 key, out of band) +
+# optional storefront. Distinct from Sign in with Apple. Blank → mock seam.
+APPLE_MUSIC_DEVELOPER_TOKEN=
+APPLE_MUSIC_STOREFRONT=us
+
 # Dev: serve provider search/import from the mock catalog (and expose the /mock/*
 # seam) so the builder works with zero provider keys. Leave unset/false in production.
 MOCK_PROVIDERS=true
