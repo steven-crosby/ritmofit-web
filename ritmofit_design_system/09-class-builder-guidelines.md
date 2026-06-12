@@ -1,0 +1,89 @@
+# 09 — Class Builder Guidelines
+
+The class builder is the heart of the web app and the place the design system earns its keep. It's where
+"playlist building + choreography as one act" becomes real.
+
+## Layout: timeline-first, energy ribbon on top, detail on the side
+```
+┌───────────────────────────────────────────────┬─────────────────────┐
+│  CLASS HEADER  (title · template · duration)   │   DETAIL EDITOR      │
+├───────────────────────────────────────────────┤   (selected track)   │
+│  ENERGY RIBBON  ╱‾‾╲      ╱‾‾‾╲   ╱╲           │                      │
+│                ╱    ╲____╱     ╲_╱  ╲___        │   Intensity (zones)  │
+│  TIMELINE  ── playhead ──────────────────────  │   Moves              │
+│  [ block ][ block ][block][ block ]            │   Cues (anchored)    │
+│   cue▲   move◆      cue▲                        │   Display BPM (mono) │
+├───────────────────────────────────────────────┤   Duration           │
+│  TRACK LIST                                     │                      │
+│  ▤ Baianá        Bakermat        122 BPM  ⋮⋮    │   [Preview in …]     │
+│  ▤ Shake It      TroyBoi         155 BPM  ⋮⋮    │                      │
+│  ▤ Con Calma     Daddy Yankee     94 BPM  ⋮⋮    │                      │
+└───────────────────────────────────────────────┴─────────────────────┘
+```
+Main column = energy ribbon + timeline + ordered track list. Right = the selected track's editor. Keep it
+a **creative workstation, not a DAW** — no Adobe-Premiere density yet. A dense mode can come later.
+
+## The energy ribbon (the signature planning view)
+Pinned above the timeline: the class's **intensity over time** as a continuous area graph. This is the
+view that makes RitmoFit feel like a rhythm tool instead of a track list.
+
+- **Height encodes zone**; gradient color (copper → ember → plasma at peaks) reinforces. Reads in
+  grayscale (see [`07-accessibility.md`](./07-accessibility.md)).
+- Derived live from `class_tracks.intensity` + `anchor_ms` — **no new schema needed**. Editing a track's
+  intensity reshapes the ribbon immediately.
+- It's the most shareable artifact in the product: an instructor can see and screenshot the *shape* of
+  their class. Full spec: [`10-rhythm-system.md`](./10-rhythm-system.md) §4.
+
+## Song row — eliminate noise (the explicit brief)
+StructClub's album art is too large and tells the instructor little about *how to use* a track. So:
+- **Album art is small** (44pt) — a creative trigger, not a focal point.
+- **BPM is visually weighted**, in the **Martian Mono data face** — the value instructors plan against.
+- Title (`body-strong`) + artist (`body` secondary), truncated cleanly.
+- Intensity shown as **zone bars + number** once assigned (not color alone).
+- Drag grip for reorder; whole row is the selection target.
+- The currently-playing row's indicator carries the **subtle on-beat pulse** — nothing else in the row
+  moves.
+- No redundant metadata, no oversized artwork, no decorative chrome. Every element earns its place.
+
+## What to preserve from StructClub
+Song cards, BPM visibility, class sections, movement/cue language, live-class readability, playlist import
+workflow, overall simplicity — all kept.
+
+## What to clearly improve
+- **Less disjointed playlist building** — building the playlist *is* building the class; no separate
+  import step in the mental model.
+- **Better desktop planning** — side-by-side ribbon + timeline + editor, keyboard workflows, room to
+  audition.
+- **Stronger SoundCloud support** — a first-class provider, not an afterthought.
+- **Better visual hierarchy** — BPM/structure/energy-shape forward, artwork quiet.
+- **Less fragile provider connection** — clear connected/disconnected states, never a dead end.
+- **Cleaner, more alive live mode** — maximum-contrast, glanceable, minimal chrome, on the beat.
+
+## Cues vs moves (separate concepts)
+Reflect the schema: **cues** and **moves** are distinct, both anchored to a `class_track` by `anchor_ms`
+(+ optional beat/bar). On the timeline they get **distinct shapes/icons**, not just colors. The detail
+editor edits them in separate sections. (Beat-snapping of `anchor_ms` is a flagged future extension of the
+tempo system — not v1.)
+
+## Intensity in context
+Zone display (Zone 1–4 + None; Build/Push/Attack/All Out) backed by the fixed enum. Zone number + bars +
+name in the editor; number + bars on compact rows. All-Out shows the plasma glow in Live and at ribbon
+peaks.
+
+## Segments (concept, not yet schema)
+If/when segments ship, they band the timeline (Warm-up → Climb → Sprint → Recovery → Cool-down) with icon
++ label and a quiet tint, *under* the energy ribbon. Until a `class_sections` table exists, don't build UI
+that assumes it — keep this aspirational and flagged.
+
+## States that matter here
+- **Empty class:** "Add your first track" — an invitation, with a clear path to search/import.
+- **Provider disconnected:** explain what broke and how to reconnect; never a silent failure.
+- **Unsaved/unsynced:** caution state (amber + icon), with the save confirmation microinteraction on
+  resolve.
+- **Reordering:** lifted card; positions settle with `snap`.
+- **Playing:** subtle on-beat pulse on the row indicator; ribbon playhead tracks position.
+
+## Avoid
+Huge album art in the timeline · dense spreadsheet-only design · unnecessary decoration · the two-orb
+background gradient · plasma anywhere at rest · red/green-only state meanings · complex collaboration UI
+in v1 · marketplace/team features in v1.
