@@ -26,3 +26,19 @@ export const userMoveSchema = z.object({
   ...timestampsShape,
 });
 export type UserMove = z.infer<typeof userMoveSchema>;
+
+// ── Request variants (step 7 routes) ────────────────────────────────────────
+
+/** Create a custom move. Server sets id / userId / timestamps. */
+export const createUserMoveSchema = userMoveSchema
+  .pick({ name: true, description: true, baseMoveId: true, template: true })
+  .partial({ description: true, baseMoveId: true, template: true });
+export type CreateUserMove = z.infer<typeof createUserMoveSchema>;
+
+/** Patch a custom move — every field optional. */
+export const updateUserMoveSchema = createUserMoveSchema.partial();
+export type UpdateUserMove = z.infer<typeof updateUserMoveSchema>;
+
+/** Query for the global moves list — optional template filter. */
+export const moveListQuerySchema = z.object({ template: classTemplateSchema.optional() });
+export type MoveListQuery = z.infer<typeof moveListQuerySchema>;

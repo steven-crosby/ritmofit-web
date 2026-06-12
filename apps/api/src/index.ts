@@ -8,6 +8,9 @@ import { HttpError } from './lib/errors.js';
 import { authRoutes } from './routes/auth.js';
 import { classRoutes } from './routes/classes.js';
 import { classTrackRoutes } from './routes/class-tracks.js';
+import { cueRoutes } from './routes/cues.js';
+import { placedMoveRoutes } from './routes/placed-moves.js';
+import { moveRoutes } from './routes/moves.js';
 
 export type { Env } from './lib/types.js';
 
@@ -70,8 +73,11 @@ api.get('/health', (c) =>
 
 api.route('/auth', authRoutes);
 api.route('/classes', classRoutes);
-// Class-track routes use mixed bases (/classes/:id/tracks and /class-tracks/:id),
+// These routers use mixed bases (e.g. /classes/:id/tracks and /class-tracks/:id),
 // so they're mounted at the api root with full paths.
 api.route('/', classTrackRoutes);
+api.route('/', cueRoutes);
+api.route('/', placedMoveRoutes);
+api.route('/', moveRoutes);
 
 export default app;

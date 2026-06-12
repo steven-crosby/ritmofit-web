@@ -18,7 +18,7 @@
  */
 import { and, eq, or } from 'drizzle-orm';
 import { accessLevelValues, type AccessLevel, type SharePermission } from '@ritmofit/shared';
-import { classes, classTracks, shares, teamMemberships } from '../db/schema.js';
+import { classes, classTracks, cues, classTrackMoves, shares, teamMemberships } from '../db/schema.js';
 import { HttpError } from './errors.js';
 import type { Db } from './db.js';
 
@@ -164,4 +164,44 @@ export async function requireClassTrackAccess(
   if (!row) throw new AccessError(404, 'NOT_FOUND', 'Not found.');
   const level = await requireAccess(db, userId, row.classId, minLevel);
   return { classId: row.classId, level };
+}
+
+/**
+ * Resolve `cue → class_track → class` and enforce access. 404s when the cue is
+ * missing. Returns the parent class_track id so callers needn't re-query it.
+ */
+export async function requireCueAccess(
+  db: Db,
+  userId: string,
+  cueId: string,
+  minLevel: MinAccessLevel,
+): Promise<{ classTrackId: string; level: AccessLevel }> {
+  const row = await db
+    .select({ classTrackId: cues.classTrackId })
+    .from(cues)
+    .where(eq(cues.id, cueId))
+    .get();
+  if (!row) throw new AccessError(404, 'NOT_FOUND', 'Not found.');
+  const { level } = await requireClassTrackAccess(db, userId, row.classTrackId, minLevel);
+  return { classTrackId: row.classTrackId, level };
+}
+
+/**
+ * Resolve `class_track_move → class_track → class` and enforce access. 404s when
+ * the placement is missing. Returns the parent class_track id.
+ */
+export async function requireClassTrackMoveAccess(
+  db: Db,
+  userId: string,
+  classTrackMoveId: string,
+  minLevel: MinAccessLevel,
+): Promise<{ classTrackId: string; level: AccessLevel }> {
+  const row = await db
+    .select({ classTrackId: classTrackMoves.classTrackId })
+    .from(classTrackMoves)
+    .where(eq(classTrackMoves.id, classTrackMoveId))
+    .get();
+  if (!row) throw new AccessError(404, 'NOT_FOUND', 'Not found.');
+  const { level } = await requireClassTrackAccess(db, userId, row.classTrackId, minLevel);
+  return { classTrackId: row.classTrackId, level };
 }
