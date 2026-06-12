@@ -886,6 +886,132 @@
         }
       }
     },
+    "/providers/connections": {
+      "get": {
+        "summary": "List the caller's provider connections (tokens stripped)",
+        "responses": {
+          "200": {
+            "description": "Connections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MusicConnectionView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/{provider}/connect": {
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "spotify",
+              "apple_music",
+              "soundcloud"
+            ]
+          }
+        }
+      ],
+      "post": {
+        "summary": "Start a provider OAuth connection (returns authorize URL)",
+        "responses": {
+          "200": {
+            "description": "Authorize URL or mock-connected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectProviderResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Provider not yet integrated"
+          },
+          "503": {
+            "description": "Provider not configured"
+          }
+        }
+      }
+    },
+    "/providers/{provider}/callback": {
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "spotify",
+              "apple_music",
+              "soundcloud"
+            ]
+          }
+        }
+      ],
+      "get": {
+        "summary": "OAuth redirect target — exchanges the code, then 302s to the SPA",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to the web app (connected or error)"
+          }
+        }
+      }
+    },
+    "/providers/{provider}/connection": {
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "spotify",
+              "apple_music",
+              "soundcloud"
+            ]
+          }
+        }
+      ],
+      "delete": {
+        "summary": "Disconnect a provider (immediate token forget)",
+        "responses": {
+          "204": {
+            "description": "Disconnected"
+          }
+        }
+      }
+    },
     "/mock/track-search": {
       "get": {
         "summary": "Dev-only mock provider search",
@@ -3058,6 +3184,107 @@
         "required": [
           "provider",
           "providerTrackId"
+        ],
+        "additionalProperties": false
+      },
+      "MusicConnectionView": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "spotify",
+              "apple_music",
+              "soundcloud"
+            ]
+          },
+          "providerUserId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "provider",
+          "providerUserId",
+          "scope",
+          "expiresAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ConnectProviderResponse": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "authorizeUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "connected": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "authorizeUrl",
+          "connected"
         ],
         "additionalProperties": false
       },
