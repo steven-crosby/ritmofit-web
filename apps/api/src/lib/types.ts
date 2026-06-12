@@ -39,6 +39,12 @@ export interface Env {
   APPLE_MUSIC_DEVELOPER_TOKEN?: string;
   APPLE_MUSIC_STOREFRONT?: string;
   /**
+   * API key for the third-party BPM provider (GetSongBPM) used to fill
+   * `tracks.display_bpm` (M2, optional). Never Spotify. Absent → BPM lookup
+   * reports the provider as unavailable; BPM stays manual.
+   */
+  GETSONGBPM_API_KEY?: string;
+  /**
    * The registered OAuth redirect URI for the SoundCloud connect flow. Defaults
    * to `${BETTER_AUTH_URL}/api/v1/providers/soundcloud/callback` when unset.
    */

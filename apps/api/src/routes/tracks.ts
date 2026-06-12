@@ -19,6 +19,7 @@ import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { HttpError, isUniqueViolation } from '../lib/errors.js';
 import { serializeTrack, serializeTrackProviderId } from '../lib/serialize.js';
+import { lookupAndApplyBpm } from '../lib/music/bpm-lookup.js';
 import { tracks, trackProviderIds } from '../db/schema.js';
 import type { Db } from '../lib/db.js';
 
@@ -88,6 +89,18 @@ trackRoutes.patch('/tracks/:id', async (c) => {
   await db.update(tracks).set(patch).where(eq(tracks.id, id));
   const row = await db.select().from(tracks).where(eq(tracks.id, id)).get();
   return c.json(serializeTrack(row!));
+});
+
+/**
+ * POST /tracks/:id/bpm-lookup — fill `display_bpm` from a third-party BPM provider
+ * (M2, optional; never Spotify). Owner only. A confident match is persisted; no
+ * match leaves the existing BPM untouched. 503 when no BPM provider is configured.
+ */
+trackRoutes.post('/tracks/:id/bpm-lookup', async (c) => {
+  const db = createDb(c.env);
+  const result = await lookupAndApplyBpm(db, c.env, c.get('userId'), c.req.param('id'));
+  const row = await db.select().from(tracks).where(eq(tracks.id, c.req.param('id'))).get();
+  return c.json({ ...serializeTrack(row!), bpmApplied: result.applied });
 });
 
 /** POST /tracks/:id/provider-ids — attach a provider id (owner only). 409 on duplicate. */
