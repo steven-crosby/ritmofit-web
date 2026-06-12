@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RitmoFit — Track search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0&display=block" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .search-layout { display:grid; grid-template-columns:1fr 320px; gap:20px; align-items:start; }
+  @media (max-width:1080px){ .search-layout{ grid-template-columns:1fr; } }
+  .bigsearch { display:flex; align-items:center; gap:12px; padding:15px 20px; border-radius:var(--r-pill); background:var(--ink-850); border:1px solid var(--border-default); margin-bottom:14px; }
+  .bigsearch input { flex:1; background:none; border:none; outline:none; color:var(--bone-50); font-size:17px; font-family:var(--font-ui); }
+  .bigsearch input::placeholder { color:var(--bone-500); }
+  .bigsearch .ic { font-size:24px; color:var(--bone-400); }
+  .prov-tabs { display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+  .res-head { display:flex; align-items:center; gap:14px; padding:0 14px 8px; font-family:var(--font-data); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--bone-500); }
+  .row .addbtn { flex:none; }
+  .manual-card .field:last-of-type{ margin-bottom:8px; }
+  .destrow { background:var(--ink-850); }
+  .info-note { display:flex; gap:8px; font-size:12px; color:var(--bone-500); margin-top:14px; }
+  .info-note .ic { font-size:16px; flex:none; color:var(--cyan-400); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Side nav ── -->
+  <aside class="sidenav">
+    <div class="brand"><div class="mark"></div><div class="name">RitmoFit<small>WEB</small></div></div>
+    <a class="nav-item" href="dashboard.html"><span class="ic outline">grid_view</span> Classes</a>
+    <div class="nav-item"><span class="ic outline">explore</span> Explore</div>
+    <div class="nav-item"><span class="ic outline">groups</span> Team</div>
+    <div class="nav-item active"><span class="ic">library_music</span> Library</div>
+    <div class="nav-label">Setup</div>
+    <a class="nav-item" href="connections.html"><span class="ic outline">link</span> Music providers</a>
+    <div class="nav-item"><span class="ic outline">settings</span> Settings</div>
+    <div class="nav-spacer"></div>
+    <div class="nav-user"><div class="avatar">A</div><div class="who"><b>Ana Reyes</b><span>ana@ritmostudio.mx</span></div></div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div>
+    <header class="topbar">
+      <a href="class-builder.html" class="iconbtn"><span class="ic">arrow_back</span></a>
+      <div><div class="crumb">Reggaetón Climb / Add track</div><h1 style="font-size:18px;margin-top:2px;">Add a track</h1></div>
+      <div class="spacer"></div>
+      <span class="badge badge-ok"><span class="ic">cloud_done</span> SoundCloud connected</span>
+    </header>
+
+    <main class="content">
+
+      <div class="bigsearch">
+        <span class="ic">search</span>
+        <input value="reggaeton climb" placeholder="Search tracks, artists, or paste a SoundCloud / Spotify link…" />
+        <span class="kbd">Enter</span>
+      </div>
+
+      <div class="prov-tabs">
+        <span class="chip cyan selected"><span class="ic">cloud</span> SoundCloud</span>
+        <span class="chip"><span class="ic">graphic_eq</span> Spotify</span>
+        <span class="chip"><span class="ic">album</span> Apple Music</span>
+        <span class="chip"><span class="ic">favorite</span> My likes</span>
+        <span class="chip" style="margin-left:auto;"><span class="ic">edit</span> Enter manually</span>
+      </div>
+
+      <div class="search-layout">
+
+        <!-- results -->
+        <section>
+          <div class="between" style="margin-bottom:8px;">
+            <p class="section-title" style="margin:0;">Results · SoundCloud</p>
+            <span class="dim mono" style="font-size:12px;">18 tracks · BPM hand-entered after add</span>
+          </div>
+          <div class="res-head"><span style="width:44px;"></span><span style="flex:1;">Title / Artist</span><span style="width:60px;text-align:right;">Length</span><span style="width:120px;text-align:right;">Add</span></div>
+
+          <div class="row">
+            <div class="art c"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">Shake It</div><div class="artist">TroyBoi <span class="src">· 2.1M plays</span></div></div>
+            <div class="dur">3:55</div>
+            <button class="btn btn-action btn-sm addbtn"><span class="ic">add</span> Add</button>
+          </div>
+          <div class="row">
+            <div class="art"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">Baianá (Edit)</div><div class="artist">Bakermat <span class="src">· 980K plays</span></div></div>
+            <div class="dur">4:02</div>
+            <button class="btn btn-action btn-sm addbtn"><span class="ic">add</span> Add</button>
+          </div>
+          <!-- already added -->
+          <div class="row" style="opacity:.62;">
+            <div class="art d"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">Gasolina (Remix)</div><div class="artist">Daddy Yankee <span class="src">· 5.4M plays</span></div></div>
+            <div class="dur">3:12</div>
+            <button class="btn btn-ghost btn-sm addbtn" disabled><span class="ic">check</span> In class</button>
+          </div>
+          <div class="row">
+            <div class="art b"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">Provenza (Club Mix)</div><div class="artist">Karol G <span class="src">· 3.0M plays</span></div></div>
+            <div class="dur">4:10</div>
+            <button class="btn btn-action btn-sm addbtn"><span class="ic">add</span> Add</button>
+          </div>
+          <div class="row">
+            <div class="art c"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">Pepas</div><div class="artist">Farruko <span class="src">· 8.7M plays</span></div></div>
+            <div class="dur">4:47</div>
+            <button class="btn btn-action btn-sm addbtn"><span class="ic">add</span> Add</button>
+          </div>
+          <div class="row">
+            <div class="art"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">La Modelo</div><div class="artist">Ozuna, Cardi B <span class="src">· 1.4M plays</span></div></div>
+            <div class="dur">3:30</div>
+            <button class="btn btn-action btn-sm addbtn"><span class="ic">add</span> Add</button>
+          </div>
+
+          <div class="info-note">
+            <span class="ic">info</span>
+            <span>RitmoFit stores a <b style="color:var(--bone-200)">reference</b> (provider ID + URI) and your own metadata — never the audio. Playback hands off to the SoundCloud app; we never stream or mix in-app.</span>
+          </div>
+        </section>
+
+        <!-- manual / detail sidebar -->
+        <aside style="position:sticky;top:86px;">
+          <div class="panel manual-card">
+            <div class="card-head"><h3>Enter manually</h3><span class="badge badge-off">no API</span></div>
+            <p class="dim" style="font-size:13px;margin:0 0 16px;">No link? Add a provider-agnostic track by hand. You can attach provider IDs later.</p>
+            <div class="field"><label>Title</label><input class="input" placeholder="Track title" /></div>
+            <div class="field"><label>Artist</label><input class="input" placeholder="Artist" /></div>
+            <div class="flex gap-3">
+              <div class="field" style="flex:1;"><label>Display BPM</label><input class="input data" placeholder="120" /></div>
+              <div class="field" style="flex:1;"><label>Length</label><input class="input data" placeholder="3:45" /></div>
+            </div>
+            <div class="field" style="margin-bottom:18px;"><label>Intensity zone</label>
+              <select class="input"><option>Zone 1 · Build</option><option selected>Zone 2 · Push</option><option>Zone 3 · Attack</option><option>Zone 4 · All Out</option><option>Zone 0 · None</option></select>
+            </div>
+            <button class="btn btn-primary btn-block"><span class="ic">add</span> Add to class</button>
+          </div>
+
+          <div class="panel sunken" style="margin-top:16px;">
+            <div class="flex gap-2" style="align-items:center;margin-bottom:8px;"><span class="ic" style="color:var(--copper-300);">bolt</span><b style="font-size:14px;">Mock catalog active</b></div>
+            <p class="dim" style="font-size:12px;margin:0;">Without live provider keys, search falls back to a seeded mock catalog so the builder is fully exercisable. Connect a provider for real results.</p>
+            <a href="connections.html" class="btn btn-action btn-sm btn-block" style="margin-top:12px;"><span class="ic">link</span> Manage providers</a>
+          </div>
+        </aside>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<nav class="mockbar">
+  <a href="index.html"><span class="ic">grid_view</span>Gallery</a>
+  <a href="login.html"><span class="ic">login</span>Sign in</a>
+  <a href="dashboard.html"><span class="ic">dashboard</span>Classes</a>
+  <a href="class-builder.html"><span class="ic">tune</span>Builder</a>
+  <a href="search.html" class="current"><span class="ic">search</span>Search</a>
+  <a href="connections.html"><span class="ic">link</span>Providers</a>
+  <a href="live.html"><span class="ic">sensors</span>Live</a>
+</nav>
+</body>
+</html>

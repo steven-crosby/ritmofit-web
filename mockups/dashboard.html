@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RitmoFit — Your classes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0&display=block" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .class-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:18px; }
+  .class-card { border-radius:var(--r-card); overflow:hidden; border:1px solid var(--border-subtle); background:var(--ink-800); cursor:pointer; transition:transform var(--dur-base) var(--ease-standard), border-color var(--dur-base); }
+  .class-card:hover { transform:translateY(-3px); border-color:var(--border-default); }
+  .class-card .top { height:118px; position:relative; padding:12px 14px; background:var(--ink-850); border-bottom:1px solid var(--border-subtle); display:flex; flex-direction:column; justify-content:space-between; }
+  .class-card .top .meta-row { display:flex; justify-content:space-between; align-items:flex-start; position:relative; z-index:1; }
+  .class-card .rib { position:absolute; left:0; right:0; bottom:0; height:62px; }
+  .class-card .body { padding:13px 15px 15px; }
+  .class-card .body h3 { margin:0 0 5px; font-size:16px; font-weight:600; }
+  .class-card .stats { display:flex; gap:14px; font-family:var(--font-data); font-size:11px; color:var(--bone-400); }
+  .class-card .stats b { color:var(--bone-200); font-weight:600; }
+  .filters { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .stat-tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+  @media (max-width:760px){ .stat-tiles{ grid-template-columns:1fr 1fr; } }
+  .tile { padding:16px 18px; border-radius:var(--r-card); background:var(--ink-800); border:1px solid var(--border-subtle); }
+  .tile .k { font-family:var(--font-data); font-size:30px; font-weight:700; letter-spacing:-0.03em; }
+  .tile .l { font-size:12px; color:var(--bone-400); margin-top:2px; }
+  .tile .k.cyan { color:var(--cyan-400); } .tile .k.copper{ color:var(--copper-300); }
+</style>
+</head>
+<body class="has-wash">
+<div class="app">
+
+  <!-- ── Side nav ── -->
+  <aside class="sidenav">
+    <div class="brand"><div class="mark"></div><div class="name">RitmoFit<small>WEB</small></div></div>
+    <div class="nav-item active"><span class="ic">grid_view</span> Classes</div>
+    <div class="nav-item"><span class="ic outline">explore</span> Explore</div>
+    <div class="nav-item"><span class="ic outline">groups</span> Team</div>
+    <div class="nav-item"><span class="ic outline">library_music</span> Library</div>
+    <div class="nav-label">Setup</div>
+    <a class="nav-item" href="connections.html"><span class="ic outline">link</span> Music providers</a>
+    <div class="nav-item"><span class="ic outline">settings</span> Settings</div>
+    <div class="nav-spacer"></div>
+    <div class="nav-user">
+      <div class="avatar">A</div>
+      <div class="who"><b>Ana Reyes</b><span>ana@ritmostudio.mx</span></div>
+      <span class="ic" style="margin-left:auto;color:var(--bone-500);">unfold_more</span>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div>
+    <header class="topbar">
+      <h1>Your classes</h1>
+      <div class="spacer"></div>
+      <div class="searchbox"><span class="ic outline" style="font-size:19px;">search</span><input placeholder="Search classes…" /></div>
+      <button class="btn btn-primary"><span class="ic">add</span> New class</button>
+    </header>
+
+    <main class="content">
+
+      <div class="stat-tiles">
+        <div class="tile"><div class="k">14</div><div class="l">Classes built</div></div>
+        <div class="tile"><div class="k copper">128</div><div class="l">Tracks placed</div></div>
+        <div class="tile"><div class="k cyan">3</div><div class="l">Shared with you</div></div>
+        <div class="tile"><div class="k">45:00</div><div class="l">Avg. class length</div></div>
+      </div>
+
+      <div class="between" style="margin-bottom:18px;">
+        <div class="filters">
+          <span class="chip selected">All</span>
+          <span class="chip"><span class="ic">person</span> Owned</span>
+          <span class="chip"><span class="ic">group</span> Shared</span>
+          <span class="chip"><span class="ic">draft</span> Drafts</span>
+        </div>
+        <div class="segmented">
+          <button class="active">Recent</button>
+          <button>A–Z</button>
+          <button>Length</button>
+        </div>
+      </div>
+
+      <section class="class-grid">
+
+        <!-- card 1 -->
+        <article class="class-card">
+          <div class="top">
+            <div class="meta-row">
+              <span class="badge badge-owner"><span class="ic">person</span> Owner</span>
+              <span class="mono dim" style="font-size:11px;">48:20</span>
+            </div>
+            <svg class="rib" viewBox="0 0 300 62" preserveAspectRatio="none">
+              <path d="M0,54 L34,50 L68,40 L102,44 L136,26 L170,30 L204,14 L238,24 L272,40 L300,48 L300,62 L0,62 Z" fill="rgba(224,126,60,0.22)"/>
+              <path d="M0,54 L34,50 L68,40 L102,44 L136,26 L170,30 L204,14 L238,24 L272,40 L300,48" fill="none" stroke="#E07E3C" stroke-width="2"/>
+              <circle cx="204" cy="14" r="3.5" fill="#FF2E88"/>
+            </svg>
+          </div>
+          <div class="body">
+            <h3>Reggaetón Climb · Friday 6pm</h3>
+            <div class="stats"><span><b>11</b> tracks</span><span><b>118–155</b> BPM</span><span>Updated <b>2d</b></span></div>
+          </div>
+        </article>
+
+        <!-- card 2 -->
+        <article class="class-card">
+          <div class="top">
+            <div class="meta-row">
+              <span class="badge badge-owner"><span class="ic">person</span> Owner</span>
+              <span class="mono dim" style="font-size:11px;">45:00</span>
+            </div>
+            <svg class="rib" viewBox="0 0 300 62" preserveAspectRatio="none">
+              <path d="M0,50 L40,40 L80,46 L120,28 L160,36 L200,20 L240,30 L280,18 L300,26 L300,62 L0,62 Z" fill="rgba(224,126,60,0.22)"/>
+              <path d="M0,50 L40,40 L80,46 L120,28 L160,36 L200,20 L240,30 L280,18 L300,26" fill="none" stroke="#E07E3C" stroke-width="2"/>
+              <circle cx="280" cy="18" r="3.5" fill="#FF2E88"/>
+            </svg>
+          </div>
+          <div class="body">
+            <h3>Hill Sprints · Interval 45</h3>
+            <div class="stats"><span><b>10</b> tracks</span><span><b>96–160</b> BPM</span><span>Updated <b>5d</b></span></div>
+          </div>
+        </article>
+
+        <!-- card 3 (shared) -->
+        <article class="class-card">
+          <div class="top">
+            <div class="meta-row">
+              <span class="badge badge-shared"><span class="ic">group</span> Shared · edit</span>
+              <span class="mono dim" style="font-size:11px;">52:10</span>
+            </div>
+            <svg class="rib" viewBox="0 0 300 62" preserveAspectRatio="none">
+              <path d="M0,56 L40,52 L80,46 L120,48 L160,34 L200,40 L240,22 L280,42 L300,50 L300,62 L0,62 Z" fill="rgba(58,192,212,0.16)"/>
+              <path d="M0,56 L40,52 L80,46 L120,48 L160,34 L200,40 L240,22 L280,42 L300,50" fill="none" stroke="#E07E3C" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="body">
+            <h3>Endurance Build (Marco)</h3>
+            <div class="stats"><span><b>12</b> tracks</span><span><b>80–132</b> BPM</span><span>by <b>Marco</b></span></div>
+          </div>
+        </article>
+
+        <!-- card 4 (draft) -->
+        <article class="class-card">
+          <div class="top">
+            <div class="meta-row">
+              <span class="badge badge-warn"><span class="ic">edit_note</span> Draft</span>
+              <span class="mono dim" style="font-size:11px;">12:40</span>
+            </div>
+            <svg class="rib" viewBox="0 0 300 62" preserveAspectRatio="none">
+              <path d="M0,54 L60,50 L120,44 L180,48 L240,40 L300,46 L300,62 L0,62 Z" fill="rgba(224,126,60,0.14)"/>
+              <path d="M0,54 L60,50 L120,44 L180,48 L240,40 L300,46" fill="none" stroke="#9E927E" stroke-width="2" stroke-dasharray="3 3"/>
+            </svg>
+          </div>
+          <div class="body">
+            <h3>Untitled class</h3>
+            <div class="stats"><span><b>3</b> tracks</span><span class="dim">no peak yet</span><span>Updated <b>1h</b></span></div>
+          </div>
+        </article>
+
+        <!-- new class CTA -->
+        <article class="class-card" style="background:var(--ink-850); border-style:dashed; display:grid; place-items:center; min-height:200px;">
+          <div style="text-align:center;">
+            <span class="ic" style="font-size:34px;color:var(--copper-400);">add_circle</span>
+            <h3 style="margin:10px 0 4px;font-family:var(--font-display);">New class</h3>
+            <p class="dim" style="margin:0;font-size:13px;">Start from blank or a template</p>
+          </div>
+        </article>
+
+      </section>
+
+      <hr class="divider" style="margin:34px 0 20px;" />
+
+      <!-- Empty-state reference (what a brand-new account sees) -->
+      <p class="section-title">First-run / empty state</p>
+      <div class="empty">
+        <span class="ic">queue_music</span>
+        <h3>Build your first class</h3>
+        <p>A class is a playlist and its choreography in one. Add tracks, shape the energy arc, tag your
+           cues and moves — then run it live on iPhone.</p>
+        <div class="flex gap-3">
+          <button class="btn btn-primary"><span class="ic">add</span> New class</button>
+          <button class="btn btn-action"><span class="ic">link</span> Connect SoundCloud</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<nav class="mockbar">
+  <a href="index.html"><span class="ic">grid_view</span>Gallery</a>
+  <a href="login.html"><span class="ic">login</span>Sign in</a>
+  <a href="dashboard.html" class="current"><span class="ic">dashboard</span>Classes</a>
+  <a href="class-builder.html"><span class="ic">tune</span>Builder</a>
+  <a href="search.html"><span class="ic">search</span>Search</a>
+  <a href="connections.html"><span class="ic">link</span>Providers</a>
+  <a href="live.html"><span class="ic">sensors</span>Live</a>
+</nav>
+</body>
+</html>

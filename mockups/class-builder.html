@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RitmoFit — Class builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0&display=block" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .builder { display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start; }
+  @media (max-width:1080px){ .builder{ grid-template-columns:1fr; } }
+  .class-head { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+  .class-head .title-block h2 { font-family:var(--font-display); font-size:24px; font-weight:600; margin:0; }
+  .class-head .title-block .sub { display:flex; gap:14px; font-family:var(--font-data); font-size:12px; color:var(--bone-400); margin-top:3px; }
+  .class-head .title-block .sub b { color:var(--bone-200); }
+  .detail { position:sticky; top:86px; }
+  .det-art { width:100%; height:150px; border-radius:var(--r-card); background:linear-gradient(135deg,var(--copper-500),var(--ember-500)); position:relative; overflow:hidden; margin-bottom:16px; }
+  .det-art .ic { position:absolute; right:10px; bottom:10px; color:rgba(11,10,8,0.5); font-size:30px; }
+  .det-art .nowtag { position:absolute; top:10px; left:10px; }
+  .det-sec { padding:16px 0; border-bottom:1px solid var(--border-subtle); }
+  .det-sec:last-child{ border-bottom:none; }
+  .det-sec .lbl { font-family:var(--font-data); font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--bone-500); margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
+  .zone-picker { display:flex; gap:6px; }
+  .zone-picker .zp { flex:1; padding:8px 4px; border-radius:var(--r-control); background:var(--ink-850); border:1px solid var(--border-subtle); text-align:center; cursor:pointer; }
+  .zone-picker .zp .zn { font-family:var(--font-data); font-weight:700; font-size:14px; display:block; }
+  .zone-picker .zp .zl { font-size:10px; color:var(--bone-400); }
+  .zone-picker .zp.active { border-color:var(--copper-400); background:var(--ink-700); }
+  .zone-picker .zp.active.allout { border-color:var(--plasma-600); box-shadow:var(--peak-glow); }
+  .tag-list { display:flex; flex-direction:column; gap:8px; }
+  .tag-item { display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:var(--r-control); background:var(--ink-850); border:1px solid var(--border-subtle); font-size:13px; }
+  .tag-item .anchor { font-family:var(--font-data); font-size:11px; color:var(--cyan-300); margin-left:auto; }
+  .tag-item .move-ic { width:11px; height:11px; background:var(--copper-300); transform:rotate(45deg); border-radius:2px; flex:none; }
+  .tag-item .cue-ic { width:0;height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:10px solid var(--cyan-400); flex:none; }
+  .ghost-add { display:flex; align-items:center; gap:8px; padding:9px 11px; border-radius:var(--r-control); border:1px dashed var(--border-default); color:var(--bone-400); font-size:13px; cursor:pointer; }
+  .ghost-add:hover{ color:var(--bone-100); border-color:var(--border-strong); }
+  .totals { display:flex; gap:10px; font-family:var(--font-data); font-size:12px; color:var(--bone-400); }
+  .list-head { display:flex; align-items:center; gap:14px; padding:0 14px 8px; font-family:var(--font-data); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--bone-500); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Side nav ── -->
+  <aside class="sidenav">
+    <div class="brand"><div class="mark"></div><div class="name">RitmoFit<small>WEB</small></div></div>
+    <a class="nav-item" href="dashboard.html"><span class="ic outline">grid_view</span> Classes</a>
+    <div class="nav-item"><span class="ic outline">explore</span> Explore</div>
+    <div class="nav-item"><span class="ic outline">groups</span> Team</div>
+    <div class="nav-item"><span class="ic outline">library_music</span> Library</div>
+    <div class="nav-label">Setup</div>
+    <a class="nav-item" href="connections.html"><span class="ic outline">link</span> Music providers</a>
+    <div class="nav-item"><span class="ic outline">settings</span> Settings</div>
+    <div class="nav-spacer"></div>
+    <div class="nav-user">
+      <div class="avatar">A</div>
+      <div class="who"><b>Ana Reyes</b><span>ana@ritmostudio.mx</span></div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div>
+    <header class="topbar">
+      <a href="dashboard.html" class="iconbtn"><span class="ic">arrow_back</span></a>
+      <div>
+        <div class="crumb">Classes / Reggaetón Climb</div>
+        <h1 style="font-size:18px;margin-top:2px;">Reggaetón Climb · Friday 6pm</h1>
+      </div>
+      <div class="spacer"></div>
+      <span class="badge badge-warn" id="savestate"><span class="ic">cloud_off</span> Unsaved changes</span>
+      <button class="btn btn-ghost btn-sm"><span class="ic">share</span> Share</button>
+      <a href="live.html" class="btn btn-action btn-sm"><span class="ic">sensors</span> Live preview</a>
+      <button class="btn btn-primary btn-sm" id="savebtn"><span class="ic">check</span> Save</button>
+    </header>
+
+    <main class="content" style="max-width:none;">
+      <div class="builder">
+
+        <!-- ════ LEFT: ribbon + timeline + track list ════ -->
+        <section>
+
+          <div class="class-head">
+            <div class="det-art" style="width:64px;height:64px;margin:0;border-radius:var(--r-control);"><span class="ic" style="font-size:18px;">music_note</span></div>
+            <div class="title-block">
+              <h2>Reggaetón Climb</h2>
+              <div class="sub"><span><b>11</b> tracks</span><span><b>48:20</b> total</span><span><b>118–155</b> BPM</span><span>Zone peak <b>4 · All Out</b></span></div>
+            </div>
+          </div>
+
+          <!-- Energy ribbon -->
+          <p class="section-title" style="margin-bottom:8px;">Energy arc · the shape of the class</p>
+          <div class="ribbon-wrap" style="margin-bottom:18px;">
+            <svg viewBox="0 0 800 130" width="100%" height="130" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="rib" x1="0" x2="1"><stop offset="0%" stop-color="#F7B987"/><stop offset="50%" stop-color="#E07E3C"/><stop offset="82%" stop-color="#D9483A"/><stop offset="100%" stop-color="#FF2E88"/></linearGradient>
+                <linearGradient id="rf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(224,126,60,0.34)"/><stop offset="100%" stop-color="rgba(224,126,60,0.02)"/></linearGradient>
+              </defs>
+              <line x1="0" y1="120" x2="800" y2="120" stroke="rgba(251,247,240,0.08)" stroke-width="1"/>
+              <path d="M0,110 L70,104 L140,88 L210,92 L280,64 L350,70 L420,40 L490,28 L560,54 L630,18 L700,68 L760,98 L800,108 L800,120 L0,120 Z" fill="url(#rf)"/>
+              <path d="M0,110 L70,104 L140,88 L210,92 L280,64 L350,70 L420,40 L490,28 L560,54 L630,18 L700,68 L760,98 L800,108" fill="none" stroke="url(#rib)" stroke-width="2.5" stroke-linejoin="round"/>
+              <circle cx="630" cy="18" r="5" fill="#FF2E88"/><circle cx="630" cy="18" r="9" fill="none" stroke="#FF2E88" stroke-opacity="0.4" stroke-width="2"/>
+              <!-- playhead -->
+              <line x1="350" y1="6" x2="350" y2="124" stroke="#74D6E5" stroke-width="1.5" opacity="0.8"/>
+            </svg>
+            <div class="axis"><span>0:00</span><span>WARM-UP</span><span>CLIMB</span><span>SPRINT ▲</span><span>RECOVERY</span><span>48:20</span></div>
+          </div>
+
+          <!-- Timeline -->
+          <div class="timeline">
+            <div class="tl-track">
+              <div class="tl-block i-easy"  style="flex:3;"><span class="lbl">Baianá</span></div>
+              <div class="tl-block i-mod"   style="flex:3.4;"><span class="lbl">Tusa</span></div>
+              <div class="tl-block i-hard"  style="flex:3.1;"><span class="lbl">Shake It</span></div>
+              <div class="tl-block i-mod"   style="flex:3.6;"><span class="lbl">Con Calma</span></div>
+              <div class="tl-block i-all_out" style="flex:3.2;"><span class="lbl">Gasolina</span></div>
+              <div class="tl-block i-easy"  style="flex:3;"><span class="lbl">Provenza</span></div>
+            </div>
+            <div class="tl-marks">
+              <div class="tl-playhead" style="left:31%;"></div>
+              <div class="tl-mark" style="left:9%;"><span class="cue"></span><span class="t">0:30</span></div>
+              <div class="tl-mark" style="left:24%;"><span class="move"></span><span class="t">3:10</span></div>
+              <div class="tl-mark" style="left:38%;"><span class="cue"></span><span class="t">8:42</span></div>
+              <div class="tl-mark" style="left:52%;"><span class="move"></span><span class="t">14:05</span></div>
+              <div class="tl-mark" style="left:69%;"><span class="cue"></span><span class="t">22:18</span></div>
+              <div class="tl-mark" style="left:86%;"><span class="move"></span><span class="t">31:40</span></div>
+            </div>
+            <div class="tl-ruler"><span>0:00</span><span>10:00</span><span>20:00</span><span>30:00</span><span>40:00</span><span>48:20</span></div>
+          </div>
+
+          <!-- legend -->
+          <div class="flex gap-4 wrap" style="font-size:12px;color:var(--bone-400);margin:6px 2px 18px;">
+            <span class="flex gap-2" style="align-items:center;"><span class="cue-ic" style="display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid var(--cyan-400);"></span> Cue (prompt)</span>
+            <span class="flex gap-2" style="align-items:center;"><span style="display:inline-block;width:10px;height:10px;background:var(--copper-300);transform:rotate(45deg);border-radius:2px;"></span> Move (placed)</span>
+            <span class="flex gap-2" style="align-items:center;"><span style="display:inline-block;width:10px;height:2px;background:var(--cyan-300);"></span> Playhead</span>
+            <span class="dim" style="margin-left:auto;">Height of the ribbon = intensity zone · derived from <span class="mono">class_tracks.intensity</span></span>
+          </div>
+
+          <!-- Track list -->
+          <div class="between" style="margin-bottom:8px;">
+            <p class="section-title" style="margin:0;">Tracks · drag to reorder</p>
+            <a href="search.html" class="btn btn-action btn-sm"><span class="ic">add</span> Add track</a>
+          </div>
+          <div class="list-head"><span style="width:22px;">#</span><span style="width:44px;"></span><span style="flex:1;">Title / Artist</span><span style="width:84px;">Zone</span><span style="width:58px;text-align:right;">BPM</span><span style="width:46px;text-align:right;">Len</span><span style="width:20px;"></span></div>
+
+          <div class="row">
+            <span class="idx">01</span><div class="art"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">Baianá</div><div class="artist">Bakermat <span class="src">· SoundCloud</span></div></div>
+            <div class="col-zone"><span class="zone z-easy"><span class="zn">1</span><span class="bars"><i class="on"></i><i></i><i></i><i></i></span></span></div>
+            <div class="bpm">122<small>BPM</small></div><div class="dur">4:02</div><span class="grip">⋮⋮</span>
+          </div>
+
+          <div class="row">
+            <span class="idx">02</span><div class="art b"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">Tusa</div><div class="artist">Karol G, Nicki Minaj <span class="src">· Spotify</span></div></div>
+            <div class="col-zone"><span class="zone z-mod"><span class="zn">2</span><span class="bars"><i class="on"></i><i class="on"></i><i></i><i></i></span></span></div>
+            <div class="bpm">101<small>BPM</small></div><div class="dur">3:40</div><span class="grip">⋮⋮</span>
+          </div>
+
+          <!-- selected + playing -->
+          <div class="row selected playing">
+            <span class="play-dot"></span><div class="art c"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">Shake It</div><div class="artist">TroyBoi <span class="src">· SoundCloud</span></div></div>
+            <div class="col-zone"><span class="zone z-hard"><span class="zn">3</span><span class="bars"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></span></div>
+            <div class="bpm">155<small>BPM</small></div><div class="dur">3:55</div><span class="grip">⋮⋮</span>
+          </div>
+
+          <div class="row">
+            <span class="idx">04</span><div class="art"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">Con Calma</div><div class="artist">Daddy Yankee <span class="src">· Spotify</span></div></div>
+            <div class="col-zone"><span class="zone z-mod"><span class="zn">2</span><span class="bars"><i class="on"></i><i class="on"></i><i></i><i></i></span></span></div>
+            <div class="bpm">94<small>BPM</small></div><div class="dur">3:48</div><span class="grip">⋮⋮</span>
+          </div>
+
+          <!-- all-out -->
+          <div class="row">
+            <span class="idx">05</span><div class="art d"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">Gasolina</div><div class="artist">Daddy Yankee <span class="src">· SoundCloud</span></div></div>
+            <div class="col-zone"><span class="zone z-all_out"><span class="zn">4</span><span class="bars"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></span></div>
+            <div class="bpm" style="color:var(--ember-400);">160<small>BPM</small></div><div class="dur">3:12</div><span class="grip">⋮⋮</span>
+          </div>
+
+          <!-- dragging preview -->
+          <div class="row dragging">
+            <span class="idx">06</span><div class="art b"><span class="ic">music_note</span></div>
+            <div class="info"><div class="title">Provenza</div><div class="artist">Karol G <span class="src">· SoundCloud</span></div></div>
+            <div class="col-zone"><span class="zone z-easy"><span class="zn">1</span><span class="bars"><i class="on"></i><i></i><i></i><i></i></span></span></div>
+            <div class="bpm">98<small>BPM</small></div><div class="dur">4:10</div><span class="grip">⋮⋮</span>
+          </div>
+
+          <a href="search.html" class="ghost-add" style="margin-top:6px;justify-content:center;padding:14px;">
+            <span class="ic">add</span> Add another track — search SoundCloud, paste a link, or enter manually
+          </a>
+
+        </section>
+
+        <!-- ════ RIGHT: selected-track detail editor ════ -->
+        <aside class="detail">
+          <div class="panel">
+            <div class="det-art">
+              <span class="nowtag badge badge-ok"><span class="ic">graphic_eq</span> Now playing</span>
+              <span class="ic">music_note</span>
+            </div>
+            <h3 style="margin:0 0 2px;font-size:18px;">Shake It</h3>
+            <p class="muted" style="margin:0 0 4px;font-size:13px;">TroyBoi</p>
+            <div class="flex gap-2 wrap" style="margin-top:8px;">
+              <span class="badge badge-provider"><span class="ic">cloud</span> SoundCloud</span>
+              <span class="chip" style="cursor:default;padding:4px 10px;font-size:11px;"><span class="mono">3:55</span> length</span>
+            </div>
+
+            <!-- Intensity / zone -->
+            <div class="det-sec">
+              <div class="lbl">Intensity zone</div>
+              <div class="zone-picker">
+                <div class="zp"><span class="zn">0</span><span class="zl">None</span></div>
+                <div class="zp"><span class="zn">1</span><span class="zl">Build</span></div>
+                <div class="zp"><span class="zn">2</span><span class="zl">Push</span></div>
+                <div class="zp active"><span class="zn">3</span><span class="zl">Attack</span></div>
+                <div class="zp allout"><span class="zn">4</span><span class="zl">All&nbsp;Out</span></div>
+              </div>
+              <p class="dim" style="font-size:12px;margin:10px 0 0;">Zone 3 · Attack — bars + number carry meaning; color reinforces. DB enum <span class="mono">hard</span>.</p>
+            </div>
+
+            <!-- Display BPM -->
+            <div class="det-sec">
+              <div class="lbl">Display BPM <span class="dim" style="text-transform:none;letter-spacing:0;">manual · M1</span></div>
+              <div class="flex gap-3" style="align-items:center;">
+                <div class="stepper"><button>–</button><input value="155" /><button>+</button></div>
+                <label class="flex gap-2" style="align-items:center;font-size:12px;color:var(--bone-400);">
+                  <span class="switch" onclick="this.classList.toggle('on')"></span> Override for this class
+                </label>
+              </div>
+              <p class="dim" style="font-size:12px;margin:10px 0 0;display:flex;gap:6px;align-items:center;"><span class="ic" style="font-size:15px;">info</span> Spotify tempo is unavailable — BPM is hand-entered.</p>
+            </div>
+
+            <!-- Cues -->
+            <div class="det-sec">
+              <div class="lbl"><span><span class="ic" style="font-size:14px;color:var(--cyan-400);vertical-align:-2px;">campaign</span> Cues</span><span class="dim" style="text-transform:none;letter-spacing:0;">2</span></div>
+              <div class="tag-list">
+                <div class="tag-item"><span class="cue-ic"></span> "Hands light — find the beat" <span class="anchor mono">0:30</span></div>
+                <div class="tag-item"><span class="cue-ic"></span> "Add a turn, climb the hill" <span class="anchor mono">2:14</span></div>
+                <div class="ghost-add"><span class="ic">add</span> Add cue at playhead</div>
+              </div>
+            </div>
+
+            <!-- Moves -->
+            <div class="det-sec">
+              <div class="lbl"><span><span class="ic" style="font-size:14px;color:var(--copper-300);vertical-align:-2px;">directions_run</span> Placed moves</span><span class="dim" style="text-transform:none;letter-spacing:0;">1</span></div>
+              <div class="tag-list">
+                <div class="tag-item"><span class="move-ic"></span> Tap-back <span class="zone z-hard" style="margin-left:6px;"><span class="bars"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></span> <span class="anchor mono">1:40</span></div>
+                <div class="ghost-add"><span class="ic">add</span> Place move from library</div>
+              </div>
+            </div>
+
+            <!-- Provider / actions -->
+            <div class="det-sec" style="border-bottom:none;padding-bottom:0;">
+              <button class="btn btn-action btn-block" style="margin-bottom:10px;"><span class="ic">open_in_new</span> Preview in SoundCloud</button>
+              <button class="btn btn-danger btn-block btn-sm"><span class="ic">delete</span> Remove from class</button>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<nav class="mockbar">
+  <a href="index.html"><span class="ic">grid_view</span>Gallery</a>
+  <a href="login.html"><span class="ic">login</span>Sign in</a>
+  <a href="dashboard.html"><span class="ic">dashboard</span>Classes</a>
+  <a href="class-builder.html" class="current"><span class="ic">tune</span>Builder</a>
+  <a href="search.html"><span class="ic">search</span>Search</a>
+  <a href="connections.html"><span class="ic">link</span>Providers</a>
+  <a href="live.html"><span class="ic">sensors</span>Live</a>
+</nav>
+
+<script>
+  // save-confirm microinteraction
+  const sb = document.getElementById('savebtn'), st = document.getElementById('savestate');
+  sb.addEventListener('click', () => {
+    st.className = 'badge badge-ok'; st.innerHTML = '<span class="ic">cloud_done</span> Saved';
+    sb.innerHTML = '<span class="ic">check</span> Saved';
+    setTimeout(()=>{ sb.innerHTML = '<span class="ic">check</span> Save'; }, 1400);
+  });
+  // zone picker
+  document.querySelectorAll('.zone-picker .zp').forEach(zp => zp.addEventListener('click', () => {
+    zp.parentElement.querySelectorAll('.zp').forEach(x=>x.classList.remove('active'));
+    zp.classList.add('active');
+  }));
+</script>
+</body>
+</html>

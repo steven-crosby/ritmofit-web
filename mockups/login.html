@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RitmoFit — Sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0&display=block" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .auth { position:relative; z-index:1; min-height:100vh; display:grid; grid-template-columns:1.05fr 0.95fr; }
+  @media (max-width:880px){ .auth { grid-template-columns:1fr; } .auth .showcase{ display:none; } }
+
+  /* left: brand showcase */
+  .showcase { position:relative; overflow:hidden; padding:56px 60px; display:flex; flex-direction:column; justify-content:space-between;
+    background:linear-gradient(155deg, var(--ink-850), var(--ink-900)); border-right:1px solid var(--border-subtle); }
+  .showcase::before { content:""; position:absolute; inset:0; background:radial-gradient(700px 480px at 18% 12%, rgba(168,82,28,0.22), transparent 60%); pointer-events:none; }
+  .showcase .top { position:relative; z-index:1; }
+  .showcase h2 { position:relative; z-index:1; font-family:var(--font-display); font-weight:700; font-size:42px; line-height:1.05; letter-spacing:-0.02em; margin:0 0 16px; }
+  .showcase p { position:relative; z-index:1; max-width:420px; color:var(--bone-300); font-size:16px; }
+  .ribbon-demo { position:relative; z-index:1; margin-top:30px; }
+
+  /* right: form */
+  .formside { display:grid; place-items:center; padding:40px 24px; }
+  .authcard { width:100%; max-width:392px; }
+  .authcard h1 { font-family:var(--font-display); font-size:28px; font-weight:600; margin:0 0 6px; }
+  .authcard .sub { color:var(--bone-400); font-size:14px; margin:0 0 26px; }
+  .oauth { display:flex; flex-direction:column; gap:10px; margin-bottom:22px; }
+  .oauth .btn { justify-content:center; background:var(--ink-800); border:1px solid var(--border-default); color:var(--bone-50); font-weight:500; }
+  .oauth .btn:hover { background:var(--ink-700); }
+  .oauth .btn .g { width:18px; height:18px; }
+  .or { display:flex; align-items:center; gap:14px; color:var(--bone-500); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; margin:4px 0 22px; }
+  .or::before, .or::after { content:""; flex:1; height:1px; background:var(--border-subtle); }
+  .legal { margin-top:22px; font-size:12px; color:var(--bone-500); text-align:center; }
+  .pulse-pill { position:relative; z-index:1; display:inline-flex; align-items:center; gap:9px; padding:9px 15px; border-radius:var(--r-pill); background:var(--ink-800); border:1px solid var(--border-subtle); font-family:var(--font-data); font-size:12px; color:var(--bone-300); margin-top:8px; }
+  .pulse-pill .play-dot { background:var(--copper-400); }
+</style>
+</head>
+<body class="has-wash">
+<div class="auth">
+
+  <!-- ── Brand showcase ── -->
+  <aside class="showcase">
+    <div class="top">
+      <div class="brand" style="padding:0;">
+        <div class="mark"></div>
+        <div class="name">RitmoFit<small>WEB · PLANNING SURFACE</small></div>
+      </div>
+    </div>
+    <div>
+      <p class="eyebrow" style="position:relative;z-index:1;">For rhythm-cycle instructors</p>
+      <h2>Build the class,<br/>feel the ritmo.</h2>
+      <p>The playlist <em>is</em> the choreography. Audition tracks, shape an energy arc, tag every cue and
+         move to the moment — one creative act, not three apps.</p>
+      <div class="ribbon-demo">
+        <div class="ribbon-wrap" style="background:rgba(18,16,12,0.5);">
+          <svg viewBox="0 0 760 110" width="100%" height="96" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="rib" x1="0" x2="1"><stop offset="0%" stop-color="#F7B987"/><stop offset="50%" stop-color="#E07E3C"/><stop offset="82%" stop-color="#D9483A"/><stop offset="100%" stop-color="#FF2E88"/></linearGradient>
+              <linearGradient id="rf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(224,126,60,0.32)"/><stop offset="100%" stop-color="rgba(224,126,60,0.02)"/></linearGradient>
+            </defs>
+            <path d="M0,92 L66,86 L132,72 L198,78 L264,52 L330,58 L396,32 L462,22 L528,46 L594,14 L660,58 L722,82 L760,90 L760,104 L0,104 Z" fill="url(#rf)"/>
+            <path d="M0,92 L66,86 L132,72 L198,78 L264,52 L330,58 L396,32 L462,22 L528,46 L594,14 L660,58 L722,82 L760,90" fill="none" stroke="url(#rib)" stroke-width="2.5" stroke-linejoin="round"/>
+            <circle cx="594" cy="14" r="4.5" fill="#FF2E88"/><circle cx="594" cy="14" r="8" fill="none" stroke="#FF2E88" stroke-opacity="0.4" stroke-width="2"/>
+          </svg>
+          <div class="axis"><span>WARM-UP</span><span>CLIMB</span><span>SPRINT ▲</span><span>RECOVERY</span><span>COOL-DOWN</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pulse-pill"><span class="play-dot"></span> The interface keeps time · <span style="color:var(--bone-50)">122 BPM</span></div>
+  </aside>
+
+  <!-- ── Form ── -->
+  <main class="formside">
+    <div class="authcard">
+      <h1>Welcome back</h1>
+      <p class="sub">Sign in to your studio. New here? An account is created on first sign-in.</p>
+
+      <div class="oauth">
+        <button class="btn">
+          <svg class="g" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.9 1.5l2.6-2.5C16.9 3.1 14.7 2 12 2 6.9 2 2.8 6.1 2.8 11.2S6.9 20.4 12 20.4c5.9 0 9.8-4.1 9.8-9.9 0-.7-.1-1.2-.2-1.7H12z"/><path fill="#34A853" d="M12 22c2.7 0 4.9-.9 6.6-2.4l-3.1-2.5c-.8.6-2 1-3.5 1-2.7 0-5-1.8-5.8-4.3l-3.2 2.5C4.6 19.6 8 22 12 22z" opacity=".0"/></svg>
+          Continue with Google
+        </button>
+        <button class="btn">
+          <svg class="g" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.7c0-2.2 1.8-3.2 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.7.8-3.3.8-.7 0-1.7-.8-2.8-.8-1.4 0-2.8.8-3.5 2.1-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.5 2.2 2.6 2.1 1-.04 1.4-.7 2.7-.7 1.2 0 1.6.7 2.7.7 1.1-.02 1.8-1 2.5-2 .8-1.2 1.1-2.3 1.1-2.4-.02-.01-2.1-.8-2.1-3.2zM14.3 6.2c.6-.7 1-1.7.9-2.7-.9.04-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.6 1 .07 1.9-.5 2.5-1.2z"/></svg>
+          Continue with Apple
+        </button>
+      </div>
+
+      <div class="or">or</div>
+
+      <form onsubmit="return false">
+        <div class="field">
+          <label for="email">Email</label>
+          <input class="input" id="email" type="email" placeholder="you@studio.com" value="ana@ritmostudio.mx" />
+        </div>
+        <div class="field" style="margin-bottom:8px;">
+          <label for="pw">Password</label>
+          <input class="input" id="pw" type="password" placeholder="••••••••••" value="password" />
+          <div class="err-msg" style="display:none;"><span class="ic">error</span> That password doesn't match.</div>
+        </div>
+        <div class="between" style="margin-bottom:20px;">
+          <label class="flex gap-2" style="align-items:center;font-size:13px;color:var(--bone-300);cursor:pointer;">
+            <span class="switch on" onclick="this.classList.toggle('on')"></span> Keep me signed in
+          </label>
+          <a href="#" style="font-size:13px;">Forgot password?</a>
+        </div>
+        <button class="btn btn-primary btn-block">Sign in</button>
+      </form>
+
+      <p class="legal">By continuing you agree to the <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
+         RitmoFit stores references and your own metadata — never your audio.</p>
+    </div>
+  </main>
+</div>
+
+<nav class="mockbar">
+  <a href="index.html"><span class="ic">grid_view</span>Gallery</a>
+  <a href="login.html" class="current"><span class="ic">login</span>Sign in</a>
+  <a href="dashboard.html"><span class="ic">dashboard</span>Classes</a>
+  <a href="class-builder.html"><span class="ic">tune</span>Builder</a>
+  <a href="search.html"><span class="ic">search</span>Search</a>
+  <a href="connections.html"><span class="ic">link</span>Providers</a>
+  <a href="live.html"><span class="ic">sensors</span>Live</a>
+</nav>
+</body>
+</html>

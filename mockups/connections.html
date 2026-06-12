@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RitmoFit — Music providers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0&display=block" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .prov { display:flex; align-items:center; gap:18px; padding:20px; border-radius:var(--r-card); background:var(--ink-800); border:1px solid var(--border-subtle); margin-bottom:14px; }
+  .prov.connected { border-color:rgba(58,192,212,0.30); }
+  .prov.warn { border-color:rgba(232,163,23,0.40); background:linear-gradient(180deg, rgba(232,163,23,0.05), var(--ink-800)); }
+  .prov .logo { width:54px; height:54px; border-radius:14px; flex:none; display:grid; place-items:center; font-size:26px; color:var(--ink-900); }
+  .prov .logo.sc { background:linear-gradient(135deg,#FF8A4C,#FF5500); }
+  .prov .logo.sp { background:linear-gradient(135deg,#1ED760,#10b54a); }
+  .prov .logo.am { background:linear-gradient(135deg,#FB5C74,#FC3C44); }
+  .prov .body { flex:1; min-width:0; }
+  .prov .body h3 { margin:0 0 3px; font-size:17px; }
+  .prov .body .det { font-size:13px; color:var(--bone-400); display:flex; gap:14px; flex-wrap:wrap; }
+  .prov .body .det .mono { color:var(--bone-300); }
+  .prov .actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .scope { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .scope .s { font-size:11px; padding:3px 9px; border-radius:var(--r-pill); background:var(--ink-700); color:var(--bone-300); font-family:var(--font-data); }
+  .twocol { display:grid; grid-template-columns:1fr 320px; gap:20px; align-items:start; }
+  @media (max-width:1000px){ .twocol{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Side nav ── -->
+  <aside class="sidenav">
+    <div class="brand"><div class="mark"></div><div class="name">RitmoFit<small>WEB</small></div></div>
+    <a class="nav-item" href="dashboard.html"><span class="ic outline">grid_view</span> Classes</a>
+    <div class="nav-item"><span class="ic outline">explore</span> Explore</div>
+    <div class="nav-item"><span class="ic outline">groups</span> Team</div>
+    <div class="nav-item"><span class="ic outline">library_music</span> Library</div>
+    <div class="nav-label">Setup</div>
+    <div class="nav-item active"><span class="ic">link</span> Music providers</div>
+    <div class="nav-item"><span class="ic outline">settings</span> Settings</div>
+    <div class="nav-spacer"></div>
+    <div class="nav-user"><div class="avatar">A</div><div class="who"><b>Ana Reyes</b><span>ana@ritmostudio.mx</span></div></div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div>
+    <header class="topbar">
+      <h1>Music providers</h1>
+      <div class="spacer"></div>
+      <span class="dim" style="font-size:13px;">References only · we never store your audio</span>
+    </header>
+
+    <main class="content">
+      <div class="twocol">
+
+        <section>
+          <p class="section-title">Connected services</p>
+
+          <!-- SoundCloud: connected -->
+          <div class="prov connected">
+            <div class="logo sc"><span class="ic">cloud</span></div>
+            <div class="body">
+              <h3>SoundCloud <span class="badge badge-ok" style="margin-left:6px;"><span class="ic">check_circle</span> Connected</span></h3>
+              <div class="det"><span>Connected as <span class="mono">@ana.reyes</span></span><span>Token refreshes <span class="mono">in 48m</span></span></div>
+              <div class="scope"><span class="s">search</span><span class="s">your likes</span><span class="s">playlists</span></div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-ghost btn-sm"><span class="ic">refresh</span> Reconnect</button>
+              <button class="btn btn-danger btn-sm"><span class="ic">link_off</span> Disconnect</button>
+            </div>
+          </div>
+
+          <!-- Spotify: needs reauth (warn) -->
+          <div class="prov warn">
+            <div class="logo sp"><span class="ic">graphic_eq</span></div>
+            <div class="body">
+              <h3>Spotify <span class="badge badge-warn" style="margin-left:6px;"><span class="ic">warning</span> Action needed</span></h3>
+              <div class="det"><span>Authorization expired — search & deep-links are paused.</span></div>
+              <p class="dim" style="font-size:12px;margin:8px 0 0;display:flex;gap:6px;"><span class="ic" style="font-size:15px;">info</span> Note: Spotify BPM is unavailable to new apps — RitmoFit never reads tempo from Spotify.</p>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary btn-sm"><span class="ic">link</span> Reconnect</button>
+            </div>
+          </div>
+
+          <!-- Apple Music: not connected -->
+          <div class="prov">
+            <div class="logo am"><span class="ic">album</span></div>
+            <div class="body">
+              <h3>Apple Music <span class="badge badge-off" style="margin-left:6px;">Not connected</span></h3>
+              <div class="det"><span>Connect to search and deep-link playback to the Music app.</span></div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-action btn-sm"><span class="ic">link</span> Connect</button>
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <p class="section-title">Optional</p>
+          <div class="prov">
+            <div class="logo" style="background:linear-gradient(135deg,var(--copper-400),var(--ember-500));"><span class="ic">speed</span></div>
+            <div class="body">
+              <h3>BPM provider <span class="badge badge-off" style="margin-left:6px;">Not connected</span></h3>
+              <div class="det"><span>Auto-fill <span class="mono">display_bpm</span> from a third-party tempo source. Until then, BPM is entered by hand.</span></div>
+            </div>
+            <div class="actions"><button class="btn btn-action btn-sm"><span class="ic">link</span> Connect</button></div>
+          </div>
+        </section>
+
+        <!-- aside: trust / OAuth explainer -->
+        <aside style="position:sticky;top:86px;">
+          <div class="banner banner-info" style="margin-bottom:16px;">
+            <span class="ic">verified_user</span>
+            <span>Tokens are <b>encrypted at rest</b> (AES-GCM). We never see your password — OAuth + PKCE only.</span>
+          </div>
+
+          <div class="panel">
+            <div class="card-head"><h3>What we store</h3></div>
+            <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:13px;">
+              <li class="flex gap-3"><span class="ic" style="color:var(--cyan-400);">check_circle</span><span>Provider track <b>IDs &amp; URIs</b> (references)</span></li>
+              <li class="flex gap-3"><span class="ic" style="color:var(--cyan-400);">check_circle</span><span>Your own metadata: classes, cues, moves, intensity, manual BPM</span></li>
+              <li class="flex gap-3"><span class="ic" style="color:var(--cyan-400);">check_circle</span><span>Encrypted OAuth tokens</span></li>
+              <li class="flex gap-3"><span class="ic" style="color:var(--ember-400);">cancel</span><span class="dim">No audio. No cached platform data. No mixing or crossfade.</span></li>
+            </ul>
+            <hr class="divider" />
+            <p class="dim" style="font-size:12px;margin:0;">On disconnect, provider-derived metadata is purged within 7 days. Playback always hands off to the provider's own app.</p>
+          </div>
+        </aside>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<nav class="mockbar">
+  <a href="index.html"><span class="ic">grid_view</span>Gallery</a>
+  <a href="login.html"><span class="ic">login</span>Sign in</a>
+  <a href="dashboard.html"><span class="ic">dashboard</span>Classes</a>
+  <a href="class-builder.html"><span class="ic">tune</span>Builder</a>
+  <a href="search.html"><span class="ic">search</span>Search</a>
+  <a href="connections.html" class="current"><span class="ic">link</span>Providers</a>
+  <a href="live.html"><span class="ic">sensors</span>Live</a>
+</nav>
+</body>
+</html>

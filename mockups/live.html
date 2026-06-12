@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RitmoFit — Live mode</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0&display=block" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .live { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; }
+  .live-top {
+    display:flex; align-items:center; gap:16px; padding:16px 28px;
+    background:var(--glass-fill); backdrop-filter:blur(20px); border-bottom:1px solid var(--glass-border);
+  }
+  .live-top .crumb { font-family:var(--font-data); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--bone-400); }
+  .live-top h1 { font-family:var(--font-display); font-size:18px; font-weight:600; margin:0; }
+  .stage { flex:1; display:grid; grid-template-columns:1.4fr 1fr; gap:24px; padding:28px; align-items:stretch; }
+  @media (max-width:980px){ .stage{ grid-template-columns:1fr; } }
+
+  /* ── HUD ── */
+  .hud {
+    position:relative; border-radius:var(--r-panel); padding:44px 40px; overflow:hidden;
+    background:radial-gradient(140% 120% at 50% 0%, rgba(50,42,32,0.9), var(--ink-900));
+    border:1px solid var(--glass-border);
+    display:flex; flex-direction:column; justify-content:center; text-align:center;
+    transition:box-shadow var(--dur-slow) var(--ease-standard), border-color var(--dur-slow);
+  }
+  .hud .now { font-family:var(--font-data); font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:var(--cyan-300); margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .hud .now .play-dot { background:var(--cyan-300); }
+  .hud .track { font-family:var(--font-display); font-size:26px; font-weight:600; }
+  .hud .track small { display:block; font-family:var(--font-ui); font-size:14px; color:var(--bone-400); font-weight:400; margin-top:2px; }
+  .hud .bpm-hero {
+    font-family:var(--font-data); font-weight:700; font-size:104px; line-height:0.9; letter-spacing:-0.04em;
+    display:inline-block; margin:18px 0 4px;
+    animation:hud-beat var(--rf-beat) infinite var(--ease-beat);
+  }
+  .hud .bpm-hero small { font-family:var(--font-data); font-size:18px; color:var(--bone-400); letter-spacing:0.1em; margin-left:10px; font-weight:500; }
+  @keyframes hud-beat { 0%{transform:scale(1);text-shadow:0 0 0 rgba(224,126,60,0);} 16%{transform:scale(1.06);text-shadow:0 0 28px rgba(224,126,60,0.45);} 100%{transform:scale(1);text-shadow:0 0 0 rgba(224,126,60,0);} }
+  .hud .cue { font-family:var(--font-display); font-weight:600; font-size:32px; margin:18px 0 6px; line-height:1.15; }
+  .hud .next { font-size:15px; color:var(--bone-300); }
+  .hud .next b { color:var(--cyan-300); }
+  .hud .meta { margin-top:24px; display:flex; justify-content:center; gap:32px; font-family:var(--font-data); font-size:15px; color:var(--bone-200); }
+  .hud .meta span small { color:var(--bone-500); font-size:10px; display:block; letter-spacing:0.1em; text-transform:uppercase; }
+
+  /* All-Out "drop" */
+  .hud.allout { border-color:var(--plasma-600); box-shadow:var(--peak-glow); background:radial-gradient(140% 120% at 50% 0%, rgba(70,20,45,0.85), var(--ink-900)); }
+  .hud.allout .bpm-hero { color:var(--bone-50); animation:hud-beat-peak var(--rf-beat) infinite var(--ease-beat); }
+  .hud.allout .now { color:var(--plasma-400); }
+  .hud.allout .now .play-dot { background:var(--plasma-500); }
+  @keyframes hud-beat-peak { 0%{transform:scale(1);text-shadow:0 0 0 rgba(255,46,136,0);} 16%{transform:scale(1.06);text-shadow:0 0 40px rgba(255,46,136,0.75);} 100%{transform:scale(1);text-shadow:0 0 0 rgba(255,46,136,0);} }
+  .zone-badge { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:var(--r-pill); background:var(--ink-700); font-weight:600; font-size:13px; margin-top:6px; }
+
+  /* ── Up next list ── */
+  .queue { display:flex; flex-direction:column; gap:14px; }
+  .next-cue { padding:16px 18px; border-radius:var(--r-card); background:var(--ink-800); border:1px solid var(--border-subtle); }
+  .next-cue .lbl { font-family:var(--font-data); font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--bone-500); margin-bottom:8px; }
+  .cuelist { display:flex; flex-direction:column; gap:8px; }
+  .cuerow { display:flex; align-items:center; gap:12px; font-size:15px; }
+  .cuerow .t { font-family:var(--font-data); font-size:12px; color:var(--cyan-300); width:46px; flex:none; }
+  .cuerow.upcoming { opacity:.55; }
+  .cuerow .cue-ic { width:0;height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:10px solid var(--cyan-400); flex:none; }
+
+  /* ── Transport ── */
+  .transport {
+    position:sticky; bottom:0; display:flex; align-items:center; gap:20px; padding:18px 28px;
+    background:var(--glass-strong); backdrop-filter:blur(24px); border-top:1px solid var(--glass-border);
+  }
+  .transport .controls { display:flex; align-items:center; gap:14px; }
+  .pbtn { display:grid; place-items:center; border-radius:50%; background:var(--ink-700); border:1px solid var(--border-default); color:var(--bone-100); cursor:pointer; }
+  .pbtn.lg { width:60px; height:60px; background:var(--copper-400); color:var(--ink-900); border:none; }
+  .pbtn .ic { font-size:24px; } .pbtn.lg .ic { font-size:30px; }
+  .progress { flex:1; }
+  .progress .bar { height:6px; border-radius:3px; background:var(--ink-600); overflow:hidden; }
+  .progress .bar > i { display:block; height:100%; width:36%; background:linear-gradient(90deg,var(--copper-400),var(--ember-500)); }
+  .progress .times { display:flex; justify-content:space-between; font-family:var(--font-data); font-size:12px; color:var(--bone-400); margin-top:6px; }
+
+  .tempo-ctl { display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:14px 18px; background:var(--ink-850); border-radius:var(--r-card); border:1px solid var(--border-subtle); margin-bottom:18px; }
+  .tempo-ctl input[type=range]{ accent-color:var(--cyan-400); width:160px; }
+  .tempo-ctl .val { font-family:var(--font-data); font-weight:700; font-size:18px; min-width:54px; }
+  .tempo-ctl button.peak { font-weight:600; font-size:12px; padding:9px 14px; border-radius:var(--r-pill); border:1px solid var(--plasma-600); background:transparent; color:var(--plasma-400); cursor:pointer; }
+  .tempo-ctl button.peak.on { background:var(--plasma-500); color:var(--ink-900); border-color:var(--plasma-500); }
+  .tempo-ctl .toggle { margin-left:auto; display:flex; align-items:center; gap:8px; font-size:13px; color:var(--bone-300); }
+</style>
+</head>
+<body class="has-wash">
+<div class="live">
+
+  <div class="live-top">
+    <a href="class-builder.html" class="iconbtn"><span class="ic">close</span></a>
+    <div>
+      <div class="crumb">Live preview · web</div>
+      <h1>Reggaetón Climb · Friday 6pm</h1>
+    </div>
+    <div class="spacer" style="flex:1;"></div>
+    <div class="segmented">
+      <button class="active">Cue by cue</button>
+      <button>Full list</button>
+      <button>Landscape</button>
+    </div>
+    <span class="badge badge-ok" style="margin-left:6px;"><span class="ic">smartphone</span> Mirrors iOS</span>
+  </div>
+
+  <div class="stage">
+
+    <!-- HUD -->
+    <div class="hud" id="hud">
+      <div class="now"><span class="play-dot"></span> Now playing · on the beat</div>
+      <div class="track">Shake It <small>TroyBoi · SoundCloud</small></div>
+      <div class="bpm-hero" id="hudbpm">155<small>BPM</small></div>
+      <div class="zone-badge" id="zonebadge"><span class="bars"><i class="on" style="background:var(--copper-400)"></i><i class="on" style="background:var(--copper-400)"></i><i class="on" style="background:var(--copper-400)"></i><i></i></span> Zone 3 · Attack</div>
+      <div class="cue" id="cue">Add a turn — climb the hill</div>
+      <div class="next">Next · <b>Sprint</b> in <span class="mono">0:24</span></div>
+      <div class="meta">
+        <span><small>Elapsed</small>12:48</span>
+        <span><small>Track</small>3 / 11</span>
+        <span><small>Remaining</small>35:32</span>
+      </div>
+    </div>
+
+    <!-- Up next -->
+    <div class="queue">
+      <div class="tempo-ctl">
+        <span class="ic" style="color:var(--cyan-400);">speed</span>
+        <input type="range" id="bpm" min="70" max="180" value="155" />
+        <span class="val"><span id="bpmval">155</span></span>
+        <span class="mono dim" style="font-size:11px;">beat <span id="beatms">387</span>ms</span>
+        <button class="peak" id="peakBtn">Trigger All-Out</button>
+        <label class="toggle"><span class="switch" id="reduceSw"></span> Reduce motion</label>
+      </div>
+
+      <div class="next-cue">
+        <div class="lbl">Cues · this track</div>
+        <div class="cuelist">
+          <div class="cuerow"><span class="t">0:30</span><span class="cue-ic"></span> Hands light — find the beat</div>
+          <div class="cuerow" style="font-weight:600;color:var(--bone-50);"><span class="t">2:14</span><span class="cue-ic"></span> Add a turn — climb the hill</div>
+          <div class="cuerow upcoming"><span class="t">3:10</span><span class="cue-ic"></span> Last push to the top</div>
+        </div>
+      </div>
+
+      <div class="next-cue">
+        <div class="lbl">Up next · the drop</div>
+        <div class="cuelist">
+          <div class="cuerow"><div class="art d" style="width:38px;height:38px;border-radius:10px;flex:none;"></div>
+            <div style="flex:1;"><div style="font-weight:600;">Gasolina</div><div class="dim" style="font-size:13px;">Daddy Yankee</div></div>
+            <span class="zone z-all_out"><span class="zn mono" style="font-weight:700;">Z4</span><span class="bars"><i class="on" style="background:var(--ember-500)"></i><i class="on" style="background:var(--ember-500)"></i><i class="on" style="background:var(--ember-500)"></i><i class="on" style="background:var(--ember-500)"></i></span></span>
+            <span class="bpm mono" style="color:var(--ember-400);font-weight:600;">160</span>
+          </div>
+        </div>
+        <p class="dim" style="font-size:12px;margin:12px 0 0;display:flex;gap:6px;"><span class="ic" style="font-size:15px;color:var(--plasma-400);">bolt</span> All-Out advance triggers the plasma glow + on-beat cross-fade — the one place motion budget is spent.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- transport -->
+  <div class="transport">
+    <div class="controls">
+      <span class="pbtn"><span class="ic">skip_previous</span></span>
+      <span class="pbtn lg"><span class="ic">pause</span></span>
+      <span class="pbtn"><span class="ic">skip_next</span></span>
+    </div>
+    <div class="progress">
+      <div class="bar"><i></i></div>
+      <div class="times"><span>1:24</span><span class="dim">Shake It · TroyBoi</span><span>3:55</span></div>
+    </div>
+    <button class="btn btn-action btn-sm"><span class="ic">open_in_new</span> Open in SoundCloud</button>
+  </div>
+</div>
+
+<nav class="mockbar">
+  <a href="index.html"><span class="ic">grid_view</span>Gallery</a>
+  <a href="login.html"><span class="ic">login</span>Sign in</a>
+  <a href="dashboard.html"><span class="ic">dashboard</span>Classes</a>
+  <a href="class-builder.html"><span class="ic">tune</span>Builder</a>
+  <a href="search.html"><span class="ic">search</span>Search</a>
+  <a href="connections.html"><span class="ic">link</span>Providers</a>
+  <a href="live.html" class="current"><span class="ic">sensors</span>Live</a>
+</nav>
+
+<script>
+  const root = document.documentElement;
+  const bpm = document.getElementById('bpm'), bpmval = document.getElementById('bpmval'),
+        beatms = document.getElementById('beatms'), hudbpm = document.getElementById('hudbpm');
+  function setBpm(v){ root.style.setProperty('--rf-bpm', v); bpmval.textContent = v; beatms.textContent = Math.round(60000/v); hudbpm.innerHTML = v + '<small>BPM</small>'; }
+  bpm.addEventListener('input', e => setBpm(e.target.value));
+  setBpm(155);
+
+  // reduce motion
+  const sw = document.getElementById('reduceSw');
+  sw.addEventListener('click', () => { sw.classList.toggle('on'); document.body.classList.toggle('reduce', sw.classList.contains('on')); });
+
+  // All-Out drop
+  const hud = document.getElementById('hud'), cue = document.getElementById('cue'),
+        peakBtn = document.getElementById('peakBtn'), zb = document.getElementById('zonebadge');
+  let peak = false;
+  peakBtn.addEventListener('click', () => {
+    peak = !peak;
+    hud.classList.toggle('allout', peak);
+    peakBtn.classList.toggle('on', peak);
+    cue.textContent = peak ? 'ALL OUT — leave nothing' : 'Add a turn — climb the hill';
+    zb.innerHTML = peak
+      ? '<span class="bars"><i class="on" style="background:var(--ember-500)"></i><i class="on" style="background:var(--ember-500)"></i><i class="on" style="background:var(--ember-500)"></i><i class="on" style="background:var(--ember-500)"></i></span> Zone 4 · All Out'
+      : '<span class="bars"><i class="on" style="background:var(--copper-400)"></i><i class="on" style="background:var(--copper-400)"></i><i class="on" style="background:var(--copper-400)"></i><i></i></span> Zone 3 · Attack';
+  });
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches){ sw.classList.add('on'); document.body.classList.add('reduce'); }
+</script>
+</body>
+</html>
