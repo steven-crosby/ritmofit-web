@@ -1,0 +1,315 @@
+/**
+ * Drizzle schema for Cloudflare D1 (SQLite) — the executable mirror of
+ * `ritmofit_dev_plan/schema.md` (the human source of truth). If the two diverge,
+ * reconcile `schema.md` first.
+ *
+ * D1/SQLite conventions:
+ * - `id` is `TEXT` holding a UUIDv4 (except `users.id`, which is whatever Better
+ *   Auth issues — a plain string, not assumed UUID).
+ * - timestamps are `INTEGER` epoch **milliseconds** (`created_at`/`updated_at` on
+ *   every table unless noted).
+ * - enums are `TEXT` columns. Drizzle's `text({ enum: [...] })` enforces only at
+ *   the TS layer — it does NOT emit a SQL CHECK — so each enum column also gets an
+ *   explicit `check()` built from the SAME shared `*Values` tuple, keeping the DB
+ *   constraint and the Zod schema from drifting (D1 has no other backstop).
+ *
+ * Enum value tuples are imported from `@ritmofit/shared` so the contract is
+ * defined exactly once (CLAUDE.md: "the shared package is the contract").
+ */
+import { sql } from 'drizzle-orm';
+import {
+  sqliteTable,
+  text,
+  integer,
+  check,
+  uniqueIndex,
+  type AnySQLiteColumn,
+} from 'drizzle-orm/sqlite-core';
+import {
+  intensityValues,
+  providerValues,
+  teamRoleValues,
+  classTemplateValues,
+  classStatusValues,
+  sharePermissionValues,
+  shareResourceTypeValues,
+} from '@ritmofit/shared';
+
+/**
+ * A SQL CHECK restricting a TEXT column to an enum's values. Nullable enum
+ * columns pass automatically: `col in (...)` is NULL when `col` is NULL, and
+ * SQLite treats a NULL-valued CHECK as satisfied.
+ */
+function enumCheck(name: string, column: AnySQLiteColumn, values: readonly string[]) {
+  const list = sql.raw(values.map((v) => `'${v}'`).join(', '));
+  return check(name, sql`${column} in (${list})`);
+}
+
+/** `created_at` / `updated_at` (epoch ms). Called per table — column builders aren't reusable. */
+function timestamps() {
+  return {
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  };
+}
+
+// ── Identity & teams ────────────────────────────────────────────────────────
+
+/**
+ * Canonical user record. Better Auth's D1 adapter creates the row on first
+ * sign-in; we own these extra columns. `id` is Better Auth's id (not re-keyed).
+ * Better Auth's own session/account/verification tables are added in step 4.
+ */
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  displayName: text('display_name'),
+  imageUrl: text('image_url'),
+  ...timestamps(),
+});
+
+export const teams = sqliteTable('teams', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  ownerUserId: text('owner_user_id')
+    .notNull()
+    .references(() => users.id),
+  ...timestamps(),
+});
+
+export const teamMemberships = sqliteTable(
+  'team_memberships',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    // teams CASCADE → memberships.
+    teamId: text('team_id')
+      .notNull()
+      .references(() => teams.id, { onDelete: 'cascade' }),
+    role: text('role', { enum: teamRoleValues }).notNull(),
+    joinedAt: integer('joined_at').notNull(),
+  },
+  (t) => [
+    enumCheck('team_memberships_role_check', t.role, teamRoleValues),
+    uniqueIndex('team_memberships_user_team_unique').on(t.userId, t.teamId),
+  ],
+);
+
+// ── Classes & music ─────────────────────────────────────────────────────────
+
+export const classes = sqliteTable(
+  'classes',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id')
+      .notNull()
+      .references(() => users.id),
+    title: text('title').notNull(),
+    description: text('description'),
+    template: text('template', { enum: classTemplateValues }),
+    status: text('status', { enum: classStatusValues }).notNull().default('draft'),
+    targetDurationMs: integer('target_duration_ms'),
+    ...timestamps(),
+    lastOpenedAt: integer('last_opened_at'),
+  },
+  (t) => [
+    enumCheck('classes_template_check', t.template, classTemplateValues),
+    enumCheck('classes_status_check', t.status, classStatusValues),
+  ],
+);
+
+export const tracks = sqliteTable('tracks', {
+  id: text('id').primaryKey(),
+  ownerUserId: text('owner_user_id')
+    .notNull()
+    .references(() => users.id),
+  title: text('title').notNull(),
+  artist: text('artist').notNull(),
+  albumArtUrl: text('album_art_url'),
+  durationMs: integer('duration_ms'),
+  displayBpm: integer('display_bpm'),
+  isrc: text('isrc'),
+  ...timestamps(),
+});
+
+export const trackProviderIds = sqliteTable(
+  'track_provider_ids',
+  {
+    id: text('id').primaryKey(),
+    // tracks CASCADE → their provider ids.
+    trackId: text('track_id')
+      .notNull()
+      .references(() => tracks.id, { onDelete: 'cascade' }),
+    provider: text('provider', { enum: providerValues }).notNull(),
+    providerTrackId: text('provider_track_id').notNull(),
+    providerUri: text('provider_uri'),
+    ...timestamps(),
+  },
+  (t) => [
+    enumCheck('track_provider_ids_provider_check', t.provider, providerValues),
+    uniqueIndex('track_provider_ids_provider_id_unique').on(t.provider, t.providerTrackId),
+  ],
+);
+
+export const classTracks = sqliteTable(
+  'class_tracks',
+  {
+    id: text('id').primaryKey(),
+    // classes CASCADE → class_tracks.
+    classId: text('class_id')
+      .notNull()
+      .references(() => classes.id, { onDelete: 'cascade' }),
+    // tracks RESTRICT while referenced — a track in use can't vanish under a class.
+    trackId: text('track_id')
+      .notNull()
+      .references(() => tracks.id, { onDelete: 'restrict' }),
+    position: integer('position').notNull(),
+    intensity: text('intensity', { enum: intensityValues }).notNull().default('none'),
+    displayBpmOverride: integer('display_bpm_override'),
+    startOffsetMs: integer('start_offset_ms'),
+    notes: text('notes'),
+    ...timestamps(),
+  },
+  (t) => [enumCheck('class_tracks_intensity_check', t.intensity, intensityValues)],
+);
+
+// ── Moves library ───────────────────────────────────────────────────────────
+
+/** Global, seeded movement library (see `seed.sql`). */
+export const moves = sqliteTable(
+  'moves',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    description: text('description'),
+    template: text('template', { enum: classTemplateValues }),
+    ...timestamps(),
+  },
+  (t) => [enumCheck('moves_template_check', t.template, classTemplateValues)],
+);
+
+export const userMoves = sqliteTable(
+  'user_moves',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    name: text('name').notNull(),
+    description: text('description'),
+    // moves SET NULL → user_moves.base_move_id (the optional library link).
+    baseMoveId: text('base_move_id').references(() => moves.id, { onDelete: 'set null' }),
+    template: text('template', { enum: classTemplateValues }),
+    ...timestamps(),
+  },
+  (t) => [enumCheck('user_moves_template_check', t.template, classTemplateValues)],
+);
+
+// ── Choreography (anchored to a class_track) ────────────────────────────────
+
+export const cues = sqliteTable('cues', {
+  id: text('id').primaryKey(),
+  // class_tracks CASCADE → cues.
+  classTrackId: text('class_track_id')
+    .notNull()
+    .references(() => classTracks.id, { onDelete: 'cascade' }),
+  anchorMs: integer('anchor_ms').notNull(),
+  beat: integer('beat'),
+  bar: integer('bar'),
+  text: text('text').notNull(),
+  color: text('color'),
+  ...timestamps(),
+});
+
+export const classTrackMoves = sqliteTable(
+  'class_track_moves',
+  {
+    id: text('id').primaryKey(),
+    // class_tracks CASCADE → class_track_moves.
+    classTrackId: text('class_track_id')
+      .notNull()
+      .references(() => classTracks.id, { onDelete: 'cascade' }),
+    anchorMs: integer('anchor_ms').notNull(),
+    // moves / user_moves SET NULL — the placement survives via name_override.
+    moveId: text('move_id').references(() => moves.id, { onDelete: 'set null' }),
+    userMoveId: text('user_move_id').references(() => userMoves.id, { onDelete: 'set null' }),
+    nameOverride: text('name_override'),
+    intensity: text('intensity', { enum: intensityValues }),
+    ...timestamps(),
+  },
+  (t) => [
+    enumCheck('class_track_moves_intensity_check', t.intensity, intensityValues),
+    // At most one library reference, and at least one of (move | user_move | name).
+    check(
+      'class_track_moves_reference_check',
+      sql`((${t.moveId} is not null) + (${t.userMoveId} is not null)) <= 1
+        and (${t.moveId} is not null or ${t.userMoveId} is not null or ${t.nameOverride} is not null)`,
+    ),
+  ],
+);
+
+// ── Sharing (Google Drive model) ────────────────────────────────────────────
+
+/**
+ * `resource_id` is polymorphic (a class id in M1) so it carries NO foreign key.
+ * The classes → shares cascade in `schema.md` is therefore enforced in
+ * application code (the class-delete route deletes matching shares), not by D1.
+ */
+export const shares = sqliteTable(
+  'shares',
+  {
+    id: text('id').primaryKey(),
+    resourceType: text('resource_type', { enum: shareResourceTypeValues }).notNull(),
+    resourceId: text('resource_id').notNull(),
+    sharedByUserId: text('shared_by_user_id')
+      .notNull()
+      .references(() => users.id),
+    targetUserId: text('target_user_id').references(() => users.id),
+    // teams CASCADE → shares targeting the team.
+    targetTeamId: text('target_team_id').references(() => teams.id, { onDelete: 'cascade' }),
+    permission: text('permission', { enum: sharePermissionValues }).notNull(),
+    ...timestamps(),
+  },
+  (t) => [
+    enumCheck('shares_resource_type_check', t.resourceType, shareResourceTypeValues),
+    enumCheck('shares_permission_check', t.permission, sharePermissionValues),
+    // Exactly one target (user XOR team).
+    check(
+      'shares_one_target_check',
+      sql`(${t.targetUserId} is null) <> (${t.targetTeamId} is null)`,
+    ),
+    // At most one share per (resource, target) — two partial uniques.
+    uniqueIndex('shares_resource_target_user_unique')
+      .on(t.resourceType, t.resourceId, t.targetUserId)
+      .where(sql`${t.targetUserId} is not null`),
+    uniqueIndex('shares_resource_target_team_unique')
+      .on(t.resourceType, t.resourceId, t.targetTeamId)
+      .where(sql`${t.targetTeamId} is not null`),
+  ],
+);
+
+// ── Music connections (M2 placeholder) ──────────────────────────────────────
+
+/** Per-user provider OAuth connection. Tokens are encrypted at rest; never sent to clients. */
+export const musicConnections = sqliteTable(
+  'music_connections',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    provider: text('provider', { enum: providerValues }).notNull(),
+    accessTokenEncrypted: text('access_token_encrypted').notNull(),
+    refreshTokenEncrypted: text('refresh_token_encrypted'),
+    providerUserId: text('provider_user_id'),
+    scope: text('scope'),
+    expiresAt: integer('expires_at'),
+    ...timestamps(),
+  },
+  (t) => [
+    enumCheck('music_connections_provider_check', t.provider, providerValues),
+    uniqueIndex('music_connections_user_provider_unique').on(t.userId, t.provider),
+  ],
+);

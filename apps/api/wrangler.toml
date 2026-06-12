@@ -10,6 +10,7 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB"
 database_name = "ritmofit"
 database_id = "PLACEHOLDER_RUN_wrangler_d1_create_ritmofit"
+migrations_dir = "migrations"
 
 [observability]
 enabled = true
