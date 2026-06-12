@@ -73,6 +73,17 @@ Core builder first (these validate the product), teams/sharing last.
 ---
 
 ## M2 — Music-provider integration
+
+> **Progress (in PRs, behind the mock until live SoundCloud creds + a registered redirect URI land):**
+> - ✅ **Slice 1** — SoundCloud search → track creation. `packages/music` `MusicProvider` abstraction +
+>   `client_credentials` adapter behind a mock-fallback registry. `GET /providers/:provider/search`,
+>   `POST /providers/track-import`. (PR #1)
+> - ✅ **Slice 2** — per-user OAuth + encrypted `music_connections` (Auth Code + PKCE; AES-GCM at rest;
+>   connect/callback/list/disconnect). No migration (table pre-existed). (PR #2, stacked on #1)
+> - ⏭️ **Next** — consume the user token (e.g. "my SoundCloud likes" + token refresh), then the deferred
+>   **7-day metadata-purge-on-disconnect** compliance work; provider-ID resolution / same-song matching;
+>   then Spotify + Apple Music behind the same interface.
+
 - **SoundCloud first** (the differentiator): provider search feeding track creation; provider-ID
   resolution and the same-song matching problem; deep-link/hand-off playback via `provider_uri`.
 - Spotify and Apple Music behind the same provider interface (add `packages/music` here).

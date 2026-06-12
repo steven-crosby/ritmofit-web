@@ -59,7 +59,23 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
   with `pnpm --filter @ritmofit/api db:migrate:local` and seed with `db:seed:local`. No Cloudflare/CI
   linkage yet; provision real D1 + deploy when M2 needs a remote.
 - **Known tech debt:** no automated integration tests yet — the route/SQL layer is verified by manual
-  flows, not CI. Address early in M2 (the app-level authz is the only access gate, so this matters).
+  flows + unit tests, not CI. Address early in M2 (the app-level authz is the only access gate).
 
-**Next: M2** (music providers, SoundCloud first) — see `ritmofit_dev_plan/milestones.md` and
-`music-providers.md`. M1's per-step branches and `main` are pushed to GitHub.
+**M2 in progress** (music providers, SoundCloud first) — see `ritmofit_dev_plan/milestones.md` and
+`music-providers.md`. New package `packages/music` holds the provider adapters.
+
+- **Slice 1 — provider search → track creation** (PR #1, `feat/m2-step1-soundcloud-search`): a
+  `MusicProvider` abstraction + server-side SoundCloud `client_credentials` adapter behind a registry
+  that falls back to the mock catalog. Routes: `GET /providers/:provider/search`,
+  `POST /providers/track-import`.
+- **Slice 2 — per-user OAuth + encrypted `music_connections`** (PR #2, `feat/m2-step2-provider-oauth`,
+  stacked on slice 1): Authorization Code + PKCE connect/callback/list/disconnect; AES-GCM token
+  encryption (`lib/crypto.ts`); PKCE (`lib/pkce.ts`). No migration (table pre-existed).
+- **Status of both:** code complete, `typecheck` + `test` (68) green; **behind the mock** — live
+  SoundCloud calls need valid `SOUNDCLOUD_CLIENT_ID/SECRET` + a **registered redirect URI**, and
+  registration may be closed. Re-verify the `OAuth <token>` auth-header scheme when creds land.
+- **Next (not started):** consume the user token (e.g. "search my SoundCloud likes" / token refresh
+  wired in), then the deferred **7-day metadata-purge-on-disconnect** compliance slice. Then Spotify /
+  Apple Music behind the same `MusicProvider`, and an optional third-party BPM provider.
+
+M1's per-step branches and `main` are on GitHub; M2 slices are open PRs (not yet merged to `main`).
