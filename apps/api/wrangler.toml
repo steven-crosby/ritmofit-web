@@ -1,0 +1,15 @@
+name = "ritmofit-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-06"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare D1 (SQLite), bound to the Worker as `DB`.
+# Create the database once with:  wrangler d1 create ritmofit
+# then paste the returned database_id below (it is NOT a secret).
+[[d1_databases]]
+binding = "DB"
+database_name = "ritmofit"
+database_id = "PLACEHOLDER_RUN_wrangler_d1_create_ritmofit"
+
+[observability]
+enabled = true

@@ -1,0 +1,12 @@
+packages:
+  - 'packages/*'
+  - 'apps/*'
+# esbuild (Vite) and workerd (wrangler dev) need their postinstall to fetch
+# platform binaries. sharp is pulled in transitively but unused.
+allowBuilds:
+  esbuild: true
+  sharp: false
+  workerd: true
+onlyBuiltDependencies:
+  - esbuild
+  - workerd

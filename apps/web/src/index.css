@@ -1,0 +1,17 @@
+/* Generated design tokens must load before Tailwind so the --rf-* vars exist
+   when utilities reference them. */
+@import './styles/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    margin: 0;
+    background-color: var(--rf-color-semantic-bg-base);
+    color: var(--rf-color-semantic-text-primary);
+    font-family: var(--rf-typography-family-ui);
+    -webkit-font-smoothing: antialiased;
+  }
+}
