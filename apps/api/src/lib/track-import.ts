@@ -5,9 +5,10 @@
  * Provider-ID resolution (M2 slice 5): a candidate is resolved against the user's
  * existing library before a new track is forged, so one song handed off to several
  * provider apps stays a single `track` with many `track_provider_ids`:
- *  1. Exact ref — `(provider, providerTrackId)` already imported. If it's the
- *     caller's, return it idempotently; if another user's, 409 (the global unique
- *     index means the ref can't be re-attached anyway).
+ *  1. Exact ref — `(owner, provider, providerTrackId)` already in the caller's
+ *     library: return it idempotently. Another user owning the same provider ref is
+ *     irrelevant (per-user libraries, D4); the owner-scoped unique index lets each
+ *     user import the same song into their own library.
  *  2. Same song, new provider — fuzzy match (`same-song.ts`) attaches the new
  *     provider ID to the existing track instead of duplicating it.
  *  3. Otherwise create a fresh owner-scoped track (manual BPM — never a
@@ -46,6 +47,7 @@ async function loadTrackWithProviders(db: Db, trackId: string): Promise<TrackWit
  */
 async function attachProviderId(
   db: Db,
+  ownerUserId: string,
   trackId: string,
   candidate: TrackSearchResult,
 ): Promise<TrackWithProviderIds | null> {
@@ -54,6 +56,7 @@ async function attachProviderId(
     await db.insert(trackProviderIds).values({
       id: crypto.randomUUID(),
       trackId,
+      ownerUserId,
       provider: candidate.provider,
       providerTrackId: candidate.providerTrackId,
       providerUri: candidate.providerUri,
@@ -132,6 +135,7 @@ async function createNewTrack(
   const providerRow = {
     id: crypto.randomUUID(),
     trackId: trackRow.id,
+    ownerUserId,
     provider: candidate.provider,
     providerTrackId: candidate.providerTrackId,
     providerUri: candidate.providerUri,
@@ -159,22 +163,22 @@ export async function importTrackFromCandidate(
   ownerUserId: string,
   candidate: TrackSearchResult,
 ): Promise<ImportResult> {
-  // 1. Exact ref — the provider track is already imported somewhere.
+  // 1. Exact ref — the provider track is already in THIS user's library. Scoped to
+  //    the caller (tracks are a per-user library, D4): another user owning the same
+  //    provider ref is irrelevant — it lives on a different track row, and the
+  //    owner-scoped unique index lets the caller import it into their own library.
   const existingRef = await db
-    .select({ trackId: trackProviderIds.trackId, ownerUserId: tracks.ownerUserId })
+    .select({ trackId: trackProviderIds.trackId })
     .from(trackProviderIds)
-    .innerJoin(tracks, eq(tracks.id, trackProviderIds.trackId))
     .where(
       and(
+        eq(trackProviderIds.ownerUserId, ownerUserId),
         eq(trackProviderIds.provider, candidate.provider),
         eq(trackProviderIds.providerTrackId, candidate.providerTrackId),
       ),
     )
     .get();
   if (existingRef) {
-    if (existingRef.ownerUserId !== ownerUserId) {
-      throw new HttpError(409, 'CONFLICT', 'That provider track is already in a library.');
-    }
     // Idempotent re-import — the track already exists, nothing created.
     return { track: await loadTrackWithProviders(db, existingRef.trackId), created: false };
   }
@@ -183,7 +187,7 @@ export async function importTrackFromCandidate(
   const matchKey = makeMatchKey(candidate.title, candidate.artist);
   const match = findSameSongMatch(candidate, await loadMatchableLibrary(db, ownerUserId, matchKey));
   if (match) {
-    const merged = await attachProviderId(db, match, candidate);
+    const merged = await attachProviderId(db, ownerUserId, match, candidate);
     // merged === null means the matched track vanished mid-flight → fall through to create.
     if (merged) return { track: merged, created: false };
   }

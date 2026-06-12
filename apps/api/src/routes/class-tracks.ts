@@ -4,7 +4,7 @@
  * Every handler resolves the parent class and gates via `requireAccess`.
  */
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import {
   addClassTrackSchema,
   updateClassTrackSchema,
@@ -18,7 +18,9 @@ import { requireAccess, requireClassTrackAccess, AccessError } from '../lib/auth
 import { HttpError } from '../lib/errors.js';
 import { serializeClassTrack } from '../lib/serialize.js';
 import { resequence } from '../lib/sequencing.js';
-import { classTracks, tracks, cues, classTrackMoves } from '../db/schema.js';
+import { buildPatch } from '../lib/patch.js';
+import { makeMatchKey } from '../lib/same-song.js';
+import { userMoves, classTracks, tracks, trackProviderIds, cues, classTrackMoves } from '../db/schema.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
 classTrackRoutes.use('*', requireSession);
@@ -60,6 +62,10 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
       durationMs: body.track.durationMs ?? null,
       displayBpm: body.track.displayBpm ?? null,
       isrc: body.track.isrc ?? null,
+      // Keep parity with POST /tracks + import: without this the inline-created
+      // track has a NULL match_key and is invisible to same-song resolution, so a
+      // later provider import of the same song forges a duplicate track.
+      matchKey: makeMatchKey(body.track.title, body.track.artist),
       createdAt: now,
       updatedAt: now,
     });
@@ -151,12 +157,7 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
   await requireClassTrackAccess(db, c.get('userId'), id, 'edit');
   const body = updateClassTrackSchema.parse(await c.req.json());
 
-  const patch: Record<string, unknown> = { updatedAt: Date.now() };
-  if ('intensity' in body) patch.intensity = body.intensity;
-  if ('displayBpmOverride' in body) patch.displayBpmOverride = body.displayBpmOverride ?? null;
-  if ('notes' in body) patch.notes = body.notes ?? null;
-
-  await db.update(classTracks).set(patch).where(eq(classTracks.id, id));
+  await db.update(classTracks).set(buildPatch(body)).where(eq(classTracks.id, id));
   const row = await db.select().from(classTracks).where(eq(classTracks.id, id)).get();
   return c.json(serializeClassTrack(row!));
 });
@@ -184,6 +185,7 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
   await requireAccess(db, me, targetClassId, 'edit');
 
   const source = await db.select().from(classTracks).where(eq(classTracks.id, sourceId)).get();
+  if (!source) throw new AccessError(404, 'NOT_FOUND', 'Not found.');
   const sourceCues = await db.select().from(cues).where(eq(cues.classTrackId, sourceId)).all();
   const sourceMoves = await db
     .select()
@@ -198,11 +200,91 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
 
   const now = Date.now();
   const newId = crypto.randomUUID();
+
+  // A copy must never carry references into ANOTHER user's private library: a
+  // foreign trackId / userMoveId would survive the source class being unshared,
+  // letting the copier keep reading the owner's private track + move metadata. So
+  // when the source track / a placed user_move isn't the caller's, clone the track
+  // (with its provider ids) into the caller's library and snapshot foreign move
+  // names into `name_override`, dropping the private ref. Refs the caller already
+  // owns are preserved as-is.
+  const clones: unknown[] = [];
+
+  // ── Resolve the track ──────────────────────────────────────────────────────
+  let resolvedTrackId = source.trackId;
+  const sourceTrack = await db.select().from(tracks).where(eq(tracks.id, source.trackId)).get();
+  if (sourceTrack && sourceTrack.ownerUserId !== me) {
+    resolvedTrackId = crypto.randomUUID();
+    clones.push(
+      db.insert(tracks).values({ ...sourceTrack, id: resolvedTrackId, ownerUserId: me, createdAt: now, updatedAt: now }),
+    );
+    const srcRefs = await db
+      .select()
+      .from(trackProviderIds)
+      .where(eq(trackProviderIds.trackId, source.trackId))
+      .all();
+    if (srcRefs.length > 0) {
+      // Skip any provider ref the caller already owns — the owner-scoped unique
+      // index would reject it, and they already have that song anyway.
+      const mineKey = (provider: string, providerTrackId: string) => `${provider} ${providerTrackId}`;
+      const mine = new Set(
+        (
+          await db
+            .select({ provider: trackProviderIds.provider, providerTrackId: trackProviderIds.providerTrackId })
+            .from(trackProviderIds)
+            .where(eq(trackProviderIds.ownerUserId, me))
+            .all()
+        ).map((r) => mineKey(r.provider, r.providerTrackId)),
+      );
+      for (const ref of srcRefs) {
+        if (mine.has(mineKey(ref.provider, ref.providerTrackId))) continue;
+        clones.push(
+          db.insert(trackProviderIds).values({
+            ...ref,
+            id: crypto.randomUUID(),
+            trackId: resolvedTrackId,
+            ownerUserId: me,
+            createdAt: now,
+            updatedAt: now,
+          }),
+        );
+      }
+    }
+  }
+
+  // ── Resolve placed-move user_move refs ─────────────────────────────────────
+  const userMoveIds = [...new Set(sourceMoves.map((m) => m.userMoveId).filter((id): id is string => id != null))];
+  const userMoveById = new Map<string, { userId: string; name: string }>();
+  if (userMoveIds.length > 0) {
+    const rows = await db
+      .select({ id: userMoves.id, userId: userMoves.userId, name: userMoves.name })
+      .from(userMoves)
+      .where(inArray(userMoves.id, userMoveIds))
+      .all();
+    rows.forEach((r) => userMoveById.set(r.id, { userId: r.userId, name: r.name }));
+  }
+  const remapMove = (move: (typeof sourceMoves)[number]) => {
+    let userMoveId = move.userMoveId;
+    let nameOverride = move.nameOverride;
+    if (userMoveId != null) {
+      const um = userMoveById.get(userMoveId);
+      if (!um || um.userId !== me) {
+        // Foreign user_move — snapshot its name (preserving the invariant: a
+        // placement keeps a name when it loses its library ref) and drop the ref.
+        nameOverride = nameOverride ?? um?.name ?? null;
+        userMoveId = null;
+      }
+    }
+    return { ...move, userMoveId, nameOverride, id: crypto.randomUUID(), classTrackId: newId, createdAt: now, updatedAt: now };
+  };
+
   const statements = [
+    ...clones,
     db.insert(classTracks).values({
-      ...source!,
+      ...source,
       id: newId,
       classId: targetClassId,
+      trackId: resolvedTrackId,
       position: targetExisting.length,
       startOffsetMs: null,
       createdAt: now,
@@ -211,13 +293,9 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
     ...sourceCues.map((cue) =>
       db.insert(cues).values({ ...cue, id: crypto.randomUUID(), classTrackId: newId, createdAt: now, updatedAt: now }),
     ),
-    ...sourceMoves.map((move) =>
-      db
-        .insert(classTrackMoves)
-        .values({ ...move, id: crypto.randomUUID(), classTrackId: newId, createdAt: now, updatedAt: now }),
-    ),
+    ...sourceMoves.map((move) => db.insert(classTrackMoves).values(remapMove(move))),
   ];
-  await db.batch(statements as [(typeof statements)[number], ...(typeof statements)[number][]]);
+  await db.batch(statements as unknown as Parameters<typeof db.batch>[0]);
   await resequence(db, targetClassId);
 
   const row = await db.select().from(classTracks).where(eq(classTracks.id, newId)).get();

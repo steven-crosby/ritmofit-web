@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ZodError } from 'zod';
 import { API_VERSION } from '@ritmofit/shared';
+import { ProviderError } from '@ritmofit/music';
 import type { AppEnv, Env } from './lib/types.js';
 import { createAuth } from './lib/auth.js';
 import { createDb } from './lib/db.js';
@@ -29,6 +30,15 @@ const app = new Hono<AppEnv>();
 app.onError((err, c) => {
   if (err instanceof HttpError) {
     return c.json({ error: { code: err.code, message: err.message } }, err.status);
+  }
+  // An upstream music provider misbehaved (non-JSON / unexpected shape). This is a
+  // bad-gateway, NOT a client validation error — keep it out of the 422 branch
+  // below (a provider `ZodError` would otherwise read as "your request was invalid").
+  if (err instanceof ProviderError) {
+    return c.json(
+      { error: { code: 'PROVIDER_UNAVAILABLE', message: 'A music provider is temporarily unavailable.' } },
+      502,
+    );
   }
   if (err instanceof ZodError) {
     return c.json(

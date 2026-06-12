@@ -14,6 +14,7 @@ import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
+import { buildPatch } from '../lib/patch.js';
 import { serializeMove, serializeUserMove } from '../lib/serialize.js';
 import { moves, userMoves, classTrackMoves } from '../db/schema.js';
 import type { Db } from '../lib/db.js';
@@ -88,16 +89,9 @@ moveRoutes.patch('/user-moves/:id', async (c) => {
   if (!owned) throw new HttpError(404, 'NOT_FOUND', 'Not found.');
 
   const body = updateUserMoveSchema.parse(await c.req.json());
-  const patch: Record<string, unknown> = { updatedAt: Date.now() };
-  if ('name' in body) patch.name = body.name;
-  if ('description' in body) patch.description = body.description ?? null;
-  if ('template' in body) patch.template = body.template ?? null;
-  if ('baseMoveId' in body) {
-    await assertValidBaseMove(db, body.baseMoveId ?? null);
-    patch.baseMoveId = body.baseMoveId ?? null;
-  }
+  if ('baseMoveId' in body) await assertValidBaseMove(db, body.baseMoveId ?? null);
 
-  await db.update(userMoves).set(patch).where(eq(userMoves.id, id));
+  await db.update(userMoves).set(buildPatch(body)).where(eq(userMoves.id, id));
   const row = await db.select().from(userMoves).where(eq(userMoves.id, id)).get();
   return c.json(serializeUserMove(row!));
 });

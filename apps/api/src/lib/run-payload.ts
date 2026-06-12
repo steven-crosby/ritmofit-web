@@ -67,59 +67,51 @@ function groupBy<T, K>(rows: readonly T[], key: (row: T) => K): Map<K, T[]> {
 
 /** Assemble the run-payload for a class (caller already authorized for VIEW). */
 export async function assembleRunPayload(db: Db, classId: string): Promise<RunPayload> {
-  const cls = await db.select().from(classes).where(eq(classes.id, classId)).get();
+  // Wave 1: the class and its ordered class_tracks are independent.
+  const [cls, cts] = await Promise.all([
+    db.select().from(classes).where(eq(classes.id, classId)).get(),
+    db.select().from(classTracks).where(eq(classTracks.classId, classId)).orderBy(classTracks.position).all(),
+  ]);
   if (!cls) throw new Error(`class ${classId} not found during run-payload assembly`);
-
-  const cts = await db
-    .select()
-    .from(classTracks)
-    .where(eq(classTracks.classId, classId))
-    .orderBy(classTracks.position)
-    .all();
 
   const trackIds = [...new Set(cts.map((ct) => ct.trackId))];
   const ctIds = cts.map((ct) => ct.id);
 
-  // Batched lookups — each guarded against an empty `IN ()`.
-  const trackRows = trackIds.length
-    ? await db.select().from(tracks).where(inArray(tracks.id, trackIds)).all()
-    : [];
-  const providerRows = trackIds.length
-    ? await db.select().from(trackProviderIds).where(inArray(trackProviderIds.trackId, trackIds)).all()
-    : [];
-  const cueRows = ctIds.length
-    ? await db.select().from(cues).where(inArray(cues.classTrackId, ctIds)).orderBy(cues.anchorMs).all()
-    : [];
-  const moveRows = ctIds.length
-    ? await db
-        .select()
-        .from(classTrackMoves)
-        .where(inArray(classTrackMoves.classTrackId, ctIds))
-        .orderBy(classTrackMoves.anchorMs)
-        .all()
-    : [];
+  // Wave 2: tracks / provider refs / cues / moves all depend only on the ct list,
+  // so fire them together. Each is guarded against an empty `IN ()`.
+  const [trackRows, providerRows, cueRows, moveRows] = await Promise.all([
+    trackIds.length ? db.select().from(tracks).where(inArray(tracks.id, trackIds)).all() : [],
+    trackIds.length
+      ? db.select().from(trackProviderIds).where(inArray(trackProviderIds.trackId, trackIds)).all()
+      : [],
+    ctIds.length
+      ? db.select().from(cues).where(inArray(cues.classTrackId, ctIds)).orderBy(cues.anchorMs).all()
+      : [],
+    ctIds.length
+      ? db
+          .select()
+          .from(classTrackMoves)
+          .where(inArray(classTrackMoves.classTrackId, ctIds))
+          .orderBy(classTrackMoves.anchorMs)
+          .all()
+      : [],
+  ]);
 
-  // Resolve library names referenced by placements.
+  // Wave 3: resolve the library names referenced by placements (both independent).
   const refMoveIds = [...new Set(moveRows.map((m) => m.moveId).filter((v): v is string => v != null))];
   const refUserMoveIds = [
     ...new Set(moveRows.map((m) => m.userMoveId).filter((v): v is string => v != null)),
   ];
-  const moveNameById = new Map(
-    (refMoveIds.length
-      ? await db.select({ id: moves.id, name: moves.name }).from(moves).where(inArray(moves.id, refMoveIds)).all()
-      : []
-    ).map((m) => [m.id, m.name]),
-  );
-  const userMoveNameById = new Map(
-    (refUserMoveIds.length
-      ? await db
-          .select({ id: userMoves.id, name: userMoves.name })
-          .from(userMoves)
-          .where(inArray(userMoves.id, refUserMoveIds))
-          .all()
-      : []
-    ).map((m) => [m.id, m.name]),
-  );
+  const [moveNameRows, userMoveNameRows] = await Promise.all([
+    refMoveIds.length
+      ? db.select({ id: moves.id, name: moves.name }).from(moves).where(inArray(moves.id, refMoveIds)).all()
+      : [],
+    refUserMoveIds.length
+      ? db.select({ id: userMoves.id, name: userMoves.name }).from(userMoves).where(inArray(userMoves.id, refUserMoveIds)).all()
+      : [],
+  ]);
+  const moveNameById = new Map(moveNameRows.map((m) => [m.id, m.name]));
+  const userMoveNameById = new Map(userMoveNameRows.map((m) => [m.id, m.name]));
 
   const trackById = new Map(trackRows.map((t) => [t.id, t]));
   const providersByTrack = groupBy(providerRows, (p) => p.trackId);

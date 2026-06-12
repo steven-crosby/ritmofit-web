@@ -17,12 +17,11 @@
 import { trackSearchResultSchema, type TrackSearchResult } from '@ritmofit/shared';
 import { z } from 'zod';
 import type { FetchLike, MusicProvider } from './provider.js';
-
-declare const btoa: (data: string) => string;
+import { readJson } from './errors.js';
+import { AppTokenCache } from './app-token.js';
 
 const DEFAULT_API_BASE = 'https://api.spotify.com/v1';
 const DEFAULT_TOKEN_URL = 'https://accounts.spotify.com/api/token';
-const TOKEN_SKEW_MS = 30_000;
 const SEARCH_LIMIT = 25;
 
 export interface SpotifyConfig {
@@ -33,11 +32,6 @@ export interface SpotifyConfig {
   tokenUrl?: string;
   now?: () => number;
 }
-
-const tokenResponseSchema = z.object({
-  access_token: z.string().min(1),
-  expires_in: z.number().optional(),
-});
 
 /** One Spotify track (permissive — unknown fields ignored). No audio-features/BPM. */
 const spTrackSchema = z.object({
@@ -62,22 +56,21 @@ export function createSpotifyProvider(config: SpotifyConfig): MusicProvider {
 class SpotifyProvider implements MusicProvider {
   readonly provider = 'spotify' as const;
 
-  private readonly clientId: string;
-  private readonly clientSecret: string;
   private readonly fetchImpl: FetchLike;
   private readonly apiBase: string;
-  private readonly tokenUrl: string;
-  private readonly now: () => number;
-
-  private cachedToken: { value: string; expiresAtMs: number } | null = null;
+  private readonly tokens: AppTokenCache;
 
   constructor(config: SpotifyConfig) {
-    this.clientId = config.clientId;
-    this.clientSecret = config.clientSecret;
     this.fetchImpl = config.fetchImpl;
     this.apiBase = config.apiBase ?? DEFAULT_API_BASE;
-    this.tokenUrl = config.tokenUrl ?? DEFAULT_TOKEN_URL;
-    this.now = config.now ?? (() => Date.now());
+    this.tokens = new AppTokenCache({
+      provider: 'spotify',
+      clientId: config.clientId,
+      clientSecret: config.clientSecret,
+      tokenUrl: config.tokenUrl ?? DEFAULT_TOKEN_URL,
+      fetchImpl: config.fetchImpl,
+      now: config.now,
+    });
   }
 
   async search(query: string): Promise<TrackSearchResult[]> {
@@ -115,39 +108,19 @@ class SpotifyProvider implements MusicProvider {
   }
 
   private async authedGet(url: string): Promise<unknown> {
-    const token = await this.appToken();
+    const token = await this.tokens.get();
     const res = await this.fetchImpl(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) {
       // One forced refresh on a 401 in case the cached token went stale early.
       if (res.status === 401) {
-        this.cachedToken = null;
+        this.tokens.invalidate();
         const retry = await this.fetchImpl(url, {
-          headers: { Authorization: `Bearer ${await this.appToken()}` },
+          headers: { Authorization: `Bearer ${await this.tokens.get()}` },
         });
-        if (retry.ok) return retry.json();
+        if (retry.ok) return readJson(retry, 'spotify');
       }
       throw new Error(`Spotify request failed: ${res.status}`);
     }
-    return res.json();
-  }
-
-  private async appToken(): Promise<string> {
-    if (this.cachedToken && this.now() < this.cachedToken.expiresAtMs - TOKEN_SKEW_MS) {
-      return this.cachedToken.value;
-    }
-    const basic = btoa(`${this.clientId}:${this.clientSecret}`);
-    const res = await this.fetchImpl(this.tokenUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${basic}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'grant_type=client_credentials',
-    });
-    if (!res.ok) throw new Error(`Spotify token request failed: ${res.status}`);
-    const parsed = tokenResponseSchema.parse(await res.json());
-    const ttl = (parsed.expires_in ?? 3600) * 1000;
-    this.cachedToken = { value: parsed.access_token, expiresAtMs: this.now() + ttl };
-    return parsed.access_token;
+    return readJson(res, 'spotify');
   }
 }

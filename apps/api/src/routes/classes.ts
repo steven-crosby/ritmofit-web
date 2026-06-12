@@ -13,6 +13,7 @@ import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { requireAccess, listVisibleClasses } from '../lib/authz.js';
+import { buildPatch } from '../lib/patch.js';
 import { serializeClass } from '../lib/serialize.js';
 import { assembleRunPayload } from '../lib/run-payload.js';
 import { classes, shares } from '../db/schema.js';
@@ -93,14 +94,7 @@ classRoutes.patch('/:id', async (c) => {
   await requireAccess(db, c.get('userId'), id, 'edit');
   const body = updateClassSchema.parse(await c.req.json());
 
-  const patch: Record<string, unknown> = { updatedAt: Date.now() };
-  if ('title' in body) patch.title = body.title;
-  if ('description' in body) patch.description = body.description ?? null;
-  if ('template' in body) patch.template = body.template ?? null;
-  if ('status' in body) patch.status = body.status;
-  if ('targetDurationMs' in body) patch.targetDurationMs = body.targetDurationMs ?? null;
-
-  await db.update(classes).set(patch).where(eq(classes.id, id));
+  await db.update(classes).set(buildPatch(body)).where(eq(classes.id, id));
   const row = await db.select().from(classes).where(eq(classes.id, id)).get();
   return c.json(serializeClass(row!));
 });

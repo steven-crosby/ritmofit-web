@@ -19,6 +19,7 @@ import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { HttpError, isUniqueViolation } from '../lib/errors.js';
 import { serializeTrack, serializeTrackProviderId } from '../lib/serialize.js';
+import { buildPatch } from '../lib/patch.js';
 import { lookupAndApplyBpm } from '../lib/music/bpm-lookup.js';
 import { makeMatchKey } from '../lib/same-song.js';
 import { tracks, trackProviderIds } from '../db/schema.js';
@@ -80,13 +81,7 @@ trackRoutes.patch('/tracks/:id', async (c) => {
   const existing = await requireOwnedTrack(db, c.get('userId'), id);
   const body = updateTrackSchema.parse(await c.req.json());
 
-  const patch: Record<string, unknown> = { updatedAt: Date.now() };
-  if ('title' in body) patch.title = body.title;
-  if ('artist' in body) patch.artist = body.artist;
-  if ('albumArtUrl' in body) patch.albumArtUrl = body.albumArtUrl ?? null;
-  if ('durationMs' in body) patch.durationMs = body.durationMs ?? null;
-  if ('displayBpm' in body) patch.displayBpm = body.displayBpm ?? null;
-  if ('isrc' in body) patch.isrc = body.isrc ?? null;
+  const patch = buildPatch(body) as ReturnType<typeof buildPatch<typeof body>> & { matchKey?: string };
   // Keep the same-song match key in sync when title/artist change.
   if ('title' in body || 'artist' in body) {
     patch.matchKey = makeMatchKey(body.title ?? existing.title, body.artist ?? existing.artist);
@@ -113,13 +108,15 @@ trackRoutes.post('/tracks/:id/bpm-lookup', async (c) => {
 trackRoutes.post('/tracks/:id/provider-ids', async (c) => {
   const db = createDb(c.env);
   const trackId = c.req.param('id');
-  await requireOwnedTrack(db, c.get('userId'), trackId);
+  const me = c.get('userId');
+  await requireOwnedTrack(db, me, trackId);
   const body = createTrackProviderIdSchema.parse(await c.req.json());
 
   const now = Date.now();
   const row = {
     id: crypto.randomUUID(),
     trackId,
+    ownerUserId: me, // == the track's owner (requireOwnedTrack enforced it)
     provider: body.provider,
     providerTrackId: body.providerTrackId,
     providerUri: body.providerUri ?? null,

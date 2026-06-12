@@ -19,6 +19,7 @@ import {
 } from '@ritmofit/music';
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
+import { soundcloudCreds, spotifyCreds, appleMusicCreds } from './provider-config.js';
 import { searchMockCatalog, findMockCandidate } from '../mock-catalog.js';
 
 /** Adapter that serves the dev mock catalog through the `MusicProvider` interface. */
@@ -39,38 +40,16 @@ export function getMusicProvider(provider: Provider, env: Env): MusicProvider {
     return new MockMusicProvider(provider);
   }
 
-  if (provider === 'soundcloud') {
-    if (!env.SOUNDCLOUD_CLIENT_ID || !env.SOUNDCLOUD_CLIENT_SECRET) {
-      throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'SoundCloud is not configured.');
-    }
-    return createSoundCloudProvider({
-      clientId: env.SOUNDCLOUD_CLIENT_ID,
-      clientSecret: env.SOUNDCLOUD_CLIENT_SECRET,
-      fetchImpl: fetch,
-    });
+  // Credential presence (and the 503-when-missing) lives in provider-config.ts so
+  // the secret checks aren't duplicated between here and the OAuth/likes routes.
+  switch (provider) {
+    case 'soundcloud':
+      return createSoundCloudProvider({ ...soundcloudCreds(env), fetchImpl: fetch });
+    case 'spotify':
+      return createSpotifyProvider({ ...spotifyCreds(env), fetchImpl: fetch });
+    case 'apple_music':
+      return createAppleMusicProvider({ ...appleMusicCreds(env), fetchImpl: fetch });
+    default:
+      throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
   }
-
-  if (provider === 'spotify') {
-    if (!env.SPOTIFY_CLIENT_ID || !env.SPOTIFY_CLIENT_SECRET) {
-      throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Spotify is not configured.');
-    }
-    return createSpotifyProvider({
-      clientId: env.SPOTIFY_CLIENT_ID,
-      clientSecret: env.SPOTIFY_CLIENT_SECRET,
-      fetchImpl: fetch,
-    });
-  }
-
-  if (provider === 'apple_music') {
-    if (!env.APPLE_MUSIC_DEVELOPER_TOKEN) {
-      throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Apple Music is not configured.');
-    }
-    return createAppleMusicProvider({
-      developerToken: env.APPLE_MUSIC_DEVELOPER_TOKEN,
-      storefront: env.APPLE_MUSIC_STOREFRONT,
-      fetchImpl: fetch,
-    });
-  }
-
-  throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
 }
