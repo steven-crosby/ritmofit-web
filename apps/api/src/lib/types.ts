@@ -25,6 +25,17 @@ export interface Env {
   SOUNDCLOUD_CLIENT_ID?: string;
   SOUNDCLOUD_CLIENT_SECRET?: string;
   /**
+   * The registered OAuth redirect URI for the SoundCloud connect flow. Defaults
+   * to `${BETTER_AUTH_URL}/api/v1/providers/soundcloud/callback` when unset.
+   */
+  SOUNDCLOUD_REDIRECT_URI?: string;
+  /**
+   * Secret that derives the AES-GCM key for encrypting provider tokens at rest
+   * (and the OAuth state cookie). Required for the provider-connection routes;
+   * generate with `openssl rand -base64 32`. Other endpoints boot without it.
+   */
+  ENCRYPTION_KEY?: string;
+  /**
    * When 'true', provider search/import are served from the dev mock catalog
    * (step 9 seam) instead of any live provider API — the whole builder runs with
    * zero provider credentials. Never set in prod.

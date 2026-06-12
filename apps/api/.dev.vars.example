@@ -19,9 +19,12 @@ ENCRYPTION_KEY=
 
 # SoundCloud API app credentials (M2). Both halves required to enable the live
 # provider; server-side only (SoundCloud treats all clients as confidential).
-# Leave blank to run provider search/import against the mock catalog below.
+# Leave blank to run provider search/import/connect against the mock seam below.
 SOUNDCLOUD_CLIENT_ID=
 SOUNDCLOUD_CLIENT_SECRET=
+# OAuth connect redirect URI; must be registered with SoundCloud. Defaults to
+# ${BETTER_AUTH_URL}/api/v1/providers/soundcloud/callback when unset.
+SOUNDCLOUD_REDIRECT_URI=http://localhost:8787/api/v1/providers/soundcloud/callback
 
 # Dev: serve provider search/import from the mock catalog (and expose the /mock/*
 # seam) so the builder works with zero provider keys. Leave unset/false in production.

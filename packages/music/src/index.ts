@@ -7,3 +7,9 @@
  */
 export type { MusicProvider, FetchLike } from './provider.js';
 export { createSoundCloudProvider, type SoundCloudConfig } from './soundcloud.js';
+export {
+  buildSoundCloudAuthorizeUrl,
+  exchangeSoundCloudCode,
+  refreshSoundCloudToken,
+  type OAuthTokens,
+} from './soundcloud-oauth.js';

@@ -22,3 +22,24 @@ export const musicConnectionSchema = z.object({
   ...timestampsShape,
 });
 export type MusicConnection = z.infer<typeof musicConnectionSchema>;
+
+/**
+ * The client-safe view of a connection — the encrypted token blobs are dropped.
+ * This is the ONLY connection shape a route may return to a client.
+ */
+export const musicConnectionViewSchema = musicConnectionSchema.omit({
+  accessTokenEncrypted: true,
+  refreshTokenEncrypted: true,
+});
+export type MusicConnectionView = z.infer<typeof musicConnectionViewSchema>;
+
+/**
+ * Response to starting a connection. In the live flow the client opens
+ * `authorizeUrl`; the dev mock seam connects immediately (`connected: true`,
+ * `authorizeUrl: null`).
+ */
+export const connectProviderResponseSchema = z.object({
+  authorizeUrl: z.url().nullable(),
+  connected: z.boolean(),
+});
+export type ConnectProviderResponse = z.infer<typeof connectProviderResponseSchema>;

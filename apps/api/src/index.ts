@@ -13,6 +13,7 @@ import { placedMoveRoutes } from './routes/placed-moves.js';
 import { moveRoutes } from './routes/moves.js';
 import { trackRoutes } from './routes/tracks.js';
 import { providerRoutes } from './routes/providers.js';
+import { providerConnectionRoutes } from './routes/provider-connections.js';
 import { mockRoutes } from './routes/mock.js';
 import { teamRoutes } from './routes/teams.js';
 import { shareRoutes } from './routes/shares.js';
@@ -78,6 +79,11 @@ api.get('/health', (c) =>
 
 api.route('/auth', authRoutes);
 api.route('/classes', classRoutes);
+// Mounted BEFORE the root routers below: those each register a blanket
+// `use('*', requireSession)` which, mounted at '/', becomes a global middleware.
+// The OAuth callback here must stay public (it authenticates via its state cookie,
+// not a session), so its concrete route has to be registered first to win.
+api.route('/', providerConnectionRoutes);
 // These routers use mixed bases (e.g. /classes/:id/tracks and /class-tracks/:id),
 // so they're mounted at the api root with full paths.
 api.route('/', classTrackRoutes);

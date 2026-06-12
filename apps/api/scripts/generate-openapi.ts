@@ -41,6 +41,8 @@ import {
   trackWithProviderIdsSchema,
   trackSearchResultSchema,
   importProviderTrackSchema,
+  musicConnectionViewSchema,
+  connectProviderResponseSchema,
   teamSchema,
   teamWithRoleSchema,
   createTeamSchema,
@@ -81,6 +83,8 @@ const named: Record<string, z.ZodType> = {
   TrackWithProviderIds: trackWithProviderIdsSchema,
   TrackSearchResult: trackSearchResultSchema,
   ImportProviderTrack: importProviderTrackSchema,
+  MusicConnectionView: musicConnectionViewSchema,
+  ConnectProviderResponse: connectProviderResponseSchema,
   Team: teamSchema,
   TeamWithRole: teamWithRoleSchema,
   CreateTeam: createTeamSchema,
@@ -212,6 +216,21 @@ const doc = {
     },
     '/providers/track-import': {
       post: { summary: 'Import a provider candidate into the library', requestBody: jsonBody('ImportProviderTrack'), responses: { '201': jsonResp('TrackWithProviderIds', 'Imported'), '404': { description: 'No such provider track' }, '409': { description: 'Already in a library' } } },
+    },
+    '/providers/connections': {
+      get: { summary: "List the caller's provider connections (tokens stripped)", responses: { '200': arrayResp('MusicConnectionView', 'Connections') } },
+    },
+    '/providers/{provider}/connect': {
+      parameters: [{ name: 'provider', in: 'path', required: true, schema: { type: 'string', enum: ['spotify', 'apple_music', 'soundcloud'] } }],
+      post: { summary: 'Start a provider OAuth connection (returns authorize URL)', responses: { '200': jsonResp('ConnectProviderResponse', 'Authorize URL or mock-connected'), '501': { description: 'Provider not yet integrated' }, '503': { description: 'Provider not configured' } } },
+    },
+    '/providers/{provider}/callback': {
+      parameters: [{ name: 'provider', in: 'path', required: true, schema: { type: 'string', enum: ['spotify', 'apple_music', 'soundcloud'] } }],
+      get: { summary: 'OAuth redirect target — exchanges the code, then 302s to the SPA', parameters: [{ name: 'code', in: 'query', required: false, schema: { type: 'string' } }, { name: 'state', in: 'query', required: false, schema: { type: 'string' } }], responses: { '302': { description: 'Redirect to the web app (connected or error)' } } },
+    },
+    '/providers/{provider}/connection': {
+      parameters: [{ name: 'provider', in: 'path', required: true, schema: { type: 'string', enum: ['spotify', 'apple_music', 'soundcloud'] } }],
+      delete: { summary: 'Disconnect a provider (immediate token forget)', responses: { '204': { description: 'Disconnected' } } },
     },
     '/mock/track-search': {
       get: { summary: 'Dev-only mock provider search', parameters: [{ name: 'q', in: 'query', required: false, schema: { type: 'string' } }], responses: { '200': arrayResp('TrackSearchResult', 'Candidates') } },

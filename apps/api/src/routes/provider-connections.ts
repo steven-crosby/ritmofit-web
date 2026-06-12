@@ -1,0 +1,256 @@
+/**
+ * Provider OAuth connection routes (M2 slice 2) — connect a user's music account,
+ * list connections, disconnect. SoundCloud is the live provider; others 501 until
+ * integrated. The `music_connections` table already exists (no migration).
+ *
+ * Flow (Authorization Code + PKCE, confidential client → secret server-side):
+ *  1. POST /providers/:provider/connect  — authed. Mint PKCE verifier + state,
+ *     stash them in a short-lived **encrypted httpOnly cookie** (carries userId,
+ *     so the callback needs no session), return the authorize URL.
+ *  2. GET  /providers/:provider/callback — SoundCloud redirects here. Validate the
+ *     state cookie (CSRF + identity), exchange the code, encrypt + upsert the
+ *     tokens, redirect back to the SPA. No `requireSession` — the cookie is the
+ *     identity, and a JSON 401 would break the browser redirect.
+ *  3. GET  /providers/connections        — authed. Token-free view only.
+ *  4. DELETE /providers/:provider/connection — authed. Immediate disconnect.
+ *
+ * Tokens are encrypted at rest and NEVER returned to a client. Never log tokens
+ * or the code (conventions.md). The 7-day metadata-purge-on-disconnect duty is a
+ * later compliance slice; here disconnect simply forgets the tokens.
+ */
+import { Hono } from 'hono';
+import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
+import { and, eq } from 'drizzle-orm';
+import { z } from 'zod';
+import {
+  providerSchema,
+  musicConnectionViewSchema,
+  type Provider,
+  type ConnectProviderResponse,
+  type MusicConnectionView,
+} from '@ritmofit/shared';
+import { buildSoundCloudAuthorizeUrl, exchangeSoundCloudCode } from '@ritmofit/music';
+import type { AppEnv, Env } from '../lib/types.js';
+import { requireSession } from '../middleware/auth.js';
+import { createDb, type Db } from '../lib/db.js';
+import { HttpError } from '../lib/errors.js';
+import { encryptSecret, decryptSecret } from '../lib/crypto.js';
+import { generateCodeVerifier, challengeFromVerifier, randomToken } from '../lib/pkce.js';
+import { musicConnections } from '../db/schema.js';
+
+const STATE_COOKIE = 'rf_oauth_state';
+const STATE_TTL_MS = 10 * 60 * 1000;
+
+export const providerConnectionRoutes = new Hono<AppEnv>();
+
+// ── helpers ─────────────────────────────────────────────────────────────────
+
+function parseProvider(raw: string): Provider {
+  const parsed = providerSchema.safeParse(raw);
+  if (!parsed.success) throw new HttpError(400, 'VALIDATION_ERROR', `Unknown provider '${raw}'.`);
+  return parsed.data;
+}
+
+function requireEncryptionKey(env: Env): string {
+  if (!env.ENCRYPTION_KEY) {
+    throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Provider connections are not configured.');
+  }
+  return env.ENCRYPTION_KEY;
+}
+
+function soundcloudCreds(env: Env): { clientId: string; clientSecret: string } {
+  if (!env.SOUNDCLOUD_CLIENT_ID || !env.SOUNDCLOUD_CLIENT_SECRET) {
+    throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'SoundCloud is not configured.');
+  }
+  return { clientId: env.SOUNDCLOUD_CLIENT_ID, clientSecret: env.SOUNDCLOUD_CLIENT_SECRET };
+}
+
+function redirectUriFor(env: Env): string {
+  return env.SOUNDCLOUD_REDIRECT_URI ?? `${env.BETTER_AUTH_URL}/api/v1/providers/soundcloud/callback`;
+}
+
+function spaUrl(env: Env, path: string): string {
+  return `${env.WEB_ORIGIN ?? 'http://localhost:5173'}${path}`;
+}
+
+/** The encrypted-cookie payload tying a callback to the user who started it. */
+const stateCookieSchema = z.object({
+  state: z.string(),
+  verifier: z.string(),
+  provider: providerSchema,
+  userId: z.string(),
+  exp: z.number(),
+});
+
+function toConnectionView(row: typeof musicConnections.$inferSelect): MusicConnectionView {
+  return musicConnectionViewSchema.parse({
+    id: row.id,
+    userId: row.userId,
+    provider: row.provider,
+    providerUserId: row.providerUserId,
+    scope: row.scope,
+    expiresAt: row.expiresAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  });
+}
+
+/** Insert-or-update the caller's connection for a provider (unique user+provider). */
+async function upsertConnection(
+  db: Db,
+  fields: {
+    userId: string;
+    provider: Provider;
+    accessTokenEncrypted: string;
+    refreshTokenEncrypted: string | null;
+    providerUserId: string | null;
+    scope: string | null;
+    expiresAt: number | null;
+  },
+): Promise<void> {
+  const now = Date.now();
+  await db
+    .insert(musicConnections)
+    .values({ id: crypto.randomUUID(), ...fields, createdAt: now, updatedAt: now })
+    .onConflictDoUpdate({
+      target: [musicConnections.userId, musicConnections.provider],
+      set: {
+        accessTokenEncrypted: fields.accessTokenEncrypted,
+        refreshTokenEncrypted: fields.refreshTokenEncrypted,
+        providerUserId: fields.providerUserId,
+        scope: fields.scope,
+        expiresAt: fields.expiresAt,
+        updatedAt: now,
+      },
+    });
+}
+
+// ── routes ──────────────────────────────────────────────────────────────────
+
+/** POST /providers/:provider/connect — start the OAuth flow (returns authorize URL). */
+providerConnectionRoutes.post('/providers/:provider/connect', requireSession, async (c) => {
+  const provider = parseProvider(c.req.param('provider'));
+  const key = requireEncryptionKey(c.env);
+  const userId = c.get('userId');
+  const db = createDb(c.env);
+
+  // Dev seam: connect immediately with placeholder tokens so the UI is testable
+  // with zero credentials.
+  if (c.env.MOCK_PROVIDERS === 'true') {
+    await upsertConnection(db, {
+      userId,
+      provider,
+      accessTokenEncrypted: await encryptSecret('mock-access-token', key),
+      refreshTokenEncrypted: await encryptSecret('mock-refresh-token', key),
+      providerUserId: 'mock-user',
+      scope: 'mock',
+      expiresAt: Date.now() + 3600_000,
+    });
+    const body: ConnectProviderResponse = { authorizeUrl: null, connected: true };
+    return c.json(body);
+  }
+
+  if (provider !== 'soundcloud') {
+    throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
+  }
+  const { clientId } = soundcloudCreds(c.env);
+
+  const verifier = generateCodeVerifier();
+  const challenge = await challengeFromVerifier(verifier);
+  const state = randomToken();
+  const cookie = await encryptSecret(
+    JSON.stringify({ state, verifier, provider, userId, exp: Date.now() + STATE_TTL_MS }),
+    key,
+  );
+  setCookie(c, STATE_COOKIE, cookie, {
+    httpOnly: true,
+    secure: c.env.BETTER_AUTH_URL.startsWith('https://'),
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: STATE_TTL_MS / 1000,
+  });
+
+  const authorizeUrl = buildSoundCloudAuthorizeUrl({
+    clientId,
+    redirectUri: redirectUriFor(c.env),
+    codeChallenge: challenge,
+    state,
+  });
+  const body: ConnectProviderResponse = { authorizeUrl, connected: false };
+  return c.json(body);
+});
+
+/** GET /providers/:provider/callback — OAuth redirect target. Validates, stores, redirects. */
+providerConnectionRoutes.get('/providers/:provider/callback', async (c) => {
+  const provider = parseProvider(c.req.param('provider'));
+  const fail = (reason: string) => c.redirect(spaUrl(c.env, `/account?error=${reason}`));
+
+  const raw = getCookie(c, STATE_COOKIE);
+  deleteCookie(c, STATE_COOKIE, { path: '/' });
+  if (!raw) return fail('state_missing');
+
+  let payload: z.infer<typeof stateCookieSchema>;
+  try {
+    payload = stateCookieSchema.parse(JSON.parse(await decryptSecret(raw, requireEncryptionKey(c.env))));
+  } catch {
+    return fail('state_invalid');
+  }
+
+  const code = c.req.query('code');
+  const state = c.req.query('state');
+  if (c.req.query('error')) return fail('access_denied');
+  if (!code || !state || state !== payload.state || payload.provider !== provider) {
+    return fail('state_mismatch');
+  }
+  if (Date.now() > payload.exp) return fail('state_expired');
+  if (provider !== 'soundcloud') return fail('unsupported_provider');
+
+  const key = c.env.ENCRYPTION_KEY!; // requireEncryptionKey already succeeded above
+  try {
+    const { clientId, clientSecret } = soundcloudCreds(c.env);
+    const tokens = await exchangeSoundCloudCode({
+      clientId,
+      clientSecret,
+      redirectUri: redirectUriFor(c.env),
+      code,
+      codeVerifier: payload.verifier,
+      fetchImpl: fetch,
+    });
+    await upsertConnection(createDb(c.env), {
+      userId: payload.userId,
+      provider,
+      accessTokenEncrypted: await encryptSecret(tokens.accessToken, key),
+      refreshTokenEncrypted: tokens.refreshToken ? await encryptSecret(tokens.refreshToken, key) : null,
+      providerUserId: null,
+      scope: tokens.scope,
+      expiresAt: tokens.expiresInSec ? Date.now() + tokens.expiresInSec * 1000 : null,
+    });
+  } catch {
+    // Never surface token-exchange detail to the browser or logs.
+    return fail('connect_failed');
+  }
+  return c.redirect(spaUrl(c.env, `/account?connected=${provider}`));
+});
+
+/** GET /providers/connections — the caller's connections (tokens stripped). */
+providerConnectionRoutes.get('/providers/connections', requireSession, async (c) => {
+  const db = createDb(c.env);
+  const rows = await db
+    .select()
+    .from(musicConnections)
+    .where(eq(musicConnections.userId, c.get('userId')))
+    .all();
+  return c.json(rows.map(toConnectionView));
+});
+
+/** DELETE /providers/:provider/connection — disconnect (immediate token forget). */
+providerConnectionRoutes.delete('/providers/:provider/connection', requireSession, async (c) => {
+  const provider = parseProvider(c.req.param('provider'));
+  const db = createDb(c.env);
+  await db
+    .delete(musicConnections)
+    .where(
+      and(eq(musicConnections.userId, c.get('userId')), eq(musicConnections.provider, provider)),
+    );
+  return c.body(null, 204);
+});
