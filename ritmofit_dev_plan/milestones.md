@@ -99,10 +99,14 @@ Core builder first (these validate the product), teams/sharing last.
 >   (Spotify, never BPM) and developer-token (Apple Music) adapters in `packages/music`, wired into the
 >   registry's mock fallback; `SPOTIFY_*` / `APPLE_MUSIC_*` env documented. Pure, unit-tested, behind the
 >   mock until creds land.
-> - ⏭️ **Next** — *(optional, deferred)* a third-party **BPM** provider for `display_bpm`. Requires
->   choosing a specific service + verifying its terms (external dependency) — not stubbed speculatively;
->   BPM stays manual until then. M2's integration surface (all three providers + resolution + compliance)
->   is otherwise complete.
+> - ✅ **Slice 7** — *(optional)* third-party **BPM** provider for `display_bpm`: a pluggable `BpmProvider`
+>   (GetSongBPM adapter, `normalizeBpm`) fills BPM from a dedicated tempo service — **never Spotify**.
+>   `POST /tracks/:id/bpm-lookup` (owner-only) persists a confident match; behind the mock
+>   (deterministic spin-band BPM) until `GETSONGBPM_API_KEY` lands, so BPM stays manual otherwise.
+>
+> **M2 complete** — all three providers (SoundCloud/Spotify/Apple Music) behind one interface, per-user
+> OAuth + refresh, likes, metadata-purge-on-disconnect, same-song resolution, and the optional BPM
+> provider. Live provider calls are behind the mock until real creds land.
 
 - **SoundCloud first** (the differentiator): provider search feeding track creation; provider-ID
   resolution and the same-song matching problem; deep-link/hand-off playback via `provider_uri`.
@@ -121,12 +125,17 @@ Core builder first (these validate the product), teams/sharing last.
 >   `packages/shared` and `api.md`. Verified live (deployed Worker + remote D1): a 2-track class returned
 >   `totalDurationMs=380000` with offsets `0`/`180000`.
 
-The remaining M3 items are the **live-surface UI**, which is the **iOS app** (the live surface; web is the
-planning surface — see workspace `CLAUDE.md`). They land in **Phase 2 / `ritmofit-ios`**, consuming the
-hardened run-payload above:
-- Cue prompter in time with music (Cue-by-Cue / Full List / Landscape views).
-- Interval countdown timer; intensity readouts.
-- Revisit the timeline beat-grid if the player needs it.
+> **Live-mode UI shipped in the web app** (`apps/web/src/components/LiveMode.tsx`), consuming the hardened
+> run-payload:
+> - ✅ **Cue prompter** — Cue-by-Cue (big current cue + next cue with countdown) and Full List (whole
+>   timeline, live track highlighted, past events struck through, tap-to-seek) views.
+> - ✅ **Interval countdown timer** — a virtual clock (play/pause/seek/reset) drives current-track and
+>   class "ends in" countdowns and the time-to-next-cue.
+> - ✅ **Intensity readouts** — redundant encoding (color + 0–4 filled bars + label), never color alone.
+> - No in-app audio — playback stays in the provider apps (the three music rules).
+>
+> **M3 complete for the web repo.** The native **iOS** live surface (Phase 2 / `ritmofit-ios`) will
+> reimplement the prompter against the same run-payload, plus a Landscape view and device-specific polish.
 
 ## M4 — Explore / featured / sharing UX
 - Explore feed; eligibility to be featured.
