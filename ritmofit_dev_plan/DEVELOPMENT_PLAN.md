@@ -90,15 +90,22 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
 Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
-- **M1 (current): Auth + class/cue data model — schema-complete, routes-lean.** Model the
+> **Status (2026-06-12): M1–M3 complete, merged to `main`, and the API backend is deployed to
+> Cloudflare.** A full M1–M3 code-review pass (PR #6) landed 10 bug fixes + 4 cleanups, including the
+> one schema change — **owner-scoped provider-id uniqueness** (migration `0004`). `typecheck`/`lint`/
+> `test` (132) green; remote D1 migrated through `0004`; `ritmofit-api` redeployed. The web app
+> (`apps/web`) is still a skeleton and is **not deployed**. **M4 is the current/next milestone.**
+
+- **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);
-  build routes in builder-first order — class builder + cues/moves end-to-end (with a **mock-track
-  seam**) before teams/sharing routes. No provider API calls; BPM hand-entered. Ship the versioned
-  **run-payload** so the data is iOS-ready.
-- **M2: Music-provider integration.** SoundCloud first; search, provider-ID resolution, optional
-  third-party BPM, deep-link playback.
-- **M3: Live mode + iOS parity polish.** Cue prompter, interval timers; harden run-payload.
-- **M4: Explore / featured / sharing UX** on top of the M1 `shares` model.
+  routes in builder-first order — class builder + cues/moves end-to-end (with a **mock-track seam**)
+  before teams/sharing routes. No provider API calls; BPM hand-entered. Versioned **run-payload** ships.
+- **M2 ✅ done: Music-provider integration.** SoundCloud first; search, provider-ID resolution, optional
+  third-party BPM, deep-link playback. Spotify + Apple Music adapters behind the mock until real creds.
+- **M3 ✅ done: Live mode + iOS parity polish.** Cue prompter, interval timers; run-payload hardened.
+- **M4 (current): Explore / featured / sharing UX** on top of the M1 `shares` model. Two open
+  decisions before slice 1 — how "featured" is determined (admin flag vs. derived eligibility), and the
+  publish/visibility model — see the M4 plan discussion.
 
 ---
 
