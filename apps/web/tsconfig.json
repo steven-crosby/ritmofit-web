@@ -4,7 +4,11 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
     "jsx": "react-jsx",
-    "noEmit": true
+    "noEmit": true,
+    // Better Auth's client return type references deep transitive packages; under
+    // pnpm's symlinked store TS can't name them portably (TS2742). Resolving
+    // through symlinks fixes it without leaking the type into an annotation.
+    "preserveSymlinks": true
   },
   "include": ["src", "vite.config.ts"]
 }
