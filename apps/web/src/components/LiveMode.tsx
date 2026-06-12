@@ -1,0 +1,390 @@
+/**
+ * M3 live mode — the cue prompter the instructor runs a class against, consuming
+ * the hardened run-payload (one fetch). It does NOT play audio (the three music
+ * rules: playback stays in the provider apps) — it's a synchronized prompter +
+ * interval timer over the class timeline.
+ *
+ * A single virtual clock (`elapsedMs`) drives everything: which track is live,
+ * the current/next cue, the countdowns, and the intensity readout. Two views:
+ * Cue-by-Cue (one big current cue + what's next) and Full List (the whole
+ * timeline). Intensity is redundantly encoded (color + label + filled bars) per
+ * the accessibility rules — never color alone.
+ */
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { RunPayload, RunPayloadTrackEntry, Intensity } from '@ritmofit/shared';
+
+type View = 'cue' | 'list';
+
+/** Bars filled per intensity — the redundant (non-color) encoding. 0..4. */
+const INTENSITY_BARS: Record<Intensity, number> = { none: 0, easy: 1, mod: 2, hard: 3, all_out: 4 };
+
+function fmt(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+/** A cue or move flattened onto the class-absolute timeline. */
+interface TimelineEvent {
+  atMs: number; // absolute ms from class start
+  kind: 'cue' | 'move';
+  text: string;
+  color: string | null;
+  intensity: Intensity | null;
+}
+
+/** The live track for a class-absolute time: the last track whose window contains it. */
+function trackAt(payload: RunPayload, elapsedMs: number): { entry: RunPayloadTrackEntry; index: number } | null {
+  if (payload.tracks.length === 0) return null;
+  let current = 0;
+  payload.tracks.forEach((t, i) => {
+    if ((t.startOffsetMs ?? 0) <= elapsedMs) current = i;
+  });
+  return { entry: payload.tracks[current]!, index: current };
+}
+
+/** All cues + moves of a track as class-absolute events, time-ordered. */
+function eventsFor(entry: RunPayloadTrackEntry): TimelineEvent[] {
+  const base = entry.startOffsetMs ?? 0;
+  const cues: TimelineEvent[] = entry.cues.map((c) => ({
+    atMs: base + c.anchorMs,
+    kind: 'cue',
+    text: c.text,
+    color: c.color,
+    intensity: null,
+  }));
+  const moves: TimelineEvent[] = entry.moves.map((m) => ({
+    atMs: base + m.anchorMs,
+    kind: 'move',
+    text: m.name,
+    color: null,
+    intensity: m.intensity,
+  }));
+  return [...cues, ...moves].sort((a, b) => a.atMs - b.atMs);
+}
+
+export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () => void }) {
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [view, setView] = useState<View>('cue');
+
+  // Virtual clock: accumulate real time only while playing, via rAF.
+  const baseRef = useRef(0); // elapsed banked before the current play segment
+  const startRef = useRef(0); // performance.now() when the segment began
+  useEffect(() => {
+    if (!playing) return;
+    startRef.current = performance.now();
+    let raf = 0;
+    const tick = () => {
+      const live = baseRef.current + (performance.now() - startRef.current);
+      const capped = Math.min(live, payload.class.totalDurationMs);
+      setElapsedMs(capped);
+      if (capped >= payload.class.totalDurationMs) {
+        baseRef.current = payload.class.totalDurationMs;
+        setPlaying(false);
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      baseRef.current += performance.now() - startRef.current;
+      cancelAnimationFrame(raf);
+    };
+  }, [playing, payload.class.totalDurationMs]);
+
+  const seek = (ms: number) => {
+    const clamped = Math.max(0, Math.min(ms, payload.class.totalDurationMs));
+    baseRef.current = clamped;
+    setElapsedMs(clamped);
+  };
+
+  const live = useMemo(() => trackAt(payload, elapsedMs), [payload, elapsedMs]);
+  const events = useMemo(() => (live ? eventsFor(live.entry) : []), [live]);
+  const currentEvent = useMemo(
+    () => [...events].reverse().find((e) => e.atMs <= elapsedMs) ?? null,
+    [events, elapsedMs],
+  );
+  const nextEvent = useMemo(() => events.find((e) => e.atMs > elapsedMs) ?? null, [events, elapsedMs]);
+
+  const trackEndMs = live ? (live.entry.startOffsetMs ?? 0) + (live.entry.track.durationMs ?? 0) : 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-bg-base">
+      <header className="flex items-center justify-between border-b border-interactive/20 px-6 py-3">
+        <div>
+          <h1 className="font-display text-lg font-semibold text-text-primary">{payload.class.title}</h1>
+          <p className="font-data text-xs text-text-tertiary">
+            {fmt(elapsedMs)} / {fmt(payload.class.totalDurationMs)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <ViewToggle view={view} setView={setView} />
+          <button
+            className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+            onClick={onExit}
+          >
+            Exit
+          </button>
+        </div>
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-auto">
+        {view === 'cue' ? (
+          <CueByCue
+            live={live}
+            currentEvent={currentEvent}
+            nextEvent={nextEvent}
+            elapsedMs={elapsedMs}
+            trackEndMs={trackEndMs}
+            classTotalMs={payload.class.totalDurationMs}
+          />
+        ) : (
+          <FullList payload={payload} liveIndex={live?.index ?? -1} elapsedMs={elapsedMs} onSeek={seek} />
+        )}
+      </div>
+
+      <Transport
+        playing={playing}
+        onToggle={() => setPlaying((p) => !p)}
+        onReset={() => {
+          setPlaying(false);
+          seek(0);
+        }}
+        elapsedMs={elapsedMs}
+        totalMs={payload.class.totalDurationMs}
+        onSeek={seek}
+      />
+    </div>
+  );
+}
+
+function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void }) {
+  return (
+    <div className="flex rounded-pill border border-interactive/30 p-0.5" role="tablist" aria-label="Prompter view">
+      {(['cue', 'list'] as const).map((v) => (
+        <button
+          key={v}
+          role="tab"
+          aria-selected={view === v}
+          onClick={() => setView(v)}
+          className={`rounded-pill px-3 py-1 font-ui text-sm ${
+            view === v ? 'bg-interactive text-text-on-accent' : 'text-text-secondary'
+          }`}
+        >
+          {v === 'cue' ? 'Cue-by-Cue' : 'Full List'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Redundant intensity encoding: color swatch + 0–4 filled bars + text label. */
+function IntensityReadout({ intensity }: { intensity: Intensity }) {
+  const bars = INTENSITY_BARS[intensity];
+  return (
+    <span className="inline-flex items-center gap-2" aria-label={`Intensity ${intensity}`}>
+      <span className="flex items-end gap-0.5" aria-hidden>
+        {[0, 1, 2, 3].map((i) => (
+          <span
+            key={i}
+            className="w-1.5 rounded-sm"
+            style={{
+              height: `${6 + i * 4}px`,
+              backgroundColor: i < bars ? `var(--rf-color-intensity-${intensity})` : 'var(--rf-color-interactive)',
+              opacity: i < bars ? 1 : 0.25,
+            }}
+          />
+        ))}
+      </span>
+      <span className="font-data text-xs uppercase tracking-wide text-text-secondary">{intensity}</span>
+    </span>
+  );
+}
+
+function CueByCue({
+  live,
+  currentEvent,
+  nextEvent,
+  elapsedMs,
+  trackEndMs,
+  classTotalMs,
+}: {
+  live: { entry: RunPayloadTrackEntry; index: number } | null;
+  currentEvent: TimelineEvent | null;
+  nextEvent: TimelineEvent | null;
+  elapsedMs: number;
+  trackEndMs: number;
+  classTotalMs: number;
+}) {
+  if (!live) {
+    return <p className="p-8 font-ui text-text-tertiary">This class has no tracks yet.</p>;
+  }
+  const { entry } = live;
+  return (
+    <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 p-8 text-center">
+      <div className="flex w-full items-center justify-between">
+        <div className="text-left">
+          <p className="font-data text-xs uppercase tracking-wide text-text-tertiary">
+            Track {live.index + 1}
+          </p>
+          <p className="font-display text-xl font-semibold text-text-primary">{entry.track.title}</p>
+          <p className="font-ui text-sm text-text-secondary">{entry.track.artist}</p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <IntensityReadout intensity={entry.intensity} />
+          {entry.displayBpm != null && (
+            <span className="font-data text-sm text-text-secondary">{entry.displayBpm} BPM</span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col items-center gap-1 rounded-card bg-bg-raised py-8 shadow-card">
+        <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Now</p>
+        <p
+          className="font-display text-4xl font-semibold leading-tight text-text-primary"
+          style={currentEvent?.color ? { color: currentEvent.color } : undefined}
+        >
+          {currentEvent ? currentEvent.text : '—'}
+        </p>
+        {currentEvent?.kind === 'move' && currentEvent.intensity && (
+          <IntensityReadout intensity={currentEvent.intensity} />
+        )}
+      </div>
+
+      <div className="flex w-full items-center justify-between rounded-card bg-bg-raised p-4 shadow-card">
+        <div className="text-left">
+          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Next</p>
+          <p className="font-ui text-text-primary">{nextEvent ? nextEvent.text : 'End of track'}</p>
+        </div>
+        {nextEvent && (
+          <span className="font-data text-2xl text-interactive" aria-label="Time to next cue">
+            {fmt(nextEvent.atMs - elapsedMs)}
+          </span>
+        )}
+      </div>
+
+      <div className="flex w-full justify-between font-data text-sm text-text-tertiary">
+        <span>Track ends in {fmt(trackEndMs - elapsedMs)}</span>
+        <span>Class ends in {fmt(classTotalMs - elapsedMs)}</span>
+      </div>
+    </div>
+  );
+}
+
+function FullList({
+  payload,
+  liveIndex,
+  elapsedMs,
+  onSeek,
+}: {
+  payload: RunPayload;
+  liveIndex: number;
+  elapsedMs: number;
+  onSeek: (ms: number) => void;
+}) {
+  return (
+    <ol className="mx-auto flex max-w-2xl flex-col gap-3 p-6">
+      {payload.tracks.map((t, i) => {
+        const start = t.startOffsetMs ?? 0;
+        const isLive = i === liveIndex;
+        return (
+          <li
+            key={t.classTrackId}
+            className={`rounded-card bg-bg-raised p-4 shadow-card ${isLive ? 'ring-2 ring-interactive' : ''}`}
+          >
+            <div className="flex items-center justify-between">
+              <button className="text-left" onClick={() => onSeek(start)} aria-label={`Jump to track ${i + 1}`}>
+                <span className="font-data text-xs text-text-tertiary">
+                  {fmt(start)} · #{i + 1}
+                </span>
+                <p className="font-display font-semibold text-text-primary">{t.track.title}</p>
+                <p className="font-ui text-sm text-text-secondary">{t.track.artist}</p>
+              </button>
+              <div className="flex flex-col items-end gap-1">
+                <IntensityReadout intensity={t.intensity} />
+                {t.displayBpm != null && (
+                  <span className="font-data text-xs text-text-tertiary">{t.displayBpm} BPM</span>
+                )}
+              </div>
+            </div>
+            {(t.cues.length > 0 || t.moves.length > 0) && (
+              <ul className="mt-3 flex flex-col gap-1 border-t border-interactive/15 pt-2">
+                {eventsFor(t).map((e, j) => {
+                  const past = e.atMs <= elapsedMs && isLive;
+                  return (
+                    <li
+                      key={j}
+                      className={`flex items-center gap-2 font-ui text-sm ${past ? 'text-text-tertiary line-through' : 'text-text-secondary'}`}
+                    >
+                      <span className="font-data text-xs text-text-tertiary">{fmt(e.atMs - start)}</span>
+                      <span
+                        className="rounded-pill px-1.5 py-0.5 font-data text-[10px] uppercase"
+                        style={{
+                          backgroundColor:
+                            e.kind === 'cue'
+                              ? (e.color ?? 'var(--rf-color-interactive)')
+                              : 'var(--rf-color-bg-base)',
+                          color: e.kind === 'cue' ? 'var(--rf-color-text-on-accent)' : undefined,
+                        }}
+                      >
+                        {e.kind}
+                      </span>
+                      <span>{e.text}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </li>
+        );
+      })}
+      {payload.tracks.length === 0 && (
+        <li className="font-ui text-text-tertiary">This class has no tracks yet.</li>
+      )}
+    </ol>
+  );
+}
+
+function Transport({
+  playing,
+  onToggle,
+  onReset,
+  elapsedMs,
+  totalMs,
+  onSeek,
+}: {
+  playing: boolean;
+  onToggle: () => void;
+  onReset: () => void;
+  elapsedMs: number;
+  totalMs: number;
+  onSeek: (ms: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-4 border-t border-interactive/20 px-6 py-4">
+      <button
+        className="rounded-pill bg-brand px-6 py-2 font-ui font-semibold text-text-on-accent"
+        onClick={onToggle}
+      >
+        {playing ? 'Pause' : 'Play'}
+      </button>
+      <button
+        className="rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive"
+        onClick={onReset}
+      >
+        Reset
+      </button>
+      <input
+        type="range"
+        min={0}
+        max={Math.max(1, totalMs)}
+        value={elapsedMs}
+        onChange={(e) => onSeek(Number(e.target.value))}
+        className="flex-1 accent-brand"
+        aria-label="Seek class timeline"
+      />
+    </div>
+  );
+}

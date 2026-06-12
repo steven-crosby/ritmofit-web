@@ -1,13 +1,21 @@
 /** Minimal authenticated builder: create a class, add a tagged track, see the timeline. */
 import { useEffect, useState, useCallback } from 'react';
-import { intensityValues, type ClassWithAccess, type ClassTrack, type Intensity } from '@ritmofit/shared';
+import {
+  intensityValues,
+  type ClassWithAccess,
+  type ClassTrack,
+  type Intensity,
+  type RunPayload,
+} from '@ritmofit/shared';
 import { authClient } from '../lib/auth-client.js';
-import { listClasses, createClass, listClassTracks, addTrack } from '../lib/api.js';
+import { listClasses, createClass, listClassTracks, addTrack, getRunPayload } from '../lib/api.js';
+import { LiveMode } from './LiveMode.js';
 
 export function Dashboard({ userName }: { userName: string }) {
   const [classes, setClasses] = useState<ClassWithAccess[]>([]);
   const [selected, setSelected] = useState<ClassWithAccess | null>(null);
   const [tracks, setTracks] = useState<ClassTrack[]>([]);
+  const [live, setLive] = useState<RunPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refreshClasses = useCallback(async () => {
@@ -26,6 +34,16 @@ export function Dashboard({ userName }: { userName: string }) {
     setSelected(cls);
     setTracks(await listClassTracks(cls.id));
   }, []);
+
+  const runClass = useCallback(async (classId: string) => {
+    try {
+      setLive(await getRunPayload(classId));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, []);
+
+  if (live) return <LiveMode payload={live} onExit={() => setLive(null)} />;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
@@ -77,6 +95,7 @@ export function Dashboard({ userName }: { userName: string }) {
               cls={selected}
               tracks={tracks}
               onTrackAdded={async () => setTracks(await listClassTracks(selected.id))}
+              onRun={() => runClass(selected.id)}
             />
           ) : (
             <p className="font-ui text-text-tertiary">Select or create a class.</p>
@@ -115,14 +134,26 @@ function ClassDetail({
   cls,
   tracks,
   onTrackAdded,
+  onRun,
 }: {
   cls: ClassWithAccess;
   tracks: ClassTrack[];
   onTrackAdded: () => void;
+  onRun: () => void;
 }) {
   return (
     <div className="flex flex-col gap-4 rounded-card bg-bg-raised p-5 shadow-card">
-      <h2 className="font-display text-xl font-semibold text-text-primary">{cls.title}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-xl font-semibold text-text-primary">{cls.title}</h2>
+        <button
+          className="rounded-pill bg-brand px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+          onClick={onRun}
+          disabled={tracks.length === 0}
+          title={tracks.length === 0 ? 'Add a track first' : 'Run this class live'}
+        >
+          ▶ Run live
+        </button>
+      </div>
       <ol className="flex flex-col gap-2">
         {tracks.map((t) => (
           <li key={t.id} className="flex items-center gap-3 rounded-pill bg-bg-base px-3 py-2">
