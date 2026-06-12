@@ -16,7 +16,16 @@ const runPayloadClassSchema = z.object({
   id: uuidSchema,
   title: z.string().min(1),
   template: classTemplateSchema.nullable(),
+  /** The instructor's planned target length (may be null). Not the assembled total. */
   targetDurationMs: timestampMsSchema.nullable(),
+  /**
+   * The actual assembled timeline length: the sum of the tracks' `durationMs`
+   * (a null track duration contributes 0). Server-derived at assembly so the live
+   * interval timer has an authoritative total without summing client-side. 0 for
+   * an empty class. M3 hardening — the timeline is recomputed at read time, so it
+   * is correct even if a persisted `startOffsetMs` ever drifts.
+   */
+  totalDurationMs: z.int().nonnegative(),
 });
 
 const runPayloadTrackSchema = z.object({
@@ -52,6 +61,12 @@ const runPayloadTrackEntrySchema = z.object({
   position: z.int().nonnegative(),
   displayBpm: z.int().positive().nullable(),
   intensity: intensitySchema,
+  /**
+   * The track's absolute start on the class timeline (ms from class start),
+   * sequential/back-to-back. Server-derived and recomputed at assembly (M3),
+   * so consumers can drive a countdown directly: this entry runs from
+   * `startOffsetMs` to `startOffsetMs + track.durationMs`. Read-only.
+   */
   startOffsetMs: timestampMsSchema.nullable(),
   notes: z.string().nullable(),
   track: runPayloadTrackSchema,

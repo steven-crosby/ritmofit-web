@@ -19,6 +19,8 @@ import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { HttpError, isUniqueViolation } from '../lib/errors.js';
 import { serializeTrack, serializeTrackProviderId } from '../lib/serialize.js';
+import { lookupAndApplyBpm } from '../lib/music/bpm-lookup.js';
+import { makeMatchKey } from '../lib/same-song.js';
 import { tracks, trackProviderIds } from '../db/schema.js';
 import type { Db } from '../lib/db.js';
 
@@ -46,6 +48,7 @@ trackRoutes.post('/tracks', async (c) => {
     durationMs: body.durationMs ?? null,
     displayBpm: body.displayBpm ?? null,
     isrc: body.isrc ?? null,
+    matchKey: makeMatchKey(body.title, body.artist),
     createdAt: now,
     updatedAt: now,
   };
@@ -74,7 +77,7 @@ trackRoutes.get('/tracks/:id', async (c) => {
 trackRoutes.patch('/tracks/:id', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
-  await requireOwnedTrack(db, c.get('userId'), id);
+  const existing = await requireOwnedTrack(db, c.get('userId'), id);
   const body = updateTrackSchema.parse(await c.req.json());
 
   const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -84,10 +87,26 @@ trackRoutes.patch('/tracks/:id', async (c) => {
   if ('durationMs' in body) patch.durationMs = body.durationMs ?? null;
   if ('displayBpm' in body) patch.displayBpm = body.displayBpm ?? null;
   if ('isrc' in body) patch.isrc = body.isrc ?? null;
+  // Keep the same-song match key in sync when title/artist change.
+  if ('title' in body || 'artist' in body) {
+    patch.matchKey = makeMatchKey(body.title ?? existing.title, body.artist ?? existing.artist);
+  }
 
   await db.update(tracks).set(patch).where(eq(tracks.id, id));
   const row = await db.select().from(tracks).where(eq(tracks.id, id)).get();
   return c.json(serializeTrack(row!));
+});
+
+/**
+ * POST /tracks/:id/bpm-lookup — fill `display_bpm` from a third-party BPM provider
+ * (M2, optional; never Spotify). Owner only. A confident match is persisted; no
+ * match leaves the existing BPM untouched. 503 when no BPM provider is configured.
+ */
+trackRoutes.post('/tracks/:id/bpm-lookup', async (c) => {
+  const db = createDb(c.env);
+  const result = await lookupAndApplyBpm(db, c.env, c.get('userId'), c.req.param('id'));
+  const row = await db.select().from(tracks).where(eq(tracks.id, c.req.param('id'))).get();
+  return c.json({ ...serializeTrack(row!), bpmApplied: result.applied });
 });
 
 /** POST /tracks/:id/provider-ids — attach a provider id (owner only). 409 on duplicate. */

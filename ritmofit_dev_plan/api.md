@@ -139,7 +139,8 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
     "id": "…",
     "title": "Mon POWER 6/8",
     "template": "cycle",
-    "targetDurationMs": 2700000
+    "targetDurationMs": 2700000,
+    "totalDurationMs": 2640000
   },
   "tracks": [
     {
@@ -178,8 +179,14 @@ contract — one fetch so the iOS app isn't composing the live view from a dozen
   `null` if neither is set — BPM is optional/manual in M1).
 - **move `name`** = `move.name ?? user_move.name ?? class_track_move.name_override` (resolve the library
   reference; fall back to the freeform name). Exactly one source is set per placement.
-- **`startOffsetMs`** is **server-derived** in M1 (sequential, back-to-back from preceding `durationMs`);
-  clients treat it as read-only. See `schema.md` → `class_tracks`.
+- **`startOffsetMs`** is **server-derived** (sequential, back-to-back from preceding `durationMs`);
+  clients treat it as read-only. See `schema.md` → `class_tracks`. **M3:** the run-payload **recomputes**
+  the timeline at read time (reusing the write-path sequencing), so per-track offsets are authoritative
+  even if a persisted `start_offset_ms` ever drifted. Each entry runs `startOffsetMs` →
+  `startOffsetMs + track.durationMs`.
+- **`class.totalDurationMs`** (**M3**) is the assembled timeline length — the sum of track `durationMs`
+  (null = 0), distinct from the instructor's planned `targetDurationMs`. Drives the live interval timer
+  without client-side summing. `0` for an empty class.
 - **`tracks`** are emitted in `position` order.
 
 ---

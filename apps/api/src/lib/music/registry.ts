@@ -11,7 +11,12 @@
  * free of app env/secrets.
  */
 import type { Provider, TrackSearchResult } from '@ritmofit/shared';
-import { createSoundCloudProvider, type MusicProvider } from '@ritmofit/music';
+import {
+  createSoundCloudProvider,
+  createSpotifyProvider,
+  createAppleMusicProvider,
+  type MusicProvider,
+} from '@ritmofit/music';
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
 import { searchMockCatalog, findMockCandidate } from '../mock-catalog.js';
@@ -41,6 +46,28 @@ export function getMusicProvider(provider: Provider, env: Env): MusicProvider {
     return createSoundCloudProvider({
       clientId: env.SOUNDCLOUD_CLIENT_ID,
       clientSecret: env.SOUNDCLOUD_CLIENT_SECRET,
+      fetchImpl: fetch,
+    });
+  }
+
+  if (provider === 'spotify') {
+    if (!env.SPOTIFY_CLIENT_ID || !env.SPOTIFY_CLIENT_SECRET) {
+      throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Spotify is not configured.');
+    }
+    return createSpotifyProvider({
+      clientId: env.SPOTIFY_CLIENT_ID,
+      clientSecret: env.SPOTIFY_CLIENT_SECRET,
+      fetchImpl: fetch,
+    });
+  }
+
+  if (provider === 'apple_music') {
+    if (!env.APPLE_MUSIC_DEVELOPER_TOKEN) {
+      throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Apple Music is not configured.');
+    }
+    return createAppleMusicProvider({
+      developerToken: env.APPLE_MUSIC_DEVELOPER_TOKEN,
+      storefront: env.APPLE_MUSIC_STOREFRONT,
       fetchImpl: fetch,
     });
   }

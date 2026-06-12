@@ -32,12 +32,28 @@ describe('getMusicProvider', () => {
     }
   });
 
-  it('501s for a provider that is not yet integrated', () => {
-    try {
-      getMusicProvider('spotify', env({}));
-      expect.unreachable('should have thrown');
-    } catch (err) {
-      expect((err as HttpError).status).toBe(501);
+  it('returns the live Spotify adapter when credentials are present', () => {
+    const p = getMusicProvider(
+      'spotify',
+      env({ SPOTIFY_CLIENT_ID: 'cid', SPOTIFY_CLIENT_SECRET: 'sec' }),
+    );
+    expect(p.provider).toBe('spotify');
+  });
+
+  it('returns the live Apple Music adapter when a developer token is present', () => {
+    const p = getMusicProvider('apple_music', env({ APPLE_MUSIC_DEVELOPER_TOKEN: 'devtok' }));
+    expect(p.provider).toBe('apple_music');
+  });
+
+  it('503s when a provider is selected without credentials', () => {
+    for (const provider of ['spotify', 'apple_music'] as const) {
+      try {
+        getMusicProvider(provider, env({}));
+        expect.unreachable('should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(HttpError);
+        expect((err as HttpError).status).toBe(503);
+      }
     }
   });
 });

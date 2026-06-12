@@ -15,8 +15,9 @@
  *  4. DELETE /providers/:provider/connection — authed. Immediate disconnect.
  *
  * Tokens are encrypted at rest and NEVER returned to a client. Never log tokens
- * or the code (conventions.md). The 7-day metadata-purge-on-disconnect duty is a
- * later compliance slice; here disconnect simply forgets the tokens.
+ * or the code (conventions.md). Disconnect forgets the tokens immediately and
+ * enqueues the deferred 7-day metadata purge (provider refs + album art) drained
+ * by the Cron Trigger — see `lib/music/purge.ts`.
  */
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
@@ -37,6 +38,7 @@ import { HttpError } from '../lib/errors.js';
 import { encryptSecret, decryptSecret } from '../lib/crypto.js';
 import { requireEncryptionKey, soundcloudCreds } from '../lib/music/provider-config.js';
 import { generateCodeVerifier, challengeFromVerifier, randomToken } from '../lib/pkce.js';
+import { enqueueProviderPurge } from '../lib/music/purge.js';
 import { musicConnections } from '../db/schema.js';
 
 const STATE_COOKIE = 'rf_oauth_state';
@@ -230,14 +232,25 @@ providerConnectionRoutes.get('/providers/connections', requireSession, async (c)
   return c.json(rows.map(toConnectionView));
 });
 
-/** DELETE /providers/:provider/connection — disconnect (immediate token forget). */
+/**
+ * DELETE /providers/:provider/connection — disconnect. Forgets the tokens
+ * immediately (security), then enqueues the deferred metadata purge (provider
+ * refs + album art) that a daily Cron Trigger drains within the 7-day SLA. See
+ * `lib/music/purge.ts`.
+ */
 providerConnectionRoutes.delete('/providers/:provider/connection', requireSession, async (c) => {
   const provider = parseProvider(c.req.param('provider'));
+  const userId = c.get('userId');
   const db = createDb(c.env);
-  await db
+  const deleted = await db
     .delete(musicConnections)
-    .where(
-      and(eq(musicConnections.userId, c.get('userId')), eq(musicConnections.provider, provider)),
-    );
+    .where(and(eq(musicConnections.userId, userId), eq(musicConnections.provider, provider)))
+    .run();
+  // Only schedule the destructive metadata purge when a connection actually
+  // existed — a no-op disconnect (never connected / double-click) must not strip
+  // the user's provider refs + album art.
+  if ((deleted.meta.changes ?? 0) > 0) {
+    await enqueueProviderPurge(db, userId, provider);
+  }
   return c.body(null, 204);
 });

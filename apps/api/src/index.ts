@@ -2,8 +2,10 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ZodError } from 'zod';
 import { API_VERSION } from '@ritmofit/shared';
-import type { AppEnv } from './lib/types.js';
+import type { AppEnv, Env } from './lib/types.js';
 import { createAuth } from './lib/auth.js';
+import { createDb } from './lib/db.js';
+import { drainPurgeQueue, createD1PurgeStore } from './lib/music/purge.js';
 import { HttpError } from './lib/errors.js';
 import { authRoutes } from './routes/auth.js';
 import { classRoutes } from './routes/classes.js';
@@ -96,4 +98,26 @@ api.route('/', mockRoutes);
 api.route('/', teamRoutes);
 api.route('/', shareRoutes);
 
-export default app;
+/**
+ * Worker entry. Beyond `fetch`, a daily Cron Trigger (`[triggers]` in
+ * wrangler.toml) drains the provider metadata-purge queue — the deferred
+ * disconnect-compliance duty (see `lib/music/purge.ts`). `waitUntil` lets the
+ * drain finish past the handler's return.
+ */
+export default {
+  fetch: app.fetch,
+  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(
+      drainPurgeQueue(createD1PurgeStore(createDb(env)), (msg) => console.log(`[purge] ${msg}`))
+        .then((summary) => {
+          console.log(`[purge] ${JSON.stringify(summary)}`);
+        })
+        // A throw before the per-row try (e.g. listQueue) would otherwise reject
+        // waitUntil unobserved and silently skip the whole sweep. Log so a failed
+        // run is visible; the queue is durable, so the next sweep retries it.
+        .catch((err) => {
+          console.error(`[purge] sweep failed: ${err instanceof Error ? err.message : String(err)}`);
+        }),
+    );
+  },
+};

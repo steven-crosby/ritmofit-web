@@ -5,7 +5,9 @@
  * field resolutions the clients depend on (api.md):
  *   - displayBpm = class_track.display_bpm_override ?? track.display_bpm
  *   - move name  = move.name ?? user_move.name ?? class_track_move.name_override
- *   - tracks in position order; startOffsetMs already server-derived.
+ *   - tracks in position order; the timeline (startOffsetMs + class totalDurationMs)
+ *     is recomputed here (M3 hardening) so it is authoritative even if a persisted
+ *     start_offset_ms ever drifts.
  */
 import { eq, inArray } from 'drizzle-orm';
 import { runPayloadSchema, RUN_PAYLOAD_SCHEMA_VERSION, type RunPayload } from '@ritmofit/shared';
@@ -20,6 +22,7 @@ import {
   userMoves,
 } from '../db/schema.js';
 import type { Db } from './db.js';
+import { computeSequence } from './sequencing.js';
 
 /**
  * Resolve a placement's display name. The placement invariant guarantees a source
@@ -32,6 +35,22 @@ export function resolveMoveName(
   nameOverride: string | null,
 ): string {
   return libraryName ?? userMoveName ?? nameOverride ?? '';
+}
+
+/**
+ * The class timeline derived from position-ordered (classTrackId, durationMs)
+ * pairs: each track's absolute `startOffsetMs` (back-to-back, null duration = 0)
+ * and the class `totalDurationMs`. Recomputed at read time so the live contract
+ * is authoritative even if a persisted offset drifted (M3 hardening). Pure, so it
+ * is unit-tested without a database.
+ */
+export function computeClassTimeline(
+  ordered: ReadonlyArray<{ id: string; durationMs: number | null }>,
+): { startOffsetByCt: Map<string, number>; totalDurationMs: number } {
+  const sequence = computeSequence(ordered);
+  const startOffsetByCt = new Map(sequence.map((s) => [s.id, s.startOffsetMs]));
+  const totalDurationMs = ordered.reduce((sum, t) => sum + (t.durationMs ?? 0), 0);
+  return { startOffsetByCt, totalDurationMs };
 }
 
 /** Group rows into a Map keyed by one of their fields. */
@@ -107,6 +126,12 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
   const cuesByCt = groupBy(cueRows, (c) => c.classTrackId);
   const movesByCt = groupBy(moveRows, (m) => m.classTrackId);
 
+  // Recompute the timeline at read time (M3 hardening) so per-track offsets and the
+  // class total are authoritative even if a persisted start_offset_ms drifted.
+  const { startOffsetByCt, totalDurationMs } = computeClassTimeline(
+    cts.map((ct) => ({ id: ct.id, durationMs: trackById.get(ct.trackId)?.durationMs ?? null })),
+  );
+
   const payload: RunPayload = {
     schemaVersion: RUN_PAYLOAD_SCHEMA_VERSION,
     class: {
@@ -114,6 +139,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
       title: cls.title,
       template: cls.template,
       targetDurationMs: cls.targetDurationMs,
+      totalDurationMs,
     },
     tracks: cts.map((ct) => {
       const track = trackById.get(ct.trackId)!;
@@ -122,7 +148,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
         position: ct.position,
         displayBpm: ct.displayBpmOverride ?? track.displayBpm,
         intensity: ct.intensity,
-        startOffsetMs: ct.startOffsetMs,
+        startOffsetMs: startOffsetByCt.get(ct.id) ?? ct.startOffsetMs,
         notes: ct.notes,
         track: {
           id: track.id,

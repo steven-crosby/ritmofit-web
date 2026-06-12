@@ -3,14 +3,24 @@ main = "src/index.ts"
 compatibility_date = "2024-11-06"
 compatibility_flags = ["nodejs_compat"]
 
+# Non-secret config. Secrets (BETTER_AUTH_SECRET, ENCRYPTION_KEY, provider
+# creds) are set via `wrangler secret put`, not here.
+[vars]
+BETTER_AUTH_URL = "https://ritmofit-api.steven-crosby09.workers.dev"
+
 # Cloudflare D1 (SQLite), bound to the Worker as `DB`.
 # Create the database once with:  wrangler d1 create ritmofit
 # then paste the returned database_id below (it is NOT a secret).
 [[d1_databases]]
 binding = "DB"
 database_name = "ritmofit"
-database_id = "PLACEHOLDER_RUN_wrangler_d1_create_ritmofit"
+database_id = "5bf15d82-10f5-4d03-b96e-6b8358334fc5"
 migrations_dir = "migrations"
+
+# Daily sweep that drains the provider metadata-purge queue (disconnect
+# compliance — see src/lib/music/purge.ts). 03:17 UTC, off-peak.
+[triggers]
+crons = ["17 3 * * *"]
 
 [observability]
 enabled = true

@@ -55,11 +55,15 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
 - **Run it:** `pnpm dev:api` (Worker on :8787) + `pnpm dev:web` (Vite on :5173). API health:
   `/api/v1/health`. Better Auth at `/api/auth/*`; REST under `/api/v1`.
 - **Checks:** `pnpm -r typecheck` · `pnpm test` (Vitest, in `apps/api`) · `pnpm --filter @ritmofit/api openapi` regenerates the spec.
-- **Database:** D1 is **local-only** (placeholder `database_id` in `wrangler.toml`) — apply migrations
-  with `pnpm --filter @ritmofit/api db:migrate:local` and seed with `db:seed:local`. No Cloudflare/CI
-  linkage yet; provision real D1 + deploy when M2 needs a remote.
+- **Cloudflare (provisioned):** remote D1 `ritmofit` (id `5bf15d82-…` in `wrangler.toml`, **not** a
+  secret) is migrated + seeded; the `ritmofit-api` Worker is deployed at
+  `https://ritmofit-api.steven-crosby09.workers.dev` with a daily Cron Trigger (`17 3 * * *`) for the
+  purge sweep. Secrets (`BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`) set via `wrangler secret put`. Local dev
+  still uses local D1: `pnpm --filter @ritmofit/api db:migrate:local` + `db:seed:local`; deploy with
+  `pnpm --filter @ritmofit/api deploy` and `db:migrate` against `--remote`.
 - **Known tech debt:** no automated integration tests yet — the route/SQL layer is verified by manual
-  flows + unit tests, not CI. Address early in M2 (the app-level authz is the only access gate).
+  flows + unit tests (purge SQL scoping verified against local D1), not CI. The app-level authz is the
+  only access gate. No CI pipeline wired to the Worker deploy yet.
 
 **M2 in progress** (music providers, SoundCloud first) — see `ritmofit_dev_plan/milestones.md` and
 `music-providers.md`. New package `packages/music` holds the provider adapters.
@@ -75,13 +79,36 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
   reactive on a 401, rotated tokens re-encrypted and persisted. Pure `fetchSoundCloudLikes` adapter +
   `SoundCloudUnauthorizedError` refresh signal in `packages/music`; orchestration in
   `lib/music/user-likes.ts`; shared creds guards in `lib/music/provider-config.ts`.
-- **Status:** code complete, `typecheck` + `test` (72) green; **behind the mock** — live SoundCloud
-  calls need valid `SOUNDCLOUD_CLIENT_ID/SECRET` + a **registered redirect URI**, and registration may
-  be closed. Re-verify the `OAuth <token>` auth-header scheme + the `/me/likes/tracks` shape when creds
-  land.
-- **Next (not started):** the deferred **7-day metadata-purge-on-disconnect** compliance slice, then
-  provider-ID resolution / same-song matching. Then Spotify / Apple Music behind the same
-  `MusicProvider`, and an optional third-party BPM provider.
+- **Slice 4 — 7-day metadata-purge-on-disconnect**: disconnect forgets tokens immediately *and*
+  enqueues a `provider_purge_queue` row (migration `0002`); a daily Cron Trigger drains it via
+  `scheduled()` → `drainPurgeQueue` (`lib/music/purge.ts`), stripping that provider's `track_provider_ids`
+  + nulling `albumArtUrl` on the user's tracks — never touching other users, other providers, or our own
+  metadata (title/artist/BPM/classes). Retry-with-give-up; orchestration unit-tested via a fake store,
+  SQL scoping verified against local D1.
+- **Slice 5 — provider-ID resolution / same-song matching**: import resolves a candidate against the
+  caller's library before forging a track (`lib/same-song.ts`) — exact `(provider, providerTrackId)` is
+  idempotent; the same song from a different provider attaches its ID to the existing track. Conservative
+  fuzzy match (normalized title+artist + duration tolerance, never double-attaches a provider).
+- **Slice 6 — Spotify + Apple Music behind the same `MusicProvider`**: `packages/music/spotify.ts`
+  (client-credentials, **never** BPM) + `apple-music.ts` (developer-token catalog search) drop in behind
+  the registry's mock fallback; `SPOTIFY_*` / `APPLE_MUSIC_*` env documented. Pure, network-injectable,
+  unit-tested.
+- **Slice 7 — third-party BPM provider** *(optional)*: pluggable `BpmProvider` (GetSongBPM adapter,
+  `normalizeBpm`) fills `display_bpm` from a dedicated tempo service — **never Spotify**.
+  `POST /tracks/:id/bpm-lookup` (owner-only); behind the deterministic mock until `GETSONGBPM_API_KEY`.
+- **M2 complete.** `typecheck` (4 pkgs) + `lint` + `test` (116) green. Live provider calls
+  (SoundCloud/Spotify/Apple Music/BPM) are **behind the mock** until real creds land — re-verify each
+  provider's endpoints/auth-header scheme then.
 
-M1's per-step branches and `main` are on GitHub; M2 slices 1–2 are merged to `main`, slice 3 is on
-`claude/dev-plan-review-c03j8a`.
+**M3 (live mode) — complete.** Two parts, both done:
+- **Run-payload hardening** (the live contract): `class.totalDurationMs` (server-derived assembled
+  length), read-time timeline recompute (`computeClassTimeline`) so per-track offsets are authoritative,
+  frozen v1 shape documented in `packages/shared` + `api.md`. **Verified live** end-to-end on the deployed
+  Worker + remote D1 (sign-up → 2-track class → `totalDurationMs=380000`, offsets `0`/`180000`).
+- **Live-mode cue prompter UI** (`apps/web/src/components/LiveMode.tsx`): Cue-by-Cue + Full List views, a
+  virtual-clock interval timer (play/pause/seek/reset, track/class countdowns), and intensity readouts
+  with redundant encoding (color + bars + label). No in-app audio — playback stays in the provider apps.
+  The native iOS live surface (Phase 2) reimplements this against the same run-payload (+ Landscape view).
+
+M1's per-step branches and `main` are on GitHub; M2 slices 1–3 are merged to `main`. Cloudflare
+provisioning + M2 slices 4–7 + all M3 work are on a working branch (not yet merged).

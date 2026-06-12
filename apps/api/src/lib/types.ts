@@ -25,6 +25,26 @@ export interface Env {
   SOUNDCLOUD_CLIENT_ID?: string;
   SOUNDCLOUD_CLIENT_SECRET?: string;
   /**
+   * Spotify app credentials (M2). Both halves required to enable the live
+   * provider; used for client-credentials search/lookup only. Per the hard music
+   * rules we NEVER read Spotify BPM (audio-features deprecated Nov 2024).
+   */
+  SPOTIFY_CLIENT_ID?: string;
+  SPOTIFY_CLIENT_SECRET?: string;
+  /**
+   * Apple Music **developer token** (ES256 JWT signed from the `.p8` key, out of
+   * band) and optional storefront (default 'us'). Distinct from Sign in with
+   * Apple. Absent → Apple Music search reports the provider as unavailable.
+   */
+  APPLE_MUSIC_DEVELOPER_TOKEN?: string;
+  APPLE_MUSIC_STOREFRONT?: string;
+  /**
+   * API key for the third-party BPM provider (GetSongBPM) used to fill
+   * `tracks.display_bpm` (M2, optional). Never Spotify. Absent → BPM lookup
+   * reports the provider as unavailable; BPM stays manual.
+   */
+  GETSONGBPM_API_KEY?: string;
+  /**
    * The registered OAuth redirect URI for the SoundCloud connect flow. Defaults
    * to `${BETTER_AUTH_URL}/api/v1/providers/soundcloud/callback` when unset.
    */

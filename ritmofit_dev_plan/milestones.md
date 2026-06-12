@@ -84,8 +84,29 @@ Core builder first (these validate the product), teams/sharing last.
 >   SoundCloud") spends the stored `music_connections` token with on-demand **refresh** (proactive on
 >   expiry + reactive on a 401, rotated tokens re-encrypted and persisted). Pure `fetchSoundCloudLikes`
 >   adapter raises `SoundCloudUnauthorizedError` as the refresh signal; app owns decrypt/refresh/persist.
-> - ⏭️ **Next** — the deferred **7-day metadata-purge-on-disconnect** compliance work; provider-ID
->   resolution / same-song matching; then Spotify + Apple Music behind the same interface.
+> - ✅ **Slice 4** — **7-day metadata-purge-on-disconnect**: disconnect forgets tokens immediately *and*
+>   enqueues a `provider_purge_queue` row (migration `0002`); a daily Cloudflare **Cron Trigger** drains
+>   it (`scheduled()` → `drainPurgeQueue`, `lib/music/purge.ts`), stripping that provider's
+>   `track_provider_ids` + nulling album art on the **disconnecting user's** tracks only — never other
+>   users, other providers, or our own metadata. Retry-with-give-up; drain unit-tested via a fake store,
+>   SQL scoping verified against local D1. Cloudflare D1 + Worker now **provisioned** (remote D1
+>   migrated/seeded; Worker deployed with the cron).
+> - ✅ **Slice 5** — **provider-ID resolution / same-song matching**: import resolves a candidate against
+>   the caller's library before forging a track — exact `(provider, providerTrackId)` is idempotent;
+>   the same song from a different provider attaches its ID to the existing track (`lib/same-song.ts`,
+>   conservative normalized title+artist + duration tolerance, never double-attaches a provider).
+> - ✅ **Slice 6** — **Spotify + Apple Music behind the same `MusicProvider`**: client-credentials
+>   (Spotify, never BPM) and developer-token (Apple Music) adapters in `packages/music`, wired into the
+>   registry's mock fallback; `SPOTIFY_*` / `APPLE_MUSIC_*` env documented. Pure, unit-tested, behind the
+>   mock until creds land.
+> - ✅ **Slice 7** — *(optional)* third-party **BPM** provider for `display_bpm`: a pluggable `BpmProvider`
+>   (GetSongBPM adapter, `normalizeBpm`) fills BPM from a dedicated tempo service — **never Spotify**.
+>   `POST /tracks/:id/bpm-lookup` (owner-only) persists a confident match; behind the mock
+>   (deterministic spin-band BPM) until `GETSONGBPM_API_KEY` lands, so BPM stays manual otherwise.
+>
+> **M2 complete** — all three providers (SoundCloud/Spotify/Apple Music) behind one interface, per-user
+> OAuth + refresh, likes, metadata-purge-on-disconnect, same-song resolution, and the optional BPM
+> provider. Live provider calls are behind the mock until real creds land.
 
 - **SoundCloud first** (the differentiator): provider search feeding track creation; provider-ID
   resolution and the same-song matching problem; deep-link/hand-off playback via `provider_uri`.
@@ -95,10 +116,26 @@ Core builder first (these validate the product), teams/sharing last.
 - Re-verify each provider's current API terms before building (constraints in `music-providers.md`).
 
 ## M3 — Live mode + iOS parity polish
-- Cue prompter in time with music (Cue-by-Cue / Full List / Landscape views).
-- Interval countdown timer; intensity readouts.
-- **Harden the run-payload** — stable versioned shape, correct duration/order, documented in
-  `packages/shared`. Revisit timeline beat-grid if the player needs it.
+
+> **Web-repo portion (the live *contract*) is done:**
+> - ✅ **Harden the run-payload** — `class.totalDurationMs` (server-derived assembled length, distinct
+>   from the planned `targetDurationMs`); the timeline (per-track `startOffsetMs` + total) is **recomputed
+>   at read time** (`computeClassTimeline`, reusing the write-path `computeSequence`) so it is authoritative
+>   even if a persisted `start_offset_ms` drifts; frozen v1 shape + timeline semantics documented in
+>   `packages/shared` and `api.md`. Verified live (deployed Worker + remote D1): a 2-track class returned
+>   `totalDurationMs=380000` with offsets `0`/`180000`.
+
+> **Live-mode UI shipped in the web app** (`apps/web/src/components/LiveMode.tsx`), consuming the hardened
+> run-payload:
+> - ✅ **Cue prompter** — Cue-by-Cue (big current cue + next cue with countdown) and Full List (whole
+>   timeline, live track highlighted, past events struck through, tap-to-seek) views.
+> - ✅ **Interval countdown timer** — a virtual clock (play/pause/seek/reset) drives current-track and
+>   class "ends in" countdowns and the time-to-next-cue.
+> - ✅ **Intensity readouts** — redundant encoding (color + 0–4 filled bars + label), never color alone.
+> - No in-app audio — playback stays in the provider apps (the three music rules).
+>
+> **M3 complete for the web repo.** The native **iOS** live surface (Phase 2 / `ritmofit-ios`) will
+> reimplement the prompter against the same run-payload, plus a Landscape view and device-specific polish.
 
 ## M4 — Explore / featured / sharing UX
 - Explore feed; eligibility to be featured.

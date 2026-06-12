@@ -8,6 +8,7 @@ import type {
   CreateClass,
   ClassTrack,
   AddClassTrack,
+  RunPayload,
 } from '@ritmofit/shared';
 import { API_BASE_URL } from './auth-client.js';
 
@@ -38,3 +39,5 @@ export const listClassTracks = (classId: string) =>
   api<ClassTrack[]>(`/classes/${classId}/tracks`);
 export const addTrack = (classId: string, body: AddClassTrack) =>
   api<ClassTrack>(`/classes/${classId}/tracks`, { method: 'POST', body: JSON.stringify(body) });
+export const getRunPayload = (classId: string) =>
+  api<RunPayload>(`/classes/${classId}/run-payload`);
