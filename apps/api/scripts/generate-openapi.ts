@@ -40,7 +40,7 @@ import {
   createTrackProviderIdSchema,
   trackWithProviderIdsSchema,
   trackSearchResultSchema,
-  importMockTrackSchema,
+  importProviderTrackSchema,
   teamSchema,
   teamWithRoleSchema,
   createTeamSchema,
@@ -80,7 +80,7 @@ const named: Record<string, z.ZodType> = {
   CreateTrackProviderId: createTrackProviderIdSchema,
   TrackWithProviderIds: trackWithProviderIdsSchema,
   TrackSearchResult: trackSearchResultSchema,
-  ImportMockTrack: importMockTrackSchema,
+  ImportProviderTrack: importProviderTrackSchema,
   Team: teamSchema,
   TeamWithRole: teamWithRoleSchema,
   CreateTeam: createTeamSchema,
@@ -206,11 +206,18 @@ const doc = {
       parameters: [idParam],
       delete: { summary: 'Remove a provider id', responses: { '204': { description: 'Removed' } } },
     },
+    '/providers/{provider}/search': {
+      parameters: [{ name: 'provider', in: 'path', required: true, schema: { type: 'string', enum: ['spotify', 'apple_music', 'soundcloud'] } }],
+      get: { summary: 'Search a music provider (M2; SoundCloud live, others mock/pending)', parameters: [{ name: 'q', in: 'query', required: false, schema: { type: 'string' } }], responses: { '200': arrayResp('TrackSearchResult', 'Candidates'), '501': { description: 'Provider not yet integrated' }, '503': { description: 'Provider not configured' } } },
+    },
+    '/providers/track-import': {
+      post: { summary: 'Import a provider candidate into the library', requestBody: jsonBody('ImportProviderTrack'), responses: { '201': jsonResp('TrackWithProviderIds', 'Imported'), '404': { description: 'No such provider track' }, '409': { description: 'Already in a library' } } },
+    },
     '/mock/track-search': {
       get: { summary: 'Dev-only mock provider search', parameters: [{ name: 'q', in: 'query', required: false, schema: { type: 'string' } }], responses: { '200': arrayResp('TrackSearchResult', 'Candidates') } },
     },
     '/mock/track-import': {
-      post: { summary: 'Dev-only import a mock candidate', requestBody: jsonBody('ImportMockTrack'), responses: { '201': jsonResp('TrackWithProviderIds', 'Imported') } },
+      post: { summary: 'Dev-only import a mock candidate', requestBody: jsonBody('ImportProviderTrack'), responses: { '201': jsonResp('TrackWithProviderIds', 'Imported') } },
     },
     '/teams': {
       get: { summary: 'List my teams', responses: { '200': arrayResp('TeamWithRole', 'Teams') } },

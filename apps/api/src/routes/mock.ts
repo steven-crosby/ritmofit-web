@@ -4,18 +4,18 @@
  * `MOCK_PROVIDERS` env: when it isn't 'true' (i.e. production) every route 404s,
  * so the seam can't leak into a real deployment.
  *
- * Imported tracks land in the caller's library exactly like a hand-entered track
- * (owner-scoped, manual BPM) plus the provider id from the catalog.
+ * The M2 `/providers/*` surface (routes/providers.ts) is the forward-facing API;
+ * this seam stays as the explicit `/mock/*` path. Both import via the shared
+ * `importTrackFromCandidate` helper, so an imported track is identical either way.
  */
 import { Hono } from 'hono';
-import { importMockTrackSchema, type TrackWithProviderIds } from '@ritmofit/shared';
+import { importProviderTrackSchema } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
-import { HttpError, isUniqueViolation } from '../lib/errors.js';
-import { serializeTrack, serializeTrackProviderId } from '../lib/serialize.js';
+import { HttpError } from '../lib/errors.js';
 import { searchMockCatalog, findMockCandidate } from '../lib/mock-catalog.js';
-import { tracks, trackProviderIds } from '../db/schema.js';
+import { importTrackFromCandidate } from '../lib/track-import.js';
 
 export const mockRoutes = new Hono<AppEnv>();
 
@@ -37,47 +37,12 @@ mockRoutes.get('/mock/track-search', (c) => {
 
 /** POST /mock/track-import — import a catalog candidate into the caller's library. */
 mockRoutes.post('/mock/track-import', async (c) => {
-  const db = createDb(c.env);
-  const { provider, providerTrackId } = importMockTrackSchema.parse(await c.req.json());
+  const { provider, providerTrackId } = importProviderTrackSchema.parse(await c.req.json());
 
   const candidate = findMockCandidate(provider, providerTrackId);
   if (!candidate) throw new HttpError(404, 'NOT_FOUND', 'No such track in the mock catalog.');
 
-  const now = Date.now();
-  const trackRow = {
-    id: crypto.randomUUID(),
-    ownerUserId: c.get('userId'),
-    title: candidate.title,
-    artist: candidate.artist,
-    albumArtUrl: candidate.albumArtUrl,
-    durationMs: candidate.durationMs,
-    displayBpm: null, // manual in M1 — never imported from a provider
-    isrc: null,
-    createdAt: now,
-    updatedAt: now,
-  };
-  const providerRow = {
-    id: crypto.randomUUID(),
-    trackId: trackRow.id,
-    provider: candidate.provider,
-    providerTrackId: candidate.providerTrackId,
-    providerUri: candidate.providerUri,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  try {
-    await db.batch([db.insert(tracks).values(trackRow), db.insert(trackProviderIds).values(providerRow)]);
-  } catch (err) {
-    if (isUniqueViolation(err)) {
-      throw new HttpError(409, 'CONFLICT', 'That provider track is already in a library.');
-    }
-    throw err;
-  }
-
-  const result: TrackWithProviderIds = {
-    ...serializeTrack(trackRow),
-    providerIds: [serializeTrackProviderId(providerRow)],
-  };
+  const db = createDb(c.env);
+  const result = await importTrackFromCandidate(db, c.get('userId'), candidate);
   return c.json(result, 201);
 });

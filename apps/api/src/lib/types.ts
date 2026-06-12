@@ -17,7 +17,18 @@ export interface Env {
   GOOGLE_CLIENT_SECRET?: string;
   APPLE_CLIENT_ID?: string;
   APPLE_CLIENT_SECRET?: string;
-  /** When 'true', enables the dev-only mock-track seam (step 9). Never set in prod. */
+  /**
+   * SoundCloud API app credentials (M2). Both halves required to enable the live
+   * provider; absent → SoundCloud routes report the provider as unavailable.
+   * Server-side only — SoundCloud treats all clients as confidential.
+   */
+  SOUNDCLOUD_CLIENT_ID?: string;
+  SOUNDCLOUD_CLIENT_SECRET?: string;
+  /**
+   * When 'true', provider search/import are served from the dev mock catalog
+   * (step 9 seam) instead of any live provider API — the whole builder runs with
+   * zero provider credentials. Never set in prod.
+   */
   MOCK_PROVIDERS?: string;
 }
 
