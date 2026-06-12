@@ -15,9 +15,13 @@ import {
   trackSchema,
   trackProviderIdSchema,
   teamSchema,
+  teamMembershipSchema,
+  teamMemberViewSchema,
   shareSchema,
   type User,
   type Team,
+  type TeamMembership,
+  type TeamMemberView,
   type Share,
   type Class,
   type ClassTrack,
@@ -97,6 +101,16 @@ type ShareRow = typeof shares.$inferSelect;
 /** Map a `teams` row to the shared `Team`. */
 export function serializeTeam(row: TeamRow): Team {
   return teamSchema.parse(row);
+}
+
+/** Map a `team_memberships` row to the shared `TeamMembership`. */
+export function serializeTeamMembership(row: TeamMembership): TeamMembership {
+  return teamMembershipSchema.parse(row);
+}
+
+/** Validate a joined member-with-profile row against the `TeamMemberView` contract. */
+export function serializeTeamMemberView(row: TeamMemberView): TeamMemberView {
+  return teamMemberViewSchema.parse(row);
 }
 
 /** Map a `shares` row to the shared `Share`. */

@@ -11,13 +11,12 @@ import {
   createTeamSchema,
   addTeamMemberSchema,
   type TeamWithRole,
-  type TeamMemberView,
 } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { HttpError, isUniqueViolation } from '../lib/errors.js';
-import { serializeTeam } from '../lib/serialize.js';
+import { serializeTeam, serializeTeamMembership, serializeTeamMemberView } from '../lib/serialize.js';
 import { requireTeamMembership, requireTeamManager } from '../lib/team-authz.js';
 import { teams, teamMemberships, users } from '../db/schema.js';
 
@@ -97,7 +96,7 @@ teamRoutes.get('/teams/:id/members', async (c) => {
     .innerJoin(users, eq(users.id, teamMemberships.userId))
     .where(eq(teamMemberships.teamId, id))
     .all();
-  return c.json(rows as TeamMemberView[]);
+  return c.json(rows.map(serializeTeamMemberView));
 });
 
 /** POST /teams/:id/members — add a member (owner/admin only). 409 if already a member. */
@@ -123,7 +122,7 @@ teamRoutes.post('/teams/:id/members', async (c) => {
     if (isUniqueViolation(err)) throw new HttpError(409, 'CONFLICT', 'Already a member of this team.');
     throw err;
   }
-  return c.json(row, 201);
+  return c.json(serializeTeamMembership(row), 201);
 });
 
 /**

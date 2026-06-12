@@ -7,16 +7,15 @@ import { and, eq, inArray } from 'drizzle-orm';
 import {
   createClassSchema,
   updateClassSchema,
-  type AccessLevel,
   type ClassWithAccess,
 } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
-import { requireAccess, accessRank } from '../lib/authz.js';
+import { requireAccess, listVisibleClasses } from '../lib/authz.js';
 import { serializeClass } from '../lib/serialize.js';
 import { assembleRunPayload } from '../lib/run-payload.js';
-import { classes, shares, teamMemberships } from '../db/schema.js';
+import { classes, shares } from '../db/schema.js';
 
 export const classRoutes = new Hono<AppEnv>();
 classRoutes.use('*', requireSession);
@@ -44,39 +43,13 @@ classRoutes.post('/', async (c) => {
 
 /**
  * GET /classes — classes the caller can see: owned ∪ shared-directly ∪
- * shared-via-team (authorization.md), each tagged with its effective access level
- * (highest wins). No shares can be created until step 11, so today this is the
- * owned set — but the union shape is final, so step 11 only adds share creation.
+ * shared-via-team, each tagged with its effective access level (highest wins).
+ * The access union lives in `lib/authz.ts` (`listVisibleClasses`) so the access
+ * model has one home; this route just fetches and shapes the rows.
  */
 classRoutes.get('/', async (c) => {
   const db = createDb(c.env);
-  const me = c.get('userId');
-
-  const owned = await db
-    .select({ id: classes.id })
-    .from(classes)
-    .where(eq(classes.ownerUserId, me))
-    .all();
-  const direct = await db
-    .select({ id: shares.resourceId, permission: shares.permission })
-    .from(shares)
-    .where(and(eq(shares.resourceType, 'class'), eq(shares.targetUserId, me)))
-    .all();
-  const viaTeam = await db
-    .select({ id: shares.resourceId, permission: shares.permission })
-    .from(shares)
-    .innerJoin(teamMemberships, eq(teamMemberships.teamId, shares.targetTeamId))
-    .where(and(eq(shares.resourceType, 'class'), eq(teamMemberships.userId, me)))
-    .all();
-
-  // Reduce to the highest access level per class id.
-  const levelById = new Map<string, AccessLevel>();
-  const bump = (id: string, level: AccessLevel) => {
-    const current = levelById.get(id);
-    if (!current || accessRank(level) > accessRank(current)) levelById.set(id, level);
-  };
-  owned.forEach((r) => bump(r.id, 'owner'));
-  [...direct, ...viaTeam].forEach((r) => bump(r.id, r.permission));
+  const levelById = await listVisibleClasses(db, c.get('userId'));
 
   if (levelById.size === 0) return c.json([] as ClassWithAccess[]);
 

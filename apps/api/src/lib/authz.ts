@@ -129,6 +129,44 @@ export function createDrizzleAuthzStore(db: Db): AuthzStore {
 }
 
 /**
+ * The visible-classes union for a user: owned ∪ shared-directly ∪ shared-via-team
+ * (authorization.md), reduced to the **highest** effective access level per class.
+ * The list counterpart to `resolveAccess` — both live here so the access model has
+ * a single home (a class never appears with level `'none'`). Returns a Map of
+ * classId → level; callers fetch and shape the class rows themselves.
+ */
+export async function listVisibleClasses(
+  db: Db,
+  userId: string,
+): Promise<Map<string, AccessLevel>> {
+  const owned = await db
+    .select({ id: classes.id })
+    .from(classes)
+    .where(eq(classes.ownerUserId, userId))
+    .all();
+  const direct = await db
+    .select({ id: shares.resourceId, permission: shares.permission })
+    .from(shares)
+    .where(and(eq(shares.resourceType, 'class'), eq(shares.targetUserId, userId)))
+    .all();
+  const viaTeam = await db
+    .select({ id: shares.resourceId, permission: shares.permission })
+    .from(shares)
+    .innerJoin(teamMemberships, eq(teamMemberships.teamId, shares.targetTeamId))
+    .where(and(eq(shares.resourceType, 'class'), eq(teamMemberships.userId, userId)))
+    .all();
+
+  const levelById = new Map<string, AccessLevel>();
+  const bump = (id: string, level: AccessLevel) => {
+    const current = levelById.get(id);
+    if (!current || accessRank(level) > accessRank(current)) levelById.set(id, level);
+  };
+  owned.forEach((r) => bump(r.id, 'owner'));
+  [...direct, ...viaTeam].forEach((r) => bump(r.id, r.permission));
+  return levelById;
+}
+
+/**
  * The route-facing gate. Resolves effective access for the caller against the
  * class and enforces `minLevel`, throwing `AccessError` (mapped to the JSON error
  * envelope by the app's `onError`). Returns the resolved level for routes that
