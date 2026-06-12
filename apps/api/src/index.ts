@@ -11,6 +11,7 @@ import { classTrackRoutes } from './routes/class-tracks.js';
 import { cueRoutes } from './routes/cues.js';
 import { placedMoveRoutes } from './routes/placed-moves.js';
 import { moveRoutes } from './routes/moves.js';
+import { trackRoutes } from './routes/tracks.js';
 
 export type { Env } from './lib/types.js';
 
@@ -79,5 +80,6 @@ api.route('/', classTrackRoutes);
 api.route('/', cueRoutes);
 api.route('/', placedMoveRoutes);
 api.route('/', moveRoutes);
+api.route('/', trackRoutes);
 
 export default app;

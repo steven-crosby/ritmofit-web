@@ -49,3 +49,21 @@ export const trackProviderIdSchema = z.object({
   ...timestampsShape,
 });
 export type TrackProviderId = z.infer<typeof trackProviderIdSchema>;
+
+// ── Request / response variants (step 8 routes) ─────────────────────────────
+
+/** Patch a track — every mutable field optional (e.g. set/correct manual BPM). */
+export const updateTrackSchema = createTrackSchema.partial();
+export type UpdateTrack = z.infer<typeof updateTrackSchema>;
+
+/** Attach a provider id to a track. Server sets id / trackId / timestamps. */
+export const createTrackProviderIdSchema = trackProviderIdSchema
+  .pick({ provider: true, providerTrackId: true, providerUri: true })
+  .partial({ providerUri: true });
+export type CreateTrackProviderId = z.infer<typeof createTrackProviderIdSchema>;
+
+/** A track with its provider ids — the `GET /tracks/:id` response shape. */
+export const trackWithProviderIdsSchema = trackSchema.extend({
+  providerIds: z.array(trackProviderIdSchema),
+});
+export type TrackWithProviderIds = z.infer<typeof trackWithProviderIdsSchema>;

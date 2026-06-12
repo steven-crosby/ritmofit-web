@@ -12,6 +12,8 @@ import {
   classTrackMoveSchema,
   moveSchema,
   userMoveSchema,
+  trackSchema,
+  trackProviderIdSchema,
   type User,
   type Class,
   type ClassTrack,
@@ -19,8 +21,19 @@ import {
   type ClassTrackMove,
   type Move,
   type UserMove,
+  type Track,
+  type TrackProviderId,
 } from '@ritmofit/shared';
-import type { classes, classTracks, cues, classTrackMoves, moves, userMoves } from '../db/schema.js';
+import type {
+  classes,
+  classTracks,
+  cues,
+  classTrackMoves,
+  moves,
+  userMoves,
+  tracks,
+  trackProviderIds,
+} from '../db/schema.js';
 
 type ClassRow = typeof classes.$inferSelect;
 type ClassTrackRow = typeof classTracks.$inferSelect;
@@ -57,6 +70,19 @@ export function serializeMove(row: MoveRow): Move {
 /** Map a `user_moves` row to the shared `UserMove`. */
 export function serializeUserMove(row: UserMoveRow): UserMove {
   return userMoveSchema.parse(row);
+}
+
+type TrackRow = typeof tracks.$inferSelect;
+type TrackProviderIdRow = typeof trackProviderIds.$inferSelect;
+
+/** Map a `tracks` row to the shared `Track`. */
+export function serializeTrack(row: TrackRow): Track {
+  return trackSchema.parse(row);
+}
+
+/** Map a `track_provider_ids` row to the shared `TrackProviderId`. */
+export function serializeTrackProviderId(row: TrackProviderIdRow): TrackProviderId {
+  return trackProviderIdSchema.parse(row);
 }
 
 /** Better Auth returns `Date`s (timestamp_ms columns); the wire format is epoch ms. */

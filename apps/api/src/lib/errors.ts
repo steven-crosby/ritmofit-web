@@ -15,3 +15,18 @@ export class HttpError extends Error {
     this.code = code;
   }
 }
+
+/**
+ * True when a thrown DB error is a SQLite UNIQUE-constraint violation (→ map to
+ * 409). Drizzle wraps the driver error, so walk the `cause` chain — the SQLite
+ * message lives several levels down, not on the top-level `.message`.
+ */
+export function isUniqueViolation(err: unknown): boolean {
+  let current: unknown = err;
+  for (let depth = 0; current != null && depth < 10; depth++) {
+    const message = current instanceof Error ? current.message : String(current);
+    if (/UNIQUE constraint failed|SQLITE_CONSTRAINT_UNIQUE/i.test(message)) return true;
+    current = current instanceof Error ? current.cause : undefined;
+  }
+  return false;
+}
