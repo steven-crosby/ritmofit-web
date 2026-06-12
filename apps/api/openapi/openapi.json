@@ -802,6 +802,90 @@
         }
       }
     },
+    "/providers/{provider}/search": {
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "spotify",
+              "apple_music",
+              "soundcloud"
+            ]
+          }
+        }
+      ],
+      "get": {
+        "summary": "Search a music provider (M2; SoundCloud live, others mock/pending)",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Candidates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrackSearchResult"
+                  }
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Provider not yet integrated"
+          },
+          "503": {
+            "description": "Provider not configured"
+          }
+        }
+      }
+    },
+    "/providers/track-import": {
+      "post": {
+        "summary": "Import a provider candidate into the library",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportProviderTrack"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Imported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackWithProviderIds"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such provider track"
+          },
+          "409": {
+            "description": "Already in a library"
+          }
+        }
+      }
+    },
     "/mock/track-search": {
       "get": {
         "summary": "Dev-only mock provider search",
@@ -840,7 +924,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ImportMockTrack"
+                "$ref": "#/components/schemas/ImportProviderTrack"
               }
             }
           }
@@ -2954,7 +3038,7 @@
         ],
         "additionalProperties": false
       },
-      "ImportMockTrack": {
+      "ImportProviderTrack": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {

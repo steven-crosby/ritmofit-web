@@ -29,6 +29,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@ritmofit/music':
+        specifier: workspace:*
+        version: link:../../packages/music
       '@ritmofit/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -103,6 +106,19 @@ importers:
       vite:
         specifier: ^5.4.10
         version: 5.4.21
+
+  packages/music:
+    dependencies:
+      '@ritmofit/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
 
   packages/shared:
     dependencies:

@@ -83,9 +83,13 @@ export const trackSearchResultSchema = z.object({
 });
 export type TrackSearchResult = z.infer<typeof trackSearchResultSchema>;
 
-/** Import a search candidate into the caller's library, by provider reference. */
-export const importMockTrackSchema = z.object({
+/**
+ * Import a search candidate into the caller's library, by provider reference.
+ * Used by both the M2 `POST /providers/track-import` route and the M1 dev-only
+ * mock seam — one shape for both, since import is provider-agnostic.
+ */
+export const importProviderTrackSchema = z.object({
   provider: providerSchema,
   providerTrackId: z.string().min(1),
 });
-export type ImportMockTrack = z.infer<typeof importMockTrackSchema>;
+export type ImportProviderTrack = z.infer<typeof importProviderTrackSchema>;
