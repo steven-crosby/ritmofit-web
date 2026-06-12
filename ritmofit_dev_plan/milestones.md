@@ -91,8 +91,18 @@ Core builder first (these validate the product), teams/sharing last.
 >   users, other providers, or our own metadata. Retry-with-give-up; drain unit-tested via a fake store,
 >   SQL scoping verified against local D1. Cloudflare D1 + Worker now **provisioned** (remote D1
 >   migrated/seeded; Worker deployed with the cron).
-> - ⏭️ **Next** — provider-ID resolution / same-song matching; then Spotify + Apple Music behind the same
->   interface, and an optional third-party BPM provider.
+> - ✅ **Slice 5** — **provider-ID resolution / same-song matching**: import resolves a candidate against
+>   the caller's library before forging a track — exact `(provider, providerTrackId)` is idempotent;
+>   the same song from a different provider attaches its ID to the existing track (`lib/same-song.ts`,
+>   conservative normalized title+artist + duration tolerance, never double-attaches a provider).
+> - ✅ **Slice 6** — **Spotify + Apple Music behind the same `MusicProvider`**: client-credentials
+>   (Spotify, never BPM) and developer-token (Apple Music) adapters in `packages/music`, wired into the
+>   registry's mock fallback; `SPOTIFY_*` / `APPLE_MUSIC_*` env documented. Pure, unit-tested, behind the
+>   mock until creds land.
+> - ⏭️ **Next** — *(optional, deferred)* a third-party **BPM** provider for `display_bpm`. Requires
+>   choosing a specific service + verifying its terms (external dependency) — not stubbed speculatively;
+>   BPM stays manual until then. M2's integration surface (all three providers + resolution + compliance)
+>   is otherwise complete.
 
 - **SoundCloud first** (the differentiator): provider search feeding track creation; provider-ID
   resolution and the same-song matching problem; deep-link/hand-off playback via `provider_uri`.

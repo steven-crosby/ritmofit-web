@@ -85,12 +85,19 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
   + nulling `albumArtUrl` on the user's tracks — never touching other users, other providers, or our own
   metadata (title/artist/BPM/classes). Retry-with-give-up; orchestration unit-tested via a fake store,
   SQL scoping verified against local D1.
-- **Status:** code complete, `typecheck` (4 pkgs) + `lint` + `test` (78) green; slices 1–3 still
-  **behind the mock** — live SoundCloud calls need valid `SOUNDCLOUD_CLIENT_ID/SECRET` + a **registered
-  redirect URI**, and registration may be closed. Re-verify the `OAuth <token>` scheme + `/me/likes/tracks`
-  shape when creds land.
-- **Next (not started):** provider-ID resolution / same-song matching, then Spotify / Apple Music behind
-  the same `MusicProvider`, and an optional third-party BPM provider.
+- **Slice 5 — provider-ID resolution / same-song matching**: import resolves a candidate against the
+  caller's library before forging a track (`lib/same-song.ts`) — exact `(provider, providerTrackId)` is
+  idempotent; the same song from a different provider attaches its ID to the existing track. Conservative
+  fuzzy match (normalized title+artist + duration tolerance, never double-attaches a provider).
+- **Slice 6 — Spotify + Apple Music behind the same `MusicProvider`**: `packages/music/spotify.ts`
+  (client-credentials, **never** BPM) + `apple-music.ts` (developer-token catalog search) drop in behind
+  the registry's mock fallback; `SPOTIFY_*` / `APPLE_MUSIC_*` env documented. Pure, network-injectable,
+  unit-tested.
+- **Status:** code complete, `typecheck` (4 pkgs) + `lint` + `test` (104) green. Live provider calls
+  (SoundCloud/Spotify/Apple Music) are still **behind the mock** until real creds land — re-verify each
+  provider's endpoints/auth-header scheme then. The optional third-party **BPM** provider is deliberately
+  deferred (needs a chosen service + terms verification); BPM stays manual.
+- **Next:** **M3 (live mode)** — cue prompter, interval timers, run-payload hardening — **in progress**.
 
-M1's per-step branches and `main` are on GitHub; M2 slices 1–3 are merged to `main`. The Cloudflare
-provisioning + slice 4 are on a working branch (not yet merged). **M3 (live mode) has not started.**
+M1's per-step branches and `main` are on GitHub; M2 slices 1–3 are merged to `main`. Cloudflare
+provisioning + M2 slices 4–6 are on a working branch (not yet merged).
