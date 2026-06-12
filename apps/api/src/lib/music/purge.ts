@@ -15,7 +15,7 @@
  * testable without a database, mirroring how slice 3 split adapter from
  * orchestration.
  */
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, notExists, sql } from 'drizzle-orm';
 import type { Provider } from '@ritmofit/shared';
 import type { Db } from '../db.js';
 import { tracks, trackProviderIds, providerPurgeQueue } from '../../db/schema.js';
@@ -133,38 +133,39 @@ export function createD1PurgeStore(db: Db): PurgeStore {
       const trackIds = [...new Set(affected.map((r) => r.id))];
       if (trackIds.length === 0) return { tracksCleared: 0, refsDeleted: 0 };
 
-      const deleted = await db
+      // Delete the provider refs AND clear now-orphaned album art in ONE atomic
+      // batch (a D1 transaction). Doing them as separate statements left a window
+      // where a crash after the delete stranded album art forever — on retry the
+      // affected-tracks query (which joins the now-deleted refs) found nothing and
+      // skipped the clear. The album-art UPDATE uses a correlated `NOT EXISTS` so
+      // it self-determines orphans from the post-delete state within the same
+      // transaction — no intermediate read, no partial-failure gap. We only clear
+      // art on tracks left with NO provider ref at all (a track still carrying
+      // another connected provider keeps its art, which may have come from it).
+      const deleteRefs = db
         .delete(trackProviderIds)
         .where(
           and(eq(trackProviderIds.provider, provider), inArray(trackProviderIds.trackId, trackIds)),
-        )
-        .run();
+        );
+      const clearArt = db
+        .update(tracks)
+        .set({ albumArtUrl: null, updatedAt: Date.now() })
+        .where(
+          and(
+            inArray(tracks.id, trackIds),
+            notExists(
+              db
+                .select({ one: sql`1` })
+                .from(trackProviderIds)
+                .where(eq(trackProviderIds.trackId, tracks.id)),
+            ),
+          ),
+        );
 
-      // Only clear album art on tracks left with NO provider ref at all — a track
-      // that still carries another (still-connected) provider keeps its art, which
-      // may have come from that provider. Re-query after the delete.
-      const stillReferenced = new Set(
-        (
-          await db
-            .select({ trackId: trackProviderIds.trackId })
-            .from(trackProviderIds)
-            .where(inArray(trackProviderIds.trackId, trackIds))
-            .all()
-        ).map((r) => r.trackId),
-      );
-      const orphaned = trackIds.filter((id) => !stillReferenced.has(id));
-
-      let cleared = 0;
-      if (orphaned.length > 0) {
-        const res = await db
-          .update(tracks)
-          .set({ albumArtUrl: null, updatedAt: Date.now() })
-          .where(inArray(tracks.id, orphaned))
-          .run();
-        cleared = res.meta.changes ?? orphaned.length;
-      }
-
-      return { tracksCleared: cleared, refsDeleted: deleted.meta.changes ?? 0 };
+      const [delRes, updRes] = await db.batch([deleteRefs, clearArt]);
+      const changes = (r: unknown) =>
+        (r as { meta?: { changes?: number } } | undefined)?.meta?.changes ?? 0;
+      return { tracksCleared: changes(updRes), refsDeleted: changes(delRes) };
     },
 
     async removeQueueItem(id) {

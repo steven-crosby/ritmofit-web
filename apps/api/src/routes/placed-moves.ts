@@ -13,6 +13,8 @@ import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { requireClassTrackAccess, requireClassTrackMoveAccess } from '../lib/authz.js';
+import { assertAnchorWithinTrack } from '../lib/anchor.js';
+import { buildPatch } from '../lib/patch.js';
 import { HttpError } from '../lib/errors.js';
 import { serializeClassTrackMove } from '../lib/serialize.js';
 import { classTrackMoves, moves, userMoves } from '../db/schema.js';
@@ -69,6 +71,7 @@ placedMoveRoutes.post('/class-tracks/:id/moves', async (c) => {
   const moveId = body.moveId ?? null;
   const userMoveId = body.userMoveId ?? null;
   await assertValidMoveRefs(db, me, moveId, userMoveId);
+  await assertAnchorWithinTrack(db, classTrackId, body.anchorMs);
 
   const now = Date.now();
   const row = {
@@ -91,7 +94,7 @@ placedMoveRoutes.patch('/class-track-moves/:id', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
   const me = c.get('userId');
-  await requireClassTrackMoveAccess(db, me, id, 'edit');
+  const { classTrackId } = await requireClassTrackMoveAccess(db, me, id, 'edit');
   const body = updateClassTrackMoveSchema.parse(await c.req.json());
 
   const existing = await db.select().from(classTrackMoves).where(eq(classTrackMoves.id, id)).get();
@@ -106,11 +109,9 @@ placedMoveRoutes.patch('/class-track-moves/:id', async (c) => {
   };
   placeClassTrackMoveSchema.parse(merged);
   await assertValidMoveRefs(db, me, merged.moveId, merged.userMoveId);
+  await assertAnchorWithinTrack(db, classTrackId, merged.anchorMs);
 
-  await db
-    .update(classTrackMoves)
-    .set({ ...merged, updatedAt: Date.now() })
-    .where(eq(classTrackMoves.id, id));
+  await db.update(classTrackMoves).set(buildPatch(merged)).where(eq(classTrackMoves.id, id));
   const row = await db.select().from(classTrackMoves).where(eq(classTrackMoves.id, id)).get();
   return c.json(serializeClassTrackMove(row!));
 });

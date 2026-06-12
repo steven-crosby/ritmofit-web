@@ -154,6 +154,13 @@ export const trackProviderIds = sqliteTable(
     trackId: text('track_id')
       .notNull()
       .references(() => tracks.id, { onDelete: 'cascade' }),
+    // Denormalized owner (== the parent track's owner) so provider-id uniqueness
+    // can be scoped PER USER. Tracks are a per-user library (D4): the same provider
+    // track may legitimately exist in many users' libraries, so a global unique on
+    // (provider, provider_track_id) would 409 the second importer of any song.
+    ownerUserId: text('owner_user_id')
+      .notNull()
+      .references(() => users.id),
     provider: text('provider', { enum: providerValues }).notNull(),
     providerTrackId: text('provider_track_id').notNull(),
     providerUri: text('provider_uri'),
@@ -161,7 +168,11 @@ export const trackProviderIds = sqliteTable(
   },
   (t) => [
     enumCheck('track_provider_ids_provider_check', t.provider, providerValues),
-    uniqueIndex('track_provider_ids_provider_id_unique').on(t.provider, t.providerTrackId),
+    uniqueIndex('track_provider_ids_owner_provider_id_unique').on(
+      t.ownerUserId,
+      t.provider,
+      t.providerTrackId,
+    ),
   ],
 );
 

@@ -27,12 +27,32 @@ describe('normalizeBpm', () => {
 });
 
 describe('createGetSongBpmProvider.lookup', () => {
-  it('reads the tempo off the first match', async () => {
-    const { fetchImpl, calls } = fakeFetch({ search: [{ tempo: '124' }, { tempo: '130' }] });
+  it('reads the tempo off the result whose title/artist matches the query', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      search: [
+        { tempo: '99', song_title: 'Something Else', artist: { name: 'Nobody' } },
+        { tempo: '124', song_title: 'Levels', artist: { name: 'Avicii' } },
+      ],
+    });
     const provider = createGetSongBpmProvider({ apiKey: 'k', fetchImpl, apiBase: 'https://bpm.test' });
+    // NOT the first row (99) — the matching one (124).
     expect(await provider.lookup({ title: 'Levels', artist: 'Avicii' })).toBe(124);
     expect(calls[0]).toContain('https://bpm.test/search/');
     expect(calls[0]).toContain('api_key=k');
+  });
+
+  it('returns null rather than a wrong-song tempo when no result matches the title', async () => {
+    // A common failure mode: search returns a different song with a tempo. Picking
+    // it would write a misleading BPM, so an unmatched title yields no BPM.
+    const { fetchImpl } = fakeFetch({ search: [{ tempo: '124', song_title: 'A Different Song', artist: { name: 'Someone' } }] });
+    const provider = createGetSongBpmProvider({ apiKey: 'k', fetchImpl, apiBase: 'https://bpm.test' });
+    expect(await provider.lookup({ title: 'Levels', artist: 'Avicii' })).toBeNull();
+  });
+
+  it('accepts a unique title hit even when the artist differs', async () => {
+    const { fetchImpl } = fakeFetch({ search: [{ tempo: '124', song_title: 'Levels', artist: { name: 'Avici' } }] });
+    const provider = createGetSongBpmProvider({ apiKey: 'k', fetchImpl, apiBase: 'https://bpm.test' });
+    expect(await provider.lookup({ title: 'Levels', artist: 'Avicii' })).toBe(124);
   });
 
   it('returns null when the service reports no result (error object)', async () => {

@@ -139,22 +139,21 @@ export async function listVisibleClasses(
   db: Db,
   userId: string,
 ): Promise<Map<string, AccessLevel>> {
-  const owned = await db
-    .select({ id: classes.id })
-    .from(classes)
-    .where(eq(classes.ownerUserId, userId))
-    .all();
-  const direct = await db
-    .select({ id: shares.resourceId, permission: shares.permission })
-    .from(shares)
-    .where(and(eq(shares.resourceType, 'class'), eq(shares.targetUserId, userId)))
-    .all();
-  const viaTeam = await db
-    .select({ id: shares.resourceId, permission: shares.permission })
-    .from(shares)
-    .innerJoin(teamMemberships, eq(teamMemberships.teamId, shares.targetTeamId))
-    .where(and(eq(shares.resourceType, 'class'), eq(teamMemberships.userId, userId)))
-    .all();
+  // The three union arms are independent — run them in one round-trip wave.
+  const [owned, direct, viaTeam] = await Promise.all([
+    db.select({ id: classes.id }).from(classes).where(eq(classes.ownerUserId, userId)).all(),
+    db
+      .select({ id: shares.resourceId, permission: shares.permission })
+      .from(shares)
+      .where(and(eq(shares.resourceType, 'class'), eq(shares.targetUserId, userId)))
+      .all(),
+    db
+      .select({ id: shares.resourceId, permission: shares.permission })
+      .from(shares)
+      .innerJoin(teamMemberships, eq(teamMemberships.teamId, shares.targetTeamId))
+      .where(and(eq(shares.resourceType, 'class'), eq(teamMemberships.userId, userId)))
+      .all(),
+  ]);
 
   const levelById = new Map<string, AccessLevel>();
   const bump = (id: string, level: AccessLevel) => {

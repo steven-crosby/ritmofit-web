@@ -9,6 +9,8 @@ import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { requireClassTrackAccess, requireCueAccess } from '../lib/authz.js';
+import { assertAnchorWithinTrack } from '../lib/anchor.js';
+import { buildPatch } from '../lib/patch.js';
 import { serializeCue } from '../lib/serialize.js';
 import { cues } from '../db/schema.js';
 
@@ -35,6 +37,7 @@ cueRoutes.post('/class-tracks/:id/cues', async (c) => {
   const classTrackId = c.req.param('id');
   await requireClassTrackAccess(db, c.get('userId'), classTrackId, 'edit');
   const body = createCueSchema.parse(await c.req.json());
+  await assertAnchorWithinTrack(db, classTrackId, body.anchorMs);
 
   const now = Date.now();
   const row = {
@@ -56,17 +59,11 @@ cueRoutes.post('/class-tracks/:id/cues', async (c) => {
 cueRoutes.patch('/cues/:id', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
-  await requireCueAccess(db, c.get('userId'), id, 'edit');
+  const { classTrackId } = await requireCueAccess(db, c.get('userId'), id, 'edit');
   const body = updateCueSchema.parse(await c.req.json());
+  if ('anchorMs' in body) await assertAnchorWithinTrack(db, classTrackId, body.anchorMs!);
 
-  const patch: Record<string, unknown> = { updatedAt: Date.now() };
-  if ('anchorMs' in body) patch.anchorMs = body.anchorMs;
-  if ('beat' in body) patch.beat = body.beat ?? null;
-  if ('bar' in body) patch.bar = body.bar ?? null;
-  if ('text' in body) patch.text = body.text;
-  if ('color' in body) patch.color = body.color ?? null;
-
-  await db.update(cues).set(patch).where(eq(cues.id, id));
+  await db.update(cues).set(buildPatch(body)).where(eq(cues.id, id));
   const row = await db.select().from(cues).where(eq(cues.id, id)).get();
   return c.json(serializeCue(row!));
 });

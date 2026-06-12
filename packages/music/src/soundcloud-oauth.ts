@@ -13,6 +13,7 @@
  */
 import { z } from 'zod';
 import type { FetchLike } from './provider.js';
+import { readJson, parseProvider } from './errors.js';
 
 // Available in Workers and Node ≥18 (vitest). Declared so the package needs no
 // DOM/Workers ambient lib.
@@ -73,7 +74,7 @@ async function postToken(
   if (!res.ok) {
     throw new Error(`SoundCloud token endpoint returned ${res.status}`);
   }
-  const t = tokenResponseSchema.parse(await res.json());
+  const t = parseProvider(tokenResponseSchema, await readJson(res, 'soundcloud'), 'soundcloud');
   return {
     accessToken: t.access_token,
     refreshToken: t.refresh_token ?? null,

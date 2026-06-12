@@ -20,14 +20,11 @@
 import { trackSearchResultSchema, type TrackSearchResult } from '@ritmofit/shared';
 import { z } from 'zod';
 import type { FetchLike, MusicProvider } from './provider.js';
-
-// `btoa` is available in both the Workers runtime and Node ≥18 (vitest). Declared
-// here so the package needs no DOM/Workers ambient lib.
-declare const btoa: (data: string) => string;
+import { readJson } from './errors.js';
+import { AppTokenCache } from './app-token.js';
 
 const DEFAULT_API_BASE = 'https://api.soundcloud.com';
 const DEFAULT_TOKEN_URL = 'https://secure.soundcloud.com/oauth/token';
-const TOKEN_SKEW_MS = 30_000; // refresh a bit early to avoid edge-of-expiry 401s
 const SEARCH_LIMIT = 25;
 const LIKES_LIMIT = 50;
 
@@ -42,12 +39,6 @@ export interface SoundCloudConfig {
   /** Clock seam for token-expiry tests. */
   now?: () => number;
 }
-
-/** SoundCloud's token response (we read only what we need). */
-const tokenResponseSchema = z.object({
-  access_token: z.string().min(1),
-  expires_in: z.number().optional(),
-});
 
 /** One SoundCloud track (permissive — unknown fields are ignored). */
 const scTrackSchema = z.object({
@@ -74,22 +65,21 @@ export function createSoundCloudProvider(config: SoundCloudConfig): MusicProvide
 class SoundCloudProvider implements MusicProvider {
   readonly provider = 'soundcloud' as const;
 
-  private readonly clientId: string;
-  private readonly clientSecret: string;
   private readonly fetchImpl: FetchLike;
   private readonly apiBase: string;
-  private readonly tokenUrl: string;
-  private readonly now: () => number;
-
-  private cachedToken: { value: string; expiresAtMs: number } | null = null;
+  private readonly tokens: AppTokenCache;
 
   constructor(config: SoundCloudConfig) {
-    this.clientId = config.clientId;
-    this.clientSecret = config.clientSecret;
     this.fetchImpl = config.fetchImpl;
     this.apiBase = config.apiBase ?? DEFAULT_API_BASE;
-    this.tokenUrl = config.tokenUrl ?? DEFAULT_TOKEN_URL;
-    this.now = config.now ?? (() => Date.now());
+    this.tokens = new AppTokenCache({
+      provider: 'soundcloud',
+      clientId: config.clientId,
+      clientSecret: config.clientSecret,
+      tokenUrl: config.tokenUrl ?? DEFAULT_TOKEN_URL,
+      fetchImpl: config.fetchImpl,
+      now: config.now,
+    });
   }
 
   async search(query: string): Promise<TrackSearchResult[]> {
@@ -116,7 +106,7 @@ class SoundCloudProvider implements MusicProvider {
 
   /** GET against the API with a valid app token; throws on non-ok (except opt-in 404). */
   private async apiGet(path: string, opts?: { allow404: boolean }): Promise<unknown> {
-    const token = await this.appToken();
+    const token = await this.tokens.get();
     const res = await this.fetchImpl(`${this.apiBase}${path}`, {
       headers: { Authorization: `OAuth ${token}`, Accept: 'application/json' },
     });
@@ -124,31 +114,7 @@ class SoundCloudProvider implements MusicProvider {
     if (!res.ok) {
       throw new Error(`SoundCloud API ${res.status} for ${path}`);
     }
-    return res.json();
-  }
-
-  /** Client-credentials app token, cached in-isolate until shortly before expiry. */
-  private async appToken(): Promise<string> {
-    if (this.cachedToken && this.now() < this.cachedToken.expiresAtMs) {
-      return this.cachedToken.value;
-    }
-    const basic = btoa(`${this.clientId}:${this.clientSecret}`);
-    const res = await this.fetchImpl(this.tokenUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${basic}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Accept: 'application/json',
-      },
-      body: 'grant_type=client_credentials',
-    });
-    if (!res.ok) {
-      throw new Error(`SoundCloud token request failed (${res.status})`);
-    }
-    const token = tokenResponseSchema.parse(await res.json());
-    const ttlMs = (token.expires_in ?? 3600) * 1000;
-    this.cachedToken = { value: token.access_token, expiresAtMs: this.now() + ttlMs - TOKEN_SKEW_MS };
-    return token.access_token;
+    return readJson(res, 'soundcloud');
   }
 }
 
@@ -186,7 +152,7 @@ export async function fetchSoundCloudLikes(cfg: {
   });
   if (res.status === 401) throw new SoundCloudUnauthorizedError();
   if (!res.ok) throw new Error(`SoundCloud API ${res.status} for /me/likes/tracks`);
-  const parsed = scSearchSchema.safeParse(await res.json());
+  const parsed = scSearchSchema.safeParse(await readJson(res, 'soundcloud'));
   if (!parsed.success) return [];
   const raw = Array.isArray(parsed.data) ? parsed.data : parsed.data.collection;
   return raw.map((item) => toCandidate(item)).filter((r): r is TrackSearchResult => r !== null);

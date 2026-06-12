@@ -58,20 +58,25 @@ export async function fetchUserLikes(
   }
 
   // Proactively refresh an access token that's expired (or about to).
-  let accessToken =
-    conn.expiresAt !== null && Date.now() > conn.expiresAt - EXPIRY_SKEW_MS
-      ? await refreshAndPersist(db, key, creds, conn)
-      : await decryptSecret(conn.accessTokenEncrypted, key);
+  const expired = conn.expiresAt !== null && Date.now() > conn.expiresAt - EXPIRY_SKEW_MS;
+  let refreshed = expired;
+  let accessToken = expired
+    ? await refreshAndPersist(db, key, creds, conn)
+    : await decryptSecret(conn.accessTokenEncrypted, key);
 
   try {
     return await fetchSoundCloudLikes({ accessToken, fetchImpl: fetch });
   } catch (err) {
-    // The provider may still reject a token we believed valid — refresh once.
-    if (err instanceof SoundCloudUnauthorizedError && conn.refreshTokenEncrypted) {
-      accessToken = await refreshAndPersist(db, key, creds, conn);
-      return await fetchSoundCloudLikes({ accessToken, fetchImpl: fetch });
+    if (!(err instanceof SoundCloudUnauthorizedError)) throw err;
+    // The provider rejected the token. If we already refreshed once this request,
+    // the grant is dead (and `conn` now holds a SPENT refresh token — re-refreshing
+    // would replay it) → ask the user to reconnect. Otherwise refresh once and retry.
+    if (refreshed || !conn.refreshTokenEncrypted) {
+      throw new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your SoundCloud account.');
     }
-    throw err;
+    refreshed = true;
+    accessToken = await refreshAndPersist(db, key, creds, conn);
+    return await fetchSoundCloudLikes({ accessToken, fetchImpl: fetch });
   }
 }
 

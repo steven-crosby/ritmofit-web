@@ -16,6 +16,7 @@
 import { trackSearchResultSchema, type TrackSearchResult } from '@ritmofit/shared';
 import { z } from 'zod';
 import type { FetchLike, MusicProvider } from './provider.js';
+import { readJson } from './errors.js';
 
 const DEFAULT_API_BASE = 'https://api.music.apple.com/v1';
 const DEFAULT_STOREFRONT = 'us';
@@ -111,7 +112,7 @@ class AppleMusicProvider implements MusicProvider {
       headers: { Authorization: `Bearer ${this.developerToken}` },
     });
     if (!res.ok) throw new Error(`Apple Music request failed: ${res.status}`);
-    return res.json();
+    return readJson(res, 'apple_music');
   }
 }
 

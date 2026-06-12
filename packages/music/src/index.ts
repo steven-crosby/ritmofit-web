@@ -6,6 +6,7 @@
  * never touches the DB or app auth. SoundCloud is first (music-providers.md).
  */
 export type { MusicProvider, FetchLike } from './provider.js';
+export { ProviderError } from './errors.js';
 export {
   createSoundCloudProvider,
   fetchSoundCloudLikes,

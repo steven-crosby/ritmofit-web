@@ -22,3 +22,19 @@ export function soundcloudCreds(env: Env): { clientId: string; clientSecret: str
   }
   return { clientId: env.SOUNDCLOUD_CLIENT_ID, clientSecret: env.SOUNDCLOUD_CLIENT_SECRET };
 }
+
+/** Spotify app credentials (confidential client), or 503 when unconfigured. */
+export function spotifyCreds(env: Env): { clientId: string; clientSecret: string } {
+  if (!env.SPOTIFY_CLIENT_ID || !env.SPOTIFY_CLIENT_SECRET) {
+    throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Spotify is not configured.');
+  }
+  return { clientId: env.SPOTIFY_CLIENT_ID, clientSecret: env.SPOTIFY_CLIENT_SECRET };
+}
+
+/** Apple Music developer-token config, or 503 when unconfigured. */
+export function appleMusicCreds(env: Env): { developerToken: string; storefront?: string } {
+  if (!env.APPLE_MUSIC_DEVELOPER_TOKEN) {
+    throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Apple Music is not configured.');
+  }
+  return { developerToken: env.APPLE_MUSIC_DEVELOPER_TOKEN, storefront: env.APPLE_MUSIC_STOREFRONT };
+}
