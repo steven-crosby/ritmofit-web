@@ -18,7 +18,8 @@
  */
 import { and, eq, or } from 'drizzle-orm';
 import { accessLevelValues, type AccessLevel, type SharePermission } from '@ritmofit/shared';
-import { classes, shares, teamMemberships } from '../db/schema.js';
+import { classes, classTracks, shares, teamMemberships } from '../db/schema.js';
+import { HttpError } from './errors.js';
 import type { Db } from './db.js';
 
 /** Minimum access an operation needs; `'none'` is never a valid requirement. */
@@ -29,14 +30,10 @@ export type MinAccessLevel = Exclude<AccessLevel, 'none'>;
  * (hide the resource's existence); `403` when they can see it but lack the level
  * the operation needs (`conventions.md`, `api.md`).
  */
-export class AccessError extends Error {
-  readonly status: 403 | 404;
-  readonly code: 'FORBIDDEN' | 'NOT_FOUND';
+export class AccessError extends HttpError {
   constructor(status: 403 | 404, code: 'FORBIDDEN' | 'NOT_FOUND', message: string) {
-    super(message);
+    super(status, code, message);
     this.name = 'AccessError';
-    this.status = status;
-    this.code = code;
   }
 }
 
@@ -55,7 +52,7 @@ export interface AuthzStore {
 }
 
 /** Rank of an access level (ascending); higher rank ⇒ more access. */
-function rankOf(level: AccessLevel): number {
+export function accessRank(level: AccessLevel): number {
   return accessLevelValues.indexOf(level);
 }
 
@@ -85,7 +82,7 @@ export async function resolveAccess(
  * insufficient". Pure — unit-tested directly.
  */
 export function assertAccess(level: AccessLevel, minLevel: MinAccessLevel): AccessLevel {
-  if (rankOf(level) >= rankOf(minLevel)) return level;
+  if (accessRank(level) >= accessRank(minLevel)) return level;
   if (level === 'none') {
     throw new AccessError(404, 'NOT_FOUND', 'Not found.');
   }
@@ -145,4 +142,26 @@ export async function requireAccess(
 ): Promise<AccessLevel> {
   const level = await resolveAccess(createDrizzleAuthzStore(db), userId, classId);
   return assertAccess(level, minLevel);
+}
+
+/**
+ * Resolve the `class_track → class` parent chain and enforce access on that class
+ * (authorization.md: choreography/class_track resources carry no ACL of their own).
+ * 404s when the class_track doesn't exist — indistinguishable from "no access".
+ * Returns the parent class id so callers needn't re-query it.
+ */
+export async function requireClassTrackAccess(
+  db: Db,
+  userId: string,
+  classTrackId: string,
+  minLevel: MinAccessLevel,
+): Promise<{ classId: string; level: AccessLevel }> {
+  const row = await db
+    .select({ classId: classTracks.classId })
+    .from(classTracks)
+    .where(eq(classTracks.id, classTrackId))
+    .get();
+  if (!row) throw new AccessError(404, 'NOT_FOUND', 'Not found.');
+  const level = await requireAccess(db, userId, row.classId, minLevel);
+  return { classId: row.classId, level };
 }

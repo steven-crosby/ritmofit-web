@@ -1,7 +1,31 @@
 /**
  * Boundary serializers: map Better Auth / Drizzle row shapes to the shared contract.
+ *
+ * Each serializer validates with the shared schema (`.parse`) so a drift between
+ * the DB and the contract fails loudly at the boundary rather than leaking out.
  */
-import { userSchema, type User } from '@ritmofit/shared';
+import {
+  userSchema,
+  classSchema,
+  classTrackSchema,
+  type User,
+  type Class,
+  type ClassTrack,
+} from '@ritmofit/shared';
+import type { classes, classTracks } from '../db/schema.js';
+
+type ClassRow = typeof classes.$inferSelect;
+type ClassTrackRow = typeof classTracks.$inferSelect;
+
+/** Map a `classes` row to the shared `Class`. Timestamps are plain ms integers. */
+export function serializeClass(row: ClassRow): Class {
+  return classSchema.parse(row);
+}
+
+/** Map a `class_tracks` row to the shared `ClassTrack`. */
+export function serializeClassTrack(row: ClassTrackRow): ClassTrack {
+  return classTrackSchema.parse(row);
+}
 
 /** Better Auth returns `Date`s (timestamp_ms columns); the wire format is epoch ms. */
 function toMs(value: Date | number): number {

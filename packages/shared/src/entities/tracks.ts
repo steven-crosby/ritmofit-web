@@ -22,6 +22,23 @@ export const trackSchema = z.object({
 });
 export type Track = z.infer<typeof trackSchema>;
 
+/**
+ * Request body to create a track. Server sets `id` / `ownerUserId` / timestamps.
+ * Used by the inline-create branch of `POST /classes/:id/tracks` (step 6) and
+ * reused verbatim by `POST /tracks` (step 8) — one shape for both entry points.
+ */
+export const createTrackSchema = trackSchema
+  .pick({
+    title: true,
+    artist: true,
+    albumArtUrl: true,
+    durationMs: true,
+    displayBpm: true,
+    isrc: true,
+  })
+  .partial({ albumArtUrl: true, durationMs: true, displayBpm: true, isrc: true });
+export type CreateTrack = z.infer<typeof createTrackSchema>;
+
 /** One row per provider for a track. Unique on (provider, providerTrackId). */
 export const trackProviderIdSchema = z.object({
   id: uuidSchema,

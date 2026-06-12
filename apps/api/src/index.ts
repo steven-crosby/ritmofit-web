@@ -1,20 +1,35 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { ZodError } from 'zod';
 import { API_VERSION } from '@ritmofit/shared';
 import type { AppEnv } from './lib/types.js';
 import { createAuth } from './lib/auth.js';
-import { AccessError } from './lib/authz.js';
+import { HttpError } from './lib/errors.js';
 import { authRoutes } from './routes/auth.js';
+import { classRoutes } from './routes/classes.js';
+import { classTrackRoutes } from './routes/class-tracks.js';
 
 export type { Env } from './lib/types.js';
 
 const app = new Hono<AppEnv>();
 
-// Map thrown errors to the standard `{ error: { code, message } }` envelope
-// (conventions.md) so routes can stay thin and let helpers like requireAccess throw.
+// Map thrown errors to the standard `{ error: { code, message, details? } }`
+// envelope (conventions.md) so routes stay thin and let helpers throw.
 app.onError((err, c) => {
-  if (err instanceof AccessError) {
+  if (err instanceof HttpError) {
     return c.json({ error: { code: err.code, message: err.message } }, err.status);
+  }
+  if (err instanceof ZodError) {
+    return c.json(
+      {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Request body failed validation.',
+          details: err.issues,
+        },
+      },
+      422,
+    );
   }
   console.error('Unhandled error:', err);
   return c.json(
@@ -54,5 +69,9 @@ api.get('/health', (c) =>
 );
 
 api.route('/auth', authRoutes);
+api.route('/classes', classRoutes);
+// Class-track routes use mixed bases (/classes/:id/tracks and /class-tracks/:id),
+// so they're mounted at the api root with full paths.
+api.route('/', classTrackRoutes);
 
 export default app;
