@@ -59,7 +59,10 @@
 - Branch per build-order step; PR back to main.
 
 ## CORS
-- Strict. Allow the production origin (`https://ritmofit.studio`) and local dev origins only.
+- Strict. The web SPA is served from `https://ritmofit.studio` (Pages); the API Worker is a **separate
+  origin** at `https://api.ritmofit.studio`. Allow only the production web origin
+  (`https://ritmofit.studio`) and local dev origins (Vite, e.g. `http://localhost:5173`) — credentials
+  enabled for the Better Auth session cookie.
 
 ## Logging
 - Never log tokens, refresh tokens, `Authorization` headers, cookies, provider secrets, or Apple

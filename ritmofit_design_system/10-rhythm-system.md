@@ -53,9 +53,22 @@ descent. We render that curve as a slim continuous area graph pinned along the t
   → a plasma kiss at peaks). Read it in grayscale and the shape still reads — the height carries it.
 - It is the single most *shareable* and most *RitmoFit* view in the product. An instructor can see — and
   screenshot — the shape of their class at a glance.
-- It is **derived from data you already have**: `class_tracks.intensity` + `anchor_ms`. No new schema
-  required to ship a first version. (Segment *banding* under the ribbon waits for `class_sections`.)
-- Editing a track's intensity reshapes the ribbon live. The ribbon *is* the choreography summary.
+- It is **derived from data you already have** — no new schema to ship a first version. (Segment
+  *banding* under the ribbon waits for `class_sections`.) See the blend rule below.
+- Editing a track's intensity (or a placed move's) reshapes the ribbon live. The ribbon *is* the
+  choreography summary.
+
+**The blend rule (hybrid).** The ribbon has two inputs, both already in the schema:
+1. **Baseline** — each `class_track.intensity` gives one zone for the whole track, laid out along the
+   timeline by `position` (and the M1-derived `start_offset_ms`). A class with only per-track intensity
+   set renders as a clean **staircase**.
+2. **Refinement** — where a track has **placed moves** carrying intensity (`class_track_moves.intensity`
+   at `anchor_ms`), those points shape the curve *within* that track's span, so a single track can rise
+   and fall. Tracks with no placed-move intensity keep the flat baseline.
+
+Important: `anchor_ms` lives on **cues/placed-moves**, never on `class_tracks` — so the baseline is the
+per-track value and the intra-track detail comes from placements. Don't reach for a `class_tracks.anchor_ms`
+field; it doesn't exist. The ribbon is a path computed per edit, not per frame (see §7).
 
 ## 5. The one "drop"
 

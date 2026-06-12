@@ -56,6 +56,11 @@ addition and it earns its place by **scarcity**:
 > Discipline check: if plasma appears on a planning screen at rest, that's a bug. It lives in motion and
 > at the peak.
 
+> **Cue tagging:** `cues.color` is a free hex in the data model, but the **cue-color picker excludes the
+> plasma range** — instructors choose from copper / cyan / amber / ember / bone tags, not the reserved
+> peak accent. Rationing is enforced in the picker, not the column. (Example payloads must not show a
+> plasma cue color.)
+
 ## Intensity ramp (warm → hot → peak)
 
 The DB enum is fixed: `none / easy / mod / hard / all_out`. Display uses Zone labels. The ramp grows from

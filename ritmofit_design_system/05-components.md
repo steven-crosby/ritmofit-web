@@ -58,8 +58,10 @@ ribbon peaks — affect only, never the sole signal.
 ## IntensityRibbon (new — the energy arc)
 The class's intensity over time as a slim continuous area graph along the timeline. **Height encodes
 zone; gradient color reinforces** (copper → ember → plasma at peaks). Static (no per-frame animation);
-recomputed on edit. Derived from `class_tracks.intensity` + `anchor_ms` — ships without new schema. The
-most shareable view in the app. Full spec in [`10-rhythm-system.md`](./10-rhythm-system.md) §4.
+recomputed on edit. Derived **hybrid**: a per-track baseline from `class_tracks.intensity`, refined where
+placed moves carry `class_track_moves.intensity` at their `anchor_ms` — ships without new schema. (No
+`class_tracks.anchor_ms` field exists; see the blend rule in
+[`10-rhythm-system.md`](./10-rhythm-system.md) §4.) The most shareable view in the app.
 
 ## TempoPulse (new — behavior, not a box)
 A treatment, not a standalone widget: a keyframe loop whose duration is bound to `--rf-beat`, applied to

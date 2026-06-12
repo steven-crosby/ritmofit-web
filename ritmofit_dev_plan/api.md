@@ -29,7 +29,7 @@ surfaced in the generated OpenAPI spec.
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/auth/session` | Validate the Better Auth session, upsert the `users` row on first sight, return the canonical profile. Called once after login. |
+| POST | `/auth/session` | Validate the Better Auth session and return the canonical profile. Better Auth's adapter **creates** the `users` row; this route **reconciles our extra columns** (`display_name`, `image_url`) on first sight — it does not mint the identity. Called once after login. |
 
 (Better Auth's own sign-in/callback routes are mounted under `/api/auth/*` by the library.)
 
@@ -87,15 +87,21 @@ surfaced in the generated OpenAPI spec.
 
 ## **Tracks & provider IDs** (M1 core — hand-entered)
 
-In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
+In M1 these are hand-entered (no provider API calls). M2 adds search/resolution. Tracks are a
+**per-user library** (D4): creation sets `owner_user_id` = caller, and update/delete/attach are
+**owner-only** (a simple ownership check, *not* `requireAccess` — see `authorization.md`).
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/tracks` | Create a provider-agnostic track (title, artist, optional manual BPM). |
-| GET | `/tracks/:id` | Fetch a track with its provider IDs. |
-| PATCH | `/tracks/:id` | Update track fields (e.g. set/correct manual BPM). |
-| POST | `/tracks/:id/provider-ids` | Attach a provider ID (provider + providerTrackId + optional uri). |
-| DELETE | `/track-provider-ids/:id` | Remove a provider ID. |
+| POST | `/tracks` | Create a provider-agnostic track (title, artist, optional manual BPM). Owner = caller. |
+| GET | `/tracks/:id` | Fetch a track with its provider IDs (owner only). |
+| PATCH | `/tracks/:id` | Update track fields, e.g. set/correct manual BPM (owner only). |
+| POST | `/tracks/:id/provider-ids` | Attach a provider ID — provider + providerTrackId + optional uri (owner only). |
+| DELETE | `/track-provider-ids/:id` | Remove a provider ID (owner of the parent track only). |
+
+> `POST /classes/:id/tracks` may inline-create a track (per its body); the inline-create sets
+> `owner_user_id` = caller and uses the **same** shared Zod shape as `POST /tracks`. Referencing an
+> *existing* track in that route requires the caller to own it.
 
 ---
 
@@ -154,7 +160,7 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
         { "provider": "soundcloud", "providerTrackId": "…", "providerUri": "…" }
       ],
       "cues": [
-        { "anchorMs": 45000, "beat": null, "bar": null, "text": "Prepare for the drop", "color": "#FF2E88" }
+        { "anchorMs": 45000, "beat": null, "bar": null, "text": "Prepare for the drop", "color": "#3AC0D4" }
       ],
       "moves": [
         { "anchorMs": 30000, "name": "Climb", "intensity": "hard" }
@@ -166,6 +172,15 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
 
 The granular endpoints above remain the **edit** surface; run-payload is the read-optimized **live**
 contract — one fetch so the iOS app isn't composing the live view from a dozen calls on studio wifi.
+
+**Server-side resolution (the contract the clients depend on):**
+- **`displayBpm`** = `class_track.display_bpm_override ?? track.display_bpm` (the override wins; may be
+  `null` if neither is set — BPM is optional/manual in M1).
+- **move `name`** = `move.name ?? user_move.name ?? class_track_move.name_override` (resolve the library
+  reference; fall back to the freeform name). Exactly one source is set per placement.
+- **`startOffsetMs`** is **server-derived** in M1 (sequential, back-to-back from preceding `durationMs`);
+  clients treat it as read-only. See `schema.md` → `class_tracks`.
+- **`tracks`** are emitted in `position` order.
 
 ---
 

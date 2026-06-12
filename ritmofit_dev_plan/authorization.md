@@ -48,6 +48,25 @@ Where "a share grants user X":
 Choreography resources (`cues`, `class_track_moves`) and `class_tracks` carry no ACL of their own — the
 helper resolves the parent chain `cue/move → class_track → class` and applies the class's access level.
 
+## Non-class resources (owner-scoped, NOT `requireAccess`)
+
+`requireAccess` is the gate for **class-scoped** resources only. Some resources are owned directly by a
+user and have no class in their chain — they get a **simple ownership check**, not `requireAccess`:
+
+| Resource | Rule |
+|---|---|
+| `tracks`, `track_provider_ids` | Per-user library (M1, D4). Read/update/delete require `track.owner_user_id == me`. Attaching a class_track that references a track also requires the caller to own that track. |
+| `user_moves` | The caller's custom language. Read/update/delete require `user_move.user_id == me`. |
+| `teams`, `team_memberships` | Membership management is governed by team role (see below), not by `requireAccess`. |
+
+These checks are small and local but still **mandatory** — D1 has no RLS, so an ownerless route is an
+open route. Keep them out of `requireAccess` so its contract stays "class access only" and doesn't blur.
+
+> **Team membership management** (add/remove members, etc.) is gated by `teams.owner_user_id` (the
+> authoritative owner) plus `team_memberships.role` for `admin`. This is **separate** from class access:
+> a team role never, by itself, grants access to a class — class access always derives from ownership +
+> shares, even when a class is shared *to* a team.
+
 ## The `GET /classes` union
 
 Listing visible classes is:

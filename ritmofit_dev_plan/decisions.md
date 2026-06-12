@@ -90,6 +90,13 @@ retrofit) even though provider *API calls* are M2.
 
 **Tradeoff:** More join complexity up front and a same-song matching problem later. Accepted.
 
+**M1 ownership (resolved in audit):** tracks are a **per-user library**, not global singletons — `tracks`
+carries `owner_user_id` and only the owner may edit a track. This avoids the multi-tenant footgun where
+one user editing a shared global track silently mutates another user's class. Because tracks are
+hand-entered in M1 with no provider IDs to match on, **duplicates across users are accepted**;
+**cross-user track identity / ISRC dedup is deferred to M2**, when provider IDs give a stable matching
+key. Provider-agnosticism is still modeled now (`track_provider_ids`); only *de-duplication* waits.
+
 ---
 
 ## D5 — Teams are many-to-many

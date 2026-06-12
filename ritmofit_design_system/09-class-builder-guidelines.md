@@ -29,8 +29,12 @@ view that makes RitmoFit feel like a rhythm tool instead of a track list.
 
 - **Height encodes zone**; gradient color (copper → ember → plasma at peaks) reinforces. Reads in
   grayscale (see [`07-accessibility.md`](./07-accessibility.md)).
-- Derived live from `class_tracks.intensity` + `anchor_ms` — **no new schema needed**. Editing a track's
-  intensity reshapes the ribbon immediately.
+- **Derived (hybrid), no new schema:** the **baseline** is each track's `class_tracks.intensity`,
+  positioned along the timeline by `position` / derived `start_offset_ms`; where **placed moves** carry
+  their own intensity (`class_track_moves.intensity` at `anchor_ms`), the curve is **refined** within
+  that track. (Note: `anchor_ms` lives on cues/placed-moves, *not* on `class_tracks` — the baseline
+  comes from the per-track value, the detail from the placements.) Editing either reshapes the ribbon
+  immediately.
 - It's the most shareable artifact in the product: an instructor can see and screenshot the *shape* of
   their class. Full spec: [`10-rhythm-system.md`](./10-rhythm-system.md) §4.
 
@@ -63,7 +67,8 @@ workflow, overall simplicity — all kept.
 Reflect the schema: **cues** and **moves** are distinct, both anchored to a `class_track` by `anchor_ms`
 (+ optional beat/bar). On the timeline they get **distinct shapes/icons**, not just colors. The detail
 editor edits them in separate sections. (Beat-snapping of `anchor_ms` is a flagged future extension of the
-tempo system — not v1.)
+tempo system — not v1.) The cue-color picker draws from the tag palette and **excludes the plasma range**
+(see [`02-color-system.md`](./02-color-system.md)) — plasma stays rationed to peak affect.
 
 ## Intensity in context
 Zone display (Zone 1–4 + None; Build/Push/Attack/All Out) backed by the fixed enum. Zone number + bars +
