@@ -20,6 +20,7 @@ import { serializeClassTrack } from '../lib/serialize.js';
 import { resequence } from '../lib/sequencing.js';
 import { buildPatch } from '../lib/patch.js';
 import { makeMatchKey } from '../lib/same-song.js';
+import { resolveCopiedTrack, refsToClone, providerRefKey, remapPlacedMoveForCaller } from '../lib/copy-class-track.js';
 import { userMoves, classTracks, tracks, trackProviderIds, cues, classTrackMoves } from '../db/schema.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
@@ -211,44 +212,37 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
   const clones: unknown[] = [];
 
   // ── Resolve the track ──────────────────────────────────────────────────────
-  let resolvedTrackId = source.trackId;
   const sourceTrack = await db.select().from(tracks).where(eq(tracks.id, source.trackId)).get();
-  if (sourceTrack && sourceTrack.ownerUserId !== me) {
-    resolvedTrackId = crypto.randomUUID();
+  const { trackId: resolvedTrackId, cloneTrack } = resolveCopiedTrack({
+    sourceTrackId: source.trackId,
+    sourceTrackOwnerId: sourceTrack?.ownerUserId ?? null,
+    callerId: me,
+    newTrackId: crypto.randomUUID(),
+  });
+  if (cloneTrack && sourceTrack) {
     clones.push(
       db.insert(tracks).values({ ...sourceTrack, id: resolvedTrackId, ownerUserId: me, createdAt: now, updatedAt: now }),
     );
-    const srcRefs = await db
-      .select()
-      .from(trackProviderIds)
-      .where(eq(trackProviderIds.trackId, source.trackId))
-      .all();
-    if (srcRefs.length > 0) {
-      // Skip any provider ref the caller already owns — the owner-scoped unique
-      // index would reject it, and they already have that song anyway.
-      const mineKey = (provider: string, providerTrackId: string) => `${provider} ${providerTrackId}`;
-      const mine = new Set(
-        (
-          await db
-            .select({ provider: trackProviderIds.provider, providerTrackId: trackProviderIds.providerTrackId })
-            .from(trackProviderIds)
-            .where(eq(trackProviderIds.ownerUserId, me))
-            .all()
-        ).map((r) => mineKey(r.provider, r.providerTrackId)),
+    const [srcRefs, ownedKeys] = await Promise.all([
+      db.select().from(trackProviderIds).where(eq(trackProviderIds.trackId, source.trackId)).all(),
+      db
+        .select({ provider: trackProviderIds.provider, providerTrackId: trackProviderIds.providerTrackId })
+        .from(trackProviderIds)
+        .where(eq(trackProviderIds.ownerUserId, me))
+        .all(),
+    ]);
+    const owned = new Set(ownedKeys.map((r) => providerRefKey(r.provider, r.providerTrackId)));
+    for (const ref of refsToClone(srcRefs, owned)) {
+      clones.push(
+        db.insert(trackProviderIds).values({
+          ...ref,
+          id: crypto.randomUUID(),
+          trackId: resolvedTrackId,
+          ownerUserId: me,
+          createdAt: now,
+          updatedAt: now,
+        }),
       );
-      for (const ref of srcRefs) {
-        if (mine.has(mineKey(ref.provider, ref.providerTrackId))) continue;
-        clones.push(
-          db.insert(trackProviderIds).values({
-            ...ref,
-            id: crypto.randomUUID(),
-            trackId: resolvedTrackId,
-            ownerUserId: me,
-            createdAt: now,
-            updatedAt: now,
-          }),
-        );
-      }
     }
   }
 
@@ -263,20 +257,14 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
       .all();
     rows.forEach((r) => userMoveById.set(r.id, { userId: r.userId, name: r.name }));
   }
-  const remapMove = (move: (typeof sourceMoves)[number]) => {
-    let userMoveId = move.userMoveId;
-    let nameOverride = move.nameOverride;
-    if (userMoveId != null) {
-      const um = userMoveById.get(userMoveId);
-      if (!um || um.userId !== me) {
-        // Foreign user_move — snapshot its name (preserving the invariant: a
-        // placement keeps a name when it loses its library ref) and drop the ref.
-        nameOverride = nameOverride ?? um?.name ?? null;
-        userMoveId = null;
-      }
-    }
-    return { ...move, userMoveId, nameOverride, id: crypto.randomUUID(), classTrackId: newId, createdAt: now, updatedAt: now };
-  };
+  const remapMove = (move: (typeof sourceMoves)[number]) => ({
+    ...move,
+    ...remapPlacedMoveForCaller(move, me, userMoveById),
+    id: crypto.randomUUID(),
+    classTrackId: newId,
+    createdAt: now,
+    updatedAt: now,
+  });
 
   const statements = [
     ...clones,
