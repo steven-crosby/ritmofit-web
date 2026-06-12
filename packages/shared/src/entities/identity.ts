@@ -38,3 +38,30 @@ export const teamMembershipSchema = z.object({
   joinedAt: timestampMsSchema,
 });
 export type TeamMembership = z.infer<typeof teamMembershipSchema>;
+
+// ── Request / response variants (step 11 routes) ────────────────────────────
+
+/** Create a team. Server sets id / ownerUserId / timestamps and the owner membership. */
+export const createTeamSchema = teamSchema.pick({ name: true });
+export type CreateTeam = z.infer<typeof createTeamSchema>;
+
+/** A team plus the caller's role in it — the `GET /teams` list shape. */
+export const teamWithRoleSchema = teamSchema.extend({ role: teamRoleSchema });
+export type TeamWithRole = z.infer<typeof teamWithRoleSchema>;
+
+/** Add a member to a team. `role` defaults to `member` server-side. */
+export const addTeamMemberSchema = z.object({
+  userId: z.string().min(1),
+  role: teamRoleSchema.optional(),
+});
+export type AddTeamMember = z.infer<typeof addTeamMemberSchema>;
+
+/** A team member with their profile — the `GET /teams/:id/members` row shape. */
+export const teamMemberViewSchema = z.object({
+  userId: z.string().min(1),
+  role: teamRoleSchema,
+  joinedAt: timestampMsSchema,
+  displayName: z.string().nullable(),
+  email: z.email(),
+});
+export type TeamMemberView = z.infer<typeof teamMemberViewSchema>;

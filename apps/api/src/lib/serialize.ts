@@ -14,7 +14,11 @@ import {
   userMoveSchema,
   trackSchema,
   trackProviderIdSchema,
+  teamSchema,
+  shareSchema,
   type User,
+  type Team,
+  type Share,
   type Class,
   type ClassTrack,
   type Cue,
@@ -33,6 +37,8 @@ import type {
   userMoves,
   tracks,
   trackProviderIds,
+  teams,
+  shares,
 } from '../db/schema.js';
 
 type ClassRow = typeof classes.$inferSelect;
@@ -83,6 +89,19 @@ export function serializeTrack(row: TrackRow): Track {
 /** Map a `track_provider_ids` row to the shared `TrackProviderId`. */
 export function serializeTrackProviderId(row: TrackProviderIdRow): TrackProviderId {
   return trackProviderIdSchema.parse(row);
+}
+
+type TeamRow = typeof teams.$inferSelect;
+type ShareRow = typeof shares.$inferSelect;
+
+/** Map a `teams` row to the shared `Team`. */
+export function serializeTeam(row: TeamRow): Team {
+  return teamSchema.parse(row);
+}
+
+/** Map a `shares` row to the shared `Share`. */
+export function serializeShare(row: ShareRow): Share {
+  return shareSchema.parse(row);
 }
 
 /** Better Auth returns `Date`s (timestamp_ms columns); the wire format is epoch ms. */

@@ -13,6 +13,8 @@ import { placedMoveRoutes } from './routes/placed-moves.js';
 import { moveRoutes } from './routes/moves.js';
 import { trackRoutes } from './routes/tracks.js';
 import { mockRoutes } from './routes/mock.js';
+import { teamRoutes } from './routes/teams.js';
+import { shareRoutes } from './routes/shares.js';
 
 export type { Env } from './lib/types.js';
 
@@ -83,5 +85,7 @@ api.route('/', placedMoveRoutes);
 api.route('/', moveRoutes);
 api.route('/', trackRoutes);
 api.route('/', mockRoutes);
+api.route('/', teamRoutes);
+api.route('/', shareRoutes);
 
 export default app;
