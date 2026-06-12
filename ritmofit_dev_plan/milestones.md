@@ -84,8 +84,15 @@ Core builder first (these validate the product), teams/sharing last.
 >   SoundCloud") spends the stored `music_connections` token with on-demand **refresh** (proactive on
 >   expiry + reactive on a 401, rotated tokens re-encrypted and persisted). Pure `fetchSoundCloudLikes`
 >   adapter raises `SoundCloudUnauthorizedError` as the refresh signal; app owns decrypt/refresh/persist.
-> - ⏭️ **Next** — the deferred **7-day metadata-purge-on-disconnect** compliance work; provider-ID
->   resolution / same-song matching; then Spotify + Apple Music behind the same interface.
+> - ✅ **Slice 4** — **7-day metadata-purge-on-disconnect**: disconnect forgets tokens immediately *and*
+>   enqueues a `provider_purge_queue` row (migration `0002`); a daily Cloudflare **Cron Trigger** drains
+>   it (`scheduled()` → `drainPurgeQueue`, `lib/music/purge.ts`), stripping that provider's
+>   `track_provider_ids` + nulling album art on the **disconnecting user's** tracks only — never other
+>   users, other providers, or our own metadata. Retry-with-give-up; drain unit-tested via a fake store,
+>   SQL scoping verified against local D1. Cloudflare D1 + Worker now **provisioned** (remote D1
+>   migrated/seeded; Worker deployed with the cron).
+> - ⏭️ **Next** — provider-ID resolution / same-song matching; then Spotify + Apple Music behind the same
+>   interface, and an optional third-party BPM provider.
 
 - **SoundCloud first** (the differentiator): provider search feeding track creation; provider-ID
   resolution and the same-song matching problem; deep-link/hand-off playback via `provider_uri`.

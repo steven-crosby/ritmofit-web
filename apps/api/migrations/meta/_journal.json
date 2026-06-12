@@ -15,6 +15,13 @@
       "when": 1781239304407,
       "tag": "0001_freezing_jack_murdock",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781294439966,
+      "tag": "0002_skinny_ares",
+      "breakpoints": true
     }
   ]
 }

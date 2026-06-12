@@ -321,6 +321,29 @@ export const musicConnections = sqliteTable(
   ],
 );
 
+/**
+ * Disconnect leaves a 7-day duty to purge that provider's derived metadata
+ * (provider IDs/URIs, album art) from the user's tracks. The DELETE on
+ * `music_connections` forgets the tokens immediately (security); this queue
+ * defers the heavier metadata sweep so it runs out-of-band, durably, on a daily
+ * Cron Trigger (see `lib/music/purge.ts`). Rows are dropped once the purge for a
+ * (user, provider) succeeds. No FK to `music_connections` — the connection is
+ * already gone by the time we enqueue.
+ */
+export const providerPurgeQueue = sqliteTable(
+  'provider_purge_queue',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    provider: text('provider', { enum: providerValues }).notNull(),
+    requestedAt: integer('requested_at').notNull(),
+    attempts: integer('attempts').notNull().default(0),
+  },
+  (t) => [enumCheck('provider_purge_queue_provider_check', t.provider, providerValues)],
+);
+
 // ── Better Auth-managed tables ──────────────────────────────────────────────
 // Re-exported here so the Drizzle client and drizzle-kit see one combined schema.
 // `users` (above) is ours, extended for Better Auth; these three are managed by it.

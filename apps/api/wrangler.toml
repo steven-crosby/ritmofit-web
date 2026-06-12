@@ -17,5 +17,10 @@ database_name = "ritmofit"
 database_id = "5bf15d82-10f5-4d03-b96e-6b8358334fc5"
 migrations_dir = "migrations"
 
+# Daily sweep that drains the provider metadata-purge queue (disconnect
+# compliance — see src/lib/music/purge.ts). 03:17 UTC, off-peak.
+[triggers]
+crons = ["17 3 * * *"]
+
 [observability]
 enabled = true
