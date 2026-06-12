@@ -1,0 +1,99 @@
+# Milestones
+
+Each step follows the working agreement: **plan → confirm → code → summarize** (see
+`ai-working-rules.md`).
+
+## M1 — Auth + class/cue data model (current)
+
+**Schema-complete, routes-lean** (decision D9). The part fully under our control. **No music-provider
+API calls.** BPM and provider IDs are hand-entered.
+
+**Definition of done:** a logged-in user can create a class, add track references (typed in or via the
+mock-track seam), tag them with cues/moves/intensity, place them on a timeline, and fetch the whole
+thing as a versioned **run-payload** — all persisted through the backend so the same data would open on
+iOS. Teams/sharing exist in the schema and have working routes by end of M1, built *after* the core
+builder.
+
+### Build order
+
+Core builder first (these validate the product), teams/sharing last.
+
+1. **Monorepo scaffold** — pnpm workspace root, `tsconfig.base.json`, three packages
+   (`packages/shared`, `apps/api`, `apps/web`), shared lint/format config, `wrangler.toml` with a D1
+   binding, a Hono Worker with `GET /api/v1/health`.
+   - *Acceptance:* web runs via Vite locally; API runs via `wrangler dev`; `/health` returns ok; shared
+     package imports resolve.
+2. **`packages/shared`** — Zod schemas + inferred types for every entity in `schema.md`. The contract;
+   everything depends on it, so it's first.
+   - *Acceptance:* types import cleanly in both api and web; enums defined once.
+3. **Drizzle schema + first migration** (`apps/api/src/db/schema.ts`) — matches `schema.md`, including
+   the `shares` one-target CHECK, the `class_track_moves` at-most-one-reference rule, and unique
+   constraints. Seed the global `moves` library.
+   - *Acceptance:* `wrangler d1 migrations apply` runs locally; schema compiles; seed creates global
+     moves.
+4. **Better Auth wiring** — email/Apple/Google; `POST /auth/session` upserts the canonical `users` row
+   on first sight; session middleware resolves the user.
+   - *Acceptance:* a user can sign in locally; API identifies the current user; unauthenticated
+     requests are rejected.
+5. **Authorization helper** (`lib/authz.ts`) — `requireAccess` per `authorization.md`, **before** any
+   protected route. Unit-tested (including the union predicate).
+   - *Acceptance:* owner/edit/view/none resolve correctly in tests.
+6. **Class + class_track routes** — CRUD, reorder, copy-with-cues. Run through `requireAccess`.
+   - *Acceptance:* create a class; add/edit/remove class_tracks; reorder persists; copy duplicates cues
+     + moves.
+7. **Cue + move routes** — CRUD for `cues` and `class_track_moves`, anchored to class_track; moves
+   library + user-moves routes.
+   - *Acceptance:* add/edit/delete cues and placed moves; create a custom user move; picker can list
+     global + user moves.
+8. **Track + provider-id routes** — hand-entered track creation; attach/remove provider IDs.
+   - *Acceptance:* create a provider-agnostic track with manual BPM; attach a provider ID.
+9. **Mock-track seam** — a dev-only mock "search/import" path that creates tracks without any provider
+   API, so the builder is fully exercisable without credentials.
+   - *Acceptance:* the entire builder flow works end-to-end with zero provider keys present.
+10. **Run-payload endpoint** — `GET /classes/:id/run-payload`, versioned, assembled from the resolved
+    schema (class + ordered tracks + provider refs + cues + moves).
+    - *Acceptance:* one request returns everything to run a class; no client-only assumptions.
+11. **Team + membership + share routes** *(built last)* — many-to-many teams; share to user-or-team;
+    wire shares into the `GET /classes` union.
+    - *Acceptance:* create a team, add a member, share a class to a user and to a team; shared classes
+      appear in the recipient's `GET /classes`.
+12. **OpenAPI generation + web skeleton** — emit the spec from shared schemas; Vite/React + Better Auth
+    login + a thin typed API client; minimal UI proving login → create class → add a tagged track.
+    - *Acceptance:* OpenAPI spec generates; the end-to-end flow works in the browser.
+
+### Explicitly out of scope for M1
+- Any call to Spotify / Apple Music / SoundCloud APIs.
+- Third-party BPM lookup.
+- Live mode / cue-prompter playback.
+- Explore / featured feed.
+- Rich planning UI (drag-drop timeline, energy ribbon, waveform) — that's the design-system build,
+  layered on after the data flow works.
+- Segments / `class_sections` (design concept, not yet schema).
+
+---
+
+## M2 — Music-provider integration
+- **SoundCloud first** (the differentiator): provider search feeding track creation; provider-ID
+  resolution and the same-song matching problem; deep-link/hand-off playback via `provider_uri`.
+- Spotify and Apple Music behind the same provider interface (add `packages/music` here).
+- Optional third-party BPM provider to populate `display_bpm`.
+- Music-connection OAuth + encrypted token storage (`music_connections`, `ENCRYPTION_KEY`).
+- Re-verify each provider's current API terms before building (constraints in `music-providers.md`).
+
+## M3 — Live mode + iOS parity polish
+- Cue prompter in time with music (Cue-by-Cue / Full List / Landscape views).
+- Interval countdown timer; intensity readouts.
+- **Harden the run-payload** — stable versioned shape, correct duration/order, documented in
+  `packages/shared`. Revisit timeline beat-grid if the player needs it.
+
+## M4 — Explore / featured / sharing UX
+- Explore feed; eligibility to be featured.
+- Richer team-library and sharing UX on top of the M1 `shares` model.
+
+---
+
+## Cross-cutting reminders
+- Plan before code on every feature; wait for confirmation.
+- The three music constraints (`music-providers.md`) are inviolable across all milestones.
+- The shared package stays the single contract; don't fork entity shapes.
+- Every class-scoped route calls `requireAccess` — D1 has no RLS back-stop.
