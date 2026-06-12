@@ -29,6 +29,7 @@ const DEFAULT_API_BASE = 'https://api.soundcloud.com';
 const DEFAULT_TOKEN_URL = 'https://secure.soundcloud.com/oauth/token';
 const TOKEN_SKEW_MS = 30_000; // refresh a bit early to avoid edge-of-expiry 401s
 const SEARCH_LIMIT = 25;
+const LIKES_LIMIT = 50;
 
 export interface SoundCloudConfig {
   clientId: string;
@@ -149,6 +150,46 @@ class SoundCloudProvider implements MusicProvider {
     this.cachedToken = { value: token.access_token, expiresAtMs: this.now() + ttlMs - TOKEN_SKEW_MS };
     return token.access_token;
   }
+}
+
+/**
+ * Thrown when SoundCloud rejects a **user** token with 401 — the signal `apps/api`
+ * uses to refresh the stored token once and retry. (App-token calls inside the
+ * adapter never surface this; they re-mint on their own cache miss.)
+ */
+export class SoundCloudUnauthorizedError extends Error {
+  readonly status = 401 as const;
+  constructor() {
+    super('SoundCloud rejected the user token (401).');
+    this.name = 'SoundCloudUnauthorizedError';
+  }
+}
+
+/**
+ * Fetch the connected user's liked tracks with a **per-user** access token
+ * (`music_connections`), mapped to the shared contract — the "search my
+ * SoundCloud" surface. Stays a pure adapter: the caller owns the token's
+ * decryption, refresh, and persistence. Throws `SoundCloudUnauthorizedError` on
+ * 401 so the caller can refresh + retry; throws on any other non-ok.
+ */
+export async function fetchSoundCloudLikes(cfg: {
+  accessToken: string;
+  fetchImpl: FetchLike;
+  apiBase?: string;
+  limit?: number;
+}): Promise<TrackSearchResult[]> {
+  const base = cfg.apiBase ?? DEFAULT_API_BASE;
+  const limit = cfg.limit ?? LIKES_LIMIT;
+  const params = `limit=${limit}&linked_partitioning=true&access=playable`;
+  const res = await cfg.fetchImpl(`${base}/me/likes/tracks?${params}`, {
+    headers: { Authorization: `OAuth ${cfg.accessToken}`, Accept: 'application/json' },
+  });
+  if (res.status === 401) throw new SoundCloudUnauthorizedError();
+  if (!res.ok) throw new Error(`SoundCloud API ${res.status} for /me/likes/tracks`);
+  const parsed = scSearchSchema.safeParse(await res.json());
+  if (!parsed.success) return [];
+  const raw = Array.isArray(parsed.data) ? parsed.data : parsed.data.collection;
+  return raw.map((item) => toCandidate(item)).filter((r): r is TrackSearchResult => r !== null);
 }
 
 /** Map a raw SoundCloud track to a contract candidate, or null if it can't be one. */

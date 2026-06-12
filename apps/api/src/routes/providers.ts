@@ -7,8 +7,9 @@
  * (no `requireAccess` — that gate is for class resources). Imported tracks are
  * owner-scoped, exactly like hand-entered ones.
  *
- * Per-user provider OAuth (`music_connections`) is a later slice; public search
- * here uses a server-side app token held entirely inside the adapter.
+ * Public search/import here use a server-side **app token** held inside the
+ * adapter. The `/likes` route instead spends the caller's **per-user** OAuth token
+ * from `music_connections` (refreshed on demand) — "search my SoundCloud".
  */
 import { Hono } from 'hono';
 import {
@@ -21,6 +22,7 @@ import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { getMusicProvider } from '../lib/music/registry.js';
+import { fetchUserLikes } from '../lib/music/user-likes.js';
 import { importTrackFromCandidate } from '../lib/track-import.js';
 
 export const providerRoutes = new Hono<AppEnv>();
@@ -41,6 +43,14 @@ providerRoutes.get('/providers/:provider/search', async (c) => {
   const q = c.req.query('q') ?? '';
   const adapter = getMusicProvider(provider, c.env);
   const results: TrackSearchResult[] = await adapter.search(q);
+  return c.json(results);
+});
+
+/** GET /providers/:provider/likes — the caller's liked tracks (spends their token). */
+providerRoutes.get('/providers/:provider/likes', async (c) => {
+  const provider = parseProvider(c.req.param('provider'));
+  const db = createDb(c.env);
+  const results: TrackSearchResult[] = await fetchUserLikes(db, c.env, c.get('userId'), provider);
   return c.json(results);
 });
 

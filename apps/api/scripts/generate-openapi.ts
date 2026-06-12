@@ -214,6 +214,10 @@ const doc = {
       parameters: [{ name: 'provider', in: 'path', required: true, schema: { type: 'string', enum: ['spotify', 'apple_music', 'soundcloud'] } }],
       get: { summary: 'Search a music provider (M2; SoundCloud live, others mock/pending)', parameters: [{ name: 'q', in: 'query', required: false, schema: { type: 'string' } }], responses: { '200': arrayResp('TrackSearchResult', 'Candidates'), '501': { description: 'Provider not yet integrated' }, '503': { description: 'Provider not configured' } } },
     },
+    '/providers/{provider}/likes': {
+      parameters: [{ name: 'provider', in: 'path', required: true, schema: { type: 'string', enum: ['spotify', 'apple_music', 'soundcloud'] } }],
+      get: { summary: "List the caller's liked tracks (M2; spends their per-user OAuth token)", responses: { '200': arrayResp('TrackSearchResult', 'Liked tracks'), '409': { description: 'Not connected / reconnect required' }, '501': { description: 'Provider not yet integrated' }, '503': { description: 'Provider not configured' } } },
+    },
     '/providers/track-import': {
       post: { summary: 'Import a provider candidate into the library', requestBody: jsonBody('ImportProviderTrack'), responses: { '201': jsonResp('TrackWithProviderIds', 'Imported'), '404': { description: 'No such provider track' }, '409': { description: 'Already in a library' } } },
     },

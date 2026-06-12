@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { createSoundCloudProvider, type FetchLike } from '@ritmofit/music';
+import {
+  createSoundCloudProvider,
+  fetchSoundCloudLikes,
+  SoundCloudUnauthorizedError,
+  type FetchLike,
+} from '@ritmofit/music';
 
 /** A scripted fetch: route by URL, record calls, return canned JSON. */
 function fakeFetch(handlers: Record<string, unknown>) {
@@ -103,6 +108,46 @@ describe('SoundCloudProvider token handling', () => {
 
     const apiCall = calls.find((c) => c.url.startsWith(`${API_BASE}/tracks`));
     expect(apiCall?.init?.headers?.Authorization).toBe('OAuth tok-1');
+  });
+});
+
+describe('fetchSoundCloudLikes', () => {
+  /** A fetch that returns a fixed status/body and records the request. */
+  function statusFetch(status: number, body: unknown) {
+    const calls: { url: string; init?: Parameters<FetchLike>[1] }[] = [];
+    const fetchImpl: FetchLike = async (url, init) => {
+      calls.push({ url, init });
+      return { ok: status >= 200 && status < 300, status, json: async () => body, text: async () => '' };
+    };
+    return { fetchImpl, calls };
+  }
+
+  it('maps the liked tracks with the user token as OAuth auth', async () => {
+    const { fetchImpl, calls } = statusFetch(200, { collection: [SC_TRACK] });
+    const out = await fetchSoundCloudLikes({ accessToken: 'user-tok', fetchImpl, apiBase: API_BASE });
+
+    expect(out.map((t) => t.providerTrackId)).toEqual(['12345']);
+    expect(calls[0]?.url.startsWith(`${API_BASE}/me/likes/tracks`)).toBe(true);
+    expect(calls[0]?.init?.headers?.Authorization).toBe('OAuth user-tok');
+  });
+
+  it('accepts a bare-array likes response', async () => {
+    const { fetchImpl } = statusFetch(200, [SC_TRACK]);
+    expect((await fetchSoundCloudLikes({ accessToken: 't', fetchImpl, apiBase: API_BASE })).length).toBe(1);
+  });
+
+  it('throws SoundCloudUnauthorizedError on 401 (the refresh signal)', async () => {
+    const { fetchImpl } = statusFetch(401, {});
+    await expect(
+      fetchSoundCloudLikes({ accessToken: 'stale', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toBeInstanceOf(SoundCloudUnauthorizedError);
+  });
+
+  it('throws a generic error on other non-ok responses', async () => {
+    const { fetchImpl } = statusFetch(500, {});
+    await expect(
+      fetchSoundCloudLikes({ accessToken: 't', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toThrow(/500/);
   });
 });
 

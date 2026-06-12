@@ -64,18 +64,24 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
 **M2 in progress** (music providers, SoundCloud first) — see `ritmofit_dev_plan/milestones.md` and
 `music-providers.md`. New package `packages/music` holds the provider adapters.
 
-- **Slice 1 — provider search → track creation** (PR #1, `feat/m2-step1-soundcloud-search`): a
-  `MusicProvider` abstraction + server-side SoundCloud `client_credentials` adapter behind a registry
-  that falls back to the mock catalog. Routes: `GET /providers/:provider/search`,
-  `POST /providers/track-import`.
-- **Slice 2 — per-user OAuth + encrypted `music_connections`** (PR #2, `feat/m2-step2-provider-oauth`,
-  stacked on slice 1): Authorization Code + PKCE connect/callback/list/disconnect; AES-GCM token
-  encryption (`lib/crypto.ts`); PKCE (`lib/pkce.ts`). No migration (table pre-existed).
-- **Status of both:** code complete, `typecheck` + `test` (68) green; **behind the mock** — live
-  SoundCloud calls need valid `SOUNDCLOUD_CLIENT_ID/SECRET` + a **registered redirect URI**, and
-  registration may be closed. Re-verify the `OAuth <token>` auth-header scheme when creds land.
-- **Next (not started):** consume the user token (e.g. "search my SoundCloud likes" / token refresh
-  wired in), then the deferred **7-day metadata-purge-on-disconnect** compliance slice. Then Spotify /
-  Apple Music behind the same `MusicProvider`, and an optional third-party BPM provider.
+- **Slice 1 — provider search → track creation** (PR #1, merged): a `MusicProvider` abstraction +
+  server-side SoundCloud `client_credentials` adapter behind a registry that falls back to the mock
+  catalog. Routes: `GET /providers/:provider/search`, `POST /providers/track-import`.
+- **Slice 2 — per-user OAuth + encrypted `music_connections`** (PR #2, merged): Authorization Code +
+  PKCE connect/callback/list/disconnect; AES-GCM token encryption (`lib/crypto.ts`); PKCE
+  (`lib/pkce.ts`). No migration (table pre-existed).
+- **Slice 3 — consume the per-user token**: `GET /providers/:provider/likes` ("search my SoundCloud")
+  spends the stored `music_connections` token, with **token refresh** wired in — proactive on expiry,
+  reactive on a 401, rotated tokens re-encrypted and persisted. Pure `fetchSoundCloudLikes` adapter +
+  `SoundCloudUnauthorizedError` refresh signal in `packages/music`; orchestration in
+  `lib/music/user-likes.ts`; shared creds guards in `lib/music/provider-config.ts`.
+- **Status:** code complete, `typecheck` + `test` (72) green; **behind the mock** — live SoundCloud
+  calls need valid `SOUNDCLOUD_CLIENT_ID/SECRET` + a **registered redirect URI**, and registration may
+  be closed. Re-verify the `OAuth <token>` auth-header scheme + the `/me/likes/tracks` shape when creds
+  land.
+- **Next (not started):** the deferred **7-day metadata-purge-on-disconnect** compliance slice, then
+  provider-ID resolution / same-song matching. Then Spotify / Apple Music behind the same
+  `MusicProvider`, and an optional third-party BPM provider.
 
-M1's per-step branches and `main` are on GitHub; M2 slices are open PRs (not yet merged to `main`).
+M1's per-step branches and `main` are on GitHub; M2 slices 1–2 are merged to `main`, slice 3 is on
+`claude/dev-plan-review-c03j8a`.

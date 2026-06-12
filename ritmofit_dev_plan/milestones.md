@@ -74,15 +74,18 @@ Core builder first (these validate the product), teams/sharing last.
 
 ## M2 — Music-provider integration
 
-> **Progress (in PRs, behind the mock until live SoundCloud creds + a registered redirect URI land):**
+> **Progress (behind the mock until live SoundCloud creds + a registered redirect URI land):**
 > - ✅ **Slice 1** — SoundCloud search → track creation. `packages/music` `MusicProvider` abstraction +
 >   `client_credentials` adapter behind a mock-fallback registry. `GET /providers/:provider/search`,
->   `POST /providers/track-import`. (PR #1)
+>   `POST /providers/track-import`. (PR #1, **merged to `main`**)
 > - ✅ **Slice 2** — per-user OAuth + encrypted `music_connections` (Auth Code + PKCE; AES-GCM at rest;
->   connect/callback/list/disconnect). No migration (table pre-existed). (PR #2, stacked on #1)
-> - ⏭️ **Next** — consume the user token (e.g. "my SoundCloud likes" + token refresh), then the deferred
->   **7-day metadata-purge-on-disconnect** compliance work; provider-ID resolution / same-song matching;
->   then Spotify + Apple Music behind the same interface.
+>   connect/callback/list/disconnect). No migration (table pre-existed). (PR #2, **merged to `main`**)
+> - ✅ **Slice 3** — consume the per-user token: `GET /providers/:provider/likes` ("search my
+>   SoundCloud") spends the stored `music_connections` token with on-demand **refresh** (proactive on
+>   expiry + reactive on a 401, rotated tokens re-encrypted and persisted). Pure `fetchSoundCloudLikes`
+>   adapter raises `SoundCloudUnauthorizedError` as the refresh signal; app owns decrypt/refresh/persist.
+> - ⏭️ **Next** — the deferred **7-day metadata-purge-on-disconnect** compliance work; provider-ID
+>   resolution / same-song matching; then Spotify + Apple Music behind the same interface.
 
 - **SoundCloud first** (the differentiator): provider search feeding track creation; provider-ID
   resolution and the same-song matching problem; deep-link/hand-off playback via `provider_uri`.
