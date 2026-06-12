@@ -112,10 +112,21 @@ Core builder first (these validate the product), teams/sharing last.
 - Re-verify each provider's current API terms before building (constraints in `music-providers.md`).
 
 ## M3 — Live mode + iOS parity polish
+
+> **Web-repo portion (the live *contract*) is done:**
+> - ✅ **Harden the run-payload** — `class.totalDurationMs` (server-derived assembled length, distinct
+>   from the planned `targetDurationMs`); the timeline (per-track `startOffsetMs` + total) is **recomputed
+>   at read time** (`computeClassTimeline`, reusing the write-path `computeSequence`) so it is authoritative
+>   even if a persisted `start_offset_ms` drifts; frozen v1 shape + timeline semantics documented in
+>   `packages/shared` and `api.md`. Verified live (deployed Worker + remote D1): a 2-track class returned
+>   `totalDurationMs=380000` with offsets `0`/`180000`.
+
+The remaining M3 items are the **live-surface UI**, which is the **iOS app** (the live surface; web is the
+planning surface — see workspace `CLAUDE.md`). They land in **Phase 2 / `ritmofit-ios`**, consuming the
+hardened run-payload above:
 - Cue prompter in time with music (Cue-by-Cue / Full List / Landscape views).
 - Interval countdown timer; intensity readouts.
-- **Harden the run-payload** — stable versioned shape, correct duration/order, documented in
-  `packages/shared`. Revisit timeline beat-grid if the player needs it.
+- Revisit the timeline beat-grid if the player needs it.
 
 ## M4 — Explore / featured / sharing UX
 - Explore feed; eligibility to be featured.

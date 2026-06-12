@@ -97,7 +97,13 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
   (SoundCloud/Spotify/Apple Music) are still **behind the mock** until real creds land — re-verify each
   provider's endpoints/auth-header scheme then. The optional third-party **BPM** provider is deliberately
   deferred (needs a chosen service + terms verification); BPM stays manual.
-- **Next:** **M3 (live mode)** — cue prompter, interval timers, run-payload hardening — **in progress**.
+**M3 (live mode) — web-repo portion complete.** The web/backend M3 deliverable is the **run-payload
+hardening** (the live contract iOS consumes): `class.totalDurationMs` (server-derived assembled length),
+read-time timeline recompute (`computeClassTimeline`) so offsets are authoritative, frozen v1 shape
+documented in `packages/shared` + `api.md`. **Verified live** end-to-end on the deployed Worker + remote
+D1 (sign-up → class with two tracks → run-payload `totalDurationMs=380000`, offsets `0`/`180000`). The
+remaining M3 items — cue prompter (Cue-by-Cue / Full List / Landscape), interval timer, intensity
+readouts — are the **live-surface UI**, which is the **iOS app** (Phase 2; web is the planning surface).
 
 M1's per-step branches and `main` are on GitHub; M2 slices 1–3 are merged to `main`. Cloudflare
-provisioning + M2 slices 4–6 are on a working branch (not yet merged).
+provisioning + M2 slices 4–6 + M3 run-payload hardening are on a working branch (not yet merged).
