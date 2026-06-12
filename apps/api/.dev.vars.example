@@ -16,3 +16,7 @@ APPLE_CLIENT_SECRET=
 
 # Declared now, used in M2 to encrypt provider tokens (conventions.md). Unused in M1.
 ENCRYPTION_KEY=
+
+# Dev-only: enables the mock-track seam (/mock/*) so the builder works with zero
+# provider keys. Leave unset/false in production.
+MOCK_PROVIDERS=true

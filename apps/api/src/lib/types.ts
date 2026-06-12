@@ -17,6 +17,8 @@ export interface Env {
   GOOGLE_CLIENT_SECRET?: string;
   APPLE_CLIENT_ID?: string;
   APPLE_CLIENT_SECRET?: string;
+  /** When 'true', enables the dev-only mock-track seam (step 9). Never set in prod. */
+  MOCK_PROVIDERS?: string;
 }
 
 /** Values the auth middleware sets on the Hono context for downstream handlers. */

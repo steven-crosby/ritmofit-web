@@ -67,3 +67,25 @@ export const trackWithProviderIdsSchema = trackSchema.extend({
   providerIds: z.array(trackProviderIdSchema),
 });
 export type TrackWithProviderIds = z.infer<typeof trackWithProviderIdsSchema>;
+
+/**
+ * A provider search candidate — the shape M2's `GET /search` will return, and
+ * what the M1 dev-only mock seam emits. No BPM: it's manual in M1 (music rules).
+ */
+export const trackSearchResultSchema = z.object({
+  provider: providerSchema,
+  providerTrackId: z.string().min(1),
+  providerUri: z.string().nullable(),
+  title: z.string().min(1),
+  artist: z.string().min(1),
+  albumArtUrl: z.url().nullable(),
+  durationMs: z.int().positive().nullable(),
+});
+export type TrackSearchResult = z.infer<typeof trackSearchResultSchema>;
+
+/** Import a search candidate into the caller's library, by provider reference. */
+export const importMockTrackSchema = z.object({
+  provider: providerSchema,
+  providerTrackId: z.string().min(1),
+});
+export type ImportMockTrack = z.infer<typeof importMockTrackSchema>;
