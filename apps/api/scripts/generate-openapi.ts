@@ -206,6 +206,10 @@ const doc = {
       parameters: [idParam],
       post: { summary: 'Attach a provider id', requestBody: jsonBody('CreateTrackProviderId'), responses: { '201': jsonResp('TrackProviderId', 'Attached'), '409': { description: 'Duplicate provider id' } } },
     },
+    '/tracks/{id}/bpm-lookup': {
+      parameters: [idParam],
+      post: { summary: 'Fill display_bpm from a third-party BPM provider (M2; never Spotify)', responses: { '200': jsonResp('Track', 'Track (with display_bpm applied if a confident match was found)'), '404': { description: 'Not found' }, '503': { description: 'BPM provider not configured' } } },
+    },
     '/track-provider-ids/{id}': {
       parameters: [idParam],
       delete: { summary: 'Remove a provider id', responses: { '204': { description: 'Removed' } } },
@@ -219,7 +223,7 @@ const doc = {
       get: { summary: "List the caller's liked tracks (M2; spends their per-user OAuth token)", responses: { '200': arrayResp('TrackSearchResult', 'Liked tracks'), '409': { description: 'Not connected / reconnect required' }, '501': { description: 'Provider not yet integrated' }, '503': { description: 'Provider not configured' } } },
     },
     '/providers/track-import': {
-      post: { summary: 'Import a provider candidate into the library', requestBody: jsonBody('ImportProviderTrack'), responses: { '201': jsonResp('TrackWithProviderIds', 'Imported'), '404': { description: 'No such provider track' }, '409': { description: 'Already in a library' } } },
+      post: { summary: 'Import a provider candidate into the library', requestBody: jsonBody('ImportProviderTrack'), responses: { '201': jsonResp('TrackWithProviderIds', 'Created a new track'), '200': jsonResp('TrackWithProviderIds', 'Resolved to an existing track (idempotent / same-song attach)'), '404': { description: 'No such provider track' }, '409': { description: "Another user's library already holds this provider ref" } } },
     },
     '/providers/connections': {
       get: { summary: "List the caller's provider connections (tokens stripped)", responses: { '200': arrayResp('MusicConnectionView', 'Connections') } },
@@ -240,7 +244,7 @@ const doc = {
       get: { summary: 'Dev-only mock provider search', parameters: [{ name: 'q', in: 'query', required: false, schema: { type: 'string' } }], responses: { '200': arrayResp('TrackSearchResult', 'Candidates') } },
     },
     '/mock/track-import': {
-      post: { summary: 'Dev-only import a mock candidate', requestBody: jsonBody('ImportProviderTrack'), responses: { '201': jsonResp('TrackWithProviderIds', 'Imported') } },
+      post: { summary: 'Dev-only import a mock candidate', requestBody: jsonBody('ImportProviderTrack'), responses: { '201': jsonResp('TrackWithProviderIds', 'Created a new track'), '200': jsonResp('TrackWithProviderIds', 'Resolved to an existing track') } },
     },
     '/teams': {
       get: { summary: 'List my teams', responses: { '200': arrayResp('TeamWithRole', 'Teams') } },

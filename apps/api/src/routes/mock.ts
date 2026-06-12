@@ -43,6 +43,6 @@ mockRoutes.post('/mock/track-import', async (c) => {
   if (!candidate) throw new HttpError(404, 'NOT_FOUND', 'No such track in the mock catalog.');
 
   const db = createDb(c.env);
-  const result = await importTrackFromCandidate(db, c.get('userId'), candidate);
-  return c.json(result, 201);
+  const { track, created } = await importTrackFromCandidate(db, c.get('userId'), candidate);
+  return c.json(track, created ? 201 : 200);
 });

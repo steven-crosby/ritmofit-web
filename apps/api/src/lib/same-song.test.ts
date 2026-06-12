@@ -2,9 +2,23 @@ import { describe, it, expect } from 'vitest';
 import {
   normalizeForMatch,
   findSameSongMatch,
+  makeMatchKey,
   DURATION_TOLERANCE_MS,
   type MatchableTrack,
 } from './same-song.js';
+
+describe('makeMatchKey', () => {
+  it('equals for cosmetically-different same songs', () => {
+    expect(makeMatchKey('Levels (Radio Edit)', 'AVICII')).toBe(makeMatchKey('Levels', 'avicii'));
+  });
+  it('does not collide when the title/artist split differs', () => {
+    // "a b" / "c" vs "a" / "b c" — would collide under a space separator.
+    expect(makeMatchKey('a b', 'c')).not.toBe(makeMatchKey('a', 'b c'));
+  });
+  it('differs for different songs', () => {
+    expect(makeMatchKey('Levels', 'Avicii')).not.toBe(makeMatchKey('Wake Me Up', 'Avicii'));
+  });
+});
 
 describe('normalizeForMatch', () => {
   it('lowercases, strips punctuation, collapses whitespace', () => {
@@ -69,9 +83,10 @@ describe('findSameSongMatch', () => {
     expect(findSameSongMatch(c, [t])).toBe('t1');
   });
 
-  it('treats an unknown duration on either side as no objection', () => {
-    expect(findSameSongMatch(candidate({ durationMs: null }), [track({ durationMs: 200000 })])).toBe('t1');
-    expect(findSameSongMatch(candidate({ durationMs: 200000 }), [track({ durationMs: null })])).toBe('t1');
+  it('does NOT merge when either duration is unknown (too weak a signal)', () => {
+    expect(findSameSongMatch(candidate({ durationMs: null }), [track({ durationMs: 200000 })])).toBeNull();
+    expect(findSameSongMatch(candidate({ durationMs: 200000 }), [track({ durationMs: null })])).toBeNull();
+    expect(findSameSongMatch(candidate({ durationMs: null }), [track({ durationMs: null })])).toBeNull();
   });
 
   it('does not match a different song', () => {

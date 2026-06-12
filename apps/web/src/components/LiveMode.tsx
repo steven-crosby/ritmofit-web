@@ -97,18 +97,28 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   const seek = (ms: number) => {
     const clamped = Math.max(0, Math.min(ms, payload.class.totalDurationMs));
     baseRef.current = clamped;
+    // Rebase the running segment to *now*, or a seek while playing would re-add the
+    // time already elapsed since play started (jumping the clock forward).
+    startRef.current = performance.now();
     setElapsedMs(clamped);
   };
 
   const live = useMemo(() => trackAt(payload, elapsedMs), [payload, elapsedMs]);
   const events = useMemo(() => (live ? eventsFor(live.entry) : []), [live]);
-  const currentEvent = useMemo(
-    () => [...events].reverse().find((e) => e.atMs <= elapsedMs) ?? null,
-    [events, elapsedMs],
-  );
+  const currentEvent = useMemo(() => {
+    // Backward scan (events is sorted) — avoids cloning+reversing the array on every
+    // animation frame while playing.
+    for (let i = events.length - 1; i >= 0; i--) {
+      if (events[i]!.atMs <= elapsedMs) return events[i]!;
+    }
+    return null;
+  }, [events, elapsedMs]);
   const nextEvent = useMemo(() => events.find((e) => e.atMs > elapsedMs) ?? null, [events, elapsedMs]);
 
-  const trackEndMs = live ? (live.entry.startOffsetMs ?? 0) + (live.entry.track.durationMs ?? 0) : 0;
+  // A track with no entered duration occupies zero timeline width, so a per-track
+  // countdown would read a misleading 0:00. Track whether we have a real window.
+  const trackDurationMs = live ? live.entry.track.durationMs : null;
+  const trackEndMs = live ? (live.entry.startOffsetMs ?? 0) + (trackDurationMs ?? 0) : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-bg-base">
@@ -138,6 +148,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             nextEvent={nextEvent}
             elapsedMs={elapsedMs}
             trackEndMs={trackEndMs}
+            trackHasDuration={trackDurationMs != null}
             classTotalMs={payload.class.totalDurationMs}
           />
         ) : (
@@ -209,6 +220,7 @@ function CueByCue({
   nextEvent,
   elapsedMs,
   trackEndMs,
+  trackHasDuration,
   classTotalMs,
 }: {
   live: { entry: RunPayloadTrackEntry; index: number } | null;
@@ -216,6 +228,7 @@ function CueByCue({
   nextEvent: TimelineEvent | null;
   elapsedMs: number;
   trackEndMs: number;
+  trackHasDuration: boolean;
   classTotalMs: number;
 }) {
   if (!live) {
@@ -266,7 +279,7 @@ function CueByCue({
       </div>
 
       <div className="flex w-full justify-between font-data text-sm text-text-tertiary">
-        <span>Track ends in {fmt(trackEndMs - elapsedMs)}</span>
+        <span>{trackHasDuration ? `Track ends in ${fmt(trackEndMs - elapsedMs)}` : 'No track duration set'}</span>
         <span>Class ends in {fmt(classTotalMs - elapsedMs)}</span>
       </div>
     </div>

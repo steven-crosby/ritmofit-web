@@ -18,8 +18,14 @@ import { and, eq } from 'drizzle-orm';
 import type { Db } from './db.js';
 import { HttpError, isUniqueViolation } from './errors.js';
 import { serializeTrack, serializeTrackProviderId } from './serialize.js';
-import { findSameSongMatch, type MatchableTrack } from './same-song.js';
+import { findSameSongMatch, makeMatchKey, type MatchableTrack } from './same-song.js';
 import { tracks, trackProviderIds } from '../db/schema.js';
+
+/** Outcome of an import: the resolved track and whether a NEW track row was created. */
+export interface ImportResult {
+  track: TrackWithProviderIds;
+  created: boolean;
+}
 
 /** Load a track with its provider ids and shape it as the contract DTO. */
 async function loadTrackWithProviders(db: Db, trackId: string): Promise<TrackWithProviderIds> {
@@ -33,12 +39,16 @@ async function loadTrackWithProviders(db: Db, trackId: string): Promise<TrackWit
   return { ...serializeTrack(track), providerIds: providers.map(serializeTrackProviderId) };
 }
 
-/** Attach a new provider id row to an existing track, then return the merged track. */
+/**
+ * Attach a new provider id row to an existing track and return the merged track —
+ * or `null` if that track no longer exists (it was deleted between the same-song
+ * match and this insert), so the caller can fall back to creating a fresh track.
+ */
 async function attachProviderId(
   db: Db,
   trackId: string,
   candidate: TrackSearchResult,
-): Promise<TrackWithProviderIds> {
+): Promise<TrackWithProviderIds | null> {
   const now = Date.now();
   try {
     await db.insert(trackProviderIds).values({
@@ -55,13 +65,25 @@ async function attachProviderId(
       // Raced with another import of the same ref — it's already attached somewhere.
       throw new HttpError(409, 'CONFLICT', 'That provider track is already in a library.');
     }
+    // The matched track may have been deleted between match and insert (FK fail) —
+    // signal the caller to create a fresh track instead of surfacing a 500.
+    const stillExists = await db.select({ id: tracks.id }).from(tracks).where(eq(tracks.id, trackId)).get();
+    if (!stillExists) return null;
     throw err;
   }
   return loadTrackWithProviders(db, trackId);
 }
 
-/** The caller's tracks reduced to the shape `findSameSongMatch` needs. */
-async function loadMatchableLibrary(db: Db, ownerUserId: string): Promise<MatchableTrack[]> {
+/**
+ * The caller's tracks that share the candidate's normalized match key, reduced to
+ * the shape `findSameSongMatch` needs. Filtering on the indexed `match_key` avoids
+ * scanning + normalizing the whole library on every import.
+ */
+async function loadMatchableLibrary(
+  db: Db,
+  ownerUserId: string,
+  matchKey: string,
+): Promise<MatchableTrack[]> {
   const rows = await db
     .select({
       id: tracks.id,
@@ -72,7 +94,7 @@ async function loadMatchableLibrary(db: Db, ownerUserId: string): Promise<Matcha
     })
     .from(tracks)
     .leftJoin(trackProviderIds, eq(trackProviderIds.trackId, tracks.id))
-    .where(eq(tracks.ownerUserId, ownerUserId))
+    .where(and(eq(tracks.ownerUserId, ownerUserId), eq(tracks.matchKey, matchKey)))
     .all();
 
   const byId = new Map<string, MatchableTrack>();
@@ -87,35 +109,12 @@ async function loadMatchableLibrary(db: Db, ownerUserId: string): Promise<Matcha
   return [...byId.values()];
 }
 
-export async function importTrackFromCandidate(
+/** Create a fresh owner-scoped track + its first provider id (the no-match path). */
+async function createNewTrack(
   db: Db,
   ownerUserId: string,
   candidate: TrackSearchResult,
 ): Promise<TrackWithProviderIds> {
-  // 1. Exact ref — the provider track is already imported somewhere.
-  const existingRef = await db
-    .select({ trackId: trackProviderIds.trackId, ownerUserId: tracks.ownerUserId })
-    .from(trackProviderIds)
-    .innerJoin(tracks, eq(tracks.id, trackProviderIds.trackId))
-    .where(
-      and(
-        eq(trackProviderIds.provider, candidate.provider),
-        eq(trackProviderIds.providerTrackId, candidate.providerTrackId),
-      ),
-    )
-    .get();
-  if (existingRef) {
-    if (existingRef.ownerUserId !== ownerUserId) {
-      throw new HttpError(409, 'CONFLICT', 'That provider track is already in a library.');
-    }
-    return loadTrackWithProviders(db, existingRef.trackId); // idempotent re-import
-  }
-
-  // 2. Same song from a different provider — attach to the existing track.
-  const match = findSameSongMatch(candidate, await loadMatchableLibrary(db, ownerUserId));
-  if (match) return attachProviderId(db, match, candidate);
-
-  // 3. New song — create the track and its first provider id.
   const now = Date.now();
   const trackRow = {
     id: crypto.randomUUID(),
@@ -126,6 +125,7 @@ export async function importTrackFromCandidate(
     durationMs: candidate.durationMs,
     displayBpm: null, // manual in M1 — never imported from a provider
     isrc: null,
+    matchKey: makeMatchKey(candidate.title, candidate.artist),
     createdAt: now,
     updatedAt: now,
   };
@@ -151,8 +151,43 @@ export async function importTrackFromCandidate(
     throw err;
   }
 
-  return {
-    ...serializeTrack(trackRow),
-    providerIds: [serializeTrackProviderId(providerRow)],
-  };
+  return { ...serializeTrack(trackRow), providerIds: [serializeTrackProviderId(providerRow)] };
+}
+
+export async function importTrackFromCandidate(
+  db: Db,
+  ownerUserId: string,
+  candidate: TrackSearchResult,
+): Promise<ImportResult> {
+  // 1. Exact ref — the provider track is already imported somewhere.
+  const existingRef = await db
+    .select({ trackId: trackProviderIds.trackId, ownerUserId: tracks.ownerUserId })
+    .from(trackProviderIds)
+    .innerJoin(tracks, eq(tracks.id, trackProviderIds.trackId))
+    .where(
+      and(
+        eq(trackProviderIds.provider, candidate.provider),
+        eq(trackProviderIds.providerTrackId, candidate.providerTrackId),
+      ),
+    )
+    .get();
+  if (existingRef) {
+    if (existingRef.ownerUserId !== ownerUserId) {
+      throw new HttpError(409, 'CONFLICT', 'That provider track is already in a library.');
+    }
+    // Idempotent re-import — the track already exists, nothing created.
+    return { track: await loadTrackWithProviders(db, existingRef.trackId), created: false };
+  }
+
+  // 2. Same song from a different provider — attach to the existing track.
+  const matchKey = makeMatchKey(candidate.title, candidate.artist);
+  const match = findSameSongMatch(candidate, await loadMatchableLibrary(db, ownerUserId, matchKey));
+  if (match) {
+    const merged = await attachProviderId(db, match, candidate);
+    // merged === null means the matched track vanished mid-flight → fall through to create.
+    if (merged) return { track: merged, created: false };
+  }
+
+  // 3. New song — create the track and its first provider id.
+  return { track: await createNewTrack(db, ownerUserId, candidate), created: true };
 }

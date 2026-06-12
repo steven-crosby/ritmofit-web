@@ -54,7 +54,11 @@ providerRoutes.get('/providers/:provider/likes', async (c) => {
   return c.json(results);
 });
 
-/** POST /providers/track-import — import a candidate by provider reference (201). */
+/**
+ * POST /providers/track-import — import a candidate by provider reference. 201 when
+ * a new track was created; 200 when it resolved to an existing track (idempotent
+ * re-import, or a same-song attach onto a track already in the library).
+ */
 providerRoutes.post('/providers/track-import', async (c) => {
   const { provider, providerTrackId } = importProviderTrackSchema.parse(await c.req.json());
   const adapter = getMusicProvider(provider, c.env);
@@ -63,6 +67,6 @@ providerRoutes.post('/providers/track-import', async (c) => {
     throw new HttpError(404, 'NOT_FOUND', 'No such track at the provider.');
   }
   const db = createDb(c.env);
-  const result = await importTrackFromCandidate(db, c.get('userId'), candidate);
-  return c.json(result, 201);
+  const { track, created } = await importTrackFromCandidate(db, c.get('userId'), candidate);
+  return c.json(track, created ? 201 : 200);
 });

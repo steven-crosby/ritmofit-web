@@ -782,6 +782,39 @@
         }
       }
     },
+    "/tracks/{id}/bpm-lookup": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "summary": "Fill display_bpm from a third-party BPM provider (M2; never Spotify)",
+        "responses": {
+          "200": {
+            "description": "Track (with display_bpm applied if a confident match was found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Track"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "503": {
+            "description": "BPM provider not configured"
+          }
+        }
+      }
+    },
     "/track-provider-ids/{id}": {
       "parameters": [
         {
@@ -911,8 +944,18 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Resolved to an existing track (idempotent / same-song attach)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackWithProviderIds"
+                }
+              }
+            }
+          },
           "201": {
-            "description": "Imported",
+            "description": "Created a new track",
             "content": {
               "application/json": {
                 "schema": {
@@ -925,7 +968,7 @@
             "description": "No such provider track"
           },
           "409": {
-            "description": "Already in a library"
+            "description": "Another user's library already holds this provider ref"
           }
         }
       }
@@ -1100,8 +1143,18 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Resolved to an existing track",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackWithProviderIds"
+                }
+              }
+            }
+          },
           "201": {
-            "description": "Imported",
+            "description": "Created a new track",
             "content": {
               "application/json": {
                 "schema": {

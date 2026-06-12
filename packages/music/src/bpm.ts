@@ -16,7 +16,9 @@
 import { z } from 'zod';
 import type { FetchLike } from './provider.js';
 
-const DEFAULT_API_BASE = 'https://api.getsongbpm.com';
+// GetSongBPM's documented API host (getsongbpm.com/api). `type=both` with a
+// `lookup=song:… artist:…` term is the combined song+artist search.
+const DEFAULT_API_BASE = 'https://api.getsong.co';
 
 export interface BpmQuery {
   title: string;

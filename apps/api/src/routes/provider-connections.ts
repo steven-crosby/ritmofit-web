@@ -242,9 +242,15 @@ providerConnectionRoutes.delete('/providers/:provider/connection', requireSessio
   const provider = parseProvider(c.req.param('provider'));
   const userId = c.get('userId');
   const db = createDb(c.env);
-  await db
+  const deleted = await db
     .delete(musicConnections)
-    .where(and(eq(musicConnections.userId, userId), eq(musicConnections.provider, provider)));
-  await enqueueProviderPurge(db, userId, provider);
+    .where(and(eq(musicConnections.userId, userId), eq(musicConnections.provider, provider)))
+    .run();
+  // Only schedule the destructive metadata purge when a connection actually
+  // existed — a no-op disconnect (never connected / double-click) must not strip
+  // the user's provider refs + album art.
+  if ((deleted.meta.changes ?? 0) > 0) {
+    await enqueueProviderPurge(db, userId, provider);
+  }
   return c.body(null, 204);
 });

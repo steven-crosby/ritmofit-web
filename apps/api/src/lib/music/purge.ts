@@ -123,8 +123,7 @@ export function createD1PurgeStore(db: Db): PurgeStore {
     },
 
     async purgeProviderMetadata(userId, provider) {
-      // Resolve the affected tracks BEFORE deleting the provider rows — once the
-      // refs are gone we'd have no way to know which tracks had album art to clear.
+      // Resolve the affected tracks BEFORE deleting the provider rows.
       const affected = await db
         .select({ id: tracks.id })
         .from(tracks)
@@ -134,11 +133,6 @@ export function createD1PurgeStore(db: Db): PurgeStore {
       const trackIds = [...new Set(affected.map((r) => r.id))];
       if (trackIds.length === 0) return { tracksCleared: 0, refsDeleted: 0 };
 
-      const cleared = await db
-        .update(tracks)
-        .set({ albumArtUrl: null, updatedAt: Date.now() })
-        .where(inArray(tracks.id, trackIds))
-        .run();
       const deleted = await db
         .delete(trackProviderIds)
         .where(
@@ -146,10 +140,31 @@ export function createD1PurgeStore(db: Db): PurgeStore {
         )
         .run();
 
-      return {
-        tracksCleared: cleared.meta.changes ?? trackIds.length,
-        refsDeleted: deleted.meta.changes ?? 0,
-      };
+      // Only clear album art on tracks left with NO provider ref at all — a track
+      // that still carries another (still-connected) provider keeps its art, which
+      // may have come from that provider. Re-query after the delete.
+      const stillReferenced = new Set(
+        (
+          await db
+            .select({ trackId: trackProviderIds.trackId })
+            .from(trackProviderIds)
+            .where(inArray(trackProviderIds.trackId, trackIds))
+            .all()
+        ).map((r) => r.trackId),
+      );
+      const orphaned = trackIds.filter((id) => !stillReferenced.has(id));
+
+      let cleared = 0;
+      if (orphaned.length > 0) {
+        const res = await db
+          .update(tracks)
+          .set({ albumArtUrl: null, updatedAt: Date.now() })
+          .where(inArray(tracks.id, orphaned))
+          .run();
+        cleared = res.meta.changes ?? orphaned.length;
+      }
+
+      return { tracksCleared: cleared, refsDeleted: deleted.meta.changes ?? 0 };
     },
 
     async removeQueueItem(id) {

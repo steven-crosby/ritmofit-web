@@ -22,6 +22,7 @@ import {
   text,
   integer,
   check,
+  index,
   uniqueIndex,
   type AnySQLiteColumn,
 } from 'drizzle-orm/sqlite-core';
@@ -138,8 +139,12 @@ export const tracks = sqliteTable('tracks', {
   durationMs: integer('duration_ms'),
   displayBpm: integer('display_bpm'),
   isrc: text('isrc'),
+  // Normalized (title, artist) key for same-song matching — `makeMatchKey`
+  // (lib/same-song.ts). Indexed so import resolves candidates without scanning the
+  // owner's whole library. Nullable: hand-entered tracks may predate it.
+  matchKey: text('match_key'),
   ...timestamps(),
-});
+}, (t) => [index('tracks_owner_match_key_idx').on(t.ownerUserId, t.matchKey)]);
 
 export const trackProviderIds = sqliteTable(
   'track_provider_ids',
