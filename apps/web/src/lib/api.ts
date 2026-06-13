@@ -14,6 +14,8 @@ import type {
   Track,
   TrackSearchResult,
   Provider,
+  MusicConnectionView,
+  ConnectProviderResponse,
   Cue,
   CreateCue,
   UpdateCue,
@@ -92,12 +94,30 @@ export const getRunPayload = (classId: string) =>
 /** Provider search candidates (server serves the live adapter or the dev mock). */
 export const searchProvider = (provider: Provider, q: string) =>
   api<TrackSearchResult[]>(`/providers/${provider}/search?q=${encodeURIComponent(q)}`);
+/** The caller's liked tracks at a provider — spends their stored OAuth token. */
+export const listLikes = (provider: Provider) =>
+  api<TrackSearchResult[]>(`/providers/${provider}/likes`);
 /** Import a candidate by provider reference → the owned track (created or matched). */
 export const importTrack = (provider: Provider, providerTrackId: string) =>
   api<Track>('/providers/track-import', {
     method: 'POST',
     body: JSON.stringify({ provider, providerTrackId }),
   });
+
+// ── Provider connections (per-user OAuth) ─────────────────────────────────────
+/** The caller's provider connections (token blobs stripped server-side). */
+export const listConnections = () => api<MusicConnectionView[]>('/providers/connections');
+/** Start a connection. Mock seam connects immediately; live returns an authorizeUrl. */
+export const connectProvider = (provider: Provider) =>
+  api<ConnectProviderResponse>(`/providers/${provider}/connect`, { method: 'POST' });
+/** Disconnect — forgets tokens now; enqueues the 7-day metadata purge server-side. */
+export const disconnectProvider = (provider: Provider) =>
+  api<void>(`/providers/${provider}/connection`, { method: 'DELETE' });
+
+// ── BPM lookup (third-party tempo provider — never Spotify) ───────────────────
+/** Owner-only: fill the track's display BPM from the tempo service (or mock). */
+export const lookupBpm = (trackId: string) =>
+  api<Track & { bpmApplied: boolean }>(`/tracks/${trackId}/bpm-lookup`, { method: 'POST' });
 
 // ── Choreography: cues + placed moves anchored to a class_track ───────────────
 export const listCues = (classTrackId: string) =>

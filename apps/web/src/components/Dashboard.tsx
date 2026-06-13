@@ -20,6 +20,7 @@ import {
   deleteClassTrack,
   reorderTracks,
   getRunPayload,
+  lookupBpm,
 } from '../lib/api.js';
 import { moveItem } from '../lib/reorder.js';
 import { avgBpm, formatDuration } from '../lib/class-summary.js';
@@ -33,6 +34,7 @@ import { ShareDialog } from './ShareDialog.js';
 import { TeamsDialog } from './TeamsDialog.js';
 import { ExploreDialog } from './ExploreDialog.js';
 import { TrackSearch } from './TrackSearch.js';
+import { ConnectionsDialog } from './ConnectionsDialog.js';
 
 export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
   const [classes, setClasses] = useState<ClassWithAccess[]>([]);
@@ -44,6 +46,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [live, setLive] = useState<RunPayload | null>(null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
+  const [connectionsOpen, setConnectionsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshClasses = useCallback(async () => {
@@ -118,6 +121,12 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         </button>
         <button
           className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+          onClick={() => setConnectionsOpen(true)}
+        >
+          Connections
+        </button>
+        <button
+          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
           onClick={() => authClient.signOut()}
         >
           Sign out
@@ -125,6 +134,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       </header>
 
       {teamsOpen && <TeamsDialog userId={userId} onClose={() => setTeamsOpen(false)} />}
+      {connectionsOpen && <ConnectionsDialog onClose={() => setConnectionsOpen(false)} />}
       {exploreOpen && (
         <ExploreDialog
           onClose={() => setExploreOpen(false)}
@@ -760,6 +770,29 @@ function TrackInspector({
   const [notes, setNotes] = useState(track.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // BPM lookup (the third-party tempo provider — never Spotify) fills the track's
+  // base display BPM; the resolved row BPM is still override ?? base.
+  const [bpmBusy, setBpmBusy] = useState(false);
+  const [bpmStatus, setBpmStatus] = useState<string | null>(null);
+
+  const lookupTrackBpm = async () => {
+    setBpmBusy(true);
+    setBpmStatus(null);
+    setError(null);
+    try {
+      const updated = await lookupBpm(track.trackId);
+      setBpmStatus(
+        updated.bpmApplied && updated.displayBpm != null
+          ? `Found ${updated.displayBpm} BPM`
+          : 'No BPM found',
+      );
+      onSaved(); // reload so the resolved row/ribbon BPM reflects the new base
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBpmBusy(false);
+    }
+  };
 
   const save = async () => {
     setBusy(true);
@@ -833,15 +866,27 @@ function TrackInspector({
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
               Display BPM override
             </span>
-            <input
-              type="number"
-              min={1}
-              inputMode="numeric"
-              placeholder="—"
-              className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
-              value={bpm}
-              onChange={(e) => setBpm(e.target.value)}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                inputMode="numeric"
+                placeholder="—"
+                className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                value={bpm}
+                onChange={(e) => setBpm(e.target.value)}
+              />
+              {/* Auto-fill the track's base BPM from the tempo service (never Spotify). */}
+              <button
+                type="button"
+                onClick={lookupTrackBpm}
+                disabled={bpmBusy}
+                className="rounded-pill border border-interactive/40 px-3 py-1.5 font-ui text-xs text-text-secondary hover:text-text-primary disabled:opacity-50"
+              >
+                {bpmBusy ? 'Looking up…' : 'Look up BPM'}
+              </button>
+              {bpmStatus && <span className="font-data text-xs text-text-tertiary">{bpmStatus}</span>}
+            </div>
           </label>
 
           <label className="flex flex-col gap-1">
