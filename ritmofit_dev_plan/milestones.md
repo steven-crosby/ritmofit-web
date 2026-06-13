@@ -323,7 +323,8 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   of times per class); layers with the slice-14 beat pulse. CSS-driven (`rf-drop-bloom` + `rf-drop-in`
   keyframes, re-triggered by remounting the bloom/text on the current cue); **degrades to an instant,
   glow-free swap under `prefers-reduced-motion`**. No schema/API-contract/shared change. `pnpm test` =
-  api 159 + web 39 = **198**.
+  api 159 + web 39 = **198**. **Merged PR #29, deployed 2026-06-13** (Worker version `c3a502c0`; no
+  schema/migration).
 
 **Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the **playing-track pulse
 in the planning timeline** (no "playing" state in the builder), the timeline **playhead** / tap-to-seek (a
