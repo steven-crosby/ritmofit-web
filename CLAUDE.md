@@ -211,13 +211,18 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   **low-noise song rows** (`SongRow`); the **track inspector** (`TrackInspector` — intensity/BPM/notes +
   remove); **cue + placed-move authoring** (`ChoreographyEditor`). Shared `IntensityReadout` extracted
   from `LiveMode`. **Vitest now runs in `apps/web`** too (geometry test) — `pnpm test` = api 159 + web 5 = **164**.
-- **Slice 5 — drag + keyboard reorder of the track list** (branch `feat/web-builder-drag-reorder`, PR
-  pending): the song rows reorder by a dedicated drag grip (off the selection button) and by ↑/↓ on the
-  focused grip; persists via the existing `POST /classes/:id/tracks/reorder` (edit access) and reloads so
-  the ribbon/offsets recompute; optimistic with rollback, view-only shows no grip. Pure `moveItem`
-  (`apps/web/src/lib/reorder.ts`, unit-tested) + `reorderTracks` client fn. No schema/API/shared change.
-  `pnpm test` = api 159 + web 11 = **170**.
-- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): inline-edit of cues/moves, custom
-  user-moves, cue color picker, the on-beat pulse, the full 3-pane layout.
+- **Slice 5 — drag + keyboard reorder of the track list** (merged, PR #9): the song rows reorder by a
+  dedicated drag grip (off the selection button) and by ↑/↓ on the focused grip; persists via the existing
+  `POST /classes/:id/tracks/reorder` (edit access) and reloads so the ribbon/offsets recompute; optimistic
+  with rollback, view-only shows no grip. Pure `moveItem` (`apps/web/src/lib/reorder.ts`, unit-tested) +
+  `reorderTracks` client fn. No schema/API/shared change.
+- **Slice 6 — inline-edit existing cues & placed moves** (branch `feat/web-builder-inline-edit`, PR
+  pending): the `ChoreographyEditor` cue/move rows gain an Edit affordance (one row at a time, Save/Cancel)
+  on top of slice 4's add/list/delete; cues edit anchor+text, moves edit anchor + library-pick/custom-name
+  + intensity. Backed by the existing `PATCH /cues/:id` + `PATCH /class-track-moves/:id` (edit access; move
+  route re-checks the at-most-one-reference invariant). `updateCue` + `updatePlacedMove` client fns; no
+  schema/API/shared change. `pnpm test` = api 159 + web 11 = **170**.
+- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): custom user-moves, cue color picker,
+  the on-beat pulse, the full 3-pane layout.
 - Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
   `milestones.md`. **Next major milestone remains iOS Phase 2.**
