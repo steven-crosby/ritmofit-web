@@ -209,7 +209,7 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
                     className={`shrink-0 rounded-pill px-3 py-1 font-ui text-xs font-semibold disabled:opacity-60 ${
                       added
                         ? 'bg-bg-raised text-text-tertiary'
-                        : 'bg-brand text-text-on-accent'
+                        : 'rf-btn-primary text-text-on-accent'
                     }`}
                   >
                     {added ? 'Added ✓' : busy ? 'Adding…' : 'Add'}
