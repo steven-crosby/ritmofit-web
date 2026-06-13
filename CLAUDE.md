@@ -65,9 +65,14 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
   **disconnected (2026-06-12)** so a push to `main` does **not** auto-deploy. Ship with
   `pnpm --filter @ritmofit/api deploy`. Don't reconnect Workers Builds without deciding you want
   push-to-deploy CI/CD (and gating it on `pnpm -r typecheck` + `pnpm test`).
-- **Known tech debt:** no automated integration tests yet — the route/SQL layer is verified by manual
-  flows + unit tests (purge SQL scoping verified against local D1), not CI. The app-level authz is the
-  only access gate. No CI pipeline (lint/typecheck/test) runs on push yet.
+- **CI (2026-06-12):** `.github/workflows/ci.yml` runs `pnpm install --frozen-lockfile` →
+  `pnpm -r typecheck` → `pnpm lint` → `pnpm test` on every push to `main` and every PR (pnpm pinned via
+  `packageManager`, **Node 22** via `.nvmrc` — pnpm 11.4 needs ≥22.13). It is a **checks-only gate; it
+  never deploys** (deploys stay manual by design). Not gated: `format:check` (the plan-doc markdown was
+  never prettier-formatted — 80 files) and OpenAPI-spec drift.
+- **Known tech debt:** no automated *integration* tests yet — the route/SQL layer is verified by manual
+  flows + unit tests (purge SQL scoping verified against local D1). The app-level authz is the only
+  access gate.
 
 **M2 complete** (music providers, SoundCloud first) — see `ritmofit_dev_plan/milestones.md` and
 `music-providers.md`. New package `packages/music` holds the provider adapters.
