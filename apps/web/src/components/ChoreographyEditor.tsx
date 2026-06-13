@@ -15,13 +15,16 @@ import {
   type Move,
   type Intensity,
   type PlaceClassTrackMove,
+  type UpdateClassTrackMove,
 } from '@ritmofit/shared';
 import {
   listCues,
   createCue,
+  updateCue,
   deleteCue,
   listPlacedMoves,
   placeMove,
+  updatePlacedMove,
   deletePlacedMove,
   listMoves,
 } from '../lib/api.js';
@@ -37,6 +40,11 @@ function clock(ms: number): string {
 function secToMs(sec: string): number {
   const n = Number(sec.trim());
   return Number.isFinite(n) && n > 0 ? Math.round(n * 1000) : 0;
+}
+
+/** ms → whole-seconds string, for seeding an edit field from a persisted anchor. */
+function msToSec(ms: number): string {
+  return String(Math.round(ms / 1000));
 }
 
 /**
@@ -80,6 +88,10 @@ export function CuesSection({
   const [anchorSec, setAnchorSec] = useState('0');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Inline edit: at most one cue editable at a time, seeded from the persisted row.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editAnchorSec, setEditAnchorSec] = useState('0');
 
   const load = useCallback(async () => {
     try {
@@ -91,6 +103,28 @@ export function CuesSection({
   useEffect(() => {
     void load();
   }, [load]);
+
+  const startEdit = (cue: Cue) => {
+    setEditingId(cue.id);
+    setEditText(cue.text);
+    setEditAnchorSec(msToSec(cue.anchorMs));
+    setError(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !editText.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await updateCue(editingId, { anchorMs: secToMs(editAnchorSec), text: editText.trim() });
+      setEditingId(null);
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const add = async () => {
     if (!text.trim()) return;
@@ -126,23 +160,70 @@ export function CuesSection({
       <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Cues</span>
       <ul className="flex flex-col gap-1">
         {cues?.length === 0 && <li className="font-ui text-xs text-text-tertiary">No cues yet.</li>}
-        {cues?.map((cue) => (
-          <li
-            key={cue.id}
-            className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5"
-          >
-            <span className="shrink-0 font-data text-xs text-text-tertiary">{clock(cue.anchorMs)}</span>
-            <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">{cue.text}</span>
-            <button
-              className="shrink-0 font-ui text-xs text-intensity-all_out disabled:opacity-40"
-              onClick={() => remove(cue.id)}
-              disabled={busy}
-              aria-label={`Delete cue ${cue.text}`}
+        {cues?.map((cue) =>
+          editingId === cue.id ? (
+            <li
+              key={cue.id}
+              className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5"
             >
-              Delete
-            </button>
-          </li>
-        ))}
+              <input
+                className={`w-16 ${fieldClass} font-data`}
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={editAnchorSec}
+                onChange={(e) => setEditAnchorSec(e.target.value)}
+                aria-label={`Cue time in seconds${anchorHint(durationMs)}`}
+                title={`Time in seconds${anchorHint(durationMs)}`}
+              />
+              <input
+                className={`min-w-0 flex-1 ${fieldClass}`}
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                aria-label="Cue text"
+                autoFocus
+              />
+              <button
+                className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
+                onClick={saveEdit}
+                disabled={busy || !editText.trim()}
+              >
+                Save
+              </button>
+              <button
+                className="shrink-0 font-ui text-xs text-text-tertiary disabled:opacity-40"
+                onClick={() => setEditingId(null)}
+                disabled={busy}
+              >
+                Cancel
+              </button>
+            </li>
+          ) : (
+            <li
+              key={cue.id}
+              className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5"
+            >
+              <span className="shrink-0 font-data text-xs text-text-tertiary">{clock(cue.anchorMs)}</span>
+              <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">{cue.text}</span>
+              <button
+                className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
+                onClick={() => startEdit(cue)}
+                disabled={busy}
+                aria-label={`Edit cue ${cue.text}`}
+              >
+                Edit
+              </button>
+              <button
+                className="shrink-0 font-ui text-xs text-intensity-all_out disabled:opacity-40"
+                onClick={() => remove(cue.id)}
+                disabled={busy}
+                aria-label={`Delete cue ${cue.text}`}
+              >
+                Delete
+              </button>
+            </li>
+          ),
+        )}
       </ul>
       <div className="flex items-center gap-2">
         <input
@@ -177,6 +258,10 @@ export function CuesSection({
 // ── Placed moves ──────────────────────────────────────────────────────────────
 
 const CUSTOM = '__custom__';
+// Sentinel for editing a placement that references a non-library "user move": keep it
+// as-is (send no reference fields, so the merge-patch preserves the userMoveId). The
+// library dropdown can't list user moves yet (that's a separate deferred slice).
+const KEEP = '__keep__';
 
 export function MovesSection({
   classTrackId,
@@ -193,6 +278,12 @@ export function MovesSection({
   const [intensity, setIntensity] = useState<Intensity | ''>('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Inline edit: at most one placement editable at a time, seeded from the row.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editPick, setEditPick] = useState<string>(CUSTOM); // library id, CUSTOM, or KEEP
+  const [editCustom, setEditCustom] = useState('');
+  const [editAnchorSec, setEditAnchorSec] = useState('0');
+  const [editIntensity, setEditIntensity] = useState<Intensity | ''>('');
 
   const load = useCallback(async () => {
     try {
@@ -238,6 +329,54 @@ export function MovesSection({
     }
   };
 
+  const startEdit = (m: ClassTrackMove) => {
+    setEditingId(m.id);
+    setEditAnchorSec(msToSec(m.anchorMs));
+    setEditIntensity(m.intensity ?? '');
+    // Seed the reference selector: a library move (its id), a freeform name (CUSTOM),
+    // or a user-move we can't list yet (KEEP — preserved untouched on save).
+    if (m.moveId) {
+      setEditPick(m.moveId);
+      setEditCustom('');
+    } else if (m.userMoveId) {
+      setEditPick(KEEP);
+      setEditCustom('');
+    } else {
+      setEditPick(CUSTOM);
+      setEditCustom(m.nameOverride ?? '');
+    }
+    setError(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
+    if (editPick === CUSTOM && !editCustom.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      // Only send reference fields when the reference actually changes; KEEP sends none,
+      // so the merge-patch preserves the original (e.g. userMoveId). Switching the
+      // reference nulls the others to hold the at-most-one invariant (server re-checks).
+      const ref: UpdateClassTrackMove =
+        editPick === KEEP
+          ? {}
+          : editPick === CUSTOM
+            ? { nameOverride: editCustom.trim(), moveId: null, userMoveId: null }
+            : { moveId: editPick, nameOverride: null, userMoveId: null };
+      await updatePlacedMove(editingId, {
+        anchorMs: secToMs(editAnchorSec),
+        intensity: editIntensity === '' ? null : editIntensity,
+        ...ref,
+      });
+      setEditingId(null);
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const remove = async (id: string) => {
     setBusy(true);
     setError(null);
@@ -256,21 +395,97 @@ export function MovesSection({
       <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Moves</span>
       <ul className="flex flex-col gap-1">
         {moves?.length === 0 && <li className="font-ui text-xs text-text-tertiary">No moves yet.</li>}
-        {moves?.map((m) => (
-          <li key={m.id} className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5">
-            <span className="shrink-0 font-data text-xs text-text-tertiary">{clock(m.anchorMs)}</span>
-            <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">{nameOf(m)}</span>
-            {m.intensity && <IntensityReadout intensity={m.intensity} />}
-            <button
-              className="shrink-0 font-ui text-xs text-intensity-all_out disabled:opacity-40"
-              onClick={() => remove(m.id)}
-              disabled={busy}
-              aria-label={`Delete move ${nameOf(m)}`}
+        {moves?.map((m) =>
+          editingId === m.id ? (
+            <li
+              key={m.id}
+              className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2"
             >
-              Delete
-            </button>
-          </li>
-        ))}
+              <input
+                className={`w-16 ${fieldClass} font-data`}
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={editAnchorSec}
+                onChange={(e) => setEditAnchorSec(e.target.value)}
+                aria-label={`Move time in seconds${anchorHint(durationMs)}`}
+                title={`Time in seconds${anchorHint(durationMs)}`}
+              />
+              <select
+                className={fieldClass}
+                value={editPick}
+                onChange={(e) => setEditPick(e.target.value)}
+                aria-label="Move"
+              >
+                {editPick === KEEP && <option value={KEEP}>Keep current move</option>}
+                <option value={CUSTOM}>Custom…</option>
+                {library.map((lib) => (
+                  <option key={lib.id} value={lib.id}>
+                    {lib.name}
+                  </option>
+                ))}
+              </select>
+              {editPick === CUSTOM && (
+                <input
+                  className={`min-w-0 flex-1 ${fieldClass}`}
+                  placeholder="Move name"
+                  value={editCustom}
+                  onChange={(e) => setEditCustom(e.target.value)}
+                  aria-label="Custom move name"
+                />
+              )}
+              <select
+                className={fieldClass}
+                value={editIntensity}
+                onChange={(e) => setEditIntensity(e.target.value as Intensity | '')}
+                aria-label="Move intensity (optional)"
+              >
+                <option value="">intensity —</option>
+                {intensityValues.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
+                onClick={saveEdit}
+                disabled={busy || (editPick === CUSTOM && !editCustom.trim())}
+              >
+                Save
+              </button>
+              <button
+                className="shrink-0 font-ui text-xs text-text-tertiary disabled:opacity-40"
+                onClick={() => setEditingId(null)}
+                disabled={busy}
+              >
+                Cancel
+              </button>
+            </li>
+          ) : (
+            <li key={m.id} className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5">
+              <span className="shrink-0 font-data text-xs text-text-tertiary">{clock(m.anchorMs)}</span>
+              <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">{nameOf(m)}</span>
+              {m.intensity && <IntensityReadout intensity={m.intensity} />}
+              <button
+                className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
+                onClick={() => startEdit(m)}
+                disabled={busy}
+                aria-label={`Edit move ${nameOf(m)}`}
+              >
+                Edit
+              </button>
+              <button
+                className="shrink-0 font-ui text-xs text-intensity-all_out disabled:opacity-40"
+                onClick={() => remove(m.id)}
+                disabled={busy}
+                aria-label={`Delete move ${nameOf(m)}`}
+              >
+                Delete
+              </button>
+            </li>
+          ),
+        )}
       </ul>
       <div className="flex flex-wrap items-center gap-2">
         <input

@@ -223,17 +223,24 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
 - ✅ **Slice 4 — cue + placed-move authoring** (`ChoreographyEditor`): add/list/delete cues (anchor +
   text) and placed moves (a `GET /moves` library move or freeform `nameOverride`, anchored, optional
   intensity; honors the at-most-one-reference invariant). Added the cue/move/library client fns.
-- ✅ **Slice 5 — drag + keyboard reorder of the track list** *(branch `feat/web-builder-drag-reorder`,
-  PR pending)*: the ordered song rows reorder by dragging a dedicated grip handle (kept off the selection
-  button so click-to-select and drag never collide) and by keyboard (↑/↓ on the focused grip — native DnD
-  isn't keyboard-operable). Persists via the existing `POST /classes/:id/tracks/reorder` (edit access)
-  and reloads the detail so the ribbon + per-track offsets recompute; optimistic order with rollback on
-  failure; view-only shows no grip. New pure `moveItem` helper (`lib/reorder.ts`, unit-tested) +
-  `reorderTracks` client fn. No schema/API-contract/shared change. `pnpm test` now api 159 + web 11 = **170**.
+- ✅ **Slice 5 — drag + keyboard reorder of the track list** (merged, PR #9): the ordered song rows
+  reorder by dragging a dedicated grip handle (kept off the selection button so click-to-select and drag
+  never collide) and by keyboard (↑/↓ on the focused grip — native DnD isn't keyboard-operable). Persists
+  via the existing `POST /classes/:id/tracks/reorder` (edit access) and reloads the detail so the ribbon +
+  per-track offsets recompute; optimistic order with rollback on failure; view-only shows no grip. New
+  pure `moveItem` helper (`lib/reorder.ts`, unit-tested) + `reorderTracks` client fn. No
+  schema/API-contract/shared change.
+- ✅ **Slice 6 — inline-edit existing cues & placed moves** *(branch `feat/web-builder-inline-edit`,
+  PR pending)*: the `ChoreographyEditor` cue/move rows gain an **Edit** affordance (one row editable at a
+  time, seeded from the persisted row, Save/Cancel) on top of slice 4's add/list/delete. Cues edit
+  anchor + text; placed moves edit anchor + library-pick/custom-name + optional intensity. Backed by the
+  existing `PATCH /cues/:id` + `PATCH /class-track-moves/:id` (edit access; the move route re-validates
+  the at-most-one-reference invariant on the merged result). Switching a move's reference nulls the
+  others; a "Keep current move" sentinel preserves a non-listable `userMoveId` untouched. `updateCue` +
+  `updatePlacedMove` client fns; no schema/API-contract/shared change. `pnpm test` = api 159 + web 11 = **170**.
 
-**Deferred (flagged in code):** inline-edit of existing cues/moves, custom user-move creation, the cue
-**color picker** (excludes the plasma range), the **on-beat pulse** on the playing row, and the full
-3-pane `09` layout.
+**Deferred (flagged in code):** custom user-move creation, the cue **color picker** (excludes the plasma
+range), the **on-beat pulse** on the playing row, and the full 3-pane `09` layout.
 
 ---
 
