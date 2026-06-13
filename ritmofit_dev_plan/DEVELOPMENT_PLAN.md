@@ -90,11 +90,15 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
 Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
-> **Status (2026-06-12): M1–M3 complete, merged to `main`, and the API backend is deployed to
-> Cloudflare.** A full M1–M3 code-review pass (PR #6) landed 10 bug fixes + 4 cleanups, including the
-> one schema change — **owner-scoped provider-id uniqueness** (migration `0004`). `typecheck`/`lint`/
-> `test` (132) green; remote D1 migrated through `0004`; `ritmofit-api` redeployed. The web app
-> (`apps/web`) is still a skeleton and is **not deployed**. **M4 is the current/next milestone.**
+> **Status (2026-06-12): M1–M4 complete, merged to `main`, and fully deployed.** The whole app — API +
+> web planning surface — is **live at `https://ritmofit.studio`**, served by one Worker (Workers static
+> assets; single origin ⇒ first-party auth, no CORS), with remote D1 migrated through `0005`. M4
+> (Explore / sharing UX) shipped in three slices — share-by-email, team-sharing, and the Explore feed
+> (`classes.visibility`, public VIEW floor, `GET /explore`, save-a-copy); **featured curation is
+> deliberately deferred**. CI (`.github/workflows/ci.yml`) gates `typecheck`/`lint`/`test` (159) on every
+> push/PR — **advisory** (enforced branch protection needs GitHub Pro/public; repo is private/Free).
+> Full deploy + CI record in [`../CLAUDE.md`](../CLAUDE.md). **Next milestone: iOS Phase 2** (the native
+> live surface in `ritmofit-ios`, against this same backend/run-payload). Web build order is **done**.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);
@@ -103,9 +107,10 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 - **M2 ✅ done: Music-provider integration.** SoundCloud first; search, provider-ID resolution, optional
   third-party BPM, deep-link playback. Spotify + Apple Music adapters behind the mock until real creds.
 - **M3 ✅ done: Live mode + iOS parity polish.** Cue prompter, interval timers; run-payload hardened.
-- **M4 (current): Explore / featured / sharing UX** on top of the M1 `shares` model. Two open
-  decisions before slice 1 — how "featured" is determined (admin flag vs. derived eligibility), and the
-  publish/visibility model — see the M4 plan discussion.
+- **M4 ✅ done: Explore / sharing UX** on the M1 `shares` model — share-by-email, team-sharing, and the
+  Explore feed (publish via `classes.visibility`, public VIEW floor, `GET /explore`, save-a-copy). The
+  two open decisions were settled: publish/visibility = a `visibility` enum; **featured = deferred** (no
+  admin concept yet — it remains a future slice). All deployed.
 
 ---
 
