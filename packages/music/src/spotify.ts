@@ -22,7 +22,10 @@ import { AppTokenCache } from './app-token.js';
 
 const DEFAULT_API_BASE = 'https://api.spotify.com/v1';
 const DEFAULT_TOKEN_URL = 'https://accounts.spotify.com/api/token';
-const SEARCH_LIMIT = 25;
+// Spotify's docs say search `limit` may be 0–50, but the client-credentials flow
+// now rejects higher values with 400 "Invalid limit" (verified in prod); 10 is a
+// safe, ample page for the add-track picker.
+const SEARCH_LIMIT = 10;
 
 export interface SpotifyConfig {
   clientId: string;
@@ -119,7 +122,9 @@ class SpotifyProvider implements MusicProvider {
         });
         if (retry.ok) return readJson(retry, 'spotify');
       }
-      throw new Error(`Spotify request failed: ${res.status}`);
+      // Surface the upstream message (truncated) so a 400/403 is diagnosable in logs.
+      const detail = await res.text().catch(() => '');
+      throw new Error(`Spotify request failed: ${res.status} ${detail.slice(0, 200)}`.trim());
     }
     return readJson(res, 'spotify');
   }
