@@ -346,8 +346,8 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   fallback for legacy/changed ids), so **two cues/moves sharing an `anchorMs` disambiguate** — closing the
   slice-12/16 caveat. `id` threads through `TimelineMarker`/`computeTimeline` → `onSelectTrack` →
   `Dashboard` `markerFocus` → `Cues`/`MovesSection`. This also hardens the contract iOS Phase 2 consumes.
-  `pnpm test` = api 159 + web 49 = **208**; typecheck (4 pkgs) · lint · web build green. *Pending merge/
-  deploy.*
+  `pnpm test` = api 159 + web 49 = **208**; typecheck (4 pkgs) · lint · web build green. **Merged PR #33,
+  deployed 2026-06-13** (Worker version `7edfda8a`; **no schema/migration** — additive contract).
 
 **Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the **playing-track pulse
 in the planning timeline** (no "playing" state in the builder), the timeline **playhead** / tap-to-seek (a
