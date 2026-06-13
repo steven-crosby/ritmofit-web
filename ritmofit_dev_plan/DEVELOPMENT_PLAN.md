@@ -112,10 +112,12 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > version `810f25d3`)*. **Slice 8** adds the **cue color picker** (rationed palette, no plasma; tags the
 > existing `cues.color`; deployed, Worker `74a94ec5`). **Slice 9** adds **custom user-moves** (create +
 > place reusable moves from the inspector; web-only — the `/user-moves` routes + run-payload name
-> resolution already existed; `pnpm test` = api 159 + web 30 = **189**; *merged PR #17, **deployed
-> 2026-06-12**, Worker `511af62c`*). All three slices are no schema/API/shared change.
-> Deferred: the on-beat pulse, the timeline-marker strip, the segment band, managing custom moves. See
-> `milestones.md` for the full slice log.
+> resolution already existed; *merged PR #17, **deployed 2026-06-12**, Worker `511af62c`*). **Slice 10**
+> adds the **timeline-marker strip** beneath the ribbon (proportional track blocks + ▲ cue / ◆ move markers
+> on a shared time axis; static, no playhead; `pnpm test` = api 159 + web 37 = **196**; *branch
+> `feat/web-timeline-strip`, not yet deployed*). All slices are no schema/API/shared change.
+> Deferred: the on-beat pulse + playhead, marker interaction (tap-to-seek), the segment band, managing
+> custom moves. See `milestones.md` for the full slice log.
 >
 > **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
 > backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.

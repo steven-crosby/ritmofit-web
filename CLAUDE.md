@@ -250,9 +250,18 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   "Library" and a **"＋ New custom move…"** option (create-and-place, then selects it). Picker values are
   source-prefixed (`m:`/`u:`) via pure unit-tested `lib/move-pick.ts`; `nameOf` resolves user-move names.
   Also retired the `KEEP` sentinel and fixed the PR #10 `TODO(select-fallback)`. No schema/API/shared
-  change. `pnpm test` = api 159 + web 30 = **189**; build green. Deferred: managing custom moves
-  (rename/delete/description/`baseMoveId`).
-- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): the on-beat pulse, the horizontal
-  timeline-marker strip, the segment band (design-concept-only), and managing custom moves.
+  change. `pnpm test` = api 159 + web 30 = **189**; build green. Merged PR #17, deployed (Worker
+  `511af62c`). Deferred: managing custom moves (rename/delete/description/`baseMoveId`).
+- **Slice 10 — timeline-marker strip** (branch `feat/web-timeline-strip`): a thin timeline band beneath
+  the energy ribbon sharing its time axis — proportional numbered track blocks with cue (▲) / placed-move
+  (◆) markers at `trackStart + clamp(anchorMs, 0, trackDuration)`. Distinct shapes (not color alone); cue
+  markers carry the cue color tag, move markers the intensity color (decorative; shape + position + a
+  `time — text/name` title/aria carry meaning). New `TimelineStrip` + pure unit-tested `computeTimeline`
+  (same duration-share math as `computeRibbonSegments` so it aligns under the ribbon; null/zero-duration
+  tracks drop block + markers). Rendered in the ribbon card. Static (no playhead — a Live concern),
+  read-only. No schema/API/shared change. `pnpm test` = api 159 + web 37 = **196**; build green.
+- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): the on-beat pulse + timeline playhead,
+  marker interaction (tap-to-seek / click-to-select), the segment band (design-concept-only), and managing
+  custom moves.
 - Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
   `milestones.md`. **Next major milestone remains iOS Phase 2.**

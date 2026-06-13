@@ -271,11 +271,21 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   `TODO(select-fallback)`** (a fallback `<option>` for an unresolved id when the library/user-moves fetch
   fails). No schema/API-contract/shared change. `pnpm test` = api 159 + web 30 = **189**. **Merged PR #17,
   deployed 2026-06-12** (Worker version `511af62c`; no schema/migration).
+- ✅ **Slice 10 — timeline-marker strip**: a thin **timeline** band beneath the energy ribbon that shares
+  its time axis — proportional numbered **track blocks** with **cue (▲)** and **placed-move (◆)** markers at
+  their absolute time (`trackStart + clamp(anchorMs, 0, trackDuration)`). Cues/moves are **distinct shapes**
+  (not color alone, 09); cue markers carry the cue's color tag, move markers the intensity color — both
+  decorative, with shape + position + a `time — text/name` title/aria carrying the meaning. New
+  `TimelineStrip` component + a pure, unit-tested `computeTimeline` (same duration-share math as
+  `computeRibbonSegments`, so the strip lines up under the ribbon; null/zero-duration tracks drop their
+  block + markers). Rendered inside the ribbon card in `Dashboard`. **Static — no playhead** (a Live /
+  on-beat concern, deferred); read-only this slice. No schema/API-contract/shared change. `pnpm test` =
+  api 159 + web 37 = **196**.
 
 **Deferred (flagged in code):** **managing** custom moves (rename/delete/description/`baseMoveId`), the
-**on-beat pulse** on the playing row, and the horizontal **timeline strip** (cue/move markers +
-playhead) plus the **segment band** under the ribbon (the latter is design-concept-only — no
-`class_sections` schema). *(The PR #10 `TODO(select-fallback)` was resolved in slice 9.)*
+**on-beat pulse** on the playing row + the timeline **playhead**, marker **interaction** (tap-to-seek /
+click-to-select), and the **segment band** under the ribbon (design-concept-only — no `class_sections`
+schema). *(The PR #10 `TODO(select-fallback)` was resolved in slice 9.)*
 
 ---
 

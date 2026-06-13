@@ -25,6 +25,7 @@ import { moveItem } from '../lib/reorder.js';
 import { avgBpm, formatDuration } from '../lib/class-summary.js';
 import { LiveMode } from './LiveMode.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
+import { TimelineStrip } from './TimelineStrip.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { CuesSection, MovesSection } from './ChoreographyEditor.js';
 import { ShareDialog } from './ShareDialog.js';
@@ -295,10 +296,12 @@ function ClassWorkspace({
           onClassUpdated={onClassUpdated}
         />
 
-        {/* The energy arc — the class's shape, derived from the run-payload (no new schema). */}
+        {/* The energy arc + timeline — the class's shape and its cue/move markers,
+            sharing one time axis, both derived from the run-payload (no new schema). */}
         {payload && payload.tracks.length > 0 && (
           <div className="rounded-card bg-bg-raised p-4 shadow-card">
             <IntensityRibbon payload={payload} />
+            <TimelineStrip payload={payload} />
           </div>
         )}
 
