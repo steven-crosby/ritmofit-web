@@ -28,8 +28,21 @@ effectiveAccess(user, class):
   shares = sharesFor(class)
   if any share grants user EDIT              -> EDIT
   if any share grants user VIEW              -> VIEW
+  if class.visibility == 'public'            -> VIEW   # M4 public floor
   else                                       -> NONE
 ```
+
+### The public visibility floor (M4)
+
+A class with `visibility = 'public'` (the owner published it to Explore) grants
+**VIEW** to **any authenticated user**. This floor sits *below* shares, so it never
+caps higher access (owner/edit/view-share still win) and never grants more than
+VIEW. It lives **inside `resolveAccess`** — still one gate — so every class-scoped
+read (`GET /classes/:id`, `/run-payload`, …) serves a public class without a
+parallel code path. It deliberately does **not** feed `listVisibleClasses`: a public
+class you don't own/aren't shared on stays out of your `GET /classes` ("my classes")
+list — discovery is the separate, public `GET /explore` feed. Default is `private`,
+so nothing is public until explicitly published.
 
 Where "a share grants user X":
 - `target_user_id == X.id`, OR

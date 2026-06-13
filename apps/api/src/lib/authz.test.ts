@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { SharePermission } from '@ritmofit/shared';
+import type { SharePermission, ClassVisibility } from '@ritmofit/shared';
 import {
   AccessError,
   assertAccess,
@@ -13,10 +13,14 @@ const OWNER = 'user_owner';
 const CLASS = 'class_1';
 
 /** A store whose two lookups return fixed values — for composition tests. */
-function stubStore(owner: string | null, share: SharePermission | null): AuthzStore {
+function stubStore(
+  owner: string | null,
+  share: SharePermission | null,
+  visibility: ClassVisibility = 'private',
+): AuthzStore {
   return {
-    async getClassOwner() {
-      return owner;
+    async getClassMeta() {
+      return owner === null ? null : { ownerUserId: owner, visibility };
     },
     async getEffectiveShare() {
       return share;
@@ -39,13 +43,17 @@ function memoryStore(opts: {
   owners?: Record<string, string>;
   shares?: FakeShare[];
   memberships?: Array<{ teamId: string; userId: string }>;
+  publicClasses?: string[];
 }): AuthzStore {
   const owners = opts.owners ?? {};
   const shares = opts.shares ?? [];
   const memberships = opts.memberships ?? [];
+  const publicClasses = new Set(opts.publicClasses ?? []);
   return {
-    async getClassOwner(classId) {
-      return owners[classId] ?? null;
+    async getClassMeta(classId) {
+      const ownerUserId = owners[classId];
+      if (ownerUserId === undefined) return null;
+      return { ownerUserId, visibility: publicClasses.has(classId) ? 'public' : 'private' };
     },
     async getEffectiveShare(classId, userId) {
       const myTeams = new Set(
@@ -99,6 +107,33 @@ describe('resolveAccess — composition', () => {
 
   it('non-owner with no share → none', async () => {
     expect(await resolveAccess(stubStore(OWNER, null), ME, CLASS)).toBe('none');
+  });
+});
+
+describe('resolveAccess — public visibility floor (M4)', () => {
+  it('public class, no share → view (anyone authenticated can see it)', async () => {
+    expect(await resolveAccess(stubStore(OWNER, null, 'public'), ME, CLASS)).toBe('view');
+  });
+
+  it('public class still lets a share grant edit (floor never caps higher access)', async () => {
+    expect(await resolveAccess(stubStore(OWNER, 'edit', 'public'), ME, CLASS)).toBe('edit');
+  });
+
+  it('owner of a public class → owner', async () => {
+    expect(await resolveAccess(stubStore(ME, null, 'public'), ME, CLASS)).toBe('owner');
+  });
+
+  it('private class, no share → none (no floor)', async () => {
+    expect(await resolveAccess(stubStore(OWNER, null, 'private'), ME, CLASS)).toBe('none');
+  });
+
+  it('missing class is never public-viewable → none', async () => {
+    expect(await resolveAccess(stubStore(null, null, 'public'), ME, CLASS)).toBe('none');
+  });
+
+  it('public via the memory store union → view', async () => {
+    const store = memoryStore({ owners: { [CLASS]: OWNER }, publicClasses: [CLASS] });
+    expect(await resolveAccess(store, ME, CLASS)).toBe('view');
   });
 });
 

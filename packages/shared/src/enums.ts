@@ -33,6 +33,16 @@ export const classStatusValues = ['draft', 'ready', 'archived'] as const;
 export const classStatusSchema = z.enum(classStatusValues);
 export type ClassStatus = z.infer<typeof classStatusSchema>;
 
+/**
+ * Discovery visibility of a class (M4) — **orthogonal** to lifecycle `status`.
+ * `private` (default) is owner + shares only; `public` is additionally listed in
+ * the Explore feed and grants VIEW to any authenticated user (see
+ * `authorization.md` → public floor).
+ */
+export const classVisibilityValues = ['private', 'public'] as const;
+export const classVisibilitySchema = z.enum(classVisibilityValues);
+export type ClassVisibility = z.infer<typeof classVisibilitySchema>;
+
 /** Permission granted by a share. */
 export const sharePermissionValues = ['view', 'edit'] as const;
 export const sharePermissionSchema = z.enum(sharePermissionValues);

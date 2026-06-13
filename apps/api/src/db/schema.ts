@@ -32,6 +32,7 @@ import {
   teamRoleValues,
   classTemplateValues,
   classStatusValues,
+  classVisibilityValues,
   sharePermissionValues,
   shareResourceTypeValues,
 } from '@ritmofit/shared';
@@ -118,6 +119,9 @@ export const classes = sqliteTable(
     description: text('description'),
     template: text('template', { enum: classTemplateValues }),
     status: text('status', { enum: classStatusValues }).notNull().default('draft'),
+    // Discovery visibility (M4), orthogonal to lifecycle `status`. Default private
+    // so every existing/new class stays owner+shares-only until explicitly published.
+    visibility: text('visibility', { enum: classVisibilityValues }).notNull().default('private'),
     targetDurationMs: integer('target_duration_ms'),
     ...timestamps(),
     lastOpenedAt: integer('last_opened_at'),
@@ -125,6 +129,8 @@ export const classes = sqliteTable(
   (t) => [
     enumCheck('classes_template_check', t.template, classTemplateValues),
     enumCheck('classes_status_check', t.status, classStatusValues),
+    enumCheck('classes_visibility_check', t.visibility, classVisibilityValues),
+    index('classes_visibility_idx').on(t.visibility),
   ],
 );
 

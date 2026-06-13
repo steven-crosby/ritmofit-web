@@ -10,8 +10,9 @@ import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { requireAccess } from '../lib/authz.js';
+import { resolveShareTarget } from '../lib/share-target.js';
 import { HttpError } from '../lib/errors.js';
-import { serializeShare } from '../lib/serialize.js';
+import { serializeShare, serializeShareView } from '../lib/serialize.js';
 import { shares, users, teams } from '../db/schema.js';
 
 export const shareRoutes = new Hono<AppEnv>();
@@ -28,8 +29,14 @@ shareRoutes.post('/shares', async (c) => {
   // Managing shares on a class requires owning it.
   await requireAccess(db, c.get('userId'), body.resourceId, 'owner');
 
-  // The target must exist (clean 422 rather than a raw FK failure).
-  if (body.targetUserId != null) {
+  // Resolve the target to a stored (userId | teamId) pair. The target must exist
+  // (clean 422 rather than a raw FK failure). `targetEmail` is resolved here so
+  // the UI can share by email without a separate user-search endpoint.
+  let emailUserId: string | null = null;
+  if (body.targetEmail != null) {
+    const u = await db.select({ id: users.id }).from(users).where(eq(users.email, body.targetEmail)).get();
+    emailUserId = u?.id ?? null;
+  } else if (body.targetUserId != null) {
     const u = await db.select({ id: users.id }).from(users).where(eq(users.id, body.targetUserId)).get();
     if (!u) throw new HttpError(422, 'VALIDATION_ERROR', 'No such target user.');
   } else {
@@ -37,10 +44,16 @@ shareRoutes.post('/shares', async (c) => {
     if (!t) throw new HttpError(422, 'VALIDATION_ERROR', 'No such target team.');
   }
 
+  const { targetUserId, targetTeamId } = resolveShareTarget({
+    directUserId: body.targetUserId ?? null,
+    teamId: body.targetTeamId ?? null,
+    emailGiven: body.targetEmail != null,
+    emailUserId,
+    selfUserId: c.get('userId'),
+  });
+
   const targetMatch =
-    body.targetUserId != null
-      ? eq(shares.targetUserId, body.targetUserId)
-      : eq(shares.targetTeamId, body.targetTeamId!);
+    targetUserId != null ? eq(shares.targetUserId, targetUserId) : eq(shares.targetTeamId, targetTeamId!);
   const existing = await db
     .select()
     .from(shares)
@@ -59,8 +72,8 @@ shareRoutes.post('/shares', async (c) => {
     resourceType: body.resourceType,
     resourceId: body.resourceId,
     sharedByUserId: c.get('userId'),
-    targetUserId: body.targetUserId ?? null,
-    targetTeamId: body.targetTeamId ?? null,
+    targetUserId,
+    targetTeamId,
     permission: body.permission,
     createdAt: now,
     updatedAt: now,
@@ -69,17 +82,32 @@ shareRoutes.post('/shares', async (c) => {
   return c.json(serializeShare(row), 201);
 });
 
-/** GET /classes/:id/shares — list shares on a class (owner only). */
+/**
+ * GET /classes/:id/shares — list shares on a class (owner only), each enriched
+ * with its target's display fields (user email/name or team name) so the UI can
+ * show *who* a class is shared with. Left joins keep the unmatched target side null.
+ */
 shareRoutes.get('/classes/:id/shares', async (c) => {
   const db = createDb(c.env);
   const classId = c.req.param('id');
   await requireAccess(db, c.get('userId'), classId, 'owner');
   const rows = await db
-    .select()
+    .select({
+      share: shares,
+      email: users.email,
+      displayName: users.displayName,
+      teamName: teams.name,
+    })
     .from(shares)
+    .leftJoin(users, eq(users.id, shares.targetUserId))
+    .leftJoin(teams, eq(teams.id, shares.targetTeamId))
     .where(and(eq(shares.resourceType, 'class'), eq(shares.resourceId, classId)))
     .all();
-  return c.json(rows.map(serializeShare));
+  return c.json(
+    rows.map((r) =>
+      serializeShareView(r.share, { email: r.email, displayName: r.displayName, teamName: r.teamName }),
+    ),
+  );
 });
 
 /** Load a share and require the caller to own its resource; else 404 (existence hidden). */

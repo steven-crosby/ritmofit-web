@@ -139,3 +139,49 @@ fixes + 4 cleanups. Highlights:
 present, owner-scoped unique index live); `ritmofit-api` redeployed (version `06a942a4`), health `200`,
 purge Cron intact. The **web app is still not deployed** — `ritmofit.studio` is DNS-only (404) and
 `apps/web` has no Pages/deploy config yet; only the API backend is live.
+
+**M4 (Explore / sharing UX) — complete + deployed (2026-06-12).** Three slices, all on the M1 `shares`
+model (backend was already complete; M4 was UX + small ergonomic fills):
+- **Slice 1 — share-by-email:** `ShareDialog` (owner-only) shares a class with a user at view/edit,
+  lists/edits/revokes shares. `POST /shares` resolves `targetEmail` server-side (no user-search
+  endpoint — privacy) + self/unknown-email `422`; `GET /classes/:id/shares` returns the enriched
+  `ShareView` (target email/name/team-name). No migration.
+- **Slice 2 — team-sharing:** `TeamsDialog` (create team, members by email, remove/leave with
+  owner/admin gating) + a share-to-team picker in `ShareDialog`. `POST /teams/:id/members` resolves
+  `email` (mirrors the share fix). No migration.
+- **Slice 3 — Explore feed:** new `classes.visibility` enum (`private` default / `public`), **migration
+  `0005_worried_harpoon.sql`** (rebuild + backfill `private`; the drizzle-generated INSERT was
+  hand-fixed — it sourced the new column from the old table). A **public VIEW floor** is wired into the
+  central `resolveAccess` (public class ⇒ anyone-authenticated VIEW; does **not** enter the `GET /classes`
+  union). `GET /explore` lists public classes newest-first (`ExploreClass` = class + owner label + track
+  count). `POST /classes/:id/copy` "saves a copy" of a class into the caller's library (fresh
+  `draft`/`private` owned class, cloning class_tracks + cues + moves, reusing the cross-user-safe
+  copy helpers; a shared foreign track cloned once via `resolveTrackForClassCopy`). Web: **Explore**
+  browser (preview + save-a-copy) and an owner-only **Publish / Make private** toggle. **Featured
+  curation is deliberately deferred** (no admin concept yet). `typecheck` (4 pkgs) · `lint` · `test`
+  (**159**) green; copy verified live end-to-end against local D1.
+- **Deployed to prod (2026-06-12):** migration `0005` applied to remote D1 (classes table empty, so no
+  backfill; `visibility` column live); `ritmofit-api` redeployed, health `200`, `/explore` +
+  `/classes/:id/copy` live and session-gated, purge Cron intact.
+
+**Web app deployed — single-origin (2026-06-12).** The SPA is now served by the **same `ritmofit-api`
+Worker** as the API (Cloudflare Workers static assets), so the whole app is live at
+`https://ritmofit-api.steven-crosby09.workers.dev`. This was a deliberate hosting choice: one origin ⇒
+the Better Auth session cookie is **first-party** (no `SameSite=None`, immune to third-party-cookie
+blocking) and there's **no CORS**. Mechanics:
+- `apps/api/wrangler.toml` has an `[assets]` block: `directory = "../web/dist"`,
+  `not_found_handling = "single-page-application"`, `run_worker_first = ["/api/*"]`. The Worker (Hono)
+  runs first for `/api/*` (REST + Better Auth); every other path is served from the built SPA, with an
+  index.html fallback for client-side routes.
+- `apps/web/src/lib/auth-client.ts`: `API_BASE_URL` is **relative (`''`) in prod** (same origin),
+  `http://localhost:8787` in dev (cross-port). So the bundle has no hardcoded origin and works unchanged
+  on `*.workers.dev` or any future custom domain.
+- **Deploy is two steps, in order:** `pnpm --filter @ritmofit/web build` (→ `apps/web/dist`) then
+  `pnpm --filter @ritmofit/api run deploy` (note `run` — `pnpm deploy` is a pnpm builtin). Remote D1
+  migrations (`db:migrate --remote`, i.e. `wrangler d1 migrations apply ritmofit --remote`) must run
+  **before** deploying code that uses the new columns.
+- **Verified in prod (2026-06-12):** root + SPA deep links serve index.html (200); `/api/v1/health` 200
+  JSON; `/api/v1/explore` 401 unauthed; and a full authed **first-party-cookie** flow (sign-up → create →
+  publish → `/explore` → copy) succeeded against remote D1, then all test data was deleted. `ritmofit.studio`
+  remains DNS-only and is **not** wired up — point it at this Worker (custom domain) when you want the
+  branded URL; no code change needed thanks to the relative base.

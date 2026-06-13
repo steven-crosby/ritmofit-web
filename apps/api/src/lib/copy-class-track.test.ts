@@ -2,9 +2,65 @@ import { describe, it, expect } from 'vitest';
 import {
   providerRefKey,
   resolveCopiedTrack,
+  resolveTrackForClassCopy,
   refsToClone,
   remapPlacedMoveForCaller,
 } from './copy-class-track.js';
+
+describe('resolveTrackForClassCopy', () => {
+  it('clones a foreign track only on first encounter, reusing the clone after', () => {
+    const memo = new Map<string, string>();
+    const first = resolveTrackForClassCopy({
+      sourceTrackId: 't1',
+      sourceTrackOwnerId: 'alice',
+      callerId: 'me',
+      newTrackId: 'clone1',
+      memo,
+    });
+    expect(first).toEqual({ trackId: 'clone1', cloneTrack: true });
+
+    // A second class_track pointing at the same foreign track reuses the clone and
+    // does NOT clone again (a second newTrackId is ignored).
+    const second = resolveTrackForClassCopy({
+      sourceTrackId: 't1',
+      sourceTrackOwnerId: 'alice',
+      callerId: 'me',
+      newTrackId: 'clone2_ignored',
+      memo,
+    });
+    expect(second).toEqual({ trackId: 'clone1', cloneTrack: false });
+  });
+
+  it('reuses the caller`s own track without cloning, and memoizes it', () => {
+    const memo = new Map<string, string>();
+    const a = resolveTrackForClassCopy({
+      sourceTrackId: 't2',
+      sourceTrackOwnerId: 'me',
+      callerId: 'me',
+      newTrackId: 'unused',
+      memo,
+    });
+    expect(a).toEqual({ trackId: 't2', cloneTrack: false });
+    const b = resolveTrackForClassCopy({
+      sourceTrackId: 't2',
+      sourceTrackOwnerId: 'me',
+      callerId: 'me',
+      newTrackId: 'unused2',
+      memo,
+    });
+    expect(b).toEqual({ trackId: 't2', cloneTrack: false });
+  });
+
+  it('clones two distinct foreign tracks independently', () => {
+    const memo = new Map<string, string>();
+    expect(
+      resolveTrackForClassCopy({ sourceTrackId: 'tA', sourceTrackOwnerId: 'x', callerId: 'me', newTrackId: 'cA', memo }),
+    ).toEqual({ trackId: 'cA', cloneTrack: true });
+    expect(
+      resolveTrackForClassCopy({ sourceTrackId: 'tB', sourceTrackOwnerId: 'x', callerId: 'me', newTrackId: 'cB', memo }),
+    ).toEqual({ trackId: 'cB', cloneTrack: true });
+  });
+});
 
 describe('resolveCopiedTrack', () => {
   it('reuses the caller`s own track (no clone)', () => {

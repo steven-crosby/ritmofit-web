@@ -49,11 +49,22 @@ export type CreateTeam = z.infer<typeof createTeamSchema>;
 export const teamWithRoleSchema = teamSchema.extend({ role: teamRoleSchema });
 export type TeamWithRole = z.infer<typeof teamWithRoleSchema>;
 
-/** Add a member to a team. `role` defaults to `member` server-side. */
-export const addTeamMemberSchema = z.object({
-  userId: z.string().min(1),
-  role: teamRoleSchema.optional(),
-});
+/**
+ * Add a member to a team. Targets **exactly one** of a user by id (`userId`) or by
+ * `email` (resolved to an id server-side, so the UI can add members without a
+ * user-search endpoint — same privacy stance as `createShareSchema`). `role`
+ * defaults to `member` server-side.
+ */
+export const addTeamMemberSchema = z
+  .object({
+    userId: z.string().min(1).nullish(),
+    email: z.email().nullish(),
+    role: teamRoleSchema.optional(),
+  })
+  .refine((m) => (m.userId != null) !== (m.email != null), {
+    error: 'Provide exactly one of userId / email.',
+    path: ['email'],
+  });
 export type AddTeamMember = z.infer<typeof addTeamMemberSchema>;
 
 /** A team member with their profile — the `GET /teams/:id/members` row shape. */

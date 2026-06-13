@@ -6,6 +6,7 @@ import { uuidSchema, timestampMsSchema, timestampsShape } from '../common.js';
 import {
   classTemplateSchema,
   classStatusSchema,
+  classVisibilitySchema,
   intensitySchema,
   accessLevelSchema,
 } from '../enums.js';
@@ -21,6 +22,7 @@ export const classSchema = z.object({
   description: z.string().nullable(),
   template: classTemplateSchema.nullable(),
   status: classStatusSchema,
+  visibility: classVisibilitySchema,
   targetDurationMs: timestampMsSchema.nullable(),
   ...timestampsShape,
   lastOpenedAt: timestampMsSchema.nullable(),
@@ -49,19 +51,36 @@ export type ClassTrack = z.infer<typeof classTrackSchema>;
 
 // ── Request / response variants (step 6 routes) ─────────────────────────────
 
-/** Create a class. Server sets `id` / `ownerUserId` / timestamps; `status` defaults `draft`. */
+/**
+ * Create a class. Server sets `id` / `ownerUserId` / timestamps; `status` defaults
+ * `draft` and `visibility` defaults `private` (a class is never born public).
+ */
 export const createClassSchema = classSchema
-  .pick({ title: true, description: true, template: true, targetDurationMs: true, status: true })
-  .partial({ description: true, template: true, targetDurationMs: true, status: true });
+  .pick({ title: true, description: true, template: true, targetDurationMs: true, status: true, visibility: true })
+  .partial({ description: true, template: true, targetDurationMs: true, status: true, visibility: true });
 export type CreateClass = z.infer<typeof createClassSchema>;
 
-/** Patch a class — every mutable field optional. Ownership and ids are immutable. */
+/**
+ * Patch a class — every mutable field optional. Ownership and ids are immutable.
+ * `visibility` is how an owner publishes to / unpublishes from Explore (M4).
+ */
 export const updateClassSchema = createClassSchema.partial();
 export type UpdateClass = z.infer<typeof updateClassSchema>;
 
 /** A class plus the caller's effective access level — the shape of list / get responses. */
 export const classWithAccessSchema = classSchema.extend({ accessLevel: accessLevelSchema });
 export type ClassWithAccess = z.infer<typeof classWithAccessSchema>;
+
+/**
+ * A public class as it appears in the Explore feed (M4): the class plus its
+ * owner's display label and track count, so a discovery card needs no extra
+ * fetch. Read-only — discovering is not access; a viewer copies it to edit.
+ */
+export const exploreClassSchema = classSchema.extend({
+  ownerName: z.string().min(1),
+  trackCount: z.int().nonnegative(),
+});
+export type ExploreClass = z.infer<typeof exploreClassSchema>;
 
 /** Per-class context a caller may set when placing / editing a class_track. */
 const classTrackInputFields = z.object({
@@ -93,3 +112,12 @@ export type ReorderClassTracks = z.infer<typeof reorderClassTracksSchema>;
 /** Copy a class_track (with its cues + moves) into another class. */
 export const copyClassTrackSchema = z.object({ targetClassId: uuidSchema });
 export type CopyClassTrack = z.infer<typeof copyClassTrackSchema>;
+
+/**
+ * Copy a whole class into the caller's library (M4 slice 3b — "save a copy" from
+ * Explore). Optional `title` overrides the default `Copy of …`. The copy is always
+ * a fresh `draft` / `private` class owned by the caller; foreign tracks + private
+ * moves are cloned/snapshotted (same cross-user safety as the class_track copy).
+ */
+export const copyClassSchema = z.object({ title: z.string().min(1).optional() });
+export type CopyClass = z.infer<typeof copyClassSchema>;

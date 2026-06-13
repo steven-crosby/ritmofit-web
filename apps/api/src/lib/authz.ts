@@ -17,7 +17,12 @@
  * this helper's contract narrow and unambiguous (`authorization.md` §Non-class).
  */
 import { and, eq, or } from 'drizzle-orm';
-import { accessLevelValues, type AccessLevel, type SharePermission } from '@ritmofit/shared';
+import {
+  accessLevelValues,
+  type AccessLevel,
+  type SharePermission,
+  type ClassVisibility,
+} from '@ritmofit/shared';
 import { classes, classTracks, cues, classTrackMoves, shares, teamMemberships } from '../db/schema.js';
 import { HttpError } from './errors.js';
 import type { Db } from './db.js';
@@ -42,8 +47,12 @@ export class AccessError extends HttpError {
  * Both lookups are single queries against indexed columns.
  */
 export interface AuthzStore {
-  /** The class's owner id, or `null` if the class does not exist. */
-  getClassOwner(classId: string): Promise<string | null>;
+  /**
+   * The class's owner id + discovery visibility, or `null` if the class does not
+   * exist. Visibility lets a `public` class grant a VIEW floor to anyone (M4),
+   * fetched in the same lookup as the owner so the common path stays one query.
+   */
+  getClassMeta(classId: string): Promise<{ ownerUserId: string; visibility: ClassVisibility } | null>;
   /**
    * The highest share permission granting `userId` access to `classId` — directly
    * or via team membership — or `null` if no share applies.
@@ -58,21 +67,24 @@ export function accessRank(level: AccessLevel): number {
 
 /**
  * Resolve the effective access level for a (user, class) pair. Pure given a store
- * — owner wins, then the highest applicable share, then none (also none when the
- * class is missing, so it's indistinguishable from "no access").
+ * — owner wins, then the highest applicable share, then a `public` VIEW floor
+ * (M4), then none (also none when the class is missing, so it's indistinguishable
+ * from "no access"). The public floor sits **below** shares so owner/edit still win
+ * higher, and never raises access above VIEW.
  */
 export async function resolveAccess(
   store: AuthzStore,
   userId: string,
   classId: string,
 ): Promise<AccessLevel> {
-  const owner = await store.getClassOwner(classId);
-  if (owner === null) return 'none';
-  if (owner === userId) return 'owner';
+  const meta = await store.getClassMeta(classId);
+  if (meta === null) return 'none';
+  if (meta.ownerUserId === userId) return 'owner';
 
   const share = await store.getEffectiveShare(classId, userId);
   if (share === 'edit') return 'edit';
   if (share === 'view') return 'view';
+  if (meta.visibility === 'public') return 'view';
   return 'none';
 }
 
@@ -92,13 +104,13 @@ export function assertAccess(level: AccessLevel, minLevel: MinAccessLevel): Acce
 /** Drizzle-backed store: the real one-query lookups against D1. */
 export function createDrizzleAuthzStore(db: Db): AuthzStore {
   return {
-    async getClassOwner(classId) {
+    async getClassMeta(classId) {
       const row = await db
-        .select({ ownerUserId: classes.ownerUserId })
+        .select({ ownerUserId: classes.ownerUserId, visibility: classes.visibility })
         .from(classes)
         .where(eq(classes.id, classId))
         .get();
-      return row?.ownerUserId ?? null;
+      return row ?? null;
     },
 
     async getEffectiveShare(classId, userId) {

@@ -19,5 +19,5 @@ export function App() {
   }
 
   if (!session) return <Login />;
-  return <Dashboard userName={session.user.name || session.user.email} />;
+  return <Dashboard userId={session.user.id} userName={session.user.name || session.user.email} />;
 }

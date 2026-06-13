@@ -48,6 +48,29 @@ export function refsToClone<T extends { provider: Provider; providerTrackId: str
 }
 
 /**
+ * Whole-class variant of {@link resolveCopiedTrack}: resolve the track a copied
+ * class_track points at while cloning any one foreign track **at most once** across
+ * the whole copy. Without the memo, two class_tracks referencing the same foreign
+ * track would each forge a separate clone — duplicate tracks, and a second insert of
+ * the same provider ref would hit the owner-scoped unique index. `memo` maps a
+ * source `trackId` to its resolution and is mutated; `cloneTrack` is `true` only on
+ * the **first** encounter of a foreign track (so the caller emits its clone once).
+ */
+export function resolveTrackForClassCopy(opts: {
+  sourceTrackId: string;
+  sourceTrackOwnerId: string | null;
+  callerId: string;
+  newTrackId: string;
+  memo: Map<string, string>;
+}): { trackId: string; cloneTrack: boolean } {
+  const seen = opts.memo.get(opts.sourceTrackId);
+  if (seen !== undefined) return { trackId: seen, cloneTrack: false };
+  const resolved = resolveCopiedTrack(opts);
+  opts.memo.set(opts.sourceTrackId, resolved.trackId);
+  return resolved;
+}
+
+/**
  * Resolve a copied placement's move refs for the caller. A `user_move` the caller
  * doesn't own is private to its owner, so drop the ref and snapshot its name into
  * `nameOverride` (preserving the at-least-one-of (move|user_move|name) invariant

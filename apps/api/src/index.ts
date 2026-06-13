@@ -20,6 +20,7 @@ import { providerConnectionRoutes } from './routes/provider-connections.js';
 import { mockRoutes } from './routes/mock.js';
 import { teamRoutes } from './routes/teams.js';
 import { shareRoutes } from './routes/shares.js';
+import { exploreRoutes } from './routes/explore.js';
 
 export type { Env } from './lib/types.js';
 
@@ -107,6 +108,7 @@ api.route('/', providerRoutes);
 api.route('/', mockRoutes);
 api.route('/', teamRoutes);
 api.route('/', shareRoutes);
+api.route('/', exploreRoutes);
 
 /**
  * Worker entry. Beyond `fetch`, a daily Cron Trigger (`[triggers]` in

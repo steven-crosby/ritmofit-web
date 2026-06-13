@@ -18,11 +18,13 @@ import {
   teamMembershipSchema,
   teamMemberViewSchema,
   shareSchema,
+  shareViewSchema,
   type User,
   type Team,
   type TeamMembership,
   type TeamMemberView,
   type Share,
+  type ShareView,
   type Class,
   type ClassTrack,
   type Cue,
@@ -116,6 +118,23 @@ export function serializeTeamMemberView(row: TeamMemberView): TeamMemberView {
 /** Map a `shares` row to the shared `Share`. */
 export function serializeShare(row: ShareRow): Share {
   return shareSchema.parse(row);
+}
+
+/**
+ * Map a `shares` row plus its joined target display fields to the `ShareView`
+ * contract. `target` carries the left-joined user/team columns (null on the side
+ * that doesn't match the share's target kind).
+ */
+export function serializeShareView(
+  row: ShareRow,
+  target: { email: string | null; displayName: string | null; teamName: string | null },
+): ShareView {
+  return shareViewSchema.parse({
+    ...row,
+    targetEmail: target.email,
+    targetDisplayName: target.displayName,
+    targetTeamName: target.teamName,
+  });
 }
 
 /** Better Auth returns `Date`s (timestamp_ms columns); the wire format is epoch ms. */

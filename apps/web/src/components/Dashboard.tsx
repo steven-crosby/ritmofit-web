@@ -2,20 +2,33 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   intensityValues,
+  type Class,
   type ClassWithAccess,
   type ClassTrack,
   type Intensity,
   type RunPayload,
 } from '@ritmofit/shared';
 import { authClient } from '../lib/auth-client.js';
-import { listClasses, createClass, listClassTracks, addTrack, getRunPayload } from '../lib/api.js';
+import {
+  listClasses,
+  createClass,
+  updateClass,
+  listClassTracks,
+  addTrack,
+  getRunPayload,
+} from '../lib/api.js';
 import { LiveMode } from './LiveMode.js';
+import { ShareDialog } from './ShareDialog.js';
+import { TeamsDialog } from './TeamsDialog.js';
+import { ExploreDialog } from './ExploreDialog.js';
 
-export function Dashboard({ userName }: { userName: string }) {
+export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
   const [classes, setClasses] = useState<ClassWithAccess[]>([]);
   const [selected, setSelected] = useState<ClassWithAccess | null>(null);
   const [tracks, setTracks] = useState<ClassTrack[]>([]);
   const [live, setLive] = useState<RunPayload | null>(null);
+  const [teamsOpen, setTeamsOpen] = useState(false);
+  const [exploreOpen, setExploreOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshClasses = useCallback(async () => {
@@ -43,6 +56,15 @@ export function Dashboard({ userName }: { userName: string }) {
     }
   }, []);
 
+  // Merge an updated class into the list + the open detail pane (preserving the
+  // caller's access level, which PATCH responses don't carry).
+  const applyClassUpdate = useCallback((updated: Class) => {
+    setClasses((prev) =>
+      prev.map((c) => (c.id === updated.id ? { ...updated, accessLevel: c.accessLevel } : c)),
+    );
+    setSelected((prev) => (prev && prev.id === updated.id ? { ...updated, accessLevel: prev.accessLevel } : prev));
+  }, []);
+
   if (live) return <LiveMode payload={live} onExit={() => setLive(null)} />;
 
   return (
@@ -52,13 +74,43 @@ export function Dashboard({ userName }: { userName: string }) {
           <h1 className="font-display text-3xl font-semibold text-text-primary">RitmoFit</h1>
           <p className="font-ui text-sm text-text-secondary">Signed in as {userName}</p>
         </div>
-        <button
-          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
-          onClick={() => authClient.signOut()}
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+            onClick={() => setExploreOpen(true)}
+          >
+            Explore
+          </button>
+          <button
+            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+            onClick={() => setTeamsOpen(true)}
+          >
+            Teams
+          </button>
+          <button
+            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+            onClick={() => authClient.signOut()}
+          >
+            Sign out
+          </button>
+        </div>
       </header>
+
+      {teamsOpen && <TeamsDialog userId={userId} onClose={() => setTeamsOpen(false)} />}
+      {exploreOpen && (
+        <ExploreDialog
+          onClose={() => setExploreOpen(false)}
+          onPreview={(classId) => {
+            setExploreOpen(false);
+            void runClass(classId);
+          }}
+          onCopied={async (cls) => {
+            setExploreOpen(false);
+            await refreshClasses();
+            await openClass({ ...cls, accessLevel: 'owner' });
+          }}
+        />
+      )}
 
       {error && <p className="font-ui text-sm text-intensity-all_out">{error}</p>}
 
@@ -96,6 +148,7 @@ export function Dashboard({ userName }: { userName: string }) {
               tracks={tracks}
               onTrackAdded={async () => setTracks(await listClassTracks(selected.id))}
               onRun={() => runClass(selected.id)}
+              onClassUpdated={applyClassUpdate}
             />
           ) : (
             <p className="font-ui text-text-tertiary">Select or create a class.</p>
@@ -135,24 +188,66 @@ function ClassDetail({
   tracks,
   onTrackAdded,
   onRun,
+  onClassUpdated,
 }: {
   cls: ClassWithAccess;
   tracks: ClassTrack[];
   onTrackAdded: () => void;
   onRun: () => void;
+  onClassUpdated: (cls: Class) => void;
 }) {
+  const [sharing, setSharing] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const isPublic = cls.visibility === 'public';
+  const isOwner = cls.accessLevel === 'owner';
+
+  const togglePublish = async () => {
+    setPublishing(true);
+    try {
+      onClassUpdated(await updateClass(cls.id, { visibility: isPublic ? 'private' : 'public' }));
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 rounded-card bg-bg-raised p-5 shadow-card">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-semibold text-text-primary">{cls.title}</h2>
-        <button
-          className="rounded-pill bg-brand px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
-          onClick={onRun}
-          disabled={tracks.length === 0}
-          title={tracks.length === 0 ? 'Add a track first' : 'Run this class live'}
-        >
-          ▶ Run live
-        </button>
+      {sharing && <ShareDialog classId={cls.id} classTitle={cls.title} onClose={() => setSharing(false)} />}
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="truncate font-display text-xl font-semibold text-text-primary">{cls.title}</h2>
+          {/* Visibility: icon + label, never color alone (accessibility). */}
+          <p className="font-ui text-xs text-text-tertiary">
+            {isPublic ? '🌐 Public — listed in Explore' : '🔒 Private'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isOwner && (
+            <button
+              className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+              onClick={togglePublish}
+              disabled={publishing}
+            >
+              {isPublic ? 'Make private' : 'Publish'}
+            </button>
+          )}
+          {isOwner && (
+            <button
+              className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+              onClick={() => setSharing(true)}
+            >
+              Share
+            </button>
+          )}
+          <button
+            className="rounded-pill bg-brand px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+            onClick={onRun}
+            disabled={tracks.length === 0}
+            title={tracks.length === 0 ? 'Add a track first' : 'Run this class live'}
+          >
+            ▶ Run live
+          </button>
+        </div>
       </div>
       <ol className="flex flex-col gap-2">
         {tracks.map((t) => (

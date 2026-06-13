@@ -18,6 +18,7 @@ import { createDb } from '../lib/db.js';
 import { HttpError, isUniqueViolation } from '../lib/errors.js';
 import { serializeTeam, serializeTeamMembership, serializeTeamMemberView } from '../lib/serialize.js';
 import { requireTeamMembership, requireTeamManager } from '../lib/team-authz.js';
+import { resolveMemberTarget } from '../lib/member-target.js';
 import { teams, teamMemberships, users } from '../db/schema.js';
 
 export const teamRoutes = new Hono<AppEnv>();
@@ -106,12 +107,25 @@ teamRoutes.post('/teams/:id/members', async (c) => {
   await requireTeamManager(db, c.get('userId'), teamId);
   const body = addTeamMemberSchema.parse(await c.req.json());
 
-  const target = await db.select({ id: users.id }).from(users).where(eq(users.id, body.userId)).get();
-  if (!target) throw new HttpError(422, 'VALIDATION_ERROR', 'No such user.');
+  // Resolve the target to a user id. `email` is resolved here (no user-search
+  // endpoint — privacy); a directly-supplied id must still exist.
+  let emailUserId: string | null = null;
+  if (body.email != null) {
+    const u = await db.select({ id: users.id }).from(users).where(eq(users.email, body.email)).get();
+    emailUserId = u?.id ?? null;
+  } else {
+    const u = await db.select({ id: users.id }).from(users).where(eq(users.id, body.userId!)).get();
+    if (!u) throw new HttpError(422, 'VALIDATION_ERROR', 'No such user.');
+  }
+  const userId = resolveMemberTarget({
+    directUserId: body.userId ?? null,
+    emailGiven: body.email != null,
+    emailUserId,
+  });
 
   const row = {
     id: crypto.randomUUID(),
-    userId: body.userId,
+    userId,
     teamId,
     role: body.role ?? 'member',
     joinedAt: Date.now(),

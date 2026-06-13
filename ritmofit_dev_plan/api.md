@@ -42,7 +42,7 @@ surfaced in the generated OpenAPI spec.
 | GET | `/classes` | List classes the user can see: owned ∪ shared-directly ∪ shared-via-team. Indicates each class's access level. |
 | POST | `/classes` | Create a class (owner = caller). |
 | GET | `/classes/:id` | Fetch one class (owner or any share). |
-| PATCH | `/classes/:id` | Update class fields (edit access). |
+| PATCH | `/classes/:id` | Update class fields (edit access). Setting `visibility` (`private`/`public`) is how an owner publishes to / unpublishes from Explore (M4). |
 | DELETE | `/classes/:id` | Delete (owner only). |
 | GET | `/classes/:id/run-payload` | **Versioned single-fetch payload to run the class live** (see below). |
 
@@ -103,6 +103,13 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
 > `owner_user_id` = caller and uses the **same** shared Zod shape as `POST /tracks`. Referencing an
 > *existing* track in that route requires the caller to own it.
 
+## **Explore** (M4 — public discovery)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/explore` | List `public` classes, newest first, each with its owner's display label + track count (`ExploreClass`). Authed, but **not** `requireAccess`-gated — it's a public catalog (the `visibility` column is the gate). A public class is then openable via the normal `GET /classes/:id` / `/run-payload` thanks to the public VIEW floor (`authorization.md`). Featured curation is deferred. |
+| POST | `/classes/:id/copy` | **Save a copy** of a class into the caller's library (M4 slice 3b). **VIEW** access (so a `public` class qualifies via the floor). Returns a fresh `draft` / `private` class the caller owns, cloning every class_track with its cues + placed moves. Reuses the class_track-copy cross-user safety: foreign tracks (+ their not-already-owned provider ids) are cloned into the caller's library and private `user_move` refs snapshotted to `name_override`; a foreign track shared by several tracks is cloned once. Optional body `{ title }` overrides the default `Copy of …`. |
+
 ---
 
 ## Teams *(schema in M1; routes built last)*
@@ -113,15 +120,15 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
 | POST | `/teams` | Create a team (caller becomes owner). |
 | GET | `/teams/:id` | Fetch a team (member only). |
 | GET | `/teams/:id/members` | List members. |
-| POST | `/teams/:id/members` | Add a member (owner/admin only). |
+| POST | `/teams/:id/members` | Add a member (owner/admin only). Targets **exactly one** of `userId` or `email`; `email` is resolved to a user id server-side (M4) — same privacy stance as `POST /shares` (no user-search endpoint). Unknown email → `422`; already a member → `409`. |
 | DELETE | `/teams/:id/members/:userId` | Remove a member (owner/admin, or self-leave). |
 
 ## Shares *(schema in M1; routes built last)*
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/classes/:id/shares` | List shares on a class (owner only). |
-| POST | `/shares` | Share a class with a user OR a team, at view/edit. Exactly one target. |
+| GET | `/classes/:id/shares` | List shares on a class (owner only). Each row is enriched with its target's display fields (`targetEmail` / `targetDisplayName` for a user, `targetTeamName` for a team) so the UI can show *who* without a second lookup. |
+| POST | `/shares` | Share a class with a user OR a team, at view/edit. **Exactly one** target: `targetUserId`, `targetTeamId`, or `targetEmail`. `targetEmail` is resolved to a user id server-side (M4) so the web UI can share by email without a user-search endpoint; an unknown email → `422`, self-share → `422`. Re-sharing the same (resource, target) updates the existing row. |
 | PATCH | `/shares/:id` | Change a share's permission. |
 | DELETE | `/shares/:id` | Revoke a share. |
 
