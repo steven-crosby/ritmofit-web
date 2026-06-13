@@ -252,7 +252,8 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   Also retired the `KEEP` sentinel and fixed the PR #10 `TODO(select-fallback)`. No schema/API/shared
   change. `pnpm test` = api 159 + web 30 = **189**; build green. Merged PR #17, deployed (Worker
   `511af62c`). Deferred: managing custom moves (rename/delete/description/`baseMoveId`).
-- **Slice 10 — timeline-marker strip** (branch `feat/web-timeline-strip`): a thin timeline band beneath
+- **Slice 10 — timeline-marker strip** (merged PR #19, **deployed 2026-06-12**, Worker version
+  `ca91c8c5`): a thin timeline band beneath
   the energy ribbon sharing its time axis — proportional numbered track blocks with cue (▲) / placed-move
   (◆) markers at `trackStart + clamp(anchorMs, 0, trackDuration)`. Distinct shapes (not color alone); cue
   markers carry the cue color tag, move markers the intensity color (decorative; shape + position + a
