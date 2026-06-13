@@ -288,7 +288,8 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   and bubbles `onChanged` (wired to the class-detail reload so ribbon/timeline move names refresh). Creation
   stays in the picker; `baseMoveId`/`template` editing deferred. No schema/API/shared change. `pnpm test` =
   api 159 + web 39 = **198**; build green.
-- **Slice 14 — on-beat pulse (Live HUD)** (branch `feat/web-onbeat-pulse`): the focal "Now" cue card in
+- **Slice 14 — on-beat pulse (Live HUD)** (merged PR #27, **deployed 2026-06-13**, Worker version
+  `9a298d21`): the focal "Now" cue card in
   Live mode breathes one cycle per beat (`--rf-beat = 60s / --rf-bpm`, `onBeat` easing) while playing — the
   signature tempo cue (`10-rhythm-system.md`). CSS-only (`rf-beat-pulse` keyframes in `index.css`,
   transform + box-shadow); `LiveMode` toggles the class + inline `--rf-bpm` when `playing && displayBpm`.

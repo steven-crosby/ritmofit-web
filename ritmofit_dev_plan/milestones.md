@@ -314,7 +314,8 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   `index.css`, transform + box-shadow only); `LiveMode` adds the class + inline `--rf-bpm` to the Now card
   when `playing && displayBpm != null`. **Exactly one pulsing element**, and **fully removed under
   `prefers-reduced-motion`** (a user loses affect, not information — the cue stays legible). No
-  schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**.
+  schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**. **Merged PR #27, deployed
+  2026-06-13** (Worker version `9a298d21`; no schema/migration).
 
 **Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the All-Out **"drop"**
 cross-fade (10 §5) + the **playing-track pulse in the planning timeline** (no "playing" state in the
