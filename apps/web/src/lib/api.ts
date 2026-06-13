@@ -10,6 +10,7 @@ import type {
   ExploreClass,
   ClassTrack,
   AddClassTrack,
+  UpdateClassTrack,
   RunPayload,
   Share,
   ShareView,
@@ -58,6 +59,10 @@ export const listClassTracks = (classId: string) =>
   api<ClassTrack[]>(`/classes/${classId}/tracks`);
 export const addTrack = (classId: string, body: AddClassTrack) =>
   api<ClassTrack>(`/classes/${classId}/tracks`, { method: 'POST', body: JSON.stringify(body) });
+export const updateClassTrack = (classTrackId: string, body: UpdateClassTrack) =>
+  api<ClassTrack>(`/class-tracks/${classTrackId}`, { method: 'PATCH', body: JSON.stringify(body) });
+export const deleteClassTrack = (classTrackId: string) =>
+  api<void>(`/class-tracks/${classTrackId}`, { method: 'DELETE' });
 export const getRunPayload = (classId: string) =>
   api<RunPayload>(`/classes/${classId}/run-payload`);
 

@@ -16,6 +16,8 @@ import {
   updateClass,
   listClassTracks,
   addTrack,
+  updateClassTrack,
+  deleteClassTrack,
   getRunPayload,
 } from '../lib/api.js';
 import { LiveMode } from './LiveMode.js';
@@ -222,8 +224,16 @@ function ClassDetail({
 }) {
   const [sharing, setSharing] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  // The selected track (by class_track id) drives the inspector. Reset when the
+  // open class changes so a stale selection from another class never lingers.
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  useEffect(() => setSelectedTrackId(null), [cls.id]);
   const isPublic = cls.visibility === 'public';
   const isOwner = cls.accessLevel === 'owner';
+  const canEdit = cls.accessLevel === 'owner' || cls.accessLevel === 'edit';
+
+  const selectedTrack = tracks.find((t) => t.id === selectedTrackId) ?? null;
+  const selectedEntry = payload?.tracks.find((e) => e.classTrackId === selectedTrackId) ?? null;
 
   const togglePublish = async () => {
     setPublishing(true);
@@ -281,9 +291,32 @@ function ClassDetail({
             lean rows only if the payload couldn't load but tracks exist. */}
         {tracks.length > 0 &&
           (payload
-            ? payload.tracks.map((t) => <SongRow key={t.classTrackId} entry={t} />)
+            ? payload.tracks.map((t) => (
+                <SongRow
+                  key={t.classTrackId}
+                  entry={t}
+                  selected={t.classTrackId === selectedTrackId}
+                  onSelect={() =>
+                    setSelectedTrackId((cur) => (cur === t.classTrackId ? null : t.classTrackId))
+                  }
+                />
+              ))
             : tracks.map((t) => <LeanTrackRow key={t.id} track={t} />))}
       </ol>
+      {/* Inspector: edit the selected track. Editing reshapes the ribbon + rows live. */}
+      {selectedTrack && (
+        <TrackInspector
+          key={selectedTrack.id}
+          track={selectedTrack}
+          title={selectedEntry?.track.title ?? 'Track'}
+          canEdit={canEdit}
+          onSaved={onTrackAdded}
+          onRemoved={() => {
+            setSelectedTrackId(null);
+            onTrackAdded();
+          }}
+        />
+      )}
       <AddTrackForm classId={cls.id} onAdded={onTrackAdded} />
     </div>
   );
@@ -293,38 +326,56 @@ function ClassDetail({
  * The low-noise song row (design system `09-class-builder-guidelines.md`): small
  * album art, title + artist, BPM weighted in the Martian Mono data face, and
  * intensity as bars+label — never color alone. No oversized art, no chrome.
- * Drag-reorder and click-to-edit are deliberately later slices.
+ * The whole row is the selection target (opens the inspector). Drag-reorder is a
+ * later slice.
  */
-function SongRow({ entry }: { entry: RunPayloadTrackEntry }) {
+function SongRow({
+  entry,
+  selected,
+  onSelect,
+}: {
+  entry: RunPayloadTrackEntry;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   return (
-    <li className="flex items-center gap-3 rounded-card bg-bg-base px-3 py-2">
-      <span className="w-5 shrink-0 font-data text-xs text-text-tertiary">{entry.position + 1}</span>
-      {/* Album art is a small creative trigger (44px), not a focal point. */}
-      {entry.track.albumArtUrl ? (
-        <img
-          src={entry.track.albumArtUrl}
-          alt=""
-          className="h-11 w-11 shrink-0 rounded-card object-cover"
-        />
-      ) : (
-        <span
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised text-text-tertiary"
-          aria-hidden
-        >
-          ♪
-        </span>
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-ui text-sm font-semibold text-text-primary">{entry.track.title}</p>
-        <p className="truncate font-ui text-xs text-text-secondary">{entry.track.artist}</p>
-      </div>
-      <IntensityReadout intensity={entry.intensity} />
-      {entry.displayBpm != null && (
-        <span className="shrink-0 font-data text-sm text-text-secondary">
-          {entry.displayBpm}
-          <span className="ml-1 text-xs text-text-tertiary">BPM</span>
-        </span>
-      )}
+    <li>
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-pressed={selected}
+        className={`flex w-full items-center gap-3 rounded-card bg-bg-base px-3 py-2 text-left ${
+          selected ? 'ring-2 ring-interactive' : ''
+        }`}
+      >
+        <span className="w-5 shrink-0 font-data text-xs text-text-tertiary">{entry.position + 1}</span>
+        {/* Album art is a small creative trigger (44px), not a focal point. */}
+        {entry.track.albumArtUrl ? (
+          <img
+            src={entry.track.albumArtUrl}
+            alt=""
+            className="h-11 w-11 shrink-0 rounded-card object-cover"
+          />
+        ) : (
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised text-text-tertiary"
+            aria-hidden
+          >
+            ♪
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-ui text-sm font-semibold text-text-primary">{entry.track.title}</p>
+          <p className="truncate font-ui text-xs text-text-secondary">{entry.track.artist}</p>
+        </div>
+        <IntensityReadout intensity={entry.intensity} />
+        {entry.displayBpm != null && (
+          <span className="shrink-0 font-data text-sm text-text-secondary">
+            {entry.displayBpm}
+            <span className="ml-1 text-xs text-text-tertiary">BPM</span>
+          </span>
+        )}
+      </button>
     </li>
   );
 }
@@ -339,6 +390,149 @@ function LeanTrackRow({ track }: { track: ClassTrack }) {
         +{Math.round((track.startOffsetMs ?? 0) / 1000)}s
       </span>
     </li>
+  );
+}
+
+/**
+ * The detail editor / inspector (design system `09-class-builder-guidelines.md`):
+ * edit the selected track's intensity, display-BPM override, and notes — and
+ * remove it. Seeds from the persisted ClassTrack (which carries the raw override,
+ * unlike the run-payload's resolved `displayBpm`). Saving reloads the class so the
+ * ribbon + rows reflect the change immediately. View-only access ⇒ read-only.
+ */
+function TrackInspector({
+  track,
+  title,
+  canEdit,
+  onSaved,
+  onRemoved,
+}: {
+  track: ClassTrack;
+  title: string;
+  canEdit: boolean;
+  onSaved: () => void;
+  onRemoved: () => void;
+}) {
+  const [intensity, setIntensity] = useState<Intensity>(track.intensity);
+  const [bpm, setBpm] = useState(track.displayBpmOverride?.toString() ?? '');
+  const [notes, setNotes] = useState(track.notes ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const trimmedBpm = bpm.trim();
+      await updateClassTrack(track.id, {
+        intensity,
+        displayBpmOverride: trimmedBpm === '' ? null : Number(trimmedBpm),
+        notes: notes.trim() === '' ? null : notes.trim(),
+      });
+      onSaved();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteClassTrack(track.id);
+      onRemoved();
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="truncate font-display text-sm font-semibold text-text-primary">{title}</h3>
+        <span className="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary">
+          Track {track.position + 1}
+        </span>
+      </div>
+
+      {!canEdit ? (
+        // Read-only: show the current values without editable controls.
+        <div className="flex items-center gap-4">
+          <IntensityReadout intensity={track.intensity} />
+          {track.displayBpmOverride != null && (
+            <span className="font-data text-sm text-text-secondary">{track.displayBpmOverride} BPM</span>
+          )}
+          {track.notes && <span className="font-ui text-xs text-text-tertiary">{track.notes}</span>}
+        </div>
+      ) : (
+        <>
+          <label className="flex flex-col gap-1">
+            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Intensity</span>
+            <div className="flex items-center gap-3">
+              <select
+                className="rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-ui text-sm text-text-primary"
+                value={intensity}
+                onChange={(e) => setIntensity(e.target.value as Intensity)}
+              >
+                {intensityValues.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+              <IntensityReadout intensity={intensity} />
+            </div>
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+              Display BPM override
+            </span>
+            <input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              placeholder="—"
+              className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+              value={bpm}
+              onChange={(e) => setBpm(e.target.value)}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Notes</span>
+            <textarea
+              rows={2}
+              className="resize-none rounded-card border border-interactive/30 bg-bg-raised px-3 py-2 font-ui text-sm text-text-primary"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </label>
+
+          {error && <p className="font-ui text-sm text-intensity-all_out">{error}</p>}
+
+          <div className="flex items-center gap-2">
+            <button
+              className="rounded-pill bg-brand px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+              onClick={save}
+              disabled={busy}
+            >
+              Save
+            </button>
+            <button
+              className="ml-auto rounded-pill border border-intensity-all_out/50 px-4 py-1.5 font-ui text-sm text-intensity-all_out disabled:opacity-40"
+              onClick={remove}
+              disabled={busy}
+            >
+              Remove track
+            </button>
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
