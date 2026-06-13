@@ -288,7 +288,8 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   block/marker's `classTrackId` + `position`; `TimelineStrip` gained optional `selectedTrackId` +
   `onSelectTrack` (a plain select, not toggle), with a non-interactive fallback preserved. `Dashboard`
   wires `onSelectTrack={setSelectedTrackId}`. Marker hit areas are padded around the glyph. No
-  schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**.
+  schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**. **Merged PR #21, deployed
+  2026-06-13** (Worker version `755e3489`; no schema/migration).
 
 **Deferred (flagged in code):** **managing** custom moves (rename/delete/description/`baseMoveId`), the
 **on-beat pulse** on the playing row + the timeline **playhead** / tap-to-seek (a Live concern),
