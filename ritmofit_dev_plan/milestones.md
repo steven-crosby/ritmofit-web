@@ -298,8 +298,16 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   rings the row whose `anchorMs` matches (correlated by `anchorMs` since run-payload cues/moves carry **no
   id**). No schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**. **Merged PR #23,
   deployed 2026-06-13** (Worker version `802ebe48`; no schema/migration).
+- ✅ **Slice 13 — manage custom moves**: a `CustomMovesDialog` (opened via a **Manage…** button in a track's
+  Moves section) lists the caller's custom moves and lets them **rename**, edit the **description**, and
+  **delete** (inline two-step confirm; deleting a referenced move is safe — the server snapshots its name
+  into placements' `nameOverride`). Web-only: added `updateUserMove`/`deleteUserMove` client fns over the
+  existing owner-scoped `PATCH`/`DELETE /user-moves/:id`. On a change, `MovesSection` refreshes the picker
+  + this track's placements and bubbles `onChanged` (`TrackInspector` wires it to the class-detail reload,
+  so the ribbon/timeline move names stay current). Creation stays in the picker; **`baseMoveId`/`template`
+  editing deferred**. No schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**.
 
-**Deferred (flagged in code):** **managing** custom moves (rename/delete/description/`baseMoveId`), the
+**Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the
 **on-beat pulse** on the playing row + the timeline **playhead** / tap-to-seek (a Live concern), and the
 **segment band** under the ribbon (design-concept-only — no `class_sections` schema). *Marker→row focus
 caveat:* two cues/moves at the **same `anchorMs`** can't be disambiguated (run-payload has no ids) — the

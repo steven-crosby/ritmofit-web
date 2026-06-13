@@ -20,6 +20,7 @@ import type {
   Move,
   UserMove,
   CreateUserMove,
+  UpdateUserMove,
   RunPayload,
   Share,
   ShareView,
@@ -109,6 +110,10 @@ export const listMoves = () => api<Move[]>('/moves');
 export const listUserMoves = () => api<UserMove[]>('/user-moves');
 export const createUserMove = (body: CreateUserMove) =>
   api<UserMove>('/user-moves', { method: 'POST', body: JSON.stringify(body) });
+export const updateUserMove = (id: string, body: UpdateUserMove) =>
+  api<UserMove>(`/user-moves/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+export const deleteUserMove = (id: string) =>
+  api<void>(`/user-moves/${id}`, { method: 'DELETE' });
 
 // ── Sharing (M4) ────────────────────────────────────────────────────────────
 export const listShares = (classId: string) =>

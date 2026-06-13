@@ -117,11 +117,12 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > on a shared time axis; *merged PR #19, **deployed 2026-06-12**, Worker `ca91c8c5`*). **Slice 11** makes
 > the timeline's blocks + markers **clickable/keyboard-selectable** (open a track in the inspector,
 > cross-highlight its row; *merged PR #21, **deployed 2026-06-13**, Worker `755e3489`*). **Slice 12** makes
-> a cue/move **marker click focus its row** in the inspector (scroll + flash, correlated by `anchorMs`;
-> *merged PR #23, **deployed 2026-06-13**, Worker `802ebe48`*).
-> All slices are no schema/API/shared change.
-> Deferred: the on-beat pulse + playhead/tap-to-seek, the segment band, managing custom moves. See
-> `milestones.md` for the full slice log.
+> a cue/move **marker click focus its row** in the inspector (*merged PR #23, deployed, Worker `802ebe48`*).
+> **Slice 13** adds a **custom-moves manager** (rename / description / delete via a dialog from the Moves
+> section; web-only over the existing `/user-moves` routes; `pnpm test` = api 159 + web 39 = **198**;
+> *branch `feat/web-manage-custom-moves`, not yet deployed*). All slices are no schema/API/shared change.
+> Deferred: the on-beat pulse + playhead/tap-to-seek, the segment band, custom-move `baseMoveId`/`template`
+> editing. See `milestones.md` for the full slice log.
 >
 > **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
 > backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.

@@ -33,6 +33,7 @@ import {
 import { IntensityReadout } from './IntensityReadout.js';
 import { CUE_COLOR_TAGS, tagLabel } from '../lib/cue-colors.js';
 import { CUSTOM, NEW, parseMovePick, pickForPlacement } from '../lib/move-pick.js';
+import { CustomMovesDialog } from './CustomMovesDialog.js';
 
 /** ms → m:ss for an in-track anchor. */
 function clock(ms: number): string {
@@ -389,12 +390,16 @@ export function MovesSection({
   classTrackId,
   durationMs,
   focus = null,
+  onChanged,
 }: {
   classTrackId: string;
   durationMs: number | null;
   focus?: RowFocus;
+  /** Parent reload (run-payload → ribbon/timeline) after the custom-move library changes. */
+  onChanged?: () => void;
 }) {
   const [moves, setMoves] = useState<ClassTrackMove[] | null>(null);
+  const [managing, setManaging] = useState(false);
   const { flashAnchorMs, rowRef } = useFlashFocus(focus, moves != null);
   const [library, setLibrary] = useState<Move[]>([]);
   // The caller's reusable custom moves. Unlike the read-only library these mutate
@@ -583,7 +588,28 @@ export function MovesSection({
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Moves</span>
+      <div className="flex items-center justify-between">
+        <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Moves</span>
+        <button
+          type="button"
+          className="font-ui text-xs text-interactive"
+          onClick={() => setManaging(true)}
+        >
+          Manage…
+        </button>
+      </div>
+      {managing && (
+        <CustomMovesDialog
+          onClose={() => setManaging(false)}
+          onChanged={async () => {
+            // Refresh the picker + this track's placements (a delete snapshots the
+            // move name into placements), then reload the run-payload-derived views.
+            await loadUserMoves();
+            await load();
+            onChanged?.();
+          }}
+        />
+      )}
       <ul className="flex flex-col gap-1">
         {moves?.length === 0 && <li className="font-ui text-xs text-text-tertiary">No moves yet.</li>}
         {moves?.map((m) =>
