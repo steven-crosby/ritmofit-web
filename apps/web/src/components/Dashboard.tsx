@@ -7,6 +7,7 @@ import {
   type ClassTrack,
   type Intensity,
   type RunPayload,
+  type RunPayloadTrackEntry,
 } from '@ritmofit/shared';
 import { authClient } from '../lib/auth-client.js';
 import {
@@ -18,6 +19,8 @@ import {
   getRunPayload,
 } from '../lib/api.js';
 import { LiveMode } from './LiveMode.js';
+import { IntensityRibbon } from './IntensityRibbon.js';
+import { IntensityReadout } from './IntensityReadout.js';
 import { ShareDialog } from './ShareDialog.js';
 import { TeamsDialog } from './TeamsDialog.js';
 import { ExploreDialog } from './ExploreDialog.js';
@@ -26,6 +29,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [classes, setClasses] = useState<ClassWithAccess[]>([]);
   const [selected, setSelected] = useState<ClassWithAccess | null>(null);
   const [tracks, setTracks] = useState<ClassTrack[]>([]);
+  // The open class's run-payload — the server-authoritative assembled timeline that
+  // feeds the energy ribbon (durations + total). Distinct from `live` (full Live mode).
+  const [detailPayload, setDetailPayload] = useState<RunPayload | null>(null);
   const [live, setLive] = useState<RunPayload | null>(null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -43,10 +49,25 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     void refreshClasses();
   }, [refreshClasses]);
 
-  const openClass = useCallback(async (cls: ClassWithAccess) => {
-    setSelected(cls);
-    setTracks(await listClassTracks(cls.id));
+  // Load (or reload) the open class's detail: its tracks plus the run-payload that
+  // drives the energy ribbon. The ribbon is optional, so a payload failure never
+  // blanks the editor — it just hides the ribbon.
+  const loadDetail = useCallback(async (classId: string) => {
+    setTracks(await listClassTracks(classId));
+    try {
+      setDetailPayload(await getRunPayload(classId));
+    } catch {
+      setDetailPayload(null);
+    }
   }, []);
+
+  const openClass = useCallback(
+    async (cls: ClassWithAccess) => {
+      setSelected(cls);
+      await loadDetail(cls.id);
+    },
+    [loadDetail],
+  );
 
   const runClass = useCallback(async (classId: string) => {
     try {
@@ -146,7 +167,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             <ClassDetail
               cls={selected}
               tracks={tracks}
-              onTrackAdded={async () => setTracks(await listClassTracks(selected.id))}
+              payload={detailPayload}
+              onTrackAdded={() => loadDetail(selected.id)}
               onRun={() => runClass(selected.id)}
               onClassUpdated={applyClassUpdate}
             />
@@ -186,12 +208,14 @@ function CreateClassForm({ onCreated }: { onCreated: (cls: Awaited<ReturnType<ty
 function ClassDetail({
   cls,
   tracks,
+  payload,
   onTrackAdded,
   onRun,
   onClassUpdated,
 }: {
   cls: ClassWithAccess;
   tracks: ClassTrack[];
+  payload: RunPayload | null;
   onTrackAdded: () => void;
   onRun: () => void;
   onClassUpdated: (cls: Class) => void;
@@ -249,25 +273,72 @@ function ClassDetail({
           </button>
         </div>
       </div>
+      {/* The energy arc — the class's shape, derived from the run-payload (no new schema). */}
+      {payload && payload.tracks.length > 0 && <IntensityRibbon payload={payload} />}
       <ol className="flex flex-col gap-2">
-        {tracks.map((t) => (
-          <li key={t.id} className="flex items-center gap-3 rounded-pill bg-bg-base px-3 py-2">
-            <span className="font-data text-xs text-text-tertiary">#{t.position + 1}</span>
-            <span
-              className="h-3 w-3 rounded-pill"
-              style={{ backgroundColor: `var(--rf-color-intensity-${t.intensity})` }}
-              aria-hidden
-            />
-            <span className="font-ui text-sm text-text-secondary">{t.intensity}</span>
-            <span className="ml-auto font-data text-xs text-text-tertiary">
-              +{Math.round((t.startOffsetMs ?? 0) / 1000)}s
-            </span>
-          </li>
-        ))}
         {tracks.length === 0 && <li className="font-ui text-sm text-text-tertiary">No tracks yet.</li>}
+        {/* Rich song rows from the run-payload (title/artist/BPM/art); fall back to the
+            lean rows only if the payload couldn't load but tracks exist. */}
+        {tracks.length > 0 &&
+          (payload
+            ? payload.tracks.map((t) => <SongRow key={t.classTrackId} entry={t} />)
+            : tracks.map((t) => <LeanTrackRow key={t.id} track={t} />))}
       </ol>
       <AddTrackForm classId={cls.id} onAdded={onTrackAdded} />
     </div>
+  );
+}
+
+/**
+ * The low-noise song row (design system `09-class-builder-guidelines.md`): small
+ * album art, title + artist, BPM weighted in the Martian Mono data face, and
+ * intensity as bars+label — never color alone. No oversized art, no chrome.
+ * Drag-reorder and click-to-edit are deliberately later slices.
+ */
+function SongRow({ entry }: { entry: RunPayloadTrackEntry }) {
+  return (
+    <li className="flex items-center gap-3 rounded-card bg-bg-base px-3 py-2">
+      <span className="w-5 shrink-0 font-data text-xs text-text-tertiary">{entry.position + 1}</span>
+      {/* Album art is a small creative trigger (44px), not a focal point. */}
+      {entry.track.albumArtUrl ? (
+        <img
+          src={entry.track.albumArtUrl}
+          alt=""
+          className="h-11 w-11 shrink-0 rounded-card object-cover"
+        />
+      ) : (
+        <span
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised text-text-tertiary"
+          aria-hidden
+        >
+          ♪
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-ui text-sm font-semibold text-text-primary">{entry.track.title}</p>
+        <p className="truncate font-ui text-xs text-text-secondary">{entry.track.artist}</p>
+      </div>
+      <IntensityReadout intensity={entry.intensity} />
+      {entry.displayBpm != null && (
+        <span className="shrink-0 font-data text-sm text-text-secondary">
+          {entry.displayBpm}
+          <span className="ml-1 text-xs text-text-tertiary">BPM</span>
+        </span>
+      )}
+    </li>
+  );
+}
+
+/** Fallback row when the run-payload is unavailable: just the persisted class-track. */
+function LeanTrackRow({ track }: { track: ClassTrack }) {
+  return (
+    <li className="flex items-center gap-3 rounded-pill bg-bg-base px-3 py-2">
+      <span className="font-data text-xs text-text-tertiary">#{track.position + 1}</span>
+      <IntensityReadout intensity={track.intensity} />
+      <span className="ml-auto font-data text-xs text-text-tertiary">
+        +{Math.round((track.startOffsetMs ?? 0) / 1000)}s
+      </span>
+    </li>
   );
 }
 
