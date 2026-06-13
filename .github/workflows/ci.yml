@@ -1,0 +1,42 @@
+name: CI
+
+# Quality gate for the pnpm monorepo: typecheck + lint + unit tests. Deploys stay
+# manual by design (see CLAUDE.md) — this workflow never deploys, it only blocks
+# regressions on PRs and pushes to main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same ref cancels the in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: typecheck · lint · test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm/action-setup reads the version from the root package.json
+      # "packageManager" field (pnpm@11.4.0), so there's one source of truth.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc # Node 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
