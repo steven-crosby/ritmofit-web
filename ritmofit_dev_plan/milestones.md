@@ -280,7 +280,8 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   `computeRibbonSegments`, so the strip lines up under the ribbon; null/zero-duration tracks drop their
   block + markers). Rendered inside the ribbon card in `Dashboard`. **Static — no playhead** (a Live /
   on-beat concern, deferred); read-only this slice. No schema/API-contract/shared change. `pnpm test` =
-  api 159 + web 37 = **196**.
+  api 159 + web 37 = **196**. **Merged PR #19, deployed 2026-06-12** (Worker version `ca91c8c5`; no
+  schema/migration).
 
 **Deferred (flagged in code):** **managing** custom moves (rename/delete/description/`baseMoveId`), the
 **on-beat pulse** on the playing row + the timeline **playhead**, marker **interaction** (tap-to-seek /
