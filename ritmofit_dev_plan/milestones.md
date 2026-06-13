@@ -269,7 +269,8 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   `lib/move-pick.ts` (`parseMovePick`/`pickForPlacement`). `nameOf` now resolves user-move names (was
   `(move)`). This also **retired the `KEEP` sentinel** (user moves are listable now) and **fixed the
   `TODO(select-fallback)`** (a fallback `<option>` for an unresolved id when the library/user-moves fetch
-  fails). No schema/API-contract/shared change. `pnpm test` = api 159 + web 30 = **189**.
+  fails). No schema/API-contract/shared change. `pnpm test` = api 159 + web 30 = **189**. **Merged PR #17,
+  deployed 2026-06-12** (Worker version `511af62c`; no schema/migration).
 
 **Deferred (flagged in code):** **managing** custom moves (rename/delete/description/`baseMoveId`), the
 **on-beat pulse** on the playing row, and the horizontal **timeline strip** (cue/move markers +
