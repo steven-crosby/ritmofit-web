@@ -43,6 +43,13 @@
       "when": 1781304306132,
       "tag": "0005_worried_harpoon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1781334029501,
+      "tag": "0006_rapid_psynapse",
+      "breakpoints": true
     }
   ]
 }

@@ -26,6 +26,7 @@ import { avgBpm, formatDuration } from '../lib/class-summary.js';
 import { LiveMode } from './LiveMode.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { TimelineStrip } from './TimelineStrip.js';
+import { SegmentBand } from './SegmentBand.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { CuesSection, MovesSection } from './ChoreographyEditor.js';
 import { ShareDialog } from './ShareDialog.js';
@@ -326,6 +327,12 @@ function ClassWorkspace({
               payload={payload}
               selectedTrackId={selectedTrackId}
               onSelectTrack={selectFromTimeline}
+            />
+            <SegmentBand
+              classId={cls.id}
+              totalDurationMs={payload.class.totalDurationMs}
+              canEdit={canEdit}
+              onChanged={onTrackChanged}
             />
           </div>
         )}

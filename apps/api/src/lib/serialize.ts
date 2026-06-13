@@ -10,6 +10,7 @@ import {
   classTrackSchema,
   cueSchema,
   classTrackMoveSchema,
+  classSectionSchema,
   moveSchema,
   userMoveSchema,
   trackSchema,
@@ -29,6 +30,7 @@ import {
   type ClassTrack,
   type Cue,
   type ClassTrackMove,
+  type ClassSection,
   type Move,
   type UserMove,
   type Track,
@@ -39,6 +41,7 @@ import type {
   classTracks,
   cues,
   classTrackMoves,
+  classSections,
   moves,
   userMoves,
   tracks,
@@ -51,6 +54,7 @@ type ClassRow = typeof classes.$inferSelect;
 type ClassTrackRow = typeof classTracks.$inferSelect;
 type CueRow = typeof cues.$inferSelect;
 type ClassTrackMoveRow = typeof classTrackMoves.$inferSelect;
+type ClassSectionRow = typeof classSections.$inferSelect;
 type MoveRow = typeof moves.$inferSelect;
 type UserMoveRow = typeof userMoves.$inferSelect;
 
@@ -72,6 +76,11 @@ export function serializeCue(row: CueRow): Cue {
 /** Map a `class_track_moves` row to the shared `ClassTrackMove`. */
 export function serializeClassTrackMove(row: ClassTrackMoveRow): ClassTrackMove {
   return classTrackMoveSchema.parse(row);
+}
+
+/** Map a `class_sections` row to the shared `ClassSection`. */
+export function serializeClassSection(row: ClassSectionRow): ClassSection {
+  return classSectionSchema.parse(row);
 }
 
 /** Map a `moves` row to the shared `Move`. */

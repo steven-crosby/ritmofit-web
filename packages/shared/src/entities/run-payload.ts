@@ -7,7 +7,7 @@
  */
 import { z } from 'zod';
 import { uuidSchema, offsetMsSchema, timestampMsSchema } from '../common.js';
-import { classTemplateSchema, intensitySchema, providerSchema } from '../enums.js';
+import { classTemplateSchema, intensitySchema, providerSchema, segmentTypeSchema } from '../enums.js';
 
 /** Schema version of the run-payload (bump on a breaking shape change; D12). */
 export const RUN_PAYLOAD_SCHEMA_VERSION = 1 as const;
@@ -75,11 +75,23 @@ const runPayloadTrackEntrySchema = z.object({
   moves: z.array(runPayloadMoveSchema),
 });
 
+/**
+ * A class section / segment band, projected onto the timeline. Additive to v1
+ * (a non-breaking field; `schemaVersion` stays 1). The band runs from
+ * `startOffsetMs` to the next section's start (or the class end).
+ */
+const runPayloadSectionSchema = z.object({
+  type: segmentTypeSchema,
+  startOffsetMs: offsetMsSchema,
+});
+
 /** `GET /classes/:id/run-payload` response. */
 export const runPayloadSchema = z.object({
   schemaVersion: z.literal(RUN_PAYLOAD_SCHEMA_VERSION),
   class: runPayloadClassSchema,
   tracks: z.array(runPayloadTrackEntrySchema),
+  /** Segment bands, ordered by `startOffsetMs` (additive v1 field; may be empty). */
+  sections: z.array(runPayloadSectionSchema),
 });
 export type RunPayload = z.infer<typeof runPayloadSchema>;
 export type RunPayloadTrackEntry = z.infer<typeof runPayloadTrackEntrySchema>;

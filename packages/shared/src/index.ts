@@ -20,6 +20,7 @@ export * from './entities/classes.js';
 export * from './entities/tracks.js';
 export * from './entities/moves.js';
 export * from './entities/choreography.js';
+export * from './entities/sections.js';
 export * from './entities/sharing.js';
 export * from './entities/music.js';
 // Re-exports RUN_PAYLOAD_SCHEMA_VERSION (the schema version lives with its contract).

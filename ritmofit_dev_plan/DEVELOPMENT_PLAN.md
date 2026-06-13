@@ -123,9 +123,12 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > `cc437560`*). **Slice 14** adds the signature **on-beat pulse** — the Live "Now" cue card breathes on the
 > track's beat (CSS, reduced-motion-safe; *merged PR #27, **deployed 2026-06-13**, Worker `9a298d21`*).
 > **Slice 15** adds the All-Out **"drop"** — a plasma glow bloom + cue crossfade on all-out cue advances in
-> Live (CSS, reduced-motion-safe; *merged PR #29, **deployed 2026-06-13**, Worker `c3a502c0`*). All slices
-> are no schema/API/shared change.
-> Deferred: the planning-timeline pulse, the playhead/tap-to-seek, the segment band, custom-move
+> Live (CSS, reduced-motion-safe; *merged PR #29, **deployed 2026-06-13**, Worker `c3a502c0`*). **Slice 16**
+> adds the **segment band** — a new `class_sections` table (**migration `0006`**) + fixed `segmentType` enum,
+> full-stack (shared + CRUD routes + additive run-payload `sections[]` + a `SegmentBand` under the timeline);
+> this is the first builder slice that **does** change schema + contract (*branch `feat/web-segment-band`,
+> not yet deployed*). Slices 7–15 were no schema/API/shared change.
+> Deferred: the planning-timeline pulse, the playhead/tap-to-seek, segment icons/drag-resize, custom-move
 > `baseMoveId`/`template` editing. See `milestones.md` for the full slice log.
 >
 > **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same

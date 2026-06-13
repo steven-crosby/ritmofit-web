@@ -18,6 +18,7 @@ import {
   trackProviderIds,
   cues,
   classTrackMoves,
+  classSections,
   moves,
   userMoves,
 } from '../db/schema.js';
@@ -67,10 +68,16 @@ function groupBy<T, K>(rows: readonly T[], key: (row: T) => K): Map<K, T[]> {
 
 /** Assemble the run-payload for a class (caller already authorized for VIEW). */
 export async function assembleRunPayload(db: Db, classId: string): Promise<RunPayload> {
-  // Wave 1: the class and its ordered class_tracks are independent.
-  const [cls, cts] = await Promise.all([
+  // Wave 1: the class, its ordered class_tracks, and its sections are independent.
+  const [cls, cts, sectionRows] = await Promise.all([
     db.select().from(classes).where(eq(classes.id, classId)).get(),
     db.select().from(classTracks).where(eq(classTracks.classId, classId)).orderBy(classTracks.position).all(),
+    db
+      .select()
+      .from(classSections)
+      .where(eq(classSections.classId, classId))
+      .orderBy(classSections.startOffsetMs)
+      .all(),
   ]);
   if (!cls) throw new Error(`class ${classId} not found during run-payload assembly`);
 
@@ -172,6 +179,8 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
         })),
       };
     }),
+    // Segment bands, already ordered by start (additive v1 field; may be empty).
+    sections: sectionRows.map((s) => ({ type: s.type, startOffsetMs: s.startOffsetMs })),
   };
 
   // Validate the projection against the contract before it leaves the server.

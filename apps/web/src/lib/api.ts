@@ -21,6 +21,9 @@ import type {
   UserMove,
   CreateUserMove,
   UpdateUserMove,
+  ClassSection,
+  CreateClassSection,
+  UpdateClassSection,
   RunPayload,
   Share,
   ShareView,
@@ -114,6 +117,16 @@ export const updateUserMove = (id: string, body: UpdateUserMove) =>
   api<UserMove>(`/user-moves/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const deleteUserMove = (id: string) =>
   api<void>(`/user-moves/${id}`, { method: 'DELETE' });
+
+/** Class sections — the energy-arc segment bands (class-scoped, edit access to write). */
+export const listSections = (classId: string) =>
+  api<ClassSection[]>(`/classes/${classId}/sections`);
+export const createSection = (classId: string, body: CreateClassSection) =>
+  api<ClassSection>(`/classes/${classId}/sections`, { method: 'POST', body: JSON.stringify(body) });
+export const updateSection = (id: string, body: UpdateClassSection) =>
+  api<ClassSection>(`/sections/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+export const deleteSection = (id: string) =>
+  api<void>(`/sections/${id}`, { method: 'DELETE' });
 
 // ── Sharing (M4) ────────────────────────────────────────────────────────────
 export const listShares = (classId: string) =>
