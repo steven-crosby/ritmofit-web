@@ -112,8 +112,8 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > version `810f25d3`)*. **Slice 8** adds the **cue color picker** (rationed palette, no plasma; tags the
 > existing `cues.color`; deployed, Worker `74a94ec5`). **Slice 9** adds **custom user-moves** (create +
 > place reusable moves from the inspector; web-only — the `/user-moves` routes + run-payload name
-> resolution already existed; `pnpm test` = api 159 + web 30 = **189**; *branch
-> `feat/web-custom-user-moves`, not yet deployed*). All three slices are no schema/API/shared change.
+> resolution already existed; `pnpm test` = api 159 + web 30 = **189**; *merged PR #17, **deployed
+> 2026-06-12**, Worker `511af62c`*). All three slices are no schema/API/shared change.
 > Deferred: the on-beat pulse, the timeline-marker strip, the segment band, managing custom moves. See
 > `milestones.md` for the full slice log.
 >

@@ -242,7 +242,8 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   "current" swatch so editing never drops it. Cue rows show a decorative color dot (time + text still carry
   meaning). Palette + `tagLabel` in pure unit-tested `lib/cue-colors.ts`. `pnpm test` = api 159 + web 22 =
   **181**; build green. Merged PR #15, deployed (Worker `74a94ec5`).
-- **Slice 9 — custom user-moves** (branch `feat/web-custom-user-moves`): create reusable custom moves and
+- **Slice 9 — custom user-moves** (merged PR #17, **deployed 2026-06-12**, Worker version `511af62c`):
+  create reusable custom moves and
   place them from the inspector `MovesSection`. Web-only — the backend (`GET/POST /user-moves` owner-scoped,
   placed-move routes validate an owned `userMoveId`, run-payload resolves user-move names) already existed.
   New `listUserMoves`/`createUserMove` client fns; `MovesSection` shows a "Your moves" `<optgroup>` beside
