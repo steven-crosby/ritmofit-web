@@ -80,32 +80,52 @@ const anchorHint = (durationMs: number | null) =>
   durationMs ? ` (0–${Math.round(durationMs / 1000)}s)` : '';
 
 /** A request to focus a cue/move row (from a timeline marker click). */
-export type RowFocus = { anchorMs: number; nonce: number } | null;
+export type RowFocus = { id: string; anchorMs: number; nonce: number } | null;
+
+/**
+ * Which row a focus targets: prefer an exact **id** match (run-payload cues/moves
+ * carry stable ids), falling back to the first row at the same `anchorMs` — for a
+ * legacy payload without ids, or an id that has since changed. Pure + unit-tested:
+ * two cues/moves sharing an `anchorMs` now disambiguate by id.
+ */
+export function resolveFlashRowId(
+  rows: ReadonlyArray<{ id: string; anchorMs: number }>,
+  target: { id: string; anchorMs: number } | null,
+): string | null {
+  if (!target) return null;
+  if (rows.some((r) => r.id === target.id)) return target.id;
+  return rows.find((r) => r.anchorMs === target.anchorMs)?.id ?? null;
+}
 
 /**
  * Flash + scroll a cue/move row into view when a timeline marker targets it.
- * Correlation is by in-track `anchorMs` (the run-payload markers carry no id).
- * `ready` gates until the section's rows have loaded, so a focus that arrives
- * before the fetch still fires; the `nonce` re-triggers on a repeat marker click.
- * Returns the ms to ring (transient, ~1.6s) and a ref for the matching row.
+ * Correlation is by row **id** (with an `anchorMs` fallback — see `resolveFlashRowId`).
+ * Gates until the section's rows have loaded, so a focus that arrives before the
+ * fetch still fires; the `nonce` re-triggers on a repeat marker click. Returns the
+ * id to ring (transient, ~1.6s), the id to attach the scroll ref to, and that ref.
  */
-function useFlashFocus(focus: RowFocus, ready: boolean) {
-  const [flashAnchorMs, setFlashAnchorMs] = useState<number | null>(null);
+function useFlashFocus(focus: RowFocus, rows: ReadonlyArray<{ id: string; anchorMs: number }> | null) {
+  const ready = rows != null;
+  const [flashTarget, setFlashTarget] = useState<{ id: string; anchorMs: number } | null>(null);
   const rowRef = useRef<HTMLLIElement | null>(null);
   const nonce = focus?.nonce;
   useEffect(() => {
     if (!focus || !ready) return;
-    setFlashAnchorMs(focus.anchorMs);
+    setFlashTarget({ id: focus.id, anchorMs: focus.anchorMs });
     const raf = requestAnimationFrame(() => rowRef.current?.scrollIntoView({ block: 'nearest' }));
-    const clear = setTimeout(() => setFlashAnchorMs(null), 1600);
+    const clear = setTimeout(() => setFlashTarget(null), 1600);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(clear);
     };
     // Intentionally keyed on the marker nonce + readiness only: re-flash on a new
-    // marker click, or once the rows have loaded — not on every focus.anchorMs read.
+    // marker click, or once the rows have loaded — not on every focus read.
   }, [nonce, ready]);
-  return { flashAnchorMs, rowRef };
+  // The scroll ref attaches as soon as `focus` arrives (so the effect's
+  // scrollIntoView lands); the ring follows the transient `flashTarget`.
+  const refRowId = resolveFlashRowId(rows ?? [], focus ? { id: focus.id, anchorMs: focus.anchorMs } : null);
+  const flashRowId = resolveFlashRowId(rows ?? [], flashTarget);
+  return { refRowId, flashRowId, rowRef };
 }
 
 // ── Cues ─────────────────────────────────────────────────────────────────────
@@ -182,7 +202,7 @@ export function CuesSection({
   focus?: RowFocus;
 }) {
   const [cues, setCues] = useState<Cue[] | null>(null);
-  const { flashAnchorMs, rowRef } = useFlashFocus(focus, cues != null);
+  const { refRowId, flashRowId, rowRef } = useFlashFocus(focus, cues);
   const [text, setText] = useState('');
   const [anchorSec, setAnchorSec] = useState('0');
   const [color, setColor] = useState<string | null>(null);
@@ -315,9 +335,9 @@ export function CuesSection({
           ) : (
             <li
               key={cue.id}
-              ref={focus && cue.anchorMs === focus.anchorMs ? rowRef : undefined}
+              ref={cue.id === refRowId ? rowRef : undefined}
               className={`flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5 ${
-                flashAnchorMs != null && cue.anchorMs === flashAnchorMs ? 'ring-2 ring-interactive' : ''
+                cue.id === flashRowId ? 'ring-2 ring-interactive' : ''
               }`}
             >
               {/* Color tag — decorative reinforcement; time + text always carry the meaning. */}
@@ -400,7 +420,7 @@ export function MovesSection({
 }) {
   const [moves, setMoves] = useState<ClassTrackMove[] | null>(null);
   const [managing, setManaging] = useState(false);
-  const { flashAnchorMs, rowRef } = useFlashFocus(focus, moves != null);
+  const { refRowId, flashRowId, rowRef } = useFlashFocus(focus, moves);
   const [library, setLibrary] = useState<Move[]>([]);
   // The caller's reusable custom moves. Unlike the read-only library these mutate
   // (creating one here), so they're component state refreshed on demand, not the
@@ -678,9 +698,9 @@ export function MovesSection({
           ) : (
             <li
               key={m.id}
-              ref={focus && m.anchorMs === focus.anchorMs ? rowRef : undefined}
+              ref={m.id === refRowId ? rowRef : undefined}
               className={`flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5 ${
-                flashAnchorMs != null && m.anchorMs === flashAnchorMs ? 'ring-2 ring-interactive' : ''
+                m.id === flashRowId ? 'ring-2 ring-interactive' : ''
               }`}
             >
               <span className="shrink-0 font-data text-xs text-text-tertiary">{clock(m.anchorMs)}</span>

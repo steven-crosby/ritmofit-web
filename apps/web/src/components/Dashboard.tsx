@@ -279,6 +279,7 @@ function ClassWorkspace({
   const [markerFocus, setMarkerFocus] = useState<{
     classTrackId: string;
     kind: 'cue' | 'move';
+    id: string;
     anchorMs: number;
     nonce: number;
   } | null>(null);
@@ -291,7 +292,7 @@ function ClassWorkspace({
   // Select a track from the timeline; a marker click also targets a cue/move row.
   const selectFromTimeline = (
     classTrackId: string,
-    marker?: { kind: 'cue' | 'move'; anchorMs: number },
+    marker?: { kind: 'cue' | 'move'; id: string; anchorMs: number },
   ) => {
     setSelectedTrackId(classTrackId);
     if (marker) {
@@ -741,7 +742,7 @@ function TrackInspector({
   durationMs: number | null;
   canEdit: boolean;
   /** A marker click asking to focus a cue/move row on this track (or null). */
-  focus: { kind: 'cue' | 'move'; anchorMs: number; nonce: number } | null;
+  focus: { kind: 'cue' | 'move'; id: string; anchorMs: number; nonce: number } | null;
   onSaved: () => void;
   onRemoved: () => void;
 }) {
@@ -868,12 +869,12 @@ function TrackInspector({
           <CuesSection
             classTrackId={track.id}
             durationMs={durationMs}
-            focus={focus?.kind === 'cue' ? { anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
+            focus={focus?.kind === 'cue' ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
           />
           <MovesSection
             classTrackId={track.id}
             durationMs={durationMs}
-            focus={focus?.kind === 'move' ? { anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
+            focus={focus?.kind === 'move' ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
             onChanged={onSaved}
           />
         </>

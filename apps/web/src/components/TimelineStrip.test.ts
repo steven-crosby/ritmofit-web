@@ -33,10 +33,14 @@ function entry(
   };
 }
 
-const cue = (anchorMs: number, text = 'Cue', color: string | null = null): Cue =>
-  ({ anchorMs, beat: null, bar: null, text, color }) as Cue;
-const move = (anchorMs: number, name = 'Move', intensity: Intensity | null = null): Move =>
-  ({ anchorMs, name, intensity }) as Move;
+const cue = (anchorMs: number, text = 'Cue', color: string | null = null, id = `cue-${anchorMs}`): Cue =>
+  ({ id, anchorMs, beat: null, bar: null, text, color }) as Cue;
+const move = (
+  anchorMs: number,
+  name = 'Move',
+  intensity: Intensity | null = null,
+  id = `move-${anchorMs}`,
+): Move => ({ id, anchorMs, name, intensity }) as Move;
 
 describe('computeTimeline — blocks', () => {
   it('returns nothing when the assembled total is zero or negative', () => {
@@ -115,5 +119,16 @@ describe('computeTimeline — markers', () => {
       classTrackId: '00000000-0000-0000-0000-000000000001',
       position: 1,
     });
+  });
+
+  it('carries each cue/move id so two markers at the same anchor stay distinct', () => {
+    const { markers } = computeTimeline(
+      [entry(1000, 0, [cue(500, 'first', null, 'cue-A'), cue(500, 'second', null, 'cue-B')])],
+      1000,
+    );
+    expect(markers).toHaveLength(2);
+    expect(markers.map((m) => m.id)).toEqual(['cue-A', 'cue-B']);
+    // Same anchor/position, but distinct ids — the disambiguator.
+    expect(markers[0]!.anchorMs).toBe(markers[1]!.anchorMs);
   });
 });
