@@ -269,9 +269,16 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   `classTrackId` + `position` per block/marker; `TimelineStrip` gained optional `selectedTrackId` +
   `onSelectTrack` (plain select, not toggle; non-interactive fallback kept); `Dashboard` wires
   `onSelectTrack={setSelectedTrackId}`. No schema/API/shared change. `pnpm test` = api 159 + web 39 =
-  **198**; build green.
+  **198**; build green. Merged PR #21, deployed (Worker `755e3489`).
+- **Slice 12 — focus a cue/move from its marker** (branch `feat/web-focus-cue-from-marker`): a timeline
+  cue (▲) / move (◆) marker click selects the track *and* scrolls the matching inspector row into view with
+  a brief flash (block clicks still just select). Markers carry in-track `anchorMs`; `onSelectTrack` gained
+  optional `{ kind, anchorMs }`; `Dashboard` holds `markerFocus` (+ `nonce` to re-flash on repeat click) and
+  threads it through `TrackInspector` → `CuesSection`/`MovesSection`; a shared `useFlashFocus` hook
+  scrolls + transiently rings the row whose `anchorMs` matches (run-payload cues/moves have no id, so
+  correlation is by `anchorMs` — duplicate anchors flash the first match). No schema/API/shared change.
+  `pnpm test` = api 159 + web 39 = **198**; build green.
 - Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): the on-beat pulse + timeline playhead /
-  tap-to-seek, focusing a specific cue/move in the inspector from its marker, the segment band
-  (design-concept-only), and managing custom moves.
+  tap-to-seek, the segment band (design-concept-only), and managing custom moves.
 - Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
   `milestones.md`. **Next major milestone remains iOS Phase 2.**

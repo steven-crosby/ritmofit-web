@@ -290,11 +290,19 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   wires `onSelectTrack={setSelectedTrackId}`. Marker hit areas are padded around the glyph. No
   schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**. **Merged PR #21, deployed
   2026-06-13** (Worker version `755e3489`; no schema/migration).
+- ✅ **Slice 12 — focus a cue/move from its marker**: clicking a timeline **cue (▲) / move (◆)** marker now
+  selects the track *and* scrolls the matching inspector row into view with a brief highlight flash (clicking
+  a track block still just selects). Markers carry the in-track `anchorMs`; `onSelectTrack` gained an optional
+  `{ kind, anchorMs }`; `Dashboard` holds a `markerFocus` (`+ nonce` so re-clicking re-flashes) and threads it
+  through `TrackInspector` to `CuesSection`/`MovesSection`. A shared `useFlashFocus` hook scrolls + transiently
+  rings the row whose `anchorMs` matches (correlated by `anchorMs` since run-payload cues/moves carry **no
+  id**). No schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**.
 
 **Deferred (flagged in code):** **managing** custom moves (rename/delete/description/`baseMoveId`), the
-**on-beat pulse** on the playing row + the timeline **playhead** / tap-to-seek (a Live concern),
-**focusing a specific cue/move** in the inspector from its marker (markers select the *track* only), and
-the **segment band** under the ribbon (design-concept-only — no `class_sections` schema).
+**on-beat pulse** on the playing row + the timeline **playhead** / tap-to-seek (a Live concern), and the
+**segment band** under the ribbon (design-concept-only — no `class_sections` schema). *Marker→row focus
+caveat:* two cues/moves at the **same `anchorMs`** can't be disambiguated (run-payload has no ids) — the
+first match flashes; the robust fix (add cue/move ids to the run-payload) is a deferred contract change.
 *(The PR #10 `TODO(select-fallback)` was resolved in slice 9.)*
 
 ---
