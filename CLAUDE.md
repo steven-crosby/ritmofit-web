@@ -222,7 +222,18 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   + intensity. Backed by the existing `PATCH /cues/:id` + `PATCH /class-track-moves/:id` (edit access; move
   route re-checks the at-most-one-reference invariant). `updateCue` + `updatePlacedMove` client fns; no
   schema/API/shared change. `pnpm test` = api 159 + web 11 = **170**.
+- **Slice 7 — the full 3-pane `09` layout** (branch `feat/web-builder-3pane-layout`, **not yet
+  deployed**): replaced the 2-column inline-inspector builder in `Dashboard.tsx` with the spec'd
+  workstation — a persistent **top bar**, then `xl:grid-cols-[266px_1fr_340px]` (collapses to one stacked
+  column below `xl`): a sticky **class library** rail, the **class workspace** center (new
+  `ClassHeaderCard` = title + visibility + derived summary → energy ribbon → track list → add-track), and a
+  **sticky right-hand inspector** (`TrackInspector` + nested cue/move authoring, own scroll, "select a
+  track" placeholder). Header summary (**track count · assembled total · avg BPM**, label+number not color
+  alone) derives from the run-payload via pure unit-tested `lib/class-summary.ts` (`avgBpm` +
+  `formatDuration`) — no new data. Components re-parented untouched; the workspace is keyed by class id so
+  switching classes clears the track selection. No schema/API/shared change. `pnpm test` = api 159 + web 17
+  = **176**; `pnpm --filter @ritmofit/web build` green.
 - Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): custom user-moves, cue color picker,
-  the on-beat pulse, the full 3-pane layout.
+  the on-beat pulse, the horizontal timeline-marker strip, and the segment band (design-concept-only).
 - Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
   `milestones.md`. **Next major milestone remains iOS Phase 2.**
