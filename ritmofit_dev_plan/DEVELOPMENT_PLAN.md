@@ -109,8 +109,10 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > (PRs #9–#10). **Slice 7** assembles it all into the spec'd **full 3-pane `09` layout** (library · class
 > workspace · sticky inspector, with a class-header summary) — purely presentational, no schema/API/shared
 > change; `pnpm test` = api 159 + web 17 = **176** *(merged PR #13, **deployed** 2026-06-12, Worker
-> version `810f25d3`)*. Deferred: cue color picker, the on-beat pulse, custom user-moves, the timeline-marker strip,
-> the segment band. See `milestones.md` for the full slice log.
+> version `810f25d3`)*. **Slice 8** adds the **cue color picker** (rationed palette, no plasma; tags the
+> existing `cues.color`, no schema/API/shared change; `pnpm test` = api 159 + web 22 = **176**→**181**).
+> Deferred: the on-beat pulse, custom user-moves, the timeline-marker strip, the segment band. See
+> `milestones.md` for the full slice log.
 >
 > **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
 > backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.

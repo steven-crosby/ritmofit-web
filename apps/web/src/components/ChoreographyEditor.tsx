@@ -29,6 +29,7 @@ import {
   listMoves,
 } from '../lib/api.js';
 import { IntensityReadout } from './IntensityReadout.js';
+import { CUE_COLOR_TAGS, tagLabel } from '../lib/cue-colors.js';
 
 /** ms → m:ss for an in-track anchor. */
 function clock(ms: number): string {
@@ -76,6 +77,70 @@ const anchorHint = (durationMs: number | null) =>
 
 // ── Cues ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Cue color tag picker (design system `02-color-system.md`): a None option plus
+ * the rationed copper/cyan/amber/ember/bone palette — never plasma. Radio-group
+ * semantics; each swatch carries a text label (aria + title), and the selected
+ * one shows the cyan interactive ring, so the choice never rests on color alone.
+ * A stored color outside the palette (legacy/custom) renders as a trailing
+ * "current" swatch so editing + Save never silently drops it.
+ */
+function CueColorPicker({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (hex: string | null) => void;
+}) {
+  const inPalette =
+    value != null && CUE_COLOR_TAGS.some((t) => t.hex.toLowerCase() === value.toLowerCase());
+  return (
+    <div role="radiogroup" aria-label="Cue color tag" className="flex items-center gap-1.5">
+      <button
+        type="button"
+        role="radio"
+        aria-checked={value == null}
+        aria-label="No color"
+        title="No color"
+        onClick={() => onChange(null)}
+        className={`flex h-5 w-5 items-center justify-center rounded-full border border-interactive/40 text-[10px] leading-none text-text-tertiary ${
+          value == null ? 'ring-2 ring-interactive' : ''
+        }`}
+      >
+        ∅
+      </button>
+      {CUE_COLOR_TAGS.map((t) => {
+        const selected = value != null && value.toLowerCase() === t.hex.toLowerCase();
+        return (
+          <button
+            key={t.hex}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            aria-label={t.name}
+            title={t.name}
+            onClick={() => onChange(t.hex)}
+            style={{ backgroundColor: t.hex }}
+            className={`h-5 w-5 rounded-full ${selected ? 'ring-2 ring-interactive ring-offset-1 ring-offset-bg-base' : ''}`}
+          />
+        );
+      })}
+      {value != null && !inPalette && (
+        <button
+          type="button"
+          role="radio"
+          aria-checked
+          aria-label="Current custom color"
+          title={value}
+          onClick={() => onChange(value)}
+          style={{ backgroundColor: value }}
+          className="h-5 w-5 rounded-full ring-2 ring-interactive ring-offset-1 ring-offset-bg-base"
+        />
+      )}
+    </div>
+  );
+}
+
 export function CuesSection({
   classTrackId,
   durationMs,
@@ -86,12 +151,14 @@ export function CuesSection({
   const [cues, setCues] = useState<Cue[] | null>(null);
   const [text, setText] = useState('');
   const [anchorSec, setAnchorSec] = useState('0');
+  const [color, setColor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Inline edit: at most one cue editable at a time, seeded from the persisted row.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [editAnchorSec, setEditAnchorSec] = useState('0');
+  const [editColor, setEditColor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -108,6 +175,7 @@ export function CuesSection({
     setEditingId(cue.id);
     setEditText(cue.text);
     setEditAnchorSec(msToSec(cue.anchorMs));
+    setEditColor(cue.color);
     setError(null);
   };
 
@@ -116,7 +184,13 @@ export function CuesSection({
     setBusy(true);
     setError(null);
     try {
-      await updateCue(editingId, { anchorMs: secToMs(editAnchorSec), text: editText.trim() });
+      // Always send `color` (hex or null) so a cleared tag persists (buildPatch
+      // sets explicit null; an omitted field would leave the old color).
+      await updateCue(editingId, {
+        anchorMs: secToMs(editAnchorSec),
+        text: editText.trim(),
+        color: editColor,
+      });
       setEditingId(null);
       await load();
     } catch (e) {
@@ -131,9 +205,14 @@ export function CuesSection({
     setBusy(true);
     setError(null);
     try {
-      await createCue(classTrackId, { anchorMs: secToMs(anchorSec), text: text.trim() });
+      await createCue(classTrackId, {
+        anchorMs: secToMs(anchorSec),
+        text: text.trim(),
+        color,
+      });
       setText('');
       setAnchorSec('0');
+      setColor(null);
       await load();
     } catch (e) {
       setError((e as Error).message);
@@ -164,7 +243,7 @@ export function CuesSection({
           editingId === cue.id ? (
             <li
               key={cue.id}
-              className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5"
+              className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2"
             >
               <input
                 className={`w-16 ${fieldClass} font-data`}
@@ -183,6 +262,7 @@ export function CuesSection({
                 aria-label="Cue text"
                 autoFocus
               />
+              <CueColorPicker value={editColor} onChange={setEditColor} />
               <button
                 className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={saveEdit}
@@ -203,6 +283,15 @@ export function CuesSection({
               key={cue.id}
               className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5"
             >
+              {/* Color tag — decorative reinforcement; time + text always carry the meaning. */}
+              {cue.color && (
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: cue.color }}
+                  title={`${tagLabel(cue.color) ?? 'Color'} tag`}
+                  aria-hidden
+                />
+              )}
               <span className="shrink-0 font-data text-xs text-text-tertiary">{clock(cue.anchorMs)}</span>
               <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">{cue.text}</span>
               <button
@@ -225,30 +314,33 @@ export function CuesSection({
           ),
         )}
       </ul>
-      <div className="flex items-center gap-2">
-        <input
-          className={`w-20 ${fieldClass} font-data`}
-          type="number"
-          min={0}
-          inputMode="numeric"
-          value={anchorSec}
-          onChange={(e) => setAnchorSec(e.target.value)}
-          aria-label={`Cue time in seconds${anchorHint(durationMs)}`}
-          title={`Time in seconds${anchorHint(durationMs)}`}
-        />
-        <input
-          className={`flex-1 ${fieldClass}`}
-          placeholder="Cue text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        <button
-          className="shrink-0 rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
-          onClick={add}
-          disabled={busy || !text.trim()}
-        >
-          Add cue
-        </button>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <input
+            className={`w-20 ${fieldClass} font-data`}
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={anchorSec}
+            onChange={(e) => setAnchorSec(e.target.value)}
+            aria-label={`Cue time in seconds${anchorHint(durationMs)}`}
+            title={`Time in seconds${anchorHint(durationMs)}`}
+          />
+          <input
+            className={`flex-1 ${fieldClass}`}
+            placeholder="Cue text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <button
+            className="shrink-0 rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+            onClick={add}
+            disabled={busy || !text.trim()}
+          >
+            Add cue
+          </button>
+        </div>
+        <CueColorPicker value={color} onChange={setColor} />
       </div>
       {error && <p className="font-ui text-xs text-intensity-all_out">{error}</p>}
     </div>
