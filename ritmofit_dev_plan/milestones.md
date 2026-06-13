@@ -259,14 +259,22 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   pure, unit-tested `lib/cue-colors.ts`. A PR-review pass swapped the picker's `radiogroup`/`radio` roles
   for an `aria-pressed` toggle `group` (no arrow-key pattern to honor). `pnpm test` = api 159 + web 22 =
   **181**. **Merged PR #15, deployed 2026-06-12** (Worker version `74a94ec5`; no schema/migration).
+- ✅ **Slice 9 — custom user-moves**: instructors can create reusable custom moves and place them from the
+  inspector's `MovesSection`. The backend (`GET/POST /user-moves` owner-scoped; placed-move routes already
+  validate an owned `userMoveId`; run-payload already resolves user-move names) needed **no change** — this
+  is web-only: new `listUserMoves` / `createUserMove` client fns; `MovesSection` loads the caller's user
+  moves, lists them as a "Your moves" `<optgroup>` beside the global "Library", and a **"＋ New custom
+  move…"** option creates-and-places in one Add (then selects the new move so a repeat Add re-uses it).
+  Picker values are source-prefixed (`m:`/`u:`) to disambiguate the two UUID spaces — a pure, unit-tested
+  `lib/move-pick.ts` (`parseMovePick`/`pickForPlacement`). `nameOf` now resolves user-move names (was
+  `(move)`). This also **retired the `KEEP` sentinel** (user moves are listable now) and **fixed the
+  `TODO(select-fallback)`** (a fallback `<option>` for an unresolved id when the library/user-moves fetch
+  fails). No schema/API-contract/shared change. `pnpm test` = api 159 + web 30 = **189**.
 
-**Deferred (flagged in code):** custom user-move creation, the **on-beat pulse** on the playing row, the
-horizontal **timeline strip** (cue/move markers +
-playhead) and the **segment band** under the ribbon (the latter is design-concept-only — no
-`class_sections` schema), and a small **move-edit select fallback** — `TODO(select-fallback)` in
-`ChoreographyEditor`: when the global moves library fails to load, editing a `moveId` placement shows a
-mismatched `<select>` (falls back to "Custom…" though Save still preserves the id). From the PR #10
-review; low-severity, UX-only.
+**Deferred (flagged in code):** **managing** custom moves (rename/delete/description/`baseMoveId`), the
+**on-beat pulse** on the playing row, and the horizontal **timeline strip** (cue/move markers +
+playhead) plus the **segment band** under the ribbon (the latter is design-concept-only — no
+`class_sections` schema). *(The PR #10 `TODO(select-fallback)` was resolved in slice 9.)*
 
 ---
 

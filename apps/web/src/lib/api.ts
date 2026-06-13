@@ -18,6 +18,8 @@ import type {
   PlaceClassTrackMove,
   UpdateClassTrackMove,
   Move,
+  UserMove,
+  CreateUserMove,
   RunPayload,
   Share,
   ShareView,
@@ -102,6 +104,11 @@ export const deletePlacedMove = (id: string) =>
 
 /** The global moves library (read-only seed). */
 export const listMoves = () => api<Move[]>('/moves');
+
+/** The caller's custom moves (owner-scoped). */
+export const listUserMoves = () => api<UserMove[]>('/user-moves');
+export const createUserMove = (body: CreateUserMove) =>
+  api<UserMove>('/user-moves', { method: 'POST', body: JSON.stringify(body) });
 
 // ── Sharing (M4) ────────────────────────────────────────────────────────────
 export const listShares = (classId: string) =>

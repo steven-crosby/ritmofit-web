@@ -241,8 +241,17 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   palette, **never plasma** (`02-color-system.md`); a stored color outside the palette shows as a trailing
   "current" swatch so editing never drops it. Cue rows show a decorative color dot (time + text still carry
   meaning). Palette + `tagLabel` in pure unit-tested `lib/cue-colors.ts`. `pnpm test` = api 159 + web 22 =
-  **181**; build green.
-- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): custom user-moves, the on-beat pulse,
-  the horizontal timeline-marker strip, and the segment band (design-concept-only).
+  **181**; build green. Merged PR #15, deployed (Worker `74a94ec5`).
+- **Slice 9 — custom user-moves** (branch `feat/web-custom-user-moves`): create reusable custom moves and
+  place them from the inspector `MovesSection`. Web-only — the backend (`GET/POST /user-moves` owner-scoped,
+  placed-move routes validate an owned `userMoveId`, run-payload resolves user-move names) already existed.
+  New `listUserMoves`/`createUserMove` client fns; `MovesSection` shows a "Your moves" `<optgroup>` beside
+  "Library" and a **"＋ New custom move…"** option (create-and-place, then selects it). Picker values are
+  source-prefixed (`m:`/`u:`) via pure unit-tested `lib/move-pick.ts`; `nameOf` resolves user-move names.
+  Also retired the `KEEP` sentinel and fixed the PR #10 `TODO(select-fallback)`. No schema/API/shared
+  change. `pnpm test` = api 159 + web 30 = **189**; build green. Deferred: managing custom moves
+  (rename/delete/description/`baseMoveId`).
+- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): the on-beat pulse, the horizontal
+  timeline-marker strip, the segment band (design-concept-only), and managing custom moves.
 - Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
   `milestones.md`. **Next major milestone remains iOS Phase 2.**

@@ -13,9 +13,9 @@ import {
   type Cue,
   type ClassTrackMove,
   type Move,
+  type UserMove,
   type Intensity,
   type PlaceClassTrackMove,
-  type UpdateClassTrackMove,
 } from '@ritmofit/shared';
 import {
   listCues,
@@ -27,9 +27,12 @@ import {
   updatePlacedMove,
   deletePlacedMove,
   listMoves,
+  listUserMoves,
+  createUserMove,
 } from '../lib/api.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { CUE_COLOR_TAGS, tagLabel } from '../lib/cue-colors.js';
+import { CUSTOM, NEW, parseMovePick, pickForPlacement } from '../lib/move-pick.js';
 
 /** ms → m:ss for an in-track anchor. */
 function clock(ms: number): string {
@@ -347,12 +350,6 @@ export function CuesSection({
 
 // ── Placed moves ──────────────────────────────────────────────────────────────
 
-const CUSTOM = '__custom__';
-// Sentinel for editing a placement that references a non-library "user move": keep it
-// as-is (send no reference fields, so the merge-patch preserves the userMoveId). The
-// library dropdown can't list user moves yet (that's a separate deferred slice).
-const KEEP = '__keep__';
-
 export function MovesSection({
   classTrackId,
   durationMs,
@@ -362,15 +359,19 @@ export function MovesSection({
 }) {
   const [moves, setMoves] = useState<ClassTrackMove[] | null>(null);
   const [library, setLibrary] = useState<Move[]>([]);
-  const [pick, setPick] = useState<string>(CUSTOM); // a library move id, or CUSTOM
-  const [customName, setCustomName] = useState('');
+  // The caller's reusable custom moves. Unlike the read-only library these mutate
+  // (creating one here), so they're component state refreshed on demand, not the
+  // session-cached library promise.
+  const [userMoves, setUserMoves] = useState<UserMove[]>([]);
+  const [pick, setPick] = useState<string>(CUSTOM); // CUSTOM | NEW | m:<id> | u:<id>
+  const [customName, setCustomName] = useState(''); // freeform name (CUSTOM) or new-move name (NEW)
   const [anchorSec, setAnchorSec] = useState('0');
   const [intensity, setIntensity] = useState<Intensity | ''>('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Inline edit: at most one placement editable at a time, seeded from the row.
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editPick, setEditPick] = useState<string>(CUSTOM); // library id, CUSTOM, or KEEP
+  const [editPick, setEditPick] = useState<string>(CUSTOM); // CUSTOM | m:<id> | u:<id>
   const [editCustom, setEditCustom] = useState('');
   const [editAnchorSec, setEditAnchorSec] = useState('0');
   const [editIntensity, setEditIntensity] = useState<Intensity | ''>('');
@@ -390,22 +391,86 @@ export function MovesSection({
       .then(setLibrary)
       .catch(() => setLibrary([]));
   }, []);
+  const loadUserMoves = useCallback(async () => {
+    try {
+      setUserMoves(await listUserMoves());
+    } catch {
+      setUserMoves([]);
+    }
+  }, []);
+  useEffect(() => {
+    void loadUserMoves();
+  }, [loadUserMoves]);
 
-  /** Resolve a placement's display name: freeform override, else the library move. */
+  /** Resolve a placement's display name: freeform override → library → user move. */
   const nameOf = (m: ClassTrackMove) =>
-    m.nameOverride ?? library.find((lib) => lib.id === m.moveId)?.name ?? '(move)';
+    m.nameOverride ??
+    library.find((lib) => lib.id === m.moveId)?.name ??
+    userMoves.find((u) => u.id === m.userMoveId)?.name ??
+    '(move)';
+
+  /** The reference fields for a placement body from a parsed selector value. */
+  const refFields = (
+    value: string,
+    name: string,
+  ): { moveId?: string | null; userMoveId?: string | null; nameOverride?: string | null } => {
+    const sel = parseMovePick(value);
+    switch (sel.kind) {
+      case 'library':
+        return { moveId: sel.id, userMoveId: null, nameOverride: null };
+      case 'user':
+        return { userMoveId: sel.id, moveId: null, nameOverride: null };
+      default: // 'custom' (NEW is resolved to a user move before this is called)
+        return { nameOverride: name.trim(), moveId: null, userMoveId: null };
+    }
+  };
+
+  // The picker option groups, shared by the add + edit selects.
+  const moveOptionGroups = (
+    <>
+      {library.length > 0 && (
+        <optgroup label="Library">
+          {library.map((m) => (
+            <option key={m.id} value={`m:${m.id}`}>
+              {m.name}
+            </option>
+          ))}
+        </optgroup>
+      )}
+      {userMoves.length > 0 && (
+        <optgroup label="Your moves">
+          {userMoves.map((u) => (
+            <option key={u.id} value={`u:${u.id}`}>
+              {u.name}
+            </option>
+          ))}
+        </optgroup>
+      )}
+    </>
+  );
 
   const add = async () => {
-    const isCustom = pick === CUSTOM;
-    if (isCustom && !customName.trim()) return;
+    const sel = parseMovePick(pick);
+    const needsName = sel.kind === 'custom' || sel.kind === 'new';
+    if (needsName && !customName.trim()) return;
     setBusy(true);
     setError(null);
     try {
-      // At-most-one reference: either a library moveId or a freeform nameOverride.
+      let ref: ReturnType<typeof refFields>;
+      if (sel.kind === 'new') {
+        // Create the reusable custom move, then place it by id; surface it in
+        // "Your moves" and select it so a repeat Add re-uses (not re-creates) it.
+        const created = await createUserMove({ name: customName.trim() });
+        await loadUserMoves();
+        setPick(`u:${created.id}`);
+        ref = { userMoveId: created.id, moveId: null, nameOverride: null };
+      } else {
+        ref = refFields(pick, customName);
+      }
       const body: PlaceClassTrackMove = {
         anchorMs: secToMs(anchorSec),
         intensity: intensity === '' ? null : intensity,
-        ...(isCustom ? { nameOverride: customName.trim() } : { moveId: pick }),
+        ...ref,
       };
       await placeMove(classTrackId, body);
       setCustomName('');
@@ -423,40 +488,25 @@ export function MovesSection({
     setEditingId(m.id);
     setEditAnchorSec(msToSec(m.anchorMs));
     setEditIntensity(m.intensity ?? '');
-    // Seed the reference selector: a library move (its id), a freeform name (CUSTOM),
-    // or a user-move we can't list yet (KEEP — preserved untouched on save).
-    if (m.moveId) {
-      setEditPick(m.moveId);
-      setEditCustom('');
-    } else if (m.userMoveId) {
-      setEditPick(KEEP);
-      setEditCustom('');
-    } else {
-      setEditPick(CUSTOM);
-      setEditCustom(m.nameOverride ?? '');
-    }
+    // Seed the selector from the placement's reference (library / user move / one-off).
+    setEditPick(pickForPlacement(m.moveId, m.userMoveId));
+    setEditCustom(m.moveId || m.userMoveId ? '' : (m.nameOverride ?? ''));
     setError(null);
   };
 
   const saveEdit = async () => {
     if (!editingId) return;
-    if (editPick === CUSTOM && !editCustom.trim()) return;
+    const sel = parseMovePick(editPick);
+    if (sel.kind === 'custom' && !editCustom.trim()) return;
     setBusy(true);
     setError(null);
     try {
-      // Only send reference fields when the reference actually changes; KEEP sends none,
-      // so the merge-patch preserves the original (e.g. userMoveId). Switching the
-      // reference nulls the others to hold the at-most-one invariant (server re-checks).
-      const ref: UpdateClassTrackMove =
-        editPick === KEEP
-          ? {}
-          : editPick === CUSTOM
-            ? { nameOverride: editCustom.trim(), moveId: null, userMoveId: null }
-            : { moveId: editPick, nameOverride: null, userMoveId: null };
+      // Switching the reference nulls the others to hold the at-most-one invariant
+      // (the server re-checks the merged result).
       await updatePlacedMove(editingId, {
         anchorMs: secToMs(editAnchorSec),
         intensity: editIntensity === '' ? null : editIntensity,
-        ...ref,
+        ...refFields(editPick, editCustom),
       });
       setEditingId(null);
       await load();
@@ -479,6 +529,15 @@ export function MovesSection({
       setBusy(false);
     }
   };
+
+  // Whether the edit selector's current value is represented by an option. If the
+  // library/user-moves fetch failed, a referenced id has no matching <option>, so
+  // render a fallback so the display matches state (and Save preserves the id).
+  const editSel = parseMovePick(editPick);
+  const editKnown =
+    editSel.kind === 'custom' ||
+    (editSel.kind === 'library' && library.some((l) => l.id === editSel.id)) ||
+    (editSel.kind === 'user' && userMoves.some((u) => u.id === editSel.id));
 
   return (
     <div className="flex flex-col gap-2">
@@ -507,21 +566,11 @@ export function MovesSection({
                 onChange={(e) => setEditPick(e.target.value)}
                 aria-label="Move"
               >
-                {/* TODO(select-fallback): if the global library failed to load, a
-                    moveId-referencing placement seeds editPick to an id with no
-                    matching <option>, so the control visually falls back to "Custom…"
-                    while state still holds the moveId. A plain Save still persists
-                    correctly (the id is preserved), but render a fallback <option> for
-                    an unknown editPick so the display matches state. (PR #10 review.) */}
-                {editPick === KEEP && <option value={KEEP}>Keep current move</option>}
-                <option value={CUSTOM}>Custom…</option>
-                {library.map((lib) => (
-                  <option key={lib.id} value={lib.id}>
-                    {lib.name}
-                  </option>
-                ))}
+                {!editKnown && <option value={editPick}>Current move</option>}
+                <option value={CUSTOM}>Custom (one-off)…</option>
+                {moveOptionGroups}
               </select>
-              {editPick === CUSTOM && (
+              {editSel.kind === 'custom' && (
                 <input
                   className={`min-w-0 flex-1 ${fieldClass}`}
                   placeholder="Move name"
@@ -546,7 +595,7 @@ export function MovesSection({
               <button
                 className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={saveEdit}
-                disabled={busy || (editPick === CUSTOM && !editCustom.trim())}
+                disabled={busy || (editSel.kind === 'custom' && !editCustom.trim())}
               >
                 Save
               </button>
@@ -600,19 +649,17 @@ export function MovesSection({
           onChange={(e) => setPick(e.target.value)}
           aria-label="Move"
         >
-          <option value={CUSTOM}>Custom…</option>
-          {library.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
+          <option value={CUSTOM}>Custom (one-off)…</option>
+          <option value={NEW}>＋ New custom move…</option>
+          {moveOptionGroups}
         </select>
-        {pick === CUSTOM && (
+        {(parseMovePick(pick).kind === 'custom' || parseMovePick(pick).kind === 'new') && (
           <input
             className={`flex-1 ${fieldClass}`}
-            placeholder="Move name"
+            placeholder={parseMovePick(pick).kind === 'new' ? 'New custom move name' : 'Move name'}
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
+            aria-label={parseMovePick(pick).kind === 'new' ? 'New custom move name' : 'Custom move name'}
           />
         )}
         <select
@@ -631,7 +678,11 @@ export function MovesSection({
         <button
           className="shrink-0 rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
           onClick={add}
-          disabled={busy || (pick === CUSTOM && !customName.trim())}
+          disabled={
+            busy ||
+            ((parseMovePick(pick).kind === 'custom' || parseMovePick(pick).kind === 'new') &&
+              !customName.trim())
+          }
         >
           Add move
         </button>
