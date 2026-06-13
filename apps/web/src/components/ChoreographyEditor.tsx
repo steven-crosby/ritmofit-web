@@ -58,6 +58,11 @@ function loadMovesLibrary(): Promise<Move[]> {
 
 const fieldClass =
   'rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-ui text-sm text-text-primary';
+// TODO(anchor-range): this is only a hint — the anchor-seconds inputs below don't
+// enforce it. An anchor past the track length returns a generic 422 ("Request body
+// failed validation") in the section's error line (the server bounds anchorMs to the
+// track duration and rejects rather than clamps). Add a client-side max + a friendlier
+// message in a later polish slice. (Found during the 2026-06-12 verification pass.)
 const anchorHint = (durationMs: number | null) =>
   durationMs ? ` (0–${Math.round(durationMs / 1000)}s)` : '';
 
