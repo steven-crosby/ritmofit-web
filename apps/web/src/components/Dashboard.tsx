@@ -32,6 +32,7 @@ import { CuesSection, MovesSection } from './ChoreographyEditor.js';
 import { ShareDialog } from './ShareDialog.js';
 import { TeamsDialog } from './TeamsDialog.js';
 import { ExploreDialog } from './ExploreDialog.js';
+import { TrackSearch } from './TrackSearch.js';
 
 export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
   const [classes, setClasses] = useState<ClassWithAccess[]>([]);
@@ -363,7 +364,15 @@ function ClassWorkspace({
                 ))}
               </ol>
             ))}
-          <AddTrackForm classId={cls.id} onAdded={onTrackChanged} />
+          <TrackSearch classId={cls.id} onAdded={onTrackChanged} />
+          {/* Manual entry stays available but de-emphasized (search/import is the
+              primary path; 09). For a track a provider can't return, or no creds. */}
+          <details className="mt-1">
+            <summary className="cursor-pointer font-ui text-xs text-text-tertiary hover:text-text-secondary">
+              Add manually
+            </summary>
+            <AddTrackForm classId={cls.id} onAdded={onTrackChanged} />
+          </details>
         </div>
       </section>
 
