@@ -216,8 +216,8 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   `POST /classes/:id/tracks/reorder` (edit access) and reloads so the ribbon/offsets recompute; optimistic
   with rollback, view-only shows no grip. Pure `moveItem` (`apps/web/src/lib/reorder.ts`, unit-tested) +
   `reorderTracks` client fn. No schema/API/shared change.
-- **Slice 6 — inline-edit existing cues & placed moves** (branch `feat/web-builder-inline-edit`, PR
-  pending): the `ChoreographyEditor` cue/move rows gain an Edit affordance (one row at a time, Save/Cancel)
+- **Slice 6 — inline-edit existing cues & placed moves** (merged, PR #10): the `ChoreographyEditor`
+  cue/move rows gain an Edit affordance (one row at a time, Save/Cancel)
   on top of slice 4's add/list/delete; cues edit anchor+text, moves edit anchor + library-pick/custom-name
   + intensity. Backed by the existing `PATCH /cues/:id` + `PATCH /class-track-moves/:id` (edit access; move
   route re-checks the at-most-one-reference invariant). `updateCue` + `updatePlacedMove` client fns; no

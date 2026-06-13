@@ -36,3 +36,7 @@ apps/web/src/styles/tokens.css
 .idea/
 .vscode/
 *.swp
+
+# Archives — design-reference artifacts are committed as files (e.g. the mockup
+# HTML under ritmofit_design_system/mockups/), never as zips.
+*.zip

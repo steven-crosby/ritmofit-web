@@ -417,6 +417,12 @@ export function MovesSection({
                 onChange={(e) => setEditPick(e.target.value)}
                 aria-label="Move"
               >
+                {/* TODO(select-fallback): if the global library failed to load, a
+                    moveId-referencing placement seeds editPick to an id with no
+                    matching <option>, so the control visually falls back to "Custom…"
+                    while state still holds the moveId. A plain Save still persists
+                    correctly (the id is preserved), but render a fallback <option> for
+                    an unknown editPick so the display matches state. (PR #10 review.) */}
                 {editPick === KEEP && <option value={KEEP}>Keep current move</option>}
                 <option value={CUSTOM}>Custom…</option>
                 {library.map((lib) => (
