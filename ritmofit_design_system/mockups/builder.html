@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RitmoFit — Class Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="theme.css" />
+<style>
+  .builder { display:grid; grid-template-columns:266px 1fr 340px; gap:18px; align-items:start; }
+  @media (max-width:1180px){ .builder{ grid-template-columns:1fr; } }
+
+  /* library */
+  .library .lib-item { width:100%; text-align:left; display:flex; flex-direction:column; gap:3px; padding:11px 13px; border-radius:var(--r-card); background:transparent; border:1px solid transparent; color:inherit; }
+  .library .lib-item:hover { background:var(--ink-800); }
+  .library .lib-item.active { background:var(--ink-800); border-color:rgba(224,126,60,0.35); box-shadow:inset 3px 0 0 var(--copper-400); }
+  .library .lib-item .t { font-weight:600; font-size:14px; color:var(--bone-50); }
+  .library .lib-item .s { font-size:12px; color:var(--bone-400); display:flex; gap:8px; align-items:center; }
+  .library .lib-item .s .badge { font-family:var(--font-data); font-size:9px; letter-spacing:0.06em; text-transform:uppercase; padding:1px 6px; border-radius:var(--r-pill); border:1px solid var(--border-default); color:var(--bone-300); }
+
+  .inspector { position:sticky; top:84px; }
+  .seg-pick { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+  .seg-pick button { border:1px solid var(--border-default); background:var(--ink-900); color:var(--bone-300); border-radius:var(--r-control); padding:9px 4px; font-size:11px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .seg-pick button.on { border-color:var(--cyan-400); color:var(--bone-50); background:rgba(58,192,212,0.10); }
+  .seg-pick .swatch { width:100%; height:5px; border-radius:3px; }
+
+  .total-pill { font-family:var(--font-data); font-size:12px; color:var(--bone-300); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ── Top bar ── -->
+  <header class="topbar">
+    <div class="brand"><span class="mark">R</span><span class="name font-display">RitmoFit</span></div>
+    <nav>
+      <a href="builder.html" class="active">Builder</a>
+      <a href="explore.html">Explore</a>
+      <a href="teams.html">Teams</a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="btn btn-quiet btn-sm">＋ New class</button>
+    <span class="avatar" title="Ana Reyes">AR</span>
+  </header>
+
+  <div class="page">
+    <div class="builder">
+
+      <!-- ════ LEFT: class library ════ -->
+      <aside class="library stack gap-3">
+        <div class="between">
+          <span class="sectionlabel">Your classes</span>
+          <span class="pill">12</span>
+        </div>
+        <div class="field">
+          <input class="input" placeholder="Search classes…" />
+        </div>
+        <div class="card" style="padding:7px;">
+          <button class="lib-item active">
+            <span class="t">Tuesday Power Ride</span>
+            <span class="s"><span class="badge">Owner</span> 6 tracks · 23:42</span>
+          </button>
+          <button class="lib-item">
+            <span class="t">Sunrise Endurance 45</span>
+            <span class="s"><span class="badge">Owner</span> 11 tracks · 45:10</span>
+          </button>
+          <button class="lib-item">
+            <span class="t">Reggaetón Burnout</span>
+            <span class="s"><span class="badge" style="color:var(--cyan-300);border-color:rgba(58,192,212,.4)">Edit</span> 8 tracks · 31:05</span>
+          </button>
+          <button class="lib-item">
+            <span class="t">Climb &amp; Sprint Intervals</span>
+            <span class="s"><span class="badge">Owner</span> 7 tracks · 28:30</span>
+          </button>
+          <button class="lib-item">
+            <span class="t">Recovery Flow</span>
+            <span class="s"><span class="badge" style="color:var(--bone-400)">View</span> 9 tracks · 38:00</span>
+          </button>
+          <button class="lib-item">
+            <span class="t">Saturday Throwback 90s</span>
+            <span class="s"><span class="badge">Owner</span> 10 tracks · 42:15</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ════ CENTER: the class ════ -->
+      <main class="stack gap-4">
+        <!-- class header -->
+        <div class="card" style="padding:18px 20px;">
+          <div class="between">
+            <div class="stack gap-2" style="min-width:0;">
+              <div class="row gap-2">
+                <span class="eyebrow">Class</span>
+                <span class="pill" style="color:var(--cyan-300);border-color:rgba(58,192,212,.4)">🌐 Public · in Explore</span>
+              </div>
+              <h1 class="h1" style="font-size:27px;">Tuesday Power Ride</h1>
+              <div class="row gap-3">
+                <span class="total-pill">6 tracks</span>
+                <span class="dim">·</span>
+                <span class="total-pill">23:42 total</span>
+                <span class="dim">·</span>
+                <span class="total-pill">avg <span style="color:var(--bone-100)">118 BPM</span></span>
+              </div>
+            </div>
+            <div class="row gap-2" style="flex:none;">
+              <button class="btn btn-ghost btn-sm">Make private</button>
+              <button class="btn btn-ghost btn-sm">Share</button>
+              <a class="btn btn-primary" href="live.html">▶ Run live</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- energy ribbon -->
+        <figure class="ribbon-wrap" style="margin:0;">
+          <figcaption>
+            <span class="sectionlabel">Energy arc</span>
+            <span class="dim" style="font-size:11px;font-family:var(--font-data);">intensity over time</span>
+          </figcaption>
+          <svg viewBox="0 0 1000 100" preserveAspectRatio="none" role="img"
+               aria-label="6 tracks, intensity over time: easy, moderate, hard, all-out, easy, hard">
+            <defs>
+              <linearGradient id="rib" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0" stop-color="#F7B987" stop-opacity="0.05"/>
+                <stop offset="1" stop-color="#F7B987" stop-opacity="0.28"/>
+              </linearGradient>
+            </defs>
+            <!-- baseline -->
+            <rect x="0" y="99" width="1000" height="1" fill="rgba(251,247,240,0.08)"/>
+            <!-- track 1 easy -->
+            <rect x="0"     y="66" width="175.8" height="34" fill="var(--z-easy)" fill-opacity="0.20"/>
+            <rect x="0"     y="66" width="175.8" height="3"  fill="var(--z-easy)" fill-opacity="0.9"/>
+            <!-- track 2 mod -->
+            <rect x="175.8" y="45" width="154.7" height="55" fill="var(--z-mod)" fill-opacity="0.20"/>
+            <rect x="175.8" y="45" width="154.7" height="3"  fill="var(--z-mod)" fill-opacity="0.9"/>
+            <!-- track 3 hard (selected) -->
+            <rect x="330.5" y="22" width="189.9" height="78" fill="var(--z-hard)" fill-opacity="0.26"/>
+            <rect x="330.5" y="22" width="189.9" height="3"  fill="var(--z-hard)" fill-opacity="1"/>
+            <!-- track 4 all-out (plasma kiss) -->
+            <rect x="520.4" y="0"  width="135.0" height="100" fill="var(--z-allout)" fill-opacity="0.24"/>
+            <rect x="520.4" y="0"  width="135.0" height="3"   fill="var(--plasma-500)" fill-opacity="0.95"/>
+            <!-- track 5 easy (recovery) -->
+            <rect x="655.4" y="66" width="161.7" height="34" fill="var(--z-easy)" fill-opacity="0.20"/>
+            <rect x="655.4" y="66" width="161.7" height="3"  fill="var(--z-easy)" fill-opacity="0.9"/>
+            <!-- track 6 hard -->
+            <rect x="817.1" y="22" width="182.9" height="78" fill="var(--z-hard)" fill-opacity="0.20"/>
+            <rect x="817.1" y="22" width="182.9" height="3"  fill="var(--z-hard)" fill-opacity="0.9"/>
+          </svg>
+
+          <!-- timeline w/ track blocks, cue+move markers, playhead -->
+          <div class="timeline">
+            <div class="track-block" style="left:0%;width:17.4%;"><span>1</span></div>
+            <div class="track-block" style="left:17.6%;width:15.3%;"><span>2</span></div>
+            <div class="track-block" style="left:33.1%;width:18.8%;background:rgba(224,126,60,0.10);border-color:rgba(224,126,60,0.4);"><span>3 ◂ editing</span></div>
+            <div class="track-block" style="left:52.0%;width:13.3%;"><span>4</span></div>
+            <div class="track-block" style="left:65.5%;width:16.0%;"><span>5</span></div>
+            <div class="track-block" style="left:81.7%;width:18.1%;"><span>6</span></div>
+            <!-- cue (▲) + move (◆) markers -->
+            <div class="marker cue"  style="left:6%;">▲</div>
+            <div class="marker move" style="left:21%;">◆</div>
+            <div class="marker cue"  style="left:37%;">▲</div>
+            <div class="marker move" style="left:44%;">◆</div>
+            <div class="marker cue"  style="left:57%;">▲</div>
+            <div class="marker move" style="left:88%;">◆</div>
+            <div class="playhead" style="left:0%;"></div>
+          </div>
+
+          <!-- segment band (design concept) -->
+          <div class="segments">
+            <div class="seg" style="flex:1.0;"><b style="background:var(--amber-400)"></b> Warm-up</div>
+            <div class="seg" style="flex:1.6;"><b style="background:var(--copper-600)"></b> Climb</div>
+            <div class="seg" style="flex:1.0;"><b style="background:var(--ember-400)"></b> Sprint</div>
+            <div class="seg" style="flex:1.2;"><b style="background:var(--violet-400)"></b> Recovery</div>
+            <div class="seg" style="flex:1.4;"><b style="background:var(--copper-600)"></b> Final climb</div>
+          </div>
+        </figure>
+
+        <!-- track list -->
+        <div class="stack gap-2">
+          <div class="between" style="margin-bottom:2px;">
+            <span class="sectionlabel">Track list</span>
+            <button class="btn btn-ghost btn-sm">＋ Add track</button>
+          </div>
+
+          <button class="song-row playing">
+            <span class="grip">⠿</span><span class="pos">1</span>
+            <span class="art">♪</span>
+            <span class="meta"><span class="title">Baianá</span><span class="artist">Bakermat</span></span>
+            <span class="intensity"><span class="bars" data-zone="easy"><i></i><i></i><i></i><i></i></span><span class="zone-label">Build</span></span>
+            <span class="bpm">122<span class="unit">BPM</span></span>
+          </button>
+
+          <button class="song-row">
+            <span class="grip">⠿</span><span class="pos">2</span>
+            <span class="art">♪</span>
+            <span class="meta"><span class="title">Tusa</span><span class="artist">Karol G, Nicki Minaj</span></span>
+            <span class="intensity"><span class="bars" data-zone="mod"><i></i><i></i><i></i><i></i></span><span class="zone-label">Push</span></span>
+            <span class="bpm">100<span class="unit">BPM</span></span>
+          </button>
+
+          <button class="song-row selected">
+            <span class="grip">⠿</span><span class="pos">3</span>
+            <span class="art">♪</span>
+            <span class="meta"><span class="title">Pepas</span><span class="artist">Farruko</span></span>
+            <span class="intensity"><span class="bars" data-zone="hard"><i></i><i></i><i></i><i></i></span><span class="zone-label">Attack</span></span>
+            <span class="bpm">130<span class="unit">BPM</span></span>
+          </button>
+
+          <button class="song-row">
+            <span class="grip">⠿</span><span class="pos">4</span>
+            <span class="art" style="background:linear-gradient(135deg,var(--ember-500),var(--plasma-600));color:var(--bone-50);box-shadow:var(--peak-glow);">★</span>
+            <span class="meta"><span class="title">Gasolina</span><span class="artist">Daddy Yankee</span></span>
+            <span class="intensity"><span class="bars" data-zone="allout"><i></i><i></i><i></i><i></i></span><span class="zone-label" style="color:var(--plasma-400)">All&nbsp;Out</span></span>
+            <span class="bpm">95<span class="unit">BPM</span></span>
+          </button>
+
+          <button class="song-row">
+            <span class="grip">⠿</span><span class="pos">5</span>
+            <span class="art">♪</span>
+            <span class="meta"><span class="title">Provenza</span><span class="artist">Karol G</span></span>
+            <span class="intensity"><span class="bars" data-zone="easy"><i></i><i></i><i></i><i></i></span><span class="zone-label">Build</span></span>
+            <span class="bpm">112<span class="unit">BPM</span></span>
+          </button>
+
+          <button class="song-row">
+            <span class="grip">⠿</span><span class="pos">6</span>
+            <span class="art">♪</span>
+            <span class="meta"><span class="title">La Gozadera</span><span class="artist">Gente de Zona, Marc Anthony</span></span>
+            <span class="intensity"><span class="bars" data-zone="hard"><i></i><i></i><i></i><i></i></span><span class="zone-label">Attack</span></span>
+            <span class="bpm">124<span class="unit">BPM</span></span>
+          </button>
+        </div>
+      </main>
+
+      <!-- ════ RIGHT: track inspector ════ -->
+      <aside class="inspector">
+        <div class="panel" style="padding:20px;">
+          <div class="between" style="margin-bottom:4px;">
+            <span class="sectionlabel">Track 3 · Inspector</span>
+            <button class="btn-danger btn btn-sm" style="padding:4px 11px;">Remove</button>
+          </div>
+          <h2 class="h2" style="font-size:19px;margin-bottom:2px;">Pepas</h2>
+          <p class="dim" style="margin:0 0 16px;font-size:13px;">Farruko · 4:30</p>
+
+          <!-- intensity -->
+          <div class="field" style="margin-bottom:18px;">
+            <span class="flabel">Intensity zone</span>
+            <div class="seg-pick">
+              <button><span class="swatch" style="background:var(--z-none)"></span>None</button>
+              <button><span class="swatch" style="background:var(--z-easy)"></span>Build</button>
+              <button><span class="swatch" style="background:var(--z-mod)"></span>Push</button>
+              <button class="on"><span class="swatch" style="background:var(--z-hard)"></span>Attack</button>
+              <button><span class="swatch" style="background:var(--z-allout)"></span>All&nbsp;Out</button>
+            </div>
+            <div class="row gap-2" style="margin-top:8px;">
+              <span class="intensity"><span class="bars" data-zone="hard"><i></i><i></i><i></i><i></i></span><span class="zone-label">Zone 3 · Attack</span></span>
+            </div>
+          </div>
+
+          <!-- BPM -->
+          <div class="field" style="margin-bottom:18px;">
+            <span class="flabel">Display BPM <span class="dim" style="text-transform:none;letter-spacing:0;">(manual — never from Spotify)</span></span>
+            <div class="row gap-2">
+              <input class="input mono" style="width:110px;" value="130" inputmode="numeric" />
+              <span class="dim" style="font-size:12.5px;">override per class</span>
+            </div>
+          </div>
+
+          <!-- notes -->
+          <div class="field" style="margin-bottom:20px;">
+            <span class="flabel">Notes</span>
+            <textarea class="input" rows="2" placeholder="Coaching notes for this track…">Standing climb into the chorus — add resistance on the drop.</textarea>
+          </div>
+
+          <hr class="divider" style="margin:0 0 16px;" />
+
+          <!-- cues -->
+          <div class="stack gap-2" style="margin-bottom:18px;">
+            <span class="flabel">Cues</span>
+            <div class="chip-row"><span class="t">0:12</span><span class="kind cue">cue</span><span class="label">Add a turn — heavy gear</span><button class="x">✕</button></div>
+            <div class="chip-row"><span class="t">1:04</span><span class="kind cue">cue</span><span class="label">Out of the saddle</span><button class="x">✕</button></div>
+            <div class="chip-row"><span class="t">2:38</span><span class="kind cue">cue</span><span class="label">Last push — count it down</span><button class="x">✕</button></div>
+            <div class="row gap-2">
+              <input class="input mono" style="width:62px;" value="0" aria-label="seconds" />
+              <input class="input" placeholder="New cue…" />
+              <button class="btn btn-ghost btn-sm">Add</button>
+            </div>
+          </div>
+
+          <!-- moves -->
+          <div class="stack gap-2">
+            <span class="flabel">Moves</span>
+            <div class="chip-row"><span class="t">0:20</span><span class="kind move">move</span><span class="label">Standing climb</span>
+              <span class="intensity"><span class="bars" data-zone="hard"><i></i><i></i><i></i><i></i></span></span><button class="x">✕</button></div>
+            <div class="chip-row"><span class="t">1:50</span><span class="kind move">move</span><span class="label">Tap-backs</span>
+              <span class="intensity"><span class="bars" data-zone="mod"><i></i><i></i><i></i><i></i></span></span><button class="x">✕</button></div>
+            <div class="row gap-2" style="flex-wrap:wrap;">
+              <input class="input mono" style="width:62px;" value="0" aria-label="seconds" />
+              <select class="input" style="flex:1;min-width:120px;"><option>Standing climb</option><option>Jumps</option><option>Tap-backs</option><option>Sprint</option><option>Custom…</option></select>
+              <button class="btn btn-ghost btn-sm">Add</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

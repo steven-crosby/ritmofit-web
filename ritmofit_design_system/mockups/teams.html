@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RitmoFit — Teams &amp; Sharing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="theme.css" />
+<style>
+  .teams-grid { display:grid; grid-template-columns:300px 1fr; gap:18px; align-items:start; }
+  @media (max-width:900px){ .teams-grid{ grid-template-columns:1fr; } }
+  .team-item { width:100%; text-align:left; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border-radius:var(--r-card); background:transparent; border:1px solid transparent; color:inherit; }
+  .team-item:hover { background:var(--ink-800); }
+  .team-item.active { background:var(--ink-800); border-color:rgba(224,126,60,.35); box-shadow:inset 3px 0 0 var(--copper-400); }
+  .team-item .n { font-weight:600; color:var(--bone-50); }
+  .role { font-family:var(--font-data); font-size:9px; text-transform:uppercase; letter-spacing:.06em; padding:2px 8px; border-radius:var(--r-pill); border:1px solid var(--border-default); color:var(--bone-300); }
+  .member { display:flex; align-items:center; gap:12px; padding:11px 13px; border-radius:var(--r-pill); background:var(--ink-900); border:1px solid var(--border-subtle); }
+  .member .who { flex:1; font-size:14px; color:var(--bone-100); }
+  .member .who small { color:var(--bone-500); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="mark">R</span><span class="name font-display">RitmoFit</span></div>
+    <nav>
+      <a href="builder.html">Builder</a>
+      <a href="explore.html">Explore</a>
+      <a href="teams.html" class="active">Teams</a>
+    </nav>
+    <span class="spacer"></span>
+    <span class="avatar">AR</span>
+  </header>
+
+  <div class="page" style="max-width:980px;">
+    <div class="stack gap-2" style="margin-bottom:22px;">
+      <span class="eyebrow">Collaborate</span>
+      <h1 class="h1">Teams</h1>
+      <p class="muted" style="margin:0;max-width:560px;">Group instructors so a whole studio shares a library at once. A team is a share target — pick it in any class's Share panel.</p>
+    </div>
+
+    <div class="teams-grid">
+      <!-- team list -->
+      <aside class="stack gap-3">
+        <form class="row gap-2" onsubmit="return false">
+          <input class="input" placeholder="New team name…" />
+          <button class="btn btn-primary btn-sm">Create</button>
+        </form>
+        <div class="card" style="padding:7px;">
+          <button class="team-item active"><span class="n">Brasa Studio — SoMa</span><span class="role">Owner</span></button>
+          <button class="team-item"><span class="n">Sunset Cycle Co.</span><span class="role">Admin</span></button>
+          <button class="team-item"><span class="n">Freelance Subs</span><span class="role" style="color:var(--bone-400)">Member</span></button>
+        </div>
+      </aside>
+
+      <!-- members -->
+      <section class="panel" style="padding:22px;">
+        <div class="between" style="margin-bottom:16px;">
+          <div class="stack gap-2">
+            <h2 class="h2" style="font-size:19px;">Brasa Studio — SoMa</h2>
+            <span class="dim" style="font-size:13px;">4 members · you are the owner</span>
+          </div>
+          <button class="btn btn-quiet btn-sm">Delete team</button>
+        </div>
+
+        <form class="row gap-2" style="margin-bottom:16px;" onsubmit="return false">
+          <input class="input" type="email" placeholder="Add member by email…" />
+          <button class="btn btn-primary btn-sm">Add</button>
+        </form>
+
+        <div class="stack gap-2">
+          <div class="member">
+            <span class="avatar" style="background:var(--copper-600);">AR</span>
+            <span class="who">Ana Reyes <small>(you)</small><br><small>ana@ritmo.studio</small></span>
+            <span class="role">Owner</span>
+          </div>
+          <div class="member">
+            <span class="avatar" style="background:var(--cyan-600);">MO</span>
+            <span class="who">Marco Ortega<br><small>marco@brasa.fit</small></span>
+            <span class="role">Admin</span>
+            <button class="btn-quiet btn btn-sm" style="padding:4px 11px;">Remove</button>
+          </div>
+          <div class="member">
+            <span class="avatar" style="background:var(--violet-500);">JD</span>
+            <span class="who">Jess Diaz<br><small>jess@brasa.fit</small></span>
+            <span class="role" style="color:var(--bone-400)">Member</span>
+            <button class="btn-quiet btn btn-sm" style="padding:4px 11px;">Remove</button>
+          </div>
+          <div class="member">
+            <span class="avatar" style="background:var(--ink-600);">LP</span>
+            <span class="who">Luis Peña<br><small>luis@brasa.fit</small></span>
+            <span class="role" style="color:var(--bone-400)">Member</span>
+            <button class="btn-quiet btn btn-sm" style="padding:4px 11px;">Remove</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ════ Share dialog (overlay) ════ -->
+  <div class="scrim">
+    <div class="dialog" style="max-width:460px;">
+      <header>
+        <div class="stack gap-2">
+          <h2>Share class</h2>
+          <span class="dim" style="font-size:13.5px;">Tuesday Power Ride</span>
+        </div>
+        <button class="close">✕</button>
+      </header>
+
+      <div class="field" style="margin-bottom:18px;">
+        <span class="flabel">Invite by email</span>
+        <div class="row gap-2">
+          <input class="input" type="email" placeholder="name@example.com" />
+          <select class="input" style="width:130px;flex:none;"><option>👁 Can view</option><option>✎ Can edit</option></select>
+          <button class="btn btn-primary btn-sm">Share</button>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:20px;">
+        <span class="flabel">Share with a team</span>
+        <div class="row gap-2">
+          <select class="input" style="flex:1;"><option>Select a team…</option><option>Brasa Studio — SoMa</option><option>Sunset Cycle Co.</option></select>
+          <select class="input" style="width:130px;flex:none;"><option>👁 Can view</option><option>✎ Can edit</option></select>
+          <button class="btn btn-primary btn-sm">Share</button>
+        </div>
+      </div>
+
+      <hr class="divider" style="margin-bottom:16px;" />
+      <span class="flabel" style="display:block;margin-bottom:10px;">Shared with</span>
+      <div class="stack gap-2">
+        <div class="member">
+          <span class="who">Brasa Studio — SoMa <small>· team</small></span>
+          <span class="role" style="color:var(--cyan-300);border-color:rgba(58,192,212,.4)">✎ Can edit</span>
+          <button class="x btn-quiet btn btn-sm" style="padding:4px 10px;">Remove</button>
+        </div>
+        <div class="member">
+          <span class="who">sofia@cycle.co</span>
+          <select class="input" style="width:128px;flex:none;padding:6px 12px;font-size:12px;"><option>👁 Can view</option><option>✎ Can edit</option></select>
+          <button class="x btn-quiet btn btn-sm" style="padding:4px 10px;">Remove</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

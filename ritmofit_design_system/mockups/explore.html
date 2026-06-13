@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RitmoFit — Explore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="theme.css" />
+<style>
+  .ex-row { display:flex; align-items:center; gap:16px; padding:14px 16px; }
+  .ex-row .cover { width:54px; height:54px; border-radius:13px; flex:none; display:grid; place-items:center; font-size:20px; color:var(--bone-50); }
+  .ex-row .t { font-weight:600; font-size:15px; color:var(--bone-50); }
+  .ex-row .s { font-size:12.5px; color:var(--bone-400); }
+  .ex-row .s .font-data { color:var(--bone-200); }
+  .mini-arc { display:flex; align-items:flex-end; gap:2px; height:30px; width:88px; flex:none; }
+  .mini-arc i { flex:1; border-radius:2px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="mark">R</span><span class="name font-display">RitmoFit</span></div>
+    <nav>
+      <a href="builder.html">Builder</a>
+      <a href="explore.html" class="active">Explore</a>
+      <a href="teams.html">Teams</a>
+    </nav>
+    <span class="spacer"></span>
+    <span class="avatar">AR</span>
+  </header>
+
+  <div class="page" style="max-width:860px;">
+    <div class="stack gap-2" style="margin-bottom:22px;">
+      <span class="eyebrow">Discover</span>
+      <h1 class="h1">Explore public classes</h1>
+      <p class="muted" style="margin:0;max-width:560px;">Classes other instructors have published. Preview the run, or save a copy into your own library to make it yours.</p>
+    </div>
+
+    <div class="row gap-2" style="margin-bottom:18px;">
+      <input class="input" placeholder="Search public classes…" style="max-width:340px;" />
+      <span class="pill">Newest</span>
+      <span class="pill">Reggaetón</span>
+      <span class="pill">45 min</span>
+    </div>
+
+    <div class="stack gap-3">
+      <div class="card ex-row">
+        <span class="cover" style="background:linear-gradient(135deg,var(--copper-400),var(--ember-500));">▦</span>
+        <div class="stack" style="flex:1;min-width:0;">
+          <span class="t">Miami Heat — Reggaetón 40</span>
+          <span class="s">by <b style="color:var(--bone-200)">Camila Ortiz</b> · <span class="font-data">9</span> tracks · 40:12 · avg <span class="font-data">112 BPM</span></span>
+        </div>
+        <span class="mini-arc" aria-hidden>
+          <i style="height:34%;background:var(--z-easy)"></i><i style="height:55%;background:var(--z-mod)"></i><i style="height:78%;background:var(--z-hard)"></i><i style="height:100%;background:var(--z-allout)"></i><i style="height:60%;background:var(--z-mod)"></i><i style="height:80%;background:var(--z-hard)"></i>
+        </span>
+        <div class="row gap-2" style="flex:none;">
+          <a class="btn btn-ghost btn-sm" href="live.html">Preview</a>
+          <button class="btn btn-primary btn-sm">Save a copy</button>
+        </div>
+      </div>
+
+      <div class="card ex-row">
+        <span class="cover" style="background:linear-gradient(135deg,var(--cyan-500),var(--cyan-600));">◈</span>
+        <div class="stack" style="flex:1;min-width:0;">
+          <span class="t">Endurance Builder — Low &amp; Steady</span>
+          <span class="s">by <b style="color:var(--bone-200)">Marcus Lee</b> · <span class="font-data">12</span> tracks · 50:00 · avg <span class="font-data">98 BPM</span></span>
+        </div>
+        <span class="mini-arc" aria-hidden>
+          <i style="height:30%;background:var(--z-easy)"></i><i style="height:42%;background:var(--z-easy)"></i><i style="height:60%;background:var(--z-mod)"></i><i style="height:55%;background:var(--z-mod)"></i><i style="height:70%;background:var(--z-hard)"></i><i style="height:48%;background:var(--z-mod)"></i>
+        </span>
+        <div class="row gap-2" style="flex:none;">
+          <a class="btn btn-ghost btn-sm" href="live.html">Preview</a>
+          <button class="btn btn-primary btn-sm">Save a copy</button>
+        </div>
+      </div>
+
+      <div class="card ex-row">
+        <span class="cover" style="background:linear-gradient(135deg,var(--ember-500),var(--plasma-600));box-shadow:var(--peak-glow);">★</span>
+        <div class="stack" style="flex:1;min-width:0;">
+          <span class="t">Sprint Intervals — All-Out 30</span>
+          <span class="s">by <b style="color:var(--bone-200)">Ana Reyes</b> · <span class="font-data">7</span> tracks · 30:25 · avg <span class="font-data">128 BPM</span></span>
+        </div>
+        <span class="mini-arc" aria-hidden>
+          <i style="height:40%;background:var(--z-easy)"></i><i style="height:100%;background:var(--z-allout)"></i><i style="height:45%;background:var(--z-easy)"></i><i style="height:100%;background:var(--z-allout)"></i><i style="height:45%;background:var(--z-easy)"></i><i style="height:100%;background:var(--z-allout)"></i>
+        </span>
+        <div class="row gap-2" style="flex:none;">
+          <a class="btn btn-ghost btn-sm" href="live.html">Preview</a>
+          <button class="btn btn-primary btn-sm">Save a copy</button>
+        </div>
+      </div>
+
+      <div class="card ex-row">
+        <span class="cover" style="background:linear-gradient(135deg,var(--violet-500),var(--violet-400));">❀</span>
+        <div class="stack" style="flex:1;min-width:0;">
+          <span class="t">Sunday Recovery Flow</span>
+          <span class="s">by <b style="color:var(--bone-200)">Priya N.</b> · <span class="font-data">10</span> tracks · 38:00 · avg <span class="font-data">90 BPM</span></span>
+        </div>
+        <span class="mini-arc" aria-hidden>
+          <i style="height:30%;background:var(--z-easy)"></i><i style="height:38%;background:var(--z-easy)"></i><i style="height:50%;background:var(--z-mod)"></i><i style="height:40%;background:var(--z-easy)"></i><i style="height:34%;background:var(--z-easy)"></i><i style="height:28%;background:var(--z-none)"></i>
+        </span>
+        <div class="row gap-2" style="flex:none;">
+          <a class="btn btn-ghost btn-sm" href="live.html">Preview</a>
+          <button class="btn btn-primary btn-sm">Save a copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
