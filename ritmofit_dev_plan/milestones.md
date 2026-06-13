@@ -325,11 +325,21 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   glow-free swap under `prefers-reduced-motion`**. No schema/API-contract/shared change. `pnpm test` =
   api 159 + web 39 = **198**. **Merged PR #29, deployed 2026-06-13** (Worker version `c3a502c0`; no
   schema/migration).
+- ✅ **Slice 16 — segment band (fixed enum)** — *the first design-system-build slice that changes schema +
+  the contract.* A new **`class_sections`** table (**migration `0006`**) holds time-anchored segment bands;
+  a fixed `segmentType` enum (`warm_up`/`climb`/`sprint`/`recovery`/`cool_down`, lower_snake; labels/tints
+  presentation-only). Full stack: shared `classSection` schemas + enum; CRUD routes (`GET/POST
+  /classes/:id/sections`, `PATCH`/`DELETE /sections/:id`) class-scoped via a new `requireSectionAccess`
+  (view reads, edit writes); the run-payload gains an **additive** `sections[]` (`schemaVersion` stays 1);
+  OpenAPI regenerated. Web: a `SegmentBand` under the timeline tiles bands by start (pure, unit-tested
+  `computeSegmentBands`; each band is **label + tint dot**, never color alone) + an edit-gated add/retime/
+  retype/delete editor. **Start is a free anchor** (no bound to the assembled duration — it shifts as
+  tracks change; render clamps + tiles). Deferred: Material-Symbol icons, drag-resize, track-range binding.
+  `pnpm test` = api 159 + web 44 = **203**.
 
 **Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the **playing-track pulse
 in the planning timeline** (no "playing" state in the builder), the timeline **playhead** / tap-to-seek (a
-Live concern), and the **segment band** under the ribbon (design-concept-only — no `class_sections`
-schema). *Marker→row focus
+Live concern), and segment-band **icons / drag-resize / track-range binding**. *Marker→row focus
 caveat:* two cues/moves at the **same `anchorMs`** can't be disambiguated (run-payload has no ids) — the
 first match flashes; the robust fix (add cue/move ids to the run-payload) is a deferred contract change.
 *(The PR #10 `TODO(select-fallback)` was resolved in slice 9.)*

@@ -23,7 +23,15 @@ import {
   type SharePermission,
   type ClassVisibility,
 } from '@ritmofit/shared';
-import { classes, classTracks, cues, classTrackMoves, shares, teamMemberships } from '../db/schema.js';
+import {
+  classes,
+  classTracks,
+  cues,
+  classTrackMoves,
+  classSections,
+  shares,
+  teamMemberships,
+} from '../db/schema.js';
 import { HttpError } from './errors.js';
 import type { Db } from './db.js';
 
@@ -253,4 +261,24 @@ export async function requireClassTrackMoveAccess(
   if (!row) throw new AccessError(404, 'NOT_FOUND', 'Not found.');
   const { level } = await requireClassTrackAccess(db, userId, row.classTrackId, minLevel);
   return { classTrackId: row.classTrackId, level };
+}
+
+/**
+ * Resolve `class_section → class` and enforce access. Sections are class-scoped
+ * (no ACL of their own). 404s when the section is missing. Returns the class id.
+ */
+export async function requireSectionAccess(
+  db: Db,
+  userId: string,
+  sectionId: string,
+  minLevel: MinAccessLevel,
+): Promise<{ classId: string; level: AccessLevel }> {
+  const row = await db
+    .select({ classId: classSections.classId })
+    .from(classSections)
+    .where(eq(classSections.id, sectionId))
+    .get();
+  if (!row) throw new AccessError(404, 'NOT_FOUND', 'Not found.');
+  const level = await requireAccess(db, userId, row.classId, minLevel);
+  return { classId: row.classId, level };
 }

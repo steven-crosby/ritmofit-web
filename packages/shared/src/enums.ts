@@ -54,6 +54,15 @@ export const shareResourceTypeSchema = z.enum(shareResourceTypeValues);
 export type ShareResourceType = z.infer<typeof shareResourceTypeSchema>;
 
 /**
+ * Class section / segment type — the energy-arc bands under the timeline
+ * (`09-class-builder-guidelines.md`, `02-color-system.md`). A **fixed enum**;
+ * labels and tints are presentation-only (Warm-up/Climb/Sprint/Recovery/Cool-down).
+ */
+export const segmentTypeValues = ['warm_up', 'climb', 'sprint', 'recovery', 'cool_down'] as const;
+export const segmentTypeSchema = z.enum(segmentTypeValues);
+export type SegmentType = z.infer<typeof segmentTypeSchema>;
+
+/**
  * Effective access a user has to a class — owner ∪ shared-direct ∪ shared-team,
  * highest wins (see `authorization.md`). Ordered **ascending**, so the tuple index
  * is the rank used for `minLevel` comparisons. Surfaced by `GET /classes`.

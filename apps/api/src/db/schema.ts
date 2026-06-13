@@ -35,6 +35,7 @@ import {
   classVisibilityValues,
   sharePermissionValues,
   shareResourceTypeValues,
+  segmentTypeValues,
 } from '@ritmofit/shared';
 
 /**
@@ -276,6 +277,31 @@ export const classTrackMoves = sqliteTable(
       sql`((${t.moveId} is not null) + (${t.userMoveId} is not null)) <= 1
         and (${t.moveId} is not null or ${t.userMoveId} is not null or ${t.nameOverride} is not null)`,
     ),
+  ],
+);
+
+// ── Sections (energy-arc segment bands) ─────────────────────────────────────
+
+/**
+ * Time-anchored segment bands under the timeline (09, 10 §4). A section begins at
+ * `start_offset_ms` and runs to the next section's start (or class end). `type` is
+ * a fixed enum; free anchors (no contiguity/overlap constraint — render orders by
+ * start). classes CASCADE → sections.
+ */
+export const classSections = sqliteTable(
+  'class_sections',
+  {
+    id: text('id').primaryKey(),
+    classId: text('class_id')
+      .notNull()
+      .references(() => classes.id, { onDelete: 'cascade' }),
+    type: text('type', { enum: segmentTypeValues }).notNull(),
+    startOffsetMs: integer('start_offset_ms').notNull(),
+    ...timestamps(),
+  },
+  (t) => [
+    enumCheck('class_sections_type_check', t.type, segmentTypeValues),
+    index('class_sections_class_idx').on(t.classId),
   ],
 );
 
