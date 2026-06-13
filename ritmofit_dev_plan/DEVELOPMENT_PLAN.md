@@ -118,7 +118,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > the timeline's blocks + markers **clickable/keyboard-selectable** (open a track in the inspector,
 > cross-highlight its row; *merged PR #21, **deployed 2026-06-13**, Worker `755e3489`*). **Slice 12** makes
 > a cue/move **marker click focus its row** in the inspector (scroll + flash, correlated by `anchorMs`;
-> `pnpm test` = api 159 + web 39 = **198**; *branch `feat/web-focus-cue-from-marker`, not yet deployed*).
+> *merged PR #23, **deployed 2026-06-13**, Worker `802ebe48`*).
 > All slices are no schema/API/shared change.
 > Deferred: the on-beat pulse + playhead/tap-to-seek, the segment band, managing custom moves. See
 > `milestones.md` for the full slice log.
