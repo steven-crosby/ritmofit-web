@@ -37,6 +37,9 @@ app.onError((err, c) => {
   // bad-gateway, NOT a client validation error — keep it out of the 422 branch
   // below (a provider `ZodError` would otherwise read as "your request was invalid").
   if (err instanceof ProviderError) {
+    // 502, not 500: an upstream provider misbehaved. Log the detail (provider +
+    // message) so it stays diagnosable, but never leak it to the client.
+    console.warn(`[provider:${err.provider}] ${err.message}`);
     return c.json(
       { error: { code: 'PROVIDER_UNAVAILABLE', message: 'A music provider is temporarily unavailable.' } },
       502,

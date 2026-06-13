@@ -15,7 +15,7 @@
  */
 import { z } from 'zod';
 import type { FetchLike } from './provider.js';
-import { readJson } from './errors.js';
+import { readJson, ProviderError } from './errors.js';
 
 // GetSongBPM's documented API host (getsongbpm.com/api). `type=both` with a
 // `lookup=song:… artist:…` term is the combined song+artist search.
@@ -78,7 +78,7 @@ export function createGetSongBpmProvider(config: GetSongBpmConfig): BpmProvider 
       const term = `song:${title} artist:${artist}`;
       const url = `${apiBase}/search/?api_key=${encodeURIComponent(config.apiKey)}&type=both&lookup=${encodeURIComponent(term)}`;
       const res = await config.fetchImpl(url, { headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error(`BPM lookup failed: ${res.status}`);
+      if (!res.ok) throw new ProviderError('getsongbpm', `BPM lookup failed: ${res.status}`);
       const parsed = responseSchema.safeParse(await readJson(res, 'getsongbpm'));
       if (!parsed.success) return null;
       const search = parsed.data.search;

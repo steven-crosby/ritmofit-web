@@ -358,6 +358,39 @@ iOS wants it). *(The slice-12/16 **marker→row `anchorMs` disambiguation caveat
 
 ---
 
+## Music frontend ("M2 frontend") — built + deployed, all providers live (2026-06-13)
+
+M2 shipped the provider **backend** with no UI — tracks were hand-entered (Title/Artist/ms). This wired
+the music layer into the builder and took it to **real catalogs in prod**.
+
+- ✅ **S1 — track search & import** (PR #35): provider-picked, debounced search → low-noise **44px song
+  cards** → one-click import-and-add (`GET /providers/:p/search` → `POST /providers/track-import` → add by
+  `trackId`). Manual entry kept as a de-emphasized fallback. `lib/providers.ts` (labels/order — SoundCloud
+  first — + enum-drift guard); `TrackSearch.tsx`.
+- ✅ **S2 — provider connections** (PR #36): `ConnectionsDialog` (top-bar **Connections**) — connect /
+  disconnect with clear connected/disconnected state; mock seam links inline, live flow redirects to the
+  authorize URL; disconnect is confirmed (triggers the 7-day metadata purge).
+- ✅ **S3 — "my likes"** (PR #36): a **Search / My-likes** toggle in `TrackSearch` (`GET /providers/:p/likes`,
+  spends the user token).
+- ✅ **S4 — BPM lookup** (PR #36): a **Look up BPM** button in the inspector (`POST /tracks/:id/bpm-lookup`,
+  never Spotify). S5 (album art on rows, empty/disconnected states) was already satisfied by existing code.
+- ✅ **Prod hardening** (PR #37) — two bugs the mock path never exercised, found once **real creds** were
+  set and fixed live: (1) **`TypeError: Illegal invocation`** on every provider — the **bare global `fetch`**
+  passed to adapters loses its `this` in the Workers runtime (miniflare tolerated it); fixed with
+  `lib/fetch.ts` `boundFetch` at all 8 call sites. (2) **Spotify search 400 "Invalid limit"** — Spotify's
+  client-credentials search now rejects `limit=25` despite the documented 0–50; lowered to **10**. Also:
+  adapters now throw typed **`ProviderError`** so provider failures map to **502** (logged), not an opaque
+  500; the Apple developer token is minted by the new **`apps/api/scripts/apple-dev-token.mjs`** (ES256 JWT
+  from the untracked `.p8`).
+- **Verified live in prod** (`ritmofit.studio`): **SoundCloud**, **Spotify**, and **Apple Music** all return
+  real search results and import with album art; throwaway test accounts deleted after each check. Secrets
+  set via `wrangler secret put`. `pnpm test` = api 159 + web 53 = **212**; typecheck (4) · lint · build green.
+- **Open:** the SoundCloud **per-user Connect** OAuth round-trip needs its **redirect URI registered**
+  (`https://ritmofit.studio/api/v1/providers/soundcloud/callback`) + a browser login to confirm end-to-end
+  (provider *search* via the app token is verified). Spotify/Apple are **search-only** by design.
+
+---
+
 ## Cross-cutting reminders
 - Plan before code on every feature; wait for confirmation.
 - The three music constraints (`music-providers.md`) are inviolable across all milestones.
