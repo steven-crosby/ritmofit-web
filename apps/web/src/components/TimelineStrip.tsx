@@ -141,7 +141,7 @@ export function TimelineStrip({
               aria-label={`Select track ${b.position + 1}`}
               onClick={() => onSelectTrack(b.classTrackId)}
               style={style}
-              className={`absolute top-0 flex h-5 items-center justify-center overflow-hidden rounded-sm border-l border-interactive/15 hover:bg-bg-raised ${ring}`}
+              className={`absolute top-0 flex h-5 items-center justify-center overflow-hidden rounded-sm border-l border-interactive/15 first:border-l-0 hover:bg-bg-raised ${ring}`}
             >
               {inner}
             </button>
