@@ -10,6 +10,12 @@ import type {
   ExploreClass,
   ClassTrack,
   AddClassTrack,
+  UpdateClassTrack,
+  Cue,
+  CreateCue,
+  ClassTrackMove,
+  PlaceClassTrackMove,
+  Move,
   RunPayload,
   Share,
   ShareView,
@@ -58,8 +64,32 @@ export const listClassTracks = (classId: string) =>
   api<ClassTrack[]>(`/classes/${classId}/tracks`);
 export const addTrack = (classId: string, body: AddClassTrack) =>
   api<ClassTrack>(`/classes/${classId}/tracks`, { method: 'POST', body: JSON.stringify(body) });
+export const updateClassTrack = (classTrackId: string, body: UpdateClassTrack) =>
+  api<ClassTrack>(`/class-tracks/${classTrackId}`, { method: 'PATCH', body: JSON.stringify(body) });
+export const deleteClassTrack = (classTrackId: string) =>
+  api<void>(`/class-tracks/${classTrackId}`, { method: 'DELETE' });
 export const getRunPayload = (classId: string) =>
   api<RunPayload>(`/classes/${classId}/run-payload`);
+
+// ── Choreography: cues + placed moves anchored to a class_track ───────────────
+export const listCues = (classTrackId: string) =>
+  api<Cue[]>(`/class-tracks/${classTrackId}/cues`);
+export const createCue = (classTrackId: string, body: CreateCue) =>
+  api<Cue>(`/class-tracks/${classTrackId}/cues`, { method: 'POST', body: JSON.stringify(body) });
+export const deleteCue = (cueId: string) => api<void>(`/cues/${cueId}`, { method: 'DELETE' });
+
+export const listPlacedMoves = (classTrackId: string) =>
+  api<ClassTrackMove[]>(`/class-tracks/${classTrackId}/moves`);
+export const placeMove = (classTrackId: string, body: PlaceClassTrackMove) =>
+  api<ClassTrackMove>(`/class-tracks/${classTrackId}/moves`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+export const deletePlacedMove = (id: string) =>
+  api<void>(`/class-track-moves/${id}`, { method: 'DELETE' });
+
+/** The global moves library (read-only seed). */
+export const listMoves = () => api<Move[]>('/moves');
 
 // ── Sharing (M4) ────────────────────────────────────────────────────────────
 export const listShares = (classId: string) =>

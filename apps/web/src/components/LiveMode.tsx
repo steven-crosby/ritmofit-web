@@ -12,11 +12,9 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RunPayload, RunPayloadTrackEntry, Intensity } from '@ritmofit/shared';
+import { IntensityReadout } from './IntensityReadout.js';
 
 type View = 'cue' | 'list';
-
-/** Bars filled per intensity — the redundant (non-color) encoding. 0..4. */
-const INTENSITY_BARS: Record<Intensity, number> = { none: 0, easy: 1, mod: 2, hard: 3, all_out: 4 };
 
 function fmt(ms: number): string {
   const total = Math.max(0, Math.round(ms / 1000));
@@ -188,29 +186,6 @@ function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void 
         </button>
       ))}
     </div>
-  );
-}
-
-/** Redundant intensity encoding: color swatch + 0–4 filled bars + text label. */
-function IntensityReadout({ intensity }: { intensity: Intensity }) {
-  const bars = INTENSITY_BARS[intensity];
-  return (
-    <span className="inline-flex items-center gap-2" aria-label={`Intensity ${intensity}`}>
-      <span className="flex items-end gap-0.5" aria-hidden>
-        {[0, 1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className="w-1.5 rounded-sm"
-            style={{
-              height: `${6 + i * 4}px`,
-              backgroundColor: i < bars ? `var(--rf-color-intensity-${intensity})` : 'var(--rf-color-interactive)',
-              opacity: i < bars ? 1 : 0.25,
-            }}
-          />
-        ))}
-      </span>
-      <span className="font-data text-xs uppercase tracking-wide text-text-secondary">{intensity}</span>
-    </span>
   );
 }
 
