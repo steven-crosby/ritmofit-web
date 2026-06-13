@@ -137,6 +137,20 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > `baseMoveId`/`template` editing, and a run-payload `id` on `sections[]` (symmetry, if iOS wants it). See
 > `milestones.md` for the full slice log.
 >
+> **Music frontend (the "M2 frontend") complete + deployed (2026-06-13).** M2's provider backend had
+> shipped with **no UI** (tracks were hand-typed as Title/Artist/ms); that gap is now closed. **S1**
+> track search → import → add (provider-picked, debounced, 44px song cards); **S2** provider-connection
+> settings (connect/disconnect, clear states); **S3** "search my likes" (token-spending); **S4** a BPM
+> lookup button. Then, when real credentials were first set, two **prod-only** bugs surfaced (the mock
+> path never exercised live `fetch`/limits) and were fixed: a Workers `Illegal invocation` from passing
+> the **bare global `fetch`** to adapters (→ a bound `fetch` wrapper) and **Spotify rejecting `limit=25`**
+> with 400 "Invalid limit" (→ 10); provider failures now also map to **502** (typed `ProviderError`), not
+> 500. **All three providers verified live in prod** (SoundCloud / Spotify / Apple Music — real search +
+> import + album art; secrets set via `wrangler secret`, Apple developer-token minted by the new
+> `apps/api/scripts/apple-dev-token.mjs`). `pnpm test` = api 159 + web 53 = **212**. PRs #35–#37; latest
+> Worker after the error-mapping fix. **Open:** SoundCloud per-user *Connect* OAuth round-trip needs the
+> redirect URI registered + a browser login to confirm (provider *search* via app-token is verified).
+>
 > **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
 > backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.
 

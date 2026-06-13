@@ -20,7 +20,7 @@
 import { trackSearchResultSchema, type TrackSearchResult } from '@ritmofit/shared';
 import { z } from 'zod';
 import type { FetchLike, MusicProvider } from './provider.js';
-import { readJson } from './errors.js';
+import { readJson, ProviderError } from './errors.js';
 import { AppTokenCache } from './app-token.js';
 
 const DEFAULT_API_BASE = 'https://api.soundcloud.com';
@@ -112,7 +112,7 @@ class SoundCloudProvider implements MusicProvider {
     });
     if (opts?.allow404 && res.status === 404) return null;
     if (!res.ok) {
-      throw new Error(`SoundCloud API ${res.status} for ${path}`);
+      throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for ${path}`);
     }
     return readJson(res, 'soundcloud');
   }
@@ -151,7 +151,7 @@ export async function fetchSoundCloudLikes(cfg: {
     headers: { Authorization: `OAuth ${cfg.accessToken}`, Accept: 'application/json' },
   });
   if (res.status === 401) throw new SoundCloudUnauthorizedError();
-  if (!res.ok) throw new Error(`SoundCloud API ${res.status} for /me/likes/tracks`);
+  if (!res.ok) throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for /me/likes/tracks`);
   const parsed = scSearchSchema.safeParse(await readJson(res, 'soundcloud'));
   if (!parsed.success) return [];
   const raw = Array.isArray(parsed.data) ? parsed.data : parsed.data.collection;

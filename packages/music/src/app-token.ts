@@ -8,7 +8,7 @@
  */
 import { z } from 'zod';
 import type { FetchLike } from './provider.js';
-import { readJson, parseProvider } from './errors.js';
+import { readJson, parseProvider, ProviderError } from './errors.js';
 
 // `btoa` is available in the Workers runtime and Node ≥18 (vitest). Declared here
 // so the package needs no DOM/Workers ambient lib.
@@ -60,7 +60,9 @@ export class AppTokenCache {
       },
       body: 'grant_type=client_credentials',
     });
-    if (!res.ok) throw new Error(`${this.cfg.provider} token request failed (${res.status})`);
+    if (!res.ok) {
+      throw new ProviderError(this.cfg.provider, `${this.cfg.provider} token request failed (${res.status})`);
+    }
     const token = parseProvider(tokenResponseSchema, await readJson(res, this.cfg.provider), this.cfg.provider);
     const ttlMs = (token.expires_in ?? DEFAULT_TTL_SEC) * 1000;
     this.cached = { value: token.access_token, expiresAtMs: this.now() + ttlMs - TOKEN_SKEW_MS };

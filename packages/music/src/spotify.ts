@@ -17,7 +17,7 @@
 import { trackSearchResultSchema, type TrackSearchResult } from '@ritmofit/shared';
 import { z } from 'zod';
 import type { FetchLike, MusicProvider } from './provider.js';
-import { readJson } from './errors.js';
+import { readJson, ProviderError } from './errors.js';
 import { AppTokenCache } from './app-token.js';
 
 const DEFAULT_API_BASE = 'https://api.spotify.com/v1';
@@ -124,7 +124,7 @@ class SpotifyProvider implements MusicProvider {
       }
       // Surface the upstream message (truncated) so a 400/403 is diagnosable in logs.
       const detail = await res.text().catch(() => '');
-      throw new Error(`Spotify request failed: ${res.status} ${detail.slice(0, 200)}`.trim());
+      throw new ProviderError('spotify', `Spotify request failed: ${res.status} ${detail.slice(0, 200)}`.trim());
     }
     return readJson(res, 'spotify');
   }
