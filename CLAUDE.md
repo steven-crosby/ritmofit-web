@@ -278,8 +278,16 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   threads it through `TrackInspector` → `CuesSection`/`MovesSection`; a shared `useFlashFocus` hook
   scrolls + transiently rings the row whose `anchorMs` matches (run-payload cues/moves have no id, so
   correlation is by `anchorMs` — duplicate anchors flash the first match). No schema/API/shared change.
-  `pnpm test` = api 159 + web 39 = **198**; build green.
+  `pnpm test` = api 159 + web 39 = **198**; build green. Merged PR #23, deployed (Worker `802ebe48`).
+- **Slice 13 — manage custom moves** (branch `feat/web-manage-custom-moves`): a `CustomMovesDialog` (opened
+  via a **Manage…** button in a track's Moves section) lists the caller's custom moves with rename, edit
+  description, and delete (inline confirm; a referenced move's name is snapshotted into placements by the
+  server on delete). Web-only: added `updateUserMove`/`deleteUserMove` over the existing owner-scoped
+  `PATCH`/`DELETE /user-moves/:id`. On change, `MovesSection` refreshes the picker + this track's placements
+  and bubbles `onChanged` (wired to the class-detail reload so ribbon/timeline move names refresh). Creation
+  stays in the picker; `baseMoveId`/`template` editing deferred. No schema/API/shared change. `pnpm test` =
+  api 159 + web 39 = **198**; build green.
 - Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): the on-beat pulse + timeline playhead /
-  tap-to-seek, the segment band (design-concept-only), and managing custom moves.
+  tap-to-seek, the segment band (design-concept-only), and custom-move `baseMoveId`/`template` editing.
 - Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
   `milestones.md`. **Next major milestone remains iOS Phase 2.**

@@ -867,6 +867,7 @@ function TrackInspector({
             classTrackId={track.id}
             durationMs={durationMs}
             focus={focus?.kind === 'move' ? { anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
+            onChanged={onSaved}
           />
         </>
       )}
