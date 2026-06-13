@@ -24,6 +24,7 @@ import {
 } from '../lib/api.js';
 import { moveItem } from '../lib/reorder.js';
 import { avgBpm, formatDuration } from '../lib/class-summary.js';
+import { useAsyncAction } from '../lib/use-async-action.js';
 import { LiveMode } from './LiveMode.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
@@ -66,10 +67,18 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   // drives the energy ribbon. The ribbon is optional, so a payload failure never
   // blanks the editor — it just hides the ribbon.
   const loadDetail = useCallback(async (classId: string) => {
-    setTracks(await listClassTracks(classId));
+    try {
+      setTracks(await listClassTracks(classId));
+    } catch (e) {
+      // The track list is essential — surface the failure instead of throwing
+      // an unhandled rejection that leaves the pane half-loaded.
+      setError((e as Error).message);
+      return;
+    }
     try {
       setDetailPayload(await getRunPayload(classId));
     } catch {
+      // The ribbon is optional, so a payload failure just hides it.
       setDetailPayload(null);
     }
   }, []);
@@ -173,6 +182,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           <LibraryRail
             classes={classes}
             selectedId={selected?.id ?? null}
+            onError={setError}
             onCreate={async (cls) => {
               await refreshClasses();
               await openClass({ ...cls, accessLevel: 'owner' });
@@ -186,6 +196,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               cls={selected}
               tracks={tracks}
               payload={detailPayload}
+              onError={setError}
               onTrackChanged={() => loadDetail(selected.id)}
               onRun={() => runClass(selected.id)}
               onClassUpdated={applyClassUpdate}
@@ -209,11 +220,13 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 function LibraryRail({
   classes,
   selectedId,
+  onError,
   onCreate,
   onOpen,
 }: {
   classes: ClassWithAccess[];
   selectedId: string | null;
+  onError: (msg: string | null) => void;
   onCreate: (cls: Awaited<ReturnType<typeof createClass>>) => void;
   onOpen: (cls: ClassWithAccess) => void;
 }) {
@@ -223,7 +236,7 @@ function LibraryRail({
         <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Your classes</span>
         <span className="font-data text-xs text-text-tertiary">{classes.length}</span>
       </div>
-      <CreateClassForm onCreated={onCreate} />
+      <CreateClassForm onCreated={onCreate} onError={onError} />
       {classes.length === 0 ? (
         <p className="font-ui text-sm text-text-tertiary">No classes yet — create your first above.</p>
       ) : (
@@ -248,17 +261,26 @@ function LibraryRail({
   );
 }
 
-function CreateClassForm({ onCreated }: { onCreated: (cls: Awaited<ReturnType<typeof createClass>>) => void }) {
+function CreateClassForm({
+  onCreated,
+  onError,
+}: {
+  onCreated: (cls: Awaited<ReturnType<typeof createClass>>) => void;
+  onError: (msg: string | null) => void;
+}) {
   const [title, setTitle] = useState('');
+  const { busy, run } = useAsyncAction(onError);
   return (
     <form
       className="flex gap-2"
-      onSubmit={async (e) => {
+      onSubmit={(e) => {
         e.preventDefault();
         if (!title.trim()) return;
-        const cls = await createClass({ title: title.trim() });
-        setTitle('');
-        onCreated(cls);
+        void run(async () => {
+          const cls = await createClass({ title: title.trim() });
+          setTitle('');
+          onCreated(cls);
+        });
       }}
     >
       <input
@@ -267,7 +289,12 @@ function CreateClassForm({ onCreated }: { onCreated: (cls: Awaited<ReturnType<ty
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
-      <button className="rounded-pill rf-btn-primary px-4 py-2 font-ui font-semibold text-text-on-accent">Add</button>
+      <button
+        disabled={busy}
+        className="rounded-pill rf-btn-primary px-4 py-2 font-ui font-semibold text-text-on-accent disabled:opacity-50"
+      >
+        {busy ? '…' : 'Add'}
+      </button>
     </form>
   );
 }
@@ -283,6 +310,7 @@ function ClassWorkspace({
   cls,
   tracks,
   payload,
+  onError,
   onTrackChanged,
   onRun,
   onClassUpdated,
@@ -290,6 +318,7 @@ function ClassWorkspace({
   cls: ClassWithAccess;
   tracks: ClassTrack[];
   payload: RunPayload | null;
+  onError: (msg: string | null) => void;
   onTrackChanged: () => void;
   onRun: () => void;
   onClassUpdated: (cls: Class) => void;
@@ -337,6 +366,7 @@ function ClassWorkspace({
           trackCount={payload?.tracks.length ?? tracks.length}
           isOwner={isOwner}
           canRun={tracks.length > 0}
+          onError={onError}
           onRun={onRun}
           onShare={() => setSharing(true)}
           onClassUpdated={onClassUpdated}
@@ -393,7 +423,7 @@ function ClassWorkspace({
             <summary className="cursor-pointer font-ui text-xs text-text-tertiary hover:text-text-secondary">
               Add manually
             </summary>
-            <AddTrackForm classId={cls.id} onAdded={onTrackChanged} />
+            <AddTrackForm classId={cls.id} onAdded={onTrackChanged} onError={onError} />
           </details>
         </div>
       </section>
@@ -438,6 +468,7 @@ function ClassHeaderCard({
   trackCount,
   isOwner,
   canRun,
+  onError,
   onRun,
   onShare,
   onClassUpdated,
@@ -447,22 +478,19 @@ function ClassHeaderCard({
   trackCount: number;
   isOwner: boolean;
   canRun: boolean;
+  onError: (msg: string | null) => void;
   onRun: () => void;
   onShare: () => void;
   onClassUpdated: (cls: Class) => void;
 }) {
-  const [publishing, setPublishing] = useState(false);
+  const { busy: publishing, run } = useAsyncAction(onError);
   const isPublic = cls.visibility === 'public';
   const averageBpm = payload ? avgBpm(payload) : null;
 
-  const togglePublish = async () => {
-    setPublishing(true);
-    try {
+  const togglePublish = () =>
+    void run(async () => {
       onClassUpdated(await updateClass(cls.id, { visibility: isPublic ? 'private' : 'public' }));
-    } finally {
-      setPublishing(false);
-    }
-  };
+    });
 
   return (
     <div className="flex flex-col gap-3 rounded-card bg-bg-raised p-5 shadow-card">
@@ -949,25 +977,36 @@ function TrackInspector({
   );
 }
 
-function AddTrackForm({ classId, onAdded }: { classId: string; onAdded: () => void }) {
+function AddTrackForm({
+  classId,
+  onAdded,
+  onError,
+}: {
+  classId: string;
+  onAdded: () => void;
+  onError: (msg: string | null) => void;
+}) {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [durationMs, setDurationMs] = useState('180000');
   const [intensity, setIntensity] = useState<Intensity>('mod');
+  const { busy, run } = useAsyncAction(onError);
 
   return (
     <form
       className="flex flex-col gap-2 border-t border-interactive/20 pt-4"
-      onSubmit={async (e) => {
+      onSubmit={(e) => {
         e.preventDefault();
         if (!title.trim() || !artist.trim()) return;
-        await addTrack(classId, {
-          track: { title: title.trim(), artist: artist.trim(), durationMs: Number(durationMs) || null },
-          intensity,
+        void run(async () => {
+          await addTrack(classId, {
+            track: { title: title.trim(), artist: artist.trim(), durationMs: Number(durationMs) || null },
+            intensity,
+          });
+          setTitle('');
+          setArtist('');
+          onAdded();
         });
-        setTitle('');
-        setArtist('');
-        onAdded();
       }}
     >
       <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Add a track</p>
@@ -1004,8 +1043,11 @@ function AddTrackForm({ classId, onAdded }: { classId: string; onAdded: () => vo
           value={durationMs}
           onChange={(e) => setDurationMs(e.target.value)}
         />
-        <button className="ml-auto rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent">
-          Add track
+        <button
+          disabled={busy}
+          className="ml-auto rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50"
+        >
+          {busy ? '…' : 'Add track'}
         </button>
       </div>
     </form>
