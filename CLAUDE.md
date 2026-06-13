@@ -262,7 +262,8 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   tracks drop block + markers). Rendered in the ribbon card. Static (no playhead — a Live concern),
   read-only. No schema/API/shared change. `pnpm test` = api 159 + web 37 = **196**; build green. Merged
   PR #19, deployed (Worker `ca91c8c5`).
-- **Slice 11 — timeline selection** (branch `feat/web-timeline-selection`): the timeline blocks + cue/move
+- **Slice 11 — timeline selection** (merged PR #21, **deployed 2026-06-13**, Worker version `755e3489`):
+  the timeline blocks + cue/move
   markers are clickable + keyboard-operable — selecting one opens that track in the inspector and
   cross-highlights its `SongRow` (open track's block ringed, `aria-pressed`). `computeTimeline` carries
   `classTrackId` + `position` per block/marker; `TimelineStrip` gained optional `selectedTrackId` +
