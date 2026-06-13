@@ -533,6 +533,10 @@ export function MovesSection({
   // Whether the edit selector's current value is represented by an option. If the
   // library/user-moves fetch failed, a referenced id has no matching <option>, so
   // render a fallback so the display matches state (and Save preserves the id).
+  // The add selector's parsed value: custom/new need a typed name.
+  const addSel = parseMovePick(pick);
+  const addNeedsName = addSel.kind === 'custom' || addSel.kind === 'new';
+
   const editSel = parseMovePick(editPick);
   const editKnown =
     editSel.kind === 'custom' ||
@@ -653,13 +657,13 @@ export function MovesSection({
           <option value={NEW}>＋ New custom move…</option>
           {moveOptionGroups}
         </select>
-        {(parseMovePick(pick).kind === 'custom' || parseMovePick(pick).kind === 'new') && (
+        {addNeedsName && (
           <input
             className={`flex-1 ${fieldClass}`}
-            placeholder={parseMovePick(pick).kind === 'new' ? 'New custom move name' : 'Move name'}
+            placeholder={addSel.kind === 'new' ? 'New custom move name' : 'Move name'}
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
-            aria-label={parseMovePick(pick).kind === 'new' ? 'New custom move name' : 'Custom move name'}
+            aria-label={addSel.kind === 'new' ? 'New custom move name' : 'Custom move name'}
           />
         )}
         <select
@@ -678,11 +682,7 @@ export function MovesSection({
         <button
           className="shrink-0 rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
           onClick={add}
-          disabled={
-            busy ||
-            ((parseMovePick(pick).kind === 'custom' || parseMovePick(pick).kind === 'new') &&
-              !customName.trim())
-          }
+          disabled={busy || (addNeedsName && !customName.trim())}
         >
           Add move
         </button>
