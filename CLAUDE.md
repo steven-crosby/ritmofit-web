@@ -164,24 +164,29 @@ model (backend was already complete; M4 was UX + small ergonomic fills):
   backfill; `visibility` column live); `ritmofit-api` redeployed, health `200`, `/explore` +
   `/classes/:id/copy` live and session-gated, purge Cron intact.
 
-**Web app deployed — single-origin (2026-06-12).** The SPA is now served by the **same `ritmofit-api`
-Worker** as the API (Cloudflare Workers static assets), so the whole app is live at
-`https://ritmofit-api.steven-crosby09.workers.dev`. This was a deliberate hosting choice: one origin ⇒
-the Better Auth session cookie is **first-party** (no `SameSite=None`, immune to third-party-cookie
-blocking) and there's **no CORS**. Mechanics:
+**Web app deployed — single-origin, on `ritmofit.studio` (2026-06-12).** The SPA is served by the **same
+`ritmofit-api` Worker** as the API (Cloudflare Workers static assets). The whole app is live at the
+branded apex **`https://ritmofit.studio`** (the canonical origin) and also at
+`https://ritmofit-api.steven-crosby09.workers.dev` (kept as a fallback via `workers_dev = true`). This
+was a deliberate hosting choice: one origin ⇒ the Better Auth session cookie is **first-party** (no
+`SameSite=None`, immune to third-party-cookie blocking) and there's **no CORS**. Mechanics:
 - `apps/api/wrangler.toml` has an `[assets]` block: `directory = "../web/dist"`,
   `not_found_handling = "single-page-application"`, `run_worker_first = ["/api/*"]`. The Worker (Hono)
   runs first for `/api/*` (REST + Better Auth); every other path is served from the built SPA, with an
   index.html fallback for client-side routes.
 - `apps/web/src/lib/auth-client.ts`: `API_BASE_URL` is **relative (`''`) in prod** (same origin),
-  `http://localhost:8787` in dev (cross-port). So the bundle has no hardcoded origin and works unchanged
-  on `*.workers.dev` or any future custom domain.
+  `http://localhost:8787` in dev (cross-port). The bundle has no hardcoded origin, so the **same build
+  serves both `ritmofit.studio` and `*.workers.dev`** with no rebuild.
+- **Custom domain:** `apps/api/wrangler.toml` declares `[[routes]] pattern = "ritmofit.studio",
+  custom_domain = true` (the `ritmofit.studio` zone is on this Cloudflare account; deploy provisions the
+  proxied DNS record + edge cert). `BETTER_AUTH_URL = "https://ritmofit.studio"` is the canonical origin
+  the session cookie/callbacks bind to. `workers_dev = true` keeps the `*.workers.dev` URL alive (auth
+  only fully works on the canonical origin). To add `www`, add another `custom_domain` route.
 - **Deploy is two steps, in order:** `pnpm --filter @ritmofit/web build` (→ `apps/web/dist`) then
   `pnpm --filter @ritmofit/api run deploy` (note `run` — `pnpm deploy` is a pnpm builtin). Remote D1
   migrations (`db:migrate --remote`, i.e. `wrangler d1 migrations apply ritmofit --remote`) must run
   **before** deploying code that uses the new columns.
-- **Verified in prod (2026-06-12):** root + SPA deep links serve index.html (200); `/api/v1/health` 200
-  JSON; `/api/v1/explore` 401 unauthed; and a full authed **first-party-cookie** flow (sign-up → create →
-  publish → `/explore` → copy) succeeded against remote D1, then all test data was deleted. `ritmofit.studio`
-  remains DNS-only and is **not** wired up — point it at this Worker (custom domain) when you want the
-  branded URL; no code change needed thanks to the relative base.
+- **Verified in prod (2026-06-12):** on **`ritmofit.studio`** — HTTPS root + SPA deep links serve
+  index.html (200), `/api/v1/health` 200 JSON, `/api/v1/explore` 401 unauthed, and a first-party-cookie
+  sign-up → authed call succeeded; on the workers.dev URL a full authed flow (sign-up → create → publish
+  → `/explore` → copy) succeeded against remote D1. All test data deleted afterward.

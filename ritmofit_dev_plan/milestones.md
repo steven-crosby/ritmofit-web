@@ -174,12 +174,12 @@ Core builder first (these validate the product), teams/sharing last.
 
   **Web app deployed (2026-06-12):** the SPA is now served by the **same `ritmofit-api` Worker** (Workers
   static assets — `[assets]` in `wrangler.toml`, `run_worker_first=["/api/*"]`, SPA fallback), so the whole
-  app is live at `https://ritmofit-api.steven-crosby09.workers.dev`. Single origin ⇒ first-party session
-  cookie, no CORS. Verified in prod end-to-end (SPA + deep links serve index.html; `/api/*` hits Hono; an
-  authed sign-up → publish → explore → copy flow worked, test data then deleted). Deploy = build web
-  (`pnpm --filter @ritmofit/web build`) then `pnpm --filter @ritmofit/api run deploy`. `ritmofit.studio`
-  is still DNS-only — attach it as a Worker custom domain for the branded URL (no code change; relative
-  API base). Full record in web `CLAUDE.md`.
+  app is live at the branded apex **`https://ritmofit.studio`** (canonical) and `*.workers.dev` (fallback).
+  Single origin ⇒ first-party session cookie, no CORS. Custom domain wired via `[[routes]]
+  custom_domain = true` + `BETTER_AUTH_URL = https://ritmofit.studio`. Verified in prod end-to-end (SPA +
+  deep links serve index.html over HTTPS; `/api/*` hits Hono; authed first-party-cookie flow worked, test
+  data then deleted). Deploy = build web (`pnpm --filter @ritmofit/web build`) then `pnpm --filter
+  @ritmofit/api run deploy`. Full record in web `CLAUDE.md`.
   - **Publish/visibility model:** a new `classes.visibility` enum, `private` (default) | `public`.
     The owner explicitly publishes via `PATCH /classes/:id`; Explore lists `public` classes. This is
     **orthogonal** to the existing `status` (draft/ready/archived = private lifecycle). Migration `0005`

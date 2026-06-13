@@ -3,10 +3,23 @@ main = "src/index.ts"
 compatibility_date = "2024-11-06"
 compatibility_flags = ["nodejs_compat"]
 
+# Keep the *.workers.dev URL alive (declaring a custom-domain route otherwise
+# disables it). Handy for smoke tests; note auth only fully works on the canonical
+# origin (BETTER_AUTH_URL), since the session cookie binds to that host.
+workers_dev = true
+
+# Custom domain — serves the whole app (SPA + API) at the branded apex. The zone
+# `ritmofit.studio` must be on this Cloudflare account; `custom_domain = true`
+# provisions the proxied DNS record + edge cert on deploy. `ritmofit.studio` is the
+# canonical origin Better Auth binds its cookie/callbacks to (BETTER_AUTH_URL below).
+[[routes]]
+pattern = "ritmofit.studio"
+custom_domain = true
+
 # Non-secret config. Secrets (BETTER_AUTH_SECRET, ENCRYPTION_KEY, provider
 # creds) are set via `wrangler secret put`, not here.
 [vars]
-BETTER_AUTH_URL = "https://ritmofit-api.steven-crosby09.workers.dev"
+BETTER_AUTH_URL = "https://ritmofit.studio"
 
 # Serve the built web SPA (apps/web/dist) from this same Worker — single origin,
 # so the session cookie is first-party and there's no CORS. The Worker runs first
