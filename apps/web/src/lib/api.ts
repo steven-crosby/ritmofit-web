@@ -68,6 +68,12 @@ export const updateClassTrack = (classTrackId: string, body: UpdateClassTrack) =
   api<ClassTrack>(`/class-tracks/${classTrackId}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const deleteClassTrack = (classTrackId: string) =>
   api<void>(`/class-tracks/${classTrackId}`, { method: 'DELETE' });
+/** Set the complete new ordering of a class's class_tracks (a full permutation). */
+export const reorderTracks = (classId: string, classTrackIds: string[]) =>
+  api<ClassTrack[]>(`/classes/${classId}/tracks/reorder`, {
+    method: 'POST',
+    body: JSON.stringify({ classTrackIds }),
+  });
 export const getRunPayload = (classId: string) =>
   api<RunPayload>(`/classes/${classId}/run-payload`);
 

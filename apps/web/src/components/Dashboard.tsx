@@ -18,8 +18,10 @@ import {
   addTrack,
   updateClassTrack,
   deleteClassTrack,
+  reorderTracks,
   getRunPayload,
 } from '../lib/api.js';
+import { moveItem } from '../lib/reorder.js';
 import { LiveMode } from './LiveMode.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { IntensityReadout } from './IntensityReadout.js';
@@ -286,24 +288,27 @@ function ClassDetail({
       </div>
       {/* The energy arc — the class's shape, derived from the run-payload (no new schema). */}
       {payload && payload.tracks.length > 0 && <IntensityRibbon payload={payload} />}
-      <ol className="flex flex-col gap-2">
-        {tracks.length === 0 && <li className="font-ui text-sm text-text-tertiary">No tracks yet.</li>}
-        {/* Rich song rows from the run-payload (title/artist/BPM/art); fall back to the
-            lean rows only if the payload couldn't load but tracks exist. */}
-        {tracks.length > 0 &&
-          (payload
-            ? payload.tracks.map((t) => (
-                <SongRow
-                  key={t.classTrackId}
-                  entry={t}
-                  selected={t.classTrackId === selectedTrackId}
-                  onSelect={() =>
-                    setSelectedTrackId((cur) => (cur === t.classTrackId ? null : t.classTrackId))
-                  }
-                />
-              ))
-            : tracks.map((t) => <LeanTrackRow key={t.id} track={t} />))}
-      </ol>
+      {tracks.length === 0 && <p className="font-ui text-sm text-text-tertiary">No tracks yet.</p>}
+      {/* Rich, reorderable song rows from the run-payload (title/artist/BPM/art);
+          fall back to the lean, non-reorderable rows only if the payload couldn't
+          load but tracks exist. */}
+      {tracks.length > 0 &&
+        (payload ? (
+          <ReorderableTrackList
+            classId={cls.id}
+            entries={payload.tracks}
+            canReorder={canEdit}
+            selectedTrackId={selectedTrackId}
+            onSelect={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
+            onReordered={onTrackAdded}
+          />
+        ) : (
+          <ol className="flex flex-col gap-2">
+            {tracks.map((t) => (
+              <LeanTrackRow key={t.id} track={t} />
+            ))}
+          </ol>
+        ))}
       {/* Inspector: edit the selected track. Editing reshapes the ribbon + rows live. */}
       {selectedTrack && (
         <TrackInspector
@@ -325,32 +330,159 @@ function ClassDetail({
 }
 
 /**
+ * The ordered, reorderable track list (design system `09-class-builder-guidelines.md`).
+ * Reorder is both **drag** (a dedicated grip handle, so the row click still selects)
+ * and **keyboard** (↑/↓ on the focused grip — native DnD isn't keyboard-operable).
+ *
+ * Local `order` mirrors the server's run-payload order and is updated optimistically;
+ * the reorder POST (a full permutation, edit access) then drives a detail reload so the
+ * ribbon + per-track offsets recompute. A failed POST rolls the order back. Only the
+ * owner/editor sees the grip (the route enforces edit access regardless).
+ */
+function ReorderableTrackList({
+  classId,
+  entries,
+  canReorder,
+  selectedTrackId,
+  onSelect,
+  onReordered,
+}: {
+  classId: string;
+  entries: RunPayloadTrackEntry[];
+  canReorder: boolean;
+  selectedTrackId: string | null;
+  onSelect: (classTrackId: string) => void;
+  onReordered: () => void;
+}) {
+  const [order, setOrder] = useState<RunPayloadTrackEntry[]>(entries);
+  // Re-sync whenever a reload delivers a fresh payload (confirms or replaces the
+  // optimistic order). Rows keep stable keys, so focus survives the reorder.
+  useEffect(() => setOrder(entries), [entries]);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const commit = async (next: RunPayloadTrackEntry[]) => {
+    const prev = order;
+    setOrder(next); // optimistic
+    setBusy(true);
+    setError(null);
+    try {
+      await reorderTracks(
+        classId,
+        next.map((e) => e.classTrackId),
+      );
+      onReordered(); // reload so the ribbon + offsets reflect the new order
+    } catch (e) {
+      setOrder(prev); // roll back
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const move = (from: number, to: number) => {
+    if (busy || to < 0 || to >= order.length || from === to) return;
+    void commit(moveItem(order, from, to));
+  };
+
+  const endDrag = () => {
+    setDragIndex(null);
+    setOverIndex(null);
+  };
+
+  return (
+    <ol className="flex flex-col gap-2">
+      {order.map((t, i) => (
+        <SongRow
+          key={t.classTrackId}
+          entry={t}
+          position={i}
+          count={order.length}
+          canReorder={canReorder}
+          selected={t.classTrackId === selectedTrackId}
+          dragging={dragIndex === i}
+          dropTarget={overIndex === i && dragIndex !== null && dragIndex !== i}
+          onSelect={() => onSelect(t.classTrackId)}
+          onDragStart={() => setDragIndex(i)}
+          onDragEnter={() => dragIndex !== null && setOverIndex(i)}
+          onDragEnd={endDrag}
+          onDrop={() => {
+            if (dragIndex !== null) move(dragIndex, i);
+            endDrag();
+          }}
+          onKeyMove={(dir) => move(i, i + dir)}
+        />
+      ))}
+      {error && <li className="font-ui text-xs text-intensity-all_out">{error}</li>}
+    </ol>
+  );
+}
+
+/**
  * The low-noise song row (design system `09-class-builder-guidelines.md`): small
  * album art, title + artist, BPM weighted in the Martian Mono data face, and
  * intensity as bars+label — never color alone. No oversized art, no chrome.
- * The whole row is the selection target (opens the inspector). Drag-reorder is a
- * later slice.
+ * The selection button (the bulk of the row) opens the inspector; a separate drag
+ * **grip** handles reorder so the two interactions never collide. `position` is the
+ * live list index (1-based for display), authoritative over the payload's stale
+ * `entry.position` during an optimistic reorder.
  */
 function SongRow({
   entry,
+  position,
+  count,
   selected,
+  canReorder,
+  dragging,
+  dropTarget,
   onSelect,
+  onDragStart,
+  onDragEnter,
+  onDragEnd,
+  onDrop,
+  onKeyMove,
 }: {
   entry: RunPayloadTrackEntry;
+  position: number;
+  count: number;
   selected: boolean;
+  canReorder: boolean;
+  dragging: boolean;
+  dropTarget: boolean;
   onSelect: () => void;
+  onDragStart: () => void;
+  onDragEnter: () => void;
+  onDragEnd: () => void;
+  onDrop: () => void;
+  onKeyMove: (direction: 1 | -1) => void;
 }) {
   return (
-    <li>
+    <li
+      onDragOver={canReorder ? (e) => e.preventDefault() : undefined}
+      onDragEnter={canReorder ? onDragEnter : undefined}
+      onDrop={
+        canReorder
+          ? (e) => {
+              e.preventDefault();
+              onDrop();
+            }
+          : undefined
+      }
+      className={`flex items-center gap-1 rounded-card transition-opacity ${
+        dropTarget ? 'ring-2 ring-interactive/60' : ''
+      } ${dragging ? 'opacity-50' : ''}`}
+    >
       <button
         type="button"
         onClick={onSelect}
         aria-pressed={selected}
-        className={`flex w-full items-center gap-3 rounded-card bg-bg-base px-3 py-2 text-left ${
+        className={`flex flex-1 items-center gap-3 rounded-card bg-bg-base px-3 py-2 text-left ${
           selected ? 'ring-2 ring-interactive' : ''
         }`}
       >
-        <span className="w-5 shrink-0 font-data text-xs text-text-tertiary">{entry.position + 1}</span>
+        <span className="w-5 shrink-0 font-data text-xs text-text-tertiary">{position + 1}</span>
         {/* Album art is a small creative trigger (44px), not a focal point. */}
         {entry.track.albumArtUrl ? (
           <img
@@ -378,6 +510,30 @@ function SongRow({
           </span>
         )}
       </button>
+      {/* Drag grip — a dedicated reorder handle (drag) that is also keyboard-operable
+          (↑/↓). Kept off the selection button so neither gesture clobbers the other. */}
+      {canReorder && (
+        <button
+          type="button"
+          draggable
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              onKeyMove(-1);
+            } else if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              onKeyMove(1);
+            }
+          }}
+          aria-label={`Reorder ${entry.track.title}, position ${position + 1} of ${count}. Use arrow up and down.`}
+          title="Drag, or use ↑/↓, to reorder"
+          className="shrink-0 cursor-grab rounded-card px-2 py-3 font-data text-text-tertiary hover:text-text-secondary focus-visible:ring-2 focus-visible:ring-interactive active:cursor-grabbing"
+        >
+          ⋮⋮
+        </button>
+      )}
     </li>
   );
 }
