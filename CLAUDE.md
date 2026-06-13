@@ -260,9 +260,17 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   `time — text/name` title/aria carry meaning). New `TimelineStrip` + pure unit-tested `computeTimeline`
   (same duration-share math as `computeRibbonSegments` so it aligns under the ribbon; null/zero-duration
   tracks drop block + markers). Rendered in the ribbon card. Static (no playhead — a Live concern),
-  read-only. No schema/API/shared change. `pnpm test` = api 159 + web 37 = **196**; build green.
-- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): the on-beat pulse + timeline playhead,
-  marker interaction (tap-to-seek / click-to-select), the segment band (design-concept-only), and managing
-  custom moves.
+  read-only. No schema/API/shared change. `pnpm test` = api 159 + web 37 = **196**; build green. Merged
+  PR #19, deployed (Worker `ca91c8c5`).
+- **Slice 11 — timeline selection** (branch `feat/web-timeline-selection`): the timeline blocks + cue/move
+  markers are clickable + keyboard-operable — selecting one opens that track in the inspector and
+  cross-highlights its `SongRow` (open track's block ringed, `aria-pressed`). `computeTimeline` carries
+  `classTrackId` + `position` per block/marker; `TimelineStrip` gained optional `selectedTrackId` +
+  `onSelectTrack` (plain select, not toggle; non-interactive fallback kept); `Dashboard` wires
+  `onSelectTrack={setSelectedTrackId}`. No schema/API/shared change. `pnpm test` = api 159 + web 39 =
+  **198**; build green.
+- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): the on-beat pulse + timeline playhead /
+  tap-to-seek, focusing a specific cue/move in the inspector from its marker, the segment band
+  (design-concept-only), and managing custom moves.
 - Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
   `milestones.md`. **Next major milestone remains iOS Phase 2.**

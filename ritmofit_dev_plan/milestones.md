@@ -282,11 +282,19 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   on-beat concern, deferred); read-only this slice. No schema/API-contract/shared change. `pnpm test` =
   api 159 + web 37 = **196**. **Merged PR #19, deployed 2026-06-12** (Worker version `ca91c8c5`; no
   schema/migration).
+- ✅ **Slice 11 — timeline selection**: the timeline strip's track blocks and cue/move markers are now
+  **clickable + keyboard-operable** — selecting one opens that track in the inspector and cross-highlights
+  its `SongRow` (the open track's block is ringed, `aria-pressed`). `computeTimeline` carries each
+  block/marker's `classTrackId` + `position`; `TimelineStrip` gained optional `selectedTrackId` +
+  `onSelectTrack` (a plain select, not toggle), with a non-interactive fallback preserved. `Dashboard`
+  wires `onSelectTrack={setSelectedTrackId}`. Marker hit areas are padded around the glyph. No
+  schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**.
 
 **Deferred (flagged in code):** **managing** custom moves (rename/delete/description/`baseMoveId`), the
-**on-beat pulse** on the playing row + the timeline **playhead**, marker **interaction** (tap-to-seek /
-click-to-select), and the **segment band** under the ribbon (design-concept-only — no `class_sections`
-schema). *(The PR #10 `TODO(select-fallback)` was resolved in slice 9.)*
+**on-beat pulse** on the playing row + the timeline **playhead** / tap-to-seek (a Live concern),
+**focusing a specific cue/move** in the inspector from its marker (markers select the *track* only), and
+the **segment band** under the ribbon (design-concept-only — no `class_sections` schema).
+*(The PR #10 `TODO(select-fallback)` was resolved in slice 9.)*
 
 ---
 

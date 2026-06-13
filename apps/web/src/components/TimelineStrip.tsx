@@ -14,6 +14,8 @@ import { type RunPayload } from '@ritmofit/shared';
 import { formatDuration } from '../lib/class-summary.js';
 
 export type TimelineBlock = {
+  /** The class_track this block represents (for click-to-select). */
+  classTrackId: string;
   /** Left edge as a percentage of the assembled total. */
   leftPct: number;
   /** Width as a percentage of the assembled total. */
@@ -24,6 +26,10 @@ export type TimelineBlock = {
 
 export type TimelineMarker = {
   key: string;
+  /** The class_track this marker sits on (for click-to-select). */
+  classTrackId: string;
+  /** 0-based index of the marker's track (display is `position + 1`). */
+  position: number;
   leftPct: number;
   kind: 'cue' | 'move';
   /** Absolute time on the class timeline (ms from start). */
@@ -54,6 +60,7 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
     const dur = t.track.durationMs ?? 0;
     if (dur <= 0) return;
     blocks.push({
+      classTrackId: t.classTrackId,
       leftPct: (startMs / totalDurationMs) * 100,
       widthPct: (dur / totalDurationMs) * 100,
       position: i,
@@ -62,6 +69,8 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
       const absMs = startMs + clamp(cue.anchorMs, 0, dur);
       markers.push({
         key: `c-${i}-${ci}`,
+        classTrackId: t.classTrackId,
+        position: i,
         leftPct: (absMs / totalDurationMs) * 100,
         kind: 'cue',
         absMs,
@@ -73,6 +82,8 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
       const absMs = startMs + clamp(mv.anchorMs, 0, dur);
       markers.push({
         key: `m-${i}-${mi}`,
+        classTrackId: t.classTrackId,
+        position: i,
         leftPct: (absMs / totalDurationMs) * 100,
         kind: 'move',
         absMs,
@@ -85,7 +96,17 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
   return { blocks, markers };
 }
 
-export function TimelineStrip({ payload }: { payload: RunPayload }) {
+export function TimelineStrip({
+  payload,
+  selectedTrackId = null,
+  onSelectTrack,
+}: {
+  payload: RunPayload;
+  /** The class_track currently open in the inspector — its block is highlighted. */
+  selectedTrackId?: string | null;
+  /** Click/keyboard-select a track from the timeline (opens it in the inspector). */
+  onSelectTrack?: (classTrackId: string) => void;
+}) {
   const { blocks, markers } = computeTimeline(payload.tracks, payload.class.totalDurationMs);
   if (blocks.length === 0) return null;
 
@@ -93,36 +114,81 @@ export function TimelineStrip({ payload }: { payload: RunPayload }) {
   const moveCount = markers.length - cueCount;
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
   const summary = `Timeline: ${plural(blocks.length, 'track')}, ${plural(cueCount, 'cue')}, ${plural(moveCount, 'move')}`;
+  const interactive = !!onSelectTrack;
 
   return (
     <figure className="mt-2 flex flex-col gap-1">
       <figcaption className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
         Timeline
       </figcaption>
-      <div role="img" aria-label={summary} className="relative h-10 w-full rounded-card bg-bg-base">
-        {/* Track blocks — the upper band, numbered, divided by quiet rules. */}
-        {blocks.map((b) => (
-          <div
-            key={b.position}
-            aria-hidden
-            className="absolute top-0 flex h-5 items-center justify-center overflow-hidden border-l border-interactive/15 first:border-l-0"
-            style={{ left: `${b.leftPct}%`, width: `${b.widthPct}%` }}
-          >
-            <span className="font-data text-[10px] text-text-tertiary">{b.position + 1}</span>
-          </div>
-        ))}
-        {/* Markers — the lower band. ▲ cue / ◆ move; shape distinguishes kind, color reinforces. */}
-        {markers.map((m) => (
-          <span
-            key={m.key}
-            className="absolute bottom-0 -translate-x-1/2 font-data text-[11px] leading-none text-text-secondary"
-            style={{ left: `${m.leftPct}%`, color: m.color ?? undefined }}
-            title={`${m.kind} ${formatDuration(m.absMs)} — ${m.label}`}
-            aria-label={`${m.kind} at ${formatDuration(m.absMs)}: ${m.label}`}
-          >
-            {m.kind === 'cue' ? '▲' : '◆'}
-          </span>
-        ))}
+      <div
+        role={interactive ? undefined : 'img'}
+        aria-label={interactive ? undefined : summary}
+        className="relative h-10 w-full rounded-card bg-bg-base"
+      >
+        {/* Track blocks — the upper band, numbered, divided by quiet rules. Click to
+            open the track in the inspector; the open track's block is ringed. */}
+        {blocks.map((b) => {
+          const selected = b.classTrackId === selectedTrackId;
+          const ring = selected ? 'ring-2 ring-interactive' : '';
+          const style = { left: `${b.leftPct}%`, width: `${b.widthPct}%` };
+          const inner = <span className="font-data text-[10px] text-text-tertiary">{b.position + 1}</span>;
+          return interactive ? (
+            <button
+              key={b.position}
+              type="button"
+              aria-pressed={selected}
+              aria-label={`Select track ${b.position + 1}`}
+              onClick={() => onSelectTrack(b.classTrackId)}
+              style={style}
+              className={`absolute top-0 flex h-5 items-center justify-center overflow-hidden rounded-sm border-l border-interactive/15 hover:bg-bg-raised ${ring}`}
+            >
+              {inner}
+            </button>
+          ) : (
+            <div
+              key={b.position}
+              aria-hidden
+              style={style}
+              className={`absolute top-0 flex h-5 items-center justify-center overflow-hidden border-l border-interactive/15 first:border-l-0 ${ring}`}
+            >
+              {inner}
+            </div>
+          );
+        })}
+        {/* Markers — the lower band. ▲ cue / ◆ move; shape distinguishes kind, color reinforces.
+            The clickable hit area is padded around the small glyph. */}
+        {markers.map((m) => {
+          const glyph = (
+            <span className="font-data text-[11px] leading-none" style={{ color: m.color ?? undefined }}>
+              {m.kind === 'cue' ? '▲' : '◆'}
+            </span>
+          );
+          const tip = `${m.kind} ${formatDuration(m.absMs)} — ${m.label}`;
+          return interactive ? (
+            <button
+              key={m.key}
+              type="button"
+              onClick={() => onSelectTrack(m.classTrackId)}
+              style={{ left: `${m.leftPct}%` }}
+              title={tip}
+              aria-label={`${m.kind} at ${formatDuration(m.absMs)}: ${m.label}, select track ${m.position + 1}`}
+              className="absolute bottom-0 -translate-x-1/2 px-1 py-0.5 text-text-secondary"
+            >
+              {glyph}
+            </button>
+          ) : (
+            <span
+              key={m.key}
+              className="absolute bottom-0 -translate-x-1/2 text-text-secondary"
+              style={{ left: `${m.leftPct}%` }}
+              title={tip}
+              aria-label={`${m.kind} at ${formatDuration(m.absMs)}: ${m.label}`}
+            >
+              {glyph}
+            </span>
+          );
+        })}
       </div>
     </figure>
   );

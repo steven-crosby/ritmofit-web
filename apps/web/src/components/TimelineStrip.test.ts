@@ -56,6 +56,14 @@ describe('computeTimeline — blocks', () => {
     expect(blocks).toHaveLength(1);
     expect(blocks[0]).toMatchObject({ leftPct: 0, widthPct: 100, position: 1 });
   });
+
+  it('carries the classTrackId on each block (for click-to-select)', () => {
+    const { blocks } = computeTimeline([entry(1000, 0), entry(1000, 1)], 2000);
+    expect(blocks.map((b) => b.classTrackId)).toEqual([
+      '00000000-0000-0000-0000-000000000000',
+      '00000000-0000-0000-0000-000000000001',
+    ]);
+  });
 });
 
 describe('computeTimeline — markers', () => {
@@ -94,5 +102,17 @@ describe('computeTimeline — markers', () => {
   it('drops markers on a zero-duration track (cannot be positioned)', () => {
     const { markers } = computeTimeline([entry(0, 0, [cue(100)], [move(100)])], 1000);
     expect(markers).toEqual([]);
+  });
+
+  it('carries the marker’s track classTrackId + position (for click-to-select)', () => {
+    const { markers } = computeTimeline(
+      [entry(1000, 0), entry(1000, 1, [cue(100)])],
+      2000,
+    );
+    expect(markers).toHaveLength(1);
+    expect(markers[0]).toMatchObject({
+      classTrackId: '00000000-0000-0000-0000-000000000001',
+      position: 1,
+    });
   });
 });

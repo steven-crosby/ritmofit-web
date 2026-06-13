@@ -301,7 +301,11 @@ function ClassWorkspace({
         {payload && payload.tracks.length > 0 && (
           <div className="rounded-card bg-bg-raised p-4 shadow-card">
             <IntensityRibbon payload={payload} />
-            <TimelineStrip payload={payload} />
+            <TimelineStrip
+              payload={payload}
+              selectedTrackId={selectedTrackId}
+              onSelectTrack={setSelectedTrackId}
+            />
           </div>
         )}
 
