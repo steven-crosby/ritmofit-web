@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RitmoFit — Every beat, by design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───────────────────────────────────────────────
+     Tokens — pulled verbatim from ritmofit_design_system/theme.css.
+     Espresso black + copper identity, cyan = the only interactive
+     channel, plasma rationed to a single peak. Three type families.
+     ─────────────────────────────────────────────── */
+  :root {
+    color-scheme: dark;
+
+    --ink-900:#0B0A08; --ink-850:#12100C; --ink-800:#1A1712;
+    --ink-700:#241F18; --ink-600:#322A20; --ink-500:#4A3F30;
+    --bone-50:#FBF7F0; --bone-100:#F3EDE2; --bone-200:#E4DBCB;
+    --bone-300:#C9BEAA; --bone-400:#9E927E; --bone-500:#766B59;
+    --copper-200:#F7B987; --copper-300:#F0975A; --copper-400:#E07E3C;
+    --copper-500:#C8682A; --copper-600:#A8521C; --copper-700:#7A3B12;
+    --ember-400:#E8654F; --ember-500:#D9483A; --ember-600:#B83A2B;
+    --cyan-300:#74D6E5; --cyan-400:#3AC0D4; --cyan-500:#17A2B8; --cyan-600:#0E7C8C;
+    --plasma-400:#FF6AAE; --plasma-500:#FF2E88; --plasma-600:#D11A68;
+    --amber-400:#F2B838; --amber-500:#E8A317; --violet-400:#8678AD; --violet-500:#6B5B95;
+
+    --z-none:#766B59; --z-easy:#F7B987; --z-mod:#F0975A; --z-hard:#E07E3C; --z-allout:#D9483A;
+
+    --border-subtle:rgba(251,247,240,0.08);
+    --border-default:rgba(251,247,240,0.14);
+    --border-strong:rgba(251,247,240,0.24);
+
+    --font-ui:"Inter","SF Pro Text",system-ui,sans-serif;
+    --font-display:"Space Grotesk","SF Pro Display",system-ui,sans-serif;
+    --font-data:"Martian Mono","SF Mono",ui-monospace,monospace;
+
+    --r-panel:28px; --r-card:20px; --r-input:16px; --r-control:12px; --r-pill:999px;
+
+    --glass-fill:rgba(26,23,18,0.72);
+    --glass-border:rgba(251,247,240,0.12);
+    --shadow-card:0 1px 2px rgba(0,0,0,0.4);
+    --shadow-lifted:0 8px 24px rgba(0,0,0,0.5);
+    --peak-glow:0 0 24px rgba(255,46,136,0.45);
+
+    --ease-standard:cubic-bezier(0.2,0,0,1);
+    --ease-snap:cubic-bezier(0.3,1.3,0.5,1);
+    --ease-beat:cubic-bezier(0.4,0,0.2,1);
+
+    --rf-bpm:124;
+    --rf-beat:calc(60s / var(--rf-bpm));
+  }
+
+  * { box-sizing:border-box; }
+  html,body { height:100%; }
+  body {
+    margin:0;
+    background:
+      radial-gradient(1100px 560px at 82% -12%, rgba(200,104,42,0.12), transparent 60%),
+      var(--ink-900);
+    color:var(--bone-50);
+    font-family:var(--font-ui); line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a { color:var(--cyan-400); text-decoration:none; }
+  button { font-family:inherit; cursor:pointer; }
+  ::selection { background:rgba(224,126,60,0.35); }
+
+  .eyebrow { font-family:var(--font-data); font-size:11px; letter-spacing:0.18em;
+    text-transform:uppercase; color:var(--copper-400); }
+  .muted { color:var(--bone-300); }
+  .dim { color:var(--bone-400); }
+
+  /* ── Top bar (glass) ── */
+  .topbar {
+    position:sticky; top:0; z-index:30;
+    display:flex; align-items:center; gap:20px;
+    padding:14px 28px;
+    background:var(--glass-fill);
+    -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+    border-bottom:1px solid var(--glass-border);
+  }
+  .brand { display:flex; align-items:center; gap:11px; }
+  .brand .mark {
+    width:30px; height:30px; border-radius:9px;
+    background:linear-gradient(150deg, var(--copper-300), var(--copper-600));
+    display:grid; place-items:center; color:var(--ink-900); font-weight:800;
+    box-shadow:0 2px 8px rgba(200,104,42,0.4);
+  }
+  .brand .name { font-family:var(--font-display); font-weight:700; font-size:19px; letter-spacing:-0.01em; }
+  .topbar .spacer { flex:1; }
+  .topbar nav { display:flex; gap:4px; }
+  .topbar nav a { font-size:13px; font-weight:500; color:var(--bone-400); padding:7px 13px; border-radius:var(--r-pill); }
+  .topbar nav a:hover { color:var(--bone-100); }
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    border:none; border-radius:var(--r-pill);
+    font-size:14px; font-weight:600; padding:9px 18px; white-space:nowrap;
+    transition:transform .14s var(--ease-snap), filter .14s var(--ease-standard);
+  }
+  .btn:active { transform:translateY(1px); }
+  .btn-primary { background:linear-gradient(170deg,var(--copper-400),var(--copper-500)); color:var(--ink-900); box-shadow:0 2px 10px rgba(200,104,42,0.32); }
+  .btn-primary:hover { filter:brightness(1.06); }
+  .btn-ghost { background:transparent; color:var(--cyan-400); border:1px solid rgba(58,192,212,0.5); }
+  .btn-ghost:hover { background:rgba(58,192,212,0.10); }
+  .btn-sm { padding:6px 13px; font-size:13px; }
+  .btn-lg { padding:14px 26px; font-size:15px; }
+
+  /* ── Hero ── */
+  .hero { max-width:1120px; margin:0 auto; padding:96px 28px 40px; }
+  .hero .eyebrow { display:block; margin-bottom:22px; }
+  .hero h1 {
+    font-family:var(--font-display); font-weight:700;
+    font-size:clamp(48px, 9vw, 104px); line-height:0.96; letter-spacing:-0.03em;
+    margin:0; max-width:14ch;
+  }
+  .hero h1 .by { color:var(--copper-300); }
+  .hero .sub {
+    margin:26px 0 0; font-size:clamp(17px,2.2vw,21px); color:var(--bone-300);
+    max-width:46ch; line-height:1.45;
+  }
+  .hero .sub b { color:var(--bone-100); font-weight:600; }
+  .hero .cta { margin-top:34px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .hero .cta .note { font-family:var(--font-data); font-size:11px; color:var(--bone-500); letter-spacing:0.04em; }
+
+  /* ── The signature: a tagline sitting ON a breathing energy arc ── */
+  .arc-stage {
+    position:relative; max-width:1120px; margin:8px auto 0; padding:0 28px;
+  }
+  .arc-card {
+    position:relative; border-radius:var(--r-panel); overflow:hidden;
+    background:var(--ink-850); border:1px solid var(--border-subtle);
+    box-shadow:var(--shadow-card);
+  }
+  .arc-card svg { width:100%; height:300px; display:block; }
+  .arc-meta {
+    position:absolute; left:24px; top:22px; display:flex; gap:18px; align-items:baseline;
+    font-family:var(--font-data); font-size:12px; color:var(--bone-400); letter-spacing:0.04em;
+  }
+  .arc-meta .big { font-size:34px; font-weight:700; color:var(--bone-100); letter-spacing:-0.03em;
+    display:inline-block; animation:beat var(--rf-beat) var(--ease-beat) infinite; }
+  .arc-meta .big small { font-size:12px; color:var(--bone-500); margin-left:5px; letter-spacing:0.1em; font-weight:500; }
+  .arc-axis {
+    position:absolute; left:0; right:0; bottom:14px;
+    display:flex; justify-content:space-between; padding:0 26px;
+    font-family:var(--font-data); font-size:10px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--bone-500);
+  }
+  .arc-axis .peak { color:var(--plasma-400); }
+  /* the peak dot pulses — the one plasma spend */
+  .peak-dot { animation:beat var(--rf-beat) var(--ease-beat) infinite; transform-origin:center; transform-box:fill-box; }
+
+  @keyframes beat { 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.05);} }
+  @media (prefers-reduced-motion: reduce){
+    .arc-meta .big, .peak-dot { animation:none; }
+  }
+
+  /* ── Phrase band (the kit, shown as a system) ── */
+  .band { max-width:1120px; margin:0 auto; padding:80px 28px 20px; }
+  .band .lead { font-family:var(--font-display); font-weight:600; font-size:13px;
+    letter-spacing:0.16em; text-transform:uppercase; color:var(--bone-400);
+    border-bottom:1px solid var(--border-subtle); padding-bottom:12px; margin:0 0 32px; }
+  .phrase-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media (max-width:880px){ .phrase-grid{ grid-template-columns:1fr; } }
+  .phrase {
+    background:var(--ink-800); border:1px solid var(--border-subtle);
+    border-radius:var(--r-card); padding:26px 24px; display:flex; flex-direction:column; gap:12px;
+    transition:transform .16s var(--ease-snap), border-color .16s;
+  }
+  .phrase:hover { transform:translateY(-3px); border-color:rgba(224,126,60,0.4); }
+  .phrase .role { font-family:var(--font-data); font-size:10px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--copper-400); }
+  .phrase .line { font-family:var(--font-display); font-weight:600; font-size:24px;
+    line-height:1.12; letter-spacing:-0.01em; color:var(--bone-50); }
+  .phrase .where { font-size:13px; color:var(--bone-400); line-height:1.5; }
+  /* the cross-format flex card carries a quiet cyan note */
+  .phrase.flex .role { color:var(--cyan-300); }
+
+  /* ── Boutique strip: serious work / ridiculous fun ── */
+  .strip { max-width:1120px; margin:64px auto 0; padding:0 28px; }
+  .strip-inner {
+    border-radius:var(--r-panel); padding:64px 48px; text-align:center;
+    background:
+      radial-gradient(620px 300px at 50% -10%, rgba(255,46,136,0.10), transparent 70%),
+      var(--ink-850);
+    border:1px solid var(--border-subtle);
+  }
+  .strip h2 { font-family:var(--font-display); font-weight:700;
+    font-size:clamp(34px,6vw,64px); line-height:1.02; letter-spacing:-0.02em; margin:0; }
+  .strip h2 .hot { color:var(--plasma-400); }
+  .strip p { margin:20px auto 0; max-width:48ch; color:var(--bone-300); font-size:16px; }
+
+  /* ── Merch shorthand footer ── */
+  footer { max-width:1120px; margin:80px auto 0; padding:36px 28px 72px;
+    border-top:1px solid var(--border-subtle);
+    display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+  footer .short { font-family:var(--font-display); font-weight:700; font-size:40px;
+    letter-spacing:-0.02em; color:var(--bone-50); }
+  footer .short .dot { color:var(--copper-400); }
+  footer .legal { font-family:var(--font-data); font-size:11px; color:var(--bone-500); letter-spacing:0.04em; max-width:42ch; line-height:1.6; }
+
+  /* tempo control so the page demonstrates the primitive */
+  .tempo { display:inline-flex; align-items:center; gap:10px; padding:8px 14px;
+    background:var(--ink-850); border:1px solid var(--border-subtle); border-radius:var(--r-pill); }
+  .tempo label { font-size:12px; color:var(--bone-400); }
+  .tempo input { accent-color:var(--cyan-400); width:120px; }
+  .tempo .val { font-family:var(--font-data); font-weight:700; font-size:14px; color:var(--bone-100); min-width:58px; }
+</style>
+</head>
+<body>
+
+  <!-- ── Top bar ── -->
+  <header class="topbar">
+    <div class="brand"><span class="mark">R</span><span class="name">RitmoFit</span></div>
+    <span class="spacer"></span>
+    <nav>
+      <a href="#">Product</a>
+      <a href="#">For studios</a>
+      <a href="#">Pricing</a>
+    </nav>
+    <button class="btn btn-ghost btn-sm">Sign in</button>
+    <button class="btn btn-primary btn-sm">Start building</button>
+  </header>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <span class="eyebrow">For instructors who build the class</span>
+    <h1>Every beat,<br><span class="by">by design.</span></h1>
+    <p class="sub">The playlist, the choreography, and the live run — built as one act.
+       <b>Serious work, ridiculous fun.</b></p>
+    <div class="cta">
+      <button class="btn btn-primary btn-lg">Start building free</button>
+      <span class="tempo">
+        <label for="bpm">Tempo</label>
+        <input type="range" id="bpm" min="80" max="170" value="124" />
+        <span class="val"><span id="bpmval">124</span> BPM</span>
+      </span>
+    </div>
+  </section>
+
+  <!-- ── Signature: tagline rides the breathing energy arc ── -->
+  <div class="arc-stage">
+    <div class="arc-card">
+      <div class="arc-meta">
+        <span class="big" id="hudbpm">124<small>BPM</small></span>
+        <span>Tuesday Power Ride · 23:42</span>
+      </div>
+      <svg viewBox="0 0 1120 300" preserveAspectRatio="none" role="img"
+           aria-label="The shape of a class: warm-up valley, climbs, an all-out sprint peak, recovery, final climb.">
+        <defs>
+          <linearGradient id="rib" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"  stop-color="#F7B987"/>
+            <stop offset="48%" stop-color="#E07E3C"/>
+            <stop offset="78%" stop-color="#D9483A"/>
+            <stop offset="92%" stop-color="#FF2E88"/>
+            <stop offset="100%" stop-color="#D9483A"/>
+          </linearGradient>
+          <linearGradient id="ribfill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(224,126,60,0.30)"/>
+            <stop offset="100%" stop-color="rgba(224,126,60,0.015)"/>
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="276" x2="1120" y2="276" stroke="rgba(251,247,240,0.08)" stroke-width="1"/>
+        <path d="M0,250 L110,238 L220,206 L330,214 L440,150 L550,164 L660,96 L780,52 L860,40 L940,128 L1010,176 L1120,238 L1120,300 L0,300 Z"
+              fill="url(#ribfill)"/>
+        <path d="M0,250 L110,238 L220,206 L330,214 L440,150 L550,164 L660,96 L780,52 L860,40 L940,128 L1010,176 L1120,238"
+              fill="none" stroke="url(#rib)" stroke-width="3" stroke-linejoin="round"/>
+        <!-- the single peak: the one plasma spend -->
+        <circle class="peak-dot" cx="860" cy="40" r="6" fill="#FF2E88"/>
+        <circle cx="860" cy="40" r="11" fill="none" stroke="#FF2E88" stroke-opacity="0.4" stroke-width="2"/>
+      </svg>
+      <div class="arc-axis">
+        <span>Warm-up</span><span>Climb</span><span class="peak">All-out ▲</span><span>Recovery</span><span>Final climb</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── The phrase kit, shown as a system ── -->
+  <section class="band">
+    <p class="lead">One line, every surface</p>
+    <div class="phrase-grid">
+      <div class="phrase">
+        <span class="role">Hero</span>
+        <span class="line">Every beat, by design.</span>
+        <span class="where">The headline. A production credit and a coaching promise in four words.</span>
+      </div>
+      <div class="phrase flex">
+        <span class="role">Cross-format flex</span>
+        <span class="line">Every move, by design.</span>
+        <span class="where">Same skeleton, swapped for Pilates and non-spin formats. Expansion, not rebrand.</span>
+      </div>
+      <div class="phrase">
+        <span class="role">Thesis</span>
+        <span class="line">Serious work. Ridiculous fun.</span>
+        <span class="where">The boutique in four words — precision underneath, never solemn on top.</span>
+      </div>
+      <div class="phrase">
+        <span class="role">Taste</span>
+        <span class="line">We sweat to a setlist.</span>
+        <span class="where">The DJ half. Says the music is curated, not piped in.</span>
+      </div>
+      <div class="phrase">
+        <span class="role">Craft</span>
+        <span class="line">Choreographed, not improvised.</span>
+        <span class="where">The trainer half. The quiet "I know exactly what I'm doing."</span>
+      </div>
+      <div class="phrase">
+        <span class="role">Merch shorthand</span>
+        <span class="line">By design.</span>
+        <span class="where">Two words on a tote or tank. The line collapses without breaking.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Boutique strip ── -->
+  <div class="strip">
+    <div class="strip-inner">
+      <h2>Serious work.<br><span class="hot">Ridiculous fun.</span></h2>
+      <p>Build a class like a track — nothing accidental, everything sequenced — then run it from the
+         bike. The discipline of a method, the energy of a drop.</p>
+    </div>
+  </div>
+
+  <!-- ── Footer / merch mark ── -->
+  <footer>
+    <span class="short">By design<span class="dot">.</span></span>
+    <span class="legal">RitmoFit · brand mockup against the v1 design system. Espresso black, copper identity,
+      cyan controls, plasma spent once at the peak. Numerals in Martian Mono.</span>
+  </footer>
+
+  <script>
+    const bpm = document.getElementById('bpm');
+    const bpmval = document.getElementById('bpmval');
+    const hudbpm = document.getElementById('hudbpm');
+    const root = document.documentElement;
+    bpm.addEventListener('input', e => {
+      const v = e.target.value;
+      root.style.setProperty('--rf-bpm', v);
+      bpmval.textContent = v;
+      hudbpm.innerHTML = v + '<small>BPM</small>';
+    });
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      // nothing to toggle — CSS already suppresses; kept for parity with app behavior
+    }
+  </script>
+</body>
+</html>
