@@ -23,6 +23,7 @@ import {
 import { LiveMode } from './LiveMode.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { IntensityReadout } from './IntensityReadout.js';
+import { CuesSection, MovesSection } from './ChoreographyEditor.js';
 import { ShareDialog } from './ShareDialog.js';
 import { TeamsDialog } from './TeamsDialog.js';
 import { ExploreDialog } from './ExploreDialog.js';
@@ -309,6 +310,7 @@ function ClassDetail({
           key={selectedTrack.id}
           track={selectedTrack}
           title={selectedEntry?.track.title ?? 'Track'}
+          durationMs={selectedEntry?.track.durationMs ?? null}
           canEdit={canEdit}
           onSaved={onTrackAdded}
           onRemoved={() => {
@@ -403,12 +405,14 @@ function LeanTrackRow({ track }: { track: ClassTrack }) {
 function TrackInspector({
   track,
   title,
+  durationMs,
   canEdit,
   onSaved,
   onRemoved,
 }: {
   track: ClassTrack;
   title: string;
+  durationMs: number | null;
   canEdit: boolean;
   onSaved: () => void;
   onRemoved: () => void;
@@ -530,6 +534,11 @@ function TrackInspector({
               Remove track
             </button>
           </div>
+
+          {/* Choreography anchored to this track — cues + placed moves. */}
+          <hr className="border-interactive/20" />
+          <CuesSection classTrackId={track.id} durationMs={durationMs} />
+          <MovesSection classTrackId={track.id} durationMs={durationMs} />
         </>
       )}
     </section>
