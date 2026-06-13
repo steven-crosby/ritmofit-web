@@ -39,6 +39,23 @@ function secToMs(sec: string): number {
   return Number.isFinite(n) && n > 0 ? Math.round(n * 1000) : 0;
 }
 
+/**
+ * The moves library is a global read-only seed, so fetch it once per session and
+ * share the promise — MovesSection mounts on every track selection, and refetching
+ * the whole library each time is wasted work. A failed fetch clears the cache so a
+ * later mount retries.
+ */
+let movesLibraryPromise: Promise<Move[]> | null = null;
+function loadMovesLibrary(): Promise<Move[]> {
+  if (!movesLibraryPromise) {
+    movesLibraryPromise = listMoves().catch((e) => {
+      movesLibraryPromise = null;
+      throw e;
+    });
+  }
+  return movesLibraryPromise;
+}
+
 const fieldClass =
   'rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-ui text-sm text-text-primary';
 const anchorHint = (durationMs: number | null) =>
@@ -183,7 +200,7 @@ export function MovesSection({
     void load();
   }, [load]);
   useEffect(() => {
-    void listMoves()
+    void loadMovesLibrary()
       .then(setLibrary)
       .catch(() => setLibrary([]));
   }, []);

@@ -201,3 +201,17 @@ was a deliberate hosting choice: one origin ⇒ the Better Auth session cookie i
   index.html (200), `/api/v1/health` 200 JSON, `/api/v1/explore` 401 unauthed, and a first-party-cookie
   sign-up → authed call succeeded; on the workers.dev URL a full authed flow (sign-up → create → publish
   → `/explore` → copy) succeeded against remote D1. All test data deleted afterward.
+
+**Web design-system build (builder UI) — slices 1–4 shipped + deployed (2026-06-12).** Supersedes the
+"minimal web skeleton" framing above: the builder is now being grown into the surface in
+[`ritmofit_design_system/`](ritmofit_design_system/), in vertical slices on top of the existing
+backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR #8**, deployed at
+`https://ritmofit.studio` (Worker version `4afed022`):
+- **Energy-arc ribbon** (`IntensityRibbon`, height-encoded staircase, plasma kiss at all-out, static);
+  **low-noise song rows** (`SongRow`); the **track inspector** (`TrackInspector` — intensity/BPM/notes +
+  remove); **cue + placed-move authoring** (`ChoreographyEditor`). Shared `IntensityReadout` extracted
+  from `LiveMode`. **Vitest now runs in `apps/web`** too (geometry test) — `pnpm test` = api 159 + web 5 = **164**.
+- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): inline-edit of cues/moves, custom
+  user-moves, cue color picker, drag-reorder, the on-beat pulse, the full 3-pane layout.
+- Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
+  `milestones.md`. **Next major milestone remains iOS Phase 2.**
