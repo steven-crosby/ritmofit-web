@@ -13,8 +13,10 @@ import type {
   UpdateClassTrack,
   Cue,
   CreateCue,
+  UpdateCue,
   ClassTrackMove,
   PlaceClassTrackMove,
+  UpdateClassTrackMove,
   Move,
   RunPayload,
   Share,
@@ -82,6 +84,8 @@ export const listCues = (classTrackId: string) =>
   api<Cue[]>(`/class-tracks/${classTrackId}/cues`);
 export const createCue = (classTrackId: string, body: CreateCue) =>
   api<Cue>(`/class-tracks/${classTrackId}/cues`, { method: 'POST', body: JSON.stringify(body) });
+export const updateCue = (cueId: string, body: UpdateCue) =>
+  api<Cue>(`/cues/${cueId}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const deleteCue = (cueId: string) => api<void>(`/cues/${cueId}`, { method: 'DELETE' });
 
 export const listPlacedMoves = (classTrackId: string) =>
@@ -91,6 +95,8 @@ export const placeMove = (classTrackId: string, body: PlaceClassTrackMove) =>
     method: 'POST',
     body: JSON.stringify(body),
   });
+export const updatePlacedMove = (id: string, body: UpdateClassTrackMove) =>
+  api<ClassTrackMove>(`/class-track-moves/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const deletePlacedMove = (id: string) =>
   api<void>(`/class-track-moves/${id}`, { method: 'DELETE' });
 
