@@ -13,8 +13,9 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { createDb } from './db.js';
-import { users, sessions, accounts, verifications } from '../db/schema.js';
+import { users, sessions, accounts, verifications, rateLimits } from '../db/schema.js';
 import type { Env } from './types.js';
+import { sendEmail, actionEmail } from './email.js';
 
 export function createAuth(env: Env) {
   const db = createDb(env);
@@ -37,12 +38,66 @@ export function createAuth(env: Env) {
     database: drizzleAdapter(db, {
       provider: 'sqlite',
       // Map Better Auth's singular model names onto our plural Drizzle tables.
-      schema: { user: users, session: sessions, account: accounts, verification: verifications },
+      schema: {
+        user: users,
+        session: sessions,
+        account: accounts,
+        verification: verifications,
+        rateLimit: rateLimits,
+      },
     }),
     // Map Better Auth's `name` / `image` fields onto our existing columns.
     user: { fields: { name: 'displayName', image: 'imageUrl' } },
-    emailAndPassword: { enabled: true },
+    emailAndPassword: {
+      enabled: true,
+      // B1 — password reset. Better Auth builds `url` (routes through its own
+      // handler, then redirects to the SPA's /reset-password with the token).
+      sendResetPassword: async ({ user, url }) => {
+        const { html, text } = actionEmail({
+          heading: 'Reset your RitmoFit password',
+          intro: `Someone (hopefully you) asked to reset the password for ${user.email}. This link expires in 1 hour.`,
+          buttonLabel: 'Reset password',
+          url,
+          footer: "If you didn't request this, you can safely ignore this email.",
+        });
+        await sendEmail(env, { to: user.email, subject: 'Reset your RitmoFit password', html, text });
+      },
+    },
+    // B2 — email verification. Sent on sign-up but NOT required to sign in
+    // (send-don't-block posture); tighten with requireEmailVerification later.
+    emailVerification: {
+      sendOnSignUp: true,
+      sendVerificationEmail: async ({ user, url }) => {
+        const { html, text } = actionEmail({
+          heading: 'Confirm your email',
+          intro: `Welcome to RitmoFit! Confirm ${user.email} to secure your account.`,
+          buttonLabel: 'Verify email',
+          url,
+          footer: 'You can keep using RitmoFit while this is pending.',
+        });
+        await sendEmail(env, { to: user.email, subject: 'Confirm your RitmoFit email', html, text });
+      },
+    },
     socialProviders,
+    // B4 — brute-force / signup-spam protection, state in our D1 `rate_limit`
+    // table. Better Auth's auto prod-detection (process.env.NODE_ENV) doesn't fire
+    // on Workers, so enable explicitly on the https origin and leave http://localhost
+    // dev unthrottled. Defaults are generous; per-endpoint rules tighten auth.
+    rateLimit: {
+      enabled: env.BETTER_AUTH_URL?.startsWith('https://') ?? false,
+      storage: 'database',
+      window: 60,
+      max: 100,
+      customRules: {
+        '/sign-in/email': { window: 60, max: 5 },
+        '/sign-up/email': { window: 3600, max: 10 },
+        '/request-password-reset': { window: 3600, max: 5 },
+        '/forget-password': { window: 3600, max: 5 },
+        '/reset-password': { window: 3600, max: 10 },
+      },
+    },
+    // Key rate limits by Cloudflare's real client IP, not the spoofable default.
+    advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip', 'x-forwarded-for'] } },
   });
 }
 

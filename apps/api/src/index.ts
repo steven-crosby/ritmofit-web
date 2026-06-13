@@ -7,6 +7,7 @@ import type { AppEnv, Env } from './lib/types.js';
 import { createAuth } from './lib/auth.js';
 import { createDb } from './lib/db.js';
 import { drainPurgeQueue, createD1PurgeStore } from './lib/music/purge.js';
+import { pruneRateLimits } from './lib/rate-limit.js';
 import { HttpError } from './lib/errors.js';
 import { authRoutes } from './routes/auth.js';
 import { classRoutes } from './routes/classes.js';
@@ -135,6 +136,18 @@ export default {
         .catch((err) => {
           console.error(`[purge] sweep failed: ${err instanceof Error ? err.message : String(err)}`);
         }),
+    );
+
+    // Same daily sweep prunes stale rate-limit rows (D1 has no TTL); independent
+    // of the purge so one failing doesn't skip the other.
+    ctx.waitUntil(
+      pruneRateLimits(createDb(env), Date.now())
+        .then((deleted) => console.log(`[rate-limit] pruned ${deleted} stale rows`))
+        .catch((err) =>
+          console.error(
+            `[rate-limit] prune failed: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        ),
     );
   },
 };

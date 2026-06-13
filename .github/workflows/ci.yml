@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   checks:
-    name: typecheck · lint · test
+    name: typecheck · lint · test · build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc # Node 20
+          node-version-file: .nvmrc # Node 22 (pnpm 11.4 needs >=22.13)
           cache: pnpm
 
       - name: Install
@@ -40,3 +40,15 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      # `vite build` can fail where `tsc --noEmit` passes (asset/import
+      # resolution), and deploys are manual — so catch build breaks in CI.
+      - name: Build web
+        run: pnpm --filter @ritmofit/web build
+
+      # The OpenAPI spec is generated from the shared Zod schemas; fail if the
+      # committed spec has drifted from a fresh regen.
+      - name: OpenAPI spec up to date
+        run: |
+          pnpm --filter @ritmofit/api openapi
+          git diff --exit-code apps/api/openapi/openapi.json

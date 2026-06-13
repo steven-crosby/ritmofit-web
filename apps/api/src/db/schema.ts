@@ -132,6 +132,8 @@ export const classes = sqliteTable(
     enumCheck('classes_status_check', t.status, classStatusValues),
     enumCheck('classes_visibility_check', t.visibility, classVisibilityValues),
     index('classes_visibility_idx').on(t.visibility),
+    // Hot path: `listVisibleClasses` owned-arm filters by owner (authz.ts).
+    index('classes_owner_user_id_idx').on(t.ownerUserId),
   ],
 );
 
@@ -202,7 +204,12 @@ export const classTracks = sqliteTable(
     notes: text('notes'),
     ...timestamps(),
   },
-  (t) => [enumCheck('class_tracks_intensity_check', t.intensity, intensityValues)],
+  (t) => [
+    enumCheck('class_tracks_intensity_check', t.intensity, intensityValues),
+    // Hot path: every class-detail load / run-payload assembly fetches a class's
+    // tracks by class_id.
+    index('class_tracks_class_id_idx').on(t.classId),
+  ],
 );
 
 // ── Moves library ───────────────────────────────────────────────────────────
@@ -234,7 +241,11 @@ export const userMoves = sqliteTable(
     template: text('template', { enum: classTemplateValues }),
     ...timestamps(),
   },
-  (t) => [enumCheck('user_moves_template_check', t.template, classTemplateValues)],
+  (t) => [
+    enumCheck('user_moves_template_check', t.template, classTemplateValues),
+    // Hot path: the moves picker lists a user's custom moves by user_id.
+    index('user_moves_user_id_idx').on(t.userId),
+  ],
 );
 
 // ── Choreography (anchored to a class_track) ────────────────────────────────
@@ -251,7 +262,10 @@ export const cues = sqliteTable('cues', {
   text: text('text').notNull(),
   color: text('color'),
   ...timestamps(),
-});
+}, (t) => [
+  // Hot path: cues are fetched per class_track when assembling the run-payload.
+  index('cues_class_track_id_idx').on(t.classTrackId),
+]);
 
 export const classTrackMoves = sqliteTable(
   'class_track_moves',
@@ -277,6 +291,8 @@ export const classTrackMoves = sqliteTable(
       sql`((${t.moveId} is not null) + (${t.userMoveId} is not null)) <= 1
         and (${t.moveId} is not null or ${t.userMoveId} is not null or ${t.nameOverride} is not null)`,
     ),
+    // Hot path: placed moves are fetched per class_track when assembling the run-payload.
+    index('class_track_moves_class_track_id_idx').on(t.classTrackId),
   ],
 );
 
@@ -390,6 +406,24 @@ export const providerPurgeQueue = sqliteTable(
     attempts: integer('attempts').notNull().default(0),
   },
   (t) => [enumCheck('provider_purge_queue_provider_check', t.provider, providerValues)],
+);
+
+/**
+ * Fixed-window rate-limit counters (B4). Better Auth's `rateLimit:
+ * { storage: 'database' }` keeps its per-key state here (one row per key); our
+ * own provider-search limiter (`lib/rate-limit.ts`) reuses the same table with a
+ * namespaced key prefix and the same fixed-window semantics. Columns match what
+ * Better Auth's adapter expects (`key` / `count` / `lastRequest`).
+ */
+export const rateLimits = sqliteTable(
+  'rate_limit',
+  {
+    id: text('id').primaryKey(),
+    key: text('key'),
+    count: integer('count'),
+    lastRequest: integer('last_request'),
+  },
+  (t) => [uniqueIndex('rate_limit_key_unq').on(t.key)],
 );
 
 // ── Better Auth-managed tables ──────────────────────────────────────────────

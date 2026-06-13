@@ -44,3 +44,10 @@ GETSONGBPM_API_KEY=
 # Dev: serve provider search/import from the mock catalog (and expose the /mock/*
 # seam) so the builder works with zero provider keys. Leave unset/false in production.
 MOCK_PROVIDERS=true
+
+# Transactional email (password reset + verification, B1/B2) via Resend. Blank →
+# emails are logged to the Worker console instead of sent (dev fallback), so reset/
+# verify links are clickable from `wrangler dev` logs. NEVER leave blank in prod.
+RESEND_API_KEY=
+# From address; must be on a Resend-verified domain. Defaults to noreply@ritmofit.studio.
+EMAIL_FROM=RitmoFit <noreply@ritmofit.studio>

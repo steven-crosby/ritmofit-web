@@ -19,6 +19,7 @@ import {
 } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
+import { rateLimit } from '../lib/rate-limit.js';
 import { createDb } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { getMusicProvider } from '../lib/music/registry.js';
@@ -37,10 +38,19 @@ function parseProvider(raw: string) {
   return parsed.data;
 }
 
+/** Upstream-quota guard: cap proxied search calls per user (B4) + clamp `q` (G1). */
+const MAX_QUERY_LEN = 200;
+const searchLimiter = rateLimit({
+  keyPrefix: 'provider-search',
+  windowMs: 60_000,
+  max: 30,
+  key: (c) => c.get('userId'),
+});
+
 /** GET /providers/:provider/search?q= — provider search candidates (contract DTOs). */
-providerRoutes.get('/providers/:provider/search', async (c) => {
+providerRoutes.get('/providers/:provider/search', searchLimiter, async (c) => {
   const provider = parseProvider(c.req.param('provider'));
-  const q = c.req.query('q') ?? '';
+  const q = (c.req.query('q') ?? '').slice(0, MAX_QUERY_LEN);
   const adapter = getMusicProvider(provider, c.env);
   const results: TrackSearchResult[] = await adapter.search(q);
   return c.json(results);

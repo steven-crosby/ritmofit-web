@@ -6,9 +6,14 @@
 import { authClient } from './lib/auth-client.js';
 import { Login } from './components/Login.js';
 import { Dashboard } from './components/Dashboard.js';
+import { ResetPassword } from './components/ResetPassword.js';
 
 export function App() {
   const { data: session, isPending } = authClient.useSession();
+
+  // Reset-password lands here from the email link (no router); render it on
+  // pathname before the session gate so it works while signed out.
+  if (window.location.pathname === '/reset-password') return <ResetPassword />;
 
   if (isPending) {
     return (
