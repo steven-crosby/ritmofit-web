@@ -317,3 +317,41 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   custom-move `baseMoveId`/`template` editing.
 - Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
   `milestones.md`. **Next major milestone remains iOS Phase 2.**
+
+**Pre-launch hardening — B1–B4 + S1/S2/S4 shipped + deployed (2026-06-13, PR #40, Worker version
+`fc071e5b`; remote D1 migrated to `0008`).** Driven by a pre-launch review (`REVIEW.md`, untracked at repo
+root). No `packages/shared`/OpenAPI contract change. `pnpm test` = api 169 + web 53 = **222**; typecheck
+(4 pkgs) · lint · build · OpenAPI no-drift green.
+- **B1/B2 — transactional email (Resend):** `apps/api/src/lib/email.ts` (`sendEmail` via Resend REST,
+  network-injectable; `actionEmail` HTML/text; dev fallback **logs to the Worker console when
+  `RESEND_API_KEY` is unset**). Wired into Better Auth: `emailAndPassword.sendResetPassword` (B1) +
+  `emailVerification.sendOnSignUp` (B2, **send-but-don't-block** — no `requireEmailVerification`). Web:
+  "Forgot password?" flow in `Login.tsx` + new `ResetPassword.tsx` rendered on `/reset-password` (no
+  router — `App.tsx` switches on `pathname`). Verified against Better Auth 1.6.17: reset link →
+  `/api/auth/reset-password/:token` → redirects to `redirectTo?token=`; verify link defaults `callbackURL`
+  to `/`.
+- **B3 — error boundaries:** `apps/web/src/components/ErrorBoundary.tsx` around `<App/>` (global → Reload)
+  and around `LiveMode` (`resetLabel="Exit live mode"` → `setLive(null)`).
+- **B4 — D1-backed rate limiting:** new `rate_limit` table (**migration `0007`**). Better Auth
+  `rateLimit: storage:'database'` on `/api/auth/*` (sign-in 5/min, sign-up/reset 10/hr, etc.), enabled on
+  the https origin (Better Auth's `process.env.NODE_ENV` prod-detection doesn't fire on Workers), keyed by
+  `cf-connecting-ip`. Reusable fixed-window limiter `apps/api/src/lib/rate-limit.ts` on `GET
+  /providers/:provider/search` (**30/min/user**, clamps `q` to 200 chars — also closes G1). The daily Cron
+  (`scheduled()`) now also prunes stale `rate_limit` rows (D1 has no TTL).
+- **S1 — silent form failures:** `apps/web/src/lib/use-async-action.ts` (`useAsyncAction` = in-flight flag
+  + error capture + re-entry guard) routes Dashboard create-class / add-track / publish / `loadDetail`
+  through the `error` state and disables buttons in-flight (no more duplicate class/track on double-click).
+- **S2 — FK indexes (migration `0008`):** `class_tracks.class_id`, `cues.class_track_id`,
+  `class_track_moves.class_track_id`, `classes.owner_user_id`, `user_moves.user_id` — the per-class
+  run-payload/detail hot path.
+- **S4 — CI:** `.github/workflows/ci.yml` now also runs `pnpm --filter @ritmofit/web build` + an
+  OpenAPI-drift check; fixed the stale Node-20 comment (`.nvmrc` is 22). Still advisory (never deploys,
+  doesn't block).
+- **⚠️ Email not yet live in prod:** `RESEND_API_KEY`/`EMAIL_FROM` are **not set** as Worker secrets (only
+  `BETTER_AUTH_SECRET` + `ENCRYPTION_KEY` are), so reset/verification emails currently hit the
+  console-log fallback — **password recovery doesn't reach users yet**. To finish B1: create a Resend
+  account, verify `ritmofit.studio` + add SPF/DKIM/DMARC to the Cloudflare DNS zone, then `wrangler secret
+  put RESEND_API_KEY` (+ `EMAIL_FROM`).
+- **Deferred (not launch-blocking):** S3 (route-level/integration tests), S5 (live-OAuth connect
+  success/failure UX, latent until provider creds ship), S6 (code-splitting — bundle is still one ~326 KB
+  / 94 KB-gzip chunk).
