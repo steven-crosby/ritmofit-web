@@ -270,7 +270,8 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   `onSelectTrack` (plain select, not toggle; non-interactive fallback kept); `Dashboard` wires
   `onSelectTrack={setSelectedTrackId}`. No schema/API/shared change. `pnpm test` = api 159 + web 39 =
   **198**; build green. Merged PR #21, deployed (Worker `755e3489`).
-- **Slice 12 — focus a cue/move from its marker** (branch `feat/web-focus-cue-from-marker`): a timeline
+- **Slice 12 — focus a cue/move from its marker** (merged PR #23, **deployed 2026-06-13**, Worker version
+  `802ebe48`): a timeline
   cue (▲) / move (◆) marker click selects the track *and* scrolls the matching inspector row into view with
   a brief flash (block clicks still just select). Markers carry in-track `anchorMs`; `onSelectTrack` gained
   optional `{ kind, anchorMs }`; `Dashboard` holds `markerFocus` (+ `nonce` to re-flash on repeat click) and

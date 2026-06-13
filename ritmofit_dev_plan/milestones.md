@@ -296,7 +296,8 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   `{ kind, anchorMs }`; `Dashboard` holds a `markerFocus` (`+ nonce` so re-clicking re-flashes) and threads it
   through `TrackInspector` to `CuesSection`/`MovesSection`. A shared `useFlashFocus` hook scrolls + transiently
   rings the row whose `anchorMs` matches (correlated by `anchorMs` since run-payload cues/moves carry **no
-  id**). No schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**.
+  id**). No schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**. **Merged PR #23,
+  deployed 2026-06-13** (Worker version `802ebe48`; no schema/migration).
 
 **Deferred (flagged in code):** **managing** custom moves (rename/delete/description/`baseMoveId`), the
 **on-beat pulse** on the playing row + the timeline **playhead** / tap-to-seek (a Live concern), and the
