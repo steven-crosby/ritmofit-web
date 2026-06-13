@@ -95,10 +95,21 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > assets; single origin ⇒ first-party auth, no CORS), with remote D1 migrated through `0005`. M4
 > (Explore / sharing UX) shipped in three slices — share-by-email, team-sharing, and the Explore feed
 > (`classes.visibility`, public VIEW floor, `GET /explore`, save-a-copy); **featured curation is
-> deliberately deferred**. CI (`.github/workflows/ci.yml`) gates `typecheck`/`lint`/`test` (159) on every
+> deliberately deferred**. CI (`.github/workflows/ci.yml`) gates `typecheck`/`lint`/`test` (164) on every
 > push/PR — **advisory** (enforced branch protection needs GitHub Pro/public; repo is private/Free).
-> Full deploy + CI record in [`../CLAUDE.md`](../CLAUDE.md). **Next milestone: iOS Phase 2** (the native
-> live surface in `ritmofit-ios`, against this same backend/run-payload). Web build order is **done**.
+> Full deploy + CI record in [`../CLAUDE.md`](../CLAUDE.md).
+>
+> **Web design-system build (builder UI) underway (2026-06-12).** The rich planning UI M1 deferred is
+> now being built in vertical slices — the difference between the data-flow skeleton and the designed
+> surface in [`../ritmofit_design_system/`](../ritmofit_design_system/). Slices 1–4 are merged (PR #8)
+> and **deployed** (Worker version `4afed022`, no schema change): (1) the energy-arc **intensity ribbon**,
+> (2) low-noise **song rows** (44px art, Martian-Mono BPM, intensity bars), (3) the **track inspector**
+> (edit intensity/BPM/notes, remove), (4) **cue + placed-move authoring**. Also wired **vitest into
+> `apps/web`** (geometry unit test). Deferred: inline-edit of cues/moves, cue color picker, drag-reorder,
+> the on-beat pulse, the full 3-pane layout. See `milestones.md` for the slice log.
+>
+> **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
+> backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);

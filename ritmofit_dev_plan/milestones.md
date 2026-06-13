@@ -3,10 +3,10 @@
 Each step follows the working agreement: **plan → confirm → code → summarize** (see
 `ai-working-rules.md`).
 
-> **Status (2026-06-12): M1 ✅ · M2 ✅ · M3 ✅ — all done, merged to `main`, API deployed. M4 is
-> next.** An M1–M3 code-review pass (PR #6) landed 10 bug fixes + 4 cleanups, incl. the one schema
-> change (owner-scoped provider-id uniqueness, migration `0004`). The web app is still a skeleton and
-> is not deployed. See `DEVELOPMENT_PLAN.md` for the rollup.
+> **Status (2026-06-12): M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ — all done, merged to `main`, and deployed**
+> (API + web at `https://ritmofit.studio`, remote D1 through `0005`). On top of the data-flow milestones,
+> the **web design-system build (builder UI)** is now underway — slices 1–4 merged (PR #8) and deployed;
+> see the new section below. **Next major milestone: iOS Phase 2.** See `DEVELOPMENT_PLAN.md` for the rollup.
 
 ## M1 — Auth + class/cue data model ✅ done
 
@@ -198,6 +198,35 @@ Core builder first (these validate the product), teams/sharing last.
   **share-to-team** picker (the caller's own teams) alongside share-by-email. Backend gains `email`
   resolution on `POST /teams/:id/members` (mirrors the share fix — no user-search endpoint) +
   unknown-email `422`. No migration — the M1 team + team-target-share model was already complete.
+
+---
+
+## Web design-system build (builder UI) — in progress
+
+Not a numbered milestone: this is the **rich planning UI M1 deferred** ("layered on after the data flow
+works"), turning the functional-but-skeleton builder into the surface specified in
+[`../ritmofit_design_system/`](../ritmofit_design_system/). Built in small vertical slices on top of the
+existing backend/run-payload — **no schema, API-contract, or shared-package change**. Slices 1–4 merged in
+**PR #8** and **deployed** (2026-06-12, Worker version `4afed022`):
+
+- ✅ **Slice 1 — energy-arc ribbon** (`IntensityRibbon`): the signature staircase area graph; height
+  encodes each track's intensity zone (grayscale-safe, color is reinforcement), plasma kiss at all-out,
+  static (reduced-motion-safe). Pure `computeRibbonSegments` helper. Also **wired vitest into `apps/web`**
+  + a geometry unit test (root `pnpm test` now runs api 159 + web 5 = **164**).
+- ✅ **Slice 2 — low-noise song rows** (`SongRow`): 44px album art, title/artist, BPM in Martian Mono,
+  intensity as bars+label. Extracted the shared `IntensityReadout` out of `LiveMode` (one definition of
+  the redundant-encoding rule).
+- ✅ **Slice 3 — track inspector / detail editor** (`TrackInspector`): select a row → edit intensity,
+  display-BPM override, notes; remove the track. Edits reshape the ribbon + rows live. Gated on
+  owner/edit access. Added `updateClassTrack` / `deleteClassTrack` (existing `PATCH`/`DELETE
+  /class-tracks/:id`).
+- ✅ **Slice 4 — cue + placed-move authoring** (`ChoreographyEditor`): add/list/delete cues (anchor +
+  text) and placed moves (a `GET /moves` library move or freeform `nameOverride`, anchored, optional
+  intensity; honors the at-most-one-reference invariant). Added the cue/move/library client fns.
+
+**Deferred (flagged in code):** inline-edit of existing cues/moves, custom user-move creation, the cue
+**color picker** (excludes the plasma range), **drag-reorder** (`POST /classes/:id/tracks/reorder`
+exists), the **on-beat pulse** on the playing row, and the full 3-pane `09` layout.
 
 ---
 
