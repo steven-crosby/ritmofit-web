@@ -222,8 +222,8 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   + intensity. Backed by the existing `PATCH /cues/:id` + `PATCH /class-track-moves/:id` (edit access; move
   route re-checks the at-most-one-reference invariant). `updateCue` + `updatePlacedMove` client fns; no
   schema/API/shared change. `pnpm test` = api 159 + web 11 = **170**.
-- **Slice 7 — the full 3-pane `09` layout** (branch `feat/web-builder-3pane-layout`, **not yet
-  deployed**): replaced the 2-column inline-inspector builder in `Dashboard.tsx` with the spec'd
+- **Slice 7 — the full 3-pane `09` layout** (merged PR #13, **deployed 2026-06-12**, Worker version
+  `810f25d3`): replaced the 2-column inline-inspector builder in `Dashboard.tsx` with the spec'd
   workstation — a persistent **top bar**, then `xl:grid-cols-[266px_1fr_340px]` (collapses to one stacked
   column below `xl`): a sticky **class library** rail, the **class workspace** center (new
   `ClassHeaderCard` = title + visibility + derived summary → energy ribbon → track list → add-track), and a
