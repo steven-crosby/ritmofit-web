@@ -8,6 +8,9 @@
  * unit-tested without a DB; the middleware is the thin D1 read/upsert around it.
  */
 import { createMiddleware } from 'hono/factory';
+import { lt } from 'drizzle-orm';
+import type { Db } from './db.js';
+import { rateLimits } from '../db/schema.js';
 import type { AppEnv } from './types.js';
 
 export interface RateRecord {
@@ -97,4 +100,27 @@ export function rateLimit(opts: RateLimitOptions) {
 
     await next();
   });
+}
+
+/**
+ * Max age for a kept `rate_limit` row — far beyond any window we configure (the
+ * longest is 1h), so pruning never deletes a counter that's still inside its
+ * active window.
+ */
+export const RATE_LIMIT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Delete stale `rate_limit` rows. D1 has no TTL and neither Better Auth's
+ * database storage nor our limiter ever deletes a row, so the table would grow
+ * unbounded (one row per IP+rule and per provider-search user). Run from the
+ * daily Cron. Safe any time: a pruned row whose window has long elapsed would
+ * reset to a fresh window on its next hit anyway. Returns rows removed.
+ */
+export async function pruneRateLimits(
+  db: Db,
+  now: number,
+  maxAgeMs = RATE_LIMIT_MAX_AGE_MS,
+): Promise<number> {
+  const res = await db.delete(rateLimits).where(lt(rateLimits.lastRequest, now - maxAgeMs));
+  return res.meta?.changes ?? 0;
 }
