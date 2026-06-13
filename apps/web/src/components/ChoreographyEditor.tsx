@@ -7,7 +7,7 @@
  * The run-payload's per-track cues/moves lack ids, so editing reads the real
  * `GET /class-tracks/:id/cues` + `/moves` (which carry ids).
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   intensityValues,
   type Cue,
@@ -78,6 +78,35 @@ const fieldClass =
 const anchorHint = (durationMs: number | null) =>
   durationMs ? ` (0–${Math.round(durationMs / 1000)}s)` : '';
 
+/** A request to focus a cue/move row (from a timeline marker click). */
+export type RowFocus = { anchorMs: number; nonce: number } | null;
+
+/**
+ * Flash + scroll a cue/move row into view when a timeline marker targets it.
+ * Correlation is by in-track `anchorMs` (the run-payload markers carry no id).
+ * `ready` gates until the section's rows have loaded, so a focus that arrives
+ * before the fetch still fires; the `nonce` re-triggers on a repeat marker click.
+ * Returns the ms to ring (transient, ~1.6s) and a ref for the matching row.
+ */
+function useFlashFocus(focus: RowFocus, ready: boolean) {
+  const [flashAnchorMs, setFlashAnchorMs] = useState<number | null>(null);
+  const rowRef = useRef<HTMLLIElement | null>(null);
+  const nonce = focus?.nonce;
+  useEffect(() => {
+    if (!focus || !ready) return;
+    setFlashAnchorMs(focus.anchorMs);
+    const raf = requestAnimationFrame(() => rowRef.current?.scrollIntoView({ block: 'nearest' }));
+    const clear = setTimeout(() => setFlashAnchorMs(null), 1600);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(clear);
+    };
+    // Intentionally keyed on the marker nonce + readiness only: re-flash on a new
+    // marker click, or once the rows have loaded — not on every focus.anchorMs read.
+  }, [nonce, ready]);
+  return { flashAnchorMs, rowRef };
+}
+
 // ── Cues ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -145,11 +174,14 @@ function CueColorPicker({
 export function CuesSection({
   classTrackId,
   durationMs,
+  focus = null,
 }: {
   classTrackId: string;
   durationMs: number | null;
+  focus?: RowFocus;
 }) {
   const [cues, setCues] = useState<Cue[] | null>(null);
+  const { flashAnchorMs, rowRef } = useFlashFocus(focus, cues != null);
   const [text, setText] = useState('');
   const [anchorSec, setAnchorSec] = useState('0');
   const [color, setColor] = useState<string | null>(null);
@@ -282,7 +314,10 @@ export function CuesSection({
           ) : (
             <li
               key={cue.id}
-              className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5"
+              ref={focus && cue.anchorMs === focus.anchorMs ? rowRef : undefined}
+              className={`flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5 ${
+                flashAnchorMs != null && cue.anchorMs === flashAnchorMs ? 'ring-2 ring-interactive' : ''
+              }`}
             >
               {/* Color tag — decorative reinforcement; time + text always carry the meaning. */}
               {cue.color && (
@@ -353,11 +388,14 @@ export function CuesSection({
 export function MovesSection({
   classTrackId,
   durationMs,
+  focus = null,
 }: {
   classTrackId: string;
   durationMs: number | null;
+  focus?: RowFocus;
 }) {
   const [moves, setMoves] = useState<ClassTrackMove[] | null>(null);
+  const { flashAnchorMs, rowRef } = useFlashFocus(focus, moves != null);
   const [library, setLibrary] = useState<Move[]>([]);
   // The caller's reusable custom moves. Unlike the read-only library these mutate
   // (creating one here), so they're component state refreshed on demand, not the
@@ -612,7 +650,13 @@ export function MovesSection({
               </button>
             </li>
           ) : (
-            <li key={m.id} className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5">
+            <li
+              key={m.id}
+              ref={focus && m.anchorMs === focus.anchorMs ? rowRef : undefined}
+              className={`flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5 ${
+                flashAnchorMs != null && m.anchorMs === flashAnchorMs ? 'ring-2 ring-interactive' : ''
+              }`}
+            >
               <span className="shrink-0 font-data text-xs text-text-tertiary">{clock(m.anchorMs)}</span>
               <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">{nameOf(m)}</span>
               {m.intensity && <IntensityReadout intensity={m.intensity} />}

@@ -34,6 +34,8 @@ export type TimelineMarker = {
   kind: 'cue' | 'move';
   /** Absolute time on the class timeline (ms from start). */
   absMs: number;
+  /** In-track anchor (ms from the track's start) — correlates to the inspector row. */
+  anchorMs: number;
   /** Cue text or move name (resolved server-side in the run-payload). */
   label: string;
   /** A ready-to-use CSS color (cue tag hex / move intensity var), or null. */
@@ -66,7 +68,8 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
       position: i,
     });
     t.cues.forEach((cue, ci) => {
-      const absMs = startMs + clamp(cue.anchorMs, 0, dur);
+      const anchorMs = clamp(cue.anchorMs, 0, dur);
+      const absMs = startMs + anchorMs;
       markers.push({
         key: `c-${i}-${ci}`,
         classTrackId: t.classTrackId,
@@ -74,12 +77,14 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
         leftPct: (absMs / totalDurationMs) * 100,
         kind: 'cue',
         absMs,
+        anchorMs,
         label: cue.text,
         color: cue.color ?? null,
       });
     });
     t.moves.forEach((mv, mi) => {
-      const absMs = startMs + clamp(mv.anchorMs, 0, dur);
+      const anchorMs = clamp(mv.anchorMs, 0, dur);
+      const absMs = startMs + anchorMs;
       markers.push({
         key: `m-${i}-${mi}`,
         classTrackId: t.classTrackId,
@@ -87,6 +92,7 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
         leftPct: (absMs / totalDurationMs) * 100,
         kind: 'move',
         absMs,
+        anchorMs,
         label: mv.name,
         color: mv.intensity ? `var(--rf-color-intensity-${mv.intensity})` : null,
       });
@@ -104,8 +110,15 @@ export function TimelineStrip({
   payload: RunPayload;
   /** The class_track currently open in the inspector — its block is highlighted. */
   selectedTrackId?: string | null;
-  /** Click/keyboard-select a track from the timeline (opens it in the inspector). */
-  onSelectTrack?: (classTrackId: string) => void;
+  /**
+   * Click/keyboard-select a track from the timeline (opens it in the inspector).
+   * A marker click also passes its `{ kind, anchorMs }` so the inspector can focus
+   * the matching cue/move row; a block click passes no marker.
+   */
+  onSelectTrack?: (
+    classTrackId: string,
+    marker?: { kind: 'cue' | 'move'; anchorMs: number },
+  ) => void;
 }) {
   const { blocks, markers } = computeTimeline(payload.tracks, payload.class.totalDurationMs);
   if (blocks.length === 0) return null;
@@ -169,7 +182,7 @@ export function TimelineStrip({
             <button
               key={m.key}
               type="button"
-              onClick={() => onSelectTrack(m.classTrackId)}
+              onClick={() => onSelectTrack(m.classTrackId, { kind: m.kind, anchorMs: m.anchorMs })}
               style={{ left: `${m.leftPct}%` }}
               title={tip}
               aria-label={`${m.kind} at ${formatDuration(m.absMs)}: ${m.label}, select track ${m.position + 1}`}

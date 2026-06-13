@@ -273,11 +273,32 @@ function ClassWorkspace({
   const [sharing, setSharing] = useState(false);
   // The selected track (by class_track id) drives the inspector.
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  // A cue/move marker click also asks the inspector to focus that row. The `nonce`
+  // bumps on every marker click so re-clicking the same marker re-flashes.
+  const [markerFocus, setMarkerFocus] = useState<{
+    classTrackId: string;
+    kind: 'cue' | 'move';
+    anchorMs: number;
+    nonce: number;
+  } | null>(null);
   const isOwner = cls.accessLevel === 'owner';
   const canEdit = cls.accessLevel === 'owner' || cls.accessLevel === 'edit';
 
   const selectedTrack = tracks.find((t) => t.id === selectedTrackId) ?? null;
   const selectedEntry = payload?.tracks.find((e) => e.classTrackId === selectedTrackId) ?? null;
+
+  // Select a track from the timeline; a marker click also targets a cue/move row.
+  const selectFromTimeline = (
+    classTrackId: string,
+    marker?: { kind: 'cue' | 'move'; anchorMs: number },
+  ) => {
+    setSelectedTrackId(classTrackId);
+    if (marker) {
+      setMarkerFocus((prev) => ({ classTrackId, ...marker, nonce: (prev?.nonce ?? 0) + 1 }));
+    }
+  };
+  const inspectorFocus =
+    markerFocus && selectedTrack && markerFocus.classTrackId === selectedTrack.id ? markerFocus : null;
 
   return (
     <>
@@ -304,7 +325,7 @@ function ClassWorkspace({
             <TimelineStrip
               payload={payload}
               selectedTrackId={selectedTrackId}
-              onSelectTrack={setSelectedTrackId}
+              onSelectTrack={selectFromTimeline}
             />
           </div>
         )}
@@ -347,6 +368,7 @@ function ClassWorkspace({
             title={selectedEntry?.track.title ?? 'Track'}
             durationMs={selectedEntry?.track.durationMs ?? null}
             canEdit={canEdit}
+            focus={inspectorFocus}
             onSaved={onTrackChanged}
             onRemoved={() => {
               setSelectedTrackId(null);
@@ -703,6 +725,7 @@ function TrackInspector({
   title,
   durationMs,
   canEdit,
+  focus,
   onSaved,
   onRemoved,
 }: {
@@ -710,6 +733,8 @@ function TrackInspector({
   title: string;
   durationMs: number | null;
   canEdit: boolean;
+  /** A marker click asking to focus a cue/move row on this track (or null). */
+  focus: { kind: 'cue' | 'move'; anchorMs: number; nonce: number } | null;
   onSaved: () => void;
   onRemoved: () => void;
 }) {
@@ -833,8 +858,16 @@ function TrackInspector({
 
           {/* Choreography anchored to this track — cues + placed moves. */}
           <hr className="border-interactive/20" />
-          <CuesSection classTrackId={track.id} durationMs={durationMs} />
-          <MovesSection classTrackId={track.id} durationMs={durationMs} />
+          <CuesSection
+            classTrackId={track.id}
+            durationMs={durationMs}
+            focus={focus?.kind === 'cue' ? { anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
+          />
+          <MovesSection
+            classTrackId={track.id}
+            durationMs={durationMs}
+            focus={focus?.kind === 'move' ? { anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
+          />
         </>
       )}
     </section>

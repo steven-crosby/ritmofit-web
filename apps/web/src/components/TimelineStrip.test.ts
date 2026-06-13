@@ -73,12 +73,13 @@ describe('computeTimeline — markers', () => {
       2000,
     );
     expect(markers).toHaveLength(2);
-    // cue at 0 + 500 = 500 / 2000 = 25%
-    expect(markers[0]).toMatchObject({ kind: 'cue', absMs: 500, leftPct: 25, label: 'A', color: null });
-    // move at 1000 + 250 = 1250 / 2000 = 62.5%, intensity → CSS var
+    // cue at 0 + 500 = 500 / 2000 = 25%; in-track anchor preserved for correlation
+    expect(markers[0]).toMatchObject({ kind: 'cue', absMs: 500, anchorMs: 500, leftPct: 25, label: 'A', color: null });
+    // move at 1000 + 250 = 1250 / 2000 = 62.5%, anchor 250; intensity → CSS var
     expect(markers[1]).toMatchObject({
       kind: 'move',
       absMs: 1250,
+      anchorMs: 250,
       leftPct: 62.5,
       label: 'B',
       color: 'var(--rf-color-intensity-hard)',
