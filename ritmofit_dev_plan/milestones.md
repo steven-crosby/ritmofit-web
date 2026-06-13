@@ -337,13 +337,24 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   tracks change; render clamps + tiles). Deferred: Material-Symbol icons, drag-resize, track-range binding.
   `pnpm test` = api 159 + web 44 = **203**. **Merged PR #31, deployed 2026-06-13** (Worker version
   `14d363cf`; **remote D1 migrated to `0006` first** — additive `class_sections` table).
+- ✅ **Slice 17 — stable cue/move ids in the run-payload** — *an additive contract change (no schema/
+  migration).* The run-payload's cues and placed moves now carry a stable **`id`** (the existing
+  `cues.id` / `class_track_moves.id` PKs, already selected during assembly — no new queries);
+  `schemaVersion` stays **1**. Shared `runPayloadCue`/`runPayloadMove` schemas gain `id: uuidSchema`;
+  OpenAPI regenerated (+two `id` fields only). Web: the timeline **marker→inspector-row focus** now
+  correlates by **id** (pure, unit-tested `resolveFlashRowId`: exact id match → first-row-at-same-anchor
+  fallback for legacy/changed ids), so **two cues/moves sharing an `anchorMs` disambiguate** — closing the
+  slice-12/16 caveat. `id` threads through `TimelineMarker`/`computeTimeline` → `onSelectTrack` →
+  `Dashboard` `markerFocus` → `Cues`/`MovesSection`. This also hardens the contract iOS Phase 2 consumes.
+  `pnpm test` = api 159 + web 49 = **208**; typecheck (4 pkgs) · lint · web build green. *Pending merge/
+  deploy.*
 
 **Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the **playing-track pulse
 in the planning timeline** (no "playing" state in the builder), the timeline **playhead** / tap-to-seek (a
-Live concern), and segment-band **icons / drag-resize / track-range binding**. *Marker→row focus
-caveat:* two cues/moves at the **same `anchorMs`** can't be disambiguated (run-payload has no ids) — the
-first match flashes; the robust fix (add cue/move ids to the run-payload) is a deferred contract change.
-*(The PR #10 `TODO(select-fallback)` was resolved in slice 9.)*
+Live concern), and segment-band **icons / drag-resize / track-range binding**. The run-payload's
+`sections[]` still carries **no id** (sections aren't part of marker→row focus; a symmetry follow-up if
+iOS wants it). *(The slice-12/16 **marker→row `anchorMs` disambiguation caveat** was **resolved in slice
+17** — cues/moves now carry ids; the PR #10 `TODO(select-fallback)` was resolved in slice 9.)*
 
 ---
 

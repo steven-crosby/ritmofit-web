@@ -162,6 +162,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
           providerUri: p.providerUri,
         })),
         cues: (cuesByCt.get(ct.id) ?? []).map((cue) => ({
+          id: cue.id,
           anchorMs: cue.anchorMs,
           beat: cue.beat,
           bar: cue.bar,
@@ -169,6 +170,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
           color: cue.color,
         })),
         moves: (movesByCt.get(ct.id) ?? []).map((m) => ({
+          id: m.id,
           anchorMs: m.anchorMs,
           name: resolveMoveName(
             m.moveId ? moveNameById.get(m.moveId) : null,

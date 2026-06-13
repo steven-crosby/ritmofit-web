@@ -128,8 +128,13 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > full-stack (shared + CRUD routes + additive run-payload `sections[]` + a `SegmentBand` under the timeline);
 > this is the first builder slice that **does** change schema + contract (*merged PR #31, **deployed
 > 2026-06-13**, Worker `14d363cf`; remote D1 migrated to `0006`*). Slices 7–15 were no schema/API/shared change.
+> **Slice 17** adds **stable cue/move `id`s to the run-payload** — an **additive** contract change (no
+> schema/migration; `schemaVersion` stays 1) so the timeline marker→row focus correlates by id and two
+> cues/moves at the same `anchorMs` disambiguate (closes the slice-12/16 caveat) — and hardens the
+> contract iOS Phase 2 consumes; `pnpm test` = api 159 + web 49 = **208** (*pending merge/deploy*).
 > Deferred: the planning-timeline pulse, the playhead/tap-to-seek, segment icons/drag-resize, custom-move
-> `baseMoveId`/`template` editing. See `milestones.md` for the full slice log.
+> `baseMoveId`/`template` editing, and a run-payload `id` on `sections[]` (symmetry, if iOS wants it). See
+> `milestones.md` for the full slice log.
 >
 > **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
 > backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.

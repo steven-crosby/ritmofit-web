@@ -26,6 +26,9 @@ export type TimelineBlock = {
 
 export type TimelineMarker = {
   key: string;
+  /** The cue / placed-move id (run-payload), so a row correlates uniquely even
+   *  when two markers share an `anchorMs`. */
+  id: string;
   /** The class_track this marker sits on (for click-to-select). */
   classTrackId: string;
   /** 0-based index of the marker's track (display is `position + 1`). */
@@ -72,6 +75,7 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
       const absMs = startMs + anchorMs;
       markers.push({
         key: `c-${i}-${ci}`,
+        id: cue.id,
         classTrackId: t.classTrackId,
         position: i,
         leftPct: (absMs / totalDurationMs) * 100,
@@ -87,6 +91,7 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
       const absMs = startMs + anchorMs;
       markers.push({
         key: `m-${i}-${mi}`,
+        id: mv.id,
         classTrackId: t.classTrackId,
         position: i,
         leftPct: (absMs / totalDurationMs) * 100,
@@ -112,12 +117,13 @@ export function TimelineStrip({
   selectedTrackId?: string | null;
   /**
    * Click/keyboard-select a track from the timeline (opens it in the inspector).
-   * A marker click also passes its `{ kind, anchorMs }` so the inspector can focus
-   * the matching cue/move row; a block click passes no marker.
+   * A marker click also passes its `{ kind, id, anchorMs }` so the inspector can
+   * focus the matching cue/move row (by `id`, with `anchorMs` as a fallback); a
+   * block click passes no marker.
    */
   onSelectTrack?: (
     classTrackId: string,
-    marker?: { kind: 'cue' | 'move'; anchorMs: number },
+    marker?: { kind: 'cue' | 'move'; id: string; anchorMs: number },
   ) => void;
 }) {
   const { blocks, markers } = computeTimeline(payload.tracks, payload.class.totalDurationMs);
@@ -182,7 +188,7 @@ export function TimelineStrip({
             <button
               key={m.key}
               type="button"
-              onClick={() => onSelectTrack(m.classTrackId, { kind: m.kind, anchorMs: m.anchorMs })}
+              onClick={() => onSelectTrack(m.classTrackId, { kind: m.kind, id: m.id, anchorMs: m.anchorMs })}
               style={{ left: `${m.leftPct}%` }}
               title={tip}
               aria-label={`${m.kind} at ${formatDuration(m.absMs)}: ${m.label}, select track ${m.position + 1}`}

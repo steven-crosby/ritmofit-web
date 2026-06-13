@@ -43,6 +43,9 @@ const runPayloadProviderRefSchema = z.object({
 });
 
 const runPayloadCueSchema = z.object({
+  /** Stable cue id (matches the granular `cues` row). Additive to v1 — lets clients
+   *  correlate a cue uniquely even when two share an `anchorMs`. */
+  id: uuidSchema,
   anchorMs: offsetMsSchema,
   beat: z.int().nonnegative().nullable(),
   bar: z.int().nonnegative().nullable(),
@@ -51,6 +54,9 @@ const runPayloadCueSchema = z.object({
 });
 
 const runPayloadMoveSchema = z.object({
+  /** Stable placement id (matches the granular `class_track_moves` row). Additive
+   *  to v1 — unique even when two placements share an `anchorMs`. */
+  id: uuidSchema,
   anchorMs: offsetMsSchema,
   name: z.string().min(1),
   intensity: intensitySchema.nullable(),
