@@ -23,6 +23,7 @@ import type { Provider, TrackSearchResult } from '@ritmofit/shared';
 import type { Db } from '../db.js';
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
+import { boundFetch } from '../fetch.js';
 import { encryptSecret, decryptSecret } from '../crypto.js';
 import { requireEncryptionKey, soundcloudCreds } from './provider-config.js';
 import { searchMockCatalog } from '../mock-catalog.js';
@@ -65,7 +66,7 @@ export async function fetchUserLikes(
     : await decryptSecret(conn.accessTokenEncrypted, key);
 
   try {
-    return await fetchSoundCloudLikes({ accessToken, fetchImpl: fetch });
+    return await fetchSoundCloudLikes({ accessToken, fetchImpl: boundFetch });
   } catch (err) {
     if (!(err instanceof SoundCloudUnauthorizedError)) throw err;
     // The provider rejected the token. If we already refreshed once this request,
@@ -76,7 +77,7 @@ export async function fetchUserLikes(
     }
     refreshed = true;
     accessToken = await refreshAndPersist(db, key, creds, conn);
-    return await fetchSoundCloudLikes({ accessToken, fetchImpl: fetch });
+    return await fetchSoundCloudLikes({ accessToken, fetchImpl: boundFetch });
   }
 }
 
@@ -101,7 +102,7 @@ async function refreshAndPersist(
       clientId: creds.clientId,
       clientSecret: creds.clientSecret,
       refreshToken,
-      fetchImpl: fetch,
+      fetchImpl: boundFetch,
     });
   } catch {
     // A failed refresh means the grant is dead — surface a reconnect, not detail.

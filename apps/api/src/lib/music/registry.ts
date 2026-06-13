@@ -19,6 +19,7 @@ import {
 } from '@ritmofit/music';
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
+import { boundFetch } from '../fetch.js';
 import { soundcloudCreds, spotifyCreds, appleMusicCreds } from './provider-config.js';
 import { searchMockCatalog, findMockCandidate } from '../mock-catalog.js';
 
@@ -44,11 +45,11 @@ export function getMusicProvider(provider: Provider, env: Env): MusicProvider {
   // the secret checks aren't duplicated between here and the OAuth/likes routes.
   switch (provider) {
     case 'soundcloud':
-      return createSoundCloudProvider({ ...soundcloudCreds(env), fetchImpl: fetch });
+      return createSoundCloudProvider({ ...soundcloudCreds(env), fetchImpl: boundFetch });
     case 'spotify':
-      return createSpotifyProvider({ ...spotifyCreds(env), fetchImpl: fetch });
+      return createSpotifyProvider({ ...spotifyCreds(env), fetchImpl: boundFetch });
     case 'apple_music':
-      return createAppleMusicProvider({ ...appleMusicCreds(env), fetchImpl: fetch });
+      return createAppleMusicProvider({ ...appleMusicCreds(env), fetchImpl: boundFetch });
     default:
       throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
   }
