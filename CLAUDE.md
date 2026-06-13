@@ -233,7 +233,15 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   `formatDuration`) — no new data. Components re-parented untouched; the workspace is keyed by class id so
   switching classes clears the track selection. No schema/API/shared change. `pnpm test` = api 159 + web 17
   = **176**; `pnpm --filter @ritmofit/web build` green.
-- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): custom user-moves, cue color picker,
-  the on-beat pulse, the horizontal timeline-marker strip, and the segment band (design-concept-only).
+- **Slice 8 — cue color picker** (branch `feat/web-cue-color-picker`): cues gain a color tag in the
+  inspector `CuesSection` (add + inline-edit), persisted to the existing `cues.color` (no schema/API/shared
+  change — column/route/run-payload were already wired). New accessible `CueColorPicker` (radio-group,
+  text-labelled swatches, cyan selected-ring): a **None** option + the rationed copper/cyan/amber/ember/bone
+  palette, **never plasma** (`02-color-system.md`); a stored color outside the palette shows as a trailing
+  "current" swatch so editing never drops it. Cue rows show a decorative color dot (time + text still carry
+  meaning). Palette + `tagLabel` in pure unit-tested `lib/cue-colors.ts`. `pnpm test` = api 159 + web 22 =
+  **181**; build green.
+- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): custom user-moves, the on-beat pulse,
+  the horizontal timeline-marker strip, and the segment band (design-concept-only).
 - Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
   `milestones.md`. **Next major milestone remains iOS Phase 2.**

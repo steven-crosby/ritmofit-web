@@ -249,9 +249,17 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   new data. Existing components were re-parented untouched; the workspace is keyed by class id so opening
   another class clears the track selection. No schema/API-contract/shared change. `pnpm test` = api 159 +
   web 17 = **176**.
+- ✅ **Slice 8 — cue color picker**: cues can be tagged with a color in the inspector's `CuesSection`
+  (add + inline-edit), persisted to the existing `cues.color` (no schema/API/shared change — the column,
+  route, and run-payload were already wired). A new accessible `CueColorPicker` (radio-group, text-labelled
+  swatches, cyan selected-ring) offers a **None** option + the rationed copper/cyan/amber/ember/bone
+  palette and **never plasma** (`02-color-system.md`); rationing is enforced in the picker. A stored color
+  outside the palette renders as a trailing "current" swatch so editing never silently drops it. Cue rows
+  show a small color dot (decorative — time + text still carry the meaning). Palette + `tagLabel` live in
+  pure, unit-tested `lib/cue-colors.ts`. `pnpm test` = api 159 + web 22 = **181**.
 
-**Deferred (flagged in code):** custom user-move creation, the cue **color picker** (excludes the plasma
-range), the **on-beat pulse** on the playing row, the horizontal **timeline strip** (cue/move markers +
+**Deferred (flagged in code):** custom user-move creation, the **on-beat pulse** on the playing row, the
+horizontal **timeline strip** (cue/move markers +
 playhead) and the **segment band** under the ribbon (the latter is design-concept-only — no
 `class_sections` schema), and a small **move-edit select fallback** — `TODO(select-fallback)` in
 `ChoreographyEditor`: when the global moves library fails to load, editing a `moveId` placement shows a
