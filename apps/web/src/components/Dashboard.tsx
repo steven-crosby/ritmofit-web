@@ -22,6 +22,7 @@ import {
   getRunPayload,
 } from '../lib/api.js';
 import { moveItem } from '../lib/reorder.js';
+import { avgBpm, formatDuration } from '../lib/class-summary.js';
 import { LiveMode } from './LiveMode.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { IntensityReadout } from './IntensityReadout.js';
@@ -94,32 +95,30 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   if (live) return <LiveMode payload={live} onExit={() => setLive(null)} />;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-3xl font-semibold text-text-primary">RitmoFit</h1>
-          <p className="font-ui text-sm text-text-secondary">Signed in as {userName}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
-            onClick={() => setExploreOpen(true)}
-          >
-            Explore
-          </button>
-          <button
-            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
-            onClick={() => setTeamsOpen(true)}
-          >
-            Teams
-          </button>
-          <button
-            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
-            onClick={() => authClient.signOut()}
-          >
-            Sign out
-          </button>
-        </div>
+    <main className="flex min-h-screen flex-col">
+      {/* Persistent top bar — brand + the cross-cutting destinations. */}
+      <header className="flex items-center gap-4 border-b border-interactive/15 px-6 py-3">
+        <h1 className="font-display text-xl font-semibold text-text-primary">RitmoFit</h1>
+        <span className="flex-1" />
+        <p className="hidden font-ui text-sm text-text-secondary sm:block">{userName}</p>
+        <button
+          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+          onClick={() => setExploreOpen(true)}
+        >
+          Explore
+        </button>
+        <button
+          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+          onClick={() => setTeamsOpen(true)}
+        >
+          Teams
+        </button>
+        <button
+          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+          onClick={() => authClient.signOut()}
+        >
+          Sign out
+        </button>
       </header>
 
       {teamsOpen && <TeamsDialog userId={userId} onClose={() => setTeamsOpen(false)} />}
@@ -138,51 +137,89 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         />
       )}
 
-      {error && <p className="font-ui text-sm text-intensity-all_out">{error}</p>}
+      <div className="mx-auto w-full max-w-[1400px] flex-1 px-6 py-6">
+        {error && <p className="mb-4 font-ui text-sm text-intensity-all_out">{error}</p>}
 
-      <div className="grid grid-cols-[1fr_1.4fr] gap-6">
-        <section className="flex flex-col gap-3">
-          <CreateClassForm
-            onCreated={async (cls) => {
+        {/* The 3-pane workstation (design system 09): library · class · inspector.
+            Collapses to a single stacked column below xl so it stays usable on
+            smaller laptops. The class workspace contributes the center + inspector
+            columns; the library is the first column. */}
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start">
+          <LibraryRail
+            classes={classes}
+            selectedId={selected?.id ?? null}
+            onCreate={async (cls) => {
               await refreshClasses();
               await openClass({ ...cls, accessLevel: 'owner' });
             }}
+            onOpen={openClass}
           />
-          <ul className="flex flex-col gap-2">
-            {classes.map((cls) => (
-              <li key={cls.id}>
-                <button
-                  onClick={() => openClass(cls)}
-                  className={`w-full rounded-card bg-bg-raised p-3 text-left font-ui shadow-card ${
-                    selected?.id === cls.id ? 'ring-2 ring-interactive' : ''
-                  }`}
-                >
-                  <span className="text-text-primary">{cls.title}</span>
-                  <span className="ml-2 font-data text-xs uppercase text-text-tertiary">
-                    {cls.accessLevel}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
 
-        <section>
           {selected ? (
-            <ClassDetail
+            <ClassWorkspace
+              key={selected.id}
               cls={selected}
               tracks={tracks}
               payload={detailPayload}
-              onTrackAdded={() => loadDetail(selected.id)}
+              onTrackChanged={() => loadDetail(selected.id)}
               onRun={() => runClass(selected.id)}
               onClassUpdated={applyClassUpdate}
             />
           ) : (
-            <p className="font-ui text-text-tertiary">Select or create a class.</p>
+            <section className="rounded-card bg-bg-raised p-8 shadow-card">
+              <p className="font-ui text-text-tertiary">Select or create a class to start building.</p>
+            </section>
           )}
-        </section>
+        </div>
       </div>
     </main>
+  );
+}
+
+/**
+ * Left rail — the class library (design system 09). Create a class and pick one
+ * to open; the active class is marked with a ring (not color alone). On xl it is
+ * a sticky column so the list stays in view while the center scrolls.
+ */
+function LibraryRail({
+  classes,
+  selectedId,
+  onCreate,
+  onOpen,
+}: {
+  classes: ClassWithAccess[];
+  selectedId: string | null;
+  onCreate: (cls: Awaited<ReturnType<typeof createClass>>) => void;
+  onOpen: (cls: ClassWithAccess) => void;
+}) {
+  return (
+    <aside className="flex flex-col gap-3 xl:sticky xl:top-6">
+      <div className="flex items-center justify-between">
+        <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Your classes</span>
+        <span className="font-data text-xs text-text-tertiary">{classes.length}</span>
+      </div>
+      <CreateClassForm onCreated={onCreate} />
+      {classes.length === 0 ? (
+        <p className="font-ui text-sm text-text-tertiary">No classes yet — create your first above.</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {classes.map((cls) => (
+            <li key={cls.id}>
+              <button
+                onClick={() => onOpen(cls)}
+                aria-pressed={selectedId === cls.id}
+                className={`w-full rounded-card bg-bg-raised p-3 text-left font-ui shadow-card ${
+                  selectedId === cls.id ? 'ring-2 ring-interactive' : ''
+                }`}
+              >
+                <span className="block truncate text-text-primary">{cls.title}</span>
+                <span className="font-data text-xs uppercase text-text-tertiary">{cls.accessLevel}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </aside>
   );
 }
 
@@ -210,33 +247,145 @@ function CreateClassForm({ onCreated }: { onCreated: (cls: Awaited<ReturnType<ty
   );
 }
 
-function ClassDetail({
+/**
+ * The class workspace — the center column (header summary + energy ribbon +
+ * track list + add-track) and the sticky right-hand inspector (design system
+ * 09). Returns a fragment so both land as siblings of the library rail in the
+ * 3-pane grid. Mounted with `key={cls.id}` by the parent, so opening another
+ * class remounts it — clearing the track selection without an effect.
+ */
+function ClassWorkspace({
   cls,
   tracks,
   payload,
-  onTrackAdded,
+  onTrackChanged,
   onRun,
   onClassUpdated,
 }: {
   cls: ClassWithAccess;
   tracks: ClassTrack[];
   payload: RunPayload | null;
-  onTrackAdded: () => void;
+  onTrackChanged: () => void;
   onRun: () => void;
   onClassUpdated: (cls: Class) => void;
 }) {
   const [sharing, setSharing] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  // The selected track (by class_track id) drives the inspector. Reset when the
-  // open class changes so a stale selection from another class never lingers.
+  // The selected track (by class_track id) drives the inspector.
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
-  useEffect(() => setSelectedTrackId(null), [cls.id]);
-  const isPublic = cls.visibility === 'public';
   const isOwner = cls.accessLevel === 'owner';
   const canEdit = cls.accessLevel === 'owner' || cls.accessLevel === 'edit';
 
   const selectedTrack = tracks.find((t) => t.id === selectedTrackId) ?? null;
   const selectedEntry = payload?.tracks.find((e) => e.classTrackId === selectedTrackId) ?? null;
+
+  return (
+    <>
+      {sharing && <ShareDialog classId={cls.id} classTitle={cls.title} onClose={() => setSharing(false)} />}
+
+      {/* ── Center column: header summary · energy ribbon · track list ── */}
+      <section className="flex min-w-0 flex-col gap-4">
+        <ClassHeaderCard
+          cls={cls}
+          payload={payload}
+          trackCount={payload?.tracks.length ?? tracks.length}
+          isOwner={isOwner}
+          canRun={tracks.length > 0}
+          onRun={onRun}
+          onShare={() => setSharing(true)}
+          onClassUpdated={onClassUpdated}
+        />
+
+        {/* The energy arc — the class's shape, derived from the run-payload (no new schema). */}
+        {payload && payload.tracks.length > 0 && (
+          <div className="rounded-card bg-bg-raised p-4 shadow-card">
+            <IntensityRibbon payload={payload} />
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2 rounded-card bg-bg-raised p-4 shadow-card">
+          <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Track list</span>
+          {tracks.length === 0 && (
+            <p className="font-ui text-sm text-text-tertiary">No tracks yet — add your first below.</p>
+          )}
+          {/* Rich, reorderable song rows from the run-payload (title/artist/BPM/art);
+              fall back to the lean, non-reorderable rows only if the payload couldn't
+              load but tracks exist. */}
+          {tracks.length > 0 &&
+            (payload ? (
+              <ReorderableTrackList
+                classId={cls.id}
+                entries={payload.tracks}
+                canReorder={canEdit}
+                selectedTrackId={selectedTrackId}
+                onSelect={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
+                onReordered={onTrackChanged}
+              />
+            ) : (
+              <ol className="flex flex-col gap-2">
+                {tracks.map((t) => (
+                  <LeanTrackRow key={t.id} track={t} />
+                ))}
+              </ol>
+            ))}
+          <AddTrackForm classId={cls.id} onAdded={onTrackChanged} />
+        </div>
+      </section>
+
+      {/* ── Right column: the sticky inspector for the selected track ── */}
+      <aside className="xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
+        {selectedTrack ? (
+          <TrackInspector
+            key={selectedTrack.id}
+            track={selectedTrack}
+            title={selectedEntry?.track.title ?? 'Track'}
+            durationMs={selectedEntry?.track.durationMs ?? null}
+            canEdit={canEdit}
+            onSaved={onTrackChanged}
+            onRemoved={() => {
+              setSelectedTrackId(null);
+              onTrackChanged();
+            }}
+          />
+        ) : (
+          <div className="rounded-card border border-interactive/20 bg-bg-base p-5">
+            <p className="font-ui text-sm text-text-tertiary">
+              Select a track to edit its intensity, BPM, notes, cues, and moves.
+            </p>
+          </div>
+        )}
+      </aside>
+    </>
+  );
+}
+
+/**
+ * The class header card (design system 09): title + visibility, the derived
+ * summary stats (track count · assembled total · average BPM, all from the
+ * run-payload — no new data), and the owner/run actions. Visibility and stats
+ * use label + number, never color alone.
+ */
+function ClassHeaderCard({
+  cls,
+  payload,
+  trackCount,
+  isOwner,
+  canRun,
+  onRun,
+  onShare,
+  onClassUpdated,
+}: {
+  cls: ClassWithAccess;
+  payload: RunPayload | null;
+  trackCount: number;
+  isOwner: boolean;
+  canRun: boolean;
+  onRun: () => void;
+  onShare: () => void;
+  onClassUpdated: (cls: Class) => void;
+}) {
+  const [publishing, setPublishing] = useState(false);
+  const isPublic = cls.visibility === 'public';
+  const averageBpm = payload ? avgBpm(payload) : null;
 
   const togglePublish = async () => {
     setPublishing(true);
@@ -248,9 +397,8 @@ function ClassDetail({
   };
 
   return (
-    <div className="flex flex-col gap-4 rounded-card bg-bg-raised p-5 shadow-card">
-      {sharing && <ShareDialog classId={cls.id} classTitle={cls.title} onClose={() => setSharing(false)} />}
-      <div className="flex items-center justify-between gap-2">
+    <div className="flex flex-col gap-3 rounded-card bg-bg-raised p-5 shadow-card">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="truncate font-display text-xl font-semibold text-text-primary">{cls.title}</h2>
           {/* Visibility: icon + label, never color alone (accessibility). */}
@@ -258,7 +406,7 @@ function ClassDetail({
             {isPublic ? '🌐 Public — listed in Explore' : '🔒 Private'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {isOwner && (
             <button
               className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
@@ -271,7 +419,7 @@ function ClassDetail({
           {isOwner && (
             <button
               className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
-              onClick={() => setSharing(true)}
+              onClick={onShare}
             >
               Share
             </button>
@@ -279,52 +427,37 @@ function ClassDetail({
           <button
             className="rounded-pill bg-brand px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
             onClick={onRun}
-            disabled={tracks.length === 0}
-            title={tracks.length === 0 ? 'Add a track first' : 'Run this class live'}
+            disabled={!canRun}
+            title={canRun ? 'Run this class live' : 'Add a track first'}
           >
             ▶ Run live
           </button>
         </div>
       </div>
-      {/* The energy arc — the class's shape, derived from the run-payload (no new schema). */}
-      {payload && payload.tracks.length > 0 && <IntensityRibbon payload={payload} />}
-      {tracks.length === 0 && <p className="font-ui text-sm text-text-tertiary">No tracks yet.</p>}
-      {/* Rich, reorderable song rows from the run-payload (title/artist/BPM/art);
-          fall back to the lean, non-reorderable rows only if the payload couldn't
-          load but tracks exist. */}
-      {tracks.length > 0 &&
-        (payload ? (
-          <ReorderableTrackList
-            classId={cls.id}
-            entries={payload.tracks}
-            canReorder={canEdit}
-            selectedTrackId={selectedTrackId}
-            onSelect={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
-            onReordered={onTrackAdded}
-          />
-        ) : (
-          <ol className="flex flex-col gap-2">
-            {tracks.map((t) => (
-              <LeanTrackRow key={t.id} track={t} />
-            ))}
-          </ol>
-        ))}
-      {/* Inspector: edit the selected track. Editing reshapes the ribbon + rows live. */}
-      {selectedTrack && (
-        <TrackInspector
-          key={selectedTrack.id}
-          track={selectedTrack}
-          title={selectedEntry?.track.title ?? 'Track'}
-          durationMs={selectedEntry?.track.durationMs ?? null}
-          canEdit={canEdit}
-          onSaved={onTrackAdded}
-          onRemoved={() => {
-            setSelectedTrackId(null);
-            onTrackAdded();
-          }}
-        />
-      )}
-      <AddTrackForm classId={cls.id} onAdded={onTrackAdded} />
+      {/* Summary stats — BPM/time weighted in the Martian Mono data face. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-data text-xs text-text-secondary">
+        <span>
+          {trackCount} {trackCount === 1 ? 'track' : 'tracks'}
+        </span>
+        {payload && (
+          <>
+            <span aria-hidden className="text-text-tertiary">
+              ·
+            </span>
+            <span>{formatDuration(payload.class.totalDurationMs)} total</span>
+          </>
+        )}
+        {averageBpm != null && (
+          <>
+            <span aria-hidden className="text-text-tertiary">
+              ·
+            </span>
+            <span>
+              avg <span className="text-text-primary">{averageBpm}</span> BPM
+            </span>
+          </>
+        )}
+      </div>
     </div>
   );
 }

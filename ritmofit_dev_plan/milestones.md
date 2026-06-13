@@ -238,12 +238,25 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   the at-most-one-reference invariant on the merged result). Switching a move's reference nulls the
   others; a "Keep current move" sentinel preserves a non-listable `userMoveId` untouched. `updateCue` +
   `updatePlacedMove` client fns; no schema/API-contract/shared change. `pnpm test` = api 159 + web 11 = **170**.
+- ✅ **Slice 7 — the full 3-pane `09` layout**: replaced the 2-column inline-inspector builder with the
+  spec'd workstation — a **persistent top bar**, then a `xl:grid-cols-[266px_1fr_340px]` grid (collapses
+  to one stacked column below `xl`): a sticky **class library** rail (left), the **class workspace**
+  center column (a new `ClassHeaderCard` with title + visibility + derived summary stats → energy ribbon
+  → track list → add-track), and a **sticky right-hand inspector** (the `TrackInspector` + its nested
+  cue/move authoring, with its own scroll and a "select a track" placeholder). The header summary
+  (**track count · assembled total · avg BPM**, label+number not color alone) is derived from the
+  existing run-payload via a pure, unit-tested `lib/class-summary.ts` (`avgBpm` + `formatDuration`) — no
+  new data. Existing components were re-parented untouched; the workspace is keyed by class id so opening
+  another class clears the track selection. No schema/API-contract/shared change. `pnpm test` = api 159 +
+  web 17 = **176**.
 
 **Deferred (flagged in code):** custom user-move creation, the cue **color picker** (excludes the plasma
-range), the **on-beat pulse** on the playing row, the full 3-pane `09` layout, and a small
-**move-edit select fallback** — `TODO(select-fallback)` in `ChoreographyEditor`: when the global moves
-library fails to load, editing a `moveId` placement shows a mismatched `<select>` (falls back to
-"Custom…" though Save still preserves the id). From the PR #10 review; low-severity, UX-only.
+range), the **on-beat pulse** on the playing row, the horizontal **timeline strip** (cue/move markers +
+playhead) and the **segment band** under the ribbon (the latter is design-concept-only — no
+`class_sections` schema), and a small **move-edit select fallback** — `TODO(select-fallback)` in
+`ChoreographyEditor`: when the global moves library fails to load, editing a `moveId` placement shows a
+mismatched `<select>` (falls back to "Custom…" though Save still preserves the id). From the PR #10
+review; low-severity, UX-only.
 
 ---
 

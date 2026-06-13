@@ -105,8 +105,12 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > and **deployed** (Worker version `4afed022`, no schema change): (1) the energy-arc **intensity ribbon**,
 > (2) low-noise **song rows** (44px art, Martian-Mono BPM, intensity bars), (3) the **track inspector**
 > (edit intensity/BPM/notes, remove), (4) **cue + placed-move authoring**. Also wired **vitest into
-> `apps/web`** (geometry unit test). Deferred: inline-edit of cues/moves, cue color picker, drag-reorder,
-> the on-beat pulse, the full 3-pane layout. See `milestones.md` for the slice log.
+> `apps/web`** (geometry unit test). Slices 5–6 added drag/keyboard reorder and inline-edit of cues/moves
+> (PRs #9–#10). **Slice 7** assembles it all into the spec'd **full 3-pane `09` layout** (library · class
+> workspace · sticky inspector, with a class-header summary) — purely presentational, no schema/API/shared
+> change; `pnpm test` = api 159 + web 17 = **176** *(branch `feat/web-builder-3pane-layout`, not yet
+> deployed)*. Deferred: cue color picker, the on-beat pulse, custom user-moves, the timeline-marker strip,
+> the segment band. See `milestones.md` for the full slice log.
 >
 > **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
 > backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.
