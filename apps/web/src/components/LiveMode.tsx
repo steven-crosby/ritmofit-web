@@ -217,6 +217,11 @@ function CueByCue({
   // playing (design system 10). Needs a BPM to time the beat; removed under
   // reduced motion by CSS. Exactly one pulsing element on screen.
   const pulse = playing && entry.displayBpm != null;
+  // "The drop" (design system 10 §5): the one big motion spend, rationed to All-Out
+  // tracks. On each cue advance there, a plasma glow blooms behind the card and the
+  // cue text cross-fades in. Reduced motion degrades both to an instant swap (CSS).
+  const isAllOut = entry.intensity === 'all_out';
+  const nowText = currentEvent ? currentEvent.text : '—';
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 p-8 text-center">
       <div className="flex w-full items-center justify-between">
@@ -235,22 +240,35 @@ function CueByCue({
         </div>
       </div>
 
-      <div
-        className={`flex w-full flex-col items-center gap-1 rounded-card bg-bg-raised py-8 shadow-card ${
-          pulse ? 'rf-beat-pulse' : ''
-        }`}
-        style={pulse ? ({ '--rf-bpm': entry.displayBpm } as CSSProperties) : undefined}
-      >
-        <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Now</p>
-        <p
-          className="font-display text-4xl font-semibold leading-tight text-text-primary"
-          style={currentEvent?.color ? { color: currentEvent.color } : undefined}
-        >
-          {currentEvent ? currentEvent.text : '—'}
-        </p>
-        {currentEvent?.kind === 'move' && currentEvent.intensity && (
-          <IntensityReadout intensity={currentEvent.intensity} />
+      <div className="relative w-full">
+        {/* The drop's plasma bloom — keyed on the cue so it replays per advance. */}
+        {isAllOut && currentEvent && (
+          <span
+            key={nowText}
+            aria-hidden
+            className="rf-drop-bloom pointer-events-none absolute inset-0 rounded-card"
+          />
         )}
+        <div
+          className={`relative flex w-full flex-col items-center gap-1 rounded-card bg-bg-raised py-8 shadow-card ${
+            pulse ? 'rf-beat-pulse' : ''
+          }`}
+          style={pulse ? ({ '--rf-bpm': entry.displayBpm } as CSSProperties) : undefined}
+        >
+          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Now</p>
+          <p
+            key={nowText}
+            className={`font-display text-4xl font-semibold leading-tight text-text-primary ${
+              isAllOut ? 'rf-drop-in' : ''
+            }`}
+            style={currentEvent?.color ? { color: currentEvent.color } : undefined}
+          >
+            {nowText}
+          </p>
+          {currentEvent?.kind === 'move' && currentEvent.intensity && (
+            <IntensityReadout intensity={currentEvent.intensity} />
+          )}
+        </div>
       </div>
 
       <div className="flex w-full items-center justify-between rounded-card bg-bg-raised p-4 shadow-card">

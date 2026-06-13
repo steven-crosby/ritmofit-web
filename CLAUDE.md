@@ -295,8 +295,14 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   transform + box-shadow); `LiveMode` toggles the class + inline `--rf-bpm` when `playing && displayBpm`.
   Exactly one pulsing element; **fully removed under `prefers-reduced-motion`**. No schema/API/shared
   change. `pnpm test` = api 159 + web 39 = **198**; build green.
-- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): the All-Out "drop" cross-fade + the
-  planning-timeline pulse, the timeline playhead / tap-to-seek, the segment band (design-concept-only), and
-  custom-move `baseMoveId`/`template` editing.
+- **Slice 15 — the All-Out "drop"** (branch `feat/web-allout-drop`): in Live mode, while the live track's
+  intensity is `all_out`, each cue advance blooms a one-shot plasma glow (`peak-glow` token) behind the
+  "Now" card and the cue text cross-fades in (`10 §5`, the one big motion spend). CSS-only (`rf-drop-bloom`
+  + `rf-drop-in` keyframes, re-triggered by remounting the bloom/text on the current cue); degrades to an
+  instant, glow-free swap under `prefers-reduced-motion`. Layers with slice 14's beat pulse. No
+  schema/API/shared change. `pnpm test` = api 159 + web 39 = **198**; build green.
+- Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): the planning-timeline playing-track
+  pulse, the timeline playhead / tap-to-seek, the segment band (design-concept-only), and custom-move
+  `baseMoveId`/`template` editing.
 - Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
   `milestones.md`. **Next major milestone remains iOS Phase 2.**

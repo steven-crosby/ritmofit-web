@@ -317,10 +317,18 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**. **Merged PR #27, deployed
   2026-06-13** (Worker version `9a298d21`; no schema/migration).
 
-**Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the All-Out **"drop"**
-cross-fade (10 §5) + the **playing-track pulse in the planning timeline** (no "playing" state in the
-builder), the timeline **playhead** / tap-to-seek (a Live concern), and the **segment band** under the
-ribbon (design-concept-only — no `class_sections` schema). *Marker→row focus
+- ✅ **Slice 15 — the All-Out "drop"** (10 §5, the one big motion spend): in Live mode, while the **live
+  track's intensity is `all_out`**, each cue advance blooms a one-shot **plasma glow** (the `peak-glow`
+  token) behind the "Now" card and the cue text **cross-fades in**. Rationed to all-out tracks (a handful
+  of times per class); layers with the slice-14 beat pulse. CSS-driven (`rf-drop-bloom` + `rf-drop-in`
+  keyframes, re-triggered by remounting the bloom/text on the current cue); **degrades to an instant,
+  glow-free swap under `prefers-reduced-motion`**. No schema/API-contract/shared change. `pnpm test` =
+  api 159 + web 39 = **198**.
+
+**Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the **playing-track pulse
+in the planning timeline** (no "playing" state in the builder), the timeline **playhead** / tap-to-seek (a
+Live concern), and the **segment band** under the ribbon (design-concept-only — no `class_sections`
+schema). *Marker→row focus
 caveat:* two cues/moves at the **same `anchorMs`** can't be disambiguated (run-payload has no ids) — the
 first match flashes; the robust fix (add cue/move ids to the run-payload) is a deferred contract change.
 *(The PR #10 `TODO(select-fallback)` was resolved in slice 9.)*

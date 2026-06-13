@@ -121,10 +121,12 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > **Slice 13** adds a **custom-moves manager** (rename / description / delete via a dialog from the Moves
 > section; web-only over the existing `/user-moves` routes; *merged PR #25, **deployed 2026-06-13**, Worker
 > `cc437560`*). **Slice 14** adds the signature **on-beat pulse** — the Live "Now" cue card breathes on the
-> track's beat (CSS, reduced-motion-safe; *merged PR #27, **deployed 2026-06-13**, Worker `9a298d21`*). All
-> slices are no schema/API/shared change.
-> Deferred: the All-Out "drop" + planning-timeline pulse, the playhead/tap-to-seek, the segment band,
-> custom-move `baseMoveId`/`template` editing. See `milestones.md` for the full slice log.
+> track's beat (CSS, reduced-motion-safe; *merged PR #27, **deployed 2026-06-13**, Worker `9a298d21`*).
+> **Slice 15** adds the All-Out **"drop"** — a plasma glow bloom + cue crossfade on all-out cue advances in
+> Live (CSS, reduced-motion-safe; *branch `feat/web-allout-drop`, not yet deployed*). All slices are no
+> schema/API/shared change.
+> Deferred: the planning-timeline pulse, the playhead/tap-to-seek, the segment band, custom-move
+> `baseMoveId`/`template` editing. See `milestones.md` for the full slice log.
 >
 > **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
 > backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.
