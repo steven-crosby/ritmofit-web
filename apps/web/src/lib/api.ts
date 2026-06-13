@@ -11,6 +11,9 @@ import type {
   ClassTrack,
   AddClassTrack,
   UpdateClassTrack,
+  Track,
+  TrackSearchResult,
+  Provider,
   Cue,
   CreateCue,
   UpdateCue,
@@ -84,6 +87,17 @@ export const reorderTracks = (classId: string, classTrackIds: string[]) =>
   });
 export const getRunPayload = (classId: string) =>
   api<RunPayload>(`/classes/${classId}/run-payload`);
+
+// ── Music providers: search a provider, import a candidate into the library ───
+/** Provider search candidates (server serves the live adapter or the dev mock). */
+export const searchProvider = (provider: Provider, q: string) =>
+  api<TrackSearchResult[]>(`/providers/${provider}/search?q=${encodeURIComponent(q)}`);
+/** Import a candidate by provider reference → the owned track (created or matched). */
+export const importTrack = (provider: Provider, providerTrackId: string) =>
+  api<Track>('/providers/track-import', {
+    method: 'POST',
+    body: JSON.stringify({ provider, providerTrackId }),
+  });
 
 // ── Choreography: cues + placed moves anchored to a class_track ───────────────
 export const listCues = (classTrackId: string) =>
