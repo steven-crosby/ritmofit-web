@@ -70,6 +70,12 @@ against local D1. OpenAPI spec is generated from the shared Zod schemas at
   `packageManager`, **Node 22** via `.nvmrc` — pnpm 11.4 needs ≥22.13). It is a **checks-only gate; it
   never deploys** (deploys stay manual by design). Not gated: `format:check` (the plan-doc markdown was
   never prettier-formatted — 80 files) and OpenAPI-spec drift.
+- **Branch protection is NOT enforced (intentional, plan-limited).** CI is **advisory** — it reports
+  pass/fail but does not block merges, and direct pushes to `main` are allowed. Enforced protection
+  (classic rules *and* Rulesets with `active` enforcement) is gated by GitHub behind **Pro or a public
+  repo**; this repo is **private on Free**, so the API 403s. Don't re-attempt enabling it without first
+  changing that (upgrade to Pro, or make the repo public after a secrets-in-history audit). Decision
+  2026-06-12: stay private/free, keep CI advisory until there's a collaborator or a reason to pay.
 - **Known tech debt:** no automated *integration* tests yet — the route/SQL layer is verified by manual
   flows + unit tests (purge SQL scoping verified against local D1). The app-level authz is the only
   access gate.
