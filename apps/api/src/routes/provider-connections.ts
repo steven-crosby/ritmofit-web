@@ -35,6 +35,7 @@ import type { AppEnv, Env } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb, type Db } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
+import { boundFetch } from '../lib/fetch.js';
 import { encryptSecret, decryptSecret } from '../lib/crypto.js';
 import { requireEncryptionKey, soundcloudCreds } from '../lib/music/provider-config.js';
 import { generateCodeVerifier, challengeFromVerifier, randomToken } from '../lib/pkce.js';
@@ -203,7 +204,7 @@ providerConnectionRoutes.get('/providers/:provider/callback', async (c) => {
       redirectUri: redirectUriFor(c.env),
       code,
       codeVerifier: payload.verifier,
-      fetchImpl: fetch,
+      fetchImpl: boundFetch,
     });
     await upsertConnection(createDb(c.env), {
       userId: payload.userId,

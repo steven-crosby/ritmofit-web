@@ -13,6 +13,7 @@ import { createGetSongBpmProvider, type BpmQuery } from '@ritmofit/music';
 import type { Db } from '../db.js';
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
+import { boundFetch } from '../fetch.js';
 import { tracks } from '../../db/schema.js';
 
 /**
@@ -33,7 +34,7 @@ export async function resolveBpm(env: Env, query: BpmQuery): Promise<number | nu
   if (!env.GETSONGBPM_API_KEY) {
     throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'BPM lookup is not configured.');
   }
-  const provider = createGetSongBpmProvider({ apiKey: env.GETSONGBPM_API_KEY, fetchImpl: fetch });
+  const provider = createGetSongBpmProvider({ apiKey: env.GETSONGBPM_API_KEY, fetchImpl: boundFetch });
   return provider.lookup(query);
 }
 
