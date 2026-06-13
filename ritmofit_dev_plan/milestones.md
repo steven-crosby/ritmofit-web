@@ -223,10 +223,17 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
 - ✅ **Slice 4 — cue + placed-move authoring** (`ChoreographyEditor`): add/list/delete cues (anchor +
   text) and placed moves (a `GET /moves` library move or freeform `nameOverride`, anchored, optional
   intensity; honors the at-most-one-reference invariant). Added the cue/move/library client fns.
+- ✅ **Slice 5 — drag + keyboard reorder of the track list** *(branch `feat/web-builder-drag-reorder`,
+  PR pending)*: the ordered song rows reorder by dragging a dedicated grip handle (kept off the selection
+  button so click-to-select and drag never collide) and by keyboard (↑/↓ on the focused grip — native DnD
+  isn't keyboard-operable). Persists via the existing `POST /classes/:id/tracks/reorder` (edit access)
+  and reloads the detail so the ribbon + per-track offsets recompute; optimistic order with rollback on
+  failure; view-only shows no grip. New pure `moveItem` helper (`lib/reorder.ts`, unit-tested) +
+  `reorderTracks` client fn. No schema/API-contract/shared change. `pnpm test` now api 159 + web 11 = **170**.
 
 **Deferred (flagged in code):** inline-edit of existing cues/moves, custom user-move creation, the cue
-**color picker** (excludes the plasma range), **drag-reorder** (`POST /classes/:id/tracks/reorder`
-exists), the **on-beat pulse** on the playing row, and the full 3-pane `09` layout.
+**color picker** (excludes the plasma range), the **on-beat pulse** on the playing row, and the full
+3-pane `09` layout.
 
 ---
 

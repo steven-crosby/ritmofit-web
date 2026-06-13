@@ -211,7 +211,13 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   **low-noise song rows** (`SongRow`); the **track inspector** (`TrackInspector` — intensity/BPM/notes +
   remove); **cue + placed-move authoring** (`ChoreographyEditor`). Shared `IntensityReadout` extracted
   from `LiveMode`. **Vitest now runs in `apps/web`** too (geometry test) — `pnpm test` = api 159 + web 5 = **164**.
+- **Slice 5 — drag + keyboard reorder of the track list** (branch `feat/web-builder-drag-reorder`, PR
+  pending): the song rows reorder by a dedicated drag grip (off the selection button) and by ↑/↓ on the
+  focused grip; persists via the existing `POST /classes/:id/tracks/reorder` (edit access) and reloads so
+  the ribbon/offsets recompute; optimistic with rollback, view-only shows no grip. Pure `moveItem`
+  (`apps/web/src/lib/reorder.ts`, unit-tested) + `reorderTracks` client fn. No schema/API/shared change.
+  `pnpm test` = api 159 + web 11 = **170**.
 - Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): inline-edit of cues/moves, custom
-  user-moves, cue color picker, drag-reorder, the on-beat pulse, the full 3-pane layout.
+  user-moves, cue color picker, the on-beat pulse, the full 3-pane layout.
 - Status tracker: [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](ritmofit_dev_plan/DEVELOPMENT_PLAN.md) +
   `milestones.md`. **Next major milestone remains iOS Phase 2.**
