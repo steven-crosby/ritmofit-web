@@ -230,8 +230,8 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   per-track offsets recompute; optimistic order with rollback on failure; view-only shows no grip. New
   pure `moveItem` helper (`lib/reorder.ts`, unit-tested) + `reorderTracks` client fn. No
   schema/API-contract/shared change.
-- ✅ **Slice 6 — inline-edit existing cues & placed moves** *(branch `feat/web-builder-inline-edit`,
-  PR pending)*: the `ChoreographyEditor` cue/move rows gain an **Edit** affordance (one row editable at a
+- ✅ **Slice 6 — inline-edit existing cues & placed moves** (merged, PR #10): the `ChoreographyEditor`
+  cue/move rows gain an **Edit** affordance (one row editable at a
   time, seeded from the persisted row, Save/Cancel) on top of slice 4's add/list/delete. Cues edit
   anchor + text; placed moves edit anchor + library-pick/custom-name + optional intensity. Backed by the
   existing `PATCH /cues/:id` + `PATCH /class-track-moves/:id` (edit access; the move route re-validates
@@ -240,7 +240,10 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   `updatePlacedMove` client fns; no schema/API-contract/shared change. `pnpm test` = api 159 + web 11 = **170**.
 
 **Deferred (flagged in code):** custom user-move creation, the cue **color picker** (excludes the plasma
-range), the **on-beat pulse** on the playing row, and the full 3-pane `09` layout.
+range), the **on-beat pulse** on the playing row, the full 3-pane `09` layout, and a small
+**move-edit select fallback** — `TODO(select-fallback)` in `ChoreographyEditor`: when the global moves
+library fails to load, editing a `moveId` placement shows a mismatched `<select>` (falls back to
+"Custom…" though Save still preserves the id). From the PR #10 review; low-severity, UX-only.
 
 ---
 
