@@ -79,11 +79,12 @@ const anchorHint = (durationMs: number | null) =>
 
 /**
  * Cue color tag picker (design system `02-color-system.md`): a None option plus
- * the rationed copper/cyan/amber/ember/bone palette — never plasma. Radio-group
- * semantics; each swatch carries a text label (aria + title), and the selected
- * one shows the cyan interactive ring, so the choice never rests on color alone.
- * A stored color outside the palette (legacy/custom) renders as a trailing
- * "current" swatch so editing + Save never silently drops it.
+ * the rationed copper/cyan/amber/ember/bone palette — never plasma. A labelled
+ * group of `aria-pressed` toggle buttons (each Tab-focusable and operable — not
+ * the arrow-key radio pattern); each swatch carries a text label (aria + title),
+ * and the selected one shows the cyan interactive ring, so the choice never
+ * rests on color alone. A stored color outside the palette (legacy/custom)
+ * renders as a trailing "current" swatch so editing + Save never silently drops it.
  */
 function CueColorPicker({
   value,
@@ -95,11 +96,10 @@ function CueColorPicker({
   const inPalette =
     value != null && CUE_COLOR_TAGS.some((t) => t.hex.toLowerCase() === value.toLowerCase());
   return (
-    <div role="radiogroup" aria-label="Cue color tag" className="flex items-center gap-1.5">
+    <div role="group" aria-label="Cue color tag" className="flex items-center gap-1.5">
       <button
         type="button"
-        role="radio"
-        aria-checked={value == null}
+        aria-pressed={value == null}
         aria-label="No color"
         title="No color"
         onClick={() => onChange(null)}
@@ -115,8 +115,7 @@ function CueColorPicker({
           <button
             key={t.hex}
             type="button"
-            role="radio"
-            aria-checked={selected}
+            aria-pressed={selected}
             aria-label={t.name}
             title={t.name}
             onClick={() => onChange(t.hex)}
@@ -128,8 +127,7 @@ function CueColorPicker({
       {value != null && !inPalette && (
         <button
           type="button"
-          role="radio"
-          aria-checked
+          aria-pressed
           aria-label="Current custom color"
           title={value}
           onClick={() => onChange(value)}
