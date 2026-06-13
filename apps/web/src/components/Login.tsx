@@ -3,17 +3,29 @@ import { useState } from 'react';
 import { authClient } from '../lib/auth-client.js';
 
 export function Login() {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setBusy(true);
+    if (mode === 'forgot') {
+      const res = await authClient.requestPasswordReset({
+        email,
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      setBusy(false);
+      if (res.error) setError(res.error.message ?? 'Could not send reset email');
+      else setNotice('If that email has an account, a reset link is on its way.');
+      return;
+    }
     const res =
       mode === 'signup'
         ? await authClient.signUp.email({ email, password, name })
@@ -21,6 +33,12 @@ export function Login() {
     setBusy(false);
     if (res.error) setError(res.error.message ?? 'Authentication failed');
     // On success, the useSession() hook in App flips to the dashboard.
+  }
+
+  function switchMode(next: 'signin' | 'signup' | 'forgot') {
+    setMode(next);
+    setError(null);
+    setNotice(null);
   }
 
   return (
@@ -37,7 +55,11 @@ export function Login() {
             </h1>
           </div>
           <p className="font-ui text-text-secondary">
-            {mode === 'signup' ? 'Create your instructor account' : 'Sign in to plan your classes'}
+            {mode === 'signup'
+              ? 'Create your instructor account'
+              : mode === 'forgot'
+                ? 'Reset your password'
+                : 'Sign in to plan your classes'}
           </p>
         </header>
 
@@ -62,30 +84,45 @@ export function Login() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <input
-            className="rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          {mode !== 'forgot' && (
+            <input
+              className="rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          )}
           {error && <p className="font-ui text-sm text-intensity-all_out">{error}</p>}
+          {notice && <p className="font-ui text-sm text-interactive">{notice}</p>}
           <button
             type="submit"
             disabled={busy}
             className="rounded-pill rf-btn-primary px-5 py-2 font-ui font-semibold text-text-on-accent disabled:opacity-50"
           >
-            {busy ? '…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+            {busy
+              ? '…'
+              : mode === 'signup'
+                ? 'Create account'
+                : mode === 'forgot'
+                  ? 'Send reset link'
+                  : 'Sign in'}
           </button>
+          {mode === 'signin' && (
+            <button
+              type="button"
+              className="self-start font-ui text-sm text-interactive"
+              onClick={() => switchMode('forgot')}
+            >
+              Forgot password?
+            </button>
+          )}
         </form>
 
         <button
           className="font-ui text-sm text-interactive"
-          onClick={() => {
-            setMode((m) => (m === 'signin' ? 'signup' : 'signin'));
-            setError(null);
-          }}
+          onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')}
         >
           {mode === 'signin' ? 'Need an account? Sign up' : 'Have an account? Sign in'}
         </button>

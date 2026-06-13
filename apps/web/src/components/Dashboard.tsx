@@ -25,6 +25,7 @@ import {
 import { moveItem } from '../lib/reorder.js';
 import { avgBpm, formatDuration } from '../lib/class-summary.js';
 import { LiveMode } from './LiveMode.js';
+import { ErrorBoundary } from './ErrorBoundary.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { TimelineStrip } from './TimelineStrip.js';
 import { SegmentBand } from './SegmentBand.js';
@@ -98,7 +99,12 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     setSelected((prev) => (prev && prev.id === updated.id ? { ...updated, accessLevel: prev.accessLevel } : prev));
   }, []);
 
-  if (live) return <LiveMode payload={live} onExit={() => setLive(null)} />;
+  if (live)
+    return (
+      <ErrorBoundary resetLabel="Exit live mode" onReset={() => setLive(null)}>
+        <LiveMode payload={live} onExit={() => setLive(null)} />
+      </ErrorBoundary>
+    );
 
   return (
     <main className="flex min-h-screen flex-col">

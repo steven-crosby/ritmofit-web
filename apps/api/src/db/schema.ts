@@ -392,6 +392,24 @@ export const providerPurgeQueue = sqliteTable(
   (t) => [enumCheck('provider_purge_queue_provider_check', t.provider, providerValues)],
 );
 
+/**
+ * Fixed-window rate-limit counters (B4). Better Auth's `rateLimit:
+ * { storage: 'database' }` keeps its per-key state here (one row per key); our
+ * own provider-search limiter (`lib/rate-limit.ts`) reuses the same table with a
+ * namespaced key prefix and the same fixed-window semantics. Columns match what
+ * Better Auth's adapter expects (`key` / `count` / `lastRequest`).
+ */
+export const rateLimits = sqliteTable(
+  'rate_limit',
+  {
+    id: text('id').primaryKey(),
+    key: text('key'),
+    count: integer('count'),
+    lastRequest: integer('last_request'),
+  },
+  (t) => [uniqueIndex('rate_limit_key_unq').on(t.key)],
+);
+
 // ── Better Auth-managed tables ──────────────────────────────────────────────
 // Re-exported here so the Drizzle client and drizzle-kit see one combined schema.
 // `users` (above) is ours, extended for Better Auth; these three are managed by it.

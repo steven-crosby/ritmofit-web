@@ -61,6 +61,18 @@ export interface Env {
    * zero provider credentials. Never set in prod.
    */
   MOCK_PROVIDERS?: string;
+  /**
+   * Resend API key for transactional email (password reset + verification,
+   * B1/B2). Absent → emails are logged to the Worker console instead of sent
+   * (dev fallback); never leave unset in prod. Server-side only.
+   */
+  RESEND_API_KEY?: string;
+  /**
+   * The `From` address for transactional email, e.g. `RitmoFit
+   * <noreply@ritmofit.studio>`. Must be on a Resend-verified domain. Defaults to
+   * `noreply@ritmofit.studio` when unset.
+   */
+  EMAIL_FROM?: string;
 }
 
 /** Values the auth middleware sets on the Hono context for downstream handlers. */
