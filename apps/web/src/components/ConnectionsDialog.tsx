@@ -166,7 +166,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
                       type="button"
                       onClick={() => connect(provider)}
                       disabled={busy}
-                      className="shrink-0 rounded-pill bg-brand px-3 py-1 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+                      className="shrink-0 rounded-pill rf-btn-primary px-3 py-1 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
                     >
                       {busy ? 'Connecting…' : 'Connect'}
                     </button>

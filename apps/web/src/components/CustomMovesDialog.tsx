@@ -168,7 +168,7 @@ function CustomMoveRow({
         />
         <div className="flex items-center gap-2">
           <button
-            className="rounded-pill bg-brand px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+            className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
             onClick={save}
             disabled={busy || !name.trim()}
           >

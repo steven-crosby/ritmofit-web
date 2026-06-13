@@ -167,7 +167,7 @@ export function ShareDialog({
               <option value="edit">Can edit</option>
             </select>
             <button
-              className="rounded-pill bg-brand px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+              className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
               disabled={busy || !email.trim()}
             >
               Share
@@ -206,7 +206,7 @@ export function ShareDialog({
                 <option value="edit">Can edit</option>
               </select>
               <button
-                className="rounded-pill bg-brand px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+                className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
                 disabled={busy || !teamId}
               >
                 Share

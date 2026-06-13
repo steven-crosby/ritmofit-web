@@ -15,11 +15,11 @@ import { listSections, createSection, updateSection, deleteSection } from '../li
 
 /** Presentation for each fixed segment type: label + a reinforcing tint (02-color-system). */
 export const SEGMENT_META: Record<SegmentType, { label: string; tint: string }> = {
-  warm_up: { label: 'Warm-up', tint: '#F2B838' }, // amber-400
-  climb: { label: 'Climb', tint: '#A8521C' }, // copper-600
-  sprint: { label: 'Sprint', tint: '#E8654F' }, // ember-400
-  recovery: { label: 'Recovery', tint: '#8678AD' }, // violet-400
-  cool_down: { label: 'Cool-down', tint: '#9E927E' }, // bone-400
+  warm_up: { label: 'Warm-up', tint: 'var(--rf-color-segment-warmup)' }, // amber-400
+  climb: { label: 'Climb', tint: 'var(--rf-color-segment-climb)' }, // copper-600
+  sprint: { label: 'Sprint', tint: 'var(--rf-color-segment-sprint)' }, // ember-400
+  recovery: { label: 'Recovery', tint: 'var(--rf-color-segment-recovery)' }, // violet-400
+  cool_down: { label: 'Cool-down', tint: 'var(--rf-color-segment-cooldown)' }, // bone-400
 };
 
 export type SegmentBandSlice = {

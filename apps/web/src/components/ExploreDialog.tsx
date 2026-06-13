@@ -123,7 +123,7 @@ export function ExploreDialog({
                   Preview
                 </button>
                 <button
-                  className="rounded-pill bg-brand px-3 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+                  className="rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
                   onClick={() => saveCopy(cls.id)}
                   disabled={copyingId !== null}
                   title="Copy this class into your library to edit it"

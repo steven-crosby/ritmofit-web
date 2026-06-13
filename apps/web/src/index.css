@@ -14,6 +14,112 @@
     font-family: var(--rf-typography-family-ui);
     -webkit-font-smoothing: antialiased;
   }
+
+  /* Copper-tinted selection — identity, not interaction (branding mockup
+     `::selection`; copper-400 #E07E3C = rgb(224,126,60) at 35%). */
+  ::selection {
+    background: rgba(224, 126, 60, 0.35);
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   Brand recipes (from ritmofit_design_system/ritmofit-branding-mockup.html).
+   These are *compositions* of the generated --rf-* primitives, not new
+   primitive tokens — so they live here (index.css is not generated) rather
+   than in the regenerated tokens.css. Change a primitive in tokens.json and
+   these cascade. Every literal traces to the mockup or a primitive value.
+   ─────────────────────────────────────────────────────────────────────── */
+@layer components {
+  /* Primary button — copper gradient + soft copper glow, with hover/press
+     feedback (design system 05 mandates hover/pressed). Replaces a flat
+     `bg-brand` fill. (branding mockup `.btn-primary`.) Motion uses token
+     durations/easings and collapses under reduced motion. */
+  .rf-btn-primary {
+    background-image: linear-gradient(
+      170deg,
+      var(--rf-color-primitive-copper-400),
+      var(--rf-color-primitive-copper-500)
+    );
+    color: var(--rf-color-semantic-text-on-accent);
+    box-shadow: 0 2px 10px rgba(200, 104, 42, 0.32); /* copper-500 tint */
+    transition:
+      transform var(--rf-motion-duration-fast) var(--rf-motion-easing-snap),
+      filter var(--rf-motion-duration-fast) var(--rf-motion-easing-standard);
+  }
+  .rf-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+  .rf-btn-primary:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  /* Brand mark — the copper-gradient rounded chip with the ink glyph
+     (branding mockup `.brand .mark`). */
+  .rf-brand-mark {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: linear-gradient(
+      150deg,
+      var(--rf-color-primitive-copper-300),
+      var(--rf-color-primitive-copper-600)
+    );
+    color: var(--rf-color-primitive-ink-900);
+    font-family: var(--rf-typography-family-display);
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 1;
+    box-shadow: 0 2px 8px rgba(200, 104, 42, 0.4); /* copper-500 tint */
+  }
+
+  /* Glass top bar — navigation is a glass surface (design system 04/05;
+     branding mockup `.topbar`). Uses the canonical glass tokens (fill 0.70 /
+     blur 20px / glass border); the mockup's incidental 0.72 is not ported.
+     Opaque fallback where backdrop-filter is unsupported. */
+  .rf-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--rf-color-semantic-bg-overlay);
+    border-bottom: 1px solid var(--rf-surface-glass-border);
+  }
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .rf-topbar {
+      background: var(--rf-surface-glass-fill-default);
+      -webkit-backdrop-filter: blur(var(--rf-surface-glass-blur-default));
+      backdrop-filter: blur(var(--rf-surface-glass-blur-default));
+    }
+  }
+
+  /* Eyebrow — Martian Mono micro-label, copper (branding mockup `.eyebrow`). */
+  .rf-eyebrow {
+    font-family: var(--rf-typography-family-data);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--rf-color-primitive-copper-400);
+  }
+
+  /* Auth/marketing hero atmosphere — a single soft copper radial over the
+     base (branding mockup `body` background; copper-500 tint). Scoped to the
+     auth surface only: design system 04 bans ambient gradients on planning
+     surfaces, so this never touches the builder. */
+  .rf-hero-glow {
+    background:
+      radial-gradient(1100px 560px at 82% -12%, rgba(200, 104, 42, 0.12), transparent 60%),
+      var(--rf-color-semantic-bg-base);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rf-btn-primary {
+    transition: none;
+  }
+  .rf-btn-primary:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 /* The on-beat pulse (design system 10 §1–2, 06): the focal Live-HUD element

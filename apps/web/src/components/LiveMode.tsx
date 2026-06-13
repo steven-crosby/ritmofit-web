@@ -383,7 +383,7 @@ function Transport({
   return (
     <div className="flex items-center gap-4 border-t border-interactive/20 px-6 py-4">
       <button
-        className="rounded-pill bg-brand px-6 py-2 font-ui font-semibold text-text-on-accent"
+        className="rounded-pill rf-btn-primary px-6 py-2 font-ui font-semibold text-text-on-accent"
         onClick={onToggle}
       >
         {playing ? 'Pause' : 'Play'}

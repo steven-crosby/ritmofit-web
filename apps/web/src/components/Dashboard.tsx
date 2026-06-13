@@ -102,31 +102,37 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 
   return (
     <main className="flex min-h-screen flex-col">
-      {/* Persistent top bar — brand + the cross-cutting destinations. */}
-      <header className="flex items-center gap-4 border-b border-interactive/15 px-6 py-3">
-        <h1 className="font-display text-xl font-semibold text-text-primary">RitmoFit</h1>
+      {/* Persistent top bar — glass nav surface (design system 04/05): brand
+          mark + wordmark, then the cross-cutting destinations. */}
+      <header className="rf-topbar flex items-center gap-4 px-6 py-3">
+        <div className="flex items-center gap-2.5">
+          <span className="rf-brand-mark" aria-hidden="true">
+            R
+          </span>
+          <h1 className="font-display text-xl font-bold tracking-[-0.01em] text-text-primary">RitmoFit</h1>
+        </div>
         <span className="flex-1" />
         <p className="hidden font-ui text-sm text-text-secondary sm:block">{userName}</p>
         <button
-          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
           onClick={() => setExploreOpen(true)}
         >
           Explore
         </button>
         <button
-          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
           onClick={() => setTeamsOpen(true)}
         >
           Teams
         </button>
         <button
-          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
           onClick={() => setConnectionsOpen(true)}
         >
           Connections
         </button>
         <button
-          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
           onClick={() => authClient.signOut()}
         >
           Sign out
@@ -255,7 +261,7 @@ function CreateClassForm({ onCreated }: { onCreated: (cls: Awaited<ReturnType<ty
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
-      <button className="rounded-pill bg-brand px-4 py-2 font-ui font-semibold text-text-on-accent">Add</button>
+      <button className="rounded-pill rf-btn-primary px-4 py-2 font-ui font-semibold text-text-on-accent">Add</button>
     </form>
   );
 }
@@ -481,7 +487,7 @@ function ClassHeaderCard({
             </button>
           )}
           <button
-            className="rounded-pill bg-brand px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+            className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
             onClick={onRun}
             disabled={!canRun}
             title={canRun ? 'Run this class live' : 'Add a track first'}
@@ -903,7 +909,7 @@ function TrackInspector({
 
           <div className="flex items-center gap-2">
             <button
-              className="rounded-pill bg-brand px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+              className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
               onClick={save}
               disabled={busy}
             >
@@ -992,7 +998,7 @@ function AddTrackForm({ classId, onAdded }: { classId: string; onAdded: () => vo
           value={durationMs}
           onChange={(e) => setDurationMs(e.target.value)}
         />
-        <button className="ml-auto rounded-pill bg-brand px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent">
+        <button className="ml-auto rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent">
           Add track
         </button>
       </div>
