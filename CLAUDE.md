@@ -302,15 +302,16 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   + `rf-drop-in` keyframes, re-triggered by remounting the bloom/text on the current cue); degrades to an
   instant, glow-free swap under `prefers-reduced-motion`. Layers with slice 14's beat pulse. No
   schema/API/shared change. `pnpm test` = api 159 + web 39 = **198**; build green.
-- **Slice 16 — segment band (fixed enum)** (branch `feat/web-segment-band`): **the first design-system-build
-  slice that changes schema + contract.** New `class_sections` table (**migration `0006`**, classes CASCADE,
+- **Slice 16 — segment band (fixed enum)** (merged PR #31, **deployed 2026-06-13**, Worker version
+  `14d363cf`; **remote D1 migrated to `0006`**): **the first design-system-build slice that changes schema +
+  contract.** New `class_sections` table (**migration `0006`**, classes CASCADE,
   type CHECK, class index) + fixed `segmentType` enum (`warm_up`/`climb`/`sprint`/`recovery`/`cool_down`).
   Shared `classSection` schemas; CRUD routes (`GET/POST /classes/:id/sections`, `PATCH`/`DELETE
   /sections/:id`) class-scoped via new `requireSectionAccess`; run-payload gains an **additive** `sections[]`
   (schemaVersion stays 1); OpenAPI regenerated. Web `SegmentBand` under the timeline (pure unit-tested
   `computeSegmentBands` tiles bands by start; label+tint, never color alone) + edit-gated add/retime/retype/
   delete. **Free start anchor** (no duration bound). `pnpm test` = api 159 + web 44 = **203**; build green.
-  **Remote D1 must be migrated to `0006` before deploying** this code.
+  Remote D1 was migrated to `0006` before the deploy (additive `class_sections` table).
 - Deferred (flagged in code + `ritmofit_dev_plan/milestones.md`): the planning-timeline playing-track
   pulse, the timeline playhead / tap-to-seek, segment-band icons / drag-resize / track-range binding, and
   custom-move `baseMoveId`/`template` editing.

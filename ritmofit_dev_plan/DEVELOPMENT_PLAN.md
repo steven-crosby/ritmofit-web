@@ -92,7 +92,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 > **Status (2026-06-12): M1–M4 complete, merged to `main`, and fully deployed.** The whole app — API +
 > web planning surface — is **live at `https://ritmofit.studio`**, served by one Worker (Workers static
-> assets; single origin ⇒ first-party auth, no CORS), with remote D1 migrated through `0005`. M4
+> assets; single origin ⇒ first-party auth, no CORS), with remote D1 migrated through `0006`. M4
 > (Explore / sharing UX) shipped in three slices — share-by-email, team-sharing, and the Explore feed
 > (`classes.visibility`, public VIEW floor, `GET /explore`, save-a-copy); **featured curation is
 > deliberately deferred**. CI (`.github/workflows/ci.yml`) gates `typecheck`/`lint`/`test` (164) on every
@@ -126,8 +126,8 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > Live (CSS, reduced-motion-safe; *merged PR #29, **deployed 2026-06-13**, Worker `c3a502c0`*). **Slice 16**
 > adds the **segment band** — a new `class_sections` table (**migration `0006`**) + fixed `segmentType` enum,
 > full-stack (shared + CRUD routes + additive run-payload `sections[]` + a `SegmentBand` under the timeline);
-> this is the first builder slice that **does** change schema + contract (*branch `feat/web-segment-band`,
-> not yet deployed*). Slices 7–15 were no schema/API/shared change.
+> this is the first builder slice that **does** change schema + contract (*merged PR #31, **deployed
+> 2026-06-13**, Worker `14d363cf`; remote D1 migrated to `0006`*). Slices 7–15 were no schema/API/shared change.
 > Deferred: the planning-timeline pulse, the playhead/tap-to-seek, segment icons/drag-resize, custom-move
 > `baseMoveId`/`template` editing. See `milestones.md` for the full slice log.
 >
