@@ -119,8 +119,8 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > cross-highlight its row; *merged PR #21, **deployed 2026-06-13**, Worker `755e3489`*). **Slice 12** makes
 > a cue/move **marker click focus its row** in the inspector (*merged PR #23, deployed, Worker `802ebe48`*).
 > **Slice 13** adds a **custom-moves manager** (rename / description / delete via a dialog from the Moves
-> section; web-only over the existing `/user-moves` routes; `pnpm test` = api 159 + web 39 = **198**;
-> *branch `feat/web-manage-custom-moves`, not yet deployed*). All slices are no schema/API/shared change.
+> section; web-only over the existing `/user-moves` routes; *merged PR #25, **deployed 2026-06-13**, Worker
+> `cc437560`*). All slices are no schema/API/shared change.
 > Deferred: the on-beat pulse + playhead/tap-to-seek, the segment band, custom-move `baseMoveId`/`template`
 > editing. See `milestones.md` for the full slice log.
 >

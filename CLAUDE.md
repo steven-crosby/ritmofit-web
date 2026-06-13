@@ -279,7 +279,8 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   scrolls + transiently rings the row whose `anchorMs` matches (run-payload cues/moves have no id, so
   correlation is by `anchorMs` — duplicate anchors flash the first match). No schema/API/shared change.
   `pnpm test` = api 159 + web 39 = **198**; build green. Merged PR #23, deployed (Worker `802ebe48`).
-- **Slice 13 — manage custom moves** (branch `feat/web-manage-custom-moves`): a `CustomMovesDialog` (opened
+- **Slice 13 — manage custom moves** (merged PR #25, **deployed 2026-06-13**, Worker version `cc437560`):
+  a `CustomMovesDialog` (opened
   via a **Manage…** button in a track's Moves section) lists the caller's custom moves with rename, edit
   description, and delete (inline confirm; a referenced move's name is snapshotted into placements by the
   server on delete). Web-only: added `updateUserMove`/`deleteUserMove` over the existing owner-scoped

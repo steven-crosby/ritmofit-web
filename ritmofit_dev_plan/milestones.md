@@ -306,6 +306,7 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   + this track's placements and bubbles `onChanged` (`TrackInspector` wires it to the class-detail reload,
   so the ribbon/timeline move names stay current). Creation stays in the picker; **`baseMoveId`/`template`
   editing deferred**. No schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**.
+  **Merged PR #25, deployed 2026-06-13** (Worker version `cc437560`; no schema/migration).
 
 **Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the
 **on-beat pulse** on the playing row + the timeline **playhead** / tap-to-seek (a Live concern), and the
