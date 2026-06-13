@@ -335,7 +335,8 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   `computeSegmentBands`; each band is **label + tint dot**, never color alone) + an edit-gated add/retime/
   retype/delete editor. **Start is a free anchor** (no bound to the assembled duration — it shifts as
   tracks change; render clamps + tiles). Deferred: Material-Symbol icons, drag-resize, track-range binding.
-  `pnpm test` = api 159 + web 44 = **203**.
+  `pnpm test` = api 159 + web 44 = **203**. **Merged PR #31, deployed 2026-06-13** (Worker version
+  `14d363cf`; **remote D1 migrated to `0006` first** — additive `class_sections` table).
 
 **Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the **playing-track pulse
 in the planning timeline** (no "playing" state in the builder), the timeline **playhead** / tap-to-seek (a
