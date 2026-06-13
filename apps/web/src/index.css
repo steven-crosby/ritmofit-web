@@ -15,3 +15,30 @@
     -webkit-font-smoothing: antialiased;
   }
 }
+
+/* The on-beat pulse (design system 10 §1–2, 06): the focal Live-HUD element
+   breathes one cycle per beat (--rf-beat = 60s / --rf-bpm), `onBeat` easing.
+   Rationed to a single element; transform + box-shadow only (60fps); removed
+   entirely under reduced motion (10 §6 — a user loses affect, not information). */
+@keyframes rf-beat-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(224, 126, 60, 0);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 28px 0 rgba(224, 126, 60, 0.22);
+  }
+}
+
+.rf-beat-pulse {
+  animation: rf-beat-pulse calc(60s / var(--rf-bpm, 120)) cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rf-beat-pulse {
+    animation: none;
+  }
+}

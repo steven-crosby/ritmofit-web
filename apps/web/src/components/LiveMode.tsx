@@ -10,7 +10,7 @@
  * timeline). Intensity is redundantly encoded (color + label + filled bars) per
  * the accessibility rules — never color alone.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { RunPayload, RunPayloadTrackEntry, Intensity } from '@ritmofit/shared';
 import { IntensityReadout } from './IntensityReadout.js';
 
@@ -148,6 +148,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             trackEndMs={trackEndMs}
             trackHasDuration={trackDurationMs != null}
             classTotalMs={payload.class.totalDurationMs}
+            playing={playing}
           />
         ) : (
           <FullList payload={payload} liveIndex={live?.index ?? -1} elapsedMs={elapsedMs} onSeek={seek} />
@@ -197,6 +198,7 @@ function CueByCue({
   trackEndMs,
   trackHasDuration,
   classTotalMs,
+  playing,
 }: {
   live: { entry: RunPayloadTrackEntry; index: number } | null;
   currentEvent: TimelineEvent | null;
@@ -205,11 +207,16 @@ function CueByCue({
   trackEndMs: number;
   trackHasDuration: boolean;
   classTotalMs: number;
+  playing: boolean;
 }) {
   if (!live) {
     return <p className="p-8 font-ui text-text-tertiary">This class has no tracks yet.</p>;
   }
   const { entry } = live;
+  // The on-beat pulse: the focal "Now" card breathes on the track's beat while
+  // playing (design system 10). Needs a BPM to time the beat; removed under
+  // reduced motion by CSS. Exactly one pulsing element on screen.
+  const pulse = playing && entry.displayBpm != null;
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 p-8 text-center">
       <div className="flex w-full items-center justify-between">
@@ -228,7 +235,12 @@ function CueByCue({
         </div>
       </div>
 
-      <div className="flex w-full flex-col items-center gap-1 rounded-card bg-bg-raised py-8 shadow-card">
+      <div
+        className={`flex w-full flex-col items-center gap-1 rounded-card bg-bg-raised py-8 shadow-card ${
+          pulse ? 'rf-beat-pulse' : ''
+        }`}
+        style={pulse ? ({ '--rf-bpm': entry.displayBpm } as CSSProperties) : undefined}
+      >
         <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Now</p>
         <p
           className="font-display text-4xl font-semibold leading-tight text-text-primary"

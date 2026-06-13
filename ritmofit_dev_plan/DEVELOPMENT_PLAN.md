@@ -120,9 +120,11 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > a cue/move **marker click focus its row** in the inspector (*merged PR #23, deployed, Worker `802ebe48`*).
 > **Slice 13** adds a **custom-moves manager** (rename / description / delete via a dialog from the Moves
 > section; web-only over the existing `/user-moves` routes; *merged PR #25, **deployed 2026-06-13**, Worker
-> `cc437560`*). All slices are no schema/API/shared change.
-> Deferred: the on-beat pulse + playhead/tap-to-seek, the segment band, custom-move `baseMoveId`/`template`
-> editing. See `milestones.md` for the full slice log.
+> `cc437560`*). **Slice 14** adds the signature **on-beat pulse** — the Live "Now" cue card breathes on the
+> track's beat (CSS, reduced-motion-safe; *branch `feat/web-onbeat-pulse`, not yet deployed*). All slices
+> are no schema/API/shared change.
+> Deferred: the All-Out "drop" + planning-timeline pulse, the playhead/tap-to-seek, the segment band,
+> custom-move `baseMoveId`/`template` editing. See `milestones.md` for the full slice log.
 >
 > **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
 > backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.

@@ -308,9 +308,18 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   editing deferred**. No schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**.
   **Merged PR #25, deployed 2026-06-13** (Worker version `cc437560`; no schema/migration).
 
-**Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the
-**on-beat pulse** on the playing row + the timeline **playhead** / tap-to-seek (a Live concern), and the
-**segment band** under the ribbon (design-concept-only — no `class_sections` schema). *Marker→row focus
+- ✅ **Slice 14 — on-beat pulse (Live HUD)**: the focal **"Now" cue card** in Live mode breathes one cycle
+  per beat (`--rf-beat = 60s / --rf-bpm`, `onBeat` easing `cubic-bezier(0.4,0,0.2,1)`) while playing — the
+  design system's signature tempo cue (`10-rhythm-system.md`). CSS-driven (`rf-beat-pulse` keyframes in
+  `index.css`, transform + box-shadow only); `LiveMode` adds the class + inline `--rf-bpm` to the Now card
+  when `playing && displayBpm != null`. **Exactly one pulsing element**, and **fully removed under
+  `prefers-reduced-motion`** (a user loses affect, not information — the cue stays legible). No
+  schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**.
+
+**Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the All-Out **"drop"**
+cross-fade (10 §5) + the **playing-track pulse in the planning timeline** (no "playing" state in the
+builder), the timeline **playhead** / tap-to-seek (a Live concern), and the **segment band** under the
+ribbon (design-concept-only — no `class_sections` schema). *Marker→row focus
 caveat:* two cues/moves at the **same `anchorMs`** can't be disambiguated (run-payload has no ids) — the
 first match flashes; the robust fix (add cue/move ids to the run-payload) is a deferred contract change.
 *(The PR #10 `TODO(select-fallback)` was resolved in slice 9.)*
