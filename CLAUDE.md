@@ -233,7 +233,8 @@ backend/run-payload (**no schema/API-contract/shared change**). Merged via **PR 
   `formatDuration`) — no new data. Components re-parented untouched; the workspace is keyed by class id so
   switching classes clears the track selection. No schema/API/shared change. `pnpm test` = api 159 + web 17
   = **176**; `pnpm --filter @ritmofit/web build` green.
-- **Slice 8 — cue color picker** (branch `feat/web-cue-color-picker`): cues gain a color tag in the
+- **Slice 8 — cue color picker** (merged PR #15, **deployed 2026-06-12**, Worker version `74a94ec5`):
+  cues gain a color tag in the
   inspector `CuesSection` (add + inline-edit), persisted to the existing `cues.color` (no schema/API/shared
   change — column/route/run-payload were already wired). New accessible `CueColorPicker` (radio-group,
   text-labelled swatches, cyan selected-ring): a **None** option + the rationed copper/cyan/amber/ember/bone

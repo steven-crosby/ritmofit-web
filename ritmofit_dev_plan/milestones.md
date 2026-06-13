@@ -256,7 +256,9 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   palette and **never plasma** (`02-color-system.md`); rationing is enforced in the picker. A stored color
   outside the palette renders as a trailing "current" swatch so editing never silently drops it. Cue rows
   show a small color dot (decorative — time + text still carry the meaning). Palette + `tagLabel` live in
-  pure, unit-tested `lib/cue-colors.ts`. `pnpm test` = api 159 + web 22 = **181**.
+  pure, unit-tested `lib/cue-colors.ts`. A PR-review pass swapped the picker's `radiogroup`/`radio` roles
+  for an `aria-pressed` toggle `group` (no arrow-key pattern to honor). `pnpm test` = api 159 + web 22 =
+  **181**. **Merged PR #15, deployed 2026-06-12** (Worker version `74a94ec5`; no schema/migration).
 
 **Deferred (flagged in code):** custom user-move creation, the **on-beat pulse** on the playing row, the
 horizontal **timeline strip** (cue/move markers +
