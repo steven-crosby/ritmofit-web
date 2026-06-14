@@ -18,8 +18,8 @@ import { createTrackSchema } from './tracks.js';
 export const classSchema = z.object({
   id: uuidSchema,
   ownerUserId: z.string().min(1),
-  title: z.string().min(1),
-  description: z.string().nullable(),
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).nullable(),
   template: classTemplateSchema.nullable(),
   status: classStatusSchema,
   visibility: classVisibilitySchema,
@@ -44,7 +44,7 @@ export const classTrackSchema = z.object({
   intensity: intensitySchema,
   displayBpmOverride: z.int().positive().nullable(),
   startOffsetMs: timestampMsSchema.nullable(),
-  notes: z.string().nullable(),
+  notes: z.string().max(2000).nullable(),
   ...timestampsShape,
 });
 export type ClassTrack = z.infer<typeof classTrackSchema>;
@@ -86,7 +86,7 @@ export type ExploreClass = z.infer<typeof exploreClassSchema>;
 const classTrackInputFields = z.object({
   intensity: intensitySchema.optional(),
   displayBpmOverride: z.int().positive().nullish(),
-  notes: z.string().nullish(),
+  notes: z.string().max(2000).nullish(),
 });
 
 /**
@@ -119,5 +119,5 @@ export type CopyClassTrack = z.infer<typeof copyClassTrackSchema>;
  * a fresh `draft` / `private` class owned by the caller; foreign tracks + private
  * moves are cloned/snapshotted (same cross-user safety as the class_track copy).
  */
-export const copyClassSchema = z.object({ title: z.string().min(1).optional() });
+export const copyClassSchema = z.object({ title: z.string().min(1).max(200).optional() });
 export type CopyClass = z.infer<typeof copyClassSchema>;

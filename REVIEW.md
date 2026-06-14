@@ -1,17 +1,17 @@
 # RitmoFit Web — Pre-Launch Readiness Review
 
-_Generated 2026-06-13. Reviewer: Claude (Opus 4.8). Status: **in progress** — updated area-by-area._
+_Regenerated 2026-06-13. Reviewer: Claude (Opus 4.8). Supersedes the prior pass — its B1–B4 + S1/S2/S4 items shipped in PR #40, so this is a fresh, current-state review._
 
-## Stack & architecture (verified, not assumed)
+## Stack & architecture (verified against the code, not assumed)
 
 pnpm monorepo, Cloudflare-native, single-origin deploy.
 
-- **`packages/shared`** — Zod entity schemas = the contract; OpenAPI generated from them.
+- **`packages/shared`** — Zod entity schemas = the contract; OpenAPI generated from them. Consumed by api + web.
 - **`packages/music`** — provider adapters (SoundCloud / Spotify / Apple Music / BPM), pure + network-injectable.
-- **`apps/api`** — Hono on Workers, Drizzle + D1 (SQLite), Better Auth. Entry `src/index.ts`. ~16 route modules mounted under `/api/v1`; Better Auth at `/api/auth/*`. Daily Cron drains the provider purge queue.
-- **`apps/web`** — React 18 + Vite + TS SPA. Served as static assets by the **same Worker** (single origin → first-party cookie, no CORS). Entry `src/main.tsx` → `App.tsx`.
+- **`apps/api`** — Hono on Workers, Drizzle + D1 (SQLite), Better Auth. Entry `src/index.ts`; 16 route modules under `/api/v1`, Better Auth at `/api/auth/*`. Daily Cron drains the provider purge queue + prunes rate-limit rows.
+- **`apps/web`** — React 18 + Vite + TS SPA (no router — `App.tsx` switches on `pathname`). Served as static assets by the **same Worker** (single origin → first-party cookie, no CORS).
 
-**Deploy:** manual (`pnpm --filter @ritmofit/web build` then `pnpm --filter @ritmofit/api run deploy`). Live at `https://ritmofit.studio`. CI is advisory (typecheck/lint/test), never deploys, does not block merges. Branch protection not enforced (private repo on Free).
+**Deploy:** manual two-step (`pnpm --filter @ritmofit/web build` → `pnpm --filter @ritmofit/api run deploy`). Live at `https://ritmofit.studio`. CI is advisory (never deploys, does not block merges); branch protection not enforced (private repo on Free).
 
 ## Gate results (run 2026-06-13)
 
@@ -19,108 +19,67 @@ pnpm monorepo, Cloudflare-native, single-origin deploy.
 |------|--------|
 | `pnpm -r typecheck` | ✅ 4 packages clean |
 | `pnpm lint` (eslint) | ✅ clean |
-| `pnpm test` (vitest) | ✅ 212 tests (api 159 + web 53) |
-| `pnpm --filter @ritmofit/web build` | ✅ builds; **single 326 KB JS chunk (92.75 KB gzip)**, 24 KB CSS |
+| `pnpm test` (vitest) | ✅ 222 tests (api 169 + web 53) |
+| `pnpm --filter @ritmofit/web build` | ✅ builds; **single 330.65 KB JS chunk (93.98 KB gzip)**, 24 KB CSS |
 
-All static gates are green. Findings below are about what the gates **don't** cover.
+All static gates are green. The findings below are about what the gates **don't** cover: a missing prod secret, missing UI CRUD/recovery paths, unbounded inputs, absent integration tests, and no code-splitting.
 
----
+## Headline
 
-## Findings
-
-Severity legend: 🔴 blocker · 🟡 should-fix · 🟢 nice-to-have. Each item notes my **confidence**.
-
-### Headline
-
-The codebase is **unusually clean for an MVP**: centralized authorization that's actually called on every class-scoped route, a Zod contract shared end-to-end, encrypted OAuth tokens with PKCE, atomic batched writes, 212 green unit tests, and zero typecheck/lint warnings. The launch risks are **not** in the class-builder logic — they're in the **account lifecycle** (no password reset, no email at all), **abuse surface** (no effective rate limiting), **client resilience** (no error boundary, several silent form failures), and **operational gates** (CI doesn't build or block, no route-level tests). None are deep architectural problems; all are fillable before launch.
+The codebase remains unusually clean for an MVP: `requireAccess` is genuinely called on every class-scoped route, the Zod contract is shared end-to-end, OAuth tokens are encrypted with PKCE, the run-payload is batched (no N+1), there is exactly one `TODO` and zero `any`/`@ts-ignore` in the web tree, and 222 unit tests pass. The launch risk is **not** in the builder logic. It is concentrated in:
+1. **One operational blocker** — transactional email is wired in code but the prod secret is unset, so password recovery silently no-ops.
+2. **A few missing client paths** — no delete-class UI, no session-expiry recovery, two auth forms that hang on a network error.
+3. **Hardening gaps** — unbounded string inputs, no pagination on growth-unbounded lists, no route-level/integration tests, and a single un-split bundle.
 
 ---
 
-## 🔴 BLOCKERS — must fix before launch
+## Frontend / UI & UX
 
-### B1. No password reset / account recovery exists
-**Where:** [apps/api/src/lib/auth.ts:44](apps/api/src/lib/auth.ts#L44) (`emailAndPassword: { enabled: true }`); [apps/web/src/components/Login.tsx](apps/web/src/components/Login.tsx) (no "forgot password" link).
-**What:** Better Auth is enabled with email/password but **no `sendResetPassword` callback and no email transport is configured anywhere in the repo**. There is no forgot-password UI.
-**Why it matters:** Any user who forgets their password is **permanently locked out** with no self-serve recovery. For a real account-based product this is a hard launch blocker, not a polish item.
-**Fix:** Wire an email transport (Cloudflare Email Routing/Send, or Resend/Postmark) and Better Auth's `emailAndPassword.sendResetPassword` + `sendVerificationEmail`; add "Forgot password?" + reset-token screens to `Login`. Confidence: **high**.
+- [ ] **[BLOCKER]** Verify the password-reset email actually reaches users before launch — `apps/api/src/lib/email.ts:55` silently `console.log`s and returns when `RESEND_API_KEY` is unset, so the "Forgot password?" flow in `apps/web/src/components/Login.tsx:19-27` appears to succeed (`"a reset link is on its way"`) while no email is sent. Why it matters: a locked-out user has no recovery. Fix: set the prod secret (tracked under API → blockers); until then the UI is misleading. (confidence: high)
+- [ ] **[SHOULD-FIX]** Add a 401/session-expiry recovery path — `apps/web/src/lib/api.ts:51-60` throws a generic `Error` on any non-OK response; `Dashboard` surfaces the message string but never signs out or returns to `Login`, so an expired session shows `"Authentication required."` on every action with no way forward but a manual reload. Fix: detect `res.status === 401` in `api()` and call `authClient.signOut()` / reset to the login view. (confidence: high)
+- [ ] **[SHOULD-FIX]** Wrap the auth-form submits so a network rejection can't hang the button — `apps/web/src/components/Login.tsx:29-34` and `apps/web/src/components/ResetPassword.tsx:27-31` `await` Better Auth calls with no try/catch; on a thrown (not returned) error, `setBusy(false)` never runs and the button is stuck on `…` with no message. Fix: try/catch around the call (or route through `useAsyncAction`). (confidence: high)
+- [ ] **[SHOULD-FIX]** Add a delete-class (and rename) UI — `DELETE /classes/:id` exists at `apps/api/src/routes/classes.ts:279` and `PATCH` already accepts `title`, but `apps/web/src/components/Dashboard.tsx` only offers create / publish / share / run. A class created by mistake can never be removed from the UI. Fix: add an owner-only delete with inline confirm to `ClassHeaderCard` or `LibraryRail`, and a title-edit affordance. (confidence: high)
+- [ ] **[NICE-TO-HAVE]** Make the top bar responsive — `apps/web/src/components/Dashboard.tsx:122-155` is a non-wrapping `flex` row of four pill buttons + the user name; on a narrow viewport it overflows horizontally. The stated surface is "a laptop," so this is low priority, but add `flex-wrap` or a menu collapse. (confidence: med)
+- [ ] **[NICE-TO-HAVE]** Handle unknown routes — `apps/web/src/App.tsx:16` special-cases only `/reset-password`; every other deep link (served `index.html` by `not_found_handling = "single-page-application"`) renders `Login`/`Dashboard` rather than a 404. Add a minimal not-found branch. (confidence: low)
+- [ ] **[NICE-TO-HAVE]** Lazy-load album-art images — the `<img>` in `apps/web/src/components/Dashboard.tsx:716` (and LiveMode) has no `loading="lazy"` / `decoding="async"`; a long track list fetches every thumbnail eagerly. (confidence: low)
 
-### B2. No transactional email → no email verification either
-**Where:** [apps/api/src/lib/auth.ts:33-46](apps/api/src/lib/auth.ts#L33-L46); user table column exists but unused: [schema.ts:74](apps/api/src/db/schema.ts#L74) (`emailVerified` defaults false).
-**What:** No `requireEmailVerification`, no verification send. Anyone can register with **any** email (including someone else's) and use the account immediately. Sharing and team-invite both resolve targets **by email** ([routes/shares.ts], [routes/teams.ts] `POST .../members`), so unverified identities flow into the trust graph.
-**Why it matters:** Account spoofing/spam-signup surface, and — coupled with B1 — confirms there is **no email pipeline at all**, which most launches require. Whether "hard blocker" depends on your launch bar, but it's the same missing capability as B1, so fix together.
-**Fix:** Same transport as B1; turn on `requireEmailVerification` (or at least verification-on-signup). Confidence: **high** it's a gap; severity depends on launch posture.
+## API / backend logic
 
-### B3. No global React error boundary — one render throw white-screens the whole app
-**Where:** [apps/web/src/App.tsx](apps/web/src/App.tsx), [apps/web/src/main.tsx](apps/web/src/main.tsx) — no `ErrorBoundary`/`componentDidCatch` anywhere (verified by grep).
-**What:** Any uncaught render-time exception (a malformed payload, an unexpected null) unmounts the entire tree to a blank page with no recovery path.
-**Why it matters:** A single edge-case in any of ~20 components can brick the app for a user mid-class-build with no way back except a manual reload. Cheap to prevent, high blast radius.
-**Fix:** Add a top-level `ErrorBoundary` around `<App/>` (and ideally a narrower one around `LiveMode`, which runs during a live class) that renders a recover/reload fallback. Confidence: **high**.
+- [ ] **[BLOCKER]** Set `RESEND_API_KEY` (+ `EMAIL_FROM`) as Worker secrets in prod and verify a real send — `apps/api/src/lib/auth.ts:55-79` wires reset + verification email, but `apps/api/src/lib/email.ts:55` no-ops without the key, and only `BETTER_AUTH_SECRET` + `ENCRYPTION_KEY` are currently set (per CLAUDE.md). Why it matters: password recovery and email verification both silently fail in production. Fix: create a Resend account, verify `ritmofit.studio` + add SPF/DKIM/DMARC to the Cloudflare DNS zone, then `wrangler secret put RESEND_API_KEY` and `EMAIL_FROM`; send a live reset to confirm delivery. (confidence: high)
+- [ ] **[SHOULD-FIX]** Bound user-supplied string lengths in the contract — every text field is `.min(1)` with **no `.max()`**: `classSchema.title`/`description` (`packages/shared/src/entities/classes.ts:21-23`), `classTrackInputFields.notes`, `cueInputFields.text` (`entities/choreography.ts`), `nameOverride`, `createTrackSchema.title`/`artist` (`entities/tracks.ts`), team `name`. A client can POST multi-MB strings → storage bloat + a heavy run-payload. Fix: add reasonable `.max()` caps (e.g. title 200, notes/text 2 000). (confidence: high)
+- [ ] **[SHOULD-FIX]** Decide the email-verification posture before opening sign-ups — `apps/api/src/lib/auth.ts:66-80` is send-but-don't-block (no `requireEmailVerification`), and sharing/teams resolve targets **by email** (`routes/shares.ts`, `routes/teams.ts`), so an unverified (or spoofed) address flows straight into the trust graph. Fix: either require verification before a user can be shared-to/added, or gate sign-in on verification once email delivery (above) is live. (confidence: high it's a gap; severity depends on launch bar)
+- [ ] **[NICE-TO-HAVE]** Consider a light write-rate limit on authoring routes — only `GET /providers/:provider/search` is limited (`apps/api/src/routes/providers.ts:43-48`, 30/min/user); create-class/track/cue/section and `copy` rely on Better Auth's auth-route limits only, so an authenticated client could spam-create. Low risk (authed, owner-scoped). Fix: reuse `rateLimit()` on the heavier POSTs if abuse appears. (confidence: low)
+- [ ] **[NICE-TO-HAVE]** Tighten the prod CORS allow-list — `apps/api/src/index.ts:75` and `lib/auth.ts:37` keep `http://localhost:5173` in the allowed origins unconditionally; harmless under single-origin, but gate the localhost entry on a dev flag. (confidence: low)
 
-### B4. No effective rate limiting on auth or API
-**Where:** Better Auth construction [apps/api/src/lib/auth.ts:33](apps/api/src/lib/auth.ts#L33) (no `rateLimit` config); no Cloudflare WAF rules in repo; public search route [apps/api/src/routes/providers.ts](apps/api/src/routes/providers.ts).
-**What:** Sign-in/sign-up have no rate limiting. Better Auth's built-in limiter defaults to **in-memory** storage, which on Workers is **per-isolate** and effectively a no-op (consecutive requests may land on fresh isolates). Provider `search?q=` is authenticated but proxies to upstream providers unbounded.
-**Why it matters:** Password brute-force, signup spam, and provider-quota exhaustion are all open on a public origin (`ritmofit.studio`).
-**Fix:** Cheapest: add Cloudflare **WAF rate-limiting rules** on `/api/auth/*` (no code). Better: configure Better Auth `rateLimit` with a D1/KV store, and add a small limiter on the provider routes. Confidence: **high**.
+## Data layer & state management
 
----
+- [ ] **[SHOULD-FIX]** Paginate the growth-unbounded list endpoints — `GET /explore` and `GET /classes` (`apps/api/src/routes/classes.ts:70-85`) return **all** matching rows; `/explore` is public and grows with every user's published classes, and `/classes` sorts the full set in memory (`classes.ts:81-84`). Fix: add `limit`/`offset` (or a cursor) to `/explore` first, then `/classes`. (confidence: med)
+- [ ] **[NICE-TO-HAVE]** Add upper bounds to duration/anchor integers — `durationMs`/`targetDurationMs`/`anchorMs` are `z.int().positive()`/`nonnegative()` with no ceiling (`packages/shared/src/common.ts`, `entities/tracks.ts`); a bogus 10-digit duration inflates `totalDurationMs` and the ribbon geometry. Fix: cap at a sane max (e.g. 24 h). (confidence: low)
+- [ ] **[NICE-TO-HAVE]** Re-confirm app-level cleanup for any future polymorphic share targets — `shares.resourceId` carries no FK (`apps/api/src/db/schema.ts:331`); class-delete already removes matching shares (`routes/classes.ts:283`), which is correct, but a second `resourceType` would need the same manual sweep. Document/guard it. (confidence: low)
+- [ ] **[NICE-TO-HAVE]** Accept that the rate-limit counter is read-then-upsert racy under bursts — `apps/api/src/lib/rate-limit.ts:77-99` (acknowledged in the comment, matches Better Auth's own approach). Fine for abuse mitigation; only revisit if exact accounting is ever needed. (confidence: high it's intentional)
+- [x] **Verified good:** authz centralized and called on every class-scoped route (`lib/authz.ts`); run-payload assembled in 3 batched waves, no N+1 (`lib/run-payload.ts:70-105`); FK cascade/restrict + enum CHECKs mirror the contract; FK hot-path indexes present (migration `0008`); migrations sequential `0000–0008` with a `meta/` dir.
 
-## 🟡 SHOULD-FIX — during soft launch
+## Testing & CI/CD
 
-### S1. Silent failures + double-submit in create/add forms
-**Where:** `CreateClassForm` [Dashboard.tsx:248-266](apps/web/src/components/Dashboard.tsx#L248-L266); `AddTrackForm` [Dashboard.tsx:952-1006](apps/web/src/components/Dashboard.tsx#L952-L1006); `togglePublish` [Dashboard.tsx:452-459](apps/web/src/components/Dashboard.tsx#L452-L459); `loadDetail`'s `listClassTracks` call [Dashboard.tsx:68](apps/web/src/components/Dashboard.tsx#L68).
-**What:** These `await` mutating calls with **no `try/catch`** — a failure becomes an unhandled promise rejection and the user sees nothing. Submit buttons aren't disabled while in-flight, so a slow network → double-click → **duplicate class/track**. `togglePublish` has `finally` but no `catch`, so publish errors vanish. `loadDetail` only wraps the run-payload fetch; a `listClassTracks` failure throws uncaught.
-**Why it matters:** Data duplication and dead-end UX on the most common actions.
-**Fix:** Route all of these through the existing `error` state; disable buttons on `busy`. Confidence: **high**.
+- [ ] **[SHOULD-FIX]** Add route-level / integration tests against a real D1 — the 169 api tests are all pure-helper unit tests; no test exercises a mounted Hono route, so a regression that drops a `requireAccess` call, breaks the `copy` batch transaction, or malforms the run-payload would pass CI. Fix: add `@cloudflare/vitest-pool-workers` (or Miniflare) tests that hit `/api/v1/...` end-to-end, prioritizing authz on each class-scoped route + `POST /classes/:id/copy`. (confidence: high)
+- [ ] **[SHOULD-FIX]** Add component/render smoke tests — `apps/web/vite.config.ts` runs vitest with `environment: 'node'`, so `Dashboard`, `LiveMode`, and every dialog (the bulk of the UX) have zero render coverage; the 53 web tests are pure geometry/logic helpers. Fix: add `jsdom` + `@testing-library/react` and smoke-render the auth forms, Dashboard, and LiveMode. (confidence: med)
+- [ ] **[SHOULD-FIX]** Enable required-checks branch protection before adding a collaborator or launching — CI is advisory and direct pushes to `main` are allowed (documented; gated by the repo being private on Free). Fix: upgrade to Pro or make the repo public (after a secrets-in-history audit), then require the `checks` job to pass before merge. (confidence: med — documented constraint)
+- [ ] **[NICE-TO-HAVE]** Add `format:check` to CI — the script exists in root `package.json` but `.github/workflows/ci.yml` omits it, so formatting drift isn't caught. (confidence: low)
+- [ ] **[NICE-TO-HAVE]** Report coverage (and consider a floor on the api lib) so the integration-test gap above is visible over time. (confidence: low)
+- [x] **Verified good:** CI runs typecheck → lint → test → web build → OpenAPI-drift on every push/PR; pnpm + Node pinned via `packageManager` + `.nvmrc`.
 
-### S2. Missing indexes on hot foreign-key columns
-**Where:** [schema.ts](apps/api/src/db/schema.ts) — verified against migrations. No index on `class_tracks.class_id`, `cues.class_track_id`, `class_track_moves.class_track_id`, `classes.owner_user_id`, `user_moves.user_id`. (Existing indexes: `class_sections.class_id`, `classes.visibility`, `tracks(owner,match_key)`, the unique indexes, Better Auth's.)
-**What:** Every run-payload assembly ([run-payload.ts:72-101](apps/api/src/lib/run-payload.ts#L72-L101)), class-detail load, copy, and the `listVisibleClasses` owned-arm ([authz.ts:164](apps/api/src/lib/authz.ts#L164), filters `classes.owner_user_id`) currently **full-scans** these tables. `class_tracks` and `cues`/`moves` are the per-class hot path.
-**Why it matters:** Invisible at launch-day volume (a handful of classes), but scans grow linearly with total rows across **all** users since these columns aren't indexed. Trivially cheap to fix now.
-**Fix:** One additive migration adding the five indexes above. Confidence: **medium-high** (SQLite scans small tables fast, so impact is latent not immediate).
+## Performance
 
-### S3. No route-level / integration tests — authz enforcement is unverified end-to-end
-**Where:** Test suite is all pure-helper unit tests (`apps/api/src/lib/**/*.test.ts`). Documented as known debt in CLAUDE.md.
-**What:** `resolveAccess`/`assertAccess` are well-tested in isolation (27 cases), but **no test asserts that a given HTTP route actually calls `requireAccess`**. A regression that drops the gate from one route would pass all 212 tests.
-**Why it matters:** Authorization is the *only* access gate (D1 has no RLS). The highest-severity possible bug class is exactly the one with zero automated coverage.
-**Fix:** Add a thin integration layer (Hono `app.request()` against a Miniflare/local-D1 binding) hitting one read + one write per route group as an authed non-owner, asserting 403/404. Confidence: **high** on value.
-
-### S4. CI doesn't build, doesn't block, and skips format/OpenAPI drift
-**Where:** [.github/workflows/ci.yml](.github/workflows/ci.yml).
-**What:** Runs typecheck + lint + test, but **not** `pnpm build` (a `vite build` can fail where `tsc --noEmit` passes — e.g. asset/import resolution), not `format:check`, not OpenAPI-spec drift. CI is advisory (doesn't block merge — documented decision). Stale comment: `node-version-file: .nvmrc # Node 20` but `.nvmrc` is `22`.
-**Why it matters:** A deploy-breaking build regression can land on `main` green. Deploys are manual, so the break surfaces only at deploy time.
-**Fix:** Add a `build` step (at least `pnpm --filter @ritmofit/web build`); optionally add `format:check` + an `openapi` regen-and-diff step. Fix the stale comment. Reconsider branch protection when the repo leaves Free/private. Confidence: **high**.
-
-### S5. Live-OAuth connect success/failure is invisible to the user
-**Where:** Callback redirects to `/account?connected=…` / `?error=…` [provider-connections.ts:176,222](apps/api/src/routes/provider-connections.ts#L176); SPA has **no router** and renders `Dashboard` for every path; only `ConnectionsDialog` reads `window.location.search` ([ConnectionsDialog.tsx:42-44](apps/web/src/components/ConnectionsDialog.tsx#L42)) and only if the user manually re-opens it.
-**What:** After a real SoundCloud redirect, the `/account` URL has no view and the connected/error result is never surfaced unless the user happens to reopen the dialog.
-**Why it matters:** Currently masked because live providers are behind the mock seam — becomes a real broken flow the moment `SOUNDCLOUD_*` creds ship.
-**Fix:** Read the query params on app load and show a toast / open the dialog; or add minimal client routing for `/account`. Confidence: **high** (latent until live providers enabled).
-
-### S6. Single 326 KB JS bundle, no code-splitting
-**Where:** `vite build` output — one `index-*.js` (326 KB / 92.75 KB gzip). [apps/web/src/components/Dashboard.tsx:27-37](apps/web/src/components/Dashboard.tsx#L27-L37) statically imports `LiveMode` + every dialog.
-**What:** `LiveMode` (only used while running a class) and all five dialogs (Teams/Explore/Connections/Share/CustomMoves) load before first paint.
-**Why it matters:** 92 KB gzip is acceptable for launch, but it's the cheapest perf win available and will only grow as the builder does.
-**Fix:** `React.lazy` + `Suspense` for `LiveMode` and the dialogs. Confidence: **high** (clear win, low risk).
+- [ ] **[SHOULD-FIX]** Code-split the SPA — the build emits a single **330 KB / 94 KB-gzip** JS chunk, so `LiveMode` (408 lines), the `ChoreographyEditor` (783 lines), and all five dialogs load eagerly on first paint even though they're behind interactions. Fix: `React.lazy` + `Suspense` for `LiveMode` and the dialogs (`Share`/`Teams`/`Explore`/`Connections`/`CustomMoves`); they're already conditionally rendered in `Dashboard.tsx`. (confidence: high)
+- [ ] **[NICE-TO-HAVE]** Pair `/classes` + `/explore` pagination (above) with server-side ordering/limits so the list endpoints don't fetch-then-sort the full set in the Worker (`apps/api/src/routes/classes.ts:81-84`). (confidence: low)
+- [ ] **[NICE-TO-HAVE]** Add `loading="lazy"` to album-art thumbnails in the track list and Live full-list view so long classes don't fetch every image up front. (confidence: low)
+- [x] **Verified good:** run-payload + `listVisibleClasses` use `Promise.all` waves, not per-row queries; static assets are served/cached by Cloudflare; the on-beat pulse + all-out bloom are CSS-only and fully removed under `prefers-reduced-motion`.
 
 ---
 
-## 🟢 NICE-TO-HAVE — post-launch polish
+## Launch Blockers — Do First
 
-- **G1. Unbounded provider search `q`.** [providers.ts:43](apps/api/src/routes/providers.ts#L43) passes `q` straight through with no max length. Add a Zod `.max()`. Confidence: medium (adapters cap results, low real risk).
-- **G2. No client-side password guidance.** [Login.tsx](apps/web/src/components/Login.tsx) has no min-length/strength hint; errors only appear post-submit. Add inline validation. Confidence: high (UX).
-- **G3. No deep-link routes.** Everything (explore, account, a specific class) is dialog/component state — URLs aren't shareable or bookmarkable, browser back doesn't work as expected. A product decision; revisit if shareable class links matter. Confidence: high (it's by design today).
-- **G4. Top-bar overflow risk on small screens.** [Dashboard.tsx:107-140](apps/web/src/components/Dashboard.tsx#L107) — brand + 4 pill buttons; no wrap/menu collapse below `sm`. Verify on a narrow viewport. Confidence: medium (unverified visually).
-- **G5. Album-art `<img>` lacks width/height + `loading="lazy"`.** [Dashboard.tsx:682-687](apps/web/src/components/Dashboard.tsx#L682) — minor CLS and eager loading of off-screen art. Confidence: medium.
-- **G6. Stale CI comment** (`# Node 20`) — see S4.
+Work top to bottom; the rest of the checklist is post-launch hardening.
 
----
-
-## Suggested sequencing of the blockers
-
-The blockers cluster into two independent tracks; do the **email track first** because it's the longest pole (needs an external service decision + DNS/SPF/DKIM) and gates two blockers.
-
-1. **B1 + B2 together (email pipeline).** Pick a transport (Cloudflare Email or Resend), wire SPF/DKIM/DMARC on `ritmofit.studio`, then implement `sendResetPassword` + verification and the reset UI. This is the critical path — start it first because deliverability setup has lead time you don't control. B1 (reset) is the true must-have; B2 (verification) rides the same plumbing.
-2. **B4 (rate limiting) — in parallel, fast.** Add Cloudflare WAF rate-limit rules on `/api/auth/*` (dashboard config, no code, ~30 min). This closes the brute-force window that B1's new reset/login flows would otherwise widen. Do it alongside track 1.
-3. **B3 (error boundary) — small, do anytime.** A self-contained ~30-line addition with no external dependency; land it early so the rest of soft-launch testing surfaces *handled* errors instead of white screens.
-
-Rationale: B1/B2 share infrastructure and have the longest external lead time, so they set the launch date — begin immediately. B3 and B4 are quick, dependency-free, and make the email work safer to test, so they slot in alongside. After blockers, take S1 (silent form failures) and S3 (route-level authz tests) first in the should-fix tier — S1 because it corrupts data on the happiest path, S3 because it guards the one security invariant that has no automated coverage.
+- [ ] **Provision transactional email in prod.** Create a Resend account, verify `ritmofit.studio` and add SPF/DKIM/DMARC to the Cloudflare DNS zone, then `wrangler secret put RESEND_API_KEY` + `EMAIL_FROM`. — `apps/api/src/lib/email.ts:55`, `apps/api/src/lib/auth.ts:55-79`
+- [ ] **Send a real password-reset and a real verification email end-to-end on `ritmofit.studio`** and confirm both land (not just the console fallback). — `apps/web/src/components/Login.tsx`, `ResetPassword.tsx`

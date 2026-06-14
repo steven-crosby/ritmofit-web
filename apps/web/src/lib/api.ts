@@ -40,7 +40,7 @@ import type {
   TeamMemberView,
   TeamRole,
 } from '@ritmofit/shared';
-import { API_BASE_URL } from './auth-client.js';
+import { API_BASE_URL, authClient } from './auth-client.js';
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}/api/v1${path}`, {
@@ -49,6 +49,10 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
   if (!res.ok) {
+    // Session expired or was revoked mid-use: clear it so App's useSession() flips
+    // back to <Login> rather than dead-ending every action with a generic error.
+    // signOut goes through Better Auth (not this wrapper), so there's no recursion.
+    if (res.status === 401) void authClient.signOut();
     let message = `Request failed (${res.status})`;
     try {
       const body = (await res.json()) as { error?: { message?: string } };
@@ -67,6 +71,8 @@ export const createClass = (body: CreateClass) =>
   api<Class>('/classes', { method: 'POST', body: JSON.stringify(body) });
 export const updateClass = (classId: string, body: UpdateClass) =>
   api<Class>(`/classes/${classId}`, { method: 'PATCH', body: JSON.stringify(body) });
+export const deleteClass = (classId: string) =>
+  api<void>(`/classes/${classId}`, { method: 'DELETE' });
 export const listExplore = () => api<ExploreClass[]>('/explore');
 export const copyClass = (classId: string, title?: string) =>
   api<Class>(`/classes/${classId}/copy`, {

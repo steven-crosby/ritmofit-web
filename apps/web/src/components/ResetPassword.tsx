@@ -24,10 +24,16 @@ export function ResetPassword() {
     if (!token) return;
     setError(null);
     setBusy(true);
-    const res = await authClient.resetPassword({ newPassword: password, token });
-    setBusy(false);
-    if (res.error) setError(res.error.message ?? 'Could not reset password');
-    else setDone(true);
+    // try/catch so a network drop surfaces a message instead of hanging on `…`.
+    try {
+      const res = await authClient.resetPassword({ newPassword: password, token });
+      if (res.error) setError(res.error.message ?? 'Could not reset password');
+      else setDone(true);
+    } catch {
+      setError('Could not reset password. Check your connection and try again.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   const invalid = !token || linkError;
