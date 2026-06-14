@@ -18,8 +18,8 @@ export const cueSchema = z.object({
   anchorMs: offsetMsSchema,
   beat: z.int().nonnegative().nullable(),
   bar: z.int().nonnegative().nullable(),
-  text: z.string().min(1),
-  color: z.string().nullable(),
+  text: z.string().min(1).max(1000),
+  color: z.string().max(64).nullable(),
   ...timestampsShape,
 });
 export type Cue = z.infer<typeof cueSchema>;
@@ -38,7 +38,7 @@ export const classTrackMoveSchema = z
     anchorMs: offsetMsSchema,
     moveId: uuidSchema.nullable(),
     userMoveId: uuidSchema.nullable(),
-    nameOverride: z.string().min(1).nullable(),
+    nameOverride: z.string().min(1).max(200).nullable(),
     intensity: intensitySchema.nullable(),
     ...timestampsShape,
   })
@@ -59,8 +59,8 @@ const cueInputFields = z.object({
   anchorMs: offsetMsSchema,
   beat: z.int().nonnegative().nullish(),
   bar: z.int().nonnegative().nullish(),
-  text: z.string().min(1),
-  color: z.string().nullish(),
+  text: z.string().min(1).max(1000),
+  color: z.string().max(64).nullish(),
 });
 
 /** Create a cue on a class_track. */
@@ -76,7 +76,7 @@ const classTrackMoveInputFields = z.object({
   anchorMs: offsetMsSchema,
   moveId: uuidSchema.nullish(),
   userMoveId: uuidSchema.nullish(),
-  nameOverride: z.string().min(1).nullish(),
+  nameOverride: z.string().min(1).max(200).nullish(),
   intensity: intensitySchema.nullish(),
 });
 

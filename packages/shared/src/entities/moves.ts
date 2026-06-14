@@ -19,8 +19,8 @@ export type Move = z.infer<typeof moveSchema>;
 export const userMoveSchema = z.object({
   id: uuidSchema,
   userId: z.string().min(1),
-  name: z.string().min(1),
-  description: z.string().nullable(),
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).nullable(),
   baseMoveId: uuidSchema.nullable(),
   template: classTemplateSchema.nullable(),
   ...timestampsShape,

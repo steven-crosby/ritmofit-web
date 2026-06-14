@@ -23,7 +23,7 @@ export type User = z.infer<typeof userSchema>;
 /** A studio or group. `ownerUserId` is authoritative for owner-only operations. */
 export const teamSchema = z.object({
   id: uuidSchema,
-  name: z.string().min(1),
+  name: z.string().min(1).max(200),
   ownerUserId: z.string().min(1),
   ...timestampsShape,
 });

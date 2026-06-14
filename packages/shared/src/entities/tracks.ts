@@ -12,8 +12,8 @@ import { providerSchema } from '../enums.js';
 export const trackSchema = z.object({
   id: uuidSchema,
   ownerUserId: z.string().min(1),
-  title: z.string().min(1),
-  artist: z.string().min(1),
+  title: z.string().min(1).max(300),
+  artist: z.string().min(1).max(300),
   albumArtUrl: z.url().nullable(),
   durationMs: z.int().positive().nullable(),
   displayBpm: z.int().positive().nullable(),
@@ -76,8 +76,8 @@ export const trackSearchResultSchema = z.object({
   provider: providerSchema,
   providerTrackId: z.string().min(1),
   providerUri: z.string().nullable(),
-  title: z.string().min(1),
-  artist: z.string().min(1),
+  title: z.string().min(1).max(300),
+  artist: z.string().min(1).max(300),
   albumArtUrl: z.url().nullable(),
   durationMs: z.int().positive().nullable(),
 });
