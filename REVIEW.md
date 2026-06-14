@@ -22,11 +22,15 @@ fails (98 files); `pnpm audit --prod` still reports 1 high / 2 moderate / 1 low
 without bumping `reqId`. Remaining work is **SHOULD-FIX hardening + the manual Follow-Up
 Verification Checklist**, none of it launch-blocking._
 
-_Fixes landed (2026-06-14, after the pass above): **browser security headers** (PR #47 —
-Worker middleware + `apps/web/public/_headers`) and **copy `class_sections` on class
-duplication** (PR #46), both merged to `main` with regression tests. **Not yet
-deployed** — production still runs Worker version 46 until a manual release; these fixes
-go live only on the next `deploy`._
+_Fixes landed + DEPLOYED (2026-06-14, after the pass above): **browser security headers**
+(PR #47 — Worker middleware + `apps/web/public/_headers`) and **copy `class_sections` on
+class duplication** (PR #46), both merged to `main` with regression tests and shipped to
+production as Worker version `0444283a-75e2-4549-bba7-4c47f759814c` (supersedes v46; no
+migration — remote D1 unchanged at `0009`; secrets persisted). Post-deploy smoke confirmed
+the security headers live on both the API (`/health`: locked `default-src 'none'` CSP +
+HSTS/nosniff/`X-Frame-Options: DENY`/Referrer-Policy/Permissions-Policy) and the SPA + static
+assets (full page CSP allowing Google Fonts + the app's own assets). Residual: a real-browser
+CSP-violation check (does anything get blocked at runtime) remains a recommended manual smoke._
 
 ## Repo Map
 
