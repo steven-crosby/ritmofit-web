@@ -1,0 +1,21 @@
+# Browser security headers for the SPA + static assets, served by Cloudflare
+# Workers static assets (the Worker does not run for these paths — see
+# wrangler.toml `run_worker_first = ["/api/*"]`). The API/health responses set the
+# same transport/frame headers in apps/api/src/index.ts; keep the two in sync.
+#
+# CSP notes:
+#   script-src  'self' + Cloudflare insights beacon (Vite emits hashed same-origin
+#               ES modules; no inline scripts).
+#   style-src   'unsafe-inline' is required for the app's inline style attributes
+#               (e.g. the live-mode beat/intensity custom properties) and Vite's
+#               injected styles; fonts.googleapis.com serves the Google Fonts CSS.
+#   font-src    fonts.gstatic.com serves the Google Fonts files.
+#   img-src     https: + data: for provider album artwork from arbitrary CDNs.
+#   connect-src 'self' (same-origin /api) + the insights beacon endpoint.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://static.cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()

@@ -467,16 +467,22 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       Remaining operational work: monitor Resend delivery failures and reputation.
       Evidence: production DNS, Worker metadata, Gmail, browser flow, and remote D1.
       Confidence: high.
-- [ ] **[SHOULD-FIX] Set baseline browser security headers at the Worker/edge** —
+- [x] **[SHOULD-FIX - FIXED] Set baseline browser security headers at the Worker/edge** —
       `apps/api/src/index.ts:29-82`, `apps/web/index.html:7-12` — Production responses
       lacked CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`,
-      `Permissions-Policy`, and frame protection. Google Fonts are an external origin that
-      must be represented in CSP or self-hosted. Why it matters: the app lacks inexpensive
-      defense-in-depth against framing, MIME confusion, referrer leakage, and script/style
-      injection. Recommended fix: add and smoke-test a restrictive CSP with
-      `frame-ancestors`, HSTS, nosniff, referrer, and permissions policies, accounting for
-      Cloudflare-managed scripts and the chosen font strategy. Evidence: verified.
-      Confidence: high.
+      `Permissions-Policy`, and frame protection. Remediation (2026-06-14): a Hono
+      `app.use('*')` middleware in `index.ts` now sets HSTS, nosniff, `X-Frame-Options:
+      DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'`
+      CSP on all API/health responses; the SPA + static assets (served by the `[assets]`
+      handler, which the Worker does not run for) carry the same transport/frame headers
+      plus a page CSP via a new `apps/web/public/_headers` (→ `dist/_headers`). The page
+      CSP keeps Google Fonts (`style-src`/`font-src` whitelisted, per the chosen
+      CSP-allow strategy), allows the Cloudflare insights beacon, and permits provider
+      album art (`img-src https:`). An integration test asserts the API headers on
+      `/health`. Remaining: a live post-deploy smoke of the SPA response headers (in the
+      Follow-Up checklist). Evidence: code change + green integration test + verified
+      `dist/_headers` emission. Confidence: high for the API path; medium for the SPA
+      path until a deployed smoke confirms it.
 - [ ] **[SHOULD-FIX] Upgrade or explicitly disposition the four dependency audit
       findings** — `pnpm-lock.yaml`, `apps/api/package.json`,
       `apps/web/package.json` — `pnpm audit --prod` exits nonzero with one high, two
