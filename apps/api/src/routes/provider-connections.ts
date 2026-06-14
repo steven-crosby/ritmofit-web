@@ -26,6 +26,7 @@ import { z } from 'zod';
 import {
   providerSchema,
   musicConnectionViewSchema,
+  supportsUserAccount,
   type Provider,
   type ConnectProviderResponse,
   type MusicConnectionView,
@@ -56,7 +57,9 @@ function parseProvider(raw: string): Provider {
 }
 
 function redirectUriFor(env: Env): string {
-  return env.SOUNDCLOUD_REDIRECT_URI ?? `${env.BETTER_AUTH_URL}/api/v1/providers/soundcloud/callback`;
+  return (
+    env.SOUNDCLOUD_REDIRECT_URI ?? `${env.BETTER_AUTH_URL}/api/v1/providers/soundcloud/callback`
+  );
 }
 
 function spaUrl(env: Env, path: string): string {
@@ -140,7 +143,7 @@ providerConnectionRoutes.post('/providers/:provider/connect', requireSession, as
     return c.json(body);
   }
 
-  if (provider !== 'soundcloud') {
+  if (!supportsUserAccount(provider)) {
     throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
   }
   const { clientId } = soundcloudCreds(c.env);
@@ -181,7 +184,9 @@ providerConnectionRoutes.get('/providers/:provider/callback', async (c) => {
 
   let payload: z.infer<typeof stateCookieSchema>;
   try {
-    payload = stateCookieSchema.parse(JSON.parse(await decryptSecret(raw, requireEncryptionKey(c.env))));
+    payload = stateCookieSchema.parse(
+      JSON.parse(await decryptSecret(raw, requireEncryptionKey(c.env))),
+    );
   } catch {
     return fail('state_invalid');
   }
@@ -193,7 +198,7 @@ providerConnectionRoutes.get('/providers/:provider/callback', async (c) => {
     return fail('state_mismatch');
   }
   if (Date.now() > payload.exp) return fail('state_expired');
-  if (provider !== 'soundcloud') return fail('unsupported_provider');
+  if (!supportsUserAccount(provider)) return fail('unsupported_provider');
 
   const key = c.env.ENCRYPTION_KEY!; // requireEncryptionKey already succeeded above
   try {
@@ -210,7 +215,9 @@ providerConnectionRoutes.get('/providers/:provider/callback', async (c) => {
       userId: payload.userId,
       provider,
       accessTokenEncrypted: await encryptSecret(tokens.accessToken, key),
-      refreshTokenEncrypted: tokens.refreshToken ? await encryptSecret(tokens.refreshToken, key) : null,
+      refreshTokenEncrypted: tokens.refreshToken
+        ? await encryptSecret(tokens.refreshToken, key)
+        : null,
       providerUserId: null,
       scope: tokens.scope,
       expiresAt: tokens.expiresInSec ? Date.now() + tokens.expiresInSec * 1000 : null,

@@ -10,7 +10,7 @@
  * States: idle prompt · searching · empty · error · per-row import busy/added.
  */
 import { useEffect, useRef, useState } from 'react';
-import type { Provider, TrackSearchResult } from '@ritmofit/shared';
+import { providerCapabilities, type Provider, type TrackSearchResult } from '@ritmofit/shared';
 import { addTrack, importTrack, listLikes, searchProvider } from '../lib/api.js';
 import { formatDuration } from '../lib/class-summary.js';
 import { DEFAULT_PROVIDER, PROVIDER_ORDER, providerLabel } from '../lib/providers.js';
@@ -33,6 +33,16 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
   // Guards against a stale async fetch overwriting a newer one's results.
   const reqId = useRef(0);
 
+  // "My likes" reads the caller's connected account; only providers with a
+  // per-user integration support it. Catalog search stays available for all.
+  const canUseLikes = providerCapabilities[provider].userLikes;
+
+  // If the selected provider can't serve likes, fall back to catalog search so we
+  // never fire a request that would 501.
+  useEffect(() => {
+    if (mode === 'likes' && !canUseLikes) setMode('search');
+  }, [mode, canUseLikes]);
+
   // Fetch results on (mode, provider, query). Search debounces and clears on an
   // empty query; "My likes" fetches the caller's liked tracks (spends their token).
   useEffect(() => {
@@ -43,11 +53,15 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
       setError(null);
       return;
     }
+    // Don't fire a likes request for a provider that can't serve them; the reset
+    // effect switches us back to search.
+    if (mode === 'likes' && !canUseLikes) return;
     const id = ++reqId.current;
     setSearching(true);
     const run = async () => {
       try {
-        const found = mode === 'likes' ? await listLikes(provider) : await searchProvider(provider, q);
+        const found =
+          mode === 'likes' ? await listLikes(provider) : await searchProvider(provider, q);
         if (id === reqId.current) {
           setResults(found);
           setError(null);
@@ -72,7 +86,7 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
     }
     const t = setTimeout(run, 300);
     return () => clearTimeout(t);
-  }, [mode, query, provider]);
+  }, [mode, query, provider, canUseLikes]);
 
   const add = async (candidate: TrackSearchResult) => {
     const key = candidateKey(candidate);
@@ -116,24 +130,29 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
         })}
       </div>
 
-      {/* Mode toggle — search the catalog, or browse the caller's own likes (S3). */}
+      {/* Mode toggle — search the catalog, or browse the caller's own likes (S3).
+          "My likes" only appears for providers with a per-user integration. */}
       <div role="group" aria-label="Source" className="flex gap-1.5">
-        {(['search', 'likes'] as Mode[]).map((m) => {
-          const selected = m === mode;
-          return (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => setMode(m)}
-              className={`rounded-pill px-3 py-1 font-ui text-xs ${
-                selected ? 'bg-interactive/15 text-text-primary' : 'text-text-tertiary hover:text-text-secondary'
-              }`}
-            >
-              {m === 'search' ? 'Search' : 'My likes'}
-            </button>
-          );
-        })}
+        {(['search', 'likes'] as Mode[])
+          .filter((m) => m === 'search' || canUseLikes)
+          .map((m) => {
+            const selected = m === mode;
+            return (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setMode(m)}
+                className={`rounded-pill px-3 py-1 font-ui text-xs ${
+                  selected
+                    ? 'bg-interactive/15 text-text-primary'
+                    : 'text-text-tertiary hover:text-text-secondary'
+                }`}
+              >
+                {m === 'search' ? 'Search' : 'My likes'}
+              </button>
+            );
+          })}
       </div>
 
       {mode === 'search' && (
@@ -161,7 +180,9 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
         </p>
       ) : searching && results === null ? (
         <p className="font-ui text-xs text-text-tertiary">
-          {mode === 'likes' ? `Loading your ${providerLabel(provider)} likes…` : `Searching ${providerLabel(provider)}…`}
+          {mode === 'likes'
+            ? `Loading your ${providerLabel(provider)} likes…`
+            : `Searching ${providerLabel(provider)}…`}
         </p>
       ) : results && results.length === 0 ? (
         <p className="font-ui text-xs text-text-tertiary">
@@ -183,7 +204,11 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
                 >
                   {/* 44px art — a small creative trigger, not a focal point (09). */}
                   {r.albumArtUrl ? (
-                    <img src={r.albumArtUrl} alt="" className="h-11 w-11 shrink-0 rounded-card object-cover" />
+                    <img
+                      src={r.albumArtUrl}
+                      alt=""
+                      className="h-11 w-11 shrink-0 rounded-card object-cover"
+                    />
                   ) : (
                     <span
                       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised text-text-tertiary"
@@ -193,7 +218,9 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
                     </span>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-ui text-sm font-semibold text-text-primary">{r.title}</p>
+                    <p className="truncate font-ui text-sm font-semibold text-text-primary">
+                      {r.title}
+                    </p>
                     <p className="truncate font-ui text-xs text-text-secondary">{r.artist}</p>
                   </div>
                   {r.durationMs != null && (

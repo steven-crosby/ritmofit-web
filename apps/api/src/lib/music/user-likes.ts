@@ -19,7 +19,7 @@ import {
   refreshSoundCloudToken,
   SoundCloudUnauthorizedError,
 } from '@ritmofit/music';
-import type { Provider, TrackSearchResult } from '@ritmofit/shared';
+import { providerCapabilities, type Provider, type TrackSearchResult } from '@ritmofit/shared';
 import type { Db } from '../db.js';
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
@@ -43,7 +43,7 @@ export async function fetchUserLikes(
   if (env.MOCK_PROVIDERS === 'true') {
     return searchMockCatalog('', provider);
   }
-  if (provider !== 'soundcloud') {
+  if (!providerCapabilities[provider].userLikes) {
     throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
   }
 

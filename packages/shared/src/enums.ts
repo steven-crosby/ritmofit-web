@@ -18,6 +18,37 @@ export const providerValues = ['spotify', 'apple_music', 'soundcloud'] as const;
 export const providerSchema = z.enum(providerValues);
 export type Provider = z.infer<typeof providerSchema>;
 
+/**
+ * Per-provider capability matrix — the single source of truth for which provider
+ * features are actually integrated, so the UI never offers a dead end and the API
+ * gates unsupported per-user actions from one place.
+ *
+ * - `catalogSearch`: public catalog search + import via the app-level token.
+ * - `userConnect`: per-user OAuth account link (`POST /providers/:provider/connect`).
+ * - `userLikes`: read the connected user's likes (spends their token).
+ *
+ * Only SoundCloud has the per-user OAuth + likes path wired today; Spotify and
+ * Apple Music are catalog-only until their account integrations land. The
+ * `MOCK_PROVIDERS` dev seam fakes tokens but does not change real integration, so
+ * this matrix stays static and provider-honest.
+ */
+export interface ProviderCapabilities {
+  catalogSearch: boolean;
+  userConnect: boolean;
+  userLikes: boolean;
+}
+
+export const providerCapabilities: Record<Provider, ProviderCapabilities> = {
+  soundcloud: { catalogSearch: true, userConnect: true, userLikes: true },
+  spotify: { catalogSearch: true, userConnect: false, userLikes: false },
+  apple_music: { catalogSearch: true, userConnect: false, userLikes: false },
+};
+
+/** Does this provider support linking a per-user account (OAuth connect)? */
+export function supportsUserAccount(provider: Provider): boolean {
+  return providerCapabilities[provider].userConnect;
+}
+
 /** Role within a team — governs membership management, not class access. */
 export const teamRoleValues = ['owner', 'admin', 'member'] as const;
 export const teamRoleSchema = z.enum(teamRoleValues);
