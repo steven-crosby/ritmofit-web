@@ -7,10 +7,12 @@
  * metadata purge server-side — so it's a deliberate, confirmed action.
  *
  * State is encoded with label + icon + text (never color alone): a connected
- * provider shows "✓ Connected", a disconnected one a "Connect" action.
+ * provider shows "✓ Connected", a disconnected one a "Connect" action. Providers
+ * without a per-user integration (see `providerCapabilities`) show a muted
+ * "Catalog search only" state instead of a dead-end Connect button.
  */
 import { useCallback, useEffect, useState } from 'react';
-import type { MusicConnectionView, Provider } from '@ritmofit/shared';
+import { supportsUserAccount, type MusicConnectionView, type Provider } from '@ritmofit/shared';
 import { listConnections, connectProvider, disconnectProvider } from '../lib/api.js';
 import { PROVIDER_ORDER, providerLabel } from '../lib/providers.js';
 
@@ -91,7 +93,9 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
       <div className="flex w-full max-w-md flex-col gap-4 rounded-panel bg-bg-raised p-6 shadow-lifted">
         <header className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="font-display text-lg font-semibold text-text-primary">Music connections</h2>
+            <h2 className="font-display text-lg font-semibold text-text-primary">
+              Music connections
+            </h2>
             <p className="font-ui text-xs text-text-tertiary">
               Link an account to search your own library.
             </p>
@@ -118,6 +122,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
             {PROVIDER_ORDER.map((provider) => {
               const connected = connectedSet.has(provider);
               const busy = busyProvider === provider;
+              const canConnect = supportsUserAccount(provider);
               return (
                 <li
                   key={provider}
@@ -127,12 +132,22 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
                     <p className="font-ui text-sm font-semibold text-text-primary">
                       {providerLabel(provider)}
                     </p>
-                    <p className={`font-ui text-xs ${connected ? 'text-interactive' : 'text-text-tertiary'}`}>
-                      {connected ? '✓ Connected' : 'Not connected'}
+                    <p
+                      className={`font-ui text-xs ${connected && canConnect ? 'text-interactive' : 'text-text-tertiary'}`}
+                    >
+                      {!canConnect
+                        ? 'Catalog search only'
+                        : connected
+                          ? '✓ Connected'
+                          : 'Not connected'}
                     </p>
                   </div>
 
-                  {connected ? (
+                  {!canConnect ? (
+                    <span className="shrink-0 font-ui text-xs text-text-tertiary">
+                      Sign-in not yet supported
+                    </span>
+                  ) : connected ? (
                     confirming === provider ? (
                       <span className="flex items-center gap-2">
                         <span className="font-ui text-xs text-text-tertiary">Disconnect?</span>
