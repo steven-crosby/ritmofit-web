@@ -1,7 +1,8 @@
 # Repository Guidelines
 
 This file is the canonical contributor and agent guide for RitmoFit. If another instruction file
-conflicts with it, follow `AGENTS.md`.
+conflicts with it, follow `AGENTS.md`. This guide may exceed 400 words when needed to preserve
+architecture, workflow, safety, or verification requirements.
 
 ## Product & Architecture
 
@@ -17,8 +18,10 @@ the SPA and API from the same Worker and origin.
 ## Before Implementing
 
 Read the relevant material in `ritmofit_dev_plan/` and, for UI work,
-`ritmofit_design_system/README.md`. Before implementing a feature or changing schema, API behavior, or
-production infrastructure, propose a concise plan and wait for confirmation. Include:
+`ritmofit_design_system/README.md`. Before any substantial work, inspect the existing implementation,
+propose a concise plan, and wait for confirmation. Substantial work includes features, architecture,
+schema or API behavior, authentication, design-system changes, infrastructure, deployment, and broad
+refactors. Include:
 
 - Goal and files affected.
 - Schema/migration and API-contract impact.
