@@ -10,6 +10,7 @@
     "build": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply ritmofit --local",
     "db:seed:local": "wrangler d1 execute ritmofit --local --file=./src/db/seed.sql",
@@ -24,6 +25,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.12.21",
     "@cloudflare/workers-types": "^4.20241106.0",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.22.4",
