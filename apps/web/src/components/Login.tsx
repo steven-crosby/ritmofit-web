@@ -16,23 +16,29 @@ export function Login() {
     setError(null);
     setNotice(null);
     setBusy(true);
-    if (mode === 'forgot') {
-      const res = await authClient.requestPasswordReset({
-        email,
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+    // try/catch: Better Auth returns `{ error }` for handled failures, but a network
+    // drop *rejects* — without this the button would hang on `…` with no message.
+    try {
+      if (mode === 'forgot') {
+        const res = await authClient.requestPasswordReset({
+          email,
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (res.error) setError(res.error.message ?? 'Could not send reset email');
+        else setNotice('If that email has an account, a reset link is on its way.');
+        return;
+      }
+      const res =
+        mode === 'signup'
+          ? await authClient.signUp.email({ email, password, name })
+          : await authClient.signIn.email({ email, password });
+      if (res.error) setError(res.error.message ?? 'Authentication failed');
+      // On success, the useSession() hook in App flips to the dashboard.
+    } catch {
+      setError('Something went wrong. Check your connection and try again.');
+    } finally {
       setBusy(false);
-      if (res.error) setError(res.error.message ?? 'Could not send reset email');
-      else setNotice('If that email has an account, a reset link is on its way.');
-      return;
     }
-    const res =
-      mode === 'signup'
-        ? await authClient.signUp.email({ email, password, name })
-        : await authClient.signIn.email({ email, password });
-    setBusy(false);
-    if (res.error) setError(res.error.message ?? 'Authentication failed');
-    // On success, the useSession() hook in App flips to the dashboard.
   }
 
   function switchMode(next: 'signin' | 'signup' | 'forgot') {

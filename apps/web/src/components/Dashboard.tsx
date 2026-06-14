@@ -14,6 +14,7 @@ import {
   listClasses,
   createClass,
   updateClass,
+  deleteClass,
   listClassTracks,
   addTrack,
   updateClassTrack,
@@ -124,6 +125,18 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     setSelected((prev) => (prev && prev.id === updated.id ? { ...updated, accessLevel: prev.accessLevel } : prev));
   }, []);
 
+  // A deleted class closes its workspace (clearing the detail panes) and refreshes
+  // the library list.
+  const handleClassDeleted = useCallback(
+    (classId: string) => {
+      setSelected((prev) => (prev && prev.id === classId ? null : prev));
+      setTracks([]);
+      setDetailPayload(null);
+      void refreshClasses();
+    },
+    [refreshClasses],
+  );
+
   if (live)
     return (
       <ErrorBoundary resetLabel="Exit live mode" onReset={() => setLive(null)}>
@@ -222,6 +235,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               onTrackChanged={() => loadDetail(selected.id)}
               onRun={() => runClass(selected.id)}
               onClassUpdated={applyClassUpdate}
+              onClassDeleted={handleClassDeleted}
             />
           ) : (
             <section className="rounded-card bg-bg-raised p-8 shadow-card">
@@ -336,6 +350,7 @@ function ClassWorkspace({
   onTrackChanged,
   onRun,
   onClassUpdated,
+  onClassDeleted,
 }: {
   cls: ClassWithAccess;
   tracks: ClassTrack[];
@@ -344,6 +359,7 @@ function ClassWorkspace({
   onTrackChanged: () => void;
   onRun: () => void;
   onClassUpdated: (cls: Class) => void;
+  onClassDeleted: (classId: string) => void;
 }) {
   const [sharing, setSharing] = useState(false);
   // The selected track (by class_track id) drives the inspector.
@@ -394,6 +410,7 @@ function ClassWorkspace({
           onRun={onRun}
           onShare={() => setSharing(true)}
           onClassUpdated={onClassUpdated}
+          onDeleted={() => onClassDeleted(cls.id)}
         />
 
         {/* The energy arc + timeline — the class's shape and its cue/move markers,
@@ -496,6 +513,7 @@ function ClassHeaderCard({
   onRun,
   onShare,
   onClassUpdated,
+  onDeleted,
 }: {
   cls: ClassWithAccess;
   payload: RunPayload | null;
@@ -506,14 +524,23 @@ function ClassHeaderCard({
   onRun: () => void;
   onShare: () => void;
   onClassUpdated: (cls: Class) => void;
+  onDeleted: () => void;
 }) {
   const { busy: publishing, run } = useAsyncAction(onError);
+  const { busy: deleting, run: runDelete } = useAsyncAction(onError);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const isPublic = cls.visibility === 'public';
   const averageBpm = payload ? avgBpm(payload) : null;
 
   const togglePublish = () =>
     void run(async () => {
       onClassUpdated(await updateClass(cls.id, { visibility: isPublic ? 'private' : 'public' }));
+    });
+
+  const confirmDelete = () =>
+    void runDelete(async () => {
+      await deleteClass(cls.id);
+      onDeleted();
     });
 
   return (
@@ -544,6 +571,34 @@ function ClassHeaderCard({
               Share
             </button>
           )}
+          {/* Owner-only delete with inline confirm (no native confirm() dialog). */}
+          {isOwner &&
+            (confirmingDelete ? (
+              <span className="flex items-center gap-1">
+                <button
+                  className="rounded-pill bg-intensity-all_out/15 px-3 py-1.5 font-ui text-sm font-semibold text-intensity-all_out disabled:opacity-40"
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? '…' : 'Delete class'}
+                </button>
+                <button
+                  className="rounded-pill border border-interactive/40 px-3 py-1.5 font-ui text-sm text-text-secondary"
+                  onClick={() => setConfirmingDelete(false)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                className="rounded-pill border border-intensity-all_out/50 px-4 py-1.5 font-ui text-sm text-intensity-all_out"
+                onClick={() => setConfirmingDelete(true)}
+                title="Delete this class"
+              >
+                Delete
+              </button>
+            ))}
           <button
             className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
             onClick={onRun}
