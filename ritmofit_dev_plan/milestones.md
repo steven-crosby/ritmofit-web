@@ -392,6 +392,16 @@ the music layer into the builder and took it to **real catalogs in prod**.
 
 ---
 
+## Post-launch web hardening
+
+- ✅ **Track-duration Live guard** (PR #49, deployed 2026-06-14): migration `0010` adds
+  `class_tracks.duration_ms_override`; sequencing, anchor validation, copies, and the run-payload use
+  the class-specific override before the library duration. The builder accepts `m:ss`, flags missing
+  durations, and blocks Live mode until every track is timed. Remote D1 is through `0010`; Worker
+  `0e9ab61b-acb8-480c-a45d-36ae455dc6c7` is live at 100%.
+
+---
+
 ## Cross-cutting reminders
 - Plan before code on every feature; wait for confirmation.
 - The three music constraints (`music-providers.md`) are inviolable across all milestones.

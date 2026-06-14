@@ -173,14 +173,16 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
 > backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.
 >
-> **Web hardening — track-duration Live guard implemented, pending deploy (2026-06-14).** A
-> class-specific `class_tracks.duration_ms_override` (migration `0010`) lets owners/editors repair an
+> **Web hardening — track-duration Live guard deployed (2026-06-14).** PR #49 adds
+> class-specific `class_tracks.duration_ms_override` (migration `0010`), letting owners/editors repair an
 > unknown or incorrect provider/library duration without mutating another user's private track.
 > Sequencing, anchor validation, copies, and the run-payload use the effective duration
 > (`override ?? track.duration_ms`). The builder labels missing durations, offers an `m:ss` correction
-> in the inspector, and blocks Live mode until every track has a positive duration. Local unit,
-> component, integration, and fresh-D1 migration verification are green. **Not deployed:** production
-> remains on Worker `fecdf611-f6ec-42f6-80e0-f1fc32eb0545`; remote D1 remains through `0009`.
+> in the inspector, and blocks Live mode until every track has a positive duration. Unit/component
+> tests (241), Worker/D1 integration tests (17), CI, and fresh-D1 migration verification passed.
+> Remote D1 was migrated through `0010` before Worker
+> `0e9ab61b-acb8-480c-a45d-36ae455dc6c7` deployed at 100%. Health, SPA, auth enforcement,
+> security-header, main-bundle, and Live-mode chunk smokes passed.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);

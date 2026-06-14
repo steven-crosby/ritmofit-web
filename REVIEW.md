@@ -46,12 +46,12 @@ Post-deploy smoke: SPA `200` serving the new `index-dEjg_vwi.js` bundle, `/healt
 security headers intact, `/classes` `401` unauthenticated. Residual: a real-browser pass of the
 capability-gated Connections/Track-search UI remains a recommended manual smoke._
 
-_Implemented locally, pending PR/deploy (2026-06-14): the core Live-duration finding is fixed with a
-class-specific `duration_ms_override` (migration `0010`), effective-duration sequencing/anchor
-validation/copy behavior, an `m:ss` inspector correction, and a hard Live-mode readiness guard.
-Focused unit/component tests, Worker/D1 integration tests, and a fresh disposable migration pass are
-green. Production remains on Worker `fecdf611-f6ec-42f6-80e0-f1fc32eb0545`; remote D1 remains through
-`0009` until an approved migration/deployment._
+_Fix deployed (2026-06-14): PR #49 closes the core Live-duration finding with a class-specific
+`duration_ms_override` (migration `0010`), effective-duration sequencing/anchor validation/copy
+behavior, an `m:ss` inspector correction, and a hard Live-mode readiness guard. Unit/component tests
+(241), Worker/D1 integration tests (17), CI, and a fresh disposable migration pass are green. Remote
+D1 was migrated through `0010` before Worker `0e9ab61b-acb8-480c-a45d-36ae455dc6c7` deployed at
+100%. Health, SPA, auth enforcement, security-header, main-bundle, and Live-mode chunk smokes passed._
 
 ## Repo Map
 
@@ -540,7 +540,7 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
 
 ## RitmoFit Core Instructor Workflow
 
-- [x] **[SHOULD-FIX - IMPLEMENTED, PENDING DEPLOY] Block Live mode until every track has a usable duration** —
+- [x] **[SHOULD-FIX - DEPLOYED] Block Live mode until every track has a usable duration** —
       `packages/shared/src/entities/tracks.ts:12-19`,
       `apps/api/src/lib/run-payload.ts:41-54`,
       `apps/web/src/components/Dashboard.tsx:403-409`,
@@ -549,13 +549,14 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       solely by track count. Multiple zero-duration entries share offsets, can be skipped
       immediately, and an all-null class has a total of zero even though it contains songs.
       Why it matters: the instructor's live sequence and countdown become unreliable.
-      Remediation (pending deploy): migration `0010` adds a positive nullable
+      Remediation (PR #49, deployed 2026-06-14): migration `0010` adds a positive nullable
       `class_tracks.duration_ms_override`; sequencing, run-payload assembly, anchor validation,
       and copies resolve `override ?? track.duration_ms`. The builder labels missing-duration
       rows, links an actionable header summary to the inspector, accepts `m:ss`, and disables
       Live mode until every track has a positive effective duration. The API rejects a duration
       shorter than the latest cue/move anchor. Evidence: unit/component coverage, mounted
-      Worker/D1 integration coverage, and fresh disposable migration validation. Confidence: high.
+      Worker/D1 integration coverage, fresh disposable migration validation, and production smoke.
+      Confidence: high.
 - [ ] **[SHOULD-FIX] Add provider handoff links to the current track in Live mode** —
       `packages/shared/src/entities/run-payload.ts:39-43`,
       `packages/shared/src/entities/run-payload.ts:65-81`,
