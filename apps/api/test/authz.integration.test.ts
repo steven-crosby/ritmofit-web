@@ -113,6 +113,36 @@ describe('run-payload + copy (integration)', () => {
     expect(payload.tracks[0].startOffsetMs).toBe(0);
   });
 
+  it('uses a class-specific duration override and rejects truncating choreography', async () => {
+    const tracks = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`);
+    const [classTrack] = (await tracks.json()) as Array<{ id: string }>;
+
+    const updated = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ durationMsOverride: 210000 }),
+    });
+    expect(updated.status).toBe(200);
+    expect((await updated.json()).durationMsOverride).toBe(210000);
+
+    const payloadRes = await authed(owner.cookie)(`/api/v1/classes/${classId}/run-payload`);
+    const payload = await payloadRes.json();
+    expect(payload.class.totalDurationMs).toBe(210000);
+    expect(payload.tracks[0].track.durationMs).toBe(210000);
+
+    const cue = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({ anchorMs: 200000, text: 'Late cue' }),
+    });
+    expect(cue.status).toBe(201);
+
+    const tooShort = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ durationMsOverride: 180000 }),
+    });
+    expect(tooShort.status).toBe(422);
+    expect((await tooShort.json()).error.message).toContain('200000ms');
+  });
+
   it('a non-owner cannot fetch the run-payload (404)', async () => {
     const res = await authed(other.cookie)(`/api/v1/classes/${classId}/run-payload`);
     expect(res.status).toBe(404);
@@ -169,5 +199,37 @@ describe('run-payload + copy (integration)', () => {
       ['warm_up', 0],
       ['sprint', 60000],
     ]);
+  });
+
+  it('saving a copy preserves class-specific duration overrides', async () => {
+    const sourceTracks = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`);
+    const [sourceTrack] = (await sourceTracks.json()) as Array<{ id: string }>;
+    const duration = await authed(owner.cookie)(`/api/v1/class-tracks/${sourceTrack!.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ durationMsOverride: 195000 }),
+    });
+    expect(duration.status).toBe(200);
+
+    const publish = await authed(owner.cookie)(`/api/v1/classes/${classId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ visibility: 'public' }),
+    });
+    expect(publish.status).toBe(200);
+
+    const copy = await authed(other.cookie)(`/api/v1/classes/${classId}/copy`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    const copied = (await copy.json()) as { id: string };
+    const copiedTracks = await authed(other.cookie)(`/api/v1/classes/${copied.id}/tracks`);
+    const [copiedTrack] = (await copiedTracks.json()) as Array<{
+      durationMsOverride: number | null;
+    }>;
+    expect(copiedTrack!.durationMsOverride).toBe(195000);
+
+    const payloadRes = await authed(other.cookie)(`/api/v1/classes/${copied.id}/run-payload`);
+    const payload = await payloadRes.json();
+    expect(payload.class.totalDurationMs).toBe(195000);
+    expect(payload.tracks[0].track.durationMs).toBe(195000);
   });
 });

@@ -4,7 +4,7 @@
  * Every handler resolves the parent class and gates via `requireAccess`.
  */
 import { Hono } from 'hono';
-import { eq, inArray } from 'drizzle-orm';
+import { desc, eq, inArray } from 'drizzle-orm';
 import {
   addClassTrackSchema,
   updateClassTrackSchema,
@@ -22,6 +22,7 @@ import { buildPatch } from '../lib/patch.js';
 import { makeMatchKey } from '../lib/same-song.js';
 import { resolveCopiedTrack, refsToClone, providerRefKey, remapPlacedMoveForCaller } from '../lib/copy-class-track.js';
 import { userMoves, classTracks, tracks, trackProviderIds, cues, classTrackMoves } from '../db/schema.js';
+import { effectiveDurationMs } from '../lib/duration.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
 classTrackRoutes.use('*', requireSession);
@@ -87,6 +88,7 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
     position: existing.length,
     intensity: body.intensity ?? 'none',
     displayBpmOverride: body.displayBpmOverride ?? null,
+    durationMsOverride: body.durationMsOverride ?? null,
     startOffsetMs: null,
     notes: body.notes ?? null,
     createdAt: now,
@@ -155,10 +157,48 @@ classTrackRoutes.post('/classes/:id/tracks/reorder', async (c) => {
 classTrackRoutes.patch('/class-tracks/:id', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
-  await requireClassTrackAccess(db, c.get('userId'), id, 'edit');
+  const { classId } = await requireClassTrackAccess(db, c.get('userId'), id, 'edit');
   const body = updateClassTrackSchema.parse(await c.req.json());
 
+  if ('durationMsOverride' in body) {
+    const [existing, latestCue, latestMove] = await Promise.all([
+      db
+        .select({ trackDurationMs: tracks.durationMs })
+        .from(classTracks)
+        .innerJoin(tracks, eq(tracks.id, classTracks.trackId))
+        .where(eq(classTracks.id, id))
+        .get(),
+      db
+        .select({ anchorMs: cues.anchorMs })
+        .from(cues)
+        .where(eq(cues.classTrackId, id))
+        .orderBy(desc(cues.anchorMs))
+        .limit(1)
+        .get(),
+      db
+        .select({ anchorMs: classTrackMoves.anchorMs })
+        .from(classTrackMoves)
+        .where(eq(classTrackMoves.classTrackId, id))
+        .orderBy(desc(classTrackMoves.anchorMs))
+        .limit(1)
+        .get(),
+    ]);
+    const durationMs = effectiveDurationMs(
+      existing?.trackDurationMs ?? null,
+      body.durationMsOverride ?? null,
+    );
+    const latestAnchorMs = Math.max(latestCue?.anchorMs ?? 0, latestMove?.anchorMs ?? 0);
+    if (durationMs != null && durationMs < latestAnchorMs) {
+      throw new HttpError(
+        422,
+        'VALIDATION_ERROR',
+        `Duration must reach the latest cue or move at ${latestAnchorMs}ms.`,
+      );
+    }
+  }
+
   await db.update(classTracks).set(buildPatch(body)).where(eq(classTracks.id, id));
+  if ('durationMsOverride' in body) await resequence(db, classId);
   const row = await db.select().from(classTracks).where(eq(classTracks.id, id)).get();
   return c.json(serializeClassTrack(row!));
 });

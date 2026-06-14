@@ -136,6 +136,7 @@ holds the per-class context.
 | position | int | Order within the class playlist |
 | intensity | text enum(`none`,`easy`,`mod`,`hard`,`all_out`) | Default `none` |
 | display_bpm_override | int | Nullable; class may show a different BPM than the track default |
+| duration_ms_override | int | Nullable, positive; class-specific correction when library/provider duration is missing or wrong |
 | start_offset_ms | int | Nullable; where the track sits on the class timeline. **Server-derived in M1** (see below) |
 | notes | text | Nullable; instructor's free-text notes for this track |
 | created_at / updated_at | int (ms) | |
@@ -144,7 +145,9 @@ holds the per-class context.
 
 > **Timeline placement (M1): sequential, derived.** `position` is the authoritative ordering. Tracks
 > play **back-to-back** — `start_offset_ms` is **computed by the server** from the sum of preceding
-> tracks' `duration_ms`, not freely set by the client; no gaps or overlaps in M1. The column is kept so
+> effective durations (`class_tracks.duration_ms_override ?? tracks.duration_ms`), not freely set by
+> the client; no gaps or overlaps in M1. The override lets a class editor correct timing without
+> mutating another user's private library track. The column is kept so
 > **free placement** (explicit offsets, silence gaps) can land in a later milestone **without a
 > migration**. Clients should treat `start_offset_ms` as read-only in M1.
 

@@ -10,6 +10,7 @@
 import { eq } from 'drizzle-orm';
 import { classTracks, tracks } from '../db/schema.js';
 import type { Db } from './db.js';
+import { effectiveDurationMs } from './duration.js';
 
 export interface SequenceInput {
   id: string;
@@ -41,17 +42,26 @@ export function computeSequence(items: ReadonlyArray<SequenceInput>): SequenceEn
  */
 export async function resequence(db: Db, classId: string, orderedIds?: string[]): Promise<void> {
   const rows = await db
-    .select({ id: classTracks.id, durationMs: tracks.durationMs })
+    .select({
+      id: classTracks.id,
+      trackDurationMs: tracks.durationMs,
+      durationMsOverride: classTracks.durationMsOverride,
+    })
     .from(classTracks)
     .innerJoin(tracks, eq(tracks.id, classTracks.trackId))
     .where(eq(classTracks.classId, classId))
     .orderBy(classTracks.position)
     .all();
 
-  let ordered: SequenceInput[] = rows;
+  let ordered: SequenceInput[] = rows.map((row) => ({
+    id: row.id,
+    durationMs: effectiveDurationMs(row.trackDurationMs, row.durationMsOverride),
+  }));
   if (orderedIds) {
-    const byId = new Map(rows.map((r) => [r.id, r]));
-    ordered = orderedIds.map((id) => byId.get(id)).filter((r): r is SequenceInput => r !== undefined);
+    const byId = new Map(ordered.map((r) => [r.id, r]));
+    ordered = orderedIds
+      .map((id) => byId.get(id))
+      .filter((r): r is SequenceInput => r !== undefined);
   }
 
   const sequence = computeSequence(ordered);

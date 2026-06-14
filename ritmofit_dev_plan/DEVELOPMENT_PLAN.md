@@ -172,6 +172,15 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 >
 > **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
 > backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.
+>
+> **Web hardening — track-duration Live guard implemented, pending deploy (2026-06-14).** A
+> class-specific `class_tracks.duration_ms_override` (migration `0010`) lets owners/editors repair an
+> unknown or incorrect provider/library duration without mutating another user's private track.
+> Sequencing, anchor validation, copies, and the run-payload use the effective duration
+> (`override ?? track.duration_ms`). The builder labels missing durations, offers an `m:ss` correction
+> in the inspector, and blocks Live mode until every track has a positive duration. Local unit,
+> component, integration, and fresh-D1 migration verification are green. **Not deployed:** production
+> remains on Worker `fecdf611-f6ec-42f6-80e0-f1fc32eb0545`; remote D1 remains through `0009`.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);

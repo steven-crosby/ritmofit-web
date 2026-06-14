@@ -200,12 +200,17 @@ export const classTracks = sqliteTable(
     position: integer('position').notNull(),
     intensity: text('intensity', { enum: intensityValues }).notNull().default('none'),
     displayBpmOverride: integer('display_bpm_override'),
+    durationMsOverride: integer('duration_ms_override'),
     startOffsetMs: integer('start_offset_ms'),
     notes: text('notes'),
     ...timestamps(),
   },
   (t) => [
     enumCheck('class_tracks_intensity_check', t.intensity, intensityValues),
+    check(
+      'class_tracks_duration_ms_override_check',
+      sql`${t.durationMsOverride} is null or ${t.durationMsOverride} > 0`,
+    ),
     // Hot path: every class-detail load / run-payload assembly fetches a class's
     // tracks by class_id.
     index('class_tracks_class_id_idx').on(t.classId),

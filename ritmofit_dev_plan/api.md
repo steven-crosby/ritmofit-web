@@ -184,6 +184,8 @@ contract — one fetch so the iOS app isn't composing the live view from a dozen
 **Server-side resolution (the contract the clients depend on):**
 - **`displayBpm`** = `class_track.display_bpm_override ?? track.display_bpm` (the override wins; may be
   `null` if neither is set — BPM is optional/manual in M1).
+- **`track.durationMs`** = `class_track.duration_ms_override ?? track.duration_ms` (the class-specific
+  correction wins; may be `null`). Live mode must not start while any entry is null.
 - **move `name`** = `move.name ?? user_move.name ?? class_track_move.name_override` (resolve the library
   reference; fall back to the freeform name). Exactly one source is set per placement.
 - **`startOffsetMs`** is **server-derived** (sequential, back-to-back from preceding `durationMs`);
@@ -191,9 +193,9 @@ contract — one fetch so the iOS app isn't composing the live view from a dozen
   the timeline at read time (reusing the write-path sequencing), so per-track offsets are authoritative
   even if a persisted `start_offset_ms` ever drifted. Each entry runs `startOffsetMs` →
   `startOffsetMs + track.durationMs`.
-- **`class.totalDurationMs`** (**M3**) is the assembled timeline length — the sum of track `durationMs`
-  (null = 0), distinct from the instructor's planned `targetDurationMs`. Drives the live interval timer
-  without client-side summing. `0` for an empty class.
+- **`class.totalDurationMs`** (**M3**) is the assembled timeline length — the sum of effective
+  `track.durationMs` values (null = 0), distinct from the instructor's planned `targetDurationMs`.
+  Drives the live interval timer without client-side summing. `0` for an empty class.
 - **`tracks`** are emitted in `position` order.
 
 ---
