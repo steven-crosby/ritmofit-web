@@ -26,6 +26,7 @@ import {
 import { moveItem } from '../lib/reorder.js';
 import { avgBpm, formatDuration } from '../lib/class-summary.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
+import { libraryView, type ListStatus } from '../lib/library-state.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
@@ -58,6 +59,7 @@ function LoadingScreen() {
 
 export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
   const [classes, setClasses] = useState<ClassWithAccess[]>([]);
+  const [listStatus, setListStatus] = useState<ListStatus>('loading');
   const [selected, setSelected] = useState<ClassWithAccess | null>(null);
   const [detail, dispatchDetail] = useReducer(classDetailReducer, initialClassDetailState);
   const detailRequestId = useRef(0);
@@ -70,8 +72,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const refreshClasses = useCallback(async () => {
     try {
       setClasses(await listClasses());
+      setListStatus('ready');
       setError(null);
     } catch (e) {
+      setListStatus('error');
       setError((e as Error).message);
     }
   }, []);
@@ -228,6 +232,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start">
           <LibraryRail
             classes={classes}
+            status={listStatus}
             selectedId={selected?.id ?? null}
             onError={setError}
             onCreate={async (cls) => {
@@ -284,17 +289,20 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
  */
 function LibraryRail({
   classes,
+  status,
   selectedId,
   onError,
   onCreate,
   onOpen,
 }: {
   classes: ClassWithAccess[];
+  status: ListStatus;
   selectedId: string | null;
   onError: (msg: string | null) => void;
   onCreate: (cls: Awaited<ReturnType<typeof createClass>>) => void;
   onOpen: (cls: ClassWithAccess) => void;
 }) {
+  const view = libraryView(status, classes.length);
   return (
     <aside className="flex flex-col gap-3 xl:sticky xl:top-6">
       <div className="flex items-center justify-between">
@@ -302,7 +310,11 @@ function LibraryRail({
         <span className="font-data text-xs text-text-tertiary">{classes.length}</span>
       </div>
       <CreateClassForm onCreated={onCreate} onError={onError} />
-      {classes.length === 0 ? (
+      {view === 'loading' ? (
+        <p className="font-ui text-sm text-text-tertiary">Loading your classes…</p>
+      ) : view === 'error' ? (
+        <p className="font-ui text-sm text-text-tertiary">Couldn't load your classes — try again.</p>
+      ) : view === 'empty' ? (
         <p className="font-ui text-sm text-text-tertiary">No classes yet — create your first above.</p>
       ) : (
         <ul className="flex flex-col gap-2">

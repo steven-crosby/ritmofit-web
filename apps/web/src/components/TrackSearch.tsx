@@ -48,6 +48,10 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
   useEffect(() => {
     const q = query.trim();
     if (mode === 'search' && q === '') {
+      // Invalidate any in-flight request: bumping the generation makes a late
+      // response fail its `id === reqId.current` guard, so a search that resolves
+      // after the field was cleared can't repopulate stale results.
+      reqId.current++;
       setResults(null);
       setSearching(false);
       setError(null);
