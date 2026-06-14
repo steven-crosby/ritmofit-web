@@ -183,3 +183,4 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`conventions.md`](./conventions.md) | Code style, naming, env, wrangler/D1, git, testing |
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
 | [`ai-working-rules.md`](./ai-working-rules.md) | The plan→confirm template + the inviolable rules |
+| [`close-session-checklist.md`](./close-session-checklist.md) | End-of-session runbook — say "run the close-session checklist" |

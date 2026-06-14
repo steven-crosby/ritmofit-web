@@ -18,6 +18,10 @@ Follow [`ritmofit_dev_plan/ai-working-rules.md`](ritmofit_dev_plan/ai-working-ru
 plan and wait for confirmation before writing code**, then summarize when done. Work in small vertical
 slices — one build-order step per session.
 
+**Closing a session:** when the user says _"run the close-session checklist"_, follow
+[`ritmofit_dev_plan/close-session-checklist.md`](ritmofit_dev_plan/close-session-checklist.md) — the
+end-of-session runbook (git/PR hygiene, gates, deploy-state, docs sync, blockers).
+
 ## Inviolable rules
 
 - **Respect the three hard music constraints** in
