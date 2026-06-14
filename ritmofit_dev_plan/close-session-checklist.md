@@ -37,8 +37,14 @@ Run and report pass/fail with real output — don't assume:
 - [ ] Note the deployed **Worker version id** and remote **D1 migration number** in the summary.
 
 ## 5. Docs / status sync (the part that makes the next session cheap)
-- [ ] Update **`CLAUDE.md` → "Current state"** with this session's work (the canonical living log): what shipped, PR numbers, Worker version, migration number, what's still open. Convert relative dates to absolute.
-- [ ] If relevant, update **`REVIEW.md`** (mark shipped items / move the blocker line), **`ritmofit_dev_plan/milestones.md`**, **`DEVELOPMENT_PLAN.md`**, or **`conventions.md`**.
+- [ ] Keep **`AGENTS.md`** limited to durable contributor rules; update it only when workflows,
+  architecture boundaries, or canonical commands change.
+- [ ] Record current milestone/deploy state in **`DEVELOPMENT_PLAN.md`** and, if relevant,
+  **`milestones.md`**: what shipped, PR numbers, Worker version, migration number, and what's still open.
+  Convert relative dates to absolute.
+- [ ] Update **`REVIEW.md`** for launch-readiness findings/blockers, or other focused docs such as
+  `conventions.md` when their subject changes. `CLAUDE.md` is only a compatibility pointer to
+  `AGENTS.md`; do not append session history to it.
 - [ ] Commit docs (convention: direct to `main`, `docs:` prefix) and push. Docs don't deploy, so no redeploy needed.
 
 ## 6. Secrets, blockers, data hygiene

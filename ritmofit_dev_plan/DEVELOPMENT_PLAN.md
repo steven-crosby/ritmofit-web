@@ -97,7 +97,8 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > (`classes.visibility`, public VIEW floor, `GET /explore`, save-a-copy); **featured curation is
 > deliberately deferred**. CI (`.github/workflows/ci.yml`) gates `typecheck`/`lint`/`test` (164) on every
 > push/PR — **advisory** (enforced branch protection needs GitHub Pro/public; repo is private/Free).
-> Full deploy + CI record in [`../CLAUDE.md`](../CLAUDE.md).
+> Current launch/deploy status is tracked in [`../REVIEW.md`](../REVIEW.md); canonical contributor and
+> deployment instructions are in [`../AGENTS.md`](../AGENTS.md).
 >
 > **Web design-system build (builder UI) underway (2026-06-12).** The rich planning UI M1 deferred is
 > now being built in vertical slices — the difference between the data-flow skeleton and the designed

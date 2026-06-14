@@ -179,7 +179,8 @@ Core builder first (these validate the product), teams/sharing last.
   custom_domain = true` + `BETTER_AUTH_URL = https://ritmofit.studio`. Verified in prod end-to-end (SPA +
   deep links serve index.html over HTTPS; `/api/*` hits Hono; authed first-party-cookie flow worked, test
   data then deleted). Deploy = build web (`pnpm --filter @ritmofit/web build`) then `pnpm --filter
-  @ritmofit/api run deploy`. Full record in web `CLAUDE.md`.
+  @ritmofit/api run deploy`. Current launch/deploy status is tracked in `REVIEW.md` and
+  `DEVELOPMENT_PLAN.md`.
   - **Publish/visibility model:** a new `classes.visibility` enum, `private` (default) | `public`.
     The owner explicitly publishes via `PATCH /classes/:id`; Explore lists `public` classes. This is
     **orthogonal** to the existing `status` (draft/ready/archived = private lifecycle). Migration `0005`

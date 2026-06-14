@@ -11,7 +11,8 @@ before it builds; you confirm; it implements; it summarizes.
 - **When a step touches UI (steps 6+ and 12), point at the design system** (`ritmofit_design_system/`)
   so Claude uses the tokens, the energy ribbon, Martian Mono for BPM, and the redundant-encoding rules
   rather than inventing styling.
-- The root [`CLAUDE.md`](../CLAUDE.md) auto-loads the plans every session, so these prompts can stay
+- The root [`AGENTS.md`](../AGENTS.md) is the canonical agent guide and directs agents to the relevant
+  plans, so these prompts can stay
   short.
 
 ---
