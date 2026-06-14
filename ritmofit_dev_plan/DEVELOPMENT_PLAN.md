@@ -184,7 +184,8 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > `0e9ab61b-acb8-480c-a45d-36ae455dc6c7` deployed at 100%. Health, SPA, auth enforcement,
 > security-header, main-bundle, and Live-mode chunk smokes passed.
 >
-> **Web hardening — Live provider handoff implemented, pending deploy (2026-06-14).** The web Live
+> **Web hardening — Live provider handoff implemented in PR #50, pending merge/deploy (2026-06-14).**
+> The web Live
 > surface now exposes explicit provider-app/site handoff links for the active track in Cue-by-Cue and
 > Full List views, using the run-payload's existing `providerRefs`. A web-only validator accepts Spotify
 > track URIs and provider-owned HTTPS links for Spotify, Apple Music, and SoundCloud while suppressing

@@ -53,7 +53,7 @@ behavior, an `m:ss` inspector correction, and a hard Live-mode readiness guard. 
 D1 was migrated through `0010` before Worker `0e9ab61b-acb8-480c-a45d-36ae455dc6c7` deployed at
 100%. Health, SPA, auth enforcement, security-header, main-bundle, and Live-mode chunk smokes passed._
 
-_Implemented locally, pending PR/deploy (2026-06-14): the Live provider-handoff finding is closed in
+_Implemented in PR #50, pending merge/deploy (2026-06-14): the Live provider-handoff finding is closed in
 both Cue-by-Cue and Full List views. The active track exposes explicit provider-app/site links from its
 existing run-payload references; a provider-specific validator suppresses missing, malformed,
 cross-provider, and unsafe stored values. Playback remains external. This is web-only with no schema,
@@ -566,7 +566,7 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       shorter than the latest cue/move anchor. Evidence: unit/component coverage, mounted
       Worker/D1 integration coverage, fresh disposable migration validation, and production smoke.
       Confidence: high.
-- [x] **[SHOULD-FIX - IMPLEMENTED, PENDING DEPLOY] Add provider handoff links to the current track in Live mode** —
+- [x] **[SHOULD-FIX - PR #50, PENDING MERGE/DEPLOY] Add provider handoff links to the current track in Live mode** —
       `packages/shared/src/entities/run-payload.ts:39-43`,
       `packages/shared/src/entities/run-payload.ts:65-81`,
       `apps/web/src/components/LiveMode.tsx:250-289`,
