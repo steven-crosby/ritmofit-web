@@ -32,23 +32,43 @@ shareRoutes.post('/shares', async (c) => {
   // Resolve the target to a stored (userId | teamId) pair. The target must exist
   // (clean 422 rather than a raw FK failure). `targetEmail` is resolved here so
   // the UI can share by email without a separate user-search endpoint.
-  let emailUserId: string | null = null;
+  let targetUser: { id: string; emailVerified: boolean } | null = null;
   if (body.targetEmail != null) {
-    const u = await db.select({ id: users.id }).from(users).where(eq(users.email, body.targetEmail)).get();
-    emailUserId = u?.id ?? null;
+    targetUser =
+      (await db
+        .select({ id: users.id, emailVerified: users.emailVerified })
+        .from(users)
+        .where(eq(users.email, body.targetEmail))
+        .get()) ?? null;
   } else if (body.targetUserId != null) {
-    const u = await db.select({ id: users.id }).from(users).where(eq(users.id, body.targetUserId)).get();
-    if (!u) throw new HttpError(422, 'VALIDATION_ERROR', 'No such target user.');
+    targetUser =
+      (await db
+        .select({ id: users.id, emailVerified: users.emailVerified })
+        .from(users)
+        .where(eq(users.id, body.targetUserId))
+        .get()) ?? null;
+    if (!targetUser) throw new HttpError(422, 'VALIDATION_ERROR', 'No such target user.');
   } else {
-    const t = await db.select({ id: teams.id }).from(teams).where(eq(teams.id, body.targetTeamId!)).get();
+    const t = await db
+      .select({ id: teams.id })
+      .from(teams)
+      .where(eq(teams.id, body.targetTeamId!))
+      .get();
     if (!t) throw new HttpError(422, 'VALIDATION_ERROR', 'No such target team.');
+  }
+  if (targetUser && !targetUser.emailVerified) {
+    throw new HttpError(
+      422,
+      'EMAIL_NOT_VERIFIED',
+      'That user must verify their email before receiving access.',
+    );
   }
 
   const { targetUserId, targetTeamId } = resolveShareTarget({
     directUserId: body.targetUserId ?? null,
     teamId: body.targetTeamId ?? null,
     emailGiven: body.targetEmail != null,
-    emailUserId,
+    emailUserId: targetUser?.id ?? null,
     selfUserId: c.get('userId'),
   });
 

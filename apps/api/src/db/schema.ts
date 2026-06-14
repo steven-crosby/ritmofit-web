@@ -404,8 +404,13 @@ export const providerPurgeQueue = sqliteTable(
     provider: text('provider', { enum: providerValues }).notNull(),
     requestedAt: integer('requested_at').notNull(),
     attempts: integer('attempts').notNull().default(0),
+    // Exhausted duties remain durable and visible for operator recovery.
+    failedAt: integer('failed_at'),
   },
-  (t) => [enumCheck('provider_purge_queue_provider_check', t.provider, providerValues)],
+  (t) => [
+    enumCheck('provider_purge_queue_provider_check', t.provider, providerValues),
+    index('provider_purge_queue_active_requested_idx').on(t.failedAt, t.requestedAt),
+  ],
 );
 
 /**

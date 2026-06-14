@@ -1,5 +1,5 @@
 /** Minimal authenticated builder: create a class, add a tagged track, see the timeline. */
-import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState, lazy, Suspense } from 'react';
 import {
   intensityValues,
   type Class,
@@ -25,6 +25,7 @@ import {
 } from '../lib/api.js';
 import { moveItem } from '../lib/reorder.js';
 import { avgBpm, formatDuration } from '../lib/class-summary.js';
+import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
@@ -58,10 +59,8 @@ function LoadingScreen() {
 export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
   const [classes, setClasses] = useState<ClassWithAccess[]>([]);
   const [selected, setSelected] = useState<ClassWithAccess | null>(null);
-  const [tracks, setTracks] = useState<ClassTrack[]>([]);
-  // The open class's run-payload — the server-authoritative assembled timeline that
-  // feeds the energy ribbon (durations + total). Distinct from `live` (full Live mode).
-  const [detailPayload, setDetailPayload] = useState<RunPayload | null>(null);
+  const [detail, dispatchDetail] = useReducer(classDetailReducer, initialClassDetailState);
+  const detailRequestId = useRef(0);
   const [live, setLive] = useState<RunPayload | null>(null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -71,6 +70,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const refreshClasses = useCallback(async () => {
     try {
       setClasses(await listClasses());
+      setError(null);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -80,24 +80,36 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     void refreshClasses();
   }, [refreshClasses]);
 
-  // Load (or reload) the open class's detail: its tracks plus the run-payload that
-  // drives the energy ribbon. The ribbon is optional, so a payload failure never
-  // blanks the editor — it just hides the ribbon.
+  // Load (or reload) one class detail under a monotonic request generation. The
+  // reducer ignores late responses, and begin immediately masks the prior class.
   const loadDetail = useCallback(async (classId: string) => {
-    try {
-      setTracks(await listClassTracks(classId));
-    } catch (e) {
-      // The track list is essential — surface the failure instead of throwing
-      // an unhandled rejection that leaves the pane half-loaded.
-      setError((e as Error).message);
+    const requestId = ++detailRequestId.current;
+    dispatchDetail({ type: 'begin', classId, requestId });
+    const [tracksResult, payloadResult] = await Promise.allSettled([
+      listClassTracks(classId),
+      getRunPayload(classId),
+    ]);
+
+    if (tracksResult.status === 'rejected') {
+      dispatchDetail({
+        type: 'failure',
+        classId,
+        requestId,
+        error:
+          tracksResult.reason instanceof Error
+            ? tracksResult.reason.message
+            : 'Could not load this class.',
+      });
       return;
     }
-    try {
-      setDetailPayload(await getRunPayload(classId));
-    } catch {
-      // The ribbon is optional, so a payload failure just hides it.
-      setDetailPayload(null);
-    }
+
+    dispatchDetail({
+      type: 'success',
+      classId,
+      requestId,
+      tracks: tracksResult.value,
+      payload: payloadResult.status === 'fulfilled' ? payloadResult.value : null,
+    });
   }, []);
 
   const openClass = useCallback(
@@ -111,6 +123,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const runClass = useCallback(async (classId: string) => {
     try {
       setLive(await getRunPayload(classId));
+      setError(null);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -130,8 +143,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const handleClassDeleted = useCallback(
     (classId: string) => {
       setSelected((prev) => (prev && prev.id === classId ? null : prev));
-      setTracks([]);
-      setDetailPayload(null);
+      dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
       void refreshClasses();
     },
     [refreshClasses],
@@ -225,18 +237,35 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             onOpen={openClass}
           />
 
-          {selected ? (
+          {selected && detail.classId === selected.id && detail.status === 'ready' ? (
             <ClassWorkspace
               key={selected.id}
               cls={selected}
-              tracks={tracks}
-              payload={detailPayload}
+              tracks={detail.tracks}
+              payload={detail.payload}
               onError={setError}
-              onTrackChanged={() => loadDetail(selected.id)}
+              onTrackChanged={() => void loadDetail(selected.id)}
               onRun={() => runClass(selected.id)}
               onClassUpdated={applyClassUpdate}
               onClassDeleted={handleClassDeleted}
             />
+          ) : selected && detail.classId === selected.id && detail.status === 'error' ? (
+            <section className="rounded-card bg-bg-raised p-8 shadow-card">
+              <p className="font-ui text-sm text-intensity-all_out" role="alert">
+                {detail.error}
+              </p>
+              <button
+                type="button"
+                className="mt-4 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
+                onClick={() => void loadDetail(selected.id)}
+              >
+                Retry class
+              </button>
+            </section>
+          ) : selected ? (
+            <section className="rounded-card bg-bg-raised p-8 shadow-card" aria-busy="true">
+              <p className="font-ui text-text-tertiary">Loading class…</p>
+            </section>
           ) : (
             <section className="rounded-card bg-bg-raised p-8 shadow-card">
               <p className="font-ui text-text-tertiary">Select or create a class to start building.</p>

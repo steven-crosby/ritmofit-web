@@ -60,7 +60,7 @@ function redirectUriFor(env: Env): string {
 }
 
 function spaUrl(env: Env, path: string): string {
-  return `${env.WEB_ORIGIN ?? 'http://localhost:5173'}${path}`;
+  return `${env.WEB_ORIGIN ?? env.BETTER_AUTH_URL}${path}`;
 }
 
 /** The encrypted-cookie payload tying a callback to the user who started it. */

@@ -20,6 +20,7 @@ custom_domain = true
 # creds) are set via `wrangler secret put`, not here.
 [vars]
 BETTER_AUTH_URL = "https://ritmofit.studio"
+WEB_ORIGIN = "https://ritmofit.studio"
 
 # Serve the built web SPA (apps/web/dist) from this same Worker — single origin,
 # so the session cookie is first-party and there's no CORS. The Worker runs first

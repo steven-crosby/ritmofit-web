@@ -11,11 +11,11 @@
  *
  * The disconnect route enqueues a `provider_purge_queue` row; a daily Cron Trigger
  * drains it (well inside the 7-day SLA). Splitting the queue *port* from its D1
- * implementation keeps the drain orchestration — batching, retry, give-up — unit
+ * implementation keeps the drain orchestration — batching, retry, dead-letter — unit
  * testable without a database, mirroring how slice 3 split adapter from
  * orchestration.
  */
-import { and, eq, inArray, notExists, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { Provider } from '@ritmofit/shared';
 import type { Db } from '../db.js';
 import { tracks, trackProviderIds, providerPurgeQueue } from '../../db/schema.js';
@@ -43,13 +43,15 @@ export interface PurgeStore {
   listQueue(limit: number): Promise<PurgeRequest[]>;
   /** Strip `provider`'s derived metadata from `userId`'s tracks. Idempotent. */
   purgeProviderMetadata(userId: string, provider: Provider): Promise<PurgeCounts>;
-  /** Drop a queue row once its purge has succeeded (or been abandoned). */
+  /** Drop a queue row once its purge has succeeded. */
   removeQueueItem(id: string): Promise<void>;
   /** Record a failed attempt so a transient error is retried on the next sweep. */
   bumpAttempts(id: string): Promise<void>;
+  /** Retain an exhausted duty in a durable failed state for operator recovery. */
+  markFailed(id: string): Promise<void>;
 }
 
-/** Give up on a queue row after this many failed sweeps (then drop it, logged). */
+/** Move a queue row to failed state after this many unsuccessful sweeps. */
 export const MAX_PURGE_ATTEMPTS = 5;
 /** Cap rows handled per sweep so one run can't fan out unboundedly. */
 export const PURGE_BATCH = 100;
@@ -65,8 +67,9 @@ export interface DrainSummary {
 
 /**
  * Drain queued purges. Each request is independent: a failure retries that row on
- * the next sweep (up to `MAX_PURGE_ATTEMPTS`, after which it's dropped so a single
- * poisoned row can't wedge the queue) and never blocks the others.
+ * the next sweep (up to `MAX_PURGE_ATTEMPTS`, after which it is retained in a
+ * failed state so it cannot wedge the active queue or disappear) and never blocks
+ * the others.
  */
 export async function drainPurgeQueue(
   store: PurgeStore,
@@ -92,9 +95,9 @@ export async function drainPurgeQueue(
     } catch {
       // Don't log the error object — it could carry user/provider detail.
       if (item.attempts + 1 >= MAX_PURGE_ATTEMPTS) {
-        await store.removeQueueItem(item.id);
+        await store.markFailed(item.id);
         summary.abandoned += 1;
-        log(`purge ${item.id} abandoned after ${item.attempts + 1} attempts`);
+        log(`purge ${item.id} moved to failed state after ${item.attempts + 1} attempts`);
       } else {
         await store.bumpAttempts(item.id);
         summary.retried += 1;
@@ -111,6 +114,7 @@ export function createD1PurgeStore(db: Db): PurgeStore {
       const rows = await db
         .select()
         .from(providerPurgeQueue)
+        .where(isNull(providerPurgeQueue.failedAt))
         .orderBy(providerPurgeQueue.requestedAt)
         .limit(limit)
         .all();
@@ -133,15 +137,10 @@ export function createD1PurgeStore(db: Db): PurgeStore {
       const trackIds = [...new Set(affected.map((r) => r.id))];
       if (trackIds.length === 0) return { tracksCleared: 0, refsDeleted: 0 };
 
-      // Delete the provider refs AND clear now-orphaned album art in ONE atomic
-      // batch (a D1 transaction). Doing them as separate statements left a window
-      // where a crash after the delete stranded album art forever — on retry the
-      // affected-tracks query (which joins the now-deleted refs) found nothing and
-      // skipped the clear. The album-art UPDATE uses a correlated `NOT EXISTS` so
-      // it self-determines orphans from the post-delete state within the same
-      // transaction — no intermediate read, no partial-failure gap. We only clear
-      // art on tracks left with NO provider ref at all (a track still carrying
-      // another connected provider keeps its art, which may have come from it).
+      // Delete the provider refs AND clear album art on every affected track in one
+      // atomic batch. The schema stores one image URL without provenance, so
+      // retaining it when another provider ref remains could keep art supplied by
+      // the disconnected provider. Clearing conservatively preserves the purge duty.
       const deleteRefs = db
         .delete(trackProviderIds)
         .where(
@@ -150,17 +149,7 @@ export function createD1PurgeStore(db: Db): PurgeStore {
       const clearArt = db
         .update(tracks)
         .set({ albumArtUrl: null, updatedAt: Date.now() })
-        .where(
-          and(
-            inArray(tracks.id, trackIds),
-            notExists(
-              db
-                .select({ one: sql`1` })
-                .from(trackProviderIds)
-                .where(eq(trackProviderIds.trackId, tracks.id)),
-            ),
-          ),
-        );
+        .where(inArray(tracks.id, trackIds));
 
       const [delRes, updRes] = await db.batch([deleteRefs, clearArt]);
       const changes = (r: unknown) =>
@@ -184,6 +173,13 @@ export function createD1PurgeStore(db: Db): PurgeStore {
         .set({ attempts: row.attempts + 1 })
         .where(eq(providerPurgeQueue.id, id));
     },
+
+    async markFailed(id) {
+      await db
+        .update(providerPurgeQueue)
+        .set({ attempts: MAX_PURGE_ATTEMPTS, failedAt: Date.now() })
+        .where(eq(providerPurgeQueue.id, id));
+    },
   };
 }
 
@@ -199,5 +195,6 @@ export async function enqueueProviderPurge(
     provider,
     requestedAt: Date.now(),
     attempts: 0,
+    failedAt: null,
   });
 }

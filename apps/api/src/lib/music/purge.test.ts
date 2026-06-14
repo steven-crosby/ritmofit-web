@@ -10,19 +10,26 @@ import {
 
 /**
  * In-memory `PurgeStore` standing in for D1, so the drain orchestration —
- * batching, per-row isolation, retry, give-up — is tested without a database.
+ * batching, per-row isolation, retry, dead-letter — is tested without a database.
  * The actual SQL scoping in `createD1PurgeStore` is verified against local D1.
  */
 function fakeStore(
   queue: PurgeRequest[],
-  opts: { failFor?: Set<string>; counts?: Record<string, { tracksCleared: number; refsDeleted: number }> } = {},
+  opts: {
+    failFor?: Set<string>;
+    counts?: Record<string, { tracksCleared: number; refsDeleted: number }>;
+  } = {},
 ) {
   const rows = new Map(queue.map((r) => [r.id, { ...r }]));
   const purged: Array<{ userId: string; provider: Provider }> = [];
   const removed: string[] = [];
+  const failed = new Set<string>();
   const store: PurgeStore = {
     async listQueue(limit) {
-      return [...rows.values()].slice(0, limit).map((r) => ({ ...r }));
+      return [...rows.values()]
+        .filter((r) => !failed.has(r.id))
+        .slice(0, limit)
+        .map((r) => ({ ...r }));
     },
     async purgeProviderMetadata(userId, provider) {
       if (opts.failFor?.has(userId)) throw new Error('boom');
@@ -37,8 +44,13 @@ function fakeStore(
       const r = rows.get(id);
       if (r) r.attempts += 1;
     },
+    async markFailed(id) {
+      const r = rows.get(id);
+      if (r) r.attempts = MAX_PURGE_ATTEMPTS;
+      failed.add(id);
+    },
   };
-  return { store, rows, purged, removed };
+  return { store, rows, purged, removed, failed };
 }
 
 const req = (over: Partial<PurgeRequest> = {}): PurgeRequest => ({
@@ -87,14 +99,22 @@ describe('drainPurgeQueue', () => {
     expect(rows.has('q2')).toBe(false); // the good one still drained
   });
 
-  it('abandons (drops) a row once it hits MAX_PURGE_ATTEMPTS', async () => {
-    const { store, rows } = fakeStore([req({ id: 'q1', userId: 'bad', attempts: MAX_PURGE_ATTEMPTS - 1 })], {
-      failFor: new Set(['bad']),
-    });
+  it('moves a row to durable failed state once it hits MAX_PURGE_ATTEMPTS', async () => {
+    const { store, rows, failed } = fakeStore(
+      [req({ id: 'q1', userId: 'bad', attempts: MAX_PURGE_ATTEMPTS - 1 })],
+      {
+        failFor: new Set(['bad']),
+      },
+    );
     const summary = await drainPurgeQueue(store);
     expect(summary.abandoned).toBe(1);
     expect(summary.retried).toBe(0);
-    expect(rows.has('q1')).toBe(false); // poisoned row removed so it can't wedge the queue
+    expect(rows.has('q1')).toBe(true);
+    expect(rows.get('q1')!.attempts).toBe(MAX_PURGE_ATTEMPTS);
+    expect(failed.has('q1')).toBe(true);
+
+    // Failed duties remain inspectable but no longer wedge the active batch.
+    expect((await drainPurgeQueue(store)).processed).toBe(0);
   });
 
   it('caps the sweep at PURGE_BATCH rows', async () => {

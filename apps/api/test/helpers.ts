@@ -44,6 +44,11 @@ export async function signUpUser(): Promise<TestUser> {
   return { cookie, userId: body.user.id, email };
 }
 
+/** Mark a test user's Better Auth email as verified for trust-graph route coverage. */
+export async function verifyUserEmail(userId: string): Promise<void> {
+  await env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(userId).run();
+}
+
 /** Bind a cookie to a fetch helper for an authenticated user. */
 export function authed(cookie: string) {
   return (path: string, init: RequestInit = {}): Promise<Response> =>
