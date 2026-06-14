@@ -284,6 +284,23 @@ touches existing tables. Tokens are **encrypted at rest** (`ENCRYPTION_KEY`); ne
 
 Unique on (`user_id`, `provider`).
 
+### `provider_purge_queue`
+Durable provider-metadata deletion duty created when a user disconnects a provider. Tokens are deleted
+immediately; a daily Worker Cron removes that provider's IDs/URIs and conservatively clears artwork from
+affected tracks. Successful rows are deleted. Exhausted rows remain with `failed_at` set for operator
+recovery instead of silently abandoning the duty.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | text (PK) | UUID |
+| user_id | text (FK → users.id) | User whose derived provider metadata must be removed |
+| provider | text enum(`spotify`,`apple_music`,`soundcloud`) | Disconnected provider |
+| requested_at | int (ms) | Queue ordering and compliance-age timestamp |
+| attempts | int | Failed sweep count; defaults to `0` |
+| failed_at | int (ms) | Nullable; set after the retry limit is exhausted |
+
+Index active oldest-first work on (`failed_at`, `requested_at`).
+
 ---
 
 ## Relationship summary
@@ -299,6 +316,7 @@ class_tracks 1───* cues
 class_tracks 1───* class_track_moves ──0..1──> moves | user_moves
 classes (resource) 1───* shares ───> target_user OR target_team
 users 1───* music_connections          (M2)
+users 1───* provider_purge_queue       (M2)
 ```
 
 ## Delete semantics (`ON DELETE`)

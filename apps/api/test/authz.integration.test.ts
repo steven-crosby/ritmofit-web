@@ -7,7 +7,7 @@
  * dropped gate is a security bug — this is the regression net for it.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { call, signUpUser, authed, type TestUser } from './helpers.js';
+import { call, signUpUser, verifyUserEmail, authed, type TestUser } from './helpers.js';
 
 describe('class authorization (integration)', () => {
   let owner: TestUser;
@@ -17,6 +17,7 @@ describe('class authorization (integration)', () => {
   beforeAll(async () => {
     owner = await signUpUser();
     other = await signUpUser();
+    await verifyUserEmail(other.userId);
     const res = await authed(owner.cookie)('/api/v1/classes', {
       method: 'POST',
       body: JSON.stringify({ title: 'Owner class' }),

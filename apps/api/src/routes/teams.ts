@@ -109,18 +109,34 @@ teamRoutes.post('/teams/:id/members', async (c) => {
 
   // Resolve the target to a user id. `email` is resolved here (no user-search
   // endpoint — privacy); a directly-supplied id must still exist.
-  let emailUserId: string | null = null;
+  let targetUser: { id: string; emailVerified: boolean } | null = null;
   if (body.email != null) {
-    const u = await db.select({ id: users.id }).from(users).where(eq(users.email, body.email)).get();
-    emailUserId = u?.id ?? null;
+    targetUser =
+      (await db
+        .select({ id: users.id, emailVerified: users.emailVerified })
+        .from(users)
+        .where(eq(users.email, body.email))
+        .get()) ?? null;
   } else {
-    const u = await db.select({ id: users.id }).from(users).where(eq(users.id, body.userId!)).get();
-    if (!u) throw new HttpError(422, 'VALIDATION_ERROR', 'No such user.');
+    targetUser =
+      (await db
+        .select({ id: users.id, emailVerified: users.emailVerified })
+        .from(users)
+        .where(eq(users.id, body.userId!))
+        .get()) ?? null;
+    if (!targetUser) throw new HttpError(422, 'VALIDATION_ERROR', 'No such user.');
+  }
+  if (targetUser && !targetUser.emailVerified) {
+    throw new HttpError(
+      422,
+      'EMAIL_NOT_VERIFIED',
+      'That user must verify their email before joining a team.',
+    );
   }
   const userId = resolveMemberTarget({
     directUserId: body.userId ?? null,
     emailGiven: body.email != null,
-    emailUserId,
+    emailUserId: targetUser?.id ?? null,
   });
 
   const row = {

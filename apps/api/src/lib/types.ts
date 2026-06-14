@@ -12,6 +12,7 @@ export interface Env {
   DB: D1Database;
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
+  /** Canonical SPA origin. Production is same-origin with BETTER_AUTH_URL. */
   WEB_ORIGIN?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
