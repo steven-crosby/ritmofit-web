@@ -12,6 +12,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { RunPayload, RunPayloadTrackEntry, Intensity } from '@ritmofit/shared';
+import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { IntensityReadout } from './IntensityReadout.js';
 
 type View = 'cue' | 'list';
@@ -32,8 +33,40 @@ interface TimelineEvent {
   intensity: Intensity | null;
 }
 
+function ProviderHandoffLinks({ entry }: { entry: RunPayloadTrackEntry }) {
+  const refs = PROVIDER_ORDER.flatMap((provider) => {
+    const ref = entry.providerRefs.find((candidate) => candidate.provider === provider);
+    const href = providerHandoffHref(provider, ref?.providerUri ?? null);
+    return href ? [{ provider, href }] : [];
+  });
+  if (refs.length === 0) return null;
+
+  return (
+    <nav
+      className="flex flex-wrap gap-2"
+      aria-label={`Open ${entry.track.title} in a music provider`}
+    >
+      {refs.map(({ provider, href }) => (
+        <a
+          key={provider}
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Open ${entry.track.title} in ${providerLabel(provider)}`}
+          className="inline-flex min-h-11 items-center rounded-pill border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive"
+        >
+          Open in {providerLabel(provider)}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 /** The live track for a class-absolute time: the last track whose window contains it. */
-function trackAt(payload: RunPayload, elapsedMs: number): { entry: RunPayloadTrackEntry; index: number } | null {
+function trackAt(
+  payload: RunPayload,
+  elapsedMs: number,
+): { entry: RunPayloadTrackEntry; index: number } | null {
   if (payload.tracks.length === 0) return null;
   let current = 0;
   payload.tracks.forEach((t, i) => {
@@ -111,7 +144,10 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     }
     return null;
   }, [events, elapsedMs]);
-  const nextEvent = useMemo(() => events.find((e) => e.atMs > elapsedMs) ?? null, [events, elapsedMs]);
+  const nextEvent = useMemo(
+    () => events.find((e) => e.atMs > elapsedMs) ?? null,
+    [events, elapsedMs],
+  );
 
   // A track with no entered duration occupies zero timeline width, so a per-track
   // countdown would read a misleading 0:00. Track whether we have a real window.
@@ -122,7 +158,9 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     <div className="fixed inset-0 z-50 flex flex-col bg-bg-base">
       <header className="flex items-center justify-between border-b border-interactive/20 px-6 py-3">
         <div>
-          <h1 className="font-display text-lg font-semibold text-text-primary">{payload.class.title}</h1>
+          <h1 className="font-display text-lg font-semibold text-text-primary">
+            {payload.class.title}
+          </h1>
           <p className="font-data text-xs text-text-tertiary">
             {fmt(elapsedMs)} / {fmt(payload.class.totalDurationMs)}
           </p>
@@ -151,7 +189,12 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             playing={playing}
           />
         ) : (
-          <FullList payload={payload} liveIndex={live?.index ?? -1} elapsedMs={elapsedMs} onSeek={seek} />
+          <FullList
+            payload={payload}
+            liveIndex={live?.index ?? -1}
+            elapsedMs={elapsedMs}
+            onSeek={seek}
+          />
         )}
       </div>
 
@@ -172,7 +215,11 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
 
 function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void }) {
   return (
-    <div className="flex rounded-pill border border-interactive/30 p-0.5" role="tablist" aria-label="Prompter view">
+    <div
+      className="flex rounded-pill border border-interactive/30 p-0.5"
+      role="tablist"
+      aria-label="Prompter view"
+    >
       {(['cue', 'list'] as const).map((v) => (
         <button
           key={v}
@@ -229,7 +276,9 @@ function CueByCue({
           <p className="font-data text-xs uppercase tracking-wide text-text-tertiary">
             Track {live.index + 1}
           </p>
-          <p className="font-display text-xl font-semibold text-text-primary">{entry.track.title}</p>
+          <p className="font-display text-xl font-semibold text-text-primary">
+            {entry.track.title}
+          </p>
           <p className="font-ui text-sm text-text-secondary">{entry.track.artist}</p>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -239,6 +288,8 @@ function CueByCue({
           )}
         </div>
       </div>
+
+      <ProviderHandoffLinks entry={entry} />
 
       <div className="relative w-full">
         {/* The drop's plasma bloom — keyed on the cue so it replays per advance. */}
@@ -284,7 +335,11 @@ function CueByCue({
       </div>
 
       <div className="flex w-full justify-between font-data text-sm text-text-tertiary">
-        <span>{trackHasDuration ? `Track ends in ${fmt(trackEndMs - elapsedMs)}` : 'No track duration set'}</span>
+        <span>
+          {trackHasDuration
+            ? `Track ends in ${fmt(trackEndMs - elapsedMs)}`
+            : 'No track duration set'}
+        </span>
         <span>Class ends in {fmt(classTotalMs - elapsedMs)}</span>
       </div>
     </div>
@@ -313,7 +368,11 @@ function FullList({
             className={`rounded-card bg-bg-raised p-4 shadow-card ${isLive ? 'ring-2 ring-interactive' : ''}`}
           >
             <div className="flex items-center justify-between">
-              <button className="text-left" onClick={() => onSeek(start)} aria-label={`Jump to track ${i + 1}`}>
+              <button
+                className="text-left"
+                onClick={() => onSeek(start)}
+                aria-label={`Jump to track ${i + 1}`}
+              >
                 <span className="font-data text-xs text-text-tertiary">
                   {fmt(start)} · #{i + 1}
                 </span>
@@ -327,6 +386,11 @@ function FullList({
                 )}
               </div>
             </div>
+            {isLive && (
+              <div className="mt-3 border-t border-interactive/15 pt-3">
+                <ProviderHandoffLinks entry={t} />
+              </div>
+            )}
             {(t.cues.length > 0 || t.moves.length > 0) && (
               <ul className="mt-3 flex flex-col gap-1 border-t border-interactive/15 pt-2">
                 {eventsFor(t).map((e, j) => {
@@ -336,7 +400,9 @@ function FullList({
                       key={j}
                       className={`flex items-center gap-2 font-ui text-sm ${past ? 'text-text-tertiary line-through' : 'text-text-secondary'}`}
                     >
-                      <span className="font-data text-xs text-text-tertiary">{fmt(e.atMs - start)}</span>
+                      <span className="font-data text-xs text-text-tertiary">
+                        {fmt(e.atMs - start)}
+                      </span>
                       <span
                         className="rounded-pill px-1.5 py-0.5 font-data text-[10px] uppercase"
                         style={{

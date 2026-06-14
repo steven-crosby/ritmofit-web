@@ -183,6 +183,16 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > Remote D1 was migrated through `0010` before Worker
 > `0e9ab61b-acb8-480c-a45d-36ae455dc6c7` deployed at 100%. Health, SPA, auth enforcement,
 > security-header, main-bundle, and Live-mode chunk smokes passed.
+>
+> **Web hardening — Live provider handoff implemented, pending deploy (2026-06-14).** The web Live
+> surface now exposes explicit provider-app/site handoff links for the active track in Cue-by-Cue and
+> Full List views, using the run-payload's existing `providerRefs`. A web-only validator accepts Spotify
+> track URIs and provider-owned HTTPS links for Spotify, Apple Music, and SoundCloud while suppressing
+> null, malformed, cross-provider, and unsafe stored values. This does not embed, mix, or control
+> playback and does not change schema, migrations, API behavior, shared contracts, or OpenAPI.
+> Typecheck, lint, 246 unit/component tests, 17 Worker/D1 integration tests, the production web build,
+> and OpenAPI drift verification passed. A local browser pass confirmed both Live views, 44px handoff
+> targets, provider order/labels, external-link attributes, and suppression when no trusted URI remains.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);

@@ -399,6 +399,14 @@ the music layer into the builder and took it to **real catalogs in prod**.
   the class-specific override before the library duration. The builder accepts `m:ss`, flags missing
   durations, and blocks Live mode until every track is timed. Remote D1 is through `0010`; Worker
   `0e9ab61b-acb8-480c-a45d-36ae455dc6c7` is live at 100%.
+- ✅ **Live provider handoff** (implemented 2026-06-14, pending PR/deploy): Cue-by-Cue and Full List
+  expose large, keyboard-accessible "Open in Provider" links for the active track. The links use the
+  existing run-payload `providerRefs`; a provider-specific web validator accepts Spotify track URIs
+  and trusted Spotify/Apple Music/SoundCloud HTTPS hosts, suppressing malformed or untrusted values.
+  Playback remains wholly in provider applications/sites. Web-only; no schema, migration, API,
+  shared-contract, or OpenAPI change. Typecheck, lint, 246 unit/component tests, 17 Worker/D1
+  integration tests, web build, and OpenAPI drift verification passed; a local browser pass covered
+  both Live views plus trusted and suppressed-link states.
 
 ---
 
