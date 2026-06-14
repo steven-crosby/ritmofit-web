@@ -73,7 +73,10 @@ export const updateClass = (classId: string, body: UpdateClass) =>
   api<Class>(`/classes/${classId}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const deleteClass = (classId: string) =>
   api<void>(`/classes/${classId}`, { method: 'DELETE' });
-export const listExplore = () => api<ExploreClass[]>('/explore');
+/** One page of the public Explore feed (newest-first). The server clamps `limit`
+ * to 50; the caller pages with `offset` and stops when a short page comes back. */
+export const listExplore = (limit = 30, offset = 0) =>
+  api<ExploreClass[]>(`/explore?limit=${limit}&offset=${offset}`);
 export const copyClass = (classId: string, title?: string) =>
   api<Class>(`/classes/${classId}/copy`, {
     method: 'POST',

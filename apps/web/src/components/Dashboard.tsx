@@ -1,5 +1,5 @@
 /** Minimal authenticated builder: create a class, add a tagged track, see the timeline. */
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import {
   intensityValues,
   type Class,
@@ -26,18 +26,34 @@ import {
 import { moveItem } from '../lib/reorder.js';
 import { avgBpm, formatDuration } from '../lib/class-summary.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
-import { LiveMode } from './LiveMode.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { TimelineStrip } from './TimelineStrip.js';
 import { SegmentBand } from './SegmentBand.js';
 import { IntensityReadout } from './IntensityReadout.js';
-import { CuesSection, MovesSection } from './ChoreographyEditor.js';
-import { ShareDialog } from './ShareDialog.js';
-import { TeamsDialog } from './TeamsDialog.js';
-import { ExploreDialog } from './ExploreDialog.js';
 import { TrackSearch } from './TrackSearch.js';
-import { ConnectionsDialog } from './ConnectionsDialog.js';
+
+// Code-split the heavy, interaction-gated surfaces into their own chunks so the
+// initial builder paint doesn't ship Live mode, the choreography editor, or the
+// modal dialogs. Each loads on first use behind a <Suspense> boundary below.
+const LiveMode = lazy(() => import('./LiveMode.js').then((m) => ({ default: m.LiveMode })));
+const ShareDialog = lazy(() => import('./ShareDialog.js').then((m) => ({ default: m.ShareDialog })));
+const TeamsDialog = lazy(() => import('./TeamsDialog.js').then((m) => ({ default: m.TeamsDialog })));
+const ExploreDialog = lazy(() => import('./ExploreDialog.js').then((m) => ({ default: m.ExploreDialog })));
+const ConnectionsDialog = lazy(() =>
+  import('./ConnectionsDialog.js').then((m) => ({ default: m.ConnectionsDialog })),
+);
+const CuesSection = lazy(() => import('./ChoreographyEditor.js').then((m) => ({ default: m.CuesSection })));
+const MovesSection = lazy(() => import('./ChoreographyEditor.js').then((m) => ({ default: m.MovesSection })));
+
+/** Full-screen Suspense fallback while a lazy chunk (e.g. Live mode) loads. */
+function LoadingScreen() {
+  return (
+    <main className="flex min-h-screen items-center justify-center">
+      <p className="font-ui text-text-tertiary">Loading…</p>
+    </main>
+  );
+}
 
 export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
   const [classes, setClasses] = useState<ClassWithAccess[]>([]);
@@ -124,7 +140,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   if (live)
     return (
       <ErrorBoundary resetLabel="Exit live mode" onReset={() => setLive(null)}>
-        <LiveMode payload={live} onExit={() => setLive(null)} />
+        <Suspense fallback={<LoadingScreen />}>
+          <LiveMode payload={live} onExit={() => setLive(null)} />
+        </Suspense>
       </ErrorBoundary>
     );
 
@@ -167,22 +185,26 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         </button>
       </header>
 
-      {teamsOpen && <TeamsDialog userId={userId} onClose={() => setTeamsOpen(false)} />}
-      {connectionsOpen && <ConnectionsDialog onClose={() => setConnectionsOpen(false)} />}
-      {exploreOpen && (
-        <ExploreDialog
-          onClose={() => setExploreOpen(false)}
-          onPreview={(classId) => {
-            setExploreOpen(false);
-            void runClass(classId);
-          }}
-          onCopied={async (cls) => {
-            setExploreOpen(false);
-            await refreshClasses();
-            await openClass({ ...cls, accessLevel: 'owner' });
-          }}
-        />
-      )}
+      {/* Lazy modal chunks — fallback null so the trigger feels instant; the modal
+          paints once its chunk resolves (near-instant on a warm cache). */}
+      <Suspense fallback={null}>
+        {teamsOpen && <TeamsDialog userId={userId} onClose={() => setTeamsOpen(false)} />}
+        {connectionsOpen && <ConnectionsDialog onClose={() => setConnectionsOpen(false)} />}
+        {exploreOpen && (
+          <ExploreDialog
+            onClose={() => setExploreOpen(false)}
+            onPreview={(classId) => {
+              setExploreOpen(false);
+              void runClass(classId);
+            }}
+            onCopied={async (cls) => {
+              setExploreOpen(false);
+              await refreshClasses();
+              await openClass({ ...cls, accessLevel: 'owner' });
+            }}
+          />
+        )}
+      </Suspense>
 
       <div className="mx-auto w-full max-w-[1400px] flex-1 px-6 py-6">
         {error && <p className="mb-4 font-ui text-sm text-intensity-all_out">{error}</p>}
@@ -372,7 +394,9 @@ function ClassWorkspace({
 
   return (
     <>
-      {sharing && <ShareDialog classId={cls.id} classTitle={cls.title} onClose={() => setSharing(false)} />}
+      <Suspense fallback={null}>
+        {sharing && <ShareDialog classId={cls.id} classTitle={cls.title} onClose={() => setSharing(false)} />}
+      </Suspense>
 
       {/* ── Center column: header summary · energy ribbon · track list ── */}
       <section className="flex min-w-0 flex-col gap-4">
@@ -1013,19 +1037,24 @@ function TrackInspector({
             </button>
           </div>
 
-          {/* Choreography anchored to this track — cues + placed moves. */}
+          {/* Choreography anchored to this track — cues + placed moves. Lazy-loaded
+              (one shared ChoreographyEditor chunk) behind a Suspense fallback. */}
           <hr className="border-interactive/20" />
-          <CuesSection
-            classTrackId={track.id}
-            durationMs={durationMs}
-            focus={focus?.kind === 'cue' ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
-          />
-          <MovesSection
-            classTrackId={track.id}
-            durationMs={durationMs}
-            focus={focus?.kind === 'move' ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
-            onChanged={onSaved}
-          />
+          <Suspense
+            fallback={<p className="font-ui text-xs text-text-tertiary">Loading choreography…</p>}
+          >
+            <CuesSection
+              classTrackId={track.id}
+              durationMs={durationMs}
+              focus={focus?.kind === 'cue' ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
+            />
+            <MovesSection
+              classTrackId={track.id}
+              durationMs={durationMs}
+              focus={focus?.kind === 'move' ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
+              onChanged={onSaved}
+            />
+          </Suspense>
         </>
       )}
     </section>
