@@ -100,14 +100,15 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > Current launch/deploy status is tracked in [`../REVIEW.md`](../REVIEW.md); canonical contributor and
 > deployment instructions are in [`../AGENTS.md`](../AGENTS.md).
 >
-> **Pre-launch blocker remediation in progress (2026-06-14).** The current worktree fixes four audited
-> launch blockers: production OAuth callbacks now use the canonical web origin; shares and team grants
-> require a verified target identity; Dashboard class detail is keyed by class/request and rejects stale
-> responses; and provider disconnect purges clear unprovenanced artwork while retaining exhausted duties
-> in a durable failed state. The purge change adds migration `0009` (`failed_at` plus the active-queue
-> index). Unit and Worker/D1 integration regressions cover these paths. These changes are not deployed;
-> apply the remote migration before the Worker deployment, then smoke-test SoundCloud callback outcomes.
-> Production transactional email remains open pending Resend/domain provisioning and delivery tests.
+> **Pre-launch blocker remediation deployed (2026-06-14).** PR #45 shipped four audited launch fixes:
+> production OAuth callbacks use the canonical web origin; shares and team grants require a verified
+> target identity; Dashboard class detail is keyed by class/request and rejects stale responses; and
+> provider disconnect purges clear unprovenanced artwork while retaining exhausted duties in a durable
+> failed state. Remote D1 is migrated through `0009` (`failed_at` plus the active-queue index), and Worker
+> version 46 (`aa26e286-c517-444a-952f-d5e410c9439f`) is live at 100%. Health, SPA, protected-route,
+> code-split asset, and missing-state SoundCloud callback smokes passed; the callback now returns to
+> `https://ritmofit.studio`. Production transactional email remains open pending Resend/domain
+> provisioning and real reset/verification delivery tests.
 >
 > **Web design-system build (builder UI) underway (2026-06-12).** The rich planning UI M1 deferred is
 > now being built in vertical slices — the difference between the data-flow skeleton and the designed

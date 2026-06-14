@@ -3,10 +3,11 @@
 _Audit date: 2026-06-14. Scope: current `main` worktree. Review only; no product fixes,
 schema changes, deployments, production migrations, or secret changes were performed._
 
-_Remediation update: the worktree now contains local fixes and regression coverage for
-blockers 2-5. They are not deployed; migration `0009` and production callback smoke
-verification remain release steps. Transactional email remains externally blocked on
-provider/domain provisioning._
+_Remediation update (2026-06-14): PR #45 is merged and deployed. Remote D1 is migrated
+through `0009`; production is 100% on Worker version 46
+(`aa26e286-c517-444a-952f-d5e410c9439f`). Health, SPA, auth enforcement, code-split
+asset, queue-schema, and missing-state SoundCloud callback smokes passed. Transactional
+email remains externally blocked on provider/domain provisioning._
 
 ## Repo Map
 
@@ -77,10 +78,10 @@ Missing or unclear documentation:
 - The root `.dev.vars.example` is stale relative to `apps/api/.dev.vars.example`: it uses
   obsolete Apple Sign-in variable names, omits Resend and current provider variables, and
   still labels M2 settings as unused placeholders.
-- Production Worker version `b9949950-13c3-4583-85e5-1fa3d640b33e` was inspected
-  read-only. Its bindings confirm that `RESEND_API_KEY` and `WEB_ORIGIN` are absent.
+- Production Worker version 46 (`aa26e286-c517-444a-952f-d5e410c9439f`) is live at
+  100%. Its bindings include the canonical `WEB_ORIGIN`; `RESEND_API_KEY` remains absent.
   DNS/email-provider verification and a tested rollback/recovery procedure could not be
-  established from committed files or read-only Worker metadata.
+  established from committed files or Worker metadata.
 
 ## Baseline Command Results
 
@@ -151,14 +152,13 @@ apps/api/openapi/openapi.json` — **PASS**
     non-runtime exceptions rather than accepting the audit failure silently.
 - `pnpm --filter @ritmofit/api exec wrangler deployments status --json` and
   `pnpm --filter @ritmofit/api exec wrangler versions view
-b9949950-13c3-4583-85e5-1fa3d640b33e --json` — **PASS WITH FINDINGS**
-  - Summary: production is 100% on Worker version `b9949950`; the deployed bindings
+aa26e286-c517-444a-952f-d5e410c9439f --json` — **PASS WITH FINDINGS**
+  - Summary: production is 100% on Worker version 46 (`aa26e286`); the deployed bindings
     include the D1 database, provider credentials, auth secret, encryption key, and
-    `BETTER_AUTH_URL`, but not `RESEND_API_KEY` or `WEB_ORIGIN`.
+    canonical `BETTER_AUTH_URL`/`WEB_ORIGIN`, but not `RESEND_API_KEY`.
   - Relevant files: `apps/api/wrangler.toml`, `apps/api/src/lib/email.ts`,
     `apps/api/src/routes/provider-connections.ts`.
-  - Recommended fix: provision transactional email and commit the canonical
-    non-secret web origin to `[vars]`, then inspect the newly deployed version.
+  - Recommended fix: provision transactional email and inspect the next deployed version.
 - `pnpm --filter @ritmofit/api exec wrangler d1 migrations list ritmofit --remote`
   — **PASS**
   - Summary: Cloudflare reported no pending production migrations.
@@ -263,7 +263,7 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
 
 ## API / Backend Logic
 
-- [x] **[BLOCKER - CODE COMPLETE, DEPLOY VERIFICATION PENDING] Fix the production
+- [x] **[BLOCKER - DEPLOYED] Fix the production
       SoundCloud OAuth return origin** —
       `apps/api/src/routes/provider-connections.ts:58-64`,
       `apps/api/src/routes/provider-connections.ts:173-176`,
@@ -276,10 +276,11 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       `WEB_ORIGIN = "https://ritmofit.studio"` or derive the same-origin return URL from the
       canonical auth origin/request, then test success, denial, missing state, and token
       exchange failure in a deployed smoke environment. Evidence: verified. Confidence:
-      high. Remediation: production `WEB_ORIGIN` is committed, the fallback now uses the
-      canonical auth origin, and an integration test covers the missing-state callback.
-      A deployed success/denial/token-failure smoke pass is still required.
-- [x] **[BLOCKER - CODE COMPLETE] Do not grant shares or team membership to unverified email
+      high. Remediation: production `WEB_ORIGIN` is live, the fallback uses the canonical
+      auth origin, and the deployed missing-state callback returns to
+      `https://ritmofit.studio/account?error=state_missing`. A full provider consent
+      success/denial/token-failure round-trip remains a follow-up smoke.
+- [x] **[BLOCKER - DEPLOYED] Do not grant shares or team membership to unverified email
       identities** — `apps/api/src/lib/auth.ts:66-80`,
       `apps/api/src/routes/shares.ts:32-53`,
       `apps/api/src/routes/teams.ts:103-124`,
@@ -309,7 +310,7 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
 
 ## Data Layer & State Management
 
-- [x] **[BLOCKER - CODE COMPLETE] Tie class-detail state to the selected class and discard stale
+- [x] **[BLOCKER - DEPLOYED] Tie class-detail state to the selected class and discard stale
       responses** — `apps/web/src/components/Dashboard.tsx:58-69`,
       `apps/web/src/components/Dashboard.tsx:83-109`,
       `apps/web/src/components/Dashboard.tsx:228-239`,
@@ -326,7 +327,7 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       Evidence: verified and code inspection. Confidence: high. Remediation: detail state
       is keyed by class and request id, masks prior data during loading/failure, and has
       reducer regressions for stale success and failure responses.
-- [x] **[BLOCKER - CODE COMPLETE, MIGRATION PENDING] Make provider disconnect purges provenance-correct and
+- [x] **[BLOCKER - DEPLOYED] Make provider disconnect purges provenance-correct and
       non-lossy** — `apps/api/src/lib/track-import.ts:115-144`,
       `apps/api/src/lib/track-import.ts:186-196`,
       `apps/api/src/lib/music/purge.ts:52-55`,
@@ -343,8 +344,8 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       add D1 integration tests for multi-provider tracks and repeated failures. Evidence:
       code inspection. Confidence: high. Remediation: affected artwork is cleared
       conservatively, exhausted rows receive `failed_at` instead of being deleted, and
-      unit/D1 integration tests cover both cases. Migration `0009` must be applied before
-      deploying this Worker.
+      unit/D1 integration tests cover both cases. Migration `0009` and its active-queue
+      index are live; a read-only production check found zero active and zero failed duties.
 - [ ] **[SHOULD-FIX] Copy class sections along with tracks, cues, and moves** —
       `apps/api/src/routes/classes.ts:99-139`,
       `apps/api/src/routes/classes.ts:163-245`,
@@ -510,12 +511,13 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
 1. Provision Resend, verify the sending domain, and prove password-reset and
    verification delivery on `ritmofit.studio`. **Open: external provisioning required.**
 2. Set the production web origin and verify every SoundCloud OAuth callback path returns
-   to `https://ritmofit.studio`. **Code complete; deploy and smoke verification pending.**
-3. Make email-based sharing/team membership require a verified identity. **Code complete.**
+   to `https://ritmofit.studio`. **Deployed; missing-state live smoke passed, full provider
+   consent round-trip remains.**
+3. Make email-based sharing/team membership require a verified identity. **Deployed.**
 4. Key Dashboard detail state by class/request so stale or failed responses cannot expose
-   another class's tracks under the selected header. **Code complete.**
+   another class's tracks under the selected header. **Deployed.**
 5. Make provider disconnect purge work provenance-aware, durable after repeated failures,
-   and observable until completed. **Code complete; migration/deploy pending.**
+   and observable until completed. **Deployed; migration and queue schema verified.**
 
 ## Follow-Up Verification Checklist
 
