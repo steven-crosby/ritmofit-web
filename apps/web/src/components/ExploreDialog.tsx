@@ -17,9 +17,13 @@ export function ExploreDialog({
   onCopied: (cls: Class) => void;
   onClose: () => void;
 }) {
+  const PAGE_SIZE = 30;
   const [items, setItems] = useState<ExploreClass[] | null>(null);
   const [copyingId, setCopyingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Pagination: a full page implies there may be more; a short page is the end.
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const saveCopy = useCallback(
     async (classId: string) => {
@@ -38,11 +42,32 @@ export function ExploreDialog({
 
   const refresh = useCallback(async () => {
     try {
-      setItems(await listExplore());
+      const page = await listExplore(PAGE_SIZE, 0);
+      setItems(page);
+      setHasMore(page.length === PAGE_SIZE);
     } catch (e) {
       setError((e as Error).message);
     }
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (items === null) return;
+    setLoadingMore(true);
+    setError(null);
+    try {
+      const page = await listExplore(PAGE_SIZE, items.length);
+      // De-dupe defensively: a class published between pages can shift offsets.
+      setItems((prev) => {
+        const seen = new Set((prev ?? []).map((c) => c.id));
+        return [...(prev ?? []), ...page.filter((c) => !seen.has(c.id))];
+      });
+      setHasMore(page.length === PAGE_SIZE);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [items]);
 
   useEffect(() => {
     void refresh();
@@ -132,6 +157,17 @@ export function ExploreDialog({
                 </button>
               </li>
             ))}
+            {hasMore && (
+              <li className="flex justify-center pt-1">
+                <button
+                  className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+                  onClick={() => void loadMore()}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? 'Loading…' : 'Load more'}
+                </button>
+              </li>
+            )}
           </ul>
         )}
       </div>

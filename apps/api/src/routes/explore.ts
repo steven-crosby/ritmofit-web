@@ -19,13 +19,29 @@ import { classes, classTracks, users } from '../db/schema.js';
 export const exploreRoutes = new Hono<AppEnv>();
 exploreRoutes.use('*', requireSession);
 
+/** Page size bounds for the Explore feed — the feed grows with every user's
+ * published classes, so it is paginated rather than returned whole. */
+const DEFAULT_LIMIT = 30;
+const MAX_LIMIT = 50;
+
+/** Clamp a query-string integer into `[min, max]`, falling back when absent/NaN. */
+function clampInt(raw: string | undefined, fallback: number, min: number, max: number): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(Math.max(Math.trunc(n), min), max);
+}
+
 /**
- * GET /explore — public classes, newest first, each with its owner's display label
- * and track count so a discovery card needs no follow-up fetch. Featured curation
- * is deferred (M4 decision); v1 is plain recency.
+ * GET /explore?limit=&offset= — public classes, newest first, each with its owner's
+ * display label and track count so a discovery card needs no follow-up fetch.
+ * Paginated (limit ≤ 50, default 30) so the feed stays bounded as it grows; the
+ * client pages with `offset` and stops when a short page comes back. Featured
+ * curation is deferred (M4 decision); v1 is plain recency.
  */
 exploreRoutes.get('/explore', async (c) => {
   const db = createDb(c.env);
+  const limit = clampInt(c.req.query('limit'), DEFAULT_LIMIT, 1, MAX_LIMIT);
+  const offset = clampInt(c.req.query('offset'), 0, 0, Number.MAX_SAFE_INTEGER);
   const rows = await db
     .select({
       cls: classes,
@@ -39,6 +55,8 @@ exploreRoutes.get('/explore', async (c) => {
     .where(eq(classes.visibility, 'public'))
     .groupBy(classes.id)
     .orderBy(desc(classes.updatedAt))
+    .limit(limit)
+    .offset(offset)
     .all();
 
   const out: ExploreClass[] = rows.map((r) =>
