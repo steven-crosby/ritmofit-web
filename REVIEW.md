@@ -11,6 +11,19 @@ asset, queue-schema, and missing-state SoundCloud callback smokes passed. Resend
 provisioned for `ritmofit.studio`; SPF, DKIM, MX, and DMARC resolve publicly, and real
 Gmail delivery, email verification, and password reset completed successfully._
 
+_Verification pass (2026-06-14, independent re-check of current `main`): **0 launch
+blockers remain open** — all 5 are deployed/complete (blocker #2's full SoundCloud
+consent success/denial/token-failure round-trip is the only residual, a live smoke, not
+code). Re-confirmed a representative sample of still-open items across every area and
+found no regressions and no drift from the descriptions below: `pnpm format:check` still
+fails (98 files); `pnpm audit --prod` still reports 1 high / 2 moderate / 1 low
+(esbuild via tsx→drizzle-kit→better-auth); `.github/workflows/ci.yml` still omits
+`format:check` and `pnpm audit`; `TrackSearch.tsx` empty-query branch still returns
+without bumping `reqId`; `apps/api/src/index.ts` still sets no browser security headers;
+and `POST /classes/:id/copy` still never reads/recreates `class_sections`. Remaining
+work is **SHOULD-FIX hardening + the manual Follow-Up Verification Checklist**, none of
+it launch-blocking._
+
 ## Repo Map
 
 RitmoFit Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
