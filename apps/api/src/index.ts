@@ -28,6 +28,23 @@ export type { Env } from './lib/types.js';
 
 const app = new Hono<AppEnv>();
 
+// Baseline browser security headers on every Worker response (the API + health;
+// the SPA/static assets are served by the [assets] handler, which the Worker does
+// not run for, so those carry the same set via `apps/web/public/_headers` — keep
+// the two in sync). API responses are JSON, so their CSP is locked to
+// `default-src 'none'`; the page CSP that allows the app's own scripts/styles/fonts
+// lives in `_headers`. Set after `next()` so the final response (including the
+// library-managed Better Auth responses) is covered.
+app.use('*', async (c, next) => {
+  await next();
+  c.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+  c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+});
+
 // Map thrown errors to the standard `{ error: { code, message, details? } }`
 // envelope (conventions.md) so routes stay thin and let helpers throw.
 app.onError((err, c) => {

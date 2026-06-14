@@ -7,6 +7,18 @@ import { providerPurgeQueue, trackProviderIds, tracks } from '../src/db/schema.j
 import { authed, call, signUpUser, verifyUserEmail } from './helpers.js';
 
 describe('launch blocker regressions (integration)', () => {
+  it('sets baseline browser security headers on API responses', async () => {
+    const res = await call('/api/v1/health');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(res.headers.get('x-frame-options')).toBe('DENY');
+    expect(res.headers.get('referrer-policy')).toBe('strict-origin-when-cross-origin');
+    expect(res.headers.get('strict-transport-security')).toContain('max-age=31536000');
+    expect(res.headers.get('permissions-policy')).toContain('geolocation=()');
+    // API responses are JSON, so the CSP is locked down (the page CSP lives in _headers).
+    expect(res.headers.get('content-security-policy')).toContain("default-src 'none'");
+  });
+
   it('returns OAuth callback failures to the canonical app origin', async () => {
     const res = await call('/api/v1/providers/soundcloud/callback');
     expect(res.status).toBe(302);
