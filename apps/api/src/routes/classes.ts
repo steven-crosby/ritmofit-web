@@ -33,6 +33,7 @@ import {
   trackProviderIds,
   cues,
   classTrackMoves,
+  classSections,
   userMoves,
 } from '../db/schema.js';
 
@@ -125,8 +126,10 @@ classRoutes.post('/:id/copy', async (c) => {
   const ctIds = sourceCTs.map((ct) => ct.id);
   const trackIds = [...new Set(sourceCTs.map((ct) => ct.trackId))];
 
-  // Fetch everything the copy needs up front (no per-track round-trips).
-  const [sourceCues, sourceMoves, sourceTracks, srcRefs, ownedKeyRows] = await Promise.all([
+  // Fetch everything the copy needs up front (no per-track round-trips). Sections
+  // anchor on the class (no class_track FK), so they're fetched by class id and in
+  // start order — the copy must carry the instructor's segment/energy plan too.
+  const [sourceCues, sourceMoves, sourceTracks, srcRefs, ownedKeyRows, sourceSections] = await Promise.all([
     ctIds.length ? db.select().from(cues).where(inArray(cues.classTrackId, ctIds)).all() : [],
     ctIds.length ? db.select().from(classTrackMoves).where(inArray(classTrackMoves.classTrackId, ctIds)).all() : [],
     trackIds.length ? db.select().from(tracks).where(inArray(tracks.id, trackIds)).all() : [],
@@ -136,6 +139,7 @@ classRoutes.post('/:id/copy', async (c) => {
       .from(trackProviderIds)
       .where(eq(trackProviderIds.ownerUserId, me))
       .all(),
+    db.select().from(classSections).where(eq(classSections.classId, sourceClassId)).orderBy(classSections.startOffsetMs).all(),
   ]);
 
   const trackById = new Map(sourceTracks.map((t) => [t.id, t]));
@@ -241,6 +245,21 @@ classRoutes.post('/:id/copy', async (c) => {
       );
     }
   });
+
+  // Sections only reference the class (FK already inserted as statements[0]), so they
+  // can be appended in start order — fresh ids, same type + anchor.
+  for (const section of sourceSections) {
+    statements.push(
+      db.insert(classSections).values({
+        id: crypto.randomUUID(),
+        classId: newClassId,
+        type: section.type,
+        startOffsetMs: section.startOffsetMs,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    );
+  }
 
   await db.batch(statements as unknown as Parameters<typeof db.batch>[0]);
   await resequence(db, newClassId);

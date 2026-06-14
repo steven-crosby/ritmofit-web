@@ -363,16 +363,18 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       conservatively, exhausted rows receive `failed_at` instead of being deleted, and
       unit/D1 integration tests cover both cases. Migration `0009` and its active-queue
       index are live; a read-only production check found zero active and zero failed duties.
-- [ ] **[SHOULD-FIX] Copy class sections along with tracks, cues, and moves** —
+- [x] **[SHOULD-FIX - FIXED] Copy class sections along with tracks, cues, and moves** —
       `apps/api/src/routes/classes.ts:99-139`,
       `apps/api/src/routes/classes.ts:163-245`,
-      `apps/api/test/authz.integration.test.ts:109-133` — Whole-class copy fetches and
-      inserts tracks, provider refs, cues, and moves but never reads or recreates
-      `class_sections`; the integration test only asserts the copied track. Why it matters:
-      Save a copy silently loses the instructor's segment/energy plan. Recommended fix:
-      include ordered sections in the same batch transaction and assert exact section
-      preservation in integration tests. Evidence: code inspection and missing coverage.
-      Confidence: high.
+      `apps/api/test/authz.integration.test.ts:109-133` — Whole-class copy fetched and
+      inserted tracks, provider refs, cues, and moves but never read or recreated
+      `class_sections`; the integration test only asserted the copied track. Why it matters:
+      Save a copy silently loses the instructor's segment/energy plan. Remediation
+      (2026-06-14): `POST /classes/:id/copy` now fetches the source `class_sections` in
+      start order within the same up-front batch and recreates them (fresh ids, new class
+      id, same `type` + `startOffsetMs`) in the batched transaction. A new integration
+      test seeds two bands on the source and asserts the copy carries both in order.
+      Evidence: code change + green Worker/D1 integration test. Confidence: high.
 - [ ] **[SHOULD-FIX] Paginate and order the private class library in D1** —
       `apps/api/src/routes/classes.ts:64-85` — `GET /classes` resolves every visible id,
       fetches every class, and sorts the full result in Worker memory. Why it matters: a

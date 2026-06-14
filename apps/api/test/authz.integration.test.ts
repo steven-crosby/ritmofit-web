@@ -91,6 +91,17 @@ describe('run-payload + copy (integration)', () => {
       }),
     });
     expect(track.status).toBe(201);
+    // Two segment bands so the copy can be asserted to carry the energy plan.
+    for (const section of [
+      { type: 'warm_up', startOffsetMs: 0 },
+      { type: 'sprint', startOffsetMs: 60000 },
+    ]) {
+      const res = await authed(owner.cookie)(`/api/v1/classes/${classId}/sections`, {
+        method: 'POST',
+        body: JSON.stringify(section),
+      });
+      expect(res.status).toBe(201);
+    }
   });
 
   it('owner run-payload reflects the assembled total duration', async () => {
@@ -132,5 +143,31 @@ describe('run-payload + copy (integration)', () => {
     const tracks = await authed(other.cookie)(`/api/v1/classes/${copied.id}/tracks`);
     expect(tracks.status).toBe(200);
     expect((await tracks.json()) as unknown[]).toHaveLength(1);
+  });
+
+  it('saving a copy preserves the class sections (segment/energy plan)', async () => {
+    // Isolated storage rolls each test back to the post-beforeAll state, so publish
+    // here (don't rely on a prior test) to give `other` the public VIEW floor to copy.
+    const publish = await authed(owner.cookie)(`/api/v1/classes/${classId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ visibility: 'public' }),
+    });
+    expect(publish.status).toBe(200);
+
+    const copy = await authed(other.cookie)(`/api/v1/classes/${classId}/copy`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    expect(copy.status).toBe(201);
+    const copied = (await copy.json()) as { id: string };
+
+    const res = await authed(other.cookie)(`/api/v1/classes/${copied.id}/sections`);
+    expect(res.status).toBe(200);
+    const sections = (await res.json()) as Array<{ type: string; startOffsetMs: number }>;
+    // Both bands carried over, in start order, with type + anchor intact.
+    expect(sections.map((s) => [s.type, s.startOffsetMs])).toEqual([
+      ['warm_up', 0],
+      ['sprint', 60000],
+    ]);
   });
 });
