@@ -33,8 +33,10 @@ export type Class = z.infer<typeof classSchema>;
  * A track's place within a class — carries the per-class choreography context.
  *
  * `startOffsetMs` is **server-derived in M1** (sequential, back-to-back from the
- * sum of preceding tracks' durations); clients treat it as read-only. `position`
- * is the authoritative ordering.
+ * sum of preceding effective durations); clients treat it as read-only.
+ * `durationMsOverride` lets a class editor repair an unknown/incorrect provider
+ * duration without mutating another user's library track. `position` is the
+ * authoritative ordering.
  */
 export const classTrackSchema = z.object({
   id: uuidSchema,
@@ -43,6 +45,7 @@ export const classTrackSchema = z.object({
   position: z.int().nonnegative(),
   intensity: intensitySchema,
   displayBpmOverride: z.int().positive().nullable(),
+  durationMsOverride: z.int().positive().nullable(),
   startOffsetMs: timestampMsSchema.nullable(),
   notes: z.string().max(2000).nullable(),
   ...timestampsShape,
@@ -86,6 +89,7 @@ export type ExploreClass = z.infer<typeof exploreClassSchema>;
 const classTrackInputFields = z.object({
   intensity: intensitySchema.optional(),
   displayBpmOverride: z.int().positive().nullish(),
+  durationMsOverride: z.int().positive().nullish(),
   notes: z.string().max(2000).nullish(),
 });
 

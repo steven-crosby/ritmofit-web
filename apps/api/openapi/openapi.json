@@ -1847,6 +1847,18 @@
               }
             ]
           },
+          "durationMsOverride": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "startOffsetMs": {
             "anyOf": [
               {
@@ -1888,6 +1900,7 @@
           "position",
           "intensity",
           "displayBpmOverride",
+          "durationMsOverride",
           "startOffsetMs",
           "notes",
           "createdAt",
@@ -1912,6 +1925,18 @@
                 ]
               },
               "displayBpmOverride": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "durationMsOverride": {
                 "anyOf": [
                   {
                     "type": "integer",
@@ -1959,6 +1984,18 @@
                 ]
               },
               "displayBpmOverride": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "durationMsOverride": {
                 "anyOf": [
                   {
                     "type": "integer",
@@ -2069,6 +2106,18 @@
             ]
           },
           "displayBpmOverride": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "durationMsOverride": {
             "anyOf": [
               {
                 "type": "integer",

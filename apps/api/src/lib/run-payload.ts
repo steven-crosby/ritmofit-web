@@ -4,6 +4,7 @@
  * just builds the projection with batched queries (no N+1) and the server-side
  * field resolutions the clients depend on (api.md):
  *   - displayBpm = class_track.display_bpm_override ?? track.display_bpm
+ *   - durationMs = class_track.duration_ms_override ?? track.duration_ms
  *   - move name  = move.name ?? user_move.name ?? class_track_move.name_override
  *   - tracks in position order; the timeline (startOffsetMs + class totalDurationMs)
  *     is recomputed here (M3 hardening) so it is authoritative even if a persisted
@@ -24,6 +25,7 @@ import {
 } from '../db/schema.js';
 import type { Db } from './db.js';
 import { computeSequence } from './sequencing.js';
+import { effectiveDurationMs } from './duration.js';
 
 /**
  * Resolve a placement's display name. The placement invariant guarantees a source
@@ -128,7 +130,13 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
   // Recompute the timeline at read time (M3 hardening) so per-track offsets and the
   // class total are authoritative even if a persisted start_offset_ms drifted.
   const { startOffsetByCt, totalDurationMs } = computeClassTimeline(
-    cts.map((ct) => ({ id: ct.id, durationMs: trackById.get(ct.trackId)?.durationMs ?? null })),
+    cts.map((ct) => ({
+      id: ct.id,
+      durationMs: effectiveDurationMs(
+        trackById.get(ct.trackId)?.durationMs ?? null,
+        ct.durationMsOverride,
+      ),
+    })),
   );
 
   const payload: RunPayload = {
@@ -142,6 +150,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
     },
     tracks: cts.map((ct) => {
       const track = trackById.get(ct.trackId)!;
+      const durationMs = effectiveDurationMs(track.durationMs, ct.durationMsOverride);
       return {
         classTrackId: ct.id,
         position: ct.position,
@@ -153,7 +162,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
           id: track.id,
           title: track.title,
           artist: track.artist,
-          durationMs: track.durationMs,
+          durationMs,
           albumArtUrl: track.albumArtUrl,
         },
         providerRefs: (providersByTrack.get(ct.trackId) ?? []).map((p) => ({

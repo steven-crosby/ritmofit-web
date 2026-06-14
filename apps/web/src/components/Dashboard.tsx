@@ -25,6 +25,13 @@ import {
 } from '../lib/api.js';
 import { moveItem } from '../lib/reorder.js';
 import { avgBpm, formatDuration } from '../lib/class-summary.js';
+import {
+  canRunPayload,
+  formatDurationInput,
+  parseDurationInput,
+  runBlockedMessage,
+  tracksMissingDuration,
+} from '../lib/duration.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
 import { libraryView, type ListStatus } from '../lib/library-state.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
@@ -126,7 +133,13 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 
   const runClass = useCallback(async (classId: string) => {
     try {
-      setLive(await getRunPayload(classId));
+      const payload = await getRunPayload(classId);
+      const blocked = runBlockedMessage(payload);
+      if (blocked) {
+        setError(blocked);
+        return;
+      }
+      setLive(payload);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -416,6 +429,7 @@ function ClassWorkspace({
   } | null>(null);
   const isOwner = cls.accessLevel === 'owner';
   const canEdit = cls.accessLevel === 'owner' || cls.accessLevel === 'edit';
+  const missingDurationTracks = payload ? tracksMissingDuration(payload) : [];
 
   const selectedTrack = tracks.find((t) => t.id === selectedTrackId) ?? null;
   const selectedEntry = payload?.tracks.find((e) => e.classTrackId === selectedTrackId) ?? null;
@@ -446,9 +460,12 @@ function ClassWorkspace({
           payload={payload}
           trackCount={payload?.tracks.length ?? tracks.length}
           isOwner={isOwner}
-          canRun={tracks.length > 0}
+          canEdit={canEdit}
+          canRun={payload != null && canRunPayload(payload)}
+          missingDurationTracks={missingDurationTracks}
           onError={onError}
           onRun={onRun}
+          onSelectTrack={setSelectedTrackId}
           onShare={() => setSharing(true)}
           onClassUpdated={onClassUpdated}
           onDeleted={() => onClassDeleted(cls.id)}
@@ -544,14 +561,17 @@ function ClassWorkspace({
  * run-payload — no new data), and the owner/run actions. Visibility and stats
  * use label + number, never color alone.
  */
-function ClassHeaderCard({
+export function ClassHeaderCard({
   cls,
   payload,
   trackCount,
   isOwner,
+  canEdit,
   canRun,
+  missingDurationTracks,
   onError,
   onRun,
+  onSelectTrack,
   onShare,
   onClassUpdated,
   onDeleted,
@@ -560,9 +580,12 @@ function ClassHeaderCard({
   payload: RunPayload | null;
   trackCount: number;
   isOwner: boolean;
+  canEdit: boolean;
   canRun: boolean;
+  missingDurationTracks: RunPayloadTrackEntry[];
   onError: (msg: string | null) => void;
   onRun: () => void;
+  onSelectTrack: (classTrackId: string) => void;
   onShare: () => void;
   onClassUpdated: (cls: Class) => void;
   onDeleted: () => void;
@@ -644,7 +667,7 @@ function ClassHeaderCard({
             className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
             onClick={onRun}
             disabled={!canRun}
-            title={canRun ? 'Run this class live' : 'Add a track first'}
+            title={canRun ? 'Run this class live' : 'Every track needs a duration'}
           >
             ▶ Run live
           </button>
@@ -674,6 +697,33 @@ function ClassHeaderCard({
           </>
         )}
       </div>
+      {missingDurationTracks.length > 0 && (
+        <div
+          className="rounded-card border border-intensity-hard/50 bg-intensity-hard/10 p-3"
+          role="status"
+        >
+          <p className="font-ui text-sm font-semibold text-text-primary">
+            Duration needed before Live mode
+          </p>
+          <p className="mt-1 font-ui text-xs text-text-secondary">
+            {canEdit
+              ? 'Select each track and enter its duration:'
+              : 'An owner or editor must set a duration for:'}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {missingDurationTracks.map((entry) => (
+              <button
+                key={entry.classTrackId}
+                type="button"
+                className="rounded-pill border border-interactive/50 px-3 py-1 font-ui text-xs text-interactive"
+                onClick={() => onSelectTrack(entry.classTrackId)}
+              >
+                {entry.track.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -858,6 +908,11 @@ function SongRow({
             <span className="ml-1 text-xs text-text-tertiary">BPM</span>
           </span>
         )}
+        {entry.track.durationMs == null && (
+          <span className="shrink-0 font-ui text-xs font-semibold text-intensity-hard">
+            Duration needed
+          </span>
+        )}
       </button>
       {/* Drag grip — a dedicated reorder handle (drag) that is also keyboard-operable
           (↑/↓). Kept off the selection button so neither gesture clobbers the other. */}
@@ -927,6 +982,7 @@ function TrackInspector({
 }) {
   const [intensity, setIntensity] = useState<Intensity>(track.intensity);
   const [bpm, setBpm] = useState(track.displayBpmOverride?.toString() ?? '');
+  const [duration, setDuration] = useState(formatDurationInput(durationMs));
   const [notes, setNotes] = useState(track.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -955,6 +1011,11 @@ function TrackInspector({
   };
 
   const save = async () => {
+    const parsedDuration = parseDurationInput(duration);
+    if (parsedDuration == null) {
+      setError('Enter a positive duration as minutes:seconds, for example 3:45.');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -962,6 +1023,7 @@ function TrackInspector({
       await updateClassTrack(track.id, {
         intensity,
         displayBpmOverride: trimmedBpm === '' ? null : Number(trimmedBpm),
+        durationMsOverride: parsedDuration,
         notes: notes.trim() === '' ? null : notes.trim(),
       });
       onSaved();
@@ -1047,6 +1109,24 @@ function TrackInspector({
               </button>
               {bpmStatus && <span className="font-data text-xs text-text-tertiary">{bpmStatus}</span>}
             </div>
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+              Duration
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="m:ss"
+              aria-describedby={`duration-help-${track.id}`}
+              className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+            />
+            <span id={`duration-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+              Minutes:seconds. Used for this class timeline.
+            </span>
           </label>
 
           <label className="flex flex-col gap-1">

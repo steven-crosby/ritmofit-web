@@ -19,11 +19,12 @@ const runPayloadClassSchema = z.object({
   /** The instructor's planned target length (may be null). Not the assembled total. */
   targetDurationMs: timestampMsSchema.nullable(),
   /**
-   * The actual assembled timeline length: the sum of the tracks' `durationMs`
-   * (a null track duration contributes 0). Server-derived at assembly so the live
-   * interval timer has an authoritative total without summing client-side. 0 for
-   * an empty class. M3 hardening — the timeline is recomputed at read time, so it
-   * is correct even if a persisted `startOffsetMs` ever drifts.
+   * The actual assembled timeline length: the sum of each class-track's effective
+   * duration (`durationMsOverride ?? track.durationMs`; null contributes 0).
+   * Server-derived at assembly so the live interval timer has an authoritative
+   * total without summing client-side. 0 for an empty class. M3 hardening — the
+   * timeline is recomputed at read time, so it is correct even if a persisted
+   * `startOffsetMs` ever drifts.
    */
   totalDurationMs: z.int().nonnegative(),
 });
@@ -32,6 +33,7 @@ const runPayloadTrackSchema = z.object({
   id: uuidSchema,
   title: z.string().min(1),
   artist: z.string().min(1),
+  /** Effective duration for this class placement (class override wins). */
   durationMs: z.int().positive().nullable(),
   albumArtUrl: z.url().nullable(),
 });
