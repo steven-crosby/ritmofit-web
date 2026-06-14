@@ -42,7 +42,11 @@
 
 ## Testing
 - **Unit:** the authz helper and any non-trivial query builders (the `GET /classes` union especially).
-- **Integration:** route-level tests against a local D1 (Miniflare / `wrangler dev` test harness).
+- **Integration:** route-level tests against a local D1 (Miniflare) — **implemented** via
+  `@cloudflare/vitest-pool-workers`. Run `pnpm --filter @ritmofit/api test:integration` (config
+  `apps/api/vitest.integration.config.ts`, tests in `apps/api/test/*.integration.test.ts`); runs the mounted
+  worker + real Better Auth sessions against a migrated test D1, and is its own CI step. Kept separate from
+  the fast node-env unit suite (`pnpm test`).
 - Tests are part of "done" for each route group, not an afterthought.
 
 ## Secrets & env

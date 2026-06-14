@@ -354,4 +354,46 @@ root). No `packages/shared`/OpenAPI contract change. `pnpm test` = api 169 + web
   put RESEND_API_KEY` (+ `EMAIL_FROM`).
 - **Deferred (not launch-blocking):** S3 (route-level/integration tests), S5 (live-OAuth connect
   success/failure UX, latent until provider creds ship), S6 (code-splitting — bundle is still one ~326 KB
-  / 94 KB-gzip chunk).
+  / 94 KB-gzip chunk). _(S3 + S6 done below.)_
+
+**Pre-launch review pass #2 + 3 PRs shipped & deployed (2026-06-13).** A second, full current-state review
+(`REVIEW.md`, now **tracked on `main`** — the earlier "untracked at repo root" note is obsolete) confirmed
+the B1–B4 blockers already shipped (above) and surfaced a fresh should-fix tier, all now merged to `main`
+and **deployed to prod** (Worker version `b9949950`, `ritmofit.studio`). **No schema/D1 migration** (remote
+D1 stays at `0008`); no `packages/shared` response-contract change. `pnpm test` = **222** unit (api 169 +
+web 53) **+ 8 integration**; typecheck (4 pkgs) · lint · build · OpenAPI no-drift green.
+- **PR #42 — should-fixes (web):** (1) **401 recovery** — `apps/web/src/lib/api.ts` calls
+  `authClient.signOut()` on any 401 so an expired session returns to `<Login>` instead of dead-ending every
+  action. (2) **Auth-form resilience** — `Login.tsx` + `ResetPassword.tsx` submits wrapped in
+  try/catch/finally (a network reject no longer hangs the button). (3) **Delete-class UI** — owner-only
+  delete + inline confirm in `ClassHeaderCard`, wired to the pre-existing `DELETE /classes/:id` (was a dead
+  backend path). (4) **Input caps** — `.max()` on user-supplied strings across `packages/shared`
+  (titles/names 200, artist 300, description/notes 2000, cue text 1000, nameOverride 200, cue color 64);
+  OpenAPI regenerated.
+- **PR #43 — route-level integration tests (S3, now DONE):** `@cloudflare/vitest-pool-workers@0.12.21`
+  (peers vitest 2–3.2) runs the **mounted worker against a real Miniflare D1** with prod migrations + real
+  Better Auth sign-up/session cookies. Own `apps/api/vitest.integration.config.ts` +
+  `apps/api/test/*.integration.test.ts` glob (the node-env unit suite is untouched); run via
+  `pnpm --filter @ritmofit/api test:integration`, added as its own CI step. **8 tests:** owner read; 401
+  unauth; non-owner 404 (hidden); non-owner edit 404; view-share read 200 / edit 403; run-payload total
+  duration; non-owner run-payload 404; publish → Explore → cross-user copy yields a private owned clone. The
+  `test/` dir sits outside the worker `rootDir: ./src`, so test-only deps (`cloudflare:test`) never enter
+  the worker build.
+- **PR #44 — perf (S6 code-splitting now DONE + `/explore` pagination):** `Dashboard.tsx` `React.lazy` +
+  `<Suspense>` for Live mode, the choreography editor, and the four dialogs → main JS chunk **330.65 → 291
+  KB** (gzip 93.98 → 86.93), split chunks load on demand. `GET /explore?limit=&offset=` (limit ≤ 50, default
+  30) keeps the public feed bounded as it grows; `ExploreDialog` pages via a **Load more** button. No
+  response-contract change; OpenAPI no-drift.
+- **Deployed (2026-06-13):** built the SPA + `wrangler deploy` (Worker `b9949950`); **prod == `main`**.
+  Smoke-tested live (health 200, SPA 200, `/explore` 401 unauthed, code-split chunks 200) **and the full API
+  flow end-to-end against prod**: sign-up → sign-in → create class → 5000-char title rejected `422` → add
+  track → run-payload `totalDurationMs=180000` → list (owner) → **delete `204` / GET `404`**. Throwaway test
+  users purged from remote D1 afterward (scoped to the `@ritmofit-verify.example` domain).
+- **⚠️ STILL the one launch blocker — email not live:** `RESEND_API_KEY`/`EMAIL_FROM` remain **unset** in
+  prod, so reset/verification still hit the console-log fallback. Finish B1 before launch: Resend account +
+  verify `ritmofit.studio` + SPF/DKIM/DMARC on the Cloudflare DNS zone, then `wrangler secret put
+  RESEND_API_KEY` (+ `EMAIL_FROM` — the from-domain MUST match the verified Resend domain). Setting the
+  secret redeploys the Worker on its own.
+- **Still deferred:** **S5** (live-OAuth connect success/failure UX, latent until provider creds ship) and
+  the design-system follow-ups in `milestones.md`. Email-verification posture stays **send-but-don't-block**
+  (decided this session). **Next major milestone remains iOS Phase 2.**

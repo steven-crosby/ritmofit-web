@@ -2,6 +2,19 @@
 
 _Regenerated 2026-06-13. Reviewer: Claude (Opus 4.8). Supersedes the prior pass — its B1–B4 + S1/S2/S4 items shipped in PR #40, so this is a fresh, current-state review._
 
+> **Status update (2026-06-13, end of session).** The should-fix tier from this review is **shipped, merged,
+> and deployed** to `ritmofit.studio` (Worker `b9949950`):
+> - ✅ **PR #42** — 401/session-expiry recovery · auth-form try/catch · delete-class UI · input `.max()` caps.
+> - ✅ **PR #43** — route-level integration tests (Workers pool + D1; 8 tests; CI step). _(closes the "no
+>   route-level tests" gap.)_
+> - ✅ **PR #44** — code-split the SPA (main chunk 330 → 291 KB) · paginate `GET /explore`.
+>
+> **One 🔴 blocker remains: transactional email is not provisioned** (`RESEND_API_KEY`/`EMAIL_FROM` unset in
+> prod → reset/verification hit the console fallback). This is the only launch gate left and is an ops task
+> (Resend account + DNS + `wrangler secret put`), not code. Remaining items below are post-launch
+> nice-to-haves (write-route rate limits, component/render tests, further pagination). Email-verification
+> posture was decided as **send-but-don't-block**.
+
 ## Stack & architecture (verified against the code, not assumed)
 
 pnpm monorepo, Cloudflare-native, single-origin deploy.
