@@ -41,6 +41,12 @@ jobs:
       - name: Test
         run: pnpm test
 
+      # Route-level integration tests run the mounted worker against a real
+      # (Miniflare) D1 with prod migrations applied — proves authz is enforced
+      # end-to-end. Separate config/glob from the node-env unit suite above.
+      - name: Integration tests (Workers pool + D1)
+        run: pnpm --filter @ritmofit/api test:integration
+
       # `vite build` can fail where `tsc --noEmit` passes (asset/import
       # resolution), and deploys are manual — so catch build breaks in CI.
       - name: Build web
