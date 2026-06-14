@@ -18,11 +18,15 @@ code). Re-confirmed a representative sample of still-open items across every are
 found no regressions and no drift from the descriptions below: `pnpm format:check` still
 fails (98 files); `pnpm audit --prod` still reports 1 high / 2 moderate / 1 low
 (esbuild via tsx→drizzle-kit→better-auth); `.github/workflows/ci.yml` still omits
-`format:check` and `pnpm audit`; `TrackSearch.tsx` empty-query branch still returns
-without bumping `reqId`; `apps/api/src/index.ts` still sets no browser security headers;
-and `POST /classes/:id/copy` still never reads/recreates `class_sections`. Remaining
-work is **SHOULD-FIX hardening + the manual Follow-Up Verification Checklist**, none of
-it launch-blocking._
+`format:check` and `pnpm audit`; and `TrackSearch.tsx` empty-query branch still returns
+without bumping `reqId`. Remaining work is **SHOULD-FIX hardening + the manual Follow-Up
+Verification Checklist**, none of it launch-blocking._
+
+_Fixes landed (2026-06-14, after the pass above): **browser security headers** (PR #47 —
+Worker middleware + `apps/web/public/_headers`) and **copy `class_sections` on class
+duplication** (PR #46), both merged to `main` with regression tests. **Not yet
+deployed** — production still runs Worker version 46 until a manual release; these fixes
+go live only on the next `deploy`._
 
 ## Repo Map
 
