@@ -32,6 +32,20 @@ HSTS/nosniff/`X-Frame-Options: DENY`/Referrer-Policy/Permissions-Policy) and the
 assets (full page CSP allowing Google Fonts + the app's own assets). Residual: a real-browser
 CSP-violation check (does anything get blocked at runtime) remains a recommended manual smoke._
 
+_Fixes landed + DEPLOYED (2026-06-14, after the above): **provider capability matrix** plus
+two **frontend state/correctness** fixes (PR #48), merged to `main` with tests and shipped to
+production as Worker version `fecdf611-f6ec-42f6-80e0-f1fc32eb0545` (supersedes `0444283a`; no
+migration — remote D1 unchanged at `0009`; secrets persisted). A shared `providerCapabilities`
+matrix (`packages/shared/src/enums.ts`) is now the single source of truth: the UI hides the
+per-user **Connect** and **My likes** actions for Spotify/Apple Music (catalog-only providers)
+instead of leading to a `501`, and the API connect/callback/likes gates read the matrix. The
+**TrackSearch** cleared-query branch now invalidates the in-flight request generation, and the
+**Dashboard** library rail distinguishes loading / empty / error (pure `libraryView()` helper).
+First web component-test infra landed (jsdom + Testing Library); `pnpm test` = api 169 + web 65.
+Post-deploy smoke: SPA `200` serving the new `index-dEjg_vwi.js` bundle, `/health` `200` with
+security headers intact, `/classes` `401` unauthenticated. Residual: a real-browser pass of the
+capability-gated Connections/Track-search UI remains a recommended manual smoke._
+
 ## Repo Map
 
 RitmoFit Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
@@ -230,18 +244,16 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
 
 ## Frontend / UI & UX
 
-- [ ] **[SHOULD-FIX] Distinguish loading, failure, and valid empty states, and clear
-      recovered errors** — `apps/web/src/components/Dashboard.tsx:58-81`,
-      `apps/web/src/components/Dashboard.tsx:86-101`,
-      `apps/web/src/components/Dashboard.tsx:209-210`,
-      `apps/web/src/components/Dashboard.tsx:275-277` — The class list starts as `[]`, so
-      "No classes yet" renders before the initial request resolves, and successful retries
-      never clear the top-level error. The browser pass left "Failed to fetch" visible
-      after a later class reload succeeded. Why it matters: instructors cannot tell whether
-      data is absent, still loading, or recovered, which undermines save/reopen confidence.
-      Recommended fix: model list/detail status explicitly, clear stale errors at the start
-      or success of a request, and preserve the last valid detail behind a retry state.
-      Evidence: verified and code inspection. Confidence: high.
+- [x] **[SHOULD-FIX - FIXED] Distinguish loading, failure, and valid empty states, and clear
+      recovered errors** — `apps/web/src/components/Dashboard.tsx`,
+      `apps/web/src/lib/library-state.ts` — The class list started as `[]`, so
+      "No classes yet" rendered before the initial request resolved, and a failed load was
+      indistinguishable from an empty library. Remediation (PR #48, deployed 2026-06-14): a
+      `listStatus` (`loading` | `ready` | `error`) drives a pure `libraryView(status, count)`
+      helper so the rail shows distinct loading / empty / error states and never blanks loaded
+      classes during a background refresh; `refreshClasses` already clears the top-level error
+      on success (keyed class detail shipped earlier in #45). Pure unit tests cover
+      `libraryView`. Evidence: code change + green tests. Confidence: high.
 - [ ] **[SHOULD-FIX] Make the workstation usable at narrow widths** —
       `apps/web/src/components/Dashboard.tsx:153-185`,
       `apps/web/src/components/Dashboard.tsx:209-216`,
@@ -264,14 +276,14 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       screen-reader labels with every input and adopt a reusable accessible dialog
       primitive that manages focus and background inertness. Evidence: verified and code
       inspection. Confidence: high.
-- [ ] **[SHOULD-FIX] Invalidate an in-flight search when the query is cleared** —
-      `apps/web/src/components/TrackSearch.tsx:33-75` — The empty-query branch clears
-      results but does not increment `reqId`; a request that already started can still
-      satisfy `id === reqId.current` and repopulate stale results after the field is empty.
-      Why it matters: users can add a result that no longer matches the visible search
-      state. Recommended fix: increment the request generation or abort the request before
-      returning from the empty-query branch, and add a fake-timer/component test. Evidence:
-      code inspection. Confidence: high.
+- [x] **[SHOULD-FIX - FIXED] Invalidate an in-flight search when the query is cleared** —
+      `apps/web/src/components/TrackSearch.tsx` — The empty-query branch cleared results but
+      did not increment `reqId`; a request already started could still satisfy
+      `id === reqId.current` and repopulate stale results, flashing them under a newly typed
+      query. Remediation (PR #48, deployed 2026-06-14): the empty-query branch now bumps
+      `reqId.current`, invalidating any in-flight generation. A jsdom component test
+      (the project's first) reproduces the cleared-mid-flight race and was confirmed to fail
+      without the fix. Evidence: code change + green component test. Confidence: high.
 - [ ] **[NICE-TO-HAVE] Add a class rename affordance** —
       `apps/web/src/components/Dashboard.tsx:500-545` — The API already accepts title
       updates, but the class header only exposes publish, share, delete, and run actions.
@@ -320,18 +332,21 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       verified production email configuration. Confidence: high. Remediation: both email
       and direct-user-id grant paths now reject unverified users with
       `EMAIL_NOT_VERIFIED`; integration tests cover shares and team membership.
-- [ ] **[SHOULD-FIX] Expose only provider capabilities that production actually
-      supports** — `apps/web/src/components/ConnectionsDialog.tsx:117-173`,
-      `apps/web/src/components/TrackSearch.tsx:97-136`,
-      `apps/api/src/routes/provider-connections.ts:127-145`,
-      `apps/api/src/lib/music/user-likes.ts:42-48` — The UI offers Connect and My likes
-      for SoundCloud, Spotify, and Apple Music. Outside the mock seam, OAuth connection and
-      user likes reject every provider except SoundCloud with `501`, although public
-      catalog search/import is implemented for all three. Why it matters: prominent
-      production buttons lead to known dead ends. Recommended fix: define a shared
-      capability matrix and hide/disable unsupported per-user actions with explanatory
-      copy while retaining catalog search. Evidence: verified UI and code inspection.
-      Confidence: high.
+- [x] **[SHOULD-FIX - FIXED] Expose only provider capabilities that production actually
+      supports** — `packages/shared/src/enums.ts`,
+      `apps/web/src/components/ConnectionsDialog.tsx`,
+      `apps/web/src/components/TrackSearch.tsx`,
+      `apps/api/src/routes/provider-connections.ts`,
+      `apps/api/src/lib/music/user-likes.ts` — The UI offered Connect and My likes for all
+      three providers, but outside the mock seam OAuth connection and user likes reject every
+      provider except SoundCloud with `501`. Remediation (PR #48, deployed 2026-06-14): a
+      shared `providerCapabilities` matrix (+ `supportsUserAccount()`) is the single source of
+      truth — SoundCloud = catalog + connect + likes, Spotify/Apple Music = catalog only. The
+      Connections dialog shows a muted "Catalog search only" state instead of a dead-end
+      Connect button, TrackSearch hides "My likes" for catalog-only providers (and won't fire
+      a `501` likes request), and the API connect/callback/likes gates read the matrix.
+      Catalog search/import stays available for all three. Unit tests assert the matrix
+      invariants. Evidence: code change + green tests. Confidence: high.
 
 ## Data Layer & State Management
 
