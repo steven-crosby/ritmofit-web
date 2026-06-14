@@ -107,8 +107,16 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > failed state. Remote D1 is migrated through `0009` (`failed_at` plus the active-queue index), and Worker
 > version 46 (`aa26e286-c517-444a-952f-d5e410c9439f`) is live at 100%. Health, SPA, protected-route,
 > code-split asset, and missing-state SoundCloud callback smokes passed; the callback now returns to
-> `https://ritmofit.studio`. Production transactional email remains open pending Resend/domain
-> provisioning and real reset/verification delivery tests.
+> `https://ritmofit.studio`.
+>
+> **Production transactional email verified (2026-06-14).** Resend verifies
+> `ritmofit.studio`; public DNS resolves the sending MX/SPF/DKIM records and DMARC policy.
+> Worker secret-only version 48 (`5bcf4a47-5795-4832-b8b0-bde95d651b3d`) supplies a
+> sending-only, domain-restricted `RESEND_API_KEY` and explicit `EMAIL_FROM`. A real
+> Gmail-alias signup received and completed email verification (`email_verified = 1`);
+> the password-reset email also arrived, opened the valid reset form, and completed the
+> password change. The temporary production account and its cascaded auth rows were
+> removed after the test. The transactional-email launch blocker is closed.
 >
 > **Web design-system build (builder UI) underway (2026-06-12).** The rich planning UI M1 deferred is
 > now being built in vertical slices — the difference between the data-flow skeleton and the designed

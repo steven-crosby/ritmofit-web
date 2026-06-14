@@ -4,10 +4,12 @@ _Audit date: 2026-06-14. Scope: current `main` worktree. Review only; no product
 schema changes, deployments, production migrations, or secret changes were performed._
 
 _Remediation update (2026-06-14): PR #45 is merged and deployed. Remote D1 is migrated
-through `0009`; production is 100% on Worker version 46
-(`aa26e286-c517-444a-952f-d5e410c9439f`). Health, SPA, auth enforcement, code-split
-asset, queue-schema, and missing-state SoundCloud callback smokes passed. Transactional
-email remains externally blocked on provider/domain provisioning._
+through `0009`; production application code remains Worker version 46
+(`aa26e286-c517-444a-952f-d5e410c9439f`), with email secrets active in version 48
+(`5bcf4a47-5795-4832-b8b0-bde95d651b3d`). Health, SPA, auth enforcement, code-split
+asset, queue-schema, and missing-state SoundCloud callback smokes passed. Resend is
+provisioned for `ritmofit.studio`; SPF, DKIM, MX, and DMARC resolve publicly, and real
+Gmail delivery, email verification, and password reset completed successfully._
 
 ## Repo Map
 
@@ -78,9 +80,11 @@ Missing or unclear documentation:
 - The root `.dev.vars.example` is stale relative to `apps/api/.dev.vars.example`: it uses
   obsolete Apple Sign-in variable names, omits Resend and current provider variables, and
   still labels M2 settings as unused placeholders.
-- Production Worker version 46 (`aa26e286-c517-444a-952f-d5e410c9439f`) is live at
-  100%. Its bindings include the canonical `WEB_ORIGIN`; `RESEND_API_KEY` remains absent.
-  DNS/email-provider verification and a tested rollback/recovery procedure could not be
+- Production application code is Worker version 46
+  (`aa26e286-c517-444a-952f-d5e410c9439f`); secret-only version 48
+  (`5bcf4a47-5795-4832-b8b0-bde95d651b3d`) supplies `RESEND_API_KEY` and `EMAIL_FROM`.
+  Resend verifies `ritmofit.studio`; public DNS resolves the sending MX/SPF/DKIM records
+  and `_dmarc` policy. A tested rollback/recovery procedure still could not be
   established from committed files or Worker metadata.
 
 ## Baseline Command Results
@@ -436,16 +440,20 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
 
 ## Security & Production Readiness
 
-- [ ] **[BLOCKER] Provision and verify production transactional email** —
+- [x] **[BLOCKER - REMEDIATED] Provision and verify production transactional email** —
       `apps/api/src/lib/email.ts:44-70`, `apps/api/src/lib/auth.ts:51-80`,
-      `apps/web/src/components/Login.tsx:22-29` — Without `RESEND_API_KEY`, reset and
-      verification messages are printed to Worker logs and the UI still reports that a
-      reset link is on its way. The deployed version's bindings confirm the key is absent.
-      Why it matters: locked-out beta users cannot recover their accounts, and verification
-      cannot establish email ownership. Recommended fix: verify the sending domain and
-      SPF/DKIM/DMARC, add `RESEND_API_KEY` and an approved `EMAIL_FROM`, send real reset and
-      verification messages, and monitor delivery failures. Evidence: verified and code
-      inspection. Confidence: high.
+      `apps/web/src/components/Login.tsx:22-29` — Resend now verifies
+      `ritmofit.studio`; public DNS resolves SPF, DKIM, sending MX, and DMARC. Worker
+      secret-only version 48 carries a sending-only, domain-restricted `RESEND_API_KEY`
+      and explicit `EMAIL_FROM`. A real Gmail-alias signup received the verification
+      message from `noreply@ritmofit.studio`; Gmail reported
+      `mailed-by: send.ritmofit.studio` and `signed-by: ritmofit.studio`. The verification
+      link set `email_verified = 1`, and a real password-reset message reached the same
+      inbox, opened the valid reset form, and completed the password change. The temporary
+      production account and its cascaded auth rows were deleted after verification.
+      Remaining operational work: monitor Resend delivery failures and reputation.
+      Evidence: production DNS, Worker metadata, Gmail, browser flow, and remote D1.
+      Confidence: high.
 - [ ] **[SHOULD-FIX] Set baseline browser security headers at the Worker/edge** —
       `apps/api/src/index.ts:29-82`, `apps/web/index.html:7-12` — Production responses
       lacked CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`,
@@ -509,7 +517,8 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
 ## Launch Blockers — Do First
 
 1. Provision Resend, verify the sending domain, and prove password-reset and
-   verification delivery on `ritmofit.studio`. **Open: external provisioning required.**
+   verification delivery on `ritmofit.studio`. **Complete: production Gmail delivery and
+   both action flows passed on 2026-06-14.**
 2. Set the production web origin and verify every SoundCloud OAuth callback path returns
    to `https://ritmofit.studio`. **Deployed; missing-state live smoke passed, full provider
    consent round-trip remains.**
@@ -530,8 +539,9 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
 - [ ] Run formatting check.
 - [x] Regenerate OpenAPI and confirm no drift.
 - [x] Validate migrations against a disposable local D1 database.
-- [ ] Smoke-test sign-up, sign-in, sign-out, session expiry, password reset, and email
-      verification.
+- [x] Smoke-test production sign-up, password reset, and email verification with real
+      inbox delivery; remove the temporary account afterward.
+- [ ] Smoke-test sign-in, sign-out, and session expiry.
 - [ ] Smoke-test provider connection, search, import, disconnect, and required purge
       behavior.
 - [ ] Smoke-test class creation, editing, choreography authoring, saving, reopening,
