@@ -394,6 +394,11 @@ the music layer into the builder and took it to **real catalogs in prod**.
 
 ## Post-launch web hardening
 
+- ✅ **D1-ordered class-library pagination**: `GET /classes` now resolves ownership, direct shares,
+  team shares, duplicate-path access rank, deterministic `(updated_at DESC, id DESC)` ordering, and
+  optional keyset pagination inside D1. The web library loads 30 at a time with an accessible
+  continuation control; unparameterized requests keep the legacy full-array contract for iOS.
+  Migration `0011` adds owner/share lookup indexes.
 - ✅ **Track-duration Live guard** (PR #49, deployed 2026-06-14): migration `0010` adds
   `class_tracks.duration_ms_override`; sequencing, anchor validation, copies, and the run-payload use
   the class-specific override before the library duration. The builder accepts `m:ss`, flags missing

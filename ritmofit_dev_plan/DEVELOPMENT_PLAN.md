@@ -128,8 +128,14 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > #51/#52 are live; Worker `1eb04d11-b676-43b5-a7be-7b62ffe83f6a` at 100%, remote D1 through `0010`.
 > **0 launch blockers remain**; the Follow-Up Verification Checklist in `../REVIEW.md` is now green except
 > a vite 5→6 upgrade (to clear the ignored advisories) and owner-only GitHub branch protection. Remaining
-> SHOULD-FIX backend items: paginate/order `GET /classes` in SQL, add lookup/cleanup indexes, and broaden
-> Worker/D1 integration tests.
+> SHOULD-FIX backend items: add the remaining lookup/cleanup indexes and broaden Worker/D1 integration
+> tests.
+>
+> **Web hardening — class-library pagination implemented (2026-06-15).** `GET /classes` now resolves
+> ownership, direct/team shares, duplicate-path access rank, deterministic ordering, and optional
+> keyset pagination inside D1. The web library loads 30 classes at a time; the unparameterized full-array
+> response remains compatible with the current iOS client. Migration `0011` adds owner/share lookup
+> indexes. Deployment pending.
 >
 > **Web design-system build (builder UI) underway (2026-06-12).** The rich planning UI M1 deferred is
 > now being built in vertical slices — the difference between the data-flow skeleton and the designed

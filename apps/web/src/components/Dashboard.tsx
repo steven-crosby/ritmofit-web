@@ -77,6 +77,8 @@ function LoadingScreen() {
 export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
   const [classes, setClasses] = useState<ClassWithAccess[]>([]);
   const [listStatus, setListStatus] = useState<ListStatus>('loading');
+  const [nextClassCursor, setNextClassCursor] = useState<string | null>(null);
+  const [loadingMoreClasses, setLoadingMoreClasses] = useState(false);
   const [selected, setSelected] = useState<ClassWithAccess | null>(null);
   const [detail, dispatchDetail] = useReducer(classDetailReducer, initialClassDetailState);
   const detailRequestId = useRef(0);
@@ -88,7 +90,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 
   const refreshClasses = useCallback(async () => {
     try {
-      setClasses(await listClasses());
+      const page = await listClasses();
+      setClasses(page.items);
+      setNextClassCursor(page.nextCursor);
       setListStatus('ready');
       setError(null);
     } catch (e) {
@@ -96,6 +100,24 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       setError((e as Error).message);
     }
   }, []);
+
+  const loadMoreClasses = useCallback(async () => {
+    if (!nextClassCursor || loadingMoreClasses) return;
+    setLoadingMoreClasses(true);
+    setError(null);
+    try {
+      const page = await listClasses(undefined, nextClassCursor);
+      setClasses((current) => {
+        const seen = new Set(current.map((cls) => cls.id));
+        return [...current, ...page.items.filter((cls) => !seen.has(cls.id))];
+      });
+      setNextClassCursor(page.nextCursor);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoadingMoreClasses(false);
+    }
+  }, [loadingMoreClasses, nextClassCursor]);
 
   useEffect(() => {
     void refreshClasses();
@@ -264,6 +286,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           <LibraryRail
             classes={classes}
             status={listStatus}
+            hasMore={nextClassCursor !== null}
+            loadingMore={loadingMoreClasses}
             selectedId={selected?.id ?? null}
             onError={setError}
             onCreate={async (cls) => {
@@ -271,6 +295,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               await openClass({ ...cls, accessLevel: 'owner' });
             }}
             onOpen={openClass}
+            onLoadMore={loadMoreClasses}
           />
 
           {selected && detail.classId === selected.id && detail.status === 'ready' ? (
@@ -320,20 +345,26 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
  * to open; the active class is marked with a ring (not color alone). On xl it is
  * a sticky column so the list stays in view while the center scrolls.
  */
-function LibraryRail({
+export function LibraryRail({
   classes,
   status,
+  hasMore,
+  loadingMore,
   selectedId,
   onError,
   onCreate,
   onOpen,
+  onLoadMore,
 }: {
   classes: ClassWithAccess[];
   status: ListStatus;
+  hasMore: boolean;
+  loadingMore: boolean;
   selectedId: string | null;
   onError: (msg: string | null) => void;
   onCreate: (cls: Awaited<ReturnType<typeof createClass>>) => void;
   onOpen: (cls: ClassWithAccess) => void;
+  onLoadMore: () => void;
 }) {
   const view = libraryView(status, classes.length);
   return (
@@ -342,7 +373,7 @@ function LibraryRail({
         <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
           Your classes
         </span>
-        <span className="font-data text-xs text-text-tertiary">{classes.length}</span>
+        <span className="font-data text-xs text-text-tertiary">{classes.length} loaded</span>
       </div>
       <CreateClassForm onCreated={onCreate} onError={onError} />
       {view === 'loading' ? (
@@ -373,6 +404,18 @@ function LibraryRail({
               </button>
             </li>
           ))}
+          {hasMore && (
+            <li className="flex justify-center pt-1">
+              <button
+                type="button"
+                className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+                onClick={onLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? 'Loading…' : 'Load more'}
+              </button>
+            </li>
+          )}
         </ul>
       )}
     </aside>

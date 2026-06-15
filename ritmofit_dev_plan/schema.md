@@ -87,6 +87,9 @@ Owned by exactly one user. No `team_id` — ownership is always a user; others g
 | created_at / updated_at | int (ms) | |
 | last_opened_at | int (ms) | Nullable |
 
+Indexes include `(owner_user_id, updated_at, id)` for the owned arm of the ordered private-library
+query.
+
 > **No `segment_type` here and no `class_sections` table in M1** — segments are a design concept not
 > yet in the schema (decision D-cut). Don't invent the table.
 
@@ -264,6 +267,9 @@ direct access.
 `(resource_type, resource_id, target_user_id)` and `(resource_type, resource_id, target_team_id)`.
 Re-sharing to the same target updates the existing row's `permission` rather than inserting a duplicate
 (`PATCH /shares/:id`).
+
+Target-first indexes on `(resource_type, target_user_id, resource_id)` and
+`(resource_type, target_team_id, resource_id)` support the direct/team arms of `GET /classes`.
 
 ---
 

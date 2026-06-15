@@ -39,7 +39,7 @@ surfaced in the generated OpenAPI spec.
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/classes` | List classes the user can see: owned ∪ shared-directly ∪ shared-via-team. Indicates each class's access level. |
+| GET | `/classes` | List classes the user can see: owned ∪ shared-directly ∪ shared-via-team. Indicates each class's highest effective access level. Web callers use `?limit=&cursor=` keyset pagination ordered by `updatedAt DESC, id DESC`; the opaque next cursor is returned in `X-RitmoFit-Next-Cursor`. An unparameterized request retains the legacy full-array response for the current iOS client. |
 | POST | `/classes` | Create a class (owner = caller). |
 | GET | `/classes/:id` | Fetch one class (owner or any share). |
 | PATCH | `/classes/:id` | Update class fields (edit access). Setting `visibility` (`private`/`public`) is how an owner publishes to / unpublishes from Explore (M4). |
@@ -202,8 +202,8 @@ contract — one fetch so the iOS app isn't composing the live view from a dozen
 
 ## Notes
 
-- The `GET /classes` union is the one query to watch for cost — a deliberate shape, not an accident.
-  See `authorization.md` for the access predicate it implements.
+- The `GET /classes` access union, deduplication, ordering, and optional keyset limit execute in D1.
+  See `authorization.md` for the access predicate and pagination shape.
 - Choreography endpoints (`cues`, `moves`) inherit the parent class's access level via the
   `cue/move → class_track → class` chain, resolved by the authz helper.
 - **M2 adds:** `GET /search` (provider search), provider-ID resolution, optional third-party BPM

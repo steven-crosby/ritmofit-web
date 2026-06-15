@@ -78,6 +78,13 @@
       "when": 1781476387559,
       "tag": "0010_overconfident_corsair",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1781501728206,
+      "tag": "0011_loose_expediter",
+      "breakpoints": true
     }
   ]
 }

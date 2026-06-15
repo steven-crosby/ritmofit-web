@@ -458,26 +458,34 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       id, same `type` + `startOffsetMs`) in the batched transaction. A new integration
       test seeds two bands on the source and asserts the copy carries both in order.
       Evidence: code change + green Worker/D1 integration test. Confidence: high.
-- [ ] **[SHOULD-FIX] Paginate and order the private class library in D1** —
+- [x] **[SHOULD-FIX - FIXED] Paginate and order the private class library in D1** —
       `apps/api/src/routes/classes.ts:64-85` — `GET /classes` resolves every visible id,
       fetches every class, and sorts the full result in Worker memory. Why it matters: a
       long-lived instructor or team account increases D1 reads, response size, and Worker
-      CPU on every dashboard load. Recommended fix: define cursor/limit semantics and push
-      ordering plus limits into SQL while preserving effective access calculation.
-      Evidence: code inspection. Confidence: medium.
-- [ ] **[SHOULD-FIX] Add indexes for the remaining recurring lookup and cleanup
+      CPU on every dashboard load. Remediation (2026-06-15): the ownership/direct-share/
+      team-share union, duplicate-path maximum access, deterministic
+      `(updated_at DESC, id DESC)` ordering, cursor predicate, and limit now execute in D1.
+      The web loads 30 rows at a time and appends with an accessible continuation control.
+      Unparameterized requests retain the full-array contract for the current iOS cache.
+      Migration `0011` adds owner/share lookup indexes; mounted Worker/D1 tests cover
+      ordering, equal timestamps, hidden rows, pagination boundaries, and highest access.
+      A representative 300-class `EXPLAIN QUERY PLAN` pass confirms all three candidate
+      arms use their intended indexes. Evidence: implementation + focused
+      unit/component/integration tests + disposable-D1 migration/query plan. Confidence: high.
+- [ ] **[SHOULD-FIX - PARTIALLY FIXED] Add indexes for the remaining recurring lookup and cleanup
       paths** — `apps/api/src/db/schema.ts:158-186`,
       `apps/api/src/db/schema.ts:331-361`,
       `apps/api/src/db/schema.ts:397-426`,
       `apps/api/src/lib/music/purge.ts:110-116`,
       `apps/api/src/lib/rate-limit.ts:120-125` — There is no standalone
-      `track_provider_ids.track_id` index despite repeated track-to-ref lookups, no
-      `provider_purge_queue.requested_at` index for the oldest-first daily batch, no
-      target-first share index for visible-class unions, and no `rate_limit.last_request`
-      index for daily pruning. Why it matters: these scans grow with provider imports,
-      sharing, and authentication traffic. Recommended fix: capture D1 query plans with
-      representative data, add only the indexes proven useful, and validate the migration
-      on a disposable database. Evidence: code inspection. Confidence: medium.
+      `track_provider_ids.track_id` index despite repeated track-to-ref lookups, and no
+      `rate_limit.last_request` index for daily pruning. The active purge queue index shipped
+      in `0009`; target-first direct/team share indexes ship in `0011` after representative
+      query-plan validation. Why it matters: the remaining scans grow with provider imports
+      and authentication traffic. Recommended fix: capture D1 query plans with representative
+      data, add only the indexes proven useful, and validate the migration on a disposable
+      database. Evidence: code inspection plus the completed pagination query-plan pass.
+      Confidence: medium.
 
 ## Testing & CI/CD
 

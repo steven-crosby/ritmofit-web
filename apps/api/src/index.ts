@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ZodError } from 'zod';
-import { API_VERSION } from '@ritmofit/shared';
+import { API_VERSION, CLASS_LIST_NEXT_CURSOR_HEADER } from '@ritmofit/shared';
 import { ProviderError } from '@ritmofit/music';
 import type { AppEnv, Env } from './lib/types.js';
 import { createAuth } from './lib/auth.js';
@@ -103,6 +103,7 @@ app.use(
     credentials: true,
     allowHeaders: ['Content-Type'],
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    exposeHeaders: [CLASS_LIST_NEXT_CURSOR_HEADER],
   }),
 );
 
