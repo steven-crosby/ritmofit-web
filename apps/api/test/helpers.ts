@@ -49,6 +49,21 @@ export async function verifyUserEmail(userId: string): Promise<void> {
   await env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(userId).run();
 }
 
+/**
+ * Read the Better Auth password-reset token for a user straight from D1. Better
+ * Auth stores it as a `verifications` row keyed `reset-password:<token>` with the
+ * user id in `value`, so a test can drive the reset flow without parsing the
+ * dev-fallback email log.
+ */
+export async function readResetToken(userId: string): Promise<string | null> {
+  const row = await env.DB.prepare(
+    "SELECT identifier FROM verifications WHERE value = ? AND identifier LIKE 'reset-password:%' ORDER BY created_at DESC LIMIT 1",
+  )
+    .bind(userId)
+    .first<{ identifier: string }>();
+  return row ? row.identifier.slice('reset-password:'.length) : null;
+}
+
 /** Bind a cookie to a fetch helper for an authenticated user. */
 export function authed(cookie: string) {
   return (path: string, init: RequestInit = {}): Promise<Response> =>
