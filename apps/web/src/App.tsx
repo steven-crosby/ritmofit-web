@@ -7,6 +7,11 @@ import { authClient } from './lib/auth-client.js';
 import { Login } from './components/Login.js';
 import { Dashboard } from './components/Dashboard.js';
 import { ResetPassword } from './components/ResetPassword.js';
+import { NotFound } from './components/NotFound.js';
+
+// The app navigates in-component (no router); the only real URLs are the root
+// and the email-link reset page. Everything else is an unknown path.
+const KNOWN_PATHS = new Set(['/', '/reset-password']);
 
 export function App() {
   const { data: session, isPending } = authClient.useSession();
@@ -14,6 +19,10 @@ export function App() {
   // Reset-password lands here from the email link (no router); render it on
   // pathname before the session gate so it works while signed out.
   if (window.location.pathname === '/reset-password') return <ResetPassword />;
+
+  // Cloudflare serves the SPA for every path, so an unknown URL must render a
+  // 404 view here rather than silently falling through to Login/Dashboard.
+  if (!KNOWN_PATHS.has(window.location.pathname)) return <NotFound />;
 
   if (isPending) {
     return (
