@@ -646,7 +646,7 @@ export function ClassHeaderCard({
 
   return (
     <div className="flex flex-col gap-3 rounded-card bg-bg-raised p-5 shadow-card">
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
         <div className="min-w-0">
           <h2 className="truncate font-display text-xl font-semibold text-text-primary">
             {cls.title}
@@ -656,7 +656,9 @@ export function ClassHeaderCard({
             {isPublic ? '🌐 Public — listed in Explore' : '🔒 Private'}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        {/* Actions wrap below the title on narrow viewports instead of forcing
+            horizontal overflow; single row to the right of the title on sm+. */}
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
           {isOwner && (
             <button
               className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
