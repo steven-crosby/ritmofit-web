@@ -76,6 +76,23 @@ describe('Dialog', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('pulls focus back into the dialog when its focused control is removed', () => {
+    vi.useFakeTimers();
+    try {
+      renderDialog();
+      const one = screen.getByRole('button', { name: 'one' });
+      one.focus();
+      // Simulate the focused control being removed by an in-dialog action,
+      // which drops focus to <body> (outside the dialog).
+      one.remove();
+      fireEvent.focusOut(screen.getByRole('dialog'));
+      vi.runAllTimers();
+      expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('returns focus to the triggering element on close', () => {
     const { trigger, unmount } = renderDialog();
     unmount();

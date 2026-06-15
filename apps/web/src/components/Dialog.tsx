@@ -38,6 +38,7 @@ export function Dialog({
   initialFocusRef?: RefObject<HTMLElement | null>;
   children: ReactNode;
 }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Keep the latest onClose without re-running the open/close effect (which must
@@ -63,7 +64,23 @@ export function Dialog({
     const target = initialFocusRef?.current ?? focusablesIn()[0] ?? panelRef.current;
     target?.focus();
 
+    // Focus guard: if focus leaves the dialog while it's open — e.g. the focused
+    // control is removed by an in-dialog action (Connect → Disconnect), dropping
+    // focus to <body> — pull it back so Tab/Escape keep working. The Tab handler
+    // covers keyboard cycling; this covers programmatic focus loss. Background is
+    // already `inert`, so the only escape route is element removal.
+    const onFocusOut = () => {
+      setTimeout(() => {
+        const overlay = overlayRef.current;
+        if (overlay && !overlay.contains(document.activeElement)) {
+          (focusablesIn()[0] ?? panelRef.current)?.focus();
+        }
+      }, 0);
+    };
+    overlayRef.current?.addEventListener('focusout', onFocusOut);
+
     return () => {
+      overlayRef.current?.removeEventListener('focusout', onFocusOut);
       root?.removeAttribute('inert');
       root?.removeAttribute('aria-hidden');
       document.body.style.overflow = prevOverflow;
@@ -100,6 +117,7 @@ export function Dialog({
 
   return createPortal(
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       role="dialog"
       aria-modal="true"
