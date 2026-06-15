@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ShareView, SharePermission, TeamWithRole } from '@ritmofit/shared';
 import { listShares, createShare, updateShare, deleteShare, listTeams } from '../lib/api.js';
+import { Dialog } from './Dialog.js';
 
 const PERMISSION_LABEL: Record<SharePermission, string> = { view: 'Can view', edit: 'Can edit' };
 const PERMISSION_ICON: Record<SharePermission, string> = { view: '👁', edit: '✎' };
@@ -45,15 +46,7 @@ export function ShareDialog({
     listTeams()
       .then(setTeams)
       .catch(() => setTeams([]));
-    emailRef.current?.focus();
   }, [refresh]);
-
-  // Close on Escape for keyboard users.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
 
   const submit = useCallback(
     async (e: React.FormEvent) => {
@@ -63,7 +56,12 @@ export function ShareDialog({
       setBusy(true);
       setError(null);
       try {
-        await createShare({ resourceType: 'class', resourceId: classId, targetEmail: target, permission });
+        await createShare({
+          resourceType: 'class',
+          resourceId: classId,
+          targetEmail: target,
+          permission,
+        });
         setEmail('');
         await refresh();
       } catch (err) {
@@ -82,7 +80,12 @@ export function ShareDialog({
       setBusy(true);
       setError(null);
       try {
-        await createShare({ resourceType: 'class', resourceId: classId, targetTeamId: teamId, permission: teamPermission });
+        await createShare({
+          resourceType: 'class',
+          resourceId: classId,
+          targetTeamId: teamId,
+          permission: teamPermission,
+        });
         setTeamId('');
         await refresh();
       } catch (err) {
@@ -119,48 +122,91 @@ export function ShareDialog({
   );
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Share ${classTitle}`}
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    <Dialog
+      onClose={onClose}
+      label={`Share ${classTitle}`}
+      initialFocusRef={emailRef}
+      panelClassName="flex w-full max-w-md flex-col gap-4 rounded-panel bg-bg-raised p-6 shadow-lifted"
     >
-      <div className="flex w-full max-w-md flex-col gap-4 rounded-panel bg-bg-raised p-6 shadow-lifted">
-        <header className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-semibold text-text-primary">Share class</h2>
-            <p className="font-ui text-sm text-text-secondary">{classTitle}</p>
-          </div>
-          <button
-            className="rounded-pill px-2 py-1 font-ui text-sm text-text-tertiary hover:text-text-primary"
-            onClick={onClose}
-            aria-label="Close share dialog"
-          >
-            ✕
-          </button>
-        </header>
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-lg font-semibold text-text-primary">Share class</h2>
+          <p className="font-ui text-sm text-text-secondary">{classTitle}</p>
+        </div>
+        <button
+          className="rounded-pill px-2 py-1 font-ui text-sm text-text-tertiary hover:text-text-primary"
+          onClick={onClose}
+          aria-label="Close share dialog"
+        >
+          ✕
+        </button>
+      </header>
 
-        <form className="flex flex-col gap-2" onSubmit={submit}>
-          <label htmlFor="share-email" className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-            Invite by email
+      <form className="flex flex-col gap-2" onSubmit={submit}>
+        <label
+          htmlFor="share-email"
+          className="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Invite by email
+        </label>
+        <div className="flex gap-2">
+          <input
+            id="share-email"
+            ref={emailRef}
+            type="email"
+            className="flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
+            placeholder="name@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={busy}
+          />
+          <select
+            className="rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
+            value={permission}
+            onChange={(e) => setPermission(e.target.value as SharePermission)}
+            aria-label="Permission for the invited user"
+            disabled={busy}
+          >
+            <option value="view">Can view</option>
+            <option value="edit">Can edit</option>
+          </select>
+          <button
+            className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+            disabled={busy || !email.trim()}
+          >
+            Share
+          </button>
+        </div>
+      </form>
+
+      {teams.length > 0 && (
+        <form className="flex flex-col gap-2" onSubmit={submitTeam}>
+          <label
+            htmlFor="share-team"
+            className="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+          >
+            Share with a team
           </label>
           <div className="flex gap-2">
-            <input
-              id="share-email"
-              ref={emailRef}
-              type="email"
+            <select
+              id="share-team"
               className="flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={teamId}
+              onChange={(e) => setTeamId(e.target.value)}
               disabled={busy}
-            />
+            >
+              <option value="">Select a team…</option>
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
             <select
               className="rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
-              value={permission}
-              onChange={(e) => setPermission(e.target.value as SharePermission)}
-              aria-label="Permission for the invited user"
+              value={teamPermission}
+              onChange={(e) => setTeamPermission(e.target.value as SharePermission)}
+              aria-label="Permission for the team"
               disabled={busy}
             >
               <option value="view">Can view</option>
@@ -168,105 +214,65 @@ export function ShareDialog({
             </select>
             <button
               className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
-              disabled={busy || !email.trim()}
+              disabled={busy || !teamId}
             >
               Share
             </button>
           </div>
         </form>
+      )}
 
-        {teams.length > 0 && (
-          <form className="flex flex-col gap-2" onSubmit={submitTeam}>
-            <label htmlFor="share-team" className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Share with a team
-            </label>
-            <div className="flex gap-2">
-              <select
-                id="share-team"
-                className="flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
-                value={teamId}
-                onChange={(e) => setTeamId(e.target.value)}
-                disabled={busy}
-              >
-                <option value="">Select a team…</option>
-                {teams.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
-                value={teamPermission}
-                onChange={(e) => setTeamPermission(e.target.value as SharePermission)}
-                aria-label="Permission for the team"
-                disabled={busy}
-              >
-                <option value="view">Can view</option>
-                <option value="edit">Can edit</option>
-              </select>
-              <button
-                className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
-                disabled={busy || !teamId}
-              >
-                Share
-              </button>
-            </div>
-          </form>
-        )}
+      {error && (
+        <p className="font-ui text-sm text-intensity-all_out" role="alert">
+          {error}
+        </p>
+      )}
 
-        {error && (
-          <p className="font-ui text-sm text-intensity-all_out" role="alert">
-            {error}
-          </p>
-        )}
-
-        <section className="flex flex-col gap-2">
-          <h3 className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Shared with</h3>
-          {shares === null ? (
-            <p className="font-ui text-sm text-text-tertiary">Loading…</p>
-          ) : shares.length === 0 ? (
-            <p className="font-ui text-sm text-text-tertiary">Not shared with anyone yet.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {shares.map((s) => (
-                <li
-                  key={s.id}
-                  className="flex items-center gap-3 rounded-card bg-bg-base px-3 py-2"
+      <section className="flex flex-col gap-2">
+        <h3 className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Shared with</h3>
+        {shares === null ? (
+          <p className="font-ui text-sm text-text-tertiary">Loading…</p>
+        ) : shares.length === 0 ? (
+          <p className="font-ui text-sm text-text-tertiary">Not shared with anyone yet.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {shares.map((s) => (
+              <li key={s.id} className="flex items-center gap-3 rounded-card bg-bg-base px-3 py-2">
+                <span
+                  className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary"
+                  title={shareTarget(s)}
                 >
-                  <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary" title={shareTarget(s)}>
-                    {shareTarget(s)}
+                  {shareTarget(s)}
+                </span>
+                {s.targetTeamId ? (
+                  // Team shares carry a single permission; no per-row toggle here.
+                  <span className="font-ui text-xs text-text-secondary">
+                    {PERMISSION_ICON[s.permission]} {PERMISSION_LABEL[s.permission]}
                   </span>
-                  {s.targetTeamId ? (
-                    // Team shares carry a single permission; no per-row toggle here.
-                    <span className="font-ui text-xs text-text-secondary">
-                      {PERMISSION_ICON[s.permission]} {PERMISSION_LABEL[s.permission]}
-                    </span>
-                  ) : (
-                    <select
-                      className="rounded-pill border border-interactive/30 bg-bg-raised px-2 py-1 font-ui text-xs text-text-primary"
-                      value={s.permission}
-                      onChange={(e) => changePermission(s.id, e.target.value as SharePermission)}
-                      aria-label={`Permission for ${shareTarget(s)}`}
-                    >
-                      <option value="view">👁 Can view</option>
-                      <option value="edit">✎ Can edit</option>
-                    </select>
-                  )}
-                  <button
-                    className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-intensity-all_out"
-                    onClick={() => revoke(s.id)}
-                    aria-label={`Revoke access for ${shareTarget(s)}`}
+                ) : (
+                  <select
+                    className="rounded-pill border border-interactive/30 bg-bg-raised px-2 py-1 font-ui text-xs text-text-primary"
+                    value={s.permission}
+                    onChange={(e) => changePermission(s.id, e.target.value as SharePermission)}
+                    aria-label={`Permission for ${shareTarget(s)}`}
                   >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
-    </div>
+                    <option value="view">👁 Can view</option>
+                    <option value="edit">✎ Can edit</option>
+                  </select>
+                )}
+                <button
+                  className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-intensity-all_out"
+                  onClick={() => revoke(s.id)}
+                  aria-label={`Revoke access for ${shareTarget(s)}`}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </Dialog>
   );
 }
 

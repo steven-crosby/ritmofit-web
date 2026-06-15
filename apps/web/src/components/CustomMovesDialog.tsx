@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { UserMove } from '@ritmofit/shared';
 import { listUserMoves, updateUserMove, deleteUserMove } from '../lib/api.js';
+import { Dialog } from './Dialog.js';
 
 export function CustomMovesDialog({
   onClose,
@@ -36,12 +37,6 @@ export function CustomMovesDialog({
     void refresh();
   }, [refresh]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
   // Apply a mutation, then refresh this list and notify the caller.
   const afterChange = useCallback(async () => {
     setError(null);
@@ -50,51 +45,47 @@ export function CustomMovesDialog({
   }, [refresh, onChanged]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Manage custom moves"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    <Dialog
+      onClose={onClose}
+      label="Manage custom moves"
+      panelClassName="flex w-full max-w-lg flex-col gap-4 rounded-panel bg-bg-raised p-6 shadow-lifted"
     >
-      <div className="flex w-full max-w-lg flex-col gap-4 rounded-panel bg-bg-raised p-6 shadow-lifted">
-        <header className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-semibold text-text-primary">Custom moves</h2>
-            <p className="font-ui text-xs text-text-tertiary">
-              Your reusable moves. Create new ones from a track’s Moves section.
-            </p>
-          </div>
-          <button
-            className="rounded-pill px-2 py-1 font-ui text-sm text-text-tertiary hover:text-text-primary"
-            onClick={onClose}
-            aria-label="Close custom moves dialog"
-          >
-            ✕
-          </button>
-        </header>
-
-        {error && (
-          <p className="font-ui text-sm text-intensity-all_out" role="alert">
-            {error}
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-lg font-semibold text-text-primary">Custom moves</h2>
+          <p className="font-ui text-xs text-text-tertiary">
+            Your reusable moves. Create new ones from a track’s Moves section.
           </p>
-        )}
+        </div>
+        <button
+          className="rounded-pill px-2 py-1 font-ui text-sm text-text-tertiary hover:text-text-primary"
+          onClick={onClose}
+          aria-label="Close custom moves dialog"
+        >
+          ✕
+        </button>
+      </header>
 
-        {moves === null ? (
-          <p className="font-ui text-sm text-text-tertiary">Loading…</p>
-        ) : moves.length === 0 ? (
-          <p className="font-ui text-sm text-text-tertiary">
-            No custom moves yet — create one from a track’s Moves section.
-          </p>
-        ) : (
-          <ul className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto">
-            {moves.map((m) => (
-              <CustomMoveRow key={m.id} move={m} onChanged={afterChange} onError={setError} />
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+      {error && (
+        <p className="font-ui text-sm text-intensity-all_out" role="alert">
+          {error}
+        </p>
+      )}
+
+      {moves === null ? (
+        <p className="font-ui text-sm text-text-tertiary">Loading…</p>
+      ) : moves.length === 0 ? (
+        <p className="font-ui text-sm text-text-tertiary">
+          No custom moves yet — create one from a track’s Moves section.
+        </p>
+      ) : (
+        <ul className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto">
+          {moves.map((m) => (
+            <CustomMoveRow key={m.id} move={m} onChanged={afterChange} onError={setError} />
+          ))}
+        </ul>
+      )}
+    </Dialog>
   );
 }
 

@@ -46,14 +46,24 @@ import { TrackSearch } from './TrackSearch.js';
 // initial builder paint doesn't ship Live mode, the choreography editor, or the
 // modal dialogs. Each loads on first use behind a <Suspense> boundary below.
 const LiveMode = lazy(() => import('./LiveMode.js').then((m) => ({ default: m.LiveMode })));
-const ShareDialog = lazy(() => import('./ShareDialog.js').then((m) => ({ default: m.ShareDialog })));
-const TeamsDialog = lazy(() => import('./TeamsDialog.js').then((m) => ({ default: m.TeamsDialog })));
-const ExploreDialog = lazy(() => import('./ExploreDialog.js').then((m) => ({ default: m.ExploreDialog })));
+const ShareDialog = lazy(() =>
+  import('./ShareDialog.js').then((m) => ({ default: m.ShareDialog })),
+);
+const TeamsDialog = lazy(() =>
+  import('./TeamsDialog.js').then((m) => ({ default: m.TeamsDialog })),
+);
+const ExploreDialog = lazy(() =>
+  import('./ExploreDialog.js').then((m) => ({ default: m.ExploreDialog })),
+);
 const ConnectionsDialog = lazy(() =>
   import('./ConnectionsDialog.js').then((m) => ({ default: m.ConnectionsDialog })),
 );
-const CuesSection = lazy(() => import('./ChoreographyEditor.js').then((m) => ({ default: m.CuesSection })));
-const MovesSection = lazy(() => import('./ChoreographyEditor.js').then((m) => ({ default: m.MovesSection })));
+const CuesSection = lazy(() =>
+  import('./ChoreographyEditor.js').then((m) => ({ default: m.CuesSection })),
+);
+const MovesSection = lazy(() =>
+  import('./ChoreographyEditor.js').then((m) => ({ default: m.MovesSection })),
+);
 
 /** Full-screen Suspense fallback while a lazy chunk (e.g. Live mode) loads. */
 function LoadingScreen() {
@@ -152,7 +162,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     setClasses((prev) =>
       prev.map((c) => (c.id === updated.id ? { ...updated, accessLevel: c.accessLevel } : c)),
     );
-    setSelected((prev) => (prev && prev.id === updated.id ? { ...updated, accessLevel: prev.accessLevel } : prev));
+    setSelected((prev) =>
+      prev && prev.id === updated.id ? { ...updated, accessLevel: prev.accessLevel } : prev,
+    );
   }, []);
 
   // A deleted class closes its workspace (clearing the detail panes) and refreshes
@@ -179,39 +191,45 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     <main className="flex min-h-screen flex-col">
       {/* Persistent top bar — glass nav surface (design system 04/05): brand
           mark + wordmark, then the cross-cutting destinations. */}
-      <header className="rf-topbar flex items-center gap-4 px-6 py-3">
+      <header className="rf-topbar flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-2.5">
           <span className="rf-brand-mark" aria-hidden="true">
             R
           </span>
-          <h1 className="font-display text-xl font-bold tracking-[-0.01em] text-text-primary">RitmoFit</h1>
+          <h1 className="font-display text-xl font-bold tracking-[-0.01em] text-text-primary">
+            RitmoFit
+          </h1>
         </div>
-        <span className="flex-1" />
-        <p className="hidden font-ui text-sm text-text-secondary sm:block">{userName}</p>
-        <button
-          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
-          onClick={() => setExploreOpen(true)}
-        >
-          Explore
-        </button>
-        <button
-          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
-          onClick={() => setTeamsOpen(true)}
-        >
-          Teams
-        </button>
-        <button
-          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
-          onClick={() => setConnectionsOpen(true)}
-        >
-          Connections
-        </button>
-        <button
-          className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
-          onClick={() => authClient.signOut()}
-        >
-          Sign out
-        </button>
+        {/* Destinations cluster — grows to fill on wide screens (so it sits hard
+            right of the brand) and wraps below the brand on narrow viewports
+            instead of overflowing. */}
+        <nav className="flex flex-1 flex-wrap items-center justify-end gap-2">
+          <p className="hidden font-ui text-sm text-text-secondary sm:block">{userName}</p>
+          <button
+            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
+            onClick={() => setExploreOpen(true)}
+          >
+            Explore
+          </button>
+          <button
+            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
+            onClick={() => setTeamsOpen(true)}
+          >
+            Teams
+          </button>
+          <button
+            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
+            onClick={() => setConnectionsOpen(true)}
+          >
+            Connections
+          </button>
+          <button
+            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
+            onClick={() => authClient.signOut()}
+          >
+            Sign out
+          </button>
+        </nav>
       </header>
 
       {/* Lazy modal chunks — fallback null so the trigger feels instant; the modal
@@ -235,7 +253,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         )}
       </Suspense>
 
-      <div className="mx-auto w-full max-w-[1400px] flex-1 px-6 py-6">
+      <div className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6">
         {error && <p className="mb-4 font-ui text-sm text-intensity-all_out">{error}</p>}
 
         {/* The 3-pane workstation (design system 09): library · class · inspector.
@@ -286,7 +304,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             </section>
           ) : (
             <section className="rounded-card bg-bg-raised p-8 shadow-card">
-              <p className="font-ui text-text-tertiary">Select or create a class to start building.</p>
+              <p className="font-ui text-text-tertiary">
+                Select or create a class to start building.
+              </p>
             </section>
           )}
         </div>
@@ -319,16 +339,22 @@ function LibraryRail({
   return (
     <aside className="flex flex-col gap-3 xl:sticky xl:top-6">
       <div className="flex items-center justify-between">
-        <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Your classes</span>
+        <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+          Your classes
+        </span>
         <span className="font-data text-xs text-text-tertiary">{classes.length}</span>
       </div>
       <CreateClassForm onCreated={onCreate} onError={onError} />
       {view === 'loading' ? (
         <p className="font-ui text-sm text-text-tertiary">Loading your classes…</p>
       ) : view === 'error' ? (
-        <p className="font-ui text-sm text-text-tertiary">Couldn't load your classes — try again.</p>
+        <p className="font-ui text-sm text-text-tertiary">
+          Couldn't load your classes — try again.
+        </p>
       ) : view === 'empty' ? (
-        <p className="font-ui text-sm text-text-tertiary">No classes yet — create your first above.</p>
+        <p className="font-ui text-sm text-text-tertiary">
+          No classes yet — create your first above.
+        </p>
       ) : (
         <ul className="flex flex-col gap-2">
           {classes.map((cls) => (
@@ -341,7 +367,9 @@ function LibraryRail({
                 }`}
               >
                 <span className="block truncate text-text-primary">{cls.title}</span>
-                <span className="font-data text-xs uppercase text-text-tertiary">{cls.accessLevel}</span>
+                <span className="font-data text-xs uppercase text-text-tertiary">
+                  {cls.accessLevel}
+                </span>
               </button>
             </li>
           ))}
@@ -376,6 +404,7 @@ function CreateClassForm({
       <input
         className="flex-1 rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
         placeholder="New class title"
+        aria-label="New class title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
@@ -445,12 +474,16 @@ function ClassWorkspace({
     }
   };
   const inspectorFocus =
-    markerFocus && selectedTrack && markerFocus.classTrackId === selectedTrack.id ? markerFocus : null;
+    markerFocus && selectedTrack && markerFocus.classTrackId === selectedTrack.id
+      ? markerFocus
+      : null;
 
   return (
     <>
       <Suspense fallback={null}>
-        {sharing && <ShareDialog classId={cls.id} classTitle={cls.title} onClose={() => setSharing(false)} />}
+        {sharing && (
+          <ShareDialog classId={cls.id} classTitle={cls.title} onClose={() => setSharing(false)} />
+        )}
       </Suspense>
 
       {/* ── Center column: header summary · energy ribbon · track list ── */}
@@ -491,9 +524,13 @@ function ClassWorkspace({
         )}
 
         <div className="flex flex-col gap-2 rounded-card bg-bg-raised p-4 shadow-card">
-          <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Track list</span>
+          <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+            Track list
+          </span>
           {tracks.length === 0 && (
-            <p className="font-ui text-sm text-text-tertiary">No tracks yet — add your first below.</p>
+            <p className="font-ui text-sm text-text-tertiary">
+              No tracks yet — add your first below.
+            </p>
           )}
           {/* Rich, reorderable song rows from the run-payload (title/artist/BPM/art);
               fall back to the lean, non-reorderable rows only if the payload couldn't
@@ -611,7 +648,9 @@ export function ClassHeaderCard({
     <div className="flex flex-col gap-3 rounded-card bg-bg-raised p-5 shadow-card">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="truncate font-display text-xl font-semibold text-text-primary">{cls.title}</h2>
+          <h2 className="truncate font-display text-xl font-semibold text-text-primary">
+            {cls.title}
+          </h2>
           {/* Visibility: icon + label, never color alone (accessibility). */}
           <p className="font-ui text-xs text-text-tertiary">
             {isPublic ? '🌐 Public — listed in Explore' : '🔒 Private'}
@@ -898,7 +937,9 @@ function SongRow({
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-ui text-sm font-semibold text-text-primary">{entry.track.title}</p>
+          <p className="truncate font-ui text-sm font-semibold text-text-primary">
+            {entry.track.title}
+          </p>
           <p className="truncate font-ui text-xs text-text-secondary">{entry.track.artist}</p>
         </div>
         <IntensityReadout intensity={entry.intensity} />
@@ -1060,14 +1101,18 @@ function TrackInspector({
         <div className="flex items-center gap-4">
           <IntensityReadout intensity={track.intensity} />
           {track.displayBpmOverride != null && (
-            <span className="font-data text-sm text-text-secondary">{track.displayBpmOverride} BPM</span>
+            <span className="font-data text-sm text-text-secondary">
+              {track.displayBpmOverride} BPM
+            </span>
           )}
           {track.notes && <span className="font-ui text-xs text-text-tertiary">{track.notes}</span>}
         </div>
       ) : (
         <>
           <label className="flex flex-col gap-1">
-            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Intensity</span>
+            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+              Intensity
+            </span>
             <div className="flex items-center gap-3">
               <select
                 className="rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-ui text-sm text-text-primary"
@@ -1107,7 +1152,9 @@ function TrackInspector({
               >
                 {bpmBusy ? 'Looking up…' : 'Look up BPM'}
               </button>
-              {bpmStatus && <span className="font-data text-xs text-text-tertiary">{bpmStatus}</span>}
+              {bpmStatus && (
+                <span className="font-data text-xs text-text-tertiary">{bpmStatus}</span>
+              )}
             </div>
           </label>
 
@@ -1130,7 +1177,9 @@ function TrackInspector({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Notes</span>
+            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+              Notes
+            </span>
             <textarea
               rows={2}
               className="resize-none rounded-card border border-interactive/30 bg-bg-raised px-3 py-2 font-ui text-sm text-text-primary"
@@ -1167,12 +1216,20 @@ function TrackInspector({
             <CuesSection
               classTrackId={track.id}
               durationMs={durationMs}
-              focus={focus?.kind === 'cue' ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
+              focus={
+                focus?.kind === 'cue'
+                  ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce }
+                  : null
+              }
             />
             <MovesSection
               classTrackId={track.id}
               durationMs={durationMs}
-              focus={focus?.kind === 'move' ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce } : null}
+              focus={
+                focus?.kind === 'move'
+                  ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce }
+                  : null
+              }
               onChanged={onSaved}
             />
           </Suspense>
@@ -1205,7 +1262,11 @@ function AddTrackForm({
         if (!title.trim() || !artist.trim()) return;
         void run(async () => {
           await addTrack(classId, {
-            track: { title: title.trim(), artist: artist.trim(), durationMs: Number(durationMs) || null },
+            track: {
+              title: title.trim(),
+              artist: artist.trim(),
+              durationMs: Number(durationMs) || null,
+            },
             intensity,
           });
           setTitle('');
@@ -1215,25 +1276,28 @@ function AddTrackForm({
       }}
     >
       <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Add a track</p>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <input
-          className="flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
+          className="min-w-0 flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
           placeholder="Title"
+          aria-label="Track title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
         <input
-          className="flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
+          className="min-w-0 flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
           placeholder="Artist"
+          aria-label="Track artist"
           value={artist}
           onChange={(e) => setArtist(e.target.value)}
         />
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <select
           className="rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
           value={intensity}
           onChange={(e) => setIntensity(e.target.value as Intensity)}
+          aria-label="Track intensity"
         >
           {intensityValues.map((v) => (
             <option key={v} value={v}>
@@ -1245,6 +1309,7 @@ function AddTrackForm({
           className="w-28 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-data text-sm text-text-primary"
           type="number"
           placeholder="ms"
+          aria-label="Track duration in milliseconds"
           value={durationMs}
           onChange={(e) => setDurationMs(e.target.value)}
         />

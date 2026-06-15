@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { TeamWithRole, TeamMemberView } from '@ritmofit/shared';
 import { listTeams, createTeam, listMembers, addMember, removeMember } from '../lib/api.js';
+import { Dialog } from './Dialog.js';
 
 export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () => void }) {
   const [teams, setTeams] = useState<TeamWithRole[] | null>(null);
@@ -26,80 +27,74 @@ export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () =
     void refreshTeams();
   }, [refreshTeams]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Manage teams"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    <Dialog
+      onClose={onClose}
+      label="Manage teams"
+      panelClassName="flex w-full max-w-2xl flex-col gap-4 rounded-panel bg-bg-raised p-6 shadow-lifted"
     >
-      <div className="flex w-full max-w-2xl flex-col gap-4 rounded-panel bg-bg-raised p-6 shadow-lifted">
-        <header className="flex items-start justify-between gap-3">
-          <h2 className="font-display text-lg font-semibold text-text-primary">Teams</h2>
-          <button
-            className="rounded-pill px-2 py-1 font-ui text-sm text-text-tertiary hover:text-text-primary"
-            onClick={onClose}
-            aria-label="Close teams dialog"
-          >
-            ✕
-          </button>
-        </header>
+      <header className="flex items-start justify-between gap-3">
+        <h2 className="font-display text-lg font-semibold text-text-primary">Teams</h2>
+        <button
+          className="rounded-pill px-2 py-1 font-ui text-sm text-text-tertiary hover:text-text-primary"
+          onClick={onClose}
+          aria-label="Close teams dialog"
+        >
+          ✕
+        </button>
+      </header>
 
-        {error && (
-          <p className="font-ui text-sm text-intensity-all_out" role="alert">
-            {error}
-          </p>
-        )}
+      {error && (
+        <p className="font-ui text-sm text-intensity-all_out" role="alert">
+          {error}
+        </p>
+      )}
 
-        <div className="grid grid-cols-[1fr_1.4fr] gap-4">
-          <section className="flex flex-col gap-3">
-            <CreateTeamForm
-              onCreated={async () => {
-                setError(null);
-                await refreshTeams();
-              }}
-              onError={setError}
-            />
-            {teams === null ? (
-              <p className="font-ui text-sm text-text-tertiary">Loading…</p>
-            ) : teams.length === 0 ? (
-              <p className="font-ui text-sm text-text-tertiary">No teams yet. Create one to share with a group.</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {teams.map((t) => (
-                  <li key={t.id}>
-                    <button
-                      onClick={() => setSelected(t)}
-                      className={`w-full rounded-card bg-bg-base p-3 text-left font-ui ${
-                        selected?.id === t.id ? 'ring-2 ring-interactive' : ''
-                      }`}
-                    >
-                      <span className="text-text-primary">{t.name}</span>
-                      <span className="ml-2 font-data text-xs uppercase text-text-tertiary">{t.role}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+      <div className="grid grid-cols-[1fr_1.4fr] gap-4">
+        <section className="flex flex-col gap-3">
+          <CreateTeamForm
+            onCreated={async () => {
+              setError(null);
+              await refreshTeams();
+            }}
+            onError={setError}
+          />
+          {teams === null ? (
+            <p className="font-ui text-sm text-text-tertiary">Loading…</p>
+          ) : teams.length === 0 ? (
+            <p className="font-ui text-sm text-text-tertiary">
+              No teams yet. Create one to share with a group.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {teams.map((t) => (
+                <li key={t.id}>
+                  <button
+                    onClick={() => setSelected(t)}
+                    className={`w-full rounded-card bg-bg-base p-3 text-left font-ui ${
+                      selected?.id === t.id ? 'ring-2 ring-interactive' : ''
+                    }`}
+                  >
+                    <span className="text-text-primary">{t.name}</span>
+                    <span className="ml-2 font-data text-xs uppercase text-text-tertiary">
+                      {t.role}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-          <section>
-            {selected ? (
-              <TeamMembers team={selected} meUserId={userId} onError={setError} />
-            ) : (
-              <p className="font-ui text-sm text-text-tertiary">Select a team to manage members.</p>
-            )}
-          </section>
-        </div>
+        <section>
+          {selected ? (
+            <TeamMembers team={selected} meUserId={userId} onError={setError} />
+          ) : (
+            <p className="font-ui text-sm text-text-tertiary">Select a team to manage members.</p>
+          )}
+        </section>
       </div>
-    </div>
+    </Dialog>
   );
 }
 
@@ -237,8 +232,14 @@ function TeamMembers({
             // Owner is immovable; otherwise managers remove others and anyone may leave.
             const canRemove = !isOwner && (canManage || isMe);
             return (
-              <li key={m.userId} className="flex items-center gap-3 rounded-pill bg-bg-raised px-3 py-2">
-                <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary" title={m.email}>
+              <li
+                key={m.userId}
+                className="flex items-center gap-3 rounded-pill bg-bg-raised px-3 py-2"
+              >
+                <span
+                  className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary"
+                  title={m.email}
+                >
                   {m.displayName ?? m.email}
                   {isMe && <span className="ml-1 text-text-tertiary">(you)</span>}
                 </span>
