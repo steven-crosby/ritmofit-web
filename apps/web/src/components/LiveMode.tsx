@@ -25,13 +25,16 @@ function fmt(ms: number): string {
 }
 
 /** A cue or move flattened onto the class-absolute timeline. */
-interface TimelineEvent {
+export interface TimelineEvent {
   atMs: number; // absolute ms from class start
   kind: 'cue' | 'move';
   text: string;
   color: string | null;
   intensity: Intensity | null;
 }
+
+/** Stable empty reference so a track-less / pre-roll frame doesn't churn memos. */
+const NO_EVENTS: TimelineEvent[] = [];
 
 function ProviderHandoffLinks({ entry }: { entry: RunPayloadTrackEntry }) {
   const refs = PROVIDER_ORDER.flatMap((provider) => {
@@ -62,17 +65,40 @@ function ProviderHandoffLinks({ entry }: { entry: RunPayloadTrackEntry }) {
   );
 }
 
-/** The live track for a class-absolute time: the last track whose window contains it. */
-function trackAt(
-  payload: RunPayload,
-  elapsedMs: number,
-): { entry: RunPayloadTrackEntry; index: number } | null {
-  if (payload.tracks.length === 0) return null;
+/**
+ * Index of the live track for a class-absolute time: the last track whose start
+ * offset has been reached, or `0` before the first track's offset. Returns `-1`
+ * only for an empty class. A primitive index (not a fresh object) so frame-rate
+ * memos that depend on "which track" don't invalidate while the index is stable.
+ */
+export function trackIndexAt(payload: RunPayload, elapsedMs: number): number {
+  if (payload.tracks.length === 0) return -1;
   let current = 0;
   payload.tracks.forEach((t, i) => {
     if ((t.startOffsetMs ?? 0) <= elapsedMs) current = i;
   });
-  return { entry: payload.tracks[current]!, index: current };
+  return current;
+}
+
+/**
+ * Index of the last event at or before `t` (or `-1`), via binary search over the
+ * `atMs`-sorted list. With ties it returns the last of the equal run, matching the
+ * prior backward linear scan. The next event is simply the following index.
+ */
+export function lastAtOrBefore(events: TimelineEvent[], t: number): number {
+  let lo = 0;
+  let hi = events.length - 1;
+  let ans = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (events[mid]!.atMs <= t) {
+      ans = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  return ans;
 }
 
 /** All cues + moves of a track as class-absolute events, time-ordered. */
@@ -134,20 +160,23 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     setElapsedMs(clamped);
   };
 
-  const live = useMemo(() => trackAt(payload, elapsedMs), [payload, elapsedMs]);
-  const events = useMemo(() => (live ? eventsFor(live.entry) : []), [live]);
-  const currentEvent = useMemo(() => {
-    // Backward scan (events is sorted) — avoids cloning+reversing the array on every
-    // animation frame while playing.
-    for (let i = events.length - 1; i >= 0; i--) {
-      if (events[i]!.atMs <= elapsedMs) return events[i]!;
-    }
-    return null;
-  }, [events, elapsedMs]);
-  const nextEvent = useMemo(
-    () => events.find((e) => e.atMs > elapsedMs) ?? null,
-    [events, elapsedMs],
+  // Flatten + sort each track's cues/moves once per payload, not on every animation
+  // frame. The frame-rate clock only changes *which* index we read, never these arrays.
+  const eventsByTrack = useMemo(() => payload.tracks.map(eventsFor), [payload]);
+  const liveIndex = useMemo(() => trackIndexAt(payload, elapsedMs), [payload, elapsedMs]);
+  const live = useMemo(
+    () => (liveIndex >= 0 ? { entry: payload.tracks[liveIndex]!, index: liveIndex } : null),
+    [payload, liveIndex],
   );
+  const events = liveIndex >= 0 ? eventsByTrack[liveIndex]! : NO_EVENTS;
+  // One binary search over the stable, pre-sorted array yields both current and next.
+  const { currentEvent, nextEvent } = useMemo(() => {
+    const i = lastAtOrBefore(events, elapsedMs);
+    return {
+      currentEvent: i >= 0 ? events[i]! : null,
+      nextEvent: i + 1 < events.length ? events[i + 1]! : null,
+    };
+  }, [events, elapsedMs]);
 
   // A track with no entered duration occupies zero timeline width, so a per-track
   // countdown would read a misleading 0:00. Track whether we have a real window.
@@ -191,7 +220,8 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
         ) : (
           <FullList
             payload={payload}
-            liveIndex={live?.index ?? -1}
+            eventsByTrack={eventsByTrack}
+            liveIndex={liveIndex}
             elapsedMs={elapsedMs}
             onSeek={seek}
           />
@@ -348,11 +378,13 @@ function CueByCue({
 
 function FullList({
   payload,
+  eventsByTrack,
   liveIndex,
   elapsedMs,
   onSeek,
 }: {
   payload: RunPayload;
+  eventsByTrack: TimelineEvent[][];
   liveIndex: number;
   elapsedMs: number;
   onSeek: (ms: number) => void;
@@ -393,7 +425,7 @@ function FullList({
             )}
             {(t.cues.length > 0 || t.moves.length > 0) && (
               <ul className="mt-3 flex flex-col gap-1 border-t border-interactive/15 pt-2">
-                {eventsFor(t).map((e, j) => {
+                {eventsByTrack[i]!.map((e, j) => {
                   const past = e.atMs <= elapsedMs && isLive;
                   return (
                     <li

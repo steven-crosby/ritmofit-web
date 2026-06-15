@@ -554,14 +554,20 @@ format:check`) and **Dependency audit** (`pnpm audit:ci`) in addition to typeche
 
 ## Performance
 
-- [ ] **[NICE-TO-HAVE] Avoid rebuilding the active event list on every animation
-      frame** — `apps/web/src/components/LiveMode.tsx:104-114` — `trackAt` creates a new
-      live wrapper as elapsed time changes, so `eventsFor(live.entry)` maps and sorts the
-      same cues/moves again on each `requestAnimationFrame`; current/next scans then run on
-      the rebuilt array. Why it matters: dense choreography can create avoidable work
-      during the most timing-sensitive view. Recommended fix: memoize events by stable
-      `classTrackId`/payload and use an index or binary search for current/next events.
-      Evidence: code inspection. Confidence: high.
+- [x] **[NICE-TO-HAVE - FIXED] Avoid rebuilding the active event list on every animation
+      frame** — `apps/web/src/components/LiveMode.tsx` — `trackAt` created a new live wrapper as
+      elapsed time changed, so `eventsFor(live.entry)` mapped and sorted the same cues/moves again on
+      each `requestAnimationFrame`; current/next scans then ran on the rebuilt array, and `FullList`
+      re-ran `eventsFor(t)` for every track every frame. Why it matters: dense choreography created
+      avoidable work during the most timing-sensitive view. Remediation (2026-06-15): each track's
+      events are flattened/sorted once per payload (`eventsByTrack = payload.tracks.map(eventsFor)`),
+      `trackAt` is replaced by a primitive-returning `trackIndexAt` so frame-rate memos only
+      invalidate when the live track changes, current/next come from a single O(log n)
+      `lastAtOrBefore` binary search over the stable pre-sorted array (preserving the prior
+      last-of-ties / `find(atMs > t)` semantics), and `FullList` reuses `eventsByTrack`. Coverage:
+      8 new unit tests for `trackIndexAt` and `lastAtOrBefore` (LiveMode suite 3 → 11). Web-only:
+      no schema, migration, API, shared-contract, or OpenAPI change. Evidence: code change + green
+      tests (web 103) + typecheck/lint/build/format-check. Confidence: high.
 - [x] **[NICE-TO-HAVE - FIXED] Lazy-decode album artwork outside the live viewport** —
       `apps/web/src/components/Dashboard.tsx`, `apps/web/src/components/TrackSearch.tsx` — Track-list
       and search-result images omitted `loading="lazy"` and `decoding="async"`, so long result or
