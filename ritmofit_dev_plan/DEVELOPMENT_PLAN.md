@@ -90,7 +90,8 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
 Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
-> **Status (2026-06-12): M1–M4 complete, merged to `main`, and fully deployed.** The whole app — API +
+> **Status — current as of 2026-06-15.** Backend **M1–M4 complete, merged to `main`, and fully deployed
+> since 2026-06-12.** The whole app — API +
 > web planning surface — is **live at `https://ritmofit.studio`**, served by one Worker (Workers static
 > assets; single origin ⇒ first-party auth, no CORS), with remote D1 migrated through `0006`. M4
 > (Explore / sharing UX) shipped in three slices — share-by-email, team-sharing, and the Explore feed
@@ -99,6 +100,16 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > push/PR — **advisory** (enforced branch protection needs GitHub Pro/public; repo is private/Free).
 > Current launch/deploy status is tracked in [`../REVIEW.md`](../REVIEW.md); canonical contributor and
 > deployment instructions are in [`../AGENTS.md`](../AGENTS.md).
+>
+> **Standalone design-system synthesis completed (2026-06-15).** A reviewable reference package now
+> lives at the workspace root in `ritmofit-design-system-codex/`. It consolidates canonical tokens and
+> guidance, adds a first-class Library-to-Builder creation flow, and includes framework-free mockups for
+> marketing, Library, Builder, Live, share cards, iOS direction, sign-in, and explicitly future-facing
+> Explore/Teams surfaces. This does not alter production components, API contracts, schema, migrations,
+> or deployment state. Production adoption remains a separate reviewable implementation phase. **The
+> canonical design system is still the in-repo [`../ritmofit_design_system/`](../ritmofit_design_system/);**
+> the workspace-root `ritmofit-design-system-*` directories and HTML mockups are exploration artifacts,
+> not the source of truth.
 >
 > **Pre-launch blocker remediation deployed (2026-06-14).** PR #45 shipped four audited launch fixes:
 > production OAuth callbacks use the canonical web origin; shares and team grants require a verified
@@ -204,8 +215,12 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > Worker after the error-mapping fix. **Open:** SoundCloud per-user *Connect* OAuth round-trip needs the
 > redirect URI registered + a browser login to confirm (provider *search* via app-token is verified).
 >
-> **Next major milestone: iOS Phase 2** (the native live surface in `ritmofit-ios`, against this same
-> backend/run-payload). The web *backend* build order is done; the web *UI* design-system build continues.
+> **iOS Phase 2 underway — near complete (2026-06-15).** The native live surface in `ritmofit-ios`
+> (built against this same backend/run-payload) has merged slices **1–10 plus slice 11 partials** to
+> `main` (PRs #5–#13); only VoiceOver, error-boundary review, and a launch screen remain. iOS status is
+> tracked in `ritmofit-ios/ritmofit_dev_plan/BUILD_ORDER.md`, the source of truth for that repo — this
+> plan does not re-track iOS slices. The web *backend* build order is done; the web *UI* design-system
+> build continues.
 >
 > **Web hardening — track-duration Live guard deployed (2026-06-14).** PR #49 adds
 > class-specific `class_tracks.duration_ms_override` (migration `0010`), letting owners/editors repair an
