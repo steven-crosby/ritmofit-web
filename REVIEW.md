@@ -100,6 +100,19 @@ typecheck / lint / test / integration / build / OpenAPI-drift gates. `openapi.js
 gate still green). Remaining: GitHub branch protection (require CI before merge) is an owner setting, and
 a vite 5 → 6 upgrade would clear the ignored advisories outright._
 
+_Deployed (2026-06-15): PR #54 closes the "Paginate and order the private class library in D1"
+SHOULD-FIX. `GET /classes` now resolves ownership ∪ direct-share ∪ team-share, reduces duplicate paths
+to the highest access level, and applies deterministic `(updated_at DESC, id DESC)` ordering and optional
+keyset pagination inside D1 (single CTE; opaque base64url cursor via `X-RitmoFit-Next-Cursor`). The web
+rail loads 30 at a time with an accessible continuation control; unparameterized requests keep the legacy
+full-array contract for the current iOS cache. Migration `0011` replaces the owner index with a composite
+`(owner_user_id, updated_at, id)` index and adds target-first direct/team share indexes. Remote D1 was
+migrated through `0011` before Worker `86c996ff-4b75-4ea0-bf8e-0ed59910c125` deployed at 100% (supersedes
+`1eb04d11`). Typecheck, lint, unit tests (api 175 + web), 21 Worker/D1 integration tests (incl. a new
+4-test class-list suite), the production web build, OpenAPI drift verification, format check, and
+`audit:ci` all passed. Post-deploy smoke: SPA `200`, `/health` `200`, `/classes` `401` (incl. `?limit=5`),
+6/6 security headers present, and remote D1 reports no pending migrations._
+
 ## Repo Map
 
 RitmoFit Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
