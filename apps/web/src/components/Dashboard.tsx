@@ -672,7 +672,10 @@ export function ClassHeaderCard({
 }) {
   const { busy: publishing, run } = useAsyncAction(onError);
   const { busy: deleting, run: runDelete } = useAsyncAction(onError);
+  const { busy: renaming, run: runRename } = useAsyncAction(onError);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(cls.title);
   const isPublic = cls.visibility === 'public';
   const averageBpm = payload ? avgBpm(payload) : null;
 
@@ -680,6 +683,23 @@ export function ClassHeaderCard({
     void run(async () => {
       onClassUpdated(await updateClass(cls.id, { visibility: isPublic ? 'private' : 'public' }));
     });
+
+  const startRename = () => {
+    setTitleDraft(cls.title);
+    setEditingTitle(true);
+  };
+
+  const saveRename = () => {
+    const next = titleDraft.trim();
+    if (next === '' || next === cls.title) {
+      setEditingTitle(false);
+      return;
+    }
+    void runRename(async () => {
+      onClassUpdated(await updateClass(cls.id, { title: next }));
+      setEditingTitle(false);
+    });
+  };
 
   const confirmDelete = () =>
     void runDelete(async () => {
@@ -691,9 +711,60 @@ export function ClassHeaderCard({
     <div className="flex flex-col gap-3 rounded-card bg-bg-raised p-5 shadow-card">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
         <div className="min-w-0">
-          <h2 className="truncate font-display text-xl font-semibold text-text-primary">
-            {cls.title}
-          </h2>
+          {editingTitle ? (
+            <form
+              className="flex flex-wrap items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveRename();
+              }}
+            >
+              <label className="sr-only" htmlFor="class-title-input">
+                Class name
+              </label>
+              <input
+                id="class-title-input"
+                autoFocus
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setEditingTitle(false);
+                }}
+                maxLength={200}
+                className="min-w-0 flex-1 rounded-card border border-interactive/40 bg-bg-base px-2 py-1 font-display text-xl font-semibold text-text-primary"
+              />
+              <button
+                type="submit"
+                className="rounded-pill rf-btn-primary px-3 py-1 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+                disabled={renaming}
+              >
+                {renaming ? '…' : 'Save'}
+              </button>
+              <button
+                type="button"
+                className="rounded-pill border border-interactive/40 px-3 py-1 font-ui text-sm text-text-secondary"
+                onClick={() => setEditingTitle(false)}
+                disabled={renaming}
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h2 className="truncate font-display text-xl font-semibold text-text-primary">
+                {cls.title}
+              </h2>
+              {isOwner && (
+                <button
+                  className="shrink-0 rounded-pill border border-interactive/40 px-2 py-0.5 font-ui text-xs text-text-secondary hover:text-text-primary"
+                  onClick={startRename}
+                  aria-label="Rename class"
+                >
+                  Rename
+                </button>
+              )}
+            </div>
+          )}
           {/* Visibility: icon + label, never color alone (accessibility). */}
           <p className="font-ui text-xs text-text-tertiary">
             {isPublic ? '🌐 Public — listed in Explore' : '🔒 Private'}
