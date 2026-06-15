@@ -139,6 +139,19 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > 100% (supersedes `1eb04d11`). Post-deploy smoke: SPA `200`, `/health` `200`, `/classes` `401` (incl.
 > `?limit=5`), 6/6 security headers present.
 >
+> **Backlog batch deployed (2026-06-15, PRs #55–#61).** The overnight hardening backlog merged to `main`
+> and the runtime/schema changes shipped together. **#57** adds the `track_provider_ids.track_id` lookup
+> index and the `rate_limit.last_request` pruning index via migration `0012` (index-only); **#56**
+> lazy-loads/async-decodes non-critical album art; **#58** renders a 404 view for unknown SPA paths;
+> **#60** adds owner-only inline class rename. **#55**/**#61** add choreography write-path and team-share
+> detail-access Worker/D1 integration tests (suite 21 → 28); **#59** rewrites the README as a real entry
+> point and drops the stale root `.dev.vars.example`. Remote D1 migrated through `0012`; Worker
+> `7505f9aa-3655-4bef-b6b3-1b2085d627eb` is live at 100% (supersedes `86c996ff`). Gates green (api 175 +
+> web 95 unit, 28 integration, build, OpenAPI no-drift, audit:ci). Post-deploy smoke: SPA `200`
+> (`index-CMFEcIls.js`), `/health` `200`, `/classes` `401`, 6/6 security headers present. Remaining
+> SHOULD-FIX: broaden the integration matrix (provider callback config, disconnect purge SQL, password
+> reset) and the deferred LiveMode RAF memoization + Better Auth trusted client-IP header.
+>
 > **Web design-system build (builder UI) underway (2026-06-12).** The rich planning UI M1 deferred is
 > now being built in vertical slices — the difference between the data-flow skeleton and the designed
 > surface in [`../ritmofit_design_system/`](../ritmofit_design_system/). Slices 1–4 are merged (PR #8)
