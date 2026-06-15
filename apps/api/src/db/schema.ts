@@ -186,6 +186,9 @@ export const trackProviderIds = sqliteTable(
       t.provider,
       t.providerTrackId,
     ),
+    // Track-scoped lookups (`WHERE track_id = ?`) run on every import and purge
+    // sweep; the unique index above is owner/provider-first and can't serve them.
+    index('track_provider_ids_track_id_idx').on(t.trackId),
   ],
 );
 
@@ -443,7 +446,12 @@ export const rateLimits = sqliteTable(
     count: integer('count'),
     lastRequest: integer('last_request'),
   },
-  (t) => [uniqueIndex('rate_limit_key_unq').on(t.key)],
+  (t) => [
+    uniqueIndex('rate_limit_key_unq').on(t.key),
+    // The daily Cron prunes stale rows by `WHERE last_request < ?`; without this
+    // the delete scans the whole counter table as auth/search traffic grows.
+    index('rate_limit_last_request_idx').on(t.lastRequest),
+  ],
 );
 
 // ── Better Auth-managed tables ──────────────────────────────────────────────
