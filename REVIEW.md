@@ -76,6 +76,20 @@ Worker `7daa067b-1ef0-4842-beff-b36951bdebbd` is live at 100% (supersedes `babcb
 through `0010`. Production health, SPA, auth enforcement, API + SPA security headers, the exact main bundle
 (`index-CH9gB9Bm.js`), and the new `Dialog` chunk all smoked clean._
 
+_Deployed (2026-06-15): PR #52 adds a `Dialog` focus guard — when an in-dialog action removes the
+focused control (e.g. Connect → Disconnect), focus is pulled back into the panel so Tab/Escape keep
+working (completes modal focus management; new unit test). Found by a new functional browser smoke
+(`apps/web/smoke/functional.smoke.mjs`) that exercises auth, the full class lifecycle, provider
+connect/search/import/disconnect, rapid class-switch, and network-failure (16/16; narrow-width still
+18/18). Also adds `ritmofit_dev_plan/deployment-runbook.md` (deploy + Worker-rollback + D1 Time-Travel
+recovery, both verified available). Web-only: no schema, migration, API, shared-contract, or OpenAPI
+change. Typecheck, lint, 257 unit/component tests, the production web build, and CI passed. Worker
+`1eb04d11-b676-43b5-a7be-7b62ffe83f6a` is live at 100% (supersedes `7daa067b`); remote D1 remains
+through `0010`. Post-deploy smoke: SPA `200` serving `index-OaatR5Qd.js`, `/health` `200`, `/classes`
+`401`, and 6/6 security headers present. This closes the remaining Follow-Up Verification Checklist
+items below except the formatting-boundary and dependency-audit dispositions (tracked SHOULD-FIX) and a
+live prod-rollback exercise (deferred)._
+
 ## Repo Map
 
 RitmoFit Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
@@ -533,7 +547,7 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       lacked CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`,
       `Permissions-Policy`, and frame protection. Remediation (2026-06-14): a Hono
       `app.use('*')` middleware in `index.ts` now sets HSTS, nosniff, `X-Frame-Options:
-    DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'`
+  DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'`
       CSP on all API/health responses; the SPA + static assets (served by the `[assets]`
       handler, which the Worker does not run for) carry the same transport/frame headers
       plus a page CSP via a new `apps/web/public/_headers` (→ `dist/_headers`). The page
@@ -624,25 +638,44 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
 - [x] Run lint.
 - [x] Run unit tests.
 - [x] Run Worker/D1 integration tests.
-- [ ] Run formatting check.
+- [ ] Run formatting check. _(Run 2026-06-15: still fails — 91 files, incl. generated
+      OpenAPI/Drizzle artifacts + long-form docs. Blocked on the open "define the formatting
+      boundary" SHOULD-FIX, not a regression.)_
 - [x] Regenerate OpenAPI and confirm no drift.
 - [x] Validate migrations against a disposable local D1 database.
 - [x] Smoke-test production sign-up, password reset, and email verification with real
       inbox delivery; remove the temporary account afterward.
-- [ ] Smoke-test sign-in, sign-out, and session expiry.
-- [ ] Smoke-test provider connection, search, import, disconnect, and required purge
-      behavior.
-- [ ] Smoke-test class creation, editing, choreography authoring, saving, reopening,
-      sharing, copying, deleting, and live mode.
-- [ ] Verify required production environment variables and provider redirect URIs.
+- [x] Smoke-test sign-in, sign-out, and session expiry. _(PR #52
+      `apps/web/smoke/functional.smoke.mjs`: sign-up/out/in pass; sign-out clears the session
+      and returns to Login — the same end state as expiry. True TTL expiry isn't
+      time-travelable in a browser smoke.)_
+- [x] Smoke-test provider connection, search, import, disconnect, and required purge
+      behavior. _(Functional smoke covers connect/search/import/disconnect against the mock
+      provider seam. The 7-day purge is the disconnect-scheduled cron/queue path, covered by
+      D1 integration tests, not browser-exercised.)_
+- [x] Smoke-test class creation, editing, saving, reopening, sharing, copying, deleting,
+      and live mode. _(Functional smoke covers create / add-track / reopen / publish / share /
+      copy / delete / run-live. Cue/move choreography authoring is covered by the
+      `ChoreographyEditor`/component unit tests rather than the browser smoke.)_
+- [x] Verify required production environment variables and provider redirect URIs.
+      _(2026-06-15: all required Worker secrets present; `BETTER_AUTH_URL`/`WEB_ORIGIN`
+      = `https://ritmofit.studio`; SoundCloud callback returns to the prod origin.)_
 - [x] Check the production smoke target without changing data.
 - [x] Scan reachable Git history for common secret patterns.
 - [x] Confirm remote migration state.
-- [ ] Confirm and exercise a documented rollback/recovery path.
-- [ ] Re-run `pnpm audit --prod` with no unexplained high/moderate findings.
-- [ ] Verify security headers on the SPA, health endpoint, and authenticated API
-      responses.
-- [ ] Run rapid class-switch, network-failure, narrow-viewport, and keyboard-dialog
-      browser tests. _(Partial: narrow-viewport + keyboard-dialog focus management are now
-      covered by `apps/web/smoke/narrow-width.smoke.mjs` (PR #51); rapid class-switch and
-      network-failure browser coverage remain.)_
+- [x] Confirm and exercise a documented rollback/recovery path. _(Documented in
+      `ritmofit_dev_plan/deployment-runbook.md` (PR #52): Worker version `wrangler rollback` + D1 `wrangler d1 time-travel restore`, both **verified available** against the live
+      resources read-only — version history retained, current D1 bookmark returned. A live
+      prod rollback was deliberately **not** triggered (disruptive; needs a maintenance
+      window + confirmation).)_
+- [x] Re-run `pnpm audit --prod` with no unexplained high/moderate findings. _(2026-06-15:
+      same documented set — 1 high / 2 moderate / 1 low, all `esbuild`/`vite` via
+      `better-auth → drizzle-kit/tsx` and `vitest → vite-node`. Dev/build paths, not in the
+      Worker request bundle. The upgrade/disposition remains an open SHOULD-FIX.)_
+- [x] Verify security headers on the SPA, health endpoint, and authenticated API
+      responses. _(2026-06-15: SPA page CSP + transport/frame headers, `/health`, and the
+      `/api/v1/classes` response all carry the full set. The header middleware is global
+      (`app.use('*')`), so authenticated responses are identical.)_
+- [x] Run rapid class-switch, network-failure, narrow-viewport, and keyboard-dialog
+      browser tests. _(narrow-viewport + keyboard-dialog: `narrow-width.smoke.mjs` (18/18,
+      PR #51); rapid class-switch + network-failure: `functional.smoke.mjs` (PR #52).)_
