@@ -5,6 +5,7 @@ import {
   PROVIDER_ORDER,
   DEFAULT_PROVIDER,
   providerLabel,
+  providerHandoffHref,
   ALL_PROVIDERS_LABELLED,
 } from './providers.js';
 
@@ -26,6 +27,41 @@ describe('provider presentation', () => {
   it('maps known labels', () => {
     expect(PROVIDER_LABELS.soundcloud).toBe('SoundCloud');
     expect(PROVIDER_LABELS.apple_music).toBe('Apple Music');
+  });
+
+  it('accepts provider-owned track handoff targets', () => {
+    expect(providerHandoffHref('spotify', 'spotify:track:4cOdK2wGLETKBW3PvgPWqT')).toBe(
+      'spotify:track:4cOdK2wGLETKBW3PvgPWqT',
+    );
+    expect(
+      providerHandoffHref(
+        'spotify',
+        'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT?si=abc',
+      ),
+    ).toBe('https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT?si=abc');
+    expect(
+      providerHandoffHref(
+        'apple_music',
+        'https://music.apple.com/us/album/bohemian-rhapsody/1440857781',
+      ),
+    ).toBe('https://music.apple.com/us/album/bohemian-rhapsody/1440857781');
+    expect(providerHandoffHref('soundcloud', 'https://soundcloud.com/bakermat/baiana')).toBe(
+      'https://soundcloud.com/bakermat/baiana',
+    );
+  });
+
+  it('rejects missing, malformed, cross-provider, and unsafe handoff targets', () => {
+    expect(providerHandoffHref('spotify', null)).toBeNull();
+    expect(providerHandoffHref('spotify', 'spotify:playlist:not-a-track')).toBeNull();
+    expect(providerHandoffHref('spotify', 'javascript:alert(1)')).toBeNull();
+    expect(providerHandoffHref('spotify', 'https://example.com/track/abc')).toBeNull();
+    expect(providerHandoffHref('apple_music', 'http://music.apple.com/us/song/1')).toBeNull();
+    expect(
+      providerHandoffHref('apple_music', 'https://music.apple.com.example.com/song/1'),
+    ).toBeNull();
+    expect(
+      providerHandoffHref('soundcloud', 'https://evil.example/?next=soundcloud.com'),
+    ).toBeNull();
   });
 });
 

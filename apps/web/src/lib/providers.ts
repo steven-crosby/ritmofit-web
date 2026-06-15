@@ -24,5 +24,40 @@ export function providerLabel(provider: Provider): string {
   return PROVIDER_LABELS[provider] ?? provider;
 }
 
+/**
+ * Return a provider handoff target only when it matches the URI shape that
+ * provider supplies. Provider refs may include old/manual data, so Live mode
+ * must not turn an arbitrary stored string into a clickable external link.
+ */
+export function providerHandoffHref(provider: Provider, providerUri: string | null): string | null {
+  if (!providerUri) return null;
+  const uri = providerUri.trim();
+  if (!uri) return null;
+
+  if (provider === 'spotify' && /^spotify:track:[A-Za-z0-9]+$/.test(uri)) {
+    return uri;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(uri);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'https:') return null;
+
+  if (provider === 'spotify') {
+    return url.hostname === 'open.spotify.com' && /^\/track\/[A-Za-z0-9]+\/?$/.test(url.pathname)
+      ? url.href
+      : null;
+  }
+  if (provider === 'apple_music') {
+    return url.hostname === 'music.apple.com' ? url.href : null;
+  }
+  return url.hostname === 'soundcloud.com' || url.hostname === 'www.soundcloud.com'
+    ? url.href
+    : null;
+}
+
 /** Defensive: every shared provider value has a label + a place in the order. */
 export const ALL_PROVIDERS_LABELLED = providerValues.every((p) => p in PROVIDER_LABELS);

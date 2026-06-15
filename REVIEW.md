@@ -53,6 +53,15 @@ behavior, an `m:ss` inspector correction, and a hard Live-mode readiness guard. 
 D1 was migrated through `0010` before Worker `0e9ab61b-acb8-480c-a45d-36ae455dc6c7` deployed at
 100%. Health, SPA, auth enforcement, security-header, main-bundle, and Live-mode chunk smokes passed._
 
+_Implemented in PR #50, pending merge/deploy (2026-06-14): the Live provider-handoff finding is closed in
+both Cue-by-Cue and Full List views. The active track exposes explicit provider-app/site links from its
+existing run-payload references; a provider-specific validator suppresses missing, malformed,
+cross-provider, and unsafe stored values. Playback remains external. This is web-only with no schema,
+migration, API, shared-contract, or OpenAPI change. Typecheck, lint, 246 unit/component tests, 17
+Worker/D1 integration tests, the production web build, and OpenAPI drift verification passed. A local
+browser pass confirmed both Live views, 44px targets, provider order/labels, external-link attributes,
+and suppression when all stored references were untrusted._
+
 ## Repo Map
 
 RitmoFit Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
@@ -557,7 +566,7 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       shorter than the latest cue/move anchor. Evidence: unit/component coverage, mounted
       Worker/D1 integration coverage, fresh disposable migration validation, and production smoke.
       Confidence: high.
-- [ ] **[SHOULD-FIX] Add provider handoff links to the current track in Live mode** —
+- [x] **[SHOULD-FIX - PR #50, PENDING MERGE/DEPLOY] Add provider handoff links to the current track in Live mode** —
       `packages/shared/src/entities/run-payload.ts:39-43`,
       `packages/shared/src/entities/run-payload.ts:65-81`,
       `apps/web/src/components/LiveMode.tsx:250-289`,
@@ -566,8 +575,12 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       RitmoFit correctly avoids embedded playback, but the web live surface gives the
       instructor no supported way to open the current song in its provider app. Recommended
       fix: render explicit "Open in SoundCloud/Spotify/Apple Music" actions for available
-      refs with safe URI handling and no autoplay/mixing behavior. Evidence: code
-      inspection. Confidence: high.
+      refs with safe URI handling and no autoplay/mixing behavior. Remediation: both Live
+      views now render large external handoff links for the active track, ordered
+      SoundCloud/Spotify/Apple Music. `providerHandoffHref` accepts Spotify track URIs plus
+      provider-owned HTTPS links and rejects missing, malformed, cross-provider, or unsafe
+      values; component tests cover both views and suppression. Evidence: code change +
+      full gates + local browser verification. Confidence: high.
 
 ## Launch Blockers — Do First
 
