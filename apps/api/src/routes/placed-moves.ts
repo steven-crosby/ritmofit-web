@@ -38,7 +38,11 @@ async function assertValidMoveRefs(
       .where(eq(userMoves.id, userMoveId))
       .get();
     if (!um || um.userId !== userId) {
-      throw new HttpError(422, 'VALIDATION_ERROR', 'userMoveId does not reference one of your moves.');
+      throw new HttpError(
+        422,
+        'VALIDATION_ERROR',
+        'userMoveId does not reference one of your moves.',
+      );
     }
   }
 }

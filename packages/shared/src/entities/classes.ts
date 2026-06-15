@@ -59,8 +59,21 @@ export type ClassTrack = z.infer<typeof classTrackSchema>;
  * `draft` and `visibility` defaults `private` (a class is never born public).
  */
 export const createClassSchema = classSchema
-  .pick({ title: true, description: true, template: true, targetDurationMs: true, status: true, visibility: true })
-  .partial({ description: true, template: true, targetDurationMs: true, status: true, visibility: true });
+  .pick({
+    title: true,
+    description: true,
+    template: true,
+    targetDurationMs: true,
+    status: true,
+    visibility: true,
+  })
+  .partial({
+    description: true,
+    template: true,
+    targetDurationMs: true,
+    status: true,
+    visibility: true,
+  });
 export type CreateClass = z.infer<typeof createClassSchema>;
 
 /**

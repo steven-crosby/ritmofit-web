@@ -53,7 +53,12 @@ describe('exchangeSoundCloudCode', () => {
       tokenUrl: 'https://token.test/oauth/token',
     });
 
-    expect(tokens).toEqual({ accessToken: 'acc-1', refreshToken: 'ref-1', expiresInSec: 3600, scope: 'non-expiring' });
+    expect(tokens).toEqual({
+      accessToken: 'acc-1',
+      refreshToken: 'ref-1',
+      expiresInSec: 3600,
+      scope: 'non-expiring',
+    });
     const call = calls[0];
     expect(call?.url).toBe('https://token.test/oauth/token');
     expect(call?.init?.method).toBe('POST');

@@ -104,7 +104,10 @@ export function resolveFlashRowId(
  * fetch still fires; the `nonce` re-triggers on a repeat marker click. Returns the
  * id to ring (transient, ~1.6s), the id to attach the scroll ref to, and that ref.
  */
-function useFlashFocus(focus: RowFocus, rows: ReadonlyArray<{ id: string; anchorMs: number }> | null) {
+function useFlashFocus(
+  focus: RowFocus,
+  rows: ReadonlyArray<{ id: string; anchorMs: number }> | null,
+) {
   const ready = rows != null;
   const [flashTarget, setFlashTarget] = useState<{ id: string; anchorMs: number } | null>(null);
   const rowRef = useRef<HTMLLIElement | null>(null);
@@ -123,7 +126,10 @@ function useFlashFocus(focus: RowFocus, rows: ReadonlyArray<{ id: string; anchor
   }, [nonce, ready]);
   // The scroll ref attaches as soon as `focus` arrives (so the effect's
   // scrollIntoView lands); the ring follows the transient `flashTarget`.
-  const refRowId = resolveFlashRowId(rows ?? [], focus ? { id: focus.id, anchorMs: focus.anchorMs } : null);
+  const refRowId = resolveFlashRowId(
+    rows ?? [],
+    focus ? { id: focus.id, anchorMs: focus.anchorMs } : null,
+  );
   const flashRowId = resolveFlashRowId(rows ?? [], flashTarget);
   return { refRowId, flashRowId, rowRef };
 }
@@ -349,8 +355,12 @@ export function CuesSection({
                   aria-hidden
                 />
               )}
-              <span className="shrink-0 font-data text-xs text-text-tertiary">{clock(cue.anchorMs)}</span>
-              <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">{cue.text}</span>
+              <span className="shrink-0 font-data text-xs text-text-tertiary">
+                {clock(cue.anchorMs)}
+              </span>
+              <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">
+                {cue.text}
+              </span>
               <button
                 className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={() => startEdit(cue)}
@@ -631,7 +641,9 @@ export function MovesSection({
         />
       )}
       <ul className="flex flex-col gap-1">
-        {moves?.length === 0 && <li className="font-ui text-xs text-text-tertiary">No moves yet.</li>}
+        {moves?.length === 0 && (
+          <li className="font-ui text-xs text-text-tertiary">No moves yet.</li>
+        )}
         {moves?.map((m) =>
           editingId === m.id ? (
             <li
@@ -703,8 +715,12 @@ export function MovesSection({
                 m.id === flashRowId ? 'ring-2 ring-interactive' : ''
               }`}
             >
-              <span className="shrink-0 font-data text-xs text-text-tertiary">{clock(m.anchorMs)}</span>
-              <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">{nameOf(m)}</span>
+              <span className="shrink-0 font-data text-xs text-text-tertiary">
+                {clock(m.anchorMs)}
+              </span>
+              <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">
+                {nameOf(m)}
+              </span>
               {m.intensity && <IntensityReadout intensity={m.intensity} />}
               <button
                 className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"

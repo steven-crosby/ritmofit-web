@@ -81,7 +81,9 @@ trackRoutes.patch('/tracks/:id', async (c) => {
   const existing = await requireOwnedTrack(db, c.get('userId'), id);
   const body = updateTrackSchema.parse(await c.req.json());
 
-  const patch = buildPatch(body) as ReturnType<typeof buildPatch<typeof body>> & { matchKey?: string };
+  const patch = buildPatch(body) as ReturnType<typeof buildPatch<typeof body>> & {
+    matchKey?: string;
+  };
   // Keep the same-song match key in sync when title/artist change.
   if ('title' in body || 'artist' in body) {
     patch.matchKey = makeMatchKey(body.title ?? existing.title, body.artist ?? existing.artist);
@@ -100,7 +102,11 @@ trackRoutes.patch('/tracks/:id', async (c) => {
 trackRoutes.post('/tracks/:id/bpm-lookup', async (c) => {
   const db = createDb(c.env);
   const result = await lookupAndApplyBpm(db, c.env, c.get('userId'), c.req.param('id'));
-  const row = await db.select().from(tracks).where(eq(tracks.id, c.req.param('id'))).get();
+  const row = await db
+    .select()
+    .from(tracks)
+    .where(eq(tracks.id, c.req.param('id')))
+    .get();
   return c.json({ ...serializeTrack(row!), bpmApplied: result.applied });
 });
 

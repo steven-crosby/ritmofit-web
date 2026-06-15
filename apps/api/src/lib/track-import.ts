@@ -70,7 +70,11 @@ async function attachProviderId(
     }
     // The matched track may have been deleted between match and insert (FK fail) —
     // signal the caller to create a fresh track instead of surfacing a 500.
-    const stillExists = await db.select({ id: tracks.id }).from(tracks).where(eq(tracks.id, trackId)).get();
+    const stillExists = await db
+      .select({ id: tracks.id })
+      .from(tracks)
+      .where(eq(tracks.id, trackId))
+      .get();
     if (!stillExists) return null;
     throw err;
   }

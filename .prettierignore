@@ -1,5 +1,16 @@
+# Build output and deps
 node_modules
 dist
 build
-**/src/styles/tokens.css
 pnpm-lock.yaml
+
+# Generated artifacts — owned by their generators, not Prettier. Formatting these
+# would fight the OpenAPI/Drizzle generators (e.g. the openapi.json drift gate).
+**/src/styles/tokens.css
+apps/api/openapi/
+apps/api/migrations/
+
+# Long-form reference docs (planning + design system) — authored prose, not
+# formatter-owned. Code and top-level docs (README, REVIEW, AGENTS, CLAUDE) are.
+ritmofit_dev_plan/
+ritmofit_design_system/

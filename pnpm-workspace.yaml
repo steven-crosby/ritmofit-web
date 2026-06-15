@@ -7,6 +7,17 @@ allowBuilds:
   esbuild: true
   sharp: false
   workerd: true
+# Dependency-audit exceptions (gate: `pnpm audit:ci`). All four are dev/build-server
+# advisories (esbuild & vite dev servers) — none reach the deployed Worker request
+# handler or the browser bundle. The high/low esbuild ones (<0.28.1) are unfixable
+# without a vite 5→6 major upgrade (vite 5 pins esbuild ^0.21). Revisit on that upgrade.
+# Rationale tracked in REVIEW.md. Any NEW advisory still fails the audit gate.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-67mh-4wv8-2f99 # esbuild moderate — dev server accepts any-origin requests (<=0.24.2)
+    - GHSA-4w7w-66w2-5vf9 # vite moderate — dev server (<=6.4.1; we're on vite 5)
+    - GHSA-gv7w-rqvm-qjhr # esbuild high — dev server (<0.28.1)
+    - GHSA-g7r4-m6w7-qqqr # esbuild low — Windows dev-server file read (<0.28.1)
 minimumReleaseAgeExclude:
   - '@better-auth/core@1.6.17'
   - '@better-auth/drizzle-adapter@1.6.17'

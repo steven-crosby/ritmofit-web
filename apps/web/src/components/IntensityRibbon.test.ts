@@ -40,10 +40,7 @@ describe('computeRibbonSegments', () => {
   });
 
   it('sizes each block by its share of the total and lays them end to end', () => {
-    const segs = computeRibbonSegments(
-      [entry('easy', 1000, 0), entry('hard', 3000, 1)],
-      4000,
-    );
+    const segs = computeRibbonSegments([entry('easy', 1000, 0), entry('hard', 3000, 1)], 4000);
     expect(segs.map((s) => s.width)).toEqual([250, 750]);
     expect(segs.map((s) => s.x)).toEqual([0, 250]);
     // widths tile the full normalized space with no gap

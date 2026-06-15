@@ -28,7 +28,12 @@ const SP_TRACK = {
   duration_ms: 213000,
   external_urls: { spotify: 'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT' },
   artists: [{ name: 'Rick Astley' }, { name: 'PWL' }],
-  album: { images: [{ url: 'https://i.scdn.co/image/big.jpg' }, { url: 'https://i.scdn.co/image/small.jpg' }] },
+  album: {
+    images: [
+      { url: 'https://i.scdn.co/image/big.jpg' },
+      { url: 'https://i.scdn.co/image/small.jpg' },
+    ],
+  },
   // an audio-features/tempo field would never be read — not present here:
   popularity: 80,
 };
@@ -50,7 +55,9 @@ function makeProvider(handlers: Record<string, unknown>) {
 
 describe('SpotifyProvider.search', () => {
   it('maps tracks.items → contract candidates (joined artists, first image)', async () => {
-    const { provider } = makeProvider({ [`${API_BASE}/search`]: { tracks: { items: [SP_TRACK] } } });
+    const { provider } = makeProvider({
+      [`${API_BASE}/search`]: { tracks: { items: [SP_TRACK] } },
+    });
     const results = await provider.search('rick astley');
     expect(results).toEqual([
       {

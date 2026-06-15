@@ -137,23 +137,27 @@ export const classes = sqliteTable(
   ],
 );
 
-export const tracks = sqliteTable('tracks', {
-  id: text('id').primaryKey(),
-  ownerUserId: text('owner_user_id')
-    .notNull()
-    .references(() => users.id),
-  title: text('title').notNull(),
-  artist: text('artist').notNull(),
-  albumArtUrl: text('album_art_url'),
-  durationMs: integer('duration_ms'),
-  displayBpm: integer('display_bpm'),
-  isrc: text('isrc'),
-  // Normalized (title, artist) key for same-song matching — `makeMatchKey`
-  // (lib/same-song.ts). Indexed so import resolves candidates without scanning the
-  // owner's whole library. Nullable: hand-entered tracks may predate it.
-  matchKey: text('match_key'),
-  ...timestamps(),
-}, (t) => [index('tracks_owner_match_key_idx').on(t.ownerUserId, t.matchKey)]);
+export const tracks = sqliteTable(
+  'tracks',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id')
+      .notNull()
+      .references(() => users.id),
+    title: text('title').notNull(),
+    artist: text('artist').notNull(),
+    albumArtUrl: text('album_art_url'),
+    durationMs: integer('duration_ms'),
+    displayBpm: integer('display_bpm'),
+    isrc: text('isrc'),
+    // Normalized (title, artist) key for same-song matching — `makeMatchKey`
+    // (lib/same-song.ts). Indexed so import resolves candidates without scanning the
+    // owner's whole library. Nullable: hand-entered tracks may predate it.
+    matchKey: text('match_key'),
+    ...timestamps(),
+  },
+  (t) => [index('tracks_owner_match_key_idx').on(t.ownerUserId, t.matchKey)],
+);
 
 export const trackProviderIds = sqliteTable(
   'track_provider_ids',
@@ -255,22 +259,26 @@ export const userMoves = sqliteTable(
 
 // ── Choreography (anchored to a class_track) ────────────────────────────────
 
-export const cues = sqliteTable('cues', {
-  id: text('id').primaryKey(),
-  // class_tracks CASCADE → cues.
-  classTrackId: text('class_track_id')
-    .notNull()
-    .references(() => classTracks.id, { onDelete: 'cascade' }),
-  anchorMs: integer('anchor_ms').notNull(),
-  beat: integer('beat'),
-  bar: integer('bar'),
-  text: text('text').notNull(),
-  color: text('color'),
-  ...timestamps(),
-}, (t) => [
-  // Hot path: cues are fetched per class_track when assembling the run-payload.
-  index('cues_class_track_id_idx').on(t.classTrackId),
-]);
+export const cues = sqliteTable(
+  'cues',
+  {
+    id: text('id').primaryKey(),
+    // class_tracks CASCADE → cues.
+    classTrackId: text('class_track_id')
+      .notNull()
+      .references(() => classTracks.id, { onDelete: 'cascade' }),
+    anchorMs: integer('anchor_ms').notNull(),
+    beat: integer('beat'),
+    bar: integer('bar'),
+    text: text('text').notNull(),
+    color: text('color'),
+    ...timestamps(),
+  },
+  (t) => [
+    // Hot path: cues are fetched per class_track when assembling the run-payload.
+    index('cues_class_track_id_idx').on(t.classTrackId),
+  ],
+);
 
 export const classTrackMoves = sqliteTable(
   'class_track_moves',

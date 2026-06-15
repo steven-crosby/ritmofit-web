@@ -36,5 +36,8 @@ export function appleMusicCreds(env: Env): { developerToken: string; storefront?
   if (!env.APPLE_MUSIC_DEVELOPER_TOKEN) {
     throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Apple Music is not configured.');
   }
-  return { developerToken: env.APPLE_MUSIC_DEVELOPER_TOKEN, storefront: env.APPLE_MUSIC_STOREFRONT };
+  return {
+    developerToken: env.APPLE_MUSIC_DEVELOPER_TOKEN,
+    storefront: env.APPLE_MUSIC_STOREFRONT,
+  };
 }

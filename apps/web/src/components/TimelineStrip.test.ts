@@ -33,8 +33,12 @@ function entry(
   };
 }
 
-const cue = (anchorMs: number, text = 'Cue', color: string | null = null, id = `cue-${anchorMs}`): Cue =>
-  ({ id, anchorMs, beat: null, bar: null, text, color }) as Cue;
+const cue = (
+  anchorMs: number,
+  text = 'Cue',
+  color: string | null = null,
+  id = `cue-${anchorMs}`,
+): Cue => ({ id, anchorMs, beat: null, bar: null, text, color }) as Cue;
 const move = (
   anchorMs: number,
   name = 'Move',
@@ -78,7 +82,14 @@ describe('computeTimeline — markers', () => {
     );
     expect(markers).toHaveLength(2);
     // cue at 0 + 500 = 500 / 2000 = 25%; in-track anchor preserved for correlation
-    expect(markers[0]).toMatchObject({ kind: 'cue', absMs: 500, anchorMs: 500, leftPct: 25, label: 'A', color: null });
+    expect(markers[0]).toMatchObject({
+      kind: 'cue',
+      absMs: 500,
+      anchorMs: 500,
+      leftPct: 25,
+      label: 'A',
+      color: null,
+    });
     // move at 1000 + 250 = 1250 / 2000 = 62.5%, anchor 250; intensity → CSS var
     expect(markers[1]).toMatchObject({
       kind: 'move',
@@ -110,10 +121,7 @@ describe('computeTimeline — markers', () => {
   });
 
   it('carries the marker’s track classTrackId + position (for click-to-select)', () => {
-    const { markers } = computeTimeline(
-      [entry(1000, 0), entry(1000, 1, [cue(100)])],
-      2000,
-    );
+    const { markers } = computeTimeline([entry(1000, 0), entry(1000, 1, [cue(100)])], 2000);
     expect(markers).toHaveLength(1);
     expect(markers[0]).toMatchObject({
       classTrackId: '00000000-0000-0000-0000-000000000001',

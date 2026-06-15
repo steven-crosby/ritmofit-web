@@ -8,37 +8,73 @@ describe('resolveShareTarget', () => {
 
   it('passes a directly-supplied user id through', () => {
     expect(
-      resolveShareTarget({ directUserId: 'u1', teamId: null, emailGiven: false, emailUserId: null, selfUserId: self }),
+      resolveShareTarget({
+        directUserId: 'u1',
+        teamId: null,
+        emailGiven: false,
+        emailUserId: null,
+        selfUserId: self,
+      }),
     ).toEqual({ targetUserId: 'u1', targetTeamId: null });
   });
 
   it('passes a team id through', () => {
     expect(
-      resolveShareTarget({ directUserId: null, teamId: 't1', emailGiven: false, emailUserId: null, selfUserId: self }),
+      resolveShareTarget({
+        directUserId: null,
+        teamId: 't1',
+        emailGiven: false,
+        emailUserId: null,
+        selfUserId: self,
+      }),
     ).toEqual({ targetUserId: null, targetTeamId: 't1' });
   });
 
   it('uses the email-resolved user id', () => {
     expect(
-      resolveShareTarget({ directUserId: null, teamId: null, emailGiven: true, emailUserId: 'u2', selfUserId: self }),
+      resolveShareTarget({
+        directUserId: null,
+        teamId: null,
+        emailGiven: true,
+        emailUserId: 'u2',
+        selfUserId: self,
+      }),
     ).toEqual({ targetUserId: 'u2', targetTeamId: null });
   });
 
   it('422s when an email resolved to no user', () => {
     expect(() =>
-      resolveShareTarget({ directUserId: null, teamId: null, emailGiven: true, emailUserId: null, selfUserId: self }),
+      resolveShareTarget({
+        directUserId: null,
+        teamId: null,
+        emailGiven: true,
+        emailUserId: null,
+        selfUserId: self,
+      }),
     ).toThrow(HttpError);
   });
 
   it('422s on sharing with yourself (direct id)', () => {
     expect(() =>
-      resolveShareTarget({ directUserId: self, teamId: null, emailGiven: false, emailUserId: null, selfUserId: self }),
+      resolveShareTarget({
+        directUserId: self,
+        teamId: null,
+        emailGiven: false,
+        emailUserId: null,
+        selfUserId: self,
+      }),
     ).toThrow(/yourself/);
   });
 
   it('422s on sharing with yourself (via email)', () => {
     expect(() =>
-      resolveShareTarget({ directUserId: null, teamId: null, emailGiven: true, emailUserId: self, selfUserId: self }),
+      resolveShareTarget({
+        directUserId: null,
+        teamId: null,
+        emailGiven: true,
+        emailUserId: self,
+        selfUserId: self,
+      }),
     ).toThrow(/yourself/);
   });
 });
@@ -55,10 +91,14 @@ describe('createShareSchema target invariant', () => {
   });
 
   it('rejects two targets (email + user id)', () => {
-    expect(createShareSchema.safeParse({ ...base, targetEmail: 'a@b.com', targetUserId: 'u1' }).success).toBe(false);
+    expect(
+      createShareSchema.safeParse({ ...base, targetEmail: 'a@b.com', targetUserId: 'u1' }).success,
+    ).toBe(false);
   });
 
   it('rejects a malformed email', () => {
-    expect(createShareSchema.safeParse({ ...base, targetEmail: 'not-an-email' }).success).toBe(false);
+    expect(createShareSchema.safeParse({ ...base, targetEmail: 'not-an-email' }).success).toBe(
+      false,
+    );
   });
 });

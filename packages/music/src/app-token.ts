@@ -61,9 +61,16 @@ export class AppTokenCache {
       body: 'grant_type=client_credentials',
     });
     if (!res.ok) {
-      throw new ProviderError(this.cfg.provider, `${this.cfg.provider} token request failed (${res.status})`);
+      throw new ProviderError(
+        this.cfg.provider,
+        `${this.cfg.provider} token request failed (${res.status})`,
+      );
     }
-    const token = parseProvider(tokenResponseSchema, await readJson(res, this.cfg.provider), this.cfg.provider);
+    const token = parseProvider(
+      tokenResponseSchema,
+      await readJson(res, this.cfg.provider),
+      this.cfg.provider,
+    );
     const ttlMs = (token.expires_in ?? DEFAULT_TTL_SEC) * 1000;
     this.cached = { value: token.access_token, expiresAtMs: this.now() + ttlMs - TOKEN_SKEW_MS };
     return token.access_token;

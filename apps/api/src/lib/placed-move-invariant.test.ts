@@ -11,7 +11,9 @@ const USER_MOVE = '11111111-1111-4111-8111-111111111111';
  */
 describe('placeClassTrackMoveSchema invariant', () => {
   it('accepts a global-move reference', () => {
-    expect(placeClassTrackMoveSchema.safeParse({ anchorMs: 1000, moveId: MOVE }).success).toBe(true);
+    expect(placeClassTrackMoveSchema.safeParse({ anchorMs: 1000, moveId: MOVE }).success).toBe(
+      true,
+    );
   });
 
   it('accepts a user-move reference', () => {

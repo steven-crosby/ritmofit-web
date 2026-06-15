@@ -56,13 +56,12 @@ function memoryStore(opts: {
       return { ownerUserId, visibility: publicClasses.has(classId) ? 'public' : 'private' };
     },
     async getEffectiveShare(classId, userId) {
-      const myTeams = new Set(
-        memberships.filter((m) => m.userId === userId).map((m) => m.teamId),
-      );
+      const myTeams = new Set(memberships.filter((m) => m.userId === userId).map((m) => m.teamId));
       const applicable = shares.filter(
         (s) =>
           s.classId === classId &&
-          (s.targetUserId === userId || (s.targetTeamId !== undefined && myTeams.has(s.targetTeamId))),
+          (s.targetUserId === userId ||
+            (s.targetTeamId !== undefined && myTeams.has(s.targetTeamId))),
       );
       if (applicable.some((s) => s.permission === 'edit')) return 'edit';
       if (applicable.some((s) => s.permission === 'view')) return 'view';

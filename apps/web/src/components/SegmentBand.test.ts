@@ -12,7 +12,10 @@ describe('computeSegmentBands', () => {
   });
 
   it('tiles each band from its start to the next start, last to the class end', () => {
-    const bands = computeSegmentBands([sec('warm_up', 0), sec('climb', 250), sec('sprint', 750)], 1000);
+    const bands = computeSegmentBands(
+      [sec('warm_up', 0), sec('climb', 250), sec('sprint', 750)],
+      1000,
+    );
     expect(bands.map((b) => b.type)).toEqual(['warm_up', 'climb', 'sprint']);
     expect(bands.map((b) => b.leftPct)).toEqual([0, 25, 75]);
     expect(bands.map((b) => b.widthPct)).toEqual([25, 50, 25]);

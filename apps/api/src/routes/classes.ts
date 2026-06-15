@@ -129,18 +129,39 @@ classRoutes.post('/:id/copy', async (c) => {
   // Fetch everything the copy needs up front (no per-track round-trips). Sections
   // anchor on the class (no class_track FK), so they're fetched by class id and in
   // start order — the copy must carry the instructor's segment/energy plan too.
-  const [sourceCues, sourceMoves, sourceTracks, srcRefs, ownedKeyRows, sourceSections] = await Promise.all([
-    ctIds.length ? db.select().from(cues).where(inArray(cues.classTrackId, ctIds)).all() : [],
-    ctIds.length ? db.select().from(classTrackMoves).where(inArray(classTrackMoves.classTrackId, ctIds)).all() : [],
-    trackIds.length ? db.select().from(tracks).where(inArray(tracks.id, trackIds)).all() : [],
-    trackIds.length ? db.select().from(trackProviderIds).where(inArray(trackProviderIds.trackId, trackIds)).all() : [],
-    db
-      .select({ provider: trackProviderIds.provider, providerTrackId: trackProviderIds.providerTrackId })
-      .from(trackProviderIds)
-      .where(eq(trackProviderIds.ownerUserId, me))
-      .all(),
-    db.select().from(classSections).where(eq(classSections.classId, sourceClassId)).orderBy(classSections.startOffsetMs).all(),
-  ]);
+  const [sourceCues, sourceMoves, sourceTracks, srcRefs, ownedKeyRows, sourceSections] =
+    await Promise.all([
+      ctIds.length ? db.select().from(cues).where(inArray(cues.classTrackId, ctIds)).all() : [],
+      ctIds.length
+        ? db
+            .select()
+            .from(classTrackMoves)
+            .where(inArray(classTrackMoves.classTrackId, ctIds))
+            .all()
+        : [],
+      trackIds.length ? db.select().from(tracks).where(inArray(tracks.id, trackIds)).all() : [],
+      trackIds.length
+        ? db
+            .select()
+            .from(trackProviderIds)
+            .where(inArray(trackProviderIds.trackId, trackIds))
+            .all()
+        : [],
+      db
+        .select({
+          provider: trackProviderIds.provider,
+          providerTrackId: trackProviderIds.providerTrackId,
+        })
+        .from(trackProviderIds)
+        .where(eq(trackProviderIds.ownerUserId, me))
+        .all(),
+      db
+        .select()
+        .from(classSections)
+        .where(eq(classSections.classId, sourceClassId))
+        .orderBy(classSections.startOffsetMs)
+        .all(),
+    ]);
 
   const trackById = new Map(sourceTracks.map((t) => [t.id, t]));
   const refsByTrack = new Map<string, typeof srcRefs>();
@@ -153,7 +174,9 @@ classRoutes.post('/:id/copy', async (c) => {
   // ref shared by two source tracks is cloned once (owner-scoped unique index).
   const ownedKeys = new Set(ownedKeyRows.map((r) => providerRefKey(r.provider, r.providerTrackId)));
 
-  const userMoveIds = [...new Set(sourceMoves.map((m) => m.userMoveId).filter((id): id is string => id != null))];
+  const userMoveIds = [
+    ...new Set(sourceMoves.map((m) => m.userMoveId).filter((id): id is string => id != null)),
+  ];
   const userMoveById = new Map<string, { userId: string; name: string }>();
   if (userMoveIds.length > 0) {
     const rows = await db
@@ -197,7 +220,13 @@ classRoutes.post('/:id/copy', async (c) => {
     });
     if (cloneTrack && srcTrack) {
       statements.push(
-        db.insert(tracks).values({ ...srcTrack, id: resolvedTrackId, ownerUserId: me, createdAt: now, updatedAt: now }),
+        db.insert(tracks).values({
+          ...srcTrack,
+          id: resolvedTrackId,
+          ownerUserId: me,
+          createdAt: now,
+          updatedAt: now,
+        }),
       );
       for (const ref of refsToClone(refsByTrack.get(ct.trackId) ?? [], ownedKeys)) {
         statements.push(
@@ -229,7 +258,13 @@ classRoutes.post('/:id/copy', async (c) => {
     );
     for (const cue of sourceCues.filter((q) => q.classTrackId === ct.id)) {
       statements.push(
-        db.insert(cues).values({ ...cue, id: crypto.randomUUID(), classTrackId: newCTId, createdAt: now, updatedAt: now }),
+        db.insert(cues).values({
+          ...cue,
+          id: crypto.randomUUID(),
+          classTrackId: newCTId,
+          createdAt: now,
+          updatedAt: now,
+        }),
       );
     }
     for (const move of sourceMoves.filter((m) => m.classTrackId === ct.id)) {

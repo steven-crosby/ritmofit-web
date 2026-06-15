@@ -4,7 +4,9 @@ import { generateCodeVerifier, challengeFromVerifier, randomToken } from './pkce
 describe('pkce', () => {
   it('matches the RFC 7636 S256 test vector', async () => {
     const verifier = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
-    expect(await challengeFromVerifier(verifier)).toBe('E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM');
+    expect(await challengeFromVerifier(verifier)).toBe(
+      'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+    );
   });
 
   it('generates base64url verifiers with no padding', async () => {

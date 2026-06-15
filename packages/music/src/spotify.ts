@@ -83,11 +83,15 @@ class SpotifyProvider implements MusicProvider {
     const json = await this.authedGet(url);
     const parsed = spSearchSchema.safeParse(json);
     const items = parsed.success ? (parsed.data.tracks?.items ?? []) : [];
-    return items.map((raw) => this.toCandidate(raw)).filter((c): c is TrackSearchResult => c !== null);
+    return items
+      .map((raw) => this.toCandidate(raw))
+      .filter((c): c is TrackSearchResult => c !== null);
   }
 
   async lookup(providerTrackId: string): Promise<TrackSearchResult | null> {
-    const json = await this.authedGet(`${this.apiBase}/tracks/${encodeURIComponent(providerTrackId)}`);
+    const json = await this.authedGet(
+      `${this.apiBase}/tracks/${encodeURIComponent(providerTrackId)}`,
+    );
     return this.toCandidate(json);
   }
 
@@ -96,7 +100,10 @@ class SpotifyProvider implements MusicProvider {
     const parsed = spTrackSchema.safeParse(raw);
     if (!parsed.success) return null;
     const t: SpTrack = parsed.data;
-    const artist = (t.artists ?? []).map((a) => a.name).filter(Boolean).join(', ');
+    const artist = (t.artists ?? [])
+      .map((a) => a.name)
+      .filter(Boolean)
+      .join(', ');
     const candidate = {
       provider: 'spotify' as const,
       providerTrackId: t.id,
@@ -124,7 +131,10 @@ class SpotifyProvider implements MusicProvider {
       }
       // Surface the upstream message (truncated) so a 400/403 is diagnosable in logs.
       const detail = await res.text().catch(() => '');
-      throw new ProviderError('spotify', `Spotify request failed: ${res.status} ${detail.slice(0, 200)}`.trim());
+      throw new ProviderError(
+        'spotify',
+        `Spotify request failed: ${res.status} ${detail.slice(0, 200)}`.trim(),
+      );
     }
     return readJson(res, 'spotify');
   }

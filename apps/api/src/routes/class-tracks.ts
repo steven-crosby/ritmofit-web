@@ -20,8 +20,20 @@ import { serializeClassTrack } from '../lib/serialize.js';
 import { resequence } from '../lib/sequencing.js';
 import { buildPatch } from '../lib/patch.js';
 import { makeMatchKey } from '../lib/same-song.js';
-import { resolveCopiedTrack, refsToClone, providerRefKey, remapPlacedMoveForCaller } from '../lib/copy-class-track.js';
-import { userMoves, classTracks, tracks, trackProviderIds, cues, classTrackMoves } from '../db/schema.js';
+import {
+  resolveCopiedTrack,
+  refsToClone,
+  providerRefKey,
+  remapPlacedMoveForCaller,
+} from '../lib/copy-class-track.js';
+import {
+  userMoves,
+  classTracks,
+  tracks,
+  trackProviderIds,
+  cues,
+  classTrackMoves,
+} from '../db/schema.js';
 import { effectiveDurationMs } from '../lib/duration.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
@@ -261,12 +273,21 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
   });
   if (cloneTrack && sourceTrack) {
     clones.push(
-      db.insert(tracks).values({ ...sourceTrack, id: resolvedTrackId, ownerUserId: me, createdAt: now, updatedAt: now }),
+      db.insert(tracks).values({
+        ...sourceTrack,
+        id: resolvedTrackId,
+        ownerUserId: me,
+        createdAt: now,
+        updatedAt: now,
+      }),
     );
     const [srcRefs, ownedKeys] = await Promise.all([
       db.select().from(trackProviderIds).where(eq(trackProviderIds.trackId, source.trackId)).all(),
       db
-        .select({ provider: trackProviderIds.provider, providerTrackId: trackProviderIds.providerTrackId })
+        .select({
+          provider: trackProviderIds.provider,
+          providerTrackId: trackProviderIds.providerTrackId,
+        })
         .from(trackProviderIds)
         .where(eq(trackProviderIds.ownerUserId, me))
         .all(),
@@ -287,7 +308,9 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
   }
 
   // ── Resolve placed-move user_move refs ─────────────────────────────────────
-  const userMoveIds = [...new Set(sourceMoves.map((m) => m.userMoveId).filter((id): id is string => id != null))];
+  const userMoveIds = [
+    ...new Set(sourceMoves.map((m) => m.userMoveId).filter((id): id is string => id != null)),
+  ];
   const userMoveById = new Map<string, { userId: string; name: string }>();
   if (userMoveIds.length > 0) {
     const rows = await db
@@ -319,7 +342,13 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
       updatedAt: now,
     }),
     ...sourceCues.map((cue) =>
-      db.insert(cues).values({ ...cue, id: crypto.randomUUID(), classTrackId: newId, createdAt: now, updatedAt: now }),
+      db.insert(cues).values({
+        ...cue,
+        id: crypto.randomUUID(),
+        classTrackId: newId,
+        createdAt: now,
+        updatedAt: now,
+      }),
     ),
     ...sourceMoves.map((move) => db.insert(classTrackMoves).values(remapMove(move))),
   ];

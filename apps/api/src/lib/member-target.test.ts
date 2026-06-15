@@ -5,15 +5,21 @@ import { HttpError } from './errors.js';
 
 describe('resolveMemberTarget', () => {
   it('passes a directly-supplied user id through', () => {
-    expect(resolveMemberTarget({ directUserId: 'u1', emailGiven: false, emailUserId: null })).toBe('u1');
+    expect(resolveMemberTarget({ directUserId: 'u1', emailGiven: false, emailUserId: null })).toBe(
+      'u1',
+    );
   });
 
   it('uses the email-resolved user id', () => {
-    expect(resolveMemberTarget({ directUserId: null, emailGiven: true, emailUserId: 'u2' })).toBe('u2');
+    expect(resolveMemberTarget({ directUserId: null, emailGiven: true, emailUserId: 'u2' })).toBe(
+      'u2',
+    );
   });
 
   it('422s when an email resolved to no user', () => {
-    expect(() => resolveMemberTarget({ directUserId: null, emailGiven: true, emailUserId: null })).toThrow(HttpError);
+    expect(() =>
+      resolveMemberTarget({ directUserId: null, emailGiven: true, emailUserId: null }),
+    ).toThrow(HttpError);
   });
 });
 

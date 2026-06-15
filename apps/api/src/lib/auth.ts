@@ -60,7 +60,12 @@ export function createAuth(env: Env) {
           url,
           footer: "If you didn't request this, you can safely ignore this email.",
         });
-        await sendEmail(env, { to: user.email, subject: 'Reset your RitmoFit password', html, text });
+        await sendEmail(env, {
+          to: user.email,
+          subject: 'Reset your RitmoFit password',
+          html,
+          text,
+        });
       },
     },
     // B2 — email verification. Sent on sign-up but NOT required to sign in
@@ -75,7 +80,12 @@ export function createAuth(env: Env) {
           url,
           footer: 'You can keep using RitmoFit while this is pending.',
         });
-        await sendEmail(env, { to: user.email, subject: 'Confirm your RitmoFit email', html, text });
+        await sendEmail(env, {
+          to: user.email,
+          subject: 'Confirm your RitmoFit email',
+          html,
+          text,
+        });
       },
     },
     socialProviders,

@@ -82,8 +82,7 @@ export const copyClass = (classId: string, title?: string) =>
     method: 'POST',
     body: JSON.stringify(title ? { title } : {}),
   });
-export const listClassTracks = (classId: string) =>
-  api<ClassTrack[]>(`/classes/${classId}/tracks`);
+export const listClassTracks = (classId: string) => api<ClassTrack[]>(`/classes/${classId}/tracks`);
 export const addTrack = (classId: string, body: AddClassTrack) =>
   api<ClassTrack>(`/classes/${classId}/tracks`, { method: 'POST', body: JSON.stringify(body) });
 export const updateClassTrack = (classTrackId: string, body: UpdateClassTrack) =>
@@ -129,8 +128,7 @@ export const lookupBpm = (trackId: string) =>
   api<Track & { bpmApplied: boolean }>(`/tracks/${trackId}/bpm-lookup`, { method: 'POST' });
 
 // ── Choreography: cues + placed moves anchored to a class_track ───────────────
-export const listCues = (classTrackId: string) =>
-  api<Cue[]>(`/class-tracks/${classTrackId}/cues`);
+export const listCues = (classTrackId: string) => api<Cue[]>(`/class-tracks/${classTrackId}/cues`);
 export const createCue = (classTrackId: string, body: CreateCue) =>
   api<Cue>(`/class-tracks/${classTrackId}/cues`, { method: 'POST', body: JSON.stringify(body) });
 export const updateCue = (cueId: string, body: UpdateCue) =>
@@ -158,8 +156,7 @@ export const createUserMove = (body: CreateUserMove) =>
   api<UserMove>('/user-moves', { method: 'POST', body: JSON.stringify(body) });
 export const updateUserMove = (id: string, body: UpdateUserMove) =>
   api<UserMove>(`/user-moves/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
-export const deleteUserMove = (id: string) =>
-  api<void>(`/user-moves/${id}`, { method: 'DELETE' });
+export const deleteUserMove = (id: string) => api<void>(`/user-moves/${id}`, { method: 'DELETE' });
 
 /** Class sections — the energy-arc segment bands (class-scoped, edit access to write). */
 export const listSections = (classId: string) =>
@@ -168,12 +165,10 @@ export const createSection = (classId: string, body: CreateClassSection) =>
   api<ClassSection>(`/classes/${classId}/sections`, { method: 'POST', body: JSON.stringify(body) });
 export const updateSection = (id: string, body: UpdateClassSection) =>
   api<ClassSection>(`/sections/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
-export const deleteSection = (id: string) =>
-  api<void>(`/sections/${id}`, { method: 'DELETE' });
+export const deleteSection = (id: string) => api<void>(`/sections/${id}`, { method: 'DELETE' });
 
 // ── Sharing (M4) ────────────────────────────────────────────────────────────
-export const listShares = (classId: string) =>
-  api<ShareView[]>(`/classes/${classId}/shares`);
+export const listShares = (classId: string) => api<ShareView[]>(`/classes/${classId}/shares`);
 export const createShare = (body: CreateShare) =>
   api<Share>('/shares', { method: 'POST', body: JSON.stringify(body) });
 export const updateShare = (shareId: string, permission: SharePermission) =>
@@ -185,8 +180,7 @@ export const deleteShare = (shareId: string) =>
 export const listTeams = () => api<TeamWithRole[]>('/teams');
 export const createTeam = (name: string) =>
   api<Team>('/teams', { method: 'POST', body: JSON.stringify({ name }) });
-export const listMembers = (teamId: string) =>
-  api<TeamMemberView[]>(`/teams/${teamId}/members`);
+export const listMembers = (teamId: string) => api<TeamMemberView[]>(`/teams/${teamId}/members`);
 export const addMember = (teamId: string, email: string, role?: TeamRole) =>
   api<TeamMembership>(`/teams/${teamId}/members`, {
     method: 'POST',

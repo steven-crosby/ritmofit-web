@@ -151,7 +151,9 @@ export function TimelineStrip({
           const selected = b.classTrackId === selectedTrackId;
           const ring = selected ? 'ring-2 ring-interactive' : '';
           const style = { left: `${b.leftPct}%`, width: `${b.widthPct}%` };
-          const inner = <span className="font-data text-[10px] text-text-tertiary">{b.position + 1}</span>;
+          const inner = (
+            <span className="font-data text-[10px] text-text-tertiary">{b.position + 1}</span>
+          );
           return interactive ? (
             <button
               key={b.position}
@@ -179,7 +181,10 @@ export function TimelineStrip({
             The clickable hit area is padded around the small glyph. */}
         {markers.map((m) => {
           const glyph = (
-            <span className="font-data text-[11px] leading-none" style={{ color: m.color ?? undefined }}>
+            <span
+              className="font-data text-[11px] leading-none"
+              style={{ color: m.color ?? undefined }}
+            >
               {m.kind === 'cue' ? '▲' : '◆'}
             </span>
           );
@@ -188,7 +193,9 @@ export function TimelineStrip({
             <button
               key={m.key}
               type="button"
-              onClick={() => onSelectTrack(m.classTrackId, { kind: m.kind, id: m.id, anchorMs: m.anchorMs })}
+              onClick={() =>
+                onSelectTrack(m.classTrackId, { kind: m.kind, id: m.id, anchorMs: m.anchorMs })
+              }
               style={{ left: `${m.leftPct}%` }}
               title={tip}
               aria-label={`${m.kind} at ${formatDuration(m.absMs)}: ${m.label}, select track ${m.position + 1}`}

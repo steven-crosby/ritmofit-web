@@ -7,16 +7,16 @@
  */
 import { Hono } from 'hono';
 import { and, eq } from 'drizzle-orm';
-import {
-  createTeamSchema,
-  addTeamMemberSchema,
-  type TeamWithRole,
-} from '@ritmofit/shared';
+import { createTeamSchema, addTeamMemberSchema, type TeamWithRole } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { HttpError, isUniqueViolation } from '../lib/errors.js';
-import { serializeTeam, serializeTeamMembership, serializeTeamMemberView } from '../lib/serialize.js';
+import {
+  serializeTeam,
+  serializeTeamMembership,
+  serializeTeamMemberView,
+} from '../lib/serialize.js';
 import { requireTeamMembership, requireTeamManager } from '../lib/team-authz.js';
 import { resolveMemberTarget } from '../lib/member-target.js';
 import { teams, teamMemberships, users } from '../db/schema.js';
@@ -30,7 +30,13 @@ teamRoutes.post('/teams', async (c) => {
   const me = c.get('userId');
   const body = createTeamSchema.parse(await c.req.json());
   const now = Date.now();
-  const teamRow = { id: crypto.randomUUID(), name: body.name, ownerUserId: me, createdAt: now, updatedAt: now };
+  const teamRow = {
+    id: crypto.randomUUID(),
+    name: body.name,
+    ownerUserId: me,
+    createdAt: now,
+    updatedAt: now,
+  };
   await db.batch([
     db.insert(teams).values(teamRow),
     db.insert(teamMemberships).values({
@@ -149,7 +155,8 @@ teamRoutes.post('/teams/:id/members', async (c) => {
   try {
     await db.insert(teamMemberships).values(row);
   } catch (err) {
-    if (isUniqueViolation(err)) throw new HttpError(409, 'CONFLICT', 'Already a member of this team.');
+    if (isUniqueViolation(err))
+      throw new HttpError(409, 'CONFLICT', 'Already a member of this team.');
     throw err;
   }
   return c.json(serializeTeamMembership(row), 201);
@@ -172,7 +179,11 @@ teamRoutes.delete('/teams/:id/members/:userId', async (c) => {
     await requireTeamManager(db, me, teamId);
   }
 
-  const team = await db.select({ ownerUserId: teams.ownerUserId }).from(teams).where(eq(teams.id, teamId)).get();
+  const team = await db
+    .select({ ownerUserId: teams.ownerUserId })
+    .from(teams)
+    .where(eq(teams.id, teamId))
+    .get();
   if (team && team.ownerUserId === targetUserId) {
     throw new HttpError(409, 'CONFLICT', 'The team owner cannot be removed.');
   }

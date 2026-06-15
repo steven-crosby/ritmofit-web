@@ -7,12 +7,60 @@
 import type { TrackSearchResult } from '@ritmofit/shared';
 
 const CATALOG: readonly TrackSearchResult[] = [
-  { provider: 'soundcloud', providerTrackId: 'sc-baiana', providerUri: 'https://soundcloud.com/bakermat/baiana', title: 'Baianá', artist: 'Bakermat', albumArtUrl: null, durationMs: 180000 },
-  { provider: 'soundcloud', providerTrackId: 'sc-instinct', providerUri: 'https://soundcloud.com/x/instinct', title: 'Instinct', artist: 'Lane 8', albumArtUrl: null, durationMs: 240000 },
-  { provider: 'spotify', providerTrackId: 'sp-titanium', providerUri: 'spotify:track:titanium', title: 'Titanium', artist: 'David Guetta', albumArtUrl: null, durationMs: 245000 },
-  { provider: 'spotify', providerTrackId: 'sp-levels', providerUri: 'spotify:track:levels', title: 'Levels', artist: 'Avicii', albumArtUrl: null, durationMs: 203000 },
-  { provider: 'apple_music', providerTrackId: 'am-wakeme', providerUri: 'https://music.apple.com/wakemeup', title: 'Wake Me Up', artist: 'Avicii', albumArtUrl: null, durationMs: 247000 },
-  { provider: 'apple_music', providerTrackId: 'am-clarity', providerUri: 'https://music.apple.com/clarity', title: 'Clarity', artist: 'Zedd', albumArtUrl: null, durationMs: 271000 },
+  {
+    provider: 'soundcloud',
+    providerTrackId: 'sc-baiana',
+    providerUri: 'https://soundcloud.com/bakermat/baiana',
+    title: 'Baianá',
+    artist: 'Bakermat',
+    albumArtUrl: null,
+    durationMs: 180000,
+  },
+  {
+    provider: 'soundcloud',
+    providerTrackId: 'sc-instinct',
+    providerUri: 'https://soundcloud.com/x/instinct',
+    title: 'Instinct',
+    artist: 'Lane 8',
+    albumArtUrl: null,
+    durationMs: 240000,
+  },
+  {
+    provider: 'spotify',
+    providerTrackId: 'sp-titanium',
+    providerUri: 'spotify:track:titanium',
+    title: 'Titanium',
+    artist: 'David Guetta',
+    albumArtUrl: null,
+    durationMs: 245000,
+  },
+  {
+    provider: 'spotify',
+    providerTrackId: 'sp-levels',
+    providerUri: 'spotify:track:levels',
+    title: 'Levels',
+    artist: 'Avicii',
+    albumArtUrl: null,
+    durationMs: 203000,
+  },
+  {
+    provider: 'apple_music',
+    providerTrackId: 'am-wakeme',
+    providerUri: 'https://music.apple.com/wakemeup',
+    title: 'Wake Me Up',
+    artist: 'Avicii',
+    albumArtUrl: null,
+    durationMs: 247000,
+  },
+  {
+    provider: 'apple_music',
+    providerTrackId: 'am-clarity',
+    providerUri: 'https://music.apple.com/clarity',
+    title: 'Clarity',
+    artist: 'Zedd',
+    albumArtUrl: null,
+    durationMs: 271000,
+  },
 ];
 
 /** Case-insensitive substring match on title/artist, optionally filtered by provider. */

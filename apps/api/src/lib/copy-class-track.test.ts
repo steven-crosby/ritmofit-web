@@ -54,10 +54,22 @@ describe('resolveTrackForClassCopy', () => {
   it('clones two distinct foreign tracks independently', () => {
     const memo = new Map<string, string>();
     expect(
-      resolveTrackForClassCopy({ sourceTrackId: 'tA', sourceTrackOwnerId: 'x', callerId: 'me', newTrackId: 'cA', memo }),
+      resolveTrackForClassCopy({
+        sourceTrackId: 'tA',
+        sourceTrackOwnerId: 'x',
+        callerId: 'me',
+        newTrackId: 'cA',
+        memo,
+      }),
     ).toEqual({ trackId: 'cA', cloneTrack: true });
     expect(
-      resolveTrackForClassCopy({ sourceTrackId: 'tB', sourceTrackOwnerId: 'x', callerId: 'me', newTrackId: 'cB', memo }),
+      resolveTrackForClassCopy({
+        sourceTrackId: 'tB',
+        sourceTrackOwnerId: 'x',
+        callerId: 'me',
+        newTrackId: 'cB',
+        memo,
+      }),
     ).toEqual({ trackId: 'cB', cloneTrack: true });
   });
 });
@@ -65,19 +77,34 @@ describe('resolveTrackForClassCopy', () => {
 describe('resolveCopiedTrack', () => {
   it('reuses the caller`s own track (no clone)', () => {
     expect(
-      resolveCopiedTrack({ sourceTrackId: 't1', sourceTrackOwnerId: 'me', callerId: 'me', newTrackId: 'new' }),
+      resolveCopiedTrack({
+        sourceTrackId: 't1',
+        sourceTrackOwnerId: 'me',
+        callerId: 'me',
+        newTrackId: 'new',
+      }),
     ).toEqual({ trackId: 't1', cloneTrack: false });
   });
 
   it('clones a foreign track into the caller`s library under the new id', () => {
     expect(
-      resolveCopiedTrack({ sourceTrackId: 't1', sourceTrackOwnerId: 'alice', callerId: 'me', newTrackId: 'new' }),
+      resolveCopiedTrack({
+        sourceTrackId: 't1',
+        sourceTrackOwnerId: 'alice',
+        callerId: 'me',
+        newTrackId: 'new',
+      }),
     ).toEqual({ trackId: 'new', cloneTrack: true });
   });
 
   it('reuses the id (no clone) when the source owner is unknown — fail loud on the FK', () => {
     expect(
-      resolveCopiedTrack({ sourceTrackId: 't1', sourceTrackOwnerId: null, callerId: 'me', newTrackId: 'new' }),
+      resolveCopiedTrack({
+        sourceTrackId: 't1',
+        sourceTrackOwnerId: null,
+        callerId: 'me',
+        newTrackId: 'new',
+      }),
     ).toEqual({ trackId: 't1', cloneTrack: false });
   });
 });
@@ -111,35 +138,45 @@ describe('remapPlacedMoveForCaller', () => {
   ]);
 
   it('passes through a placement with no user_move ref', () => {
-    expect(remapPlacedMoveForCaller({ userMoveId: null, nameOverride: 'freeform' }, me, userMoves)).toEqual({
+    expect(
+      remapPlacedMoveForCaller({ userMoveId: null, nameOverride: 'freeform' }, me, userMoves),
+    ).toEqual({
       userMoveId: null,
       nameOverride: 'freeform',
     });
   });
 
   it('keeps the caller`s own user_move ref unchanged', () => {
-    expect(remapPlacedMoveForCaller({ userMoveId: 'mine', nameOverride: null }, me, userMoves)).toEqual({
+    expect(
+      remapPlacedMoveForCaller({ userMoveId: 'mine', nameOverride: null }, me, userMoves),
+    ).toEqual({
       userMoveId: 'mine',
       nameOverride: null,
     });
   });
 
   it('drops a foreign user_move ref and snapshots its name into nameOverride', () => {
-    expect(remapPlacedMoveForCaller({ userMoveId: 'hers', nameOverride: null }, me, userMoves)).toEqual({
+    expect(
+      remapPlacedMoveForCaller({ userMoveId: 'hers', nameOverride: null }, me, userMoves),
+    ).toEqual({
       userMoveId: null,
       nameOverride: 'Her Move',
     });
   });
 
   it('prefers an existing nameOverride over the snapshot when dropping a foreign ref', () => {
-    expect(remapPlacedMoveForCaller({ userMoveId: 'hers', nameOverride: 'kept' }, me, userMoves)).toEqual({
+    expect(
+      remapPlacedMoveForCaller({ userMoveId: 'hers', nameOverride: 'kept' }, me, userMoves),
+    ).toEqual({
       userMoveId: null,
       nameOverride: 'kept',
     });
   });
 
   it('drops a dangling user_move ref (not in the map) with no name to fall back to', () => {
-    expect(remapPlacedMoveForCaller({ userMoveId: 'gone', nameOverride: null }, me, userMoves)).toEqual({
+    expect(
+      remapPlacedMoveForCaller({ userMoveId: 'gone', nameOverride: null }, me, userMoves),
+    ).toEqual({
       userMoveId: null,
       nameOverride: null,
     });

@@ -73,16 +73,27 @@ shareRoutes.post('/shares', async (c) => {
   });
 
   const targetMatch =
-    targetUserId != null ? eq(shares.targetUserId, targetUserId) : eq(shares.targetTeamId, targetTeamId!);
+    targetUserId != null
+      ? eq(shares.targetUserId, targetUserId)
+      : eq(shares.targetTeamId, targetTeamId!);
   const existing = await db
     .select()
     .from(shares)
-    .where(and(eq(shares.resourceType, body.resourceType), eq(shares.resourceId, body.resourceId), targetMatch))
+    .where(
+      and(
+        eq(shares.resourceType, body.resourceType),
+        eq(shares.resourceId, body.resourceId),
+        targetMatch,
+      ),
+    )
     .get();
 
   const now = Date.now();
   if (existing) {
-    await db.update(shares).set({ permission: body.permission, updatedAt: now }).where(eq(shares.id, existing.id));
+    await db
+      .update(shares)
+      .set({ permission: body.permission, updatedAt: now })
+      .where(eq(shares.id, existing.id));
     const row = await db.select().from(shares).where(eq(shares.id, existing.id)).get();
     return c.json(serializeShare(row!));
   }
@@ -125,7 +136,11 @@ shareRoutes.get('/classes/:id/shares', async (c) => {
     .all();
   return c.json(
     rows.map((r) =>
-      serializeShareView(r.share, { email: r.email, displayName: r.displayName, teamName: r.teamName }),
+      serializeShareView(r.share, {
+        email: r.email,
+        displayName: r.displayName,
+        teamName: r.teamName,
+      }),
     ),
   );
 });
@@ -144,7 +159,10 @@ shareRoutes.patch('/shares/:id', async (c) => {
   const id = c.req.param('id');
   await requireOwnedShare(db, c.get('userId'), id);
   const body = updateShareSchema.parse(await c.req.json());
-  await db.update(shares).set({ permission: body.permission, updatedAt: Date.now() }).where(eq(shares.id, id));
+  await db
+    .update(shares)
+    .set({ permission: body.permission, updatedAt: Date.now() })
+    .where(eq(shares.id, id));
   const row = await db.select().from(shares).where(eq(shares.id, id)).get();
   return c.json(serializeShare(row!));
 });

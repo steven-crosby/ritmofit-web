@@ -96,7 +96,9 @@ describe('SoundCloudProvider.search', () => {
 
 describe('SoundCloudProvider token handling', () => {
   it('requests a client-credentials token with Basic auth, then caches it', async () => {
-    const { provider, calls } = makeProvider({ [`${API_BASE}/tracks?`]: { collection: [SC_TRACK] } });
+    const { provider, calls } = makeProvider({
+      [`${API_BASE}/tracks?`]: { collection: [SC_TRACK] },
+    });
     await provider.search('a');
     await provider.search('b');
 
@@ -117,14 +119,23 @@ describe('fetchSoundCloudLikes', () => {
     const calls: { url: string; init?: Parameters<FetchLike>[1] }[] = [];
     const fetchImpl: FetchLike = async (url, init) => {
       calls.push({ url, init });
-      return { ok: status >= 200 && status < 300, status, json: async () => body, text: async () => '' };
+      return {
+        ok: status >= 200 && status < 300,
+        status,
+        json: async () => body,
+        text: async () => '',
+      };
     };
     return { fetchImpl, calls };
   }
 
   it('maps the liked tracks with the user token as OAuth auth', async () => {
     const { fetchImpl, calls } = statusFetch(200, { collection: [SC_TRACK] });
-    const out = await fetchSoundCloudLikes({ accessToken: 'user-tok', fetchImpl, apiBase: API_BASE });
+    const out = await fetchSoundCloudLikes({
+      accessToken: 'user-tok',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
 
     expect(out.map((t) => t.providerTrackId)).toEqual(['12345']);
     expect(calls[0]?.url.startsWith(`${API_BASE}/me/likes/tracks`)).toBe(true);
@@ -133,7 +144,9 @@ describe('fetchSoundCloudLikes', () => {
 
   it('accepts a bare-array likes response', async () => {
     const { fetchImpl } = statusFetch(200, [SC_TRACK]);
-    expect((await fetchSoundCloudLikes({ accessToken: 't', fetchImpl, apiBase: API_BASE })).length).toBe(1);
+    expect(
+      (await fetchSoundCloudLikes({ accessToken: 't', fetchImpl, apiBase: API_BASE })).length,
+    ).toBe(1);
   });
 
   it('throws SoundCloudUnauthorizedError on 401 (the refresh signal)', async () => {
