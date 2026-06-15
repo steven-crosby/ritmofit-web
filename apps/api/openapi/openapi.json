@@ -33,7 +33,30 @@
     },
     "/classes": {
       "get": {
-        "summary": "List visible classes (owned ∪ shared)",
+        "summary": "List visible classes (owned ∪ shared), optionally paginated",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "description": "Page size. Supplying limit or cursor enables keyset pagination; cursor without limit uses 30."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "description": "Opaque continuation cursor from the prior response header."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Visible classes",
@@ -46,7 +69,18 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-RitmoFit-Next-Cursor": {
+                "description": "Opaque cursor for the next page; absent on the final page.",
+                "schema": {
+                  "type": "string"
+                }
+              }
             }
+          },
+          "422": {
+            "description": "Invalid pagination parameters or cursor"
           }
         }
       },

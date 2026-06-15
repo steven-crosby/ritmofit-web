@@ -40,9 +40,10 @@ import type {
   TeamMemberView,
   TeamRole,
 } from '@ritmofit/shared';
+import { CLASS_LIST_DEFAULT_LIMIT, CLASS_LIST_NEXT_CURSOR_HEADER } from '@ritmofit/shared';
 import { API_BASE_URL, authClient } from './auth-client.js';
 
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
+async function apiResponse(path: string, init?: RequestInit): Promise<Response> {
   const res = await fetch(`${API_BASE_URL}/api/v1${path}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -62,11 +63,32 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new Error(message);
   }
+  return res;
+}
+
+async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await apiResponse(path, init);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 
-export const listClasses = () => api<ClassWithAccess[]>('/classes');
+export interface ClassListPage {
+  items: ClassWithAccess[];
+  nextCursor: string | null;
+}
+
+export const listClasses = async (
+  limit = CLASS_LIST_DEFAULT_LIMIT,
+  cursor?: string,
+): Promise<ClassListPage> => {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor) params.set('cursor', cursor);
+  const res = await apiResponse(`/classes?${params}`);
+  return {
+    items: (await res.json()) as ClassWithAccess[],
+    nextCursor: res.headers.get(CLASS_LIST_NEXT_CURSOR_HEADER),
+  };
+};
 export const createClass = (body: CreateClass) =>
   api<Class>('/classes', { method: 'POST', body: JSON.stringify(body) });
 export const updateClass = (classId: string, body: UpdateClass) =>

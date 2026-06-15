@@ -132,8 +132,8 @@ export const classes = sqliteTable(
     enumCheck('classes_status_check', t.status, classStatusValues),
     enumCheck('classes_visibility_check', t.visibility, classVisibilityValues),
     index('classes_visibility_idx').on(t.visibility),
-    // Hot path: `listVisibleClasses` owned-arm filters by owner (authz.ts).
-    index('classes_owner_user_id_idx').on(t.ownerUserId),
+    // Cover the owned arm and its stable library ordering boundary.
+    index('classes_owner_updated_id_idx').on(t.ownerUserId, t.updatedAt, t.id),
   ],
 );
 
@@ -371,6 +371,8 @@ export const shares = sqliteTable(
     uniqueIndex('shares_resource_target_team_unique')
       .on(t.resourceType, t.resourceId, t.targetTeamId)
       .where(sql`${t.targetTeamId} is not null`),
+    index('shares_target_user_resource_idx').on(t.resourceType, t.targetUserId, t.resourceId),
+    index('shares_target_team_resource_idx').on(t.resourceType, t.targetTeamId, t.resourceId),
   ],
 );
 

@@ -14,6 +14,9 @@ import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import {
   API_VERSION,
+  CLASS_LIST_DEFAULT_LIMIT,
+  CLASS_LIST_MAX_LIMIT,
+  CLASS_LIST_NEXT_CURSOR_HEADER,
   classSchema,
   classWithAccessSchema,
   createClassSchema,
@@ -138,8 +141,39 @@ const doc = {
     },
     '/classes': {
       get: {
-        summary: 'List visible classes (owned ∪ shared)',
-        responses: { '200': arrayResp('ClassWithAccess', 'Visible classes') },
+        summary: 'List visible classes (owned ∪ shared), optionally paginated',
+        parameters: [
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: {
+              type: 'integer',
+              minimum: 1,
+              maximum: CLASS_LIST_MAX_LIMIT,
+            },
+            description: `Page size. Supplying limit or cursor enables keyset pagination; cursor without limit uses ${CLASS_LIST_DEFAULT_LIMIT}.`,
+          },
+          {
+            name: 'cursor',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', maxLength: 512 },
+            description: 'Opaque continuation cursor from the prior response header.',
+          },
+        ],
+        responses: {
+          '200': {
+            ...arrayResp('ClassWithAccess', 'Visible classes'),
+            headers: {
+              [CLASS_LIST_NEXT_CURSOR_HEADER]: {
+                description: 'Opaque cursor for the next page; absent on the final page.',
+                schema: { type: 'string' },
+              },
+            },
+          },
+          '422': { description: 'Invalid pagination parameters or cursor' },
+        },
       },
       post: {
         summary: 'Create a class',

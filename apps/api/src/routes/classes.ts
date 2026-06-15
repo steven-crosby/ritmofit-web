@@ -5,6 +5,9 @@
 import { Hono } from 'hono';
 import { and, eq, inArray } from 'drizzle-orm';
 import {
+  CLASS_LIST_DEFAULT_LIMIT,
+  CLASS_LIST_NEXT_CURSOR_HEADER,
+  classListQuerySchema,
   createClassSchema,
   updateClassSchema,
   copyClassSchema,
@@ -18,6 +21,7 @@ import { HttpError } from '../lib/errors.js';
 import { buildPatch } from '../lib/patch.js';
 import { serializeClass } from '../lib/serialize.js';
 import { assembleRunPayload } from '../lib/run-payload.js';
+import { decodeClassListCursor, encodeClassListCursor } from '../lib/class-list-pagination.js';
 import { resequence } from '../lib/sequencing.js';
 import {
   resolveTrackForClassCopy,
@@ -63,26 +67,23 @@ classRoutes.post('/', async (c) => {
 });
 
 /**
- * GET /classes — classes the caller can see: owned ∪ shared-directly ∪
- * shared-via-team, each tagged with its effective access level (highest wins).
- * The access union lives in `lib/authz.ts` (`listVisibleClasses`) so the access
- * model has one home; this route just fetches and shapes the rows.
+ * GET /classes — owned ∪ direct-share ∪ team-share, highest access wins.
+ * `?limit=&cursor=` opts into bounded keyset pages; no params preserves the
+ * legacy full-array response used by the current iOS cache.
  */
 classRoutes.get('/', async (c) => {
   const db = createDb(c.env);
-  const levelById = await listVisibleClasses(db, c.get('userId'));
-
-  if (levelById.size === 0) return c.json([] as ClassWithAccess[]);
-
-  const rows = await db
-    .select()
-    .from(classes)
-    .where(inArray(classes.id, [...levelById.keys()]))
-    .all();
-  const out: ClassWithAccess[] = rows
-    .map((row) => ({ ...serializeClass(row), accessLevel: levelById.get(row.id)! }))
-    .sort((a, b) => b.updatedAt - a.updatedAt);
-  return c.json(out);
+  const rawQuery = c.req.query();
+  const query = classListQuerySchema.parse(rawQuery);
+  const paginated = rawQuery.limit !== undefined || rawQuery.cursor !== undefined;
+  const page = await listVisibleClasses(db, c.get('userId'), {
+    limit: paginated ? (query.limit ?? CLASS_LIST_DEFAULT_LIMIT) : undefined,
+    cursor: query.cursor ? decodeClassListCursor(query.cursor) : undefined,
+  });
+  if (page.nextCursor) {
+    c.header(CLASS_LIST_NEXT_CURSOR_HEADER, encodeClassListCursor(page.nextCursor));
+  }
+  return c.json(page.items satisfies ClassWithAccess[]);
 });
 
 /**

@@ -87,6 +87,23 @@ export type UpdateClass = z.infer<typeof updateClassSchema>;
 export const classWithAccessSchema = classSchema.extend({ accessLevel: accessLevelSchema });
 export type ClassWithAccess = z.infer<typeof classWithAccessSchema>;
 
+/** Bounded keyset pagination for the private class library. */
+export const CLASS_LIST_DEFAULT_LIMIT = 30;
+export const CLASS_LIST_MAX_LIMIT = 50;
+export const CLASS_LIST_NEXT_CURSOR_HEADER = 'X-RitmoFit-Next-Cursor';
+
+export const classListCursorSchema = z.object({
+  updatedAt: timestampMsSchema,
+  id: uuidSchema,
+});
+export type ClassListCursor = z.infer<typeof classListCursorSchema>;
+
+export const classListQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(CLASS_LIST_MAX_LIMIT).optional(),
+  cursor: z.string().min(1).max(512).optional(),
+});
+export type ClassListQuery = z.infer<typeof classListQuerySchema>;
+
 /**
  * A public class as it appears in the Explore feed (M4): the class plus its
  * owner's display label and track count, so a discovery card needs no extra

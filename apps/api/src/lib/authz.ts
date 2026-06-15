@@ -16,10 +16,12 @@
  * `user_moves`) get their own small ownership checks in their routes — keeping
  * this helper's contract narrow and unambiguous (`authorization.md` §Non-class).
  */
-import { and, eq, or } from 'drizzle-orm';
+import { and, eq, or, sql } from 'drizzle-orm';
 import {
   accessLevelValues,
   type AccessLevel,
+  type ClassListCursor,
+  type ClassWithAccess,
   type SharePermission,
   type ClassVisibility,
 } from '@ritmofit/shared';
@@ -34,6 +36,7 @@ import {
 } from '../db/schema.js';
 import { HttpError } from './errors.js';
 import type { Db } from './db.js';
+import { serializeClass } from './serialize.js';
 
 /** Minimum access an operation needs; `'none'` is never a valid requirement. */
 export type MinAccessLevel = Exclude<AccessLevel, 'none'>;
@@ -150,41 +153,104 @@ export function createDrizzleAuthzStore(db: Db): AuthzStore {
   };
 }
 
+interface VisibleClassRow {
+  id: string;
+  ownerUserId: string;
+  title: string;
+  description: string | null;
+  template: 'cycle' | 'hiit' | 'sculpt' | 'tread' | null;
+  status: 'draft' | 'ready' | 'archived';
+  visibility: 'private' | 'public';
+  targetDurationMs: number | null;
+  createdAt: number;
+  updatedAt: number;
+  lastOpenedAt: number | null;
+  accessLevel: Exclude<AccessLevel, 'none'>;
+}
+
+export interface VisibleClassPage {
+  items: ClassWithAccess[];
+  nextCursor: ClassListCursor | null;
+}
+
 /**
- * The visible-classes union for a user: owned ∪ shared-directly ∪ shared-via-team
- * (authorization.md), reduced to the **highest** effective access level per class.
- * The list counterpart to `resolveAccess` — both live here so the access model has
- * a single home (a class never appears with level `'none'`). Returns a Map of
- * classId → level; callers fetch and shape the class rows themselves.
+ * List owned ∪ directly shared ∪ team-shared classes in D1, reducing duplicate
+ * paths to the highest access level before applying deterministic keyset order.
+ * With no `limit`, this preserves the legacy full-array behavior used by iOS.
  */
 export async function listVisibleClasses(
   db: Db,
   userId: string,
-): Promise<Map<string, AccessLevel>> {
-  // The three union arms are independent — run them in one round-trip wave.
-  const [owned, direct, viaTeam] = await Promise.all([
-    db.select({ id: classes.id }).from(classes).where(eq(classes.ownerUserId, userId)).all(),
-    db
-      .select({ id: shares.resourceId, permission: shares.permission })
-      .from(shares)
-      .where(and(eq(shares.resourceType, 'class'), eq(shares.targetUserId, userId)))
-      .all(),
-    db
-      .select({ id: shares.resourceId, permission: shares.permission })
-      .from(shares)
-      .innerJoin(teamMemberships, eq(teamMemberships.teamId, shares.targetTeamId))
-      .where(and(eq(shares.resourceType, 'class'), eq(teamMemberships.userId, userId)))
-      .all(),
-  ]);
+  options: { limit?: number; cursor?: ClassListCursor } = {},
+): Promise<VisibleClassPage> {
+  const cursorFilter = options.cursor
+    ? sql`and (
+        c.updated_at < ${options.cursor.updatedAt}
+        or (c.updated_at = ${options.cursor.updatedAt} and c.id < ${options.cursor.id})
+      )`
+    : sql``;
+  const limitClause = options.limit == null ? sql`` : sql`limit ${options.limit + 1}`;
 
-  const levelById = new Map<string, AccessLevel>();
-  const bump = (id: string, level: AccessLevel) => {
-    const current = levelById.get(id);
-    if (!current || accessRank(level) > accessRank(current)) levelById.set(id, level);
+  const rows = await db.all<VisibleClassRow>(sql`
+    with access_candidates(class_id, access_rank) as (
+      select id, 3
+      from classes
+      where owner_user_id = ${userId}
+
+      union all
+
+      select resource_id, case permission when 'edit' then 2 else 1 end
+      from shares
+      where resource_type = 'class' and target_user_id = ${userId}
+
+      union all
+
+      select s.resource_id, case s.permission when 'edit' then 2 else 1 end
+      from team_memberships tm
+      cross join shares s on s.target_team_id = tm.team_id
+      where tm.user_id = ${userId} and s.resource_type = 'class'
+    ),
+    visible(class_id, access_rank) as (
+      select class_id, max(access_rank)
+      from access_candidates
+      group by class_id
+    )
+    select
+      c.id,
+      c.owner_user_id as ownerUserId,
+      c.title,
+      c.description,
+      c.template,
+      c.status,
+      c.visibility,
+      c.target_duration_ms as targetDurationMs,
+      c.created_at as createdAt,
+      c.updated_at as updatedAt,
+      c.last_opened_at as lastOpenedAt,
+      case visible.access_rank
+        when 3 then 'owner'
+        when 2 then 'edit'
+        else 'view'
+      end as accessLevel
+    from visible
+    inner join classes c on c.id = visible.class_id
+    where 1 = 1
+    ${cursorFilter}
+    order by c.updated_at desc, c.id desc
+    ${limitClause}
+  `);
+
+  const hasMore = options.limit != null && rows.length > options.limit;
+  const pageRows = hasMore ? rows.slice(0, options.limit) : rows;
+  const items = pageRows.map((row) => ({
+    ...serializeClass(row),
+    accessLevel: row.accessLevel,
+  }));
+  const last = hasMore ? items.at(-1) : undefined;
+  return {
+    items,
+    nextCursor: last ? { updatedAt: last.updatedAt, id: last.id } : null,
   };
-  owned.forEach((r) => bump(r.id, 'owner'));
-  [...direct, ...viaTeam].forEach((r) => bump(r.id, r.permission));
-  return levelById;
 }
 
 /**

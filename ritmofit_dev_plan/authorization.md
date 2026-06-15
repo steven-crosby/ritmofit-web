@@ -82,27 +82,37 @@ open route. Keep them out of `requireAccess` so its contract stays "class access
 
 ## The `GET /classes` union
 
-Listing visible classes is:
+Listing visible classes is one D1 query:
 
 ```sql
--- owned
-SELECT c.* FROM classes c WHERE c.owner_user_id = :me
-UNION
--- shared directly to me
-SELECT c.* FROM classes c
-  JOIN shares s ON s.resource_id = c.id
-  WHERE s.resource_type = 'class' AND s.target_user_id = :me
-UNION
--- shared to a team I'm in
-SELECT c.* FROM classes c
-  JOIN shares s ON s.resource_id = c.id
-  JOIN team_memberships tm ON tm.team_id = s.target_team_id
-  WHERE s.resource_type = 'class' AND tm.user_id = :me;
+WITH access_candidates(class_id, access_rank) AS (
+  SELECT id, 3 FROM classes WHERE owner_user_id = :me
+  UNION ALL
+  SELECT resource_id, CASE permission WHEN 'edit' THEN 2 ELSE 1 END
+    FROM shares
+    WHERE resource_type = 'class' AND target_user_id = :me
+  UNION ALL
+  SELECT s.resource_id, CASE s.permission WHEN 'edit' THEN 2 ELSE 1 END
+    FROM team_memberships tm
+    CROSS JOIN shares s ON s.target_team_id = tm.team_id
+    WHERE tm.user_id = :me AND s.resource_type = 'class'
+),
+visible AS (
+  SELECT class_id, MAX(access_rank) AS access_rank
+  FROM access_candidates
+  GROUP BY class_id
+)
+SELECT c.*, visible.access_rank
+FROM visible
+JOIN classes c ON c.id = visible.class_id
+ORDER BY c.updated_at DESC, c.id DESC;
 ```
 
-A deliberate, named query shape — fine at our scale and plain SQLite (no Postgres-only constructs). If
-it ever becomes hot, the fix is an index / a materialized membership view, **not** denormalizing
-ownership onto classes.
+Web callers add a bounded keyset predicate on `(updated_at, id)` plus `LIMIT`; the response body remains
+the existing array and carries the next opaque cursor in `X-RitmoFit-Next-Cursor`. Unparameterized
+requests retain the legacy full list for the current iOS cache sync. Supporting indexes select owned,
+direct-share, and team-share candidates before the final sort. This remains plain SQLite; do not
+denormalize ownership onto classes.
 
 ## Implementation notes
 
