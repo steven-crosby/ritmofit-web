@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supportsUserAccount, type MusicConnectionView, type Provider } from '@ritmofit/shared';
 import { listConnections, connectProvider, disconnectProvider } from '../lib/api.js';
 import { PROVIDER_ORDER, providerLabel } from '../lib/providers.js';
+import { Dialog } from './Dialog.js';
 
 export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
@@ -33,12 +34,6 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
 
   // Surface a real-OAuth redirect result if the callback bounced back with one
   // (?connected=… / ?error=…). Harmless in the mock flow, which never redirects.
@@ -83,120 +78,116 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Music connections"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    <Dialog
+      onClose={onClose}
+      label="Music connections"
+      panelClassName="flex w-full max-w-md flex-col gap-4 rounded-panel bg-bg-raised p-6 shadow-lifted"
     >
-      <div className="flex w-full max-w-md flex-col gap-4 rounded-panel bg-bg-raised p-6 shadow-lifted">
-        <header className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-semibold text-text-primary">
-              Music connections
-            </h2>
-            <p className="font-ui text-xs text-text-tertiary">
-              Link an account to search your own library.
-            </p>
-          </div>
-          <button
-            className="rounded-pill px-2 py-1 font-ui text-sm text-text-tertiary hover:text-text-primary"
-            onClick={onClose}
-            aria-label="Close connections dialog"
-          >
-            ✕
-          </button>
-        </header>
-
-        {error && (
-          <p className="font-ui text-sm text-intensity-all_out" role="alert">
-            {error}
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-lg font-semibold text-text-primary">
+            Music connections
+          </h2>
+          <p className="font-ui text-xs text-text-tertiary">
+            Link an account to search your own library.
           </p>
-        )}
+        </div>
+        <button
+          className="rounded-pill px-2 py-1 font-ui text-sm text-text-tertiary hover:text-text-primary"
+          onClick={onClose}
+          aria-label="Close connections dialog"
+        >
+          ✕
+        </button>
+      </header>
 
-        {connections === null ? (
-          <p className="font-ui text-sm text-text-tertiary">Loading…</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {PROVIDER_ORDER.map((provider) => {
-              const connected = connectedSet.has(provider);
-              const busy = busyProvider === provider;
-              const canConnect = supportsUserAccount(provider);
-              return (
-                <li
-                  key={provider}
-                  className="flex items-center gap-3 rounded-card bg-bg-base px-3 py-2.5"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-ui text-sm font-semibold text-text-primary">
-                      {providerLabel(provider)}
-                    </p>
-                    <p
-                      className={`font-ui text-xs ${connected && canConnect ? 'text-interactive' : 'text-text-tertiary'}`}
-                    >
-                      {!canConnect
-                        ? 'Catalog search only'
-                        : connected
-                          ? '✓ Connected'
-                          : 'Not connected'}
-                    </p>
-                  </div>
+      {error && (
+        <p className="font-ui text-sm text-intensity-all_out" role="alert">
+          {error}
+        </p>
+      )}
 
-                  {!canConnect ? (
-                    <span className="shrink-0 font-ui text-xs text-text-tertiary">
-                      Sign-in not yet supported
-                    </span>
-                  ) : connected ? (
-                    confirming === provider ? (
-                      <span className="flex items-center gap-2">
-                        <span className="font-ui text-xs text-text-tertiary">Disconnect?</span>
-                        <button
-                          type="button"
-                          onClick={() => disconnect(provider)}
-                          disabled={busy}
-                          className="rounded-pill border border-intensity-all_out/50 px-3 py-1 font-ui text-xs text-intensity-all_out disabled:opacity-50"
-                        >
-                          {busy ? 'Removing…' : 'Confirm'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirming(null)}
-                          className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-text-primary"
-                        >
-                          Cancel
-                        </button>
-                      </span>
-                    ) : (
+      {connections === null ? (
+        <p className="font-ui text-sm text-text-tertiary">Loading…</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {PROVIDER_ORDER.map((provider) => {
+            const connected = connectedSet.has(provider);
+            const busy = busyProvider === provider;
+            const canConnect = supportsUserAccount(provider);
+            return (
+              <li
+                key={provider}
+                className="flex items-center gap-3 rounded-card bg-bg-base px-3 py-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-ui text-sm font-semibold text-text-primary">
+                    {providerLabel(provider)}
+                  </p>
+                  <p
+                    className={`font-ui text-xs ${connected && canConnect ? 'text-interactive' : 'text-text-tertiary'}`}
+                  >
+                    {!canConnect
+                      ? 'Catalog search only'
+                      : connected
+                        ? '✓ Connected'
+                        : 'Not connected'}
+                  </p>
+                </div>
+
+                {!canConnect ? (
+                  <span className="shrink-0 font-ui text-xs text-text-tertiary">
+                    Sign-in not yet supported
+                  </span>
+                ) : connected ? (
+                  confirming === provider ? (
+                    <span className="flex items-center gap-2">
+                      <span className="font-ui text-xs text-text-tertiary">Disconnect?</span>
                       <button
                         type="button"
-                        onClick={() => setConfirming(provider)}
-                        className="shrink-0 rounded-pill border border-interactive/40 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+                        onClick={() => disconnect(provider)}
+                        disabled={busy}
+                        className="rounded-pill border border-intensity-all_out/50 px-3 py-1 font-ui text-xs text-intensity-all_out disabled:opacity-50"
                       >
-                        Disconnect
+                        {busy ? 'Removing…' : 'Confirm'}
                       </button>
-                    )
+                      <button
+                        type="button"
+                        onClick={() => setConfirming(null)}
+                        className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-text-primary"
+                      >
+                        Cancel
+                      </button>
+                    </span>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => connect(provider)}
-                      disabled={busy}
-                      className="shrink-0 rounded-pill rf-btn-primary px-3 py-1 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+                      onClick={() => setConfirming(provider)}
+                      className="shrink-0 rounded-pill border border-interactive/40 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
                     >
-                      {busy ? 'Connecting…' : 'Connect'}
+                      Disconnect
                     </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => connect(provider)}
+                    disabled={busy}
+                    className="shrink-0 rounded-pill rf-btn-primary px-3 py-1 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+                  >
+                    {busy ? 'Connecting…' : 'Connect'}
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
-        <p className="font-ui text-xs text-text-tertiary">
-          Disconnecting forgets your tokens immediately and schedules removal of that provider's
-          imported references within 7 days.
-        </p>
-      </div>
-    </div>
+      <p className="font-ui text-xs text-text-tertiary">
+        Disconnecting forgets your tokens immediately and schedules removal of that provider's
+        imported references within 7 days.
+      </p>
+    </Dialog>
   );
 }

@@ -74,31 +74,49 @@ export function Login() {
           className="flex flex-col gap-3 rounded-card bg-bg-raised p-6 shadow-card"
         >
           {mode === 'signup' && (
-            <input
-              className="rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
-              placeholder="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+            <>
+              <label htmlFor="login-name" className="sr-only">
+                Name
+              </label>
+              <input
+                id="login-name"
+                className="rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
+                placeholder="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </>
           )}
+          <label htmlFor="login-email" className="sr-only">
+            Email
+          </label>
           <input
+            id="login-email"
             className="rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
             type="email"
+            autoComplete="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
           {mode !== 'forgot' && (
-            <input
-              className="rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <>
+              <label htmlFor="login-password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="login-password"
+                className="rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
+                type="password"
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </>
           )}
           {error && <p className="font-ui text-sm text-intensity-all_out">{error}</p>}
           {notice && <p className="font-ui text-sm text-interactive">{notice}</p>}
