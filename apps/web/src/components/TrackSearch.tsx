@@ -211,6 +211,8 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
                     <img
                       src={r.albumArtUrl}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
                       className="h-11 w-11 shrink-0 rounded-card object-cover"
                     />
                   ) : (
