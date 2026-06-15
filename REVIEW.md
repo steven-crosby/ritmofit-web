@@ -63,6 +63,19 @@ tests, the production web build, OpenAPI drift verification, and CI passed. Work
 health, SPA, auth enforcement, security headers, exact main/Live asset hashes, and browser runtime/CSP
 smokes passed._
 
+_Deployed (2026-06-15): PR #51 closes the two open frontend SHOULD-FIX UI findings — narrow-width
+usability and form labels + complete modal focus management. A new accessible `Dialog` primitive
+(portal, initial focus, Tab trap, Escape, `inert`/`aria-hidden` background, focus return) is adopted in
+all five dialogs; Login and the create-class / manual-track inputs gained real labels; the top nav and
+class-header actions wrap instead of overflowing at 390 px. Added jsdom component tests (Dialog + Login,
++10) and a committed Playwright narrow-width browser smoke (`apps/web/smoke/`, Playwright kept out of repo
+deps) that asserts 0 px overflow and live focus management — it caught a 9 px class-header overflow that
+jsdom can't see, now fixed (18/18 smoke checks pass). Web-only: no schema, migration, API, shared-contract,
+or OpenAPI change. Typecheck, lint, 256 unit/component tests, the production web build, and CI passed.
+Worker `7daa067b-1ef0-4842-beff-b36951bdebbd` is live at 100% (supersedes `babcb3fe`); remote D1 remains
+through `0010`. Production health, SPA, auth enforcement, API + SPA security headers, the exact main bundle
+(`index-CH9gB9Bm.js`), and the new `Dialog` chunk all smoked clean._
+
 ## Repo Map
 
 RitmoFit Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
@@ -271,28 +284,34 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       classes during a background refresh; `refreshClasses` already clears the top-level error
       on success (keyed class detail shipped earlier in #45). Pure unit tests cover
       `libraryView`. Evidence: code change + green tests. Confidence: high.
-- [ ] **[SHOULD-FIX] Make the workstation usable at narrow widths** —
-      `apps/web/src/components/Dashboard.tsx:153-185`,
-      `apps/web/src/components/Dashboard.tsx:209-216`,
-      `apps/web/src/components/Dashboard.tsx:781-844` — At a 390 x 844 viewport, the page
+- [x] **[SHOULD-FIX - FIXED] Make the workstation usable at narrow widths** —
+      `apps/web/src/components/Dashboard.tsx` — At a 390 x 844 viewport, the page
       measured 566 px wide; Connections, Sign out, Run live, the track row, reorder grip,
       and manual form extended beyond the viewport. Why it matters: a private-beta user on
       a small laptop split view, tablet, or phone cannot reliably reach core controls.
-      Recommended fix: wrap/collapse the top navigation, reduce page padding at small
-      breakpoints, make track rows stack or elide secondary fields, and make manual fields
-      a responsive grid. Evidence: verified. Confidence: high.
-- [ ] **[SHOULD-FIX] Add real form labels and complete modal focus management** —
-      `apps/web/src/components/Login.tsx:72-101`,
-      `apps/web/src/components/Dashboard.tsx:310-327`,
-      `apps/web/src/components/ConnectionsDialog.tsx:83-105` — Several forms use
-      placeholders as their only labels. Opening Music connections leaves focus on the
-      background trigger, and the 29 enabled controls behind the modal remain focusable;
-      the dialog has Escape handling but no initial focus, focus trap/inert background, or
-      focus return. Why it matters: keyboard and assistive-technology users can lose
-      context or interact with obscured controls. Recommended fix: associate visible or
-      screen-reader labels with every input and adopt a reusable accessible dialog
-      primitive that manages focus and background inertness. Evidence: verified and code
-      inspection. Confidence: high.
+      Remediation (PR #51, deployed 2026-06-15): the top nav wraps into a `<nav>` cluster,
+      the class-header actions stack below the title and wrap on narrow screens, the manual
+      add-track fields wrap, and page padding shrinks below `sm`. A committed Playwright
+      narrow-width smoke (`apps/web/smoke/narrow-width.smoke.mjs`) asserts 0 px horizontal
+      overflow on login, the empty dashboard, the dashboard with a track, and with each
+      dialog open; it caught and verified the fix for a residual 9 px class-header overflow.
+      Evidence: 18/18 browser-smoke checks pass at 390 px. Confidence: high.
+- [x] **[SHOULD-FIX - FIXED] Add real form labels and complete modal focus management** —
+      `apps/web/src/components/Login.tsx`, `apps/web/src/components/Dashboard.tsx`,
+      `apps/web/src/components/Dialog.tsx`, + all five dialog components — Several forms used
+      placeholders as their only labels. Opening Music connections left focus on the
+      background trigger, and the enabled controls behind the modal remained focusable;
+      the dialogs had Escape handling but no initial focus, focus trap/inert background, or
+      focus return. Remediation (PR #51, deployed 2026-06-15): a new reusable `Dialog`
+      primitive portals to `document.body`, moves focus inside on open, traps Tab/Shift+Tab,
+      closes on Escape, marks `#root` `inert` + `aria-hidden`, locks scroll, and returns
+      focus to the trigger on close; it is adopted in Connections, Explore, Share,
+      CustomMoves, and Teams. `sr-only`/`aria-label` labels were associated with the Login
+      name/email/password and the create-class + manual add-track inputs. Coverage: a
+      `Dialog.test.tsx` (focus management) and `Login.test.tsx` (label associations) jsdom
+      suite, plus the narrow-width browser smoke which confirms focus-in, inert background,
+      Tab trap, and focus-return live across all three nav dialogs. Evidence: code change +
+      green tests (256) + 18/18 browser-smoke checks. Confidence: high.
 - [x] **[SHOULD-FIX - FIXED] Invalidate an in-flight search when the query is cleared** —
       `apps/web/src/components/TrackSearch.tsx` — The empty-query branch cleared results but
       did not increment `reqId`; a request already started could still satisfy
@@ -514,7 +533,7 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       lacked CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`,
       `Permissions-Policy`, and frame protection. Remediation (2026-06-14): a Hono
       `app.use('*')` middleware in `index.ts` now sets HSTS, nosniff, `X-Frame-Options:
-      DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'`
+    DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'`
       CSP on all API/health responses; the SPA + static assets (served by the `[assets]`
       handler, which the Worker does not run for) carry the same transport/frame headers
       plus a page CSP via a new `apps/web/public/_headers` (→ `dist/_headers`). The page
@@ -624,4 +643,6 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
 - [ ] Verify security headers on the SPA, health endpoint, and authenticated API
       responses.
 - [ ] Run rapid class-switch, network-failure, narrow-viewport, and keyboard-dialog
-      browser tests.
+      browser tests. _(Partial: narrow-viewport + keyboard-dialog focus management are now
+      covered by `apps/web/smoke/narrow-width.smoke.mjs` (PR #51); rapid class-switch and
+      network-failure browser coverage remain.)_
