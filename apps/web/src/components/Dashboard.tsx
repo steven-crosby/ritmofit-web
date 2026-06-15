@@ -971,6 +971,8 @@ function SongRow({
           <img
             src={entry.track.albumArtUrl}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="h-11 w-11 shrink-0 rounded-card object-cover"
           />
         ) : (

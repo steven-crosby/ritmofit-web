@@ -65,3 +65,26 @@ describe('TrackSearch stale-result guard', () => {
     expect(screen.getByText(/searching/i)).toBeTruthy();
   });
 });
+
+describe('TrackSearch result artwork', () => {
+  it('lazy-loads and async-decodes non-critical album thumbnails', async () => {
+    const result: TrackSearchResult = {
+      provider: 'soundcloud',
+      providerTrackId: 't2',
+      providerUri: null,
+      title: 'Art Track',
+      artist: 'Painter',
+      albumArtUrl: 'https://art.example/cover.jpg',
+      durationMs: 1000,
+    };
+    vi.mocked(api.searchProvider).mockResolvedValue([result]);
+
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'house' } });
+
+    const img = (await screen.findByRole('presentation')) as HTMLImageElement;
+    expect(img.getAttribute('src')).toBe(result.albumArtUrl);
+    expect(img.getAttribute('loading')).toBe('lazy');
+    expect(img.getAttribute('decoding')).toBe('async');
+  });
+});
