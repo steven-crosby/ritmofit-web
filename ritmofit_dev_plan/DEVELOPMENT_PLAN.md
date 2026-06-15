@@ -101,6 +101,17 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > Current launch/deploy status is tracked in [`../REVIEW.md`](../REVIEW.md); canonical contributor and
 > deployment instructions are in [`../AGENTS.md`](../AGENTS.md).
 >
+> **LiveMode timeline perf deployed (2026-06-15).** PR #62 closes the REVIEW.md NICE-TO-HAVE
+> "avoid rebuilding the active event list on every animation frame": each track's cues/moves are now
+> flattened/sorted once per payload, a primitive-returning `trackIndexAt` keeps frame-rate memos from
+> invalidating unless the live track changes, and current/next come from a single O(log n) binary search
+> over the stable pre-sorted array (`FullList` reuses the same precomputed events). Web-only — no schema,
+> migration, API, shared-contract, or OpenAPI change; +8 LiveMode unit tests (suite 3 → 11). All
+> CI-equivalent gates green (typecheck, lint, unit api 175 + web 103, 28 Worker/D1 integration, web
+> build, OpenAPI no-drift). Worker `768cdded-78b4-4150-a017-d8c92042c750` is live at 100% (supersedes
+> `7505f9aa`); remote D1 unchanged (no pending migrations, through `0012`). Post-deploy smoke: SPA `200`,
+> `/health` `200`, `/explore` + `/classes` `401`, and the new `LiveMode-Bu73mx7n.js` chunk `200`.
+>
 > **Standalone design-system synthesis completed (2026-06-15).** A reviewable reference package now
 > lives at the workspace root in `ritmofit-design-system-codex/`. It consolidates canonical tokens and
 > guidance, adds a first-class Library-to-Builder creation flow, and includes framework-free mockups for
