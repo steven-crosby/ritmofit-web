@@ -113,6 +113,20 @@ migrated through `0011` before Worker `86c996ff-4b75-4ea0-bf8e-0ed59910c125` dep
 `audit:ci` all passed. Post-deploy smoke: SPA `200`, `/health` `200`, `/classes` `401` (incl. `?limit=5`),
 6/6 security headers present, and remote D1 reports no pending migrations._
 
+_Deployed (2026-06-15): PRs #55–#61 (the overnight backlog) merged to `main` (`28eb5bf`) and the
+runtime/schema changes shipped in one batch. **#57** adds the standalone `track_provider_ids.track_id`
+lookup index and the `rate_limit.last_request` pruning index via migration `0012` (index-only, no data
+change); **#56** lazy-loads/async-decodes non-critical album artwork; **#58** renders a 404 view for
+unknown SPA paths; **#60** adds an owner-only inline class-rename affordance. **#55** and **#61** add
+choreography write-path and team-share detail-access Worker/D1 integration tests (integration suite
+21 → 28); **#59** rewrites the README as a real entry point and removes the stale root
+`.dev.vars.example`. The full CI-equivalent gate suite ran green on the merged tree: format check,
+`-r typecheck`, lint, unit tests (api 175 + web), 28 Worker/D1 integration tests, the production web
+build, OpenAPI drift verification, and `audit:ci`. Migration `0012` was applied to remote D1 (no
+pending migrations remain) before Worker `7505f9aa-3655-4bef-b6b3-1b2085d627eb` deployed at 100%
+(supersedes `86c996ff`). Post-deploy smoke: SPA `200` serving `index-CMFEcIls.js`, `/health` `200`,
+`/classes` `401`, and 6/6 security headers present._
+
 ## Repo Map
 
 RitmoFit Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
@@ -357,19 +371,18 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       `reqId.current`, invalidating any in-flight generation. A jsdom component test
       (the project's first) reproduces the cleared-mid-flight race and was confirmed to fail
       without the fix. Evidence: code change + green component test. Confidence: high.
-- [ ] **[NICE-TO-HAVE] Add a class rename affordance** —
-      `apps/web/src/components/Dashboard.tsx:500-545` — The API already accepts title
-      updates, but the class header only exposes publish, share, delete, and run actions.
-      Why it matters: correcting a typo requires recreating or using the API directly.
-      Recommended fix: add a small owner-only inline title editor using the existing
-      `updateClass` path. Evidence: code inspection. Confidence: high.
-- [ ] **[NICE-TO-HAVE] Render a not-found state for unknown SPA paths** —
-      `apps/web/src/App.tsx:14-27`, `apps/api/wrangler.toml:29-32` — Only
-      `/reset-password` is special-cased, while Cloudflare serves `index.html` for every
-      unknown path; an arbitrary URL therefore becomes Login or Dashboard rather than a
-      404-like view. Why it matters: bad links fail ambiguously. Recommended fix: add a
-      minimal route table and not-found branch. Evidence: code inspection. Confidence:
-      high.
+- [x] **[NICE-TO-HAVE - FIXED] Add a class rename affordance** —
+      `apps/web/src/components/Dashboard.tsx`, `apps/web/src/components/ClassHeaderCard.tsx` — The API
+      already accepts title updates, but the class header only exposed publish, share, delete, and run
+      actions. Remediation (PR #60, deployed 2026-06-15): an owner-only inline title editor in the class
+      header uses the existing `updateClass` path; a `ClassHeaderCard.test.tsx` suite covers it.
+      Evidence: code change + green tests. Confidence: high.
+- [x] **[NICE-TO-HAVE - FIXED] Render a not-found state for unknown SPA paths** —
+      `apps/web/src/App.tsx`, `apps/web/src/components/NotFound.tsx` — Only `/reset-password` was
+      special-cased, while Cloudflare serves `index.html` for every unknown path, so an arbitrary URL
+      became Login or Dashboard rather than a 404-like view. Remediation (PR #58, deployed 2026-06-15):
+      a minimal route table renders a dedicated `NotFound` view for unknown paths; `App.test.tsx`
+      covers the branch. Evidence: code change + green tests. Confidence: high.
 
 ## API / Backend Logic
 
@@ -485,20 +498,16 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       A representative 300-class `EXPLAIN QUERY PLAN` pass confirms all three candidate
       arms use their intended indexes. Evidence: implementation + focused
       unit/component/integration tests + disposable-D1 migration/query plan. Confidence: high.
-- [ ] **[SHOULD-FIX - PARTIALLY FIXED] Add indexes for the remaining recurring lookup and cleanup
-      paths** — `apps/api/src/db/schema.ts:158-186`,
-      `apps/api/src/db/schema.ts:331-361`,
-      `apps/api/src/db/schema.ts:397-426`,
-      `apps/api/src/lib/music/purge.ts:110-116`,
-      `apps/api/src/lib/rate-limit.ts:120-125` — There is no standalone
+- [x] **[SHOULD-FIX - FIXED] Add indexes for the remaining recurring lookup and cleanup
+      paths** — `apps/api/src/db/schema.ts`, `apps/api/migrations/0012_small_ink.sql`,
+      `apps/api/src/lib/music/purge.ts`, `apps/api/src/lib/rate-limit.ts` — There was no standalone
       `track_provider_ids.track_id` index despite repeated track-to-ref lookups, and no
-      `rate_limit.last_request` index for daily pruning. The active purge queue index shipped
-      in `0009`; target-first direct/team share indexes ship in `0011` after representative
-      query-plan validation. Why it matters: the remaining scans grow with provider imports
-      and authentication traffic. Recommended fix: capture D1 query plans with representative
-      data, add only the indexes proven useful, and validate the migration on a disposable
-      database. Evidence: code inspection plus the completed pagination query-plan pass.
-      Confidence: medium.
+      `rate_limit.last_request` index for daily pruning. The active purge queue index shipped in
+      `0009` and target-first direct/team share indexes in `0011`. Remediation (PR #57, deployed
+      2026-06-15): migration `0012` adds the `track_provider_ids.track_id` lookup index and the
+      `rate_limit.last_request` pruning index (index-only, no data change). Remote D1 migrated through
+      `0012` before deploy. Evidence: implementation + disposable-D1 migration validation. Confidence:
+      high.
 
 ## Testing & CI/CD
 
@@ -511,14 +520,16 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       add Testing Library/jsdom component tests and a small browser suite covering sign-up,
       create/import/edit/reopen/run, network failure, and rapid class switching. Evidence:
       missing coverage. Confidence: high.
-- [ ] **[SHOULD-FIX] Expand Worker/D1 integration tests across launch-critical
-      routes** — `apps/api/test/authz.integration.test.ts:1-134` — The single eight-test
-      suite covers basic class authz, run payload, sharing, Explore, and a track copy, but
-      not provider callback configuration, disconnect purge SQL behavior, section copying,
-      unverified share targets, teams, password-reset delivery, cue/move writes, or invalid
-      duration handling. Why it matters: the most consequential API findings are outside
-      the mounted-Worker test boundary. Recommended fix: prioritize one regression test per
-      blocker and then broaden the route matrix. Evidence: missing coverage. Confidence:
+- [ ] **[SHOULD-FIX - PARTIALLY FIXED] Expand Worker/D1 integration tests across launch-critical
+      routes** — `apps/api/test/*.integration.test.ts` — The original eight-test suite covered basic
+      class authz, run payload, sharing, Explore, and a track copy, but not provider callback
+      configuration, disconnect purge SQL behavior, section copying, unverified share targets, teams,
+      password-reset delivery, cue/move writes, or invalid duration handling. Progress (PRs #55 + #61,
+      deployed 2026-06-15): the mounted Worker/D1 suite grew from 21 to 28 tests with dedicated
+      `choreography-access.integration.test.ts` (cue/move write-path authorization) and
+      `team-access.integration.test.ts` (team-share detail access + level enforcement). Remaining:
+      provider callback configuration, disconnect purge SQL, and password-reset delivery are still
+      outside the mounted-Worker boundary. Evidence: code change + green integration suite. Confidence:
       high.
 - [x] **[SHOULD-FIX - MOSTLY FIXED] Make release gates enforce formatting, dependency policy, and
       protected merges** — `.github/workflows/ci.yml`, `package.json` — CI omitted
@@ -551,13 +562,13 @@ format:check`) and **Dependency audit** (`pnpm audit:ci`) in addition to typeche
       during the most timing-sensitive view. Recommended fix: memoize events by stable
       `classTrackId`/payload and use an index or binary search for current/next events.
       Evidence: code inspection. Confidence: high.
-- [ ] **[NICE-TO-HAVE] Lazy-decode album artwork outside the live viewport** —
-      `apps/web/src/components/Dashboard.tsx:793-800`,
-      `apps/web/src/components/TrackSearch.tsx:180-203` — Track-list and search-result
-      images omit `loading="lazy"` and `decoding="async"`. Why it matters: long result or
-      class lists eagerly request and decode every thumbnail. Recommended fix: lazy-load
-      noncritical artwork, keep explicit dimensions, and verify that the current track's
-      art remains eager where needed. Evidence: code inspection. Confidence: high.
+- [x] **[NICE-TO-HAVE - FIXED] Lazy-decode album artwork outside the live viewport** —
+      `apps/web/src/components/Dashboard.tsx`, `apps/web/src/components/TrackSearch.tsx` — Track-list
+      and search-result images omitted `loading="lazy"` and `decoding="async"`, so long result or
+      class lists eagerly requested and decoded every thumbnail. Remediation (PR #56, deployed
+      2026-06-15): non-critical artwork is lazy-loaded and async-decoded with explicit dimensions
+      retained; a `TrackSearch.test.tsx` case covers it. Evidence: code change + green tests.
+      Confidence: high.
 
 ## Security & Production Readiness
 
@@ -604,18 +615,16 @@ DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'
       CI and fails on any **new** advisory. Follow-up: revisit when upgrading to vite 6 /
       newer Better Auth. Evidence: `audit:ci` exits 0; new advisories still gate. Confidence:
       high.
-- [ ] **[SHOULD-FIX] Create a production configuration, deployment, and recovery
-      runbook** — `README.md:1-2`, `.dev.vars.example:1-29`,
-      `apps/api/.dev.vars.example:1-53`, `AGENTS.md:131-148` — The root README does not
-      explain setup or release operations, the root environment example is obsolete, and
-      deployment guidance covers migration-before-code and smoke tests but not environment
-      validation, Worker rollback, D1 backup/restore, failed migration recovery, or
-      compatibility sequencing. Why it matters: private-beta incidents depend on memory
-      and scattered planning notes. Recommended fix: consolidate the canonical environment
-      matrix, pre-deploy checks, rollback steps, D1 recovery expectations, owner/contact,
-      and post-deploy smoke procedure; remove or update the stale root example. Evidence:
-      code inspection and needs confirmation for actual Cloudflare backup settings.
-      Confidence: high for documentation gaps; medium for platform recovery state.
+- [x] **[SHOULD-FIX - MOSTLY FIXED] Create a production configuration, deployment, and recovery
+      runbook** — `README.md`, `apps/api/.dev.vars.example`, `ritmofit_dev_plan/deployment-runbook.md`,
+      `AGENTS.md:131-148` — The root README did not explain setup or release operations and the root
+      environment example was obsolete. Remediation: the deploy + Worker-rollback + D1 Time-Travel
+      recovery runbook landed in `ritmofit_dev_plan/deployment-runbook.md` (PR #52), and PR #59
+      (deployed 2026-06-15) rewrites the README as a real entry point (install, local startup, env,
+      tests, deployment, troubleshooting) and removes the stale root `.dev.vars.example` in favor of
+      the canonical `apps/api/.dev.vars.example`. Remaining: a live prod-rollback exercise (deferred,
+      needs a maintenance window). Evidence: code change + the verified-available rollback/recovery
+      runbook. Confidence: high.
 
 ## RitmoFit Core Instructor Workflow
 
