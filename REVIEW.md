@@ -90,6 +90,16 @@ through `0010`. Post-deploy smoke: SPA `200` serving `index-OaatR5Qd.js`, `/heal
 items below except the formatting-boundary and dependency-audit dispositions (tracked SHOULD-FIX) and a
 live prod-rollback exercise (deferred)._
 
+_Landed — not deployed (2026-06-15): PR #53 hardens the release gates (no runtime change, so no
+deploy). Defines the Prettier boundary (`.prettierignore` excludes generated OpenAPI/Drizzle outputs +
+the long-form `ritmofit_dev_plan`/`ritmofit_design_system` doc trees; ~51 owned source/doc files
+formatted in one pass) so `format:check` is green and trustworthy; dispositions the four dev/build-only
+`esbuild`/`vite` audit advisories via explicit `--ignore` flags in a new `audit:ci` script; and wires
+both **Format check** and **Dependency audit** into `.github/workflows/ci.yml` alongside the existing
+typecheck / lint / test / integration / build / OpenAPI-drift gates. `openapi.json` is untouched (drift
+gate still green). Remaining: GitHub branch protection (require CI before merge) is an owner setting, and
+a vite 5 → 6 upgrade would clear the ignored advisories outright._
+
 ## Repo Map
 
 RitmoFit Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
@@ -489,24 +499,26 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       the mounted-Worker test boundary. Recommended fix: prioritize one regression test per
       blocker and then broaden the route matrix. Evidence: missing coverage. Confidence:
       high.
-- [ ] **[SHOULD-FIX] Make release gates enforce formatting, dependency policy, and
-      protected merges** — `.github/workflows/ci.yml:16-60`, `AGENTS.md:115-122`,
-      `ritmofit_dev_plan/close-session-checklist.md:8-10` — CI omits
-      `format:check` and dependency auditing; both commands currently fail. Repository
-      guidance also records that CI is advisory and branch protection is off. Why it
-      matters: a direct merge can ship with known red gates, and manual deployments do not
-      add a second automated barrier. Recommended fix: clean the current failures, add the
-      checks with a documented vulnerability-exception process, and require the CI job
-      before merge when repository plan/account capability allows. Evidence: command
-      failure, code inspection, and needs confirmation for current GitHub settings.
-      Confidence: high for CI contents; medium for live branch settings.
-- [ ] **[NICE-TO-HAVE] Define and enforce the repository's formatting boundary** —
-      `.prettierrc`, `.prettierignore`, `package.json` — `format:check` reports 99 files,
-      including generated OpenAPI/Drizzle artifacts and long-form reference documents.
-      Why it matters: the check is too noisy to be trusted as a release signal. Recommended
-      fix: decide which generated/reference files are formatter-owned, update ignore or
-      generation behavior, and format the remaining owned files in a dedicated change.
-      Evidence: command failure. Confidence: high.
+- [x] **[SHOULD-FIX - MOSTLY FIXED] Make release gates enforce formatting, dependency policy, and
+      protected merges** — `.github/workflows/ci.yml`, `package.json` — CI omitted
+      `format:check` and dependency auditing; both commands failed. Remediation (PR #53):
+      both failures are cleaned (see below) and CI now runs **Format check** (`pnpm
+format:check`) and **Dependency audit** (`pnpm audit:ci`) in addition to typecheck /
+      lint / test / integration / build / OpenAPI-drift. The audit step ignores the four
+      documented dev-tooling advisories via explicit `--ignore <GHSA>` flags, so any **new**
+      advisory fails the build. Residual: **branch protection** (requiring the CI job before
+      merge) is a GitHub repo setting, not code — still to be enabled by the owner.
+      Evidence: green gates locally. Confidence: high for CI contents; the protected-merge
+      setting remains an owner action.
+- [x] **[NICE-TO-HAVE - FIXED] Define and enforce the repository's formatting boundary** —
+      `.prettierignore`, `package.json` — `format:check` reported 91+ files, including
+      generated OpenAPI/Drizzle artifacts and long-form reference docs. Remediation (PR #53):
+      `.prettierignore` now excludes the generators' outputs (`apps/api/openapi/`,
+      `apps/api/migrations/`, `tokens.css`) and the long-form reference doc trees
+      (`ritmofit_dev_plan/`, `ritmofit_design_system/`); the ~51 owned source + top-level
+      doc files were formatted in one pass. `format:check` is green and wired into CI.
+      Evidence: green `format:check` + unchanged `openapi.json` (drift gate still passes).
+      Confidence: high.
 
 ## Performance
 
@@ -547,7 +559,7 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       lacked CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`,
       `Permissions-Policy`, and frame protection. Remediation (2026-06-14): a Hono
       `app.use('*')` middleware in `index.ts` now sets HSTS, nosniff, `X-Frame-Options:
-  DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'`
+DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'`
       CSP on all API/health responses; the SPA + static assets (served by the `[assets]`
       handler, which the Worker does not run for) carry the same transport/frame headers
       plus a page CSP via a new `apps/web/public/_headers` (→ `dist/_headers`). The page
@@ -558,16 +570,19 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       Follow-Up checklist). Evidence: code change + green integration test + verified
       `dist/_headers` emission. Confidence: high for the API path; medium for the SPA
       path until a deployed smoke confirms it.
-- [ ] **[SHOULD-FIX] Upgrade or explicitly disposition the four dependency audit
-      findings** — `pnpm-lock.yaml`, `apps/api/package.json`,
-      `apps/web/package.json` — `pnpm audit --prod` exits nonzero with one high, two
-      moderate, and one low vulnerability record affecting `esbuild` and Vite through
-      Better Auth/Drizzle and Vite/Vitest tool paths. Why it matters: compromised build
-      tooling or exposed development servers can affect developer and CI environments even
-      when the packages are not in the Worker request bundle. Recommended fix: upgrade
-      Better Auth, Vite/Vitest, Drizzle tooling, and direct build dependencies to versions
-      that resolve the paths; rerun all gates and document narrowly scoped exceptions if an
-      upstream fix is unavailable. Evidence: command failure. Confidence: high.
+- [x] **[SHOULD-FIX - DISPOSITIONED] Upgrade or explicitly disposition the four dependency audit
+      findings** — `package.json` (`audit:ci` script) — `pnpm audit --prod` exited nonzero with
+      one high, two moderate, and one low record affecting `esbuild` and Vite through
+      Better Auth/Drizzle (`drizzle-kit → tsx → esbuild`) and Vite/Vitest tool paths.
+      Disposition (PR #53): all four are **dev/build-server-only** advisories (esbuild & vite
+      dev servers) — none reach the deployed Worker request handler or the browser bundle —
+      and the `high`/`low` esbuild ones (`<0.28.1`) are unfixable without a **vite 5 → 6 major
+      upgrade** (vite 5 pins `esbuild ^0.21`). They are explicitly accepted via
+      `--ignore <GHSA>` in the `audit:ci` script (`GHSA-67mh-4wv8-2f99`,
+      `GHSA-4w7w-66w2-5vf9`, `GHSA-gv7w-rqvm-qjhr`, `GHSA-g7r4-m6w7-qqqr`), which now runs in
+      CI and fails on any **new** advisory. Follow-up: revisit when upgrading to vite 6 /
+      newer Better Auth. Evidence: `audit:ci` exits 0; new advisories still gate. Confidence:
+      high.
 - [ ] **[SHOULD-FIX] Create a production configuration, deployment, and recovery
       runbook** — `README.md:1-2`, `.dev.vars.example:1-29`,
       `apps/api/.dev.vars.example:1-53`, `AGENTS.md:131-148` — The root README does not

@@ -25,13 +25,16 @@ export function IntensityReadout({ intensity }: { intensity: Intensity }) {
             className="w-1.5 rounded-sm"
             style={{
               height: `${6 + i * 4}px`,
-              backgroundColor: i < bars ? `var(--rf-color-intensity-${intensity})` : 'var(--rf-color-interactive)',
+              backgroundColor:
+                i < bars ? `var(--rf-color-intensity-${intensity})` : 'var(--rf-color-interactive)',
               opacity: i < bars ? 1 : 0.25,
             }}
           />
         ))}
       </span>
-      <span className="font-data text-xs uppercase tracking-wide text-text-secondary">{intensity}</span>
+      <span className="font-data text-xs uppercase tracking-wide text-text-secondary">
+        {intensity}
+      </span>
     </span>
   );
 }

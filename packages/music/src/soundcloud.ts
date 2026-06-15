@@ -151,7 +151,8 @@ export async function fetchSoundCloudLikes(cfg: {
     headers: { Authorization: `OAuth ${cfg.accessToken}`, Accept: 'application/json' },
   });
   if (res.status === 401) throw new SoundCloudUnauthorizedError();
-  if (!res.ok) throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for /me/likes/tracks`);
+  if (!res.ok)
+    throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for /me/likes/tracks`);
   const parsed = scSearchSchema.safeParse(await readJson(res, 'soundcloud'));
   if (!parsed.success) return [];
   const raw = Array.isArray(parsed.data) ? parsed.data : parsed.data.collection;

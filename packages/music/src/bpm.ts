@@ -88,7 +88,9 @@ export function createGetSongBpmProvider(config: GetSongBpmConfig): BpmProvider 
       // a wrong-song tempo is worse than no tempo (it misleads the choreography).
       const wantTitle = loosely(title);
       const wantArtist = loosely(artist);
-      const titleMatches = search.filter((s) => s.song_title && loosely(s.song_title) === wantTitle);
+      const titleMatches = search.filter(
+        (s) => s.song_title && loosely(s.song_title) === wantTitle,
+      );
       if (titleMatches.length === 0) return null;
       // Prefer a row whose artist also matches; otherwise accept a unique title hit.
       const best =

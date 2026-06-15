@@ -60,7 +60,9 @@ export interface AuthzStore {
    * exist. Visibility lets a `public` class grant a VIEW floor to anyone (M4),
    * fetched in the same lookup as the owner so the common path stays one query.
    */
-  getClassMeta(classId: string): Promise<{ ownerUserId: string; visibility: ClassVisibility } | null>;
+  getClassMeta(
+    classId: string,
+  ): Promise<{ ownerUserId: string; visibility: ClassVisibility } | null>;
   /**
    * The highest share permission granting `userId` access to `classId` — directly
    * or via team membership — or `null` if no share applies.

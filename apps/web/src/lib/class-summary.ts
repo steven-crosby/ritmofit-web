@@ -12,9 +12,7 @@ import type { RunPayload } from '@ritmofit/shared';
  * as zero); `null` when no track has a BPM so the caller can omit the stat.
  */
 export function avgBpm(payload: RunPayload): number | null {
-  const bpms = payload.tracks
-    .map((t) => t.displayBpm)
-    .filter((b): b is number => b != null);
+  const bpms = payload.tracks.map((t) => t.displayBpm).filter((b): b is number => b != null);
   if (bpms.length === 0) return null;
   return Math.round(bpms.reduce((sum, b) => sum + b, 0) / bpms.length);
 }

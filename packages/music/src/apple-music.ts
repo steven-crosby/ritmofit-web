@@ -40,7 +40,9 @@ const amSongSchema = z.object({
       artistName: z.string().optional(),
       durationInMillis: z.number().optional(),
       url: z.string().optional(),
-      artwork: z.object({ url: z.string(), width: z.number().optional(), height: z.number().optional() }).optional(),
+      artwork: z
+        .object({ url: z.string(), width: z.number().optional(), height: z.number().optional() })
+        .optional(),
     })
     .optional(),
 });
@@ -77,7 +79,9 @@ class AppleMusicProvider implements MusicProvider {
     const json = await this.authedGet(url);
     const parsed = amSearchSchema.safeParse(json);
     const data = parsed.success ? (parsed.data.results?.songs?.data ?? []) : [];
-    return data.map((raw) => this.toCandidate(raw)).filter((c): c is TrackSearchResult => c !== null);
+    return data
+      .map((raw) => this.toCandidate(raw))
+      .filter((c): c is TrackSearchResult => c !== null);
   }
 
   async lookup(providerTrackId: string): Promise<TrackSearchResult | null> {
@@ -111,7 +115,8 @@ class AppleMusicProvider implements MusicProvider {
     const res = await this.fetchImpl(url, {
       headers: { Authorization: `Bearer ${this.developerToken}` },
     });
-    if (!res.ok) throw new ProviderError('apple_music', `Apple Music request failed: ${res.status}`);
+    if (!res.ok)
+      throw new ProviderError('apple_music', `Apple Music request failed: ${res.status}`);
     return readJson(res, 'apple_music');
   }
 }

@@ -5,11 +5,7 @@
  */
 import { Hono } from 'hono';
 import { and, eq, isNull } from 'drizzle-orm';
-import {
-  createUserMoveSchema,
-  updateUserMoveSchema,
-  moveListQuerySchema,
-} from '@ritmofit/shared';
+import { createUserMoveSchema, updateUserMoveSchema, moveListQuerySchema } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
@@ -23,7 +19,8 @@ import type { Db } from '../lib/db.js';
 async function assertValidBaseMove(db: Db, baseMoveId: string | null): Promise<void> {
   if (baseMoveId == null) return;
   const m = await db.select({ id: moves.id }).from(moves).where(eq(moves.id, baseMoveId)).get();
-  if (!m) throw new HttpError(422, 'VALIDATION_ERROR', 'baseMoveId does not reference a known move.');
+  if (!m)
+    throw new HttpError(422, 'VALIDATION_ERROR', 'baseMoveId does not reference a known move.');
 }
 
 export const moveRoutes = new Hono<AppEnv>();

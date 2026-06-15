@@ -46,7 +46,10 @@ export function computeSegmentBands(
   const bands: SegmentBandSlice[] = [];
   sorted.forEach((s, i) => {
     const start = clamp(s.startOffsetMs, 0, totalDurationMs);
-    const end = i + 1 < sorted.length ? clamp(sorted[i + 1]!.startOffsetMs, 0, totalDurationMs) : totalDurationMs;
+    const end =
+      i + 1 < sorted.length
+        ? clamp(sorted[i + 1]!.startOffsetMs, 0, totalDurationMs)
+        : totalDurationMs;
     if (end <= start) return;
     bands.push({
       type: s.type,
@@ -106,9 +109,15 @@ export function SegmentBand({
 
   return (
     <figure className="mt-2 flex flex-col gap-1">
-      <figcaption className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Segments</figcaption>
+      <figcaption className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+        Segments
+      </figcaption>
       {hasBand ? (
-        <div className="relative h-6 w-full overflow-hidden rounded-card bg-bg-base" role="img" aria-label={`Segments: ${arc}`}>
+        <div
+          className="relative h-6 w-full overflow-hidden rounded-card bg-bg-base"
+          role="img"
+          aria-label={`Segments: ${arc}`}
+        >
           {bands.map((b, i) => (
             <div
               key={i}
@@ -221,7 +230,10 @@ function SegmentEditor({
             .sort((a, b) => a.startOffsetMs - b.startOffsetMs)
             .map((s) =>
               editingId === s.id ? (
-                <li key={s.id} className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2">
+                <li
+                  key={s.id}
+                  className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2"
+                >
                   <input
                     className={`w-20 ${fieldClass} font-data`}
                     type="number"
@@ -255,7 +267,10 @@ function SegmentEditor({
                   </button>
                 </li>
               ) : (
-                <li key={s.id} className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5">
+                <li
+                  key={s.id}
+                  className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5"
+                >
                   <span
                     aria-hidden
                     className="h-2 w-2 shrink-0 rounded-full"

@@ -7,7 +7,12 @@
  */
 import { z } from 'zod';
 import { uuidSchema, offsetMsSchema, timestampMsSchema } from '../common.js';
-import { classTemplateSchema, intensitySchema, providerSchema, segmentTypeSchema } from '../enums.js';
+import {
+  classTemplateSchema,
+  intensitySchema,
+  providerSchema,
+  segmentTypeSchema,
+} from '../enums.js';
 
 /** Schema version of the run-payload (bump on a breaking shape change; D12). */
 export const RUN_PAYLOAD_SCHEMA_VERSION = 1 as const;

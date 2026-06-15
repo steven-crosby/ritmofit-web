@@ -37,7 +37,10 @@ const app = new Hono<AppEnv>();
 // library-managed Better Auth responses) is covered.
 app.use('*', async (c, next) => {
   await next();
-  c.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+  c.header(
+    'Content-Security-Policy',
+    "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+  );
   c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   c.header('X-Content-Type-Options', 'nosniff');
   c.header('X-Frame-Options', 'DENY');
@@ -59,7 +62,12 @@ app.onError((err, c) => {
     // message) so it stays diagnosable, but never leak it to the client.
     console.warn(`[provider:${err.provider}] ${err.message}`);
     return c.json(
-      { error: { code: 'PROVIDER_UNAVAILABLE', message: 'A music provider is temporarily unavailable.' } },
+      {
+        error: {
+          code: 'PROVIDER_UNAVAILABLE',
+          message: 'A music provider is temporarily unavailable.',
+        },
+      },
       502,
     );
   }
@@ -151,7 +159,9 @@ export default {
         // waitUntil unobserved and silently skip the whole sweep. Log so a failed
         // run is visible; the queue is durable, so the next sweep retries it.
         .catch((err) => {
-          console.error(`[purge] sweep failed: ${err instanceof Error ? err.message : String(err)}`);
+          console.error(
+            `[purge] sweep failed: ${err instanceof Error ? err.message : String(err)}`,
+          );
         }),
     );
 

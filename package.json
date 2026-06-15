@@ -16,7 +16,8 @@
     "test": "pnpm -r --if-present test",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,css}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,css}\"",
+    "audit:ci": "pnpm audit --prod"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

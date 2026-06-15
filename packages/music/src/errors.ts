@@ -18,7 +18,10 @@ export class ProviderError extends Error {
 }
 
 /** Read a Response body as JSON, raising `ProviderError` on a non-JSON body. */
-export async function readJson(res: { json(): Promise<unknown> }, provider: string): Promise<unknown> {
+export async function readJson(
+  res: { json(): Promise<unknown> },
+  provider: string,
+): Promise<unknown> {
   try {
     return await res.json();
   } catch (cause) {

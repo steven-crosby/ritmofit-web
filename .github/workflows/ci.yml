@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   checks:
-    name: typecheck · lint · test · build
+    name: format · typecheck · lint · test · build · audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +31,11 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      # Prettier owns code + top-level docs; generated artifacts and long-form
+      # reference docs are excluded in .prettierignore.
+      - name: Format check
+        run: pnpm format:check
 
       - name: Typecheck
         run: pnpm -r typecheck
@@ -58,3 +63,10 @@ jobs:
         run: |
           pnpm --filter @ritmofit/api openapi
           git diff --exit-code apps/api/openapi/openapi.json
+
+      # Production dependency audit. The four esbuild/vite advisories ignored in
+      # the audit:ci script are dev/build-server only (not in the deployed Worker
+      # or browser bundle) and unfixable without a vite 5→6 major upgrade; they
+      # are documented in REVIEW.md. Any NEW advisory fails the build.
+      - name: Dependency audit (prod)
+        run: pnpm audit:ci

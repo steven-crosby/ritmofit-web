@@ -84,9 +84,15 @@ describe('findSameSongMatch', () => {
   });
 
   it('does NOT merge when either duration is unknown (too weak a signal)', () => {
-    expect(findSameSongMatch(candidate({ durationMs: null }), [track({ durationMs: 200000 })])).toBeNull();
-    expect(findSameSongMatch(candidate({ durationMs: 200000 }), [track({ durationMs: null })])).toBeNull();
-    expect(findSameSongMatch(candidate({ durationMs: null }), [track({ durationMs: null })])).toBeNull();
+    expect(
+      findSameSongMatch(candidate({ durationMs: null }), [track({ durationMs: 200000 })]),
+    ).toBeNull();
+    expect(
+      findSameSongMatch(candidate({ durationMs: 200000 }), [track({ durationMs: null })]),
+    ).toBeNull();
+    expect(
+      findSameSongMatch(candidate({ durationMs: null }), [track({ durationMs: null })]),
+    ).toBeNull();
   });
 
   it('does not match a different song', () => {

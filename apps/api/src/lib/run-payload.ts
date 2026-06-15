@@ -73,7 +73,12 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
   // Wave 1: the class, its ordered class_tracks, and its sections are independent.
   const [cls, cts, sectionRows] = await Promise.all([
     db.select().from(classes).where(eq(classes.id, classId)).get(),
-    db.select().from(classTracks).where(eq(classTracks.classId, classId)).orderBy(classTracks.position).all(),
+    db
+      .select()
+      .from(classTracks)
+      .where(eq(classTracks.classId, classId))
+      .orderBy(classTracks.position)
+      .all(),
     db
       .select()
       .from(classSections)
@@ -107,16 +112,26 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
   ]);
 
   // Wave 3: resolve the library names referenced by placements (both independent).
-  const refMoveIds = [...new Set(moveRows.map((m) => m.moveId).filter((v): v is string => v != null))];
+  const refMoveIds = [
+    ...new Set(moveRows.map((m) => m.moveId).filter((v): v is string => v != null)),
+  ];
   const refUserMoveIds = [
     ...new Set(moveRows.map((m) => m.userMoveId).filter((v): v is string => v != null)),
   ];
   const [moveNameRows, userMoveNameRows] = await Promise.all([
     refMoveIds.length
-      ? db.select({ id: moves.id, name: moves.name }).from(moves).where(inArray(moves.id, refMoveIds)).all()
+      ? db
+          .select({ id: moves.id, name: moves.name })
+          .from(moves)
+          .where(inArray(moves.id, refMoveIds))
+          .all()
       : [],
     refUserMoveIds.length
-      ? db.select({ id: userMoves.id, name: userMoves.name }).from(userMoves).where(inArray(userMoves.id, refUserMoveIds)).all()
+      ? db
+          .select({ id: userMoves.id, name: userMoves.name })
+          .from(userMoves)
+          .where(inArray(userMoves.id, refUserMoveIds))
+          .all()
       : [],
   ]);
   const moveNameById = new Map(moveNameRows.map((m) => [m.id, m.name]));

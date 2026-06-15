@@ -23,10 +23,7 @@ authRoutes.post('/session', async (c) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
   if (!session) {
-    return c.json(
-      { error: { code: 'UNAUTHORIZED', message: 'Authentication required.' } },
-      401,
-    );
+    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required.' } }, 401);
   }
 
   return c.json(serializeUser(session.user));
