@@ -127,6 +127,14 @@ pending migrations remain) before Worker `7505f9aa-3655-4bef-b6b3-1b2085d627eb` 
 (supersedes `86c996ff`). Post-deploy smoke: SPA `200` serving `index-CMFEcIls.js`, `/health` `200`,
 `/classes` `401`, and 6/6 security headers present._
 
+_Landed — not deployed (2026-06-15): two test/tooling PRs, no runtime change. **#63** closes the last
+"Expand Worker/D1 integration tests" gaps — `provider-callback`, `provider-disconnect`, and
+`password-reset` integration suites drive the mounted worker against Miniflare D1 (suite 28 → 41),
+covering every OAuth-callback failure branch, the disconnect → purge-enqueue side effect, and the full
+Better Auth reset flow. **#64** dispositions two newly-published dev/build-only vite advisories
+(`GHSA-fx2h-pf6j-xcff`, `GHSA-v6wh-96g9-6wx3`) that had started failing the `audit:ci` gate on `main`.
+Both merged to `main` after green CI; production stays on Worker `768cdded` / remote D1 `0012`._
+
 ## Repo Map
 
 RitmoFit Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
@@ -520,17 +528,24 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       add Testing Library/jsdom component tests and a small browser suite covering sign-up,
       create/import/edit/reopen/run, network failure, and rapid class switching. Evidence:
       missing coverage. Confidence: high.
-- [ ] **[SHOULD-FIX - PARTIALLY FIXED] Expand Worker/D1 integration tests across launch-critical
+- [x] **[SHOULD-FIX - FIXED] Expand Worker/D1 integration tests across launch-critical
       routes** — `apps/api/test/*.integration.test.ts` — The original eight-test suite covered basic
       class authz, run payload, sharing, Explore, and a track copy, but not provider callback
       configuration, disconnect purge SQL behavior, section copying, unverified share targets, teams,
       password-reset delivery, cue/move writes, or invalid duration handling. Progress (PRs #55 + #61,
       deployed 2026-06-15): the mounted Worker/D1 suite grew from 21 to 28 tests with dedicated
       `choreography-access.integration.test.ts` (cue/move write-path authorization) and
-      `team-access.integration.test.ts` (team-share detail access + level enforcement). Remaining:
-      provider callback configuration, disconnect purge SQL, and password-reset delivery are still
-      outside the mounted-Worker boundary. Evidence: code change + green integration suite. Confidence:
-      high.
+      `team-access.integration.test.ts` (team-share detail access + level enforcement). Remediation
+      (PR #63, merged 2026-06-15): the last three named gaps now run against the mounted worker —
+      `provider-callback.integration.test.ts` mints the encrypted `rf_oauth_state` cookie to drive
+      every callback failure branch (`state_invalid`/`access_denied`/`state_mismatch`/`state_expired`/
+      `unsupported_provider`/`connect_failed`, each redirecting to the canonical origin);
+      `provider-disconnect.integration.test.ts` proves `DELETE …/connection` enqueues exactly one purge
+      duty on a real disconnect and none on a no-op/repeated disconnect; and
+      `password-reset.integration.test.ts` runs request → reset → sign-in (new password works, old
+      fails) through the real Better Auth routes, plus no-enumeration and invalid-token cases. Suite
+      28 → 41. Test-only — no schema/migration/route/contract/OpenAPI change, so **not a deploy**.
+      Evidence: code change + green integration suite (41) + full CI gates. Confidence: high.
 - [x] **[SHOULD-FIX - MOSTLY FIXED] Make release gates enforce formatting, dependency policy, and
       protected merges** — `.github/workflows/ci.yml`, `package.json` — CI omitted
       `format:check` and dependency auditing; both commands failed. Remediation (PR #53):
@@ -608,17 +623,21 @@ DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'
       Follow-Up checklist). Evidence: code change + green integration test + verified
       `dist/_headers` emission. Confidence: high for the API path; medium for the SPA
       path until a deployed smoke confirms it.
-- [x] **[SHOULD-FIX - DISPOSITIONED] Upgrade or explicitly disposition the four dependency audit
-      findings** — `package.json` (`audit:ci` script) — `pnpm audit --prod` exited nonzero with
-      one high, two moderate, and one low record affecting `esbuild` and Vite through
-      Better Auth/Drizzle (`drizzle-kit → tsx → esbuild`) and Vite/Vitest tool paths.
-      Disposition (PR #53): all four are **dev/build-server-only** advisories (esbuild & vite
+- [x] **[SHOULD-FIX - DISPOSITIONED] Upgrade or explicitly disposition the dependency audit
+      findings** — `pnpm-workspace.yaml` (`auditConfig.ignoreGhsas`), `package.json` (`audit:ci`
+      script) — `pnpm audit --prod` exited nonzero with `esbuild`/Vite records reached only through
+      Better Auth/Drizzle (`drizzle-kit → tsx → esbuild`) and Vitest/Vite tool paths.
+      Disposition (PR #53): all are **dev/build-server-only** advisories (esbuild & vite
       dev servers) — none reach the deployed Worker request handler or the browser bundle —
-      and the `high`/`low` esbuild ones (`<0.28.1`) are unfixable without a **vite 5 → 6 major
+      and the esbuild ones (`<0.28.1`) are unfixable without a **vite 5 → 6 major
       upgrade** (vite 5 pins `esbuild ^0.21`). They are explicitly accepted via
-      `--ignore <GHSA>` in the `audit:ci` script (`GHSA-67mh-4wv8-2f99`,
-      `GHSA-4w7w-66w2-5vf9`, `GHSA-gv7w-rqvm-qjhr`, `GHSA-g7r4-m6w7-qqqr`), which now runs in
-      CI and fails on any **new** advisory. Follow-up: revisit when upgrading to vite 6 /
+      `auditConfig.ignoreGhsas` in `pnpm-workspace.yaml`, which `audit:ci` runs in CI and which
+      still fails on any **new** advisory. Update (PR #64, merged 2026-06-15): two newly-published
+      vite advisories of the same dev/build-only class (`GHSA-fx2h-pf6j-xcff` high `server.fs.deny`
+      bypass, `GHSA-v6wh-96g9-6wx3` moderate launch-editor disclosure; both `<=6.4.2`, via vitest)
+      began failing the gate and were added to the ignore list — six GHSAs now accepted
+      (`GHSA-67mh-4wv8-2f99`, `GHSA-4w7w-66w2-5vf9`, `GHSA-gv7w-rqvm-qjhr`, `GHSA-g7r4-m6w7-qqqr`,
+      `GHSA-fx2h-pf6j-xcff`, `GHSA-v6wh-96g9-6wx3`). Follow-up: revisit when upgrading to vite 6 /
       newer Better Auth. Evidence: `audit:ci` exits 0; new advisories still gate. Confidence:
       high.
 - [x] **[SHOULD-FIX - MOSTLY FIXED] Create a production configuration, deployment, and recovery

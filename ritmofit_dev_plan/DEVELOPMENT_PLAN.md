@@ -112,6 +112,18 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > `7505f9aa`); remote D1 unchanged (no pending migrations, through `0012`). Post-deploy smoke: SPA `200`,
 > `/health` `200`, `/explore` + `/classes` `401`, and the new `LiveMode-Bu73mx7n.js` chunk `200`.
 >
+> **Integration-test matrix completed + audit gate kept green (2026-06-15, PRs #63–#64, not deployed).**
+> PR #63 closes the last REVIEW.md "Expand Worker/D1 integration tests" gaps: new `provider-callback`,
+> `provider-disconnect`, and `password-reset` suites drive the mounted worker against Miniflare D1
+> (integration suite 28 → 41), covering every OAuth-callback failure branch (state minted via the test
+> `ENCRYPTION_KEY`), the disconnect → purge-enqueue side effect, and the full Better Auth reset flow
+> (request → reset → sign-in, plus no-enumeration + invalid-token). PR #64 dispositions two
+> newly-published dev/build-only vite advisories (`GHSA-fx2h-pf6j-xcff`, `GHSA-v6wh-96g9-6wx3`) that had
+> started failing `audit:ci` on `main`. Both are test/tooling-only — no schema, migration, API,
+> shared-contract, or OpenAPI change — so **neither is a deploy**; production stays on Worker `768cdded`
+> / remote D1 `0012`. Merged after green CI. Remaining SHOULD-FIX: web component/browser UI coverage and
+> the Better Auth trusted client-IP header.
+>
 > **Standalone design-system synthesis completed (2026-06-15).** A reviewable reference package now
 > lives at the workspace root in `ritmofit-design-system-codex/`. It consolidates canonical tokens and
 > guidance, adds a first-class Library-to-Builder creation flow, and includes framework-free mockups for
