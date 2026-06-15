@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
-import { LiveMode } from './LiveMode.js';
+import { LiveMode, lastAtOrBefore, trackIndexAt, type TimelineEvent } from './LiveMode.js';
 
 afterEach(cleanup);
 
@@ -94,5 +94,67 @@ describe('LiveMode provider handoff', () => {
 
     expect(screen.queryByRole('navigation', { name: /music provider/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /^Open / })).toBeNull();
+  });
+});
+
+function trackAt(startOffsetMs: number): RunPayloadTrackEntry {
+  return { ...activeTrack, startOffsetMs };
+}
+
+describe('trackIndexAt', () => {
+  const threeTracks = {
+    ...payload,
+    tracks: [trackAt(0), trackAt(60000), trackAt(120000)],
+  } satisfies RunPayload;
+
+  it('returns -1 for an empty class', () => {
+    expect(trackIndexAt({ ...payload, tracks: [] }, 0)).toBe(-1);
+  });
+
+  it('selects the last track whose start offset has been reached', () => {
+    expect(trackIndexAt(threeTracks, 0)).toBe(0);
+    expect(trackIndexAt(threeTracks, 59999)).toBe(0);
+    expect(trackIndexAt(threeTracks, 60000)).toBe(1);
+    expect(trackIndexAt(threeTracks, 130000)).toBe(2);
+  });
+
+  it('clamps to the first track before its start offset', () => {
+    const delayed = { ...payload, tracks: [trackAt(5000), trackAt(60000)] } satisfies RunPayload;
+    expect(trackIndexAt(delayed, 0)).toBe(0);
+  });
+});
+
+describe('lastAtOrBefore', () => {
+  const ev = (atMs: number): TimelineEvent => ({
+    atMs,
+    kind: 'cue',
+    text: `@${atMs}`,
+    color: null,
+    intensity: null,
+  });
+  // Includes a tie at 1000 to confirm the last-of-equals behavior current/next rely on.
+  const events = [ev(1000), ev(1000), ev(2000), ev(5000)];
+
+  it('returns -1 before the first event', () => {
+    expect(lastAtOrBefore(events, 999)).toBe(-1);
+  });
+
+  it('returns the last index of an equal run on a tie', () => {
+    expect(lastAtOrBefore(events, 1000)).toBe(1);
+  });
+
+  it('returns the last event at or before the time between events', () => {
+    expect(lastAtOrBefore(events, 1500)).toBe(1);
+    expect(lastAtOrBefore(events, 2000)).toBe(2);
+  });
+
+  it('returns the final index past the last event, leaving no next', () => {
+    const i = lastAtOrBefore(events, 10000);
+    expect(i).toBe(3);
+    expect(i + 1 < events.length).toBe(false);
+  });
+
+  it('handles an empty event list', () => {
+    expect(lastAtOrBefore([], 0)).toBe(-1);
   });
 });
