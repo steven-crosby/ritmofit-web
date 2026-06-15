@@ -118,6 +118,19 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > password change. The temporary production account and its cascaded auth rows were
 > removed after the test. The transactional-email launch blocker is closed.
 >
+> **Pre-launch hardening + verification (2026-06-15).** Three web-focused PRs: **#51** an accessible
+> `Dialog` primitive (focus trap/return, `inert` background) adopted across all five dialogs, real form
+> labels, and narrow-width (390 px) layout fixes; **#52** a dialog focus guard (keep focus inside when an
+> in-dialog control is removed) plus committed Playwright browser smokes (`apps/web/smoke/`: narrow-width
+> 18/18, functional 16/16) and a deploy/rollback runbook (`deployment-runbook.md`); **#53** release-gate
+> hardening — Prettier boundary so `format:check` is green, the four dev/build-only `esbuild`/`vite` audit
+> advisories dispositioned via `pnpm-workspace.yaml`, and both wired into CI (no deploy — tooling only).
+> #51/#52 are live; Worker `1eb04d11-b676-43b5-a7be-7b62ffe83f6a` at 100%, remote D1 through `0010`.
+> **0 launch blockers remain**; the Follow-Up Verification Checklist in `../REVIEW.md` is now green except
+> a vite 5→6 upgrade (to clear the ignored advisories) and owner-only GitHub branch protection. Remaining
+> SHOULD-FIX backend items: paginate/order `GET /classes` in SQL, add lookup/cleanup indexes, and broaden
+> Worker/D1 integration tests.
+>
 > **Web design-system build (builder UI) underway (2026-06-12).** The rich planning UI M1 deferred is
 > now being built in vertical slices — the difference between the data-flow skeleton and the designed
 > surface in [`../ritmofit_design_system/`](../ritmofit_design_system/). Slices 1–4 are merged (PR #8)

@@ -109,6 +109,7 @@ coverage for non-trivial helpers, authorization, route mounting, query behavior,
 Before submitting code, run the CI-equivalent gates:
 
 ```bash
+pnpm format:check
 pnpm -r typecheck
 pnpm lint
 pnpm test
@@ -116,10 +117,14 @@ pnpm --filter @ritmofit/api test:integration
 pnpm --filter @ritmofit/web build
 pnpm --filter @ritmofit/api openapi
 git diff --exit-code apps/api/openapi/openapi.json
+pnpm audit:ci
 ```
 
-CI is advisory and never deploys. `format:check` is useful for touched files but is not currently a
-repository-wide CI gate.
+CI is advisory and never deploys, but it now runs all of the above — including `format:check` and
+`pnpm audit:ci`. Prettier owns code and top-level docs; generated artifacts and the long-form
+reference doc trees (`ritmofit_dev_plan/`, `ritmofit_design_system/`) are excluded in `.prettierignore`.
+`audit:ci` accepts the documented dev/build-only advisories via `auditConfig.ignoreGhsas` in
+`pnpm-workspace.yaml`; any new advisory fails the gate.
 
 ## Commits & Pull Requests
 
