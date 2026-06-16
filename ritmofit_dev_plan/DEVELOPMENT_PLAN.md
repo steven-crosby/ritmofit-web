@@ -93,11 +93,12 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > **Status — current as of 2026-06-15.** Backend **M1–M4 complete, merged to `main`, and fully deployed
 > since 2026-06-12.** The whole app — API +
 > web planning surface — is **live at `https://ritmofit.studio`**, served by one Worker (Workers static
-> assets; single origin ⇒ first-party auth, no CORS), with remote D1 migrated through `0006`. M4
+> assets; single origin ⇒ first-party auth, no CORS), with remote D1 migrated through `0012`. M4
 > (Explore / sharing UX) shipped in three slices — share-by-email, team-sharing, and the Explore feed
 > (`classes.visibility`, public VIEW floor, `GET /explore`, save-a-copy); **featured curation is
-> deliberately deferred**. CI (`.github/workflows/ci.yml`) gates `typecheck`/`lint`/`test` (164) on every
-> push/PR — **advisory** (enforced branch protection needs GitHub Pro/public; repo is private/Free).
+> deliberately deferred**. CI (`.github/workflows/ci.yml`) gates format, typecheck, lint, unit tests,
+> Worker/D1 integration tests, the web build, OpenAPI drift, and `audit:ci` on every push/PR —
+> **advisory** until the owner enables branch protection.
 > Current launch/deploy status is tracked in [`../REVIEW.md`](../REVIEW.md); canonical contributor and
 > deployment instructions are in [`../AGENTS.md`](../AGENTS.md).
 >
@@ -134,11 +135,19 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > newly-published dev/build-only vite advisories (`GHSA-fx2h-pf6j-xcff`, `GHSA-v6wh-96g9-6wx3`) that had
 > started failing `audit:ci` on `main`. Both are test/tooling-only — no schema, migration, API,
 > shared-contract, or OpenAPI change — so **neither is a deploy**; production stays on Worker `768cdded`
-> / remote D1 `0012`. Merged after green CI. Remaining SHOULD-FIX: web component/browser UI coverage and
-> the Better Auth trusted client-IP header.
+> / remote D1 `0012`. Merged after green CI. The integration-test matrix item is closed; at that point,
+> the remaining code-level SHOULD-FIX from the review was the Better Auth trusted client-IP header.
+>
+> **Better Auth trusted client-IP hardening completed (2026-06-15, pending deploy).** Better Auth now
+> keys auth rate limits only from Cloudflare's trusted `CF-Connecting-IP` header, removing
+> `X-Forwarded-For` as a fallback because clients can supply values before Cloudflare appends to it. The
+> Worker/D1 integration helper now supplies a production-shaped `cf-connecting-ip` header by default, and
+> the password-reset suite proves spoofed `X-Forwarded-For` values do not create separate rate-limit
+> buckets. No schema, migration, API contract, shared-contract, or OpenAPI change; deploy with the next
+> runtime batch.
 >
 > **Standalone design-system synthesis completed (2026-06-15).** A reviewable reference package now
-> lives at the workspace root in `ritmofit-design-system-codex/`. It consolidates canonical tokens and
+> lives at the workspace root in `ritmofit-design-system-latest/`. It consolidates canonical tokens and
 > guidance, adds a first-class Library-to-Builder creation flow, and includes framework-free mockups for
 > marketing, Library, Builder, Live, share cards, iOS direction, sign-in, and explicitly future-facing
 > Explore/Teams surfaces. This does not alter production components, API contracts, schema, migrations,

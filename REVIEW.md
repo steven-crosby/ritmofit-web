@@ -152,16 +152,16 @@ RitmoFit Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
   stale rate-limit rows.
 - `apps/api/src/db` and `apps/api/migrations` — Drizzle ORM over Cloudflare D1/SQLite.
   Schema definitions live in `apps/api/src/db/schema.ts` and
-  `apps/api/src/db/auth-schema.ts`; ten sequential migrations (`0000` through `0009`)
-  and Drizzle metadata are present in the remediation worktree.
+  `apps/api/src/db/auth-schema.ts`; migrations are present through `0012` and remote D1
+  has no unapplied migrations as of the 2026-06-15 close-session verification.
 - `packages/shared` — canonical Zod schemas, enums, API entity types, and run-payload
   contract shared by the API and clients.
 - `packages/music` — SoundCloud, Spotify, Apple Music, and third-party BPM provider
   adapters. Provider audio is not served or cached by this repository.
 - `.github/workflows/ci.yml` — advisory GitHub Actions checks on pushes to `main` and
-  pull requests. CI installs from the frozen lockfile, then runs typecheck, lint, unit
-  tests, Worker/D1 integration tests, the web build, and an OpenAPI drift check. It
-  does not deploy.
+  pull requests. CI installs from the frozen lockfile, then runs format check,
+  typecheck, lint, unit tests, Worker/D1 integration tests, the web build, OpenAPI drift,
+  and `audit:ci`. It does not deploy.
 - `apps/api/wrangler.toml` — production runtime and deployment configuration. One Worker
   serves `/api/*` and the built SPA from `apps/web/dist`, binds the `ritmofit` D1 database
   as `DB`, exposes `ritmofit.studio` as the custom domain, retains the workers.dev URL,
@@ -195,23 +195,26 @@ Runtime assumptions:
   `MOCK_PROVIDERS=true`; production provider credentials are optional by type but required
   for the corresponding live integrations.
 
-Missing or unclear documentation:
+Tracker status:
 
-- `README.md` contains only a two-sentence product description and does not document
-  installation, local startup, required environment variables, tests, deployment, or
-  troubleshooting. The detailed information exists across `AGENTS.md` and
-  `ritmofit_dev_plan`, but the normal repository entry point is incomplete.
-- The root `.dev.vars.example` is stale relative to `apps/api/.dev.vars.example`: it uses
-  obsolete Apple Sign-in variable names, omits Resend and current provider variables, and
-  still labels M2 settings as unused placeholders.
-- Production application code is Worker version 46
-  (`aa26e286-c517-444a-952f-d5e410c9439f`); secret-only version 48
-  (`5bcf4a47-5795-4832-b8b0-bde95d651b3d`) supplies `RESEND_API_KEY` and `EMAIL_FROM`.
-  Resend verifies `ritmofit.studio`; public DNS resolves the sending MX/SPF/DKIM records
-  and `_dmarc` policy. A tested rollback/recovery procedure still could not be
-  established from committed files or Worker metadata.
+- The original missing-documentation findings are closed: `README.md` is now the normal
+  setup and operations entry point, the stale root `.dev.vars.example` was removed, and
+  `apps/api/.dev.vars.example` is the canonical local env template.
+- Production is Worker `768cdded-78b4-4150-a017-d8c92042c750` at 100%, with remote D1
+  migrated through `0012`. Later PRs #63-#66 were test/docs/tooling only and intentionally
+  not deployed.
+- Rollback/recovery is documented in `ritmofit_dev_plan/deployment-runbook.md`; Worker
+  rollback and D1 Time Travel availability were verified read-only. A live production
+  rollback exercise remains deferred until a maintenance window.
+- Owner-side GitHub branch protection still needs to be enabled for CI-required merges.
+- The review's code-level SHOULD-FIX items are closed. Remaining owner/operational follow-ups are
+  branch protection, Vite 6 / newer Better Auth dependency cleanup, and a live production rollback
+  exercise during a maintenance window.
 
 ## Baseline Command Results
+
+These command results are the original 2026-06-14 audit baseline. Later remediation above and the
+Follow-Up Verification Checklist supersede stale failures and test counts.
 
 - `node --version && pnpm --version && pnpm install --frozen-lockfile` — **PASS**
   - Summary: Node `v26.0.0`, pnpm `11.4.0`; all five workspace projects were already
@@ -551,6 +554,18 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       fails) through the real Better Auth routes, plus no-enumeration and invalid-token cases. Suite
       28 → 41. Test-only — no schema/migration/route/contract/OpenAPI change, so **not a deploy**.
       Evidence: code change + green integration suite (41) + full CI gates. Confidence: high.
+- [x] **[SHOULD-FIX - FIXED] Configure Better Auth's trusted client-IP header for production
+      rate limiting** — `apps/api/src/lib/auth.ts`, `apps/api/test/helpers.ts`,
+      `apps/api/test/password-reset.integration.test.ts` — Better Auth's limiter warned when it could
+      not determine a client IP and originally allowed `X-Forwarded-For` as a fallback. Cloudflare
+      documents `CF-Connecting-IP` as the single visitor-IP header to prefer over `X-Forwarded-For`, and
+      Better Auth documents `advanced.ipAddress.ipAddressHeaders` for trusted proxy IP detection.
+      Remediation (2026-06-15): auth rate limits now read only `cf-connecting-ip`; the mounted
+      Worker/D1 integration helper supplies a production-shaped Cloudflare IP header by default; and the
+      password-reset integration suite proves a fixed `CF-Connecting-IP` with rotating spoofed
+      `X-Forwarded-For` values still hits one rate-limit bucket and returns `429` on the sixth request.
+      Suite 41 → 42. No schema, migration, API route/contract, shared-contract, or OpenAPI change.
+      Evidence: code change + green integration suite (42). Confidence: high.
 - [x] **[SHOULD-FIX - MOSTLY FIXED] Make release gates enforce formatting, dependency policy, and
       protected merges** — `.github/workflows/ci.yml`, `package.json` — CI omitted
       `format:check` and dependency auditing; both commands failed. Remediation (PR #53):
@@ -582,7 +597,7 @@ format:check`) and **Dependency audit** (`pnpm audit:ci`) in addition to typeche
       pre-launch operator, and realizing it requires resolving the D1-for-previews question (share prod
       D1 = footgun; separate seeded preview D1 = real setup). **Revisit when** a second person starts
       reviewing UI, or at launch. **If/when we do it**, the chosen path is a `pull_request` job running
-      `wrangler versions upload` (a *version*, not a deploy — keeps the manual prod guardrail intact)
+      `wrangler versions upload` (a _version_, not a deploy — keeps the manual prod guardrail intact)
       rather than Cloudflare's repo link; needs `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo
       secrets and a preview-D1 decision. Confidence: high (decision), not a code change.
 

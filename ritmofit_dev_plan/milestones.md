@@ -3,10 +3,12 @@
 Each step follows the working agreement: **plan → confirm → code → summarize** (see
 `ai-working-rules.md`).
 
-> **Status (2026-06-12): M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ — all done, merged to `main`, and deployed**
-> (API + web at `https://ritmofit.studio`, remote D1 through `0005`). On top of the data-flow milestones,
-> the **web design-system build (builder UI)** is now underway — slices 1–4 merged (PR #8) and deployed;
-> see the new section below. **Next major milestone: iOS Phase 2.** See `DEVELOPMENT_PLAN.md` for the rollup.
+> **Status (2026-06-15): M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ — all done, merged to `main`, and deployed**
+> (API + web at `https://ritmofit.studio`, remote D1 through `0012`). On top of the data-flow milestones,
+> the **web design-system build (builder UI)** has shipped slices 1–17, and the post-launch hardening
+> backlog has closed the launch-blocking and review SHOULD-FIX work documented below. The next major
+> product milestone is iOS Phase 2 in the separate `ritmofit-ios` repo; remaining web work is tracked in
+> `DEVELOPMENT_PLAN.md` and `REVIEW.md`.
 
 ## M1 — Auth + class/cue data model ✅ done
 

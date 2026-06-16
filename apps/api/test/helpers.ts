@@ -8,11 +8,14 @@ import { env, createExecutionContext, waitOnExecutionContext } from 'cloudflare:
 import worker from '../src/index.js';
 
 const ORIGIN = 'https://test.ritmofit.studio';
+const TEST_CLIENT_IP = '203.0.113.10';
 
 /** Fetch the worker once, draining the execution context (so waitUntil work settles). */
 export async function call(path: string, init: RequestInit = {}): Promise<Response> {
   const ctx = createExecutionContext();
-  const res = await worker.fetch(new Request(`${ORIGIN}${path}`, init), env, ctx);
+  const headers = new Headers(init.headers);
+  if (!headers.has('cf-connecting-ip')) headers.set('cf-connecting-ip', TEST_CLIENT_IP);
+  const res = await worker.fetch(new Request(`${ORIGIN}${path}`, { ...init, headers }), env, ctx);
   await waitOnExecutionContext(ctx);
   return res;
 }

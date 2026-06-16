@@ -106,8 +106,10 @@ export function createAuth(env: Env) {
         '/reset-password': { window: 3600, max: 10 },
       },
     },
-    // Key rate limits by Cloudflare's real client IP, not the spoofable default.
-    advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip', 'x-forwarded-for'] } },
+    // Key rate limits only by Cloudflare's single trusted visitor-IP header.
+    // `X-Forwarded-For` can include client-supplied values before Cloudflare
+    // appends to it, so it must not be a fallback for auth throttling.
+    advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] } },
   });
 }
 
