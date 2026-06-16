@@ -27,7 +27,16 @@ export function createAuth(env: Env) {
       ? { google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } }
       : {}),
     ...(env.APPLE_CLIENT_ID && env.APPLE_CLIENT_SECRET
-      ? { apple: { clientId: env.APPLE_CLIENT_ID, clientSecret: env.APPLE_CLIENT_SECRET } }
+      ? {
+          apple: {
+            clientId: env.APPLE_CLIENT_ID,
+            clientSecret: env.APPLE_CLIENT_SECRET,
+            // Native iOS Sign in with Apple issues ID tokens whose audience is the
+            // app bundle id (not the web Services ID). Declaring it lets Better Auth
+            // accept tokens posted from the iOS client to /sign-in/social.
+            appBundleIdentifier: 'studio.ritmofit.RitmoFit',
+          },
+        }
       : {}),
   };
 
