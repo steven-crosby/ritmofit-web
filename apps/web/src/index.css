@@ -1,3 +1,7 @@
+/* Self-hosted OFL fonts (03-typography) — @font-face for Inter / Space Grotesk /
+   Martian Mono, served from public/fonts. Replaces the Google Fonts CDN. */
+@import './styles/fonts.css';
+
 /* Generated design tokens must load before Tailwind so the --rf-* vars exist
    when utilities reference them. */
 @import './styles/tokens.css';

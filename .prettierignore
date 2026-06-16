@@ -7,6 +7,8 @@ pnpm-lock.yaml
 # Generated artifacts — owned by their generators, not Prettier. Formatting these
 # would fight the OpenAPI/Drizzle generators (e.g. the openapi.json drift gate).
 **/src/styles/tokens.css
+**/src/styles/fonts.css
+apps/web/public/fonts/
 apps/api/openapi/
 apps/api/migrations/
 
