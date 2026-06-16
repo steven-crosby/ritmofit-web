@@ -20,9 +20,10 @@
   }
 
   /* Copper-tinted selection — identity, not interaction (branding mockup
-     `::selection`; copper-400 #E07E3C = rgb(224,126,60) at 35%). */
+     `::selection`; copper-400 at 35%, derived from the token so a hue change
+     propagates). */
   ::selection {
-    background: rgba(224, 126, 60, 0.35);
+    background: color-mix(in srgb, var(--rf-color-primitive-copper-400) 35%, transparent);
   }
 }
 
@@ -45,7 +46,7 @@
       var(--rf-color-primitive-copper-500)
     );
     color: var(--rf-color-semantic-text-on-accent);
-    box-shadow: 0 2px 10px rgba(200, 104, 42, 0.32); /* copper-500 tint */
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--rf-color-primitive-copper-500) 32%, transparent);
     transition:
       transform var(--rf-motion-duration-fast) var(--rf-motion-easing-snap),
       filter var(--rf-motion-duration-fast) var(--rf-motion-easing-standard);
@@ -75,7 +76,7 @@
     font-weight: 800;
     font-size: 16px;
     line-height: 1;
-    box-shadow: 0 2px 8px rgba(200, 104, 42, 0.4); /* copper-500 tint */
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--rf-color-primitive-copper-500) 40%, transparent);
   }
 
   /* Glass top bar — navigation is a glass surface (design system 04/05;
@@ -112,7 +113,11 @@
      surfaces, so this never touches the builder. */
   .rf-hero-glow {
     background:
-      radial-gradient(1100px 560px at 82% -12%, rgba(200, 104, 42, 0.12), transparent 60%),
+      radial-gradient(
+        1100px 560px at 82% -12%,
+        color-mix(in srgb, var(--rf-color-primitive-copper-500) 12%, transparent),
+        transparent 60%
+      ),
       var(--rf-color-semantic-bg-base);
   }
 }
@@ -131,16 +136,20 @@
    Rationed to a single element; transform + filter only (60fps); removed
    entirely under reduced motion (10 §6 — a user loses affect, not information).
    The glow rides on `filter: drop-shadow` so the card keeps its base box-shadow
-   (shadow-card) elevation throughout the pulse. */
+   (shadow-card) elevation throughout the pulse.
+   NOTE: the copper-400 rgba values here are kept literal (not color-mix) on
+   purpose — the off-state holds the copper hue at 0 alpha (rgb 224,126,60) so the
+   drop-shadow interpolates cleanly to the lit state instead of fading through
+   transparent-black. This is the one documented channel-literal exception. */
 @keyframes rf-beat-pulse {
   0%,
   100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 0 rgba(224, 126, 60, 0));
+    filter: drop-shadow(0 0 0 rgba(224, 126, 60, 0)); /* copper-400 @ 0 alpha */
   }
   50% {
     transform: scale(1.06);
-    filter: drop-shadow(0 0 16px rgba(224, 126, 60, 0.35));
+    filter: drop-shadow(0 0 16px rgba(224, 126, 60, 0.35)); /* copper-400 @ 35% */
   }
 }
 
