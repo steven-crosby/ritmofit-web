@@ -76,7 +76,10 @@ walk(tokens.surface, 'surface');
 walk(tokens.motion, 'motion');
 
 // Canonical tempo aliases the rhythm system references directly (10-rhythm-system.md).
-lines.push('  --rf-bpm: 120;');
+// --rf-bpm is the default/at-rest tempo from tokens.json (tempo.default-bpm); Live
+// overrides it per playing track at runtime. --rf-beat derives the beat duration.
+const defaultBpm = tokens.tempo?.['default-bpm'] ?? 120;
+lines.push(`  --rf-bpm: ${defaultBpm};`);
 lines.push('  --rf-beat: calc(60s / var(--rf-bpm, 120));');
 
 const header =
