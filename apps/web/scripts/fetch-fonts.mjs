@@ -11,8 +11,8 @@
 // + absolute /fonts/ urls) so Vite serves the files from the site root. The woff2
 // files and fonts.css are committed, so the build never needs the network.
 //
-// NOTE: the OFL requires the license text to travel with the fonts. For production,
-// also ship each family's OFL.txt next to the woff2 (see public/fonts/NOTICE.md).
+// The OFL requires the license text to travel with the fonts, so this also fetches
+// each family's upstream OFL into public/fonts/<slug>-OFL.txt (see NOTICE.md).
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -27,9 +27,26 @@ const UA =
   '(KHTML, like Gecko) Chrome/120 Safari/537.36';
 
 const FAMILIES = [
-  { name: 'Inter', query: 'Inter:wght@400..900', slug: 'inter' },
-  { name: 'Space Grotesk', query: 'Space+Grotesk:wght@300..700', slug: 'space-grotesk' },
-  { name: 'Martian Mono', query: 'Martian+Mono:wght@400..800', slug: 'martian-mono' },
+  // `license` is the upstream OFL text; the SIL OFL requires it to travel with the
+  // fonts, so it is bundled beside the woff2 (public/fonts/<slug>-OFL.txt).
+  {
+    name: 'Inter',
+    query: 'Inter:wght@400..900',
+    slug: 'inter',
+    license: 'https://raw.githubusercontent.com/rsms/inter/master/LICENSE.txt',
+  },
+  {
+    name: 'Space Grotesk',
+    query: 'Space+Grotesk:wght@300..700',
+    slug: 'space-grotesk',
+    license: 'https://raw.githubusercontent.com/floriankarsten/space-grotesk/master/OFL.txt',
+  },
+  {
+    name: 'Martian Mono',
+    query: 'Martian+Mono:wght@400..800',
+    slug: 'martian-mono',
+    license: 'https://raw.githubusercontent.com/evilmartians/mono/main/OFL.txt',
+  },
 ];
 const SUBSETS = ['latin', 'latin-ext'];
 
@@ -67,6 +84,10 @@ for (const fam of FAMILIES) {
     // Rewrite the gstatic url -> absolute local path (served from the site root).
     out.push(block.replace(/url\(https:[^)]+\.woff2\)/, `url('/fonts/${file}')`).trim(), '');
   }
+
+  // Bundle the upstream OFL text beside the woff2 (the license must travel with the fonts).
+  const license = await (await fetch(fam.license, { headers: { 'User-Agent': UA } })).text();
+  writeFileSync(join(fontsDir, `${fam.slug}-OFL.txt`), license);
 }
 
 writeFileSync(join(webRoot, 'src', 'styles', 'fonts.css'), out.join('\n'));
