@@ -442,9 +442,12 @@ function FullList({
                         style={{
                           backgroundColor:
                             e.kind === 'cue'
-                              ? (e.color ?? 'var(--rf-color-interactive)')
-                              : 'var(--rf-color-bg-base)',
-                          color: e.kind === 'cue' ? 'var(--rf-color-text-on-accent)' : undefined,
+                              ? (e.color ?? 'var(--rf-color-semantic-interactive-default)')
+                              : 'var(--rf-color-semantic-bg-base)',
+                          color:
+                            e.kind === 'cue'
+                              ? 'var(--rf-color-semantic-text-on-accent)'
+                              : undefined,
                         }}
                       >
                         {e.kind}

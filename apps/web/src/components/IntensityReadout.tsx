@@ -26,7 +26,9 @@ export function IntensityReadout({ intensity }: { intensity: Intensity }) {
             style={{
               height: `${6 + i * 4}px`,
               backgroundColor:
-                i < bars ? `var(--rf-color-intensity-${intensity})` : 'var(--rf-color-interactive)',
+                i < bars
+                  ? `var(--rf-color-intensity-${intensity})`
+                  : 'var(--rf-color-semantic-interactive-default)',
               opacity: i < bars ? 1 : 0.25,
             }}
           />
