@@ -147,6 +147,19 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > and deployed to production as Worker `035f196c-e11b-4507-81d7-b5320b42ff2b` (remote D1 unchanged at
 > `0012`); smoke-tested SPA, `/api/v1/health`, and a protected route (401 without auth).
 >
+> **Web design-system reconciliation completed and deployed (PRs #69 + #70, 2026-06-16).** The web app
+> now fully adopts the consolidated design system: `tokens.json` re-vendored from the source of truth
+> (new primitives, `bg/live`, `radius.sheet`, corrected state colors, default BPM 120→122), Tailwind
+> mappings for the `state.*`/`segment.*` channels, the danger channel corrected across 11 components (was
+> borrowing the intensity ramp), the three OFL fonts self-hosted (Google Fonts CDN removed, CSP tightened
+> to `font-src 'self'`, full per-family `*-OFL.txt` bundled), explicit provider connection states, Live on
+> the `bg/live` surface, and an opt-in `[data-theme="light"]` token block. A high-effort code-review pass
+> also fixed four pre-existing broken `--rf-*` token references. No schema, migration, API contract,
+> shared-contract, or OpenAPI change. PR #69 (the reconciliation) shipped first as Worker `ce1b41e9`, then
+> PR #70 (the OFL license bundle) as Worker `d4613501-c176-49cf-ad44-2e3f166bf3c8` (remote D1 unchanged at
+> `0012`); both smoke-tested — SPA, `/api/v1/health`, a protected route (401), the self-hosted font assets,
+> and the three OFL license texts (`200 text/plain`).
+>
 > **Standalone design-system synthesis completed (2026-06-15).** A reviewable reference package now
 > lives at the workspace root in `ritmofit-design-system-latest/`. It consolidates canonical tokens and
 > guidance, adds a first-class Library-to-Builder creation flow, and includes framework-free mockups for
