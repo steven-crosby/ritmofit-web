@@ -71,6 +71,25 @@ pnpm audit:ci
 pnpm build   # all workspaces
 ```
 
+## Design system & tokens
+
+The UI is driven by design tokens, not ad-hoc colors. The flow is single-source:
+
+- `ritmofit_design_system/tokens.json` is the **vendored copy** of the design-system
+  source of truth. Refresh it by copying the latest `tokens.json` from the governing
+  design-system folder when it changes — never hand-edit token values in app code.
+- `pnpm --filter @ritmofit/web tokens` (auto-runs on `dev`/`build`) regenerates
+  `src/styles/tokens.css`: the dark `:root` set plus an **opt-in**
+  `[data-theme="light"]` block. Dark is the default; nothing sets `data-theme`, so
+  light mode is inert until a theme toggle is added. Live mode stays dark in both
+  themes. `tokens.css` is a generated, git-ignored artifact.
+- `tailwind.config.js` only maps the `--rf-*` vars into Tailwind utilities — tokens
+  stay the single source. Reference channels semantically (`text-state-danger`,
+  `bg-live`) rather than the intensity ramp or raw colors.
+- Fonts are **self-hosted** under `public/fonts` (no third-party CDN). Refresh the
+  subsets with `node apps/web/scripts/fetch-fonts.mjs`; licensing is in
+  `public/fonts/NOTICE.md` (ship each family's full `OFL.txt` before production).
+
 ## Deploy
 
 Deployments are **manual and production-facing** — see the deploy, rollback, and D1 recovery procedures

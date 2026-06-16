@@ -6,16 +6,42 @@
  * authorize URL); disconnect forgets the tokens now and triggers the 7-day
  * metadata purge server-side — so it's a deliberate, confirmed action.
  *
- * State is encoded with label + icon + text (never color alone): a connected
- * provider shows "✓ Connected", a disconnected one a "Connect" action. Providers
- * without a per-user integration (see `providerCapabilities`) show a muted
- * "Catalog search only" state instead of a dead-end Connect button.
+ * State is encoded with glyph + label + text (never color alone, 05/11): each
+ * provider shows an explicit status — ✓ Connected, ⧖ Session expired, ○ Not
+ * connected, ◍ Catalog search only — paired with its recovery action (Connect /
+ * Reconnect / Disconnect).
+ *
+ * Only the four states derivable from `MusicConnectionView` (provider +
+ * `expiresAt`) are shown; the canonical model's `permission` and `provider-error`
+ * states need backend signal we don't yet have — a documented TODO in
+ * `providerConnectionState`, not invented from data we lack.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { supportsUserAccount, type MusicConnectionView, type Provider } from '@ritmofit/shared';
+import { type MusicConnectionView, type Provider } from '@ritmofit/shared';
 import { listConnections, connectProvider, disconnectProvider } from '../lib/api.js';
-import { PROVIDER_ORDER, providerLabel } from '../lib/providers.js';
+import {
+  PROVIDER_ORDER,
+  providerLabel,
+  providerConnectionState,
+  type ProviderConnectionState,
+} from '../lib/providers.js';
 import { Dialog } from './Dialog.js';
+
+/**
+ * Presentation per state: a glyph and label carry the meaning; the tone maps to
+ * the semantic channel (02) and only reinforces. `reconnecting` is the transient
+ * in-flight state shown while a connect/reauth call is busy.
+ */
+const STATE_META: Record<
+  ProviderConnectionState | 'reconnecting',
+  { glyph: string; label: string; tone: string }
+> = {
+  connected: { glyph: '✓', label: 'Connected', tone: 'text-state-positive' },
+  reconnecting: { glyph: '↻', label: 'Reconnecting…', tone: 'text-interactive' },
+  expired: { glyph: '⧖', label: 'Session expired', tone: 'text-state-caution' },
+  disconnected: { glyph: '○', label: 'Not connected', tone: 'text-text-tertiary' },
+  'catalog-only': { glyph: '◍', label: 'Catalog search only', tone: 'text-text-tertiary' },
+};
 
 export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
@@ -43,7 +69,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
     if (err) setError(`Connection failed: ${err.replace(/_/g, ' ')}.`);
   }, []);
 
-  const connectedSet = new Set((connections ?? []).map((c) => c.provider));
+  const connectionByProvider = new Map((connections ?? []).map((c) => [c.provider, c]));
 
   const connect = async (provider: Provider) => {
     setBusyProvider(provider);
@@ -102,7 +128,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
       </header>
 
       {error && (
-        <p className="font-ui text-sm text-intensity-all_out" role="alert">
+        <p className="font-ui text-sm text-state-danger" role="alert">
           {error}
         </p>
       )}
@@ -112,9 +138,18 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
       ) : (
         <ul className="flex flex-col gap-2">
           {PROVIDER_ORDER.map((provider) => {
-            const connected = connectedSet.has(provider);
             const busy = busyProvider === provider;
-            const canConnect = supportsUserAccount(provider);
+            const dataState = providerConnectionState(
+              provider,
+              connectionByProvider.get(provider),
+              Date.now(),
+            );
+            // The only busy action from a disconnected/expired row is a (re)connect,
+            // so surface that as the transient reconnecting state; a busy connected
+            // row is mid-disconnect and keeps its Connected status (button says so).
+            const showReconnecting =
+              busy && (dataState === 'disconnected' || dataState === 'expired');
+            const meta = STATE_META[showReconnecting ? 'reconnecting' : dataState];
             return (
               <li
                 key={provider}
@@ -124,22 +159,17 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
                   <p className="font-ui text-sm font-semibold text-text-primary">
                     {providerLabel(provider)}
                   </p>
-                  <p
-                    className={`font-ui text-xs ${connected && canConnect ? 'text-interactive' : 'text-text-tertiary'}`}
-                  >
-                    {!canConnect
-                      ? 'Catalog search only'
-                      : connected
-                        ? '✓ Connected'
-                        : 'Not connected'}
+                  <p className={`flex items-center gap-1.5 font-ui text-xs ${meta.tone}`}>
+                    <span aria-hidden>{meta.glyph}</span>
+                    <span>{meta.label}</span>
                   </p>
                 </div>
 
-                {!canConnect ? (
+                {dataState === 'catalog-only' ? (
                   <span className="shrink-0 font-ui text-xs text-text-tertiary">
                     Sign-in not yet supported
                   </span>
-                ) : connected ? (
+                ) : dataState === 'connected' ? (
                   confirming === provider ? (
                     <span className="flex items-center gap-2">
                       <span className="font-ui text-xs text-text-tertiary">Disconnect?</span>
@@ -147,7 +177,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
                         type="button"
                         onClick={() => disconnect(provider)}
                         disabled={busy}
-                        className="rounded-pill border border-intensity-all_out/50 px-3 py-1 font-ui text-xs text-intensity-all_out disabled:opacity-50"
+                        className="rounded-pill border border-state-danger/50 px-3 py-1 font-ui text-xs text-state-danger disabled:opacity-50"
                       >
                         {busy ? 'Removing…' : 'Confirm'}
                       </button>
@@ -168,6 +198,16 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
                       Disconnect
                     </button>
                   )
+                ) : dataState === 'expired' ? (
+                  // Recovery action for an expired link — re-auth via the connect flow.
+                  <button
+                    type="button"
+                    onClick={() => connect(provider)}
+                    disabled={busy}
+                    className="shrink-0 rounded-pill border border-interactive px-3 py-1 font-ui text-xs font-semibold text-interactive disabled:opacity-50"
+                  >
+                    {busy ? 'Reconnecting…' : 'Reconnect'}
+                  </button>
                 ) : (
                   <button
                     type="button"

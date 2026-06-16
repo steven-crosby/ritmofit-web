@@ -67,7 +67,7 @@ export function CustomMovesDialog({
       </header>
 
       {error && (
-        <p className="font-ui text-sm text-intensity-all_out" role="alert">
+        <p className="font-ui text-sm text-state-danger" role="alert">
           {error}
         </p>
       )}
@@ -189,7 +189,7 @@ function CustomMoveRow({
         <>
           <span className="font-ui text-xs text-text-tertiary">Delete?</span>
           <button
-            className="rounded-pill px-2 py-1 font-ui text-xs text-intensity-all_out disabled:opacity-40"
+            className="rounded-pill px-2 py-1 font-ui text-xs text-state-danger disabled:opacity-40"
             onClick={remove}
             disabled={busy}
             aria-label={`Confirm delete ${move.name}`}
@@ -215,7 +215,7 @@ function CustomMoveRow({
             Edit
           </button>
           <button
-            className="shrink-0 rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-intensity-all_out disabled:opacity-40"
+            className="shrink-0 rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-state-danger disabled:opacity-40"
             onClick={() => setConfirmingDelete(true)}
             disabled={busy}
             aria-label={`Delete ${move.name}`}

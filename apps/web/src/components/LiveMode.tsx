@@ -183,8 +183,10 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   const trackDurationMs = live ? live.entry.track.durationMs : null;
   const trackEndMs = live ? (live.entry.startOffsetMs ?? 0) + (trackDurationMs ?? 0) : 0;
 
+  // Live runs on bg-live (ink-950, darker than bg-base) for maximum AAA contrast
+  // in a dim studio — and stays dark in both themes (02/04-layout).
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg-base">
+    <div className="fixed inset-0 z-50 flex flex-col bg-live">
       <header className="flex items-center justify-between border-b border-interactive/20 px-6 py-3">
         <div>
           <h1 className="font-display text-lg font-semibold text-text-primary">
@@ -440,9 +442,12 @@ function FullList({
                         style={{
                           backgroundColor:
                             e.kind === 'cue'
-                              ? (e.color ?? 'var(--rf-color-interactive)')
-                              : 'var(--rf-color-bg-base)',
-                          color: e.kind === 'cue' ? 'var(--rf-color-text-on-accent)' : undefined,
+                              ? (e.color ?? 'var(--rf-color-semantic-interactive-default)')
+                              : 'var(--rf-color-semantic-bg-base)',
+                          color:
+                            e.kind === 'cue'
+                              ? 'var(--rf-color-semantic-text-on-accent)'
+                              : undefined,
                         }}
                       >
                         {e.kind}

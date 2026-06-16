@@ -6,6 +6,7 @@ import {
   DEFAULT_PROVIDER,
   providerLabel,
   providerHandoffHref,
+  providerConnectionState,
   ALL_PROVIDERS_LABELLED,
 } from './providers.js';
 
@@ -87,5 +88,29 @@ describe('provider capability matrix', () => {
     for (const p of providerValues) {
       expect(supportsUserAccount(p)).toBe(providerCapabilities[p].userConnect);
     }
+  });
+});
+
+describe('providerConnectionState', () => {
+  const NOW = 1_000_000;
+
+  it('reports catalog-only for providers without per-user accounts', () => {
+    // Even given a (hypothetical) connection, a catalog-only provider stays catalog-only.
+    expect(providerConnectionState('spotify', { expiresAt: null }, NOW)).toBe('catalog-only');
+    expect(providerConnectionState('apple_music', undefined, NOW)).toBe('catalog-only');
+  });
+
+  it('reports disconnected when a connect-capable provider has no connection', () => {
+    expect(providerConnectionState('soundcloud', undefined, NOW)).toBe('disconnected');
+  });
+
+  it('reports connected for a present connection with no/future expiry', () => {
+    expect(providerConnectionState('soundcloud', { expiresAt: null }, NOW)).toBe('connected');
+    expect(providerConnectionState('soundcloud', { expiresAt: NOW + 1 }, NOW)).toBe('connected');
+  });
+
+  it('reports expired once expiresAt has passed', () => {
+    expect(providerConnectionState('soundcloud', { expiresAt: NOW }, NOW)).toBe('expired');
+    expect(providerConnectionState('soundcloud', { expiresAt: NOW - 1 }, NOW)).toBe('expired');
   });
 });

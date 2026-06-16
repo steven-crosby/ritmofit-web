@@ -12,6 +12,9 @@ export default {
           raised: 'var(--rf-color-semantic-bg-raised)',
           overlay: 'var(--rf-color-semantic-bg-overlay)',
           sunken: 'var(--rf-color-semantic-bg-sunken)',
+          // Live runs darker than bg/base for AAA contrast in a dim studio; stays
+          // dark even under the light theme (02-color-system: a performance surface).
+          live: 'var(--rf-color-semantic-bg-live)',
         },
         text: {
           primary: 'var(--rf-color-semantic-text-primary)',
@@ -38,6 +41,24 @@ export default {
           hard: 'var(--rf-color-intensity-hard)',
           all_out: 'var(--rf-color-intensity-all_out)',
         },
+        // Semantic states (02-color-system) — always paired with a mandatory icon
+        // in components. Distinct from the intensity ramp: danger/error meaning
+        // belongs here, never on intensity-all_out.
+        state: {
+          positive: 'var(--rf-color-semantic-state-positive)',
+          caution: 'var(--rf-color-semantic-state-caution)',
+          danger: 'var(--rf-color-semantic-state-danger)',
+          info: 'var(--rf-color-semantic-state-info)',
+        },
+        // Segment-track tints — quiet, label-first reinforcement (02). Not the
+        // interactive channel; never used as a fill.
+        segment: {
+          warmup: 'var(--rf-color-segment-warmup)',
+          climb: 'var(--rf-color-segment-climb)',
+          sprint: 'var(--rf-color-segment-sprint)',
+          recovery: 'var(--rf-color-segment-recovery)',
+          cooldown: 'var(--rf-color-segment-cooldown)',
+        },
       },
       fontFamily: {
         display: 'var(--rf-typography-family-display)',
@@ -45,6 +66,7 @@ export default {
         data: 'var(--rf-typography-family-data)',
       },
       borderRadius: {
+        sheet: 'var(--rf-radius-sheet)',
         panel: 'var(--rf-radius-panel)',
         card: 'var(--rf-radius-card)',
         input: 'var(--rf-radius-input)',

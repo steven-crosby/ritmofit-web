@@ -276,7 +276,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       </Suspense>
 
       <div className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6">
-        {error && <p className="mb-4 font-ui text-sm text-intensity-all_out">{error}</p>}
+        {error && <p className="mb-4 font-ui text-sm text-state-danger">{error}</p>}
 
         {/* The 3-pane workstation (design system 09): library · class · inspector.
             Collapses to a single stacked column below xl so it stays usable on
@@ -312,7 +312,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             />
           ) : selected && detail.classId === selected.id && detail.status === 'error' ? (
             <section className="rounded-card bg-bg-raised p-8 shadow-card">
-              <p className="font-ui text-sm text-intensity-all_out" role="alert">
+              <p className="font-ui text-sm text-state-danger" role="alert">
                 {detail.error}
               </p>
               <button
@@ -795,7 +795,7 @@ export function ClassHeaderCard({
             (confirmingDelete ? (
               <span className="flex items-center gap-1">
                 <button
-                  className="rounded-pill bg-intensity-all_out/15 px-3 py-1.5 font-ui text-sm font-semibold text-intensity-all_out disabled:opacity-40"
+                  className="rounded-pill bg-state-danger/15 px-3 py-1.5 font-ui text-sm font-semibold text-state-danger disabled:opacity-40"
                   onClick={confirmDelete}
                   disabled={deleting}
                 >
@@ -811,7 +811,7 @@ export function ClassHeaderCard({
               </span>
             ) : (
               <button
-                className="rounded-pill border border-intensity-all_out/50 px-4 py-1.5 font-ui text-sm text-intensity-all_out"
+                className="rounded-pill border border-state-danger/50 px-4 py-1.5 font-ui text-sm text-state-danger"
                 onClick={() => setConfirmingDelete(true)}
                 title="Delete this class"
               >
@@ -969,7 +969,7 @@ function ReorderableTrackList({
           onKeyMove={(dir) => move(i, i + dir)}
         />
       ))}
-      {error && <li className="font-ui text-xs text-intensity-all_out">{error}</li>}
+      {error && <li className="font-ui text-xs text-state-danger">{error}</li>}
     </ol>
   );
 }
@@ -1306,7 +1306,7 @@ function TrackInspector({
             />
           </label>
 
-          {error && <p className="font-ui text-sm text-intensity-all_out">{error}</p>}
+          {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
 
           <div className="flex items-center gap-2">
             <button
@@ -1317,7 +1317,7 @@ function TrackInspector({
               Save
             </button>
             <button
-              className="ml-auto rounded-pill border border-intensity-all_out/50 px-4 py-1.5 font-ui text-sm text-intensity-all_out disabled:opacity-40"
+              className="ml-auto rounded-pill border border-state-danger/50 px-4 py-1.5 font-ui text-sm text-state-danger disabled:opacity-40"
               onClick={remove}
               disabled={busy}
             >

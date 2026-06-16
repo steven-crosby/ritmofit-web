@@ -118,7 +118,7 @@ export function Login() {
               />
             </>
           )}
-          {error && <p className="font-ui text-sm text-intensity-all_out">{error}</p>}
+          {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
           {notice && <p className="font-ui text-sm text-interactive">{notice}</p>}
           <button
             type="submit"

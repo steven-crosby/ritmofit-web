@@ -33,6 +33,8 @@ describe('ConnectionsDialog capability gating', () => {
 
     // SoundCloud supports a per-user account, so it offers Connect.
     expect(await screen.findByRole('button', { name: 'Connect' })).toBeTruthy();
+    // The disconnected provider shows an explicit glyph+label status, not color alone.
+    expect(screen.getByText('Not connected')).toBeTruthy();
     // Catalog-only providers show a muted state instead of a dead-end Connect.
     expect(screen.getAllByText('Catalog search only').length).toBe(2);
     expect(screen.getAllByText('Sign-in not yet supported').length).toBe(2);
@@ -46,7 +48,7 @@ describe('ConnectionsDialog capability gating', () => {
 
     render(<ConnectionsDialog onClose={() => {}} />);
 
-    expect(await screen.findByText('✓ Connected')).toBeTruthy();
+    expect(await screen.findByText('Connected')).toBeTruthy();
 
     // Disconnect is a two-step confirm so it can't be triggered by a stray click.
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
