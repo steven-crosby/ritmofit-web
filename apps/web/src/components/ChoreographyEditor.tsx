@@ -370,7 +370,7 @@ export function CuesSection({
                 Edit
               </button>
               <button
-                className="shrink-0 font-ui text-xs text-intensity-all_out disabled:opacity-40"
+                className="shrink-0 font-ui text-xs text-state-danger disabled:opacity-40"
                 onClick={() => remove(cue.id)}
                 disabled={busy}
                 aria-label={`Delete cue ${cue.text}`}
@@ -409,7 +409,7 @@ export function CuesSection({
         </div>
         <CueColorPicker value={color} onChange={setColor} />
       </div>
-      {error && <p className="font-ui text-xs text-intensity-all_out">{error}</p>}
+      {error && <p className="font-ui text-xs text-state-danger">{error}</p>}
     </div>
   );
 }
@@ -731,7 +731,7 @@ export function MovesSection({
                 Edit
               </button>
               <button
-                className="shrink-0 font-ui text-xs text-intensity-all_out disabled:opacity-40"
+                className="shrink-0 font-ui text-xs text-state-danger disabled:opacity-40"
                 onClick={() => remove(m.id)}
                 disabled={busy}
                 aria-label={`Delete move ${nameOf(m)}`}
@@ -793,7 +793,7 @@ export function MovesSection({
           Add move
         </button>
       </div>
-      {error && <p className="font-ui text-xs text-intensity-all_out">{error}</p>}
+      {error && <p className="font-ui text-xs text-state-danger">{error}</p>}
     </div>
   );
 }

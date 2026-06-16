@@ -66,7 +66,7 @@ export function ResetPassword() {
             </>
           ) : invalid ? (
             <>
-              <p className="font-ui text-sm text-intensity-all_out">
+              <p className="font-ui text-sm text-state-danger">
                 This reset link is invalid or has expired.
               </p>
               <a
@@ -87,7 +87,7 @@ export function ResetPassword() {
                 minLength={8}
                 required
               />
-              {error && <p className="font-ui text-sm text-intensity-all_out">{error}</p>}
+              {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
               <button
                 type="submit"
                 disabled={busy}

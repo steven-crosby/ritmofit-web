@@ -45,7 +45,7 @@ export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () =
       </header>
 
       {error && (
-        <p className="font-ui text-sm text-intensity-all_out" role="alert">
+        <p className="font-ui text-sm text-state-danger" role="alert">
           {error}
         </p>
       )}
@@ -246,7 +246,7 @@ function TeamMembers({
                 <span className="font-data text-xs uppercase text-text-tertiary">{m.role}</span>
                 {canRemove && (
                   <button
-                    className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-intensity-all_out"
+                    className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-state-danger"
                     onClick={() => remove(m.userId)}
                     aria-label={isMe ? `Leave ${team.name}` : `Remove ${m.displayName ?? m.email}`}
                   >

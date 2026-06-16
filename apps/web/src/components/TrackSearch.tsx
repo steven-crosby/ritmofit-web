@@ -175,7 +175,7 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
         </>
       )}
 
-      {error && <p className="font-ui text-sm text-intensity-all_out">{error}</p>}
+      {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
 
       {/* States. Idle (search, no query) invites; the rest reflect the fetch. */}
       {mode === 'search' && query.trim() === '' ? (

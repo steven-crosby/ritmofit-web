@@ -139,7 +139,7 @@ export function SegmentBand({
       ) : (
         <p className="font-ui text-xs text-text-tertiary">No segments yet.</p>
       )}
-      {error && <p className="font-ui text-xs text-intensity-all_out">{error}</p>}
+      {error && <p className="font-ui text-xs text-state-danger">{error}</p>}
       {canEdit && (
         <SegmentEditor
           classId={classId}
@@ -291,7 +291,7 @@ function SegmentEditor({
                     Edit
                   </button>
                   <button
-                    className="shrink-0 font-ui text-xs text-text-tertiary hover:text-intensity-all_out disabled:opacity-40"
+                    className="shrink-0 font-ui text-xs text-text-tertiary hover:text-state-danger disabled:opacity-40"
                     onClick={() => remove(s.id)}
                     disabled={busy}
                     aria-label={`Delete ${SEGMENT_META[s.type].label} segment`}

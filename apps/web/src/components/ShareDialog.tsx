@@ -223,7 +223,7 @@ export function ShareDialog({
       )}
 
       {error && (
-        <p className="font-ui text-sm text-intensity-all_out" role="alert">
+        <p className="font-ui text-sm text-state-danger" role="alert">
           {error}
         </p>
       )}
@@ -261,7 +261,7 @@ export function ShareDialog({
                   </select>
                 )}
                 <button
-                  className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-intensity-all_out"
+                  className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-state-danger"
                   onClick={() => revoke(s.id)}
                   aria-label={`Revoke access for ${shareTarget(s)}`}
                 >

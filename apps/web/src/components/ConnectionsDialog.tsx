@@ -102,7 +102,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
       </header>
 
       {error && (
-        <p className="font-ui text-sm text-intensity-all_out" role="alert">
+        <p className="font-ui text-sm text-state-danger" role="alert">
           {error}
         </p>
       )}
@@ -147,7 +147,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
                         type="button"
                         onClick={() => disconnect(provider)}
                         disabled={busy}
-                        className="rounded-pill border border-intensity-all_out/50 px-3 py-1 font-ui text-xs text-intensity-all_out disabled:opacity-50"
+                        className="rounded-pill border border-state-danger/50 px-3 py-1 font-ui text-xs text-state-danger disabled:opacity-50"
                       >
                         {busy ? 'Removing…' : 'Confirm'}
                       </button>

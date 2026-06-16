@@ -97,7 +97,7 @@ export function ExploreDialog({
       </header>
 
       {error && (
-        <p className="font-ui text-sm text-intensity-all_out" role="alert">
+        <p className="font-ui text-sm text-state-danger" role="alert">
           {error}
         </p>
       )}
