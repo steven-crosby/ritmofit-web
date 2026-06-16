@@ -14,6 +14,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { RunPayload, RunPayloadTrackEntry, Intensity } from '@ritmofit/shared';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { IntensityReadout } from './IntensityReadout.js';
+import { LiveTimeline } from './LiveTimeline.js';
 
 type View = 'cue' | 'list';
 
@@ -237,8 +238,8 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
           setPlaying(false);
           seek(0);
         }}
+        payload={payload}
         elapsedMs={elapsedMs}
-        totalMs={payload.class.totalDurationMs}
         onSeek={seek}
       />
     </div>
@@ -472,15 +473,15 @@ function Transport({
   playing,
   onToggle,
   onReset,
+  payload,
   elapsedMs,
-  totalMs,
   onSeek,
 }: {
   playing: boolean;
   onToggle: () => void;
   onReset: () => void;
+  payload: RunPayload;
   elapsedMs: number;
-  totalMs: number;
   onSeek: (ms: number) => void;
 }) {
   return (
@@ -497,15 +498,7 @@ function Transport({
       >
         Reset
       </button>
-      <input
-        type="range"
-        min={0}
-        max={Math.max(1, totalMs)}
-        value={elapsedMs}
-        onChange={(e) => onSeek(Number(e.target.value))}
-        className="flex-1 accent-brand"
-        aria-label="Seek class timeline"
-      />
+      <LiveTimeline payload={payload} elapsedMs={elapsedMs} onSeek={onSeek} />
     </div>
   );
 }

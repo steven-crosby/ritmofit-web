@@ -101,6 +101,19 @@ function trackAt(startOffsetMs: number): RunPayloadTrackEntry {
   return { ...activeTrack, startOffsetMs };
 }
 
+describe('LiveMode timeline scrubber', () => {
+  it('seeks the virtual clock from the timeline (keyboard)', () => {
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    // The transport scrubber replaces the old plain range input.
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    // Clock starts at 0:00 / 3:00; a right-arrow nudges +5s.
+    expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    expect(screen.getByText('0:05 / 3:00')).toBeTruthy();
+    expect(slider.getAttribute('aria-valuenow')).toBe('5000');
+  });
+});
+
 describe('trackIndexAt', () => {
   const threeTracks = {
     ...payload,
