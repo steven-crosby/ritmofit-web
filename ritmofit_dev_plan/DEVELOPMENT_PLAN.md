@@ -101,6 +101,19 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > Current launch/deploy status is tracked in [`../REVIEW.md`](../REVIEW.md); canonical contributor and
 > deployment instructions are in [`../AGENTS.md`](../AGENTS.md).
 >
+> **Web UI coverage closed + PR-preview decision deferred (2026-06-15, PRs #65–#66, not deployed).**
+> PR #66 closes the last REVIEW.md "web UI coverage" SHOULD-FIX with jsdom + Testing Library component
+> tests for Dashboard (incl. the keyed rapid-switch guard), the Connections/Share/Teams dialogs, and
+> ErrorBoundary (web unit suite 103 → 118; total api 175 + web 118, integration 41). PR #65 recorded the
+> integration-test matrix + audit disposition. Separately, evaluated linking the GitHub repo to Cloudflare
+> for CI/preview deploys and **deferred PR preview environments** (recorded as a DEFERRED decision in
+> REVIEW.md): the repo-link is rejected outright (duplicates CI + pushes toward auto-deploy, conflicting
+> with the manual-deploy guardrail); previews revisited when a second reviewer joins or at launch, via a
+> `wrangler versions upload` PR job (a version, not a deploy) if pursued. All test/docs-only — no schema,
+> migration, API, shared-contract, or OpenAPI change, so **not a deploy**; production stays on Worker
+> `768cdded` / remote D1 `0012`. Close-session gates green (typecheck, lint, unit 293, integration 41,
+> web build, OpenAPI no-drift).
+>
 > **LiveMode timeline perf deployed (2026-06-15).** PR #62 closes the REVIEW.md NICE-TO-HAVE
 > "avoid rebuilding the active event list on every animation frame": each track's cues/moves are now
 > flattened/sorted once per payload, a primitive-returning `trackIndexAt` keeps frame-rate memos from
