@@ -519,15 +519,20 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
 
 ## Testing & CI/CD
 
-- [ ] **[SHOULD-FIX] Add component and browser coverage for the actual instructor
-      UI** — `apps/web/vite.config.ts:9-15`, `apps/web/src/components/Dashboard.tsx:58-109`,
-      `apps/web/src/components/LiveMode.tsx:65-168` — The 56 web tests exercise pure
-      helpers; Vitest runs in Node with no DOM, and there are no render tests for Login,
-      Dashboard, dialogs, class switching, provider search, or Live mode. Why it matters:
-      the confirmed stale-state, responsive, and focus bugs all pass CI. Recommended fix:
-      add Testing Library/jsdom component tests and a small browser suite covering sign-up,
-      create/import/edit/reopen/run, network failure, and rapid class switching. Evidence:
-      missing coverage. Confidence: high.
+- [x] **[SHOULD-FIX - FIXED] Add component and browser coverage for the actual instructor
+      UI** — `apps/web/vite.config.ts`, `apps/web/src/components/*.test.tsx`,
+      `apps/web/smoke/` — The original 56 web tests exercised pure helpers only, with no DOM
+      render tests for the instructor surfaces. Remediation: jsdom + Testing Library component
+      tests now cover Login, the `Dialog` primitive, `TrackSearch` (provider search), `LiveMode`,
+      `LibraryRail`, `ClassHeaderCard`, and `App` routing (PRs #48/#51/#54/#58/#60), and the
+      committed Playwright smokes (`apps/web/smoke/`: narrow-width 18/18, functional 16/16, PRs
+      #51/#52) drive sign-up, the full class lifecycle, provider connect/search/import/disconnect,
+      rapid class switching, and network failure in a real browser. The remaining named gaps now
+      have focused component coverage: `Dashboard.test.tsx` (rail loading/empty/error states,
+      open-class workspace, the keyed-detail rapid-switch guard, and detail-failure retry),
+      `ConnectionsDialog.test.tsx` (capability gating + confirmed disconnect), `ShareDialog.test.tsx`
+      and `TeamsDialog.test.tsx` (the verified-identity sharing surfaces), and `ErrorBoundary.test.tsx`.
+      Evidence: code change + green component suites + the browser smokes. Confidence: high.
 - [x] **[SHOULD-FIX - FIXED] Expand Worker/D1 integration tests across launch-critical
       routes** — `apps/api/test/*.integration.test.ts` — The original eight-test suite covered basic
       class authz, run payload, sharing, Explore, and a track copy, but not provider callback
@@ -708,9 +713,10 @@ DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'
 - [x] Run lint.
 - [x] Run unit tests.
 - [x] Run Worker/D1 integration tests.
-- [ ] Run formatting check. _(Run 2026-06-15: still fails — 91 files, incl. generated
-      OpenAPI/Drizzle artifacts + long-form docs. Blocked on the open "define the formatting
-      boundary" SHOULD-FIX, not a regression.)_
+- [x] Run formatting check. _(2026-06-15: green — PR #53 defined the formatting boundary
+      (`.prettierignore` excludes generated OpenAPI/Drizzle artifacts + the long-form doc
+      trees) and formatted the owned source/docs; `pnpm format:check` now reports "All matched
+      files use Prettier code style!" and runs in CI.)_
 - [x] Regenerate OpenAPI and confirm no drift.
 - [x] Validate migrations against a disposable local D1 database.
 - [x] Smoke-test production sign-up, password reset, and email verification with real

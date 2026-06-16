@@ -1,0 +1,163 @@
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ClassTrack, ClassWithAccess } from '@ritmofit/shared';
+import { Dashboard } from './Dashboard.js';
+import * as api from '../lib/api.js';
+import type { ClassListPage } from '../lib/api.js';
+
+vi.mock('../lib/api.js');
+// Dashboard imports the auth client for "Sign out"; stub it so the module's
+// real network/session setup never runs under the test.
+vi.mock('../lib/auth-client.js', () => ({
+  authClient: { signOut: vi.fn() },
+}));
+
+/** A promise whose resolution we control, to model a slow in-flight request. */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+let classSeq = 0;
+function makeClass(title: string, accessLevel: ClassWithAccess['accessLevel'] = 'owner') {
+  classSeq += 1;
+  const id = `00000000-0000-4000-8000-${String(classSeq).padStart(12, '0')}`;
+  return {
+    id,
+    ownerUserId: 'owner',
+    title,
+    description: null,
+    template: 'cycle',
+    status: 'draft',
+    visibility: 'private',
+    targetDurationMs: null,
+    createdAt: classSeq,
+    updatedAt: classSeq,
+    lastOpenedAt: null,
+    accessLevel,
+  } satisfies ClassWithAccess;
+}
+
+function page(items: ClassWithAccess[]): ClassListPage {
+  return { items, nextCursor: null };
+}
+
+function renderDashboard() {
+  return render(<Dashboard userId="me" userName="Tester" />);
+}
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
+describe('Dashboard class library states', () => {
+  it('shows the loading state, then the class list once it resolves', async () => {
+    const classes = deferred<ClassListPage>();
+    vi.mocked(api.listClasses).mockReturnValue(classes.promise);
+
+    renderDashboard();
+    // The rail is in its loading state until the first request resolves — it must
+    // not flash the "no classes yet" empty state first.
+    expect(screen.getByText('Loading your classes…')).toBeTruthy();
+
+    await act(async () => {
+      classes.resolve(page([makeClass('Morning ride')]));
+      await classes.promise;
+    });
+
+    expect(await screen.findByText('Morning ride')).toBeTruthy();
+    expect(screen.queryByText('Loading your classes…')).toBeNull();
+    expect(screen.getByText('Select or create a class to start building.')).toBeTruthy();
+  });
+
+  it('shows a distinct error state when the class list fails to load', async () => {
+    vi.mocked(api.listClasses).mockRejectedValue(new Error('network down'));
+
+    renderDashboard();
+
+    expect(await screen.findByText("Couldn't load your classes — try again.")).toBeTruthy();
+    // The top-level banner surfaces the underlying message too.
+    expect(screen.getByText('network down')).toBeTruthy();
+  });
+
+  it('shows the empty state when the library is genuinely empty', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+
+    renderDashboard();
+
+    expect(await screen.findByText(/No classes yet/)).toBeTruthy();
+  });
+});
+
+describe('Dashboard class detail', () => {
+  it('opens a selected class into its workspace', async () => {
+    const ride = makeClass('Sunset climb');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([] as ClassTrack[]);
+    // No run payload is fine — the workspace renders from the persisted tracks.
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /Sunset climb/ }));
+
+    expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
+    expect(screen.getByText(/No tracks yet/)).toBeTruthy();
+  });
+
+  it('keeps the newly selected class when a slower prior load resolves late', async () => {
+    const first = makeClass('First ride');
+    const second = makeClass('Second ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([first, second]));
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+
+    const firstTracks = deferred<ClassTrack[]>();
+    vi.mocked(api.listClassTracks).mockImplementation((classId: string) =>
+      classId === first.id ? firstTracks.promise : Promise.resolve([] as ClassTrack[]),
+    );
+
+    renderDashboard();
+    // Select the slow class, then immediately switch to the fast one.
+    fireEvent.click(await screen.findByRole('button', { name: /First ride/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Second ride/ }));
+
+    expect(await screen.findByRole('heading', { name: 'Second ride' })).toBeTruthy();
+
+    // The earlier request now resolves out of order; its stale response must not
+    // overwrite the detail under the currently selected class header.
+    await act(async () => {
+      firstTracks.resolve([]);
+      await firstTracks.promise;
+    });
+
+    expect(screen.getByRole('heading', { name: 'Second ride' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'First ride' })).toBeNull();
+  });
+
+  it('renders a retry affordance when a class detail fails, and reloads on retry', async () => {
+    const ride = makeClass('Broken ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    vi.mocked(api.listClassTracks)
+      .mockRejectedValueOnce(new Error('detail boom'))
+      .mockResolvedValue([] as ClassTrack[]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /Broken ride/ }));
+
+    expect(await screen.findByText('detail boom')).toBeTruthy();
+    const retry = screen.getByRole('button', { name: 'Retry class' });
+
+    fireEvent.click(retry);
+
+    // The second load succeeds, so the workspace replaces the error panel.
+    expect(await screen.findByRole('heading', { name: 'Broken ride' })).toBeTruthy();
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+  });
+});
