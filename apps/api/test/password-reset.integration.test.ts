@@ -13,10 +13,13 @@ import { call, readResetToken, signUpUser } from './helpers.js';
 
 const REDIRECT_TO = 'https://test.ritmofit.studio/reset-password';
 
-function postJson(path: string, body: unknown, cookie?: string) {
+function postJson(path: string, body: unknown, cookie?: string, headers?: HeadersInit) {
+  const requestHeaders = new Headers(headers);
+  requestHeaders.set('content-type', 'application/json');
+  if (cookie) requestHeaders.set('cookie', cookie);
   return call(path, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+    headers: requestHeaders,
     body: JSON.stringify(body),
   });
 }
@@ -72,5 +75,29 @@ describe('password reset flow (integration)', () => {
       token: 'not-a-real-token',
     });
     expect(reset.ok).toBe(false);
+  });
+
+  it('keys the auth rate limit by Cloudflare IP and ignores spoofed forwarded-for values', async () => {
+    const cfIp = '203.0.113.42';
+    const statuses: number[] = [];
+
+    for (let i = 0; i < 6; i += 1) {
+      const res = await postJson(
+        '/api/auth/request-password-reset',
+        {
+          email: `rate-${i}-${crypto.randomUUID()}@example.com`,
+          redirectTo: REDIRECT_TO,
+        },
+        undefined,
+        {
+          'cf-connecting-ip': cfIp,
+          'x-forwarded-for': `198.51.100.${i + 1}`,
+        },
+      );
+      statuses.push(res.status);
+    }
+
+    expect(statuses.slice(0, 5)).toEqual([200, 200, 200, 200, 200]);
+    expect(statuses[5]).toBe(429);
   });
 });
