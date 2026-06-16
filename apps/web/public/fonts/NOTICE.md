@@ -4,12 +4,13 @@ These `.woff2` files are **self-hosted** (latin + latin-ext subsets) and regener
 [`../../scripts/fetch-fonts.mjs`](../../scripts/fetch-fonts.mjs). All three families are licensed under
 the **SIL Open Font License, Version 1.1**, which permits bundling and redistribution.
 
-| Family | Role (see `03-typography.md`) | Copyright | Source |
-| --- | --- | --- | --- |
-| Inter | UI / body | © Rasmus Andersson | github.com/rsms/inter |
-| Space Grotesk | Display | © Florian Karsten | github.com/floriankarsten/space-grotesk |
-| Martian Mono | Data (BPM, timecodes, zones) | © 2022 Evil Martians | github.com/evilmartians/mono |
+| Family | Role (see `03-typography.md`) | Copyright | Source | License text |
+| --- | --- | --- | --- | --- |
+| Inter | UI / body | © Rasmus Andersson | github.com/rsms/inter | [`inter-OFL.txt`](./inter-OFL.txt) |
+| Space Grotesk | Display | © Florian Karsten | github.com/floriankarsten/space-grotesk | [`space-grotesk-OFL.txt`](./space-grotesk-OFL.txt) |
+| Martian Mono | Data (BPM, timecodes, zones) | © Evil Martians | github.com/evilmartians/mono | [`martian-mono-OFL.txt`](./martian-mono-OFL.txt) |
 
-The subsets here are pulled from Google Fonts (gstatic) at variable weights. **For production,** ship the
-full `OFL.txt` for each family alongside the font files (the OFL requires the license text to travel with
-the fonts). This reference folder bundles only the subsetted woff2 + this notice.
+The subsets are pulled from Google Fonts (gstatic) at variable weights. The OFL requires the license text
+to travel with the fonts, so each family's full upstream `*-OFL.txt` is bundled here alongside the woff2
+and ships with the deployed SPA. Refresh both the subsets and the license texts with
+[`../../scripts/fetch-fonts.mjs`](../../scripts/fetch-fonts.mjs).
