@@ -571,6 +571,20 @@ format:check`) and **Dependency audit** (`pnpm audit:ci`) in addition to typeche
       doc files were formatted in one pass. `format:check` is green and wired into CI.
       Evidence: green `format:check` + unchanged `openapi.json` (drift gate still passes).
       Confidence: high.
+- [ ] **[DEFERRED 2026-06-15] PR preview environments** — `.github/workflows/ci.yml` — Considered
+      whether to add per-PR preview deployments (and, separately, whether to link the GitHub repo to
+      Cloudflare's Workers Builds). Decision: **defer.** Rationale: (1) GitHub Actions already runs the
+      full quality gate including the mounted Worker/D1 integration suite, so most runtime-parity value
+      is already covered; (2) linking the repo to Cloudflare is rejected outright — it duplicates CI and
+      pushes toward auto-deploy on push, which conflicts with the intentional manual, human-confirmed
+      prod-deploy guardrail (AGENTS.md §Security/Deployment); (3) the remaining genuine gap (a
+      browser-clickable instance of each PR on the real runtime) has modest value for a solo,
+      pre-launch operator, and realizing it requires resolving the D1-for-previews question (share prod
+      D1 = footgun; separate seeded preview D1 = real setup). **Revisit when** a second person starts
+      reviewing UI, or at launch. **If/when we do it**, the chosen path is a `pull_request` job running
+      `wrangler versions upload` (a *version*, not a deploy — keeps the manual prod guardrail intact)
+      rather than Cloudflare's repo link; needs `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo
+      secrets and a preview-D1 decision. Confidence: high (decision), not a code change.
 
 ## Performance
 
