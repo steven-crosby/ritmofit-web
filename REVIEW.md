@@ -200,9 +200,9 @@ Tracker status:
 - The original missing-documentation findings are closed: `README.md` is now the normal
   setup and operations entry point, the stale root `.dev.vars.example` was removed, and
   `apps/api/.dev.vars.example` is the canonical local env template.
-- Production is Worker `768cdded-78b4-4150-a017-d8c92042c750` at 100%, with remote D1
-  migrated through `0012`. Later PRs #63-#66 were test/docs/tooling only and intentionally
-  not deployed.
+- Production is Worker `035f196c-e11b-4507-81d7-b5320b42ff2b` at 100% (deployed 2026-06-15 for the
+  Better Auth client-IP fix, PR #67), with remote D1 migrated through `0012`. Intervening PRs #63-#66
+  were test/docs/tooling only and intentionally not deployed.
 - Rollback/recovery is documented in `ritmofit_dev_plan/deployment-runbook.md`; Worker
   rollback and D1 Time Travel availability were verified read-only. A live production
   rollback exercise remains deferred until a maintenance window.

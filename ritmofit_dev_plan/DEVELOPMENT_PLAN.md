@@ -138,13 +138,14 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > / remote D1 `0012`. Merged after green CI. The integration-test matrix item is closed; at that point,
 > the remaining code-level SHOULD-FIX from the review was the Better Auth trusted client-IP header.
 >
-> **Better Auth trusted client-IP hardening completed (2026-06-15, pending deploy).** Better Auth now
+> **Better Auth trusted client-IP hardening completed and deployed (PR #67, 2026-06-15).** Better Auth now
 > keys auth rate limits only from Cloudflare's trusted `CF-Connecting-IP` header, removing
 > `X-Forwarded-For` as a fallback because clients can supply values before Cloudflare appends to it. The
 > Worker/D1 integration helper now supplies a production-shaped `cf-connecting-ip` header by default, and
 > the password-reset suite proves spoofed `X-Forwarded-For` values do not create separate rate-limit
-> buckets. No schema, migration, API contract, shared-contract, or OpenAPI change; deploy with the next
-> runtime batch.
+> buckets. No schema, migration, API contract, shared-contract, or OpenAPI change. Merged after green CI
+> and deployed to production as Worker `035f196c-e11b-4507-81d7-b5320b42ff2b` (remote D1 unchanged at
+> `0012`); smoke-tested SPA, `/api/v1/health`, and a protected route (401 without auth).
 >
 > **Standalone design-system synthesis completed (2026-06-15).** A reviewable reference package now
 > lives at the workspace root in `ritmofit-design-system-latest/`. It consolidates canonical tokens and
