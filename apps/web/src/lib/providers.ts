@@ -4,7 +4,7 @@
  * *values* are the shared enum (`providerValues`); this only adds display labels
  * and the order/default the builder's search UI shows. No new contract.
  */
-import { providerValues, type Provider } from '@ritmofit/shared';
+import { providerValues, supportsUserAccount, type Provider } from '@ritmofit/shared';
 
 /** Human label per provider (the enum values are snake/lowercase). */
 export const PROVIDER_LABELS: Record<Provider, string> = {
@@ -61,3 +61,30 @@ export function providerHandoffHref(provider: Provider, providerUri: string | nu
 
 /** Defensive: every shared provider value has a label + a place in the order. */
 export const ALL_PROVIDERS_LABELLED = providerValues.every((p) => p in PROVIDER_LABELS);
+
+/**
+ * Provider connection state for the explicit, never-color-only status indicator
+ * (design system 05/11). The canonical model has six states; only these four are
+ * derivable from `MusicConnectionView` (provider + `expiresAt`), so the others
+ * (`reconnecting` — a transient UI state during the connect flow — plus
+ * `permission` and `provider-error`) are surfaced by the component or left as
+ * documented TODOs rather than invented from data we don't have.
+ */
+export type ProviderConnectionState = 'connected' | 'expired' | 'disconnected' | 'catalog-only';
+
+/**
+ * Derive the connection state. `catalog-only` providers have no per-user account
+ * integration; a connection whose `expiresAt` has passed is `expired` (re-auth
+ * needed); a present, unexpired connection is `connected`; everything else is
+ * `disconnected`. `now` is injected so the mapping is pure and unit-testable.
+ */
+export function providerConnectionState(
+  provider: Provider,
+  connection: { expiresAt: number | null } | undefined,
+  now: number,
+): ProviderConnectionState {
+  if (!supportsUserAccount(provider)) return 'catalog-only';
+  if (!connection) return 'disconnected';
+  if (connection.expiresAt != null && connection.expiresAt <= now) return 'expired';
+  return 'connected';
+}
