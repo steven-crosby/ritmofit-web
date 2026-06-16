@@ -3,15 +3,26 @@
  * Warm-up → Climb → Sprint → Recovery → Cool-down bands under the timeline,
  * sharing its time axis. Each section is time-anchored (`startOffsetMs`) and runs
  * to the next section's start (or the class end); bands tile the timeline. The
- * segment **type** is identified by **label + a tint** (never color alone, 02).
+ * segment **type** is identified by **label + an icon + a tint** (never color
+ * alone, 02).
  *
  * Renders from the granular `/classes/:id/sections` (which carry ids for editing);
  * the run-payload also ships `sections` for the live/iOS contract. Authoring is
- * edit-access-only: add / re-time / retype / delete.
+ * edit-access-only: add / re-time / retype / delete. With edit access, each band
+ * boundary is also a drag-resize handle (re-times `startOffsetMs` directly on the
+ * band); the numeric editor below stays the precise/secondary path.
  */
-import { useCallback, useEffect, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react';
 import { segmentTypeValues, type ClassSection, type SegmentType } from '@ritmofit/shared';
 import { listSections, createSection, updateSection, deleteSection } from '../lib/api.js';
+import { formatDuration } from '../lib/class-summary.js';
 
 /** Presentation for each fixed segment type: label + a reinforcing tint (02-color-system). */
 export const SEGMENT_META: Record<SegmentType, { label: string; tint: string }> = {
@@ -22,6 +33,36 @@ export const SEGMENT_META: Record<SegmentType, { label: string; tint: string }> 
   cool_down: { label: 'Cool-down', tint: 'var(--rf-color-segment-cooldown)' }, // bone-400
 };
 
+/**
+ * A tiny energy-arc glyph per type (a polyline in a 16×16 box), reinforcing the
+ * label + tint. Inline SVG — no icon-font/CDN dependency, so the tightened
+ * `font-src 'self'` CSP is unaffected. Decorative: the label carries the meaning.
+ */
+const SEGMENT_ICON_POINTS: Record<SegmentType, string> = {
+  warm_up: '2,11 8,7 14,9', // gentle rise
+  climb: '2,13 8,8 14,3', // steady steep climb
+  sprint: '2,12 5,4 8,12 11,4 14,12', // intense spikes
+  recovery: '2,7 6,11 10,7 14,8', // dip and recover
+  cool_down: '2,5 8,10 14,11', // settle down
+};
+
+function SegmentIcon({ type }: { type: SegmentType }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="h-3 w-3 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points={SEGMENT_ICON_POINTS[type]} />
+    </svg>
+  );
+}
+
 export type SegmentBandSlice = {
   type: SegmentType;
   leftPct: number;
@@ -29,6 +70,37 @@ export type SegmentBandSlice = {
 };
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+
+/** Minimum gap between adjacent boundaries so a drag can't invert or collapse bands. */
+const MIN_GAP_MS = 1000;
+
+/** Pointer x within a strip's box → a clamped, whole-ms class time. */
+export function boundaryMsFromPointer(
+  clientX: number,
+  rect: { left: number; width: number },
+  totalMs: number,
+): number {
+  if (totalMs <= 0 || rect.width <= 0) return 0;
+  const fraction = (clientX - rect.left) / rect.width;
+  return Math.round(clamp(fraction, 0, 1) * totalMs);
+}
+
+/**
+ * Keep a section's start between its neighbors (with a min gap) and inside the
+ * class, so re-timing never reorders or collapses bands. `null` neighbors mean
+ * "no bound that side" (the first section floors at 0, the last ceils at total).
+ */
+export function clampSectionStart(
+  draftMs: number,
+  prevStartMs: number | null,
+  nextStartMs: number | null,
+  minGapMs: number,
+  totalMs: number,
+): number {
+  const lo = prevStartMs === null ? 0 : prevStartMs + minGapMs;
+  const hi = nextStartMs === null ? totalMs : nextStartMs - minGapMs;
+  return Math.round(clamp(draftMs, lo, Math.max(lo, hi)));
+}
 
 /**
  * Pure geometry: tile bands across the timeline. Each section (ordered by start)
@@ -81,6 +153,7 @@ export function SegmentBand({
 }) {
   const [sections, setSections] = useState<ClassSection[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const bandRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -99,8 +172,19 @@ export function SegmentBand({
     onChanged?.();
   }, [load, onChanged]);
 
+  // Drag/keyboard commit for a boundary handle. Throws on failure so the handle
+  // can revert its draft; success reloads so neighbors + the live contract follow.
+  const commitStart = useCallback(
+    async (id: string, startOffsetMs: number) => {
+      await updateSection(id, { startOffsetMs });
+      await afterChange();
+    },
+    [afterChange],
+  );
+
   const bands = computeSegmentBands(sections ?? [], totalDurationMs);
   const hasBand = bands.length > 0;
+  const sorted = [...(sections ?? [])].sort((a, b) => a.startOffsetMs - b.startOffsetMs);
 
   // Nothing to show and not editable → render nothing (keeps a view-only class clean).
   if (!hasBand && !canEdit) return null;
@@ -114,27 +198,41 @@ export function SegmentBand({
       </figcaption>
       {hasBand ? (
         <div
+          ref={bandRef}
           className="relative h-6 w-full overflow-hidden rounded-card bg-bg-base"
-          role="img"
+          role={canEdit ? 'group' : 'img'}
           aria-label={`Segments: ${arc}`}
         >
           {bands.map((b, i) => (
             <div
               key={i}
+              aria-hidden
               className="absolute top-0 flex h-full items-center gap-1 overflow-hidden px-1.5"
               style={{ left: `${b.leftPct}%`, width: `${b.widthPct}%` }}
             >
-              {/* tint dot + label — type read by label, color only reinforces (02). */}
-              <span
-                aria-hidden
-                className="h-2 w-2 shrink-0 rounded-full"
-                style={{ backgroundColor: SEGMENT_META[b.type].tint }}
-              />
+              {/* icon + tint + label — type read by label, icon/color only reinforce (02). */}
+              <span style={{ color: SEGMENT_META[b.type].tint }}>
+                <SegmentIcon type={b.type} />
+              </span>
               <span className="truncate font-ui text-[11px] text-text-secondary">
                 {SEGMENT_META[b.type].label}
               </span>
             </div>
           ))}
+          {/* Edit-access drag handles, one per boundary (re-time startOffsetMs). */}
+          {canEdit &&
+            sorted.map((s, i) => (
+              <SegmentHandle
+                key={s.id}
+                section={s}
+                prevStartMs={i > 0 ? sorted[i - 1]!.startOffsetMs : null}
+                nextStartMs={i + 1 < sorted.length ? sorted[i + 1]!.startOffsetMs : null}
+                totalMs={totalDurationMs}
+                getRect={() => bandRef.current?.getBoundingClientRect()}
+                onCommit={commitStart}
+                onError={setError}
+              />
+            ))}
         </div>
       ) : (
         <p className="font-ui text-xs text-text-tertiary">No segments yet.</p>
@@ -149,6 +247,122 @@ export function SegmentBand({
         />
       )}
     </figure>
+  );
+}
+
+/**
+ * A draggable boundary on the band: an accessible slider that re-times one
+ * section's `startOffsetMs`. Pointer drag and arrow keys update a local draft;
+ * the change is committed (PATCH) on pointer-up, Enter, or blur, and reverted if
+ * the request fails. The draft re-syncs to the server value after a reload.
+ */
+function SegmentHandle({
+  section,
+  prevStartMs,
+  nextStartMs,
+  totalMs,
+  getRect,
+  onCommit,
+  onError,
+}: {
+  section: ClassSection;
+  prevStartMs: number | null;
+  nextStartMs: number | null;
+  totalMs: number;
+  getRect: () => DOMRect | undefined;
+  onCommit: (id: string, startOffsetMs: number) => Promise<void>;
+  onError: (msg: string) => void;
+}) {
+  const [draftMs, setDraftMs] = useState(section.startOffsetMs);
+  const draggingRef = useRef(false);
+
+  // Re-sync to the committed value after a reload, but never mid-drag.
+  useEffect(() => {
+    if (!draggingRef.current) setDraftMs(section.startOffsetMs);
+  }, [section.startOffsetMs]);
+
+  const leftPct = totalMs > 0 ? clamp((draftMs / totalMs) * 100, 0, 100) : 0;
+
+  const fromPointer = (clientX: number) => {
+    const rect = getRect();
+    if (!rect) return section.startOffsetMs;
+    const raw = boundaryMsFromPointer(clientX, rect, totalMs);
+    return clampSectionStart(raw, prevStartMs, nextStartMs, MIN_GAP_MS, totalMs);
+  };
+
+  const commit = async (next: number) => {
+    if (next === section.startOffsetMs) return;
+    try {
+      await onCommit(section.id, next);
+    } catch (e) {
+      setDraftMs(section.startOffsetMs); // revert; server stays authoritative
+      onError((e as Error).message);
+    }
+  };
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    draggingRef.current = true;
+    setDraftMs(fromPointer(e.clientX));
+  };
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current) return;
+    setDraftMs(fromPointer(e.clientX));
+  };
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    const final = fromPointer(e.clientX);
+    setDraftMs(final);
+    void commit(final);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const step = e.shiftKey ? 5000 : 1000;
+    const set = (raw: number) => {
+      e.preventDefault();
+      setDraftMs(clampSectionStart(raw, prevStartMs, nextStartMs, MIN_GAP_MS, totalMs));
+    };
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowUp':
+        return set(draftMs + step);
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        return set(draftMs - step);
+      case 'Home':
+        return set(0);
+      case 'End':
+        return set(totalMs);
+      case 'Enter':
+        e.preventDefault();
+        return void commit(draftMs);
+      default:
+        return undefined;
+    }
+  };
+
+  return (
+    <div
+      role="slider"
+      tabIndex={0}
+      aria-label={`${SEGMENT_META[section.type].label} start`}
+      aria-valuemin={prevStartMs ?? 0}
+      aria-valuemax={nextStartMs ?? Math.round(totalMs)}
+      aria-valuenow={Math.round(draftMs)}
+      aria-valuetext={formatDuration(draftMs)}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onKeyDown={onKeyDown}
+      onBlur={() => void commit(draftMs)}
+      style={{ left: `${leftPct}%` }}
+      className="absolute inset-y-0 z-10 flex w-3 -translate-x-1/2 cursor-ew-resize touch-none items-stretch justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+    >
+      <span aria-hidden className="w-0.5 bg-interactive" />
+    </div>
   );
 }
 
@@ -271,11 +485,9 @@ function SegmentEditor({
                   key={s.id}
                   className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5"
                 >
-                  <span
-                    aria-hidden
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: SEGMENT_META[s.type].tint }}
-                  />
+                  <span aria-hidden style={{ color: SEGMENT_META[s.type].tint }}>
+                    <SegmentIcon type={s.type} />
+                  </span>
                   <span className="shrink-0 font-data text-xs text-text-tertiary">
                     {msToSec(s.startOffsetMs)}s
                   </span>

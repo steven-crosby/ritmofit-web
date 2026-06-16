@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { SegmentType } from '@ritmofit/shared';
-import { computeSegmentBands } from './SegmentBand.js';
+import { boundaryMsFromPointer, clampSectionStart, computeSegmentBands } from './SegmentBand.js';
 
 const sec = (type: SegmentType, startOffsetMs: number) => ({ type, startOffsetMs });
 
@@ -43,5 +43,44 @@ describe('computeSegmentBands', () => {
     const beyond = computeSegmentBands([sec('warm_up', 0), sec('sprint', 5000)], 1000);
     // sprint starts at/after the total → clamped to 1000, zero width, dropped.
     expect(beyond).toEqual([{ type: 'warm_up', leftPct: 0, widthPct: 100 }]);
+  });
+});
+
+describe('boundaryMsFromPointer', () => {
+  const rect = { left: 100, width: 200 };
+
+  it('maps the pointer x within the box to a whole-ms time', () => {
+    expect(boundaryMsFromPointer(100, rect, 240000)).toBe(0); // left edge
+    expect(boundaryMsFromPointer(200, rect, 240000)).toBe(120000); // midpoint
+    expect(boundaryMsFromPointer(300, rect, 240000)).toBe(240000); // right edge
+  });
+
+  it('clamps a pointer outside the box to the ends', () => {
+    expect(boundaryMsFromPointer(0, rect, 240000)).toBe(0);
+    expect(boundaryMsFromPointer(9999, rect, 240000)).toBe(240000);
+  });
+
+  it('returns 0 for a non-positive total or zero-width box', () => {
+    expect(boundaryMsFromPointer(200, rect, 0)).toBe(0);
+    expect(boundaryMsFromPointer(200, { left: 0, width: 0 }, 240000)).toBe(0);
+  });
+});
+
+describe('clampSectionStart', () => {
+  it('keeps the start a min-gap inside its neighbors', () => {
+    // prev=10000, next=60000, gap=1000 → window [11000, 59000]
+    expect(clampSectionStart(30000, 10000, 60000, 1000, 240000)).toBe(30000);
+    expect(clampSectionStart(5000, 10000, 60000, 1000, 240000)).toBe(11000);
+    expect(clampSectionStart(99000, 10000, 60000, 1000, 240000)).toBe(59000);
+  });
+
+  it('floors at 0 with no previous and ceils at total with no next', () => {
+    expect(clampSectionStart(-5000, null, 60000, 1000, 240000)).toBe(0);
+    expect(clampSectionStart(999999, 10000, null, 1000, 240000)).toBe(240000);
+  });
+
+  it('falls back to the low bound when neighbors leave no room', () => {
+    // prev=10000, next=10500, gap=1000 → hi(9500) < lo(11000) → clamp to lo
+    expect(clampSectionStart(10250, 10000, 10500, 1000, 240000)).toBe(11000);
   });
 });
