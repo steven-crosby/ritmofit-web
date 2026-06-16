@@ -9,10 +9,20 @@ allowBuilds:
   workerd: true
 # Dependency-audit exceptions (gate: `pnpm audit:ci`). All are dev/build-server
 # advisories (esbuild & vite dev servers, reached only via vitest/drizzle-kit) — none
-# reach the deployed Worker request handler or the browser bundle. The esbuild and vite
-# ones are unfixable without a vite 5→6 major upgrade (vite 5 pins esbuild ^0.21).
-# Revisit on that upgrade. Rationale tracked in REVIEW.md. Any NEW advisory still fails
-# the audit gate.
+# reach the deployed Worker request handler or the browser bundle.
+#
+# Why these can't simply be upgraded away (investigated 2026-06-16):
+#   • The vite advisories (<=6.4.2) require removing vite 5 from the whole tree. The API
+#     pulls vite *only* via vitest, so it needs vitest 4 → @cloudflare/vitest-pool-workers
+#     0.16, which dropped per-test storage isolation (now per-file; upstream
+#     cloudflare/workers-sdk#12889). Our authz integration suite relies on per-test D1
+#     rollback, so that bump makes the security regression net order-dependent/flaky.
+#   • The esbuild advisories (<0.28.1) are NOT fixed by a vite major bump — vite 6/7 still
+#     pin esbuild <0.28.1, as do wrangler, pool-workers, tsx, and drizzle-kit. The fix is
+#     esbuild 0.28.1, not yet propagated through those tools. Forcing it via `overrides`
+#     would also push esbuild into wrangler's production bundler.
+# Revisit when pool-workers restores per-test isolation (#12889) and/or esbuild 0.28.1
+# propagates. Rationale tracked in REVIEW.md. Any NEW advisory still fails the audit gate.
 auditConfig:
   ignoreGhsas:
     - GHSA-67mh-4wv8-2f99 # esbuild moderate — dev server accepts any-origin requests (<=0.24.2)
