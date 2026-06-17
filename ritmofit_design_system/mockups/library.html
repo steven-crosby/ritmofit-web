@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RitmoFit - Library</title>
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="app-header">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        RitmoFit
+      </a>
+      <nav class="app-nav" aria-label="Product navigation">
+        <a href="library.html" aria-current="page">Library</a>
+        <a href="moves.html">Moves</a>
+        <a href="builder.html">Builder</a>
+        <a href="explore.html">Explore</a>
+        <a href="teams.html">Teams</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button button-ghost" href="builder.html">My classes</a>
+        <span class="avatar" aria-label="Ana Reyes">AR</span>
+      </div>
+    </header>
+
+    <main class="page" id="content">
+      <div class="library-layout">
+        <aside class="surface source-rail" aria-label="Library sources">
+          <div class="stack gap-2">
+            <span class="section-label">Your music</span>
+            <div class="rail-list stack gap-1">
+              <a class="source-link" href="#" aria-current="page">
+                <span>Liked tracks</span><span class="source-count">248</span>
+              </a>
+              <a class="source-link" href="#">
+                <span>Recent imports</span><span class="source-count">18</span>
+              </a>
+              <a class="source-link" href="#">
+                <span>Warm-up ideas</span><span class="source-count">34</span>
+              </a>
+              <a class="source-link" href="#">
+                <span>Peak tracks</span><span class="source-count">29</span>
+              </a>
+              <a class="source-link" href="#">
+                <span>Cooldown</span><span class="source-count">21</span>
+              </a>
+            </div>
+            <hr class="divider" />
+            <span class="section-label">Connections</span>
+            <span class="provider-state ps-connected">
+              <span class="ps-icon" aria-hidden="true">✓</span>Spotify connected
+            </span>
+            <span class="provider-state ps-connected">
+              <span class="ps-icon" aria-hidden="true">✓</span>SoundCloud
+              connected
+            </span>
+            <span class="provider-state ps-expired">
+              <span class="ps-icon" aria-hidden="true">⧖</span>Apple Music —
+              session expired
+            </span>
+            <button class="button button-action button-block">
+              Manage connections
+            </button>
+          </div>
+        </aside>
+
+        <section class="library-main" aria-labelledby="library-title">
+          <div class="screen-heading">
+            <div class="screen-heading-copy">
+              <span class="eyebrow">Start with the music</span>
+              <h1 class="title-lg" id="library-title">Your Library</h1>
+              <p class="muted">
+                Select tracks, then build a new class or add them to one already
+                in motion.
+              </p>
+            </div>
+            <span class="data dim">248 saved tracks</span>
+          </div>
+
+          <div class="filter-bar">
+            <label class="search-field">
+              <span class="sr-only">Search your library</span>
+              <input
+                class="input"
+                type="search"
+                placeholder="Search tracks, artists, or playlists"
+              />
+            </label>
+            <select class="input" aria-label="Provider filter">
+              <option>All providers</option>
+              <option>Spotify</option>
+              <option>SoundCloud</option>
+              <option>Apple Music</option>
+            </select>
+            <select class="input" aria-label="Sort library">
+              <option>Recently saved</option>
+              <option>Title</option>
+              <option>BPM</option>
+            </select>
+          </div>
+
+          <div class="library-table" aria-label="Saved tracks">
+            <div class="track-row library-row is-selected" data-library-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Pulso de Noche</span>
+                <input
+                  data-select-track
+                  data-duration="248"
+                  type="checkbox"
+                  checked
+                />
+              </label>
+              <span class="art art-1" aria-hidden="true"></span>
+              <span class="track-copy">
+                <span class="track-title">Pulso de Noche</span>
+                <span class="track-meta">Mara Sol · saved yesterday</span>
+              </span>
+              <span class="bpm">126<small>BPM</small></span>
+              <span class="timecode dim">4:08</span>
+              <span class="provider">Spotify</span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="track-row library-row is-selected" data-library-row>
+              <label class="checkbox">
+                <span class="sr-only">Select The Marble Has a Beat</span>
+                <input
+                  data-select-track
+                  data-duration="222"
+                  type="checkbox"
+                  checked
+                />
+              </label>
+              <span class="art art-2" aria-hidden="true"></span>
+              <span class="track-copy">
+                <span class="track-title">The Marble Has a Beat</span>
+                <span class="track-meta">North Room · saved 3 days ago</span>
+              </span>
+              <span class="bpm">132<small>BPM</small></span>
+              <span class="timecode dim">3:42</span>
+              <span class="provider">SoundCloud</span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="track-row library-row is-selected" data-library-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Control / Release</span>
+                <input
+                  data-select-track
+                  data-duration="312"
+                  type="checkbox"
+                  checked
+                />
+              </label>
+              <span class="art art-3" aria-hidden="true"></span>
+              <span class="track-copy">
+                <span class="track-title">Control / Release</span>
+                <span class="track-meta">Baja Method · saved last week</span>
+              </span>
+              <span class="bpm">118<small>BPM</small></span>
+              <span class="timecode dim">5:12</span>
+              <span class="provider">Spotify</span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="track-row library-row is-selected" data-library-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Drop In</span>
+                <input
+                  data-select-track
+                  data-duration="215"
+                  type="checkbox"
+                  checked
+                />
+              </label>
+              <span class="art art-4" aria-hidden="true"></span>
+              <span class="track-copy">
+                <span class="track-title">Drop In</span>
+                <span class="track-meta">Studio 84 · saved last week</span>
+              </span>
+              <span class="bpm">138<small>BPM</small></span>
+              <span class="timecode dim">3:35</span>
+              <span class="provider">SoundCloud</span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="track-row library-row" data-library-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Brasa</span>
+                <input data-select-track data-duration="287" type="checkbox" />
+              </label>
+              <span class="art art-5" aria-hidden="true"></span>
+              <span class="track-copy">
+                <span class="track-title">Brasa</span>
+                <span class="track-meta">Luna Oeste · saved 2 weeks ago</span>
+              </span>
+              <span class="bpm">104<small>BPM</small></span>
+              <span class="timecode dim">4:47</span>
+              <span class="provider-state ps-expired">
+                <span class="ps-icon" aria-hidden="true">⧖</span>Apple Music
+                expired
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="track-row library-row" data-library-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Slow Pressure</span>
+                <input data-select-track data-duration="326" type="checkbox" />
+              </label>
+              <span class="art art-2" aria-hidden="true"></span>
+              <span class="track-copy">
+                <span class="track-title">Slow Pressure</span>
+                <span class="track-meta">Atlas Club · saved 2 weeks ago</span>
+              </span>
+              <span class="bpm">92<small>BPM</small></span>
+              <span class="timecode dim">5:26</span>
+              <span class="provider">Spotify</span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options"
+              >
+                •••
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="selection-tray"
+            data-selection-tray
+            role="status"
+            aria-live="polite"
+            aria-label="Track selection"
+          >
+            <div class="selection-copy">
+              <strong data-selection-count>4 tracks selected</strong>
+              <span data-selection-duration
+                >13:17 total. Start with the music; shape the room in
+                Builder.</span
+              >
+            </div>
+            <button class="button button-action">Add to class</button>
+            <a class="button button-primary" href="builder.html">Build class</a>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

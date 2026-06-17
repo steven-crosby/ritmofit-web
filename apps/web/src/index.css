@@ -80,19 +80,19 @@
   }
 
   /* Glass top bar — navigation is a glass surface (design system 04/05;
-     branding mockup `.topbar`). Uses the canonical glass tokens (fill 0.70 /
-     blur 20px / glass border); the mockup's incidental 0.72 is not ported.
-     Opaque fallback where backdrop-filter is unsupported. */
+     branding mockup `.topbar`). Uses the purpose-built header fill (a darker,
+     more opaque espresso glass than the overlay scale so the bar stays legible
+     while content scrolls under it, paired with backdrop-blur). The 0.9-alpha
+     fill doubles as the opaque fallback where backdrop-filter is unsupported. */
   .rf-topbar {
     position: sticky;
     top: 0;
     z-index: 30;
-    background: var(--rf-color-semantic-bg-overlay);
+    background: var(--rf-surface-glass-header);
     border-bottom: 1px solid var(--rf-surface-glass-border);
   }
   @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
     .rf-topbar {
-      background: var(--rf-surface-glass-fill-default);
       -webkit-backdrop-filter: blur(var(--rf-surface-glass-blur-default));
       backdrop-filter: blur(var(--rf-surface-glass-blur-default));
     }
@@ -119,6 +119,36 @@
         transparent 60%
       ),
       var(--rf-color-semantic-bg-base);
+  }
+
+  /* Heat affect — campaign / brand-front register ONLY (login, marketing,
+     share/export, Explore hero, the Live drop). copper→ember→plasma display
+     gradient + an ambient bloom; plasma is affect, never a control. Banned on
+     any working surface — builder / inspector / forms / dense lists (02 §3, 04).
+     Mirrors the design-system mockup recipes `.heat-text` / `.heat-bloom`. */
+
+  /* Heat gradient as display-type fill — use on a single hero accent word. */
+  .rf-heat-text {
+    background: var(--rf-surface-gradient-heat);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Ambient heat bloom behind a brand-front hero — off-axis, low-alpha, derived
+     (not the banned two-orb SaaS background). Sits behind content; inert. */
+  .rf-heat-bloom {
+    position: relative;
+    isolation: isolate;
+  }
+  .rf-heat-bloom::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--rf-surface-bloom-heat);
+    pointer-events: none;
+    z-index: -1;
   }
 }
 

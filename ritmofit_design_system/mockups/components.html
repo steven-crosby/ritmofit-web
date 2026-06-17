@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RitmoFit - Component reference</title>
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="app-header">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        RitmoFit
+      </a>
+      <nav class="app-nav" aria-label="Reference navigation">
+        <a href="index.html">Mockups</a>
+        <a href="components.html" aria-current="page">Components</a>
+      </nav>
+      <div class="header-actions">
+        <button
+          class="button button-ghost"
+          data-theme-toggle
+          aria-pressed="false"
+        >
+          Light theme
+        </button>
+      </div>
+    </header>
+
+    <main class="page page-narrow" id="content">
+      <section class="gallery-hero stack gap-4">
+        <span class="eyebrow">Canonical reference</span>
+        <h1 class="title-lg">One system. Distinct modes.</h1>
+        <p class="lead">
+          Builder stays calm. Live earns the heat. Marketing and share artifacts
+          carry the swagger. Every surface uses the same color channels, type
+          roles, spacing, geometry, and accessibility rules.
+        </p>
+      </section>
+
+      <section class="component-section stack gap-5">
+        <div>
+          <span class="section-label">Color channels</span>
+          <h2 class="title-md">Meaning before hue.</h2>
+        </div>
+        <div class="swatch-grid">
+          <div class="swatch">
+            <div class="swatch-color" style="--swatch: #0b0a08"></div>
+            <div class="swatch-copy">Surface / #0B0A08</div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="--swatch: #e07e3c"></div>
+            <div class="swatch-copy">Brand / #E07E3C</div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="--swatch: #3ac0d4"></div>
+            <div class="swatch-copy">Interactive / #3AC0D4</div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="--swatch: #ff2e88"></div>
+            <div class="swatch-copy">Peak only / #FF2E88</div>
+          </div>
+        </div>
+        <div class="future-banner">
+          <strong>Discipline</strong>
+          <span
+            >Copper is identity and primary action. Cyan is interaction and
+            focus. Plasma is never a control.</span
+          >
+        </div>
+      </section>
+
+      <section class="component-section stack gap-5">
+        <div>
+          <span class="section-label">Empty and recovery states</span>
+          <h2 class="title-md">Every dead end gets a next move.</h2>
+        </div>
+        <div class="component-grid">
+          <article class="surface card-pad stack gap-4">
+            <span class="eyebrow">Empty class</span>
+            <h3 class="title-md">Start with a track.</h3>
+            <p class="muted">Shape the room from there.</p>
+            <a class="button button-primary" href="library.html"
+              >Open Library</a
+            >
+          </article>
+          <article class="surface card-pad stack gap-4">
+            <span class="status status-warning">Music connection lost</span>
+            <h3 class="title-md">Your music link dropped.</h3>
+            <p class="muted">
+              Reconnect to keep building. Your class structure is still here.
+            </p>
+            <button class="button button-action">Reconnect provider</button>
+          </article>
+        </div>
+      </section>
+
+      <section class="component-section stack gap-5">
+        <div>
+          <span class="section-label">Provider connection</span>
+          <h2 class="title-md">Every provider state is explicit.</h2>
+        </div>
+        <div class="row gap-3 wrap">
+          <span class="provider-state ps-connected">
+            <span class="ps-icon" aria-hidden="true">✓</span>Spotify connected
+          </span>
+          <span class="provider-state ps-reconnecting">
+            <span class="ps-icon" aria-hidden="true">↻</span>Reconnecting…
+          </span>
+        </div>
+        <div class="component-grid">
+          <div class="surface card-pad between gap-3 wrap">
+            <span class="provider-state ps-disconnected">
+              <span class="ps-icon" aria-hidden="true">!</span>Disconnected
+            </span>
+            <button class="button button-action">Reconnect</button>
+          </div>
+          <div class="surface card-pad between gap-3 wrap">
+            <span class="provider-state ps-expired">
+              <span class="ps-icon" aria-hidden="true">⧖</span>Session expired
+            </span>
+            <button class="button button-action">Re-authenticate</button>
+          </div>
+          <div class="surface card-pad between gap-3 wrap">
+            <span class="provider-state ps-permission">
+              <span class="ps-icon" aria-hidden="true">⊘</span>Permission needed
+            </span>
+            <button class="button button-action">Grant access</button>
+          </div>
+          <div class="surface card-pad between gap-3 wrap">
+            <span class="provider-state ps-error">
+              <span class="ps-icon" aria-hidden="true">×</span>Provider error
+            </span>
+            <button class="button button-action">Retry</button>
+          </div>
+        </div>
+        <p class="muted">
+          Color reinforces; the label and glyph carry the meaning. Every failure
+          state pairs with an inline recovery action — see
+          <a href="builder-states.html">Builder states</a> for these in context.
+        </p>
+      </section>
+
+      <section class="component-section stack gap-5">
+        <div>
+          <span class="section-label">Class sections</span>
+          <h2 class="title-md">Segments read by label, tinted by role.</h2>
+        </div>
+        <div class="row gap-2 wrap">
+          <span class="segment-tag seg-warmup">
+            <span class="seg-dot" aria-hidden="true"></span>Warm-up
+          </span>
+          <span class="segment-tag seg-climb">
+            <span class="seg-dot" aria-hidden="true"></span>Climb
+          </span>
+          <span class="segment-tag seg-sprint">
+            <span class="seg-dot" aria-hidden="true"></span>Sprint
+          </span>
+          <span class="segment-tag seg-recovery">
+            <span class="seg-dot" aria-hidden="true"></span>Recovery
+          </span>
+          <span class="segment-tag seg-cooldown">
+            <span class="seg-dot" aria-hidden="true"></span>Cool-down
+          </span>
+        </div>
+        <div class="row gap-2 wrap">
+          <button class="chip" aria-pressed="true">All</button>
+          <button class="chip" aria-pressed="false">Spotify</button>
+          <button class="chip" aria-pressed="false">SoundCloud</button>
+          <button class="chip" aria-pressed="false">Apple Music</button>
+        </div>
+        <p class="muted">
+          Filter chips toggle on a raised surface; the selected chip adds a cyan
+          border and heavier weight, never color alone.
+        </p>
+      </section>
+
+      <section class="component-section stack gap-5">
+        <div>
+          <span class="section-label">Typography</span>
+          <h2 class="title-md">The numbers carry the brand.</h2>
+        </div>
+        <div class="component-grid">
+          <article class="surface card-pad stack gap-3">
+            <span class="section-label">Display / Space Grotesk</span>
+            <strong class="title-lg">Shape the room.</strong>
+            <span class="muted"
+              >Marketing, section heroes, and Live headers.</span
+            >
+          </article>
+          <article class="surface card-pad stack gap-3">
+            <span class="section-label">Data / Martian Mono</span>
+            <strong class="data-hero"
+              >138</strong
+            >
+            <span class="muted"
+              >BPM, timecodes, zones, durations, and counts.</span
+            >
+          </article>
+        </div>
+      </section>
+
+      <section class="component-section stack gap-5">
+        <div>
+          <span class="section-label">Controls</span>
+          <h2 class="title-md">One primary action per surface.</h2>
+        </div>
+        <div class="row gap-3 wrap">
+          <button class="button button-primary">Primary</button>
+          <button class="button button-action">Action</button>
+          <button class="button button-ghost">Ghost</button>
+          <button class="button button-danger">Destructive</button>
+          <button class="button button-ghost" disabled>Disabled</button>
+        </div>
+        <div class="component-grid">
+          <label class="field">
+            <span>Class title</span>
+            <input class="input" value="Saturday Rhythm Build" />
+          </label>
+          <label class="field">
+            <span>Display BPM</span>
+            <input class="input data" type="number" value="126" />
+          </label>
+        </div>
+      </section>
+
+      <section class="component-section stack gap-5">
+        <div>
+          <span class="section-label">Intensity</span>
+          <h2 class="title-md">Zone + bars + label + color.</h2>
+        </div>
+        <div class="component-grid">
+          <article class="surface card-pad stack gap-4">
+            <span class="intensity">
+              <span class="zone-bars" data-zone="0"
+                ><i></i><i></i><i></i><i></i
+              ></span>
+              <span class="zone-copy">Zone 0 · None</span>
+            </span>
+            <span class="intensity">
+              <span class="zone-bars" data-zone="1"
+                ><i></i><i></i><i></i><i></i
+              ></span>
+              <span class="zone-copy">Zone 1 · Build</span>
+            </span>
+            <span class="intensity">
+              <span class="zone-bars" data-zone="2"
+                ><i></i><i></i><i></i><i></i
+              ></span>
+              <span class="zone-copy">Zone 2 · Push</span>
+            </span>
+            <span class="intensity">
+              <span class="zone-bars" data-zone="3"
+                ><i></i><i></i><i></i><i></i
+              ></span>
+              <span class="zone-copy">Zone 3 · Attack</span>
+            </span>
+            <span class="intensity">
+              <span class="zone-bars" data-zone="4"
+                ><i></i><i></i><i></i><i></i
+              ></span>
+              <span class="zone-copy">Zone 4 · All Out</span>
+            </span>
+          </article>
+          <article class="surface card-pad">
+            <div class="track-row is-selected">
+              <span class="track-index">03</span>
+              <span class="art art-3" aria-hidden="true"></span>
+              <span class="track-copy">
+                <span class="track-title">The Marble Has a Beat</span>
+                <span class="track-meta">North Room · 3:42</span>
+              </span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="3"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">Z3 · Attack</span>
+              </span>
+              <span class="bpm">132<small>BPM</small></span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="component-section stack gap-5">
+        <div>
+          <span class="section-label">Class shape</span>
+          <h2 class="title-md">Height carries the meaning.</h2>
+        </div>
+        <figure class="energy-ribbon">
+          <figcaption>
+            <strong>45-minute class · 3 peaks · All Out at 32:10</strong>
+            <span class="ribbon-summary"
+              >The textual summary preserves the same information for
+              screen-reader users.</span
+            >
+          </figcaption>
+          <svg
+            viewBox="0 0 1000 130"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="Class energy shape with three peaks"
+          >
+            <defs>
+              <linearGradient id="component-ribbon" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0" class="rf-stop-build" />
+                <stop offset="0.5" class="rf-stop-push" />
+                <stop offset="0.85" class="rf-stop-attack" />
+                <stop offset="1" class="rf-stop-peak" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M0 104 L90 104 L90 82 L245 82 L245 46 L420 46 L420 10 L600 10 L600 92 L735 92 L735 48 L1000 48 L1000 130 L0 130 Z"
+              fill="url(#component-ribbon)"
+              class="ribbon-area"
+            />
+            <path
+              d="M0 104 L90 104 L90 82 L245 82 L245 46 L420 46 L420 10 L600 10 L600 92 L735 92 L735 48 L1000 48"
+              class="ribbon-line"
+              fill="none"
+              stroke="url(#component-ribbon)"
+              stroke-width="3"
+              vector-effect="non-scaling-stroke"
+            />
+            <circle cx="510" cy="10" r="5" class="rf-fill-peak" />
+            <line x1="0" y1="128" x2="1000" y2="128" class="rf-stroke-baseline" />
+          </svg>
+        </figure>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

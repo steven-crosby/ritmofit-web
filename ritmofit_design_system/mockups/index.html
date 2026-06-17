@@ -1,107 +1,226 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RitmoFit Web — Page Mockups</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="theme.css" />
-<style>
-  .hero { max-width:1100px; margin:0 auto; padding:72px 28px 28px; }
-  .hero .eyebrow { margin-bottom:14px; display:block; }
-  .hero h1 { font-family:var(--font-display); font-weight:700; font-size:54px; letter-spacing:-0.02em; margin:0 0 16px; line-height:1.02; }
-  .hero p { max-width:620px; font-size:17px; color:var(--bone-300); margin:0; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:18px; max-width:1100px; margin:36px auto 0; padding:0 28px 80px; }
-  .tile { display:block; padding:22px; border-radius:var(--r-card); background:var(--ink-800); border:1px solid var(--border-subtle); transition:transform .16s var(--ease-snap), border-color .16s; }
-  .tile:hover { transform:translateY(-3px); border-color:rgba(224,126,60,0.4); }
-  .tile .num { font-family:var(--font-data); font-size:11px; color:var(--copper-400); letter-spacing:0.1em; }
-  .tile h3 { font-family:var(--font-display); font-size:20px; font-weight:600; margin:10px 0 8px; color:var(--bone-50); }
-  .tile p { font-size:13.5px; color:var(--bone-400); margin:0; line-height:1.5; }
-  .thumb { height:120px; border-radius:12px; margin-bottom:16px; overflow:hidden; position:relative; border:1px solid var(--border-subtle); }
-  .legend { max-width:1100px; margin:0 auto; padding:0 28px 80px; }
-  .legend .card { padding:20px 22px; }
-  .legend h4 { margin:0 0 12px; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--bone-400); }
-  .legend ul { margin:0; padding-left:18px; color:var(--bone-300); font-size:13.5px; line-height:1.7; }
-  .legend code { font-family:var(--font-data); font-size:12px; color:var(--copper-300); }
-</style>
-</head>
-<body>
-  <div class="hero">
-    <span class="eyebrow">RitmoFit · Web Planning Surface</span>
-    <h1>Page mockups</h1>
-    <p>How the finished web app should look — rendered against the real design tokens (espresso black + copper, cyan controls, plasma reserved for the drop), Martian&nbsp;Mono for every BPM and timecode, and the signature energy-arc ribbon. Each tile opens a full-screen page.</p>
-  </div>
-
-  <div class="grid">
-    <a class="tile" href="login.html">
-      <div class="thumb" style="background:radial-gradient(800px 300px at 70% -20%,rgba(200,104,42,.25),transparent),var(--ink-850);display:grid;place-items:center;">
-        <div style="font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--bone-100);">RitmoFit</div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RitmoFit Design System - Mockups</title>
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="app-header">
+      <a
+        class="brand"
+        href="index.html"
+        aria-label="RitmoFit design system home"
+      >
+        <span class="brand-mark" aria-hidden="true">R</span>
+        RitmoFit
+      </a>
+      <span class="pill">Codex synthesis</span>
+      <div class="header-actions">
+        <a class="button button-action" href="components.html"
+          >View components</a
+        >
       </div>
-      <span class="num">01</span>
-      <h3>Sign in / Sign up</h3>
-      <p>Email + password against Better Auth. The quiet front door — one focused card on the warm-black field.</p>
-    </a>
+    </header>
 
-    <a class="tile" href="builder.html">
-      <div class="thumb" style="background:linear-gradient(120deg,var(--ink-850),var(--ink-800));display:flex;align-items:flex-end;gap:3px;padding:14px;">
-        <div style="flex:1;height:30%;background:var(--z-easy);border-radius:3px;"></div>
-        <div style="flex:1;height:52%;background:var(--z-mod);border-radius:3px;"></div>
-        <div style="flex:1;height:74%;background:var(--z-hard);border-radius:3px;"></div>
-        <div style="flex:1;height:100%;background:var(--z-allout);border-radius:3px;box-shadow:var(--peak-glow);"></div>
-        <div style="flex:1;height:34%;background:var(--z-easy);border-radius:3px;"></div>
-        <div style="flex:1;height:74%;background:var(--z-hard);border-radius:3px;"></div>
-      </div>
-      <span class="num">02</span>
-      <h3>Class Builder ★</h3>
-      <p>The heart of the product. 3-pane workstation: class library, the energy ribbon + timeline + song rows, and the track inspector with cues &amp; moves.</p>
-    </a>
+    <main class="page" id="content">
+      <section class="gallery-hero stack gap-5">
+        <span class="eyebrow">For instructors who create</span>
+        <h1 class="title-xl">Find the class inside the music.</h1>
+        <p class="lead">
+          One consolidated RitmoFit system: creator-first Library,
+          timeline-first Builder, high-clarity Live mode, and campaign-grade
+          brand surfaces built from the same disciplined tokens.
+        </p>
+      </section>
 
-    <a class="tile" href="live.html">
-      <div class="thumb" style="background:var(--ink-900);display:grid;place-items:center;">
-        <div style="font-family:var(--font-display);font-weight:700;font-size:30px;color:var(--bone-50);">SEATED&nbsp;CLIMB</div>
-      </div>
-      <span class="num">03</span>
-      <h3>Live Mode</h3>
-      <p>The cue prompter the instructor runs a class against — maximum contrast, on-beat pulse, the All-Out drop. Cue-by-Cue and Full-List views.</p>
-    </a>
+      <section class="gallery-grid" aria-label="Design system mockups">
+        <a class="gallery-card" href="marketing.html">
+          <div class="gallery-preview" aria-hidden="true">
+            <i style="height: 25%"></i><i style="height: 38%"></i
+            ><i style="height: 62%"></i><i style="height: 82%"></i
+            ><i style="height: 54%"></i><i style="height: 96%"></i>
+          </div>
+          <div>
+            <span class="eyebrow">01 / Brand</span>
+            <h2 class="title-md">Marketing</h2>
+            <p>
+              Creator-first positioning, class shape as the hero artifact, and
+              restrained swagger.
+            </p>
+          </div>
+        </a>
 
-    <a class="tile" href="explore.html">
-      <div class="thumb" style="background:var(--ink-850);padding:14px;display:flex;flex-direction:column;gap:8px;justify-content:center;">
-        <div style="height:14px;width:70%;background:rgba(251,247,240,.1);border-radius:6px;"></div>
-        <div style="height:10px;width:45%;background:rgba(251,247,240,.06);border-radius:6px;"></div>
-        <div style="height:14px;width:60%;background:rgba(251,247,240,.1);border-radius:6px;margin-top:6px;"></div>
-      </div>
-      <span class="num">04</span>
-      <h3>Explore</h3>
-      <p>Public classes other instructors have published. Preview the run, or save a copy into your own library.</p>
-    </a>
+        <a class="gallery-card" href="library.html">
+          <div class="row gap-3" aria-hidden="true">
+            <span class="art art-1"></span><span class="art art-2"></span
+            ><span class="art art-3"></span>
+          </div>
+          <div>
+            <span class="eyebrow">02 / Core workflow</span>
+            <h2 class="title-md">Library</h2>
+            <p>
+              Select saved music and start a class with the same immediacy as
+              building a playlist.
+            </p>
+          </div>
+        </a>
 
-    <a class="tile" href="teams.html">
-      <div class="thumb" style="background:var(--ink-850);display:grid;place-items:center;gap:6px;">
-        <div style="display:flex;gap:-8px;">
-          <span class="avatar" style="background:var(--copper-600);">A</span>
-          <span class="avatar" style="margin-left:-8px;background:var(--cyan-600);">M</span>
-          <span class="avatar" style="margin-left:-8px;background:var(--violet-500);">J</span>
-        </div>
-      </div>
-      <span class="num">05</span>
-      <h3>Teams &amp; Share</h3>
-      <p>Create a team, manage members by email, and share a class at view/edit — the Google-Drive sharing model.</p>
-    </a>
-  </div>
+        <a class="gallery-card" href="moves.html">
+          <div class="row gap-2 wrap" aria-hidden="true">
+            <span class="move-template">Cycle</span
+            ><span class="move-template">HIIT</span
+            ><span class="move-template">Sculpt</span
+            ><span class="move-template">Tread</span>
+          </div>
+          <div>
+            <span class="eyebrow">Core workflow</span>
+            <h2 class="title-md">Move library</h2>
+            <p>
+              Reusable moves by template — cycle, HIIT, sculpt, tread — placed on
+              a track with their own intensity and anchor.
+            </p>
+          </div>
+        </a>
 
-  <div class="legend">
-    <div class="card">
-      <h4>What these mockups encode</h4>
-      <ul>
-        <li><b>Tempo is a token.</b> <code>--rf-bpm</code> drives <code>--rf-beat</code>; the playing track's art pulses on the actual beat (Live + selected row only, suppressed under reduced-motion).</li>
-        <li><b>The numbers carry the brand.</b> Every BPM and timecode is set in Martian&nbsp;Mono.</li>
-        <li><b>The class has a shape.</b> The energy-arc ribbon renders intensity over time; height encodes the zone so it reads in grayscale.</li>
-        <li><b>Color never carries meaning alone.</b> Intensity is always color + bar-count + label; cyan is the only "you can act on this" color; plasma magenta appears only at All-Out.</li>
-      </ul>
-    </div>
-  </div>
-</body>
+        <a class="gallery-card" href="builder.html">
+          <div class="gallery-preview" aria-hidden="true">
+            <i style="height: 34%"></i><i style="height: 52%"></i
+            ><i style="height: 72%"></i
+            ><i></i><i class="rf-bg-ember" style="height: 98%"></i>
+            <i style="height: 43%"></i><i style="height: 76%"></i>
+          </div>
+          <div>
+            <span class="eyebrow">03 / Core workflow</span>
+            <h2 class="title-md">Builder</h2>
+            <p>
+              Calm workstation hierarchy: class shape, sequence, data, cues, and
+              movement editor.
+            </p>
+          </div>
+        </a>
+
+        <a class="gallery-card" href="live.html">
+          <div class="stack gap-2" aria-hidden="true">
+            <span class="data-hero"
+              >138</span
+            >
+            <span class="title-md">Drop in.</span>
+          </div>
+          <div>
+            <span class="eyebrow">04 / Performance</span>
+            <h2 class="title-md">Live</h2>
+            <p>
+              Large current cue, next cue, BPM, time, intensity, and emergency
+              clarity.
+            </p>
+          </div>
+        </a>
+
+        <a class="gallery-card" href="share-card.html">
+          <div class="mini-shape peak" aria-hidden="true">
+            <i style="height: 24%"></i><i style="height: 40%"></i
+            ><i style="height: 56%"></i><i style="height: 75%"></i
+            ><i style="height: 48%"></i><i style="height: 69%"></i
+            ><i style="height: 84%"></i><i style="height: 100%"></i>
+          </div>
+          <div>
+            <span class="eyebrow">05 / Brand artifact</span>
+            <h2 class="title-md">Share card</h2>
+            <p>
+              The class shape becomes campaign artwork without turning into
+              generic social content.
+            </p>
+          </div>
+        </a>
+
+        <a class="gallery-card" href="ios.html">
+          <div class="row gap-3" aria-hidden="true">
+            <span class="pill">Library</span><span class="pill">Class</span
+            ><span class="pill">Live</span>
+          </div>
+          <div>
+            <span class="eyebrow">06 / Native direction</span>
+            <h2 class="title-md">iOS</h2>
+            <p>
+              Shared roles expressed as a touch-first, single-focus studio
+              instrument.
+            </p>
+          </div>
+        </a>
+
+        <a class="gallery-card" href="login.html">
+          <div class="brand" aria-hidden="true">
+            <span class="brand-mark">R</span>
+            RitmoFit
+          </div>
+          <div>
+            <span class="eyebrow">07 / Entry</span>
+            <h2 class="title-md">Sign in</h2>
+            <p>
+              A quiet front door with one task and a content-derived class-shape
+              backdrop.
+            </p>
+          </div>
+        </a>
+
+        <a class="gallery-card" href="explore.html">
+          <span class="pill">Future-facing concept</span>
+          <div>
+            <span class="eyebrow">08 / Discovery</span>
+            <h2 class="title-md">Explore</h2>
+            <p>
+              Published class shapes from other instructors, clearly separate
+              from the music Library.
+            </p>
+          </div>
+        </a>
+
+        <a class="gallery-card" href="teams.html">
+          <span class="pill">Future-facing concept</span>
+          <div>
+            <span class="eyebrow">09 / Collaboration</span>
+            <h2 class="title-md">Teams</h2>
+            <p>
+              Studio membership and class sharing without crowding the core
+              authoring workflow.
+            </p>
+          </div>
+        </a>
+
+        <a class="gallery-card" href="components.html">
+          <div class="row gap-2 wrap" aria-hidden="true">
+            <span class="button button-primary">Primary</span>
+            <span class="button button-action">Action</span>
+          </div>
+          <div>
+            <span class="eyebrow">10 / Reference</span>
+            <h2 class="title-md">Components</h2>
+            <p>
+              Color channels, typography, controls, states, intensity, ribbon,
+              and track rows.
+            </p>
+          </div>
+        </a>
+
+        <a class="gallery-card" href="builder-states.html">
+          <div class="row gap-2 wrap" aria-hidden="true">
+            <span class="provider-state ps-disconnected">
+              <span class="ps-icon">!</span>Disconnected
+            </span>
+          </div>
+          <div>
+            <span class="eyebrow">11 / Reference</span>
+            <h2 class="title-md">Builder states</h2>
+            <p>
+              Empty class, dropped provider, and unsaved changes on the real
+              builder surface — each with a recovery action.
+            </p>
+          </div>
+        </a>
+      </section>
+    </main>
+  </body>
 </html>

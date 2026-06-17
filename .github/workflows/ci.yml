@@ -43,6 +43,14 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # Design-system guard gate: tokens.json is the single source of truth, so
+      # fail if the generated emitters (web/iOS) drifted, a token lint rule broke,
+      # or a semantic color pair fell below its contrast floor. The package has no
+      # dependencies, so `npm run verify` runs without an install.
+      - name: Design system verify
+        working-directory: ritmofit_design_system
+        run: npm run verify
+
       - name: Test
         run: pnpm test
 

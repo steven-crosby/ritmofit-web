@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RitmoFit - Find the class inside the music</title>
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="app-header">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        RitmoFit
+      </a>
+      <nav class="app-nav" aria-label="Marketing navigation">
+        <a href="#product">Product</a>
+        <a href="#method">Method</a>
+        <a href="#studios">For studios</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button button-ghost" href="login.html">Sign in</a>
+        <a class="button button-primary" href="library.html">Start building</a>
+      </div>
+    </header>
+
+    <main class="page" id="content">
+      <section class="marketing-hero heat-bloom">
+        <div class="marketing-copy">
+          <span class="eyebrow">Built for instructors who create</span>
+          <h1 class="title-xl">
+            Find the class inside the <span>music.</span>
+          </h1>
+          <p class="lead">
+            Anyone can press play. You build the room — track by track, cue by
+            cue, from the music up.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="library.html"
+              >Start building</a
+            >
+            <a class="button button-action" href="#class-shape"
+              >See class shape</a
+            >
+          </div>
+          <span class="status"
+            >Music providers connected by approved handoff</span
+          >
+        </div>
+
+        <div class="shape-stage" id="class-shape">
+          <div class="shape-stage-copy stack gap-2">
+            <span class="section-label">Saturday rhythm build</span>
+            <span class="data">45:00 · 11 tracks · 126 avg BPM</span>
+          </div>
+          <svg
+            viewBox="0 0 800 390"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="Class shape: gradual build, three strong attacks, one All-Out peak, and a controlled cooldown."
+          >
+            <defs>
+              <linearGradient id="marketing-line" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" class="rf-stop-build" />
+                <stop offset="0.55" class="rf-stop-push" />
+                <stop offset="0.84" class="rf-stop-attack" />
+                <stop offset="0.94" class="rf-stop-peak" />
+                <stop offset="1" class="rf-stop-attack" />
+              </linearGradient>
+              <linearGradient id="marketing-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" class="rf-stop-push" stop-opacity="0.3" />
+                <stop offset="1" class="rf-stop-push" stop-opacity="0.02" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M0 330 L70 318 L145 276 L210 294 L282 230 L350 252 L422 172 L490 198 L566 114 L632 42 L688 148 L742 238 L800 310 L800 390 L0 390 Z"
+              fill="url(#marketing-fill)"
+            />
+            <path
+              d="M0 330 L70 318 L145 276 L210 294 L282 230 L350 252 L422 172 L490 198 L566 114 L632 42 L688 148 L742 238 L800 310"
+              class="ribbon-line"
+              fill="none"
+              stroke="url(#marketing-line)"
+              stroke-width="4"
+              vector-effect="non-scaling-stroke"
+            />
+            <circle cx="632" cy="42" r="7" class="rf-fill-peak heat-glow-svg" />
+          </svg>
+        </div>
+      </section>
+
+      <section class="feature-grid" id="product">
+        <article class="card feature-card">
+          <span class="eyebrow">01 / Find</span>
+          <h2>Start with your music.</h2>
+          <p>
+            Select saved tracks in Library and carry them directly into a new
+            class. The music and the authoring workflow stay connected.
+          </p>
+        </article>
+        <article class="card feature-card" id="method">
+          <span class="eyebrow">02 / Shape</span>
+          <h2>Make the energy visible.</h2>
+          <p>
+            Sequence tracks, assign effort, score movement, and see the class
+            become a shape before the room hears the first beat.
+          </p>
+        </article>
+        <article class="card feature-card" id="studios">
+          <span class="eyebrow">03 / Perform</span>
+          <h2>Lead without losing the beat.</h2>
+          <p>
+            Live mode puts current cue, next cue, BPM, time, and intensity where
+            an instructor can read them while moving.
+          </p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RitmoFit - Builder states</title>
+    <link
+      rel="preload"
+      href="fonts/inter-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="fonts/martian-mono-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="app-header">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        RitmoFit
+      </a>
+      <nav class="app-nav" aria-label="Reference navigation">
+        <a href="index.html">Mockups</a>
+        <a href="components.html">Components</a>
+        <a href="builder.html">Builder</a>
+        <a href="builder-states.html" aria-current="page">Builder states</a>
+      </nav>
+    </header>
+
+    <main class="page page-narrow" id="content">
+      <section class="gallery-hero stack gap-4">
+        <span class="eyebrow">Builder · states that matter</span>
+        <h1 class="title-lg">Every state keeps a next move.</h1>
+        <p class="lead">
+          The builder is shown here in the states it actually reaches — empty,
+          provider dropped, and unsaved — on the real surface, each pairing its
+          condition with a clear recovery action. No dead ends, no silent
+          failures.
+        </p>
+      </section>
+
+      <!-- EMPTY CLASS -->
+      <section class="component-section stack gap-4">
+        <div>
+          <span class="section-label">Empty class</span>
+          <h2 class="title-md">A new class invites the first track.</h2>
+        </div>
+        <header class="surface class-header">
+          <div class="stack gap-3">
+            <div class="row gap-2 wrap">
+              <span class="eyebrow">Draft</span>
+              <span class="provider-state ps-connected">
+                <span class="ps-icon" aria-hidden="true">✓</span>Spotify
+                connected
+              </span>
+            </div>
+            <h3 class="title-md">Untitled class</h3>
+            <div class="class-metrics">
+              <span>0 tracks</span>
+              <span>0:00 total</span>
+              <span>— avg BPM</span>
+              <span>0 cues</span>
+            </div>
+          </div>
+        </header>
+        <div class="panel panel-pad stack gap-3">
+          <span class="eyebrow">No tracks yet</span>
+          <h3 class="title-md">Start with a track. Shape the room from there.</h3>
+          <p class="muted">
+            Search your library to find the first phrase, or import a playlist.
+            The class shape appears as soon as the first track lands.
+          </p>
+          <div class="row gap-2 wrap">
+            <a class="button button-primary" href="library.html">Open Library</a>
+            <button class="button button-action">Import a playlist</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROVIDER DISCONNECTED -->
+      <section class="component-section stack gap-4">
+        <div>
+          <span class="section-label">Provider disconnected</span>
+          <h2 class="title-md">A dropped link never dead-ends.</h2>
+        </div>
+        <div class="surface card-pad between gap-3 wrap" role="alert">
+          <div class="row gap-3 wrap">
+            <span class="provider-state ps-disconnected">
+              <span class="ps-icon" aria-hidden="true">!</span>SoundCloud
+              disconnected
+            </span>
+            <span class="muted"
+              >Your music link dropped. Reconnect to keep building — your class
+              structure is still here.</span
+            >
+          </div>
+          <button class="button button-action">Reconnect SoundCloud</button>
+        </div>
+        <div class="track-list">
+          <div class="track-row">
+            <span class="track-index">03</span>
+            <span class="art art-3" aria-hidden="true"></span>
+            <span class="track-copy">
+              <span class="track-title">The Marble Has a Beat</span>
+              <span class="track-meta">North Room · SoundCloud · 3:42</span>
+            </span>
+            <span class="provider-state ps-disconnected">
+              <span class="ps-icon" aria-hidden="true">!</span>SoundCloud
+              unavailable
+            </span>
+            <span class="bpm">132<small>BPM</small></span>
+            <span class="grip" aria-hidden="true">⠿</span>
+          </div>
+          <div class="track-row">
+            <span class="track-index">04</span>
+            <span class="art art-4" aria-hidden="true"></span>
+            <span class="track-copy">
+              <span class="track-title">Drop In</span>
+              <span class="track-meta">Studio 84 · Spotify · 3:35</span>
+            </span>
+            <span class="provider">Spotify</span>
+            <span class="bpm">138<small>BPM</small></span>
+            <span class="grip" aria-hidden="true">⠿</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- UNSAVED / UNSYNCED -->
+      <section class="component-section stack gap-4">
+        <div>
+          <span class="section-label">Unsaved changes</span>
+          <h2 class="title-md">Edits are held, then confirmed.</h2>
+        </div>
+        <div class="surface card-pad between gap-3 wrap">
+          <span class="status status-warning">Changes waiting to sync</span>
+          <div class="row gap-2 wrap">
+            <button class="button button-ghost">Discard</button>
+            <button class="button button-primary">Save class shape</button>
+          </div>
+        </div>
+        <p class="muted">
+          On save, a small confident confirmation reads
+          <strong>“Class shape saved.”</strong> — no banner, no interruption to
+          the build.
+        </p>
+      </section>
+
+      <!-- INPUT ERROR -->
+      <section class="component-section stack gap-4">
+        <div>
+          <span class="section-label">Input error</span>
+          <h2 class="title-md">A bad value says what to fix.</h2>
+        </div>
+        <div class="panel panel-pad stack gap-3">
+          <label class="field">
+            <span
+              >Display BPM
+              <span class="dim">(manual or approved tempo source)</span></span
+            >
+            <input
+              class="input data"
+              type="number"
+              value="402"
+              aria-invalid="true"
+              aria-describedby="bpm-error"
+            />
+            <span class="field-error" id="bpm-error" role="alert">
+              BPM must be between 60 and 200. Most rhythm classes sit near 120.
+            </span>
+          </label>
+          <p class="muted">
+            The error pairs an icon, an ember border, and a plain message — color
+            never carries the failure alone.
+          </p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

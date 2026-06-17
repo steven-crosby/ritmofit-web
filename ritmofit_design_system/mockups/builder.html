@@ -1,310 +1,481 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RitmoFit — Class Builder</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="theme.css" />
-<style>
-  .builder { display:grid; grid-template-columns:266px 1fr 340px; gap:18px; align-items:start; }
-  @media (max-width:1180px){ .builder{ grid-template-columns:1fr; } }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RitmoFit - Class Builder</title>
+    <link
+      rel="preload"
+      href="fonts/inter-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="fonts/martian-mono-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="app-header">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        RitmoFit
+      </a>
+      <nav class="app-nav" aria-label="Product navigation">
+        <a href="library.html">Library</a>
+        <a href="moves.html">Moves</a>
+        <a href="builder.html" aria-current="page">Builder</a>
+        <a href="explore.html">Explore</a>
+        <a href="teams.html">Teams</a>
+      </nav>
+      <div class="header-actions">
+        <button class="button button-ghost">New class</button>
+        <span class="avatar" aria-label="Ana Reyes">AR</span>
+      </div>
+    </header>
 
-  /* library */
-  .library .lib-item { width:100%; text-align:left; display:flex; flex-direction:column; gap:3px; padding:11px 13px; border-radius:var(--r-card); background:transparent; border:1px solid transparent; color:inherit; }
-  .library .lib-item:hover { background:var(--ink-800); }
-  .library .lib-item.active { background:var(--ink-800); border-color:rgba(224,126,60,0.35); box-shadow:inset 3px 0 0 var(--copper-400); }
-  .library .lib-item .t { font-weight:600; font-size:14px; color:var(--bone-50); }
-  .library .lib-item .s { font-size:12px; color:var(--bone-400); display:flex; gap:8px; align-items:center; }
-  .library .lib-item .s .badge { font-family:var(--font-data); font-size:9px; letter-spacing:0.06em; text-transform:uppercase; padding:1px 6px; border-radius:var(--r-pill); border:1px solid var(--border-default); color:var(--bone-300); }
+    <main class="builder-layout page" id="content" data-modality="spin">
+      <div class="builder-layout">
+        <aside class="surface class-rail" aria-label="Your classes">
+          <div class="between gap-3 card-pad">
+            <span class="section-label">Your classes</span>
+            <span class="pill data">12</span>
+          </div>
+          <div class="rail-list stack gap-1">
+            <a class="class-link" href="#" aria-current="page">
+              <strong>Saturday Rhythm Build</strong>
+              <span class="data">6 tracks · 25:31</span>
+            </a>
+            <a class="class-link" href="#">
+              <strong>Sunrise Endurance</strong>
+              <span class="data">11 tracks · 45:10</span>
+            </a>
+            <a class="class-link" href="#">
+              <strong>Control / Release</strong>
+              <span class="data">8 tracks · 34:05</span>
+            </a>
+            <a class="class-link" href="#">
+              <strong>Peak Intervals</strong>
+              <span class="data">7 tracks · 28:30</span>
+            </a>
+          </div>
+          <div class="card-pad">
+            <a class="button button-action button-block" href="library.html"
+              >Add from Library</a
+            >
+          </div>
+        </aside>
 
-  .inspector { position:sticky; top:84px; }
-  .seg-pick { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
-  .seg-pick button { border:1px solid var(--border-default); background:var(--ink-900); color:var(--bone-300); border-radius:var(--r-control); padding:9px 4px; font-size:11px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:5px; }
-  .seg-pick button.on { border-color:var(--cyan-400); color:var(--bone-50); background:rgba(58,192,212,0.10); }
-  .seg-pick .swatch { width:100%; height:5px; border-radius:3px; }
-
-  .total-pill { font-family:var(--font-data); font-size:12px; color:var(--bone-300); }
-</style>
-</head>
-<body>
-<div class="app">
-  <!-- ── Top bar ── -->
-  <header class="topbar">
-    <div class="brand"><span class="mark">R</span><span class="name font-display">RitmoFit</span></div>
-    <nav>
-      <a href="builder.html" class="active">Builder</a>
-      <a href="explore.html">Explore</a>
-      <a href="teams.html">Teams</a>
-    </nav>
-    <span class="spacer"></span>
-    <button class="btn btn-quiet btn-sm">＋ New class</button>
-    <span class="avatar" title="Ana Reyes">AR</span>
-  </header>
-
-  <div class="page">
-    <div class="builder">
-
-      <!-- ════ LEFT: class library ════ -->
-      <aside class="library stack gap-3">
-        <div class="between">
-          <span class="sectionlabel">Your classes</span>
-          <span class="pill">12</span>
-        </div>
-        <div class="field">
-          <input class="input" placeholder="Search classes…" />
-        </div>
-        <div class="card" style="padding:7px;">
-          <button class="lib-item active">
-            <span class="t">Tuesday Power Ride</span>
-            <span class="s"><span class="badge">Owner</span> 6 tracks · 23:42</span>
-          </button>
-          <button class="lib-item">
-            <span class="t">Sunrise Endurance 45</span>
-            <span class="s"><span class="badge">Owner</span> 11 tracks · 45:10</span>
-          </button>
-          <button class="lib-item">
-            <span class="t">Reggaetón Burnout</span>
-            <span class="s"><span class="badge" style="color:var(--cyan-300);border-color:rgba(58,192,212,.4)">Edit</span> 8 tracks · 31:05</span>
-          </button>
-          <button class="lib-item">
-            <span class="t">Climb &amp; Sprint Intervals</span>
-            <span class="s"><span class="badge">Owner</span> 7 tracks · 28:30</span>
-          </button>
-          <button class="lib-item">
-            <span class="t">Recovery Flow</span>
-            <span class="s"><span class="badge" style="color:var(--bone-400)">View</span> 9 tracks · 38:00</span>
-          </button>
-          <button class="lib-item">
-            <span class="t">Saturday Throwback 90s</span>
-            <span class="s"><span class="badge">Owner</span> 10 tracks · 42:15</span>
-          </button>
-        </div>
-      </aside>
-
-      <!-- ════ CENTER: the class ════ -->
-      <main class="stack gap-4">
-        <!-- class header -->
-        <div class="card" style="padding:18px 20px;">
-          <div class="between">
-            <div class="stack gap-2" style="min-width:0;">
-              <div class="row gap-2">
-                <span class="eyebrow">Class</span>
-                <span class="pill" style="color:var(--cyan-300);border-color:rgba(58,192,212,.4)">🌐 Public · in Explore</span>
+        <section class="builder-main stack gap-4" aria-labelledby="class-title">
+          <header class="surface class-header">
+            <div class="stack gap-3">
+              <div class="row gap-2 wrap">
+                <span class="eyebrow">Class shape saved</span>
+                <span class="provider-state ps-connected">
+                  <span class="ps-icon" aria-hidden="true">✓</span>Spotify
+                  connected
+                </span>
+                <span class="provider-state ps-connected">
+                  <span class="ps-icon" aria-hidden="true">✓</span>SoundCloud
+                  connected
+                </span>
               </div>
-              <h1 class="h1" style="font-size:27px;">Tuesday Power Ride</h1>
-              <div class="row gap-3">
-                <span class="total-pill">6 tracks</span>
-                <span class="dim">·</span>
-                <span class="total-pill">23:42 total</span>
-                <span class="dim">·</span>
-                <span class="total-pill">avg <span style="color:var(--bone-100)">118 BPM</span></span>
+              <h1 class="title-md" id="class-title">Saturday Rhythm Build</h1>
+              <div class="class-metrics">
+                <span>6 tracks</span>
+                <span>25:31 total</span>
+                <span>126 avg BPM</span>
+                <span>4 cues</span>
+                <span>5 moves</span>
               </div>
             </div>
-            <div class="row gap-2" style="flex:none;">
-              <button class="btn btn-ghost btn-sm">Make private</button>
-              <button class="btn btn-ghost btn-sm">Share</button>
-              <a class="btn btn-primary" href="live.html">▶ Run live</a>
+            <div class="class-actions">
+              <button class="button button-action">Share</button>
+              <a class="button button-primary" href="live.html">Run live</a>
             </div>
-          </div>
-        </div>
+          </header>
 
-        <!-- energy ribbon -->
-        <figure class="ribbon-wrap" style="margin:0;">
-          <figcaption>
-            <span class="sectionlabel">Energy arc</span>
-            <span class="dim" style="font-size:11px;font-family:var(--font-data);">intensity over time</span>
-          </figcaption>
-          <svg viewBox="0 0 1000 100" preserveAspectRatio="none" role="img"
-               aria-label="6 tracks, intensity over time: easy, moderate, hard, all-out, easy, hard">
-            <defs>
-              <linearGradient id="rib" x1="0" y1="1" x2="0" y2="0">
-                <stop offset="0" stop-color="#F7B987" stop-opacity="0.05"/>
-                <stop offset="1" stop-color="#F7B987" stop-opacity="0.28"/>
-              </linearGradient>
-            </defs>
-            <!-- baseline -->
-            <rect x="0" y="99" width="1000" height="1" fill="rgba(251,247,240,0.08)"/>
-            <!-- track 1 easy -->
-            <rect x="0"     y="66" width="175.8" height="34" fill="var(--z-easy)" fill-opacity="0.20"/>
-            <rect x="0"     y="66" width="175.8" height="3"  fill="var(--z-easy)" fill-opacity="0.9"/>
-            <!-- track 2 mod -->
-            <rect x="175.8" y="45" width="154.7" height="55" fill="var(--z-mod)" fill-opacity="0.20"/>
-            <rect x="175.8" y="45" width="154.7" height="3"  fill="var(--z-mod)" fill-opacity="0.9"/>
-            <!-- track 3 hard (selected) -->
-            <rect x="330.5" y="22" width="189.9" height="78" fill="var(--z-hard)" fill-opacity="0.26"/>
-            <rect x="330.5" y="22" width="189.9" height="3"  fill="var(--z-hard)" fill-opacity="1"/>
-            <!-- track 4 all-out (plasma kiss) -->
-            <rect x="520.4" y="0"  width="135.0" height="100" fill="var(--z-allout)" fill-opacity="0.24"/>
-            <rect x="520.4" y="0"  width="135.0" height="3"   fill="var(--plasma-500)" fill-opacity="0.95"/>
-            <!-- track 5 easy (recovery) -->
-            <rect x="655.4" y="66" width="161.7" height="34" fill="var(--z-easy)" fill-opacity="0.20"/>
-            <rect x="655.4" y="66" width="161.7" height="3"  fill="var(--z-easy)" fill-opacity="0.9"/>
-            <!-- track 6 hard -->
-            <rect x="817.1" y="22" width="182.9" height="78" fill="var(--z-hard)" fill-opacity="0.20"/>
-            <rect x="817.1" y="22" width="182.9" height="3"  fill="var(--z-hard)" fill-opacity="0.9"/>
-          </svg>
-
-          <!-- timeline w/ track blocks, cue+move markers, playhead -->
-          <div class="timeline">
-            <div class="track-block" style="left:0%;width:17.4%;"><span>1</span></div>
-            <div class="track-block" style="left:17.6%;width:15.3%;"><span>2</span></div>
-            <div class="track-block" style="left:33.1%;width:18.8%;background:rgba(224,126,60,0.10);border-color:rgba(224,126,60,0.4);"><span>3 ◂ editing</span></div>
-            <div class="track-block" style="left:52.0%;width:13.3%;"><span>4</span></div>
-            <div class="track-block" style="left:65.5%;width:16.0%;"><span>5</span></div>
-            <div class="track-block" style="left:81.7%;width:18.1%;"><span>6</span></div>
-            <!-- cue (▲) + move (◆) markers -->
-            <div class="marker cue"  style="left:6%;">▲</div>
-            <div class="marker move" style="left:21%;">◆</div>
-            <div class="marker cue"  style="left:37%;">▲</div>
-            <div class="marker move" style="left:44%;">◆</div>
-            <div class="marker cue"  style="left:57%;">▲</div>
-            <div class="marker move" style="left:88%;">◆</div>
-            <div class="playhead" style="left:0%;"></div>
-          </div>
-
-          <!-- segment band (design concept) -->
-          <div class="segments">
-            <div class="seg" style="flex:1.0;"><b style="background:var(--amber-400)"></b> Warm-up</div>
-            <div class="seg" style="flex:1.6;"><b style="background:var(--copper-600)"></b> Climb</div>
-            <div class="seg" style="flex:1.0;"><b style="background:var(--ember-400)"></b> Sprint</div>
-            <div class="seg" style="flex:1.2;"><b style="background:var(--violet-400)"></b> Recovery</div>
-            <div class="seg" style="flex:1.4;"><b style="background:var(--copper-600)"></b> Final climb</div>
-          </div>
-        </figure>
-
-        <!-- track list -->
-        <div class="stack gap-2">
-          <div class="between" style="margin-bottom:2px;">
-            <span class="sectionlabel">Track list</span>
-            <button class="btn btn-ghost btn-sm">＋ Add track</button>
-          </div>
-
-          <button class="song-row playing">
-            <span class="grip">⠿</span><span class="pos">1</span>
-            <span class="art">♪</span>
-            <span class="meta"><span class="title">Baianá</span><span class="artist">Bakermat</span></span>
-            <span class="intensity"><span class="bars" data-zone="easy"><i></i><i></i><i></i><i></i></span><span class="zone-label">Build</span></span>
-            <span class="bpm">122<span class="unit">BPM</span></span>
-          </button>
-
-          <button class="song-row">
-            <span class="grip">⠿</span><span class="pos">2</span>
-            <span class="art">♪</span>
-            <span class="meta"><span class="title">Tusa</span><span class="artist">Karol G, Nicki Minaj</span></span>
-            <span class="intensity"><span class="bars" data-zone="mod"><i></i><i></i><i></i><i></i></span><span class="zone-label">Push</span></span>
-            <span class="bpm">100<span class="unit">BPM</span></span>
-          </button>
-
-          <button class="song-row selected">
-            <span class="grip">⠿</span><span class="pos">3</span>
-            <span class="art">♪</span>
-            <span class="meta"><span class="title">Pepas</span><span class="artist">Farruko</span></span>
-            <span class="intensity"><span class="bars" data-zone="hard"><i></i><i></i><i></i><i></i></span><span class="zone-label">Attack</span></span>
-            <span class="bpm">130<span class="unit">BPM</span></span>
-          </button>
-
-          <button class="song-row">
-            <span class="grip">⠿</span><span class="pos">4</span>
-            <span class="art" style="background:linear-gradient(135deg,var(--ember-500),var(--plasma-600));color:var(--bone-50);box-shadow:var(--peak-glow);">★</span>
-            <span class="meta"><span class="title">Gasolina</span><span class="artist">Daddy Yankee</span></span>
-            <span class="intensity"><span class="bars" data-zone="allout"><i></i><i></i><i></i><i></i></span><span class="zone-label" style="color:var(--plasma-400)">All&nbsp;Out</span></span>
-            <span class="bpm">95<span class="unit">BPM</span></span>
-          </button>
-
-          <button class="song-row">
-            <span class="grip">⠿</span><span class="pos">5</span>
-            <span class="art">♪</span>
-            <span class="meta"><span class="title">Provenza</span><span class="artist">Karol G</span></span>
-            <span class="intensity"><span class="bars" data-zone="easy"><i></i><i></i><i></i><i></i></span><span class="zone-label">Build</span></span>
-            <span class="bpm">112<span class="unit">BPM</span></span>
-          </button>
-
-          <button class="song-row">
-            <span class="grip">⠿</span><span class="pos">6</span>
-            <span class="art">♪</span>
-            <span class="meta"><span class="title">La Gozadera</span><span class="artist">Gente de Zona, Marc Anthony</span></span>
-            <span class="intensity"><span class="bars" data-zone="hard"><i></i><i></i><i></i><i></i></span><span class="zone-label">Attack</span></span>
-            <span class="bpm">124<span class="unit">BPM</span></span>
-          </button>
-        </div>
-      </main>
-
-      <!-- ════ RIGHT: track inspector ════ -->
-      <aside class="inspector">
-        <div class="panel" style="padding:20px;">
-          <div class="between" style="margin-bottom:4px;">
-            <span class="sectionlabel">Track 3 · Inspector</span>
-            <button class="btn-danger btn btn-sm" style="padding:4px 11px;">Remove</button>
-          </div>
-          <h2 class="h2" style="font-size:19px;margin-bottom:2px;">Pepas</h2>
-          <p class="dim" style="margin:0 0 16px;font-size:13px;">Farruko · 4:30</p>
-
-          <!-- intensity -->
-          <div class="field" style="margin-bottom:18px;">
-            <span class="flabel">Intensity zone</span>
-            <div class="seg-pick">
-              <button><span class="swatch" style="background:var(--z-none)"></span>None</button>
-              <button><span class="swatch" style="background:var(--z-easy)"></span>Build</button>
-              <button><span class="swatch" style="background:var(--z-mod)"></span>Push</button>
-              <button class="on"><span class="swatch" style="background:var(--z-hard)"></span>Attack</button>
-              <button><span class="swatch" style="background:var(--z-allout)"></span>All&nbsp;Out</button>
+          <figure class="energy-ribbon">
+            <figcaption>
+              <div class="stack gap-1">
+                <span class="section-label">Class shape</span>
+                <strong>Your playlist has a shape. Make it visible.</strong>
+              </div>
+              <span class="ribbon-summary">
+                25 minutes, 2 peak efforts, highest zone All Out, controlled
+                release in the final 4 minutes.
+              </span>
+            </figcaption>
+            <div class="timeline-ruler" aria-hidden="true">
+              <span data-beat="1"></span><span data-beat="2"></span><span data-beat="3"></span><span data-beat="4"></span>
+              <span data-beat="5"></span><span data-beat="6"></span><span data-beat="7"></span><span data-beat="8"></span>
             </div>
-            <div class="row gap-2" style="margin-top:8px;">
-              <span class="intensity"><span class="bars" data-zone="hard"><i></i><i></i><i></i><i></i></span><span class="zone-label">Zone 3 · Attack</span></span>
+            <svg
+              viewBox="0 0 1000 130"
+              preserveAspectRatio="none"
+              role="img"
+              aria-label="Class energy shape: builds through tracks one and two, attacks in track three, reaches All Out in track four, releases in track five, and finishes with a final attack."
+            >
+              <defs>
+                <linearGradient id="builder-ribbon" x1="0" y1="1" x2="0" y2="0">
+                  <stop offset="0" class="rf-stop-build" />
+                  <stop offset="0.5" class="rf-stop-push" />
+                  <stop offset="0.85" class="rf-stop-attack" />
+                  <stop offset="1" class="rf-stop-peak" />
+                </linearGradient>
+              </defs>
+              <path
+                class="ribbon-area"
+                d="M0 104 L90 104 L90 82 L245 82 L245 46 L420 46 L420 10 L600 10 L600 92 L735 92 L735 48 L1000 48 L1000 130 L0 130 Z"
+                fill="url(#builder-ribbon)"
+              />
+              <path
+                d="M0 104 L90 104 L90 82 L245 82 L245 46 L420 46 L420 10 L600 10 L600 92 L735 92 L735 48 L1000 48"
+                class="ribbon-line"
+                fill="none"
+                stroke="url(#builder-ribbon)"
+                stroke-width="3"
+                vector-effect="non-scaling-stroke"
+              />
+              <circle cx="510" cy="10" r="5" class="rf-fill-peak" />
+              <line
+                x1="0"
+                y1="128"
+                x2="1000"
+                y2="128"
+                class="rf-stroke-baseline"
+              />
+            </svg>
+            <div class="timeline-strip" aria-label="Class timeline">
+              <button class="timeline-block">01</button>
+              <button class="timeline-block">02</button>
+              <button class="timeline-block is-active">03 · editing</button>
+              <button class="timeline-block">04</button>
+              <button class="timeline-block">05</button>
+              <button class="timeline-block">06</button>
+              <button
+                class="timeline-marker cue"
+                style="left: 12%"
+                aria-label="Cue at 1 minute 24 seconds"
+              >
+                ▲
+              </button>
+              <button
+                class="timeline-marker move"
+                style="left: 29%"
+                aria-label="Move at 6 minutes"
+              >
+                ◆
+              </button>
+              <button
+                class="timeline-marker cue"
+                style="left: 47%"
+                aria-label="Cue at 11 minutes"
+              >
+                ▲
+              </button>
+              <button
+                class="timeline-marker move"
+                style="left: 66%"
+                aria-label="Move at 16 minutes"
+              >
+                ◆
+              </button>
+              <span class="playhead" aria-hidden="true"></span>
             </div>
-          </div>
+          </figure>
 
-          <!-- BPM -->
-          <div class="field" style="margin-bottom:18px;">
-            <span class="flabel">Display BPM <span class="dim" style="text-transform:none;letter-spacing:0;">(manual — never from Spotify)</span></span>
-            <div class="row gap-2">
-              <input class="input mono" style="width:110px;" value="130" inputmode="numeric" />
-              <span class="dim" style="font-size:12.5px;">override per class</span>
+          <section class="stack gap-2" aria-labelledby="segment-band-title">
+            <span class="section-label" id="segment-band-title">Segments</span>
+            <div class="row gap-2 wrap" aria-label="Class segments in order">
+              <span class="segment-tag seg-warmup">
+                <span class="seg-dot" aria-hidden="true"></span>Warm-up
+              </span>
+              <span class="segment-tag seg-climb">
+                <span class="seg-dot" aria-hidden="true"></span>Climb
+              </span>
+              <span class="segment-tag seg-sprint">
+                <span class="seg-dot" aria-hidden="true"></span>Sprint
+              </span>
+              <span class="segment-tag seg-recovery">
+                <span class="seg-dot" aria-hidden="true"></span>Recovery
+              </span>
+              <span class="segment-tag seg-cooldown">
+                <span class="seg-dot" aria-hidden="true"></span>Cool-down
+              </span>
             </div>
-          </div>
+          </section>
 
-          <!-- notes -->
-          <div class="field" style="margin-bottom:20px;">
-            <span class="flabel">Notes</span>
-            <textarea class="input" rows="2" placeholder="Coaching notes for this track…">Standing climb into the chorus — add resistance on the drop.</textarea>
-          </div>
-
-          <hr class="divider" style="margin:0 0 16px;" />
-
-          <!-- cues -->
-          <div class="stack gap-2" style="margin-bottom:18px;">
-            <span class="flabel">Cues</span>
-            <div class="chip-row"><span class="t">0:12</span><span class="kind cue">cue</span><span class="label">Add a turn — heavy gear</span><button class="x">✕</button></div>
-            <div class="chip-row"><span class="t">1:04</span><span class="kind cue">cue</span><span class="label">Out of the saddle</span><button class="x">✕</button></div>
-            <div class="chip-row"><span class="t">2:38</span><span class="kind cue">cue</span><span class="label">Last push — count it down</span><button class="x">✕</button></div>
-            <div class="row gap-2">
-              <input class="input mono" style="width:62px;" value="0" aria-label="seconds" />
-              <input class="input" placeholder="New cue…" />
-              <button class="btn btn-ghost btn-sm">Add</button>
+          <section class="stack gap-2" aria-labelledby="track-list-title">
+            <div class="between gap-3">
+              <span class="section-label" id="track-list-title"
+                >Track sequence</span
+              >
+              <a class="button button-action" href="library.html">Add tracks</a>
             </div>
-          </div>
 
-          <!-- moves -->
-          <div class="stack gap-2">
-            <span class="flabel">Moves</span>
-            <div class="chip-row"><span class="t">0:20</span><span class="kind move">move</span><span class="label">Standing climb</span>
-              <span class="intensity"><span class="bars" data-zone="hard"><i></i><i></i><i></i><i></i></span></span><button class="x">✕</button></div>
-            <div class="chip-row"><span class="t">1:50</span><span class="kind move">move</span><span class="label">Tap-backs</span>
-              <span class="intensity"><span class="bars" data-zone="mod"><i></i><i></i><i></i><i></i></span></span><button class="x">✕</button></div>
-            <div class="row gap-2" style="flex-wrap:wrap;">
-              <input class="input mono" style="width:62px;" value="0" aria-label="seconds" />
-              <select class="input" style="flex:1;min-width:120px;"><option>Standing climb</option><option>Jumps</option><option>Tap-backs</option><option>Sprint</option><option>Custom…</option></select>
-              <button class="btn btn-ghost btn-sm">Add</button>
+            <div class="track-list">
+              <button class="track-row is-playing">
+                <span class="playing-dot" aria-label="Now playing"></span>
+                <span class="art art-1" aria-hidden="true"></span>
+                <span class="track-copy">
+                  <span class="track-title">Pulso de Noche</span>
+                  <span class="track-meta">Mara Sol · Spotify · 4:08</span>
+                </span>
+                <span class="intensity">
+                  <span class="zone-bars" data-zone="1"
+                    ><i></i><i></i><i></i><i></i
+                  ></span>
+                  <span class="zone-copy">Z1 · Build</span>
+                </span>
+                <span class="bpm">
+                  <span class="metric-spin">126<small>RPM</small></span>
+                  <span class="metric-pilates">4<small>Holds</small></span>
+                </span>
+                <span class="grip" aria-hidden="true">⠿</span>
+              </button>
+
+              <button class="track-row">
+                <span class="track-index">02</span>
+                <span class="art art-2" aria-hidden="true"></span>
+                <span class="track-copy">
+                  <span class="track-title">Control / Release</span>
+                  <span class="track-meta">Baja Method · Spotify · 5:12</span>
+                </span>
+                <span class="intensity">
+                  <span class="zone-bars" data-zone="2"
+                    ><i></i><i></i><i></i><i></i
+                  ></span>
+                  <span class="zone-copy">Z2 · Push</span>
+                </span>
+                <span class="bpm">
+                  <span class="metric-spin">118<small>RPM</small></span>
+                  <span class="metric-pilates">3<small>Holds</small></span>
+                </span>
+                <span class="grip" aria-hidden="true">⠿</span>
+              </button>
+
+              <button class="track-row is-selected">
+                <span class="track-index">03</span>
+                <span class="art art-3" aria-hidden="true"></span>
+                <span class="track-copy">
+                  <span class="track-title">The Marble Has a Beat</span>
+                  <span class="track-meta">North Room · SoundCloud · 3:42</span>
+                </span>
+                <span class="intensity">
+                  <span class="zone-bars" data-zone="3"
+                    ><i></i><i></i><i></i><i></i
+                  ></span>
+                  <span class="zone-copy">Z3 · Attack</span>
+                </span>
+                <span class="bpm">
+                  <span class="metric-spin">132<small>RPM</small></span>
+                  <span class="metric-pilates">5<small>Holds</small></span>
+                </span>
+                <span class="grip" aria-hidden="true">⠿</span>
+              </button>
+
+              <button class="track-row">
+                <span class="track-index">04</span>
+                <span class="art art-4" aria-hidden="true"></span>
+                <span class="track-copy">
+                  <span class="track-title">Drop In</span>
+                  <span class="track-meta">Studio 84 · SoundCloud · 3:35</span>
+                </span>
+                <span class="intensity">
+                  <span class="zone-bars" data-zone="4"
+                    ><i></i><i></i><i></i><i></i
+                  ></span>
+                  <span class="zone-copy">Z4 · All Out</span>
+                </span>
+                <span class="bpm">
+                  <span class="metric-spin">138<small>RPM</small></span>
+                  <span class="metric-pilates">6<small>Holds</small></span>
+                </span>
+                <span class="grip" aria-hidden="true">⠿</span>
+              </button>
+
+              <button class="track-row">
+                <span class="track-index">05</span>
+                <span class="art art-5" aria-hidden="true"></span>
+                <span class="track-copy">
+                  <span class="track-title">Slow Pressure</span>
+                  <span class="track-meta">Atlas Club · Spotify · 5:26</span>
+                </span>
+                <span class="intensity">
+                  <span class="zone-bars" data-zone="1"
+                    ><i></i><i></i><i></i><i></i
+                  ></span>
+                  <span class="zone-copy">Z1 · Build</span>
+                </span>
+                <span class="bpm">
+                  <span class="metric-spin">92<small>RPM</small></span>
+                  <span class="metric-pilates">2<small>Holds</small></span>
+                </span>
+                <span class="grip" aria-hidden="true">⠿</span>
+              </button>
+
+              <button class="track-row">
+                <span class="track-index">06</span>
+                <span class="art art-2" aria-hidden="true"></span>
+                <span class="track-copy">
+                  <span class="track-title">Brasa</span>
+                  <span class="track-meta"
+                    >Luna Oeste · Apple Music · 3:28</span
+                  >
+                </span>
+                <span class="intensity">
+                  <span class="zone-bars" data-zone="3"
+                    ><i></i><i></i><i></i><i></i
+                  ></span>
+                  <span class="zone-copy">Z3 · Attack</span>
+                </span>
+                <span class="bpm">
+                  <span class="metric-spin">104<small>RPM</small></span>
+                  <span class="metric-pilates">4<small>Holds</small></span>
+                </span>
+                <span class="grip" aria-hidden="true">⠿</span>
+              </button>
             </div>
-          </div>
-        </div>
-      </aside>
+          </section>
+        </section>
 
-    </div>
-  </div>
-</div>
-</body>
+        <aside class="panel inspector" aria-label="Selected track inspector">
+          <div class="inspector-header stack gap-2">
+            <div class="between gap-2">
+              <span class="section-label">Track 03 · Inspector</span>
+              <button class="button button-danger">Remove</button>
+            </div>
+            <h2 class="title-md">The Marble Has a Beat</h2>
+            <span class="dim">North Room · 3:42 · SoundCloud</span>
+          </div>
+
+          <section class="inspector-section stack gap-3">
+            <span class="field-label">Intensity</span>
+            <div class="zone-picker" data-zone-group>
+              <button class="zone-option" data-zone-option aria-pressed="false">
+                <span>Z0</span><span>None</span>
+              </button>
+              <button class="zone-option" data-zone-option aria-pressed="false">
+                <span>Z1</span><span>Build</span>
+              </button>
+              <button class="zone-option" data-zone-option aria-pressed="false">
+                <span>Z2</span><span>Push</span>
+              </button>
+              <button class="zone-option" data-zone-option aria-pressed="true">
+                <span>Z3</span><span>Attack</span>
+              </button>
+              <button class="zone-option" data-zone-option aria-pressed="false">
+                <span>Z4</span><span>All Out</span>
+              </button>
+            </div>
+            <span class="intensity">
+              <span class="zone-bars" data-zone="3"
+                ><i></i><i></i><i></i><i></i
+              ></span>
+              <span class="zone-copy">Zone 3 · Attack · 3 bars</span>
+            </span>
+          </section>
+
+          <section class="inspector-section stack gap-3">
+            <label class="field">
+              <span
+                >Display BPM
+                <span class="dim">(manual or approved tempo source)</span></span
+              >
+              <input class="input data" type="number" value="132" />
+            </label>
+            <label class="field">
+              <span>Creator note</span>
+              <textarea class="input">
+Hold tension through the break. Release after the vocal drop.</textarea
+              >
+            </label>
+          </section>
+
+          <section class="inspector-section stack gap-2">
+            <div class="between">
+              <span class="field-label">Cues</span>
+              <button class="button button-action">Add cue</button>
+            </div>
+            <div class="cue-row">
+              <span class="timecode">0:24</span>
+              <span class="cue-kind">Cue</span>
+              <span>Build resistance</span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="Delete cue"
+              >
+                ×
+              </button>
+            </div>
+            <div class="cue-row">
+              <span class="timecode">1:18</span>
+              <span class="cue-kind">Cue</span>
+              <span>Drive through the break</span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="Delete cue"
+              >
+                ×
+              </button>
+            </div>
+          </section>
+
+          <section class="inspector-section stack gap-2">
+            <div class="between">
+              <span class="field-label">Moves</span>
+              <a class="button button-action" href="moves.html">Add move</a>
+            </div>
+            <div class="cue-row">
+              <span class="timecode">0:38</span>
+              <span class="cue-kind move">Cycle</span>
+              <span class="move-line">
+                <strong>Standing climb</strong>
+                <span class="intensity">
+                  <span class="zone-bars" data-zone="3"
+                    ><i></i><i></i><i></i><i></i
+                  ></span>
+                  <span class="zone-copy">Z3</span>
+                </span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="Delete move"
+              >
+                ×
+              </button>
+            </div>
+            <div class="cue-row">
+              <span class="timecode">2:06</span>
+              <span class="cue-kind move">Cycle</span>
+              <span class="move-line">
+                <strong>Controlled release</strong>
+                <span class="intensity">
+                  <span class="zone-bars" data-zone="2"
+                    ><i></i><i></i><i></i><i></i
+                  ></span>
+                  <span class="zone-copy">Z2</span>
+                </span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="Delete move"
+              >
+                ×
+              </button>
+            </div>
+            <span class="dim">From your move library — or create a one-off.</span>
+          </section>
+        </aside>
+      </div>
+    </main>
+    <script src="app.js"></script>
+  </body>
 </html>

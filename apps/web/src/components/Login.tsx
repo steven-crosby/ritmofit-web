@@ -48,7 +48,7 @@ export function Login() {
   }
 
   return (
-    <main className="rf-hero-glow flex min-h-screen flex-col items-center justify-center p-8">
+    <main className="rf-heat-bloom flex min-h-screen flex-col items-center justify-center p-8">
       <div className="flex w-full max-w-sm flex-col gap-6">
         <header className="flex flex-col gap-3">
           <span className="rf-eyebrow">For instructors who build the class</span>
@@ -56,9 +56,7 @@ export function Login() {
             <span className="rf-brand-mark" aria-hidden="true">
               R
             </span>
-            <h1 className="font-display text-4xl font-bold tracking-[-0.02em] text-text-primary">
-              RitmoFit
-            </h1>
+            <h1 className="rf-heat-text font-display text-display-lg">RitmoFit</h1>
           </div>
           <p className="font-ui text-text-secondary">
             {mode === 'signup'
