@@ -1020,10 +1020,16 @@ Create or maintain:
 - reduced-motion overrides
 - accessibility/focus styles
 
-Class-naming convention: **design tokens carry the `--rf-` prefix; component and utility
-_classes_ do not.** This is the convention the reference mockups already use — keep new classes
-un-prefixed so the system stays consistent. The class names below match what `mockups/theme.css`
-actually ships:
+Class-naming convention: **design tokens always carry the `--rf-` prefix.** Component/utility
+_classes_ use two namespaces by surface, and new classes should match their surface:
+
+- The **reference mockups** in this package use bare, un-prefixed classes (listed below — they match
+  what `mockups/theme.css` actually ships).
+- The **production web app** namespaces its component classes under `rf-` (e.g. `.rf-topbar`,
+  `.rf-btn-primary`, `.rf-heat-text`, `.rf-eyebrow`) to avoid collisions with Tailwind's utility
+  classes, which share the app's `class` attribute.
+
+The bare names below are the mockup vocabulary:
 
 ```css
 .surface            /* solid card/panel surface */
