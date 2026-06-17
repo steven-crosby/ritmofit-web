@@ -46,15 +46,34 @@ function withUnit(name, value) {
   return String(value);
 }
 
+// Raw token strings (e.g. surface.bloom.heat) are authored with the reference
+// emitter's SHORT primitive var names — var(--rf-plasma-500). This generator emits
+// primitives under their long names, so rewrite those refs or they'd dangle.
+const PRIMITIVE_FAMILIES = 'ink|bone|copper|ember|cyan|plasma|amber|violet';
+const shortVarRe = new RegExp(`var\\(--rf-(${PRIMITIVE_FAMILIES})-(\\d+)\\)`, 'g');
+const longPrimitiveVars = (v) =>
+  typeof v === 'string' ? v.replace(shortVarRe, 'var(--rf-color-primitive-$1-$2)') : v;
+
+// A primitive ref -> its long CSS var, keeping composed gradients routed through
+// primitives so a hue change in tokens.json propagates. Falls back to a literal.
+const refToPrimitiveVar = (ref, theme) => {
+  const m = typeof ref === 'string' && ref.match(/^\{color\.primitive\.(\w+)\.(\w+)\}$/);
+  return m ? `var(--rf-color-primitive-${m[1]}-${m[2]})` : resolveValue(ref, theme);
+};
+
 function emit(out, name, raw, theme) {
   const resolved = resolveValue(raw, theme);
   if (resolved === undefined || resolved === '') return;
-  out.push(`  --rf-${name}: ${withUnit(name, resolved)};`);
+  out.push(`  --rf-${name}: ${withUnit(name, longPrimitiveVars(resolved))};`);
 }
 
 // A node is a "leaf slot" when it directly holds a value rather than children.
 const isLeafSlot = (v) =>
   v && typeof v === 'object' && ('dark' in v || 'light' in v || 'value' in v || 'tint' in v);
+
+// Subtrees that aren't a flat var dump — built explicitly in code below (the
+// heat gradient composes an array of stops + an angle into one value).
+const COMPOSITE_PATHS = new Set(['surface-gradient']);
 
 function walk(out, node, path, theme) {
   for (const [key, val] of Object.entries(node)) {
@@ -63,6 +82,7 @@ function walk(out, node, path, theme) {
     // [data-theme="light"] block, not :root — emitted explicitly below.
     if (key.endsWith('Light')) continue;
     const name = path ? `${path}-${key}` : key;
+    if (COMPOSITE_PATHS.has(name)) continue;
     if (Array.isArray(val)) continue; // e.g. ribbon.stops — built in code, not a var
     if (val && typeof val === 'object') {
       if (isLeafSlot(val)) emit(out, name, val, theme);
@@ -88,6 +108,17 @@ walk(lines, tokens.motion, 'motion', 'dark');
 const defaultBpm = tokens.tempo?.['default-bpm'] ?? 120;
 lines.push(`  --rf-bpm: ${defaultBpm};`);
 lines.push('  --rf-beat: calc(60s / var(--rf-bpm, 120));');
+
+// surface.gradient.heat — composed here because its stops are an array (skipped by
+// walk). The campaign "heat" display gradient (copper→ember→plasma); stops route
+// through primitive vars. Theme-independent affect; brand-front only (02/04).
+const heat = tokens.surface?.gradient?.heat;
+if (heat?.stops) {
+  const stops = heat.stops
+    .map((s) => `${refToPrimitiveVar(s.color, 'dark')} ${+(s.at * 100).toFixed(2)}%`)
+    .join(', ');
+  lines.push(`  --rf-surface-gradient-heat: linear-gradient(${heat.angle}deg, ${stops});`);
+}
 
 // ── Opt-in [data-theme="light"] — only the theme-dependent slots flip ──
 // Same var names as :root, so the existing Tailwind mappings pick up the light
