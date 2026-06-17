@@ -200,9 +200,13 @@ Tracker status:
 - The original missing-documentation findings are closed: `README.md` is now the normal
   setup and operations entry point, the stale root `.dev.vars.example` was removed, and
   `apps/api/.dev.vars.example` is the canonical local env template.
-- Production is Worker `d4613501-c176-49cf-ad44-2e3f166bf3c8` at 100% (deployed 2026-06-16: the web
-  design-system reconciliation, PR #69, shipped first as `ce1b41e9`, then the OFL font-license bundle,
-  PR #70, as `d4613501`), with remote D1 unchanged at `0012`. The prior baseline was `035f196c` (PR #67).
+- Production is Worker `db6265f2-4ed0-48f0-8b8b-4c03801c0247` at 100% (deployed 2026-06-16: PR #73 —
+  the Live-mode timeline playhead + tap/drag-to-seek scrubber and segment-band drag-resize handles +
+  per-type icons, web-only — shipped together with the previously-merged-but-undeployed PR #72, an
+  additive native-iOS Apple ID token acceptance (`appBundleIdentifier`, gated on the existing Apple
+  secrets; no web impact). No migration — remote D1 unchanged at `0012`. The prior baseline was
+  `d4613501` (PRs #69 + #70). Post-deploy smoke: SPA `200` serving `index-CiPyGTHK.js`, `/health` `200`,
+  `/classes` `401`, and the full SPA + API security-header set present.
 - Rollback/recovery is documented in `ritmofit_dev_plan/deployment-runbook.md`; Worker
   rollback and D1 Time Travel availability were verified read-only. A live production
   rollback exercise remains deferred until a maintenance window.

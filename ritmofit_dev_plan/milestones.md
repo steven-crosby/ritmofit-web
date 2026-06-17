@@ -352,9 +352,25 @@ existing backend/run-payload — **no schema, API-contract, or shared-package ch
   `pnpm test` = api 159 + web 49 = **208**; typecheck (4 pkgs) · lint · web build green. **Merged PR #33,
   deployed 2026-06-13** (Worker version `7edfda8a`; **no schema/migration** — additive contract).
 
+- ✅ **Slice 18 — Live timeline playhead/seek + segment drag-resize** (PR #73, deployed 2026-06-16):
+  closes three of the deferred-backlog items below. The builder's static `TimelineStrip` is brought into
+  Live mode as the transport **scrubber** — a new `LiveTimeline` reuses `computeTimeline()` for the
+  proportional track blocks + cue (▲) / move (◆) markers, fills the played portion, and draws a moving
+  **playhead** at the current class time; it replaces the plain `<input type=range>` with an accessible
+  `role="slider"` (aria value text; pointer click/drag + ←/→ · PageUp/Dn · Home/End), seeking the existing
+  virtual prompter clock only (no audio — the three music rules hold). Each segment boundary becomes a
+  **drag-resize handle** (accessible slider) that re-times `startOffsetMs` via the existing
+  `PATCH /sections/:id`, clamped between neighbors (1s min gap) so a drag can't reorder/collapse bands,
+  committing on pointer-up/Enter/blur and reverting on failure; the numeric `SegmentEditor` stays the
+  precise/secondary path. Adds a per-type inline-SVG **energy-arc icon** (label + icon + tint, never color
+  alone; no font/CDN, so `font-src 'self'` is unaffected). Web-only: no schema, migration, API,
+  shared-contract, or OpenAPI change. `pnpm test` = api 175 + web 147; CI green. **Deployed** in Worker
+  `db6265f2-4ed0-48f0-8b8b-4c03801c0247` (alongside the additive API PR #72); remote D1 unchanged at `0012`.
+
 **Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the **playing-track pulse
-in the planning timeline** (no "playing" state in the builder), the timeline **playhead** / tap-to-seek (a
-Live concern), and segment-band **icons / drag-resize / track-range binding**. The run-payload's
+in the planning timeline** (no "playing" state in the builder), and segment-band **track-range binding**
+(snapping boundaries to track starts). *(Slice 18 closed the timeline **playhead** / tap-to-seek and the
+segment-band **icons** + **drag-resize** items.)* The run-payload's
 `sections[]` still carries **no id** (sections aren't part of marker→row focus; a symmetry follow-up if
 iOS wants it). *(The slice-12/16 **marker→row `anchorMs` disambiguation caveat** was **resolved in slice
 17** — cues/moves now carry ids; the PR #10 `TODO(select-fallback)` was resolved in slice 9.)*
