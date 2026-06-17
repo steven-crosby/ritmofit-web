@@ -33,6 +33,7 @@ const group = (label) => lines.push("", `  /* ${label} */`);
 const v = (name, value) => lines.push(`  --rf-${name}: ${value};`);
 
 lines.push("  color-scheme: dark;");
+lines.push("  --in-oklch: ;");
 
 // 1. Primitive palette (hex literals, lowercased to match authored style)
 group("primitives");
@@ -96,6 +97,15 @@ for (const [k, n] of Object.entries(tokens.radius)) {
   v(`radius-${k}`, `${n}px`);
 }
 
+// 9b. Spacing scale (4px grid). The .gap-* / *-pad utilities in the hand-authored
+// CSS below reference these so web spacing can't drift from tokens.json. The full
+// scale is emitted (parity with iOS RFSpace); not every step is used by a utility.
+group("spacing");
+for (const [k, n] of Object.entries(tokens.space)) {
+  if (k.startsWith("$")) continue;
+  v(`space-${k}`, `${n}px`);
+}
+
 // 10. Shadows
 group("shadows");
 for (const [k, s] of Object.entries(tokens.surface.shadow)) {
@@ -121,7 +131,7 @@ const heatGrad = tokens.surface.gradient.heat;
 const heatStops = heatGrad.stops
   .map((s) => `${refToVar(s.color)} ${Math.round(s.at * 100)}%`)
   .join(", ");
-v("gradient-heat", `linear-gradient(${heatGrad.angle}deg, ${heatStops})`);
+v("gradient-heat", `linear-gradient(${heatGrad.angle}deg var(--in-oklch, ), ${heatStops})`);
 v("bloom-heat", tokens.surface.bloom.heat);
 
 // 12. Easing
@@ -213,6 +223,7 @@ lv("glass-default", tokens.surface.glass.fillLight.default);
 lv("glass-strong", tokens.surface.glass.fillLight.strong);
 lv("glass-border", tokens.surface.glass.borderLight);
 lv("glass-highlight", tokens.surface.glass.highlightLight);
+lv("header-fill", tokens.surface.glass.headerLight);
 lgroup("shadows");
 lv("shadow-card", tokens.surface.shadow.cardLight);
 lv("shadow-lifted", tokens.surface.shadow.liftedLight);

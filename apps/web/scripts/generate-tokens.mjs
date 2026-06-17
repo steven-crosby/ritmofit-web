@@ -135,6 +135,7 @@ lightLines.push(`  --rf-surface-glass-fill-default: ${g.fillLight.default};`);
 lightLines.push(`  --rf-surface-glass-fill-strong: ${g.fillLight.strong};`);
 lightLines.push(`  --rf-surface-glass-border: ${g.borderLight};`);
 lightLines.push(`  --rf-surface-glass-highlight: ${g.highlightLight};`);
+lightLines.push(`  --rf-surface-glass-header: ${g.headerLight};`);
 lightLines.push(`  --rf-surface-shadow-card: ${s.cardLight};`);
 lightLines.push(`  --rf-surface-shadow-lifted: ${s.liftedLight};`);
 

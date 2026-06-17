@@ -98,8 +98,10 @@ shaped/iconed by type (cue vs move) — not color alone. The IntensityRibbon sit
 
 ## Navigation
 
-- **Web:** persistent side nav (Explore / Team / Library), glass top bar.
-- **iOS:** glass bottom tab bar matching the three sections, plus the in-class Timeline/Playlist toggle.
+- **Web:** persistent glass top nav bar (Library / Moves / Builder / Explore / Teams); the current
+  section is marked with `aria-current="page"`. Content rails (your-classes, library sources) are
+  in-surface lists, not the primary app navigation.
+- **iOS:** glass bottom tab bar matching the core sections, plus the in-class Timeline/Playlist toggle.
 - Active tab: filled icon + cyan; inactive: outline icon.
 
 ## Overlays, sheets, dialogs

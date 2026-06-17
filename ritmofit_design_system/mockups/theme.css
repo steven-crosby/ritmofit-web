@@ -6,6 +6,7 @@
 :root {
 /* >>> tokens:start — GENERATED from tokens.json by scripts/build-tokens.mjs. Do not edit by hand. */
   color-scheme: dark;
+  --in-oklch: ;
 
   /* primitives */
   --rf-ink-950: #060504;
@@ -94,6 +95,19 @@
   --rf-radius-control: 12px;
   --rf-radius-pill: 999px;
 
+  /* spacing */
+  --rf-space-0: 0px;
+  --rf-space-1: 4px;
+  --rf-space-2: 8px;
+  --rf-space-3: 12px;
+  --rf-space-4: 16px;
+  --rf-space-5: 20px;
+  --rf-space-6: 24px;
+  --rf-space-8: 32px;
+  --rf-space-10: 40px;
+  --rf-space-12: 48px;
+  --rf-space-16: 64px;
+
   /* shadows */
   --rf-shadow-card: 0 1px 2px rgba(0,0,0,0.42);
   --rf-shadow-lifted: 0 18px 54px rgba(0,0,0,0.42);
@@ -110,8 +124,8 @@
   --rf-header-fill: rgba(11, 10, 8, 0.9);
 
   /* campaign heat (brand-front only) */
-  --rf-gradient-heat: linear-gradient(96deg, var(--rf-copper-400) 0%, var(--rf-ember-500) 58%, var(--rf-plasma-500) 100%);
-  --rf-bloom-heat: radial-gradient(60% 55% at 80% 0%, color-mix(in srgb, var(--rf-plasma-500) 20%, transparent) 0%, color-mix(in srgb, var(--rf-copper-500) 13%, transparent) 40%, transparent 72%);
+  --rf-gradient-heat: linear-gradient(96deg var(--in-oklch, ), var(--rf-copper-400) 0%, var(--rf-ember-500) 58%, var(--rf-plasma-500) 100%);
+  --rf-bloom-heat: radial-gradient(60% 55% at 80% 0%, color-mix(in oklch, var(--rf-plasma-500) 20%, transparent) 0%, color-mix(in oklch, var(--rf-copper-500) 13%, transparent) 40%, transparent 72%);
 
   /* easing */
   --rf-ease: cubic-bezier(0.2, 0, 0, 1);
@@ -161,6 +175,12 @@
 /* <<< tokens:end */
 }
 
+@supports (linear-gradient(in oklch, white, black)) {
+  :root {
+    --in-oklch: in oklch;
+  }
+}
+
 [data-theme="light"] {
 /* >>> theme:light:start — GENERATED (light values) by scripts/build-tokens.mjs. Opt-in; dark is the default. Do not edit by hand. */
   color-scheme: light;
@@ -207,6 +227,7 @@
   --rf-glass-strong: rgba(243,237,226,0.82);
   --rf-glass-border: rgba(11,10,8,0.10);
   --rf-glass-highlight: rgba(255,255,255,0.50);
+  --rf-header-fill: rgba(251, 247, 240, 0.9);
 
   /* shadows */
   --rf-shadow-card: 0 1px 2px rgba(0,0,0,0.10);
@@ -236,7 +257,7 @@ body {
 }
 
 body::selection {
-  background: color-mix(in srgb, var(--rf-brand-primary) 35%, transparent);
+  background: color-mix(in oklch, var(--rf-brand-primary) 35%, transparent);
 }
 
 a {
@@ -439,27 +460,27 @@ svg {
 }
 
 .gap-1 {
-  gap: 4px;
+  gap: var(--rf-space-1);
 }
 
 .gap-2 {
-  gap: 8px;
+  gap: var(--rf-space-2);
 }
 
 .gap-3 {
-  gap: 12px;
+  gap: var(--rf-space-3);
 }
 
 .gap-4 {
-  gap: 16px;
+  gap: var(--rf-space-4);
 }
 
 .gap-5 {
-  gap: 20px;
+  gap: var(--rf-space-5);
 }
 
 .gap-6 {
-  gap: 24px;
+  gap: var(--rf-space-6);
 }
 
 .surface,
@@ -482,20 +503,26 @@ svg {
 
 .surface-glass {
   border: 1px solid var(--rf-glass-border);
-  background: var(--rf-glass);
+  background: var(--rf-bg-overlay); /* Fallback */
   box-shadow:
     inset 0 1px 0 var(--rf-glass-highlight),
     var(--rf-shadow-lifted);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
+}
+
+@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {
+  .surface-glass {
+    background: var(--rf-glass);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
 }
 
 .card-pad {
-  padding: 20px;
+  padding: var(--rf-space-5);
 }
 
 .panel-pad {
-  padding: 24px;
+  padding: var(--rf-space-6);
 }
 
 .divider {
@@ -514,7 +541,7 @@ svg {
   align-items: center;
   gap: 22px;
   padding: 10px 28px;
-  border-bottom: 1px solid color-mix(in srgb, var(--rf-bone-50) 10%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--rf-bone-50) 10%, transparent);
   background: var(--rf-header-fill);
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
@@ -567,7 +594,7 @@ svg {
 }
 
 .app-nav a[aria-current="page"] {
-  background: color-mix(in srgb, var(--rf-bone-50) 7%, transparent);
+  background: color-mix(in oklch, var(--rf-bone-50) 7%, transparent);
   color: var(--rf-text-primary);
 }
 
@@ -627,28 +654,28 @@ svg {
 }
 
 .button-action {
-  border-color: color-mix(in srgb, var(--rf-interactive) 50%, transparent);
-  background: color-mix(in srgb, var(--rf-interactive) 6%, transparent);
+  border-color: color-mix(in oklch, var(--rf-interactive) 50%, transparent);
+  background: transparent;
   color: var(--rf-interactive);
 }
 
 .button-action:hover {
-  background: color-mix(in srgb, var(--rf-interactive) 13%, transparent);
+  background: color-mix(in oklch, var(--rf-interactive) 13%, transparent);
 }
 
 .button-ghost {
   border-color: var(--rf-border-default);
-  background: color-mix(in srgb, var(--rf-bone-50) 4%, transparent);
+  background: color-mix(in oklch, var(--rf-bone-50) 4%, transparent);
   color: var(--rf-text-secondary);
 }
 
 .button-ghost:hover {
-  background: color-mix(in srgb, var(--rf-bone-50) 9%, transparent);
+  background: color-mix(in oklch, var(--rf-bone-50) 9%, transparent);
   color: var(--rf-text-primary);
 }
 
 .button-danger {
-  border-color: color-mix(in srgb, var(--rf-danger) 46%, transparent);
+  border-color: color-mix(in oklch, var(--rf-danger) 46%, transparent);
   background: transparent;
   color: var(--rf-danger);
 }
@@ -682,14 +709,14 @@ svg {
   height: 18px;
   place-items: center;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--rf-interactive) 15%, transparent);
+  background: color-mix(in oklch, var(--rf-interactive) 15%, transparent);
   color: var(--rf-interactive-hover);
   content: "✓";
   font-size: 0.67rem;
 }
 
 .status-warning::before {
-  background: color-mix(in srgb, var(--rf-caution) 13%, transparent);
+  background: color-mix(in oklch, var(--rf-caution) 13%, transparent);
   color: var(--rf-caution);
   content: "!";
 }
@@ -787,10 +814,10 @@ textarea.input {
   flex: 0 0 48px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--rf-bone-50) 12%, transparent);
+  border: 1px solid color-mix(in oklch, var(--rf-bone-50) 12%, transparent);
   border-radius: var(--rf-radius-control);
   background: var(--rf-bg-overlay);
-  color: color-mix(in srgb, var(--rf-bone-50) 72%, transparent);
+  color: color-mix(in oklch, var(--rf-bone-50) 72%, transparent);
 }
 
 .art::before,
@@ -956,16 +983,16 @@ textarea.input {
    instead of hardcoding hex, so the ramp lives in tokens (build/push/attack/peak
    = copper-200 -> copper-400 -> ember-500 -> plasma-500). Geometry (axis/offset)
    stays inline per gradient. */
-.stop-build {
+.rf-stop-build {
   stop-color: var(--rf-ribbon-stop-0);
 }
-.stop-push {
+.rf-stop-push {
   stop-color: var(--rf-ribbon-stop-1);
 }
-.stop-attack {
+.rf-stop-attack {
   stop-color: var(--rf-ribbon-stop-2);
 }
-.stop-peak {
+.rf-stop-peak {
   stop-color: var(--rf-ribbon-stop-3);
 }
 /* Ribbon area fill — replaces inline fill-opacity="0.22" in markup so the
@@ -978,19 +1005,19 @@ textarea.input {
   stroke-opacity: var(--rf-ribbon-line-opacity);
 }
 /* SVG solid fill/stroke equivalents (ribbon area fills, peak dots, simple ramps). */
-.fill-push {
+.rf-fill-push {
   fill: var(--rf-copper-400);
 }
-.fill-peak {
+.rf-fill-peak {
   fill: var(--rf-peak);
 }
-.stroke-push {
+.rf-stroke-push {
   stroke: var(--rf-copper-400);
 }
 /* Canonical ribbon baseline (the faint axis line under the energy ribbon).
    Tokenized so every surface draws the same baseline (token: ribbon.baseline =
    border.subtle). */
-.stroke-baseline {
+.rf-stroke-baseline {
   stroke: var(--rf-ribbon-baseline);
   stroke-width: 1;
 }
@@ -1015,15 +1042,15 @@ textarea.input {
   background: var(--rf-ember-500);
 }
 
-.bg-amber {
+.rf-bg-amber {
   background: var(--rf-amber-400);
 }
 
-.bg-peak {
+.rf-bg-peak {
   background: var(--rf-peak);
 }
 
-.bg-ember {
+.rf-bg-ember {
   background: var(--rf-ember-500);
 }
 
@@ -1057,7 +1084,7 @@ button.track-row {
 }
 
 .track-row.is-selected {
-  border-color: color-mix(in srgb, var(--rf-interactive) 58%, transparent);
+  border-color: color-mix(in oklch, var(--rf-interactive) 58%, transparent);
   background: var(--rf-bg-raised);
   box-shadow: inset 3px 0 0 var(--rf-interactive);
 }
@@ -1160,19 +1187,19 @@ button.track-row {
 
 .ps-connected .ps-icon,
 .ps-reconnecting .ps-icon {
-  background: color-mix(in srgb, var(--rf-interactive) 16%, transparent);
+  background: color-mix(in oklch, var(--rf-interactive) 16%, transparent);
   color: var(--rf-interactive-hover);
 }
 
 .ps-disconnected .ps-icon,
 .ps-expired .ps-icon {
-  background: color-mix(in srgb, var(--rf-caution) 18%, transparent);
+  background: color-mix(in oklch, var(--rf-caution) 18%, transparent);
   color: var(--rf-caution);
 }
 
 .ps-permission .ps-icon,
 .ps-error .ps-icon {
-  background: color-mix(in srgb, var(--rf-danger) 18%, transparent);
+  background: color-mix(in oklch, var(--rf-danger) 18%, transparent);
   color: var(--rf-danger);
 }
 
@@ -1240,7 +1267,7 @@ button.track-row {
 
 .chip[aria-pressed="true"] {
   border-color: var(--rf-interactive);
-  background: color-mix(in srgb, var(--rf-interactive) 12%, transparent);
+  background: color-mix(in oklch, var(--rf-interactive) 12%, transparent);
   color: var(--rf-text-primary);
   font-weight: 750;
 }
@@ -1288,7 +1315,7 @@ button.track-row {
 
 .gallery-card:hover {
   transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--rf-brand-primary) 42%, transparent);
+  border-color: color-mix(in oklch, var(--rf-brand-primary) 42%, transparent);
 }
 
 .gallery-card p {
@@ -1351,8 +1378,8 @@ button.track-row {
   border: 1px solid var(--rf-border-default);
   border-radius: var(--rf-radius-panel);
   background:
-    linear-gradient(color-mix(in srgb, var(--rf-bone-50) 3.5%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--rf-bone-50) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in oklch, var(--rf-bone-50) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--rf-bone-50) 3.5%, transparent) 1px, transparent 1px),
     var(--rf-bg-sunken);
   background-size: 28px 28px;
   box-shadow: var(--rf-shadow-lifted);
@@ -1421,8 +1448,8 @@ button.track-row {
 }
 
 .source-link[aria-current="page"] {
-  border-color: color-mix(in srgb, var(--rf-brand-primary) 32%, transparent);
-  background: color-mix(in srgb, var(--rf-brand-primary) 8%, transparent);
+  border-color: color-mix(in oklch, var(--rf-brand-primary) 32%, transparent);
+  background: color-mix(in oklch, var(--rf-brand-primary) 8%, transparent);
   color: var(--rf-text-primary);
   box-shadow: inset 3px 0 0 var(--rf-brand-primary);
 }
@@ -1474,7 +1501,7 @@ button.track-row {
 }
 
 .library-row.is-selected {
-  border-color: color-mix(in srgb, var(--rf-interactive) 55%, transparent);
+  border-color: color-mix(in oklch, var(--rf-interactive) 55%, transparent);
   background: var(--rf-bg-raised);
 }
 
@@ -1487,7 +1514,7 @@ button.track-row {
   align-items: center;
   gap: 18px;
   margin-top: 18px;
-  border: 1px solid color-mix(in srgb, var(--rf-interactive-hover) 32%, transparent);
+  border: 1px solid color-mix(in oklch, var(--rf-interactive-hover) 32%, transparent);
   border-radius: var(--rf-radius-card);
   background: var(--rf-glass-strong);
   padding: 12px 16px;
@@ -1562,8 +1589,8 @@ button.track-row {
 }
 
 .class-link[aria-current="page"] {
-  border-color: color-mix(in srgb, var(--rf-brand-primary) 32%, transparent);
-  background: color-mix(in srgb, var(--rf-brand-primary) 8%, transparent);
+  border-color: color-mix(in oklch, var(--rf-brand-primary) 32%, transparent);
+  background: color-mix(in oklch, var(--rf-brand-primary) 8%, transparent);
   box-shadow: inset 3px 0 0 var(--rf-brand-primary);
 }
 
@@ -1641,7 +1668,7 @@ button.track-row {
   align-items: center;
   border: 1px solid var(--rf-border-subtle);
   border-radius: 7px;
-  background: color-mix(in srgb, var(--rf-bone-50) 4.5%, transparent);
+  background: color-mix(in oklch, var(--rf-bone-50) 4.5%, transparent);
   padding: 0 8px;
   color: var(--rf-text-tertiary);
   font-family: var(--rf-font-data);
@@ -1649,8 +1676,8 @@ button.track-row {
 }
 
 .timeline-block.is-active {
-  border-color: color-mix(in srgb, var(--rf-interactive) 50%, transparent);
-  background: color-mix(in srgb, var(--rf-interactive) 9%, transparent);
+  border-color: color-mix(in oklch, var(--rf-interactive) 50%, transparent);
+  background: color-mix(in oklch, var(--rf-interactive) 9%, transparent);
 }
 
 .timeline-marker {
@@ -1680,7 +1707,7 @@ button.track-row {
   left: 42%;
   width: 2px;
   background: var(--rf-interactive-hover);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--rf-interactive) 60%, transparent);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--rf-interactive) 60%, transparent);
 }
 
 .track-list {
@@ -1725,7 +1752,7 @@ button.track-row {
 
 .zone-option[aria-pressed="true"] {
   border-color: var(--rf-interactive);
-  background: color-mix(in srgb, var(--rf-interactive) 9%, transparent);
+  background: color-mix(in oklch, var(--rf-interactive) 9%, transparent);
 }
 
 .zone-option span:first-child {
@@ -1820,11 +1847,11 @@ button.track-row {
    All-Out (Zone 4). A non-peak current cue stays neutral (see 02-color-system
    plasma allowlist; 10-rhythm-system §5 the one drop). */
 .current-cue.is-all-out {
-  border-color: color-mix(in srgb, var(--rf-peak) 34%, transparent);
+  border-color: color-mix(in oklch, var(--rf-peak) 34%, transparent);
   background:
     radial-gradient(
       circle at 78% 14%,
-      color-mix(in srgb, var(--rf-peak) 22%, transparent),
+      color-mix(in oklch, var(--rf-peak) 22%, transparent),
       transparent 30%
     ),
     var(--rf-bg-sunken);
@@ -1945,7 +1972,7 @@ button.track-row {
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: var(--rf-text-primary);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--rf-interactive) 28%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--rf-interactive) 28%, transparent);
   content: "";
 }
 
@@ -1961,8 +1988,8 @@ button.track-row {
   justify-content: space-between;
   border-right: 1px solid var(--rf-border-subtle);
   background:
-    linear-gradient(color-mix(in srgb, var(--rf-bone-50) 3%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--rf-bone-50) 3%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in oklch, var(--rf-bone-50) 3%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--rf-bone-50) 3%, transparent) 1px, transparent 1px),
     var(--rf-bg-sunken);
   background-size: 36px 36px;
   padding: 48px;
@@ -2003,9 +2030,9 @@ button.track-row {
   align-items: flex-start;
   gap: 12px;
   margin-bottom: 20px;
-  border: 1px solid color-mix(in srgb, var(--rf-caution) 28%, transparent);
+  border: 1px solid color-mix(in oklch, var(--rf-caution) 28%, transparent);
   border-radius: var(--rf-radius-card);
-  background: color-mix(in srgb, var(--rf-caution) 6%, transparent);
+  background: color-mix(in oklch, var(--rf-caution) 6%, transparent);
   padding: 14px 16px;
 }
 
@@ -2081,8 +2108,8 @@ button.track-row {
   border: 1px solid var(--rf-border-default);
   border-radius: var(--rf-radius-sheet);
   background:
-    linear-gradient(color-mix(in srgb, var(--rf-bone-50) 3.5%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--rf-bone-50) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in oklch, var(--rf-bone-50) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--rf-bone-50) 3.5%, transparent) 1px, transparent 1px),
     var(--rf-bg-sunken);
   background-size: 30px 30px;
   padding: 28px;
@@ -2095,7 +2122,7 @@ button.track-row {
   right: -120px;
   top: -120px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--rf-peak) 22%, transparent);
+  background: color-mix(in oklch, var(--rf-peak) 22%, transparent);
   content: "";
   filter: blur(18px);
 }
@@ -2121,7 +2148,7 @@ button.track-row {
 .share-metric {
   border: 1px solid var(--rf-border-subtle);
   border-radius: var(--rf-radius-input);
-  background: color-mix(in srgb, var(--rf-bone-50) 4%, transparent);
+  background: color-mix(in oklch, var(--rf-bone-50) 4%, transparent);
   padding: 10px;
 }
 
@@ -2186,7 +2213,7 @@ button.track-row {
 }
 
 .phone-nav a[aria-current="page"] {
-  background: color-mix(in srgb, var(--rf-interactive) 10%, transparent);
+  background: color-mix(in oklch, var(--rf-interactive) 10%, transparent);
   color: var(--rf-interactive);
 }
 
@@ -2229,11 +2256,11 @@ button.track-row {
 @keyframes playing-beat {
   0%,
   100% {
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--rf-interactive) 35%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--rf-interactive) 35%, transparent);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 12px color-mix(in srgb, var(--rf-interactive) 60%, transparent);
+    box-shadow: 0 0 12px color-mix(in oklch, var(--rf-interactive) 60%, transparent);
     transform: scale(var(--rf-pulse-scale-max));
   }
 }
@@ -2289,7 +2316,7 @@ button.track-row {
   box-shadow: var(--rf-shadow-peak-bloom);
 }
 .heat-glow-svg {
-  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--rf-peak) 55%, transparent));
+  filter: drop-shadow(0 0 18px color-mix(in oklch, var(--rf-peak) 55%, transparent));
 }
 
 /* ============================================================================
@@ -2326,8 +2353,8 @@ button.track-row {
 }
 
 .move-row.is-selected {
-  border-color: color-mix(in srgb, var(--rf-interactive) 50%, transparent);
-  background: color-mix(in srgb, var(--rf-interactive) 7%, transparent);
+  border-color: color-mix(in oklch, var(--rf-interactive) 50%, transparent);
+  background: color-mix(in oklch, var(--rf-interactive) 7%, transparent);
 }
 
 /* Neutral move marker — the ◆ shape that distinguishes a move from a cue (▲).
@@ -2339,7 +2366,7 @@ button.track-row {
   height: 36px;
   border: 1px solid var(--rf-border-default);
   border-radius: var(--rf-radius-control);
-  background: color-mix(in srgb, var(--rf-move-tint) 10%, transparent);
+  background: color-mix(in oklch, var(--rf-move-tint) 10%, transparent);
   color: var(--rf-move-tint);
   font-size: 0.78rem;
 }
@@ -2385,7 +2412,7 @@ button.track-row {
 /* "Custom" tag for user_moves, so library vs your-own reads at a glance. */
 .move-origin {
   border-radius: var(--rf-radius-control);
-  background: color-mix(in srgb, var(--rf-move-tint) 12%, transparent);
+  background: color-mix(in oklch, var(--rf-move-tint) 12%, transparent);
   color: var(--rf-text-secondary);
   padding: 1px 6px;
   font-family: var(--rf-font-data);

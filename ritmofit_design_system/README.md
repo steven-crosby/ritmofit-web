@@ -39,7 +39,7 @@ The visual target is **Club Athletic + Creator Swagger + Nike restraint**:
 | `ritmofit-design-system.md`        | Product and brand authority for every decision in this package |
 | `tokens.json`                    | Platform-neutral token source (single source of truth)         |
 | `scripts/build-tokens.mjs`       | Generates the `:root` block in `mockups/theme.css` from tokens |
-| `scripts/build-tokens-ios.mjs`   | Generates `ios/RFTokens.swift` (colors, type, spacing, motion) from tokens |
+| `scripts/build-tokens-ios.mjs`   | Generates `ios/RFTokens.swift` (colors dark + light, type, spacing, radius, motion, tempo, intensity, segment, move, ribbon, gradient) from tokens |
 | `ios/RFTokens.swift`             | Generated SwiftUI constants — the iOS half of token parity      |
 | `scripts/fetch-fonts.mjs`        | Self-hosts the three OFL fonts into `mockups/fonts/` + `fonts.css` |
 | `scripts/lint-tokens.mjs`        | Guardrail lint: no raw hex in hand CSS/markup, no banned copy, token integrity |
@@ -86,8 +86,11 @@ expects a `Color(hex:)` initializer in the host app (the iOS repo provides one).
 
 A complete **light theme** is generated too, but **opt-in**: web emits a `[data-theme="light"]` override
 block, iOS an `RFColorLight` enum. Dark stays the default; set `data-theme="light"` on a root element (or
-adopt `RFColorLight`) to use it. Live mode stays dark in both themes; glass/shadow light support is a
-documented follow-up.
+adopt `RFColorLight`) to use it. The light theme flips the full surface layer — semantic colors, glass
+(fills, border, highlight, sticky header), and shadows. Live mode stays dark in both themes by design (a
+performance surface for dim rooms). On iOS, glass is expressed via native materials, so `RFColorLight`
+covers the semantic color layer; web's `[data-theme="light"]` block additionally carries the glass/shadow
+values. Light-mode glass legibility isn't gated by `check-contrast.mjs`, so verify it in a real browser.
 
 ## Mockups
 

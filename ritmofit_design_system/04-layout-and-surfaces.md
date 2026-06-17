@@ -32,8 +32,8 @@ RitmoFit uses **both, by surface job**, never mixing them on one element:
 
 | Token     | px  | Applies to                             |
 | --------- | --- | -------------------------------------- |
-| `sheet`   | 32  | Share/export card, All-Out cue card    |
-| `panel`   | 28  | Main panels, large overlays, sheets    |
+| `sheet`   | 32  | Full-height sheets, the largest surfaces |
+| `panel`   | 28  | Main panels, large overlays            |
 | `card`    | 20  | Cards, song rows, list items           |
 | `input`   | 16  | Text fields, selects                   |
 | `control` | 12  | Small controls, chips bg, tiny buttons |
@@ -85,10 +85,5 @@ The mockup breakpoints (`mockups/theme.css`), each collapsing multi-column layou
 `html` sets `min-width: 320px` as the supported floor; touch targets stay ≥ 44×44pt and the focus ring is
 visible at every width.
 
-> QA note (status): the **static** structure is verified — all four breakpoints (1180 / 900 / 680 /
-> 480) are present in `mockups/theme.css`, `html` declares the `min-width: 320px` floor, no layout
-> container uses a fixed width above the 320px floor (the lone `300px` is the share-card's decorative
-> off-axis bloom, not content), and the Live `data-hero` BPM scales via `clamp()` rather than a fixed
-> size. The **visual** checks — actual render at the 320px floor and at 200% browser zoom — still
-> require a **real browser**; the headless screenshot tooling here did not reliably set a sub-default
-> layout viewport, so those two remain manual. Record the result here once run.
+> QA note: verify the 320px floor and 200% browser zoom in a **real browser** — the headless screenshot
+> tooling used here did not reliably set a sub-default layout viewport, so those two checks are manual.

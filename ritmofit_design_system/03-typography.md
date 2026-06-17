@@ -27,11 +27,15 @@ So the data layer gets its own face with mechanical character, and the numbers b
 
 ## Scale
 
-px on web; iOS maps 1:1 to points. Tracking in em.
+Sizes are the iOS point values (mapped 1:1) and the web reference. On web the display/title and `data`
+roles render in **relative units** — the large roles use fluid `clamp()` so type scales with browser zoom
+(per [`07-accessibility.md`](./07-accessibility.md)); the values below are the design intent, not emitted
+CSS variables (see the emitter-coverage note in [`08-ios-web-alignment.md`](./08-ios-web-alignment.md)).
+Tracking in em.
 
 | Token         | Size / Line | Weight | Tracking | Family        | Use                                   |
 | ------------- | ----------- | ------ | -------- | ------------- | ------------------------------------- |
-| `display-xl`  | 52 / 56     | 600    | -0.02    | Space Grotesk | Marketing hero accent (`.title-xl`)   |
+| `display-xl`  | 52 / 56     | 600    | -0.02    | Space Grotesk | Largest hero moment (iOS point value) |
 | `display-lg`  | 48 / 52     | 600    | -0.02    | Space Grotesk | Marketing hero, big titles            |
 | `display`     | 34 / 40     | 600    | -0.02    | Space Grotesk | Section heroes, Live title            |
 | `title`       | 24 / 30     | 600    | -0.01    | Inter         | Screen titles                         |

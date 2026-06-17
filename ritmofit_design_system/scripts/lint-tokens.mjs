@@ -86,6 +86,18 @@ if (tokens) {
     }
   };
   walk(tokens.color);
+
+  // Spacing scale must be emitted to the web :root — the .gap-*/*-pad utilities
+  // reference --rf-space-* so web spacing can't drift from tokens.json. Guard the
+  // emission so a regression (dropping the group) fails loudly instead of silently
+  // breaking layout. The generated :root block lives between the tokens markers.
+  const rootBlock = (theme.match(/\/\* >>> tokens:start[\s\S]*?\/\* <<< tokens:end \*\//) || [""])[0];
+  for (const k of Object.keys(tokens.space || {})) {
+    if (k.startsWith("$")) continue;
+    if (!new RegExp(`--rf-space-${k}\\s*:`).test(rootBlock)) {
+      fail("mockups/theme.css", `spacing token space.${k} not emitted as --rf-space-${k} — run node scripts/build-tokens.mjs`);
+    }
+  }
 }
 
 // --- 5. Prose <-> token table integrity -------------------------------------

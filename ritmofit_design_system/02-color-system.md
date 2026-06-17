@@ -5,11 +5,14 @@ A complete warm **light** palette now fills every semantic `light` slot (cream s
 copper/cyan/cyan-state stepped to their deepest existing steps for contrast on a light ground). It is
 **opt-in** — the web emits it under `[data-theme="light"]`, iOS as `RFColorLight` — so dark stays the
 default and the dark-first surfaces are unaffected. Surfaces and text are AA-clean (espresso text on cream
-is ~7:1+; tertiary uses `ink-500` for AA). Two documented carve-outs remain as follow-ups, plus one
-now-closed item kept for the record:
+is ~7:1+; tertiary uses `ink-500` for AA). One item is intentional-by-design; two are now closed (kept
+for the record):
 
-1. **Live mode stays dark** in both themes (`bg/live`, a performance surface for dim rooms).
-2. **Glass/shadow surfaces have no light variant yet** — only the semantic color layer flips.
+1. **Live mode stays dark** in both themes (`bg/live`, a performance surface for dim rooms) — by design, not a gap.
+2. **Glass/shadow light variants — RESOLVED.** The light theme flips the glass fills, hairline border,
+   inner highlight, sticky-header fill, and the card/lifted shadows (warm-white translucency + softer
+   shadows), emitted under `[data-theme="light"]`. Light-mode glass legibility is not gated by
+   `check-contrast.mjs` (it covers text/accent pairs), so verify glass surfaces in a real browser.
 3. **Bright accent channels as _small_ text on light — RESOLVED.** The light theme maps the interactive
    channel to `cyan-700` and caution to `amber-600` (the deepened steps), and the eyebrow to
    `copper-600`/`brand-strong`. With those, copper eyebrows (4.63:1) and cyan links (5.30:1) clear AA for

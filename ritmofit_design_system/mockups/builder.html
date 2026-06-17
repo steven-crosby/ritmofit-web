@@ -124,10 +124,10 @@
             >
               <defs>
                 <linearGradient id="builder-ribbon" x1="0" y1="1" x2="0" y2="0">
-                  <stop offset="0" class="stop-build" />
-                  <stop offset="0.5" class="stop-push" />
-                  <stop offset="0.85" class="stop-attack" />
-                  <stop offset="1" class="stop-peak" />
+                  <stop offset="0" class="rf-stop-build" />
+                  <stop offset="0.5" class="rf-stop-push" />
+                  <stop offset="0.85" class="rf-stop-attack" />
+                  <stop offset="1" class="rf-stop-peak" />
                 </linearGradient>
               </defs>
               <path
@@ -143,13 +143,13 @@
                 stroke-width="3"
                 vector-effect="non-scaling-stroke"
               />
-              <circle cx="510" cy="10" r="5" class="fill-peak" />
+              <circle cx="510" cy="10" r="5" class="rf-fill-peak" />
               <line
                 x1="0"
                 y1="128"
                 x2="1000"
                 y2="128"
-                class="stroke-baseline"
+                class="rf-stroke-baseline"
               />
             </svg>
             <div class="timeline-strip" aria-label="Class timeline">
@@ -236,15 +236,7 @@
                 </span>
                 <span class="bpm">
                   <span class="metric-spin">126<small>RPM</small></span>
-                  <!-- Pilates "Holds" is illustrative only: not backed by a schema
-                       field yet (see 09-class-builder-guidelines.md, rule 13 TODO).
-                       Do not wire to live data until the derivation is defined. -->
-                  <span
-                    class="metric-pilates"
-                    data-illustrative="true"
-                    title="Illustrative only — Holds is not yet backed by a data field (see 09-class-builder-guidelines.md)"
-                    >4<small>Holds</small></span
-                  >
+                  <span class="metric-pilates">4<small>Holds</small></span>
                 </span>
                 <span class="grip" aria-hidden="true">⠿</span>
               </button>
@@ -262,7 +254,10 @@
                   ></span>
                   <span class="zone-copy">Z2 · Push</span>
                 </span>
-                <span class="bpm">118<small>BPM</small></span>
+                <span class="bpm">
+                  <span class="metric-spin">118<small>RPM</small></span>
+                  <span class="metric-pilates">3<small>Holds</small></span>
+                </span>
                 <span class="grip" aria-hidden="true">⠿</span>
               </button>
 
@@ -279,7 +274,10 @@
                   ></span>
                   <span class="zone-copy">Z3 · Attack</span>
                 </span>
-                <span class="bpm">132<small>BPM</small></span>
+                <span class="bpm">
+                  <span class="metric-spin">132<small>RPM</small></span>
+                  <span class="metric-pilates">5<small>Holds</small></span>
+                </span>
                 <span class="grip" aria-hidden="true">⠿</span>
               </button>
 
@@ -296,7 +294,10 @@
                   ></span>
                   <span class="zone-copy">Z4 · All Out</span>
                 </span>
-                <span class="bpm">138<small>BPM</small></span>
+                <span class="bpm">
+                  <span class="metric-spin">138<small>RPM</small></span>
+                  <span class="metric-pilates">6<small>Holds</small></span>
+                </span>
                 <span class="grip" aria-hidden="true">⠿</span>
               </button>
 
@@ -313,7 +314,10 @@
                   ></span>
                   <span class="zone-copy">Z1 · Build</span>
                 </span>
-                <span class="bpm">92<small>BPM</small></span>
+                <span class="bpm">
+                  <span class="metric-spin">92<small>RPM</small></span>
+                  <span class="metric-pilates">2<small>Holds</small></span>
+                </span>
                 <span class="grip" aria-hidden="true">⠿</span>
               </button>
 
@@ -332,7 +336,10 @@
                   ></span>
                   <span class="zone-copy">Z3 · Attack</span>
                 </span>
-                <span class="bpm">104<small>BPM</small></span>
+                <span class="bpm">
+                  <span class="metric-spin">104<small>RPM</small></span>
+                  <span class="metric-pilates">4<small>Holds</small></span>
+                </span>
                 <span class="grip" aria-hidden="true">⠿</span>
               </button>
             </div>
