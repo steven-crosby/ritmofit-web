@@ -50,7 +50,7 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 
 | Area | Decision |
 |---|---|
-| Platform | **Cloudflare-native** — Workers (API) + D1 (database) + Pages/Workers static assets (web) |
+| Platform | **Cloudflare-native** — Workers (API) + D1 (database) + the SPA served as Workers static assets from the **same Worker/origin** as the API (no separate Pages site, single origin) |
 | Account system | We own the `users` table; auth providers only verify identity |
 | Auth | **Better Auth** on Workers + D1 (email, Apple, Google). Sessions in our D1. |
 | Backend framework | **Hono** (TypeScript) on a Worker; REST surface documented with OpenAPI |
@@ -90,7 +90,7 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
 Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
-> **Status — current as of 2026-06-15.** Backend **M1–M4 complete, merged to `main`, and fully deployed
+> **Status — current as of 2026-06-17.** Backend **M1–M4 complete, merged to `main`, and fully deployed
 > since 2026-06-12.** The whole app — API +
 > web planning surface — is **live at `https://ritmofit.studio`**, served by one Worker (Workers static
 > assets; single origin ⇒ first-party auth, no CORS), with remote D1 migrated through `0012`. M4
@@ -101,224 +101,10 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > **advisory** until the owner enables branch protection.
 > Current launch/deploy status is tracked in [`../REVIEW.md`](../REVIEW.md); canonical contributor and
 > deployment instructions are in [`../AGENTS.md`](../AGENTS.md).
->
-> **Web UI coverage closed + PR-preview decision deferred (2026-06-15, PRs #65–#66, not deployed).**
-> PR #66 closes the last REVIEW.md "web UI coverage" SHOULD-FIX with jsdom + Testing Library component
-> tests for Dashboard (incl. the keyed rapid-switch guard), the Connections/Share/Teams dialogs, and
-> ErrorBoundary (web unit suite 103 → 118; total api 175 + web 118, integration 41). PR #65 recorded the
-> integration-test matrix + audit disposition. Separately, evaluated linking the GitHub repo to Cloudflare
-> for CI/preview deploys and **deferred PR preview environments** (recorded as a DEFERRED decision in
-> REVIEW.md): the repo-link is rejected outright (duplicates CI + pushes toward auto-deploy, conflicting
-> with the manual-deploy guardrail); previews revisited when a second reviewer joins or at launch, via a
-> `wrangler versions upload` PR job (a version, not a deploy) if pursued. All test/docs-only — no schema,
-> migration, API, shared-contract, or OpenAPI change, so **not a deploy**; production stays on Worker
-> `768cdded` / remote D1 `0012`. Close-session gates green (typecheck, lint, unit 293, integration 41,
-> web build, OpenAPI no-drift).
->
-> **LiveMode timeline perf deployed (2026-06-15).** PR #62 closes the REVIEW.md NICE-TO-HAVE
-> "avoid rebuilding the active event list on every animation frame": each track's cues/moves are now
-> flattened/sorted once per payload, a primitive-returning `trackIndexAt` keeps frame-rate memos from
-> invalidating unless the live track changes, and current/next come from a single O(log n) binary search
-> over the stable pre-sorted array (`FullList` reuses the same precomputed events). Web-only — no schema,
-> migration, API, shared-contract, or OpenAPI change; +8 LiveMode unit tests (suite 3 → 11). All
-> CI-equivalent gates green (typecheck, lint, unit api 175 + web 103, 28 Worker/D1 integration, web
-> build, OpenAPI no-drift). Worker `768cdded-78b4-4150-a017-d8c92042c750` is live at 100% (supersedes
-> `7505f9aa`); remote D1 unchanged (no pending migrations, through `0012`). Post-deploy smoke: SPA `200`,
-> `/health` `200`, `/explore` + `/classes` `401`, and the new `LiveMode-Bu73mx7n.js` chunk `200`.
->
-> **Integration-test matrix completed + audit gate kept green (2026-06-15, PRs #63–#64, not deployed).**
-> PR #63 closes the last REVIEW.md "Expand Worker/D1 integration tests" gaps: new `provider-callback`,
-> `provider-disconnect`, and `password-reset` suites drive the mounted worker against Miniflare D1
-> (integration suite 28 → 41), covering every OAuth-callback failure branch (state minted via the test
-> `ENCRYPTION_KEY`), the disconnect → purge-enqueue side effect, and the full Better Auth reset flow
-> (request → reset → sign-in, plus no-enumeration + invalid-token). PR #64 dispositions two
-> newly-published dev/build-only vite advisories (`GHSA-fx2h-pf6j-xcff`, `GHSA-v6wh-96g9-6wx3`) that had
-> started failing `audit:ci` on `main`. Both are test/tooling-only — no schema, migration, API,
-> shared-contract, or OpenAPI change — so **neither is a deploy**; production stays on Worker `768cdded`
-> / remote D1 `0012`. Merged after green CI. The integration-test matrix item is closed; at that point,
-> the remaining code-level SHOULD-FIX from the review was the Better Auth trusted client-IP header.
->
-> **Better Auth trusted client-IP hardening completed and deployed (PR #67, 2026-06-15).** Better Auth now
-> keys auth rate limits only from Cloudflare's trusted `CF-Connecting-IP` header, removing
-> `X-Forwarded-For` as a fallback because clients can supply values before Cloudflare appends to it. The
-> Worker/D1 integration helper now supplies a production-shaped `cf-connecting-ip` header by default, and
-> the password-reset suite proves spoofed `X-Forwarded-For` values do not create separate rate-limit
-> buckets. No schema, migration, API contract, shared-contract, or OpenAPI change. Merged after green CI
-> and deployed to production as Worker `035f196c-e11b-4507-81d7-b5320b42ff2b` (remote D1 unchanged at
-> `0012`); smoke-tested SPA, `/api/v1/health`, and a protected route (401 without auth).
->
-> **Web design-system reconciliation completed and deployed (PRs #69 + #70, 2026-06-16).** The web app
-> now fully adopts the consolidated design system: `tokens.json` re-vendored from the source of truth
-> (new primitives, `bg/live`, `radius.sheet`, corrected state colors, default BPM 120→122), Tailwind
-> mappings for the `state.*`/`segment.*` channels, the danger channel corrected across 11 components (was
-> borrowing the intensity ramp), the three OFL fonts self-hosted (Google Fonts CDN removed, CSP tightened
-> to `font-src 'self'`, full per-family `*-OFL.txt` bundled), explicit provider connection states, Live on
-> the `bg/live` surface, and an opt-in `[data-theme="light"]` token block. A high-effort code-review pass
-> also fixed four pre-existing broken `--rf-*` token references. No schema, migration, API contract,
-> shared-contract, or OpenAPI change. PR #69 (the reconciliation) shipped first as Worker `ce1b41e9`, then
-> PR #70 (the OFL license bundle) as Worker `d4613501-c176-49cf-ad44-2e3f166bf3c8` (remote D1 unchanged at
-> `0012`); both smoke-tested — SPA, `/api/v1/health`, a protected route (401), the self-hosted font assets,
-> and the three OFL license texts (`200 text/plain`).
->
-> **Standalone design-system synthesis completed (2026-06-15).** A reviewable reference package now
-> lives at the workspace root in `ritmofit-design-system-latest/`. It consolidates canonical tokens and
-> guidance, adds a first-class Library-to-Builder creation flow, and includes framework-free mockups for
-> marketing, Library, Builder, Live, share cards, iOS direction, sign-in, and explicitly future-facing
-> Explore/Teams surfaces. This does not alter production components, API contracts, schema, migrations,
-> or deployment state. Production adoption remains a separate reviewable implementation phase. **The
-> canonical design system is still the in-repo [`../ritmofit_design_system/`](../ritmofit_design_system/);**
-> the workspace-root `ritmofit-design-system-*` directories and HTML mockups are exploration artifacts,
-> not the source of truth.
->
-> **Pre-launch blocker remediation deployed (2026-06-14).** PR #45 shipped four audited launch fixes:
-> production OAuth callbacks use the canonical web origin; shares and team grants require a verified
-> target identity; Dashboard class detail is keyed by class/request and rejects stale responses; and
-> provider disconnect purges clear unprovenanced artwork while retaining exhausted duties in a durable
-> failed state. Remote D1 is migrated through `0009` (`failed_at` plus the active-queue index), and Worker
-> version 46 (`aa26e286-c517-444a-952f-d5e410c9439f`) is live at 100%. Health, SPA, protected-route,
-> code-split asset, and missing-state SoundCloud callback smokes passed; the callback now returns to
-> `https://ritmofit.studio`.
->
-> **Production transactional email verified (2026-06-14).** Resend verifies
-> `ritmofit.studio`; public DNS resolves the sending MX/SPF/DKIM records and DMARC policy.
-> Worker secret-only version 48 (`5bcf4a47-5795-4832-b8b0-bde95d651b3d`) supplies a
-> sending-only, domain-restricted `RESEND_API_KEY` and explicit `EMAIL_FROM`. A real
-> Gmail-alias signup received and completed email verification (`email_verified = 1`);
-> the password-reset email also arrived, opened the valid reset form, and completed the
-> password change. The temporary production account and its cascaded auth rows were
-> removed after the test. The transactional-email launch blocker is closed.
->
-> **Pre-launch hardening + verification (2026-06-15).** Three web-focused PRs: **#51** an accessible
-> `Dialog` primitive (focus trap/return, `inert` background) adopted across all five dialogs, real form
-> labels, and narrow-width (390 px) layout fixes; **#52** a dialog focus guard (keep focus inside when an
-> in-dialog control is removed) plus committed Playwright browser smokes (`apps/web/smoke/`: narrow-width
-> 18/18, functional 16/16) and a deploy/rollback runbook (`deployment-runbook.md`); **#53** release-gate
-> hardening — Prettier boundary so `format:check` is green, the four dev/build-only `esbuild`/`vite` audit
-> advisories dispositioned via `pnpm-workspace.yaml`, and both wired into CI (no deploy — tooling only).
-> #51/#52 are live; Worker `1eb04d11-b676-43b5-a7be-7b62ffe83f6a` at 100%, remote D1 through `0010`.
-> **0 launch blockers remain**; the Follow-Up Verification Checklist in `../REVIEW.md` is now green except
-> a vite 5→6 upgrade (to clear the ignored advisories) and owner-only GitHub branch protection. Remaining
-> SHOULD-FIX backend items: add the remaining lookup/cleanup indexes and broaden Worker/D1 integration
-> tests.
->
-> **Web hardening — class-library pagination deployed (2026-06-15, PR #54).** `GET /classes` now resolves
-> ownership, direct/team shares, duplicate-path access rank, deterministic ordering, and optional
-> keyset pagination inside D1. The web library loads 30 classes at a time; the unparameterized full-array
-> response remains compatible with the current iOS client. Migration `0011` adds owner/share lookup
-> indexes. Remote D1 migrated through `0011`; Worker `86c996ff-4b75-4ea0-bf8e-0ed59910c125` is live at
-> 100% (supersedes `1eb04d11`). Post-deploy smoke: SPA `200`, `/health` `200`, `/classes` `401` (incl.
-> `?limit=5`), 6/6 security headers present.
->
-> **Backlog batch deployed (2026-06-15, PRs #55–#61).** The overnight hardening backlog merged to `main`
-> and the runtime/schema changes shipped together. **#57** adds the `track_provider_ids.track_id` lookup
-> index and the `rate_limit.last_request` pruning index via migration `0012` (index-only); **#56**
-> lazy-loads/async-decodes non-critical album art; **#58** renders a 404 view for unknown SPA paths;
-> **#60** adds owner-only inline class rename. **#55**/**#61** add choreography write-path and team-share
-> detail-access Worker/D1 integration tests (suite 21 → 28); **#59** rewrites the README as a real entry
-> point and drops the stale root `.dev.vars.example`. Remote D1 migrated through `0012`; Worker
-> `7505f9aa-3655-4bef-b6b3-1b2085d627eb` is live at 100% (supersedes `86c996ff`). Gates green (api 175 +
-> web 95 unit, 28 integration, build, OpenAPI no-drift, audit:ci). Post-deploy smoke: SPA `200`
-> (`index-CMFEcIls.js`), `/health` `200`, `/classes` `401`, 6/6 security headers present. Remaining
-> SHOULD-FIX: broaden the integration matrix (provider callback config, disconnect purge SQL, password
-> reset) and the deferred LiveMode RAF memoization + Better Auth trusted client-IP header.
->
-> **Web design-system build (builder UI) underway (2026-06-12).** The rich planning UI M1 deferred is
-> now being built in vertical slices — the difference between the data-flow skeleton and the designed
-> surface in [`../ritmofit_design_system/`](../ritmofit_design_system/). Slices 1–4 are merged (PR #8)
-> and **deployed** (Worker version `4afed022`, no schema change): (1) the energy-arc **intensity ribbon**,
-> (2) low-noise **song rows** (44px art, Martian-Mono BPM, intensity bars), (3) the **track inspector**
-> (edit intensity/BPM/notes, remove), (4) **cue + placed-move authoring**. Also wired **vitest into
-> `apps/web`** (geometry unit test). Slices 5–6 added drag/keyboard reorder and inline-edit of cues/moves
-> (PRs #9–#10). **Slice 7** assembles it all into the spec'd **full 3-pane `09` layout** (library · class
-> workspace · sticky inspector, with a class-header summary) — purely presentational, no schema/API/shared
-> change; `pnpm test` = api 159 + web 17 = **176** *(merged PR #13, **deployed** 2026-06-12, Worker
-> version `810f25d3`)*. **Slice 8** adds the **cue color picker** (rationed palette, no plasma; tags the
-> existing `cues.color`; deployed, Worker `74a94ec5`). **Slice 9** adds **custom user-moves** (create +
-> place reusable moves from the inspector; web-only — the `/user-moves` routes + run-payload name
-> resolution already existed; *merged PR #17, **deployed 2026-06-12**, Worker `511af62c`*). **Slice 10**
-> adds the **timeline-marker strip** beneath the ribbon (proportional track blocks + ▲ cue / ◆ move markers
-> on a shared time axis; *merged PR #19, **deployed 2026-06-12**, Worker `ca91c8c5`*). **Slice 11** makes
-> the timeline's blocks + markers **clickable/keyboard-selectable** (open a track in the inspector,
-> cross-highlight its row; *merged PR #21, **deployed 2026-06-13**, Worker `755e3489`*). **Slice 12** makes
-> a cue/move **marker click focus its row** in the inspector (*merged PR #23, deployed, Worker `802ebe48`*).
-> **Slice 13** adds a **custom-moves manager** (rename / description / delete via a dialog from the Moves
-> section; web-only over the existing `/user-moves` routes; *merged PR #25, **deployed 2026-06-13**, Worker
-> `cc437560`*). **Slice 14** adds the signature **on-beat pulse** — the Live "Now" cue card breathes on the
-> track's beat (CSS, reduced-motion-safe; *merged PR #27, **deployed 2026-06-13**, Worker `9a298d21`*).
-> **Slice 15** adds the All-Out **"drop"** — a plasma glow bloom + cue crossfade on all-out cue advances in
-> Live (CSS, reduced-motion-safe; *merged PR #29, **deployed 2026-06-13**, Worker `c3a502c0`*). **Slice 16**
-> adds the **segment band** — a new `class_sections` table (**migration `0006`**) + fixed `segmentType` enum,
-> full-stack (shared + CRUD routes + additive run-payload `sections[]` + a `SegmentBand` under the timeline);
-> this is the first builder slice that **does** change schema + contract (*merged PR #31, **deployed
-> 2026-06-13**, Worker `14d363cf`; remote D1 migrated to `0006`*). Slices 7–15 were no schema/API/shared change.
-> **Slice 17** adds **stable cue/move `id`s to the run-payload** — an **additive** contract change (no
-> schema/migration; `schemaVersion` stays 1) so the timeline marker→row focus correlates by id and two
-> cues/moves at the same `anchorMs` disambiguate (closes the slice-12/16 caveat) — and hardens the
-> contract iOS Phase 2 consumes; `pnpm test` = api 159 + web 49 = **208** (*merged PR #33, **deployed
-> 2026-06-13**, Worker `7edfda8a`, no schema/migration*).
-> Deferred: the planning-timeline pulse, the playhead/tap-to-seek, segment icons/drag-resize, custom-move
-> `baseMoveId`/`template` editing, and a run-payload `id` on `sections[]` (symmetry, if iOS wants it). See
-> `milestones.md` for the full slice log.
->
-> **Music frontend (the "M2 frontend") complete + deployed (2026-06-13).** M2's provider backend had
-> shipped with **no UI** (tracks were hand-typed as Title/Artist/ms); that gap is now closed. **S1**
-> track search → import → add (provider-picked, debounced, 44px song cards); **S2** provider-connection
-> settings (connect/disconnect, clear states); **S3** "search my likes" (token-spending); **S4** a BPM
-> lookup button. Then, when real credentials were first set, two **prod-only** bugs surfaced (the mock
-> path never exercised live `fetch`/limits) and were fixed: a Workers `Illegal invocation` from passing
-> the **bare global `fetch`** to adapters (→ a bound `fetch` wrapper) and **Spotify rejecting `limit=25`**
-> with 400 "Invalid limit" (→ 10); provider failures now also map to **502** (typed `ProviderError`), not
-> 500. **All three providers verified live in prod** (SoundCloud / Spotify / Apple Music — real search +
-> import + album art; secrets set via `wrangler secret`, Apple developer-token minted by the new
-> `apps/api/scripts/apple-dev-token.mjs`). `pnpm test` = api 159 + web 53 = **212**. PRs #35–#37; latest
-> Worker after the error-mapping fix. **Open:** SoundCloud per-user *Connect* OAuth round-trip needs the
-> redirect URI registered + a browser login to confirm (provider *search* via app-token is verified).
->
-> **iOS Phase 2 underway — near complete (2026-06-15).** The native live surface in `ritmofit-ios`
-> (built against this same backend/run-payload) has merged slices **1–10 plus slice 11 partials** to
-> `main` (PRs #5–#13); only VoiceOver, error-boundary review, and a launch screen remain. iOS status is
-> tracked in `ritmofit-ios/ritmofit_dev_plan/BUILD_ORDER.md`, the source of truth for that repo — this
-> plan does not re-track iOS slices. The web *backend* build order is done; the web *UI* design-system
-> build continues.
->
-> **Web hardening — track-duration Live guard deployed (2026-06-14).** PR #49 adds
-> class-specific `class_tracks.duration_ms_override` (migration `0010`), letting owners/editors repair an
-> unknown or incorrect provider/library duration without mutating another user's private track.
-> Sequencing, anchor validation, copies, and the run-payload use the effective duration
-> (`override ?? track.duration_ms`). The builder labels missing durations, offers an `m:ss` correction
-> in the inspector, and blocks Live mode until every track has a positive duration. Unit/component
-> tests (241), Worker/D1 integration tests (17), CI, and fresh-D1 migration verification passed.
-> Remote D1 was migrated through `0010` before Worker
-> `0e9ab61b-acb8-480c-a45d-36ae455dc6c7` deployed at 100%. Health, SPA, auth enforcement,
-> security-header, main-bundle, and Live-mode chunk smokes passed.
->
-> **Web hardening — Live provider handoff deployed (2026-06-14).** PR #50 adds explicit
-> provider-app/site handoff links for the active track in Cue-by-Cue and Full List views, using the
-> run-payload's existing `providerRefs`. A web-only validator accepts Spotify
-> track URIs and provider-owned HTTPS links for Spotify, Apple Music, and SoundCloud while suppressing
-> null, malformed, cross-provider, and unsafe stored values. This does not embed, mix, or control
-> playback and does not change schema, migrations, API behavior, shared contracts, or OpenAPI.
-> Typecheck, lint, 246 unit/component tests, 17 Worker/D1 integration tests, the production web build,
-> and OpenAPI drift verification passed. A local browser pass confirmed both Live views, 44px handoff
-> targets, provider order/labels, external-link attributes, and suppression when no trusted URI remains.
-> CI passed; merged `main` deployed as Worker `babcb3fe-9f7c-4e17-9e65-ab0c16b7784f` at 100%.
-> Remote D1 remains through `0010`. Production health, SPA, auth enforcement, security headers, exact
-> main/Live asset hashes, and browser runtime/CSP smokes passed.
->
-> **Design system — audited final package integrated + deployed (2026-06-17).** PR #74 reconciled the
-> in-repo `ritmofit_design_system` with the audited `ritmofit-design-system-final` as a union merge:
-> `tokens.json` gains an oklch heat gradient and a light-theme sticky-header token (`headerLight`), now
-> wired through the app emitter so `[data-theme="light"]` overrides the topbar; `build-tokens.mjs` /
-> `lint-tokens.mjs` gain spacing-scale emission + a guard while keeping the web copy's `--check` / prose
-> lint tooling; specs + README reconciled. No schema/API/migration change. `npm run verify`, typecheck,
-> lint, **322** unit (web 147 + api 175) + **42** Worker/D1 integration tests, the web build, and OpenAPI
-> no-drift passed; merged `main` deployed as Worker `12aa76f9-3a3f-4fc3-8950-f8096434dd31` at 100% (remote
-> D1 unchanged through `0010`). Prod CSS verified SHA-256-identical to a fresh build; a live browser render
-> confirmed the heat gradient, oklch bloom, and warm-white light header. A post-merge **integration audit**
-> (9 dimensions + live render) found the token pipeline, emitters, tooling, and prod artifact clean, and
-> surfaced three doc-accuracy issues fixed in PR #75 (docs-only, no redeploy): stale `light.html`
-> "no light variant" copy, the brief's class-naming convention (the app uses an `rf-` component namespace,
-> the mockups bare names), and a "web uses fluid `clamp()`" type claim true only of the mockups.
+
+_The full dated deploy/build log (every PR, Worker version id, and migration step) has been moved to
+[`HISTORY.md`](./HISTORY.md) to keep this map readable. This section keeps the current-state summary
+above and the milestone roll-up below._
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);
@@ -350,3 +136,4 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
 | [`ai-working-rules.md`](./ai-working-rules.md) | The plan→confirm template + the inviolable rules |
 | [`close-session-checklist.md`](./close-session-checklist.md) | End-of-session runbook — say "run the close-session checklist" |
+| [`HISTORY.md`](./HISTORY.md) | Archived dated build/deploy log (PRs, Worker versions, migration steps) |

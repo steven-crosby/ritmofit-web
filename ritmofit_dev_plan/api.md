@@ -168,15 +168,22 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
         { "provider": "soundcloud", "providerTrackId": "…", "providerUri": "…" }
       ],
       "cues": [
-        { "anchorMs": 45000, "beat": null, "bar": null, "text": "Prepare for the drop", "color": "#3AC0D4" }
+        { "id": "…", "anchorMs": 45000, "beat": null, "bar": null, "text": "Prepare for the drop", "color": "#3AC0D4" }
       ],
       "moves": [
-        { "anchorMs": 30000, "name": "Climb", "intensity": "hard" }
+        { "id": "…", "anchorMs": 30000, "name": "Climb", "intensity": "hard" }
       ]
     }
+  ],
+  "sections": [
+    { "id": "…", "type": "climb", "label": "Climb", "startOffsetMs": 300000 }
   ]
 }
 ```
+
+> **Additive growth since v1 froze (`schemaVersion` stays 1):** top-level **`sections[]`** (segment
+> bands — builder slice 16, migration `0006`) and a stable **`id`** on every cue and placed move
+> (slice 17, so two cues/moves at the same `anchorMs` disambiguate). `sections[]` carries no `id` yet.
 
 The granular endpoints above remain the **edit** surface; run-payload is the read-optimized **live**
 contract — one fetch so the iOS app isn't composing the live view from a dozen calls on studio wifi.
@@ -206,5 +213,7 @@ contract — one fetch so the iOS app isn't composing the live view from a dozen
   See `authorization.md` for the access predicate and pagination shape.
 - Choreography endpoints (`cues`, `moves`) inherit the parent class's access level via the
   `cue/move → class_track → class` chain, resolved by the authz helper.
-- **M2 adds:** `GET /search` (provider search), provider-ID resolution, optional third-party BPM
-  lookup, and music-connection OAuth routes. Not in M1.
+- **M2 adds** (shipped): `GET /providers/:provider/search` (provider search) + `POST
+  /providers/track-import`, per-user OAuth (`connect`/`callback`/`list`/`disconnect`) with encrypted
+  `music_connections`, `GET /providers/:provider/likes`, provider-ID resolution / same-song matching,
+  and optional third-party BPM lookup (`POST /tracks/:id/bpm-lookup`, never Spotify).

@@ -12,7 +12,7 @@
 | API style | REST, documented with OpenAPI |
 | Validation / types | Zod schemas in `packages/shared`, types inferred from them |
 | Web client | React + Vite + TypeScript (SPA) + Tailwind (RitmoFit tokens) |
-| Web hosting | Cloudflare Pages / Workers static assets |
+| Web hosting | Workers static assets — the SPA is served by the **same Worker** as the API (single origin); no separate Pages site |
 | iOS client | Native Swift (separate repo), consumes the OpenAPI contract |
 
 ## How the clients share one backend
@@ -63,11 +63,11 @@ ritmofit/
 │  ├─ api/                      # Hono backend (Cloudflare Worker)
 │  │  ├─ src/
 │  │  │  ├─ db/schema.ts        # Drizzle table definitions (must match schema.md)
-│  │  │  ├─ db/migrations/      # Drizzle/D1 migrations (committed, ordered)
 │  │  │  ├─ middleware/auth.ts  # Better Auth session → resolve canonical user
 │  │  │  ├─ lib/authz.ts        # centralized access checks (see authorization.md)
 │  │  │  ├─ routes/             # one module per resource group
 │  │  │  └─ index.ts
+│  │  ├─ migrations/            # Drizzle/D1 migrations (committed, ordered) — at apps/api/migrations
 │  │  ├─ openapi/               # generated OpenAPI spec for iOS + web
 │  │  └─ wrangler.toml          # Worker + D1 binding config
 │  └─ web/                      # React + Vite SPA
@@ -112,8 +112,10 @@ Do not redefine entity shapes inside `apps/api` or `apps/web`. Change a shape on
   disconnected (2026-06-12) so a push to `main` does **not** auto-deploy to production. Don't reconnect
   it without deciding you want push-to-deploy CI/CD; a future CI should gate on `pnpm -r typecheck` +
   `pnpm test` before any deploy.
-- **Web:** Vite build → Cloudflare Pages (or Workers static assets). The SPA calls the API Worker over
-  HTTPS; CORS is restricted to the production origin + local dev (see `conventions.md`).
+- **Web:** Vite build → **Workers static assets** served by the **same Worker** as the API (`[assets]`
+  in `wrangler.toml`, `run_worker_first=["/api/*"]`, SPA fallback). SPA and API share **one origin**
+  (`https://ritmofit.studio`), so the session cookie is first-party and **no cross-origin CORS is
+  needed**. (There is no separate `api.ritmofit.studio` origin and no Cloudflare Pages site.)
 - **Local dev:** `wrangler dev` runs the Worker against a local D1; the web app runs via Vite and
   points at the local API. Secrets in `.dev.vars` (git-ignored); never commit secrets.
 - **Provider keys** (Spotify, SoundCloud, Apple Music) are **not used in M1** — they land in M2.
