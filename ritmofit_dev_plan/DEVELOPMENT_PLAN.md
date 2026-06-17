@@ -304,6 +304,21 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > CI passed; merged `main` deployed as Worker `babcb3fe-9f7c-4e17-9e65-ab0c16b7784f` at 100%.
 > Remote D1 remains through `0010`. Production health, SPA, auth enforcement, security headers, exact
 > main/Live asset hashes, and browser runtime/CSP smokes passed.
+>
+> **Design system — audited final package integrated + deployed (2026-06-17).** PR #74 reconciled the
+> in-repo `ritmofit_design_system` with the audited `ritmofit-design-system-final` as a union merge:
+> `tokens.json` gains an oklch heat gradient and a light-theme sticky-header token (`headerLight`), now
+> wired through the app emitter so `[data-theme="light"]` overrides the topbar; `build-tokens.mjs` /
+> `lint-tokens.mjs` gain spacing-scale emission + a guard while keeping the web copy's `--check` / prose
+> lint tooling; specs + README reconciled. No schema/API/migration change. `npm run verify`, typecheck,
+> lint, **322** unit (web 147 + api 175) + **42** Worker/D1 integration tests, the web build, and OpenAPI
+> no-drift passed; merged `main` deployed as Worker `12aa76f9-3a3f-4fc3-8950-f8096434dd31` at 100% (remote
+> D1 unchanged through `0010`). Prod CSS verified SHA-256-identical to a fresh build; a live browser render
+> confirmed the heat gradient, oklch bloom, and warm-white light header. A post-merge **integration audit**
+> (9 dimensions + live render) found the token pipeline, emitters, tooling, and prod artifact clean, and
+> surfaced three doc-accuracy issues fixed in PR #75 (docs-only, no redeploy): stale `light.html`
+> "no light variant" copy, the brief's class-naming convention (the app uses an `rf-` component namespace,
+> the mockups bare names), and a "web uses fluid `clamp()`" type claim true only of the mockups.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);
