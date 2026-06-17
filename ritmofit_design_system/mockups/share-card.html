@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RitmoFit - Share card</title>
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="app-header">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        RitmoFit
+      </a>
+      <nav class="app-nav" aria-label="Mockup navigation">
+        <a href="marketing.html">Marketing</a>
+        <a href="builder.html">Builder</a>
+        <a href="live.html">Live</a>
+        <a href="share-card.html" aria-current="page">Share card</a>
+      </nav>
+    </header>
+
+    <main class="page" id="content">
+      <div class="share-layout">
+        <article
+          class="share-card"
+          aria-label="Share card for Saturday Rhythm Build by Ana Reyes"
+        >
+          <div>
+            <span class="brand">
+              <span class="brand-mark" aria-hidden="true">R</span>
+              RitmoFit
+            </span>
+            <h1 class="share-title">
+              Built from the beat. Shaped for
+              <span class="heat-text">the room.</span>
+            </h1>
+          </div>
+
+          <div class="stack gap-5">
+            <svg
+              viewBox="0 0 640 170"
+              preserveAspectRatio="none"
+              role="img"
+              aria-label="Class shape with two attack peaks and one All-Out peak"
+            >
+              <defs>
+                <linearGradient id="share-line" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" class="stop-build" />
+                  <stop offset="0.55" class="stop-push" />
+                  <stop offset="0.85" class="stop-attack" />
+                  <stop offset="0.94" class="stop-peak" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M0 145 L70 130 L125 104 L185 116 L240 72 L304 92 L358 44 L415 78 L475 28 L530 86 L585 112 L640 144 L640 170 L0 170 Z"
+                class="fill-push ribbon-area"
+              />
+              <path
+                d="M0 145 L70 130 L125 104 L185 116 L240 72 L304 92 L358 44 L415 78 L475 28 L530 86 L585 112 L640 144"
+                class="ribbon-line"
+                fill="none"
+                stroke="url(#share-line)"
+                stroke-width="4"
+                vector-effect="non-scaling-stroke"
+              />
+              <circle cx="475" cy="28" r="6" class="fill-peak heat-glow-svg" />
+            </svg>
+            <div class="share-metrics">
+              <div class="share-metric">
+                <span class="unit">Time</span>
+                <strong>45:00</strong>
+              </div>
+              <div class="share-metric">
+                <span class="unit">Tracks</span>
+                <strong>11</strong>
+              </div>
+              <div class="share-metric">
+                <span class="unit">Peaks</span>
+                <strong>03</strong>
+              </div>
+            </div>
+            <div class="between gap-4">
+              <div>
+                <strong>Saturday Rhythm Build</strong>
+                <span class="muted">Ana Reyes · Brasa Studio</span>
+              </div>
+              <span class="data">126 avg BPM</span>
+            </div>
+          </div>
+        </article>
+
+        <section class="stack gap-5">
+          <span class="eyebrow">Share the shape of the class</span>
+          <h2 class="title-lg">Creative work deserves an ownable artifact.</h2>
+          <p class="lead">
+            This is the campaign register: the share card runs hot — gradient,
+            bloom, and the All-Out crest in full plasma — while every number
+            still comes from real class data. Loud where the brand performs,
+            quiet where the instructor works.
+          </p>
+          <div class="surface card-pad stack gap-3">
+            <strong>Required content</strong>
+            <span class="muted"
+              >Class title · instructor or studio · energy ribbon · duration ·
+              track count · peak count · RitmoFit mark.</span
+            >
+            <hr class="divider" />
+            <strong>Voice</strong>
+            <span class="muted"
+              >Campaign-grade, rhythmic, physical, and controlled. No
+              party-fitness language, forced Spanglish, or tropical
+              costume.</span
+            >
+          </div>
+          <div class="row gap-2 wrap">
+            <button class="button button-primary">Export card</button>
+            <button class="button button-action">Copy share link</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

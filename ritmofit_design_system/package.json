@@ -1,0 +1,16 @@
+{
+  "name": "ritmofit-design-system",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "RitmoFit design system — tokens.json single source of truth, web + iOS emitters, and guard scripts.",
+  "scripts": {
+    "build": "node scripts/build-tokens.mjs",
+    "build:ios": "node scripts/build-tokens-ios.mjs",
+    "build:all": "npm run build && npm run build:ios",
+    "fonts": "node scripts/fetch-fonts.mjs",
+    "lint": "node scripts/lint-tokens.mjs",
+    "contrast": "node scripts/check-contrast.mjs",
+    "verify": "node scripts/build-tokens.mjs --check && node scripts/build-tokens-ios.mjs --check && node scripts/lint-tokens.mjs && node scripts/check-contrast.mjs"
+  }
+}

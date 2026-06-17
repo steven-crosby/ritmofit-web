@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RitmoFit - Move library</title>
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="app-header">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        RitmoFit
+      </a>
+      <nav class="app-nav" aria-label="Product navigation">
+        <a href="library.html">Library</a>
+        <a href="moves.html" aria-current="page">Moves</a>
+        <a href="builder.html">Builder</a>
+        <a href="explore.html">Explore</a>
+        <a href="teams.html">Teams</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button button-ghost" href="builder.html">My classes</a>
+        <span class="avatar" aria-label="Ana Reyes">AR</span>
+      </div>
+    </header>
+
+    <main class="page" id="content">
+      <div class="library-layout">
+        <aside class="surface source-rail" aria-label="Move sources">
+          <div class="stack gap-2">
+            <span class="section-label">Move templates</span>
+            <div class="rail-list stack gap-1">
+              <a class="source-link" href="#" aria-current="page">
+                <span>All moves</span><span class="source-count">86</span>
+              </a>
+              <a class="source-link" href="#">
+                <span>Cycle</span><span class="source-count">32</span>
+              </a>
+              <a class="source-link" href="#">
+                <span>HIIT</span><span class="source-count">21</span>
+              </a>
+              <a class="source-link" href="#">
+                <span>Sculpt</span><span class="source-count">24</span>
+              </a>
+              <a class="source-link" href="#">
+                <span>Tread</span><span class="source-count">9</span>
+              </a>
+            </div>
+            <hr class="divider" />
+            <span class="section-label">Yours</span>
+            <a class="source-link" href="#">
+              <span>My moves</span><span class="source-count">12</span>
+            </a>
+            <button class="button button-action button-block">
+              Create move
+            </button>
+          </div>
+        </aside>
+
+        <section class="library-main" aria-labelledby="moves-title">
+          <div class="screen-heading">
+            <div class="screen-heading-copy">
+              <span class="eyebrow">Score the movement</span>
+              <h1 class="title-lg" id="moves-title">Move library</h1>
+              <p class="muted">
+                Reusable moves you place on a track and cue to the beat. Pick one
+                from the library, make it yours, or build a new one. Every move
+                keeps its own intensity when you place it.
+              </p>
+            </div>
+            <span class="data dim">86 moves</span>
+          </div>
+
+          <div class="filter-bar">
+            <label class="search-field">
+              <span class="sr-only">Search moves</span>
+              <input
+                class="input"
+                type="search"
+                placeholder="Search moves or descriptions"
+              />
+            </label>
+            <select class="input" aria-label="Template filter">
+              <option>All templates</option>
+              <option>Cycle</option>
+              <option>HIIT</option>
+              <option>Sculpt</option>
+              <option>Tread</option>
+            </select>
+            <select class="input" aria-label="Sort moves">
+              <option>Recently used</option>
+              <option>Name</option>
+              <option>Template</option>
+            </select>
+          </div>
+
+          <div class="moves-table" aria-label="Moves">
+            <div class="move-row is-selected" data-move-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Standing climb</span>
+                <input type="checkbox" checked />
+              </label>
+              <span class="move-marker" aria-hidden="true">◆</span>
+              <span class="move-copy">
+                <span class="move-name">Standing climb</span>
+                <span class="move-desc"
+                  >Out of the saddle, heavy resistance, drive from the hips.</span
+                >
+              </span>
+              <span class="move-template">Cycle</span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="3"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">Z3 · Attack</span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options for Standing climb"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="move-row is-selected" data-move-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Seated sprint</span>
+                <input type="checkbox" checked />
+              </label>
+              <span class="move-marker" aria-hidden="true">◆</span>
+              <span class="move-copy">
+                <span class="move-name">Seated sprint</span>
+                <span class="move-desc"
+                  >Seated, fast cadence, light-to-moderate resistance.</span
+                >
+              </span>
+              <span class="move-template">Cycle</span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="4"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">Z4 · All Out</span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options for Seated sprint"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="move-row" data-move-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Jumps</span>
+                <input type="checkbox" />
+              </label>
+              <span class="move-marker" aria-hidden="true">◆</span>
+              <span class="move-copy">
+                <span class="move-name">Jumps</span>
+                <span class="move-desc"
+                  >In and out of the saddle on the count.</span
+                >
+              </span>
+              <span class="move-template">Cycle</span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="3"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">Z3 · Attack</span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options for Jumps"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="move-row" data-move-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Burpee interval</span>
+                <input type="checkbox" />
+              </label>
+              <span class="move-marker" aria-hidden="true">◆</span>
+              <span class="move-copy">
+                <span class="move-name">Burpee interval</span>
+                <span class="move-desc"
+                  >Full-body interval, land soft, reset on the beat.</span
+                >
+              </span>
+              <span class="move-template">HIIT</span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="4"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">Z4 · All Out</span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options for Burpee interval"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="move-row" data-move-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Mountain climbers</span>
+                <input type="checkbox" />
+              </label>
+              <span class="move-marker" aria-hidden="true">◆</span>
+              <span class="move-copy">
+                <span class="move-name">Mountain climbers</span>
+                <span class="move-desc"
+                  >Plank base, alternating knees at tempo.</span
+                >
+              </span>
+              <span class="move-template">HIIT</span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="3"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">Z3 · Attack</span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options for Mountain climbers"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="move-row" data-move-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Controlled curl</span>
+                <input type="checkbox" />
+              </label>
+              <span class="move-marker" aria-hidden="true">◆</span>
+              <span class="move-copy">
+                <span class="move-name">Controlled curl</span>
+                <span class="move-desc"
+                  >Slow eccentric, brace the core, no swing.</span
+                >
+              </span>
+              <span class="move-template">Sculpt</span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="2"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">Z2 · Push</span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options for Controlled curl"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="move-row" data-move-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Plank hold</span>
+                <input type="checkbox" />
+              </label>
+              <span class="move-marker" aria-hidden="true">◆</span>
+              <span class="move-copy">
+                <span class="move-name">Plank hold</span>
+                <span class="move-desc">Forearms down, long spine, breathe.</span>
+              </span>
+              <span class="move-template">Sculpt</span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="2"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">Z2 · Push</span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options for Plank hold"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="move-row" data-move-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Incline push</span>
+                <input type="checkbox" />
+              </label>
+              <span class="move-marker" aria-hidden="true">◆</span>
+              <span class="move-copy">
+                <span class="move-name">Incline push</span>
+                <span class="move-desc"
+                  >Rising grade, steady effort, tall posture.</span
+                >
+              </span>
+              <span class="move-template">Tread</span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="3"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">Z3 · Attack</span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options for Incline push"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="move-row" data-move-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Brasa finisher</span>
+                <input type="checkbox" />
+              </label>
+              <span class="move-marker" aria-hidden="true">◆</span>
+              <span class="move-copy">
+                <span class="move-name"
+                  >Brasa finisher <span class="move-origin">Custom</span></span
+                >
+                <span class="move-desc">Your signature all-out close.</span>
+              </span>
+              <span class="move-template">Cycle</span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="4"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">Z4 · All Out</span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options for Brasa finisher"
+              >
+                •••
+              </button>
+            </div>
+
+            <div class="move-row" data-move-row>
+              <label class="checkbox">
+                <span class="sr-only">Select Reset breath</span>
+                <input type="checkbox" />
+              </label>
+              <span class="move-marker" aria-hidden="true">◆</span>
+              <span class="move-copy">
+                <span class="move-name"
+                  >Reset breath <span class="move-origin">Custom</span></span
+                >
+                <span class="move-desc">Four counts in, six counts out.</span>
+              </span>
+              <span class="move-template">Sculpt</span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="1"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">Z1 · Build</span>
+              </span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="More options for Reset breath"
+              >
+                •••
+              </button>
+            </div>
+          </div>
+
+          <div class="selection-tray" role="status" aria-label="Move selection">
+            <div class="selection-copy">
+              <strong>2 moves selected</strong>
+              <span
+                >Place them on the selected track in Builder — each keeps its own
+                intensity and anchor.</span
+              >
+            </div>
+            <button class="button button-action">Add to track</button>
+            <a class="button button-primary" href="builder.html">Open Builder</a>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

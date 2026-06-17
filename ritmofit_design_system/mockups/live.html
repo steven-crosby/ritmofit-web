@@ -1,122 +1,124 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RitmoFit — Live Mode</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="theme.css" />
-<style>
-  /* Live: maximum contrast, near-black, minimal chrome. --rf-bpm set to the live track. */
-  body { --rf-bpm:95; background:#060504; }
-  .live { position:fixed; inset:0; display:flex; flex-direction:column; }
-  .live-head { display:flex; align-items:center; justify-content:space-between; padding:16px 26px; border-bottom:1px solid var(--border-subtle); }
-  .live-head .clock { font-family:var(--font-data); font-size:13px; color:var(--bone-400); letter-spacing:0.04em; }
-  .vtoggle { display:flex; gap:3px; background:var(--ink-850); padding:3px; border-radius:var(--r-pill); border:1px solid var(--border-subtle); }
-  .vtoggle button { border:none; background:transparent; color:var(--bone-400); padding:7px 15px; border-radius:var(--r-pill); font-size:13px; font-weight:600; }
-  .vtoggle button.on { background:var(--cyan-500); color:var(--ink-900); }
-
-  .live-body { flex:1; display:grid; place-items:center; padding:24px; min-height:0; }
-  .cuecard { width:100%; max-width:760px; display:flex; flex-direction:column; gap:22px; }
-
-  .nowtrack { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-  .nowtrack .ttl { font-family:var(--font-display); font-size:24px; font-weight:700; }
-  .nowtrack .art { width:60px; height:60px; border-radius:14px; background:linear-gradient(135deg,var(--ember-500),var(--plasma-600)); display:grid; place-items:center; color:#fff; font-size:22px; box-shadow:var(--peak-glow); animation:beat var(--rf-beat) var(--ease-beat) infinite; }
-
-  .now {
-    border-radius:var(--r-panel); padding:56px 40px; text-align:center;
-    background:radial-gradient(600px 280px at 50% 0%, rgba(255,46,136,0.16), transparent 70%), var(--ink-850);
-    border:1px solid rgba(255,46,136,0.32);
-    box-shadow:0 0 60px rgba(255,46,136,0.18);
-  }
-  .now .lbl { font-family:var(--font-data); font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:var(--plasma-400); margin-bottom:14px; }
-  .now .cue { font-family:var(--font-display); font-weight:700; font-size:54px; line-height:1.06; letter-spacing:-0.02em; color:var(--bone-50); margin:0; }
-  .now .badge { display:inline-flex; margin-top:18px; }
-
-  .next { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:20px 26px; border-radius:var(--r-card); background:var(--ink-850); border:1px solid var(--border-subtle); }
-  .next .lbl { font-family:var(--font-data); font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--bone-400); }
-  .next .txt { font-size:18px; font-weight:600; color:var(--bone-100); }
-  .next .count { font-family:var(--font-data); font-size:34px; font-weight:700; color:var(--cyan-300); }
-
-  .ends { display:flex; justify-content:space-between; font-family:var(--font-data); font-size:13px; color:var(--bone-400); padding:0 4px; }
-  .ends b { color:var(--bone-200); }
-
-  /* transport */
-  .transport { display:flex; align-items:center; gap:18px; padding:18px 26px; border-top:1px solid var(--border-subtle); background:var(--ink-900); }
-  .seek { flex:1; height:6px; border-radius:var(--r-pill); background:var(--ink-700); position:relative; overflow:visible; }
-  .seek .fill { position:absolute; inset:0 auto 0 0; width:62%; border-radius:var(--r-pill); background:linear-gradient(90deg,var(--copper-500),var(--ember-500)); }
-  .seek .knob { position:absolute; top:50%; left:62%; width:16px; height:16px; border-radius:50%; background:var(--bone-50); transform:translate(-50%,-50%); box-shadow:0 0 0 4px rgba(255,46,136,0.25); }
-  @keyframes beat { 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.06);} }
-  @media (prefers-reduced-motion: reduce){ .nowtrack .art{ animation:none; } }
-</style>
-</head>
-<body>
-<div class="live">
-  <header class="live-head">
-    <div class="stack">
-      <span style="font-family:var(--font-display);font-weight:700;font-size:17px;">Tuesday Power Ride</span>
-      <span class="clock">11:42 / 23:42 · Track 4 of 6</span>
-    </div>
-    <div class="row gap-3">
-      <div class="vtoggle">
-        <button class="on">Cue-by-Cue</button>
-        <button>Full List</button>
-      </div>
-      <a class="btn btn-ghost btn-sm" href="builder.html">Exit</a>
-    </div>
-  </header>
-
-  <div class="live-body">
-    <div class="cuecard">
-      <!-- live track -->
-      <div class="nowtrack">
-        <div class="row gap-3">
-          <span class="art">★</span>
-          <div class="stack">
-            <span class="font-data" style="font-size:11px;color:var(--bone-500);letter-spacing:.1em;text-transform:uppercase;">Now playing</span>
-            <span class="ttl">Gasolina</span>
-            <span class="dim" style="font-size:14px;">Daddy Yankee</span>
-          </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RitmoFit - Live Mode</title>
+    <link
+      rel="preload"
+      href="fonts/inter-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="fonts/martian-mono-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to current cue</a>
+    <main class="live-shell" id="content">
+      <header class="live-header">
+        <div class="stack">
+          <strong class="font-display">Saturday Rhythm Build</strong>
+          <span class="timecode dim">11:42 / 25:31 · Track 4 of 6</span>
         </div>
-        <div class="stack" style="align-items:flex-end;gap:8px;">
-          <span class="intensity"><span class="bars" data-zone="allout"><i></i><i></i><i></i><i></i></span><span class="zone-label" style="color:var(--plasma-400)">All&nbsp;Out</span></span>
-          <span class="bpm" style="font-size:18px;color:var(--bone-100);">95<span class="unit">BPM</span></span>
+        <div class="row gap-2 wrap" data-view-group>
+          <button
+            class="button button-action"
+            data-view-option
+            aria-pressed="true"
+          >
+            Cue-by-cue
+          </button>
+          <button
+            class="button button-ghost"
+            data-view-option
+            aria-pressed="false"
+          >
+            Full list
+          </button>
+          <a class="button button-ghost" href="builder.html">Exit Live</a>
+        </div>
+      </header>
+
+      <div class="live-body">
+        <div class="live-hud">
+          <section
+            class="current-cue tempo-pulse-live is-all-out"
+            aria-labelledby="current-cue-title"
+          >
+            <div class="row gap-3">
+              <span class="eyebrow">Now · Zone 4 · All Out</span>
+              <span class="intensity">
+                <span class="zone-bars" data-zone="4"
+                  ><i></i><i></i><i></i><i></i
+                ></span>
+                <span class="zone-copy">4 bars</span>
+              </span>
+            </div>
+            <h1 class="current-cue-copy" id="current-cue-title">Drop in.</h1>
+            <div class="current-cue-meta">
+              <div class="stack gap-1">
+                <strong>Attack · standing drive</strong>
+                <span class="muted">8 counts to release</span>
+              </div>
+              <div class="live-bpm" aria-label="138 beats per minute">
+                <strong>138</strong>
+                <span>BPM</span>
+              </div>
+            </div>
+          </section>
+
+          <aside class="live-side stack gap-6" aria-label="Live class context">
+            <section class="stack gap-1">
+              <span class="section-label">Now playing</span>
+              <span class="title-lg">Drop In</span>
+              <span class="track-meta">Studio 84</span>
+            </section>
+
+            <section class="stack gap-1">
+              <span class="section-label">Next cue in <strong class="data">0:18</strong></span>
+              <h2 class="title-lg">Release. Find control.</h2>
+            </section>
+
+            <section class="stack gap-2">
+              <div class="between">
+                <span class="section-label">Track ends</span>
+                <strong class="timecode">0:41</strong>
+              </div>
+              <div class="between">
+                <span class="section-label">Class ends</span>
+                <strong class="timecode">13:49</strong>
+              </div>
+            </section>
+          </aside>
         </div>
       </div>
 
-      <!-- the drop -->
-      <div class="now">
-        <div class="lbl">Now</div>
-        <p class="cue">SPRINT — empty the tank!</p>
-        <div class="badge"><span class="intensity"><span class="bars" data-zone="allout"><i></i><i></i><i></i><i></i></span><span class="zone-label" style="color:var(--plasma-400)">All&nbsp;Out</span></span></div>
-      </div>
-
-      <!-- next -->
-      <div class="next">
-        <div class="stack gap-2">
-          <span class="lbl">Next</span>
-          <span class="txt">Recover — drop the gear, spin it out</span>
-        </div>
-        <span class="count" aria-label="Time to next cue">0:18</span>
-      </div>
-
-      <div class="ends">
-        <span>Track ends in <b>0:41</b></span>
-        <span>Class ends in <b>12:00</b></span>
-      </div>
-    </div>
-  </div>
-
-  <div class="transport">
-    <button class="btn btn-primary btn-lg" style="min-width:110px;">❚❚ Pause</button>
-    <button class="btn btn-quiet">↺ Reset</button>
-    <div class="seek" aria-label="Seek class timeline">
-      <div class="fill"></div><div class="knob"></div>
-    </div>
-    <span class="font-data dim" style="font-size:13px;">11:42 / 23:42</span>
-  </div>
-</div>
-</body>
+      <footer class="live-transport">
+        <button class="button button-primary">Pause</button>
+        <button class="button button-ghost">Reset</button>
+        <div
+          class="seek"
+          data-seek
+          data-seek-total="1531"
+          role="slider"
+          tabindex="0"
+          aria-label="Class position"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="58"
+          aria-valuetext="11:42 of 25:31"
+        ></div>
+        <span class="timecode" data-seek-readout>11:42 / 25:31</span>
+      </footer>
+    </main>
+    <script src="app.js"></script>
+  </body>
 </html>
