@@ -21,9 +21,11 @@ brand evolves.
 > **Emitter coverage (honest scope).** The web emitter outputs colors, font _families_, radius, shadows,
 > glass, the ribbon ramp, motion, tempo, and the **spacing scale** (as `--rf-space-*`, consumed by the
 > `.gap-*` / padding utilities; `lint-tokens.mjs` guards the emission so it can't silently drop). One scale
-> is **not** emitted as web variables and is instead authored in `mockups/theme.css` to the `tokens.json`
-> values: the **type-scale sizes** (web uses fluid `clamp()` so type scales with zoom — see
-> [`07-accessibility.md`](./07-accessibility.md)). iOS consumes type and spacing literally via `RFType` /
+> is **not** emitted by this package's web emitter: the **type-scale sizes**. The reference mockups express
+> the large display roles with hand-authored fluid `clamp()` (viewport-responsive, decoupled from the token
+> point values); the production app emits the type scale and maps its display tier to the fixed token sizes.
+> Both scale with browser zoom (see [`07-accessibility.md`](./07-accessibility.md)). iOS consumes type and
+> spacing literally via `RFType` /
 > `RFSpace`. `tokens.json` stays the single reference for those values on both platforms — so when the type
 > scale changes, update the web utilities to match (no generator guards the type scale yet).
 

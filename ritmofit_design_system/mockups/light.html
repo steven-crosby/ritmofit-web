@@ -41,11 +41,14 @@
 
       <section class="component-section stack gap-4">
         <div class="future-banner">
-          <strong>Documented carve-outs</strong>
+          <strong>Documented carve-out</strong>
           <span>
             Live mode stays dark in both themes (a performance surface for dim
-            studios). Glass and shadow have no light variant yet — only the
-            semantic color layer flips. Both are tracked follow-ups, not bugs.
+            studios) — by design, not a gap. Everything else flips: the light
+            theme carries the full surface layer — semantic colors, glass
+            (fills, border, highlight, and this sticky header), and shadows.
+            Light-mode glass legibility isn't gated by
+            <code>check-contrast.mjs</code>, so verify it in a real browser.
           </span>
         </div>
       </section>

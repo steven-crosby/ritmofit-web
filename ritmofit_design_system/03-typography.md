@@ -27,11 +27,12 @@ So the data layer gets its own face with mechanical character, and the numbers b
 
 ## Scale
 
-Sizes are the iOS point values (mapped 1:1) and the web reference. On web the display/title and `data`
-roles render in **relative units** — the large roles use fluid `clamp()` so type scales with browser zoom
-(per [`07-accessibility.md`](./07-accessibility.md)); the values below are the design intent, not emitted
-CSS variables (see the emitter-coverage note in [`08-ios-web-alignment.md`](./08-ios-web-alignment.md)).
-Tracking in em.
+Sizes are the iOS point values (mapped 1:1) and the web reference. On web, type renders in **relative
+units**: the reference mockups size the large display/hero roles with hand-authored fluid `clamp()`
+(viewport-responsive), while the production app maps the display tier to the fixed token point sizes
+below — both scale with browser zoom (per [`07-accessibility.md`](./07-accessibility.md)). The values
+below are the design intent (see the emitter-coverage note in
+[`08-ios-web-alignment.md`](./08-ios-web-alignment.md)). Tracking in em.
 
 | Token         | Size / Line | Weight | Tracking | Family        | Use                                   |
 | ------------- | ----------- | ------ | -------- | ------------- | ------------------------------------- |
