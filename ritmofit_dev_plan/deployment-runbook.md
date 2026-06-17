@@ -13,11 +13,15 @@ Owner / deployer: `steven.crosby09@gmail.com` (Cloudflare account holder).
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `apps/api/wrangler.toml` `[vars]` | `BETTER_AUTH_URL`, `WEB_ORIGIN` (both `https://ritmofit.studio`)                                                                                                       | Committed, non-secret. The session cookie binds to `BETTER_AUTH_URL`.               |
 | Worker secrets (prod)             | `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `SOUNDCLOUD_CLIENT_ID`/`_SECRET`, `SPOTIFY_CLIENT_ID`/`_SECRET`, `APPLE_MUSIC_DEVELOPER_TOKEN` | `wrangler secret list` (names only). Already provisioned — do **not** re-provision. |
-| D1                                | database `ritmofit`, bound as `DB`                                                                                                                                     | Schema at migrations `0000`–`0010`.                                                 |
+| D1                                | database `ritmofit`, bound as `DB`                                                                                                                                     | Schema at migrations `0000`–`0012`.                                                 |
 | Local dev                         | `apps/api/.dev.vars` (gitignored), `MOCK_PROVIDERS=true`, no `RESEND_API_KEY` (email logs to console)                                                                  | Never commit secrets.                                                               |
 
-`MOCK_PROVIDERS` is unset in prod (live providers). There is intentionally **no** Google/Apple
-social-login secret set in prod — the Login UI is email/password only.
+`MOCK_PROVIDERS` is unset in prod (live providers). **Auth target: email/password + Apple + Google
+sign-in** on both web and iOS. Apple/Google are implemented (Better Auth providers; the iOS Sign in
+with Apple button is built), but their **prod secrets are not yet provisioned**, so the live Login UI
+is **currently email/password only** until `APPLE_CLIENT_ID`/`APPLE_CLIENT_SECRET` (and the Google
+client secrets) are set via `wrangler secret put`. This is a pending provisioning step, not a
+permanent exclusion.
 
 ## Pre-deploy
 
@@ -103,5 +107,6 @@ does **not** un-apply a migration. If a bad deploy included a migration:
 ## References
 
 - Manual deploy + migration ordering: `AGENTS.md` › "Security, Deployment & Session Close".
-- Deploy history of record: `REVIEW.md` (one dated entry per production deploy).
+- Deploy history of record: `ritmofit_dev_plan/HISTORY.md` (and `REVIEW_HISTORY.md` for the
+  pre-launch remediation log) — one dated entry per production deploy.
 - Session close hygiene: `ritmofit_dev_plan/close-session-checklist.md`.

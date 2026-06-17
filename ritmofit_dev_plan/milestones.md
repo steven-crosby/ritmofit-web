@@ -3,9 +3,9 @@
 Each step follows the working agreement: **plan → confirm → code → summarize** (see
 `ai-working-rules.md`).
 
-> **Status (2026-06-15): M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ — all done, merged to `main`, and deployed**
+> **Status (2026-06-16): M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ — all done, merged to `main`, and deployed**
 > (API + web at `https://ritmofit.studio`, remote D1 through `0012`). On top of the data-flow milestones,
-> the **web design-system build (builder UI)** has shipped slices 1–17, and the post-launch hardening
+> the **web design-system build (builder UI)** has shipped (slices 1–18), and the post-launch hardening
 > backlog has closed the launch-blocking and review SHOULD-FIX work documented below. The next major
 > product milestone is iOS Phase 2 in the separate `ritmofit-ios` repo; remaining web work is tracked in
 > `DEVELOPMENT_PLAN.md` and `REVIEW.md`.
@@ -75,7 +75,8 @@ Core builder first (these validate the product), teams/sharing last.
 - Explore / featured feed.
 - Rich planning UI (drag-drop timeline, energy ribbon, waveform) — that's the design-system build,
   layered on after the data flow works.
-- Segments / `class_sections` (design concept, not yet schema).
+- Segments / `class_sections` (design concept in M1; **added later** in the design-system build —
+  slice 16, migration `0006`).
 
 ---
 
@@ -144,7 +145,7 @@ Core builder first (these validate the product), teams/sharing last.
 > **M3 complete for the web repo.** The native **iOS** live surface (Phase 2 / `ritmofit-ios`) will
 > reimplement the prompter against the same run-payload, plus a Landscape view and device-specific polish.
 
-## M4 — Explore / featured / sharing UX (current)
+## M4 — Explore / sharing UX ✅ done (featured deferred)
 - ✅ **Slice 1 — sharing UX (share-by-email):** the web Dashboard now has a `ShareDialog` (owner-only)
   to share a class with another user by email at view/edit, list current shares with their target's
   display name/email, change a permission, and revoke. Backend gains `targetEmail` resolution on
@@ -204,235 +205,19 @@ Core builder first (these validate the product), teams/sharing last.
 
 ---
 
-## Web design-system build (builder UI) — in progress
+## Builder UI, music frontend & post-launch hardening — shipped
 
-Not a numbered milestone: this is the **rich planning UI M1 deferred** ("layered on after the data flow
-works"), turning the functional-but-skeleton builder into the surface specified in
-[`../ritmofit_design_system/`](../ritmofit_design_system/). Built in small vertical slices on top of the
-existing backend/run-payload — **no schema, API-contract, or shared-package change**. Slices 1–4 merged in
-**PR #8** and **deployed** (2026-06-12, Worker version `4afed022`):
+The web design-system **builder UI** (energy ribbon, song rows, track inspector, choreography editor,
+timeline strip, segment band, Live HUD pulse/drop), the music-provider **frontend**
+(search/import/connections/likes/BPM — all three providers live in prod), and the **post-launch
+hardening** backlog all shipped and deployed. The full per-slice log (builder slices 1–18, music
+frontend S1–S4, hardening PRs — with Worker versions, migrations, and test counts) is archived in
+[`HISTORY.md`](./HISTORY.md).
 
-- ✅ **Slice 1 — energy-arc ribbon** (`IntensityRibbon`): the signature staircase area graph; height
-  encodes each track's intensity zone (grayscale-safe, color is reinforcement), plasma kiss at all-out,
-  static (reduced-motion-safe). Pure `computeRibbonSegments` helper. Also **wired vitest into `apps/web`**
-  + a geometry unit test (root `pnpm test` now runs api 159 + web 5 = **164**).
-- ✅ **Slice 2 — low-noise song rows** (`SongRow`): 44px album art, title/artist, BPM in Martian Mono,
-  intensity as bars+label. Extracted the shared `IntensityReadout` out of `LiveMode` (one definition of
-  the redundant-encoding rule).
-- ✅ **Slice 3 — track inspector / detail editor** (`TrackInspector`): select a row → edit intensity,
-  display-BPM override, notes; remove the track. Edits reshape the ribbon + rows live. Gated on
-  owner/edit access. Added `updateClassTrack` / `deleteClassTrack` (existing `PATCH`/`DELETE
-  /class-tracks/:id`).
-- ✅ **Slice 4 — cue + placed-move authoring** (`ChoreographyEditor`): add/list/delete cues (anchor +
-  text) and placed moves (a `GET /moves` library move or freeform `nameOverride`, anchored, optional
-  intensity; honors the at-most-one-reference invariant). Added the cue/move/library client fns.
-- ✅ **Slice 5 — drag + keyboard reorder of the track list** (merged, PR #9): the ordered song rows
-  reorder by dragging a dedicated grip handle (kept off the selection button so click-to-select and drag
-  never collide) and by keyboard (↑/↓ on the focused grip — native DnD isn't keyboard-operable). Persists
-  via the existing `POST /classes/:id/tracks/reorder` (edit access) and reloads the detail so the ribbon +
-  per-track offsets recompute; optimistic order with rollback on failure; view-only shows no grip. New
-  pure `moveItem` helper (`lib/reorder.ts`, unit-tested) + `reorderTracks` client fn. No
-  schema/API-contract/shared change.
-- ✅ **Slice 6 — inline-edit existing cues & placed moves** (merged, PR #10): the `ChoreographyEditor`
-  cue/move rows gain an **Edit** affordance (one row editable at a
-  time, seeded from the persisted row, Save/Cancel) on top of slice 4's add/list/delete. Cues edit
-  anchor + text; placed moves edit anchor + library-pick/custom-name + optional intensity. Backed by the
-  existing `PATCH /cues/:id` + `PATCH /class-track-moves/:id` (edit access; the move route re-validates
-  the at-most-one-reference invariant on the merged result). Switching a move's reference nulls the
-  others; a "Keep current move" sentinel preserves a non-listable `userMoveId` untouched. `updateCue` +
-  `updatePlacedMove` client fns; no schema/API-contract/shared change. `pnpm test` = api 159 + web 11 = **170**.
-- ✅ **Slice 7 — the full 3-pane `09` layout**: replaced the 2-column inline-inspector builder with the
-  spec'd workstation — a **persistent top bar**, then a `xl:grid-cols-[266px_1fr_340px]` grid (collapses
-  to one stacked column below `xl`): a sticky **class library** rail (left), the **class workspace**
-  center column (a new `ClassHeaderCard` with title + visibility + derived summary stats → energy ribbon
-  → track list → add-track), and a **sticky right-hand inspector** (the `TrackInspector` + its nested
-  cue/move authoring, with its own scroll and a "select a track" placeholder). The header summary
-  (**track count · assembled total · avg BPM**, label+number not color alone) is derived from the
-  existing run-payload via a pure, unit-tested `lib/class-summary.ts` (`avgBpm` + `formatDuration`) — no
-  new data. Existing components were re-parented untouched; the workspace is keyed by class id so opening
-  another class clears the track selection. No schema/API-contract/shared change. `pnpm test` = api 159 +
-  web 17 = **176**.
-- ✅ **Slice 8 — cue color picker**: cues can be tagged with a color in the inspector's `CuesSection`
-  (add + inline-edit), persisted to the existing `cues.color` (no schema/API/shared change — the column,
-  route, and run-payload were already wired). A new accessible `CueColorPicker` (radio-group, text-labelled
-  swatches, cyan selected-ring) offers a **None** option + the rationed copper/cyan/amber/ember/bone
-  palette and **never plasma** (`02-color-system.md`); rationing is enforced in the picker. A stored color
-  outside the palette renders as a trailing "current" swatch so editing never silently drops it. Cue rows
-  show a small color dot (decorative — time + text still carry the meaning). Palette + `tagLabel` live in
-  pure, unit-tested `lib/cue-colors.ts`. A PR-review pass swapped the picker's `radiogroup`/`radio` roles
-  for an `aria-pressed` toggle `group` (no arrow-key pattern to honor). `pnpm test` = api 159 + web 22 =
-  **181**. **Merged PR #15, deployed 2026-06-12** (Worker version `74a94ec5`; no schema/migration).
-- ✅ **Slice 9 — custom user-moves**: instructors can create reusable custom moves and place them from the
-  inspector's `MovesSection`. The backend (`GET/POST /user-moves` owner-scoped; placed-move routes already
-  validate an owned `userMoveId`; run-payload already resolves user-move names) needed **no change** — this
-  is web-only: new `listUserMoves` / `createUserMove` client fns; `MovesSection` loads the caller's user
-  moves, lists them as a "Your moves" `<optgroup>` beside the global "Library", and a **"＋ New custom
-  move…"** option creates-and-places in one Add (then selects the new move so a repeat Add re-uses it).
-  Picker values are source-prefixed (`m:`/`u:`) to disambiguate the two UUID spaces — a pure, unit-tested
-  `lib/move-pick.ts` (`parseMovePick`/`pickForPlacement`). `nameOf` now resolves user-move names (was
-  `(move)`). This also **retired the `KEEP` sentinel** (user moves are listable now) and **fixed the
-  `TODO(select-fallback)`** (a fallback `<option>` for an unresolved id when the library/user-moves fetch
-  fails). No schema/API-contract/shared change. `pnpm test` = api 159 + web 30 = **189**. **Merged PR #17,
-  deployed 2026-06-12** (Worker version `511af62c`; no schema/migration).
-- ✅ **Slice 10 — timeline-marker strip**: a thin **timeline** band beneath the energy ribbon that shares
-  its time axis — proportional numbered **track blocks** with **cue (▲)** and **placed-move (◆)** markers at
-  their absolute time (`trackStart + clamp(anchorMs, 0, trackDuration)`). Cues/moves are **distinct shapes**
-  (not color alone, 09); cue markers carry the cue's color tag, move markers the intensity color — both
-  decorative, with shape + position + a `time — text/name` title/aria carrying the meaning. New
-  `TimelineStrip` component + a pure, unit-tested `computeTimeline` (same duration-share math as
-  `computeRibbonSegments`, so the strip lines up under the ribbon; null/zero-duration tracks drop their
-  block + markers). Rendered inside the ribbon card in `Dashboard`. **Static — no playhead** (a Live /
-  on-beat concern, deferred); read-only this slice. No schema/API-contract/shared change. `pnpm test` =
-  api 159 + web 37 = **196**. **Merged PR #19, deployed 2026-06-12** (Worker version `ca91c8c5`; no
-  schema/migration).
-- ✅ **Slice 11 — timeline selection**: the timeline strip's track blocks and cue/move markers are now
-  **clickable + keyboard-operable** — selecting one opens that track in the inspector and cross-highlights
-  its `SongRow` (the open track's block is ringed, `aria-pressed`). `computeTimeline` carries each
-  block/marker's `classTrackId` + `position`; `TimelineStrip` gained optional `selectedTrackId` +
-  `onSelectTrack` (a plain select, not toggle), with a non-interactive fallback preserved. `Dashboard`
-  wires `onSelectTrack={setSelectedTrackId}`. Marker hit areas are padded around the glyph. No
-  schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**. **Merged PR #21, deployed
-  2026-06-13** (Worker version `755e3489`; no schema/migration).
-- ✅ **Slice 12 — focus a cue/move from its marker**: clicking a timeline **cue (▲) / move (◆)** marker now
-  selects the track *and* scrolls the matching inspector row into view with a brief highlight flash (clicking
-  a track block still just selects). Markers carry the in-track `anchorMs`; `onSelectTrack` gained an optional
-  `{ kind, anchorMs }`; `Dashboard` holds a `markerFocus` (`+ nonce` so re-clicking re-flashes) and threads it
-  through `TrackInspector` to `CuesSection`/`MovesSection`. A shared `useFlashFocus` hook scrolls + transiently
-  rings the row whose `anchorMs` matches (correlated by `anchorMs` since run-payload cues/moves carry **no
-  id**). No schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**. **Merged PR #23,
-  deployed 2026-06-13** (Worker version `802ebe48`; no schema/migration).
-- ✅ **Slice 13 — manage custom moves**: a `CustomMovesDialog` (opened via a **Manage…** button in a track's
-  Moves section) lists the caller's custom moves and lets them **rename**, edit the **description**, and
-  **delete** (inline two-step confirm; deleting a referenced move is safe — the server snapshots its name
-  into placements' `nameOverride`). Web-only: added `updateUserMove`/`deleteUserMove` client fns over the
-  existing owner-scoped `PATCH`/`DELETE /user-moves/:id`. On a change, `MovesSection` refreshes the picker
-  + this track's placements and bubbles `onChanged` (`TrackInspector` wires it to the class-detail reload,
-  so the ribbon/timeline move names stay current). Creation stays in the picker; **`baseMoveId`/`template`
-  editing deferred**. No schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**.
-  **Merged PR #25, deployed 2026-06-13** (Worker version `cc437560`; no schema/migration).
-
-- ✅ **Slice 14 — on-beat pulse (Live HUD)**: the focal **"Now" cue card** in Live mode breathes one cycle
-  per beat (`--rf-beat = 60s / --rf-bpm`, `onBeat` easing `cubic-bezier(0.4,0,0.2,1)`) while playing — the
-  design system's signature tempo cue (`10-rhythm-system.md`). CSS-driven (`rf-beat-pulse` keyframes in
-  `index.css`, transform + box-shadow only); `LiveMode` adds the class + inline `--rf-bpm` to the Now card
-  when `playing && displayBpm != null`. **Exactly one pulsing element**, and **fully removed under
-  `prefers-reduced-motion`** (a user loses affect, not information — the cue stays legible). No
-  schema/API-contract/shared change. `pnpm test` = api 159 + web 39 = **198**. **Merged PR #27, deployed
-  2026-06-13** (Worker version `9a298d21`; no schema/migration).
-
-- ✅ **Slice 15 — the All-Out "drop"** (10 §5, the one big motion spend): in Live mode, while the **live
-  track's intensity is `all_out`**, each cue advance blooms a one-shot **plasma glow** (the `peak-glow`
-  token) behind the "Now" card and the cue text **cross-fades in**. Rationed to all-out tracks (a handful
-  of times per class); layers with the slice-14 beat pulse. CSS-driven (`rf-drop-bloom` + `rf-drop-in`
-  keyframes, re-triggered by remounting the bloom/text on the current cue); **degrades to an instant,
-  glow-free swap under `prefers-reduced-motion`**. No schema/API-contract/shared change. `pnpm test` =
-  api 159 + web 39 = **198**. **Merged PR #29, deployed 2026-06-13** (Worker version `c3a502c0`; no
-  schema/migration).
-- ✅ **Slice 16 — segment band (fixed enum)** — *the first design-system-build slice that changes schema +
-  the contract.* A new **`class_sections`** table (**migration `0006`**) holds time-anchored segment bands;
-  a fixed `segmentType` enum (`warm_up`/`climb`/`sprint`/`recovery`/`cool_down`, lower_snake; labels/tints
-  presentation-only). Full stack: shared `classSection` schemas + enum; CRUD routes (`GET/POST
-  /classes/:id/sections`, `PATCH`/`DELETE /sections/:id`) class-scoped via a new `requireSectionAccess`
-  (view reads, edit writes); the run-payload gains an **additive** `sections[]` (`schemaVersion` stays 1);
-  OpenAPI regenerated. Web: a `SegmentBand` under the timeline tiles bands by start (pure, unit-tested
-  `computeSegmentBands`; each band is **label + tint dot**, never color alone) + an edit-gated add/retime/
-  retype/delete editor. **Start is a free anchor** (no bound to the assembled duration — it shifts as
-  tracks change; render clamps + tiles). Deferred: Material-Symbol icons, drag-resize, track-range binding.
-  `pnpm test` = api 159 + web 44 = **203**. **Merged PR #31, deployed 2026-06-13** (Worker version
-  `14d363cf`; **remote D1 migrated to `0006` first** — additive `class_sections` table).
-- ✅ **Slice 17 — stable cue/move ids in the run-payload** — *an additive contract change (no schema/
-  migration).* The run-payload's cues and placed moves now carry a stable **`id`** (the existing
-  `cues.id` / `class_track_moves.id` PKs, already selected during assembly — no new queries);
-  `schemaVersion` stays **1**. Shared `runPayloadCue`/`runPayloadMove` schemas gain `id: uuidSchema`;
-  OpenAPI regenerated (+two `id` fields only). Web: the timeline **marker→inspector-row focus** now
-  correlates by **id** (pure, unit-tested `resolveFlashRowId`: exact id match → first-row-at-same-anchor
-  fallback for legacy/changed ids), so **two cues/moves sharing an `anchorMs` disambiguate** — closing the
-  slice-12/16 caveat. `id` threads through `TimelineMarker`/`computeTimeline` → `onSelectTrack` →
-  `Dashboard` `markerFocus` → `Cues`/`MovesSection`. This also hardens the contract iOS Phase 2 consumes.
-  `pnpm test` = api 159 + web 49 = **208**; typecheck (4 pkgs) · lint · web build green. **Merged PR #33,
-  deployed 2026-06-13** (Worker version `7edfda8a`; **no schema/migration** — additive contract).
-
-- ✅ **Slice 18 — Live timeline playhead/seek + segment drag-resize** (PR #73, deployed 2026-06-16):
-  closes three of the deferred-backlog items below. The builder's static `TimelineStrip` is brought into
-  Live mode as the transport **scrubber** — a new `LiveTimeline` reuses `computeTimeline()` for the
-  proportional track blocks + cue (▲) / move (◆) markers, fills the played portion, and draws a moving
-  **playhead** at the current class time; it replaces the plain `<input type=range>` with an accessible
-  `role="slider"` (aria value text; pointer click/drag + ←/→ · PageUp/Dn · Home/End), seeking the existing
-  virtual prompter clock only (no audio — the three music rules hold). Each segment boundary becomes a
-  **drag-resize handle** (accessible slider) that re-times `startOffsetMs` via the existing
-  `PATCH /sections/:id`, clamped between neighbors (1s min gap) so a drag can't reorder/collapse bands,
-  committing on pointer-up/Enter/blur and reverting on failure; the numeric `SegmentEditor` stays the
-  precise/secondary path. Adds a per-type inline-SVG **energy-arc icon** (label + icon + tint, never color
-  alone; no font/CDN, so `font-src 'self'` is unaffected). Web-only: no schema, migration, API,
-  shared-contract, or OpenAPI change. `pnpm test` = api 175 + web 147; CI green. **Deployed** in Worker
-  `db6265f2-4ed0-48f0-8b8b-4c03801c0247` (alongside the additive API PR #72); remote D1 unchanged at `0012`.
-
-**Deferred (flagged in code):** custom-move **`baseMoveId`/`template`** editing, the **playing-track pulse
-in the planning timeline** (no "playing" state in the builder), and segment-band **track-range binding**
-(snapping boundaries to track starts). *(Slice 18 closed the timeline **playhead** / tap-to-seek and the
-segment-band **icons** + **drag-resize** items.)* The run-payload's
-`sections[]` still carries **no id** (sections aren't part of marker→row focus; a symmetry follow-up if
-iOS wants it). *(The slice-12/16 **marker→row `anchorMs` disambiguation caveat** was **resolved in slice
-17** — cues/moves now carry ids; the PR #10 `TODO(select-fallback)` was resolved in slice 9.)*
-
----
-
-## Music frontend ("M2 frontend") — built + deployed, all providers live (2026-06-13)
-
-M2 shipped the provider **backend** with no UI — tracks were hand-entered (Title/Artist/ms). This wired
-the music layer into the builder and took it to **real catalogs in prod**.
-
-- ✅ **S1 — track search & import** (PR #35): provider-picked, debounced search → low-noise **44px song
-  cards** → one-click import-and-add (`GET /providers/:p/search` → `POST /providers/track-import` → add by
-  `trackId`). Manual entry kept as a de-emphasized fallback. `lib/providers.ts` (labels/order — SoundCloud
-  first — + enum-drift guard); `TrackSearch.tsx`.
-- ✅ **S2 — provider connections** (PR #36): `ConnectionsDialog` (top-bar **Connections**) — connect /
-  disconnect with clear connected/disconnected state; mock seam links inline, live flow redirects to the
-  authorize URL; disconnect is confirmed (triggers the 7-day metadata purge).
-- ✅ **S3 — "my likes"** (PR #36): a **Search / My-likes** toggle in `TrackSearch` (`GET /providers/:p/likes`,
-  spends the user token).
-- ✅ **S4 — BPM lookup** (PR #36): a **Look up BPM** button in the inspector (`POST /tracks/:id/bpm-lookup`,
-  never Spotify). S5 (album art on rows, empty/disconnected states) was already satisfied by existing code.
-- ✅ **Prod hardening** (PR #37) — two bugs the mock path never exercised, found once **real creds** were
-  set and fixed live: (1) **`TypeError: Illegal invocation`** on every provider — the **bare global `fetch`**
-  passed to adapters loses its `this` in the Workers runtime (miniflare tolerated it); fixed with
-  `lib/fetch.ts` `boundFetch` at all 8 call sites. (2) **Spotify search 400 "Invalid limit"** — Spotify's
-  client-credentials search now rejects `limit=25` despite the documented 0–50; lowered to **10**. Also:
-  adapters now throw typed **`ProviderError`** so provider failures map to **502** (logged), not an opaque
-  500; the Apple developer token is minted by the new **`apps/api/scripts/apple-dev-token.mjs`** (ES256 JWT
-  from the untracked `.p8`).
-- **Verified live in prod** (`ritmofit.studio`): **SoundCloud**, **Spotify**, and **Apple Music** all return
-  real search results and import with album art; throwaway test accounts deleted after each check. Secrets
-  set via `wrangler secret put`. `pnpm test` = api 159 + web 53 = **212**; typecheck (4) · lint · build green.
-- **Open:** the SoundCloud **per-user Connect** OAuth round-trip needs its **redirect URI registered**
-  (`https://ritmofit.studio/api/v1/providers/soundcloud/callback`) + a browser login to confirm end-to-end
-  (provider *search* via the app token is verified). Spotify/Apple are **search-only** by design.
-
----
-
-## Post-launch web hardening
-
-- ✅ **D1-ordered class-library pagination**: `GET /classes` now resolves ownership, direct shares,
-  team shares, duplicate-path access rank, deterministic `(updated_at DESC, id DESC)` ordering, and
-  optional keyset pagination inside D1. The web library loads 30 at a time with an accessible
-  continuation control; unparameterized requests keep the legacy full-array contract for iOS.
-  Migration `0011` adds owner/share lookup indexes.
-- ✅ **Track-duration Live guard** (PR #49, deployed 2026-06-14): migration `0010` adds
-  `class_tracks.duration_ms_override`; sequencing, anchor validation, copies, and the run-payload use
-  the class-specific override before the library duration. The builder accepts `m:ss`, flags missing
-  durations, and blocks Live mode until every track is timed. Remote D1 is through `0010`; Worker
-  `0e9ab61b-acb8-480c-a45d-36ae455dc6c7` is live at 100%.
-- ✅ **Live provider handoff** (PR #50, deployed 2026-06-14): Cue-by-Cue and Full List
-  expose large, keyboard-accessible "Open in Provider" links for the active track. The links use the
-  existing run-payload `providerRefs`; a provider-specific web validator accepts Spotify track URIs
-  and trusted Spotify/Apple Music/SoundCloud HTTPS hosts, suppressing malformed or untrusted values.
-  Playback remains wholly in provider applications/sites. Web-only; no schema, migration, API,
-  shared-contract, or OpenAPI change. Typecheck, lint, 246 unit/component tests, 17 Worker/D1
-  integration tests, web build, and OpenAPI drift verification passed; a local browser pass covered
-  both Live views plus trusted and suppressed-link states. CI passed; Worker
-  `babcb3fe-9f7c-4e17-9e65-ab0c16b7784f` is live at 100%, with remote D1 unchanged through `0010`.
-
----
+**Still deferred (flagged in code):** custom-move `baseMoveId`/`template` editing; the playing-track
+pulse in the *planning* timeline (no "playing" state in the builder); segment-band track-range binding
+(snapping boundaries to track starts); and a run-payload `id` on `sections[]` (symmetry follow-up if
+iOS wants it).
 
 ## Cross-cutting reminders
 - Plan before code on every feature; wait for confirmation.

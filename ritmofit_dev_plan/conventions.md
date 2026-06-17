@@ -65,10 +65,13 @@
 - Branch per build-order step; PR back to main.
 
 ## CORS
-- Strict. The web SPA is served from `https://ritmofit.studio` (Pages); the API Worker is a **separate
-  origin** at `https://api.ritmofit.studio`. Allow only the production web origin
-  (`https://ritmofit.studio`) and local dev origins (Vite, e.g. `http://localhost:5173`) — credentials
-  enabled for the Better Auth session cookie.
+- **Production is single-origin:** the SPA and the API are served by the **same Worker** at
+  `https://ritmofit.studio` (`/api/*` → Hono, everything else → the built SPA). The Better Auth session
+  cookie is therefore **first-party and no cross-origin CORS is needed** in production. (There is no
+  separate `api.ritmofit.studio` origin.)
+- **Local dev is cross-origin:** Vite serves the web app (`http://localhost:5173`) while the Worker runs
+  separately (`http://localhost:8787`), so dev CORS must allow the Vite dev origin with credentials
+  enabled for the session cookie.
 
 ## Logging
 - Never log tokens, refresh tokens, `Authorization` headers, cookies, provider secrets, or Apple
@@ -76,5 +79,6 @@
 
 ## Domain & infra (current state)
 - Domain `ritmofit.studio` on Cloudflare DNS.
-- API = Cloudflare Worker; database = Cloudflare D1; web = Cloudflare Pages / Workers static assets.
+- API = Cloudflare Worker; database = Cloudflare D1; web = Workers static assets served by the **same
+  Worker** as the API (single origin; no separate Pages site).
 - iOS app is a separate repo and a second client of this backend — not a separate source of truth.

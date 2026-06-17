@@ -90,8 +90,11 @@ Owned by exactly one user. No `team_id` — ownership is always a user; others g
 Indexes include `(owner_user_id, updated_at, id)` for the owned arm of the ordered private-library
 query.
 
-> **No `segment_type` here and no `class_sections` table in M1** — segments are a design concept not
-> yet in the schema (decision D-cut). Don't invent the table.
+> **Segments:** no `segment_type` on `classes`. There was no `class_sections` table in M1 (segments
+> were a design concept then), but one was **added later** in the design-system builder build
+> (**slice 16, migration `0006`**): a `class_sections` table with a fixed `segmentType` enum
+> (`warm_up`/`climb`/`sprint`/`recovery`/`cool_down`), time-anchored by `start_offset_ms`. This M1
+> schema doc does not yet detail that table — see `milestones.md` slice 16 and the Drizzle schema.
 
 ### `tracks`
 The provider-agnostic song — the abstract track, not a provider's copy.

@@ -75,9 +75,10 @@ pnpm build   # all workspaces
 
 The UI is driven by design tokens, not ad-hoc colors. The flow is single-source:
 
-- `ritmofit_design_system/tokens.json` is the **vendored copy** of the design-system
-  source of truth. Refresh it by copying the latest `tokens.json` from the governing
-  design-system folder when it changes — never hand-edit token values in app code.
+- `ritmofit_design_system/tokens.json` is the **canonical** design-system token source
+  of truth for the app — edit token values here. (The workspace-root
+  `ritmofit-design-system-final/` is an audit/review snapshot, **not** an upstream this
+  is vendored from.) Never hand-edit the generated token CSS in app code.
 - `pnpm --filter @ritmofit/web tokens` (auto-runs on `dev`/`build`) regenerates
   `src/styles/tokens.css`: the dark `:root` set plus an **opt-in**
   `[data-theme="light"]` block. Dark is the default; nothing sets `data-theme`, so

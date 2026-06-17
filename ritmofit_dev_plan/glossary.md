@@ -42,8 +42,11 @@ a cue/move at a specific `anchor_ms` (and optionally beat/bar) — not a distinc
 **Timeline** — The class laid out over time. `start_offset_ms` on `class_track`; `anchor_ms` on
 cues/placed moves. Wall-clock milliseconds is the provider-independent default.
 
-**Segment** — A class section type (Warm-up / Climb / Sprint / Recovery / Cool-down). A **design concept
-only — not in the M1 schema.** Likely a future `class_sections` table; don't invent it silently.
+**Segment** — A class section type (Warm-up / Climb / Sprint / Recovery / Cool-down). Cut from the M1
+schema as a design concept, then **shipped** in the design-system builder build as the `class_sections`
+table (migration `0006`) with a fixed `segmentType` enum
+(`warm_up`/`climb`/`sprint`/`recovery`/`cool_down`); the run-payload carries an additive `sections[]`.
+See `decisions.md` and `milestones.md` slice 16.
 
 **Team** — A studio/group. Many-to-many with users via `team_memberships`. Team roles
 (owner/admin/member) govern *membership management*, not class access.

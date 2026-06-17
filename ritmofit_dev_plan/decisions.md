@@ -18,10 +18,13 @@ auth SaaS via webhook.
 
 ---
 
-## D2 — Cloudflare-native platform: Workers + D1 + Pages  **[Resolved]**
+## D2 — Cloudflare-native platform: Workers + D1 + Workers static assets  **[Resolved]**
 
 **Decision:** The API is a **Hono app on a Cloudflare Worker**; the database is **Cloudflare D1**
-(SQLite); the web SPA is served from **Cloudflare Pages / Workers static assets**.
+(SQLite); the web SPA is served as **Workers static assets from the same Worker as the API** (single
+origin). *(Original plan considered a separate Cloudflare Pages site; in production we instead serve the
+built SPA from the API Worker — `[assets]` in `wrangler.toml` with `run_worker_first=["/api/*"]` — so
+SPA and API share one origin and the session cookie stays first-party. No separate Pages site.)*
 
 **Why:**
 - `ritmofit.studio` is already on Cloudflare DNS; staying on one platform keeps DNS, compute, DB, and
@@ -204,9 +207,12 @@ endpoints still exist for editing; run-payload is the read-optimized live contra
 
 ## Cut from M1 (flagged, not built)
 
-- **Segments / class sections.** The design system treats segments (Warm-up/Climb/Sprint/…) as a
-  *design concept not yet in the schema* — likely a future `class_sections` table. We honor that:
-  **no `segment_type` column in M1.** Don't silently invent the table.
+- **Segments / class sections.** *(Cut from M1; **shipped later**.)* In M1 segments were a design
+  concept only — no `class_sections` table. They were added in the design-system builder build
+  (**slice 16, migration `0006`**, PR #31) as a `class_sections` table with a fixed `segmentType` enum
+  (`warm_up`/`climb`/`sprint`/`recovery`/`cool_down`) plus an additive run-payload `sections[]`
+  (`schemaVersion` stayed 1). See `milestones.md` slice 16. *(So this is no longer "don't invent the
+  table" — the table exists; build against it.)*
 - **`class_snapshots`** (history/restore/iOS cache) — revisit when versioning is a real requirement.
 - **`color_role` on class_tracks** — color belongs to the design layer, not the data model. (`color`
   on a *cue* stays — the design system uses it for visual cue tagging.)
