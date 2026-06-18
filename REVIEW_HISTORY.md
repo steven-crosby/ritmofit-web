@@ -142,4 +142,3 @@ covering every OAuth-callback failure branch, the disconnect → purge-enqueue s
 Better Auth reset flow. **#64** dispositions two newly-published dev/build-only vite advisories
 (`GHSA-fx2h-pf6j-xcff`, `GHSA-v6wh-96g9-6wx3`) that had started failing the `audit:ci` gate on `main`.
 Both merged to `main` after green CI; production stays on Worker `768cdded` / remote D1 `0012`._
-
