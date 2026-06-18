@@ -16,3 +16,5 @@ apps/api/migrations/
 # formatter-owned. Code and top-level docs (README, REVIEW, AGENTS, CLAUDE) are.
 ritmofit_dev_plan/
 ritmofit_design_system/
+design-system-audits/
+.claude/
