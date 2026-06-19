@@ -532,9 +532,10 @@ DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'
       CSP on all API/health responses; the SPA + static assets (served by the `[assets]`
       handler, which the Worker does not run for) carry the same transport/frame headers
       plus a page CSP via a new `apps/web/public/_headers` (→ `dist/_headers`). The page
-      CSP keeps Google Fonts (`style-src`/`font-src` whitelisted, per the chosen
-      CSP-allow strategy), allows the Cloudflare insights beacon, and permits provider
-      album art (`img-src https:`). An integration test asserts the API headers on
+      CSP self-hosts the OFL fonts under `/fonts` (`font-src 'self'`; no font CDN),
+      keeps `style-src 'unsafe-inline'` for the app's inline style attributes, allows
+      the Cloudflare insights beacon, and permits provider album art (`img-src https:`).
+      An integration test asserts the API headers on
       `/health`. Remaining: a live post-deploy smoke of the SPA response headers (in the
       Follow-Up checklist). Evidence: code change + green integration test + verified
       `dist/_headers` emission. Confidence: high for the API path; medium for the SPA

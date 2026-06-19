@@ -1,14 +1,15 @@
 # Milestones
 
 Each step follows the working agreement: **plan → confirm → code → summarize** (see
-`ai-working-rules.md`).
+`../AGENTS.md` → "Before Implementing").
 
 > **Status (2026-06-16): M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ — all done, merged to `main`, and deployed**
 > (API + web at `https://ritmofit.studio`, remote D1 through `0012`). On top of the data-flow milestones,
 > the **web design-system build (builder UI)** has shipped (slices 1–18), and the post-launch hardening
 > backlog has closed the launch-blocking and review SHOULD-FIX work documented below. The next major
 > product milestone is iOS Phase 2 in the separate `ritmofit-ios` repo; remaining web work is tracked in
-> `DEVELOPMENT_PLAN.md` and `REVIEW.md`.
+> `DEVELOPMENT_PLAN.md` and `HISTORY.md` (the prior `REVIEW.md` launch-readiness log is archived in
+> `archive/`).
 
 ## M1 — Auth + class/cue data model ✅ done
 
@@ -182,8 +183,8 @@ Core builder first (these validate the product), teams/sharing last.
   custom_domain = true` + `BETTER_AUTH_URL = https://ritmofit.studio`. Verified in prod end-to-end (SPA +
   deep links serve index.html over HTTPS; `/api/*` hits Hono; authed first-party-cookie flow worked, test
   data then deleted). Deploy = build web (`pnpm --filter @ritmofit/web build`) then `pnpm --filter
-  @ritmofit/api run deploy`. Current launch/deploy status is tracked in `REVIEW.md` and
-  `DEVELOPMENT_PLAN.md`.
+  @ritmofit/api run deploy`. Current launch/deploy status is tracked in `DEVELOPMENT_PLAN.md` and
+  `HISTORY.md`.
   - **Publish/visibility model:** a new `classes.visibility` enum, `private` (default) | `public`.
     The owner explicitly publishes via `PATCH /classes/:id`; Explore lists `public` classes. This is
     **orthogonal** to the existing `status` (draft/ready/archived = private lifecycle). Migration `0005`
