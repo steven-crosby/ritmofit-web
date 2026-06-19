@@ -44,10 +44,11 @@ Run and report pass/fail with real output — don't assume:
   absolute. Then **update the current-state summary** at the top of **`DEVELOPMENT_PLAN.md`** (and the
   status header / milestone roll-up in **`milestones.md`** if a milestone changed). Keep those two as
   *current state + pointers* — the per-PR log lives in `HISTORY.md`, not inline, so they stay readable.
-- [ ] For launch-readiness findings/blockers: keep **`REVIEW.md`** as *current status + findings/backlog*
-  and append any dated remediation entry to **`REVIEW_HISTORY.md`**. Update other focused docs such as
-  `conventions.md` when their subject changes. `CLAUDE.md` is only a compatibility pointer to
-  `AGENTS.md`; do not append session history to it.
+- [ ] For launch/deploy status and any new findings/blockers: append a dated entry to **`HISTORY.md`**
+  and refresh the current-state summary in **`DEVELOPMENT_PLAN.md`**. (The pre-launch `REVIEW.md`/
+  `REVIEW_HISTORY.md` trackers are archived in `archive/`; do not revive them.) Update other focused
+  docs such as `conventions.md` when their subject changes. `CLAUDE.md` is only a compatibility pointer
+  to `AGENTS.md`; do not append session history to it.
 - [ ] Commit docs (convention: direct to `main`, `docs:` prefix) and push. Docs don't deploy, so no redeploy needed.
 
 ## 6. Secrets, blockers, data hygiene

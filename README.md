@@ -106,4 +106,5 @@ migrations **before** the code that depends on them.
   operational runbooks.
 - [`ritmofit_design_system/README.md`](ritmofit_design_system/README.md) — tokens, components,
   accessibility, motion, and layout guidance for UI work.
-- [`REVIEW.md`](REVIEW.md) — launch-readiness status and the open hardening backlog.
+- [`ritmofit_dev_plan/archive/`](ritmofit_dev_plan/archive/) — archived launch-readiness review
+  (`REVIEW.md`/`REVIEW_HISTORY.md`), pre-launch audit reports, and superseded AI session prompts.

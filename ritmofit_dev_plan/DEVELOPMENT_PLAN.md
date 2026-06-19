@@ -74,8 +74,8 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 ## Working agreement for AI assistants
 
 1. **Plan before code.** For any feature, propose files, schema impact, API surface, frontend impact,
-   risks, and verification — then wait for confirmation. Use the template in
-   [`ai-working-rules.md`](./ai-working-rules.md).
+   risks, and verification — then wait for confirmation. Use the plan→confirm template in
+   [`../AGENTS.md`](../AGENTS.md) → "Before Implementing".
 2. **Respect the hard constraints above.** Never cache audio, pull Spotify BPM, or mix audio in-app.
 3. **The shared package is the contract.** Entity shapes live once in `packages/shared`; don't
    redefine them in `apps/api` or `apps/web`.
@@ -99,7 +99,8 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > deliberately deferred**. CI (`.github/workflows/ci.yml`) gates format, typecheck, lint, unit tests,
 > Worker/D1 integration tests, the web build, OpenAPI drift, and `audit:ci` on every push/PR —
 > **advisory** until the owner enables branch protection.
-> Current launch/deploy status is tracked in [`../REVIEW.md`](../REVIEW.md); canonical contributor and
+> Current launch/deploy status is tracked in this plan and [`HISTORY.md`](./HISTORY.md); the prior
+> `REVIEW.md` launch-readiness log is archived in [`archive/`](./archive/). Canonical contributor and
 > deployment instructions are in [`../AGENTS.md`](../AGENTS.md).
 
 _The full dated deploy/build log (every PR, Worker version id, and migration step) has been moved to
@@ -134,6 +135,5 @@ above and the milestone roll-up below._
 | [`milestones.md`](./milestones.md) | Milestone breakdown, M1 build order, acceptance criteria |
 | [`conventions.md`](./conventions.md) | Code style, naming, env, wrangler/D1, git, testing |
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
-| [`ai-working-rules.md`](./ai-working-rules.md) | The plan→confirm template + the inviolable rules |
 | [`close-session-checklist.md`](./close-session-checklist.md) | End-of-session runbook — say "run the close-session checklist" |
 | [`HISTORY.md`](./HISTORY.md) | Archived dated build/deploy log (PRs, Worker versions, migration steps) |

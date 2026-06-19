@@ -121,5 +121,6 @@ denormalize ownership onto classes.
 - Resolve team membership in the same query where possible to avoid N+1.
 - A team's `owner`/`admin` roles govern **team membership management**, not class access. Class access
   always derives from ownership + shares, even when a class is shared *to* a team.
-- Because there's no RLS, **every** new class-scoped route must call `requireAccess` — add it to the
-  route checklist in `ai-working-rules.md`. A missing call is a security bug, not a style nit.
+- Because there's no RLS, **every** new class-scoped route must call `requireAccess` (see the
+  authorization rules in `../AGENTS.md` → "Coding & Domain Rules"). A missing call is a security bug,
+  not a style nit.
