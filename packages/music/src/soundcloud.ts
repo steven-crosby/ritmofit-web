@@ -104,6 +104,17 @@ class SoundCloudProvider implements MusicProvider {
     return toCandidate(body);
   }
 
+  async getPlaylist(playlistId: string): Promise<TrackSearchResult[]> {
+    const id = encodeURIComponent(playlistId);
+    const body = await this.apiGet(`/playlists/${id}`, { allow404: true });
+    if (body === null) return [];
+    const parsed = z.object({ tracks: z.array(z.unknown()) }).safeParse(body);
+    if (!parsed.success) return [];
+    return parsed.data.tracks
+      .map((item) => toCandidate(item))
+      .filter((r): r is TrackSearchResult => r !== null);
+  }
+
   /** GET against the API with a valid app token; throws on non-ok (except opt-in 404). */
   private async apiGet(path: string, opts?: { allow404: boolean }): Promise<unknown> {
     const token = await this.tokens.get();

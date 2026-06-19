@@ -24,6 +24,9 @@ export const classSchema = z.object({
   status: classStatusSchema,
   visibility: classVisibilitySchema,
   targetDurationMs: timestampMsSchema.nullable(),
+  featuredCategory: z.string().max(100).nullable(),
+  coverImageUrl: z.string().url().max(1000).nullable(),
+  tags: z.array(z.string().min(1).max(50)).max(20).default([]),
   ...timestampsShape,
   lastOpenedAt: timestampMsSchema.nullable(),
 });
@@ -66,6 +69,9 @@ export const createClassSchema = classSchema
     targetDurationMs: true,
     status: true,
     visibility: true,
+    featuredCategory: true,
+    coverImageUrl: true,
+    tags: true,
   })
   .partial({
     description: true,
@@ -73,6 +79,9 @@ export const createClassSchema = classSchema
     targetDurationMs: true,
     status: true,
     visibility: true,
+    featuredCategory: true,
+    coverImageUrl: true,
+    tags: true,
   });
 export type CreateClass = z.infer<typeof createClassSchema>;
 

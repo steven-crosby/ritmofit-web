@@ -58,4 +58,20 @@ describe('ConnectionsDialog capability gating', () => {
     // After the refresh returns no connections, SoundCloud falls back to Connect.
     expect(await screen.findByRole('button', { name: 'Connect' })).toBeTruthy();
   });
+
+  it('shows a success notice when an OAuth round-trip connected a provider', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([connection('soundcloud')]);
+
+    render(<ConnectionsDialog onClose={() => {}} oauthResult={{ connected: 'soundcloud' }} />);
+
+    expect(await screen.findByText('Connected to SoundCloud.')).toBeTruthy();
+  });
+
+  it('shows a readable failure notice when an OAuth round-trip errored', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    render(<ConnectionsDialog onClose={() => {}} oauthResult={{ error: 'state_expired' }} />);
+
+    expect(await screen.findByText('Connection failed: state expired.')).toBeTruthy();
+  });
 });

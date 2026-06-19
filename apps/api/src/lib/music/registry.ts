@@ -34,6 +34,10 @@ class MockMusicProvider implements MusicProvider {
   async lookup(providerTrackId: string): Promise<TrackSearchResult | null> {
     return findMockCandidate(this.provider, providerTrackId) ?? null;
   }
+
+  async getPlaylist(_playlistId: string): Promise<TrackSearchResult[]> {
+    return []; // fallback implementation
+  }
 }
 
 export function getMusicProvider(provider: Provider, env: Env): MusicProvider {

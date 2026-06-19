@@ -40,6 +40,9 @@ function makeClass(title: string, accessLevel: ClassWithAccess['accessLevel'] = 
     createdAt: classSeq,
     updatedAt: classSeq,
     lastOpenedAt: null,
+    featuredCategory: null,
+    coverImageUrl: null,
+    tags: [],
     accessLevel,
   } satisfies ClassWithAccess;
 }

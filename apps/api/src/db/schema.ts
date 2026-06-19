@@ -123,6 +123,8 @@ export const classes = sqliteTable(
     // Discovery visibility (M4), orthogonal to lifecycle `status`. Default private
     // so every existing/new class stays owner+shares-only until explicitly published.
     visibility: text('visibility', { enum: classVisibilityValues }).notNull().default('private'),
+    featuredCategory: text('featured_category'),
+    coverImageUrl: text('cover_image_url'),
     targetDurationMs: integer('target_duration_ms'),
     ...timestamps(),
     lastOpenedAt: integer('last_opened_at'),
@@ -221,6 +223,22 @@ export const classTracks = sqliteTable(
     // Hot path: every class-detail load / run-payload assembly fetches a class's
     // tracks by class_id.
     index('class_tracks_class_id_idx').on(t.classId),
+  ],
+);
+
+export const classTags = sqliteTable(
+  'class_tags',
+  {
+    id: text('id').primaryKey(),
+    classId: text('class_id')
+      .notNull()
+      .references(() => classes.id, { onDelete: 'cascade' }),
+    tag: text('tag').notNull(),
+    ...timestamps(),
+  },
+  (t) => [
+    uniqueIndex('class_tags_class_id_tag_unq').on(t.classId, t.tag),
+    index('class_tags_tag_idx').on(t.tag),
   ],
 );
 

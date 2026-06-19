@@ -18,7 +18,7 @@ import { DEFAULT_PROVIDER, PROVIDER_ORDER, providerLabel } from '../lib/provider
 /** A stable key for a candidate (provider + provider track id). */
 const candidateKey = (r: TrackSearchResult) => `${r.provider}:${r.providerTrackId}`;
 
-type Mode = 'search' | 'likes';
+type Mode = 'search' | 'likes' | 'playlist';
 
 export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: () => void }) {
   const [provider, setProvider] = useState<Provider>(DEFAULT_PROVIDER);
@@ -30,6 +30,8 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
   // Per-candidate import state: which key is busy, and which keys were added.
   const [importingKey, setImportingKey] = useState<string | null>(null);
   const [addedKeys, setAddedKeys] = useState<Set<string>>(new Set());
+  const [playlistUrl, setPlaylistUrl] = useState('');
+  const [importingPlaylist, setImportingPlaylist] = useState(false);
   // Guards against a stale async fetch overwriting a newer one's results.
   const reqId = useRef(0);
 
@@ -88,8 +90,10 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
       void run();
       return;
     }
-    const t = setTimeout(run, 300);
-    return () => clearTimeout(t);
+    if (mode === 'search') {
+      const t = setTimeout(run, 300);
+      return () => clearTimeout(t);
+    }
   }, [mode, query, provider, canUseLikes]);
 
   const add = async (candidate: TrackSearchResult) => {
@@ -105,6 +109,22 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
       setError((e as Error).message);
     } finally {
       setImportingKey(null);
+    }
+  };
+
+  const importList = async () => {
+    if (!playlistUrl.trim()) return;
+    setImportingPlaylist(true);
+    setError(null);
+    try {
+      const { importPlaylist } = await import('../lib/api.js');
+      await importPlaylist(classId, playlistUrl);
+      setPlaylistUrl('');
+      onAdded();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setImportingPlaylist(false);
     }
   };
 
@@ -137,8 +157,8 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
       {/* Mode toggle — search the catalog, or browse the caller's own likes (S3).
           "My likes" only appears for providers with a per-user integration. */}
       <div role="group" aria-label="Source" className="flex gap-1.5">
-        {(['search', 'likes'] as Mode[])
-          .filter((m) => m === 'search' || canUseLikes)
+        {(['search', 'likes', 'playlist'] as Mode[])
+          .filter((m) => m !== 'likes' || canUseLikes)
           .map((m) => {
             const selected = m === mode;
             return (
@@ -153,7 +173,7 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
                     : 'text-text-tertiary hover:text-text-secondary'
                 }`}
               >
-                {m === 'search' ? 'Search' : 'My likes'}
+                {m === 'search' ? 'Search' : m === 'playlist' ? 'Import Playlist' : 'My likes'}
               </button>
             );
           })}
@@ -175,10 +195,38 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
         </>
       )}
 
+      {mode === 'playlist' && (
+        <div className="flex gap-2">
+          <label className="sr-only" htmlFor="playlist-url-input">
+            Playlist URL
+          </label>
+          <input
+            id="playlist-url-input"
+            type="url"
+            className="rounded-pill flex-1 border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
+            placeholder={`Paste a ${providerLabel(provider)} playlist URL…`}
+            value={playlistUrl}
+            onChange={(e) => setPlaylistUrl(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={importList}
+            disabled={importingPlaylist || !playlistUrl.trim()}
+            className="rounded-pill rf-btn-primary px-3 py-1 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+          >
+            {importingPlaylist ? 'Importing…' : 'Import'}
+          </button>
+        </div>
+      )}
+
       {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
 
       {/* States. Idle (search, no query) invites; the rest reflect the fetch. */}
-      {mode === 'search' && query.trim() === '' ? (
+      {mode === 'playlist' ? (
+        <p className="font-ui text-xs text-text-tertiary">
+          Paste the URL of a public playlist to import all its tracks at once.
+        </p>
+      ) : mode === 'search' && query.trim() === '' ? (
         <p className="font-ui text-xs text-text-tertiary">
           Find a track to add — building the playlist is building the class.
         </p>

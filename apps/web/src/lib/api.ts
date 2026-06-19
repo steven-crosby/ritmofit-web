@@ -95,6 +95,29 @@ export const updateClass = (classId: string, body: UpdateClass) =>
   api<Class>(`/classes/${classId}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const deleteClass = (classId: string) =>
   api<void>(`/classes/${classId}`, { method: 'DELETE' });
+export const addClassTag = (classId: string, tag: string) =>
+  api<{ success: true; tag: string }>(`/classes/${classId}/tags`, {
+    method: 'POST',
+    body: JSON.stringify({ tag }),
+  });
+export const removeClassTag = (classId: string, tag: string) =>
+  api<void>(`/classes/${classId}/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' });
+export const uploadClassCover = async (classId: string, file: File): Promise<Class> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_BASE_URL}/api/v1/classes/${classId}/cover`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+  if (!res.ok) throw new Error('Upload failed');
+  return res.json() as Promise<Class>;
+};
+export const importPlaylist = (classId: string, url: string) =>
+  api<{ imported: number }>(`/classes/${classId}/import-playlist`, {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
 /** One page of the public Explore feed (newest-first). The server clamps `limit`
  * to 50; the caller pages with `offset` and stops when a short page comes back. */
 export const listExplore = (limit = 30, offset = 0) =>

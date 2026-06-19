@@ -16,6 +16,15 @@ const KNOWN_PATHS = new Set(['/', '/reset-password']);
 export function App() {
   const { data: session, isPending } = authClient.useSession();
 
+  const skipLink = (
+    <a
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[100] rounded-pill bg-bg-raised px-4 py-2 font-ui text-text-primary shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+    >
+      Skip to main content
+    </a>
+  );
+
   // Reset-password lands here from the email link (no router); render it on
   // pathname before the session gate so it works while signed out.
   if (window.location.pathname === '/reset-password') return <ResetPassword />;
@@ -32,6 +41,18 @@ export function App() {
     );
   }
 
-  if (!session) return <Login />;
-  return <Dashboard userId={session.user.id} userName={session.user.name || session.user.email} />;
+  if (!session) {
+    return (
+      <>
+        {skipLink}
+        <Login />
+      </>
+    );
+  }
+  return (
+    <>
+      {skipLink}
+      <Dashboard userId={session.user.id} userName={session.user.name || session.user.email} />
+    </>
+  );
 }

@@ -22,9 +22,7 @@ describe('launch blocker regressions (integration)', () => {
   it('returns OAuth callback failures to the canonical app origin', async () => {
     const res = await call('/api/v1/providers/soundcloud/callback');
     expect(res.status).toBe(302);
-    expect(res.headers.get('location')).toBe(
-      'https://test.ritmofit.studio/account?error=state_missing',
-    );
+    expect(res.headers.get('location')).toBe('https://test.ritmofit.studio/?error=state_missing');
   });
 
   it('rejects an unverified share target, then permits the verified user', async () => {

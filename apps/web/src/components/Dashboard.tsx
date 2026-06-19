@@ -22,6 +22,9 @@ import {
   reorderTracks,
   getRunPayload,
   lookupBpm,
+  addClassTag,
+  removeClassTag,
+  uploadClassCover,
 } from '../lib/api.js';
 import { moveItem } from '../lib/reorder.js';
 import { avgBpm, formatDuration } from '../lib/class-summary.js';
@@ -58,6 +61,9 @@ const ExploreDialog = lazy(() =>
 const ConnectionsDialog = lazy(() =>
   import('./ConnectionsDialog.js').then((m) => ({ default: m.ConnectionsDialog })),
 );
+const ClassSummaryView = lazy(() =>
+  import('./ClassSummaryView.js').then((m) => ({ default: m.ClassSummaryView })),
+);
 const CuesSection = lazy(() =>
   import('./ChoreographyEditor.js').then((m) => ({ default: m.CuesSection })),
 );
@@ -85,7 +91,11 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [live, setLive] = useState<RunPayload | null>(null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
+  const [previewClassId, setPreviewClassId] = useState<string | null>(null);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
+  const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const refreshClasses = useCallback(async () => {
@@ -122,6 +132,27 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   useEffect(() => {
     void refreshClasses();
   }, [refreshClasses]);
+
+  // A provider OAuth round-trip returns the browser to "/?connected=…" or
+  // "/?error=…". Open the connections dialog with that result, then strip the
+  // query so a refresh or back-nav doesn't replay it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('connected');
+    const errorReason = params.get('error');
+    if (!connected && !errorReason) return;
+    setOauthResult({ connected: connected ?? undefined, error: errorReason ?? undefined });
+    setConnectionsOpen(true);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, []);
+
+  useEffect(() => {
+    if (selected) {
+      document.title = `${selected.title} - RitmoFit`;
+    } else {
+      document.title = 'RitmoFit';
+    }
+  }, [selected]);
 
   // Load (or reload) one class detail under a monotonic request generation. The
   // reducer ignores late responses, and begin immediately masks the prior class.
@@ -210,7 +241,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     );
 
   return (
-    <main className="flex min-h-screen flex-col">
+    <main id="main-content" className="flex min-h-screen flex-col">
       {/* Persistent top bar — glass nav surface (design system 04/05): brand
           mark + wordmark, then the cross-cutting destinations. */}
       <header className="rf-topbar flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
@@ -258,16 +289,35 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           paints once its chunk resolves (near-instant on a warm cache). */}
       <Suspense fallback={null}>
         {teamsOpen && <TeamsDialog userId={userId} onClose={() => setTeamsOpen(false)} />}
-        {connectionsOpen && <ConnectionsDialog onClose={() => setConnectionsOpen(false)} />}
+        {connectionsOpen && (
+          <ConnectionsDialog
+            oauthResult={oauthResult}
+            onClose={() => {
+              setConnectionsOpen(false);
+              setOauthResult(null);
+            }}
+          />
+        )}
         {exploreOpen && (
           <ExploreDialog
             onClose={() => setExploreOpen(false)}
             onPreview={(classId) => {
               setExploreOpen(false);
-              void runClass(classId);
+              setPreviewClassId(classId);
             }}
             onCopied={async (cls) => {
               setExploreOpen(false);
+              await refreshClasses();
+              await openClass({ ...cls, accessLevel: 'owner' });
+            }}
+          />
+        )}
+        {previewClassId && (
+          <ClassSummaryView
+            classId={previewClassId}
+            onClose={() => setPreviewClassId(null)}
+            onCopied={async (cls) => {
+              setPreviewClassId(null);
               await refreshClasses();
               await openClass({ ...cls, accessLevel: 'owner' });
             }}
@@ -366,7 +416,12 @@ export function LibraryRail({
   onOpen: (cls: ClassWithAccess) => void;
   onLoadMore: () => void;
 }) {
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const view = libraryView(status, classes.length);
+  const allTags = Array.from(new Set(classes.flatMap((c) => c.tags))).sort();
+  const filteredClasses = selectedTag
+    ? classes.filter((c) => c.tags.includes(selectedTag))
+    : classes;
   return (
     <aside className="flex flex-col gap-3 xl:sticky xl:top-6">
       <div className="flex items-center justify-between">
@@ -387,24 +442,50 @@ export function LibraryRail({
           No classes yet — create your first above.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {classes.map((cls) => (
-            <li key={cls.id}>
-              <button
-                onClick={() => onOpen(cls)}
-                aria-pressed={selectedId === cls.id}
-                className={`w-full rounded-card bg-bg-raised p-3 text-left font-ui shadow-card ${
-                  selectedId === cls.id ? 'ring-2 ring-interactive' : ''
-                }`}
-              >
-                <span className="block truncate text-text-primary">{cls.title}</span>
-                <span className="font-data text-xs uppercase text-text-tertiary">
-                  {cls.accessLevel}
-                </span>
-              </button>
-            </li>
-          ))}
-          {hasMore && (
+        <div className="flex flex-col gap-3">
+          {allTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pb-1">
+              {selectedTag && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedTag(null)}
+                  className="rounded-pill border border-interactive bg-interactive px-2 py-0.5 font-ui text-xs text-bg-base"
+                >
+                  #{selectedTag} ×
+                </button>
+              )}
+              {allTags
+                .filter((t) => t !== selectedTag)
+                .map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setSelectedTag(tag)}
+                    className="rounded-pill border border-interactive/30 bg-bg-base px-2 py-0.5 font-ui text-xs text-text-secondary hover:text-text-primary"
+                  >
+                    #{tag}
+                  </button>
+                ))}
+            </div>
+          )}
+          <ul className="flex flex-col gap-2">
+            {filteredClasses.map((cls) => (
+              <li key={cls.id}>
+                <button
+                  onClick={() => onOpen(cls)}
+                  aria-pressed={selectedId === cls.id}
+                  className={`w-full rounded-card bg-bg-raised p-3 text-left font-ui shadow-card ${
+                    selectedId === cls.id ? 'ring-2 ring-interactive' : ''
+                  }`}
+                >
+                  <span className="block truncate text-text-primary">{cls.title}</span>
+                  <span className="font-data text-xs uppercase text-text-tertiary">
+                    {cls.accessLevel}
+                  </span>
+                </button>
+              </li>
+            ))}
+            {hasMore && (
             <li className="flex justify-center pt-1">
               <button
                 type="button"
@@ -416,7 +497,8 @@ export function LibraryRail({
               </button>
             </li>
           )}
-        </ul>
+          </ul>
+        </div>
       )}
     </aside>
   );
@@ -676,6 +758,8 @@ export function ClassHeaderCard({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(cls.title);
+  const [tagInput, setTagInput] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isPublic = cls.visibility === 'public';
   const averageBpm = payload ? avgBpm(payload) : null;
 
@@ -707,10 +791,69 @@ export function ClassHeaderCard({
       onDeleted();
     });
 
+  const handleTagSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const tag = tagInput.trim();
+    if (!tag) return;
+    if (cls.tags.includes(tag)) {
+      setTagInput('');
+      return;
+    }
+    void run(async () => {
+      await addClassTag(cls.id, tag);
+      onClassUpdated({ ...cls, tags: [...cls.tags, tag] });
+      setTagInput('');
+    });
+  };
+
+  const removeTag = (tag: string) => {
+    void run(async () => {
+      await removeClassTag(cls.id, tag);
+      onClassUpdated({ ...cls, tags: cls.tags.filter((t) => t !== tag) });
+    });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    void run(async () => {
+      const updatedClass = await uploadClassCover(cls.id, file);
+      onClassUpdated(updatedClass);
+    });
+  };
+
   return (
     <div className="flex flex-col gap-3 rounded-card bg-bg-raised p-5 shadow-card">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
-        <div className="min-w-0">
+        <div className="flex flex-1 items-start gap-4 min-w-0">
+          {/* Cover image area */}
+          <div className="relative shrink-0 flex flex-col items-center">
+            {cls.coverImageUrl ? (
+              <img
+                src={cls.coverImageUrl}
+                alt="Class Cover"
+                fetchPriority="high"
+                className="h-24 w-24 rounded-card object-cover border border-interactive/20"
+              />
+            ) : (
+              <div className="flex h-24 w-24 items-center justify-center rounded-card border border-dashed border-interactive/40 bg-bg-base text-text-tertiary">
+                <span className="text-2xl" aria-hidden>📷</span>
+              </div>
+            )}
+            {isOwner && (
+              <label className="mt-2 cursor-pointer text-xs font-ui text-interactive hover:underline">
+                {cls.coverImageUrl ? 'Change' : 'Upload Cover'}
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                />
+              </label>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
           {editingTitle ? (
             <form
               className="flex flex-wrap items-center gap-2"
@@ -769,6 +912,41 @@ export function ClassHeaderCard({
           <p className="font-ui text-xs text-text-tertiary">
             {isPublic ? '🌐 Public — listed in Explore' : '🔒 Private'}
           </p>
+
+          {/* Tags */}
+          <div className="mt-3 flex flex-wrap gap-2 items-center">
+            {cls.tags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 rounded-pill bg-interactive/15 px-2.5 py-1 font-ui text-xs text-text-primary border border-interactive/30"
+              >
+                #{tag}
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="ml-0.5 text-text-secondary hover:text-state-danger"
+                    aria-label={`Remove tag ${tag}`}
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
+            ))}
+            {canEdit && (
+              <form onSubmit={handleTagSubmit} className="flex flex-wrap gap-1 items-center">
+                <input
+                  type="text"
+                  placeholder="Add tag…"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  className="rounded-pill border border-interactive/30 bg-bg-base px-2.5 py-1 font-ui text-xs text-text-primary"
+                  maxLength={50}
+                />
+              </form>
+            )}
+          </div>
+        </div>
         </div>
         {/* Actions wrap below the title on narrow viewports instead of forcing
             horizontal overflow; single row to the right of the title on sm+. */}

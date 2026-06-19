@@ -109,8 +109,19 @@ export function ExploreDialog({
           No public classes yet. Publish one of yours to share it here.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2 overflow-y-auto">
-          {items.map((cls) => (
+        <div className="flex flex-col gap-6 overflow-y-auto">
+          {Object.entries(
+            items.reduce((acc, cls) => {
+              const cat = cls.featuredCategory || 'Community';
+              if (!acc[cat]) acc[cat] = [];
+              acc[cat].push(cls);
+              return acc;
+            }, {} as Record<string, ExploreClass[]>)
+          ).map(([category, categoryItems]) => (
+            <div key={category} className="flex flex-col gap-2">
+              <h3 className="font-display text-md font-semibold text-text-secondary">{category}</h3>
+              <ul className="flex flex-col gap-2">
+                {categoryItems.map((cls) => (
             <li
               key={cls.id}
               className="flex items-center gap-3 rounded-card bg-bg-base p-3 shadow-card"
@@ -150,7 +161,10 @@ export function ExploreDialog({
               >
                 {copyingId === cls.id ? 'Saving…' : 'Save a copy'}
               </button>
-            </li>
+                </li>
+              ))}
+            </ul>
+          </div>
           ))}
           {hasMore && (
             <li className="flex justify-center pt-1">
@@ -163,7 +177,7 @@ export function ExploreDialog({
               </button>
             </li>
           )}
-        </ul>
+        </div>
       )}
     </Dialog>
   );

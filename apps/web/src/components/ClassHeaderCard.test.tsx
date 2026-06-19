@@ -25,6 +25,9 @@ const cls = {
   updatedAt: 1,
   lastOpenedAt: null,
   accessLevel: 'owner',
+  featuredCategory: null,
+  coverImageUrl: null,
+  tags: [],
 } satisfies ClassWithAccess;
 
 const missingEntry = {

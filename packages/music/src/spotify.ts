@@ -95,6 +95,17 @@ class SpotifyProvider implements MusicProvider {
     return this.toCandidate(json);
   }
 
+  async getPlaylist(playlistId: string): Promise<TrackSearchResult[]> {
+    const json = await this.authedGet(
+      `${this.apiBase}/playlists/${encodeURIComponent(playlistId)}/tracks?limit=100`,
+    );
+    const parsed = z.object({ items: z.array(z.object({ track: z.unknown() })) }).safeParse(json);
+    if (!parsed.success) return [];
+    return parsed.data.items
+      .map((item) => this.toCandidate(item.track))
+      .filter((c): c is TrackSearchResult => c !== null);
+  }
+
   /** Map a Spotify track object → contract candidate, or null if it can't satisfy the schema. */
   private toCandidate(raw: unknown): TrackSearchResult | null {
     const parsed = spTrackSchema.safeParse(raw);

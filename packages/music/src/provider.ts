@@ -22,6 +22,9 @@ export interface MusicProvider {
    * null when the provider has no such track (→ the route maps that to 404).
    */
   lookup(providerTrackId: string): Promise<TrackSearchResult | null>;
+
+  /** Fetch tracks from a playlist. */
+  getPlaylist(playlistId: string): Promise<TrackSearchResult[]>;
 }
 
 /**

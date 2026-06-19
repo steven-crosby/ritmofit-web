@@ -92,6 +92,10 @@ class AppleMusicProvider implements MusicProvider {
     return first ? this.toCandidate(first) : null;
   }
 
+  async getPlaylist(_playlistId: string): Promise<TrackSearchResult[]> {
+    return []; // Not implemented for Apple Music
+  }
+
   /** Map an Apple Music song → contract candidate, or null if it can't satisfy the schema. */
   private toCandidate(raw: unknown): TrackSearchResult | null {
     const parsed = amSongSchema.safeParse(raw);

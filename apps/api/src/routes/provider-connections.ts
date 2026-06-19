@@ -176,7 +176,7 @@ providerConnectionRoutes.post('/providers/:provider/connect', requireSession, as
 /** GET /providers/:provider/callback — OAuth redirect target. Validates, stores, redirects. */
 providerConnectionRoutes.get('/providers/:provider/callback', async (c) => {
   const provider = parseProvider(c.req.param('provider'));
-  const fail = (reason: string) => c.redirect(spaUrl(c.env, `/account?error=${reason}`));
+  const fail = (reason: string) => c.redirect(spaUrl(c.env, `/?error=${reason}`));
 
   const raw = getCookie(c, STATE_COOKIE);
   deleteCookie(c, STATE_COOKIE, { path: '/' });
@@ -226,7 +226,7 @@ providerConnectionRoutes.get('/providers/:provider/callback', async (c) => {
     // Never surface token-exchange detail to the browser or logs.
     return fail('connect_failed');
   }
-  return c.redirect(spaUrl(c.env, `/account?connected=${provider}`));
+  return c.redirect(spaUrl(c.env, `/?connected=${provider}`));
 });
 
 /** GET /providers/connections — the caller's connections (tokens stripped). */

@@ -20,6 +20,9 @@ const classes = [
     updatedAt: 2,
     lastOpenedAt: null,
     accessLevel: 'owner',
+    featuredCategory: null,
+    coverImageUrl: null,
+    tags: [],
   },
   {
     id: '00000000-0000-4000-8000-000000000002',
@@ -34,6 +37,9 @@ const classes = [
     updatedAt: 1,
     lastOpenedAt: null,
     accessLevel: 'view',
+    featuredCategory: null,
+    coverImageUrl: null,
+    tags: [],
   },
 ] satisfies ClassWithAccess[];
 

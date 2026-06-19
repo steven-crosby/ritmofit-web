@@ -5,7 +5,7 @@ import type { Env } from './types.js';
 const MSG = { to: 'user@example.com', subject: 'Hi', html: '<p>Hi</p>', text: 'Hi' };
 
 function env(over: Partial<Env> = {}): Env {
-  return { DB: {} as never, BETTER_AUTH_SECRET: 's', BETTER_AUTH_URL: 'u', ...over };
+  return { DB: {} as never, IMAGES_BUCKET: {} as never, BETTER_AUTH_SECRET: 's', BETTER_AUTH_URL: 'u', ...over };
 }
 
 describe('buildResendPayload', () => {

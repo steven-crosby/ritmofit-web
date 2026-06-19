@@ -57,7 +57,7 @@ describe('provider OAuth callback configuration (integration)', () => {
       `${STATE_COOKIE}=garbage`,
     );
     expect(res.status).toBe(302);
-    expect(locationOf(res)).toBe(`${ORIGIN}/account?error=state_invalid`);
+    expect(locationOf(res)).toBe(`${ORIGIN}/?error=state_invalid`);
   });
 
   it('returns access_denied when the provider reports a consent error', async () => {
@@ -67,13 +67,13 @@ describe('provider OAuth callback configuration (integration)', () => {
       await stateCookie(),
     );
     expect(res.status).toBe(302);
-    expect(locationOf(res)).toBe(`${ORIGIN}/account?error=access_denied`);
+    expect(locationOf(res)).toBe(`${ORIGIN}/?error=access_denied`);
   });
 
   it('returns state_mismatch when the query state does not match the cookie', async () => {
     const res = await callback('soundcloud', '?code=abc&state=wrong-state', await stateCookie());
     expect(res.status).toBe(302);
-    expect(locationOf(res)).toBe(`${ORIGIN}/account?error=state_mismatch`);
+    expect(locationOf(res)).toBe(`${ORIGIN}/?error=state_mismatch`);
   });
 
   it('returns state_mismatch when the cookie provider differs from the path provider', async () => {
@@ -84,7 +84,7 @@ describe('provider OAuth callback configuration (integration)', () => {
       await stateCookie({ provider: 'spotify' }),
     );
     expect(res.status).toBe(302);
-    expect(locationOf(res)).toBe(`${ORIGIN}/account?error=state_mismatch`);
+    expect(locationOf(res)).toBe(`${ORIGIN}/?error=state_mismatch`);
   });
 
   it('returns state_expired when the cookie has passed its TTL', async () => {
@@ -94,7 +94,7 @@ describe('provider OAuth callback configuration (integration)', () => {
       await stateCookie({ exp: Date.now() - 1000 }),
     );
     expect(res.status).toBe(302);
-    expect(locationOf(res)).toBe(`${ORIGIN}/account?error=state_expired`);
+    expect(locationOf(res)).toBe(`${ORIGIN}/?error=state_expired`);
   });
 
   it('returns unsupported_provider for a valid state on a catalog-only provider', async () => {
@@ -104,7 +104,7 @@ describe('provider OAuth callback configuration (integration)', () => {
       await stateCookie({ provider: 'spotify' }),
     );
     expect(res.status).toBe(302);
-    expect(locationOf(res)).toBe(`${ORIGIN}/account?error=unsupported_provider`);
+    expect(locationOf(res)).toBe(`${ORIGIN}/?error=unsupported_provider`);
   });
 
   it('returns connect_failed when the token exchange cannot complete', async () => {
@@ -113,6 +113,6 @@ describe('provider OAuth callback configuration (integration)', () => {
     // and redirects with a generic reason rather than 500.
     const res = await callback('soundcloud', '?code=abc&state=state-token', await stateCookie());
     expect(res.status).toBe(302);
-    expect(locationOf(res)).toBe(`${ORIGIN}/account?error=connect_failed`);
+    expect(locationOf(res)).toBe(`${ORIGIN}/?error=connect_failed`);
   });
 });
