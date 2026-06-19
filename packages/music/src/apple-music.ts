@@ -92,7 +92,7 @@ class AppleMusicProvider implements MusicProvider {
     return first ? this.toCandidate(first) : null;
   }
 
-  async getPlaylist(_playlistId: string): Promise<TrackSearchResult[]> {
+  async getPlaylist(): Promise<TrackSearchResult[]> {
     return []; // Not implemented for Apple Music
   }
 
