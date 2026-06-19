@@ -793,7 +793,9 @@ export function ClassHeaderCard({
 
   const handleTagSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const tag = tagInput.trim();
+    // Canonicalize to match how the server stores tags (trim + lowercase) so the
+    // dup-check and optimistic update agree with the persisted value.
+    const tag = tagInput.trim().toLowerCase();
     if (!tag) return;
     if (cls.tags.includes(tag)) {
       setTagInput('');

@@ -287,6 +287,24 @@ classRoutes.post('/:id/copy', async (c) => {
     }
   });
 
+  // Clone the source class's tags onto the copy (fresh ids, same tag values).
+  const sourceTags = await db
+    .select({ tag: classTags.tag })
+    .from(classTags)
+    .where(eq(classTags.classId, sourceClassId))
+    .all();
+  for (const { tag } of sourceTags) {
+    statements.push(
+      db.insert(classTags).values({
+        id: crypto.randomUUID(),
+        classId: newClassId,
+        tag,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    );
+  }
+
   // Sections only reference the class (FK already inserted as statements[0]), so they
   // can be appended in start order — fresh ids, same type + anchor.
   for (const section of sourceSections) {
@@ -306,8 +324,7 @@ classRoutes.post('/:id/copy', async (c) => {
   await resequence(db, newClassId);
 
   const row = await db.select().from(classes).where(eq(classes.id, newClassId)).get();
-  // We didn't clone tags in copy class yet, so tags: [] is correct for a fresh copy
-  return c.json(serializeClass({ ...row!, tags: [] }), 201);
+  return c.json(serializeClass({ ...row!, tags: sourceTags.map((t) => t.tag) }), 201);
 });
 
 /** GET /classes/:id — fetch one class (any access); 404 when not visible. */

@@ -6,6 +6,7 @@ import { createDb } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { getMusicProvider } from '../lib/music/registry.js';
 import { importTrackFromCandidate } from '../lib/track-import.js';
+import { makeMatchKey } from '../lib/same-song.js';
 import { classTracks } from '../db/schema.js';
 import { resequence } from '../lib/sequencing.js';
 import { eq } from 'drizzle-orm';
@@ -72,26 +73,43 @@ playlistImportRoutes.post('/classes/:id/import-playlist', async (c) => {
     .where(eq(classTracks.classId, classId))
     .all();
 
-  let position = existing.length;
-  const now = Date.now();
-  const trackInserts = [];
+  // Collapse same-song candidates by match key. importTrackFromCandidate already
+  // merges same-song imports in the library, so duplicates would only add work (or
+  // race when resolved concurrently); deduping first leaves distinct songs whose
+  // per-library dedup touches disjoint match-key buckets and is safe in parallel.
+  const seen = new Set<string>();
+  const uniqueCandidates = candidates.filter((cand) => {
+    const key = makeMatchKey(cand.title, cand.artist);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
-  for (const candidate of candidates) {
-    const { track } = await importTrackFromCandidate(db, me, candidate);
-    trackInserts.push({
-      id: crypto.randomUUID(),
-      classId,
-      trackId: track.id,
-      position: position++,
-      intensity: 'none' as const,
-      displayBpmOverride: null,
-      durationMsOverride: null,
-      startOffsetMs: null,
-      notes: null,
-      createdAt: now,
-      updatedAt: now,
-    });
+  // Resolve with bounded concurrency rather than one sequential round-trip per track.
+  const CONCURRENCY = 5;
+  const resolved: Awaited<ReturnType<typeof importTrackFromCandidate>>[] = [];
+  for (let i = 0; i < uniqueCandidates.length; i += CONCURRENCY) {
+    const batch = uniqueCandidates.slice(i, i + CONCURRENCY);
+    resolved.push(
+      ...(await Promise.all(batch.map((cand) => importTrackFromCandidate(db, me, cand)))),
+    );
   }
+
+  const now = Date.now();
+  let position = existing.length;
+  const trackInserts = resolved.map(({ track }) => ({
+    id: crypto.randomUUID(),
+    classId,
+    trackId: track.id,
+    position: position++,
+    intensity: 'none' as const,
+    displayBpmOverride: null,
+    durationMsOverride: null,
+    startOffsetMs: null,
+    notes: null,
+    createdAt: now,
+    updatedAt: now,
+  }));
 
   if (trackInserts.length > 0) {
     await db.insert(classTracks).values(trackInserts);
