@@ -486,17 +486,17 @@ export function LibraryRail({
               </li>
             ))}
             {hasMore && (
-            <li className="flex justify-center pt-1">
-              <button
-                type="button"
-                className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
-                onClick={onLoadMore}
-                disabled={loadingMore}
-              >
-                {loadingMore ? 'Loading…' : 'Load more'}
-              </button>
-            </li>
-          )}
+              <li className="flex justify-center pt-1">
+                <button
+                  type="button"
+                  className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+                  onClick={onLoadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? 'Loading…' : 'Load more'}
+                </button>
+              </li>
+            )}
           </ul>
         </div>
       )}
@@ -837,7 +837,9 @@ export function ClassHeaderCard({
               />
             ) : (
               <div className="flex h-24 w-24 items-center justify-center rounded-card border border-dashed border-interactive/40 bg-bg-base text-text-tertiary">
-                <span className="text-2xl" aria-hidden>📷</span>
+                <span className="text-2xl" aria-hidden>
+                  📷
+                </span>
               </div>
             )}
             {isOwner && (
@@ -854,99 +856,99 @@ export function ClassHeaderCard({
             )}
           </div>
           <div className="min-w-0 flex-1">
-          {editingTitle ? (
-            <form
-              className="flex flex-wrap items-center gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                saveRename();
-              }}
-            >
-              <label className="sr-only" htmlFor="class-title-input">
-                Class name
-              </label>
-              <input
-                id="class-title-input"
-                autoFocus
-                value={titleDraft}
-                onChange={(e) => setTitleDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') setEditingTitle(false);
+            {editingTitle ? (
+              <form
+                className="flex flex-wrap items-center gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  saveRename();
                 }}
-                maxLength={200}
-                className="min-w-0 flex-1 rounded-card border border-interactive/40 bg-bg-base px-2 py-1 font-display text-xl font-semibold text-text-primary"
-              />
-              <button
-                type="submit"
-                className="rounded-pill rf-btn-primary px-3 py-1 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
-                disabled={renaming}
               >
-                {renaming ? '…' : 'Save'}
-              </button>
-              <button
-                type="button"
-                className="rounded-pill border border-interactive/40 px-3 py-1 font-ui text-sm text-text-secondary"
-                onClick={() => setEditingTitle(false)}
-                disabled={renaming}
-              >
-                Cancel
-              </button>
-            </form>
-          ) : (
-            <div className="flex items-center gap-2">
-              <h2 className="truncate font-display text-xl font-semibold text-text-primary">
-                {cls.title}
-              </h2>
-              {isOwner && (
+                <label className="sr-only" htmlFor="class-title-input">
+                  Class name
+                </label>
+                <input
+                  id="class-title-input"
+                  autoFocus
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setEditingTitle(false);
+                  }}
+                  maxLength={200}
+                  className="min-w-0 flex-1 rounded-card border border-interactive/40 bg-bg-base px-2 py-1 font-display text-xl font-semibold text-text-primary"
+                />
                 <button
-                  className="shrink-0 rounded-pill border border-interactive/40 px-2 py-0.5 font-ui text-xs text-text-secondary hover:text-text-primary"
-                  onClick={startRename}
-                  aria-label="Rename class"
+                  type="submit"
+                  className="rounded-pill rf-btn-primary px-3 py-1 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+                  disabled={renaming}
                 >
-                  Rename
+                  {renaming ? '…' : 'Save'}
                 </button>
-              )}
-            </div>
-          )}
-          {/* Visibility: icon + label, never color alone (accessibility). */}
-          <p className="font-ui text-xs text-text-tertiary">
-            {isPublic ? '🌐 Public — listed in Explore' : '🔒 Private'}
-          </p>
-
-          {/* Tags */}
-          <div className="mt-3 flex flex-wrap gap-2 items-center">
-            {cls.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1 rounded-pill bg-interactive/15 px-2.5 py-1 font-ui text-xs text-text-primary border border-interactive/30"
-              >
-                #{tag}
-                {canEdit && (
+                <button
+                  type="button"
+                  className="rounded-pill border border-interactive/40 px-3 py-1 font-ui text-sm text-text-secondary"
+                  onClick={() => setEditingTitle(false)}
+                  disabled={renaming}
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h2 className="truncate font-display text-xl font-semibold text-text-primary">
+                  {cls.title}
+                </h2>
+                {isOwner && (
                   <button
-                    type="button"
-                    onClick={() => removeTag(tag)}
-                    className="ml-0.5 text-text-secondary hover:text-state-danger"
-                    aria-label={`Remove tag ${tag}`}
+                    className="shrink-0 rounded-pill border border-interactive/40 px-2 py-0.5 font-ui text-xs text-text-secondary hover:text-text-primary"
+                    onClick={startRename}
+                    aria-label="Rename class"
                   >
-                    ×
+                    Rename
                   </button>
                 )}
-              </span>
-            ))}
-            {canEdit && (
-              <form onSubmit={handleTagSubmit} className="flex flex-wrap gap-1 items-center">
-                <input
-                  type="text"
-                  placeholder="Add tag…"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  className="rounded-pill border border-interactive/30 bg-bg-base px-2.5 py-1 font-ui text-xs text-text-primary"
-                  maxLength={50}
-                />
-              </form>
+              </div>
             )}
+            {/* Visibility: icon + label, never color alone (accessibility). */}
+            <p className="font-ui text-xs text-text-tertiary">
+              {isPublic ? '🌐 Public — listed in Explore' : '🔒 Private'}
+            </p>
+
+            {/* Tags */}
+            <div className="mt-3 flex flex-wrap gap-2 items-center">
+              {cls.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-pill bg-interactive/15 px-2.5 py-1 font-ui text-xs text-text-primary border border-interactive/30"
+                >
+                  #{tag}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="ml-0.5 text-text-secondary hover:text-state-danger"
+                      aria-label={`Remove tag ${tag}`}
+                    >
+                      ×
+                    </button>
+                  )}
+                </span>
+              ))}
+              {canEdit && (
+                <form onSubmit={handleTagSubmit} className="flex flex-wrap gap-1 items-center">
+                  <input
+                    type="text"
+                    placeholder="Add tag…"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    className="rounded-pill border border-interactive/30 bg-bg-base px-2.5 py-1 font-ui text-xs text-text-primary"
+                    maxLength={50}
+                  />
+                </form>
+              )}
+            </div>
           </div>
-        </div>
         </div>
         {/* Actions wrap below the title on narrow viewports instead of forcing
             horizontal overflow; single row to the right of the title on sm+. */}

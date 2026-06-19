@@ -205,7 +205,7 @@ classRoutes.post('/:id/copy', async (c) => {
       template: sourceClass.template,
       status: 'draft',
       visibility: 'private',
-      targetDurationMs: null,
+      targetDurationMs: sourceClass.targetDurationMs,
       featuredCategory: null,
       coverImageUrl: null,
       createdAt: now,
@@ -316,8 +316,15 @@ classRoutes.get('/:id', async (c) => {
   const id = c.req.param('id');
   const accessLevel = await requireAccess(db, c.get('userId'), id, 'view');
   const row = await db.select().from(classes).where(eq(classes.id, id)).get();
-  const tagsRow = await db.select({ tag: classTags.tag }).from(classTags).where(eq(classTags.classId, id)).all();
-  const result: ClassWithAccess = { ...serializeClass({ ...row!, tags: tagsRow.map(t => t.tag) }), accessLevel };
+  const tagsRow = await db
+    .select({ tag: classTags.tag })
+    .from(classTags)
+    .where(eq(classTags.classId, id))
+    .all();
+  const result: ClassWithAccess = {
+    ...serializeClass({ ...row!, tags: tagsRow.map((t) => t.tag) }),
+    accessLevel,
+  };
   return c.json(result);
 });
 
@@ -330,8 +337,12 @@ classRoutes.patch('/:id', async (c) => {
 
   await db.update(classes).set(buildPatch(body)).where(eq(classes.id, id));
   const row = await db.select().from(classes).where(eq(classes.id, id)).get();
-  const tagsRow = await db.select({ tag: classTags.tag }).from(classTags).where(eq(classTags.classId, id)).all();
-  return c.json(serializeClass({ ...row!, tags: tagsRow.map(t => t.tag) }));
+  const tagsRow = await db
+    .select({ tag: classTags.tag })
+    .from(classTags)
+    .where(eq(classTags.classId, id))
+    .all();
+  return c.json(serializeClass({ ...row!, tags: tagsRow.map((t) => t.tag) }));
 });
 
 /**
@@ -355,7 +366,7 @@ classRoutes.post('/:id/cover', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
   await requireAccess(db, c.get('userId'), id, 'edit');
-  
+
   if (!c.env.IMAGES_BUCKET) {
     throw new HttpError(500, 'INTERNAL_SERVER_ERROR', 'Images bucket not configured.');
   }
@@ -366,27 +377,39 @@ classRoutes.post('/:id/cover', async (c) => {
     throw new HttpError(400, 'BAD_REQUEST', 'Missing file.');
   }
 
-  // e.g., "covers/uuid.jpg"
-  const ext = file.name.split('.').pop() || 'jpg';
+  // Derive the extension from the (allowlisted) content type, never the
+  // client-supplied filename — this keeps the served object an image and
+  // prevents an attacker from storing e.g. text/html and getting it served back.
+  const extByType: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  };
+  const ext = extByType[file.type];
+  if (!ext) {
+    throw new HttpError(400, 'BAD_REQUEST', 'Cover must be a JPEG, PNG, or WebP image.');
+  }
   const objectKey = `covers/${crypto.randomUUID()}.${ext}`;
 
   await c.env.IMAGES_BUCKET.put(objectKey, file, {
     httpMetadata: { contentType: file.type },
   });
 
-  // Construct the public URL. Depending on the setup, this could be a custom domain or the workers.dev domain.
-  // For simplicity, we assume R2 bucket is exposed or we use a route to serve it. 
-  // Actually, we should probably just store the object path and let the frontend prefix it, or return the full URL.
-  // Let's store a relative path or full URL. Cloudflare R2 public buckets usually have an r2.dev domain or custom domain.
-  // We'll store a relative URL: `/api/v1/uploads/${objectKey}` and create a GET route, or just store the key and let a route serve it.
-  // Wait! A `public` R2 bucket isn't strictly required if we serve it through the worker. Let's serve it through `GET /uploads/*`.
-  const coverImageUrl = `/api/v1/uploads/${objectKey}`;
+  // Store an absolute URL: the image is served by this Worker at
+  // `/api/v1/uploads/...`, and the web app (a different origin) renders it
+  // directly as an <img src>, so a root-relative path would resolve against
+  // the wrong origin and also fail the classSchema url() check.
+  const coverImageUrl = `${new URL(c.req.url).origin}/api/v1/uploads/${objectKey}`;
 
   await db.update(classes).set({ coverImageUrl }).where(eq(classes.id, id));
-  
+
   const row = await db.select().from(classes).where(eq(classes.id, id)).get();
-  const tagsRow = await db.select({ tag: classTags.tag }).from(classTags).where(eq(classTags.classId, id)).all();
-  return c.json(serializeClass({ ...row!, tags: tagsRow.map(t => t.tag) }));
+  const tagsRow = await db
+    .select({ tag: classTags.tag })
+    .from(classTags)
+    .where(eq(classTags.classId, id))
+    .all();
+  return c.json(serializeClass({ ...row!, tags: tagsRow.map((t) => t.tag) }));
 });
 
 /** POST /classes/:id/tags — add a tag to the class. Edit access required. */
@@ -399,16 +422,19 @@ classRoutes.post('/:id/tags', async (c) => {
     throw new HttpError(400, 'BAD_REQUEST', 'Tag must be a non-empty string.');
   }
   const tag = body.tag.trim().toLowerCase();
-  
+
   const now = Date.now();
-  await db.insert(classTags).values({
-    id: crypto.randomUUID(),
-    classId: id,
-    tag,
-    createdAt: now,
-    updatedAt: now,
-  }).onConflictDoNothing({ target: [classTags.classId, classTags.tag] });
-  
+  await db
+    .insert(classTags)
+    .values({
+      id: crypto.randomUUID(),
+      classId: id,
+      tag,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoNothing({ target: [classTags.classId, classTags.tag] });
+
   return c.json({ success: true, tag }, 201);
 });
 
@@ -418,7 +444,9 @@ classRoutes.delete('/:id/tags/:tag', async (c) => {
   const id = c.req.param('id');
   const tag = c.req.param('tag');
   await requireAccess(db, c.get('userId'), id, 'edit');
-  
-  await db.delete(classTags).where(and(eq(classTags.classId, id), eq(classTags.tag, tag.toLowerCase())));
+
+  await db
+    .delete(classTags)
+    .where(and(eq(classTags.classId, id), eq(classTags.tag, tag.toLowerCase())));
   return c.body(null, 204);
 });

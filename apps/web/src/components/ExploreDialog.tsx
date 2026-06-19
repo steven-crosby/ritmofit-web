@@ -111,60 +111,65 @@ export function ExploreDialog({
       ) : (
         <div className="flex flex-col gap-6 overflow-y-auto">
           {Object.entries(
-            items.reduce((acc, cls) => {
-              const cat = cls.featuredCategory || 'Community';
-              if (!acc[cat]) acc[cat] = [];
-              acc[cat].push(cls);
-              return acc;
-            }, {} as Record<string, ExploreClass[]>)
+            items.reduce(
+              (acc, cls) => {
+                const cat = cls.featuredCategory || 'Community';
+                if (!acc[cat]) acc[cat] = [];
+                acc[cat].push(cls);
+                return acc;
+              },
+              {} as Record<string, ExploreClass[]>,
+            ),
           ).map(([category, categoryItems]) => (
             <div key={category} className="flex flex-col gap-2">
               <h3 className="font-display text-md font-semibold text-text-secondary">{category}</h3>
               <ul className="flex flex-col gap-2">
                 {categoryItems.map((cls) => (
-            <li
-              key={cls.id}
-              className="flex items-center gap-3 rounded-card bg-bg-base p-3 shadow-card"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-ui text-text-primary">{cls.title}</p>
-                <p className="font-ui text-xs text-text-tertiary">
-                  by {cls.ownerName}
-                  <span className="mx-1.5" aria-hidden>
-                    ·
-                  </span>
-                  <span className="font-data">{cls.trackCount}</span> track
-                  {cls.trackCount === 1 ? '' : 's'}
-                  {cls.template && (
-                    <>
-                      <span className="mx-1.5" aria-hidden>
-                        ·
-                      </span>
-                      {cls.template}
-                    </>
-                  )}
-                </p>
-              </div>
-              <button
-                className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
-                onClick={() => onPreview(cls.id)}
-                disabled={cls.trackCount === 0}
-                title={cls.trackCount === 0 ? 'This class has no tracks yet' : 'Preview this class'}
-              >
-                Preview
-              </button>
-              <button
-                className="rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
-                onClick={() => saveCopy(cls.id)}
-                disabled={copyingId !== null}
-                title="Copy this class into your library to edit it"
-              >
-                {copyingId === cls.id ? 'Saving…' : 'Save a copy'}
-              </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+                  <li
+                    key={cls.id}
+                    className="flex items-center gap-3 rounded-card bg-bg-base p-3 shadow-card"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-ui text-text-primary">{cls.title}</p>
+                      <p className="font-ui text-xs text-text-tertiary">
+                        by {cls.ownerName}
+                        <span className="mx-1.5" aria-hidden>
+                          ·
+                        </span>
+                        <span className="font-data">{cls.trackCount}</span> track
+                        {cls.trackCount === 1 ? '' : 's'}
+                        {cls.template && (
+                          <>
+                            <span className="mx-1.5" aria-hidden>
+                              ·
+                            </span>
+                            {cls.template}
+                          </>
+                        )}
+                      </p>
+                    </div>
+                    <button
+                      className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+                      onClick={() => onPreview(cls.id)}
+                      disabled={cls.trackCount === 0}
+                      title={
+                        cls.trackCount === 0 ? 'This class has no tracks yet' : 'Preview this class'
+                      }
+                    >
+                      Preview
+                    </button>
+                    <button
+                      className="rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+                      onClick={() => saveCopy(cls.id)}
+                      disabled={copyingId !== null}
+                      title="Copy this class into your library to edit it"
+                    >
+                      {copyingId === cls.id ? 'Saving…' : 'Save a copy'}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
           {hasMore && (
             <li className="flex justify-center pt-1">
