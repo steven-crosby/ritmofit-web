@@ -10,6 +10,7 @@ import type { User } from '@ritmofit/shared';
  */
 export interface Env {
   DB: D1Database;
+  IMAGES_BUCKET: R2Bucket;
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   /** Canonical SPA origin. Production is same-origin with BETTER_AUTH_URL. */

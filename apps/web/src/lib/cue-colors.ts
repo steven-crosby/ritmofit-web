@@ -4,7 +4,8 @@
  * choose from copper / cyan / amber / ember / bone tags — never the reserved
  * **plasma** peak accent (`#FF2E88` / `#FF6AAE` / `#D11A68`), which stays for
  * All-Out glow and the Live sprint pulse only. Rationing is enforced here, not
- * in the column. Hex values are the design-token primitives (`tokens.json`).
+ * in the column. Hex values are the design-token primitives (`tokens.json`) — a
+ * `cue-colors.test.ts` guard fails if they ever drift from that source.
  */
 export type CueColorTag = { name: string; hex: string };
 

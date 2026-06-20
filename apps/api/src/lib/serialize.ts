@@ -59,7 +59,7 @@ type MoveRow = typeof moves.$inferSelect;
 type UserMoveRow = typeof userMoves.$inferSelect;
 
 /** Map a `classes` row to the shared `Class`. Timestamps are plain ms integers. */
-export function serializeClass(row: ClassRow): Class {
+export function serializeClass(row: ClassRow & { tags?: string[] }): Class {
   return classSchema.parse(row);
 }
 

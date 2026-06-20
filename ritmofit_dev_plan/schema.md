@@ -83,6 +83,10 @@ Owned by exactly one user. No `team_id` — ownership is always a user; others g
 | description | text | Nullable |
 | template | text enum(`cycle`,`hiit`,`sculpt`,`tread`) | Nullable; class template type |
 | status | text enum(`draft`,`ready`,`archived`) | Default `draft` |
+| visibility | text enum(`private`,`unlisted`,`public`) | Default `private` |
+| featured_category | text | Nullable; marks this class for curated Explore rows |
+| cover_image_url | text | Nullable; custom uploaded R2 image URL |
+| target_duration_ms | int | Nullable; total planned class length |
 | target_duration_ms | int | Nullable; total planned class length |
 | created_at / updated_at | int (ms) | |
 | last_opened_at | int (ms) | Nullable |
@@ -156,6 +160,18 @@ holds the per-class context.
 > mutating another user's private library track. The column is kept so
 > **free placement** (explicit offsets, silence gaps) can land in a later milestone **without a
 > migration**. Clients should treat `start_offset_ms` as read-only in M1.
+
+### `class_tags`
+Simple "Google Keep" style tagging system for classes. Used to search historical classes (e.g., "Songs by Move" or thematic searches).
+
+| Column | Type | Notes |
+|---|---|---|
+| id | text (PK) | UUID |
+| class_id | text (FK → classes.id) | |
+| tag | text | Lowercase tag string |
+| created_at / updated_at | int (ms) | |
+
+Unique on (`class_id`, `tag`).
 
 ---
 
@@ -320,6 +336,7 @@ Index active oldest-first work on (`failed_at`, `requested_at`).
 ```
 users 1───* team_memberships *───1 teams
 users 1───* classes
+classes 1───* class_tags
 users 1───* tracks                      (per-user library — M1, decision D4)
 users 1───* user_moves *───0..1 moves
 classes 1───* class_tracks *───1 tracks
@@ -337,7 +354,7 @@ Define these in the Drizzle schema (step 3); D1/SQLite enforces FKs when `PRAGMA
 
 | Parent deleted | Child behavior |
 |---|---|
-| `classes` | **CASCADE** → `class_tracks` → their `cues` and `class_track_moves`; and the class's `shares` |
+| `classes` | **CASCADE** → `class_tracks` → their `cues` and `class_track_moves`; and the class's `shares` and `class_tags` |
 | `class_tracks` | **CASCADE** → its `cues` and `class_track_moves` |
 | `tracks` | **RESTRICT** while referenced by any `class_track` (a track in use can't vanish from under a class); also cascades its `track_provider_ids` |
 | `teams` | **CASCADE** → `team_memberships` and any `shares` targeting the team |

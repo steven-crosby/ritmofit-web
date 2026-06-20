@@ -43,11 +43,19 @@ const STATE_META: Record<
   'catalog-only': { glyph: '◍', label: 'Catalog search only', tone: 'text-text-tertiary' },
 };
 
-export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
+export function ConnectionsDialog({
+  onClose,
+  oauthResult,
+}: {
+  onClose: () => void;
+  /** The provider OAuth round-trip result, parsed from the return URL by the dashboard. */
+  oauthResult?: { connected?: string; error?: string } | null;
+}) {
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
   const [busyProvider, setBusyProvider] = useState<Provider | null>(null);
   const [confirming, setConfirming] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -61,13 +69,18 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
     void refresh();
   }, [refresh]);
 
-  // Surface a real-OAuth redirect result if the callback bounced back with one
-  // (?connected=… / ?error=…). Harmless in the mock flow, which never redirects.
+  // Surface a real-OAuth redirect result handed down from the dashboard: the
+  // callback returns the browser to "/?connected=…" or "/?error=…", which the
+  // dashboard parses and passes here. The mock flow connects in place and passes
+  // nothing.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const err = params.get('error');
-    if (err) setError(`Connection failed: ${err.replace(/_/g, ' ')}.`);
-  }, []);
+    if (!oauthResult) return;
+    if (oauthResult.error) {
+      setError(`Connection failed: ${oauthResult.error.replace(/_/g, ' ')}.`);
+    } else if (oauthResult.connected) {
+      setNotice(`Connected to ${providerLabel(oauthResult.connected as Provider)}.`);
+    }
+  }, [oauthResult]);
 
   const connectionByProvider = new Map((connections ?? []).map((c) => [c.provider, c]));
 
@@ -130,6 +143,12 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
       {error && (
         <p className="font-ui text-sm text-state-danger" role="alert">
           {error}
+        </p>
+      )}
+
+      {notice && (
+        <p className="font-ui text-sm text-state-positive" role="status">
+          {notice}
         </p>
       )}
 

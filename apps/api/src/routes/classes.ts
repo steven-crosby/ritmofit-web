@@ -39,6 +39,7 @@ import {
   classTrackMoves,
   classSections,
   userMoves,
+  classTags,
 } from '../db/schema.js';
 
 export const classRoutes = new Hono<AppEnv>();
@@ -58,12 +59,14 @@ classRoutes.post('/', async (c) => {
     status: body.status ?? 'draft',
     visibility: body.visibility ?? 'private',
     targetDurationMs: body.targetDurationMs ?? null,
+    featuredCategory: body.featuredCategory ?? null,
+    coverImageUrl: null,
     createdAt: now,
     updatedAt: now,
     lastOpenedAt: null,
   };
   await db.insert(classes).values(row);
-  return c.json(serializeClass(row), 201);
+  return c.json(serializeClass({ ...row, tags: [] }), 201);
 });
 
 /**
@@ -203,6 +206,8 @@ classRoutes.post('/:id/copy', async (c) => {
       status: 'draft',
       visibility: 'private',
       targetDurationMs: sourceClass.targetDurationMs,
+      featuredCategory: null,
+      coverImageUrl: null,
       createdAt: now,
       updatedAt: now,
       lastOpenedAt: null,
@@ -282,6 +287,24 @@ classRoutes.post('/:id/copy', async (c) => {
     }
   });
 
+  // Clone the source class's tags onto the copy (fresh ids, same tag values).
+  const sourceTags = await db
+    .select({ tag: classTags.tag })
+    .from(classTags)
+    .where(eq(classTags.classId, sourceClassId))
+    .all();
+  for (const { tag } of sourceTags) {
+    statements.push(
+      db.insert(classTags).values({
+        id: crypto.randomUUID(),
+        classId: newClassId,
+        tag,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    );
+  }
+
   // Sections only reference the class (FK already inserted as statements[0]), so they
   // can be appended in start order — fresh ids, same type + anchor.
   for (const section of sourceSections) {
@@ -301,7 +324,7 @@ classRoutes.post('/:id/copy', async (c) => {
   await resequence(db, newClassId);
 
   const row = await db.select().from(classes).where(eq(classes.id, newClassId)).get();
-  return c.json(serializeClass(row!), 201);
+  return c.json(serializeClass({ ...row!, tags: sourceTags.map((t) => t.tag) }), 201);
 });
 
 /** GET /classes/:id — fetch one class (any access); 404 when not visible. */
@@ -310,7 +333,15 @@ classRoutes.get('/:id', async (c) => {
   const id = c.req.param('id');
   const accessLevel = await requireAccess(db, c.get('userId'), id, 'view');
   const row = await db.select().from(classes).where(eq(classes.id, id)).get();
-  const result: ClassWithAccess = { ...serializeClass(row!), accessLevel };
+  const tagsRow = await db
+    .select({ tag: classTags.tag })
+    .from(classTags)
+    .where(eq(classTags.classId, id))
+    .all();
+  const result: ClassWithAccess = {
+    ...serializeClass({ ...row!, tags: tagsRow.map((t) => t.tag) }),
+    accessLevel,
+  };
   return c.json(result);
 });
 
@@ -323,7 +354,12 @@ classRoutes.patch('/:id', async (c) => {
 
   await db.update(classes).set(buildPatch(body)).where(eq(classes.id, id));
   const row = await db.select().from(classes).where(eq(classes.id, id)).get();
-  return c.json(serializeClass(row!));
+  const tagsRow = await db
+    .select({ tag: classTags.tag })
+    .from(classTags)
+    .where(eq(classTags.classId, id))
+    .all();
+  return c.json(serializeClass({ ...row!, tags: tagsRow.map((t) => t.tag) }));
 });
 
 /**
@@ -339,5 +375,95 @@ classRoutes.delete('/:id', async (c) => {
     db.delete(shares).where(and(eq(shares.resourceType, 'class'), eq(shares.resourceId, id))),
     db.delete(classes).where(eq(classes.id, id)),
   ]);
+  return c.body(null, 204);
+});
+
+/** POST /classes/:id/cover — upload a custom cover image to R2. Edit access required. */
+classRoutes.post('/:id/cover', async (c) => {
+  const db = createDb(c.env);
+  const id = c.req.param('id');
+  await requireAccess(db, c.get('userId'), id, 'edit');
+
+  if (!c.env.IMAGES_BUCKET) {
+    throw new HttpError(500, 'INTERNAL_SERVER_ERROR', 'Images bucket not configured.');
+  }
+
+  const body = await c.req.parseBody();
+  const file = body['file'];
+  if (!(file instanceof File)) {
+    throw new HttpError(400, 'BAD_REQUEST', 'Missing file.');
+  }
+
+  // Derive the extension from the (allowlisted) content type, never the
+  // client-supplied filename — this keeps the served object an image and
+  // prevents an attacker from storing e.g. text/html and getting it served back.
+  const extByType: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  };
+  const ext = extByType[file.type];
+  if (!ext) {
+    throw new HttpError(400, 'BAD_REQUEST', 'Cover must be a JPEG, PNG, or WebP image.');
+  }
+  const objectKey = `covers/${crypto.randomUUID()}.${ext}`;
+
+  await c.env.IMAGES_BUCKET.put(objectKey, file, {
+    httpMetadata: { contentType: file.type },
+  });
+
+  // Store an absolute URL: the image is served by this Worker at
+  // `/api/v1/uploads/...`, and the web app (a different origin) renders it
+  // directly as an <img src>, so a root-relative path would resolve against
+  // the wrong origin and also fail the classSchema url() check.
+  const coverImageUrl = `${new URL(c.req.url).origin}/api/v1/uploads/${objectKey}`;
+
+  await db.update(classes).set({ coverImageUrl }).where(eq(classes.id, id));
+
+  const row = await db.select().from(classes).where(eq(classes.id, id)).get();
+  const tagsRow = await db
+    .select({ tag: classTags.tag })
+    .from(classTags)
+    .where(eq(classTags.classId, id))
+    .all();
+  return c.json(serializeClass({ ...row!, tags: tagsRow.map((t) => t.tag) }));
+});
+
+/** POST /classes/:id/tags — add a tag to the class. Edit access required. */
+classRoutes.post('/:id/tags', async (c) => {
+  const db = createDb(c.env);
+  const id = c.req.param('id');
+  await requireAccess(db, c.get('userId'), id, 'edit');
+  const body = await c.req.json().catch(() => ({}));
+  if (typeof body.tag !== 'string' || body.tag.trim() === '') {
+    throw new HttpError(400, 'BAD_REQUEST', 'Tag must be a non-empty string.');
+  }
+  const tag = body.tag.trim().toLowerCase();
+
+  const now = Date.now();
+  await db
+    .insert(classTags)
+    .values({
+      id: crypto.randomUUID(),
+      classId: id,
+      tag,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoNothing({ target: [classTags.classId, classTags.tag] });
+
+  return c.json({ success: true, tag }, 201);
+});
+
+/** DELETE /classes/:id/tags/:tag — remove a tag. Edit access required. */
+classRoutes.delete('/:id/tags/:tag', async (c) => {
+  const db = createDb(c.env);
+  const id = c.req.param('id');
+  const tag = c.req.param('tag');
+  await requireAccess(db, c.get('userId'), id, 'edit');
+
+  await db
+    .delete(classTags)
+    .where(and(eq(classTags.classId, id), eq(classTags.tag, tag.toLowerCase())));
   return c.body(null, 204);
 });

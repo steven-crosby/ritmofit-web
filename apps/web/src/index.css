@@ -25,6 +25,12 @@
   ::selection {
     background: color-mix(in srgb, var(--rf-color-primitive-copper-400) 35%, transparent);
   }
+
+  /* Global focus-visible ring for accessibility */
+  :focus-visible {
+    outline: 2px solid var(--rf-color-primitive-copper-400);
+    outline-offset: 2px;
+  }
 }
 
 /* ───────────────────────────────────────────────────────────────────────

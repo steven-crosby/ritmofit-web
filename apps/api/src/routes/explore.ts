@@ -48,6 +48,7 @@ exploreRoutes.get('/explore', async (c) => {
       ownerName: users.displayName,
       ownerEmail: users.email,
       trackCount: sql<number>`count(${classTracks.id})`,
+      tagsCsv: sql<string>`(select group_concat(tag, ',') from class_tags where class_id = ${classes.id})`,
     })
     .from(classes)
     .innerJoin(users, eq(users.id, classes.ownerUserId))
@@ -61,7 +62,7 @@ exploreRoutes.get('/explore', async (c) => {
 
   const out: ExploreClass[] = rows.map((r) =>
     exploreClassSchema.parse({
-      ...serializeClass(r.cls),
+      ...serializeClass({ ...r.cls, tags: r.tagsCsv ? String(r.tagsCsv).split(',') : [] }),
       ownerName: r.ownerName ?? r.ownerEmail,
       trackCount: Number(r.trackCount),
     }),

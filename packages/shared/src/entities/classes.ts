@@ -24,6 +24,9 @@ export const classSchema = z.object({
   status: classStatusSchema,
   visibility: classVisibilitySchema,
   targetDurationMs: timestampMsSchema.nullable(),
+  featuredCategory: z.string().max(100).nullable(),
+  coverImageUrl: z.string().url().max(1000).nullable(),
+  tags: z.array(z.string().min(1).max(50)).max(20).default([]),
   ...timestampsShape,
   lastOpenedAt: timestampMsSchema.nullable(),
 });
@@ -59,6 +62,9 @@ export type ClassTrack = z.infer<typeof classTrackSchema>;
  * `draft` and `visibility` defaults `private` (a class is never born public).
  */
 export const createClassSchema = classSchema
+  // `coverImageUrl` is written only by the `/classes/:id/cover` upload endpoint and
+  // `tags` only by the `/classes/:id/tags` endpoints (tags aren't even a column on
+  // `classes`), so neither belongs in the create/update JSON contract.
   .pick({
     title: true,
     description: true,
@@ -66,6 +72,7 @@ export const createClassSchema = classSchema
     targetDurationMs: true,
     status: true,
     visibility: true,
+    featuredCategory: true,
   })
   .partial({
     description: true,
@@ -73,6 +80,7 @@ export const createClassSchema = classSchema
     targetDurationMs: true,
     status: true,
     visibility: true,
+    featuredCategory: true,
   });
 export type CreateClass = z.infer<typeof createClassSchema>;
 

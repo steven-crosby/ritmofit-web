@@ -23,6 +23,8 @@ import { mockRoutes } from './routes/mock.js';
 import { teamRoutes } from './routes/teams.js';
 import { shareRoutes } from './routes/shares.js';
 import { exploreRoutes } from './routes/explore.js';
+import { uploadsRoutes } from './routes/uploads.js';
+import { playlistImportRoutes } from './routes/playlist-import.js';
 
 export type { Env } from './lib/types.js';
 
@@ -141,6 +143,8 @@ api.route('/', mockRoutes);
 api.route('/', teamRoutes);
 api.route('/', shareRoutes);
 api.route('/', exploreRoutes);
+api.route('/uploads', uploadsRoutes);
+api.route('/', playlistImportRoutes);
 
 /**
  * Worker entry. Beyond `fetch`, a daily Cron Trigger (`[triggers]` in

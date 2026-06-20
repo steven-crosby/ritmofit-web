@@ -207,6 +207,119 @@ const doc = {
         responses: { '200': jsonResp('RunPayload', 'Run payload') },
       },
     },
+    '/classes/{id}/cover': {
+      parameters: [idParam],
+      post: {
+        summary: 'Upload a class cover image (edit). Multipart; JPEG/PNG/WebP only.',
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: {
+                type: 'object',
+                properties: { file: { type: 'string', format: 'binary' } },
+                required: ['file'],
+              },
+            },
+          },
+        },
+        responses: {
+          '200': jsonResp('Class', 'Updated class with coverImageUrl'),
+          '400': { description: 'Missing file, or not a JPEG/PNG/WebP image' },
+        },
+      },
+    },
+    '/classes/{id}/tags': {
+      parameters: [idParam],
+      post: {
+        summary: 'Add a tag to a class (edit). Tag is lowercased; duplicates are no-ops.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: { tag: { type: 'string', minLength: 1 } },
+                required: ['tag'],
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Tag added (or already present)',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: { success: { type: 'boolean' }, tag: { type: 'string' } },
+                  required: ['success', 'tag'],
+                },
+              },
+            },
+          },
+          '400': { description: 'Tag must be a non-empty string' },
+        },
+      },
+    },
+    '/classes/{id}/tags/{tag}': {
+      parameters: [
+        idParam,
+        { name: 'tag', in: 'path', required: true, schema: { type: 'string' } },
+      ],
+      delete: {
+        summary: 'Remove a tag from a class (edit)',
+        responses: { '204': { description: 'Removed' } },
+      },
+    },
+    '/classes/{id}/import-playlist': {
+      parameters: [idParam],
+      post: {
+        summary:
+          'Import a Spotify playlist URL as class tracks (edit). SoundCloud not yet supported.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: { url: { type: 'string', format: 'uri' } },
+                required: ['url'],
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Tracks imported',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: { imported: { type: 'integer' } },
+                  required: ['imported'],
+                },
+              },
+            },
+          },
+          '400': { description: 'Invalid or unsupported playlist URL, or empty playlist' },
+          '501': { description: 'SoundCloud import not yet supported' },
+        },
+      },
+    },
+    '/uploads/covers/{filename}': {
+      parameters: [{ name: 'filename', in: 'path', required: true, schema: { type: 'string' } }],
+      get: {
+        summary: 'Serve a stored cover image from R2',
+        responses: {
+          '200': {
+            description: 'Image bytes',
+            content: { 'image/*': { schema: { type: 'string', format: 'binary' } } },
+          },
+          '404': { description: 'Image not found' },
+        },
+      },
+    },
     '/classes/{id}/tracks': {
       parameters: [idParam],
       get: {
