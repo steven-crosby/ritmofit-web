@@ -10,6 +10,31 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Class covers, tags, playlist import + PWA deployed (2026-06-20, PR #81, Worker `d625bc50`).**
+> PR #81 (feat: class covers, tags, playlist import, and PWA assets) merged to `main` (merge commit
+> `0aad7a4`) and deployed. Adds: per-class custom cover images stored in a **new R2 bucket**
+> (`ritmofit-images`, bound as `IMAGES_BUCKET`) and served by the Worker at `/api/v1/uploads/covers/*`;
+> a `class_tags` table with add/remove/clone-on-copy; Spotify playlist URL import (bounded concurrency,
+> same-song dedup; SoundCloud import deliberately 501 pending `/resolve`); and PWA manifest + service
+> worker + icon/favicon/OG assets. Two review fixes landed on the branch first: tags serialize via
+> `json_group_array` (a comma in a tag no longer splits it in the list view), and `coverImageUrl`/`tags`
+> were dropped from the create/update JSON contract (written only by their dedicated endpoints — `tags`
+> isn't a `classes` column, so a PATCH carrying it would have broken), with `featuredCategory` now
+> honored on create. **New infra prerequisite:** R2 had to be enabled on the Cloudflare account (owner
+> dashboard opt-in) and the `ritmofit-images` bucket created before deploy — the runbook's environment
+> matrix predates R2. **Migration `0013`** (`class_tags` + `classes.featured_category` /
+> `classes.cover_image_url`, additive/non-breaking) applied to remote D1 before code; remote D1 now at
+> `0013`. Migrations-before-code order followed. Pre-deploy gates green: typecheck, lint (repo source;
+> untracked local `.ds-sync`/`.design-sync` tooling lints dirty but isn't in git or CI), unit 175 +
+> web 150, integration 42, web build (PWA SW generated), OpenAPI no-drift. Post-deploy smoke: SPA 200,
+> health 200, unauth `/classes` + `/explore` 401, security headers present, served asset hash
+> `index-DPf04y_D.js` matches the build, `IMAGES_BUCKET` binding resolves in prod. The cover-serving
+> route is session-gated (consistent with the fully-authenticated app — Explore itself requires auth);
+> logged-in same-origin `<img>` requests carry the cookie, so covers render. Prior live version
+> `12aa76f9` (2026-06-17) is the rollback anchor. Five non-blocking review follow-ups left as a PR
+> comment (Spotify 100-track truncation, orphaned-cover cleanup, upload size limit, image `nosniff`,
+> `user-scalable=no` a11y).
+>
 > **Web UI coverage closed + PR-preview decision deferred (2026-06-15, PRs #65–#66, not deployed).**
 > PR #66 closes the last REVIEW.md "web UI coverage" SHOULD-FIX with jsdom + Testing Library component
 > tests for Dashboard (incl. the keyed rapid-switch guard), the Connections/Share/Teams dialogs, and
