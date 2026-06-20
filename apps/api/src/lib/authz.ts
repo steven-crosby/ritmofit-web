@@ -168,7 +168,7 @@ interface VisibleClassRow {
   updatedAt: number;
   lastOpenedAt: number | null;
   accessLevel: Exclude<AccessLevel, 'none'>;
-  tagsCsv: string | null;
+  tagsJson: string | null;
 }
 
 export interface VisibleClassPage {
@@ -232,7 +232,7 @@ export async function listVisibleClasses(
       c.created_at as createdAt,
       c.updated_at as updatedAt,
       c.last_opened_at as lastOpenedAt,
-      (select group_concat(tag, ',') from class_tags where class_id = c.id) as tagsCsv,
+      (select json_group_array(tag) from class_tags where class_id = c.id) as tagsJson,
       case visible.access_rank
         when 3 then 'owner'
         when 2 then 'edit'
@@ -249,7 +249,7 @@ export async function listVisibleClasses(
   const hasMore = options.limit != null && rows.length > options.limit;
   const pageRows = hasMore ? rows.slice(0, options.limit) : rows;
   const items = pageRows.map((row) => ({
-    ...serializeClass({ ...row, tags: row.tagsCsv ? row.tagsCsv.split(',') : [] }),
+    ...serializeClass({ ...row, tags: row.tagsJson ? (JSON.parse(row.tagsJson) as string[]) : [] }),
     accessLevel: row.accessLevel,
   }));
   const last = hasMore ? items.at(-1) : undefined;

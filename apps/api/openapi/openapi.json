@@ -2074,28 +2074,6 @@
                 "type": "null"
               }
             ]
-          },
-          "coverImageUrl": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 1000,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "tags": {
-            "default": [],
-            "maxItems": 20,
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 50
-            }
           }
         },
         "required": [
@@ -2176,28 +2154,6 @@
                 "type": "null"
               }
             ]
-          },
-          "coverImageUrl": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 1000,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "tags": {
-            "default": [],
-            "maxItems": 20,
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 50
-            }
           }
         },
         "additionalProperties": false

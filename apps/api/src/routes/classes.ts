@@ -59,7 +59,7 @@ classRoutes.post('/', async (c) => {
     status: body.status ?? 'draft',
     visibility: body.visibility ?? 'private',
     targetDurationMs: body.targetDurationMs ?? null,
-    featuredCategory: null,
+    featuredCategory: body.featuredCategory ?? null,
     coverImageUrl: null,
     createdAt: now,
     updatedAt: now,
