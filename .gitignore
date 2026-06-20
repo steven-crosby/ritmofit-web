@@ -40,3 +40,14 @@ apps/web/src/styles/tokens.css
 # Archives — design-reference artifacts are committed as files (e.g. the mockup
 # HTML under ritmofit_design_system/mockups/), never as zips.
 *.zip
+
+# design-sync (claude.ai/design): staged scripts, build output, machine state,
+# and the regenerated converter inputs. Durable inputs under .design-sync/
+# (config.json, NOTES.md, conventions.md, previews/, *.mjs) ARE committed.
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+apps/web/.ds-styles.css
+apps/web/.ds-entry.tsx
