@@ -17,11 +17,7 @@ export function Selectable() {
   const firstTrackId = demoClass.tracks[2]?.classTrackId ?? null;
   return (
     <Surface>
-      <TimelineStrip
-        payload={demoClass}
-        selectedTrackId={firstTrackId}
-        onSelectTrack={() => {}}
-      />
+      <TimelineStrip payload={demoClass} selectedTrackId={firstTrackId} onSelectTrack={() => {}} />
     </Surface>
   );
 }

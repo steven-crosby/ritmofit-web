@@ -6,6 +6,7 @@ a few `rf-*` recipe classes. The synced components are the app's reusable
 visualizations and the modal primitive.
 
 ## Setup / wrapping
+
 - **No provider or context is required** — every component here is presentational and
   takes plain props. Import from the bundle and render: `import { IntensityRibbon } from '<this DS>'`.
 - **Dark theme is the default** (`:root` declares the dark token values; `color-scheme: dark`).
@@ -15,6 +16,7 @@ visualizations and the modal primitive.
   or the components read as light-on-white and look wrong.
 
 ## Styling idiom — use TOKENS first
+
 Designs render against the **static** shipped stylesheet, not a live Tailwind build, so the
 reliable styling vocabulary is the **`--rf-*` token variables** (all defined in the shipped
 `styles.css` closure) — reference them via `var(--rf-…)` in inline styles. The Tailwind utility
@@ -48,23 +50,30 @@ Recipe classes that ship (compositions of the tokens — use as-is):
 alone — always pair a label/icon/shape (see `IntensityReadout`, `TimelineStrip` markers).
 
 ## Where the truth lives
+
 Read `styles.css` and its `@import`s (the inlined tokens, `@font-face`, and `_ds_bundle.css`)
 before styling, and each component's `<Name>.prompt.md` / `<Name>.d.ts` for its API and the
 run-payload data shape it expects.
 
 ## Idiomatic snippet
+
 ```tsx
 import { IntensityRibbon, TimelineStrip } from '<this DS>';
 
 <div
   className="font-ui text-text-primary"
-  style={{ background: 'var(--rf-color-semantic-bg-base)', padding: 20, borderRadius: 'var(--rf-radius-panel)' }}
+  style={{
+    background: 'var(--rf-color-semantic-bg-base)',
+    padding: 20,
+    borderRadius: 'var(--rf-radius-panel)',
+  }}
 >
   <h2 className="font-display text-display-lg">Sunset Climb</h2>
   <IntensityRibbon payload={runPayload} />
   <TimelineStrip payload={runPayload} />
-</div>
+</div>;
 ```
+
 The data-driven components (`IntensityRibbon`, `TimelineStrip`, `LiveTimeline`) consume a
 **run-payload** (`{ class, tracks[], sections[] }`); `IntensityReadout` takes a single
 `intensity` ("none" | "easy" | "mod" | "hard" | "all_out"). See each `.d.ts`/`.prompt.md`.
