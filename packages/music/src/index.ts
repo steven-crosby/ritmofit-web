@@ -28,3 +28,9 @@ export {
   type BpmQuery,
   type GetSongBpmConfig,
 } from './bpm.js';
+export {
+  fetchWithRetry,
+  isTransientStatus,
+  parseRetryAfterMs,
+  type RetryOptions,
+} from './retry.js';

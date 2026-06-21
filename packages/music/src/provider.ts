@@ -43,4 +43,7 @@ export type FetchLike = (
   status: number;
   json(): Promise<unknown>;
   text(): Promise<string>;
+  /** Present on a real `fetch` Response; optional so a test fake can omit it. Used
+   *  by the retry helper to honor a `Retry-After` header on 429/503. */
+  headers?: { get(name: string): string | null };
 }>;

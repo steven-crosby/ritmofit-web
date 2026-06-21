@@ -22,6 +22,7 @@ import { z } from 'zod';
 import type { FetchLike, MusicProvider } from './provider.js';
 import { readJson, ProviderError } from './errors.js';
 import { AppTokenCache } from './app-token.js';
+import { fetchWithRetry, type RetryOptions } from './retry.js';
 
 const DEFAULT_API_BASE = 'https://api.soundcloud.com';
 const DEFAULT_TOKEN_URL = 'https://secure.soundcloud.com/oauth/token';
@@ -38,6 +39,8 @@ export interface SoundCloudConfig {
   tokenUrl?: string;
   /** Clock seam for token-expiry tests. */
   now?: () => number;
+  /** Retry tuning for transient (429/5xx) reads; tests inject a no-op sleep. */
+  retry?: RetryOptions;
 }
 
 /** One SoundCloud track (permissive — unknown fields are ignored). */
@@ -68,10 +71,12 @@ class SoundCloudProvider implements MusicProvider {
   private readonly fetchImpl: FetchLike;
   private readonly apiBase: string;
   private readonly tokens: AppTokenCache;
+  private readonly retry?: RetryOptions;
 
   constructor(config: SoundCloudConfig) {
     this.fetchImpl = config.fetchImpl;
     this.apiBase = config.apiBase ?? DEFAULT_API_BASE;
+    this.retry = config.retry;
     this.tokens = new AppTokenCache({
       provider: 'soundcloud',
       clientId: config.clientId,
@@ -118,9 +123,12 @@ class SoundCloudProvider implements MusicProvider {
   /** GET against the API with a valid app token; throws on non-ok (except opt-in 404). */
   private async apiGet(path: string, opts?: { allow404: boolean }): Promise<unknown> {
     const token = await this.tokens.get();
-    const res = await this.fetchImpl(`${this.apiBase}${path}`, {
-      headers: { Authorization: `OAuth ${token}`, Accept: 'application/json' },
-    });
+    const res = await fetchWithRetry(
+      this.fetchImpl,
+      `${this.apiBase}${path}`,
+      { headers: { Authorization: `OAuth ${token}`, Accept: 'application/json' } },
+      this.retry,
+    );
     if (opts?.allow404 && res.status === 404) return null;
     if (!res.ok) {
       throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for ${path}`);

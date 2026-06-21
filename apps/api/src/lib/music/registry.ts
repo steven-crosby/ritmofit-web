@@ -40,6 +40,25 @@ class MockMusicProvider implements MusicProvider {
   }
 }
 
+/**
+ * Live adapters are memoized per (provider + credential) for the lifetime of the
+ * Worker isolate. Each adapter owns an `AppTokenCache`; without this, a fresh
+ * adapter per request meant the app token rarely survived between requests, forcing
+ * an extra Basic-auth token mint (and latency) on most search/import calls. The key
+ * includes a credential fingerprint so a credential change (or a test using
+ * different creds) yields a distinct adapter. Mock adapters are cheap and toggle on
+ * an env flag, so they're never cached.
+ */
+const adapterCache = new Map<string, MusicProvider>();
+
+function memoize(key: string, build: () => MusicProvider): MusicProvider {
+  const hit = adapterCache.get(key);
+  if (hit) return hit;
+  const adapter = build();
+  adapterCache.set(key, adapter);
+  return adapter;
+}
+
 export function getMusicProvider(provider: Provider, env: Env): MusicProvider {
   if (env.MOCK_PROVIDERS === 'true') {
     return new MockMusicProvider(provider);
@@ -47,13 +66,26 @@ export function getMusicProvider(provider: Provider, env: Env): MusicProvider {
 
   // Credential presence (and the 503-when-missing) lives in provider-config.ts so
   // the secret checks aren't duplicated between here and the OAuth/likes routes.
+  // Resolve creds first (may throw 503) — only a configured provider gets cached.
   switch (provider) {
-    case 'soundcloud':
-      return createSoundCloudProvider({ ...soundcloudCreds(env), fetchImpl: boundFetch });
-    case 'spotify':
-      return createSpotifyProvider({ ...spotifyCreds(env), fetchImpl: boundFetch });
-    case 'apple_music':
-      return createAppleMusicProvider({ ...appleMusicCreds(env), fetchImpl: boundFetch });
+    case 'soundcloud': {
+      const creds = soundcloudCreds(env);
+      return memoize(`soundcloud:${creds.clientId}`, () =>
+        createSoundCloudProvider({ ...creds, fetchImpl: boundFetch }),
+      );
+    }
+    case 'spotify': {
+      const creds = spotifyCreds(env);
+      return memoize(`spotify:${creds.clientId}`, () =>
+        createSpotifyProvider({ ...creds, fetchImpl: boundFetch }),
+      );
+    }
+    case 'apple_music': {
+      const creds = appleMusicCreds(env);
+      return memoize(`apple_music:${creds.developerToken}`, () =>
+        createAppleMusicProvider({ ...creds, fetchImpl: boundFetch }),
+      );
+    }
     default:
       throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
   }
