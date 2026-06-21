@@ -52,10 +52,13 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
   const body = addClassTrackSchema.parse(await c.req.json());
 
   let trackId: string;
+  // Base length used to validate the clip window below (the same bound the PATCH
+  // route enforces): a clip start at/past it collapses the run-payload duration.
+  let trackDurationMs: number | null = null;
   if ('trackId' in body) {
     // Reference an existing track — must be in the caller's library (D4).
     const t = await db
-      .select({ ownerUserId: tracks.ownerUserId })
+      .select({ ownerUserId: tracks.ownerUserId, durationMs: tracks.durationMs })
       .from(tracks)
       .where(eq(tracks.id, body.trackId))
       .get();
@@ -63,6 +66,7 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
       throw new AccessError(404, 'NOT_FOUND', 'Not found.');
     }
     trackId = body.trackId;
+    trackDurationMs = t.durationMs;
   } else {
     // Inline-create a track owned by the caller (same shape as POST /tracks, step 8).
     const now = Date.now();
@@ -83,6 +87,18 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
       createdAt: now,
       updatedAt: now,
     });
+    trackDurationMs = body.track.durationMs ?? null;
+  }
+
+  // Reject a clip start at/past the track length before persisting (mirrors the PATCH
+  // guard) — otherwise the run-payload duration collapses to zero and 422s the class.
+  const clipError = clipStartBeyondTrack(
+    trackDurationMs,
+    body.durationMsOverride ?? null,
+    body.clipStartMs ?? 0,
+  );
+  if (clipError) {
+    throw new HttpError(422, 'VALIDATION_ERROR', clipError);
   }
 
   const existing = await db

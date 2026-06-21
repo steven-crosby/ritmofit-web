@@ -2,7 +2,7 @@
  * Classes & their tracks — `classes`, `class_tracks` (schema.md).
  */
 import { z } from 'zod';
-import { uuidSchema, timestampMsSchema, timestampsShape } from '../common.js';
+import { uuidSchema, timestampMsSchema, timestampsShape, MAX_DURATION_MS } from '../common.js';
 import {
   classTemplateSchema,
   classStatusSchema,
@@ -140,16 +140,18 @@ export type ExploreClass = z.infer<typeof exploreClassSchema>;
 const classTrackInputFields = z.object({
   intensity: intensitySchema.optional(),
   displayBpmOverride: z.int().positive().nullish(),
-  durationMsOverride: z.int().positive().nullish(),
+  durationMsOverride: z.int().positive().max(MAX_DURATION_MS).nullish(),
   // Trim window. `clipStartMs` null/omitted resets to 0; `clipEndMs` null = to the end.
-  // The route validates the resulting window contains every cue/move anchor.
-  clipStartMs: z.int().nonnegative().nullish(),
-  clipEndMs: z.int().positive().nullish(),
+  // The route validates the resulting window contains every cue/move anchor and that
+  // the start falls before the track length. All bounded by MAX_DURATION_MS so a
+  // pathological value can't bloat the timeline or overflow downstream math.
+  clipStartMs: z.int().nonnegative().max(MAX_DURATION_MS).nullish(),
+  clipEndMs: z.int().positive().max(MAX_DURATION_MS).nullish(),
   // Downbeat offset for beat-snapping; null/omitted resets to 0.
-  beatAnchorMs: z.int().nonnegative().nullish(),
+  beatAnchorMs: z.int().nonnegative().max(MAX_DURATION_MS).nullish(),
   // Explicit timeline placement — honored only in free mode (rejected in sequential,
   // where offsets are server-derived). Track-relative class-start ms.
-  startOffsetMs: z.int().nonnegative().nullish(),
+  startOffsetMs: z.int().nonnegative().max(MAX_DURATION_MS).nullish(),
   notes: z.string().max(2000).nullish(),
 });
 
@@ -176,6 +178,16 @@ export type ReorderClassTracks = z.infer<typeof reorderClassTracksSchema>;
 /** Copy a class_track (with its cues + moves) into another class. */
 export const copyClassTrackSchema = z.object({ targetClassId: uuidSchema });
 export type CopyClassTrack = z.infer<typeof copyClassTrackSchema>;
+
+/**
+ * Import a provider playlist into a class. The URL is length-bounded so a hostile
+ * caller can't submit a megabyte string, and the server caps how many distinct
+ * tracks one import resolves (`MAX_PLAYLIST_IMPORT_TRACKS`) to bound upstream
+ * provider calls and D1 writes per request.
+ */
+export const MAX_PLAYLIST_IMPORT_TRACKS = 100;
+export const importPlaylistSchema = z.object({ url: z.string().url().max(2000) });
+export type ImportPlaylist = z.infer<typeof importPlaylistSchema>;
 
 /**
  * Copy a whole class into the caller's library (M4 slice 3b — "save a copy" from

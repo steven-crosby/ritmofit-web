@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
-import { z } from 'zod';
+import { importPlaylistSchema, MAX_PLAYLIST_IMPORT_TRACKS } from '@ritmofit/shared';
 import { requireSession } from '../middleware/auth.js';
 import { requireAccess } from '../lib/authz.js';
+import { rateLimit } from '../lib/rate-limit.js';
 import { createDb } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { getMusicProvider } from '../lib/music/registry.js';
@@ -15,15 +16,22 @@ import type { AppEnv } from '../lib/types.js';
 export const playlistImportRoutes = new Hono<AppEnv>();
 playlistImportRoutes.use('*', requireSession);
 
-const importSchema = z.object({ url: z.string().url() });
+// Playlist import fans out one upstream lookup + import per distinct track, so it's
+// the most expensive provider route — cap it tightly per user.
+const importLimiter = rateLimit({
+  keyPrefix: 'playlist-import',
+  windowMs: 60_000,
+  max: 5,
+  key: (c) => c.get('userId'),
+});
 
-playlistImportRoutes.post('/classes/:id/import-playlist', async (c) => {
+playlistImportRoutes.post('/classes/:id/import-playlist', importLimiter, async (c) => {
   const db = createDb(c.env);
   const classId = c.req.param('id');
   const me = c.get('userId');
   await requireAccess(db, me, classId, 'edit');
 
-  const { url } = importSchema.parse(await c.req.json());
+  const { url } = importPlaylistSchema.parse(await c.req.json());
   let provider: 'spotify' | null = null;
   let playlistId: string | null = null;
 
@@ -84,6 +92,17 @@ playlistImportRoutes.post('/classes/:id/import-playlist', async (c) => {
     seen.add(key);
     return true;
   });
+
+  // Bound the per-request fan-out (upstream lookups + D1 writes). A playlist with
+  // more distinct songs than the cap is rejected rather than silently truncated, so
+  // the instructor knows the class wasn't fully imported.
+  if (uniqueCandidates.length > MAX_PLAYLIST_IMPORT_TRACKS) {
+    throw new HttpError(
+      422,
+      'VALIDATION_ERROR',
+      `Playlist has too many tracks to import at once (limit ${MAX_PLAYLIST_IMPORT_TRACKS}).`,
+    );
+  }
 
   // Resolve with bounded concurrency rather than one sequential round-trip per track.
   const CONCURRENCY = 5;

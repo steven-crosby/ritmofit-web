@@ -18,6 +18,15 @@ export const timestampMsSchema = z.int().nonnegative();
 export const offsetMsSchema = z.int().nonnegative();
 
 /**
+ * Upper bound (ms) for any track-relative duration/anchor or class-timeline offset
+ * a client may submit — 24 hours. Generous enough never to reject a real track or
+ * class, tight enough to reject pathological values (e.g. near `MAX_SAFE_INTEGER`)
+ * that would bloat the free-mode timeline total or skew downstream beat-grid math.
+ * Does NOT apply to epoch-ms timestamps, which are far larger.
+ */
+export const MAX_DURATION_MS = 24 * 60 * 60 * 1000;
+
+/**
  * `created_at` / `updated_at` present on every entity. Spread into an entity's
  * shape so the timestamp convention stays identical across the contract.
  */

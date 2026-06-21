@@ -46,7 +46,6 @@ exploreRoutes.get('/explore', async (c) => {
     .select({
       cls: classes,
       ownerName: users.displayName,
-      ownerEmail: users.email,
       trackCount: sql<number>`count(${classTracks.id})`,
       tagsCsv: sql<string>`(select group_concat(tag, ',') from class_tags where class_id = ${classes.id})`,
     })
@@ -63,7 +62,9 @@ exploreRoutes.get('/explore', async (c) => {
   const out: ExploreClass[] = rows.map((r) =>
     exploreClassSchema.parse({
       ...serializeClass({ ...r.cls, tags: r.tagsCsv ? String(r.tagsCsv).split(',') : [] }),
-      ownerName: r.ownerName ?? r.ownerEmail,
+      // Never fall back to the owner's email (PII) — email is private everywhere else
+      // in the app. Use a neutral label when an owner hasn't set a display name.
+      ownerName: r.ownerName ?? 'RitmoFit instructor',
       trackCount: Number(r.trackCount),
     }),
   );
