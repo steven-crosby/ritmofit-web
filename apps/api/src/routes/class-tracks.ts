@@ -34,7 +34,7 @@ import {
   cues,
   classTrackMoves,
 } from '../db/schema.js';
-import { resolveClipWindow, effectiveDurationMs } from '../lib/duration.js';
+import { resolveClipWindow, effectiveDurationMs, clipStartBeyondTrack } from '../lib/duration.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
 classTrackRoutes.use('*', requireSession);
@@ -238,6 +238,17 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
       clipStartMs,
       clipEndMs,
     );
+    // A clip start at/past the track length collapses the window to zero, which
+    // later fails the run-payload's positive-duration contract and 422s the whole
+    // class. Reject it here (the DB CHECK can't express the base bound).
+    const clipError = clipStartBeyondTrack(
+      existing?.trackDurationMs ?? null,
+      durationMsOverride,
+      clipStartMs,
+    );
+    if (clipError) {
+      throw new HttpError(422, 'VALIDATION_ERROR', clipError);
+    }
     if (touchesWindow && anchors) {
       if (anchors.minMs < startMs) {
         throw new HttpError(

@@ -44,3 +44,27 @@ export function effectiveDurationMs(
   );
   return endMs == null ? null : Math.max(0, endMs - startMs);
 }
+
+/**
+ * Guard a clip window against a `clipStartMs` at or past the resolved base length
+ * (`durationMsOverride ?? trackDurationMs`). Such a start collapses the playback
+ * window to zero, which makes the run-payload's `track.durationMs` non-positive and
+ * fails `runPayloadSchema.parse` — bricking the entire class's run-payload (the
+ * builder timeline AND Live mode), not just the one track. The DB CHECK only
+ * enforces `clipEndMs > clipStartMs`, so this invariant has to live in the route.
+ * Returns a user-facing message when invalid, or null when the window is fine (or
+ * the base length is unknown, in which case any start is permitted).
+ */
+export function clipStartBeyondTrack(
+  trackDurationMs: number | null,
+  durationMsOverride: number | null,
+  clipStartMs: number | null = 0,
+): string | null {
+  const base = durationMsOverride ?? trackDurationMs;
+  if (base == null) return null;
+  const startMs = clipStartMs ?? 0;
+  if (startMs >= base) {
+    return `Clip start must be before the track length (${base}ms).`;
+  }
+  return null;
+}
