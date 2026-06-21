@@ -13,6 +13,9 @@ import {
 } from '../enums.js';
 import { createTrackSchema } from './tracks.js';
 
+/** Maximum accepted custom class-cover size (5 MiB), shared by web and API validation. */
+export const MAX_CLASS_COVER_BYTES = 5 * 1024 * 1024;
+
 /**
  * A class, owned by exactly one user. No `teamId` — others get access via shares.
  */

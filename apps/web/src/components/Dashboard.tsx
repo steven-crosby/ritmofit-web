@@ -868,6 +868,8 @@ export function ClassHeaderCard({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Permit choosing the same file again after a validation/network failure.
+    e.target.value = '';
     void run(async () => {
       const updatedClass = await uploadClassCover(cls.id, file);
       onClassUpdated(updatedClass);
