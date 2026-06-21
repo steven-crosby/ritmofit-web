@@ -101,7 +101,12 @@ export async function resequence(db: Db, classId: string, orderedIds?: string[])
     const statements = ranked.flatMap((r, i) =>
       r.position === i
         ? []
-        : [db.update(classTracks).set({ position: i, updatedAt: now }).where(eq(classTracks.id, r.id))],
+        : [
+            db
+              .update(classTracks)
+              .set({ position: i, updatedAt: now })
+              .where(eq(classTracks.id, r.id)),
+          ],
     );
     if (statements.length > 0) {
       await db.batch(statements as [(typeof statements)[number], ...(typeof statements)[number][]]);

@@ -19,12 +19,7 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from 'react';
-import {
-  beatGridLayout,
-  msPerBeat,
-  snapToBeat,
-  type RunPayload,
-} from '@ritmofit/shared';
+import { beatGridLayout, msPerBeat, snapToBeat, type RunPayload } from '@ritmofit/shared';
 import { formatDuration } from '../lib/class-summary.js';
 
 export type TimelineBlock = {

@@ -56,7 +56,10 @@ describe('computeTimeline — blocks', () => {
   });
 
   it('sizes blocks by their share of the total and places them by offset', () => {
-    const { blocks } = computeTimeline([entry(1000, 0, [], [], 0), entry(3000, 1, [], [], 1000)], 4000);
+    const { blocks } = computeTimeline(
+      [entry(1000, 0, [], [], 0), entry(3000, 1, [], [], 1000)],
+      4000,
+    );
     expect(blocks.map((b) => b.leftPct)).toEqual([0, 25]);
     expect(blocks.map((b) => b.widthPct)).toEqual([25, 75]);
     expect(blocks.map((b) => b.position)).toEqual([0, 1]);
@@ -64,7 +67,10 @@ describe('computeTimeline — blocks', () => {
 
   it('honors an authored offset gap (free placement)', () => {
     // Track B starts at 2000 with a gap after A (which ends at 1000).
-    const { blocks } = computeTimeline([entry(1000, 0, [], [], 0), entry(1000, 1, [], [], 2000)], 4000);
+    const { blocks } = computeTimeline(
+      [entry(1000, 0, [], [], 0), entry(1000, 1, [], [], 2000)],
+      4000,
+    );
     expect(blocks.map((b) => b.leftPct)).toEqual([0, 50]);
   });
 

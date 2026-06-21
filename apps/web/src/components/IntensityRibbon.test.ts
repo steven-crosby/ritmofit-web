@@ -47,7 +47,10 @@ describe('computeRibbonSegments', () => {
   });
 
   it('sizes each block by its share of the total and places them by offset', () => {
-    const segs = computeRibbonSegments([entry('easy', 1000, 0, 0), entry('hard', 3000, 1, 1000)], 4000);
+    const segs = computeRibbonSegments(
+      [entry('easy', 1000, 0, 0), entry('hard', 3000, 1, 1000)],
+      4000,
+    );
     expect(segs.map((s) => s.width)).toEqual([250, 750]);
     expect(segs.map((s) => s.x)).toEqual([0, 250]);
     // widths tile the full normalized space with no gap
@@ -57,7 +60,10 @@ describe('computeRibbonSegments', () => {
 
   it('leaves uncolored space for a free-placement gap', () => {
     // easy [0,1000), gap, hard [2000,3000) of a 4000 total → x at 0 and 500 (of 1000).
-    const segs = computeRibbonSegments([entry('easy', 1000, 0, 0), entry('hard', 1000, 1, 2000)], 4000);
+    const segs = computeRibbonSegments(
+      [entry('easy', 1000, 0, 0), entry('hard', 1000, 1, 2000)],
+      4000,
+    );
     expect(segs.map((s) => s.x)).toEqual([0, 500]);
   });
 

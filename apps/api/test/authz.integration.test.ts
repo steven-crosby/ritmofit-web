@@ -260,7 +260,9 @@ describe('run-payload + copy (integration)', () => {
     ).json();
     expect(payload.class.timelineMode).toBe('free');
     expect(payload.class.totalDurationMs).toBe(320000);
-    const bEntry = payload.tracks.find((t: { classTrackId: string }) => t.classTrackId === trackB.id);
+    const bEntry = payload.tracks.find(
+      (t: { classTrackId: string }) => t.classTrackId === trackB.id,
+    );
     expect(bEntry.startOffsetMs).toBe(200000);
 
     // Copying a track into a free-mode class appends it after the current material

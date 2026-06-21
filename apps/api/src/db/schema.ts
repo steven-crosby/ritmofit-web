@@ -126,7 +126,9 @@ export const classes = sqliteTable(
     visibility: text('visibility', { enum: classVisibilityValues }).notNull().default('private'),
     // Timeline layout. Default sequential (back-to-back, server-derived offsets) so
     // every existing/new class keeps the M1 behavior until switched to free placement.
-    timelineMode: text('timeline_mode', { enum: timelineModeValues }).notNull().default('sequential'),
+    timelineMode: text('timeline_mode', { enum: timelineModeValues })
+      .notNull()
+      .default('sequential'),
     featuredCategory: text('featured_category'),
     coverImageUrl: text('cover_image_url'),
     targetDurationMs: integer('target_duration_ms'),

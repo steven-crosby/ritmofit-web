@@ -17,12 +17,7 @@ import { createDb, type Db } from '../lib/db.js';
 import { requireAccess, requireClassTrackAccess, AccessError } from '../lib/authz.js';
 import { HttpError } from '../lib/errors.js';
 import { serializeClassTrack } from '../lib/serialize.js';
-import {
-  resequence,
-  freeAppendOffsetMs,
-  wouldOverlap,
-  timelineModeOf,
-} from '../lib/sequencing.js';
+import { resequence, freeAppendOffsetMs, wouldOverlap, timelineModeOf } from '../lib/sequencing.js';
 import { buildPatch } from '../lib/patch.js';
 import { makeMatchKey } from '../lib/same-song.js';
 import {
@@ -234,7 +229,8 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
         : (existing?.durationMsOverride ?? null);
     const clipStartMs =
       'clipStartMs' in body ? (body.clipStartMs ?? 0) : (existing?.clipStartMs ?? 0);
-    const clipEndMs = 'clipEndMs' in body ? (body.clipEndMs ?? null) : (existing?.clipEndMs ?? null);
+    const clipEndMs =
+      'clipEndMs' in body ? (body.clipEndMs ?? null) : (existing?.clipEndMs ?? null);
 
     const { startMs, endMs } = resolveClipWindow(
       existing?.trackDurationMs ?? null,

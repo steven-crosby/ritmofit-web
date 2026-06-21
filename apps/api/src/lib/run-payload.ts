@@ -177,7 +177,11 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
   const { startOffsetByCt, totalDurationMs } =
     cls.timelineMode === 'free'
       ? computeFreeTimeline(
-          cts.map((ct) => ({ id: ct.id, startOffsetMs: ct.startOffsetMs, durationMs: durationOf(ct) })),
+          cts.map((ct) => ({
+            id: ct.id,
+            startOffsetMs: ct.startOffsetMs,
+            durationMs: durationOf(ct),
+          })),
         )
       : computeClassTimeline(cts.map((ct) => ({ id: ct.id, durationMs: durationOf(ct) })));
 

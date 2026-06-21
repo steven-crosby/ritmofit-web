@@ -197,7 +197,9 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   const gap = inGap
     ? {
         untilMs: beforeLive ? liveStartMs : (nextStartMs ?? 0),
-        nextTitle: beforeLive ? (live?.entry.track.title ?? null) : (nextEntry?.track.title ?? null),
+        nextTitle: beforeLive
+          ? (live?.entry.track.title ?? null)
+          : (nextEntry?.track.title ?? null),
       }
     : null;
 
@@ -318,7 +320,9 @@ function CueByCue({
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 p-8 text-center">
         <div className="flex w-full flex-col items-center gap-1 rounded-card bg-bg-raised py-10 shadow-card">
           <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Silence</p>
-          <p className="font-display text-3xl font-semibold text-text-secondary">No track playing</p>
+          <p className="font-display text-3xl font-semibold text-text-secondary">
+            No track playing
+          </p>
         </div>
         <div className="flex w-full items-center justify-between rounded-card bg-bg-raised p-4 shadow-card">
           <div className="text-left">
