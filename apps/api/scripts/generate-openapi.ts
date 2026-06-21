@@ -17,6 +17,7 @@ import {
   CLASS_LIST_DEFAULT_LIMIT,
   CLASS_LIST_MAX_LIMIT,
   CLASS_LIST_NEXT_CURSOR_HEADER,
+  MAX_CLASS_COVER_BYTES,
   classSchema,
   classWithAccessSchema,
   createClassSchema,
@@ -210,7 +211,8 @@ const doc = {
     '/classes/{id}/cover': {
       parameters: [idParam],
       post: {
-        summary: 'Upload a class cover image (edit). Multipart; JPEG/PNG/WebP only.',
+        summary: 'Upload a class cover image (edit)',
+        description: `Multipart JPEG, PNG, or WebP; maximum ${MAX_CLASS_COVER_BYTES} bytes (5 MiB).`,
         requestBody: {
           required: true,
           content: {
@@ -226,6 +228,7 @@ const doc = {
         responses: {
           '200': jsonResp('Class', 'Updated class with coverImageUrl'),
           '400': { description: 'Missing file, or not a JPEG/PNG/WebP image' },
+          '413': { description: 'Cover image exceeds 5 MiB' },
         },
       },
     },

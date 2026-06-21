@@ -212,7 +212,8 @@
         }
       ],
       "post": {
-        "summary": "Upload a class cover image (edit). Multipart; JPEG/PNG/WebP only.",
+        "summary": "Upload a class cover image (edit)",
+        "description": "Multipart JPEG, PNG, or WebP; maximum 5242880 bytes (5 MiB).",
         "requestBody": {
           "required": true,
           "content": {
@@ -245,6 +246,9 @@
           },
           "400": {
             "description": "Missing file, or not a JPEG/PNG/WebP image"
+          },
+          "413": {
+            "description": "Cover image exceeds 5 MiB"
           }
         }
       }
