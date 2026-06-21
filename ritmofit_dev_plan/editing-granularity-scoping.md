@@ -192,6 +192,10 @@ deployed sequential/iOS behavior is untouched, with overlaps rejected and a Live
 Together they move the class-builder's editing granularity from ~3/10 toward ~5–6/10 for *choreography*
 (still, by design, not a DAW — audio stays in the provider apps per `music-providers.md`).
 
-Possible follow-ups (not built): snapping a dragged track start to the beat grid (track starts currently
-snap to whole seconds); carrying `timeline_mode` + authored offsets through whole-class copy (a copy
-currently lands sequential); and a per-track time signature beyond 4/4.
+The boundary this work stops at is locked as **decision D13** ([`decisions.md`](./decisions.md)): no
+in-app playback, mixing/crossfade, destructive audio editing, or audio analysis — RitmoFit is a planning
+surface, not a DAW.
+
+Possible follow-ups (not built, and *not* ruled out by D13): snapping a dragged track start to the beat
+grid (track starts currently snap to whole seconds); carrying `timeline_mode` + authored offsets through
+whole-class copy (a copy currently lands sequential); and a per-track time signature beyond 4/4.

@@ -43,6 +43,23 @@ The class *is* the ordered set of tracks plus the choreography layered on them. 
 (`class_track`) is a first-class item carrying its own cues, moves, and intensity — it points at a
 provider track, but it isn't merely "a row imported from Spotify."
 
+## What we're explicitly NOT building
+
+RitmoFit is a **planning + choreography surface**, not a player or an audio editor. These are
+**permanent non-goals** (locked as decision **D13** in [`decisions.md`](./decisions.md), rooted in the
+provider terms in [`music-providers.md`](./music-providers.md)) — decline or redesign requests that need
+them rather than scheduling them:
+
+- **No in-app audio playback / streaming** — playback hands off to the instructor's provider app.
+- **No audio mixing / crossfade** — a class is one stream (this is why free placement rejects overlaps).
+- **No destructive audio editing** — "trimming" is a per-class playback *window*, not a file edit; this
+  is not a DAW.
+- **No in-app audio analysis / decoding** — BPM is manual or from a third-party tempo service; the beat
+  downbeat is hand-marked.
+
+The granularity work (trim / beat-snap / free placement) deepens *choreography* control and stops
+short of audio production on purpose — see [`editing-granularity-scoping.md`](./editing-granularity-scoping.md).
+
 ## Why SoundCloud matters
 
 SoundCloud is a core differentiator: it carries independent and emerging artists that Spotify and Apple
