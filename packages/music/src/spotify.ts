@@ -26,6 +26,9 @@ const DEFAULT_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 // now rejects higher values with 400 "Invalid limit" (verified in prod); 10 is a
 // safe, ample page for the add-track picker.
 const SEARCH_LIMIT = 10;
+// Spotify's playlist-items endpoint currently caps pages at 50. Construct each
+// request from our API base + offset rather than following provider-supplied URLs.
+const PLAYLIST_PAGE_LIMIT = 50;
 
 export interface SpotifyConfig {
   clientId: string;
@@ -50,6 +53,11 @@ type SpTrack = z.infer<typeof spTrackSchema>;
 
 const spSearchSchema = z.object({
   tracks: z.object({ items: z.array(z.unknown()) }).optional(),
+});
+
+const spPlaylistPageSchema = z.object({
+  items: z.array(z.object({ track: z.unknown() })),
+  total: z.number().int().nonnegative(),
 });
 
 export function createSpotifyProvider(config: SpotifyConfig): MusicProvider {
@@ -96,14 +104,32 @@ class SpotifyProvider implements MusicProvider {
   }
 
   async getPlaylist(playlistId: string): Promise<TrackSearchResult[]> {
-    const json = await this.authedGet(
-      `${this.apiBase}/playlists/${encodeURIComponent(playlistId)}/tracks?limit=100`,
-    );
-    const parsed = z.object({ items: z.array(z.object({ track: z.unknown() })) }).safeParse(json);
-    if (!parsed.success) return [];
-    return parsed.data.items
-      .map((item) => this.toCandidate(item.track))
-      .filter((c): c is TrackSearchResult => c !== null);
+    const encodedPlaylistId = encodeURIComponent(playlistId);
+    const candidates: TrackSearchResult[] = [];
+    let offset = 0;
+    let total = Number.POSITIVE_INFINITY;
+
+    while (offset < total) {
+      const json = await this.authedGet(
+        `${this.apiBase}/playlists/${encodedPlaylistId}/tracks?limit=${PLAYLIST_PAGE_LIMIT}&offset=${offset}`,
+      );
+      const parsed = spPlaylistPageSchema.safeParse(json);
+      if (!parsed.success) {
+        throw new ProviderError('spotify', 'Spotify returned an invalid playlist page.');
+      }
+
+      const pageItems = parsed.data.items;
+      candidates.push(
+        ...pageItems
+          .map((item) => this.toCandidate(item.track))
+          .filter((candidate): candidate is TrackSearchResult => candidate !== null),
+      );
+      total = parsed.data.total;
+      if (pageItems.length === 0) break;
+      offset += pageItems.length;
+    }
+
+    return candidates;
   }
 
   /** Map a Spotify track object → contract candidate, or null if it can't satisfy the schema. */

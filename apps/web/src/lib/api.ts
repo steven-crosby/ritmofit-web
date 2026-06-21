@@ -40,7 +40,11 @@ import type {
   TeamMemberView,
   TeamRole,
 } from '@ritmofit/shared';
-import { CLASS_LIST_DEFAULT_LIMIT, CLASS_LIST_NEXT_CURSOR_HEADER } from '@ritmofit/shared';
+import {
+  CLASS_LIST_DEFAULT_LIMIT,
+  CLASS_LIST_NEXT_CURSOR_HEADER,
+  MAX_CLASS_COVER_BYTES,
+} from '@ritmofit/shared';
 import { API_BASE_URL, authClient } from './auth-client.js';
 
 async function apiResponse(path: string, init?: RequestInit): Promise<Response> {
@@ -103,14 +107,16 @@ export const addClassTag = (classId: string, tag: string) =>
 export const removeClassTag = (classId: string, tag: string) =>
   api<void>(`/classes/${classId}/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' });
 export const uploadClassCover = async (classId: string, file: File): Promise<Class> => {
+  if (file.size > MAX_CLASS_COVER_BYTES) {
+    throw new Error('Cover image must be 5 MiB or smaller.');
+  }
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch(`${API_BASE_URL}/api/v1/classes/${classId}/cover`, {
+  const res = await apiResponse(`/classes/${classId}/cover`, {
     method: 'POST',
-    credentials: 'include',
+    headers: {},
     body: formData,
   });
-  if (!res.ok) throw new Error('Upload failed');
   return res.json() as Promise<Class>;
 };
 export const importPlaylist = (classId: string, url: string) =>
