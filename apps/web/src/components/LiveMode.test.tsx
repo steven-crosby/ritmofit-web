@@ -50,6 +50,7 @@ const payload = {
     title: 'Handoff Ride',
     template: 'cycle',
     targetDurationMs: null,
+    timelineMode: 'sequential',
     totalDurationMs: 180000,
   },
   tracks: [activeTrack],

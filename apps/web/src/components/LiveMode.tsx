@@ -182,7 +182,24 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   // A track with no entered duration occupies zero timeline width, so a per-track
   // countdown would read a misleading 0:00. Track whether we have a real window.
   const trackDurationMs = live ? live.entry.track.durationMs : null;
-  const trackEndMs = live ? (live.entry.startOffsetMs ?? 0) + (trackDurationMs ?? 0) : 0;
+  const liveStartMs = live ? (live.entry.startOffsetMs ?? 0) : 0;
+  const trackEndMs = liveStartMs + (trackDurationMs ?? 0);
+
+  // Free-mode gaps: we're in silence either before the live track starts (leading
+  // gap) or after it ends with a later track still ahead. trackIndexAt returns the
+  // surrounding track in both cases, so derive the gap from its window.
+  const nextEntry =
+    liveIndex >= 0 && liveIndex + 1 < payload.tracks.length ? payload.tracks[liveIndex + 1] : null;
+  const nextStartMs = nextEntry ? (nextEntry.startOffsetMs ?? 0) : null;
+  const beforeLive = live != null && elapsedMs < liveStartMs;
+  const afterLive = live != null && trackDurationMs != null && elapsedMs >= trackEndMs;
+  const inGap = beforeLive || (afterLive && nextStartMs != null && elapsedMs < nextStartMs);
+  const gap = inGap
+    ? {
+        untilMs: beforeLive ? liveStartMs : (nextStartMs ?? 0),
+        nextTitle: beforeLive ? (live?.entry.track.title ?? null) : (nextEntry?.track.title ?? null),
+      }
+    : null;
 
   // Live runs on bg-live (ink-950, darker than bg-base) for maximum AAA contrast
   // in a dim studio — and stays dark in both themes (02/04-layout).
@@ -219,6 +236,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             trackHasDuration={trackDurationMs != null}
             classTotalMs={payload.class.totalDurationMs}
             playing={playing}
+            gap={gap}
           />
         ) : (
           <FullList
@@ -279,6 +297,7 @@ function CueByCue({
   trackHasDuration,
   classTotalMs,
   playing,
+  gap,
 }: {
   live: { entry: RunPayloadTrackEntry; index: number } | null;
   currentEvent: TimelineEvent | null;
@@ -288,9 +307,33 @@ function CueByCue({
   trackHasDuration: boolean;
   classTotalMs: number;
   playing: boolean;
+  /** Free-mode silence between tracks: a countdown to the next track. */
+  gap: { untilMs: number; nextTitle: string | null } | null;
 }) {
   if (!live) {
     return <p className="p-8 font-ui text-text-tertiary">This class has no tracks yet.</p>;
+  }
+  if (gap) {
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 p-8 text-center">
+        <div className="flex w-full flex-col items-center gap-1 rounded-card bg-bg-raised py-10 shadow-card">
+          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Silence</p>
+          <p className="font-display text-3xl font-semibold text-text-secondary">No track playing</p>
+        </div>
+        <div className="flex w-full items-center justify-between rounded-card bg-bg-raised p-4 shadow-card">
+          <div className="text-left">
+            <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Next track</p>
+            <p className="font-ui text-text-primary">{gap.nextTitle ?? '—'}</p>
+          </div>
+          <span className="font-data text-2xl text-interactive" aria-label="Time to next track">
+            {fmt(gap.untilMs - elapsedMs)}
+          </span>
+        </div>
+        <div className="flex w-full justify-end font-data text-sm text-text-tertiary">
+          <span>Class ends in {fmt(classTotalMs - elapsedMs)}</span>
+        </div>
+      </div>
+    );
   }
   const { entry } = live;
   // The on-beat pulse: the focal "Now" card breathes on the track's beat while

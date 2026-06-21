@@ -17,7 +17,12 @@ import { createDb, type Db } from '../lib/db.js';
 import { requireAccess, requireClassTrackAccess, AccessError } from '../lib/authz.js';
 import { HttpError } from '../lib/errors.js';
 import { serializeClassTrack } from '../lib/serialize.js';
-import { resequence } from '../lib/sequencing.js';
+import {
+  resequence,
+  freeAppendOffsetMs,
+  wouldOverlap,
+  timelineModeOf,
+} from '../lib/sequencing.js';
 import { buildPatch } from '../lib/patch.js';
 import { makeMatchKey } from '../lib/same-song.js';
 import {
@@ -34,7 +39,7 @@ import {
   cues,
   classTrackMoves,
 } from '../db/schema.js';
-import { resolveClipWindow } from '../lib/duration.js';
+import { resolveClipWindow, effectiveDurationMs } from '../lib/duration.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
 classTrackRoutes.use('*', requireSession);
@@ -91,6 +96,11 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
     .where(eq(classTracks.classId, classId))
     .all();
 
+  // Free mode authors offsets, so a new track lands right after the current material
+  // (resequence won't set it); sequential leaves it null for resequence to derive.
+  const mode = await timelineModeOf(db, classId);
+  const startOffsetMs = mode === 'free' ? await freeAppendOffsetMs(db, classId) : null;
+
   const now = Date.now();
   const id = crypto.randomUUID();
   await db.insert(classTracks).values({
@@ -104,7 +114,7 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
     clipStartMs: body.clipStartMs ?? 0,
     clipEndMs: body.clipEndMs ?? null,
     beatAnchorMs: body.beatAnchorMs ?? 0,
-    startOffsetMs: null,
+    startOffsetMs,
     notes: body.notes ?? null,
     createdAt: now,
     updatedAt: now,
@@ -137,6 +147,15 @@ classTrackRoutes.post('/classes/:id/tracks/reorder', async (c) => {
   const db = createDb(c.env);
   const classId = c.req.param('id');
   await requireAccess(db, c.get('userId'), classId, 'edit');
+  // In free mode, order is derived from each track's offset — reposition by dragging
+  // the track on the timeline (set its offset), not by reordering the list.
+  if ((await timelineModeOf(db, classId)) === 'free') {
+    throw new HttpError(
+      422,
+      'VALIDATION_ERROR',
+      'Reordering is unavailable in free-placement mode; drag a track to change its start time.',
+    );
+  }
   const { classTrackIds } = reorderClassTracksSchema.parse(await c.req.json());
 
   const current = await db
@@ -175,13 +194,22 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
   const { classId } = await requireClassTrackAccess(db, c.get('userId'), id, 'edit');
   const body = updateClassTrackSchema.parse(await c.req.json());
 
-  // The duration override and the clip window all change the timeline length, so a
-  // change to any of them re-validates against this track's choreography (the window
-  // must still contain every cue/move anchor) and re-derives the class offsets.
+  // The duration override and the clip window change the timeline length; the offset
+  // moves the track on the timeline. Any of them re-validates and re-derives layout.
   const touchesWindow =
     'durationMsOverride' in body || 'clipStartMs' in body || 'clipEndMs' in body;
+  const touchesOffset = 'startOffsetMs' in body;
+  const mode = touchesOffset || touchesWindow ? await timelineModeOf(db, classId) : 'sequential';
 
-  if (touchesWindow) {
+  if (touchesOffset && mode !== 'free') {
+    throw new HttpError(
+      422,
+      'VALIDATION_ERROR',
+      'Switch the class to free placement before setting a track start time.',
+    );
+  }
+
+  if (touchesWindow || touchesOffset) {
     const [existing, anchors] = await Promise.all([
       db
         .select({
@@ -189,6 +217,7 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
           durationMsOverride: classTracks.durationMsOverride,
           clipStartMs: classTracks.clipStartMs,
           clipEndMs: classTracks.clipEndMs,
+          startOffsetMs: classTracks.startOffsetMs,
         })
         .from(classTracks)
         .innerJoin(tracks, eq(tracks.id, classTracks.trackId))
@@ -197,8 +226,8 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
       anchorBounds(db, id),
     ]);
 
-    // Merge the patch over the persisted row to get the resulting window (a field
-    // absent from the body keeps its stored value; an explicit null resets it).
+    // Merge the patch over the persisted row (absent field keeps its value; explicit
+    // null resets it) to get the resulting window + offset.
     const durationMsOverride =
       'durationMsOverride' in body
         ? (body.durationMsOverride ?? null)
@@ -213,7 +242,7 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
       clipStartMs,
       clipEndMs,
     );
-    if (anchors) {
+    if (touchesWindow && anchors) {
       if (anchors.minMs < startMs) {
         throw new HttpError(
           422,
@@ -229,20 +258,40 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
         );
       }
     }
+
+    // Free mode: the resulting window must not overlap a sibling (gaps are fine).
+    if (mode === 'free') {
+      const mergedOffset = touchesOffset
+        ? (body.startOffsetMs ?? 0)
+        : (existing?.startOffsetMs ?? 0);
+      const mergedDuration = effectiveDurationMs(
+        existing?.trackDurationMs ?? null,
+        durationMsOverride,
+        clipStartMs,
+        clipEndMs,
+      );
+      if (await wouldOverlap(db, classId, id, mergedOffset, mergedDuration)) {
+        throw new HttpError(
+          422,
+          'VALIDATION_ERROR',
+          'That start time would overlap another track. Leave a gap or move the other track.',
+        );
+      }
+    }
   }
 
   // `clip_start_ms` / `beat_anchor_ms` are NOT NULL — a null in the patch means
-  // "reset to 0". Pull them out of the generic patch so the typed `.set()` never
-  // sees a null for those columns.
-  const { clipStartMs, beatAnchorMs, ...rest } = buildPatch(body);
+  // "reset to 0". `start_offset_ms` is nullable but we keep free offsets concrete.
+  const { clipStartMs, beatAnchorMs, startOffsetMs, ...rest } = buildPatch(body);
   const patch = {
     ...rest,
     ...('clipStartMs' in body ? { clipStartMs: clipStartMs ?? 0 } : {}),
     ...('beatAnchorMs' in body ? { beatAnchorMs: beatAnchorMs ?? 0 } : {}),
+    ...(touchesOffset ? { startOffsetMs: startOffsetMs ?? 0 } : {}),
   };
 
   await db.update(classTracks).set(patch).where(eq(classTracks.id, id));
-  if (touchesWindow) await resequence(db, classId);
+  if (touchesWindow || touchesOffset) await resequence(db, classId);
   const row = await db.select().from(classTracks).where(eq(classTracks.id, id)).get();
   return c.json(serializeClassTrack(row!));
 });

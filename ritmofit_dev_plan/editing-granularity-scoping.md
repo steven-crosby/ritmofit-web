@@ -86,7 +86,18 @@ offset subtraction. Keeps stored data stable and the edit UI honest.
 
 ---
 
-## Feature B — Free timeline placement / gaps (the expensive one)
+## Feature B — Free timeline placement / gaps ✅ shipped
+
+> **Status: implemented** on this branch, gated behind a per-class `classes.timeline_mode`
+> (`sequential` default | `free`), migration `0016`. In free mode `start_offset_ms` is user-authored
+> (gaps allowed, **overlaps rejected** server-side) and `position` is derived by offset rank;
+> `computeFreeTimeline` makes the run-payload total the latest track end. Switching into free seeds
+> offsets from the sequential layout; switching back re-packs. The web timeline/ribbon/Live scrubber now
+> position by `startOffsetMs` (so gaps render), tracks are draggable on the strip (+ a "Start at" inspector
+> field), list-reorder is disabled in free mode, and **Live mode shows a silence countdown** during gaps.
+> Scope below is the as-built record.
+
+### Original analysis (retained)
 
 **Goal:** break back-to-back — let a track sit at an arbitrary `startOffsetMs`, with gaps (silence)
 between tracks.
@@ -173,9 +184,14 @@ feature needs a **beat grid**, which needs three things — and we have only one
 |-------|---------|--------|------|-----|
 | 1 | **Trimming** ✅ | Medium (2–3d) | Low–Med | **Shipped.** Rode the centralized duration chokepoint as predicted; preserved invariants; raised the granularity score. |
 | 2 | **Beat-snapping** ✅ | Medium (3–5d) | Med (data) | **Shipped (full UI).** Added the downbeat field + grid math; editor toggle, timeline grid + snap-on-drag. Additive — no invariant or live-contract break. |
-| 3 | **Free placement** | Large (5–8d) | High | Inverts the core invariant + changes the deployed live/iOS contract. Gate behind a per-class mode; reconsider once trimming lands (silent spacer tracks may suffice). |
+| 3 | **Free placement** ✅ | Large (5–8d) | High | **Shipped.** Gated behind a per-class `timeline_mode`; gaps allowed, overlaps rejected; Live shows a silence countdown. Run-payload v1 stayed additive (`schemaVersion` 1). |
 
-**Bottom line:** trimming is the clear first move — cheap because the architecture already centralizes
-duration, and it likely absorbs much of the demand that would otherwise justify the expensive free-
-placement work. Beat-snapping is cheap in code but only worth doing alongside its data prerequisites.
-Free placement is a real project, not a slice.
+**Bottom line:** all three landed. Trimming and beat-snapping rode the centralized duration/timeline
+math and stayed additive; free placement was the real project — gated behind `timeline_mode` so the
+deployed sequential/iOS behavior is untouched, with overlaps rejected and a Live silence state for gaps.
+Together they move the class-builder's editing granularity from ~3/10 toward ~5–6/10 for *choreography*
+(still, by design, not a DAW — audio stays in the provider apps per `music-providers.md`).
+
+Possible follow-ups (not built): snapping a dragged track start to the beat grid (track starts currently
+snap to whole seconds); carrying `timeline_mode` + authored offsets through whole-class copy (a copy
+currently lands sequential); and a per-track time signature beyond 4/4.

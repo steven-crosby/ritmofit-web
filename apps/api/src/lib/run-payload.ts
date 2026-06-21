@@ -61,6 +61,23 @@ export function computeClassTimeline(
   return { startOffsetByCt, totalDurationMs };
 }
 
+/**
+ * Free-mode timeline: offsets are the **authored** `startOffsetMs` (clamped ≥ 0,
+ * null → 0), and the class total is the latest track end (`max(start + duration)`),
+ * so trailing gaps don't extend the class but a gap before the last track does.
+ * Pure, so it is unit-tested without a database.
+ */
+export function computeFreeTimeline(
+  items: ReadonlyArray<{ id: string; startOffsetMs: number | null; durationMs: number | null }>,
+): { startOffsetByCt: Map<string, number>; totalDurationMs: number } {
+  const startOffsetByCt = new Map(items.map((t) => [t.id, Math.max(0, t.startOffsetMs ?? 0)]));
+  const totalDurationMs = items.reduce(
+    (max, t) => Math.max(max, Math.max(0, t.startOffsetMs ?? 0) + (t.durationMs ?? 0)),
+    0,
+  );
+  return { startOffsetByCt, totalDurationMs };
+}
+
 /** Group rows into a Map keyed by one of their fields. */
 function groupBy<T, K>(rows: readonly T[], key: (row: T) => K): Map<K, T[]> {
   const map = new Map<K, T[]>();
@@ -147,19 +164,22 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
   const cuesByCt = groupBy(cueRows, (c) => c.classTrackId);
   const movesByCt = groupBy(moveRows, (m) => m.classTrackId);
 
-  // Recompute the timeline at read time (M3 hardening) so per-track offsets and the
-  // class total are authoritative even if a persisted start_offset_ms drifted.
-  const { startOffsetByCt, totalDurationMs } = computeClassTimeline(
-    cts.map((ct) => ({
-      id: ct.id,
-      durationMs: effectiveDurationMs(
-        trackById.get(ct.trackId)?.durationMs ?? null,
-        ct.durationMsOverride,
-        ct.clipStartMs,
-        ct.clipEndMs,
-      ),
-    })),
-  );
+  // Timeline: in sequential mode it's recomputed back-to-back at read time (M3
+  // hardening, self-heals a drifted offset); in free mode the authored offsets are
+  // authoritative and the total is the latest track end.
+  const durationOf = (ct: (typeof cts)[number]) =>
+    effectiveDurationMs(
+      trackById.get(ct.trackId)?.durationMs ?? null,
+      ct.durationMsOverride,
+      ct.clipStartMs,
+      ct.clipEndMs,
+    );
+  const { startOffsetByCt, totalDurationMs } =
+    cls.timelineMode === 'free'
+      ? computeFreeTimeline(
+          cts.map((ct) => ({ id: ct.id, startOffsetMs: ct.startOffsetMs, durationMs: durationOf(ct) })),
+        )
+      : computeClassTimeline(cts.map((ct) => ({ id: ct.id, durationMs: durationOf(ct) })));
 
   const payload: RunPayload = {
     schemaVersion: RUN_PAYLOAD_SCHEMA_VERSION,
@@ -169,6 +189,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
       template: cls.template,
       targetDurationMs: cls.targetDurationMs,
       totalDurationMs,
+      timelineMode: cls.timelineMode,
     },
     tracks: cts.map((ct) => {
       const track = trackById.get(ct.trackId)!;

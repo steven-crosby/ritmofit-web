@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeSequence } from './sequencing.js';
+import { computeSequence, overlapsAny } from './sequencing.js';
 
 describe('computeSequence', () => {
   it('empty list → empty', () => {
@@ -40,5 +40,26 @@ describe('computeSequence', () => {
       { id: 'y', durationMs: 100 },
     ]);
     expect(seq.map((s) => s.id)).toEqual(['x', 'y']);
+  });
+});
+
+describe('overlapsAny (free-mode placement)', () => {
+  const others = [
+    { start: 0, dur: 1000 }, // [0, 1000)
+    { start: 2000, dur: 1000 }, // [2000, 3000)
+  ];
+  it('allows a gap between tracks', () => {
+    expect(overlapsAny({ start: 1200, dur: 500 }, others)).toBe(false);
+  });
+  it('allows touching edges (end meets next start)', () => {
+    expect(overlapsAny({ start: 1000, dur: 1000 }, others)).toBe(false); // [1000, 2000)
+  });
+  it('rejects a window that intrudes into a neighbor', () => {
+    expect(overlapsAny({ start: 900, dur: 500 }, others)).toBe(true); // [900,1400) hits [0,1000)
+    expect(overlapsAny({ start: 2500, dur: 1000 }, others)).toBe(true); // hits [2000,3000)
+  });
+  it('zero-width windows never overlap', () => {
+    expect(overlapsAny({ start: 500, dur: 0 }, others)).toBe(false);
+    expect(overlapsAny({ start: 500, dur: 500 }, [{ start: 400, dur: 0 }])).toBe(false);
   });
 });

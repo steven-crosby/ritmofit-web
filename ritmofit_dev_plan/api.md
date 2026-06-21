@@ -147,7 +147,8 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
     "title": "Mon POWER 6/8",
     "template": "cycle",
     "targetDurationMs": 2700000,
-    "totalDurationMs": 2640000
+    "totalDurationMs": 2640000,
+    "timelineMode": "sequential"
   },
   "tracks": [
     {
@@ -189,7 +190,9 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
 > Per-track **`clipStartMs`** + **`beatAnchorMs`** (trimming + beat-snapping) and derived **`beat`/`bar`**
 > on cues *and* moves. With trimming, cue/move `anchorMs` are **re-based to the clip start** (so the live
 > timeline lines up); `beat`/`bar` are derived from the original track-relative anchor + BPM + downbeat
-> (4/4), null without a tempo or before bar 1.
+> (4/4), null without a tempo or before bar 1. Top-level **`class.timelineMode`** (`sequential` | `free`):
+> in `free` mode `startOffsetMs` is author-set with gaps, and `totalDurationMs` is the latest track end —
+> a consumer detects a gap wherever a track's `startOffsetMs` exceeds the previous track's end.
 
 The granular endpoints above remain the **edit** surface; run-payload is the read-optimized **live**
 contract — one fetch so the iOS app isn't composing the live view from a dozen calls on studio wifi.

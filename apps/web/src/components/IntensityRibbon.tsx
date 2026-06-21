@@ -50,9 +50,10 @@ export type RibbonSegment = {
 };
 
 /**
- * Pure geometry: lay each track out by its share of the assembled total, mapping
- * intensity → crest height. A null/zero `durationMs` contributes 0 width (matches
- * the run-payload's `totalDurationMs` rule). Returns [] when there's nothing to draw.
+ * Pure geometry: place each track by its (server-resolved) `startOffsetMs` and size
+ * it by its share of the assembled total, mapping intensity → crest height. In free
+ * mode a gap shows as uncolored space (no segment drawn there). A null/zero
+ * `durationMs` contributes no segment. Returns [] when there's nothing to draw.
  * Exported so the layout can be unit-tested independently of the DOM.
  */
 export function computeRibbonSegments(
@@ -61,14 +62,13 @@ export function computeRibbonSegments(
 ): RibbonSegment[] {
   if (totalDurationMs <= 0) return [];
   const segments: RibbonSegment[] = [];
-  let x = 0;
   for (const t of tracks) {
     const dur = t.track.durationMs ?? 0;
     if (dur <= 0) continue;
+    const x = ((t.startOffsetMs ?? 0) / totalDurationMs) * VB_W;
     const width = (dur / totalDurationMs) * VB_W;
     const top = VB_H - ZONE_HEIGHT[t.intensity] * VB_H;
     segments.push({ x, width, top, intensity: t.intensity });
-    x += width;
   }
   return segments;
 }

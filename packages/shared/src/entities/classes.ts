@@ -7,6 +7,7 @@ import {
   classTemplateSchema,
   classStatusSchema,
   classVisibilitySchema,
+  timelineModeSchema,
   intensitySchema,
   accessLevelSchema,
 } from '../enums.js';
@@ -23,6 +24,7 @@ export const classSchema = z.object({
   template: classTemplateSchema.nullable(),
   status: classStatusSchema,
   visibility: classVisibilitySchema,
+  timelineMode: timelineModeSchema,
   targetDurationMs: timestampMsSchema.nullable(),
   featuredCategory: z.string().max(100).nullable(),
   coverImageUrl: z.string().url().max(1000).nullable(),
@@ -78,6 +80,7 @@ export const createClassSchema = classSchema
     targetDurationMs: true,
     status: true,
     visibility: true,
+    timelineMode: true,
     featuredCategory: true,
   })
   .partial({
@@ -86,6 +89,7 @@ export const createClassSchema = classSchema
     targetDurationMs: true,
     status: true,
     visibility: true,
+    timelineMode: true,
     featuredCategory: true,
   });
 export type CreateClass = z.infer<typeof createClassSchema>;
@@ -140,6 +144,9 @@ const classTrackInputFields = z.object({
   clipEndMs: z.int().positive().nullish(),
   // Downbeat offset for beat-snapping; null/omitted resets to 0.
   beatAnchorMs: z.int().nonnegative().nullish(),
+  // Explicit timeline placement — honored only in free mode (rejected in sequential,
+  // where offsets are server-derived). Track-relative class-start ms.
+  startOffsetMs: z.int().nonnegative().nullish(),
   notes: z.string().max(2000).nullish(),
 });
 

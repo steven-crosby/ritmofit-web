@@ -12,6 +12,7 @@ import {
   intensitySchema,
   providerSchema,
   segmentTypeSchema,
+  timelineModeSchema,
 } from '../enums.js';
 
 /** Schema version of the run-payload (bump on a breaking shape change; D12). */
@@ -23,6 +24,12 @@ const runPayloadClassSchema = z.object({
   template: classTemplateSchema.nullable(),
   /** The instructor's planned target length (may be null). Not the assembled total. */
   targetDurationMs: timestampMsSchema.nullable(),
+  /**
+   * Timeline layout (additive to v1). `sequential` = back-to-back (no gaps);
+   * `free` = explicit offsets with gaps allowed — a consumer can detect a gap
+   * wherever a track's `startOffsetMs` exceeds the previous track's end.
+   */
+  timelineMode: timelineModeSchema,
   /**
    * The actual assembled timeline length: the sum of each class-track's effective
    * duration (`durationMsOverride ?? track.durationMs`; null contributes 0).

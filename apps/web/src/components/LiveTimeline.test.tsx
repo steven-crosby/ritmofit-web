@@ -96,6 +96,7 @@ function makePayload(): RunPayload {
       title: 'Scrub Ride',
       template: 'cycle',
       targetDurationMs: null,
+      timelineMode: 'sequential',
       totalDurationMs: 240000,
     },
     tracks: [entry(0, 120000, [cue(60000)]), entry(1, 120000, [], [move(60000)])],

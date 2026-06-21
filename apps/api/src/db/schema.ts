@@ -36,6 +36,7 @@ import {
   sharePermissionValues,
   shareResourceTypeValues,
   segmentTypeValues,
+  timelineModeValues,
 } from '@ritmofit/shared';
 
 /**
@@ -123,6 +124,9 @@ export const classes = sqliteTable(
     // Discovery visibility (M4), orthogonal to lifecycle `status`. Default private
     // so every existing/new class stays owner+shares-only until explicitly published.
     visibility: text('visibility', { enum: classVisibilityValues }).notNull().default('private'),
+    // Timeline layout. Default sequential (back-to-back, server-derived offsets) so
+    // every existing/new class keeps the M1 behavior until switched to free placement.
+    timelineMode: text('timeline_mode', { enum: timelineModeValues }).notNull().default('sequential'),
     featuredCategory: text('featured_category'),
     coverImageUrl: text('cover_image_url'),
     targetDurationMs: integer('target_duration_ms'),
@@ -133,6 +137,7 @@ export const classes = sqliteTable(
     enumCheck('classes_template_check', t.template, classTemplateValues),
     enumCheck('classes_status_check', t.status, classStatusValues),
     enumCheck('classes_visibility_check', t.visibility, classVisibilityValues),
+    enumCheck('classes_timeline_mode_check', t.timelineMode, timelineModeValues),
     index('classes_visibility_idx').on(t.visibility),
     // Cover the owned arm and its stable library ordering boundary.
     index('classes_owner_updated_id_idx').on(t.ownerUserId, t.updatedAt, t.id),

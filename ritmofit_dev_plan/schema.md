@@ -84,6 +84,7 @@ Owned by exactly one user. No `team_id` — ownership is always a user; others g
 | template | text enum(`cycle`,`hiit`,`sculpt`,`tread`) | Nullable; class template type |
 | status | text enum(`draft`,`ready`,`archived`) | Default `draft` |
 | visibility | text enum(`private`,`unlisted`,`public`) | Default `private` |
+| timeline_mode | text enum(`sequential`,`free`) | Default `sequential`. `sequential` = back-to-back, server-derived offsets; `free` = author offsets with gaps (overlaps rejected), positions derived from offset order |
 | featured_category | text | Nullable; marks this class for curated Explore rows |
 | cover_image_url | text | Nullable; custom uploaded R2 image URL |
 | target_duration_ms | int | Nullable; total planned class length |
@@ -165,13 +166,18 @@ holds the per-class context.
 > rejects a window that would orphan one). The run-payload re-bases anchors to the clip start so the
 > live timeline lines up (see `api.md`).
 
-> **Timeline placement (M1): sequential, derived.** `position` is the authoritative ordering. Tracks
-> play **back-to-back** — `start_offset_ms` is **computed by the server** from the sum of preceding
-> effective durations (`class_tracks.duration_ms_override ?? tracks.duration_ms`), not freely set by
-> the client; no gaps or overlaps in M1. The override lets a class editor correct timing without
-> mutating another user's private library track. The column is kept so
-> **free placement** (explicit offsets, silence gaps) can land in a later milestone **without a
-> migration**. Clients should treat `start_offset_ms` as read-only in M1.
+> **Timeline placement — two modes (`classes.timeline_mode`).**
+> - **sequential** (default): `position` is authoritative and tracks play **back-to-back** —
+>   `start_offset_ms` is **server-derived** from the sum of preceding effective durations
+>   (`min(clip_end_ms ?? base, base) − clip_start_ms`, `base = duration_ms_override ?? tracks.duration_ms`),
+>   not set by the client; no gaps or overlaps. Clients treat `start_offset_ms` as read-only.
+> - **free**: `start_offset_ms` is **user-authored** (gaps/silence allowed, overlaps rejected by the
+>   edit route); `position` is **derived** by ranking tracks on their offset. The run-payload total is the
+>   latest track end (`max(start + duration)`), so a trailing gap doesn't extend the class. Switching into
+>   free seeds offsets from the current sequential layout; switching back re-packs them back-to-back.
+>
+> The `duration_ms_override` lets a class editor correct timing without mutating another user's private
+> library track.
 
 ### `class_tags`
 Simple "Google Keep" style tagging system for classes. Used to search historical classes (e.g., "Songs by Move" or thematic searches).

@@ -84,10 +84,12 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
   if (totalDurationMs <= 0) return { blocks: [], markers: [] };
   const blocks: TimelineBlock[] = [];
   const markers: TimelineMarker[] = [];
-  let startMs = 0;
   tracks.forEach((t, i) => {
     const dur = t.track.durationMs ?? 0;
     if (dur <= 0) return;
+    // Position by the (server-resolved) offset — back-to-back in sequential mode,
+    // authored with gaps in free mode. Both come straight from the run-payload.
+    const startMs = t.startOffsetMs ?? 0;
     blocks.push({
       classTrackId: t.classTrackId,
       leftPct: (startMs / totalDurationMs) * 100,
@@ -131,7 +133,6 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
         color: mv.intensity ? `var(--rf-color-intensity-${mv.intensity})` : null,
       });
     });
-    startMs += dur;
   });
   return { blocks, markers };
 }
@@ -155,6 +156,7 @@ export function TimelineStrip({
   selectedTrackId = null,
   onSelectTrack,
   onMoveMarker,
+  onMoveTrack,
 }: {
   payload: RunPayload;
   /** The class_track currently open in the inspector — its block is highlighted. */
@@ -178,6 +180,12 @@ export function TimelineStrip({
     marker: { kind: 'cue' | 'move'; id: string },
     anchorMs: number,
   ) => Promise<void> | void;
+  /**
+   * Persist a track dragged to a new class-timeline `startOffsetMs` (free mode +
+   * edit access). When provided, the track blocks become draggable; a click still
+   * selects. Overlaps are rejected server-side (the drag reverts on failure).
+   */
+  onMoveTrack?: (classTrackId: string, startOffsetMs: number) => Promise<void> | void;
 }) {
   const { blocks, markers } = computeTimeline(payload.tracks, payload.class.totalDurationMs);
   const stripRef = useRef<HTMLDivElement>(null);
@@ -234,6 +242,19 @@ export function TimelineStrip({
           const inner = (
             <span className="font-data text-[10px] text-text-tertiary">{b.position + 1}</span>
           );
+          if (onMoveTrack) {
+            return (
+              <TrackBlockHandle
+                key={b.position}
+                block={b}
+                totalMs={total}
+                selected={selected}
+                getRect={() => stripRef.current?.getBoundingClientRect()}
+                onSelect={() => onSelectTrack?.(b.classTrackId)}
+                onCommit={(startOffsetMs) => onMoveTrack(b.classTrackId, startOffsetMs)}
+              />
+            );
+          }
           return interactive ? (
             <button
               key={b.position}
@@ -303,6 +324,121 @@ export function TimelineStrip({
         })}
       </div>
     </figure>
+  );
+}
+
+/** Snap a dragged track start to the nearest whole second (free placement is coarse). */
+const snapStart = (ms: number) => Math.max(0, Math.round(ms / 1000) * 1000);
+
+/**
+ * A draggable track block (free mode): drag horizontally to set the track's
+ * class-timeline `startOffsetMs`; a click with no movement selects the track. The
+ * draft re-syncs to the server value after a reload, and reverts if the commit
+ * fails (e.g. the server rejects an overlap). Arrow keys nudge by 1s (5s with Shift).
+ */
+function TrackBlockHandle({
+  block,
+  totalMs,
+  selected,
+  getRect,
+  onSelect,
+  onCommit,
+}: {
+  block: TimelineBlock;
+  totalMs: number;
+  selected: boolean;
+  getRect: () => DOMRect | undefined;
+  onSelect: () => void;
+  onCommit: (startOffsetMs: number) => Promise<void> | void;
+}) {
+  const [draftStart, setDraftStart] = useState(block.startMs);
+  const draggingRef = useRef(false);
+  const movedRef = useRef(false);
+
+  useEffect(() => {
+    if (!draggingRef.current) setDraftStart(block.startMs);
+  }, [block.startMs]);
+
+  const leftPct = totalMs > 0 ? clamp((draftStart / totalMs) * 100, 0, 100) : 0;
+  const widthPct = totalMs > 0 ? (block.durMs / totalMs) * 100 : 0;
+
+  // Pointer x → the block's new (snapped, ≥ 0) start, keeping its left edge under the cursor.
+  const fromPointer = (clientX: number): number => {
+    const rect = getRect();
+    if (!rect) return block.startMs;
+    const abs = clamp((clientX - rect.left) / rect.width, 0, 1) * totalMs;
+    return snapStart(abs);
+  };
+
+  const commit = async (next: number) => {
+    if (next === block.startMs) return;
+    try {
+      await onCommit(next);
+    } catch {
+      setDraftStart(block.startMs);
+    }
+  };
+
+  const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    draggingRef.current = true;
+    movedRef.current = false;
+  };
+  const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
+    if (!draggingRef.current) return;
+    movedRef.current = true;
+    setDraftStart(fromPointer(e.clientX));
+  };
+  const onPointerUp = (e: PointerEvent<HTMLButtonElement>) => {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    if (!movedRef.current) {
+      onSelect();
+      return;
+    }
+    const final = fromPointer(e.clientX);
+    setDraftStart(final);
+    void commit(final);
+  };
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    const step = e.shiftKey ? 5000 : 1000;
+    const set = (raw: number) => {
+      e.preventDefault();
+      setDraftStart(Math.max(0, raw));
+    };
+    switch (e.key) {
+      case 'ArrowRight':
+        return set(draftStart + step);
+      case 'ArrowLeft':
+        return set(draftStart - step);
+      case 'Enter':
+        e.preventDefault();
+        return void commit(draftStart);
+      default:
+        return undefined;
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      role="slider"
+      aria-label={`Track ${block.position + 1} start at ${formatDuration(draftStart)}. Drag or arrow keys to move; Enter to select.`}
+      aria-valuemin={0}
+      aria-valuemax={Math.round(totalMs)}
+      aria-valuenow={Math.round(draftStart)}
+      aria-valuetext={formatDuration(draftStart)}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onKeyDown={onKeyDown}
+      onBlur={() => void commit(draftStart)}
+      style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+      className={`absolute top-0 flex h-5 cursor-ew-resize touch-none items-center justify-center overflow-hidden rounded-sm border-l border-interactive/15 hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive ${selected ? 'ring-2 ring-interactive' : ''}`}
+    >
+      <span className="font-data text-[10px] text-text-tertiary">{block.position + 1}</span>
+    </button>
   );
 }
 

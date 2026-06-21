@@ -209,6 +209,61 @@ describe('run-payload + copy (integration)', () => {
     expect(entry.cues[0]).toMatchObject({ anchorMs: 2000, beat: 1, bar: 2 });
   });
 
+  it('free placement: gaps allowed, overlaps rejected, run-payload reflects offsets', async () => {
+    // Add a second track so we have two to place. Track A is 180000ms (beforeAll).
+    const addB = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({ track: { title: 'Track B', artist: 'Artist', durationMs: 120000 } }),
+    });
+    expect(addB.status).toBe(201);
+
+    // Switch to free placement — offsets seed from the sequential layout (0 / 180000).
+    const toFree = await authed(owner.cookie)(`/api/v1/classes/${classId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ timelineMode: 'free' }),
+    });
+    expect(toFree.status).toBe(200);
+    expect((await toFree.json()).timelineMode).toBe('free');
+
+    const tracks = (await (
+      await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`)
+    ).json()) as Array<{ id: string; startOffsetMs: number }>;
+    const trackB = tracks.find((t) => t.startOffsetMs === 180000)!;
+    expect(trackB).toBeTruthy();
+
+    // Move B later to open a 20s gap after A (A ends at 180000).
+    const gap = await authed(owner.cookie)(`/api/v1/class-tracks/${trackB.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ startOffsetMs: 200000 }),
+    });
+    expect(gap.status).toBe(200);
+    expect((await gap.json()).startOffsetMs).toBe(200000);
+
+    // Pull B back so it would overlap A ([0,180000)) — rejected.
+    const overlap = await authed(owner.cookie)(`/api/v1/class-tracks/${trackB.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ startOffsetMs: 100000 }),
+    });
+    expect(overlap.status).toBe(422);
+    expect((await overlap.json()).error.message).toContain('overlap');
+
+    // Reorder is unavailable in free mode.
+    const reorder = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ classTrackIds: tracks.map((t) => t.id) }),
+    });
+    expect(reorder.status).toBe(422);
+
+    // The run-payload reports the gap: total = 200000 + 120000, B at 200000.
+    const payload = await (
+      await authed(owner.cookie)(`/api/v1/classes/${classId}/run-payload`)
+    ).json();
+    expect(payload.class.timelineMode).toBe('free');
+    expect(payload.class.totalDurationMs).toBe(320000);
+    const bEntry = payload.tracks.find((t: { classTrackId: string }) => t.classTrackId === trackB.id);
+    expect(bEntry.startOffsetMs).toBe(200000);
+  });
+
   it('a non-owner cannot fetch the run-payload (404)', async () => {
     const res = await authed(other.cookie)(`/api/v1/classes/${classId}/run-payload`);
     expect(res.status).toBe(404);
