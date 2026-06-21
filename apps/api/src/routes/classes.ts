@@ -7,6 +7,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import {
   CLASS_LIST_DEFAULT_LIMIT,
   CLASS_LIST_NEXT_CURSOR_HEADER,
+  MAX_CLASS_COVER_BYTES,
   classListQuerySchema,
   createClassSchema,
   updateClassSchema,
@@ -23,6 +24,7 @@ import { serializeClass } from '../lib/serialize.js';
 import { assembleRunPayload } from '../lib/run-payload.js';
 import { decodeClassListCursor, encodeClassListCursor } from '../lib/class-list-pagination.js';
 import { resequence } from '../lib/sequencing.js';
+import { deleteClassCover } from '../lib/class-cover.js';
 import {
   resolveTrackForClassCopy,
   refsToClone,
@@ -371,10 +373,16 @@ classRoutes.delete('/:id', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
   await requireAccess(db, c.get('userId'), id, 'owner');
+  const existingClass = await db
+    .select({ coverImageUrl: classes.coverImageUrl })
+    .from(classes)
+    .where(eq(classes.id, id))
+    .get();
   await db.batch([
     db.delete(shares).where(and(eq(shares.resourceType, 'class'), eq(shares.resourceId, id))),
     db.delete(classes).where(eq(classes.id, id)),
   ]);
+  await deleteClassCover(c.env.IMAGES_BUCKET, existingClass?.coverImageUrl ?? null);
   return c.body(null, 204);
 });
 
@@ -388,10 +396,22 @@ classRoutes.post('/:id/cover', async (c) => {
     throw new HttpError(500, 'INTERNAL_SERVER_ERROR', 'Images bucket not configured.');
   }
 
+  const contentLength = Number(c.req.header('content-length'));
+  const multipartOverheadBytes = 64 * 1024;
+  if (
+    Number.isFinite(contentLength) &&
+    contentLength > MAX_CLASS_COVER_BYTES + multipartOverheadBytes
+  ) {
+    throw new HttpError(413, 'PAYLOAD_TOO_LARGE', 'Cover image must be 5 MiB or smaller.');
+  }
+
   const body = await c.req.parseBody();
   const file = body['file'];
   if (!(file instanceof File)) {
     throw new HttpError(400, 'BAD_REQUEST', 'Missing file.');
+  }
+  if (file.size > MAX_CLASS_COVER_BYTES) {
+    throw new HttpError(413, 'PAYLOAD_TOO_LARGE', 'Cover image must be 5 MiB or smaller.');
   }
 
   // Derive the extension from the (allowlisted) content type, never the
@@ -408,6 +428,12 @@ classRoutes.post('/:id/cover', async (c) => {
   }
   const objectKey = `covers/${crypto.randomUUID()}.${ext}`;
 
+  const existingClass = await db
+    .select({ coverImageUrl: classes.coverImageUrl })
+    .from(classes)
+    .where(eq(classes.id, id))
+    .get();
+
   await c.env.IMAGES_BUCKET.put(objectKey, file, {
     httpMetadata: { contentType: file.type },
   });
@@ -418,7 +444,13 @@ classRoutes.post('/:id/cover', async (c) => {
   // the wrong origin and also fail the classSchema url() check.
   const coverImageUrl = `${new URL(c.req.url).origin}/api/v1/uploads/${objectKey}`;
 
-  await db.update(classes).set({ coverImageUrl }).where(eq(classes.id, id));
+  try {
+    await db.update(classes).set({ coverImageUrl }).where(eq(classes.id, id));
+  } catch (error) {
+    await deleteClassCover(c.env.IMAGES_BUCKET, coverImageUrl);
+    throw error;
+  }
+  await deleteClassCover(c.env.IMAGES_BUCKET, existingClass?.coverImageUrl ?? null);
 
   const row = await db.select().from(classes).where(eq(classes.id, id)).get();
   const tagsRow = await db

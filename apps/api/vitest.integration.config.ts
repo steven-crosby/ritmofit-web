@@ -28,6 +28,7 @@ export default defineWorkersConfig(async () => {
             compatibilityDate: '2024-11-06',
             compatibilityFlags: ['nodejs_compat'],
             d1Databases: { DB: 'ritmofit-test' },
+            r2Buckets: { IMAGES_BUCKET: 'ritmofit-images-test' },
             bindings: {
               // Surfaced to the setup file to migrate the test DB.
               TEST_MIGRATIONS: migrations,

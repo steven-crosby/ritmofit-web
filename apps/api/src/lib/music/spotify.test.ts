@@ -6,7 +6,9 @@ function fakeFetch(handlers: Record<string, unknown>) {
   const calls: { url: string; init?: Parameters<FetchLike>[1] }[] = [];
   const fetchImpl: FetchLike = async (url, init) => {
     calls.push({ url, init });
-    const key = Object.keys(handlers).find((k) => url.startsWith(k));
+    const key = Object.keys(handlers)
+      .sort((a, b) => b.length - a.length)
+      .find((candidate) => url.startsWith(candidate));
     const body = key ? handlers[key] : null;
     return {
       ok: key !== undefined,
@@ -103,5 +105,86 @@ describe('SpotifyProvider.lookup', () => {
     const r = await provider.lookup('4cOdK2wGLETKBW3PvgPWqT');
     expect(r?.providerTrackId).toBe('4cOdK2wGLETKBW3PvgPWqT');
     expect(r?.provider).toBe('spotify');
+  });
+});
+
+describe('SpotifyProvider.getPlaylist', () => {
+  it('paginates every playlist item in 50-track pages', async () => {
+    const firstPage = Array.from({ length: 50 }, (_, index) => ({
+      track: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
+    }));
+    const secondTrack = {
+      ...SP_TRACK,
+      id: 'track-50',
+      uri: 'spotify:track:track-50',
+    };
+    const playlistUrl = `${API_BASE}/playlists/playlist-id/tracks`;
+    const { provider, calls } = makeProvider({
+      [`${playlistUrl}?limit=50&offset=50`]: { items: [{ track: secondTrack }], total: 51 },
+      [`${playlistUrl}?limit=50&offset=0`]: { items: firstPage, total: 51 },
+    });
+
+    const results = await provider.getPlaylist('playlist-id');
+
+    expect(results).toHaveLength(51);
+    expect(results[0]?.providerTrackId).toBe('track-0');
+    expect(results[50]?.providerTrackId).toBe('track-50');
+    expect(
+      calls.filter((call) => call.url.startsWith(playlistUrl)).map((call) => call.url),
+    ).toEqual([`${playlistUrl}?limit=50&offset=0`, `${playlistUrl}?limit=50&offset=50`]);
+  });
+
+  it('rejects a malformed later page instead of returning a partial playlist', async () => {
+    const playlistUrl = `${API_BASE}/playlists/playlist-id/tracks`;
+    const { provider } = makeProvider({
+      [`${playlistUrl}?limit=50&offset=1`]: { items: 'invalid', total: 2 },
+      [`${playlistUrl}?limit=50&offset=0`]: { items: [{ track: SP_TRACK }], total: 2 },
+    });
+
+    await expect(provider.getPlaylist('playlist-id')).rejects.toThrow(
+      'Spotify returned an invalid playlist page.',
+    );
+  });
+
+  it('refreshes an expired app token while fetching a playlist page', async () => {
+    const calls: { url: string; authorization?: string }[] = [];
+    let tokenCalls = 0;
+    let playlistCalls = 0;
+    const fetchImpl: FetchLike = async (url, init) => {
+      calls.push({ url, authorization: init?.headers?.Authorization });
+      if (url === TOKEN_URL) {
+        tokenCalls += 1;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ access_token: `tok-${tokenCalls}`, expires_in: 3600 }),
+          text: async () => '',
+        };
+      }
+
+      playlistCalls += 1;
+      const ok = playlistCalls > 1;
+      return {
+        ok,
+        status: ok ? 200 : 401,
+        json: async () => ({ items: [{ track: SP_TRACK }], total: 1 }),
+        text: async () => (ok ? '' : 'expired'),
+      };
+    };
+    const provider = createSpotifyProvider({
+      clientId: 'cid',
+      clientSecret: 'secret',
+      fetchImpl,
+      apiBase: API_BASE,
+      tokenUrl: TOKEN_URL,
+    });
+
+    await expect(provider.getPlaylist('playlist-id')).resolves.toHaveLength(1);
+    expect(tokenCalls).toBe(2);
+    expect(
+      calls
+        .filter((call) => call.url.startsWith(`${API_BASE}/playlists`))
+        .map((call) => call.authorization),
+    ).toEqual(['Bearer tok-1', 'Bearer tok-2']);
   });
 });
