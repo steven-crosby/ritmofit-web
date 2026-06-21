@@ -262,6 +262,16 @@ describe('run-payload + copy (integration)', () => {
     expect(payload.class.totalDurationMs).toBe(320000);
     const bEntry = payload.tracks.find((t: { classTrackId: string }) => t.classTrackId === trackB.id);
     expect(bEntry.startOffsetMs).toBe(200000);
+
+    // Copying a track into a free-mode class appends it after the current material
+    // (latest end = 320000), not at 0 where it would overlap.
+    const trackA = tracks.find((t) => t.startOffsetMs === 0)!;
+    const copied = await authed(owner.cookie)(`/api/v1/class-tracks/${trackA.id}/copy`, {
+      method: 'POST',
+      body: JSON.stringify({ targetClassId: classId }),
+    });
+    expect(copied.status).toBe(201);
+    expect((await copied.json()).startOffsetMs).toBe(320000);
   });
 
   it('a non-owner cannot fetch the run-payload (404)', async () => {

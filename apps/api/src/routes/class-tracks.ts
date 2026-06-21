@@ -364,6 +364,11 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
     .from(classTracks)
     .where(eq(classTracks.classId, targetClassId))
     .all();
+  // A free-mode target authors offsets, so the copy lands after the current material
+  // (resequence won't place it); sequential leaves it null for resequence to derive.
+  const targetMode = await timelineModeOf(db, targetClassId);
+  const copyStartOffsetMs =
+    targetMode === 'free' ? await freeAppendOffsetMs(db, targetClassId) : null;
 
   const now = Date.now();
   const newId = crypto.randomUUID();
@@ -451,7 +456,7 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
       classId: targetClassId,
       trackId: resolvedTrackId,
       position: targetExisting.length,
-      startOffsetMs: null,
+      startOffsetMs: copyStartOffsetMs,
       createdAt: now,
       updatedAt: now,
     }),
