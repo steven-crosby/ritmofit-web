@@ -10,6 +10,18 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **PR #81 follow-up hardening deployed (2026-06-21, PR #84, Worker `e3528c85`).**
+> PR #84 merged to `main` as `51c5b9e` and deployed from a clean worktree. Browser pinch zoom is
+> restored; class-cover uploads now enforce a shared 5 MiB limit, return a documented `413`, serve with
+> `nosniff`, and best-effort delete replaced/deleted R2 objects; Spotify playlist import now paginates
+> the provider's 50-item pages instead of silently truncating and rejects malformed later pages rather
+> than returning a partial import. No schema or migration change; remote D1 remains through `0013` with
+> no pending migrations. Pre-deploy gates: format, typecheck, lint, unit 330, Worker/D1/R2 integration
+> 44, web build, OpenAPI no-drift, and `audit:ci` all green. Post-deploy smoke: SPA `200`, health `200`,
+> unauthenticated `/classes` `401`, all six security headers present, built asset
+> `index-BhYgwUet.js` served `200`, and production viewport metadata is
+> `width=device-width, initial-scale=1.0`. Prior Worker `d625bc50` is the rollback anchor.
+>
 > **Class covers, tags, playlist import + PWA deployed (2026-06-20, PR #81, Worker `d625bc50`).**
 > PR #81 (feat: class covers, tags, playlist import, and PWA assets) merged to `main` (merge commit
 > `0aad7a4`) and deployed. Adds: per-class custom cover images stored in a **new R2 bucket**
@@ -486,4 +498,3 @@ the music layer into the builder and took it to **real catalogs in prod**.
   `babcb3fe-9f7c-4e17-9e65-ab0c16b7784f` is live at 100%, with remote D1 unchanged through `0010`.
 
 ---
-
