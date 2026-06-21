@@ -1,0 +1,26 @@
+{
+  "projectId": "b8504eac-0bc0-49fe-91ca-5027c5f27389",
+  "shape": "package",
+  "pkg": "@ritmofit/web",
+  "globalName": "RitmoFit",
+  "entry": "apps/web/.ds-entry.tsx",
+  "srcDir": "src",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": ".ds-styles.css",
+  "buildCmd": "node .design-sync/build-inputs.mjs",
+  "readmeHeader": ".design-sync/conventions.md",
+  "runtimeFontPrefixes": ["SF Pro", "SF Mono", "Roboto Mono"],
+  "overrides": {
+    "Dialog": { "cardMode": "single", "viewport": "640x460", "primaryStory": "ShareClass" },
+    "IntensityRibbon": { "cardMode": "column" },
+    "LiveTimeline": { "cardMode": "column" },
+    "TimelineStrip": { "cardMode": "column" }
+  },
+  "componentSrcMap": {
+    "Dialog": "src/components/Dialog.tsx",
+    "IntensityRibbon": "src/components/IntensityRibbon.tsx",
+    "IntensityReadout": "src/components/IntensityReadout.tsx",
+    "TimelineStrip": "src/components/TimelineStrip.tsx",
+    "LiveTimeline": "src/components/LiveTimeline.tsx"
+  }
+}
