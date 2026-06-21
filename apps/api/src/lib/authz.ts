@@ -161,6 +161,7 @@ interface VisibleClassRow {
   template: 'cycle' | 'hiit' | 'sculpt' | 'tread' | null;
   status: 'draft' | 'ready' | 'archived';
   visibility: 'private' | 'public';
+  timelineMode: 'sequential' | 'free';
   targetDurationMs: number | null;
   featuredCategory: string | null;
   coverImageUrl: string | null;
@@ -226,6 +227,7 @@ export async function listVisibleClasses(
       c.template,
       c.status,
       c.visibility,
+      c.timeline_mode as timelineMode,
       c.featured_category as featuredCategory,
       c.cover_image_url as coverImageUrl,
       c.target_duration_ms as targetDurationMs,

@@ -10,6 +10,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   intensityValues,
+  snapToBeat,
+  beatPositionAt,
   type Cue,
   type ClassTrackMove,
   type Move,
@@ -50,6 +52,44 @@ function secToMs(sec: string): number {
 /** ms → whole-seconds string, for seeding an edit field from a persisted anchor. */
 function msToSec(ms: number): string {
   return String(Math.round(ms / 1000));
+}
+
+/** "bar.beat" label for a track-relative anchor (e.g. "12.1"), or null without a tempo. */
+function beatLabel(anchorMs: number, bpm: number | null, beatAnchorMs: number): string | null {
+  const p = beatPositionAt(anchorMs, bpm, beatAnchorMs);
+  return p && p.bar >= 1 ? `${p.bar}.${p.beat}` : null;
+}
+
+/**
+ * Beat-snapping wiring shared by the cue + move sections: a "snap to beat" toggle
+ * (defaulting on when a tempo is known) and a snapper that rounds a track-relative
+ * anchor to the grid. Returns the anchor unchanged when snapping is off or there's
+ * no tempo. A small reusable checkbox renders the toggle.
+ */
+function useBeatSnap(bpm: number | null, beatAnchorMs: number) {
+  const canSnap = bpm != null && bpm > 0;
+  const [snap, setSnap] = useState(canSnap);
+  const maybeSnap = (anchorMs: number) =>
+    snap && canSnap ? snapToBeat(anchorMs, bpm, beatAnchorMs).anchorMs : anchorMs;
+  return { canSnap, snap, setSnap, maybeSnap };
+}
+
+function SnapToggle({
+  canSnap,
+  snap,
+  onChange,
+}: {
+  canSnap: boolean;
+  snap: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  if (!canSnap) return null;
+  return (
+    <label className="flex items-center gap-1.5 font-ui text-xs text-text-secondary">
+      <input type="checkbox" checked={snap} onChange={(e) => onChange(e.target.checked)} />
+      Snap to beat
+    </label>
+  );
 }
 
 /**
@@ -201,12 +241,18 @@ function CueColorPicker({
 export function CuesSection({
   classTrackId,
   durationMs,
+  bpm = null,
+  beatAnchorMs = 0,
   focus = null,
 }: {
   classTrackId: string;
   durationMs: number | null;
+  /** Resolved BPM + downbeat offset for beat-snapping (no snapping without a tempo). */
+  bpm?: number | null;
+  beatAnchorMs?: number;
   focus?: RowFocus;
 }) {
+  const { canSnap, snap, setSnap, maybeSnap } = useBeatSnap(bpm, beatAnchorMs);
   const [cues, setCues] = useState<Cue[] | null>(null);
   const { refRowId, flashRowId, rowRef } = useFlashFocus(focus, cues);
   const [text, setText] = useState('');
@@ -247,7 +293,7 @@ export function CuesSection({
       // Always send `color` (hex or null) so a cleared tag persists (buildPatch
       // sets explicit null; an omitted field would leave the old color).
       await updateCue(editingId, {
-        anchorMs: secToMs(editAnchorSec),
+        anchorMs: maybeSnap(secToMs(editAnchorSec)),
         text: editText.trim(),
         color: editColor,
       });
@@ -266,7 +312,7 @@ export function CuesSection({
     setError(null);
     try {
       await createCue(classTrackId, {
-        anchorMs: secToMs(anchorSec),
+        anchorMs: maybeSnap(secToMs(anchorSec)),
         text: text.trim(),
         color,
       });
@@ -358,6 +404,14 @@ export function CuesSection({
               <span className="shrink-0 font-data text-xs text-text-tertiary">
                 {clock(cue.anchorMs)}
               </span>
+              {beatLabel(cue.anchorMs, bpm, beatAnchorMs) && (
+                <span
+                  className="shrink-0 rounded-pill bg-bg-base px-1.5 font-data text-[10px] text-text-tertiary"
+                  title={`Bar ${beatLabel(cue.anchorMs, bpm, beatAnchorMs)?.split('.')[0]}, beat ${beatLabel(cue.anchorMs, bpm, beatAnchorMs)?.split('.')[1]}`}
+                >
+                  {beatLabel(cue.anchorMs, bpm, beatAnchorMs)}
+                </span>
+              )}
               <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">
                 {cue.text}
               </span>
@@ -407,7 +461,10 @@ export function CuesSection({
             Add cue
           </button>
         </div>
-        <CueColorPicker value={color} onChange={setColor} />
+        <div className="flex items-center justify-between gap-2">
+          <CueColorPicker value={color} onChange={setColor} />
+          <SnapToggle canSnap={canSnap} snap={snap} onChange={setSnap} />
+        </div>
       </div>
       {error && <p className="font-ui text-xs text-state-danger">{error}</p>}
     </div>
@@ -419,15 +476,21 @@ export function CuesSection({
 export function MovesSection({
   classTrackId,
   durationMs,
+  bpm = null,
+  beatAnchorMs = 0,
   focus = null,
   onChanged,
 }: {
   classTrackId: string;
   durationMs: number | null;
+  /** Resolved BPM + downbeat offset for beat-snapping (no snapping without a tempo). */
+  bpm?: number | null;
+  beatAnchorMs?: number;
   focus?: RowFocus;
   /** Parent reload (run-payload → ribbon/timeline) after the custom-move library changes. */
   onChanged?: () => void;
 }) {
+  const { canSnap, snap, setSnap, maybeSnap } = useBeatSnap(bpm, beatAnchorMs);
   const [moves, setMoves] = useState<ClassTrackMove[] | null>(null);
   const [managing, setManaging] = useState(false);
   const { refRowId, flashRowId, rowRef } = useFlashFocus(focus, moves);
@@ -541,7 +604,7 @@ export function MovesSection({
         ref = refFields(pick, customName);
       }
       const body: PlaceClassTrackMove = {
-        anchorMs: secToMs(anchorSec),
+        anchorMs: maybeSnap(secToMs(anchorSec)),
         intensity: intensity === '' ? null : intensity,
         ...ref,
       };
@@ -577,7 +640,7 @@ export function MovesSection({
       // Switching the reference nulls the others to hold the at-most-one invariant
       // (the server re-checks the merged result).
       await updatePlacedMove(editingId, {
-        anchorMs: secToMs(editAnchorSec),
+        anchorMs: maybeSnap(secToMs(editAnchorSec)),
         intensity: editIntensity === '' ? null : editIntensity,
         ...refFields(editPick, editCustom),
       });
@@ -718,6 +781,14 @@ export function MovesSection({
               <span className="shrink-0 font-data text-xs text-text-tertiary">
                 {clock(m.anchorMs)}
               </span>
+              {beatLabel(m.anchorMs, bpm, beatAnchorMs) && (
+                <span
+                  className="shrink-0 rounded-pill bg-bg-base px-1.5 font-data text-[10px] text-text-tertiary"
+                  title={`Bar ${beatLabel(m.anchorMs, bpm, beatAnchorMs)?.split('.')[0]}, beat ${beatLabel(m.anchorMs, bpm, beatAnchorMs)?.split('.')[1]}`}
+                >
+                  {beatLabel(m.anchorMs, bpm, beatAnchorMs)}
+                </span>
+              )}
               <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">
                 {nameOf(m)}
               </span>
@@ -792,6 +863,7 @@ export function MovesSection({
         >
           Add move
         </button>
+        <SnapToggle canSnap={canSnap} snap={snap} onChange={setSnap} />
       </div>
       {error && <p className="font-ui text-xs text-state-danger">{error}</p>}
     </div>

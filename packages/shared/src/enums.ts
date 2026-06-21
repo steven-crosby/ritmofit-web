@@ -59,6 +59,18 @@ export const classTemplateValues = ['cycle', 'hiit', 'sculpt', 'tread'] as const
 export const classTemplateSchema = z.enum(classTemplateValues);
 export type ClassTemplate = z.infer<typeof classTemplateSchema>;
 
+/**
+ * How a class's timeline is laid out.
+ * - `sequential` (default): tracks play back-to-back; `start_offset_ms` is
+ *   **server-derived** from the sum of preceding effective durations.
+ * - `free`: the instructor places tracks at explicit offsets, with gaps (silence)
+ *   allowed and overlaps rejected; `start_offset_ms` is **user-authored** and
+ *   `position` is derived from offset order.
+ */
+export const timelineModeValues = ['sequential', 'free'] as const;
+export const timelineModeSchema = z.enum(timelineModeValues);
+export type TimelineMode = z.infer<typeof timelineModeSchema>;
+
 /** Lifecycle status of a class. */
 export const classStatusValues = ['draft', 'ready', 'archived'] as const;
 export const classStatusSchema = z.enum(classStatusValues);

@@ -205,6 +205,43 @@ endpoints still exist for editing; run-payload is the read-optimized live contra
 
 ---
 
+## D13 — Permanent non-goals: a planning surface, not a player or a DAW
+
+**Decision:** The following are **permanent product non-goals** — not "later milestones." They are
+ruled out by the music-provider constraints ([`music-providers.md`](./music-providers.md)) and by the
+product's purpose (synthesize *planning + choreography*, not own playback or audio production). A
+feature request that requires one of these should be **declined or redesigned**, not scheduled.
+
+1. **No in-app audio playback / streaming.** RitmoFit never plays tracks itself; it deep-links / hands
+   off to the user's Spotify / Apple Music / SoundCloud app (`track_provider_ids.provider_uri`). The
+   "play"-like controls (Live transport, scrubber) drive the **virtual prompter clock**, not a media
+   engine. *(music-providers.md #2/#3.)*
+2. **No audio mixing / crossfade between tracks.** We do not mix, beatmatch, or crossfade audio.
+   Free-placement deliberately **rejects overlaps** for this reason: a class is a single playback
+   stream, and any crossfade defers to the provider app's own setting. *(music-providers.md #2.)*
+3. **No destructive audio editing.** "Trimming" sets a per-class **playback window**
+   (`clip_start_ms` / `clip_end_ms`), never an edit to the source file; there is no waveform/DSP layer.
+   RitmoFit is not a DAW — the editing-granularity work (trim / beat-snap / free placement) raises
+   *choreography* control, and stops short of audio production on purpose
+   (see [`editing-granularity-scoping.md`](./editing-granularity-scoping.md)).
+4. **No in-app audio analysis / decoding pipeline.** We do not decode or analyze audio to derive
+   tempo/beat data. BPM is **manual** (`display_bpm` / `display_bpm_override`) or, optionally, from a
+   dedicated third-party tempo service (M2); the beat grid's downbeat is **hand-marked**
+   (`beat_anchor_ms`). *(music-providers.md #1/#3.)*
+
+**Why:** These aren't backlog items waiting for capacity — they're platform/legal realities
+(provider terms) and a scope boundary (planning vs. production). Listing them as locked decisions stops
+each one from being re-proposed as "just one more feature" and keeps the build honest about what
+RitmoFit is.
+
+**Revisit only if** the underlying provider terms materially change (e.g. a license that permits
+first-party streaming/mixing), in which case treat it as a new, deliberately-scoped initiative — and
+update [`music-providers.md`](./music-providers.md) first. Adjacent capabilities that are *not* ruled
+out (and are tracked as optional follow-ups in `editing-granularity-scoping.md`): beat-snapping a
+dragged track start, carrying `timeline_mode` through whole-class copy, and per-track time signatures.
+
+---
+
 ## Cut from M1 (flagged, not built)
 
 - **Segments / class sections.** *(Cut from M1; **shipped later**.)* In M1 segments were a design

@@ -36,6 +36,7 @@ function makeClass(title: string, accessLevel: ClassWithAccess['accessLevel'] = 
     template: 'cycle',
     status: 'draft',
     visibility: 'private',
+    timelineMode: 'sequential',
     targetDurationMs: null,
     createdAt: classSeq,
     updatedAt: classSeq,

@@ -41,6 +41,15 @@ Both platforms prohibit caching track audio and most derived data.
 
 We never store the audio or platform-derived analysis.
 
+## Permanent non-goals (consequences of the above)
+
+These follow directly from the three constraints and are **locked as decision D13**
+([`decisions.md`](./decisions.md)) so they aren't re-proposed feature by feature:
+**no in-app audio playback/streaming**, **no audio mixing/crossfade** (why free-placement rejects
+overlaps), **no destructive audio editing** (trimming is a playback *window*, not a file edit — not a
+DAW), and **no in-app audio analysis/decoding** (BPM is manual or third-party; the downbeat is
+hand-marked). Decline or redesign requests that need one of these rather than scheduling them.
+
 ## What this means architecturally
 
 - The "play" controls in the UI are **planning/preview affordances and hand-offs**, not a media engine

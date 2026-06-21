@@ -5,13 +5,20 @@ import { computeRibbonSegments } from './IntensityRibbon.js';
 type Entry = RunPayload['tracks'][number];
 
 /** Minimal run-payload track entry — only the fields the ribbon geometry reads matter. */
-function entry(intensity: Intensity, durationMs: number | null, position = 0): Entry {
+function entry(
+  intensity: Intensity,
+  durationMs: number | null,
+  position = 0,
+  startOffsetMs = 0,
+): Entry {
   return {
     classTrackId: `00000000-0000-0000-0000-00000000000${position}`,
     position,
     displayBpm: null,
     intensity,
-    startOffsetMs: null,
+    startOffsetMs,
+    clipStartMs: 0,
+    beatAnchorMs: 0,
     notes: null,
     track: {
       id: `10000000-0000-0000-0000-00000000000${position}`,
@@ -39,13 +46,25 @@ describe('computeRibbonSegments', () => {
     expect(seg).toMatchObject({ x: 0, width: 1000, intensity: 'all_out' });
   });
 
-  it('sizes each block by its share of the total and lays them end to end', () => {
-    const segs = computeRibbonSegments([entry('easy', 1000, 0), entry('hard', 3000, 1)], 4000);
+  it('sizes each block by its share of the total and places them by offset', () => {
+    const segs = computeRibbonSegments(
+      [entry('easy', 1000, 0, 0), entry('hard', 3000, 1, 1000)],
+      4000,
+    );
     expect(segs.map((s) => s.width)).toEqual([250, 750]);
     expect(segs.map((s) => s.x)).toEqual([0, 250]);
     // widths tile the full normalized space with no gap
     const last = segs.at(-1)!;
     expect(last.x + last.width).toBe(1000);
+  });
+
+  it('leaves uncolored space for a free-placement gap', () => {
+    // easy [0,1000), gap, hard [2000,3000) of a 4000 total → x at 0 and 500 (of 1000).
+    const segs = computeRibbonSegments(
+      [entry('easy', 1000, 0, 0), entry('hard', 1000, 1, 2000)],
+      4000,
+    );
+    expect(segs.map((s) => s.x)).toEqual([0, 500]);
   });
 
   it('maps intensity to crest height (all_out is tallest, none is shortest)', () => {
