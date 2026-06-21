@@ -1324,6 +1324,14 @@ function TrackInspector({
   const [intensity, setIntensity] = useState<Intensity>(track.intensity);
   const [bpm, setBpm] = useState(track.displayBpmOverride?.toString() ?? '');
   const [duration, setDuration] = useState(formatDurationInput(durationMs));
+  // Trim window (m:ss, track-relative). Empty start = from the beginning (0);
+  // empty end = to the track's end (null).
+  const [clipStart, setClipStart] = useState(
+    track.clipStartMs ? formatDurationInput(track.clipStartMs) : '',
+  );
+  const [clipEnd, setClipEnd] = useState(
+    track.clipEndMs != null ? formatDurationInput(track.clipEndMs) : '',
+  );
   const [notes, setNotes] = useState(track.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1357,6 +1365,21 @@ function TrackInspector({
       setError('Enter a positive duration as minutes:seconds, for example 3:45.');
       return;
     }
+    // Clip start: blank = 0 (from the beginning). Clip end: blank = null (to the end).
+    const clipStartMs = clipStart.trim() === '' ? 0 : parseDurationInput(clipStart);
+    if (clipStartMs == null) {
+      setError('Enter the clip start as minutes:seconds, for example 0:30 (or leave it blank).');
+      return;
+    }
+    const clipEndMs = clipEnd.trim() === '' ? null : parseDurationInput(clipEnd);
+    if (clipEnd.trim() !== '' && clipEndMs == null) {
+      setError('Enter the clip end as minutes:seconds, for example 2:15 (or leave it blank).');
+      return;
+    }
+    if (clipEndMs != null && clipEndMs <= clipStartMs) {
+      setError('Clip end must be after clip start.');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -1365,6 +1388,8 @@ function TrackInspector({
         intensity,
         displayBpmOverride: trimmedBpm === '' ? null : Number(trimmedBpm),
         durationMsOverride: parsedDuration,
+        clipStartMs,
+        clipEndMs,
         notes: notes.trim() === '' ? null : notes.trim(),
       });
       onSaved();
@@ -1475,6 +1500,40 @@ function TrackInspector({
               Minutes:seconds. Used for this class timeline.
             </span>
           </label>
+
+          <fieldset className="flex flex-col gap-1">
+            <legend className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+              Trim
+            </legend>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="start"
+                aria-label="Clip start (minutes:seconds)"
+                aria-describedby={`clip-help-${track.id}`}
+                className="w-24 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                value={clipStart}
+                onChange={(e) => setClipStart(e.target.value)}
+              />
+              <span aria-hidden className="font-ui text-sm text-text-tertiary">
+                –
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="end"
+                aria-label="Clip end (minutes:seconds)"
+                aria-describedby={`clip-help-${track.id}`}
+                className="w-24 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                value={clipEnd}
+                onChange={(e) => setClipEnd(e.target.value)}
+              />
+            </div>
+            <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+              Play only part of the track. Blank start = from the beginning; blank end = to the end.
+            </span>
+          </fieldset>
 
           <label className="flex flex-col gap-1">
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">

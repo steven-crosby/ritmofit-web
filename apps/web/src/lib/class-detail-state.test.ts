@@ -16,6 +16,8 @@ describe('classDetailReducer', () => {
       intensity: 'mod',
       displayBpmOverride: null,
       durationMsOverride: null,
+      clipStartMs: 0,
+      clipEndMs: null,
       startOffsetMs: 0,
       notes: null,
       createdAt: 1,

@@ -150,6 +150,8 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
       durationMs: effectiveDurationMs(
         trackById.get(ct.trackId)?.durationMs ?? null,
         ct.durationMsOverride,
+        ct.clipStartMs,
+        ct.clipEndMs,
       ),
     })),
   );
@@ -165,7 +167,16 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
     },
     tracks: cts.map((ct) => {
       const track = trackById.get(ct.trackId)!;
-      const durationMs = effectiveDurationMs(track.durationMs, ct.durationMsOverride);
+      const durationMs = effectiveDurationMs(
+        track.durationMs,
+        ct.durationMsOverride,
+        ct.clipStartMs,
+        ct.clipEndMs,
+      );
+      // Cue/move anchors are stored track-relative; re-base them to the clip start
+      // so the live timeline lines up when the intro is trimmed (clamp ≥ 0 — the
+      // edit route guarantees anchors fall inside the window, this is defensive).
+      const rebase = (anchorMs: number) => Math.max(0, anchorMs - ct.clipStartMs);
       return {
         classTrackId: ct.id,
         position: ct.position,
@@ -187,7 +198,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
         })),
         cues: (cuesByCt.get(ct.id) ?? []).map((cue) => ({
           id: cue.id,
-          anchorMs: cue.anchorMs,
+          anchorMs: rebase(cue.anchorMs),
           beat: cue.beat,
           bar: cue.bar,
           text: cue.text,
@@ -195,7 +206,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
         })),
         moves: (movesByCt.get(ct.id) ?? []).map((m) => ({
           id: m.id,
-          anchorMs: m.anchorMs,
+          anchorMs: rebase(m.anchorMs),
           name: resolveMoveName(
             m.moveId ? moveNameById.get(m.moveId) : null,
             m.userMoveId ? userMoveNameById.get(m.userMoveId) : null,

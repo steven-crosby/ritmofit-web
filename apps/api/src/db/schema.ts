@@ -210,6 +210,11 @@ export const classTracks = sqliteTable(
     intensity: text('intensity', { enum: intensityValues }).notNull().default('none'),
     displayBpmOverride: integer('display_bpm_override'),
     durationMsOverride: integer('duration_ms_override'),
+    // Per-class playback window into the track (trimming). clip_start_ms trims the
+    // intro (default 0); clip_end_ms trims the tail (null = to the effective end).
+    // Window-only — the audio file is untouched (the three music constraints stand).
+    clipStartMs: integer('clip_start_ms').notNull().default(0),
+    clipEndMs: integer('clip_end_ms'),
     startOffsetMs: integer('start_offset_ms'),
     notes: text('notes'),
     ...timestamps(),
@@ -219,6 +224,10 @@ export const classTracks = sqliteTable(
     check(
       'class_tracks_duration_ms_override_check',
       sql`${t.durationMsOverride} is null or ${t.durationMsOverride} > 0`,
+    ),
+    check(
+      'class_tracks_clip_window_check',
+      sql`${t.clipStartMs} >= 0 and (${t.clipEndMs} is null or ${t.clipEndMs} > ${t.clipStartMs})`,
     ),
     // Hot path: every class-detail load / run-payload assembly fetches a class's
     // tracks by class_id.

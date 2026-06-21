@@ -143,6 +143,43 @@ describe('run-payload + copy (integration)', () => {
     expect((await tooShort.json()).error.message).toContain('200000ms');
   });
 
+  it('trims a track to a clip window and re-bases cue anchors in the run-payload', async () => {
+    const tracks = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`);
+    const [classTrack] = (await tracks.json()) as Array<{ id: string }>;
+
+    // A cue at 0:60 into the (untrimmed) track — inside the window we'll set.
+    const cue = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({ anchorMs: 60000, text: 'Drop' }),
+    });
+    expect(cue.status).toBe(201);
+
+    // Play only 0:30–2:30 of the 3:00 track (window = 120000ms).
+    const trimmed = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipStartMs: 30000, clipEndMs: 150000 }),
+    });
+    expect(trimmed.status).toBe(200);
+    const trimmedBody = await trimmed.json();
+    expect(trimmedBody.clipStartMs).toBe(30000);
+    expect(trimmedBody.clipEndMs).toBe(150000);
+
+    const payloadRes = await authed(owner.cookie)(`/api/v1/classes/${classId}/run-payload`);
+    const payload = await payloadRes.json();
+    expect(payload.class.totalDurationMs).toBe(120000);
+    expect(payload.tracks[0].track.durationMs).toBe(120000);
+    // The cue (track-relative 60000) re-bases to the clip start: 60000 − 30000.
+    expect(payload.tracks[0].cues[0].anchorMs).toBe(30000);
+
+    // A clip start past the earliest anchor would orphan the cue — reject.
+    const orphan = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipStartMs: 90000 }),
+    });
+    expect(orphan.status).toBe(422);
+    expect((await orphan.json()).error.message).toContain('60000ms');
+  });
+
   it('a non-owner cannot fetch the run-payload (404)', async () => {
     const res = await authed(other.cookie)(`/api/v1/classes/${classId}/run-payload`);
     expect(res.status).toBe(404);

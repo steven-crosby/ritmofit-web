@@ -35,7 +35,14 @@ ships a forward migration with a safe default for existing rows.
 
 ---
 
-## Feature A — Per-class track trimming ⭐ recommended first
+## Feature A — Per-class track trimming ⭐ recommended first ✅ shipped
+
+> **Status: implemented** on this branch. `class_tracks` gained `clip_start_ms` (NOT NULL default 0)
+> and `clip_end_ms` (nullable) via migration `0014`; `effectiveDurationMs` / the new `resolveClipWindow`
+> centralize the window math, so `resequence` + `computeClassTimeline` propagate it for free; the
+> run-payload re-bases cue/move anchors to the clip start; `PATCH /class-tracks/:id` validates the window
+> contains every anchor; and the track inspector grew a "Trim" start–end control. Scope below is the
+> as-built record.
 
 **Goal:** play a sub-range `[clipStartMs, clipEndMs)` of a track within a class (e.g. skip a 0:20
 intro, end at the 2:15 drop), so the contributed duration shrinks and the rest of the timeline
@@ -153,7 +160,7 @@ feature needs a **beat grid**, which needs three things — and we have only one
 
 | Order | Feature | Effort | Risk | Why |
 |-------|---------|--------|------|-----|
-| 1 | **Trimming** | Medium (2–3d) | Low–Med | Best value/effort; rides the centralized duration chokepoint; preserves invariants; independently raises the granularity score. |
+| 1 | **Trimming** ✅ | Medium (2–3d) | Low–Med | **Shipped.** Rode the centralized duration chokepoint as predicted; preserved invariants; raised the granularity score. |
 | 2 | **Beat-snapping** | Medium (3–5d) | Med (data) | Additive, no invariant change; but ship the downbeat field + wire BPM first or it feels broken. Pairs with trimming (both are track-inspector work). |
 | 3 | **Free placement** | Large (5–8d) | High | Inverts the core invariant + changes the deployed live/iOS contract. Gate behind a per-class mode; reconsider once trimming lands (silent spacer tracks may suffice). |
 

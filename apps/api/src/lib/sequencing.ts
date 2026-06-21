@@ -46,6 +46,8 @@ export async function resequence(db: Db, classId: string, orderedIds?: string[])
       id: classTracks.id,
       trackDurationMs: tracks.durationMs,
       durationMsOverride: classTracks.durationMsOverride,
+      clipStartMs: classTracks.clipStartMs,
+      clipEndMs: classTracks.clipEndMs,
     })
     .from(classTracks)
     .innerJoin(tracks, eq(tracks.id, classTracks.trackId))
@@ -55,7 +57,12 @@ export async function resequence(db: Db, classId: string, orderedIds?: string[])
 
   let ordered: SequenceInput[] = rows.map((row) => ({
     id: row.id,
-    durationMs: effectiveDurationMs(row.trackDurationMs, row.durationMsOverride),
+    durationMs: effectiveDurationMs(
+      row.trackDurationMs,
+      row.durationMsOverride,
+      row.clipStartMs,
+      row.clipEndMs,
+    ),
   }));
   if (orderedIds) {
     const byId = new Map(ordered.map((r) => [r.id, r]));

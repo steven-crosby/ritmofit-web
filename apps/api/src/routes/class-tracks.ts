@@ -4,7 +4,7 @@
  * Every handler resolves the parent class and gates via `requireAccess`.
  */
 import { Hono } from 'hono';
-import { desc, eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import {
   addClassTrackSchema,
   updateClassTrackSchema,
@@ -13,7 +13,7 @@ import {
 } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
-import { createDb } from '../lib/db.js';
+import { createDb, type Db } from '../lib/db.js';
 import { requireAccess, requireClassTrackAccess, AccessError } from '../lib/authz.js';
 import { HttpError } from '../lib/errors.js';
 import { serializeClassTrack } from '../lib/serialize.js';
@@ -34,7 +34,7 @@ import {
   cues,
   classTrackMoves,
 } from '../db/schema.js';
-import { effectiveDurationMs } from '../lib/duration.js';
+import { resolveClipWindow } from '../lib/duration.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
 classTrackRoutes.use('*', requireSession);
@@ -101,6 +101,8 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
     intensity: body.intensity ?? 'none',
     displayBpmOverride: body.displayBpmOverride ?? null,
     durationMsOverride: body.durationMsOverride ?? null,
+    clipStartMs: body.clipStartMs ?? 0,
+    clipEndMs: body.clipEndMs ?? null,
     startOffsetMs: null,
     notes: body.notes ?? null,
     createdAt: now,
@@ -165,55 +167,112 @@ classTrackRoutes.post('/classes/:id/tracks/reorder', async (c) => {
   return c.json(rows.map(serializeClassTrack));
 });
 
-/** PATCH /class-tracks/:id — intensity / bpm override / notes (edit access). */
+/** PATCH /class-tracks/:id — intensity / bpm override / clip window / notes (edit access). */
 classTrackRoutes.patch('/class-tracks/:id', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
   const { classId } = await requireClassTrackAccess(db, c.get('userId'), id, 'edit');
   const body = updateClassTrackSchema.parse(await c.req.json());
 
-  if ('durationMsOverride' in body) {
-    const [existing, latestCue, latestMove] = await Promise.all([
+  // The duration override and the clip window all change the timeline length, so a
+  // change to any of them re-validates against this track's choreography (the window
+  // must still contain every cue/move anchor) and re-derives the class offsets.
+  const touchesWindow =
+    'durationMsOverride' in body || 'clipStartMs' in body || 'clipEndMs' in body;
+
+  if (touchesWindow) {
+    const [existing, anchors] = await Promise.all([
       db
-        .select({ trackDurationMs: tracks.durationMs })
+        .select({
+          trackDurationMs: tracks.durationMs,
+          durationMsOverride: classTracks.durationMsOverride,
+          clipStartMs: classTracks.clipStartMs,
+          clipEndMs: classTracks.clipEndMs,
+        })
         .from(classTracks)
         .innerJoin(tracks, eq(tracks.id, classTracks.trackId))
         .where(eq(classTracks.id, id))
         .get(),
-      db
-        .select({ anchorMs: cues.anchorMs })
-        .from(cues)
-        .where(eq(cues.classTrackId, id))
-        .orderBy(desc(cues.anchorMs))
-        .limit(1)
-        .get(),
-      db
-        .select({ anchorMs: classTrackMoves.anchorMs })
-        .from(classTrackMoves)
-        .where(eq(classTrackMoves.classTrackId, id))
-        .orderBy(desc(classTrackMoves.anchorMs))
-        .limit(1)
-        .get(),
+      anchorBounds(db, id),
     ]);
-    const durationMs = effectiveDurationMs(
+
+    // Merge the patch over the persisted row to get the resulting window (a field
+    // absent from the body keeps its stored value; an explicit null resets it).
+    const durationMsOverride =
+      'durationMsOverride' in body
+        ? (body.durationMsOverride ?? null)
+        : (existing?.durationMsOverride ?? null);
+    const clipStartMs =
+      'clipStartMs' in body ? (body.clipStartMs ?? 0) : (existing?.clipStartMs ?? 0);
+    const clipEndMs = 'clipEndMs' in body ? (body.clipEndMs ?? null) : (existing?.clipEndMs ?? null);
+
+    const { startMs, endMs } = resolveClipWindow(
       existing?.trackDurationMs ?? null,
-      body.durationMsOverride ?? null,
+      durationMsOverride,
+      clipStartMs,
+      clipEndMs,
     );
-    const latestAnchorMs = Math.max(latestCue?.anchorMs ?? 0, latestMove?.anchorMs ?? 0);
-    if (durationMs != null && durationMs < latestAnchorMs) {
-      throw new HttpError(
-        422,
-        'VALIDATION_ERROR',
-        `Duration must reach the latest cue or move at ${latestAnchorMs}ms.`,
-      );
+    if (anchors) {
+      if (anchors.minMs < startMs) {
+        throw new HttpError(
+          422,
+          'VALIDATION_ERROR',
+          `Clip start must be at or before the earliest cue or move at ${anchors.minMs}ms.`,
+        );
+      }
+      if (endMs != null && endMs < anchors.maxMs) {
+        throw new HttpError(
+          422,
+          'VALIDATION_ERROR',
+          `Clip end must reach the latest cue or move at ${anchors.maxMs}ms.`,
+        );
+      }
     }
   }
 
-  await db.update(classTracks).set(buildPatch(body)).where(eq(classTracks.id, id));
-  if ('durationMsOverride' in body) await resequence(db, classId);
+  // `clip_start_ms` is NOT NULL — a null in the patch means "reset to 0". Pull it out
+  // of the generic patch so the typed `.set()` never sees a null for that column.
+  const { clipStartMs, ...rest } = buildPatch(body);
+  const patch = 'clipStartMs' in body ? { ...rest, clipStartMs: clipStartMs ?? 0 } : rest;
+
+  await db.update(classTracks).set(patch).where(eq(classTracks.id, id));
+  if (touchesWindow) await resequence(db, classId);
   const row = await db.select().from(classTracks).where(eq(classTracks.id, id)).get();
   return c.json(serializeClassTrack(row!));
 });
+
+/**
+ * The min/max cue|move anchor across a class_track's choreography, or null when it
+ * has none. Used to keep a clip window from orphaning an anchor (trimming below the
+ * earliest, or above the latest).
+ */
+async function anchorBounds(
+  db: Db,
+  classTrackId: string,
+): Promise<{ minMs: number; maxMs: number } | null> {
+  const [cueAgg, moveAgg] = await Promise.all([
+    db
+      .select({
+        min: sql<number | null>`min(${cues.anchorMs})`,
+        max: sql<number | null>`max(${cues.anchorMs})`,
+      })
+      .from(cues)
+      .where(eq(cues.classTrackId, classTrackId))
+      .get(),
+    db
+      .select({
+        min: sql<number | null>`min(${classTrackMoves.anchorMs})`,
+        max: sql<number | null>`max(${classTrackMoves.anchorMs})`,
+      })
+      .from(classTrackMoves)
+      .where(eq(classTrackMoves.classTrackId, classTrackId))
+      .get(),
+  ]);
+  const mins = [cueAgg?.min, moveAgg?.min].filter((n): n is number => n != null);
+  const maxs = [cueAgg?.max, moveAgg?.max].filter((n): n is number => n != null);
+  if (mins.length === 0) return null;
+  return { minMs: Math.min(...mins), maxMs: Math.max(...maxs) };
+}
 
 /** DELETE /class-tracks/:id — remove from the class (edit access); cues/moves cascade. */
 classTrackRoutes.delete('/class-tracks/:id', async (c) => {

@@ -147,11 +147,22 @@ holds the per-class context.
 | intensity | text enum(`none`,`easy`,`mod`,`hard`,`all_out`) | Default `none` |
 | display_bpm_override | int | Nullable; class may show a different BPM than the track default |
 | duration_ms_override | int | Nullable, positive; class-specific correction when library/provider duration is missing or wrong |
+| clip_start_ms | int | NOT NULL default 0; play this track from this offset — trim the intro. Track-relative ms. |
+| clip_end_ms | int | Nullable; play this track until this offset — trim the tail; null = to the effective end. CHECK `clip_end_ms > clip_start_ms`. |
 | start_offset_ms | int | Nullable; where the track sits on the class timeline. **Server-derived in M1** (see below) |
 | notes | text | Nullable; instructor's free-text notes for this track |
 | created_at / updated_at | int (ms) | |
 
 `cues` and `class_track_moves` attach here, NOT to `tracks` — choreography is per-class (D7).
+
+> **Per-class trimming.** A class_track plays the window `[clip_start_ms, clip_end_ms)` of its track
+> (defaults `0 .. effective end`, i.e. the whole track). The **effective duration** a track contributes
+> to the timeline is therefore `min(clip_end_ms ?? base, base) − clip_start_ms`, where
+> `base = duration_ms_override ?? tracks.duration_ms`. Trimming is purely a playback-window choice — it
+> does **not** edit the audio file (the three music constraints stand). Cue/move `anchor_ms` stay
+> **track-relative** (unchanged on trim); the clip window must contain every anchor (the edit route
+> rejects a window that would orphan one). The run-payload re-bases anchors to the clip start so the
+> live timeline lines up (see `api.md`).
 
 > **Timeline placement (M1): sequential, derived.** `position` is the authoritative ordering. Tracks
 > play **back-to-back** — `start_offset_ms` is **computed by the server** from the sum of preceding
