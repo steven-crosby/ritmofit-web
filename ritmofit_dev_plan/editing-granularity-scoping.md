@@ -121,7 +121,18 @@ offsets + total).
 
 ---
 
-## Feature C — Beat-snapping (blocked on *data*, not code)
+## Feature C — Beat-snapping ✅ shipped
+
+> **Status: implemented** on this branch (the "full" UI option). The data prerequisite was solved by
+> adding `class_tracks.beat_anchor_ms` (downbeat offset, migration `0015`); BPM comes from the resolved
+> `displayBpmOverride ?? track.displayBpm`; 4/4 is assumed. The pure grid math lives in
+> `packages/shared/src/beat.ts` (`snapToBeat` / `beatPositionAt` / `beatGridTicks` / `beatGridLayout`).
+> The cue/move editor gained a "snap to beat" toggle + a bar.beat readout; the track inspector gained a
+> "Downbeat" field; the timeline strip draws a faint beat/bar grid and its markers are now draggable and
+> snap to the grid; the run-payload derives beat/bar for cues + moves and exposes `beatAnchorMs` /
+> `clipStartMs` for the overlay. Scope below is the as-built record.
+
+### Original analysis (retained)
 
 **Goal:** activate the dormant `beat`/`bar` fields so cue/move anchors snap to the musical grid.
 
@@ -161,7 +172,7 @@ feature needs a **beat grid**, which needs three things — and we have only one
 | Order | Feature | Effort | Risk | Why |
 |-------|---------|--------|------|-----|
 | 1 | **Trimming** ✅ | Medium (2–3d) | Low–Med | **Shipped.** Rode the centralized duration chokepoint as predicted; preserved invariants; raised the granularity score. |
-| 2 | **Beat-snapping** | Medium (3–5d) | Med (data) | Additive, no invariant change; but ship the downbeat field + wire BPM first or it feels broken. Pairs with trimming (both are track-inspector work). |
+| 2 | **Beat-snapping** ✅ | Medium (3–5d) | Med (data) | **Shipped (full UI).** Added the downbeat field + grid math; editor toggle, timeline grid + snap-on-drag. Additive — no invariant or live-contract break. |
 | 3 | **Free placement** | Large (5–8d) | High | Inverts the core invariant + changes the deployed live/iOS contract. Gate behind a per-class mode; reconsider once trimming lands (silent spacer tracks may suffice). |
 
 **Bottom line:** trimming is the clear first move — cheap because the architecture already centralizes

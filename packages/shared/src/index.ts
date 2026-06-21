@@ -15,6 +15,7 @@ export const API_VERSION = 'v1' as const;
 
 export * from './enums.js';
 export * from './common.js';
+export * from './beat.js';
 export * from './entities/identity.js';
 export * from './entities/classes.js';
 export * from './entities/tracks.js';

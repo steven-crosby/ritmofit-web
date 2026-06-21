@@ -53,6 +53,8 @@ export const classTrackSchema = z.object({
   durationMsOverride: z.int().positive().nullable(),
   clipStartMs: z.int().nonnegative(),
   clipEndMs: z.int().positive().nullable(),
+  // Downbeat offset for beat-snapping: track-relative ms where beat 1 of bar 1 lands.
+  beatAnchorMs: z.int().nonnegative(),
   startOffsetMs: timestampMsSchema.nullable(),
   notes: z.string().max(2000).nullable(),
   ...timestampsShape,
@@ -136,6 +138,8 @@ const classTrackInputFields = z.object({
   // The route validates the resulting window contains every cue/move anchor.
   clipStartMs: z.int().nonnegative().nullish(),
   clipEndMs: z.int().positive().nullish(),
+  // Downbeat offset for beat-snapping; null/omitted resets to 0.
+  beatAnchorMs: z.int().nonnegative().nullish(),
   notes: z.string().max(2000).nullish(),
 });
 

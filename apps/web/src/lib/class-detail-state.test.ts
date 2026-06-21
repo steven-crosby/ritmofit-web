@@ -18,6 +18,7 @@ describe('classDetailReducer', () => {
       durationMsOverride: null,
       clipStartMs: 0,
       clipEndMs: null,
+      beatAnchorMs: 0,
       startOffsetMs: 0,
       notes: null,
       createdAt: 1,

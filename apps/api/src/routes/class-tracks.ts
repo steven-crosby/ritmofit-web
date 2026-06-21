@@ -103,6 +103,7 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
     durationMsOverride: body.durationMsOverride ?? null,
     clipStartMs: body.clipStartMs ?? 0,
     clipEndMs: body.clipEndMs ?? null,
+    beatAnchorMs: body.beatAnchorMs ?? 0,
     startOffsetMs: null,
     notes: body.notes ?? null,
     createdAt: now,
@@ -230,10 +231,15 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
     }
   }
 
-  // `clip_start_ms` is NOT NULL — a null in the patch means "reset to 0". Pull it out
-  // of the generic patch so the typed `.set()` never sees a null for that column.
-  const { clipStartMs, ...rest } = buildPatch(body);
-  const patch = 'clipStartMs' in body ? { ...rest, clipStartMs: clipStartMs ?? 0 } : rest;
+  // `clip_start_ms` / `beat_anchor_ms` are NOT NULL — a null in the patch means
+  // "reset to 0". Pull them out of the generic patch so the typed `.set()` never
+  // sees a null for those columns.
+  const { clipStartMs, beatAnchorMs, ...rest } = buildPatch(body);
+  const patch = {
+    ...rest,
+    ...('clipStartMs' in body ? { clipStartMs: clipStartMs ?? 0 } : {}),
+    ...('beatAnchorMs' in body ? { beatAnchorMs: beatAnchorMs ?? 0 } : {}),
+  };
 
   await db.update(classTracks).set(patch).where(eq(classTracks.id, id));
   if (touchesWindow) await resequence(db, classId);

@@ -12,6 +12,8 @@ function entry(intensity: Intensity, durationMs: number | null, position = 0): E
     displayBpm: null,
     intensity,
     startOffsetMs: null,
+    clipStartMs: 0,
+    beatAnchorMs: 0,
     notes: null,
     track: {
       id: `10000000-0000-0000-0000-00000000000${position}`,

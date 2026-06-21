@@ -149,6 +149,7 @@ holds the per-class context.
 | duration_ms_override | int | Nullable, positive; class-specific correction when library/provider duration is missing or wrong |
 | clip_start_ms | int | NOT NULL default 0; play this track from this offset — trim the intro. Track-relative ms. |
 | clip_end_ms | int | Nullable; play this track until this offset — trim the tail; null = to the effective end. CHECK `clip_end_ms > clip_start_ms`. |
+| beat_anchor_ms | int | NOT NULL default 0; downbeat offset for beat-snapping — track-relative ms where beat 1 of bar 1 lands. With the resolved BPM (and 4/4) it defines the beat grid. |
 | start_offset_ms | int | Nullable; where the track sits on the class timeline. **Server-derived in M1** (see below) |
 | notes | text | Nullable; instructor's free-text notes for this track |
 | created_at / updated_at | int (ms) | |
@@ -248,8 +249,8 @@ prompter.
 | id | text (PK) | UUID |
 | class_track_id | text (FK → class_tracks.id) | |
 | anchor_ms | int | Timestamp into the track, in milliseconds |
-| beat | int | Nullable; optional beat anchor. **Forward-looking — non-functional in M1** (no downbeat phase to derive from; beat-snapping is a later milestone, like `music_connections`) |
-| bar | int | Nullable; optional bar anchor. Same M1 status as `beat` |
+| beat | int | Nullable; optional stored beat anchor. Beat-snapping now derives beat/bar at read from `anchor_ms` + the track's BPM + `beat_anchor_ms` (the run-payload populates them); these columns remain reserved and are not written by the snapping flow. |
+| bar | int | Nullable; optional stored bar anchor. Same status as `beat`. |
 | text | text | The cue text shown in the prompter |
 | color | text | Nullable; free hex for visual tagging. The design system's cue-color picker **excludes the plasma range** (rationing is enforced in the UI, not the column) |
 | created_at / updated_at | int (ms) | |

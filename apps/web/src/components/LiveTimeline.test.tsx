@@ -66,6 +66,8 @@ function entry(position: number, durationMs: number | null, cues: Cue[] = [], mo
     displayBpm: null,
     intensity: 'mod',
     startOffsetMs: null,
+    clipStartMs: 0,
+    beatAnchorMs: 0,
     notes: null,
     track: {
       id: `10000000-0000-4000-8000-00000000000${position}`,

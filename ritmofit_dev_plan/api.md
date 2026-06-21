@@ -156,6 +156,8 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
       "displayBpm": 122,
       "intensity": "mod",
       "startOffsetMs": 0,
+      "clipStartMs": 0,
+      "beatAnchorMs": 0,
       "notes": "Start seated, build energy",
       "track": {
         "id": "…",
@@ -168,10 +170,10 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
         { "provider": "soundcloud", "providerTrackId": "…", "providerUri": "…" }
       ],
       "cues": [
-        { "id": "…", "anchorMs": 45000, "beat": null, "bar": null, "text": "Prepare for the drop", "color": "#3AC0D4" }
+        { "id": "…", "anchorMs": 45000, "beat": 1, "bar": 23, "text": "Prepare for the drop", "color": "#3AC0D4" }
       ],
       "moves": [
-        { "id": "…", "anchorMs": 30000, "name": "Climb", "intensity": "hard" }
+        { "id": "…", "anchorMs": 30000, "beat": 1, "bar": 16, "name": "Climb", "intensity": "hard" }
       ]
     }
   ],
@@ -184,6 +186,10 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
 > **Additive growth since v1 froze (`schemaVersion` stays 1):** top-level **`sections[]`** (segment
 > bands — builder slice 16, migration `0006`) and a stable **`id`** on every cue and placed move
 > (slice 17, so two cues/moves at the same `anchorMs` disambiguate). `sections[]` carries no `id` yet.
+> Per-track **`clipStartMs`** + **`beatAnchorMs`** (trimming + beat-snapping) and derived **`beat`/`bar`**
+> on cues *and* moves. With trimming, cue/move `anchorMs` are **re-based to the clip start** (so the live
+> timeline lines up); `beat`/`bar` are derived from the original track-relative anchor + BPM + downbeat
+> (4/4), null without a tempo or before bar 1.
 
 The granular endpoints above remain the **edit** surface; run-payload is the read-optimized **live**
 contract — one fetch so the iOS app isn't composing the live view from a dozen calls on studio wifi.

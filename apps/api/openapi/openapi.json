@@ -2233,6 +2233,11 @@
               }
             ]
           },
+          "beatAnchorMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
           "startOffsetMs": {
             "anyOf": [
               {
@@ -2277,6 +2282,7 @@
           "durationMsOverride",
           "clipStartMs",
           "clipEndMs",
+          "beatAnchorMs",
           "startOffsetMs",
           "notes",
           "createdAt",
@@ -2341,6 +2347,18 @@
                   {
                     "type": "integer",
                     "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "beatAnchorMs": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
                     "maximum": 9007199254740991
                   },
                   {
@@ -2424,6 +2442,18 @@
                   {
                     "type": "integer",
                     "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "beatAnchorMs": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
                     "maximum": 9007199254740991
                   },
                   {
@@ -2570,6 +2600,18 @@
               {
                 "type": "integer",
                 "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "beatAnchorMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
                 "maximum": 9007199254740991
               },
               {
@@ -4408,6 +4450,16 @@
                     }
                   ]
                 },
+                "clipStartMs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "beatAnchorMs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
                 "notes": {
                   "anyOf": [
                     {
@@ -4583,6 +4635,30 @@
                         "minimum": 0,
                         "maximum": 9007199254740991
                       },
+                      "beat": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "bar": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "name": {
                         "type": "string",
                         "minLength": 1
@@ -4608,6 +4684,8 @@
                     "required": [
                       "id",
                       "anchorMs",
+                      "beat",
+                      "bar",
                       "name",
                       "intensity"
                     ],
@@ -4621,6 +4699,8 @@
                 "displayBpm",
                 "intensity",
                 "startOffsetMs",
+                "clipStartMs",
+                "beatAnchorMs",
                 "notes",
                 "track",
                 "providerRefs",

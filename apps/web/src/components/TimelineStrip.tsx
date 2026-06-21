@@ -4,13 +4,27 @@
  * with cue (▲) and placed-move (◆) markers at their absolute time. Cues and moves
  * are **distinct shapes**, not just colors (09: "distinct shapes/icons, not just
  * colors"); color is decorative reinforcement, and the shape + position + title
- * carry the meaning. Derived entirely from the run-payload — no new schema.
+ * carry the meaning. Derived entirely from the run-payload.
  *
- * Static (no playhead): the playhead + on-beat pulse are a Live concern, rationed
- * away from the planning surface (deferred). Read-only this slice — it reflects
- * edits made in the inspector after a reload.
+ * With edit access it also shows a faint **beat/bar grid** per track (from the
+ * resolved BPM + downbeat) and lets markers be **dragged to re-time** their cue/move,
+ * snapping to the grid when enabled. Without an `onMoveMarker` handler it stays
+ * read-only (it reflects edits made in the inspector after a reload).
  */
-import { type RunPayload } from '@ritmofit/shared';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react';
+import {
+  beatGridLayout,
+  msPerBeat,
+  snapToBeat,
+  type RunPayload,
+} from '@ritmofit/shared';
 import { formatDuration } from '../lib/class-summary.js';
 
 export type TimelineBlock = {
@@ -22,6 +36,16 @@ export type TimelineBlock = {
   widthPct: number;
   /** 0-based index in the track list (display is `position + 1`). */
   position: number;
+  /** Absolute start on the class timeline (ms). */
+  startMs: number;
+  /** Clipped (effective) duration of the block (ms). */
+  durMs: number;
+  /** Trim start (track-relative ms) — converts a block-relative drag back to an anchor. */
+  clipStartMs: number;
+  /** Downbeat offset (track-relative ms) for the beat grid / snapping. */
+  beatAnchorMs: number;
+  /** Resolved BPM, or null (no grid / no snapping). */
+  bpm: number | null;
 };
 
 export type TimelineMarker = {
@@ -69,6 +93,11 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
       leftPct: (startMs / totalDurationMs) * 100,
       widthPct: (dur / totalDurationMs) * 100,
       position: i,
+      startMs,
+      durMs: dur,
+      clipStartMs: t.clipStartMs,
+      beatAnchorMs: t.beatAnchorMs,
+      bpm: t.displayBpm,
     });
     t.cues.forEach((cue, ci) => {
       const anchorMs = clamp(cue.anchorMs, 0, dur);
@@ -107,10 +136,25 @@ export function computeTimeline(tracks: RunPayload['tracks'], totalDurationMs: n
   return { blocks, markers };
 }
 
+/** The faint beat/bar grid background for one block, or null without a tempo. */
+function blockGridStyle(block: TimelineBlock): CSSProperties | null {
+  const layout = beatGridLayout(block.beatAnchorMs - block.clipStartMs, block.bpm, block.durMs);
+  if (!layout) return null;
+  // Bar lines stronger than beat lines; bar layer first so it paints on top.
+  const bar = `repeating-linear-gradient(to right, rgba(255,255,255,0.16) 0 1px, transparent 1px ${layout.barPct}%)`;
+  const beat = `repeating-linear-gradient(to right, rgba(255,255,255,0.06) 0 1px, transparent 1px ${layout.beatPct}%)`;
+  return {
+    backgroundImage: `${bar}, ${beat}`,
+    backgroundPosition: `${layout.barPhasePct}% 0, ${layout.beatPhasePct}% 0`,
+    backgroundRepeat: 'repeat',
+  };
+}
+
 export function TimelineStrip({
   payload,
   selectedTrackId = null,
   onSelectTrack,
+  onMoveMarker,
 }: {
   payload: RunPayload;
   /** The class_track currently open in the inspector — its block is highlighted. */
@@ -125,8 +169,24 @@ export function TimelineStrip({
     classTrackId: string,
     marker?: { kind: 'cue' | 'move'; id: string; anchorMs: number },
   ) => void;
+  /**
+   * Persist a marker dragged to a new **track-relative** anchor (edit access).
+   * When provided, markers become draggable handles; when omitted the strip is
+   * read-only.
+   */
+  onMoveMarker?: (
+    marker: { kind: 'cue' | 'move'; id: string },
+    anchorMs: number,
+  ) => Promise<void> | void;
 }) {
   const { blocks, markers } = computeTimeline(payload.tracks, payload.class.totalDurationMs);
+  const stripRef = useRef<HTMLDivElement>(null);
+  const blockById = new Map(blocks.map((b) => [b.classTrackId, b]));
+  const total = payload.class.totalDurationMs;
+  const editable = !!onMoveMarker;
+  const gridAvailable = blocks.some((b) => b.bpm != null);
+  const [snap, setSnap] = useState(true);
+
   if (blocks.length === 0) return null;
 
   const cueCount = markers.filter((m) => m.kind === 'cue').length;
@@ -137,14 +197,34 @@ export function TimelineStrip({
 
   return (
     <figure className="mt-2 flex flex-col gap-1">
-      <figcaption className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-        Timeline
+      <figcaption className="flex items-center justify-between font-ui text-xs uppercase tracking-wide text-text-tertiary">
+        <span>Timeline</span>
+        {editable && gridAvailable && (
+          <label className="flex items-center gap-1.5 normal-case tracking-normal text-text-secondary">
+            <input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)} />
+            Snap to beat
+          </label>
+        )}
       </figcaption>
       <div
+        ref={stripRef}
         role={interactive ? undefined : 'img'}
         aria-label={interactive ? undefined : summary}
         className="relative h-10 w-full rounded-card bg-bg-base"
       >
+        {/* Beat/bar grid — faint, full-height, behind blocks and markers. */}
+        {blocks.map((b) => {
+          const style = blockGridStyle(b);
+          if (!style) return null;
+          return (
+            <div
+              key={`g-${b.position}`}
+              aria-hidden
+              className="absolute inset-y-0"
+              style={{ left: `${b.leftPct}%`, width: `${b.widthPct}%`, ...style }}
+            />
+          );
+        })}
         {/* Track blocks — the upper band, numbered, divided by quiet rules. Click to
             open the track in the inspector; the open track's block is ringed. */}
         {blocks.map((b) => {
@@ -177,45 +257,187 @@ export function TimelineStrip({
             </div>
           );
         })}
-        {/* Markers — the lower band. ▲ cue / ◆ move; shape distinguishes kind, color reinforces.
-            The clickable hit area is padded around the small glyph. */}
+        {/* Markers — the lower band. ▲ cue / ◆ move; shape distinguishes kind, color reinforces. */}
         {markers.map((m) => {
-          const glyph = (
-            <span
-              className="font-data text-[11px] leading-none"
-              style={{ color: m.color ?? undefined }}
-            >
-              {m.kind === 'cue' ? '▲' : '◆'}
-            </span>
-          );
-          const tip = `${m.kind} ${formatDuration(m.absMs)} — ${m.label}`;
+          const block = blockById.get(m.classTrackId)!;
+          const select = () =>
+            onSelectTrack?.(m.classTrackId, { kind: m.kind, id: m.id, anchorMs: m.anchorMs });
+          if (editable) {
+            return (
+              <MarkerHandle
+                key={m.key}
+                marker={m}
+                block={block}
+                totalMs={total}
+                snap={snap}
+                getRect={() => stripRef.current?.getBoundingClientRect()}
+                onSelect={select}
+                onCommit={(anchorMs) => onMoveMarker!({ kind: m.kind, id: m.id }, anchorMs)}
+              />
+            );
+          }
+          // View-but-selectable: a click focuses the cue/move row (no drag).
           return interactive ? (
             <button
               key={m.key}
               type="button"
-              onClick={() =>
-                onSelectTrack(m.classTrackId, { kind: m.kind, id: m.id, anchorMs: m.anchorMs })
-              }
+              onClick={select}
               style={{ left: `${m.leftPct}%` }}
-              title={tip}
+              title={`${m.kind} ${formatDuration(m.absMs)} — ${m.label}`}
               aria-label={`${m.kind} at ${formatDuration(m.absMs)}: ${m.label}, select track ${m.position + 1}`}
               className="absolute bottom-0 -translate-x-1/2 px-1 py-0.5 text-text-secondary"
             >
-              {glyph}
+              <Glyph kind={m.kind} color={m.color} />
             </button>
           ) : (
             <span
               key={m.key}
               className="absolute bottom-0 -translate-x-1/2 text-text-secondary"
               style={{ left: `${m.leftPct}%` }}
-              title={tip}
+              title={`${m.kind} ${formatDuration(m.absMs)} — ${m.label}`}
               aria-label={`${m.kind} at ${formatDuration(m.absMs)}: ${m.label}`}
             >
-              {glyph}
+              <Glyph kind={m.kind} color={m.color} />
             </span>
           );
         })}
       </div>
     </figure>
+  );
+}
+
+function Glyph({ kind, color }: { kind: 'cue' | 'move'; color: string | null }) {
+  return (
+    <span className="font-data text-[11px] leading-none" style={{ color: color ?? undefined }}>
+      {kind === 'cue' ? '▲' : '◆'}
+    </span>
+  );
+}
+
+/**
+ * A draggable cue/move marker (edit access): an accessible slider re-timing one
+ * cue/move's anchor. A pointer drag (or arrow keys) updates a local draft; a real
+ * drag commits the new **track-relative** anchor on pointer-up, while a click with
+ * no movement falls through to selecting the track + focusing the row. Arrow keys
+ * step by a beat when the tempo is known (else 1s), and the draft re-syncs to the
+ * server value after a reload. Snapping (when enabled) rounds to the beat grid.
+ */
+function MarkerHandle({
+  marker,
+  block,
+  totalMs,
+  snap,
+  getRect,
+  onSelect,
+  onCommit,
+}: {
+  marker: TimelineMarker;
+  block: TimelineBlock;
+  totalMs: number;
+  snap: boolean;
+  getRect: () => DOMRect | undefined;
+  onSelect: () => void;
+  onCommit: (anchorMs: number) => Promise<void> | void;
+}) {
+  // Draft in track-relative ms (the stored anchor); marker.anchorMs is block-relative.
+  const committed = marker.anchorMs + block.clipStartMs;
+  const [draftTrackRel, setDraftTrackRel] = useState(committed);
+  const draggingRef = useRef(false);
+  const movedRef = useRef(false);
+
+  useEffect(() => {
+    if (!draggingRef.current) setDraftTrackRel(committed);
+  }, [committed]);
+
+  const windowLo = block.clipStartMs;
+  const windowHi = block.clipStartMs + block.durMs;
+  const absMs = block.startMs + (draftTrackRel - block.clipStartMs);
+  const leftPct = totalMs > 0 ? clamp((absMs / totalMs) * 100, 0, 100) : 0;
+
+  /** Pointer x → snapped, clamped track-relative anchor. */
+  const fromPointer = (clientX: number): number => {
+    const rect = getRect();
+    if (!rect) return committed;
+    const abs = clamp((clientX - rect.left) / rect.width, 0, 1) * totalMs;
+    const blockRel = clamp(abs - block.startMs, 0, block.durMs);
+    let trackRel = blockRel + block.clipStartMs;
+    if (snap) trackRel = snapToBeat(trackRel, block.bpm, block.beatAnchorMs).anchorMs;
+    return clamp(trackRel, windowLo, windowHi);
+  };
+
+  const commit = async (next: number) => {
+    if (next === committed) return;
+    try {
+      await onCommit(next);
+    } catch {
+      setDraftTrackRel(committed); // revert; server stays authoritative
+    }
+  };
+
+  const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    draggingRef.current = true;
+    movedRef.current = false;
+  };
+  const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
+    if (!draggingRef.current) return;
+    movedRef.current = true;
+    setDraftTrackRel(fromPointer(e.clientX));
+  };
+  const onPointerUp = (e: PointerEvent<HTMLButtonElement>) => {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    if (!movedRef.current) {
+      onSelect(); // a click, not a drag
+      return;
+    }
+    const final = fromPointer(e.clientX);
+    setDraftTrackRel(final);
+    void commit(final);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    const step = msPerBeat(block.bpm) ?? 1000;
+    const set = (raw: number) => {
+      e.preventDefault();
+      setDraftTrackRel(clamp(Math.round(raw), windowLo, windowHi));
+    };
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowUp':
+        return set(draftTrackRel + step);
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        return set(draftTrackRel - step);
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        return void commit(draftTrackRel);
+      default:
+        return undefined;
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      role="slider"
+      aria-label={`${marker.kind} at ${formatDuration(marker.absMs)}: ${marker.label}. Drag or use arrow keys to re-time; Enter to select.`}
+      aria-valuemin={Math.round(windowLo)}
+      aria-valuemax={Math.round(windowHi)}
+      aria-valuenow={Math.round(draftTrackRel)}
+      aria-valuetext={formatDuration(absMs)}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onKeyDown={onKeyDown}
+      onBlur={() => void commit(draftTrackRel)}
+      style={{ left: `${leftPct}%` }}
+      title={`${marker.kind} ${formatDuration(absMs)} — ${marker.label}`}
+      className="absolute bottom-0 -translate-x-1/2 cursor-ew-resize touch-none px-1 py-0.5 text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+    >
+      <Glyph kind={marker.kind} color={marker.color} />
+    </button>
   );
 }

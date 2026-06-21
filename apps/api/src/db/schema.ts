@@ -215,6 +215,10 @@ export const classTracks = sqliteTable(
     // Window-only — the audio file is untouched (the three music constraints stand).
     clipStartMs: integer('clip_start_ms').notNull().default(0),
     clipEndMs: integer('clip_end_ms'),
+    // Downbeat offset for beat-snapping: track-relative ms where beat 1 of bar 1
+    // lands. Default 0 (grid starts at the track/clip start until the instructor
+    // marks the first beat). 4/4 is assumed; tempo comes from the resolved BPM.
+    beatAnchorMs: integer('beat_anchor_ms').notNull().default(0),
     startOffsetMs: integer('start_offset_ms'),
     notes: text('notes'),
     ...timestamps(),

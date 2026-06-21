@@ -12,6 +12,8 @@ const activeTrack = {
   displayBpm: 124,
   intensity: 'hard',
   startOffsetMs: 0,
+  clipStartMs: 0,
+  beatAnchorMs: 0,
   notes: null,
   track: {
     id: '00000000-0000-4000-8000-000000000002',

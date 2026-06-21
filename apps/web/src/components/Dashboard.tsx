@@ -20,6 +20,8 @@ import {
   updateClassTrack,
   deleteClassTrack,
   reorderTracks,
+  updateCue,
+  updatePlacedMove,
   getRunPayload,
   lookupBpm,
   addClassTag,
@@ -638,6 +640,15 @@ function ClassWorkspace({
               payload={payload}
               selectedTrackId={selectedTrackId}
               onSelectTrack={selectFromTimeline}
+              onMoveMarker={
+                canEdit
+                  ? async (marker, anchorMs) => {
+                      if (marker.kind === 'cue') await updateCue(marker.id, { anchorMs });
+                      else await updatePlacedMove(marker.id, { anchorMs });
+                      onTrackChanged();
+                    }
+                  : undefined
+              }
             />
             <SegmentBand
               classId={cls.id}
@@ -697,6 +708,7 @@ function ClassWorkspace({
             track={selectedTrack}
             title={selectedEntry?.track.title ?? 'Track'}
             durationMs={selectedEntry?.track.durationMs ?? null}
+            displayBpm={selectedEntry?.displayBpm ?? null}
             canEdit={canEdit}
             focus={inspectorFocus}
             onSaved={onTrackChanged}
@@ -1307,6 +1319,7 @@ function TrackInspector({
   track,
   title,
   durationMs,
+  displayBpm,
   canEdit,
   focus,
   onSaved,
@@ -1315,6 +1328,8 @@ function TrackInspector({
   track: ClassTrack;
   title: string;
   durationMs: number | null;
+  /** Resolved BPM (override ?? base) — drives beat-snapping in the choreography editor. */
+  displayBpm: number | null;
   canEdit: boolean;
   /** A marker click asking to focus a cue/move row on this track (or null). */
   focus: { kind: 'cue' | 'move'; id: string; anchorMs: number; nonce: number } | null;
@@ -1331,6 +1346,10 @@ function TrackInspector({
   );
   const [clipEnd, setClipEnd] = useState(
     track.clipEndMs != null ? formatDurationInput(track.clipEndMs) : '',
+  );
+  // Downbeat offset (m:ss, track-relative) for the beat grid. Blank = 0:00.
+  const [downbeat, setDownbeat] = useState(
+    track.beatAnchorMs ? formatDurationInput(track.beatAnchorMs) : '',
   );
   const [notes, setNotes] = useState(track.notes ?? '');
   const [busy, setBusy] = useState(false);
@@ -1380,6 +1399,12 @@ function TrackInspector({
       setError('Clip end must be after clip start.');
       return;
     }
+    // Downbeat: blank = 0 (grid starts at the track start).
+    const beatAnchorMs = downbeat.trim() === '' ? 0 : parseDurationInput(downbeat);
+    if (beatAnchorMs == null) {
+      setError('Enter the downbeat as minutes:seconds, for example 0:02 (or leave it blank).');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -1390,6 +1415,7 @@ function TrackInspector({
         durationMsOverride: parsedDuration,
         clipStartMs,
         clipEndMs,
+        beatAnchorMs,
         notes: notes.trim() === '' ? null : notes.trim(),
       });
       onSaved();
@@ -1537,6 +1563,26 @@ function TrackInspector({
 
           <label className="flex flex-col gap-1">
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+              Downbeat
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="m:ss"
+              aria-describedby={`downbeat-help-${track.id}`}
+              className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+              value={downbeat}
+              onChange={(e) => setDownbeat(e.target.value)}
+            />
+            <span id={`downbeat-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+              {displayBpm
+                ? `Where beat 1 lands. Sets the ${displayBpm} BPM grid for snapping (4/4).`
+                : 'Set a BPM above to enable beat-snapping.'}
+            </span>
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
               Notes
             </span>
             <textarea
@@ -1575,6 +1621,8 @@ function TrackInspector({
             <CuesSection
               classTrackId={track.id}
               durationMs={durationMs}
+              bpm={displayBpm}
+              beatAnchorMs={track.beatAnchorMs}
               focus={
                 focus?.kind === 'cue'
                   ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce }
@@ -1584,6 +1632,8 @@ function TrackInspector({
             <MovesSection
               classTrackId={track.id}
               durationMs={durationMs}
+              bpm={displayBpm}
+              beatAnchorMs={track.beatAnchorMs}
               focus={
                 focus?.kind === 'move'
                   ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce }

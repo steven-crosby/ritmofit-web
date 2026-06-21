@@ -11,7 +11,12 @@
  *     start_offset_ms ever drifts.
  */
 import { eq, inArray } from 'drizzle-orm';
-import { runPayloadSchema, RUN_PAYLOAD_SCHEMA_VERSION, type RunPayload } from '@ritmofit/shared';
+import {
+  runPayloadSchema,
+  RUN_PAYLOAD_SCHEMA_VERSION,
+  beatPositionAt,
+  type RunPayload,
+} from '@ritmofit/shared';
 import {
   classes,
   classTracks,
@@ -177,12 +182,21 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
       // so the live timeline lines up when the intro is trimmed (clamp ≥ 0 — the
       // edit route guarantees anchors fall inside the window, this is defensive).
       const rebase = (anchorMs: number) => Math.max(0, anchorMs - ct.clipStartMs);
+      const displayBpm = ct.displayBpmOverride ?? track.displayBpm;
+      // Beat/bar derived from the track-relative anchor (before re-basing) + tempo +
+      // downbeat. Null when there's no tempo, or for an anchor before the first bar.
+      const beatAt = (anchorMs: number): { beat: number | null; bar: number | null } => {
+        const p = beatPositionAt(anchorMs, displayBpm, ct.beatAnchorMs);
+        return p && p.bar >= 1 ? { beat: p.beat, bar: p.bar } : { beat: null, bar: null };
+      };
       return {
         classTrackId: ct.id,
         position: ct.position,
-        displayBpm: ct.displayBpmOverride ?? track.displayBpm,
+        displayBpm,
         intensity: ct.intensity,
         startOffsetMs: startOffsetByCt.get(ct.id) ?? ct.startOffsetMs,
+        clipStartMs: ct.clipStartMs,
+        beatAnchorMs: ct.beatAnchorMs,
         notes: ct.notes,
         track: {
           id: track.id,
@@ -199,14 +213,14 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
         cues: (cuesByCt.get(ct.id) ?? []).map((cue) => ({
           id: cue.id,
           anchorMs: rebase(cue.anchorMs),
-          beat: cue.beat,
-          bar: cue.bar,
+          ...beatAt(cue.anchorMs),
           text: cue.text,
           color: cue.color,
         })),
         moves: (movesByCt.get(ct.id) ?? []).map((m) => ({
           id: m.id,
           anchorMs: rebase(m.anchorMs),
+          ...beatAt(m.anchorMs),
           name: resolveMoveName(
             m.moveId ? moveNameById.get(m.moveId) : null,
             m.userMoveId ? userMoveNameById.get(m.userMoveId) : null,

@@ -180,6 +180,35 @@ describe('run-payload + copy (integration)', () => {
     expect((await orphan.json()).error.message).toContain('60000ms');
   });
 
+  it('derives beat/bar in the run-payload from the BPM + downbeat', async () => {
+    const tracks = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`);
+    const [classTrack] = (await tracks.json()) as Array<{ id: string }>;
+
+    // 120 BPM (beat = 500ms), downbeat at the track start, 4/4.
+    const set = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ displayBpmOverride: 120, beatAnchorMs: 0 }),
+    });
+    expect(set.status).toBe(200);
+    expect((await set.json()).beatAnchorMs).toBe(0);
+
+    // A cue at 2.0s = beat index 4 → bar 2, beat 1.
+    const cue = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({ anchorMs: 2000, text: 'Bar 2' }),
+    });
+    expect(cue.status).toBe(201);
+
+    const payload = await (
+      await authed(owner.cookie)(`/api/v1/classes/${classId}/run-payload`)
+    ).json();
+    const entry = payload.tracks[0];
+    expect(entry.displayBpm).toBe(120);
+    expect(entry.beatAnchorMs).toBe(0);
+    expect(entry.clipStartMs).toBe(0);
+    expect(entry.cues[0]).toMatchObject({ anchorMs: 2000, beat: 1, bar: 2 });
+  });
+
   it('a non-owner cannot fetch the run-payload (404)', async () => {
     const res = await authed(other.cookie)(`/api/v1/classes/${classId}/run-payload`);
     expect(res.status).toBe(404);

@@ -65,6 +65,10 @@ const runPayloadMoveSchema = z.object({
    *  to v1 — unique even when two placements share an `anchorMs`. */
   id: uuidSchema,
   anchorMs: offsetMsSchema,
+  /** Beat/bar derived from the track's tempo + downbeat (null without a tempo).
+   *  Additive to v1 — mirrors the cue fields. */
+  beat: z.int().nonnegative().nullable(),
+  bar: z.int().nonnegative().nullable(),
   name: z.string().min(1),
   intensity: intensitySchema.nullable(),
 });
@@ -81,6 +85,15 @@ const runPayloadTrackEntrySchema = z.object({
    * `startOffsetMs` to `startOffsetMs + track.durationMs`. Read-only.
    */
   startOffsetMs: timestampMsSchema.nullable(),
+  /**
+   * The clip window's start (track-relative ms; 0 = untrimmed) and the downbeat
+   * offset (track-relative ms where beat 1 lands). Additive to v1 — together with
+   * `displayBpm` they let an editor draw the beat grid in the clipped block and
+   * convert a dragged position back to a track-relative anchor. Cue/move `anchorMs`
+   * in this payload are already re-based to the clip start.
+   */
+  clipStartMs: z.int().nonnegative(),
+  beatAnchorMs: z.int().nonnegative(),
   notes: z.string().nullable(),
   track: runPayloadTrackSchema,
   providerRefs: z.array(runPayloadProviderRefSchema),
