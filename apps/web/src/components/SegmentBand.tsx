@@ -424,6 +424,7 @@ function SegmentEditor({
       await onChanged();
     } catch (e) {
       onError((e as Error).message);
+    } finally {
       setBusy(false);
     }
   };

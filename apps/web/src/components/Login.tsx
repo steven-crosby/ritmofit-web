@@ -113,14 +113,24 @@ export function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                aria-describedby={error ? 'login-error' : undefined}
               />
             </>
           )}
-          {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
-          {notice && <p className="font-ui text-sm text-interactive">{notice}</p>}
+          {error && (
+            <p id="login-error" role="alert" className="font-ui text-sm text-state-danger">
+              {error}
+            </p>
+          )}
+          {notice && (
+            <p role="status" className="font-ui text-sm text-interactive">
+              {notice}
+            </p>
+          )}
           <button
             type="submit"
             disabled={busy}
+            aria-busy={busy}
             className="rounded-pill rf-btn-primary px-5 py-2 font-ui font-semibold text-text-on-accent disabled:opacity-50"
           >
             {busy

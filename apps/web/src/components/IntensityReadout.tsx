@@ -14,10 +14,24 @@ export const INTENSITY_BARS: Record<Intensity, number> = {
   all_out: 4,
 };
 
+/**
+ * Human-readable zone labels — the single source of truth for how an intensity is
+ * spelled in the UI (the readout, the energy-arc summary). Avoids leaking the raw
+ * enum (`mod`, `all_out`) into copy or diverging between surfaces.
+ */
+export const INTENSITY_LABEL: Record<Intensity, string> = {
+  none: 'none',
+  easy: 'easy',
+  mod: 'moderate',
+  hard: 'hard',
+  all_out: 'all-out',
+};
+
 export function IntensityReadout({ intensity }: { intensity: Intensity }) {
   const bars = INTENSITY_BARS[intensity];
+  const label = INTENSITY_LABEL[intensity];
   return (
-    <span className="inline-flex items-center gap-2" aria-label={`Intensity ${intensity}`}>
+    <span className="inline-flex items-center gap-2" aria-label={`Intensity ${label}`}>
       <span className="flex items-end gap-0.5" aria-hidden>
         {[0, 1, 2, 3].map((i) => (
           <span
@@ -34,9 +48,7 @@ export function IntensityReadout({ intensity }: { intensity: Intensity }) {
           />
         ))}
       </span>
-      <span className="font-data text-xs uppercase tracking-wide text-text-secondary">
-        {intensity}
-      </span>
+      <span className="font-data text-xs uppercase tracking-wide text-text-secondary">{label}</span>
     </span>
   );
 }

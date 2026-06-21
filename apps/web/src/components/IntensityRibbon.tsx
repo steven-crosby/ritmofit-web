@@ -15,6 +15,7 @@
  * deferred (see the design docs).
  */
 import { type Intensity, type RunPayload } from '@ritmofit/shared';
+import { INTENSITY_LABEL } from './IntensityReadout.js';
 
 /** Zone → crest height fraction (0–1). `none` keeps a small floor so it still reads as a block. */
 const ZONE_HEIGHT: Record<Intensity, number> = {
@@ -23,15 +24,6 @@ const ZONE_HEIGHT: Record<Intensity, number> = {
   mod: 0.55,
   hard: 0.78,
   all_out: 1,
-};
-
-/** Spoken zone labels for the accessible text summary. */
-const ZONE_LABEL: Record<Intensity, string> = {
-  none: 'none',
-  easy: 'easy',
-  mod: 'moderate',
-  hard: 'hard',
-  all_out: 'all-out',
 };
 
 // Normalized drawing space; the SVG stretches to the container (preserveAspectRatio="none").
@@ -79,7 +71,7 @@ export function IntensityRibbon({ payload }: { payload: RunPayload }) {
   // The arc as words, so it reads with no color and no pixels (screen readers / grayscale).
   const arc = payload.tracks
     .filter((t) => (t.track.durationMs ?? 0) > 0)
-    .map((t) => ZONE_LABEL[t.intensity])
+    .map((t) => INTENSITY_LABEL[t.intensity])
     .join(', ');
   const summary = `${segments.length} track${segments.length === 1 ? '' : 's'}, intensity over time: ${arc}`;
 

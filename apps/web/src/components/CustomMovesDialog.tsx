@@ -12,6 +12,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { UserMove } from '@ritmofit/shared';
 import { listUserMoves, updateUserMove, deleteUserMove } from '../lib/api.js';
+import { errMessage } from '../lib/errors.js';
+import { useAsyncAction } from '../lib/use-async-action.js';
 import { Dialog } from './Dialog.js';
 
 export function CustomMovesDialog({
@@ -29,7 +31,7 @@ export function CustomMovesDialog({
     try {
       setMoves(await listUserMoves());
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e));
     }
   }, []);
 
@@ -96,13 +98,15 @@ function CustomMoveRow({
 }: {
   move: UserMove;
   onChanged: () => Promise<void>;
-  onError: (msg: string) => void;
+  onError: (msg: string | null) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(move.name);
   const [description, setDescription] = useState(move.description ?? '');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [busy, setBusy] = useState(false);
+  // useAsyncAction owns the in-flight flag + error capture, so `busy` always clears
+  // (the old hand-rolled remove left it stuck true on success).
+  const { busy, run } = useAsyncAction(onError);
 
   const startEdit = () => {
     setName(move.name);
@@ -110,34 +114,23 @@ function CustomMoveRow({
     setEditing(true);
   };
 
-  const save = async () => {
+  const save = () => {
     if (!name.trim()) return;
-    setBusy(true);
-    try {
+    void run(async () => {
       await updateUserMove(move.id, {
         name: name.trim(),
         description: description.trim() === '' ? null : description.trim(),
       });
       setEditing(false);
       await onChanged();
-    } catch (e) {
-      onError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
+    });
   };
 
-  const remove = async () => {
-    setBusy(true);
-    try {
+  const remove = () =>
+    void run(async () => {
       await deleteUserMove(move.id);
       await onChanged();
-    } catch (e) {
-      onError((e as Error).message);
-      setBusy(false);
-      setConfirmingDelete(false);
-    }
-  };
+    });
 
   if (editing) {
     return (
