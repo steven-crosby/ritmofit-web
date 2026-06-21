@@ -7,6 +7,7 @@ import {
   classTemplateSchema,
   classStatusSchema,
   classVisibilitySchema,
+  timelineModeSchema,
   intensitySchema,
   accessLevelSchema,
 } from '../enums.js';
@@ -26,6 +27,7 @@ export const classSchema = z.object({
   template: classTemplateSchema.nullable(),
   status: classStatusSchema,
   visibility: classVisibilitySchema,
+  timelineMode: timelineModeSchema,
   targetDurationMs: timestampMsSchema.nullable(),
   featuredCategory: z.string().max(100).nullable(),
   coverImageUrl: z.string().url().max(1000).nullable(),
@@ -42,7 +44,9 @@ export type Class = z.infer<typeof classSchema>;
  * sum of preceding effective durations); clients treat it as read-only.
  * `durationMsOverride` lets a class editor repair an unknown/incorrect provider
  * duration without mutating another user's library track. `position` is the
- * authoritative ordering.
+ * authoritative ordering. `clipStartMs` / `clipEndMs` are the per-class playback
+ * window (trimming): the track contributes `min(clipEndMs ?? base, base) − clipStartMs`
+ * to the timeline, where `base = durationMsOverride ?? track.durationMs`.
  */
 export const classTrackSchema = z.object({
   id: uuidSchema,
@@ -52,6 +56,10 @@ export const classTrackSchema = z.object({
   intensity: intensitySchema,
   displayBpmOverride: z.int().positive().nullable(),
   durationMsOverride: z.int().positive().nullable(),
+  clipStartMs: z.int().nonnegative(),
+  clipEndMs: z.int().positive().nullable(),
+  // Downbeat offset for beat-snapping: track-relative ms where beat 1 of bar 1 lands.
+  beatAnchorMs: z.int().nonnegative(),
   startOffsetMs: timestampMsSchema.nullable(),
   notes: z.string().max(2000).nullable(),
   ...timestampsShape,
@@ -75,6 +83,7 @@ export const createClassSchema = classSchema
     targetDurationMs: true,
     status: true,
     visibility: true,
+    timelineMode: true,
     featuredCategory: true,
   })
   .partial({
@@ -83,6 +92,7 @@ export const createClassSchema = classSchema
     targetDurationMs: true,
     status: true,
     visibility: true,
+    timelineMode: true,
     featuredCategory: true,
   });
 export type CreateClass = z.infer<typeof createClassSchema>;
@@ -131,6 +141,15 @@ const classTrackInputFields = z.object({
   intensity: intensitySchema.optional(),
   displayBpmOverride: z.int().positive().nullish(),
   durationMsOverride: z.int().positive().nullish(),
+  // Trim window. `clipStartMs` null/omitted resets to 0; `clipEndMs` null = to the end.
+  // The route validates the resulting window contains every cue/move anchor.
+  clipStartMs: z.int().nonnegative().nullish(),
+  clipEndMs: z.int().positive().nullish(),
+  // Downbeat offset for beat-snapping; null/omitted resets to 0.
+  beatAnchorMs: z.int().nonnegative().nullish(),
+  // Explicit timeline placement — honored only in free mode (rejected in sequential,
+  // where offsets are server-derived). Track-relative class-start ms.
+  startOffsetMs: z.int().nonnegative().nullish(),
   notes: z.string().max(2000).nullish(),
 });
 

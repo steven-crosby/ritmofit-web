@@ -20,6 +20,8 @@ import {
   updateClassTrack,
   deleteClassTrack,
   reorderTracks,
+  updateCue,
+  updatePlacedMove,
   getRunPayload,
   lookupBpm,
   addClassTag,
@@ -583,7 +585,22 @@ function ClassWorkspace({
   } | null>(null);
   const isOwner = cls.accessLevel === 'owner';
   const canEdit = cls.accessLevel === 'owner' || cls.accessLevel === 'edit';
+  const isFree = cls.timelineMode === 'free';
   const missingDurationTracks = payload ? tracksMissingDuration(payload) : [];
+
+  // Toggle the class between back-to-back (sequential) and free placement. The
+  // server seeds/repacks offsets; refresh both the class and the run-payload.
+  const toggleTimelineMode = async () => {
+    try {
+      const updated = await updateClass(cls.id, {
+        timelineMode: isFree ? 'sequential' : 'free',
+      });
+      onClassUpdated(updated);
+      onTrackChanged();
+    } catch (e) {
+      onError((e as Error).message);
+    }
+  };
 
   const selectedTrack = tracks.find((t) => t.id === selectedTrackId) ?? null;
   const selectedEntry = payload?.tracks.find((e) => e.classTrackId === selectedTrackId) ?? null;
@@ -633,11 +650,42 @@ function ClassWorkspace({
             sharing one time axis, both derived from the run-payload (no new schema). */}
         {payload && payload.tracks.length > 0 && (
           <div className="rounded-card bg-bg-raised p-4 shadow-card">
+            {canEdit && (
+              <div className="mb-2 flex items-center justify-end gap-2">
+                <span className="font-ui text-xs text-text-tertiary">
+                  {isFree ? 'Free placement (gaps allowed)' : 'Back-to-back'}
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleTimelineMode}
+                  className="rounded-pill border border-interactive/40 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+                >
+                  {isFree ? 'Switch to back-to-back' : 'Switch to free placement'}
+                </button>
+              </div>
+            )}
             <IntensityRibbon payload={payload} />
             <TimelineStrip
               payload={payload}
               selectedTrackId={selectedTrackId}
               onSelectTrack={selectFromTimeline}
+              onMoveMarker={
+                canEdit
+                  ? async (marker, anchorMs) => {
+                      if (marker.kind === 'cue') await updateCue(marker.id, { anchorMs });
+                      else await updatePlacedMove(marker.id, { anchorMs });
+                      onTrackChanged();
+                    }
+                  : undefined
+              }
+              onMoveTrack={
+                canEdit && isFree
+                  ? async (classTrackId, startOffsetMs) => {
+                      await updateClassTrack(classTrackId, { startOffsetMs });
+                      onTrackChanged();
+                    }
+                  : undefined
+              }
             />
             <SegmentBand
               classId={cls.id}
@@ -665,7 +713,7 @@ function ClassWorkspace({
               <ReorderableTrackList
                 classId={cls.id}
                 entries={payload.tracks}
-                canReorder={canEdit}
+                canReorder={canEdit && !isFree}
                 selectedTrackId={selectedTrackId}
                 onSelect={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
                 onReordered={onTrackChanged}
@@ -697,7 +745,9 @@ function ClassWorkspace({
             track={selectedTrack}
             title={selectedEntry?.track.title ?? 'Track'}
             durationMs={selectedEntry?.track.durationMs ?? null}
+            displayBpm={selectedEntry?.displayBpm ?? null}
             canEdit={canEdit}
+            canPlaceFreely={isFree}
             focus={inspectorFocus}
             onSaved={onTrackChanged}
             onRemoved={() => {
@@ -1309,7 +1359,9 @@ function TrackInspector({
   track,
   title,
   durationMs,
+  displayBpm,
   canEdit,
+  canPlaceFreely,
   focus,
   onSaved,
   onRemoved,
@@ -1317,7 +1369,11 @@ function TrackInspector({
   track: ClassTrack;
   title: string;
   durationMs: number | null;
+  /** Resolved BPM (override ?? base) — drives beat-snapping in the choreography editor. */
+  displayBpm: number | null;
   canEdit: boolean;
+  /** Free-placement mode: show the editable "Start at" timeline offset. */
+  canPlaceFreely: boolean;
   /** A marker click asking to focus a cue/move row on this track (or null). */
   focus: { kind: 'cue' | 'move'; id: string; anchorMs: number; nonce: number } | null;
   onSaved: () => void;
@@ -1326,6 +1382,22 @@ function TrackInspector({
   const [intensity, setIntensity] = useState<Intensity>(track.intensity);
   const [bpm, setBpm] = useState(track.displayBpmOverride?.toString() ?? '');
   const [duration, setDuration] = useState(formatDurationInput(durationMs));
+  // Trim window (m:ss, track-relative). Empty start = from the beginning (0);
+  // empty end = to the track's end (null).
+  const [clipStart, setClipStart] = useState(
+    track.clipStartMs ? formatDurationInput(track.clipStartMs) : '',
+  );
+  const [clipEnd, setClipEnd] = useState(
+    track.clipEndMs != null ? formatDurationInput(track.clipEndMs) : '',
+  );
+  // Downbeat offset (m:ss, track-relative) for the beat grid. Blank = 0:00.
+  const [downbeat, setDownbeat] = useState(
+    track.beatAnchorMs ? formatDurationInput(track.beatAnchorMs) : '',
+  );
+  // Free-placement start on the class timeline (m:ss). Blank = 0:00.
+  const [startAt, setStartAt] = useState(
+    track.startOffsetMs ? formatDurationInput(track.startOffsetMs) : '',
+  );
   const [notes, setNotes] = useState(track.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1359,6 +1431,37 @@ function TrackInspector({
       setError('Enter a positive duration as minutes:seconds, for example 3:45.');
       return;
     }
+    // Clip start: blank = 0 (from the beginning). Clip end: blank = null (to the end).
+    const clipStartMs = clipStart.trim() === '' ? 0 : parseDurationInput(clipStart);
+    if (clipStartMs == null) {
+      setError('Enter the clip start as minutes:seconds, for example 0:30 (or leave it blank).');
+      return;
+    }
+    const clipEndMs = clipEnd.trim() === '' ? null : parseDurationInput(clipEnd);
+    if (clipEnd.trim() !== '' && clipEndMs == null) {
+      setError('Enter the clip end as minutes:seconds, for example 2:15 (or leave it blank).');
+      return;
+    }
+    if (clipEndMs != null && clipEndMs <= clipStartMs) {
+      setError('Clip end must be after clip start.');
+      return;
+    }
+    // Downbeat: blank = 0 (grid starts at the track start).
+    const beatAnchorMs = downbeat.trim() === '' ? 0 : parseDurationInput(downbeat);
+    if (beatAnchorMs == null) {
+      setError('Enter the downbeat as minutes:seconds, for example 0:02 (or leave it blank).');
+      return;
+    }
+    // Free-placement start (only sent in free mode; the server rejects it otherwise).
+    let startOffsetMs: number | undefined;
+    if (canPlaceFreely) {
+      const parsed = startAt.trim() === '' ? 0 : parseDurationInput(startAt);
+      if (parsed == null) {
+        setError('Enter the start time as minutes:seconds, for example 3:20 (or leave it blank).');
+        return;
+      }
+      startOffsetMs = parsed;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -1367,6 +1470,10 @@ function TrackInspector({
         intensity,
         displayBpmOverride: trimmedBpm === '' ? null : Number(trimmedBpm),
         durationMsOverride: parsedDuration,
+        clipStartMs,
+        clipEndMs,
+        beatAnchorMs,
+        ...(startOffsetMs !== undefined ? { startOffsetMs } : {}),
         notes: notes.trim() === '' ? null : notes.trim(),
       });
       onSaved();
@@ -1478,6 +1585,80 @@ function TrackInspector({
             </span>
           </label>
 
+          <fieldset className="flex flex-col gap-1">
+            <legend className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+              Trim
+            </legend>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="start"
+                aria-label="Clip start (minutes:seconds)"
+                aria-describedby={`clip-help-${track.id}`}
+                className="w-24 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                value={clipStart}
+                onChange={(e) => setClipStart(e.target.value)}
+              />
+              <span aria-hidden className="font-ui text-sm text-text-tertiary">
+                –
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="end"
+                aria-label="Clip end (minutes:seconds)"
+                aria-describedby={`clip-help-${track.id}`}
+                className="w-24 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                value={clipEnd}
+                onChange={(e) => setClipEnd(e.target.value)}
+              />
+            </div>
+            <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+              Play only part of the track. Blank start = from the beginning; blank end = to the end.
+            </span>
+          </fieldset>
+
+          <label className="flex flex-col gap-1">
+            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+              Downbeat
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="m:ss"
+              aria-describedby={`downbeat-help-${track.id}`}
+              className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+              value={downbeat}
+              onChange={(e) => setDownbeat(e.target.value)}
+            />
+            <span id={`downbeat-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+              {displayBpm
+                ? `Where beat 1 lands. Sets the ${displayBpm} BPM grid for snapping (4/4).`
+                : 'Set a BPM above to enable beat-snapping.'}
+            </span>
+          </label>
+
+          {canPlaceFreely && (
+            <label className="flex flex-col gap-1">
+              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                Start at
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="m:ss"
+                aria-describedby={`startat-help-${track.id}`}
+                className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                value={startAt}
+                onChange={(e) => setStartAt(e.target.value)}
+              />
+              <span id={`startat-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+                Where this track starts on the class timeline. Gaps are allowed; overlaps are not.
+              </span>
+            </label>
+          )}
+
           <label className="flex flex-col gap-1">
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
               Notes
@@ -1518,6 +1699,8 @@ function TrackInspector({
             <CuesSection
               classTrackId={track.id}
               durationMs={durationMs}
+              bpm={displayBpm}
+              beatAnchorMs={track.beatAnchorMs}
               focus={
                 focus?.kind === 'cue'
                   ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce }
@@ -1527,6 +1710,8 @@ function TrackInspector({
             <MovesSection
               classTrackId={track.id}
               durationMs={durationMs}
+              bpm={displayBpm}
+              beatAnchorMs={track.beatAnchorMs}
               focus={
                 focus?.kind === 'move'
                   ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce }

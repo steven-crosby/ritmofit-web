@@ -20,6 +20,7 @@ const cls = {
   template: 'cycle',
   status: 'draft',
   visibility: 'private',
+  timelineMode: 'sequential',
   targetDurationMs: null,
   createdAt: 1,
   updatedAt: 1,

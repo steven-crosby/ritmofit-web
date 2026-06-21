@@ -143,6 +143,139 @@ describe('run-payload + copy (integration)', () => {
     expect((await tooShort.json()).error.message).toContain('200000ms');
   });
 
+  it('trims a track to a clip window and re-bases cue anchors in the run-payload', async () => {
+    const tracks = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`);
+    const [classTrack] = (await tracks.json()) as Array<{ id: string }>;
+
+    // A cue at 0:60 into the (untrimmed) track — inside the window we'll set.
+    const cue = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({ anchorMs: 60000, text: 'Drop' }),
+    });
+    expect(cue.status).toBe(201);
+
+    // Play only 0:30–2:30 of the 3:00 track (window = 120000ms).
+    const trimmed = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipStartMs: 30000, clipEndMs: 150000 }),
+    });
+    expect(trimmed.status).toBe(200);
+    const trimmedBody = await trimmed.json();
+    expect(trimmedBody.clipStartMs).toBe(30000);
+    expect(trimmedBody.clipEndMs).toBe(150000);
+
+    const payloadRes = await authed(owner.cookie)(`/api/v1/classes/${classId}/run-payload`);
+    const payload = await payloadRes.json();
+    expect(payload.class.totalDurationMs).toBe(120000);
+    expect(payload.tracks[0].track.durationMs).toBe(120000);
+    // The cue (track-relative 60000) re-bases to the clip start: 60000 − 30000.
+    expect(payload.tracks[0].cues[0].anchorMs).toBe(30000);
+
+    // A clip start past the earliest anchor would orphan the cue — reject.
+    const orphan = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipStartMs: 90000 }),
+    });
+    expect(orphan.status).toBe(422);
+    expect((await orphan.json()).error.message).toContain('60000ms');
+  });
+
+  it('derives beat/bar in the run-payload from the BPM + downbeat', async () => {
+    const tracks = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`);
+    const [classTrack] = (await tracks.json()) as Array<{ id: string }>;
+
+    // 120 BPM (beat = 500ms), downbeat at the track start, 4/4.
+    const set = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ displayBpmOverride: 120, beatAnchorMs: 0 }),
+    });
+    expect(set.status).toBe(200);
+    expect((await set.json()).beatAnchorMs).toBe(0);
+
+    // A cue at 2.0s = beat index 4 → bar 2, beat 1.
+    const cue = await authed(owner.cookie)(`/api/v1/class-tracks/${classTrack!.id}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({ anchorMs: 2000, text: 'Bar 2' }),
+    });
+    expect(cue.status).toBe(201);
+
+    const payload = await (
+      await authed(owner.cookie)(`/api/v1/classes/${classId}/run-payload`)
+    ).json();
+    const entry = payload.tracks[0];
+    expect(entry.displayBpm).toBe(120);
+    expect(entry.beatAnchorMs).toBe(0);
+    expect(entry.clipStartMs).toBe(0);
+    expect(entry.cues[0]).toMatchObject({ anchorMs: 2000, beat: 1, bar: 2 });
+  });
+
+  it('free placement: gaps allowed, overlaps rejected, run-payload reflects offsets', async () => {
+    // Add a second track so we have two to place. Track A is 180000ms (beforeAll).
+    const addB = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({ track: { title: 'Track B', artist: 'Artist', durationMs: 120000 } }),
+    });
+    expect(addB.status).toBe(201);
+
+    // Switch to free placement — offsets seed from the sequential layout (0 / 180000).
+    const toFree = await authed(owner.cookie)(`/api/v1/classes/${classId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ timelineMode: 'free' }),
+    });
+    expect(toFree.status).toBe(200);
+    expect((await toFree.json()).timelineMode).toBe('free');
+
+    const tracks = (await (
+      await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`)
+    ).json()) as Array<{ id: string; startOffsetMs: number }>;
+    const trackB = tracks.find((t) => t.startOffsetMs === 180000)!;
+    expect(trackB).toBeTruthy();
+
+    // Move B later to open a 20s gap after A (A ends at 180000).
+    const gap = await authed(owner.cookie)(`/api/v1/class-tracks/${trackB.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ startOffsetMs: 200000 }),
+    });
+    expect(gap.status).toBe(200);
+    expect((await gap.json()).startOffsetMs).toBe(200000);
+
+    // Pull B back so it would overlap A ([0,180000)) — rejected.
+    const overlap = await authed(owner.cookie)(`/api/v1/class-tracks/${trackB.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ startOffsetMs: 100000 }),
+    });
+    expect(overlap.status).toBe(422);
+    expect((await overlap.json()).error.message).toContain('overlap');
+
+    // Reorder is unavailable in free mode.
+    const reorder = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ classTrackIds: tracks.map((t) => t.id) }),
+    });
+    expect(reorder.status).toBe(422);
+
+    // The run-payload reports the gap: total = 200000 + 120000, B at 200000.
+    const payload = await (
+      await authed(owner.cookie)(`/api/v1/classes/${classId}/run-payload`)
+    ).json();
+    expect(payload.class.timelineMode).toBe('free');
+    expect(payload.class.totalDurationMs).toBe(320000);
+    const bEntry = payload.tracks.find(
+      (t: { classTrackId: string }) => t.classTrackId === trackB.id,
+    );
+    expect(bEntry.startOffsetMs).toBe(200000);
+
+    // Copying a track into a free-mode class appends it after the current material
+    // (latest end = 320000), not at 0 where it would overlap.
+    const trackA = tracks.find((t) => t.startOffsetMs === 0)!;
+    const copied = await authed(owner.cookie)(`/api/v1/class-tracks/${trackA.id}/copy`, {
+      method: 'POST',
+      body: JSON.stringify({ targetClassId: classId }),
+    });
+    expect(copied.status).toBe(201);
+    expect((await copied.json()).startOffsetMs).toBe(320000);
+  });
+
   it('a non-owner cannot fetch the run-payload (404)', async () => {
     const res = await authed(other.cookie)(`/api/v1/classes/${classId}/run-payload`);
     expect(res.status).toBe(404);

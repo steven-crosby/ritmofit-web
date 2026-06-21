@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveMoveName, computeClassTimeline } from './run-payload.js';
+import { resolveMoveName, computeClassTimeline, computeFreeTimeline } from './run-payload.js';
 
 describe('resolveMoveName', () => {
   it('prefers the global library name', () => {
@@ -54,5 +54,35 @@ describe('computeClassTimeline', () => {
     const { startOffsetByCt, totalDurationMs } = computeClassTimeline([]);
     expect(totalDurationMs).toBe(0);
     expect(startOffsetByCt.size).toBe(0);
+  });
+});
+
+describe('computeFreeTimeline', () => {
+  it('honors authored offsets and totals to the latest track end', () => {
+    const { startOffsetByCt, totalDurationMs } = computeFreeTimeline([
+      { id: 'a', startOffsetMs: 0, durationMs: 180000 },
+      { id: 'b', startOffsetMs: 200000, durationMs: 160000 }, // 20s gap after a
+    ]);
+    expect(startOffsetByCt.get('a')).toBe(0);
+    expect(startOffsetByCt.get('b')).toBe(200000);
+    expect(totalDurationMs).toBe(360000); // 200000 + 160000
+  });
+
+  it('clamps a negative/null offset to 0 and treats a null duration as 0', () => {
+    const { startOffsetByCt, totalDurationMs } = computeFreeTimeline([
+      { id: 'a', startOffsetMs: null, durationMs: null },
+      { id: 'b', startOffsetMs: -5000, durationMs: 60000 },
+    ]);
+    expect(startOffsetByCt.get('a')).toBe(0);
+    expect(startOffsetByCt.get('b')).toBe(0);
+    expect(totalDurationMs).toBe(60000);
+  });
+
+  it('a trailing gap does not extend the class (total is the max end, not a sum)', () => {
+    const { totalDurationMs } = computeFreeTimeline([
+      { id: 'a', startOffsetMs: 0, durationMs: 60000 },
+      { id: 'b', startOffsetMs: 30000, durationMs: 60000 }, // ends at 90000
+    ]);
+    expect(totalDurationMs).toBe(90000);
   });
 });

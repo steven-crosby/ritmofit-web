@@ -84,6 +84,7 @@ Owned by exactly one user. No `team_id` — ownership is always a user; others g
 | template | text enum(`cycle`,`hiit`,`sculpt`,`tread`) | Nullable; class template type |
 | status | text enum(`draft`,`ready`,`archived`) | Default `draft` |
 | visibility | text enum(`private`,`unlisted`,`public`) | Default `private` |
+| timeline_mode | text enum(`sequential`,`free`) | Default `sequential`. `sequential` = back-to-back, server-derived offsets; `free` = author offsets with gaps (overlaps rejected), positions derived from offset order |
 | featured_category | text | Nullable; marks this class for curated Explore rows |
 | cover_image_url | text | Nullable; custom uploaded R2 image URL |
 | target_duration_ms | int | Nullable; total planned class length |
@@ -147,19 +148,36 @@ holds the per-class context.
 | intensity | text enum(`none`,`easy`,`mod`,`hard`,`all_out`) | Default `none` |
 | display_bpm_override | int | Nullable; class may show a different BPM than the track default |
 | duration_ms_override | int | Nullable, positive; class-specific correction when library/provider duration is missing or wrong |
+| clip_start_ms | int | NOT NULL default 0; play this track from this offset — trim the intro. Track-relative ms. |
+| clip_end_ms | int | Nullable; play this track until this offset — trim the tail; null = to the effective end. CHECK `clip_end_ms > clip_start_ms`. |
+| beat_anchor_ms | int | NOT NULL default 0; downbeat offset for beat-snapping — track-relative ms where beat 1 of bar 1 lands. With the resolved BPM (and 4/4) it defines the beat grid. |
 | start_offset_ms | int | Nullable; where the track sits on the class timeline. **Server-derived in M1** (see below) |
 | notes | text | Nullable; instructor's free-text notes for this track |
 | created_at / updated_at | int (ms) | |
 
 `cues` and `class_track_moves` attach here, NOT to `tracks` — choreography is per-class (D7).
 
-> **Timeline placement (M1): sequential, derived.** `position` is the authoritative ordering. Tracks
-> play **back-to-back** — `start_offset_ms` is **computed by the server** from the sum of preceding
-> effective durations (`class_tracks.duration_ms_override ?? tracks.duration_ms`), not freely set by
-> the client; no gaps or overlaps in M1. The override lets a class editor correct timing without
-> mutating another user's private library track. The column is kept so
-> **free placement** (explicit offsets, silence gaps) can land in a later milestone **without a
-> migration**. Clients should treat `start_offset_ms` as read-only in M1.
+> **Per-class trimming.** A class_track plays the window `[clip_start_ms, clip_end_ms)` of its track
+> (defaults `0 .. effective end`, i.e. the whole track). The **effective duration** a track contributes
+> to the timeline is therefore `min(clip_end_ms ?? base, base) − clip_start_ms`, where
+> `base = duration_ms_override ?? tracks.duration_ms`. Trimming is purely a playback-window choice — it
+> does **not** edit the audio file (the three music constraints stand). Cue/move `anchor_ms` stay
+> **track-relative** (unchanged on trim); the clip window must contain every anchor (the edit route
+> rejects a window that would orphan one). The run-payload re-bases anchors to the clip start so the
+> live timeline lines up (see `api.md`).
+
+> **Timeline placement — two modes (`classes.timeline_mode`).**
+> - **sequential** (default): `position` is authoritative and tracks play **back-to-back** —
+>   `start_offset_ms` is **server-derived** from the sum of preceding effective durations
+>   (`min(clip_end_ms ?? base, base) − clip_start_ms`, `base = duration_ms_override ?? tracks.duration_ms`),
+>   not set by the client; no gaps or overlaps. Clients treat `start_offset_ms` as read-only.
+> - **free**: `start_offset_ms` is **user-authored** (gaps/silence allowed, overlaps rejected by the
+>   edit route); `position` is **derived** by ranking tracks on their offset. The run-payload total is the
+>   latest track end (`max(start + duration)`), so a trailing gap doesn't extend the class. Switching into
+>   free seeds offsets from the current sequential layout; switching back re-packs them back-to-back.
+>
+> The `duration_ms_override` lets a class editor correct timing without mutating another user's private
+> library track.
 
 ### `class_tags`
 Simple "Google Keep" style tagging system for classes. Used to search historical classes (e.g., "Songs by Move" or thematic searches).
@@ -237,8 +255,8 @@ prompter.
 | id | text (PK) | UUID |
 | class_track_id | text (FK → class_tracks.id) | |
 | anchor_ms | int | Timestamp into the track, in milliseconds |
-| beat | int | Nullable; optional beat anchor. **Forward-looking — non-functional in M1** (no downbeat phase to derive from; beat-snapping is a later milestone, like `music_connections`) |
-| bar | int | Nullable; optional bar anchor. Same M1 status as `beat` |
+| beat | int | Nullable; optional stored beat anchor. Beat-snapping now derives beat/bar at read from `anchor_ms` + the track's BPM + `beat_anchor_ms` (the run-payload populates them); these columns remain reserved and are not written by the snapping flow. |
+| bar | int | Nullable; optional stored bar anchor. Same status as `beat`. |
 | text | text | The cue text shown in the prompter |
 | color | text | Nullable; free hex for visual tagging. The design system's cue-color picker **excludes the plasma range** (rationing is enforced in the UI, not the column) |
 | created_at / updated_at | int (ms) | |

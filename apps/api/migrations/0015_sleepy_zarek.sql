@@ -1,0 +1,1 @@
+ALTER TABLE `class_tracks` ADD `beat_anchor_ms` integer DEFAULT 0 NOT NULL;

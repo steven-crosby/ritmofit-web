@@ -36,6 +36,7 @@ import {
   sharePermissionValues,
   shareResourceTypeValues,
   segmentTypeValues,
+  timelineModeValues,
 } from '@ritmofit/shared';
 
 /**
@@ -123,6 +124,11 @@ export const classes = sqliteTable(
     // Discovery visibility (M4), orthogonal to lifecycle `status`. Default private
     // so every existing/new class stays owner+shares-only until explicitly published.
     visibility: text('visibility', { enum: classVisibilityValues }).notNull().default('private'),
+    // Timeline layout. Default sequential (back-to-back, server-derived offsets) so
+    // every existing/new class keeps the M1 behavior until switched to free placement.
+    timelineMode: text('timeline_mode', { enum: timelineModeValues })
+      .notNull()
+      .default('sequential'),
     featuredCategory: text('featured_category'),
     coverImageUrl: text('cover_image_url'),
     targetDurationMs: integer('target_duration_ms'),
@@ -133,6 +139,7 @@ export const classes = sqliteTable(
     enumCheck('classes_template_check', t.template, classTemplateValues),
     enumCheck('classes_status_check', t.status, classStatusValues),
     enumCheck('classes_visibility_check', t.visibility, classVisibilityValues),
+    enumCheck('classes_timeline_mode_check', t.timelineMode, timelineModeValues),
     index('classes_visibility_idx').on(t.visibility),
     // Cover the owned arm and its stable library ordering boundary.
     index('classes_owner_updated_id_idx').on(t.ownerUserId, t.updatedAt, t.id),
@@ -210,6 +217,15 @@ export const classTracks = sqliteTable(
     intensity: text('intensity', { enum: intensityValues }).notNull().default('none'),
     displayBpmOverride: integer('display_bpm_override'),
     durationMsOverride: integer('duration_ms_override'),
+    // Per-class playback window into the track (trimming). clip_start_ms trims the
+    // intro (default 0); clip_end_ms trims the tail (null = to the effective end).
+    // Window-only — the audio file is untouched (the three music constraints stand).
+    clipStartMs: integer('clip_start_ms').notNull().default(0),
+    clipEndMs: integer('clip_end_ms'),
+    // Downbeat offset for beat-snapping: track-relative ms where beat 1 of bar 1
+    // lands. Default 0 (grid starts at the track/clip start until the instructor
+    // marks the first beat). 4/4 is assumed; tempo comes from the resolved BPM.
+    beatAnchorMs: integer('beat_anchor_ms').notNull().default(0),
     startOffsetMs: integer('start_offset_ms'),
     notes: text('notes'),
     ...timestamps(),
@@ -219,6 +235,10 @@ export const classTracks = sqliteTable(
     check(
       'class_tracks_duration_ms_override_check',
       sql`${t.durationMsOverride} is null or ${t.durationMsOverride} > 0`,
+    ),
+    check(
+      'class_tracks_clip_window_check',
+      sql`${t.clipStartMs} >= 0 and (${t.clipEndMs} is null or ${t.clipEndMs} > ${t.clipStartMs})`,
     ),
     // Hot path: every class-detail load / run-payload assembly fetches a class's
     // tracks by class_id.

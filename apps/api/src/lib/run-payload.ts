@@ -11,7 +11,12 @@
  *     start_offset_ms ever drifts.
  */
 import { eq, inArray } from 'drizzle-orm';
-import { runPayloadSchema, RUN_PAYLOAD_SCHEMA_VERSION, type RunPayload } from '@ritmofit/shared';
+import {
+  runPayloadSchema,
+  RUN_PAYLOAD_SCHEMA_VERSION,
+  beatPositionAt,
+  type RunPayload,
+} from '@ritmofit/shared';
 import {
   classes,
   classTracks,
@@ -53,6 +58,23 @@ export function computeClassTimeline(
   const sequence = computeSequence(ordered);
   const startOffsetByCt = new Map(sequence.map((s) => [s.id, s.startOffsetMs]));
   const totalDurationMs = ordered.reduce((sum, t) => sum + (t.durationMs ?? 0), 0);
+  return { startOffsetByCt, totalDurationMs };
+}
+
+/**
+ * Free-mode timeline: offsets are the **authored** `startOffsetMs` (clamped ≥ 0,
+ * null → 0), and the class total is the latest track end (`max(start + duration)`),
+ * so trailing gaps don't extend the class but a gap before the last track does.
+ * Pure, so it is unit-tested without a database.
+ */
+export function computeFreeTimeline(
+  items: ReadonlyArray<{ id: string; startOffsetMs: number | null; durationMs: number | null }>,
+): { startOffsetByCt: Map<string, number>; totalDurationMs: number } {
+  const startOffsetByCt = new Map(items.map((t) => [t.id, Math.max(0, t.startOffsetMs ?? 0)]));
+  const totalDurationMs = items.reduce(
+    (max, t) => Math.max(max, Math.max(0, t.startOffsetMs ?? 0) + (t.durationMs ?? 0)),
+    0,
+  );
   return { startOffsetByCt, totalDurationMs };
 }
 
@@ -142,17 +164,26 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
   const cuesByCt = groupBy(cueRows, (c) => c.classTrackId);
   const movesByCt = groupBy(moveRows, (m) => m.classTrackId);
 
-  // Recompute the timeline at read time (M3 hardening) so per-track offsets and the
-  // class total are authoritative even if a persisted start_offset_ms drifted.
-  const { startOffsetByCt, totalDurationMs } = computeClassTimeline(
-    cts.map((ct) => ({
-      id: ct.id,
-      durationMs: effectiveDurationMs(
-        trackById.get(ct.trackId)?.durationMs ?? null,
-        ct.durationMsOverride,
-      ),
-    })),
-  );
+  // Timeline: in sequential mode it's recomputed back-to-back at read time (M3
+  // hardening, self-heals a drifted offset); in free mode the authored offsets are
+  // authoritative and the total is the latest track end.
+  const durationOf = (ct: (typeof cts)[number]) =>
+    effectiveDurationMs(
+      trackById.get(ct.trackId)?.durationMs ?? null,
+      ct.durationMsOverride,
+      ct.clipStartMs,
+      ct.clipEndMs,
+    );
+  const { startOffsetByCt, totalDurationMs } =
+    cls.timelineMode === 'free'
+      ? computeFreeTimeline(
+          cts.map((ct) => ({
+            id: ct.id,
+            startOffsetMs: ct.startOffsetMs,
+            durationMs: durationOf(ct),
+          })),
+        )
+      : computeClassTimeline(cts.map((ct) => ({ id: ct.id, durationMs: durationOf(ct) })));
 
   const payload: RunPayload = {
     schemaVersion: RUN_PAYLOAD_SCHEMA_VERSION,
@@ -162,16 +193,35 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
       template: cls.template,
       targetDurationMs: cls.targetDurationMs,
       totalDurationMs,
+      timelineMode: cls.timelineMode,
     },
     tracks: cts.map((ct) => {
       const track = trackById.get(ct.trackId)!;
-      const durationMs = effectiveDurationMs(track.durationMs, ct.durationMsOverride);
+      const durationMs = effectiveDurationMs(
+        track.durationMs,
+        ct.durationMsOverride,
+        ct.clipStartMs,
+        ct.clipEndMs,
+      );
+      // Cue/move anchors are stored track-relative; re-base them to the clip start
+      // so the live timeline lines up when the intro is trimmed (clamp ≥ 0 — the
+      // edit route guarantees anchors fall inside the window, this is defensive).
+      const rebase = (anchorMs: number) => Math.max(0, anchorMs - ct.clipStartMs);
+      const displayBpm = ct.displayBpmOverride ?? track.displayBpm;
+      // Beat/bar derived from the track-relative anchor (before re-basing) + tempo +
+      // downbeat. Null when there's no tempo, or for an anchor before the first bar.
+      const beatAt = (anchorMs: number): { beat: number | null; bar: number | null } => {
+        const p = beatPositionAt(anchorMs, displayBpm, ct.beatAnchorMs);
+        return p && p.bar >= 1 ? { beat: p.beat, bar: p.bar } : { beat: null, bar: null };
+      };
       return {
         classTrackId: ct.id,
         position: ct.position,
-        displayBpm: ct.displayBpmOverride ?? track.displayBpm,
+        displayBpm,
         intensity: ct.intensity,
         startOffsetMs: startOffsetByCt.get(ct.id) ?? ct.startOffsetMs,
+        clipStartMs: ct.clipStartMs,
+        beatAnchorMs: ct.beatAnchorMs,
         notes: ct.notes,
         track: {
           id: track.id,
@@ -187,15 +237,15 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
         })),
         cues: (cuesByCt.get(ct.id) ?? []).map((cue) => ({
           id: cue.id,
-          anchorMs: cue.anchorMs,
-          beat: cue.beat,
-          bar: cue.bar,
+          anchorMs: rebase(cue.anchorMs),
+          ...beatAt(cue.anchorMs),
           text: cue.text,
           color: cue.color,
         })),
         moves: (movesByCt.get(ct.id) ?? []).map((m) => ({
           id: m.id,
-          anchorMs: m.anchorMs,
+          anchorMs: rebase(m.anchorMs),
+          ...beatAt(m.anchorMs),
           name: resolveMoveName(
             m.moveId ? moveNameById.get(m.moveId) : null,
             m.userMoveId ? userMoveNameById.get(m.userMoveId) : null,

@@ -12,13 +12,16 @@ function entry(
   position = 0,
   cues: Cue[] = [],
   moves: Move[] = [],
+  startOffsetMs = 0,
 ): Entry {
   return {
     classTrackId: `00000000-0000-0000-0000-00000000000${position}`,
     position,
     displayBpm: null,
     intensity: 'mod',
-    startOffsetMs: null,
+    startOffsetMs,
+    clipStartMs: 0,
+    beatAnchorMs: 0,
     notes: null,
     track: {
       id: `10000000-0000-0000-0000-00000000000${position}`,
@@ -52,11 +55,23 @@ describe('computeTimeline — blocks', () => {
     expect(computeTimeline([entry(1000)], -5)).toEqual({ blocks: [], markers: [] });
   });
 
-  it('sizes blocks by their share of the total and tiles them end to end', () => {
-    const { blocks } = computeTimeline([entry(1000, 0), entry(3000, 1)], 4000);
+  it('sizes blocks by their share of the total and places them by offset', () => {
+    const { blocks } = computeTimeline(
+      [entry(1000, 0, [], [], 0), entry(3000, 1, [], [], 1000)],
+      4000,
+    );
     expect(blocks.map((b) => b.leftPct)).toEqual([0, 25]);
     expect(blocks.map((b) => b.widthPct)).toEqual([25, 75]);
     expect(blocks.map((b) => b.position)).toEqual([0, 1]);
+  });
+
+  it('honors an authored offset gap (free placement)', () => {
+    // Track B starts at 2000 with a gap after A (which ends at 1000).
+    const { blocks } = computeTimeline(
+      [entry(1000, 0, [], [], 0), entry(1000, 1, [], [], 2000)],
+      4000,
+    );
+    expect(blocks.map((b) => b.leftPct)).toEqual([0, 50]);
   });
 
   it('skips null/zero-duration tracks (no block, no advance)', () => {
@@ -77,7 +92,7 @@ describe('computeTimeline — blocks', () => {
 describe('computeTimeline — markers', () => {
   it('positions a cue/move at trackStart + anchor, as a percentage of total', () => {
     const { markers } = computeTimeline(
-      [entry(1000, 0, [cue(500, 'A')]), entry(1000, 1, [], [move(250, 'B', 'hard')])],
+      [entry(1000, 0, [cue(500, 'A')], [], 0), entry(1000, 1, [], [move(250, 'B', 'hard')], 1000)],
       2000,
     );
     expect(markers).toHaveLength(2);

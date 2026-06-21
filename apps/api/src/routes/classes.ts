@@ -23,7 +23,7 @@ import { buildPatch } from '../lib/patch.js';
 import { serializeClass } from '../lib/serialize.js';
 import { assembleRunPayload } from '../lib/run-payload.js';
 import { decodeClassListCursor, encodeClassListCursor } from '../lib/class-list-pagination.js';
-import { resequence } from '../lib/sequencing.js';
+import { resequence, seedFreeOffsets } from '../lib/sequencing.js';
 import { deleteClassCover } from '../lib/class-cover.js';
 import {
   resolveTrackForClassCopy,
@@ -60,6 +60,7 @@ classRoutes.post('/', async (c) => {
     template: body.template ?? null,
     status: body.status ?? 'draft',
     visibility: body.visibility ?? 'private',
+    timelineMode: body.timelineMode ?? 'sequential',
     targetDurationMs: body.targetDurationMs ?? null,
     featuredCategory: body.featuredCategory ?? null,
     coverImageUrl: null,
@@ -354,7 +355,25 @@ classRoutes.patch('/:id', async (c) => {
   await requireAccess(db, c.get('userId'), id, 'edit');
   const body = updateClassSchema.parse(await c.req.json());
 
+  // Detect a timeline-mode switch so we can seed/repack offsets afterward.
+  let modeSwitch: 'to_free' | 'to_sequential' | null = null;
+  if ('timelineMode' in body && body.timelineMode != null) {
+    const current = await db
+      .select({ mode: classes.timelineMode })
+      .from(classes)
+      .where(eq(classes.id, id))
+      .get();
+    if (current && current.mode !== body.timelineMode) {
+      modeSwitch = body.timelineMode === 'free' ? 'to_free' : 'to_sequential';
+    }
+  }
+
   await db.update(classes).set(buildPatch(body)).where(eq(classes.id, id));
+  // Switching into free seeds authored offsets from the current sequential layout
+  // (so the timeline looks identical, then tracks can be dragged apart); switching
+  // back to sequential re-packs them back-to-back.
+  if (modeSwitch === 'to_free') await seedFreeOffsets(db, id);
+  else if (modeSwitch === 'to_sequential') await resequence(db, id);
   const row = await db.select().from(classes).where(eq(classes.id, id)).get();
   const tagsRow = await db
     .select({ tag: classTags.tag })
