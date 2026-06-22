@@ -34,7 +34,7 @@ import {
   cues,
   classTrackMoves,
 } from '../db/schema.js';
-import { resolveClipWindow, effectiveDurationMs } from '../lib/duration.js';
+import { resolveClipWindow, effectiveDurationMs, clipStartBeyondTrack } from '../lib/duration.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
 classTrackRoutes.use('*', requireSession);
@@ -52,10 +52,13 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
   const body = addClassTrackSchema.parse(await c.req.json());
 
   let trackId: string;
+  // Base length used to validate the clip window below (the same bound the PATCH
+  // route enforces): a clip start at/past it collapses the run-payload duration.
+  let trackDurationMs: number | null = null;
   if ('trackId' in body) {
     // Reference an existing track — must be in the caller's library (D4).
     const t = await db
-      .select({ ownerUserId: tracks.ownerUserId })
+      .select({ ownerUserId: tracks.ownerUserId, durationMs: tracks.durationMs })
       .from(tracks)
       .where(eq(tracks.id, body.trackId))
       .get();
@@ -63,6 +66,7 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
       throw new AccessError(404, 'NOT_FOUND', 'Not found.');
     }
     trackId = body.trackId;
+    trackDurationMs = t.durationMs;
   } else {
     // Inline-create a track owned by the caller (same shape as POST /tracks, step 8).
     const now = Date.now();
@@ -83,6 +87,18 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
       createdAt: now,
       updatedAt: now,
     });
+    trackDurationMs = body.track.durationMs ?? null;
+  }
+
+  // Reject a clip start at/past the track length before persisting (mirrors the PATCH
+  // guard) — otherwise the run-payload duration collapses to zero and 422s the class.
+  const clipError = clipStartBeyondTrack(
+    trackDurationMs,
+    body.durationMsOverride ?? null,
+    body.clipStartMs ?? 0,
+  );
+  if (clipError) {
+    throw new HttpError(422, 'VALIDATION_ERROR', clipError);
   }
 
   const existing = await db
@@ -238,6 +254,17 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
       clipStartMs,
       clipEndMs,
     );
+    // A clip start at/past the track length collapses the window to zero, which
+    // later fails the run-payload's positive-duration contract and 422s the whole
+    // class. Reject it here (the DB CHECK can't express the base bound).
+    const clipError = clipStartBeyondTrack(
+      existing?.trackDurationMs ?? null,
+      durationMsOverride,
+      clipStartMs,
+    );
+    if (clipError) {
+      throw new HttpError(422, 'VALIDATION_ERROR', clipError);
+    }
     if (touchesWindow && anchors) {
       if (anchors.minMs < startMs) {
         throw new HttpError(

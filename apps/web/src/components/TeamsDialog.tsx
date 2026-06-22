@@ -8,18 +8,23 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { TeamWithRole, TeamMemberView } from '@ritmofit/shared';
 import { listTeams, createTeam, listMembers, addMember, removeMember } from '../lib/api.js';
+import { errMessage } from '../lib/errors.js';
 import { Dialog } from './Dialog.js';
 
 export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () => void }) {
   const [teams, setTeams] = useState<TeamWithRole[] | null>(null);
-  const [selected, setSelected] = useState<TeamWithRole | null>(null);
+  // Track the selection by id and derive the current team from the list, so a refresh
+  // (role change / deletion) never leaves a stale snapshot selected — a deleted team
+  // simply deselects.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const selected = teams?.find((t) => t.id === selectedId) ?? null;
 
   const refreshTeams = useCallback(async () => {
     try {
       setTeams(await listTeams());
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e));
     }
   }, []);
 
@@ -70,9 +75,9 @@ export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () =
               {teams.map((t) => (
                 <li key={t.id}>
                   <button
-                    onClick={() => setSelected(t)}
+                    onClick={() => setSelectedId(t.id)}
                     className={`w-full rounded-card bg-bg-base p-3 text-left font-ui ${
-                      selected?.id === t.id ? 'ring-2 ring-interactive' : ''
+                      selectedId === t.id ? 'ring-2 ring-interactive' : ''
                     }`}
                   >
                     <span className="text-text-primary">{t.name}</span>
@@ -119,7 +124,7 @@ function CreateTeamForm({
           setName('');
           onCreated();
         } catch (err) {
-          onError((err as Error).message);
+          onError(errMessage(err));
         } finally {
           setBusy(false);
         }
@@ -161,7 +166,7 @@ function TeamMembers({
     try {
       setMembers(await listMembers(team.id));
     } catch (e) {
-      onError((e as Error).message);
+      onError(errMessage(e));
     }
   }, [team.id, onError]);
 
@@ -175,7 +180,7 @@ function TeamMembers({
         await removeMember(team.id, uid);
         await refresh();
       } catch (e) {
-        onError((e as Error).message);
+        onError(errMessage(e));
       }
     },
     [team.id, refresh, onError],
@@ -198,7 +203,7 @@ function TeamMembers({
               setEmail('');
               await refresh();
             } catch (err) {
-              onError((err as Error).message);
+              onError(errMessage(err));
             } finally {
               setBusy(false);
             }

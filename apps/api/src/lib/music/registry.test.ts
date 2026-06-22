@@ -45,6 +45,26 @@ describe('getMusicProvider', () => {
     expect(p.provider).toBe('apple_music');
   });
 
+  it('memoizes the live adapter for the same provider + credentials', () => {
+    const creds = env({ SPOTIFY_CLIENT_ID: 'memo-cid', SPOTIFY_CLIENT_SECRET: 'sec' });
+    const first = getMusicProvider('spotify', creds);
+    const second = getMusicProvider('spotify', creds);
+    expect(second).toBe(first); // same instance → its AppTokenCache survives across calls
+
+    // A different client id is a different credential → a fresh adapter.
+    const other = getMusicProvider(
+      'spotify',
+      env({ SPOTIFY_CLIENT_ID: 'other-cid', SPOTIFY_CLIENT_SECRET: 'sec' }),
+    );
+    expect(other).not.toBe(first);
+  });
+
+  it('never memoizes the mock adapter', () => {
+    const a = getMusicProvider('spotify', env({ MOCK_PROVIDERS: 'true' }));
+    const b = getMusicProvider('spotify', env({ MOCK_PROVIDERS: 'true' }));
+    expect(b).not.toBe(a);
+  });
+
   it('503s when a provider is selected without credentials', () => {
     for (const provider of ['spotify', 'apple_music'] as const) {
       try {

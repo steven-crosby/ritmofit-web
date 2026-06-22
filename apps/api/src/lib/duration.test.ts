@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { effectiveDurationMs, resolveClipWindow } from './duration.js';
+import { clipStartBeyondTrack, effectiveDurationMs, resolveClipWindow } from './duration.js';
 
 describe('effectiveDurationMs', () => {
   it('uses the class-specific override when present', () => {
@@ -61,5 +61,27 @@ describe('resolveClipWindow', () => {
 
   it('reports a null end when the length is unknown and no clip end is set', () => {
     expect(resolveClipWindow(null, null, 30000, null)).toEqual({ startMs: 30000, endMs: null });
+  });
+});
+
+describe('clipStartBeyondTrack', () => {
+  it('permits a clip start inside the track', () => {
+    expect(clipStartBeyondTrack(180000, null, 30000)).toBeNull();
+    expect(clipStartBeyondTrack(180000, null, 0)).toBeNull();
+  });
+
+  it('rejects a clip start at or past the library length', () => {
+    expect(clipStartBeyondTrack(180000, null, 180000)).toMatch(/before the track length/);
+    expect(clipStartBeyondTrack(180000, null, 200000)).toMatch(/before the track length/);
+  });
+
+  it('measures against the duration override when present', () => {
+    // start fits the 200000 override even though it exceeds the 180000 library length
+    expect(clipStartBeyondTrack(180000, 200000, 190000)).toBeNull();
+    expect(clipStartBeyondTrack(180000, 200000, 200000)).toMatch(/before the track length/);
+  });
+
+  it('permits any start when the base length is unknown', () => {
+    expect(clipStartBeyondTrack(null, null, 30000)).toBeNull();
   });
 });

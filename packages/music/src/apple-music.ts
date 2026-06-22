@@ -17,6 +17,7 @@ import { trackSearchResultSchema, type TrackSearchResult } from '@ritmofit/share
 import { z } from 'zod';
 import type { FetchLike, MusicProvider } from './provider.js';
 import { readJson, ProviderError } from './errors.js';
+import { fetchWithRetry, type RetryOptions } from './retry.js';
 
 const DEFAULT_API_BASE = 'https://api.music.apple.com/v1';
 const DEFAULT_STOREFRONT = 'us';
@@ -29,6 +30,8 @@ export interface AppleMusicConfig {
   /** ISO storefront, e.g. 'us'. Defaults to 'us'. */
   storefront?: string;
   apiBase?: string;
+  /** Retry tuning for transient (429/5xx) reads; tests inject a no-op sleep. */
+  retry?: RetryOptions;
 }
 
 /** One Apple Music song (permissive — unknown fields ignored). */
@@ -64,12 +67,14 @@ class AppleMusicProvider implements MusicProvider {
   private readonly fetchImpl: FetchLike;
   private readonly storefront: string;
   private readonly apiBase: string;
+  private readonly retry?: RetryOptions;
 
   constructor(config: AppleMusicConfig) {
     this.developerToken = config.developerToken;
     this.fetchImpl = config.fetchImpl;
     this.storefront = config.storefront ?? DEFAULT_STOREFRONT;
     this.apiBase = config.apiBase ?? DEFAULT_API_BASE;
+    this.retry = config.retry;
   }
 
   async search(query: string): Promise<TrackSearchResult[]> {
@@ -116,9 +121,12 @@ class AppleMusicProvider implements MusicProvider {
   }
 
   private async authedGet(url: string): Promise<unknown> {
-    const res = await this.fetchImpl(url, {
-      headers: { Authorization: `Bearer ${this.developerToken}` },
-    });
+    const res = await fetchWithRetry(
+      this.fetchImpl,
+      url,
+      { headers: { Authorization: `Bearer ${this.developerToken}` } },
+      this.retry,
+    );
     if (!res.ok)
       throw new ProviderError('apple_music', `Apple Music request failed: ${res.status}`);
     return readJson(res, 'apple_music');

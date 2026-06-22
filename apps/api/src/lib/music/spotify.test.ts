@@ -188,3 +188,39 @@ describe('SpotifyProvider.getPlaylist', () => {
     ).toEqual(['Bearer tok-1', 'Bearer tok-2']);
   });
 });
+
+describe('SpotifyProvider transient-retry wiring', () => {
+  it('retries a transient 503 search response then succeeds', async () => {
+    let searchCalls = 0;
+    const fetchImpl: FetchLike = async (url) => {
+      if (url === TOKEN_URL) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ access_token: 'tok', expires_in: 3600 }),
+          text: async () => '',
+        };
+      }
+      searchCalls += 1;
+      const ok = searchCalls > 1; // first attempt 503, retry 200
+      return {
+        ok,
+        status: ok ? 200 : 503,
+        json: async () => ({ tracks: { items: ok ? [SP_TRACK] : [] } }),
+        text: async () => '',
+      };
+    };
+    const provider = createSpotifyProvider({
+      clientId: 'cid',
+      clientSecret: 'secret',
+      fetchImpl,
+      apiBase: API_BASE,
+      tokenUrl: TOKEN_URL,
+      retry: { sleep: async () => {} }, // no real backoff in tests
+    });
+
+    const results = await provider.search('rick');
+    expect(results).toHaveLength(1);
+    expect(searchCalls).toBe(2);
+  });
+});

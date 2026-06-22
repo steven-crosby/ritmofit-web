@@ -34,6 +34,7 @@ import {
 import { buildSoundCloudAuthorizeUrl, exchangeSoundCloudCode } from '@ritmofit/music';
 import type { AppEnv, Env } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
+import { rateLimit } from '../lib/rate-limit.js';
 import { createDb, type Db } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { boundFetch } from '../lib/fetch.js';
@@ -120,58 +121,72 @@ async function upsertConnection(
 
 // ── routes ──────────────────────────────────────────────────────────────────
 
-/** POST /providers/:provider/connect — start the OAuth flow (returns authorize URL). */
-providerConnectionRoutes.post('/providers/:provider/connect', requireSession, async (c) => {
-  const provider = parseProvider(c.req.param('provider'));
-  const key = requireEncryptionKey(c.env);
-  const userId = c.get('userId');
-  const db = createDb(c.env);
-
-  // Dev seam: connect immediately with placeholder tokens so the UI is testable
-  // with zero credentials.
-  if (c.env.MOCK_PROVIDERS === 'true') {
-    await upsertConnection(db, {
-      userId,
-      provider,
-      accessTokenEncrypted: await encryptSecret('mock-access-token', key),
-      refreshTokenEncrypted: await encryptSecret('mock-refresh-token', key),
-      providerUserId: 'mock-user',
-      scope: 'mock',
-      expiresAt: Date.now() + 3600_000,
-    });
-    const body: ConnectProviderResponse = { authorizeUrl: null, connected: true };
-    return c.json(body);
-  }
-
-  if (!supportsUserAccount(provider)) {
-    throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
-  }
-  const { clientId } = soundcloudCreds(c.env);
-
-  const verifier = generateCodeVerifier();
-  const challenge = await challengeFromVerifier(verifier);
-  const state = randomToken();
-  const cookie = await encryptSecret(
-    JSON.stringify({ state, verifier, provider, userId, exp: Date.now() + STATE_TTL_MS }),
-    key,
-  );
-  setCookie(c, STATE_COOKIE, cookie, {
-    httpOnly: true,
-    secure: c.env.BETTER_AUTH_URL.startsWith('https://'),
-    sameSite: 'Lax',
-    path: '/',
-    maxAge: STATE_TTL_MS / 1000,
-  });
-
-  const authorizeUrl = buildSoundCloudAuthorizeUrl({
-    clientId,
-    redirectUri: redirectUriFor(c.env),
-    codeChallenge: challenge,
-    state,
-  });
-  const body: ConnectProviderResponse = { authorizeUrl, connected: false };
-  return c.json(body);
+// Connect mints an encrypted state cookie and builds an OAuth URL per call; cap it
+// per user so the flow can't be hammered.
+const connectLimiter = rateLimit({
+  keyPrefix: 'provider-connect',
+  windowMs: 60_000,
+  max: 10,
+  key: (c) => c.get('userId'),
 });
+
+/** POST /providers/:provider/connect — start the OAuth flow (returns authorize URL). */
+providerConnectionRoutes.post(
+  '/providers/:provider/connect',
+  requireSession,
+  connectLimiter,
+  async (c) => {
+    const provider = parseProvider(c.req.param('provider'));
+    const key = requireEncryptionKey(c.env);
+    const userId = c.get('userId');
+    const db = createDb(c.env);
+
+    // Dev seam: connect immediately with placeholder tokens so the UI is testable
+    // with zero credentials.
+    if (c.env.MOCK_PROVIDERS === 'true') {
+      await upsertConnection(db, {
+        userId,
+        provider,
+        accessTokenEncrypted: await encryptSecret('mock-access-token', key),
+        refreshTokenEncrypted: await encryptSecret('mock-refresh-token', key),
+        providerUserId: 'mock-user',
+        scope: 'mock',
+        expiresAt: Date.now() + 3600_000,
+      });
+      const body: ConnectProviderResponse = { authorizeUrl: null, connected: true };
+      return c.json(body);
+    }
+
+    if (!supportsUserAccount(provider)) {
+      throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
+    }
+    const { clientId } = soundcloudCreds(c.env);
+
+    const verifier = generateCodeVerifier();
+    const challenge = await challengeFromVerifier(verifier);
+    const state = randomToken();
+    const cookie = await encryptSecret(
+      JSON.stringify({ state, verifier, provider, userId, exp: Date.now() + STATE_TTL_MS }),
+      key,
+    );
+    setCookie(c, STATE_COOKIE, cookie, {
+      httpOnly: true,
+      secure: c.env.BETTER_AUTH_URL.startsWith('https://'),
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: STATE_TTL_MS / 1000,
+    });
+
+    const authorizeUrl = buildSoundCloudAuthorizeUrl({
+      clientId,
+      redirectUri: redirectUriFor(c.env),
+      codeChallenge: challenge,
+      state,
+    });
+    const body: ConnectProviderResponse = { authorizeUrl, connected: false };
+    return c.json(body);
+  },
+);
 
 /** GET /providers/:provider/callback — OAuth redirect target. Validates, stores, redirects. */
 providerConnectionRoutes.get('/providers/:provider/callback', async (c) => {

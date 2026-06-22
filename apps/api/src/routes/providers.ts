@@ -47,6 +47,21 @@ const searchLimiter = rateLimit({
   key: (c) => c.get('userId'),
 });
 
+// /likes spends the caller's own OAuth token; /track-import spends the shared app
+// token. Both proxy upstream provider calls, so cap them per user like search.
+const likesLimiter = rateLimit({
+  keyPrefix: 'provider-likes',
+  windowMs: 60_000,
+  max: 20,
+  key: (c) => c.get('userId'),
+});
+const importLimiter = rateLimit({
+  keyPrefix: 'provider-track-import',
+  windowMs: 60_000,
+  max: 30,
+  key: (c) => c.get('userId'),
+});
+
 /** GET /providers/:provider/search?q= — provider search candidates (contract DTOs). */
 providerRoutes.get('/providers/:provider/search', searchLimiter, async (c) => {
   const provider = parseProvider(c.req.param('provider'));
@@ -57,7 +72,7 @@ providerRoutes.get('/providers/:provider/search', searchLimiter, async (c) => {
 });
 
 /** GET /providers/:provider/likes — the caller's liked tracks (spends their token). */
-providerRoutes.get('/providers/:provider/likes', async (c) => {
+providerRoutes.get('/providers/:provider/likes', likesLimiter, async (c) => {
   const provider = parseProvider(c.req.param('provider'));
   const db = createDb(c.env);
   const results: TrackSearchResult[] = await fetchUserLikes(db, c.env, c.get('userId'), provider);
@@ -69,7 +84,7 @@ providerRoutes.get('/providers/:provider/likes', async (c) => {
  * a new track was created; 200 when it resolved to an existing track (idempotent
  * re-import, or a same-song attach onto a track already in the library).
  */
-providerRoutes.post('/providers/track-import', async (c) => {
+providerRoutes.post('/providers/track-import', importLimiter, async (c) => {
   const { provider, providerTrackId } = importProviderTrackSchema.parse(await c.req.json());
   const adapter = getMusicProvider(provider, c.env);
   const candidate = await adapter.lookup(providerTrackId);

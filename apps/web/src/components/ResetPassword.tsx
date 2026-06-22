@@ -36,7 +36,7 @@ export function ResetPassword() {
     }
   }
 
-  const invalid = !token || linkError;
+  const invalid = !token || linkError != null;
 
   return (
     <main className="rf-hero-glow flex min-h-screen flex-col items-center justify-center p-8">
@@ -78,22 +78,33 @@ export function ResetPassword() {
             </>
           ) : (
             <form onSubmit={submit} className="flex flex-col gap-3">
+              <label htmlFor="new-password" className="sr-only">
+                New password
+              </label>
               <input
+                id="new-password"
                 className="rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
                 type="password"
+                autoComplete="new-password"
                 placeholder="New password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={8}
                 required
+                aria-describedby={error ? 'reset-error' : undefined}
               />
-              {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
+              {error && (
+                <p id="reset-error" role="alert" className="font-ui text-sm text-state-danger">
+                  {error}
+                </p>
+              )}
               <button
                 type="submit"
                 disabled={busy}
+                aria-busy={busy}
                 className="rounded-pill rf-btn-primary px-5 py-2 font-ui font-semibold text-text-on-accent disabled:opacity-50"
               >
-                {busy ? '…' : 'Reset password'}
+                {busy ? 'Resetting…' : 'Reset password'}
               </button>
             </form>
           )}

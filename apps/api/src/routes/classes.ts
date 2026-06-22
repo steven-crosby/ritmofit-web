@@ -16,6 +16,7 @@ import {
 } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
+import { rateLimit } from '../lib/rate-limit.js';
 import { createDb } from '../lib/db.js';
 import { requireAccess, listVisibleClasses } from '../lib/authz.js';
 import { HttpError } from '../lib/errors.js';
@@ -46,6 +47,15 @@ import {
 
 export const classRoutes = new Hono<AppEnv>();
 classRoutes.use('*', requireSession);
+
+// Cover upload streams a multipart body into R2 per call; cap it per user so the
+// bucket can't be hammered with writes.
+const coverLimiter = rateLimit({
+  keyPrefix: 'class-cover',
+  windowMs: 60_000,
+  max: 10,
+  key: (c) => c.get('userId'),
+});
 
 /** POST /classes — create a class owned by the caller. */
 classRoutes.post('/', async (c) => {
@@ -406,7 +416,7 @@ classRoutes.delete('/:id', async (c) => {
 });
 
 /** POST /classes/:id/cover — upload a custom cover image to R2. Edit access required. */
-classRoutes.post('/:id/cover', async (c) => {
+classRoutes.post('/:id/cover', coverLimiter, async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
   await requireAccess(db, c.get('userId'), id, 'edit');

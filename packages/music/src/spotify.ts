@@ -19,6 +19,7 @@ import { z } from 'zod';
 import type { FetchLike, MusicProvider } from './provider.js';
 import { readJson, ProviderError } from './errors.js';
 import { AppTokenCache } from './app-token.js';
+import { fetchWithRetry, type RetryOptions } from './retry.js';
 
 const DEFAULT_API_BASE = 'https://api.spotify.com/v1';
 const DEFAULT_TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -37,6 +38,8 @@ export interface SpotifyConfig {
   apiBase?: string;
   tokenUrl?: string;
   now?: () => number;
+  /** Retry tuning for transient (429/5xx) reads; tests inject a no-op sleep. */
+  retry?: RetryOptions;
 }
 
 /** One Spotify track (permissive — unknown fields ignored). No audio-features/BPM. */
@@ -70,10 +73,12 @@ class SpotifyProvider implements MusicProvider {
   private readonly fetchImpl: FetchLike;
   private readonly apiBase: string;
   private readonly tokens: AppTokenCache;
+  private readonly retry?: RetryOptions;
 
   constructor(config: SpotifyConfig) {
     this.fetchImpl = config.fetchImpl;
     this.apiBase = config.apiBase ?? DEFAULT_API_BASE;
+    this.retry = config.retry;
     this.tokens = new AppTokenCache({
       provider: 'spotify',
       clientId: config.clientId,
@@ -156,14 +161,22 @@ class SpotifyProvider implements MusicProvider {
 
   private async authedGet(url: string): Promise<unknown> {
     const token = await this.tokens.get();
-    const res = await this.fetchImpl(url, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetchWithRetry(
+      this.fetchImpl,
+      url,
+      { headers: { Authorization: `Bearer ${token}` } },
+      this.retry,
+    );
     if (!res.ok) {
       // One forced refresh on a 401 in case the cached token went stale early.
       if (res.status === 401) {
         this.tokens.invalidate();
-        const retry = await this.fetchImpl(url, {
-          headers: { Authorization: `Bearer ${await this.tokens.get()}` },
-        });
+        const retry = await fetchWithRetry(
+          this.fetchImpl,
+          url,
+          { headers: { Authorization: `Bearer ${await this.tokens.get()}` } },
+          this.retry,
+        );
         if (retry.ok) return readJson(retry, 'spotify');
       }
       // Surface the upstream message (truncated) so a 400/403 is diagnosable in logs.
