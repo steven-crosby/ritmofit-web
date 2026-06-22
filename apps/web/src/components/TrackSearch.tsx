@@ -11,7 +11,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { providerCapabilities, type Provider, type TrackSearchResult } from '@ritmofit/shared';
-import { addTrack, importTrack, listLikes, searchProvider } from '../lib/api.js';
+import { addTrack, importPlaylist, importTrack, listLikes, searchProvider } from '../lib/api.js';
 import { formatDuration } from '../lib/class-summary.js';
 import { DEFAULT_PROVIDER, PROVIDER_ORDER, providerLabel } from '../lib/providers.js';
 
@@ -117,7 +117,6 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
     setImportingPlaylist(true);
     setError(null);
     try {
-      const { importPlaylist } = await import('../lib/api.js');
       await importPlaylist(classId, playlistUrl);
       setPlaylistUrl('');
       onAdded();
