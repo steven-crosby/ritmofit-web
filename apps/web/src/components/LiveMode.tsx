@@ -13,6 +13,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { RunPayload, RunPayloadTrackEntry, Intensity } from '@ritmofit/shared';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
+import { useWakeLock } from '../lib/use-wake-lock.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { LiveTimeline } from './LiveTimeline.js';
 
@@ -152,6 +153,9 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     };
   }, [playing, payload.class.totalDurationMs]);
 
+  // Keep the studio screen awake while the class is running.
+  useWakeLock(playing);
+
   const seek = (ms: number) => {
     const clamped = Math.max(0, Math.min(ms, payload.class.totalDurationMs));
     baseRef.current = clamped;
@@ -203,10 +207,33 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
       }
     : null;
 
+  // Screen-reader announcement of the focal state. Built from stable values (cue
+  // text, gap, end) — never the per-frame countdown — so it speaks once per change
+  // rather than continuously. The live region below re-announces only when this
+  // string actually changes.
+  const ended = payload.class.totalDurationMs > 0 && elapsedMs >= payload.class.totalDurationMs;
+  let announcement = '';
+  if (payload.tracks.length === 0) {
+    announcement = '';
+  } else if (ended) {
+    announcement = 'Class complete.';
+  } else if (gap) {
+    announcement = gap.nextTitle ? `Silence. Next track: ${gap.nextTitle}.` : 'Silence.';
+  } else if (currentEvent) {
+    announcement = `${currentEvent.kind === 'move' ? 'Move' : 'Cue'}: ${currentEvent.text}.`;
+  } else if (live) {
+    announcement = `Track ${live.index + 1}: ${live.entry.track.title}.`;
+  }
+
   // Live runs on bg-live (ink-950, darker than bg-base) for maximum AAA contrast
   // in a dim studio — and stays dark in both themes (02/04-layout).
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-live">
+      {/* The advancing cue, spoken for screen readers — the prompter's core function.
+          Visually hidden; the Cue-by-Cue card carries the same content on screen. */}
+      <p className="sr-only" aria-live="assertive" aria-atomic="true">
+        {announcement}
+      </p>
       <header className="flex items-center justify-between border-b border-interactive/20 px-6 py-3">
         <div>
           <h1 className="font-display text-lg font-semibold text-text-primary">

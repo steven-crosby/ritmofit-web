@@ -104,6 +104,36 @@ function trackAt(startOffsetMs: number): RunPayloadTrackEntry {
   return { ...activeTrack, startOffsetMs };
 }
 
+describe('LiveMode screen-reader announcements', () => {
+  it('announces the live track when no cue is active', () => {
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    expect(screen.getByText('Track 1: Active Track.')).toBeTruthy();
+  });
+
+  it('announces the current cue once one is reached', () => {
+    const withCue: RunPayload = {
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            {
+              id: '00000000-0000-4000-8000-0000000000aa',
+              anchorMs: 0,
+              beat: null,
+              bar: null,
+              text: 'Stand and sprint',
+              color: null,
+            },
+          ],
+        },
+      ],
+    };
+    render(<LiveMode payload={withCue} onExit={() => {}} />);
+    expect(screen.getByText('Cue: Stand and sprint.')).toBeTruthy();
+  });
+});
+
 describe('LiveMode timeline scrubber', () => {
   it('seeks the virtual clock from the timeline (keyboard)', () => {
     render(<LiveMode payload={payload} onExit={() => {}} />);
