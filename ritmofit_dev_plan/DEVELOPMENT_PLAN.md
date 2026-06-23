@@ -137,3 +137,13 @@ above and the milestone roll-up below._
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
 | [`close-session-checklist.md`](./close-session-checklist.md) | End-of-session runbook — say "run the close-session checklist" |
 | [`HISTORY.md`](./HISTORY.md) | Archived dated build/deploy log (PRs, Worker versions, migration steps) |
+
+---
+
+## Backlog / Open Items
+
+These items have been discussed and placed in the backlog for future prioritization or review:
+
+1. **"Songs by Move" / Track Tagging System:** Implement a simple "Google Keep/Apple Notes" style tagging system for tracks/classes to allow reverse-searching for songs previously choreographed with specific moves or themes.
+2. **Explore Feed UI:** Currently a simple chronological list of public classes. The visually rich, categorized UI (horizontal scrolling curated lists, e.g., "HIIT", "Pride") is a deferred enhancement.
+3. **Cues vs. Notes:** Revisit whether the current unified cueing system is sufficient, or if the data model needs to be split to distinguish between "Quick Cues" (large prompter text) and "Notes" (instructor context).

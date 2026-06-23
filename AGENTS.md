@@ -1,12 +1,13 @@
 # Repository Guidelines
 
+<!-- note (Codex, 2026-06-22): Made this guide independent of the untracked parent workspace. -->
+
 This file is the canonical contributor and agent guide for RitmoFit. If another instruction file
 conflicts with it, follow `AGENTS.md`. This guide may exceed 400 words when needed to preserve
 architecture, workflow, safety, or verification requirements.
 
 When an AI agent (e.g. Claude, Gemini) edits this file or adds a note to it, it must identify itself —
-label the change with the authoring agent and date (e.g. `<!-- note (Claude, 2026-06-17): … -->`). See
-the workspace-root `AGENTS.md` → "Attribution when editing instruction files."
+label the change with the authoring agent and date (e.g. `<!-- note (Claude, 2026-06-17): … -->`).
 
 ## Product & Architecture
 
