@@ -10,6 +10,25 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **⚠️ Session 2026-06-23 — merged to `main`, NOT deployed. Prod is behind `main`.**
+> Three PRs merged this session: **#91** (`44e7b6b`, chore: ESLint-ignore git-ignored DesignSync
+> artifacts so local `pnpm lint` matches CI), **#92** (`3c3f1fd`, docs: sweep housekeeping — backlog
+> section, self-contained `AGENTS.md`, removed obsolete `design-system-audits/`), and **#93**
+> (`8c70a6b`, feat: surface track `notes` in Live mode + the Cues-vs-Notes decision doc;
+> [`cues-vs-notes-decision.md`](./cues-vs-notes-decision.md)). `main` head is `8c70a6b`.
+> Close-session gates all green: typecheck, lint, unit (api 231 + web 166), integration 49, web build,
+> OpenAPI no-drift.
+>
+> **Deploy NOT performed — blocked + larger than this session.** Production is still on Worker
+> `e3528c85` (PR #84). The undeployed delta is **PRs #85–#93** (~28 commits), and **migrations
+> `0014` (clip-window trimming), `0015` (`beat_anchor_ms`), `0016` (free-timeline placement) are
+> pending on remote D1** (remote at `0013`) — they MUST be applied **before** the code deploy
+> (migrations-before-code). Deploy could not run here: the available Cloudflare token lacks
+> Workers/D1 scope (`wrangler` → `7403`). **Next session / owner:** authenticate `wrangler`, then
+> `wrangler d1 migrations apply ritmofit --remote` → `pnpm --filter @ritmofit/web build` →
+> `pnpm --filter @ritmofit/api run deploy` → smoke-test; record the new Worker version + remote
+> migration `0016` here.
+
 > **PR #81 follow-up hardening deployed (2026-06-21, PR #84, Worker `e3528c85`).**
 > PR #84 merged to `main` as `51c5b9e` and deployed from a clean worktree. Browser pinch zoom is
 > restored; class-cover uploads now enforce a shared 5 MiB limit, return a documented `413`, serve with
