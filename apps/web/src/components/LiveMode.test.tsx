@@ -104,6 +104,37 @@ function trackAt(startOffsetMs: number): RunPayloadTrackEntry {
   return { ...activeTrack, startOffsetMs };
 }
 
+describe('LiveMode track notes', () => {
+  const notedPayload = {
+    ...payload,
+    tracks: [{ ...activeTrack, notes: 'Watch the new rider in row 2' }],
+  } satisfies RunPayload;
+
+  it('surfaces the active track notes in Cue-by-Cue without making them the focal cue', () => {
+    render(<LiveMode payload={notedPayload} onExit={() => {}} />);
+
+    expect(screen.getByText('Watch the new rider in row 2')).toBeTruthy();
+    // The notes are a subordinate block, not the focal cue: the "Now" card and its
+    // "Notes" label both render, distinctly.
+    expect(screen.getByText('Now')).toBeTruthy();
+    expect(screen.getByText('Notes')).toBeTruthy();
+  });
+
+  it('shows the notes in Full List too', () => {
+    render(<LiveMode payload={notedPayload} onExit={() => {}} />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+
+    expect(screen.getByText('Watch the new rider in row 2')).toBeTruthy();
+  });
+
+  it('renders no notes block when the track has none', () => {
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+
+    expect(screen.queryByText(/Notes/)).toBeNull();
+  });
+});
+
 describe('LiveMode screen-reader announcements', () => {
   it('announces the live track when no cue is active', () => {
     render(<LiveMode payload={payload} onExit={() => {}} />);

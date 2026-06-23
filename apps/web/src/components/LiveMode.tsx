@@ -396,6 +396,13 @@ function CueByCue({
         </div>
       </div>
 
+      {entry.notes && (
+        <div className="w-full rounded-card border border-interactive/15 p-3 text-left">
+          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Notes</p>
+          <p className="whitespace-pre-wrap font-ui text-sm text-text-secondary">{entry.notes}</p>
+        </div>
+      )}
+
       <ProviderHandoffLinks entry={entry} />
 
       <div className="relative w-full">
@@ -495,6 +502,14 @@ function FullList({
                 )}
               </div>
             </div>
+            {t.notes && (
+              <p className="mt-2 whitespace-pre-wrap font-ui text-sm text-text-secondary">
+                <span className="mr-1 font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                  Notes:
+                </span>
+                {t.notes}
+              </p>
+            )}
             {isLive && (
               <div className="mt-3 border-t border-interactive/15 pt-3">
                 <ProviderHandoffLinks entry={t} />

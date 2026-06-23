@@ -73,12 +73,16 @@ is already in the run-payload and in `ClassTrack`.
 **In scope**
 
 1. **Live mode** — show the current track's `notes` as a **subtle, non-focal**
-   context line (e.g. near the track header in `CueByCue`, `LiveMode.tsx` ~L381–397),
-   explicitly **not** the big "Now" card. Primary gap; the reason notes exist.
-2. **Class summary** — render `notes` per track in `ClassSummaryView`
-   (tracks map ~L119) for the **owner's own** classes. For foreign/Explore classes,
-   gate or omit, consistent with cues/moves already being copy-gated ("save a copy
-   to view cues/moves"). Treat instructor notes as at least as private as cues.
+   context line in **both** Live views: a bordered block under the track header in
+   `CueByCue` (explicitly **not** the big "Now" card), and a compact "Notes:" line
+   under each track header in the Full List. Primary gap; the reason notes exist.
+2. **Class summary — no change (finding).** `ClassSummaryView` is reached **only**
+   via the Explore preview flow (`previewClassId` ← `onPreview`); it is a
+   foreign-class preview where cues/moves are already copy-gated ("save a copy to
+   view"). Instructor notes are at least as private, so they must **not** render
+   there. The owner already sees and edits notes in the builder track-settings
+   panel (`Dashboard.tsx`), so there is no owner-only summary surface to add to.
+   Net: the read-path gap was Live mode only.
 
 **Out of scope (later steps)**
 
