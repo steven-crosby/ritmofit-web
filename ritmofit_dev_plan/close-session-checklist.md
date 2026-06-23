@@ -5,9 +5,11 @@ A reusable end-of-session runbook. **Invoke by telling Claude:** _"run the close
 **pauses only at the decision points marked 🙋 (your call)** — everything else it does or reports
 automatically. At the end it prints a concise state summary.
 
-> Context for whoever runs this: deploys are **manual** (push to `main` does NOT deploy), CI is
-> **advisory** (never blocks/deploys), branch protection is **off**, and the repo's convention is to commit
-> **docs straight to `main`** (e.g. `docs:` commits). Run everything from `ritmofit-web/`.
+> Context for whoever runs this: deploys are **manual** (push to `main` does NOT deploy), and
+> **branch protection is ON** (since 2026-06-23) — direct `git push origin main` is **rejected**, so
+> **all changes (including docs) go via a PR** with the `format · typecheck · lint · test · build · audit`
+> check green before merge (`gh pr merge <n> --squash --delete-branch`; auto-merge is not enabled).
+> Run everything from `ritmofit-web/`.
 
 ---
 
@@ -49,7 +51,7 @@ Run and report pass/fail with real output — don't assume:
   `REVIEW_HISTORY.md` trackers are archived in `archive/`; do not revive them.) Update other focused
   docs such as `conventions.md` when their subject changes. `CLAUDE.md` is only a compatibility pointer
   to `AGENTS.md`; do not append session history to it.
-- [ ] Commit docs (convention: direct to `main`, `docs:` prefix) and push. Docs don't deploy, so no redeploy needed.
+- [ ] Commit docs (`docs:` prefix) on a branch and open a PR (branch protection blocks direct pushes to `main`); merge once CI is green. Docs don't deploy, so no redeploy needed.
 
 ## 6. Secrets, blockers, data hygiene
 - [ ] Restate any **known blockers** still open (e.g. ⚠️ email: `RESEND_API_KEY`/`EMAIL_FROM` unset → reset/verification on console fallback).
