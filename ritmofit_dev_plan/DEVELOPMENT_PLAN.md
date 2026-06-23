@@ -90,6 +90,11 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
 Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
+> **⚠️ Deploy state (2026-06-23): `main` is AHEAD of production.** Prod runs Worker `e3528c85` (PR #84);
+> `main` head is `8c70a6b`. Undeployed delta = **PRs #85–#93**, with **migrations `0014`–`0016` pending
+> on remote D1** (apply before code — migrations-before-code). See [`HISTORY.md`](./HISTORY.md) for the
+> runbook. The "fully deployed" line below describes the M1–M4 baseline, not the current `main`.
+>
 > **Status — current as of 2026-06-17.** Backend **M1–M4 complete, merged to `main`, and fully deployed
 > since 2026-06-12.** The whole app — API +
 > web planning surface — is **live at `https://ritmofit.studio`**, served by one Worker (Workers static
