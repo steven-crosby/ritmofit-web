@@ -108,11 +108,11 @@ enum RFColorLight {
 }
 
 enum RFRadius {
-    static let sheet: CGFloat = 32
-    static let panel: CGFloat = 28
-    static let card: CGFloat = 20
-    static let input: CGFloat = 16
-    static let control: CGFloat = 12
+    static let sheet: CGFloat = 24
+    static let panel: CGFloat = 20
+    static let card: CGFloat = 16
+    static let input: CGFloat = 12
+    static let control: CGFloat = 10
     static let pill: CGFloat = 999
 }
 
@@ -150,9 +150,9 @@ struct RFTextStyle {
 }
 
 enum RFType {
-    static let displayXl = RFTextStyle(size: 52, lineHeight: 56, weight: .semibold, trackingEm: -0.02, family: .display)
-    static let displayLg = RFTextStyle(size: 48, lineHeight: 52, weight: .semibold, trackingEm: -0.02, family: .display)
-    static let display = RFTextStyle(size: 34, lineHeight: 40, weight: .semibold, trackingEm: -0.02, family: .display)
+    static let displayXl = RFTextStyle(size: 52, lineHeight: 56, weight: .bold, trackingEm: -0.04, family: .display)
+    static let displayLg = RFTextStyle(size: 48, lineHeight: 52, weight: .bold, trackingEm: -0.035, family: .display)
+    static let display = RFTextStyle(size: 34, lineHeight: 40, weight: .bold, trackingEm: -0.03, family: .display)
     static let title = RFTextStyle(size: 24, lineHeight: 30, weight: .semibold, trackingEm: -0.01, family: .ui)
     static let heading = RFTextStyle(size: 18, lineHeight: 24, weight: .semibold, trackingEm: 0, family: .ui)
     static let body = RFTextStyle(size: 15, lineHeight: 22, weight: .regular, trackingEm: 0, family: .ui)
@@ -245,8 +245,7 @@ enum RFGradient {
     static let heatAngleDegrees: Double = 96
     static let heatStops: [(at: CGFloat, color: Color)] = [
         (0, Color(hex: "E07E3C")),
-        (0.58, Color(hex: "D9483A")),
-        (1, Color(hex: "FF2E88")),
+        (1, Color(hex: "D9483A")),
     ]
 }
 

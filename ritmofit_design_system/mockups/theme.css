@@ -83,16 +83,16 @@
   --rf-border-strong: rgba(251,247,240,0.24);
 
   /* type families */
-  --rf-font-ui: "Inter", "SF Pro Text", system-ui, sans-serif;
-  --rf-font-display: "Space Grotesk", "SF Pro Display", system-ui, sans-serif;
-  --rf-font-data: "Martian Mono", "SF Mono", ui-monospace, "Roboto Mono", monospace;
+  --rf-font-ui: "Sora", "SF Pro Text", system-ui, sans-serif;
+  --rf-font-display: "Bricolage Grotesque", "SF Pro Display", system-ui, sans-serif;
+  --rf-font-data: "Azeret Mono", "SF Mono", ui-monospace, "Roboto Mono", monospace;
 
   /* radius */
-  --rf-radius-sheet: 32px;
-  --rf-radius-panel: 28px;
-  --rf-radius-card: 20px;
-  --rf-radius-input: 16px;
-  --rf-radius-control: 12px;
+  --rf-radius-sheet: 24px;
+  --rf-radius-panel: 20px;
+  --rf-radius-card: 16px;
+  --rf-radius-input: 12px;
+  --rf-radius-control: 10px;
   --rf-radius-pill: 999px;
 
   /* spacing */
@@ -121,11 +121,11 @@
   --rf-glass-border: rgba(251,247,240,0.12);
   --rf-glass-highlight: rgba(251,247,240,0.06);
   --rf-glass: var(--rf-glass-strong);
-  --rf-header-fill: rgba(11, 10, 8, 0.9);
+  --rf-header-fill: #0B0A08;
 
   /* campaign heat (brand-front only) */
-  --rf-gradient-heat: linear-gradient(96deg var(--in-oklch, ), var(--rf-copper-400) 0%, var(--rf-ember-500) 58%, var(--rf-plasma-500) 100%);
-  --rf-bloom-heat: radial-gradient(60% 55% at 80% 0%, color-mix(in oklch, var(--rf-plasma-500) 20%, transparent) 0%, color-mix(in oklch, var(--rf-copper-500) 13%, transparent) 40%, transparent 72%);
+  --rf-gradient-heat: linear-gradient(96deg var(--in-oklch, ), var(--rf-copper-400) 0%, var(--rf-ember-500) 100%);
+  --rf-bloom-heat: radial-gradient(60% 55% at 80% 0%, color-mix(in srgb, var(--rf-ember-500) 12%, transparent) 0%, color-mix(in srgb, var(--rf-copper-500) 13%, transparent) 40%, transparent 72%);
 
   /* easing */
   --rf-ease: cubic-bezier(0.2, 0, 0, 1);
@@ -135,7 +135,7 @@
 
   /* tempo */
   --rf-bpm: 122;
-  --rf-beat: calc(60s / var(--rf-bpm, 120));
+  --rf-beat: calc(60s / var(--rf-bpm, 122));
 
   /* intensity (zone ramp) */
   --rf-zone-0: var(--rf-bone-500);
@@ -227,7 +227,7 @@
   --rf-glass-strong: rgba(243,237,226,0.82);
   --rf-glass-border: rgba(11,10,8,0.10);
   --rf-glass-highlight: rgba(255,255,255,0.50);
-  --rf-header-fill: rgba(251, 247, 240, 0.9);
+  --rf-header-fill: #FFFDF9;
 
   /* shadows */
   --rf-shadow-card: 0 1px 2px rgba(0,0,0,0.10);
