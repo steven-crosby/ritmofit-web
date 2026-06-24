@@ -120,6 +120,13 @@
       "when": 1782065407927,
       "tag": "0016_motionless_shocker",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1782315380573,
+      "tag": "0017_ordinary_whistler",
+      "breakpoints": true
     }
   ]
 }

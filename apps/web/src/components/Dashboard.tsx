@@ -27,6 +27,7 @@ import {
   addClassTag,
   removeClassTag,
   uploadClassCover,
+  getClass,
 } from '../lib/api.js';
 import { moveItem } from '../lib/reorder.js';
 import { avgBpm, formatDuration } from '../lib/class-summary.js';
@@ -63,6 +64,9 @@ const ExploreDialog = lazy(() =>
 const ConnectionsDialog = lazy(() =>
   import('./ConnectionsDialog.js').then((m) => ({ default: m.ConnectionsDialog })),
 );
+const SongsByMoveDialog = lazy(() =>
+  import('./SongsByMoveDialog.js').then((m) => ({ default: m.SongsByMoveDialog })),
+);
 const ClassSummaryView = lazy(() =>
   import('./ClassSummaryView.js').then((m) => ({ default: m.ClassSummaryView })),
 );
@@ -95,6 +99,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [exploreOpen, setExploreOpen] = useState(false);
   const [previewClassId, setPreviewClassId] = useState<string | null>(null);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
+  const [songsByMoveOpen, setSongsByMoveOpen] = useState(false);
   const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
     null,
   );
@@ -196,6 +201,21 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     [loadDetail],
   );
 
+  // Open a class by id when we don't already hold its full record (e.g. from the
+  // Songs-by-Move results, where a match may be on a library page we haven't
+  // loaded). Prefer the in-memory list; otherwise fetch it.
+  const openClassById = useCallback(
+    async (classId: string) => {
+      const known = classes.find((c) => c.id === classId);
+      try {
+        await openClass(known ?? (await getClass(classId)));
+      } catch (e) {
+        setError((e as Error).message);
+      }
+    },
+    [classes, openClass],
+  );
+
   const runClass = useCallback(async (classId: string) => {
     try {
       const payload = await getRunPayload(classId);
@@ -268,6 +288,12 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           </button>
           <button
             className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
+            onClick={() => setSongsByMoveOpen(true)}
+          >
+            Songs by move
+          </button>
+          <button
+            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
             onClick={() => setTeamsOpen(true)}
           >
             Teams
@@ -298,6 +324,12 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               setConnectionsOpen(false);
               setOauthResult(null);
             }}
+          />
+        )}
+        {songsByMoveOpen && (
+          <SongsByMoveDialog
+            onClose={() => setSongsByMoveOpen(false)}
+            onOpenClass={openClassById}
           />
         )}
         {exploreOpen && (

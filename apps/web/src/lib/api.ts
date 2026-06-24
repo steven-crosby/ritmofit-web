@@ -26,6 +26,7 @@ import type {
   UserMove,
   CreateUserMove,
   UpdateUserMove,
+  SongByMove,
   ClassSection,
   CreateClassSection,
   UpdateClassSection,
@@ -99,6 +100,8 @@ export const updateClass = (classId: string, body: UpdateClass) =>
   api<Class>(`/classes/${classId}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const deleteClass = (classId: string) =>
   api<void>(`/classes/${classId}`, { method: 'DELETE' });
+/** Fetch one class with the caller's access level (used to open a class by id). */
+export const getClass = (classId: string) => api<ClassWithAccess>(`/classes/${classId}`);
 export const addClassTag = (classId: string, tag: string) =>
   api<{ success: true; tag: string }>(`/classes/${classId}/tags`, {
     method: 'POST',
@@ -208,6 +211,16 @@ export const createUserMove = (body: CreateUserMove) =>
 export const updateUserMove = (id: string, body: UpdateUserMove) =>
   api<UserMove>(`/user-moves/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const deleteUserMove = (id: string) => api<void>(`/user-moves/${id}`, { method: 'DELETE' });
+
+/**
+ * "Songs by move" reverse search: the caller's songs previously choreographed
+ * with a move, grouped by track (owner-scoped server-side). `kind` selects the
+ * global library vs. the caller's custom-move namespace (their ids overlap).
+ */
+export const songsByMove = (move: { kind: 'library' | 'user'; id: string }) =>
+  api<SongByMove[]>(
+    move.kind === 'library' ? `/moves/${move.id}/songs` : `/user-moves/${move.id}/songs`,
+  );
 
 /** Class sections — the energy-arc segment bands (class-scoped, edit access to write). */
 export const listSections = (classId: string) =>
