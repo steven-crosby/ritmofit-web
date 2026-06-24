@@ -164,6 +164,14 @@ const doc = {
             schema: { type: 'string', maxLength: 512 },
             description: 'Opaque continuation cursor from the prior response header.',
           },
+          {
+            name: 'tag',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', maxLength: 50 },
+            description:
+              'Filter to classes carrying this tag (trimmed + lowercased). Composes with pagination.',
+          },
         ],
         responses: {
           '200': {

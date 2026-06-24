@@ -122,6 +122,9 @@ export type ClassListCursor = z.infer<typeof classListCursorSchema>;
 export const classListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(CLASS_LIST_MAX_LIMIT).optional(),
   cursor: z.string().min(1).max(512).optional(),
+  // Filter the library to classes carrying this tag (server-side theme search).
+  // Normalized to match how tags are stored (trimmed + lowercased).
+  tag: z.string().trim().toLowerCase().min(1).max(50).optional(),
 });
 export type ClassListQuery = z.infer<typeof classListQuerySchema>;
 

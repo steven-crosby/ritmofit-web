@@ -1,5 +1,14 @@
 /** Minimal authenticated builder: create a class, add a tagged track, see the timeline. */
-import { useCallback, useEffect, useReducer, useRef, useState, lazy, Suspense } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+  lazy,
+  Suspense,
+  type FormEvent,
+} from 'react';
 import {
   intensityValues,
   type Class,
@@ -91,6 +100,13 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [listStatus, setListStatus] = useState<ListStatus>('loading');
   const [nextClassCursor, setNextClassCursor] = useState<string | null>(null);
   const [loadingMoreClasses, setLoadingMoreClasses] = useState(false);
+  // Server-side tag (theme) search. `activeTag` drives the UI; the ref lets the
+  // memoized loaders read the current filter without re-creating on every change.
+  // `knownTags` accumulates every tag seen on an unfiltered page so the quick-fill
+  // pills persist even while a filter narrows the list to one tag.
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const activeTagRef = useRef<string | null>(null);
+  const [knownTags, setKnownTags] = useState<string[]>([]);
   const [selected, setSelected] = useState<ClassWithAccess | null>(null);
   const [detail, dispatchDetail] = useReducer(classDetailReducer, initialClassDetailState);
   const detailRequestId = useRef(0);
@@ -105,36 +121,59 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   );
   const [error, setError] = useState<string | null>(null);
 
+  // Merge a page's tags into the known-tags set (only an unfiltered page widens
+  // it; a filtered page only re-adds the active tag, which is harmless).
+  const mergeKnownTags = useCallback((items: ClassWithAccess[]) => {
+    setKnownTags((prev) => {
+      const set = new Set(prev);
+      for (const cls of items) for (const t of cls.tags) set.add(t);
+      return [...set].sort();
+    });
+  }, []);
+
   const refreshClasses = useCallback(async () => {
     try {
-      const page = await listClasses();
+      const page = await listClasses(undefined, undefined, activeTagRef.current ?? undefined);
       setClasses(page.items);
       setNextClassCursor(page.nextCursor);
+      mergeKnownTags(page.items);
       setListStatus('ready');
       setError(null);
     } catch (e) {
       setListStatus('error');
       setError((e as Error).message);
     }
-  }, []);
+  }, [mergeKnownTags]);
+
+  // Switch the server-side tag filter (null clears it) and reload from page 1.
+  const applyTagFilter = useCallback(
+    async (tag: string | null) => {
+      activeTagRef.current = tag;
+      setActiveTag(tag);
+      setListStatus('loading');
+      await refreshClasses();
+    },
+    [refreshClasses],
+  );
 
   const loadMoreClasses = useCallback(async () => {
     if (!nextClassCursor || loadingMoreClasses) return;
     setLoadingMoreClasses(true);
     setError(null);
     try {
-      const page = await listClasses(undefined, nextClassCursor);
+      const page = await listClasses(undefined, nextClassCursor, activeTagRef.current ?? undefined);
       setClasses((current) => {
         const seen = new Set(current.map((cls) => cls.id));
         return [...current, ...page.items.filter((cls) => !seen.has(cls.id))];
       });
       setNextClassCursor(page.nextCursor);
+      mergeKnownTags(page.items);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoadingMoreClasses(false);
     }
-  }, [loadingMoreClasses, nextClassCursor]);
+  }, [loadingMoreClasses, nextClassCursor, mergeKnownTags]);
 
   useEffect(() => {
     void refreshClasses();
@@ -373,9 +412,13 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             hasMore={nextClassCursor !== null}
             loadingMore={loadingMoreClasses}
             selectedId={selected?.id ?? null}
+            knownTags={knownTags}
+            activeTag={activeTag}
+            onSelectTag={applyTagFilter}
             onError={setError}
             onCreate={async (cls) => {
-              await refreshClasses();
+              // A new class is untagged — clear any active filter so it's visible.
+              await applyTagFilter(null);
               await openClass({ ...cls, accessLevel: 'owner' });
             }}
             onOpen={openClass}
@@ -435,6 +478,9 @@ export function LibraryRail({
   hasMore,
   loadingMore,
   selectedId,
+  knownTags,
+  activeTag,
+  onSelectTag,
   onError,
   onCreate,
   onOpen,
@@ -445,17 +491,21 @@ export function LibraryRail({
   hasMore: boolean;
   loadingMore: boolean;
   selectedId: string | null;
+  /** Every tag seen on an unfiltered page — the quick-fill pill set. */
+  knownTags: string[];
+  /** The active server-side tag filter, or null when unfiltered. */
+  activeTag: string | null;
+  /** Apply (or clear, with null) the server-side tag filter; reloads from page 1. */
+  onSelectTag: (tag: string | null) => void;
   onError: (msg: string | null) => void;
   onCreate: (cls: Awaited<ReturnType<typeof createClass>>) => void;
   onOpen: (cls: ClassWithAccess) => void;
   onLoadMore: () => void;
 }) {
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  // `classes` is already the server-filtered set, so an empty list under an active
+  // tag is "no matches", not "no classes at all".
   const view = libraryView(status, classes.length);
-  const allTags = Array.from(new Set(classes.flatMap((c) => c.tags))).sort();
-  const filteredClasses = selectedTag
-    ? classes.filter((c) => c.tags.includes(selectedTag))
-    : classes;
+  const showTagFilter = knownTags.length > 0 || activeTag != null;
   return (
     <aside className="flex flex-col gap-3 xl:sticky xl:top-6">
       <div className="flex items-center justify-between">
@@ -465,6 +515,9 @@ export function LibraryRail({
         <span className="font-data text-xs text-text-tertiary">{classes.length} loaded</span>
       </div>
       <CreateClassForm onCreated={onCreate} onError={onError} />
+      {showTagFilter && (
+        <TagFilter knownTags={knownTags} activeTag={activeTag} onSelectTag={onSelectTag} />
+      )}
       {view === 'loading' ? (
         <p className="font-ui text-sm text-text-tertiary">Loading your classes…</p>
       ) : view === 'error' ? (
@@ -472,69 +525,118 @@ export function LibraryRail({
           Couldn't load your classes — try again.
         </p>
       ) : view === 'empty' ? (
-        <p className="font-ui text-sm text-text-tertiary">
-          No classes yet — create your first above.
-        </p>
+        activeTag != null ? (
+          <p className="font-ui text-sm text-text-tertiary">
+            No classes tagged <span className="text-text-secondary">#{activeTag}</span>.
+          </p>
+        ) : (
+          <p className="font-ui text-sm text-text-tertiary">
+            No classes yet — create your first above.
+          </p>
+        )
       ) : (
-        <div className="flex flex-col gap-3">
-          {allTags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pb-1">
-              {selectedTag && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedTag(null)}
-                  className="rounded-pill border border-interactive bg-interactive px-2 py-0.5 font-ui text-xs text-bg-base"
-                >
-                  #{selectedTag} ×
-                </button>
-              )}
-              {allTags
-                .filter((t) => t !== selectedTag)
-                .map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => setSelectedTag(tag)}
-                    className="rounded-pill border border-interactive/30 bg-bg-base px-2 py-0.5 font-ui text-xs text-text-secondary hover:text-text-primary"
-                  >
-                    #{tag}
-                  </button>
-                ))}
-            </div>
+        <ul className="flex flex-col gap-2">
+          {classes.map((cls) => (
+            <li key={cls.id}>
+              <button
+                onClick={() => onOpen(cls)}
+                aria-pressed={selectedId === cls.id}
+                className={`w-full rounded-card bg-bg-raised p-3 text-left font-ui shadow-card ${
+                  selectedId === cls.id ? 'ring-2 ring-interactive' : ''
+                }`}
+              >
+                <span className="block truncate text-text-primary">{cls.title}</span>
+                <span className="font-data text-xs uppercase text-text-tertiary">
+                  {cls.accessLevel}
+                </span>
+              </button>
+            </li>
+          ))}
+          {hasMore && (
+            <li className="flex justify-center pt-1">
+              <button
+                type="button"
+                className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+                onClick={onLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? 'Loading…' : 'Load more'}
+              </button>
+            </li>
           )}
-          <ul className="flex flex-col gap-2">
-            {filteredClasses.map((cls) => (
-              <li key={cls.id}>
-                <button
-                  onClick={() => onOpen(cls)}
-                  aria-pressed={selectedId === cls.id}
-                  className={`w-full rounded-card bg-bg-raised p-3 text-left font-ui shadow-card ${
-                    selectedId === cls.id ? 'ring-2 ring-interactive' : ''
-                  }`}
-                >
-                  <span className="block truncate text-text-primary">{cls.title}</span>
-                  <span className="font-data text-xs uppercase text-text-tertiary">
-                    {cls.accessLevel}
-                  </span>
-                </button>
-              </li>
-            ))}
-            {hasMore && (
-              <li className="flex justify-center pt-1">
-                <button
-                  type="button"
-                  className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
-                  onClick={onLoadMore}
-                  disabled={loadingMore}
-                >
-                  {loadingMore ? 'Loading…' : 'Load more'}
-                </button>
-              </li>
-            )}
-          </ul>
-        </div>
+        </ul>
       )}
     </aside>
+  );
+}
+
+/**
+ * Server-side tag (theme) search. The active filter shows as a removable chip;
+ * `knownTags` render as quick-fill pills; the input reaches any tag — including
+ * ones not on a loaded page — and is normalized (trim + lowercase) to match how
+ * the server stores tags.
+ */
+function TagFilter({
+  knownTags,
+  activeTag,
+  onSelectTag,
+}: {
+  knownTags: string[];
+  activeTag: string | null;
+  onSelectTag: (tag: string | null) => void;
+}) {
+  const [input, setInput] = useState('');
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const tag = input.trim().toLowerCase();
+    if (!tag) return;
+    setInput('');
+    onSelectTag(tag);
+  };
+  return (
+    <div className="flex flex-col gap-1.5 pb-1">
+      <form className="flex gap-1.5" onSubmit={submit}>
+        <input
+          className="min-w-0 flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1 font-ui text-xs text-text-primary"
+          placeholder="Filter by tag…"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          aria-label="Filter classes by tag"
+        />
+        {input.trim() && (
+          <button
+            type="submit"
+            className="rounded-pill border border-interactive px-3 py-1 font-ui text-xs text-interactive"
+          >
+            Filter
+          </button>
+        )}
+      </form>
+      <div className="flex flex-wrap gap-1.5">
+        {activeTag && (
+          <button
+            type="button"
+            onClick={() => onSelectTag(null)}
+            className="rounded-pill border border-interactive bg-interactive px-2 py-0.5 font-ui text-xs text-bg-base"
+            aria-label={`Clear tag filter ${activeTag}`}
+          >
+            #{activeTag} ×
+          </button>
+        )}
+        {knownTags
+          .filter((t) => t !== activeTag)
+          .map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => onSelectTag(tag)}
+              className="rounded-pill border border-interactive/30 bg-bg-base px-2 py-0.5 font-ui text-xs text-text-secondary hover:text-text-primary"
+            >
+              #{tag}
+            </button>
+          ))}
+      </div>
+    </div>
   );
 }
 

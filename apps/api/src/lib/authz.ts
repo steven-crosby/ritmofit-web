@@ -185,12 +185,19 @@ export interface VisibleClassPage {
 export async function listVisibleClasses(
   db: Db,
   userId: string,
-  options: { limit?: number; cursor?: ClassListCursor } = {},
+  options: { limit?: number; cursor?: ClassListCursor; tag?: string } = {},
 ): Promise<VisibleClassPage> {
   const cursorFilter = options.cursor
     ? sql`and (
         c.updated_at < ${options.cursor.updatedAt}
         or (c.updated_at = ${options.cursor.updatedAt} and c.id < ${options.cursor.id})
+      )`
+    : sql``;
+  // Theme search: keep only classes carrying the tag. Composes with the access
+  // CTE and the keyset cursor, so a filtered library still paginates correctly.
+  const tagFilter = options.tag
+    ? sql`and exists (
+        select 1 from class_tags ct where ct.class_id = c.id and ct.tag = ${options.tag}
       )`
     : sql``;
   const limitClause = options.limit == null ? sql`` : sql`limit ${options.limit + 1}`;
@@ -244,6 +251,7 @@ export async function listVisibleClasses(
     inner join classes c on c.id = visible.class_id
     where 1 = 1
     ${cursorFilter}
+    ${tagFilter}
     order by c.updated_at desc, c.id desc
     ${limitClause}
   `);

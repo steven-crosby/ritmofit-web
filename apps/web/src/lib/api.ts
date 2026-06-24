@@ -85,9 +85,11 @@ export interface ClassListPage {
 export const listClasses = async (
   limit = CLASS_LIST_DEFAULT_LIMIT,
   cursor?: string,
+  tag?: string,
 ): Promise<ClassListPage> => {
   const params = new URLSearchParams({ limit: String(limit) });
   if (cursor) params.set('cursor', cursor);
+  if (tag) params.set('tag', tag);
   const res = await apiResponse(`/classes?${params}`);
   return {
     items: (await res.json()) as ClassWithAccess[],

@@ -95,6 +95,7 @@ classRoutes.get('/', async (c) => {
   const page = await listVisibleClasses(db, c.get('userId'), {
     limit: paginated ? (query.limit ?? CLASS_LIST_DEFAULT_LIMIT) : undefined,
     cursor: query.cursor ? decodeClassListCursor(query.cursor) : undefined,
+    tag: query.tag,
   });
   if (page.nextCursor) {
     c.header(CLASS_LIST_NEXT_CURSOR_HEADER, encodeClassListCursor(page.nextCursor));
