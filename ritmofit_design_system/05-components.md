@@ -17,32 +17,36 @@ it applies. Geometry from the radius scale; color from the channels in
 | Variant            | Fill                       | Text                 | Use                                     |
 | ------------------ | -------------------------- | -------------------- | --------------------------------------- |
 | Primary            | copper `brand/primary`     | ink                  | The one main action per surface         |
-| Action (secondary) | transparent + cyan border  | cyan                 | "Preview in Spotify", secondary actions |
-| Ghost              | `bg/overlay`               | bone                 | Cancel, tertiary                        |
-| Destructive        | transparent + ember border | ember + `error` icon | Remove/delete — icon mandatory          |
+| Secondary          | neutral border/fill        | bone or cyan         | Share, New class, secondary actions      |
+| Inline action      | transparent, no border     | cyan + `+` prefix    | Add track, cue, move, or library item    |
+| Ghost              | `bg/overlay`               | bone                 | Cancel, tertiary                         |
+| Destructive        | transparent, no border     | ember + `error` icon | Remove/delete — icon mandatory           |
 
-Radius `pill`. Hover: primary brightens; action/ghost lighten fill. Pressed: a subtle depress
+Radius `input` (12px); pills are reserved for chips and compact tags. Hover: primary brightens;
+secondary/ghost controls lighten their neutral fill; destructive controls gain a subtle ember tint.
+Pressed: a subtle depress
 (`transform: translateY(1px)`). Disabled drops to 40% opacity and removes hover. Only one primary per
 surface. **Plasma is never a button fill.**
 
 ## Chips & toggles
 
-- **Filter/selection chips:** `pill` radius, `bg/raised`; selected = **cyan border + heavier weight**
-  (selection is interaction, not identity — copper stays reserved for current-location/brand).
+- **Filter/selection chips:** `pill` radius, `bg/raised`; selected = neutral structure + heavier weight.
+  Cyan is appropriate when the chip is an operable control, but not as passive location decoration.
   Always show selection via shape + weight, not color alone. (`.chip[aria-pressed]`)
-- **Segment tag:** pill, label-first with a small reinforcing tint dot from the segment palette
-  in `tokens.json` (warm-up/climb/sprint/recovery/cool-down). Quiet. (`.segment-tag`)
+- **Segment tag:** pill, label-first with a small reinforcing tint dot. Schema keys retain their honest
+  fallback labels (Warm-up/Climb/Sprint/Recovery/Cool-down). A reviewed discipline template or
+  instructor-authored section name may override the visible label. Quiet. (`.segment-tag`)
 - **Toggle/switch:** cyan when on, with knob position carrying state.
 
 ## Inputs
 
 `input` radius, `bg/sunken` or `bg/raised` fill, `border/default`, label above in `label` token. Focus =
 cyan ring. Error = ember border + `error` icon + message (never red border alone). Numeric inputs (BPM)
-use the **Martian Mono data face** with stepper affordances.
+use the **Azeret Mono data face** with stepper affordances.
 
 ## BPM readout (the signature data component)
 
-The product's hero value. Three sizes, all Martian Mono / tabular:
+The product's hero value. Three sizes, all Azeret Mono / tabular:
 
 - **Inline** (`data`) — in song rows and the editor.
 - **Large** (`data-lg`) — timeline header, section totals.
@@ -56,11 +60,11 @@ The signature list item. **Low noise** (see [`09-class-builder-guidelines.md`](.
 
 - Small album art (44pt, `control` radius) — a creative trigger, not a focal point.
 - Title (`body-strong`) + artist (`body`, secondary).
-- **BPM** in `data` (Martian Mono), visually weighted — the planning-critical value.
+- **BPM** in `data` (Azeret Mono), visually weighted — the planning-critical value.
 - Drag grip for reorder; intensity indicator (zone bars) when assigned.
-- States: default · hover (raise border) · selected (**cyan** left-edge + outline — selection is
-  interaction) · dragging (`shadow.lifted` + slight scale) · **playing** (faint on-beat pulse on the
-  play indicator only).
+- States: default · hover (raise border) · selected (neutral surface/border plus the checked control or
+  matching inspector heading) · dragging (`shadow.lifted` + slight scale) · **playing** (cyan dot with
+  faint on-beat pulse on the play indicator only).
 
 ## Intensity indicator
 
@@ -92,17 +96,16 @@ shaped/iconed by type (cue vs move) — not color alone. The IntensityRibbon sit
 
 ## Cue & move markers
 
-- **Cue marker:** small, carries cue text on hover/expand; pulse animation on add.
+- **Cue marker:** small, carries cue text on hover/expand; a brief static highlight confirms add.
 - **Move marker:** distinct shape/icon from a cue (separate concepts); may carry intensity.
 - Both anchored to a `class_track` by `anchor_ms`; both editable in the side detail panel.
 
 ## Navigation
 
-- **Web:** persistent glass top nav bar (Library / Moves / Builder / Explore / Teams); the current
-  section is marked with `aria-current="page"`. Content rails (your-classes, library sources) are
-  in-surface lists, not the primary app navigation.
-- **iOS:** glass bottom tab bar matching the core sections, plus the in-class Timeline/Playlist toggle.
-- Active tab: filled icon + cyan; inactive: outline icon.
+- **Web:** responsive top header for launch surfaces: Library, Moves, and Builder.
+- **iOS:** native bottom navigation for launch destinations, plus the in-class Timeline/Playlist toggle.
+- Active tab: stronger label plus a quiet neutral underline/filled icon; inactive: quieter label/outline
+  icon. Cyan is reserved for focus and controls, not persistent location.
 
 ## Overlays, sheets, dialogs
 
@@ -111,7 +114,7 @@ distinct Cancel. Destructive options carry icons.
 
 ## Now-playing / Live HUD
 
-Glass over content, maximum-contrast text, `data-hero`/`display` type, current cue dominant, next cue
+Structured solid/glass surfaces over the dark Live ground, maximum-contrast text, `data-hero`/`display` type, current cue dominant, next cue
 queued, BPM + timecode persistent **and pulsing on the beat**. The All-Out cue advance is the one "drop"
 moment (plasma glow bloom, on-beat cross-fade). Minimal controls, large targets.
 
@@ -122,8 +125,11 @@ to fix it, in the interface's voice. Never vague, never an apology.
 
 ## Provider connection states
 
-Music providers are core to trust, so connection state is always explicit — six states, never a silent
-failure (see brief §9.8). The label and glyph carry meaning; color only reinforces (`.provider-state`):
+Music providers are core to trust. Catalog availability and user-account connection are different
+capabilities and must not be conflated. Today, Spotify and Apple Music are catalog sources;
+SoundCloud supports user connection and likes. For providers with a user-account integration,
+connection state is always explicit — six states, never a silent failure (see brief §9.8). The label
+and glyph carry meaning; color only reinforces (`.provider-state`):
 
 | State          | Glyph | Color channel | Note                                    |
 | -------------- | :---: | ------------- | --------------------------------------- |
@@ -135,6 +141,11 @@ failure (see brief §9.8). The label and glyph carry meaning; color only reinfor
 | Provider error |   ×   | danger/ember  | provider-side failure                   |
 
 Every failure state pairs with an inline recovery action.
+
+Catalog-only providers use an explicit `catalog available` label rather than a connected state.
+
+Connected and reconnecting states are borderless icon + text. Warning and error states may opt into a
+bordered container because the boundary helps communicate an actionable problem.
 
 ## Icons
 

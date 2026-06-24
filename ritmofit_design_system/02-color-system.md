@@ -5,15 +5,11 @@ A complete warm **light** palette now fills every semantic `light` slot (cream s
 copper/cyan/cyan-state stepped to their deepest existing steps for contrast on a light ground). It is
 **opt-in** — the web emits it under `[data-theme="light"]`, iOS as `RFColorLight` — so dark stays the
 default and the dark-first surfaces are unaffected. Surfaces and text are AA-clean (espresso text on cream
-is ~7:1+; tertiary uses `ink-500` for AA). One item is intentional-by-design; two are now closed (kept
-for the record):
+is ~7:1+; tertiary uses `ink-500` for AA). The generated light theme includes semantic surfaces,
+glass, header, and shadow variants. Live intentionally remains dark:
 
-1. **Live mode stays dark** in both themes (`bg/live`, a performance surface for dim rooms) — by design, not a gap.
-2. **Glass/shadow light variants — RESOLVED.** The light theme flips the glass fills, hairline border,
-   inner highlight, sticky-header fill, and the card/lifted shadows (warm-white translucency + softer
-   shadows), emitted under `[data-theme="light"]`. Light-mode glass legibility is not gated by
-   `check-contrast.mjs` (it covers text/accent pairs), so verify glass surfaces in a real browser.
-3. **Bright accent channels as _small_ text on light — RESOLVED.** The light theme maps the interactive
+1. **Live mode stays dark** in both themes (`bg/live`, a performance surface for dim rooms).
+2. **Bright accent channels as _small_ text on light — RESOLVED.** The light theme maps the interactive
    channel to `cyan-700` and caution to `amber-600` (the deepened steps), and the eyebrow to
    `copper-600`/`brand-strong`. With those, copper eyebrows (4.63:1) and cyan links (5.30:1) clear AA for
    small text, and the amber caution graphic (3.16:1) clears the ≥3:1 graphics bar — all **verified by
@@ -60,12 +56,9 @@ The most important rule: **copper = identity, cyan = interaction, plasma = peak.
 A hot magenta — `peak/glow` `#FF2E88`, `peak/bright` `#FF6AAE`. This is the synthesis's distinctive
 addition and it earns its place by **scarcity**:
 
-- **Where it appears (the allowlist):** (1) the All-Out intensity _glow_ (layered on top of the ember bar,
-  not replacing it); (2) the Live-mode sprint pulse / drop; and (3) the **brand-front campaign register** —
-  as the hot end of the heat gradient (`--rf-gradient-heat`) and the ambient bloom (`--rf-bloom-heat`) on
-  marketing, share/export, login, onboarding, and the Explore hero. That is the entire allowlist. In every
-  case plasma is _affect_: never a control, never meaning-bearing, never on a working or editing surface
-  (builder, inspector, forms, dense lists, Live-at-rest). Strip it and nothing is lost.
+- **Where it appears (the complete allowlist):** (1) All-Out intensity glow; (2) the Live sprint/drop
+  pulse; (3) the Zone 4 kiss in an energy ribbon; and (4) marketing/share artwork derived from actual
+  class peaks. It is never generic brand atmosphere.
 - **What it is:** pure affect — the visual "drop." It makes the peak of a class _feel_ like the peak.
 - **What it is not:** never a button, never a link, never a focus ring, never the sole signal for any
   state. Strip the plasma and the meaning is still fully encoded by zone number + bar count + label.
@@ -73,9 +66,7 @@ addition and it earns its place by **scarcity**:
   identity the earlier drafts named and abandoned — without tipping into theme-park saturation, because
   it shows up on roughly 1% of pixels.
 
-> Discipline check: if plasma appears on a planning screen at rest, that's a bug. It lives in motion, at
-> the peak, and — statically, as gradient + bloom — on the brand-front campaign register. Never where the
-> instructor is working.
+> Discipline check: if plasma cannot be traced to a labeled class peak or the Live drop, it is a bug.
 
 > **Cue tagging:** `cues.color` is a free hex in the data model, but the **cue-color picker excludes the
 > plasma range** — instructors choose from copper / cyan / amber / ember / bone tags, not the reserved

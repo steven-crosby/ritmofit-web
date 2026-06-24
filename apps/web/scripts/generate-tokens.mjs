@@ -75,6 +75,13 @@ const isLeafSlot = (v) =>
 // heat gradient composes an array of stops + an angle into one value).
 const COMPOSITE_PATHS = new Set(['surface-gradient']);
 
+// Subtrees intentionally NOT emitted as web custom properties:
+//  - surface.depth.* are role NAMES (canvas/workbench/contained/elevated) that the
+//    reference iOS emitter maps to bg roles; the web app expresses depth via Tailwind
+//    bg-* utilities, so emitting `--rf-surface-depth-canvas: base` would only dangle.
+//  - typography.family.ios.* is the native iOS face stack — irrelevant on the web.
+const SKIP_SUBTREES = new Set(['surface-depth', 'typography-family-ios']);
+
 function walk(out, node, path, theme) {
   for (const [key, val] of Object.entries(node)) {
     if (key.startsWith('$')) continue;
@@ -83,6 +90,7 @@ function walk(out, node, path, theme) {
     if (key.endsWith('Light')) continue;
     const name = path ? `${path}-${key}` : key;
     if (COMPOSITE_PATHS.has(name)) continue;
+    if (SKIP_SUBTREES.has(name)) continue;
     if (Array.isArray(val)) continue; // e.g. ribbon.stops — built in code, not a var
     if (val && typeof val === 'object') {
       if (isLeafSlot(val)) emit(out, name, val, theme);
@@ -107,7 +115,7 @@ walk(lines, tokens.motion, 'motion', 'dark');
 // overrides it per playing track at runtime. --rf-beat derives the beat duration.
 const defaultBpm = tokens.tempo?.['default-bpm'] ?? 120;
 lines.push(`  --rf-bpm: ${defaultBpm};`);
-lines.push('  --rf-beat: calc(60s / var(--rf-bpm, 120));');
+lines.push(`  --rf-beat: calc(60s / var(--rf-bpm, ${defaultBpm}));`);
 
 // surface.gradient.heat — composed here because its stops are an array (skipped by
 // walk). The campaign "heat" display gradient (copper→ember→plasma); stops route

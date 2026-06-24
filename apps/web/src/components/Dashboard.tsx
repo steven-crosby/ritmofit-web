@@ -1062,7 +1062,7 @@ export function ClassHeaderCard({
           </button>
         </div>
       </div>
-      {/* Summary stats — BPM/time weighted in the Martian Mono data face. */}
+      {/* Summary stats — BPM/time weighted in the Azeret Mono data face. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-data text-xs text-text-secondary">
         <span>
           {trackCount} {trackCount === 1 ? 'track' : 'tracks'}
@@ -1210,7 +1210,7 @@ function ReorderableTrackList({
 
 /**
  * The low-noise song row (design system `09-class-builder-guidelines.md`): small
- * album art, title + artist, BPM weighted in the Martian Mono data face, and
+ * album art, title + artist, BPM weighted in the Azeret Mono data face, and
  * intensity as bars+label — never color alone. No oversized art, no chrome.
  * The selection button (the bulk of the row) opens the inspector; a separate drag
  * **grip** handles reorder so the two interactions never collide. `position` is the

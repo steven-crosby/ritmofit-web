@@ -15,7 +15,8 @@ non-color channel:
 | Intensity                        | zone number + bar count + label (+ color)      |
 | Segment type                     | icon + label (+ small color dot)               |
 | Success / error / caution / info | icon + word (+ color)                          |
-| Selected / active                | shape (outline/fill change) + weight (+ color) |
+| Selected control                 | checked/pressed state + shape + weight (+ color) |
+| Current location                 | matching content heading + weight/neutral fill |
 | Destructive action               | icon + word (+ ember color)                    |
 | Cue vs move on timeline          | distinct shape/icon (+ position)               |
 | Class energy (the ribbon)        | **graph height** (+ gradient color)            |
@@ -53,7 +54,7 @@ shape.
 ## Type & Dynamic Type
 
 - Web: relative units; layouts reflow at browser zoom up to 200% without loss of content/function. The
-  Martian Mono data face must scale with the rest — never pin it to fixed px.
+  Azeret Mono data face must scale with the rest — never pin it to fixed px.
 - iOS: support Dynamic Type categories; the type scale maps to text styles. Live mode's scale multiplier
   stacks sensibly with Dynamic Type.
 
@@ -67,6 +68,8 @@ shape.
 ## Targets & input
 
 - Touch targets ≥ 44×44pt; pointer targets comfortable.
+- A visually small checkbox, timeline marker, color swatch, or scrubber may sit inside a 44×44
+  interactive wrapper; its accessible name and focus treatment belong to that full target.
 - Don't rely on hover to reveal essential information (must be reachable on touch and keyboard).
 
 ## Live-mode specific

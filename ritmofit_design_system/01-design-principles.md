@@ -48,12 +48,9 @@ Planning mode is rich, layered, and mostly _still_: room to think. Live mode is 
 contrast, larger type, minimal chrome, and a visible pulse, glanceable from across a dim studio while
 moving. The same tokens produce both; the _mode_ selects how hard to push them.
 
-**Expressiveness scales with surface, too.** Working surfaces (builder, inspector, forms, dense lists) stay
-cool and quiet so a long session never tires the eye. Brand-front surfaces (marketing, share, login,
-onboarding, the Live drop) run the **campaign / swagger register** — heat gradient, ambient bloom, a hotter
-class-shape peak. Same palette, opposite volume. The discipline isn't "always restrained"; it's "restrained
-where they _work_, loud where the brand _performs_." (Where and how: [`02-color-system.md`](./02-color-system.md)
-and the drop in [`10-rhythm-system.md`](./10-rhythm-system.md).)
+**Expressiveness scales with surface, too.** Working surfaces—including sign-in—stay cool and quiet.
+Marketing and share artifacts may use copper/ember warmth, while plasma appears only at a real class
+peak or the Live drop. Swagger comes from class shape, scale, copy, and composition—not generic glow.
 
 ## 7. Earn every element
 

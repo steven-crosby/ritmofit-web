@@ -18,21 +18,11 @@ Each emitter transforms the JSON into its target. **Never hand-edit values in co
 generated file** — change the token and regenerate both. This keeps the two clients in lockstep as the
 brand evolves.
 
-> **Emitter coverage (honest scope).** The web emitter outputs colors, font _families_, radius, shadows,
-> glass, the ribbon ramp, motion, tempo, and the **spacing scale** (as `--rf-space-*`, consumed by the
-> `.gap-*` / padding utilities; `lint-tokens.mjs` guards the emission so it can't silently drop). One scale
-> is **not** emitted by this package's web emitter: the **type-scale sizes**. The reference mockups express
-> the large display roles with hand-authored fluid `clamp()` (viewport-responsive, decoupled from the token
-> point values); the production app emits the type scale and maps its display tier to the fixed token sizes.
-> Both scale with browser zoom (see [`07-accessibility.md`](./07-accessibility.md)). iOS consumes type and
-> spacing literally via `RFType` /
-> `RFSpace`. `tokens.json` stays the single reference for those values on both platforms — so when the type
-> scale changes, update the web utilities to match (no generator guards the type scale yet).
-
 ## What stays identical
 
 - Color roles and values (warm-black/copper/cyan channels + the reserved plasma peak).
-- Type scale sizes, weights, families — including **Martian Mono** for all data/numerals.
+- Type scale sizes and role intent; Bricolage Grotesque and Azeret Mono are shared. Web UI uses Sora
+  while iOS UI retains native SF Pro Text.
 - Radius and spacing scales.
 - Intensity ramp, segment language, redundant-encoding rules, the energy ribbon's meaning.
 - Motion durations/easing and the signature microinteractions' _intent_.
@@ -47,8 +37,8 @@ brand evolves.
 | Motion         | CSS transitions/keyframes on transform+opacity                      | SwiftUI animations; honor system spring feel                     |
 | Tempo pulse    | CSS keyframe whose duration = `--rf-beat`                           | SwiftUI `withAnimation` repeating on `beatDuration`              |
 | Icons          | Approved rounded web icon set                                       | SF Symbols (rounded equivalents)                                 |
-| Navigation     | persistent glass top nav bar                                        | glass bottom tab bar + native nav                                |
-| Type           | Inter / Space Grotesk / Martian Mono via web fonts; system fallback | bundle Space Grotesk + Martian Mono; SF Pro for UI; Dynamic Type |
+| Navigation     | responsive glass top header for launch destinations                 | glass bottom tab bar + native nav                                |
+| Type           | Sora UI + Bricolage Grotesque display + Azeret Mono data | bundle Bricolage Grotesque + Azeret Mono; SF Pro Text for UI; Dynamic Type |
 | Reduced motion | `prefers-reduced-motion`                                            | iOS Reduce Motion                                                |
 | Density        | planning view rich, side-by-side                                    | live view dominant, single-focus                                 |
 
@@ -58,8 +48,8 @@ brand evolves.
   keyboard workflows, rich contrast. Glass for nav/overlays; dense editing stays solid; tempo is off
   except a subtle pulse on the playing track.
 - **iOS** is the **live** home: glanceable HUD, maximum contrast, large `data-hero` type, glass over
-  content, full on-beat pulse, the "drop" at All-Out. iOS still supports planning (parity); web still
-  supports review.
+  content, full on-beat pulse, the "drop" at All-Out. Its current product scope is iPhone-only,
+  dark-only, with class browsing and live execution rather than web-planning parity.
 
 ## Native-feel guidelines
 
@@ -74,3 +64,14 @@ brand evolves.
 If a component looks or behaves meaningfully different between platforms in a way **not** listed in the
 "expresses differently" table, that's a bug, not a platform nuance. The shared tokens plus this table
 define the allowed divergence.
+
+## Current integration constraints
+
+- The backend and generated OpenAPI contract are authoritative for both clients.
+- iOS consumes the versioned `GET /classes/:id/run-payload` projection.
+- Do not create iOS-owned server entities or silently add visual data fields.
+- The current shared run payload includes `timelineMode`, `clipStartMs`, and `beatAnchorMs`; verify the
+  iOS DTO against the current contract before design-system integration because its checked-in model
+  may lag additive fields.
+- iOS vendors `design-tokens/tokens.json` and generates
+  `RitmoFit/RitmoFit/Core/DesignSystem/RFTokens.swift`; never hand-edit the generated Swift file.
