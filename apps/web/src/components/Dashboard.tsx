@@ -436,6 +436,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               onRun={() => runClass(selected.id)}
               onClassUpdated={applyClassUpdate}
               onClassDeleted={handleClassDeleted}
+              onOpenSongsByMove={() => setSongsByMoveOpen(true)}
             />
           ) : selected && detail.classId === selected.id && detail.status === 'error' ? (
             <section className="rounded-card bg-bg-raised p-8 shadow-card">
@@ -695,6 +696,7 @@ function ClassWorkspace({
   onRun,
   onClassUpdated,
   onClassDeleted,
+  onOpenSongsByMove,
 }: {
   cls: ClassWithAccess;
   tracks: ClassTrack[];
@@ -704,6 +706,8 @@ function ClassWorkspace({
   onRun: () => void;
   onClassUpdated: (cls: Class) => void;
   onClassDeleted: (classId: string) => void;
+  /** Open the Songs-by-Move dialog (the top-bar dialog, reused in the builder). */
+  onOpenSongsByMove: () => void;
 }) {
   const [sharing, setSharing] = useState(false);
   // The selected track (by class_track id) drives the inspector.
@@ -888,6 +892,7 @@ function ClassWorkspace({
               setSelectedTrackId(null);
               onTrackChanged();
             }}
+            onOpenSongsByMove={onOpenSongsByMove}
           />
         ) : (
           <div className="rounded-card border border-interactive/20 bg-bg-base p-5">
@@ -1499,6 +1504,7 @@ function TrackInspector({
   focus,
   onSaved,
   onRemoved,
+  onOpenSongsByMove,
 }: {
   track: ClassTrack;
   title: string;
@@ -1512,6 +1518,8 @@ function TrackInspector({
   focus: { kind: 'cue' | 'move'; id: string; anchorMs: number; nonce: number } | null;
   onSaved: () => void;
   onRemoved: () => void;
+  /** Open the Songs-by-Move dialog from the Moves section. */
+  onOpenSongsByMove: () => void;
 }) {
   const [intensity, setIntensity] = useState<Intensity>(track.intensity);
   const [bpm, setBpm] = useState(track.displayBpmOverride?.toString() ?? '');
@@ -1852,6 +1860,7 @@ function TrackInspector({
                   : null
               }
               onChanged={onSaved}
+              onOpenSongsByMove={onOpenSongsByMove}
             />
           </Suspense>
         </>

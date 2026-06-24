@@ -480,6 +480,7 @@ export function MovesSection({
   beatAnchorMs = 0,
   focus = null,
   onChanged,
+  onOpenSongsByMove,
 }: {
   classTrackId: string;
   durationMs: number | null;
@@ -489,6 +490,8 @@ export function MovesSection({
   focus?: RowFocus;
   /** Parent reload (run-payload → ribbon/timeline) after the custom-move library changes. */
   onChanged?: () => void;
+  /** Open the Songs-by-Move dialog — recall songs choreographed with a move. */
+  onOpenSongsByMove?: () => void;
 }) {
   const { canSnap, snap, setSnap, maybeSnap } = useBeatSnap(bpm, beatAnchorMs);
   const [moves, setMoves] = useState<ClassTrackMove[] | null>(null);
@@ -683,13 +686,25 @@ export function MovesSection({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Moves</span>
-        <button
-          type="button"
-          className="font-ui text-xs text-interactive"
-          onClick={() => setManaging(true)}
-        >
-          Manage…
-        </button>
+        <div className="flex items-center gap-3">
+          {onOpenSongsByMove && (
+            <button
+              type="button"
+              className="font-ui text-xs text-interactive"
+              onClick={onOpenSongsByMove}
+              title="Find songs you've choreographed with a move"
+            >
+              Songs by move…
+            </button>
+          )}
+          <button
+            type="button"
+            className="font-ui text-xs text-interactive"
+            onClick={() => setManaging(true)}
+          >
+            Manage…
+          </button>
+        </div>
       </div>
       {managing && (
         <CustomMovesDialog
