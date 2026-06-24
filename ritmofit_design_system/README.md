@@ -22,15 +22,17 @@ The visual target is **Club Athletic + Creator Swagger + Nike restraint**:
 ## Canonical decisions
 
 1. `tokens.json` is the source of truth.
-2. Inter is the UI family, Space Grotesk is the display family, and Martian Mono is the data family.
+2. Sora is the web UI family; iOS retains SF Pro Text for UI. Bricolage Grotesque is the shared
+   display family, and Azeret Mono is the shared data family.
 3. Copper is brand identity and the one primary action on a surface.
 4. Cyan is interaction, focus, links, controls, and information.
-5. Plasma is peak affect only: All-Out, the Live drop, class-shape peak artwork, and the brand-front campaign register (heat gradient + bloom). Never a control; never on a working surface.
+5. Plasma is peak affect only: All-Out glow, the Live drop, Zone 4 in the ribbon, and marketing/share artwork derived from actual class peaks. Never generic brand atmosphere or a control.
 6. Color confirms; structure, labels, numbers, icons, and shape inform.
 7. The energy ribbon is a core product and brand artifact.
 8. Album art is bounded. BPM, duration, sequence, cues, movement, and energy shape carry more weight.
 9. Pulse is allowed only in the Live HUD and the currently playing planning indicator.
 10. Reduced motion removes affect without removing meaning.
+11. Foundation language is modality-neutral. Stored enum keys retain schema-honest fallback labels; discipline templates and instructor-authored names may provide scoped display language.
 
 ## Package map
 

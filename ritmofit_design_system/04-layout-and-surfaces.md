@@ -21,6 +21,18 @@ RitmoFit uses **both, by surface job**, never mixing them on one element:
 - border: `rgba(251,247,240,0.12)`; inset highlight: `rgba(251,247,240,0.06)`
 - Opaque fallback (`bg/overlay`) when `backdrop-filter` is unsupported.
 
+### Resting depth model
+
+Planning surfaces use four explicit roles:
+
+- **Canvas:** `bg/base`, with no border or shadow.
+- **Workbench:** `bg/sunken` + `border/subtle`, for ribbons and inspectors.
+- **Contained:** `bg/raised`; add a border only when it communicates a real boundary or selection.
+- **Elevated:** `bg/overlay` + `shadow/lifted`, reserved for overlays, dragging, and floating trays.
+
+Borders belong to boundaries, inputs, focus, warnings, and errors—not every object. Resting surfaces do
+not cast shadows. Planning headers are opaque so scrolling content never bleeds through them.
+
 ### Solid recipe
 
 - fill: `bg/raised` (cards) or `bg/overlay` (elevated)
@@ -32,19 +44,19 @@ RitmoFit uses **both, by surface job**, never mixing them on one element:
 
 | Token     | px  | Applies to                             |
 | --------- | --- | -------------------------------------- |
-| `sheet`   | 32  | Full-height sheets, the largest surfaces |
-| `panel`   | 28  | Main panels, large overlays            |
-| `card`    | 20  | Cards, song rows, list items           |
-| `input`   | 16  | Text fields, selects                   |
-| `control` | 12  | Small controls, chips bg, tiny buttons |
-| `pill`    | 999 | Buttons, chips, toggles, segment tags  |
+| `sheet`   | 24  | Major sheets, Live hero cards          |
+| `panel`   | 20  | Main panels, large overlays            |
+| `card`    | 16  | Cards and substantial contained groups |
+| `input`   | 12  | Fields, selects, ordinary buttons      |
+| `control` | 10  | Song rows and compact controls         |
+| `pill`    | 999 | Chips, toggles, and compact tags only  |
 
 Reads natural both on a desktop monitor and under iOS Liquid Glass, which favors large soft rounded
 panels — without looking toy-like on web.
 
 ## Spacing
 
-4px base grid. Tokens `space.1`…`space.16` (4, 8, 12, 16, 20, 24, 32, 40, 48, 64). Generous space around
+4px base grid. Tokens `space.1`…`space.8` (4, 8, 12, 16, 24, 32, 48, 64). Generous space around
 information-bearing elements; tighten only in deliberate dense-mode contexts.
 
 ## Atmosphere — derived, not decorative
@@ -77,9 +89,9 @@ The mockup breakpoints (`mockups/theme.css`), each collapsing multi-column layou
 
 | Max-width | What changes                                                                                              |
 | --------- | -------------------------------------------------------------------------------------------------------- |
-| 1180px    | Builder narrows to main + inspector; galleries to 3-up; Library to 2-up.                                  |
-| 900px     | Marketing / share / auth / Library / Builder / Teams / Live HUD go single-column; the app-header wraps and the nav becomes a full-width horizontal scroller. |
-| 680px     | Remaining 2-ups collapse; the ghost header action (e.g. "Sign in") hides.                                 |
+| 1180px    | Builder class rail becomes a compact toolbar and the work area narrows to main + inspector.              |
+| 900px     | Marketing / share / auth / Library / Builder / Live HUD go single-column; the app-header wraps and the nav becomes a full-width horizontal scroller. |
+| 680px     | Builder toolbar wraps to two rows; paired class actions remain two-up; remaining 2-ups collapse.         |
 | 480px     | Small-screen floor: the Live header wraps and the `data-hero` BPM stacks under the cue text so big type never fights a narrow column. |
 
 `html` sets `min-width: 320px` as the supported floor; touch targets stay ≥ 44×44pt and the focus ring is

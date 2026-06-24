@@ -42,16 +42,17 @@ That's it. Two surfaces. The pulse is a _focus_ device — it marks "this is hap
 - Not on more than one element per screen at a time.
 - Not in Search or Edit mode at all (`mode.*.tempo: off`).
 - Not when `prefers-reduced-motion` / iOS Reduce Motion is set (see §6).
-- Not on the brand-front — the campaign register's heat is **static** (gradient + bloom), not pulse.
-  Marketing/share/login don't breathe; the pulse allowlist above stays exactly two surfaces.
+- Not on marketing/share/sign-in surfaces. Their composition is static; the pulse allowlist stays
+  exactly two surfaces.
 
 If a reviewer can find a second pulsing thing on screen, one of them is wrong.
 
 ## 4. The energy arc (the class has a shape)
 
 The other half of the rhythm system is structural, not animated: the **intensity ribbon**. A class is
-not just an ordered list — it's an _energy curve_, warm-up valley → climbs → sprint peaks → cool-down
-descent. We render that curve as a slim continuous area graph pinned along the top of the timeline.
+not just an ordered list — it's an _energy curve_ with a beginning, build, peak, recovery, and release.
+Those words describe the arc, not persisted segment enums. We render the curve as a slim continuous area
+graph pinned along the top of the timeline.
 
 - **Height encodes zone** (`none`→`all_out`); color rides on top from the ribbon gradient (copper → ember
   → a plasma kiss at peaks). Read it in grayscale and the shape still reads — the height carries it.

@@ -23,7 +23,7 @@ The few deliberate delight moments. Everything else is quiet.
 | Moment               | Motion                                                                           |
 | -------------------- | -------------------------------------------------------------------------------- |
 | Track added to class | soft slide in + `snap` settle                                                    |
-| Cue added            | pulse marker on the timeline (opacity + scale, `fast`)                           |
+| Cue added            | brief static highlight (`fast` opacity), never a pulse                           |
 | Reorder track        | card lifts with `shadow.lifted` + slight scale while dragged                     |
 | Save complete        | tiny confident confirmation (icon + `fast` opacity), no banner                   |
 | Live progress        | subtle continuous playhead motion, no bounce                                     |
@@ -46,7 +46,7 @@ Respect `prefers-reduced-motion` (web) and iOS Reduce Motion:
 
 - Durations collapse to ~0.01ms (effectively instant).
 - Transform/scale animations become **opacity-only** crossfades.
-- The cue pulse, reorder lift, save snap **and the tempo pulse + the drop** all degrade to a static state
+- The cue confirmation, reorder lift, save snap **and the tempo pulse + the drop** all degrade to a static state
   change. The playing state falls back to a static "Now playing" indicator + label.
 - No parallax, no ambient looping motion. The energy ribbon (a static graph) is unaffected.
 

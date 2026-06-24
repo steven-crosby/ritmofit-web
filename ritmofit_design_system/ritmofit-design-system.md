@@ -1,12 +1,12 @@
-# RitmoFit Design System — Codex Implementation Brief
+# RitmoFit Design System — Implementation Brief
 
-Version: 2026-06-14  
-Audience: Codex working inside the RitmoFit Git repositories for web and iOS  
+Version: 4.1.0 (2026-06-23)  
+Audience: implementation agents and contributors working inside the RitmoFit web and iOS repositories  
 Scope: Web app, marketing pages, class builder, live mode, iOS alignment, reusable tokens, and future-ready movement-first language
 
 ---
 
-## 0. Codex mission
+## 0. Implementation mission
 
 You are implementing or refining the RitmoFit design system across the web app and iOS app/page.
 
@@ -24,7 +24,7 @@ Short brand truth:
 
 > Find the class inside the music.
 
-Codex must preserve the existing system’s strongest mechanics while extending the brand language and implementation discipline.
+Implementers must preserve the existing system’s strongest mechanics while extending the brand language and implementation discipline.
 
 ---
 
@@ -35,6 +35,10 @@ Codex must preserve the existing system’s strongest mechanics while extending 
 The target is:
 
 > If Fatboy Slim and Daddy Yankee became Pilates instructors and opened their own studio, then hired the Nike marketing team to build the brand.
+
+The operative target is **Club Athletic + Creator Swagger + Nike restraint**. The metaphor sets creative
+energy, not a discipline boundary: RitmoFit must feel native to salsa, samba, barre, yoga, conditioning,
+cycle, Pilates, and movement practices that do not yet have a product template.
 
 Implementation translation:
 
@@ -58,7 +62,7 @@ Emotional territory:
 
 Cultural flavor:
 
-> Latin-rooted warmth, rhythm, percussion, confidence, and movement — **implicit in the working tool, explicit on the brand-front.** The builder stays cool; marketing, share, login, onboarding, and the Live drop are where the heat is allowed to show. Spanish-rooted _naming_ stays an easter egg (§5.5); the _heat_ is not — it earns full voice where the brand performs.
+> Latin-rooted warmth, rhythm, percussion, confidence, and movement—implicit in the working tool and controlled on the brand-front. Builder and sign-in stay calm; marketing/share earn swagger through class shape, composition, copy, and copper/ember warmth. Plasma is reserved for real peaks and the Live drop.
 
 Product posture:
 
@@ -114,7 +118,7 @@ Use this framing throughout product and marketing:
 - The instructor **builds** the beat into a physical experience.
 - The instructor **performs** with precision.
 
-Codex should prefer implementation choices that make the workflow feel like creative discovery:
+Implementation should prefer choices that make the workflow feel like creative discovery:
 
 - Fast track auditioning.
 - Visible BPM and structure.
@@ -174,7 +178,7 @@ Never swap these meanings.
 
 Plasma must never be a button, link, form control, focus ring, routine badge, or generic accent.
 
-Plasma _is_ affect: the All-Out / Live drop, and the brand-front campaign heat (gradient display fill + ambient bloom on marketing/share/login/onboarding/Explore hero). Affect only — never meaning-bearing, never on a working or editing surface. Strip every plasma pixel and no information is lost.
+Plasma _is_ affect, but its allowlist is exact: All-Out glow, Live sprint/drop pulse, the Zone 4 kiss in an energy ribbon, and marketing/share artwork derived from actual class peaks. It is never generic atmosphere. Strip every plasma pixel and no information is lost.
 
 ### 3.5 Surfaces match their job
 
@@ -214,20 +218,20 @@ Live mode:
 - glanceable across a studio
 - pulse allowed only where meaningful
 
-Marketing/share cards — the **campaign / swagger register**:
+Marketing/share cards—the **campaign / swagger register**:
 
 - more swagger
 - more campaign language
 - more visual rhythm
 - still premium and controlled
 
-This is the one register where heat runs hot. It applies **only** to the brand-front: marketing, share/export cards, login/onboarding, the Explore hero, and the Live drop. Sanctioned treatments, all routed through tokens:
+This register applies only to marketing and share/export. Sanctioned treatments are routed through tokens:
 
-- **Heat gradient display type** (`--rf-gradient-heat`, copper → ember → plasma) on the hero's accent word.
-- **Ambient heat bloom** (`--rf-bloom-heat`) behind the hero — derived, off-axis, low-alpha; never the banned two-orb SaaS gradient (§3.7).
-- **Hotter class-shape artwork** — the ribbon may bloom at its peak (`--rf-shadow-peak-bloom`).
+- **Warm display type** (`--rf-gradient-heat`, copper → ember) on a hero accent.
+- **Ambient copper/ember bloom** (`--rf-bloom-heat`) behind the hero—derived, off-axis, low-alpha.
+- **Peak class-shape artwork**—plasma may bloom only where the depicted class reaches Zone 4.
 
-Hard boundary: none of this appears on a working surface. The builder, inspector, forms, dense lists, and Live-at-rest stay bone-dry. If heat shows up where an instructor is editing, it is a bug. The register is where the brand performs, not where the instructor works.
+Hard boundary: none of this appears on Builder, sign-in, inspector, forms, dense lists, or Live-at-rest.
 
 ### 3.7 Earn every element
 
@@ -239,9 +243,13 @@ Do not add generic two-orb AI SaaS backgrounds. If texture is needed, derive it 
 
 ## 4. Movement-first vocabulary
 
-RitmoFit begins with rhythm cycle/spin but must be future-proof for Pilates, yoga, barre, HIIT, dance cardio, and other rhythm-designed classes.
+RitmoFit supports rhythm-led movement without a default discipline. A salsa, samba, Pilates, barre, yoga, HIIT, or cycle instructor should encounter the same authoring primitives and bring practice-specific language through templates or instructor-authored content.
 
-> **Surfaced in the system, not just specced.** The movement vocabulary is now a real product surface: the **move library** (`mockups/moves.html`) plus a canonical move taxonomy in `tokens.json` (`color.move`), keyed on the existing `moves.template` enum (`cycle` / `hiit` / `sculpt` / `tread`). A placed move (`class_track_moves`) references a library move (`moves`), a personal move (`user_moves`), or a freeform `name_override`, each carrying its own `intensity` + `anchor_ms`; the builder inspector types each placed move by template. Moves are **icon + label led and color-neutral** (`color.move.tint`) so they never compete with the copper cue channel or the intensity ramp. This is the Pilates/spin *movement command* half of the brand model (§1.1) made concrete, instead of the single generic marker earlier drafts shipped.
+> **Schema honesty:** the current `moves.template` enum (`cycle` / `hiit` / `sculpt` / `tread`) is an implementation constraint, not the product's definition of movement. A placed move may reference library data or use `name_override`. The UI calls these values current source tags, keeps moves icon + label led and color-neutral, and documents a schema TODO before adding new persisted disciplines.
+
+The same rule applies to class sections. Stored `segmentType` keys keep their honest fallback labels
+(Warm-up, Climb, Sprint, Recovery, Cool-down). A reviewed discipline template or an instructor-authored
+section name may override the visible label; the system never relabels one persisted meaning as another.
 
 ### 4.1 Foundation language
 
@@ -585,35 +593,37 @@ Use three roles:
 
 | Role    | Font                                    | Purpose                                  |
 | ------- | --------------------------------------- | ---------------------------------------- |
-| UI/body | Inter / SF Pro fallback                 | dense interface, labels, lists, forms    |
-| Display | Space Grotesk / SF Pro Display fallback | marketing, large titles, Live headers    |
-| Data    | Martian Mono / SF Mono fallback         | BPM, timecodes, zones, durations, counts |
+| UI/body | Sora on web / SF Pro Text on iOS       | dense interface, labels, lists, forms    |
+| Display | Bricolage Grotesque / SF Pro Display fallback | marketing, large titles, Live headers    |
+| Data    | Azeret Mono / SF Mono fallback         | BPM, timecodes, zones, durations, counts |
 
 The numbers carry the brand. BPM in a generic UI font is a bug.
+
+Bricolage Grotesque runs at normal width with optical sizing enabled. Sora is not bundled as the
+native iOS UI face; SF Pro Text preserves native expression there.
 
 ### 7.2 Type scale
 
 | Token       | Web px | Weight | Tracking | Family        | Use                       |
 | ----------- | -----: | -----: | -------: | ------------- | ------------------------- |
-| display-xl  |  52/56 |    600 |  -0.02em | Space Grotesk | marketing hero accent     |
-| display-lg  |  48/52 |    600 |  -0.02em | Space Grotesk | marketing hero            |
-| display     |  34/40 |    600 |  -0.02em | Space Grotesk | section hero, Live title  |
-| title       |  24/30 |    600 |  -0.01em | Inter         | screen titles             |
-| heading     |  18/24 |    600 |        0 | Inter         | card/group header         |
-| body        |  15/22 |    400 |        0 | Inter         | default UI text           |
-| body-strong |  15/22 |    600 |        0 | Inter         | list titles               |
-| label       |  13/16 |    500 |  +0.01em | Inter         | labels, chips             |
-| caption     |  11/14 |    500 |  +0.04em | Inter         | metadata, uppercase units |
-| data-hero   |  88/84 |    700 |  -0.04em | Martian Mono  | Live BPM                  |
-| data-lg     |  28/30 |    600 |  -0.03em | Martian Mono  | timeline readouts         |
-| data        |  15/18 |    500 |  -0.02em | Martian Mono  | inline BPM/timecode       |
+| display-lg  |  48/52 |    700 | -0.035em | Bricolage Grotesque | marketing hero            |
+| display     |  34/40 |    700 |  -0.03em | Bricolage Grotesque | section hero, Live title  |
+| title       |  24/30 |    600 |  -0.01em | Sora         | screen titles             |
+| heading     |  18/24 |    600 |        0 | Sora         | card/group header         |
+| body        |  15/22 |    400 |        0 | Sora         | default UI text           |
+| body-strong |  15/22 |    600 |        0 | Sora         | list titles               |
+| label       |  13/16 |    500 |  +0.01em | Sora         | labels, chips             |
+| caption     |  11/14 |    500 |  +0.04em | Sora         | metadata, uppercase units |
+| data-hero   |  88/84 |    700 |  -0.04em | Azeret Mono  | Live BPM                  |
+| data-lg     |  28/30 |    600 |  -0.03em | Azeret Mono  | timeline readouts         |
+| data        |  15/18 |    500 |  -0.02em | Azeret Mono  | inline BPM/timecode       |
 
 ### 7.3 Typography rules
 
 - Sentence case for UI.
 - Uppercase only for small units like BPM, DURATION, ZONE.
 - Use weight and spacing before adding more font sizes.
-- Data contexts always use Martian Mono.
+- Data contexts always use Azeret Mono.
 - Live mode uses large data type for glanceability.
 - Respect Dynamic Type and browser zoom.
 
@@ -623,14 +633,14 @@ The numbers carry the brand. BPM in a generic UI font is a bug.
 
 ### 8.1 Radius scale
 
-| Token   |  px | Use                          |
-| ------- | --: | ---------------------------- |
-| sheet   |  32 | share/export card, All-Out cue |
-| panel   |  28 | main panels, large sheets    |
-| card    |  20 | cards, track rows         |
-| input   |  16 | fields, selects           |
-| control |  12 | compact controls          |
-| pill    | 999 | buttons, chips, toggles   |
+| Token   |  px | Use                       |
+| ------- | --: | ------------------------- |
+| sheet   |  24 | major sheets               |
+| panel   |  20 | main panels                 |
+| card    |  16 | cards, contained groups       |
+| input   |  12 | fields, selects, buttons      |
+| control |  10 | track rows, compact controls  |
+| pill    | 999 | chips, toggles, compact tags  |
 
 ### 8.2 Spacing
 
@@ -638,7 +648,6 @@ Use a 4px base grid.
 
 Recommended tokens:
 
-- 0
 - 4
 - 8
 - 12
@@ -651,6 +660,11 @@ Recommended tokens:
 - 64
 
 ### 8.3 Surface recipes
+
+Resting depth is strict: canvas = `bg/base`; workbench = `bg/sunken` + `border/subtle`; contained =
+`bg/raised` with a border only when it clarifies a boundary; elevated = `bg/overlay` + `shadow/lifted`
+for overlays, dragging, and floating trays. Resting surfaces do not cast shadows, and planning headers
+remain opaque. Borders belong to boundaries, inputs, focus, warnings, and errors—not every object.
 
 Solid card:
 
@@ -713,13 +727,15 @@ Variants:
 | Variant          | Fill                       | Text         | Use                          |
 | ---------------- | -------------------------- | ------------ | ---------------------------- |
 | Primary          | copper                     | ink          | one main action per surface  |
-| Action/Secondary | transparent + cyan border  | cyan         | actionable secondary actions |
+| Secondary        | neutral border/fill        | bone or cyan | Share, New class, secondary  |
+| Inline action    | transparent, no border     | cyan + `+`   | add track/cue/move/library   |
 | Ghost            | raised/overlay             | bone         | cancel, tertiary             |
-| Destructive      | transparent + ember border | ember + icon | delete/remove                |
+| Destructive      | transparent, no border     | ember + icon | delete/remove                |
 
 Rules:
 
 - Only one primary per surface.
+- Buttons use the 12px `input` radius; pills are tags/chips only.
 - Focus ring always cyan.
 - Disabled state reduces opacity and removes hover.
 - Plasma is never a button.
@@ -728,7 +744,8 @@ Rules:
 ### 9.2 Chips and toggles
 
 - Filter chips use raised surface.
-- Selected state must use shape/weight and color.
+- Selected controls use checked/pressed state plus shape and weight; cyan may confirm the interaction.
+- Persistent location uses matching content headings plus weight or neutral fill, not cyan decoration.
 - Segment tags include icon + label + small tint dot.
 - Toggle “on” uses cyan plus knob position.
 
@@ -738,7 +755,7 @@ Rules:
 - Labels above fields.
 - Focus ring cyan.
 - Error = ember border + icon + message.
-- Numeric data fields use Martian Mono.
+- Numeric data fields use Azeret Mono.
 
 ### 9.4 BPM readout
 
@@ -761,8 +778,8 @@ Required elements:
 - Small album art, around 44pt.
 - Title.
 - Artist.
-- BPM in Martian Mono.
-- Duration/timecode in Martian Mono.
+- BPM in Azeret Mono.
+- Duration/timecode in Azeret Mono.
 - Intensity zone with number + bars.
 - Drag/reorder affordance where relevant.
 - Selection state.
@@ -815,6 +832,14 @@ Cue color picker must exclude plasma range.
 ### 9.8 Provider connection states
 
 Music providers are core to trust.
+
+Catalog availability is not account connection. Current product capability is authoritative:
+
+- Spotify and Apple Music support catalog search/import only.
+- SoundCloud supports catalog search/import, user connection, and likes.
+
+Show `catalog available` for catalog-only providers. Use the connection states below only when the
+provider supports a user-account integration.
 
 States must be explicit:
 
@@ -1008,6 +1033,11 @@ Prefer this order:
 3. Component styles consuming variables.
 4. No hardcoded color/type/radius values inside component files unless explicitly local and documented.
 
+For the current web product, `ritmofit_design_system/tokens.json` is consumed by
+`apps/web/scripts/generate-tokens.mjs`, which emits `apps/web/src/styles/tokens.css`. The mockup
+generator in this package is a reference-package tool; do not replace the product generator without a
+separate architecture decision.
+
 ### 12.2 CSS architecture
 
 Create or maintain:
@@ -1020,35 +1050,26 @@ Create or maintain:
 - reduced-motion overrides
 - accessibility/focus styles
 
-Class-naming convention: **design tokens always carry the `--rf-` prefix.** Component/utility
-_classes_ use two namespaces by surface, and new classes should match their surface:
-
-- The **reference mockups** in this package use bare, un-prefixed classes (listed below — they match
-  what `mockups/theme.css` actually ships).
-- The **production web app** namespaces its component classes under `rf-` (e.g. `.rf-topbar`,
-  `.rf-btn-primary`, `.rf-heat-text`, `.rf-eyebrow`) to avoid collisions with Tailwind's utility
-  classes, which share the app's `class` attribute.
-
-The bare names below are the mockup vocabulary:
+Suggested CSS utility names:
 
 ```css
-.surface            /* solid card/panel surface */
-.surface-glass      /* glass nav/overlay/HUD */
-.data               /* inline Martian Mono data */
-.data-lg            /* large data readout */
-.data-hero          /* Live BPM hero readout */
-.button-primary     /* copper, one per surface */
-.button-action      /* cyan secondary */
-.button-ghost       /* tertiary */
-.button-danger      /* destructive + icon */
-.intensity          /* zone bars + number + label */
-.ribbon-area        /* energy ribbon fill (with .ribbon-line, .ribbon-summary) */
-.tempo-pulse-live   /* Live HUD on-beat pulse */
-.track-row.is-playing .playing-dot  /* playing-track pulse target */
+.rf-surface-solid
+.rf-surface-glass
+.rf-text-primary
+.rf-text-secondary
+.rf-data
+.rf-data-lg
+.rf-data-hero
+.rf-button-primary
+.rf-button-action
+.rf-button-ghost
+.rf-button-danger
+.rf-focus-ring
+.rf-intensity-zone
+.rf-energy-ribbon
+.rf-tempo-pulse-live
+.rf-tempo-pulse-playing
 ```
-
-Focus is a global `:focus-visible` cyan ring (token `--rf-focus-ring`), not a per-component class.
-Text colors apply via the `--rf-text-*` tokens directly rather than text-color utility classes.
 
 ### 12.3 Reduced motion CSS
 
@@ -1129,6 +1150,10 @@ enum RFColor {
 }
 ```
 
+The current iOS repository vendors `design-tokens/tokens.json` and emits
+`RitmoFit/RitmoFit/Core/DesignSystem/RFTokens.swift`. Sync the canonical JSON, then regenerate; never
+copy or edit generated Swift by hand.
+
 ### 13.2 Native expression
 
 Do not force web CSS aesthetics into iOS.
@@ -1137,8 +1162,8 @@ iOS should feel native while preserving:
 
 - warm dark surfaces
 - copper/cyan/plasma channel discipline
-- Martian Mono for data
-- Space Grotesk/display role where bundled
+- Azeret Mono for data
+- Bricolage Grotesque/display role where bundled
 - large Live readouts
 - reduced-motion behavior
 - energy ribbon/class shape
@@ -1254,7 +1279,7 @@ Brand moments are limited and intentional.
 
 ---
 
-## 16. Implementation tasks for Codex
+## 16. Implementation tasks
 
 Use this checklist to audit and implement.
 
@@ -1331,7 +1356,7 @@ With phrases like:
 
 ## 17. Acceptance criteria
 
-A Codex change is successful when:
+An implementation change is successful when:
 
 ### Brand/product
 
@@ -1344,7 +1369,7 @@ A Codex change is successful when:
 
 - Copper, cyan, and plasma roles are not mixed.
 - Plasma appears only in the allowlist.
-- Data values use Martian Mono or approved data font fallback.
+- Data values use Azeret Mono or approved data font fallback.
 - Album art is bounded and not dominant in builder workflows.
 - Energy ribbon/class shape is prominent where applicable.
 
@@ -1375,7 +1400,7 @@ A Codex change is successful when:
 
 ---
 
-## 18. Suggested Codex prompt
+## 18. Suggested implementation prompt
 
 Use this prompt at the repo root or workspace root.
 
@@ -1392,7 +1417,7 @@ Implementation priorities:
 1. Audit existing tokens, theme files, CSS variables, Swift constants, and component styles.
 2. Centralize design tokens for color, typography, radius, spacing, surfaces, motion, and intensity roles.
 3. Enforce color-channel discipline: copper = brand identity, cyan = interaction/focus/info, plasma = peak affect only.
-4. Ensure BPM/timecode/zone/duration data use the data typography role, preferably Martian Mono or approved fallback.
+4. Ensure BPM/timecode/zone/duration data use the data typography role, preferably Azeret Mono or approved fallback.
 5. Implement or preserve the rhythm system: BPM-derived beat token, rationed tempo pulse, reduced-motion fallback, and energy ribbon/class shape.
 6. Refine web and iOS UI so Builder is calm, Live is high-contrast and glanceable, and marketing copy is creator-first.
 7. Replace generic SaaS or party-fitness copy with RitmoFit voice: rhythmic, physical, confident, clear, creator-first.
@@ -1405,9 +1430,9 @@ Before editing, inspect the repository structure and identify the relevant token
 
 ---
 
-## 19. Suggested follow-up Codex prompt for auditing only
+## 19. Suggested follow-up prompt for auditing only
 
-Use when you want Codex to evaluate before editing.
+Use when you want an implementation agent to evaluate before editing.
 
 ```text
 Audit the RitmoFit repo against the RitmoFit design-system brief.
@@ -1430,7 +1455,7 @@ Use the core truth: RitmoFit is for instructors who are creators. Builder mode i
 
 ---
 
-## 20. Suggested follow-up Codex prompt for implementation
+## 20. Suggested follow-up prompt for implementation
 
 Use after the audit.
 

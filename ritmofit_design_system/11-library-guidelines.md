@@ -8,20 +8,20 @@ listening queue.
 
 The Library helps an instructor:
 
-1. See music already available through connected providers.
+1. See music available through supported provider catalogs and connected accounts.
 2. Search, filter, and select tracks without leaving the planning flow.
 3. Start a new class from one or more selected tracks.
 4. Add selected tracks to an existing class.
-5. understand provider availability and reconnect when access drops.
+5. Understand provider capability and reconnect only where user connection is supported.
 
-It is not a social feed, recommendation firehose, or second Explore page.
+It is not a social feed or recommendation firehose.
 
 ## Information hierarchy
 
 Prioritize:
 
 1. Track title and artist.
-2. BPM and duration in Martian Mono.
+2. BPM and duration in Azeret Mono.
 3. Provider and availability state.
 4. Selection state and class action.
 5. Small bounded artwork.
@@ -57,7 +57,13 @@ Selection copy:
 
 ## Provider states
 
-Provider state is explicit and recoverable:
+Provider capability is explicit. Current implementation truth:
+
+- Spotify: catalog search/import; no user connection or likes.
+- Apple Music: catalog search/import; no user connection or likes.
+- SoundCloud: catalog search/import plus user connection and likes.
+
+The connection-state matrix below applies only to providers that support user accounts:
 
 | State            | Treatment                                         |
 | ---------------- | ------------------------------------------------- |
@@ -78,14 +84,14 @@ applications or links.
 ## Selection and accessibility
 
 - The checkbox and row both expose selection, but essential controls remain independently focusable.
-- Selected rows use checkbox state, outline, and weight in addition to color.
+- Selected rows use checkbox state plus a neutral surface/border change. The content heading names the
+  active source; cyan belongs to the checkbox and focus ring, not the persistent row container.
 - All targets are at least 44 by 44 pixels.
 - The sticky selection tray is announced as a status region.
 - Keyboard users can select rows, move through the list, and trigger class creation.
 - Focus is always visible with the cyan focus ring.
 
-## Relationship to Explore
+## Launch boundary
 
-Library contains the instructor's music and saved source material. Explore contains published class
-shapes from other instructors. Saving an Explore class creates an editable class copy; saving music
-belongs to provider/library workflows.
+Library contains the instructor's music and saved source material. Social discovery and team
+collaboration are outside the launch system and must not crowd the authoring workflow.
