@@ -132,9 +132,9 @@ enum RFSpace {
 }
 
 enum RFFontFamily: String {
-    case ui = "Inter"
-    case display = "Space Grotesk"
-    case data = "Martian Mono"
+    case display = "Bricolage Grotesque"
+    case ui = "SF Pro Text"
+    case data = "Azeret Mono"
 }
 
 struct RFTextStyle {
