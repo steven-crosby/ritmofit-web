@@ -6,9 +6,9 @@ the **SIL Open Font License, Version 1.1**, which permits bundling and redistrib
 
 | Family | Role (see `03-typography.md`) | Copyright | Source | License text |
 | --- | --- | --- | --- | --- |
-| Inter | UI / body | © Rasmus Andersson | github.com/rsms/inter | [`inter-OFL.txt`](./inter-OFL.txt) |
-| Space Grotesk | Display | © Florian Karsten | github.com/floriankarsten/space-grotesk | [`space-grotesk-OFL.txt`](./space-grotesk-OFL.txt) |
-| Martian Mono | Data (BPM, timecodes, zones) | © Evil Martians | github.com/evilmartians/mono | [`martian-mono-OFL.txt`](./martian-mono-OFL.txt) |
+| Bricolage Grotesque | Display | © 2022 The Bricolage Grotesque Project Authors | github.com/ateliertriay/bricolage | [`bricolage-grotesque-OFL.txt`](./bricolage-grotesque-OFL.txt) |
+| Sora | UI / body | © 2019 The Sora Project Authors | github.com/sora-xor/sora-font | [`sora-OFL.txt`](./sora-OFL.txt) |
+| Azeret Mono | Data (BPM, timecodes, zones) | © 2021 The Azeret Project Authors | github.com/displaay/azeret | [`azeret-mono-OFL.txt`](./azeret-mono-OFL.txt) |
 
 The subsets are pulled from Google Fonts (gstatic) at variable weights. The OFL requires the license text
 to travel with the fonts, so each family's full upstream `*-OFL.txt` is bundled here alongside the woff2
