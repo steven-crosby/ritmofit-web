@@ -124,10 +124,13 @@ p("}");
 p("");
 
 // Typography
-const FONT = { ui: "Inter", display: "Space Grotesk", data: "Martian Mono" };
+const FONT = tokens.typography.family.ios;
 const WEIGHT = { 300: ".light", 400: ".regular", 500: ".medium", 600: ".semibold", 700: ".bold", 800: ".heavy" };
 p("enum RFFontFamily: String {");
-for (const [k, v] of Object.entries(FONT)) p(`    case ${k} = "${v}"`);
+for (const [k, v] of Object.entries(FONT)) {
+  if (k.startsWith("$")) continue; // skip the $comment metadata key
+  p(`    case ${k} = "${v}"`);
+}
 p("}");
 p("");
 p("struct RFTextStyle {");
