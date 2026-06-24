@@ -1,5 +1,5 @@
-/* Self-hosted OFL fonts (03-typography) — @font-face for Inter / Space Grotesk /
-   Martian Mono, served from public/fonts. Replaces the Google Fonts CDN. */
+/* Self-hosted OFL fonts (03-typography) — @font-face for Bricolage Grotesque /
+   Sora / Azeret Mono, served from public/fonts. Replaces the Google Fonts CDN. */
 @import './styles/fonts.css';
 
 /* Generated design tokens must load before Tailwind so the --rf-* vars exist
@@ -28,8 +28,8 @@
 
   /* Global focus-visible ring for accessibility */
   :focus-visible {
-    outline: 2px solid var(--rf-color-primitive-copper-400);
-    outline-offset: 2px;
+    outline: 3px solid var(--rf-color-semantic-interactive-focus-ring);
+    outline-offset: 3px;
   }
 }
 
@@ -104,7 +104,7 @@
     }
   }
 
-  /* Eyebrow — Martian Mono micro-label, copper (branding mockup `.eyebrow`). */
+  /* Eyebrow — Azeret Mono micro-label, copper (branding mockup `.eyebrow`). */
   .rf-eyebrow {
     font-family: var(--rf-typography-family-data);
     font-size: 11px;
@@ -128,10 +128,11 @@
   }
 
   /* Heat affect — campaign / brand-front register ONLY (login, marketing,
-     share/export, Explore hero, the Live drop). copper→ember→plasma display
-     gradient + an ambient bloom; plasma is affect, never a control. Banned on
-     any working surface — builder / inspector / forms / dense lists (02 §3, 04).
-     Mirrors the design-system mockup recipes `.heat-text` / `.heat-bloom`. */
+     share/export, Explore hero, the Live drop). copper→ember display gradient
+     + an ambient bloom; affect only, never a control. Plasma is no longer a
+     brand-gradient stop — it stays confined to real class-peak artwork. Banned
+     on any working surface — builder / inspector / forms / dense lists (02 §3,
+     04). Mirrors the design-system mockup recipes `.heat-text` / `.heat-bloom`. */
 
   /* Heat gradient as display-type fill — use on a single hero accent word. */
   .rf-heat-text {
