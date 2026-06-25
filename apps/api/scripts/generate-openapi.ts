@@ -35,6 +35,7 @@ import {
   updateClassTrackMoveSchema,
   moveSchema,
   userMoveSchema,
+  songByMoveSchema,
   createUserMoveSchema,
   updateUserMoveSchema,
   trackSchema,
@@ -77,6 +78,7 @@ const named: Record<string, z.ZodType> = {
   UpdateClassTrackMove: updateClassTrackMoveSchema,
   Move: moveSchema,
   UserMove: userMoveSchema,
+  SongByMove: songByMoveSchema,
   CreateUserMove: createUserMoveSchema,
   UpdateUserMove: updateUserMoveSchema,
   Track: trackSchema,
@@ -161,6 +163,14 @@ const doc = {
             required: false,
             schema: { type: 'string', maxLength: 512 },
             description: 'Opaque continuation cursor from the prior response header.',
+          },
+          {
+            name: 'tag',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', maxLength: 50 },
+            description:
+              'Filter to classes carrying this tag (trimmed + lowercased). Composes with pagination.',
           },
         ],
         responses: {
@@ -408,6 +418,13 @@ const doc = {
         responses: { '200': arrayResp('Move', 'Global moves') },
       },
     },
+    '/moves/{id}/songs': {
+      parameters: [idParam],
+      get: {
+        summary: "The caller's songs choreographed with this global move",
+        responses: { '200': arrayResp('SongByMove', 'Songs grouped by track') },
+      },
+    },
     '/user-moves': {
       get: {
         summary: "List the caller's custom moves",
@@ -427,6 +444,16 @@ const doc = {
         responses: { '200': jsonResp('UserMove', 'Updated') },
       },
       delete: { summary: 'Delete a custom move', responses: { '204': { description: 'Deleted' } } },
+    },
+    '/user-moves/{id}/songs': {
+      parameters: [idParam],
+      get: {
+        summary: "The caller's songs choreographed with this custom move",
+        responses: {
+          '200': arrayResp('SongByMove', 'Songs grouped by track'),
+          '404': { description: 'Not found or not owned' },
+        },
+      },
     },
     '/tracks': {
       post: {

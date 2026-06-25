@@ -45,15 +45,28 @@ const classes = [
   },
 ] satisfies ClassWithAccess[];
 
-function renderRail(options: { hasMore?: boolean; loadingMore?: boolean } = {}) {
+function renderRail(
+  options: {
+    hasMore?: boolean;
+    loadingMore?: boolean;
+    status?: 'loading' | 'error' | 'ready';
+    items?: ClassWithAccess[];
+    knownTags?: string[];
+    activeTag?: string | null;
+    onSelectTag?: (tag: string | null) => void;
+  } = {},
+) {
   const onLoadMore = vi.fn();
   render(
     <LibraryRail
-      classes={classes}
-      status="ready"
+      classes={options.items ?? classes}
+      status={options.status ?? 'ready'}
       hasMore={options.hasMore ?? true}
       loadingMore={options.loadingMore ?? false}
       selectedId={null}
+      knownTags={options.knownTags ?? []}
+      activeTag={options.activeTag ?? null}
+      onSelectTag={options.onSelectTag ?? (() => {})}
       onError={() => {}}
       onCreate={() => {}}
       onOpen={() => {}}
@@ -79,5 +92,37 @@ describe('LibraryRail pagination', () => {
   it('omits the continuation control on the final page', () => {
     renderRail({ hasMore: false });
     expect(screen.queryByRole('button', { name: /load more/i })).toBeNull();
+  });
+});
+
+describe('LibraryRail tag search', () => {
+  it('selects a known tag pill to drive a server-side filter', () => {
+    const onSelectTag = vi.fn();
+    renderRail({ knownTags: ['hiit', 'pride'], onSelectTag });
+    fireEvent.click(screen.getByRole('button', { name: '#hiit' }));
+    expect(onSelectTag).toHaveBeenCalledWith('hiit');
+  });
+
+  it('filters by free-text input, normalized to trimmed lowercase', () => {
+    const onSelectTag = vi.fn();
+    renderRail({ onSelectTag, knownTags: ['hiit'] });
+    fireEvent.change(screen.getByLabelText('Filter classes by tag'), {
+      target: { value: '  Pride  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+    expect(onSelectTag).toHaveBeenCalledWith('pride');
+  });
+
+  it('shows the active tag as a clearable chip', () => {
+    const onSelectTag = vi.fn();
+    renderRail({ activeTag: 'hiit', knownTags: ['hiit'], onSelectTag });
+    fireEvent.click(screen.getByRole('button', { name: 'Clear tag filter hiit' }));
+    expect(onSelectTag).toHaveBeenCalledWith(null);
+  });
+
+  it('distinguishes a filtered-empty result from an empty library', () => {
+    renderRail({ items: [], activeTag: 'hiit', knownTags: ['hiit'] });
+    expect(screen.getByText(/No classes tagged/i)).toBeTruthy();
+    expect(screen.queryByText(/create your first/i)).toBeNull();
   });
 });

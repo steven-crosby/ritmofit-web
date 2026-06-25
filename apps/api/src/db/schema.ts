@@ -347,6 +347,10 @@ export const classTrackMoves = sqliteTable(
     ),
     // Hot path: placed moves are fetched per class_track when assembling the run-payload.
     index('class_track_moves_class_track_id_idx').on(t.classTrackId),
+    // Reverse "songs by move" lookup: find every placement of a given move so the
+    // owner can see which songs they've choreographed it with (otherwise a scan).
+    index('class_track_moves_move_id_idx').on(t.moveId),
+    index('class_track_moves_user_move_id_idx').on(t.userMoveId),
   ],
 );
 

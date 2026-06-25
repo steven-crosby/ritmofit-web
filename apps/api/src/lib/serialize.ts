@@ -13,6 +13,7 @@ import {
   classSectionSchema,
   moveSchema,
   userMoveSchema,
+  songByMoveSchema,
   trackSchema,
   trackProviderIdSchema,
   teamSchema,
@@ -33,6 +34,8 @@ import {
   type ClassSection,
   type Move,
   type UserMove,
+  type SongByMove,
+  type SongByMovePlacement,
   type Track,
   type TrackProviderId,
 } from '@ritmofit/shared';
@@ -91,6 +94,17 @@ export function serializeMove(row: MoveRow): Move {
 /** Map a `user_moves` row to the shared `UserMove`. */
 export function serializeUserMove(row: UserMoveRow): UserMove {
   return userMoveSchema.parse(row);
+}
+
+/**
+ * Validate a "songs by move" group — a track plus its placements across the
+ * caller's classes — against the shared contract (the reverse-search response).
+ */
+export function serializeSongByMove(
+  track: TrackRow,
+  placements: SongByMovePlacement[],
+): SongByMove {
+  return songByMoveSchema.parse({ track, placements });
 }
 
 type TrackRow = typeof tracks.$inferSelect;
