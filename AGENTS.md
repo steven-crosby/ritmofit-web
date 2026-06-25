@@ -9,16 +9,32 @@ architecture, workflow, safety, or verification requirements.
 When an AI agent (e.g. Claude, Gemini) edits this file or adds a note to it, it must identify itself —
 label the change with the authoring agent and date (e.g. `<!-- note (Claude, 2026-06-17): … -->`).
 
+<!-- note (Claude, 2026-06-24): Adopted the full surface-parity principle (D18) — web and iOS are co-equal surfaces; added the hard parity gate below. -->
+
 ## Product & Architecture
 
-RitmoFit is a choreography and class-running tool for rhythm spin instructors. This repository contains
-the web planning surface and its shared backend; the separate iOS app consumes the same API. The backend
-is the source of truth for classes, choreography, tracks, moves, teams, and shares. Music providers own
-playback and provider-specific availability. The frontend owns presentation and temporary form state.
+RitmoFit is a choreography and class-running tool for rhythm spin instructors, delivered as **two
+complete, co-equal surfaces of one product** ("Spotify for instructors"): this **web app** and the
+separate **iOS app**. Each carries the _full_ instructor loop — build & choreograph, library, search,
+explore, sharing, **and** run a class live — in its platform's native idiom; neither is
+capability-limited. This repository contains the web surface and the shared backend the iOS app also
+consumes. The backend is the source of truth for classes, choreography, tracks, moves, teams, and
+shares. Music providers own playback and provider-specific availability. The frontend owns presentation
+and temporary form state.
 
 The stack is a pnpm TypeScript monorepo: React/Vite/Tailwind on the web, Hono/Cloudflare Workers and D1
 on the API, Drizzle for persistence, Zod for contracts, and Better Auth for identity. Production serves
 the SPA and API from the same Worker and origin.
+
+## Surface Parity (Web ↔ iOS) — hard gate
+
+The parity principle is locked as `ritmofit_dev_plan/decisions.md` **D18**; mechanics, sync points, the
+current parity backlog, and the documented exceptions live in
+`ritmofit_dev_plan/web-ios-parity.md`. **The gate is binding:** no feature merges on one surface without
+the same capability landing on the other **or** a tracked, linked parity item on the other surface.
+Existing asymmetries are defects, not the steady state. Allowed divergence is limited to the documented
+exceptions (iPhone-only haptics/lock-screen/motion; web-leaning second-screen presentation) and
+platform-idiomatic UX expression. When planning any feature, state its parity impact in the plan and PR.
 
 ## Before Implementing
 

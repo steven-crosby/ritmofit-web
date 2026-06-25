@@ -1,6 +1,9 @@
 # Editing-Granularity Scoping — Trimming · Free Placement · Beat-Snapping
 
-> Status: **scoping only** (no code yet). Branch `claude/ritmofit-editing-granularity-wxp4z5`.
+<!-- note (Claude, 2026-06-24): This began as a scoping doc; Features A (trim) and the timeline-mode/beat-snap work have since SHIPPED to main and prod. It now reads as an as-built appendix — the "on this branch" / "next migration 0014" phrasing below is the historical record at authoring time, not current state. For the live migration level, see HISTORY.md / `wrangler d1 migrations list`. -->
+
+> Status: **as-built appendix** — the features scoped here shipped to `main`/prod (see the per-feature
+> "✅ shipped" markers and `HISTORY.md`). Originally drafted as scoping.
 > Context: the planning surface today is strong on *ordering* and *annotation* but caps out
 > below a DAW on fine-grained control. These three deferred features are the realistic levers
 > to raise that ceiling **without** turning RitmoFit into an audio editor (the three music
@@ -30,8 +33,9 @@ free placement is expensive because it *inverts* the invariant** (offset stops b
 becomes user-authored), which also breaks the deployed run-payload v1 timeline semantics that iOS
 depends on.
 
-Next migration number is **`0014`** (latest is `0013`). Remote D1 is live, so every schema change
-ships a forward migration with a safe default for existing rows.
+Remote D1 is live, so every schema change ships a **forward migration with a safe default for existing
+rows** (Drizzle migrations are forward-only). _(At authoring time the next number was `0014`; the live
+level is well past that now — check `wrangler d1 migrations list ritmofit --remote`.)_
 
 ---
 

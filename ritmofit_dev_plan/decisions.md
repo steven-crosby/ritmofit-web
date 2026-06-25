@@ -305,6 +305,41 @@ rhythm/intensity doc to name the zones canonically.
 
 ---
 
+## D18 — "Spotify for instructors": full surface parity (web ↔ iOS)  **[Resolved 2026-06-24]**
+
+**Decision:** Web and iOS are **two complete, co-equal surfaces of one product** — not a "planning
+surface" and a "live surface." Every core instructor capability — **build & choreograph** a class,
+**library**, **multi-provider search**, **explore**, **sharing/teams**, **and running a class live** —
+exists on **both**, expressed in **each platform's native idiom** (iOS gestures + bottom tab bar; web
+sidebar + keyboard). A surface may *lean* toward a context (web comfortable at a desk, iOS in the room),
+but is **never capability-limited**. This **supersedes** the earlier asymmetric-surfaces framing in
+`overview.md`, `DEVELOPMENT_PLAN.md`, and `08-ios-web-alignment.md`.
+
+**Why:** The product promise — "Spotify for instructors" — is that you pick up either device and do
+*everything*, intuitively. Spotify mirrors its core loop across mobile/desktop/web (platform-idiomatic,
+not byte-identical); RitmoFit holds the same bar. Concretely, **the iOS app is iPhone-only**, so web is
+today the *only* good large-screen / tablet / Android live surface — a presenter-only web would leave
+every non-iPhone live scenario half-served.
+
+**Enforcement (hard gate, effective now):** No feature merges on one surface without the same capability
+landing on the other **or** a tracked, linked parity item on the other surface. **Existing asymmetries
+are treated as defects**, worked down ahead of most net-new feature work. Mechanics, sync points, the
+current parity backlog, and the documented exceptions live in
+[`web-ios-parity.md`](./web-ios-parity.md).
+
+**Documented exceptions (allowed divergence):** genuinely platform-bound affordances only — iPhone
+haptics, lock-screen / Now-Playing integration, and motion/ambient sensing remain iOS-only. A
+second-screen "presentation/cast" view (laptop → TV) is a web-leaning *enhancement*, not a limiter.
+"UX expression" is **platform-idiomatic**, not a unified pixel-identical UI.
+
+**Tradeoff:** Overturns the original asymmetric architecture; implies sizable near-term parity work in
+**both** directions (web gains full live-run; iOS gains builder/library/search/explore/sharing) and
+raises cross-repo coordination cost (two clients, one contract). Accepted as the cost of the core
+promise. **Open follow-on (not now):** iPad as a first-class iOS target — today the principle leans on
+web to cover iPad.
+
+---
+
 ## Cut from M1 (flagged, not built)
 
 - **Segments / class sections.** *(Cut from M1; **shipped later**.)* In M1 segments were a design

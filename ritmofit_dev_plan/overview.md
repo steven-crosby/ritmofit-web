@@ -2,16 +2,20 @@
 
 ## What we're building
 
-RitmoFit is a choreography and class-running tool for rhythm spin cycle instructors. Two clients,
-one backend:
+RitmoFit is a choreography and class-running tool for rhythm spin cycle instructors. **Two complete,
+co-equal surfaces of one product** ("Spotify for instructors"), one backend:
 
-- **Web app** — the planning surface. Instructors sit at a laptop, audition tracks across providers,
-  assemble a class, and choreograph it (cues, moves, intensity, timeline).
-- **iOS app** — the live surface (separate repo). Instructors run the class in front of a room: a cue
-  prompter in time with the music, interval countdowns, intensity readouts.
+- **Web app** — every instructor capability on a browser: audition tracks across providers, assemble
+  and choreograph a class (cues, moves, intensity, timeline), *and* run it live (a laptop or tablet at
+  the front of the room — including the iPad/Android tablets the iPhone-only iOS app can't serve).
+- **iOS app** (separate repo) — the same complete loop in a native iPhone idiom: build/choreograph and
+  run a class live (cue prompter in time with the music, interval countdowns, intensity readouts).
 
-Both read and write the same data through the backend in this repo. A class built on web opens on iOS
-unchanged, and vice versa.
+Both surfaces do **everything**, each in its platform's native idiom; a surface may *lean* toward a
+context (web at a desk, iOS in the room) but is never capability-limited. Both read and write the same
+data through the backend in this repo — a class built on web opens on iOS unchanged, and vice versa.
+The parity principle is locked as **D18**; the gate + current parity backlog live in
+[`web-ios-parity.md`](./web-ios-parity.md).
 
 ## Who the user is
 

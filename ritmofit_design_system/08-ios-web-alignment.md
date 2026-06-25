@@ -42,14 +42,21 @@ brand evolves.
 | Reduced motion | `prefers-reduced-motion`                                            | iOS Reduce Motion                                                |
 | Density        | planning view rich, side-by-side                                    | live view dominant, single-focus                                 |
 
-## Mode emphasis differs by platform
+## Emphasis differs by platform — capability does not
 
-- **Web** is the **planning** home: timeline-first builder with the energy ribbon, side detail editor,
+Both surfaces carry the **full** instructor loop (build/choreograph **and** live-run); the difference is
+**density and default emphasis**, expressed idiomatically — not which capabilities exist. This is a
+platform-idiomatic lean, not an asymmetry of features (parity principle: `decisions.md` D18 +
+[`../ritmofit_dev_plan/web-ios-parity.md`](../ritmofit_dev_plan/web-ios-parity.md)).
+
+- **Web** *leans* desk-comfortable: timeline-first builder with the energy ribbon, side detail editor,
   keyboard workflows, rich contrast. Glass for nav/overlays; dense editing stays solid; tempo is off
-  except a subtle pulse on the playing track.
-- **iOS** is the **live** home: glanceable HUD, maximum contrast, large `data-hero` type, glass over
-  content, full on-beat pulse, the "drop" at All-Out. Its current product scope is iPhone-only,
-  dark-only, with class browsing and live execution rather than web-planning parity.
+  except a subtle pulse on the playing track. Web also provides the **full live-run** experience (a
+  laptop/tablet at the front of the room), with an optional second-screen presentation/cast view.
+- **iOS** *leans* in-the-room: glanceable HUD, maximum contrast, large `data-hero` type, glass over
+  content, full on-beat pulse, the "drop" at All-Out. iOS likewise provides the **full build/choreograph**
+  loop in a native idiom. Current scope is iPhone-only and dark-only; closing the builder/library/search
+  parity gap is tracked iOS work (`web-ios-parity.md`), not a permanent boundary.
 
 ## Native-feel guidelines
 
