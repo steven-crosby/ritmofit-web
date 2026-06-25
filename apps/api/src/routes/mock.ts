@@ -19,14 +19,19 @@ import { importTrackFromCandidate } from '../lib/track-import.js';
 
 export const mockRoutes = new Hono<AppEnv>();
 
-// Gate: the seam exists only when explicitly enabled (local dev).
-mockRoutes.use('*', async (c, next) => {
+// Gate: the seam exists only when explicitly enabled (local dev). Scope the
+// middleware to `/mock/*`, NOT `*`: this router is mounted at the api root
+// (`api.route('/', mockRoutes)`), so a `*` matcher leaks to every route
+// registered after it in the chain — in production (`MOCK_PROVIDERS !== 'true'`)
+// the gate then 404s teams/shares/explore/uploads/playlist-import before their
+// handlers run. Matching only `/mock/*` keeps the seam self-contained.
+mockRoutes.use('/mock/*', async (c, next) => {
   if (c.env.MOCK_PROVIDERS !== 'true') {
     return c.json({ error: { code: 'NOT_FOUND', message: 'Not found.' } }, 404);
   }
   await next();
 });
-mockRoutes.use('*', requireSession);
+mockRoutes.use('/mock/*', requireSession);
 
 /** GET /mock/track-search?q=&provider= — fake provider candidates from the catalog. */
 mockRoutes.get('/mock/track-search', (c) => {
