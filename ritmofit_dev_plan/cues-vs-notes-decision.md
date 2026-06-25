@@ -1,8 +1,14 @@
 <!-- note (Claude, 2026-06-23): Resolution of DEVELOPMENT_PLAN backlog item #3 (Cues vs. Notes), plus scope for the step-1 implementation slice. -->
+<!-- note (Claude, 2026-06-24): Step-1 read path has SHIPPED — Live mode now renders per-track notes (LiveMode.tsx). This is now an as-built decision record. -->
 
 # Cues vs. Notes — decision & step-1 scope
 
-Resolves backlog item #3 in [`DEVELOPMENT_PLAN.md`](./DEVELOPMENT_PLAN.md).
+Resolves the Cues-vs-Notes open item formerly tracked in [`DEVELOPMENT_PLAN.md`](./DEVELOPMENT_PLAN.md).
+
+> **Outcome (2026-06-24):** decided **not** to split the schema; the step-1 **read path shipped** — Live
+> mode now surfaces the previously write-only `class_tracks.notes`. This doc is kept as the as-built
+> decision record. A future `kind: 'cue' | 'note'` discriminator on `cues` remains the additive path *if*
+> anchored per-moment notes are ever evidenced.
 
 ## Question
 

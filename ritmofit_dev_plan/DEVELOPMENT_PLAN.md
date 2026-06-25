@@ -94,26 +94,17 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
 Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
-> **Deploy state (2026-06-23): `main` == production.** Caught up the PRs #85–#93 backlog in one deploy;
-> prod runs Worker `d183ee42` from `main` (`69dcdcd`), remote D1 at `0016`. Details + smoke results in
-> [`HISTORY.md`](./HISTORY.md).
+> **Where current status lives** (to avoid drift, this map carries no dated status):
+> - **Milestone state** (M1–M4 and what's done) → [`milestones.md`](./milestones.md).
+> - **Chronological deploy/build log** (every PR, Worker version id, migration step, the live Worker
+>   version, and remote D1 migration level) → [`HISTORY.md`](./HISTORY.md), newest entry first.
+> - **Forward work** → [`mockup-parity-backlog.md`](./mockup-parity-backlog.md) (feature/surface gaps)
+>   and [`web-ios-parity.md`](./web-ios-parity.md) (the web↔iOS parity backlog).
+> - **Contributor + deployment instructions** → [`../AGENTS.md`](../AGENTS.md) and
+>   [`deployment-runbook.md`](./deployment-runbook.md).
 >
-> **Status — current as of 2026-06-17.** Backend **M1–M4 complete, merged to `main`, and fully deployed
-> since 2026-06-12.** The whole app — API +
-> web planning surface — is **live at `https://ritmofit.studio`**, served by one Worker (Workers static
-> assets; single origin ⇒ first-party auth, no CORS), with remote D1 migrated through `0016`. M4
-> (Explore / sharing UX) shipped in three slices — share-by-email, team-sharing, and the Explore feed
-> (`classes.visibility`, public VIEW floor, `GET /explore`, save-a-copy); **featured curation is
-> deliberately deferred**. CI (`.github/workflows/ci.yml`) gates format, typecheck, lint, unit tests,
-> Worker/D1 integration tests, the web build, OpenAPI drift, and `audit:ci` on every push/PR —
-> **advisory** until the owner enables branch protection.
-> Current launch/deploy status is tracked in this plan and [`HISTORY.md`](./HISTORY.md); the prior
-> `REVIEW.md` launch-readiness log is archived in [`archive/`](./archive/). Canonical contributor and
-> deployment instructions are in [`../AGENTS.md`](../AGENTS.md).
-
-_The full dated deploy/build log (every PR, Worker version id, and migration step) has been moved to
-[`HISTORY.md`](./HISTORY.md) to keep this map readable. This section keeps the current-state summary
-above and the milestone roll-up below._
+> The headline: backend **M1–M4 complete and deployed**, the app is live at `https://ritmofit.studio`
+> (one Worker, single origin), and `main` ships to prod via the manual runbook with branch protection on.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);
@@ -147,14 +138,24 @@ above and the milestone roll-up below._
 | [`HISTORY.md`](./HISTORY.md) | Archived dated build/deploy log (PRs, Worker versions, migration steps) |
 | [`mockup-parity-backlog.md`](./mockup-parity-backlog.md) | Prioritized feature/surface gaps from the mockups-vs-prod audit (post design-system) |
 | [`web-ios-parity.md`](./web-ios-parity.md) | Web ↔ iOS surface-parity principle (D18): the hard gate, sync points, and the cross-surface parity backlog |
+| [`structclub-parity-audit.md`](./structclub-parity-audit.md) | Point-in-time competitive audit vs. the StructClub app (analysis; forward work lives in the backlog) |
 
 ---
 
 ## Backlog / Open Items
 
-These items have been discussed and placed in the backlog for future prioritization or review:
+Forward work has a single home — [`mockup-parity-backlog.md`](./mockup-parity-backlog.md) (feature/
+surface gaps, ranked High/Medium/Polish + decision-gated items) — plus
+[`web-ios-parity.md`](./web-ios-parity.md) for the cross-surface parity backlog. Don't keep a parallel
+list here; add to those.
 
-1. **"Songs by Move" / Track Tagging System:** Implement a simple "Google Keep/Apple Notes" style tagging system for tracks/classes to allow reverse-searching for songs previously choreographed with specific moves or themes.
-2. **Explore Feed UI:** Currently a simple chronological list of public classes. The visually rich, categorized UI (horizontal scrolling curated lists, e.g., "HIIT", "Pride") is a deferred enhancement.
-3. **Cues vs. Notes — RESOLVED (2026-06-23, Claude):** Do **not** split the schema. Investigation found the "Notes" channel already exists (`class_tracks.notes`, in the DB, the shared contract, and the run-payload) and is editable in the builder — but is **write-only**: never surfaced on any read surface (Live mode, class summary). The fix is to complete the read path, not split the model. If field use later proves a need for *anchored, per-moment* notes distinct from cues, add a `kind: 'cue' | 'note'` discriminator column to `cues` (backward-compatible, run-payload additive) rather than a new table — defer until evidenced. Full decision + the step-1 slice scope: [`cues-vs-notes-decision.md`](./cues-vs-notes-decision.md).
-4. **Mockup-parity backlog (2026-06-24, Claude):** the mockups-vs-production gap audit produced a prioritized backlog of the feature/surface gaps remaining after the v4.1 design-system deploy — biggest three: Spotify/Apple user-connect, a saved-tracks Library, and share-card export. Full ranked list (High/Medium/Polish + four decision-gated items) in [`mockup-parity-backlog.md`](./mockup-parity-backlog.md). Note: item 2 above (Explore Feed UI) overlaps backlog M3 — fold together when picked up.
+Recently closed (kept as pointers so the trail isn't lost):
+
+- **"Songs by Move" / track-and-theme reverse search — ✅ shipped** (PRs #99; reverse move→songs search
+  + server-side class tag/theme search). See [`HISTORY.md`](./HISTORY.md).
+- **Cues vs. Notes — ✅ resolved + read-path shipped.** Decided *not* to split the schema; the
+  `class_tracks.notes` channel already existed end-to-end but was write-only, and Live mode now renders
+  it. If *anchored, per-moment* notes ever prove needed, add a `kind: 'cue' | 'note'` discriminator to
+  `cues` (additive) rather than a new table. Full decision: [`cues-vs-notes-decision.md`](./cues-vs-notes-decision.md).
+- **Explore Feed UI** (rich categorized curation) and **featured curation** remain deferred — tracked in
+  the mockup-parity backlog (overlaps its M3).
