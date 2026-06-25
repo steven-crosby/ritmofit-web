@@ -141,6 +141,7 @@ above and the milestone roll-up below._
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
 | [`close-session-checklist.md`](./close-session-checklist.md) | End-of-session runbook — say "run the close-session checklist" |
 | [`HISTORY.md`](./HISTORY.md) | Archived dated build/deploy log (PRs, Worker versions, migration steps) |
+| [`mockup-parity-backlog.md`](./mockup-parity-backlog.md) | Prioritized feature/surface gaps from the mockups-vs-prod audit (post design-system) |
 
 ---
 
@@ -151,3 +152,4 @@ These items have been discussed and placed in the backlog for future prioritizat
 1. **"Songs by Move" / Track Tagging System:** Implement a simple "Google Keep/Apple Notes" style tagging system for tracks/classes to allow reverse-searching for songs previously choreographed with specific moves or themes.
 2. **Explore Feed UI:** Currently a simple chronological list of public classes. The visually rich, categorized UI (horizontal scrolling curated lists, e.g., "HIIT", "Pride") is a deferred enhancement.
 3. **Cues vs. Notes — RESOLVED (2026-06-23, Claude):** Do **not** split the schema. Investigation found the "Notes" channel already exists (`class_tracks.notes`, in the DB, the shared contract, and the run-payload) and is editable in the builder — but is **write-only**: never surfaced on any read surface (Live mode, class summary). The fix is to complete the read path, not split the model. If field use later proves a need for *anchored, per-moment* notes distinct from cues, add a `kind: 'cue' | 'note'` discriminator column to `cues` (backward-compatible, run-payload additive) rather than a new table — defer until evidenced. Full decision + the step-1 slice scope: [`cues-vs-notes-decision.md`](./cues-vs-notes-decision.md).
+4. **Mockup-parity backlog (2026-06-24, Claude):** the mockups-vs-production gap audit produced a prioritized backlog of the feature/surface gaps remaining after the v4.1 design-system deploy — biggest three: Spotify/Apple user-connect, a saved-tracks Library, and share-card export. Full ranked list (High/Medium/Polish + four decision-gated items) in [`mockup-parity-backlog.md`](./mockup-parity-backlog.md). Note: item 2 above (Explore Feed UI) overlaps backlog M3 — fold together when picked up.
