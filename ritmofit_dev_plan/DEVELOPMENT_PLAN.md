@@ -14,11 +14,14 @@
 
 A choreography and class-running tool for **rhythm spin cycle instructors**.
 
-- The **web app** is the *planning* surface — assembling and choreographing classes on a laptop:
-  auditioning tracks, ordering them into an energy arc, tagging cues and moves to specific moments.
-- The **iOS app** (separate repo) is the *live* surface — running the class in front of a room.
+- **Two complete, co-equal surfaces of one product** ("Spotify for instructors"): the **web app** and
+  the **iOS app** (separate repo) each carry the *full* instructor loop — build & choreograph, library,
+  search, explore, sharing, **and** run a class live — expressed in each platform's native idiom. A
+  surface may *lean* toward a context (web at a desk, iOS in the room) but is **never capability-limited**.
 - Both are clients of **one shared backend** built in this repo. A class built on web opens on iOS
   unchanged. **The backend is the single source of truth; neither client is.**
+- The parity principle is locked as decision **D18**; the hard gate + current parity backlog live in
+  [`web-ios-parity.md`](./web-ios-parity.md).
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
@@ -50,6 +53,7 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 
 | Area | Decision |
 |---|---|
+| Surface model | **Full parity** — web and iOS are co-equal surfaces; every core capability on both, platform-idiomatic (D18, [`web-ios-parity.md`](./web-ios-parity.md)) |
 | Platform | **Cloudflare-native** — Workers (API) + D1 (database) + the SPA served as Workers static assets from the **same Worker/origin** as the API (no separate Pages site, single origin) |
 | Account system | We own the `users` table; auth providers only verify identity |
 | Auth | **Better Auth** on Workers + D1 (email, Apple, Google). Sessions in our D1. |
@@ -142,6 +146,7 @@ above and the milestone roll-up below._
 | [`close-session-checklist.md`](./close-session-checklist.md) | End-of-session runbook — say "run the close-session checklist" |
 | [`HISTORY.md`](./HISTORY.md) | Archived dated build/deploy log (PRs, Worker versions, migration steps) |
 | [`mockup-parity-backlog.md`](./mockup-parity-backlog.md) | Prioritized feature/surface gaps from the mockups-vs-prod audit (post design-system) |
+| [`web-ios-parity.md`](./web-ios-parity.md) | Web ↔ iOS surface-parity principle (D18): the hard gate, sync points, and the cross-surface parity backlog |
 
 ---
 
