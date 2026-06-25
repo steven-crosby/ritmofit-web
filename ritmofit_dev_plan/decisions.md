@@ -242,6 +242,69 @@ dragged track start, carrying `timeline_mode` through whole-class copy, and per-
 
 ---
 
+## D14 — RPM (cadence) + Holds per track  **[Resolved 2026-06-24, from the mockup-parity audit]**
+
+**Decision:** Model **RPM** (pedal cadence) and **Holds** per track, surfaced on builder track rows and
+the Live HUD (the mockup shows "118 RPM · 3 Holds" per row). RPM is a **manual per-track field**, kept
+**distinct from BPM** — cadence ≠ music tempo (an instructor may pedal at half-time), so it is not
+derived from `display_bpm` (cf. D11).
+
+**Why:** Cadence is core spin-instructor language; the audit found prod models only BPM. The owner
+chose to add it.
+
+**Tradeoff / open sub-question:** New schema field(s) + builder/Live UI + a run-payload addition.
+**Holds** is unsettled: either a **derived** count of hold-type placed moves (no new field) or a
+**manual** per-track count — settle in design before building. Keep RPM and BPM visually distinct so
+they're never conflated.
+
+---
+
+## D15 — Public marketing landing page  **[Resolved 2026-06-24]**
+
+**Decision:** Build a public **marketing landing** at `/` (mockup `marketing.html`); sign-in becomes
+secondary. Signed-out users see the landing, not the Login form directly.
+
+**Why:** The owner wants a public front door for traction. Today the signed-out gate in `App.tsx`
+renders `<Login>` straight away.
+
+**Tradeoff / note:** A marketing page wants SEO/pre-render, which lightly tensions with **D3** ("Vite
+SPA, no SSR — the tool sits behind a login"). Resolve by **pre-rendering / serving the landing route as
+static** (the Worker already serves static assets) rather than adopting full SSR/Next. Expands the
+client routing + the signed-out branch in `App.tsx` (`KNOWN_PATHS`).
+
+---
+
+## D16 — Save model: auto-save + status indicator (not staged)  **[Resolved 2026-06-24]**
+
+**Decision:** Keep **silent auto-save** (the current optimistic-write model) and add a subtle
+**saving/saved status indicator**. Do **not** adopt the mockup's staged Save/Discard.
+
+**Why:** Auto-save is lower-friction and already implemented across the builder's many independent
+writes; an indicator delivers the mockup's "CLASS SHAPE SAVED" reassurance without a builder-state
+rework.
+
+**Tradeoff:** Needs one lightweight global save-status signal the per-field writes feed into; minor.
+
+---
+
+## D17 — Intensity vocabulary = spin zones (Build/Push/Attack/All Out)  **[Resolved 2026-06-24]**
+
+**Decision:** Adopt **zone vocabulary** for the five intensity levels, matching the current mockups:
+**Z0 None · Z1 Build · Z2 Push · Z3 Attack · Z4 All Out**. This is **display-layer only** — keep the
+enum `none/easy/mod/hard/all_out` (`packages/shared` + DB) **unchanged** (no migration); change
+`INTENSITY_LABEL` in `IntensityReadout.tsx` and optionally surface the `Z0–Z4` number. Supersedes both
+the prod effort labels (easy/moderate/hard) and the design-system "movement" labels
+(Arrival/Rise/Drive/Recover/Release).
+
+**Why:** Spin-native and evocative; aligns prod to the latest mockups. The owner's call among three
+competing vocabularies that had drifted apart.
+
+**Tradeoff:** Backward-compatible (labels only). Pairs with flipping the intensity control from a
+raw-enum dropdown to a labeled **segmented control** (backlog M1 + P2), and updating the design-system
+rhythm/intensity doc to name the zones canonically.
+
+---
+
 ## Cut from M1 (flagged, not built)
 
 - **Segments / class sections.** *(Cut from M1; **shipped later**.)* In M1 segments were a design

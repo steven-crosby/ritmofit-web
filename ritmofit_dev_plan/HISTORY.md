@@ -10,6 +10,34 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-25 deployed (Worker `c269837d-3c24-4b87-886e-4f24df11c0ba`).**
+> Shipped two merged PRs from `main` (`2c27da2`). **#99** (`585f134`, feat: "Songs by Move" reverse
+> search — owner-scoped `GET /moves/:id/songs` + `/user-moves/:id/songs`, grouped by track; **plus**
+> server-side class **tag/theme search** `GET /classes?tag=` as an EXISTS filter composing with the
+> visibility CTE + keyset cursor; plus an in-builder entry point) and **#100** (`2c27da2`, fix: scope
+> the dev-only mock-seam gate to `/mock/*`). **Migration `0017`** (additive indexes on
+> `class_track_moves(move_id)` / `(user_move_id)`) applied to remote D1 **before** the code deploy;
+> remote D1 now at `0017`. Prior Worker `c6b91a31-d981-4ece-9cd4-2e985e4fb424` (session 2026-06-24) is
+> the rollback anchor.
+>
+> **#100 fixed a latent prod-404 bug on `main`** that the next deploy would have detonated: `mockRoutes`
+> mounts at the api root (`api.route('/', mockRoutes)`) and gated itself with `mockRoutes.use('*', …)`,
+> which returns `404 NOT_FOUND` in prod (`MOCK_PROVIDERS !== 'true'`). Because `*` matches every path and
+> mock is registered **before** teams/shares/explore/uploads/playlist-import, the gate shadowed all of
+> those siblings → `404` in production. **CI never caught it** — the integration suite runs with
+> `MOCK_PROVIDERS='true'`, which makes the gate transparent. Production was healthy only because the live
+> Worker predated the regression. Fix scopes both middlewares to `/mock/*`; added a plain-Hono unit test
+> (`mock.test.ts`) and a real-worker integration test (`mock-gate-leak.integration.test.ts`), both run
+> with `MOCK_PROVIDERS` unset to reproduce prod. Verified the regression: the unit test fails against the
+> pre-fix `mock.ts`, passes with the fix.
+>
+> Pre-deploy gates green (both PRs): format, typecheck, lint, unit (api 234 + web 175), Worker/D1
+> integration 61, web build, OpenAPI no-drift. Post-deploy smoke (live): SPA `/` → `200`, `/api/v1/health`
+> → `200`, unauthenticated `/api/v1/classes` / `/api/v1/explore` / `/api/v1/teams` → `401` (handlers
+> reached, **not** the pre-fix `404`), `/api/v1/mock/track-search` → `401` (seam not exposed), built asset
+> `index-CZ9jMwA7.js` served, all six security headers present. Bindings confirmed: D1 `ritmofit`, R2
+> `ritmofit-images`, `BETTER_AUTH_URL`/`WEB_ORIGIN` = `https://ritmofit.studio`.
+
 > **Session 2026-06-23 deployed (Worker `d183ee42-eba4-40ae-9def-fc0bd313223e`).**
 > Caught up the long undeployed delta (**PRs #85–#93**, ~28 commits) in one code-only deploy. PRs merged
 > this session: **#91** (`44e7b6b`, chore: ESLint-ignore git-ignored DesignSync artifacts so local
