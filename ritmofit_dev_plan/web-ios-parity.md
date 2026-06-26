@@ -46,8 +46,7 @@ In practice, for any feature PR (web *or* iOS):
 
 ## Parity backlog (current asymmetries — these are the defects to close)
 
-Capability-level, both directions. Track concrete slices in `milestones.md` / `mockup-parity-backlog.md`
-(web) and `BUILD_ORDER.md` (iOS); this is the cross-surface ledger.
+Capability-level, both directions. Track concrete slices in `milestones.md` (web) and `BUILD_ORDER.md` (iOS); this is the cross-surface ledger.
 
 **Web has, iOS needs:**
 

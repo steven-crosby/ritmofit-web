@@ -98,8 +98,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > - **Milestone state** (M1–M4 and what's done) → [`milestones.md`](./milestones.md).
 > - **Chronological deploy/build log** (every PR, Worker version id, migration step, the live Worker
 >   version, and remote D1 migration level) → [`HISTORY.md`](./HISTORY.md), newest entry first.
-> - **Forward work** → [`mockup-parity-backlog.md`](./mockup-parity-backlog.md) (feature/surface gaps)
->   and [`web-ios-parity.md`](./web-ios-parity.md) (the web↔iOS parity backlog).
+> - **Forward work** → [`web-ios-parity.md`](./web-ios-parity.md) (the web↔iOS parity backlog).
 > - **Contributor + deployment instructions** → [`../AGENTS.md`](../AGENTS.md) and
 >   [`deployment-runbook.md`](./deployment-runbook.md).
 >
@@ -136,7 +135,6 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
 | [`../agent-prompts/daily/close-session.md`](../agent-prompts/daily/close-session.md) | End-of-session runbook — say "run close-session" |
 | [`HISTORY.md`](./HISTORY.md) | Archived dated build/deploy log (PRs, Worker versions, migration steps) |
-| [`mockup-parity-backlog.md`](./mockup-parity-backlog.md) | Prioritized feature/surface gaps from the mockups-vs-prod audit (post design-system) |
 | [`web-ios-parity.md`](./web-ios-parity.md) | Web ↔ iOS surface-parity principle (D18): the hard gate, sync points, and the cross-surface parity backlog |
 | [`structclub-parity-audit.md`](./structclub-parity-audit.md) | Point-in-time competitive audit vs. the StructClub app (analysis; forward work lives in the backlog) |
 
@@ -144,10 +142,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 ## Backlog / Open Items
 
-Forward work has a single home — [`mockup-parity-backlog.md`](./mockup-parity-backlog.md) (feature/
-surface gaps, ranked High/Medium/Polish + decision-gated items) — plus
-[`web-ios-parity.md`](./web-ios-parity.md) for the cross-surface parity backlog. Don't keep a parallel
-list here; add to those.
+Forward work has a single home — [`web-ios-parity.md`](./web-ios-parity.md) for the cross-surface parity backlog. Don't keep a parallel list here; add to that.
 
 Recently closed (kept as pointers so the trail isn't lost):
 

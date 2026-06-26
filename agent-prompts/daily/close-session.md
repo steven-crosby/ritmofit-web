@@ -77,8 +77,7 @@ deployment behavior changed, run the full CI-equivalent gate:
   shipped, deployed, or materially changed operational state. Use absolute dates.
 - [ ] Refresh the current-state summary in `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`, and
   `ritmofit_dev_plan/milestones.md` if a milestone changed.
-- [ ] Track forward work in `ritmofit_dev_plan/mockup-parity-backlog.md` or
-  `ritmofit_dev_plan/web-ios-parity.md`; do not create parallel backlog lists.
+- [ ] Track forward work in `ritmofit_dev_plan/web-ios-parity.md`; do not create parallel backlog lists.
 - [ ] Update focused docs such as `conventions.md`, `authorization.md`, or
   `deployment-runbook.md` when their subject changes.
 - [ ] Do not revive archived launch trackers in `ritmofit_dev_plan/archive/`.

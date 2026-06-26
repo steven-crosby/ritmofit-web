@@ -60,8 +60,6 @@ docs-PR-producing, and `pr-triage` remains read-only unless explicitly invoked w
   - `close-session` — interactive cleanup, verification, PR/deploy hygiene, and handoff.
   - `changed-code-sentinel` — optional remote daily agent; reviews only the new commit delta.
   - `command-brief` — turns the sentinel result into an actionable handoff for this repo.
-  - `morning-sweep` — legacy fallback for repository-wide triage.
-  - `standup-digest` — legacy fallback for days when no sentinel report exists.
 - `technical/` — code + design:
   - `stability`, `quality`, `design-system`, `security`, `performance`,
     `api-contract-parity`, `accessibility`, `test-coverage`, `dependency-freshness`,
@@ -79,7 +77,7 @@ are live decision-aids — where you are the record — do not. The mechanics li
 
 | Prompt | Report? |
 |---|---|
-| `daily/changed-code-sentinel`, `daily/command-brief`, `daily/morning-sweep`, `daily/standup-digest` | **Yes** |
+| `daily/changed-code-sentinel`, `daily/command-brief` | **Yes** |
 | all `technical/*` audits | **Yes** |
 | `planning/pr-triage`, `planning/doc-drift` | **Yes** |
 | `daily/start-session`, `daily/close-session` | No — interactive |

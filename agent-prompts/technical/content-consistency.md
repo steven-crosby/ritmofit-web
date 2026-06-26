@@ -24,17 +24,14 @@ Check `ritmofit-web`'s own user-facing text — no iOS source required:
 - **State copy:** empty / error / loading text that's missing, placeholder, or off-tone.
 - **i18n** (if any localization exists): missing or mismatched keys.
 
-## Cross-surface vs iOS (only when iOS source is available)
+## Cross-surface vs iOS
 
 The authoritative parity reference is the iOS client's copy under its `Features/`, which is
-**not vendored** in this repo. To run this part you need a read-only `ritmofit-ios` checkout
-(e.g. a sibling `../ritmofit-ios` clone). If one is present, compare the web copy against
-`../ritmofit-ios/RitmoFit/RitmoFit/Features/` for terminology, formatting, and label parity,
-flagging anywhere the two surfaces diverge.
+**not vendored** in this repo. Because this repo is self-contained and we no longer rely on sibling
+directory checks, you cannot verify iOS copy parity directly from this workspace.
 
-If no iOS source is available this session — the common ephemeral/remote case — **do not guess**
-at iOS copy or infer drift. Run the web-internal checks above and record this line verbatim in
-the after-action report: `cross-surface copy parity vs iOS: not run — no iOS source in this
+**Do not guess** at iOS copy or infer drift. Run the web-internal checks above and record this line verbatim in
+the after-action report: `cross-surface copy parity vs iOS: not run — no iOS source vendored in this
 checkout`. (Contract/enum parity, which *is* snapshotted, belongs to `api-contract-parity.md`.)
 
 ## Output

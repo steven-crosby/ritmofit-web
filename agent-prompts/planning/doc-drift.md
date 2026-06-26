@@ -16,7 +16,7 @@ Find where the written record and the code / reality have diverged:
 - Dead links, renamed files, deleted modules still referenced.
 
 Apply my doc conventions: self-label any status note with **agent + date**; archive dated
-status entries into `HISTORY.md` / `REVIEW_HISTORY.md` rather than letting them pile up in
+status entries into `HISTORY.md` rather than letting them pile up in
 live planning docs; keep planning docs slim.
 
 Open small docs-only PRs for clear corrections. Judgment calls (should this whole doc be
