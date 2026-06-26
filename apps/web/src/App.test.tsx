@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { App } from './App.js';
 
-// Signed-out session so the root path resolves to Login (not Dashboard, which
-// pulls in the whole builder). The components import the client at module load.
+// Signed-out session so the root path resolves to MarketingPage (D15), not Dashboard.
+// The components import the client at module load.
 vi.mock('./lib/auth-client.js', () => ({
   authClient: { useSession: () => ({ data: null, isPending: false }) },
 }));
@@ -23,7 +23,7 @@ describe('App path routing', () => {
     expect(screen.getByRole('link', { name: /back to ritmofit/i }).getAttribute('href')).toBe('/');
   });
 
-  it('renders the app (Login when signed out) at the root path', () => {
+  it('renders the app (MarketingPage when signed out) at the root path', () => {
     window.history.pushState({}, '', '/');
     render(<App />);
     expect(screen.queryByText('404')).toBeNull();

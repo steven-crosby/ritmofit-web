@@ -2,7 +2,12 @@
 import { useState } from 'react';
 import { authClient } from '../lib/auth-client.js';
 
-export function Login() {
+interface LoginProps {
+  /** Optional: return to the marketing landing page. */
+  onBack?: () => void;
+}
+
+export function Login({ onBack }: LoginProps = {}) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -50,6 +55,17 @@ export function Login() {
   return (
     <main className="rf-heat-bloom flex min-h-screen flex-col items-center justify-center p-8">
       <div className="flex w-full max-w-sm flex-col gap-6">
+        {onBack && (
+          <button
+            type="button"
+            id="login-back-btn"
+            onClick={onBack}
+            className="-ml-1 flex items-center gap-1.5 self-start font-ui text-sm text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive rounded"
+            aria-label="Back to home"
+          >
+            <span aria-hidden="true">←</span> Back to home
+          </button>
+        )}
         <header className="flex flex-col gap-3">
           <span className="rf-eyebrow">For instructors who build the class</span>
           <div className="flex items-center gap-3">

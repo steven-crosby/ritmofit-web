@@ -1,20 +1,27 @@
 /**
- * Root: gate on the Better Auth session. Signed out → Login; signed in →
- * Dashboard (the minimal builder: create class → add a tagged track), proving
- * the end-to-end flow through the backend (M1 step 12 acceptance).
+ * Root: gate on the Better Auth session.
+ * - Signed out at "/" → MarketingPage (public front door, D15).
+ *   "Sign in" / "Start building" CTAs flip showLogin → Login with onBack.
+ * - Signed in → Dashboard.
+ * - "/reset-password" → ResetPassword (works while signed out).
+ * - Unknown path → NotFound.
  */
+import { useState } from 'react';
 import { authClient } from './lib/auth-client.js';
 import { Login } from './components/Login.js';
 import { Dashboard } from './components/Dashboard.js';
+import { MarketingPage } from './components/MarketingPage.js';
 import { ResetPassword } from './components/ResetPassword.js';
 import { NotFound } from './components/NotFound.js';
 
-// The app navigates in-component (no router); the only real URLs are the root
-// and the email-link reset page. Everything else is an unknown path.
+// The app navigates in-component (no router); the real URL surface is '/' and
+// '/reset-password'. Everything else is an unknown path → NotFound.
 const KNOWN_PATHS = new Set(['/', '/reset-password']);
 
 export function App() {
   const { data: session, isPending } = authClient.useSession();
+  // Controls the signed-out state-switch: false = MarketingPage, true = Login.
+  const [showLogin, setShowLogin] = useState(false);
 
   const skipLink = (
     <a
@@ -25,12 +32,11 @@ export function App() {
     </a>
   );
 
-  // Reset-password lands here from the email link (no router); render it on
-  // pathname before the session gate so it works while signed out.
+  // Reset-password lands here from the email link; render before the session
+  // gate so it works while signed out.
   if (window.location.pathname === '/reset-password') return <ResetPassword />;
 
-  // Cloudflare serves the SPA for every path, so an unknown URL must render a
-  // 404 view here rather than silently falling through to Login/Dashboard.
+  // Unknown path → 404 (Cloudflare SPA fallback serves index.html for all paths).
   if (!KNOWN_PATHS.has(window.location.pathname)) return <NotFound />;
 
   if (isPending) {
@@ -41,18 +47,26 @@ export function App() {
     );
   }
 
-  if (!session) {
+  // Signed in → Dashboard.
+  if (session) {
     return (
       <>
         {skipLink}
-        <Login />
+        <Dashboard userId={session.user.id} userName={session.user.name || session.user.email} />
       </>
     );
   }
-  return (
-    <>
-      {skipLink}
-      <Dashboard userId={session.user.id} userName={session.user.name || session.user.email} />
-    </>
-  );
+
+  // Signed out + user clicked a CTA → Login with a back link.
+  if (showLogin) {
+    return (
+      <>
+        {skipLink}
+        <Login onBack={() => setShowLogin(false)} />
+      </>
+    );
+  }
+
+  // Signed out, default → Marketing landing (D15).
+  return <MarketingPage onSignIn={() => setShowLogin(true)} />;
 }
