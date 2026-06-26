@@ -10,7 +10,6 @@ import {
   type FormEvent,
 } from 'react';
 import {
-  intensityValues,
   type Class,
   type ClassWithAccess,
   type ClassTrack,
@@ -54,7 +53,8 @@ import { ErrorBoundary } from './ErrorBoundary.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { TimelineStrip } from './TimelineStrip.js';
 import { SegmentBand } from './SegmentBand.js';
-import { IntensityReadout, INTENSITY_LABEL } from './IntensityReadout.js';
+import { IntensityReadout } from './IntensityReadout.js';
+import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 import { TrackSearch } from './TrackSearch.js';
 
 // Code-split the heavy, interaction-gated surfaces into their own chunks so the
@@ -1664,18 +1664,12 @@ function TrackInspector({
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
               Intensity
             </span>
-            <div className="flex items-center gap-3">
-              <select
-                className="rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-ui text-sm text-text-primary"
+            <div className="flex flex-wrap items-center gap-3">
+              <IntensitySegmentedControl
                 value={intensity}
-                onChange={(e) => setIntensity(e.target.value as Intensity)}
-              >
-                {intensityValues.map((v) => (
-                  <option key={v} value={v}>
-                    {INTENSITY_LABEL[v]}
-                  </option>
-                ))}
-              </select>
+                onChange={setIntensity}
+                ariaLabel="Track intensity"
+              />
               <IntensityReadout intensity={intensity} />
             </div>
           </label>
@@ -1923,18 +1917,11 @@ function AddTrackForm({
         />
       </div>
       <div className="flex flex-wrap gap-2">
-        <select
-          className="rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
+        <IntensitySegmentedControl
           value={intensity}
-          onChange={(e) => setIntensity(e.target.value as Intensity)}
-          aria-label="Track intensity"
-        >
-          {intensityValues.map((v) => (
-            <option key={v} value={v}>
-              {INTENSITY_LABEL[v]}
-            </option>
-          ))}
-        </select>
+          onChange={setIntensity}
+          ariaLabel="Track intensity"
+        />
         <input
           className="w-28 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-data text-sm text-text-primary"
           type="number"

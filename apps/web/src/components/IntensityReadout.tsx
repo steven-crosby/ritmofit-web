@@ -5,7 +5,12 @@
  */
 import type { Intensity } from '@ritmofit/shared';
 
-/** Bars filled per intensity — the redundant (non-color) encoding. 0..4. */
+/**
+ * Bars filled per intensity — the redundant (non-color) encoding. 0..4. By design
+ * this count **is** the spin zone number (Z0–Z4): see the canonical intensity table
+ * in `ritmofit_design_system/02-color-system.md`. Use it wherever the "Zn" numeral
+ * is surfaced so the two never drift.
+ */
 export const INTENSITY_BARS: Record<Intensity, number> = {
   none: 0,
   easy: 1,
@@ -16,15 +21,16 @@ export const INTENSITY_BARS: Record<Intensity, number> = {
 
 /**
  * Human-readable zone labels — the single source of truth for how an intensity is
- * spelled in the UI (the readout, the energy-arc summary). Avoids leaking the raw
- * enum (`mod`, `all_out`) into copy or diverging between surfaces.
+ * spelled in the UI (the readout, the energy-arc summary, the segmented control).
+ * Spin-zone vocabulary per decision D17 / design-system 02-color-system.md: enum
+ * stays `none/easy/mod/hard/all_out` (no migration); only the display words change.
  */
 export const INTENSITY_LABEL: Record<Intensity, string> = {
-  none: 'none',
-  easy: 'easy',
-  mod: 'moderate',
-  hard: 'hard',
-  all_out: 'all-out',
+  none: 'None',
+  easy: 'Build',
+  mod: 'Push',
+  hard: 'Attack',
+  all_out: 'All Out',
 };
 
 export function IntensityReadout({ intensity }: { intensity: Intensity }) {

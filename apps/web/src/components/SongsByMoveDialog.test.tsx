@@ -77,7 +77,8 @@ describe('SongsByMoveDialog', () => {
     expect(await screen.findByText('Shared Anthem')).toBeTruthy();
     expect(screen.getByText('128 BPM')).toBeTruthy();
     expect(screen.getByText('at 1:00')).toBeTruthy();
-    expect(screen.getByText('hard')).toBeTruthy();
+    // Intensity renders as its spin-zone word (D17), not the raw enum.
+    expect(screen.getByText('Attack')).toBeTruthy();
   });
 
   it('routes a custom-move pick to the user-move namespace', async () => {
