@@ -109,4 +109,4 @@ does **not** un-apply a migration. If a bad deploy included a migration:
 - Manual deploy + migration ordering: `AGENTS.md` › "Security, Deployment & Session Close".
 - Deploy history of record: `ritmofit_dev_plan/HISTORY.md` (the archived `ritmofit_dev_plan/archive/REVIEW_HISTORY.md`
   holds the pre-launch remediation log) — one dated entry per production deploy.
-- Session close hygiene: `ritmofit_dev_plan/close-session-checklist.md`.
+- Session close hygiene: `agent-prompts/daily/close-session.md`.

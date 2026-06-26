@@ -1,10 +1,21 @@
 # Agent Prompt Schedule
 
-Use this schedule as the operating rhythm for `ritmofit-web` background agents. The
-default is intentionally lightweight: run the sentinel often, run specialists only when
-there is a real signal, and leave merge/deploy decisions to the owner.
+Use this schedule as the operating rhythm for `ritmofit-web` prompts. The default is
+intentionally lightweight: use `daily/start-session.md` and `daily/close-session.md` for
+personal work blocks, run remote/background agents only when useful, and leave
+merge/deploy decisions to the owner.
 
-## Default commute loop
+## Personal session loop
+
+| Step | Prompt | Purpose |
+|---|---|---|
+| 1 | `daily/start-session.md` | Orient against git state, plans, recent work, parity impact, and likely verification before editing. |
+| 2 | Work session | Implement only after the owner confirms substantial plans. |
+| 3 | `daily/close-session.md` | Check git/PR/deploy/docs hygiene, run appropriate gates, and leave a clean handoff. |
+
+Run this loop whenever a session starts or ends, even multiple times in one day.
+
+## Remote/background commute loop
 
 | Step | Prompt | Timebox | Purpose |
 |---|---|---:|---|
@@ -13,7 +24,8 @@ there is a real signal, and leave merge/deploy decisions to the owner.
 | 3 | Owner review | 5 min | Decide what to review, merge, defer, or re-run with a specialist prompt. |
 
 Run only step 1 when time is tight. Add step 2 when you want a single prioritized brief
-before looking at branches and PRs.
+before looking at branches and PRs. These prompts are optional maintenance helpers, not the
+default personal-session path.
 
 ## Weekly rotation
 
@@ -43,7 +55,7 @@ Run these in order before a meaningful release, milestone close, or owner review
 
 1. `planning/release-readiness.md`
 2. `planning/pr-triage.md`
-3. `sessions/close-session.md` when you want the full interactive repo checklist
+3. `daily/close-session.md` when you want the full interactive repo checklist
 
 Do not deploy from an unattended prompt. Deployment remains an explicit owner decision.
 
@@ -51,6 +63,8 @@ Do not deploy from an unattended prompt. Deployment remains an explicit owner de
 
 | Situation | Run |
 |---|---|
+| You are starting a personal work session | `daily/start-session.md` |
+| You are ending a personal work session | `daily/close-session.md` |
 | Recent commits need regression review | `daily/changed-code-sentinel.md` |
 | You want a short current-state handoff | `daily/command-brief.md` |
 | No sentinel report exists but you want broad status | `daily/standup-digest.md` |
@@ -71,8 +85,8 @@ Do not deploy from an unattended prompt. Deployment remains an explicit owner de
 | Docs may no longer match reality | `planning/doc-drift.md` |
 | You are preparing to ship | `planning/release-readiness.md` |
 | You need to clear open maintenance PRs | `planning/pr-triage.md` |
-| You are starting interactive coding | `sessions/start-session.md` |
-| You are ending an interactive session | `sessions/close-session.md` |
+| You are starting interactive coding | `daily/start-session.md` |
+| You are ending an interactive session | `daily/close-session.md` |
 
 ## Anti-churn rules
 

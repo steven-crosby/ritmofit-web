@@ -134,7 +134,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`milestones.md`](./milestones.md) | Milestone breakdown, M1 build order, acceptance criteria |
 | [`conventions.md`](./conventions.md) | Code style, naming, env, wrangler/D1, git, testing |
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
-| [`close-session-checklist.md`](./close-session-checklist.md) | End-of-session runbook — say "run the close-session checklist" |
+| [`../agent-prompts/daily/close-session.md`](../agent-prompts/daily/close-session.md) | End-of-session runbook — say "run close-session" |
 | [`HISTORY.md`](./HISTORY.md) | Archived dated build/deploy log (PRs, Worker versions, migration steps) |
 | [`mockup-parity-backlog.md`](./mockup-parity-backlog.md) | Prioritized feature/surface gaps from the mockups-vs-prod audit (post design-system) |
 | [`web-ios-parity.md`](./web-ios-parity.md) | Web ↔ iOS surface-parity principle (D18): the hard gate, sync points, and the cross-surface parity backlog |

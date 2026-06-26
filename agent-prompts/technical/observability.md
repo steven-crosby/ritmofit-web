@@ -17,7 +17,7 @@ Audit whether a production issue could be detected, diagnosed, and verified with
 
 - **Health and smoke coverage:** `/api/v1/health`, SPA shell, protected endpoints returning 401,
   code-split assets, and any feature-specific smoke paths named in
-  `ritmofit_dev_plan/deployment-runbook.md` and `close-session-checklist.md`.
+  `ritmofit_dev_plan/deployment-runbook.md` and `agent-prompts/daily/close-session.md`.
 - **Error envelopes:** routes and middleware preserve the standard
   `{ error: { code, message, details? } }` shape and do not leak secrets, tokens, provider
   payloads, or private user data.

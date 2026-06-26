@@ -2,6 +2,8 @@
 
 <!-- note (Codex, 2026-06-22): Made this guide independent of the untracked parent workspace. -->
 
+<!-- note (Codex, 2026-06-26): Moved session prompts into agent-prompts/daily for the daily personal-workflow loop. -->
+
 This file is the canonical contributor and agent guide for RitmoFit. If another instruction file
 conflicts with it, follow `AGENTS.md`. This guide may exceed 400 words when needed to preserve
 architecture, workflow, safety, or verification requirements.
@@ -169,6 +171,6 @@ pnpm --filter @ritmofit/api run deploy
 ```
 
 After deployment, smoke-test the SPA, health endpoint, and a protected endpoint, and report the Worker
-version and remote migration state. When asked to “run the close-session checklist,” follow
-`ritmofit_dev_plan/close-session-checklist.md` completely, including git/PR hygiene, verification,
+version and remote migration state. When asked to “run close-session,” follow
+`agent-prompts/daily/close-session.md` completely, including git/PR hygiene, verification,
 deployment-state reporting, documentation updates, blockers, and cleanup of production test data.
