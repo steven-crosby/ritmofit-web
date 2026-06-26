@@ -7,7 +7,7 @@ inspected_head: 1130438acb1692b8ffed5c258466ccd4636e78ad
 inspected_range: full-repo
 completed: true
 prs:
-  []
+  - https://github.com/steven-crosby/ritmofit-web/pull/118
 ---
 
 # technical/design-system — 2026-06-26
@@ -15,17 +15,28 @@ prs:
 ## Summary
 
 Audited `apps/web/src` for drift from the canonical `ritmofit_design_system`
-(tokens, typography, color, component states, radii/shadows). **No PR-worthy drift
-found** — the web surface is strongly aligned with the design system. The only two
-candidates are either an acknowledged exception (white gridline `rgba` overlay) or
-would require minting a new scrim token (the modal backdrop `bg-black/60`), which is
-a design decision and out of scope for an unattended narrow change. Nothing needs the
-owner today; one optional, low-priority token question is logged below.
+(tokens, typography, color, component states, radii/shadows). The web surface is
+strongly aligned with the design system. One actionable drift was found and fixed:
+the builder timeline painted its beat/bar gridlines with raw `rgba(255,255,255,…)`,
+which vanish under the opt-in `[data-theme="light"]` theme — fixed in PR #118 by
+routing them through the theme-aware `border.*` tokens. The remaining candidate (the
+modal backdrop `bg-black/60`) would require minting a new scrim token, a design
+decision left to the owner. Nothing else needs attention today.
 
 ## Commands run + results
 
-This was a read-only inspection run; no PR was opened, so the full submission gate was
-not required. Searches/inspection only:
+Verification gate for the PR #118 code change:
+
+- `pnpm format:check` → pass (after formatting this report)
+- `pnpm -r typecheck` → pass (all workspaces)
+- `pnpm lint` → pass
+- `pnpm test` → pass (web 180, api 234)
+- `pnpm --filter @ritmofit/web build` → pass
+- Visual: rendered the gradient recipe against the real generated `tokens.css` for
+  dark + light, before vs after — white grid vanishes on light theme; token grid
+  stays legible. Live authenticated builder not stood up within the timebox.
+
+Inspection searches:
 
 - `grep` for hardcoded hex/rgb/hsl in `apps/web/src` → only `lib/cue-colors.ts`
   (intentional, guarded by `cue-colors.test.ts` against `tokens.json`), plus two
@@ -57,15 +68,16 @@ not required. Searches/inspection only:
     decision, so not actioned here.
   - Recheck next run? no (until a scrim token exists).
 
-- **[P3] Beat/bar gridlines use hardcoded `rgba(255,255,255,…)`** —
+- **[P2 — FIXED in PR #118] Beat/bar gridlines used hardcoded `rgba(255,255,255,…)`** —
   `apps/web/src/components/TimelineStrip.tsx:140-141`
   - Evidence: `repeating-linear-gradient(to right, rgba(255,255,255,0.16) …)` and the
-    `0.06` beat variant.
-  - User impact: none; these are decorative low-opacity tick overlays, not semantic
-    color. This is the kind of chrome the design system tolerates outside the token set.
-  - Recommended owner: web (optional) — only worth tokenizing if a gridline token is
-    added for light-theme legibility.
-  - Recheck next run? no.
+    `0.06` beat variant — pure white, the only non-tokenized color in the timeline.
+  - User impact: latent legibility bug — under the opt-in `[data-theme="light"]` theme
+    the white lines render on a cream surface and effectively vanish (verified by
+    before/after render).
+  - Fix: routed through `--rf-color-semantic-border-{strong,subtle}`, which flip to ink
+    under the light theme. Dark theme unchanged.
+  - Recommended owner: web (done). Recheck next run? no.
 
 No typography, font-family, semantic-color, success-color, radii, shadow, or
 component-state (hover/focus/disabled/empty/loading) drift was found. The codebase is
@@ -73,13 +85,13 @@ disciplined and densely annotated with design-system references.
 
 ## Blockers
 
-None for the inspection itself. The only two candidates both resolve to a product/
-design decision (whether to add a scrim/gridline token), which per the house rules is
-report-only in an unattended run — I did not invent tokens or open a speculative PR.
+None. The gridline drift was fixed in PR #118. The remaining `Dialog.tsx` backdrop
+candidate resolves to a design decision (whether to mint a scrim token), so it is left
+report-only — no token invented.
 
 ## Next recommended action
 
 Optional, owner-gated: decide whether to add a `semantic.bg.scrim` token (dark + light)
 to `ritmofit_design_system/tokens.json` and route `Dialog.tsx` through it. If approved,
 that becomes a clean one-token + one-line PR with before/after screenshots. Absent that
-decision, no design-system action is needed for the web surface this cycle.
+decision, no further design-system action is needed for the web surface this cycle.
