@@ -26,4 +26,4 @@
    this is a planning prompt, so prefer surfacing the right questions over guessing.
 
 Keep it tight enough to drop straight into the plan doc. (Pairs with the **Plan** agent
-for a deeper architecture pass, and with `sessions/start-session.md` to kick off the build.)
+for a deeper architecture pass, and with `daily/start-session.md` to kick off the build.)

@@ -1,9 +1,10 @@
 # agent-prompts (ritmofit-web)
 
-A library of reusable, paste-and-go prompts for keeping **ritmofit-web** (the React/Vite
-SPA plus its Cloudflare Worker + D1 API) healthy while I'm away from the keyboard. It is
-optimized for a one-hour commute, a single 45-minute agent session on this repo, and a
-Mac that remains awake. Runs leave reviewable draft PRs or short operational reports under
+A library of reusable, paste-and-go prompts for working on **ritmofit-web** (the React/Vite
+SPA plus its Cloudflare Worker + D1 API). The default use is Steven's day-to-day loop:
+start a focused personal session, do the work, then close it cleanly. The same library also
+contains optional remote/background maintenance prompts for ephemeral agents that leave
+reviewable draft PRs or short operational reports under
 `/Users/stevencrosby/Repos/RitmoFit/agent-reports/`.
 
 > This is the **web-scoped** copy of the library. The cross-product original lives at the
@@ -13,6 +14,18 @@ Mac that remains awake. Runs leave reviewable draft PRs or short operational rep
 > this repo.
 
 ## How to use
+
+### Personal sessions
+
+1. At the start of any work block, paste `daily/start-session.md`.
+2. Review the baseline and plan. For substantial work, confirm the plan before implementation.
+3. At the end of the work block, paste `daily/close-session.md`.
+
+Use these prompts repeatedly throughout the day. They are interactive and expect a person in
+the loop; they do not run unattended, merge, deploy, or make owner decisions.
+
+### Remote/background runs
+
 1. Keep the Mac awake. Confirm GitHub authentication and Node/pnpm before leaving.
 2. Launch an isolated agent worktree on this repository (the `claude` CLI shown here is the
    reference launcher). `--add-dir` grants read access to the sibling iOS repository and the
@@ -31,16 +44,18 @@ Mac that remains awake. Runs leave reviewable draft PRs or short operational rep
    keeps the full workflow within one hour.
 5. Review the command brief and draft PRs. Agents never merge or deploy.
 
-Technical prompts inherit [`00-house-rules.md`](00-house-rules.md): isolated worktrees,
-one draft PR maximum, deduplication, verification, a 45-minute timebox, and validated
-agent reports. Most planning prompts are read-only; `doc-drift` is docs-PR-producing, and
-`pr-triage` remains read-only unless explicitly invoked with `ACT`. `security` and
-`dependency-freshness` are **report-first**.
+PR-producing remote prompts inherit [`00-house-rules.md`](00-house-rules.md): isolated
+worktrees, one draft PR maximum, deduplication, verification, a 45-minute timebox, and
+validated agent reports. Most planning prompts are read-only; `doc-drift` is
+docs-PR-producing, and `pr-triage` remains read-only unless explicitly invoked with `ACT`.
+`security` and `dependency-freshness` are **report-first**.
 
 ## Folder
 - `00-house-rules.md` — shared guardrails for every PR-producing prompt.
-- `daily/`
-  - `changed-code-sentinel` — primary daily agent; reviews only the new commit delta.
+- `daily/` — normal day-to-day prompts:
+  - `start-session` — interactive orientation before a personal work block.
+  - `close-session` — interactive cleanup, verification, PR/deploy hygiene, and handoff.
+  - `changed-code-sentinel` — optional remote daily agent; reviews only the new commit delta.
   - `command-brief` — turns the sentinel result into an actionable handoff for this repo.
   - `morning-sweep` — legacy fallback for repository-wide triage.
   - `standup-digest` — legacy fallback for days when no sentinel report exists.
@@ -50,11 +65,6 @@ agent reports. Most planning prompts are read-only; `doc-drift` is docs-PR-produ
     `content-consistency`, `observability`.
 - `planning/` — productivity / dev-planning:
   - `pr-triage`, `next-slice-planner`, `roadmap-sync`, `release-readiness`, `doc-drift`.
-- `sessions/` — **interactive** co-development prompts (a human is in the loop; these do NOT
-  run unattended or open draft PRs):
-  - `start-session` — orient against the live plan + contract, then wait for approval.
-  - `close-session` — pointer to this repo's canonical close-session checklist (kept in
-    `ritmofit_dev_plan/close-session-checklist.md` so it tracks the real deploy model and gates).
 
 ## Suggested cadence
 
@@ -62,7 +72,9 @@ For the full reference schedule and trigger map, see [`SCHEDULE.md`](SCHEDULE.md
 
 | When | Run |
 |---|---|
-| Every commute | `daily/changed-code-sentinel`, then the command brief |
+| Start any personal work block | `daily/start-session` |
+| End any personal work block | `daily/close-session` |
+| Remote/background commute run | `daily/changed-code-sentinel`, then the command brief |
 | Mon | `planning/next-slice-planner`, then `technical/stability` (deep) |
 | Tue | `technical/quality` (deep) + `technical/test-coverage` |
 | Wed | `technical/design-system` (deep) + `technical/accessibility` |
@@ -72,9 +84,10 @@ For the full reference schedule and trigger map, see [`SCHEDULE.md`](SCHEDULE.md
 | Monthly | `planning/doc-drift` |
 | Before a release | `planning/release-readiness` |
 
-The realistic daily minimum is the sentinel. Add the command brief when you want a single
-prioritized handoff. Run deep prompts only when a sentinel or roadmap brief points to that
-dimension; avoid routine audit churn.
+The realistic daily minimum for personal work is `start-session` and `close-session`. Add
+the sentinel and command brief when you want a remote/background agent pass. Run deep prompts
+only when a session baseline, sentinel, or roadmap brief points to that dimension; avoid
+routine audit churn.
 
 ## Operating model
 
@@ -82,7 +95,8 @@ Think of the prompts as a small set of specialist teams, each with a clear owner
 
 | Team | Prompt(s) | Use when |
 |---|---|---|
-| Command center | `daily/changed-code-sentinel`, `daily/command-brief` | You want the default commute loop: inspect recent change risk, then receive a short owner handoff. |
+| Daily workflow | `daily/start-session`, `daily/close-session` | You are opening or wrapping a personal work session. |
+| Command center | `daily/changed-code-sentinel`, `daily/command-brief` | You want a remote/background pass: inspect recent change risk, then receive a short owner handoff. |
 | Web reliability | `technical/stability`, `technical/performance` | Production behavior, runtime correctness, live-class reliability, or speed is the concern. |
 | Product quality | `technical/quality`, `technical/test-coverage` | You want maintainability cleanup or a stronger regression net without changing product behavior. |
 | Design systems | `technical/design-system`, `technical/accessibility`, `technical/content-consistency` | UI fidelity, WCAG behavior, terminology, or cross-surface copy consistency needs attention. |
@@ -90,17 +104,18 @@ Think of the prompts as a small set of specialist teams, each with a clear owner
 | Security & supply chain | `technical/security`, `technical/dependency-freshness` | Secrets, auth/session risk, CVEs, or dependency upgrade posture needs review. |
 | Observability | `technical/observability` | Logs, health checks, smoke coverage, or deploy evidence may be too thin to diagnose production issues. |
 | Product planning | `planning/roadmap-sync`, `planning/next-slice-planner` | You need to decide what to build next or turn a priority into a bounded slice. |
-| Release management | `planning/release-readiness`, `planning/pr-triage`, `sessions/close-session` | You are preparing to ship, clear maintenance PRs, or wrap up a human-led session. |
+| Release management | `planning/release-readiness`, `planning/pr-triage`, `daily/close-session` | You are preparing to ship, clear maintenance PRs, or wrap up a human-led session. |
 | Documentation ops | `planning/doc-drift` | Docs, plans, or setup instructions may no longer match the repo. |
 
 ## Decision guide
 
+- **I am starting work:** use `daily/start-session`.
+- **I am stopping work:** use `daily/close-session`.
 - **I only have one unattended run:** use `daily/changed-code-sentinel`; add
   `daily/command-brief` when you want the summary before reviewing.
 - **Recent code changed and I want regression coverage:** use `daily/changed-code-sentinel`.
 - **I need to choose the next product slice:** use `planning/roadmap-sync`, then
   `planning/next-slice-planner`.
-- **I am about to start coding interactively:** use `sessions/start-session`.
 - **I am about to release or cut a milestone:** use `planning/release-readiness`, then
   `planning/pr-triage`.
 - **The app feels broken or brittle:** use `technical/stability`.

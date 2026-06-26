@@ -13,7 +13,7 @@ pre-launch and M1-era materials are superseded.
 | `REVIEW_HISTORY.md` | Dated pre-launch remediation log | `HISTORY.md` |
 | `pre_launch_audit_report.md` | Staff-QA audit output (2026-06-18, verdict PASS) | — |
 | `ritmofitweb-prelaunch-audit.md` | The Staff-QA audit *prompt* that emitted the report above | — |
-| `codex-prompts/` | OpenAI Codex session/audit/hardening prompt sequence | `../../AGENTS.md` + `close-session-checklist.md` |
+| `codex-prompts/` | OpenAI Codex session/audit/hardening prompt sequence | `../../AGENTS.md` + `../../agent-prompts/daily/close-session.md` |
 | `session-prompts.md` | M1 build-order copy-paste implementation prompts | M1–M4 shipped |
 | `ai-working-rules.md` | M1-era plan→confirm working agreement | `../../AGENTS.md` → "Before Implementing" |
 | `brand-mockup-review.md` | One-off frontend ↔ design-system conformance review (2026-06-13) | — |
