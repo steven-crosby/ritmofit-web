@@ -137,8 +137,10 @@ function blockGridStyle(block: TimelineBlock): CSSProperties | null {
   const layout = beatGridLayout(block.beatAnchorMs - block.clipStartMs, block.bpm, block.durMs);
   if (!layout) return null;
   // Bar lines stronger than beat lines; bar layer first so it paints on top.
-  const bar = `repeating-linear-gradient(to right, rgba(255,255,255,0.16) 0 1px, transparent 1px ${layout.barPct}%)`;
-  const beat = `repeating-linear-gradient(to right, rgba(255,255,255,0.06) 0 1px, transparent 1px ${layout.beatPct}%)`;
+  // Bone-tinted border tokens (not raw white) so the grid follows the divider
+  // language and flips to ink under [data-theme="light"] instead of vanishing.
+  const bar = `repeating-linear-gradient(to right, var(--rf-color-semantic-border-strong) 0 1px, transparent 1px ${layout.barPct}%)`;
+  const beat = `repeating-linear-gradient(to right, var(--rf-color-semantic-border-subtle) 0 1px, transparent 1px ${layout.beatPct}%)`;
   return {
     backgroundImage: `${bar}, ${beat}`,
     backgroundPosition: `${layout.barPhasePct}% 0, ${layout.beatPhasePct}% 0`,
