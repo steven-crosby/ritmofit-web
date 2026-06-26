@@ -10,6 +10,7 @@
  * sent, so local dev boots with zero secrets and reset/verify links are clickable
  * from `wrangler dev` logs. Never leave the key unset in prod.
  */
+import { boundFetch } from './fetch.js';
 import type { Env } from './types.js';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
@@ -43,12 +44,15 @@ export class EmailSendError extends Error {
 
 /**
  * Send one transactional email. With no `RESEND_API_KEY`, logs and returns
- * (dev fallback). `fetchImpl` defaults to the global `fetch`.
+ * (dev fallback). `fetchImpl` defaults to `boundFetch`, not the bare global
+ * `fetch`: production callers (Better Auth's reset/verify hooks) invoke this
+ * without an explicit impl, and a detached global `fetch` throws
+ * `TypeError: Illegal invocation` in the Workers runtime. See `./fetch.ts`.
  */
 export async function sendEmail(
   env: Env,
   msg: EmailMessage,
-  fetchImpl: FetchLike = fetch,
+  fetchImpl: FetchLike = boundFetch,
 ): Promise<void> {
   const from = env.EMAIL_FROM ?? DEFAULT_FROM;
 
