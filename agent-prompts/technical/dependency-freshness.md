@@ -1,7 +1,7 @@
 # Dependency freshness  (REPORT-FIRST)
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
+> `agent-prompts/00-house-rules.md`
 >
 > **MODE:** investigate + RECOMMEND. The proactive cousin of `security.md`'s CVE scan —
 > "what's behind, and is it safe to move?" Open a PR ONLY for a single, obviously-safe

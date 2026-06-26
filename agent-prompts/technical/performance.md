@@ -1,7 +1,7 @@
 # Performance
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
+> `agent-prompts/00-house-rules.md`
 > Measure before and after — never "optimize" on vibes. Put the numbers in the PR.
 
 **REPO:** `ritmofit-web`

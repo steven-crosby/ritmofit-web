@@ -4,19 +4,20 @@
 > **TIMEBOX:** 10 minutes.
 
 Read **ritmofit-web**, its canonical `AGENTS.md`, the live planning sources
-(`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`), the newest agent reports under
-`/Users/stevencrosby/Repos/RitmoFit/agent-reports/`, recent commits, open PRs, and CI/check
-status. You may glance at the sibling `ritmofit-ios` repo read-only only to note a
-cross-repo dependency.
+(`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`), the newest agent reports under this repo's
+`agent-reports/` (repo-root-relative), recent commits, open PRs, and CI/check
+status. You may glance at the vendored `ios-snapshot/` (read-only iOS client source) only to
+note a cross-repo dependency.
 
 Validate each candidate sentinel report with
-`/Users/stevencrosby/Repos/RitmoFit/agent-reports/validate-agent-report.sh` before using
+`./agent-reports/validate-agent-report.sh agent-reports/YYYY-MM-DD/<file>.md` before using
 it. Treat an invalid report or `completed: false` as an incomplete sentinel run;
 do not use its `inspected_head` as confirmed coverage.
 
-Produce a single brief under:
+Produce a single brief, archived as a normal agent report (start from
+`agent-reports/AGENT_REPORT_TEMPLATE.md`, validate it), at:
 
-`/Users/stevencrosby/Repos/RitmoFit/agent-reports/YYYY-MM-DD/command-brief-web.md`
+`agent-reports/YYYY-MM-DD/command-brief.md`
 
 Keep it under 350 words and lead with decisions:
 

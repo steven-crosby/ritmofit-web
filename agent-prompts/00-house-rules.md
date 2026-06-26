@@ -2,7 +2,8 @@
 
 Every **PR-producing** prompt in this library inherits these rules, including the
 docs-only drift prompt. Read-only prompts use their own lighter header. All work here
-branches in **ritmofit-web**; the sibling iOS repo is only ever read-only context.
+branches in **ritmofit-web**; the iOS client is only ever read-only context (vendored as a
+snapshot in `ios-snapshot/`, so no sibling iOS checkout is needed).
 
 You are running unattended for at most **45 minutes** while I commute. Spend the final
 5 minutes recording results and cleaning up. Broad investigation is allowed; autonomous
@@ -29,14 +30,18 @@ changes must stay narrow.
 8. **PR description states:** WHAT changed, WHY, RISK (low/med/high), HOW verified,
    and the inspected commit range. Title prefix `[auto/<dimension>]`. Mark it draft.
    Apply `auto-maintenance` when that label exists.
-9. Write a durable agent report from
-   `/Users/stevencrosby/Repos/RitmoFit/agent-reports/AGENT_REPORT_TEMPLATE.md` under
-   `/Users/stevencrosby/Repos/RitmoFit/agent-reports/YYYY-MM-DD/`. Include repo, agent,
-   the inspected default-branch head, commands and results, findings, PR links, blockers,
-   and the next recommended action. Run
-   `/Users/stevencrosby/Repos/RitmoFit/agent-reports/validate-agent-report.sh REPORT`.
-   A run is incomplete until validation passes. Reports never belong in an application
-   branch as `FINDINGS.md`.
+9. Write a durable agent report from this repo's
+   `agent-reports/AGENT_REPORT_TEMPLATE.md` to
+   `agent-reports/YYYY-MM-DD/<prompt-slug>.md` (paths are repo-root-relative;
+   `<prompt-slug>` is the prompt path with `/`→`-`, e.g. `technical/security` →
+   `technical-security.md`; suffix `-2`, `-3`, … if the same prompt runs twice in a day).
+   Include repo, agent, the inspected default-branch head, commands and results, findings,
+   PR links, blockers, and the next recommended action. Run
+   `./agent-reports/validate-agent-report.sh agent-reports/YYYY-MM-DD/<file>.md`. A run is
+   incomplete until validation passes. The report is **git-tracked** and lives in this
+   repo's `agent-reports/` — never in the sibling iOS repo and never mixed into a code diff
+   as a `FINDINGS.md`. A run that also opens a code PR may commit its report on the same
+   branch, inside `agent-reports/`, separate from the code change.
 10. **Found nothing PR-worthy? Say so.** Never manufacture busywork.
 11. **Stay in scope** — only the dimension named in the prompt, in this repo. Out-of-scope
    discoveries go in the report, not the diff.
@@ -48,6 +53,8 @@ changes must stay narrow.
 
 **This repo:** `ritmofit-web` — React/Vite SPA plus a Cloudflare Worker and D1; the Worker
 serves both the SPA and the API. The CI-equivalent gate (typecheck/lint/test/build) is
-defined in `AGENTS.md` — run the full required list before any PR. The sibling
-`ritmofit-ios` repo (SwiftUI / SwiftData) is read-only context for the contract- and
-content-parity prompts; never branch or build it from here.
+defined in `AGENTS.md` — run the full required list before any PR. The iOS client
+(SwiftUI / SwiftData) is read-only context: its contract surface is vendored in
+`ios-snapshot/` for `api-contract-parity` (see `ios-snapshot/README.md`), while
+`content-consistency` compares copy against a live `ritmofit-ios` checkout only when present.
+Never branch or build the iOS app from here.

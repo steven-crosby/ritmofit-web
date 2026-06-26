@@ -1,15 +1,15 @@
 # Changed-code regression sentinel — primary commute agent (ritmofit-web)
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
+> `agent-prompts/00-house-rules.md`
 
 **REPO:** `ritmofit-web`
 **MODE:** investigate broadly; patch narrowly; draft PRs only
 **TIMEBOX:** 45 minutes
 
 Inspect changes since this sentinel last completed successfully for this repo. Find the
-`inspected_head` in the newest completed matching report under
-`/Users/stevencrosby/Repos/RitmoFit/agent-reports/`. If no usable report exists, inspect
+`inspected_head` in the newest completed matching report under this repo's
+`agent-reports/` (repo-root-relative). If no usable report exists, inspect
 the last 24 hours or at most 20 commits from the remote default branch. Record the exact
 range used. The range is always:
 

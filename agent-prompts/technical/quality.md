@@ -1,7 +1,7 @@
 # Code quality & simplification
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
+> `agent-prompts/00-house-rules.md`
 > **BEHAVIOR-PRESERVING ONLY.**
 
 **REPO:** `ritmofit-web`

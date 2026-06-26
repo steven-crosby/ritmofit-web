@@ -8,7 +8,7 @@ Each step follows the working agreement: **plan → confirm → code → summari
 > UI)** has shipped, and the post-launch hardening backlog has closed the launch-blocking and review
 > SHOULD-FIX work documented below. For the live Worker version and the current remote D1 migration level
 > (well past these milestones — `HISTORY.md` is the source of truth, not this block), see
-> [`HISTORY.md`](./HISTORY.md); forward work is in [`mockup-parity-backlog.md`](./mockup-parity-backlog.md).
+> [`HISTORY.md`](./HISTORY.md); forward work is in [`web-ios-parity.md`](./web-ios-parity.md).
 >
 > **Surface scope:** per the parity principle (`decisions.md` D18, [`web-ios-parity.md`](./web-ios-parity.md)),
 > web and iOS are co-equal surfaces — the cross-surface parity backlog (web gains full live-run; iOS gains

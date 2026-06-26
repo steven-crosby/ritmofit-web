@@ -67,8 +67,6 @@ Do not deploy from an unattended prompt. Deployment remains an explicit owner de
 | You are ending a personal work session | `daily/close-session.md` |
 | Recent commits need regression review | `daily/changed-code-sentinel.md` |
 | You want a short current-state handoff | `daily/command-brief.md` |
-| No sentinel report exists but you want broad status | `daily/standup-digest.md` |
-| No checkpoint exists and you want full-repo triage | `daily/morning-sweep.md` |
 | App behavior seems broken, flaky, or crash-prone | `technical/stability.md` |
 | App or Worker seems slow | `technical/performance.md` |
 | Tests are thin around risky code | `technical/test-coverage.md` |

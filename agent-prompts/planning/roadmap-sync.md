@@ -1,7 +1,7 @@
 # Roadmap sync — weekly ritmofit-web prioritization (read-only)
 
-> **READ-ONLY.** Produce a brief. Self-label with agent + date. Reads the sibling
-> `ritmofit-ios` repo read-only only to map dependencies.
+> **READ-ONLY.** Produce a brief. Self-label with agent + date. Reads the vendored
+> `ios-snapshot/` (read-only iOS client source) only to map dependencies.
 
 Answer: **what should I focus on in `ritmofit-web` this week?**
 

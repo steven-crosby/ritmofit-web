@@ -1,10 +1,11 @@
 # API contract & cross-platform parity (from the web/backend side)
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
-> This one reads the sibling `ritmofit-ios` repo **read-only** for context; you branch
-> only here in `ritmofit-web`. It catches the classic companion-app bug: the iOS client
-> and this backend drifting apart. Because this repo is the source of truth, most genuine
+> `agent-prompts/00-house-rules.md`
+> This one reads the vendored [`ios-snapshot/`](../../ios-snapshot/) (a read-only copy of the
+> iOS client source) for context — no sibling iOS checkout required; you branch only here in
+> `ritmofit-web`. It catches the classic companion-app bug: the iOS client and this backend
+> drifting apart. Because this repo is the source of truth, most genuine
 > drift fixes are a backend contract decision → **report**, not an unattended change.
 
 **Use when:** backend routes, OpenAPI, shared schemas, auth/session expectations, or iOS Swift
@@ -13,7 +14,7 @@ decoding may have drifted.
 `content-consistency.md` instead.
 
 You serve the API (Workers + D1) and own `apps/api/openapi/openapi.json`. Compare what this
-backend actually serves against what `ritmofit-ios` decodes:
+backend actually serves against what the iOS client decodes (vendored in `ios-snapshot/`):
 
 - **Endpoint drift:** routes / methods the iOS client calls that this backend no longer
   serves; changed paths.
@@ -38,9 +39,10 @@ contract change → report with a recommendation; never reshape the wire contrac
 touched the API or DB schema, the regenerate-and-reconcile flow is:
 1. `pnpm --filter @ritmofit/api openapi` to regenerate `apps/api/openapi/openapi.json`,
    then read the diff to see exactly what changed.
-2. The matching Swift types in `ritmofit-ios` (`Core/Models`, `Core/Networking`) must be
-   updated to the regenerated contract — that reconcile is the **iOS** repo's job; from
-   here, report the exact diff and which client types it affects so that work can be picked
-   up there.
+2. The matching Swift types in the iOS client (`ios-snapshot/Core/Models`,
+   `ios-snapshot/Core/Networking`) must be updated to the regenerated contract — that
+   reconcile is the **iOS** repo's job; from here, report the exact diff and which client
+   types it affects so that work can be picked up there. (The snapshot is read-only and can
+   lag iOS; see `ios-snapshot/README.md`.)
 3. Verify on this side: `pnpm -r typecheck`. A regen that produces an unexpected diff, or a
    contract change needing a product decision, is report-only.
