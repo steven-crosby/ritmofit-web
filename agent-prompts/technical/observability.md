@@ -1,7 +1,7 @@
 # Observability & smoke evidence  (REPORT-FIRST)
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
+> `agent-prompts/00-house-rules.md`
 >
 > **MODE:** investigate + RECOMMEND. Open PRs only for trivially safe instrumentation or
 > smoke-test documentation fixes. Do not add external monitoring vendors, telemetry pipelines,

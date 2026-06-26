@@ -1,7 +1,7 @@
 # Security & dependency hygiene  (REPORT-FIRST)
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
+> `agent-prompts/00-house-rules.md`
 >
 > **MODE OVERRIDE:** investigate + RECOMMEND. Open PRs ONLY for trivially-safe fixes
 > (e.g. deleting a log line that prints a token, a single patch-level pin). Auth

@@ -1,7 +1,7 @@
 # Test-coverage gap-filler
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
+> `agent-prompts/00-house-rules.md`
 > **ADDITIVE ONLY** — you add tests, you do not change product behavior.
 
 **REPO:** `ritmofit-web`

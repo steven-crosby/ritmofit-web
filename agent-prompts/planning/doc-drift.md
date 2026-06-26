@@ -1,7 +1,7 @@
 # Doc drift — keep the docs honest
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
+> `agent-prompts/00-house-rules.md`
 > **PR-PRODUCING, DOCS ONLY** — never touch product code from this prompt.
 
 **REPO:** `ritmofit-web`

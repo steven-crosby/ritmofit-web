@@ -1,7 +1,7 @@
 # Morning Sweep — legacy full-repository triage
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
+> `agent-prompts/00-house-rules.md`
 
 **Legacy fallback.** Prefer `changed-code-sentinel.md` for daily use. Run this broader
 sweep only when there is no useful sentinel checkpoint, there has been no recent

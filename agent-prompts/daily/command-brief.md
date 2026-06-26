@@ -6,8 +6,8 @@
 Read **ritmofit-web**, its canonical `AGENTS.md`, the live planning sources
 (`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`), the newest agent reports under this repo's
 `agent-reports/` (repo-root-relative), recent commits, open PRs, and CI/check
-status. You may glance at the sibling `ritmofit-ios` repo read-only only to note a
-cross-repo dependency.
+status. You may glance at the vendored `ios-snapshot/` (read-only iOS client source) only to
+note a cross-repo dependency.
 
 Validate each candidate sentinel report with
 `./agent-reports/validate-agent-report.sh agent-reports/YYYY-MM-DD/<file>.md` before using

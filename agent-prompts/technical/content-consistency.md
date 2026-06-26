@@ -1,16 +1,19 @@
 # Content & terminology consistency
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
-> Reads the sibling `ritmofit-ios` repo **read-only** for cross-surface comparison; you
-> branch only here in `ritmofit-web`. Cross-surface copy drift is the bug here.
+> `agent-prompts/00-house-rules.md`
+> Reads the vendored [`ios-snapshot/`](../../ios-snapshot/) (read-only iOS client source,
+> incl. `ios-snapshot/Features/` for user-facing copy) for cross-surface comparison — no
+> sibling iOS checkout required; you branch only here in `ritmofit-web`. Cross-surface copy
+> drift is the bug here.
 
 **Use when:** terminology, labels, state copy, formatting, or microcopy may differ between web
 and iOS.
 **Do not use when:** payload shapes or endpoint behavior may differ; use
 `api-contract-parity.md` instead.
 
-Check the web app's user-facing text, using the iOS client as the parity reference:
+Check the web app's user-facing text, using the iOS client (`ios-snapshot/Features/`) as the
+parity reference:
 
 - **Terminology parity:** the same concept is named identically on both surfaces —
   classes, sessions, runs, Intensity, Tempo, rhythm signature, the provider names. Flag

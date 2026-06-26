@@ -1,7 +1,7 @@
 # Changed-code regression sentinel — primary commute agent (ritmofit-web)
 
 > **Follow the house rules first:**
-> `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
+> `agent-prompts/00-house-rules.md`
 
 **REPO:** `ritmofit-web`
 **MODE:** investigate broadly; patch narrowly; draft PRs only

@@ -19,3 +19,7 @@ ritmofit_design_system/
 design-system-audits/
 .claude/
 agent-prompts/
+
+# Vendored read-only snapshot of ritmofit-ios source (cross-surface parity prompts).
+# Foreign content; refreshed verbatim from ritmofit-ios, never formatter-owned.
+ios-snapshot/

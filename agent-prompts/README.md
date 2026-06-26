@@ -9,11 +9,11 @@ reviewable draft PRs or short operational reports under this repo's
 ritmofit-web report stays in this repo; the sibling iOS repo keeps its own archive. There
 is no shared workspace-level report folder.
 
-> This is the **web-scoped** copy of the library. The cross-product original lives at the
-> workspace root (`../agent-prompts/`); the sibling **iOS** copy lives in
-> `../ritmofit-ios/agent-prompts/`. Two prompts here still *read* the iOS repo read-only
-> (`technical/api-contract-parity`, `technical/content-consistency`) — they branch only in
-> this repo.
+> This is the **web-scoped** copy of the library; the sibling **iOS** repo (`ritmofit-ios`)
+> keeps its own copy. Two prompts here (`technical/api-contract-parity`,
+> `technical/content-consistency`) read the iOS client source, vendored read-only in
+> [`ios-snapshot/`](../ios-snapshot/) — so **no sibling iOS checkout is required**. They
+> branch only in this repo.
 
 ## How to use
 
@@ -30,17 +30,17 @@ the loop; they do not run unattended, merge, deploy, or make owner decisions.
 
 1. Keep the Mac awake. Confirm GitHub authentication and Node/pnpm before leaving.
 2. Launch an isolated agent worktree on this repository (the `claude` CLI shown here is the
-   reference launcher). Reports are now repo-local, so the worktree needs no extra write
-   access for them; `--add-dir` only grants **read** access to the sibling iOS repository
-   (used by the contract- and content-parity prompts):
+   reference launcher). Everything the prompts read is in-repo — reports under
+   `agent-reports/`, the API this repo owns, and the iOS client source for the parity prompts
+   in `ios-snapshot/` — so no `--add-dir` to a sibling repo is needed:
 
    ```bash
-   cd /Users/stevencrosby/Repos/RitmoFit/ritmofit-web
-   claude --worktree --add-dir /Users/stevencrosby/Repos/RitmoFit/ritmofit-ios --permission-mode acceptEdits
+   cd /path/to/ritmofit-web
+   claude --worktree --permission-mode acceptEdits
    ```
 
    Configure the agent's permissions in advance for the required Git, GitHub CLI, build,
-   test, and workspace-report commands. Do not use `--dangerously-skip-permissions` on a
+   test, and agent-report commands. Do not use `--dangerously-skip-permissions` on a
    networked development machine.
 3. Paste `daily/changed-code-sentinel.md` into the session.
 4. After it finishes, run `daily/command-brief.md` from this repo. Its 10-minute timebox

@@ -2,7 +2,8 @@
 
 Every **PR-producing** prompt in this library inherits these rules, including the
 docs-only drift prompt. Read-only prompts use their own lighter header. All work here
-branches in **ritmofit-web**; the sibling iOS repo is only ever read-only context.
+branches in **ritmofit-web**; the iOS client is only ever read-only context (vendored as a
+snapshot in `ios-snapshot/`, so no sibling iOS checkout is needed).
 
 You are running unattended for at most **45 minutes** while I commute. Spend the final
 5 minutes recording results and cleaning up. Broad investigation is allowed; autonomous
@@ -52,6 +53,7 @@ changes must stay narrow.
 
 **This repo:** `ritmofit-web` — React/Vite SPA plus a Cloudflare Worker and D1; the Worker
 serves both the SPA and the API. The CI-equivalent gate (typecheck/lint/test/build) is
-defined in `AGENTS.md` — run the full required list before any PR. The sibling
-`ritmofit-ios` repo (SwiftUI / SwiftData) is read-only context for the contract- and
-content-parity prompts; never branch or build it from here.
+defined in `AGENTS.md` — run the full required list before any PR. The iOS client
+(SwiftUI / SwiftData) is read-only context for the contract- and content-parity prompts,
+vendored read-only in `ios-snapshot/` (see `ios-snapshot/README.md`); never branch or build
+it from here.
