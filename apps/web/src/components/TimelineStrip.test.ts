@@ -18,6 +18,8 @@ function entry(
     classTrackId: `00000000-0000-0000-0000-00000000000${position}`,
     position,
     displayBpm: null,
+    displayRpm: null,
+    holdCount: null,
     intensity: 'mod',
     startOffsetMs,
     clipStartMs: 0,

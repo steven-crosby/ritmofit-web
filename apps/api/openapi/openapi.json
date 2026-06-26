@@ -2368,6 +2368,30 @@
               }
             ]
           },
+          "displayRpm": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "holdCount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "createdAt": {
             "type": "integer",
             "minimum": 0,
@@ -2392,6 +2416,8 @@
           "beatAnchorMs",
           "startOffsetMs",
           "notes",
+          "displayRpm",
+          "holdCount",
           "createdAt",
           "updatedAt"
         ],
@@ -2490,6 +2516,30 @@
                   {
                     "type": "string",
                     "maxLength": 2000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "displayRpm": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "holdCount": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
                   },
                   {
                     "type": "null"
@@ -2597,6 +2647,30 @@
                   {
                     "type": "string",
                     "maxLength": 2000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "displayRpm": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "holdCount": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
                   },
                   {
                     "type": "null"
@@ -2767,6 +2841,30 @@
               {
                 "type": "string",
                 "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "displayRpm": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "holdCount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
               },
               {
                 "type": "null"
@@ -4734,6 +4832,30 @@
                     }
                   ]
                 },
+                "displayRpm": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "holdCount": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "intensity": {
                   "type": "string",
                   "enum": [
@@ -5003,6 +5125,8 @@
                 "classTrackId",
                 "position",
                 "displayBpm",
+                "displayRpm",
+                "holdCount",
                 "intensity",
                 "startOffsetMs",
                 "clipStartMs",

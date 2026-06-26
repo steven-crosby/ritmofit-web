@@ -21,6 +21,8 @@ describe('classDetailReducer', () => {
       beatAnchorMs: 0,
       startOffsetMs: 0,
       notes: null,
+      displayRpm: null,
+      holdCount: null,
       createdAt: 1,
       updatedAt: 1,
     };

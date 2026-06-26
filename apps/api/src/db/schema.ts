@@ -228,6 +228,11 @@ export const classTracks = sqliteTable(
     beatAnchorMs: integer('beat_anchor_ms').notNull().default(0),
     startOffsetMs: integer('start_offset_ms'),
     notes: text('notes'),
+    // Manual pedal cadence (RPM) — distinct from display_bpm (cadence ≠ music tempo,
+    // D14). Nullable: most tracks won't have an explicit cadence target.
+    displayRpm: integer('display_rpm'),
+    // Manual hold count per track (D14 Option B). Null = unset; 0 = "no holds".
+    holdCount: integer('hold_count'),
     ...timestamps(),
   },
   (t) => [
@@ -240,6 +245,8 @@ export const classTracks = sqliteTable(
       'class_tracks_clip_window_check',
       sql`${t.clipStartMs} >= 0 and (${t.clipEndMs} is null or ${t.clipEndMs} > ${t.clipStartMs})`,
     ),
+    check('class_tracks_display_rpm_check', sql`${t.displayRpm} is null or ${t.displayRpm} > 0`),
+    check('class_tracks_hold_count_check', sql`${t.holdCount} is null or ${t.holdCount} >= 0`),
     // Hot path: every class-detail load / run-payload assembly fetches a class's
     // tracks by class_id.
     index('class_tracks_class_id_idx').on(t.classId),
