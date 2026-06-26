@@ -71,6 +71,12 @@ deployment behavior changed, run the full CI-equivalent gate:
 
 ## 5. Docs and status sync
 
+- [ ] Drain `INBOX.md`: capture any breadcrumbs that surfaced this session, then route each
+  open `- [ ]` item to its real home using the routing table in `INBOX.md`
+  (decision → `decisions.md`, scope → `DEVELOPMENT_PLAN.md`/`milestones.md`, parity →
+  `web-ios-parity.md`, durable fact → memory, reusable prompt → `agent-prompts/`, concrete
+  bug → draft PR / `spawn_task`). **Delete each line once routed**, and delete stale ones.
+  Leave only genuinely unshaped ideas for next session.
 - [ ] Keep `AGENTS.md` limited to durable contributor rules; update it only when workflows,
   architecture boundaries, or canonical commands change.
 - [ ] Append dated deploy/build entries to `ritmofit_dev_plan/HISTORY.md` when something

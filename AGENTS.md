@@ -66,6 +66,8 @@ changed, verification performed, and any remaining risks or follow-ups.
 - `packages/music`: provider adapters and music-domain helpers.
 - `ritmofit_design_system`: tokens, components, accessibility, motion, and layout guidance.
 - `ritmofit_dev_plan`: architecture, authorization, conventions, milestones, and operational runbooks.
+- `INBOX.md`: breadcrumb catcher for raw ideas; surfaced at start-session, routed/cleared at
+  close-session. The only file allowed to be messy — drain it into the trackers above.
 
 ## Development Commands
 
