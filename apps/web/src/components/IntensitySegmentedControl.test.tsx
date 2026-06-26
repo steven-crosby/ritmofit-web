@@ -36,4 +36,14 @@ describe('IntensitySegmentedControl', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Attack' }));
     expect(onChange).toHaveBeenCalledWith('hard');
   });
+
+  it('gives the visible label a keyboard focus ring (radio is sr-only)', () => {
+    // Regression: the radio is visually hidden, so the focus indicator must live on
+    // the label or keyboard focus is invisible. Design system requires a visible
+    // cyan focus ring at all times.
+    render(<IntensitySegmentedControl value="none" onChange={() => {}} ariaLabel="i" />);
+    const radio = screen.getByRole('radio', { name: 'Attack' });
+    const label = radio.closest('label');
+    expect(label?.className).toMatch(/has-\[:focus-visible\]:ring-interactive/);
+  });
 });
