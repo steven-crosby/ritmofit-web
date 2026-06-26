@@ -29,14 +29,18 @@ changes must stay narrow.
 8. **PR description states:** WHAT changed, WHY, RISK (low/med/high), HOW verified,
    and the inspected commit range. Title prefix `[auto/<dimension>]`. Mark it draft.
    Apply `auto-maintenance` when that label exists.
-9. Write a durable agent report from
-   `/Users/stevencrosby/Repos/RitmoFit/agent-reports/AGENT_REPORT_TEMPLATE.md` under
-   `/Users/stevencrosby/Repos/RitmoFit/agent-reports/YYYY-MM-DD/`. Include repo, agent,
-   the inspected default-branch head, commands and results, findings, PR links, blockers,
-   and the next recommended action. Run
-   `/Users/stevencrosby/Repos/RitmoFit/agent-reports/validate-agent-report.sh REPORT`.
-   A run is incomplete until validation passes. Reports never belong in an application
-   branch as `FINDINGS.md`.
+9. Write a durable agent report from this repo's
+   `agent-reports/AGENT_REPORT_TEMPLATE.md` to
+   `agent-reports/YYYY-MM-DD/<prompt-slug>.md` (paths are repo-root-relative;
+   `<prompt-slug>` is the prompt path with `/`→`-`, e.g. `technical/security` →
+   `technical-security.md`; suffix `-2`, `-3`, … if the same prompt runs twice in a day).
+   Include repo, agent, the inspected default-branch head, commands and results, findings,
+   PR links, blockers, and the next recommended action. Run
+   `./agent-reports/validate-agent-report.sh agent-reports/YYYY-MM-DD/<file>.md`. A run is
+   incomplete until validation passes. The report is **git-tracked** and lives in this
+   repo's `agent-reports/` — never in the sibling iOS repo and never mixed into a code diff
+   as a `FINDINGS.md`. A run that also opens a code PR may commit its report on the same
+   branch, inside `agent-reports/`, separate from the code change.
 10. **Found nothing PR-worthy? Say so.** Never manufacture busywork.
 11. **Stay in scope** — only the dimension named in the prompt, in this repo. Out-of-scope
    discoveries go in the report, not the diff.

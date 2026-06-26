@@ -4,8 +4,10 @@ A library of reusable, paste-and-go prompts for working on **ritmofit-web** (the
 SPA plus its Cloudflare Worker + D1 API). The default use is Steven's day-to-day loop:
 start a focused personal session, do the work, then close it cleanly. The same library also
 contains optional remote/background maintenance prompts for ephemeral agents that leave
-reviewable draft PRs or short operational reports under
-`/Users/stevencrosby/Repos/RitmoFit/agent-reports/`.
+reviewable draft PRs or short operational reports under this repo's
+[`agent-reports/`](../agent-reports/). Reports are **repo-local and git-tracked** — every
+ritmofit-web report stays in this repo; the sibling iOS repo keeps its own archive. There
+is no shared workspace-level report folder.
 
 > This is the **web-scoped** copy of the library. The cross-product original lives at the
 > workspace root (`../agent-prompts/`); the sibling **iOS** copy lives in
@@ -28,12 +30,13 @@ the loop; they do not run unattended, merge, deploy, or make owner decisions.
 
 1. Keep the Mac awake. Confirm GitHub authentication and Node/pnpm before leaving.
 2. Launch an isolated agent worktree on this repository (the `claude` CLI shown here is the
-   reference launcher). `--add-dir` grants read access to the sibling iOS repository and the
-   workspace-level agent reports:
+   reference launcher). Reports are now repo-local, so the worktree needs no extra write
+   access for them; `--add-dir` only grants **read** access to the sibling iOS repository
+   (used by the contract- and content-parity prompts):
 
    ```bash
    cd /Users/stevencrosby/Repos/RitmoFit/ritmofit-web
-   claude --worktree --add-dir /Users/stevencrosby/Repos/RitmoFit --permission-mode acceptEdits
+   claude --worktree --add-dir /Users/stevencrosby/Repos/RitmoFit/ritmofit-ios --permission-mode acceptEdits
    ```
 
    Configure the agent's permissions in advance for the required Git, GitHub CLI, build,
@@ -65,6 +68,25 @@ docs-PR-producing, and `pr-triage` remains read-only unless explicitly invoked w
     `content-consistency`, `observability`.
 - `planning/` — productivity / dev-planning:
   - `pr-triage`, `next-slice-planner`, `roadmap-sync`, `release-readiness`, `doc-drift`.
+
+## After-action reports
+
+Autonomous passes that produce findings archive a validated report to
+[`agent-reports/`](../agent-reports/) (repo-local, git-tracked). Interactive prompts that
+are live decision-aids — where you are the record — do not. The mechanics live in
+[`00-house-rules.md`](00-house-rules.md) §9 and
+[`../agent-reports/README.md`](../agent-reports/README.md).
+
+| Prompt | Report? |
+|---|---|
+| `daily/changed-code-sentinel`, `daily/command-brief`, `daily/morning-sweep`, `daily/standup-digest` | **Yes** |
+| all `technical/*` audits | **Yes** |
+| `planning/pr-triage`, `planning/doc-drift` | **Yes** |
+| `daily/start-session`, `daily/close-session` | No — interactive |
+| `planning/next-slice-planner`, `planning/roadmap-sync`, `planning/release-readiness` | No — live decision-aid |
+
+The exhaustive reports are intentionally more than anyone reads daily; a later
+reviewer/digest agent is meant to read the archive and surface only what matters.
 
 ## Suggested cadence
 
@@ -140,6 +162,6 @@ Think of the prompts as a small set of specialist teams, each with a clear owner
   untouched.
 - Agents may push branches and open draft PRs. They may not merge, deploy, apply remote
   migrations, or change secrets.
-- A completed run must produce an agent report based on
-  `/Users/stevencrosby/Repos/RitmoFit/agent-reports/AGENT_REPORT_TEMPLATE.md` that passes
-  `/Users/stevencrosby/Repos/RitmoFit/agent-reports/validate-agent-report.sh`.
+- A completed run must produce an agent report based on this repo's
+  [`agent-reports/AGENT_REPORT_TEMPLATE.md`](../agent-reports/AGENT_REPORT_TEMPLATE.md) that
+  passes `./agent-reports/validate-agent-report.sh agent-reports/YYYY-MM-DD/<file>.md`.

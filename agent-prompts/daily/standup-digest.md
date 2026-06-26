@@ -23,3 +23,11 @@ For `ritmofit-web`:
 - **My top 3 today:** your recommendation, ranked, with a one-line why each.
 
 Keep it under ~250 words. Lead with the 3 things that matter most.
+
+Archive the brief as an agent report: start from this repo's
+`agent-reports/AGENT_REPORT_TEMPLATE.md`, write it to
+`agent-reports/YYYY-MM-DD/standup-digest.md` (`completed: true`, `inspected_head` = the
+remote default-branch head you read; the brief itself is the `## Summary`, your top-3 is
+`## Next recommended action`), then run
+`./agent-reports/validate-agent-report.sh agent-reports/YYYY-MM-DD/standup-digest.md`.
+Being read-only, you do not open PRs — but the report still belongs in `agent-reports/`.
