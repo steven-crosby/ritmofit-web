@@ -8,8 +8,8 @@
 **TIMEBOX:** 45 minutes
 
 Inspect changes since this sentinel last completed successfully for this repo. Find the
-`inspected_head` in the newest completed matching record under
-`/Users/stevencrosby/Repos/RitmoFit/agent-runs/`. If no usable record exists, inspect
+`inspected_head` in the newest completed matching report under
+`/Users/stevencrosby/Repos/RitmoFit/agent-reports/`. If no usable report exists, inspect
 the last 24 hours or at most 20 commits from the remote default branch. Record the exact
 range used. The range is always:
 
@@ -62,6 +62,6 @@ Do not weaken, skip, or delete a test to get green. Do not make backend contract
 database migration, authentication architecture, dependency-major, or visual-design
 decisions unattended; report those with a recommended next step.
 
-End by writing the run record required by the house rules. Rank unresolved findings as
+End by writing the agent report required by the house rules. Rank unresolved findings as
 P0–P3 and include `file:line`, evidence, user impact, recommended owner, and whether a
 future sentinel should re-check it.

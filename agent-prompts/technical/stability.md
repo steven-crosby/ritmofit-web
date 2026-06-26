@@ -3,9 +3,13 @@
 > **Follow the house rules first:**
 > `/Users/stevencrosby/Repos/RitmoFit/ritmofit-web/agent-prompts/00-house-rules.md`
 > Even if unavailable: read the repo's AGENTS.md, branch per concern, DRAFT PRs only,
-> never merge, run build+tests before every PR, cap at 1 PR + a validated run record.
+> never merge, run build+tests before every PR, cap at 1 PR + a validated agent report.
 
 **REPO:** `ritmofit-web`
+
+**Use when:** production behavior may be broken, flaky, crash-prone, or silently regressing.
+**Do not use when:** you only want additive coverage without changing product behavior; use
+`test-coverage.md`.
 
 Hunt for what will break in prod or is silently broken now. Prefer a PR that adds a
 failing regression test reproducing a real bug, THEN fixes it.

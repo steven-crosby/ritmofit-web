@@ -4,18 +4,19 @@
 > **TIMEBOX:** 10 minutes.
 
 Read **ritmofit-web**, its canonical `AGENTS.md`, the live planning sources
-(`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`), the newest records under
-`/Users/stevencrosby/Repos/RitmoFit/agent-runs/`, recent commits, open PRs, and CI/check
+(`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`), the newest agent reports under
+`/Users/stevencrosby/Repos/RitmoFit/agent-reports/`, recent commits, open PRs, and CI/check
 status. You may glance at the sibling `ritmofit-ios` repo read-only only to note a
 cross-repo dependency.
 
-Validate each candidate sentinel record with `agent-runs/validate-run-record.sh` before
-using it. Treat an invalid record or `completed: false` as an incomplete sentinel run;
+Validate each candidate sentinel report with
+`/Users/stevencrosby/Repos/RitmoFit/agent-reports/validate-agent-report.sh` before using
+it. Treat an invalid report or `completed: false` as an incomplete sentinel run;
 do not use its `inspected_head` as confirmed coverage.
 
 Produce a single brief under:
 
-`/Users/stevencrosby/Repos/RitmoFit/agent-runs/YYYY-MM-DD/command-brief-web.md`
+`/Users/stevencrosby/Repos/RitmoFit/agent-reports/YYYY-MM-DD/command-brief-web.md`
 
 Keep it under 350 words and lead with decisions:
 
@@ -29,4 +30,4 @@ Keep it under 350 words and lead with decisions:
 5. **Defer:** noisy or low-value findings that should not consume today.
 
 Distinguish verified facts from inference. Link PRs and include file pointers where they
-matter. If the sentinel did not run or produced an incomplete record, state that directly.
+matter. If the sentinel did not run or produced an incomplete report, state that directly.

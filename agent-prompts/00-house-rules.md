@@ -24,17 +24,17 @@ changes must stay narrow.
 6. **Cap each run at 1 PR**, highest-value and highest-confidence first. Do not open a
    PR for speculative cleanup, broad refactors, architecture decisions, auth redesign,
    schema changes, migrations, dependency majors, or visual redesigns.
-7. Before reporting or fixing something, search open issues, open PRs, and prior run
-   records. Link existing work instead of duplicating it.
+7. Before reporting or fixing something, search open issues, open PRs, and prior agent
+   reports. Link existing work instead of duplicating it.
 8. **PR description states:** WHAT changed, WHY, RISK (low/med/high), HOW verified,
    and the inspected commit range. Title prefix `[auto/<dimension>]`. Mark it draft.
    Apply `auto-maintenance` when that label exists.
-9. Write a durable run record from
-   `/Users/stevencrosby/Repos/RitmoFit/agent-runs/RUN_RECORD_TEMPLATE.md` under
-   `/Users/stevencrosby/Repos/RitmoFit/agent-runs/YYYY-MM-DD/`. Include repo, agent,
+9. Write a durable agent report from
+   `/Users/stevencrosby/Repos/RitmoFit/agent-reports/AGENT_REPORT_TEMPLATE.md` under
+   `/Users/stevencrosby/Repos/RitmoFit/agent-reports/YYYY-MM-DD/`. Include repo, agent,
    the inspected default-branch head, commands and results, findings, PR links, blockers,
    and the next recommended action. Run
-   `/Users/stevencrosby/Repos/RitmoFit/agent-runs/validate-run-record.sh RECORD`.
+   `/Users/stevencrosby/Repos/RitmoFit/agent-reports/validate-agent-report.sh REPORT`.
    A run is incomplete until validation passes. Reports never belong in an application
    branch as `FINDINGS.md`.
 10. **Found nothing PR-worthy? Say so.** Never manufacture busywork.

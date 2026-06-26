@@ -6,6 +6,11 @@
 
 **REPO:** `ritmofit-web`
 
+**Use when:** behavior-preserving cleanup, simplification, dead code removal, or structure
+alignment is the goal.
+**Do not use when:** a bug fix, architecture decision, migration, or user-visible behavior change
+is needed; report those or use the relevant specialist prompt.
+
 Fix rot, smallest-diff-first:
 - Dead code, unused exports / files, commented-out blocks, unreachable branches.
 - Duplication worth a shared helper (extract ONLY if it genuinely cuts complexity).

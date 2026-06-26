@@ -5,6 +5,11 @@
 
 **REPO:** `ritmofit-web`
 
+**Use when:** keyboard, screen reader, contrast, focus, semantics, or reduced-motion behavior needs
+verification.
+**Do not use when:** the concern is only token/component visual fidelity; start with
+`design-system.md` instead.
+
 Go deeper than the `design-system` pass. Audit the React/Vite SPA against WCAG 2.2 AA.
 
 - Keyboard: full operability, visible focus rings, logical tab order, no focus traps,

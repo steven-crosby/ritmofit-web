@@ -6,6 +6,10 @@
 
 **REPO:** `ritmofit-web`
 
+**Use when:** there is suspected slowness in the SPA, Worker, D1 access, caching, bundles, fonts,
+or Core Web Vitals.
+**Do not use when:** correctness or crash risk is the primary issue; use `stability.md` first.
+
 - Core Web Vitals (LCP / INP / CLS); render-blocking resources; oversized / unsplit
   bundles; unoptimized images and fonts (the design fonts are heavy — check loading
   strategy).

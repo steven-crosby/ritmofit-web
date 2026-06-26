@@ -9,6 +9,10 @@
 
 **REPO:** `ritmofit-web`
 
+**Use when:** packages may be stale and you want a ranked upgrade plan before changing them.
+**Do not use when:** the immediate concern is an active CVE, secret exposure, or auth risk; use
+`security.md` first.
+
 - Inventory outdated packages with `pnpm outdated` plus the documented audit command.
   Group as patch/minor/major.
 - For each notable one: current → latest, changelog-risk (breaking changes? migration
