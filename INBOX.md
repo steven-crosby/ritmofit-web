@@ -33,15 +33,15 @@ Drained automatically at the **start of every work session** (surfaced) and rout
 `agent-prompts/daily/close-session.md`. When a breadcrumb is routed, **delete its line
 here** — an inbox you drain is the difference between capture and hoarding.
 
-| Breadcrumb is… | Route it to | Then |
-|---|---|---|
-| A decision or locked principle | `ritmofit_dev_plan/decisions.md` (D-number, the D18 pattern) | delete the line |
-| "Build / fix this next", scope | `ritmofit_dev_plan/DEVELOPMENT_PLAN.md` / `milestones.md` | delete the line |
-| Forward parity work | `ritmofit_dev_plan/web-ios-parity.md` | delete the line |
-| A non-obvious fact to outlive this work | the memory directory (`MEMORY.md` + a file) | delete the line |
-| A reusable workflow/prompt | `agent-prompts/` (web) or the iOS copy | delete the line |
-| A concrete bug/cleanup | a draft PR or a `spawn_task` chip | delete the line |
-| Stale / no longer wanted | — | just delete the line |
+| Breadcrumb is…                          | Route it to                                                  | Then                 |
+| --------------------------------------- | ------------------------------------------------------------ | -------------------- |
+| A decision or locked principle          | `ritmofit_dev_plan/decisions.md` (D-number, the D18 pattern) | delete the line      |
+| "Build / fix this next", scope          | `ritmofit_dev_plan/DEVELOPMENT_PLAN.md` / `milestones.md`    | delete the line      |
+| Forward parity work                     | `ritmofit_dev_plan/web-ios-parity.md`                        | delete the line      |
+| A non-obvious fact to outlive this work | the memory directory (`MEMORY.md` + a file)                  | delete the line      |
+| A reusable workflow/prompt              | `agent-prompts/` (web) or the iOS copy                       | delete the line      |
+| A concrete bug/cleanup                  | a draft PR or a `spawn_task` chip                            | delete the line      |
+| Stale / no longer wanted                | —                                                            | just delete the line |
 
 If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete it.
 
