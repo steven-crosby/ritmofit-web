@@ -10,6 +10,7 @@ import type { TeamWithRole, TeamMemberView } from '@ritmofit/shared';
 import { listTeams, createTeam, listMembers, addMember, removeMember } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
 import { Dialog } from './Dialog.js';
+import { PendingList } from './PendingList.js';
 
 export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () => void }) {
   const [teams, setTeams] = useState<TeamWithRole[] | null>(null);
@@ -21,6 +22,7 @@ export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () =
   const selected = teams?.find((t) => t.id === selectedId) ?? null;
 
   const refreshTeams = useCallback(async () => {
+    setError(null);
     try {
       setTeams(await listTeams());
     } catch (e) {
@@ -65,7 +67,7 @@ export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () =
             onError={setError}
           />
           {teams === null ? (
-            <p className="font-ui text-sm text-text-tertiary">Loading…</p>
+            <PendingList error={error} onRetry={() => void refreshTeams()} />
           ) : teams.length === 0 ? (
             <p className="font-ui text-sm text-text-tertiary">
               No teams yet. Create one to share with a group.
@@ -158,15 +160,19 @@ function TeamMembers({
   onError: (msg: string) => void;
 }) {
   const [members, setMembers] = useState<TeamMemberView[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const canManage = team.role === 'owner' || team.role === 'admin';
 
   const refresh = useCallback(async () => {
+    setLoadError(null);
     try {
       setMembers(await listMembers(team.id));
     } catch (e) {
-      onError(errMessage(e));
+      const msg = errMessage(e);
+      setLoadError(msg);
+      onError(msg);
     }
   }, [team.id, onError]);
 
@@ -228,7 +234,7 @@ function TeamMembers({
       )}
 
       {members === null ? (
-        <p className="font-ui text-sm text-text-tertiary">Loading…</p>
+        <PendingList error={loadError} onRetry={() => void refresh()} />
       ) : (
         <ul className="flex flex-col gap-2">
           {members.map((m) => {

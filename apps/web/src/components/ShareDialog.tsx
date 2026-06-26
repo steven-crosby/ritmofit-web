@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ShareView, SharePermission, TeamWithRole } from '@ritmofit/shared';
 import { listShares, createShare, updateShare, deleteShare, listTeams } from '../lib/api.js';
 import { Dialog } from './Dialog.js';
+import { PendingList } from './PendingList.js';
 
 const PERMISSION_LABEL: Record<SharePermission, string> = { view: 'Can view', edit: 'Can edit' };
 const PERMISSION_ICON: Record<SharePermission, string> = { view: '👁', edit: '✎' };
@@ -33,6 +34,7 @@ export function ShareDialog({
   const emailRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(async () => {
+    setError(null);
     try {
       setShares(await listShares(classId));
     } catch (e) {
@@ -231,7 +233,7 @@ export function ShareDialog({
       <section className="flex flex-col gap-2">
         <h3 className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Shared with</h3>
         {shares === null ? (
-          <p className="font-ui text-sm text-text-tertiary">Loading…</p>
+          <PendingList error={error} onRetry={() => void refresh()} />
         ) : shares.length === 0 ? (
           <p className="font-ui text-sm text-text-tertiary">Not shared with anyone yet.</p>
         ) : (
