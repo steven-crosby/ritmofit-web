@@ -10,6 +10,8 @@ const activeTrack = {
   classTrackId: '00000000-0000-4000-8000-000000000001',
   position: 0,
   displayBpm: 124,
+  displayRpm: null,
+  holdCount: null,
   intensity: 'hard',
   startOffsetMs: 0,
   clipStartMs: 0,

@@ -393,6 +393,14 @@ function CueByCue({
           {entry.displayBpm != null && (
             <span className="font-data text-sm text-text-secondary">{entry.displayBpm} BPM</span>
           )}
+          {entry.displayRpm != null && (
+            <span className="font-data text-sm text-text-secondary">{entry.displayRpm} RPM</span>
+          )}
+          {entry.holdCount != null && (
+            <span className="font-data text-sm text-text-secondary">
+              {entry.holdCount} {entry.holdCount === 1 ? 'Hold' : 'Holds'}
+            </span>
+          )}
         </div>
       </div>
 
@@ -499,6 +507,14 @@ function FullList({
                 <IntensityReadout intensity={t.intensity} />
                 {t.displayBpm != null && (
                   <span className="font-data text-xs text-text-tertiary">{t.displayBpm} BPM</span>
+                )}
+                {t.displayRpm != null && (
+                  <span className="font-data text-xs text-text-tertiary">{t.displayRpm} RPM</span>
+                )}
+                {t.holdCount != null && (
+                  <span className="font-data text-xs text-text-tertiary">
+                    {t.holdCount} {t.holdCount === 1 ? 'Hold' : 'Holds'}
+                  </span>
                 )}
               </div>
             </div>

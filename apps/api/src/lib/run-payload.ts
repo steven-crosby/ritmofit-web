@@ -218,6 +218,8 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
         classTrackId: ct.id,
         position: ct.position,
         displayBpm,
+        displayRpm: ct.displayRpm ?? null,
+        holdCount: ct.holdCount ?? null,
         intensity: ct.intensity,
         startOffsetMs: startOffsetByCt.get(ct.id) ?? ct.startOffsetMs,
         clipStartMs: ct.clipStartMs,

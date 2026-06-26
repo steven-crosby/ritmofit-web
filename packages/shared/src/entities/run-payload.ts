@@ -84,6 +84,10 @@ const runPayloadTrackEntrySchema = z.object({
   classTrackId: uuidSchema,
   position: z.int().nonnegative(),
   displayBpm: z.int().positive().nullable(),
+  /** Manual pedal cadence (RPM). Null = unset. Kept distinct from displayBpm (D14). */
+  displayRpm: z.int().positive().nullable(),
+  /** Manual hold count. Null = unset. D14 Option B. */
+  holdCount: z.int().nonnegative().nullable(),
   intensity: intensitySchema,
   /**
    * The track's absolute start on the class timeline (ms from class start),
