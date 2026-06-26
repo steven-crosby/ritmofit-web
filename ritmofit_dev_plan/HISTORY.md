@@ -10,6 +10,24 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-25 deployed (Worker `efa56513-d81d-4d9b-98d0-a6be2d18d8e6`).**
+> Shipped **#106** (`754569e`, squash) — backlog **M1** (intensity spin-zone vocabulary + segmented
+> control, decision D17), frontend-only, no migration. `INTENSITY_LABEL` relabeled to the canonical
+> zone words **None / Build / Push / Attack / All Out** (display-only; enum `none/easy/mod/hard/all_out`
+> and the DB unchanged) — flows to the readout, the energy-arc summary, Songs-by-Move, and the
+> move-intensity dropdowns. New accessible `IntensitySegmentedControl` (native radio inputs → free
+> keyboard nav + screen-reader semantics; each segment shows "Z*n* · word"; the bar count doubles as
+> the zone number per design-system `02-color-system.md`) replaces the raw-enum `<select>` in the
+> **track** inspector + manual-add form. Deliberate follow-up: the two ChoreographyEditor
+> **move-intensity** dropdowns stay as relabeled selects — they're optional/unset and sit in compact
+> rows, so converting them needs an "unset" segment.
+>
+> Pre-deploy gates green: PR #106 CI (format/typecheck/lint/test/build/audit), plus local typecheck +
+> web build pre-deploy (web 180 unit tests). Post-deploy smoke (live): SPA `/` → `200`,
+> `/api/v1/health` → `200`, unauthenticated `/api/v1/classes` → `401`, all six security headers present,
+> served asset `index-BQ0pRDiH.js` matches the local build. Prior Worker
+> `d4e828c5-c50e-4515-bcc5-f569d6c95c02` (session 2026-06-25, P1/P2) is the rollback anchor.
+>
 > **Session 2026-06-25 deployed (Worker `d4e828c5-c50e-4515-bcc5-f569d6c95c02`).**
 > Shipped **#104** (`3113ad0`, squash) — two mockup-parity **Polish** items, frontend-only, no migration.
 > **P1 (empty-state-as-error, systemic):** the 2026-06-24 crawl's "Not found in danger-red + lingering
