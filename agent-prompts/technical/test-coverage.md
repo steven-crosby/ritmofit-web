@@ -6,6 +6,11 @@
 
 **REPO:** `ritmofit-web`
 
+**Use when:** you want meaningful additive tests around high-blast-radius code without changing
+product behavior.
+**Do not use when:** writing the test reveals a real bug that needs a product-code fix; stop and
+hand that to `stability.md`.
+
 `stability.md` finds what's breaking; this builds the net *before* it breaks. Find the
 highest-value UNTESTED paths and cover them.
 

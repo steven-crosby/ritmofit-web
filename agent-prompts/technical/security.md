@@ -9,6 +9,11 @@
 
 **REPO:** `ritmofit-web`
 
+**Use when:** secrets, PII, auth/session behavior, authorization, dependency CVEs, or unsafe
+input/logging are the concern.
+**Do not use when:** you only need proactive non-security package freshness planning; use
+`dependency-freshness.md`.
+
 - Committed / logged secrets or keys; PII in logs or error payloads; `.env` / Worker secret
   exposure; anything that would leak into the bundled SPA.
 - Auth surface: inspect only currently implemented provider paths — the configured Better

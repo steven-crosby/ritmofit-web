@@ -3,11 +3,11 @@
 A library of reusable, paste-and-go prompts for keeping **ritmofit-web** (the React/Vite
 SPA plus its Cloudflare Worker + D1 API) healthy while I'm away from the keyboard. It is
 optimized for a one-hour commute, a single 45-minute agent session on this repo, and a
-Mac that remains awake. Runs leave reviewable draft PRs or short operational records under
-`/Users/stevencrosby/Repos/RitmoFit/agent-runs/`.
+Mac that remains awake. Runs leave reviewable draft PRs or short operational reports under
+`/Users/stevencrosby/Repos/RitmoFit/agent-reports/`.
 
 > This is the **web-scoped** copy of the library. The cross-product original lives at the
-> workspace root (`../../agent-prompts/`); the sibling **iOS** copy lives in
+> workspace root (`../agent-prompts/`); the sibling **iOS** copy lives in
 > `../ritmofit-ios/agent-prompts/`. Two prompts here still *read* the iOS repo read-only
 > (`technical/api-contract-parity`, `technical/content-consistency`) — they branch only in
 > this repo.
@@ -16,7 +16,7 @@ Mac that remains awake. Runs leave reviewable draft PRs or short operational rec
 1. Keep the Mac awake. Confirm GitHub authentication and Node/pnpm before leaving.
 2. Launch an isolated agent worktree on this repository (the `claude` CLI shown here is the
    reference launcher). `--add-dir` grants read access to the sibling iOS repository and the
-   workspace-level run records:
+   workspace-level agent reports:
 
    ```bash
    cd /Users/stevencrosby/Repos/RitmoFit/ritmofit-web
@@ -24,7 +24,7 @@ Mac that remains awake. Runs leave reviewable draft PRs or short operational rec
    ```
 
    Configure the agent's permissions in advance for the required Git, GitHub CLI, build,
-   test, and workspace-record commands. Do not use `--dangerously-skip-permissions` on a
+   test, and workspace-report commands. Do not use `--dangerously-skip-permissions` on a
    networked development machine.
 3. Paste `daily/changed-code-sentinel.md` into the session.
 4. After it finishes, run `daily/command-brief.md` from this repo. Its 10-minute timebox
@@ -33,7 +33,7 @@ Mac that remains awake. Runs leave reviewable draft PRs or short operational rec
 
 Technical prompts inherit [`00-house-rules.md`](00-house-rules.md): isolated worktrees,
 one draft PR maximum, deduplication, verification, a 45-minute timebox, and validated
-run records. Most planning prompts are read-only; `doc-drift` is docs-PR-producing, and
+agent reports. Most planning prompts are read-only; `doc-drift` is docs-PR-producing, and
 `pr-triage` remains read-only unless explicitly invoked with `ACT`. `security` and
 `dependency-freshness` are **report-first**.
 
@@ -42,12 +42,12 @@ run records. Most planning prompts are read-only; `doc-drift` is docs-PR-produci
 - `daily/`
   - `changed-code-sentinel` — primary daily agent; reviews only the new commit delta.
   - `command-brief` — turns the sentinel result into an actionable handoff for this repo.
-  - `morning-sweep` — legacy repository-wide triage; use occasionally.
-  - `standup-digest` — legacy status brief for days without a sentinel.
+  - `morning-sweep` — legacy fallback for repository-wide triage.
+  - `standup-digest` — legacy fallback for days when no sentinel report exists.
 - `technical/` — code + design:
   - `stability`, `quality`, `design-system`, `security`, `performance`,
     `api-contract-parity`, `accessibility`, `test-coverage`, `dependency-freshness`,
-    `content-consistency`.
+    `content-consistency`, `observability`.
 - `planning/` — productivity / dev-planning:
   - `pr-triage`, `next-slice-planner`, `roadmap-sync`, `release-readiness`, `doc-drift`.
 - `sessions/` — **interactive** co-development prompts (a human is in the loop; these do NOT
@@ -57,6 +57,9 @@ run records. Most planning prompts are read-only; `doc-drift` is docs-PR-produci
     `ritmofit_dev_plan/close-session-checklist.md` so it tracks the real deploy model and gates).
 
 ## Suggested cadence
+
+For the full reference schedule and trigger map, see [`SCHEDULE.md`](SCHEDULE.md).
+
 | When | Run |
 |---|---|
 | Every commute | `daily/changed-code-sentinel`, then the command brief |
@@ -73,12 +76,55 @@ The realistic daily minimum is the sentinel. Add the command brief when you want
 prioritized handoff. Run deep prompts only when a sentinel or roadmap brief points to that
 dimension; avoid routine audit churn.
 
+## Operating model
+
+Think of the prompts as a small set of specialist teams, each with a clear owner and trigger:
+
+| Team | Prompt(s) | Use when |
+|---|---|---|
+| Command center | `daily/changed-code-sentinel`, `daily/command-brief` | You want the default commute loop: inspect recent change risk, then receive a short owner handoff. |
+| Web reliability | `technical/stability`, `technical/performance` | Production behavior, runtime correctness, live-class reliability, or speed is the concern. |
+| Product quality | `technical/quality`, `technical/test-coverage` | You want maintainability cleanup or a stronger regression net without changing product behavior. |
+| Design systems | `technical/design-system`, `technical/accessibility`, `technical/content-consistency` | UI fidelity, WCAG behavior, terminology, or cross-surface copy consistency needs attention. |
+| Platform/API | `technical/api-contract-parity` | The backend contract, OpenAPI output, or iOS decode compatibility may have drifted. |
+| Security & supply chain | `technical/security`, `technical/dependency-freshness` | Secrets, auth/session risk, CVEs, or dependency upgrade posture needs review. |
+| Observability | `technical/observability` | Logs, health checks, smoke coverage, or deploy evidence may be too thin to diagnose production issues. |
+| Product planning | `planning/roadmap-sync`, `planning/next-slice-planner` | You need to decide what to build next or turn a priority into a bounded slice. |
+| Release management | `planning/release-readiness`, `planning/pr-triage`, `sessions/close-session` | You are preparing to ship, clear maintenance PRs, or wrap up a human-led session. |
+| Documentation ops | `planning/doc-drift` | Docs, plans, or setup instructions may no longer match the repo. |
+
+## Decision guide
+
+- **I only have one unattended run:** use `daily/changed-code-sentinel`; add
+  `daily/command-brief` when you want the summary before reviewing.
+- **Recent code changed and I want regression coverage:** use `daily/changed-code-sentinel`.
+- **I need to choose the next product slice:** use `planning/roadmap-sync`, then
+  `planning/next-slice-planner`.
+- **I am about to start coding interactively:** use `sessions/start-session`.
+- **I am about to release or cut a milestone:** use `planning/release-readiness`, then
+  `planning/pr-triage`.
+- **The app feels broken or brittle:** use `technical/stability`.
+- **The app feels slow:** use `technical/performance`.
+- **A production issue would be hard to detect or diagnose:** use
+  `technical/observability`.
+- **The UI looks off or inconsistent:** use `technical/design-system`.
+- **Keyboard, screen reader, contrast, or motion behavior is the risk:** use
+  `technical/accessibility`.
+- **The web API may break iOS:** use `technical/api-contract-parity`.
+- **Copy or terminology differs between web and iOS:** use `technical/content-consistency`.
+- **Auth, secrets, logs, or dependency CVEs are the risk:** use `technical/security`.
+- **Packages are getting stale but not necessarily vulnerable:** use
+  `technical/dependency-freshness`.
+- **You want useful tests without behavior changes:** use `technical/test-coverage`.
+- **You want cleanup without behavior changes:** use `technical/quality`.
+- **Docs look stale:** use `planning/doc-drift`.
+
 ## Running it "in the background while commuting"
 - Disable sleep for the run or use a machine that remains awake.
 - The normal run is one isolated worktree on this repository, so the source checkout stays
   untouched.
 - Agents may push branches and open draft PRs. They may not merge, deploy, apply remote
   migrations, or change secrets.
-- A completed run must produce a record based on
-  [`../../agent-runs/RUN_RECORD_TEMPLATE.md`](../../agent-runs/RUN_RECORD_TEMPLATE.md) that
-  passes `../../agent-runs/validate-run-record.sh`.
+- A completed run must produce an agent report based on
+  `/Users/stevencrosby/Repos/RitmoFit/agent-reports/AGENT_REPORT_TEMPLATE.md` that passes
+  `/Users/stevencrosby/Repos/RitmoFit/agent-reports/validate-agent-report.sh`.

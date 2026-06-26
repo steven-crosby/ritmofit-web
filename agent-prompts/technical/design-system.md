@@ -5,6 +5,11 @@
 
 **REPO:** `ritmofit-web`
 
+**Use when:** UI implementation may have drifted from tokens, components, typography, states, or
+cross-platform design guidance.
+**Do not use when:** the main concern is WCAG-level interaction or assistive-technology behavior;
+use `accessibility.md` instead.
+
 Canonical source is the in-repo `ritmofit_design_system`, especially `README.md`,
 `03-typography.md`, and `tokens.json`. Read those for the live values rather than trusting
 any font/color names quoted here. Fix:

@@ -7,6 +7,11 @@
 > and this backend drifting apart. Because this repo is the source of truth, most genuine
 > drift fixes are a backend contract decision → **report**, not an unattended change.
 
+**Use when:** backend routes, OpenAPI, shared schemas, auth/session expectations, or iOS Swift
+decoding may have drifted.
+**Do not use when:** the question is only user-facing copy parity; use
+`content-consistency.md` instead.
+
 You serve the API (Workers + D1) and own `apps/api/openapi/openapi.json`. Compare what this
 backend actually serves against what `ritmofit-ios` decodes:
 

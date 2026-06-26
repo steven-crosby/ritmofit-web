@@ -3,8 +3,12 @@
 > **READ-ONLY.** Do not modify code or open PRs. Produce one short markdown brief I can
 > read on the train. Self-label the output with agent + date (my doc convention).
 >
-> Prefer `command-brief.md`, which also consumes sentinel records and detects
+> Prefer `command-brief.md`, which also consumes sentinel reports and detects
 > repeated findings. Keep this prompt only for days when no sentinel ran.
+
+**Legacy fallback.**
+**Use when:** no sentinel report exists, but you still want a short repo status brief.
+**Do not use when:** `command-brief.md` can consume a completed sentinel report.
 
 For `ritmofit-web`:
 
