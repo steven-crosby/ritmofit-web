@@ -10,6 +10,31 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-26 deployed (Worker `23b27a25-00d1-4cc3-89c9-7e300a72f4a8`).**
+> Shipped **#110** (`a12cc55`, squash) — **M6 / decision D14**: per-track **RPM (cadence)** and
+> **hold count**, authored independently of music tempo (RPM is *not* derived from BPM; a hold count of
+> `0` is meaningful and distinct from unset/`null`). `displayRpm`/`holdCount` (nullable; `rpm > 0`,
+> `holds >= 0`) added to the shared `classTrackSchema`, the class-track input contract, and the
+> run-payload track entry; D1 columns + CHECK constraints; run-payload assembly passthrough; add/patch
+> route wiring; regenerated OpenAPI. Web surfaces them on song rows, the builder track inspector (with
+> editable RPM/Holds inputs), and the Live Mode NOW card / full-list rows.
+>
+> **Migration `0018` (applied to remote D1 first, before code).** drizzle-kit's generated table-rebuild
+> copied the brand-new `display_rpm`/`hold_count` columns *from the old table* in its `INSERT…SELECT`;
+> via SQLite's double-quoted-identifier fallback that would backfill every existing row with the literal
+> strings `"display_rpm"`/`"hold_count"` instead of `NULL` (slipping past the `rpm > 0` CHECK on
+> text/int comparison), and empty-DB integration tests never caught it. Hand-fixed to omit the new
+> columns from the copy so they default to `NULL`. Remote D1 was at `0017` pre-deploy; prod
+> `class_tracks` had **0 rows**, so no data was at risk — post-migration the columns exist with clean
+> types. New `rpm-holds.integration.test.ts` covers add/patch round-trip, the `0`-vs-`null` hold
+> distinction, and the constraints.
+>
+> Pre-deploy gates green (typecheck, lint, unit web + api 234, integration **64**, web build, OpenAPI
+> no-drift); PR #110 CI green (format/typecheck/lint/test/build/audit). Post-deploy smoke (live): SPA
+> `/` → `200`, `/api/v1/health` → `200`, unauthenticated `/api/v1/classes` → `401`, all six security
+> headers present, served asset `index-CmOHEOQ_.js` matches the local build. Prior Worker
+> `efa56513-d81d-4d9b-98d0-a6be2d18d8e6` (session 2026-06-26, M1 #106) is the rollback anchor.
+>
 > **Session 2026-06-25 deployed (Worker `efa56513-d81d-4d9b-98d0-a6be2d18d8e6`).**
 > Shipped **#106** (`754569e`, squash) — backlog **M1** (intensity spin-zone vocabulary + segmented
 > control, decision D17), frontend-only, no migration. `INTENSITY_LABEL` relabeled to the canonical
