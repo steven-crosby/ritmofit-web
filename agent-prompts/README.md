@@ -10,10 +10,10 @@ ritmofit-web report stays in this repo; the sibling iOS repo keeps its own archi
 is no shared workspace-level report folder.
 
 > This is the **web-scoped** copy of the library; the sibling **iOS** repo (`ritmofit-ios`)
-> keeps its own copy. Two prompts here (`technical/api-contract-parity`,
-> `technical/content-consistency`) read the iOS client source, vendored read-only in
-> [`ios-snapshot/`](../ios-snapshot/) — so **no sibling iOS checkout is required**. They
-> branch only in this repo.
+> keeps its own copy. `technical/api-contract-parity` reads the iOS contract surface, vendored
+> read-only in [`ios-snapshot/`](../ios-snapshot/) — so it needs **no sibling iOS checkout**.
+> `technical/content-consistency` runs its web-internal checks always and only compares copy
+> against iOS when a live `ritmofit-ios` checkout is present. Both branch only in this repo.
 
 ## How to use
 

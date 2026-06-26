@@ -2,27 +2,42 @@
 
 > **Follow the house rules first:**
 > `agent-prompts/00-house-rules.md`
-> Reads the vendored [`ios-snapshot/`](../../ios-snapshot/) (read-only iOS client source,
-> incl. `ios-snapshot/Features/` for user-facing copy) for cross-surface comparison — no
-> sibling iOS checkout required; you branch only here in `ritmofit-web`. Cross-surface copy
-> drift is the bug here.
+> You branch only here in `ritmofit-web`. The web-internal copy checks always run. The
+> cross-surface comparison against iOS needs the iOS client's copy, which is **not** vendored
+> here (it lives in fast-moving SwiftUI views that drift too quickly to snapshot usefully) —
+> see "Cross-surface vs iOS" below.
 
 **Use when:** terminology, labels, state copy, formatting, or microcopy may differ between web
-and iOS.
+and iOS, or web copy may just be internally inconsistent.
 **Do not use when:** payload shapes or endpoint behavior may differ; use
 `api-contract-parity.md` instead.
 
-Check the web app's user-facing text, using the iOS client (`ios-snapshot/Features/`) as the
-parity reference:
+## Web-internal consistency (always runnable)
 
-- **Terminology parity:** the same concept is named identically on both surfaces —
-  classes, sessions, runs, Intensity, Tempo, rhythm signature, the provider names. Flag
-  anywhere the web copy diverges from iOS (or vice-versa).
+Check `ritmofit-web`'s own user-facing text — no iOS source required:
+
+- **Internal terminology consistency:** the same concept is named identically across the web
+  surface — classes, sessions, runs, Intensity, Tempo, rhythm signature, the provider names.
 - **Microcopy quality:** typos, grammar, inconsistent capitalization / casing of feature
-  names, button & label voice on the web surface. Keep it on-brand and tight.
-- **Formatting:** numbers / units / dates / times formatted consistently with the iOS app.
+  names, button & label voice. Keep it on-brand and tight.
+- **Formatting:** numbers / units / dates / times formatted consistently across the web app.
 - **State copy:** empty / error / loading text that's missing, placeholder, or off-tone.
 - **i18n** (if any localization exists): missing or mismatched keys.
+
+## Cross-surface vs iOS (only when iOS source is available)
+
+The authoritative parity reference is the iOS client's copy under its `Features/`, which is
+**not vendored** in this repo. To run this part you need a read-only `ritmofit-ios` checkout
+(e.g. a sibling `../ritmofit-ios` clone). If one is present, compare the web copy against
+`../ritmofit-ios/RitmoFit/RitmoFit/Features/` for terminology, formatting, and label parity,
+flagging anywhere the two surfaces diverge.
+
+If no iOS source is available this session — the common ephemeral/remote case — **do not guess**
+at iOS copy or infer drift. Run the web-internal checks above and record this line verbatim in
+the after-action report: `cross-surface copy parity vs iOS: not run — no iOS source in this
+checkout`. (Contract/enum parity, which *is* snapshotted, belongs to `api-contract-parity.md`.)
+
+## Output
 
 Open PRs for safe web-side copy fixes, one area per PR. Genuine naming decisions (should it
 be "class" or "session" *everywhere*?) span both surfaces → report with a recommendation;

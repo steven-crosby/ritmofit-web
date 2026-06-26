@@ -54,6 +54,7 @@ changes must stay narrow.
 **This repo:** `ritmofit-web` — React/Vite SPA plus a Cloudflare Worker and D1; the Worker
 serves both the SPA and the API. The CI-equivalent gate (typecheck/lint/test/build) is
 defined in `AGENTS.md` — run the full required list before any PR. The iOS client
-(SwiftUI / SwiftData) is read-only context for the contract- and content-parity prompts,
-vendored read-only in `ios-snapshot/` (see `ios-snapshot/README.md`); never branch or build
-it from here.
+(SwiftUI / SwiftData) is read-only context: its contract surface is vendored in
+`ios-snapshot/` for `api-contract-parity` (see `ios-snapshot/README.md`), while
+`content-consistency` compares copy against a live `ritmofit-ios` checkout only when present.
+Never branch or build the iOS app from here.
