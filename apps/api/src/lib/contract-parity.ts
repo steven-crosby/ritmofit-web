@@ -96,15 +96,52 @@ function stripNestedBraces(body: string): string {
 }
 
 /**
- * Parse a Swift source file into `{ StructName: [storedPropertyNames] }`.
- *
- * Only **stored** properties (`let name: Type`) declared directly in a `struct`
- * body are collected — computed `var`s, initializers, nested `CodingKeys`, and
- * `init(from:)` locals are stripped first (their brace blocks are removed), so
- * they can't masquerade as decoded fields. Backtick-escaped names (`` `class` ``)
- * are unwrapped.
+ * Strip Swift comments before any structural matching, so a commented-out or TODO
+ * declaration (`// let displayRpm: Int?`) can't be counted as a decoded field, and
+ * so a `{`/`}` inside a comment can't break brace matching. Block comments are
+ * removed first (they may span the braces a later pass relies on), then line
+ * comments. Non-nested block comments only — Swift's are rare and the vendored
+ * snapshot uses none.
  */
-export function extractSwiftStructFields(src: string): Record<string, string[]> {
+function stripSwiftComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+}
+
+/** Extract the coded keys from a `CodingKeys` enum body: `case a, b = "wire"`. */
+function extractCodingKeys(enumBody: string): string[] {
+  const keys: string[] = [];
+  const caseRe = /\bcase\s+([^\n]+)/g;
+  let line: RegExpExecArray | null;
+  while ((line = caseRe.exec(enumBody)) !== null) {
+    const caseList = line[1];
+    if (caseList === undefined) continue;
+    for (const item of caseList.split(',')) {
+      // `name` or `name = "wireName"`; the wire string wins when remapped.
+      const m = /`?([A-Za-z_]\w*)`?\s*(?:=\s*"([^"]+)")?/.exec(item.trim());
+      const key = m ? (m[2] ?? m[1]) : undefined;
+      if (key !== undefined) keys.push(key);
+    }
+  }
+  return keys;
+}
+
+/**
+ * Parse a Swift source file into `{ StructName: [decodedFieldNames] }`.
+ *
+ * The decoded field set is what the wire actually maps onto, which is authoritative
+ * in this order:
+ * 1. an explicit `CodingKeys` enum (its cases) — required when a struct uses custom
+ *    `init(from:)`, since a stored `let` that isn't a `CodingKeys` case is *not*
+ *    decoded; `RunTrack`/`Move` in the snapshot do exactly this;
+ * 2. otherwise the synthesized keys, i.e. the stored `let name: Type` properties
+ *    declared directly in the struct body.
+ *
+ * Computed `var`s, initializers, and nested bodies are stripped first so they can't
+ * masquerade as fields; comments are stripped before any matching. Backtick-escaped
+ * names (`` `class` ``) are unwrapped.
+ */
+export function extractSwiftStructFields(source: string): Record<string, string[]> {
+  const src = stripSwiftComments(source);
   const result: Record<string, string[]> = {};
   const declRe = /\bstruct\s+([A-Za-z_]\w*)/g;
   let decl: RegExpExecArray | null;
@@ -115,13 +152,24 @@ export function extractSwiftStructFields(src: string): Record<string, string[]> 
     if (braceStart === -1) continue;
     const body = readBalanced(src, braceStart);
     if (body === null) continue;
-    const direct = stripNestedBraces(body);
-    const fields: string[] = [];
-    const letRe = /\blet\s+`?([A-Za-z_]\w*)`?\s*:/g;
-    let prop: RegExpExecArray | null;
-    while ((prop = letRe.exec(direct)) !== null) {
-      const field = prop[1];
-      if (field !== undefined) fields.push(field);
+
+    let fields: string[] = [];
+    // 1. Prefer an explicit CodingKeys enum (authoritative for custom decoders).
+    const ckMatch = /\benum\s+CodingKeys\b/.exec(body);
+    if (ckMatch) {
+      const ckBraceStart = body.indexOf('{', ckMatch.index);
+      const ckBody = ckBraceStart === -1 ? null : readBalanced(body, ckBraceStart);
+      if (ckBody !== null) fields = extractCodingKeys(ckBody);
+    }
+    // 2. Fall back to synthesized keys: stored `let` properties.
+    if (fields.length === 0) {
+      const direct = stripNestedBraces(body);
+      const letRe = /\blet\s+`?([A-Za-z_]\w*)`?\s*:/g;
+      let prop: RegExpExecArray | null;
+      while ((prop = letRe.exec(direct)) !== null) {
+        const field = prop[1];
+        if (field !== undefined) fields.push(field);
+      }
     }
     // A struct may be declared once; if seen twice (extensions), merge.
     result[name] = [...(result[name] ?? []), ...fields];
@@ -245,14 +293,17 @@ export function compareContractParity(
 
     for (const field of clientFields) {
       if (serverFields.has(field)) continue;
-      const key = `${struct}.${field}`;
-      if (allow.has(key)) matched.add(key);
+      // The allowlist tracks *additive* lag only; it must NEVER suppress the
+      // client-crashing direction (the server removed/renamed a field the DTO
+      // still decodes). So `unknown-to-server` always fails, even if an
+      // allowlist entry for `struct.field` exists — and that now-misdirected
+      // entry surfaces separately as a stale allowlist entry (it no longer
+      // matches a `missing-on-ios` drift).
       drifts.push({
         struct,
         field,
         kind: 'unknown-to-server',
-        allowlisted: allow.has(key),
-        reason: allow.get(key),
+        allowlisted: false,
       });
     }
   }

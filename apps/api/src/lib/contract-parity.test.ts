@@ -44,6 +44,43 @@ describe('extractSwiftStructFields', () => {
     `;
     expect(extractSwiftStructFields(src).T).toEqual(['a']);
   });
+
+  it('ignores commented-out and TODO let-declarations', () => {
+    const src = `
+      struct T: Decodable {
+        let a: Int
+        // let displayRpm: Int?  // TODO: decode once iOS catches up
+        /* let holdCount: Int? */
+        let b: Int
+      }
+    `;
+    expect(extractSwiftStructFields(src).T).toEqual(['a', 'b']);
+  });
+
+  it('uses CodingKeys cases (not stored lets) when a custom decoder is present', () => {
+    // A stored `let` that is NOT a CodingKeys case is not actually decoded.
+    const src = `
+      struct RunTrack: Decodable {
+        let classTrackId: String
+        let displayRpm: Int?
+        private enum CodingKeys: String, CodingKey {
+          case classTrackId, displayBpm
+          case notes
+        }
+        init(from decoder: Decoder) throws { /* ... */ }
+      }
+    `;
+    expect(extractSwiftStructFields(src).RunTrack).toEqual(['classTrackId', 'displayBpm', 'notes']);
+  });
+
+  it('honors CodingKeys wire remapping (case x = "wire")', () => {
+    const src = `
+      struct T: Decodable {
+        enum CodingKeys: String, CodingKey { case internalName = "wireName", other }
+      }
+    `;
+    expect(extractSwiftStructFields(src).T).toEqual(['wireName', 'other']);
+  });
 });
 
 describe('extractOpenApiRunPayloadFields', () => {
@@ -121,6 +158,24 @@ describe('compareContractParity', () => {
   it('treats a wholly un-vendored struct as all-fields-missing', () => {
     const result = compareContractParity({ Section: ['type', 'startOffsetMs'] }, {}, []);
     expect(result.failing.map((d) => d.field)).toEqual(['type', 'startOffsetMs']);
+  });
+
+  it('never allowlists unknown-to-server drift, even when struct.field is in the allowlist', () => {
+    // A field that was allowlisted as additive lag is later REMOVED from the
+    // server while iOS still decodes it: the crash direction must still fail,
+    // and the now-misdirected allowlist entry must surface as stale.
+    const allow = [{ struct: 'RunTrack', field: 'displayRpm', reason: 'additive lag' }];
+    const result = compareContractParity(
+      { RunTrack: ['classTrackId'] },
+      { RunTrack: ['classTrackId', 'displayRpm'] },
+      allow,
+    );
+    expect(result.failing).toEqual([
+      { struct: 'RunTrack', field: 'displayRpm', kind: 'unknown-to-server', allowlisted: false },
+    ]);
+    expect(result.staleAllowlist).toEqual([
+      { struct: 'RunTrack', field: 'displayRpm', reason: 'additive lag' },
+    ]);
   });
 
   it('moves allowlisted drift out of failing and reports stale entries', () => {
