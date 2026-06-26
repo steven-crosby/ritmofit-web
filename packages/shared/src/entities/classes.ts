@@ -62,6 +62,10 @@ export const classTrackSchema = z.object({
   beatAnchorMs: z.int().nonnegative(),
   startOffsetMs: timestampMsSchema.nullable(),
   notes: z.string().max(2000).nullable(),
+  /** Manual pedal cadence (RPM). Kept distinct from displayBpm — cadence ≠ music tempo (D14). */
+  displayRpm: z.int().positive().nullable(),
+  /** Manual hold count per track (D14 Option B). Null = unset. */
+  holdCount: z.int().nonnegative().nullable(),
   ...timestampsShape,
 });
 export type ClassTrack = z.infer<typeof classTrackSchema>;
@@ -156,6 +160,10 @@ const classTrackInputFields = z.object({
   // where offsets are server-derived). Track-relative class-start ms.
   startOffsetMs: z.int().nonnegative().max(MAX_DURATION_MS).nullish(),
   notes: z.string().max(2000).nullish(),
+  /** Manual pedal cadence (RPM). Null/omitted clears. Distinct from BPM (D14). */
+  displayRpm: z.int().positive().nullish(),
+  /** Manual hold count. Null/omitted clears. Zero is valid ("no holds"). (D14 Option B). */
+  holdCount: z.int().nonnegative().nullish(),
 });
 
 /**

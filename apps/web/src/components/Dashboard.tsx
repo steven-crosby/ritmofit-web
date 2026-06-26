@@ -1440,6 +1440,34 @@ function SongRow({
             <span className="ml-1 text-xs text-text-tertiary">BPM</span>
           </span>
         )}
+        {entry.displayRpm != null && (
+          <>
+            {entry.displayBpm != null && (
+              <span className="shrink-0 text-xs text-text-tertiary" aria-hidden="true">
+                ·
+              </span>
+            )}
+            <span className="shrink-0 font-data text-sm text-text-secondary">
+              {entry.displayRpm}
+              <span className="ml-1 text-xs text-text-tertiary">RPM</span>
+            </span>
+          </>
+        )}
+        {entry.holdCount != null && (
+          <>
+            {(entry.displayBpm != null || entry.displayRpm != null) && (
+              <span className="shrink-0 text-xs text-text-tertiary" aria-hidden="true">
+                ·
+              </span>
+            )}
+            <span className="shrink-0 font-data text-sm text-text-secondary">
+              {entry.holdCount}
+              <span className="ml-1 text-xs text-text-tertiary">
+                {entry.holdCount === 1 ? 'Hold' : 'Holds'}
+              </span>
+            </span>
+          </>
+        )}
         {entry.track.durationMs == null && (
           <span className="shrink-0 font-ui text-xs font-semibold text-intensity-hard">
             Duration needed
@@ -1523,6 +1551,8 @@ function TrackInspector({
 }) {
   const [intensity, setIntensity] = useState<Intensity>(track.intensity);
   const [bpm, setBpm] = useState(track.displayBpmOverride?.toString() ?? '');
+  const [rpm, setRpm] = useState(track.displayRpm?.toString() ?? '');
+  const [holdCountVal, setHoldCountVal] = useState(track.holdCount?.toString() ?? '');
   const [duration, setDuration] = useState(formatDurationInput(durationMs));
   // Trim window (m:ss, track-relative). Empty start = from the beginning (0);
   // empty end = to the track's end (null).
@@ -1608,9 +1638,13 @@ function TrackInspector({
     setError(null);
     try {
       const trimmedBpm = bpm.trim();
+      const trimmedRpm = rpm.trim();
+      const trimmedHolds = holdCountVal.trim();
       await updateClassTrack(track.id, {
         intensity,
         displayBpmOverride: trimmedBpm === '' ? null : Number(trimmedBpm),
+        displayRpm: trimmedRpm === '' ? null : Number(trimmedRpm),
+        holdCount: trimmedHolds === '' ? null : Number(trimmedHolds),
         durationMsOverride: parsedDuration,
         clipStartMs,
         clipEndMs,
@@ -1654,6 +1688,14 @@ function TrackInspector({
           {track.displayBpmOverride != null && (
             <span className="font-data text-sm text-text-secondary">
               {track.displayBpmOverride} BPM
+            </span>
+          )}
+          {track.displayRpm != null && (
+            <span className="font-data text-sm text-text-secondary">{track.displayRpm} RPM</span>
+          )}
+          {track.holdCount != null && (
+            <span className="font-data text-sm text-text-secondary">
+              {track.holdCount} {track.holdCount === 1 ? 'Hold' : 'Holds'}
             </span>
           )}
           {track.notes && <span className="font-ui text-xs text-text-tertiary">{track.notes}</span>}
@@ -1702,6 +1744,46 @@ function TrackInspector({
               )}
             </div>
           </label>
+
+          <div className="flex gap-3">
+            <label className="flex flex-col gap-1">
+              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                RPM
+              </span>
+              <input
+                type="number"
+                min={1}
+                inputMode="numeric"
+                placeholder="—"
+                aria-describedby={`rpm-help-${track.id}`}
+                className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                value={rpm}
+                onChange={(e) => setRpm(e.target.value)}
+              />
+              <span id={`rpm-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+                Cadence — not derived from BPM
+              </span>
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                Holds
+              </span>
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                placeholder="—"
+                aria-describedby={`holds-help-${track.id}`}
+                className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                value={holdCountVal}
+                onChange={(e) => setHoldCountVal(e.target.value)}
+              />
+              <span id={`holds-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+                Hold count for this track
+              </span>
+            </label>
+          </div>
 
           <label className="flex flex-col gap-1">
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
