@@ -32,7 +32,7 @@ import {
   listUserMoves,
   createUserMove,
 } from '../lib/api.js';
-import { IntensityReadout } from './IntensityReadout.js';
+import { IntensityReadout, INTENSITY_LABEL } from './IntensityReadout.js';
 import { CUE_COLOR_TAGS, tagLabel } from '../lib/cue-colors.js';
 import { CUSTOM, NEW, parseMovePick, pickForPlacement } from '../lib/move-pick.js';
 import { CustomMovesDialog } from './CustomMovesDialog.js';
@@ -766,7 +766,7 @@ export function MovesSection({
                 <option value="">intensity —</option>
                 {intensityValues.map((v) => (
                   <option key={v} value={v}>
-                    {v}
+                    {INTENSITY_LABEL[v]}
                   </option>
                 ))}
               </select>
@@ -867,7 +867,7 @@ export function MovesSection({
           <option value="">intensity —</option>
           {intensityValues.map((v) => (
             <option key={v} value={v}>
-              {v}
+              {INTENSITY_LABEL[v]}
             </option>
           ))}
         </select>

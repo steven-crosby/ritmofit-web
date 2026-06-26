@@ -26,6 +26,7 @@ import {
   type ProviderConnectionState,
 } from '../lib/providers.js';
 import { Dialog } from './Dialog.js';
+import { PendingList } from './PendingList.js';
 
 /**
  * Presentation per state: a glyph and label carry the meaning; the tone maps to
@@ -58,6 +59,7 @@ export function ConnectionsDialog({
   const [notice, setNotice] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    setError(null);
     try {
       setConnections(await listConnections());
     } catch (e) {
@@ -153,7 +155,7 @@ export function ConnectionsDialog({
       )}
 
       {connections === null ? (
-        <p className="font-ui text-sm text-text-tertiary">Loading…</p>
+        <PendingList error={error} onRetry={() => void refresh()} />
       ) : (
         <ul className="flex flex-col gap-2">
           {PROVIDER_ORDER.map((provider) => {

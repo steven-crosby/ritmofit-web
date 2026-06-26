@@ -15,6 +15,7 @@ import { listUserMoves, updateUserMove, deleteUserMove } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import { Dialog } from './Dialog.js';
+import { PendingList } from './PendingList.js';
 
 export function CustomMovesDialog({
   onClose,
@@ -28,6 +29,7 @@ export function CustomMovesDialog({
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    setError(null);
     try {
       setMoves(await listUserMoves());
     } catch (e) {
@@ -75,7 +77,7 @@ export function CustomMovesDialog({
       )}
 
       {moves === null ? (
-        <p className="font-ui text-sm text-text-tertiary">Loading…</p>
+        <PendingList error={error} onRetry={() => void refresh()} />
       ) : moves.length === 0 ? (
         <p className="font-ui text-sm text-text-tertiary">
           No custom moves yet — create one from a track’s Moves section.

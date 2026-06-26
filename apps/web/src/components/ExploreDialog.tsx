@@ -10,6 +10,7 @@ import { listExplore, copyClass } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import { Dialog } from './Dialog.js';
+import { PendingList } from './PendingList.js';
 
 export function ExploreDialog({
   onPreview,
@@ -46,6 +47,7 @@ export function ExploreDialog({
   );
 
   const refresh = useCallback(async () => {
+    setError(null);
     try {
       const page = await listExplore(PAGE_SIZE, 0);
       setItems(page);
@@ -105,7 +107,7 @@ export function ExploreDialog({
       )}
 
       {items === null ? (
-        <p className="font-ui text-sm text-text-tertiary">Loading…</p>
+        <PendingList error={error} onRetry={() => void refresh()} />
       ) : items.length === 0 ? (
         <p className="font-ui text-sm text-text-tertiary">
           No public classes yet. Publish one of yours to share it here.

@@ -54,7 +54,7 @@ import { ErrorBoundary } from './ErrorBoundary.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { TimelineStrip } from './TimelineStrip.js';
 import { SegmentBand } from './SegmentBand.js';
-import { IntensityReadout } from './IntensityReadout.js';
+import { IntensityReadout, INTENSITY_LABEL } from './IntensityReadout.js';
 import { TrackSearch } from './TrackSearch.js';
 
 // Code-split the heavy, interaction-gated surfaces into their own chunks so the
@@ -1672,7 +1672,7 @@ function TrackInspector({
               >
                 {intensityValues.map((v) => (
                   <option key={v} value={v}>
-                    {v}
+                    {INTENSITY_LABEL[v]}
                   </option>
                 ))}
               </select>
@@ -1931,7 +1931,7 @@ function AddTrackForm({
         >
           {intensityValues.map((v) => (
             <option key={v} value={v}>
-              {v}
+              {INTENSITY_LABEL[v]}
             </option>
           ))}
         </select>
