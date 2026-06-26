@@ -10,6 +10,28 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-25 deployed (Worker `d4e828c5-c50e-4515-bcc5-f569d6c95c02`).**
+> Shipped **#104** (`3113ad0`, squash) — two mockup-parity **Polish** items, frontend-only, no migration.
+> **P1 (empty-state-as-error, systemic):** the 2026-06-24 crawl's "Not found in danger-red + lingering
+> Loading…" was the **failed-load** path — a list fetch error set the red alert while the list state
+> stayed `null`, so the dialog showed "Loading…" forever with no retry. (The crawl most likely *hit* the
+> error via the #100 prod-404, fixed the prior session.) New shared `PendingList` component renders
+> "Loading…" only while genuinely pending, else a "Try again" retry; `error` is cleared at the start of
+> each refresh. Wired into Explore / Teams (+ nested TeamMembers, given a local load-error for
+> independent retry) / Share **and** Connections / CustomMoves (same conflation, beyond the audit's named
+> three). **P2 (raw intensity enum):** the intensity `<select>`s now render `INTENSITY_LABEL[v]`
+> (none/easy/moderate/hard/all-out) instead of the raw enum, across all **4** selects (`Dashboard.tsx` ×2,
+> `ChoreographyEditor.tsx` ×2) — label text only; M1's segmented control + D17 zone vocab stay separate.
+>
+> Pre-deploy gates green: typecheck, lint, unit (web 177 + api 234), OpenAPI no-drift, web build; PR #104
+> CI green (format/typecheck/lint/test/build/audit). Post-deploy smoke (live): SPA `/` → `200`,
+> `/api/v1/health` → `200`, unauthenticated `/api/v1/classes` / `/explore` / `/teams` → `401` (handlers
+> reached, **not** the pre-#100 `404`), all six security headers present, served asset
+> `index-DKVcAK9r.js` matches the local build. Prior Worker `c269837d-3c24-4b87-886e-4f24df11c0ba`
+> (session 2026-06-25) is the rollback anchor. Known minor follow-up (non-blocking): a TeamMembers
+> retry that succeeds leaves the parent's prior red error banner up until the next action clears it —
+> fold into a later Teams touch.
+>
 > **Session 2026-06-25 deployed (Worker `c269837d-3c24-4b87-886e-4f24df11c0ba`).**
 > Shipped two merged PRs from `main` (`2c27da2`). **#99** (`585f134`, feat: "Songs by Move" reverse
 > search — owner-scoped `GET /moves/:id/songs` + `/user-moves/:id/songs`, grouped by track; **plus**

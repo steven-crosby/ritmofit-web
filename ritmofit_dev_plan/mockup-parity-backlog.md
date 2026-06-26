@@ -43,8 +43,6 @@ Effort legend: **XS** ≈ <½ day · **S** ≈ ~1 day · **M** ≈ few days · *
 
 | # | Item | Gap | Effort | Evidence |
 |---|---|---|---|---|
-| P1 | ✅ **Fixed — pending deploy.** Empty-state-as-error (systemic) | The 2026-06-24 crawl's "Not found in danger-red + lingering Loading…" was the failed-load path: a fetch error set the red alert while the list stayed `null`, so the dialog claimed "Loading…" forever with no retry. (The crawl most likely *hit* the error via the #100 prod-404, fixed 2026-06-25.) Shared fix: new `PendingList` component shows "Loading…" only while genuinely pending, else a "Try again" retry; `error` cleared at the start of each refresh. Wired into Explore/Teams (+TeamMembers)/Share **and** Connections/CustomMoves (same conflation). | S | `PendingList.tsx`; Explore/Teams/Share/Connections/CustomMoves dialogs |
-| P2 | ✅ **Fixed — pending deploy.** Raw enum in intensity `<select>` | Dropdowns now render `INTENSITY_LABEL[v]` (none/easy/moderate/hard/all-out) instead of the raw enum. Found in **4** selects, not 2: `Dashboard.tsx` ×2 (inspector + manual-add) and `ChoreographyEditor.tsx` ×2 (move-intensity). Label-text only — the **M1 segmented-control swap + D17 zone vocab remain separate**. | XS | `Dashboard.tsx`; `ChoreographyEditor.tsx` |
 | P3 | **Builder header polish** | No cue/move counts (mockup: "4 cues · 5 moves"), no visible energy-shape description (aria only), no inline provider-connected chips. | S | `ClassHeaderCard` in `Dashboard.tsx`; `builder.html` |
 | P4 | **Save-status indicator** | ✅ **Decided (D16): keep auto-save + add a subtle saving/saved indicator** (not staged Save/Discard). Needs one global save-status signal the per-field writes feed. | S | `builder-states.html`; `Dashboard.tsx` write paths; D16 |
 
