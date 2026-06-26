@@ -127,6 +127,8 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
     beatAnchorMs: body.beatAnchorMs ?? 0,
     startOffsetMs,
     notes: body.notes ?? null,
+    displayRpm: body.displayRpm ?? null,
+    holdCount: body.holdCount ?? null,
     createdAt: now,
     updatedAt: now,
   });

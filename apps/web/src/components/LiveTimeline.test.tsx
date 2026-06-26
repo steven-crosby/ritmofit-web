@@ -64,6 +64,8 @@ function entry(position: number, durationMs: number | null, cues: Cue[] = [], mo
     classTrackId: `00000000-0000-4000-8000-00000000000${position}`,
     position,
     displayBpm: null,
+    displayRpm: null,
+    holdCount: null,
     intensity: 'mod',
     startOffsetMs: null,
     clipStartMs: 0,
