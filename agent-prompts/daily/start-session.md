@@ -20,21 +20,25 @@ files or begin implementation during orientation.
    - current branch, recent commits, and local branches/upstreams when relevant
 3. Inspect open pull requests with `gh pr list --state open` when GitHub access is available.
    Note drafts, failing or pending checks, and branches that may already contain the work.
-4. Read the current status sources:
+4. Drain the breadcrumb catcher: read `INBOX.md`. Surface any open `- [ ]` breadcrumbs so
+   they don't rot in chat. For each, note its likely home (see the routing table in
+   `INBOX.md`) and whether it bears on this session's objective. Do not route or delete
+   lines during orientation — that happens at close-session; just make them visible.
+5. Read the current status sources:
    - `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`
    - relevant sections of `ritmofit_dev_plan/milestones.md`
    - `ritmofit_dev_plan/HISTORY.md` when deployment state, recent work, or blockers matter
    - `agent-prompts/daily/command-brief.md` output or recent agent reports when the owner
      points to them
-5. For UI work, read `ritmofit_design_system/README.md` plus the specific token/component
+6. For UI work, read `ritmofit_design_system/README.md` plus the specific token/component
    guidance that applies.
-6. For API, schema, shared-contract, auth, music-provider, or iOS-impacting work, inspect the
+7. For API, schema, shared-contract, auth, music-provider, or iOS-impacting work, inspect the
    relevant shared schemas, routes, migrations, OpenAPI output, authorization helpers, and
    parity docs before proposing changes.
-7. If deployment state matters to the likely next task, use read-only commands to compare
+8. If deployment state matters to the likely next task, use read-only commands to compare
    production with `main`. Do not deploy, apply remote migrations, modify secrets, or alter
    remote data.
-8. Ask one focused question only when the objective cannot be safely inferred. If the owner
+9. Ask one focused question only when the objective cannot be safely inferred. If the owner
    already supplied a clear objective, summarize the discovered context and propose the plan.
 
 ## Rules
@@ -64,6 +68,7 @@ Report a concise session baseline:
   verifiable.
 - **Trackers:** current milestone/slice, unresolved blockers, and strongest candidate for
   next work.
+- **Breadcrumbs:** open items in `INBOX.md`, each with its likely home, or "inbox empty."
 - **Parity:** expected web/iOS impact or no parity impact.
 - **Risks:** existing changes, migration/deployment concerns, missing evidence, or open
   questions.
