@@ -1,6 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { sendEmail, buildResendPayload, actionEmail, EmailSendError } from './email.js';
+import { boundFetch } from './fetch.js';
 import type { Env } from './types.js';
+
+// `boundFetch` is the only network seam that survives the detached-call quirk in
+// the production Workers runtime (see lib/fetch.ts). Mock it so the default-impl
+// regression test can assert `sendEmail` routes through it rather than the bare
+// global `fetch`, which throws `Illegal invocation` in prod.
+vi.mock('./fetch.js', () => ({
+  boundFetch: vi.fn(async () => new Response('{}', { status: 200 })),
+}));
 
 const MSG = { to: 'user@example.com', subject: 'Hi', html: '<p>Hi</p>', text: 'Hi' };
 
@@ -40,6 +49,18 @@ describe('sendEmail', () => {
     expect(url).toBe('https://api.resend.com/emails');
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer key_123');
     expect(JSON.parse(init.body as string).from).toBe('A <a@ritmofit.studio>');
+  });
+
+  it('defaults to boundFetch (not the bare global) so prod email sends survive the Workers runtime', async () => {
+    // Regression: Better Auth's reset/verify hooks call sendEmail without an
+    // explicit fetchImpl. Defaulting to the global `fetch` throws
+    // `TypeError: Illegal invocation` once detached in production.
+    vi.mocked(boundFetch).mockClear();
+    await sendEmail(env({ RESEND_API_KEY: 'key_123' }), MSG);
+    expect(boundFetch).toHaveBeenCalledOnce();
+    expect((vi.mocked(boundFetch).mock.calls[0] as unknown as [string])[0]).toBe(
+      'https://api.resend.com/emails',
+    );
   });
 
   it('falls back to logging (no fetch) when no API key is set', async () => {
