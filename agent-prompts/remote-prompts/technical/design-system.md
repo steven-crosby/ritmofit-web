@@ -1,7 +1,14 @@
 # Design-system consistency
 
+> **Remote ephemeral sandbox.** You run unattended in an isolated, ephemeral cloud sandbox —
+> not the owner's machine. The repository is a fresh clone and the container is discarded when
+> the session ends, so **nothing you do survives unless it is committed and pushed**: push any
+> branch and draft PR to the remote, and commit every report into the git-tracked
+> `agent-reports/`. No human is watching in real time — never block on interactive input;
+> decisions that belong to the owner become written recommendations.
+
 > **Follow the house rules first:**
-> `agent-prompts/00-house-rules.md`
+> `agent-prompts/remote-prompts/00-house-rules.md`
 
 **REPO:** `ritmofit-web`
 

@@ -28,7 +28,7 @@ files or begin implementation during orientation.
    - `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`
    - relevant sections of `ritmofit_dev_plan/milestones.md`
    - `ritmofit_dev_plan/HISTORY.md` when deployment state, recent work, or blockers matter
-   - `agent-prompts/daily/command-brief.md` output or recent agent reports when the owner
+   - `agent-prompts/remote-prompts/daily/command-brief.md` output or recent agent reports when the owner
      points to them
 6. For UI work, read `ritmofit_design_system/README.md` plus the specific token/component
    guidance that applies.
