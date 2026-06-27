@@ -72,6 +72,14 @@ jobs:
           pnpm --filter @ritmofit/api openapi
           git diff --exit-code apps/api/openapi/openapi.json
 
+      # Cross-surface contract drift (web ↔ iOS). The design-token seam is already
+      # drift-gated above; this gates the *DTO* seam — the vendored iOS run-payload
+      # DTOs (ios-snapshot/) must not silently fall behind the contract this backend
+      # serves (web-ios-parity.md › "known seam gaps"). Tracked, accepted lag lives
+      # in the script's allowlist; a NEW drift (either direction) fails here.
+      - name: iOS contract parity (run-payload DTO drift)
+        run: pnpm --filter @ritmofit/api contract-parity
+
       # Production dependency audit. The four esbuild/vite advisories ignored in
       # the audit:ci script are dev/build-server only (not in the deployed Worker
       # or browser bundle) and unfixable without a vite 5→6 major upgrade; they

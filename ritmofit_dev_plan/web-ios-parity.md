@@ -36,13 +36,25 @@ In practice, for any feature PR (web *or* iOS):
 
 ### Known seam gaps (process debt to close)
 
-- **No cross-repo drift check.** iOS vendors its *own* copies — `ritmofit-ios/design-tokens/tokens.json`
-  and `ritmofit-ios/RitmoFit/RitmoFit/Core/DesignSystem/RFTokens.swift` — hand-synced from web canon.
-  Nothing fails when they drift from `ritmofit-web/ritmofit_design_system/tokens.json`. (Live symptom:
-  iOS lagged the v4.1 font migration.) **Wanted:** a check that compares the iOS-vendored `tokens.json`
-  against web canon, and the iOS Swift DTOs against `openapi.json`.
-- **iOS Swift models can silently lag additive contract fields** (e.g. `timelineMode`, `clipStartMs`,
-  `beatAnchorMs`). Re-verify the iOS DTO against the current contract before integration work.
+- **Run-payload DTO drift is now gated** (was: "no cross-repo drift check" for the contract). The CI
+  step **"iOS contract parity (run-payload DTO drift)"** (`pnpm --filter @ritmofit/api contract-parity`,
+  `apps/api/scripts/check-contract-parity.ts`) compares the field sets the OpenAPI spec advertises
+  against the fields the vendored `ios-snapshot/Core/Models/RunPayload.swift` DTOs decode. A *new* drift
+  in either direction fails CI; known, accepted additive lag is tracked in the script's allowlist
+  (`apps/api/src/lib/contract-parity.ts` → `CONTRACT_PARITY_ALLOWLIST`). Field-name presence only —
+  type/nullability/enum drift stays the job of the manual `agent-prompts/technical/api-contract-parity.md`
+  pass. **Currently allowlisted (iOS DTO follow-ups owned in `ritmofit-ios`):** `RunClass.timelineMode`;
+  `RunTrack.displayRpm` / `holdCount` (M6/D14, PR #110) / `clipStartMs` / `beatAnchorMs`; `Move.beat` /
+  `Move.bar`.
+- **Still open: no design-token drift check for the iOS-vendored copy.** iOS vendors its own
+  `ritmofit-ios/design-tokens/tokens.json` and `…/Core/DesignSystem/RFTokens.swift`, hand-synced from web
+  canon; nothing fails when they drift from `ritmofit-web/ritmofit_design_system/tokens.json` (live
+  symptom: iOS lagged the v4.1 font migration). The contract-parity gate above doesn't cover tokens
+  because the iOS `tokens.json` isn't vendored into this repo — closing it needs either vendoring it or a
+  cross-repo check.
+- **iOS Swift models can silently lag additive contract fields** — now caught by the gate above for the
+  run-payload surface. Re-verify the iOS DTO against the current contract before integration work; refresh
+  `ios-snapshot/` so the gate compares against current iOS.
 
 ## Parity backlog (current asymmetries — these are the defects to close)
 

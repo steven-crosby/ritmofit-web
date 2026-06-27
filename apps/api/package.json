@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply ritmofit --local",
     "db:seed:local": "wrangler d1 execute ritmofit --local --file=./src/db/seed.sql",
-    "openapi": "tsx scripts/generate-openapi.ts"
+    "openapi": "tsx scripts/generate-openapi.ts",
+    "contract-parity": "tsx scripts/check-contract-parity.ts"
   },
   "dependencies": {
     "@ritmofit/music": "workspace:*",
