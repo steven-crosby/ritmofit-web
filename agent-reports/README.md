@@ -30,7 +30,8 @@ agent-reports/
 ```
 
 - One file per prompt run, under a dated folder. `<prompt-slug>` mirrors the prompt path
-  with `/` replaced by `-` (e.g. `technical/security` → `technical-security.md`).
+  **relative to `agent-prompts/remote-prompts/`** with `/` replaced by `-` (e.g.
+  `technical/security` → `technical-security.md` — no `remote-prompts-` prefix).
 - If the same prompt runs twice in one day, suffix the second `-2`, `-3`, ….
 - The repo is implied by the location, so filenames don't repeat `-web`.
 
@@ -40,13 +41,14 @@ Autonomous passes that produce findings archive a report; interactive live decis
 do not. The authoritative list lives in [`../agent-prompts/README.md`](../agent-prompts/README.md);
 in short:
 
-- **Archive:** `daily/changed-code-sentinel`, `daily/command-brief`,
-  `daily/morning-sweep`, `daily/standup-digest`, every `technical/*` audit,
-  `planning/pr-triage`, `planning/doc-drift`.
-- **No report:** `daily/start-session`, `daily/close-session`,
-  `planning/next-slice-planner`, `planning/roadmap-sync`, `planning/release-readiness`.
+- **Archive:** `remote-prompts/daily/changed-code-sentinel`,
+  `remote-prompts/daily/command-brief`, every `remote-prompts/technical/*` audit,
+  `remote-prompts/planning/pr-triage`, `remote-prompts/planning/doc-drift`.
+- **No report:** `daily/start-session`, `daily/close-session` (interactive, not relocated),
+  `remote-prompts/planning/next-slice-planner`, `remote-prompts/planning/roadmap-sync`,
+  `remote-prompts/planning/release-readiness`.
 
-## Rules (from [`../agent-prompts/00-house-rules.md`](../agent-prompts/00-house-rules.md))
+## Rules (from [`../agent-prompts/remote-prompts/00-house-rules.md`](../agent-prompts/remote-prompts/00-house-rules.md))
 
 - Start from `AGENT_REPORT_TEMPLATE.md`. Fill every required frontmatter field.
 - Run `./agent-reports/validate-agent-report.sh agent-reports/YYYY-MM-DD/<file>.md`. A run

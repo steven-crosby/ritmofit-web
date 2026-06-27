@@ -1,5 +1,11 @@
 # Roadmap sync — weekly ritmofit-web prioritization (read-only)
 
+> **Remote ephemeral sandbox.** You run unattended in an isolated, ephemeral cloud sandbox —
+> not the owner's machine. The repository is a fresh clone and the container is discarded when
+> the session ends; nothing on disk persists, so this prompt's deliverable is the brief you
+> return as your final response. No human is watching in real time — never block on interactive
+> input; surface decisions as written recommendations rather than waiting.
+
 > **READ-ONLY.** Produce a brief. Self-label with agent + date. Reads the vendored
 > `ios-snapshot/` (read-only iOS client source) only to map dependencies.
 

@@ -1,20 +1,28 @@
 # House Rules — unattended background maintenance agents (ritmofit-web)
 
+> **Remote ephemeral sandbox.** Every prompt that inherits these rules runs unattended in an
+> isolated, ephemeral cloud sandbox — not the owner's machine. The repository is a fresh clone
+> and the container is discarded when the session ends, so **nothing survives unless it is
+> committed and pushed**: push any branch and draft PR to the remote, and commit every report
+> into the git-tracked `agent-reports/`. No human is watching in real time — never block on
+> interactive input; decisions that belong to the owner become written recommendations.
+
 Every **PR-producing** prompt in this library inherits these rules, including the
 docs-only drift prompt. Read-only prompts use their own lighter header. All work here
 branches in **ritmofit-web**; the iOS client is only ever read-only context (vendored as a
 snapshot in `ios-snapshot/`, so no sibling iOS checkout is needed).
 
-You are running unattended for at most **45 minutes** while I commute. Spend the final
-5 minutes recording results and cleaning up. Broad investigation is allowed; autonomous
-changes must stay narrow.
+You are running unattended in this sandbox for at most **45 minutes**. Spend the final
+5 minutes recording results and cleaning up — and because the container is discarded at the
+end, push branches and commit reports before you stop, or the work is lost. Broad
+investigation is allowed; autonomous changes must stay narrow.
 
 1. **Read this repo's `AGENTS.md` first** (plus any `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`
    it points to). Those conventions OVERRIDE your instincts and this prompt. On conflict,
    AGENTS.md wins — note it in your output.
-2. Fetch the remote and inspect the current worktree before acting. Never disturb local
-   changes. The normal launch command creates an isolated agent worktree. If it
-   did not, stop when the worktree is dirty rather than moving or stashing user work.
+2. Fetch the remote and inspect the working tree before acting. The sandbox starts from a
+   fresh clone, so there should be no uncommitted user work to disturb; if the tree is
+   unexpectedly dirty, stop and report rather than moving or stashing whatever is there.
 3. **Branch per concern** from the current remote default branch. Never commit to main.
    Never merge, deploy, migrate the remote D1 database, or change secrets.
 4. **One concern = one small DRAFT PR.** Minimal, reviewable diffs. No opportunistic
@@ -33,8 +41,9 @@ changes must stay narrow.
 9. Write a durable agent report from this repo's
    `agent-reports/AGENT_REPORT_TEMPLATE.md` to
    `agent-reports/YYYY-MM-DD/<prompt-slug>.md` (paths are repo-root-relative;
-   `<prompt-slug>` is the prompt path with `/`→`-`, e.g. `technical/security` →
-   `technical-security.md`; suffix `-2`, `-3`, … if the same prompt runs twice in a day).
+   `<prompt-slug>` is the prompt path **relative to `agent-prompts/remote-prompts/`** with
+   `/`→`-`, e.g. `technical/security` → `technical-security.md` — report names do not carry a
+   `remote-prompts-` prefix; suffix `-2`, `-3`, … if the same prompt runs twice in a day).
    Include repo, agent, the inspected default-branch head, commands and results, findings,
    PR links, blockers, and the next recommended action. Run
    `./agent-reports/validate-agent-report.sh agent-reports/YYYY-MM-DD/<file>.md`. A run is
