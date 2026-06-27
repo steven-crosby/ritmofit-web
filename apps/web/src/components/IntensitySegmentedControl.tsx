@@ -33,7 +33,11 @@ export function IntensitySegmentedControl({
         return (
           <label
             key={v}
-            className={`cursor-pointer rounded-pill px-2.5 py-1 font-ui text-xs transition-colors ${
+            // The radio is sr-only, so the label is the only visible chrome — it
+            // must carry the keyboard focus ring itself, or focus is invisible
+            // (design system: "visible cyan focus ring at all times"). `has-[:focus-visible]`
+            // lifts the contained radio's focus onto the label.
+            className={`cursor-pointer rounded-pill px-2.5 py-1 font-ui text-xs transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-interactive ${
               selected
                 ? 'rf-btn-primary font-semibold text-text-on-accent'
                 : 'text-text-secondary hover:text-text-primary'
