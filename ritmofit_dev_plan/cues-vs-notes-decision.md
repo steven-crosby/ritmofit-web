@@ -99,6 +99,6 @@ is already in the run-payload and in `ClassTrack`.
 
 - A track with notes shows them subtly in Live without disturbing the focal cue
   flow; reduced-motion and screen-reader announcement of the focal cue unchanged.
-- Notes visible on the owner's class summary; not leaked on a foreign class.
+- Notes are **not** rendered on the (foreign-only) `ClassSummaryView` — no leak on a foreign class; the owner reads/edits notes only in the builder track-settings panel.
 - Existing gates stay green: `pnpm -r typecheck`, `pnpm test`, web build, OpenAPI
   drift (should be a no-op — no contract change), `pnpm audit:ci`.

@@ -24,14 +24,15 @@ numbers, icons, position, and weight**; color makes it feel confident on top of 
 colorblindness, low light, sweat, and glances. (Red/green avoidance is a personality guideline;
 redundant encoding is the durable rule.)
 
-## 4. One interactive language, one identity, one drop
+## 4. One identity, one interactive language, one drop
 
 Three reserved channels, never swapped:
 
 - **Cyan** = "you can act on this." The _only_ interactive color — controls, links, focus, info.
 - **Copper** = identity. Brand, primary actions, warmth.
-- **Plasma** (hot magenta) = peak energy. Used ~1% of the time, for All-Out and the Live sprint only.
-  It is affect, never a control and never meaning-bearing on its own.
+- **Plasma** (hot magenta) = peak energy. Used ~1% of the time — All-Out glow, the Live sprint/drop, the
+  Zone 4 ribbon kiss, and peak-derived marketing/share artwork. It is affect, never a control and never
+  meaning-bearing on its own.
 
 Keeping these separate is what lets the interface stay quiet while still feeling distinctly RitmoFit and
 still landing a punch when the class peaks.

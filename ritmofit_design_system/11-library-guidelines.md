@@ -1,4 +1,4 @@
-# 11 - Library Guidelines
+# 11 — Library Guidelines
 
 The Library is the bridge between saved music and authored classes. It should feel as immediate as
 creating a playlist from a music library, but the destination is a movement score rather than a

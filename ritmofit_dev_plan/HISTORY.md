@@ -72,14 +72,14 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 > `/api/v1/health` → `200`, unauthenticated `/api/v1/classes` + `/explore` + `/teams` → `401`, all six
 > security headers present, served asset `index-yWIThSNv.js` matches the local build, current
 > `ChoreographyEditor-DfSufLw2.js` chunk serves as `text/javascript` (not the HTML fallback). Prior
-> Worker `2d9e0830-9662-49ef-9c8e-0c45a946f16b` (session 2026-06-27, M7 #120 batch) is the rollback
+> Worker `2d9e0830-9662-49ef-9c8e-0c45a946f16b` (session 2026-06-27, D15 #120 batch) is the rollback
 > anchor. Open audit follow-ups (not deployed-blocking): CSP-blocked inline script (likely a Cloudflare
 > zone setting) and the ms-duration manual-add field; see `web-launch-readiness.md`.
 >
 > **Session 2026-06-27 deployed (Worker `2d9e0830-9662-49ef-9c8e-0c45a946f16b`).**
 > Shipped a five-PR batch (all squash-merged to `main`, each rebased onto the advancing tip and
 > CI-green before merge), no migration (remote D1 already at head — "No migrations to apply"):
-> **#120** (`129b7ae`) — **M7 / D15** public marketing landing page (`MarketingPage`: glass nav,
+> **#120** (`129b7ae`) — **D15** public marketing landing page (`MarketingPage`: glass nav,
 > heat-bloom hero with energy-arc SVG, feature cards, CTA strip; signed-out `/` renders it, CTAs flip
 > to Login via state with a `← Back to home` link; documented web-leaning exception, no API/parity
 > impact). **#117** (`c8fe89a`) — **api**: CI gate for web↔iOS run-payload DTO contract drift
@@ -93,10 +93,10 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 > Post-deploy smoke (live): SPA `/` → `200`, `/api/v1/health` → `200`, unauthenticated
 > `/api/v1/classes` → `401`, all six security headers present, served asset `index-yOu-ndqj.js`
 > matches the local build. Prior Worker `23b27a25-00d1-4cc3-89c9-7e300a72f4a8` (session 2026-06-26,
-> M6 #110) is the rollback anchor.
+> D14 #110) is the rollback anchor.
 >
 > **Session 2026-06-26 deployed (Worker `23b27a25-00d1-4cc3-89c9-7e300a72f4a8`).**
-> Shipped **#110** (`a12cc55`, squash) — **M6 / decision D14**: per-track **RPM (cadence)** and
+> Shipped **#110** (`a12cc55`, squash) — **decision D14**: per-track **RPM (cadence)** and
 > **hold count**, authored independently of music tempo (RPM is *not* derived from BPM; a hold count of
 > `0` is meaningful and distinct from unset/`null`). `displayRpm`/`holdCount` (nullable; `rpm > 0`,
 > `holds >= 0`) added to the shared `classTrackSchema`, the class-track input contract, and the

@@ -52,8 +52,8 @@ API so a class built on web opens on iOS unchanged.
 
 ```
 ritmofit/
-├─ DEVELOPMENT_PLAN.md          # entry point / map (this plan)
 ├─ ritmofit_dev_plan/           # this folder — durable context for AI + humans
+│  └─ DEVELOPMENT_PLAN.md       # entry point / map (this plan)
 ├─ ritmofit_design_system/      # the design system (tokens, principles, components)
 ├─ packages/
 │  └─ shared/                   # the contract: Zod schemas + inferred TS types

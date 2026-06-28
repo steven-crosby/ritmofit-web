@@ -94,7 +94,7 @@ WITH access_candidates(class_id, access_rank) AS (
   UNION ALL
   SELECT s.resource_id, CASE s.permission WHEN 'edit' THEN 2 ELSE 1 END
     FROM team_memberships tm
-    CROSS JOIN shares s ON s.target_team_id = tm.team_id
+    JOIN shares s ON s.target_team_id = tm.team_id
     WHERE tm.user_id = :me AND s.resource_type = 'class'
 ),
 visible AS (
