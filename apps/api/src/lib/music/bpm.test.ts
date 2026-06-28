@@ -115,9 +115,13 @@ describe('resolveBpm', () => {
     expect(bpm).toBe(mockBpm({ title: 'A', artist: 'B' }));
   });
 
-  it('503s when no provider is configured', async () => {
-    await expect(resolveBpm(env({}), { title: 'A', artist: 'B' })).rejects.toBeInstanceOf(
-      HttpError,
-    );
+  it('503s with user-facing copy (no internal "not configured" leak) when no provider is configured', async () => {
+    const err = await resolveBpm(env({}), { title: 'A', artist: 'B' }).catch((e) => e);
+    expect(err).toBeInstanceOf(HttpError);
+    expect((err as HttpError).status).toBe(503);
+    expect((err as HttpError).code).toBe('PROVIDER_UNAVAILABLE');
+    // Instructor-facing: points at the manual fallback, doesn't leak config detail.
+    expect((err as HttpError).message).toContain('set the BPM manually');
+    expect((err as HttpError).message).not.toContain('not configured');
   });
 });
