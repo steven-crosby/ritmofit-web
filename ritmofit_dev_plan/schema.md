@@ -233,6 +233,13 @@ the seed is idempotent:
 | Recovery | cycle | Active rest / cool-down |
 | Jumps | cycle | In/out of saddle on count |
 | Sprint Hold | cycle | Sustained sprint effort |
+| Running | cycle | Standing run, out of saddle |
+| Hovers | cycle | Held hover over the saddle |
+| Press-Ups | cycle | Push-ups on the bars to the beat |
+| Crunches | cycle | Standing core crunch on the beat |
+| Oblique Twists | cycle | Side-core twist on the bike |
+| Pyramid | cycle | Progressive resistance build |
+| Sprint on a Hill | cycle | Sprint under heavy resistance |
 | Burpee | hiit | Full-body floor move |
 | Mountain Climber | hiit | Core/cardio |
 | Squat | sculpt | Lower-body strength |
