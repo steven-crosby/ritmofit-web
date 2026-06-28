@@ -14,16 +14,24 @@ import { listMoves, listUserMoves, songsByMove } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
 import { formatDuration } from '../lib/class-summary.js';
 import { parseMovePick } from '../lib/move-pick.js';
+import { useAsyncAction } from '../lib/use-async-action.js';
 import { INTENSITY_LABEL } from './IntensityReadout.js';
 import { Dialog } from './Dialog.js';
 
 export function SongsByMoveDialog({
   onClose,
   onOpenClass,
+  onStartClass,
 }: {
   onClose: () => void;
   /** Open a class by id in the Dashboard workspace (the dialog closes after). */
   onOpenClass: (classId: string) => void | Promise<void>;
+  /**
+   * Start a new class seeded from a choreographed song: copies that class_track
+   * (with its cues + placed moves) into a fresh class and opens it. The dialog
+   * closes after. `title` seeds the new class name.
+   */
+  onStartClass: (sourceClassTrackId: string, title: string) => Promise<void>;
 }) {
   const [library, setLibrary] = useState<Move[]>([]);
   const [userMoves, setUserMoves] = useState<UserMove[]>([]);
@@ -144,7 +152,14 @@ export function SongsByMoveDialog({
       ) : songs && songs.length > 0 ? (
         <ul className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto">
           {songs.map((s) => (
-            <SongRow key={s.track.id} song={s} onOpenClass={onOpenClass} onClose={onClose} />
+            <SongRow
+              key={s.track.id}
+              song={s}
+              onOpenClass={onOpenClass}
+              onStartClass={onStartClass}
+              onClose={onClose}
+              onError={setError}
+            />
           ))}
         </ul>
       ) : null}
@@ -155,15 +170,28 @@ export function SongsByMoveDialog({
 function SongRow({
   song,
   onOpenClass,
+  onStartClass,
   onClose,
+  onError,
 }: {
   song: SongByMove;
   onOpenClass: (classId: string) => void | Promise<void>;
+  onStartClass: (sourceClassTrackId: string, title: string) => Promise<void>;
   onClose: () => void;
+  onError: (msg: string | null) => void;
 }) {
   const { track, placements } = song;
+  const { busy: starting, run: runStart } = useAsyncAction(onError);
   const open = (classId: string) => {
     void Promise.resolve(onOpenClass(classId)).then(onClose);
+  };
+  // Seed a new class from this choreographed placement, then close the dialog
+  // (Dashboard opens the new class). One in-flight start per song row.
+  const start = (classTrackId: string) => {
+    void runStart(async () => {
+      await onStartClass(classTrackId, track.title);
+      onClose();
+    });
   };
   return (
     <li className="flex flex-col gap-2 rounded-card bg-bg-base p-3">
@@ -212,6 +240,15 @@ function SongRow({
                 <span>{INTENSITY_LABEL[p.intensity]}</span>
               </>
             )}
+            <button
+              type="button"
+              className="rounded-pill border border-interactive/40 px-2 py-0.5 text-interactive hover:bg-interactive/10 disabled:opacity-40"
+              onClick={() => start(p.classTrackId)}
+              disabled={starting}
+              aria-label={`Start a new class from ${track.title} in ${p.classTitle}`}
+            >
+              {starting ? 'Starting…' : 'Start a class'}
+            </button>
           </li>
         ))}
       </ul>

@@ -54,6 +54,7 @@ function renderRail(
     activeTag?: string | null;
     onSelectTag?: (tag: string | null) => void;
     onDuplicate?: (cls: ClassListItem) => Promise<void>;
+    onPreview?: (cls: ClassListItem) => void;
     onOpen?: (cls: ClassListItem) => void;
   } = {},
 ) {
@@ -71,6 +72,7 @@ function renderRail(
       onError={() => {}}
       onCreate={() => {}}
       onDuplicate={options.onDuplicate ?? (() => Promise.resolve())}
+      onPreview={options.onPreview ?? (() => {})}
       onOpen={options.onOpen ?? (() => {})}
       onLoadMore={onLoadMore}
     />,
@@ -191,6 +193,21 @@ describe('LibraryRail card summary', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Duplicate Copy me' }));
     await waitFor(() => expect(onDuplicate).toHaveBeenCalledTimes(1));
     expect(onDuplicate.mock.calls[0]?.[0]?.id).toBe('00000000-0000-4000-8000-0000000000a4');
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it('previews a class via its own labeled control without opening the builder', () => {
+    const onOpen = vi.fn();
+    const onPreview = vi.fn();
+    renderRail({
+      items: [makeItem({ id: '00000000-0000-4000-8000-0000000000a5', title: 'Peek me' })],
+      onOpen,
+      onPreview,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preview Peek me' }));
+    expect(onPreview).toHaveBeenCalledTimes(1);
+    expect(onPreview.mock.calls[0]?.[0]?.id).toBe('00000000-0000-4000-8000-0000000000a5');
     expect(onOpen).not.toHaveBeenCalled();
   });
 });

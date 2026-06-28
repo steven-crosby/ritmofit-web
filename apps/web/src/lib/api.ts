@@ -146,6 +146,12 @@ export const updateClassTrack = (classTrackId: string, body: UpdateClassTrack) =
   api<ClassTrack>(`/class-tracks/${classTrackId}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const deleteClassTrack = (classTrackId: string) =>
   api<void>(`/class-tracks/${classTrackId}`, { method: 'DELETE' });
+/** Copy a class_track — with its cues and placed moves — into another class (edit on both). */
+export const copyClassTrack = (classTrackId: string, targetClassId: string) =>
+  api<ClassTrack>(`/class-tracks/${classTrackId}/copy`, {
+    method: 'POST',
+    body: JSON.stringify({ targetClassId }),
+  });
 /** Set the complete new ordering of a class's class_tracks (a full permutation). */
 export const reorderTracks = (classId: string, classTrackIds: string[]) =>
   api<ClassTrack[]>(`/classes/${classId}/tracks/reorder`, {
