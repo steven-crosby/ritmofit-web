@@ -102,3 +102,51 @@ describe('SegmentBand drag-resize handles', () => {
     );
   });
 });
+
+describe('SegmentBand track-range snapping', () => {
+  // Track 2 starts at 90000 → snap targets are [0, 90000, 240000].
+  async function renderWithTracks() {
+    vi.mocked(api.listSections).mockResolvedValue(twoSections());
+    vi.mocked(api.updateSection).mockResolvedValue(section(SPRINT_ID, 'sprint', 90000));
+    render(
+      <SegmentBand classId={CLASS_ID} totalDurationMs={TOTAL} canEdit trackStartsMs={[0, 90000]} />,
+    );
+    await screen.findByRole('slider', { name: 'Sprint start' });
+  }
+
+  it('offers a "Snap to tracks" toggle when interior track starts exist', async () => {
+    await renderWithTracks();
+    const toggle = screen.getByRole('checkbox', { name: 'Snap to tracks' }) as HTMLInputElement;
+    expect(toggle.checked).toBe(true); // default on
+  });
+
+  it('hides the toggle when there are no interior track starts', async () => {
+    vi.mocked(api.listSections).mockResolvedValue(twoSections());
+    render(<SegmentBand classId={CLASS_ID} totalDurationMs={TOTAL} canEdit trackStartsMs={[0]} />);
+    await screen.findByRole('slider', { name: 'Sprint start' });
+    expect(screen.queryByRole('checkbox', { name: 'Snap to tracks' })).toBeNull();
+  });
+
+  it('snaps a dragged boundary to the nearest track start', async () => {
+    stubRect();
+    await renderWithTracks();
+    const sprint = screen.getByRole('slider', { name: 'Sprint start' });
+    // Drag to x=83/200 → ~99600ms raw; nearest track edge is 90000.
+    fireEvent.pointerDown(sprint, { clientX: 120, pointerId: 1 });
+    fireEvent.pointerUp(sprint, { clientX: 83, pointerId: 1 });
+    await waitFor(() =>
+      expect(api.updateSection).toHaveBeenCalledWith(SPRINT_ID, { startOffsetMs: 90000 }),
+    );
+  });
+
+  it('arrow keys jump to the adjacent track boundary under snap', async () => {
+    await renderWithTracks();
+    const sprint = screen.getByRole('slider', { name: 'Sprint start' });
+    fireEvent.keyDown(sprint, { key: 'ArrowLeft' }); // 120000 → previous edge 90000
+    expect(sprint.getAttribute('aria-valuenow')).toBe('90000');
+    fireEvent.blur(sprint);
+    await waitFor(() =>
+      expect(api.updateSection).toHaveBeenCalledWith(SPRINT_ID, { startOffsetMs: 90000 }),
+    );
+  });
+});
