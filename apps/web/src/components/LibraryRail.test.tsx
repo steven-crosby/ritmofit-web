@@ -1,34 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import type { ClassWithAccess } from '@ritmofit/shared';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ClassListItem } from '@ritmofit/shared';
 import { LibraryRail } from './Dashboard.js';
 
 afterEach(cleanup);
 
-const classes = [
-  {
-    id: '00000000-0000-4000-8000-000000000001',
+function makeItem(over: Partial<ClassListItem> & { id: string; title: string }): ClassListItem {
+  return {
     ownerUserId: 'owner',
-    title: 'First ride',
-    description: null,
-    template: 'cycle',
-    status: 'draft',
-    visibility: 'private',
-    timelineMode: 'sequential',
-    targetDurationMs: null,
-    createdAt: 2,
-    updatedAt: 2,
-    lastOpenedAt: null,
-    accessLevel: 'owner',
-    featuredCategory: null,
-    coverImageUrl: null,
-    tags: [],
-  },
-  {
-    id: '00000000-0000-4000-8000-000000000002',
-    ownerUserId: 'other',
-    title: 'Shared ride',
     description: null,
     template: 'cycle',
     status: 'draft',
@@ -38,22 +18,43 @@ const classes = [
     createdAt: 1,
     updatedAt: 1,
     lastOpenedAt: null,
-    accessLevel: 'view',
+    accessLevel: 'owner',
     featuredCategory: null,
     coverImageUrl: null,
     tags: [],
-  },
-] satisfies ClassWithAccess[];
+    trackCount: 0,
+    totalDurationMs: 0,
+    albumArtUrls: [],
+    ...over,
+  };
+}
+
+const classes: ClassListItem[] = [
+  makeItem({
+    id: '00000000-0000-4000-8000-000000000001',
+    title: 'First ride',
+    createdAt: 2,
+    updatedAt: 2,
+  }),
+  makeItem({
+    id: '00000000-0000-4000-8000-000000000002',
+    title: 'Shared ride',
+    ownerUserId: 'other',
+    accessLevel: 'view',
+  }),
+];
 
 function renderRail(
   options: {
     hasMore?: boolean;
     loadingMore?: boolean;
     status?: 'loading' | 'error' | 'ready';
-    items?: ClassWithAccess[];
+    items?: ClassListItem[];
     knownTags?: string[];
     activeTag?: string | null;
     onSelectTag?: (tag: string | null) => void;
+    onDuplicate?: (cls: ClassListItem) => Promise<void>;
+    onOpen?: (cls: ClassListItem) => void;
   } = {},
 ) {
   const onLoadMore = vi.fn();
@@ -69,7 +70,8 @@ function renderRail(
       onSelectTag={options.onSelectTag ?? (() => {})}
       onError={() => {}}
       onCreate={() => {}}
-      onOpen={() => {}}
+      onDuplicate={options.onDuplicate ?? (() => Promise.resolve())}
+      onOpen={options.onOpen ?? (() => {})}
       onLoadMore={onLoadMore}
     />,
   );
@@ -124,5 +126,86 @@ describe('LibraryRail tag search', () => {
     renderRail({ items: [], activeTag: 'hiit', knownTags: ['hiit'] });
     expect(screen.getByText(/No classes tagged/i)).toBeTruthy();
     expect(screen.queryByText(/create your first/i)).toBeNull();
+  });
+});
+
+describe('LibraryRail card summary', () => {
+  it('shows the track count and total runtime on the card', () => {
+    renderRail({
+      items: [
+        makeItem({
+          id: '00000000-0000-4000-8000-0000000000a1',
+          title: 'Summit',
+          trackCount: 3,
+          totalDurationMs: 1_800_000, // 30:00
+        }),
+      ],
+    });
+    expect(screen.getByText('3 tracks')).toBeTruthy();
+    expect(screen.getByText('30:00')).toBeTruthy();
+  });
+
+  it('singularizes a one-track class and omits a zero duration', () => {
+    renderRail({
+      items: [
+        makeItem({
+          id: '00000000-0000-4000-8000-0000000000a2',
+          title: 'Single',
+          trackCount: 1,
+          totalDurationMs: 0,
+        }),
+      ],
+    });
+    expect(screen.getByText('1 track')).toBeTruthy();
+    expect(screen.queryByText('0:00')).toBeNull();
+  });
+
+  it('renders a track-art collage from the album-art URLs', () => {
+    renderRail({
+      items: [
+        makeItem({
+          id: '00000000-0000-4000-8000-0000000000a3',
+          title: 'Arty',
+          albumArtUrls: ['https://art/a.jpg', 'https://art/b.jpg'],
+        }),
+      ],
+    });
+    // The multi-art collage is decorative (aria-hidden), so query the DOM directly.
+    const imgs = Array.from(document.querySelectorAll('img')) as HTMLImageElement[];
+    expect(imgs.map((i) => i.getAttribute('src'))).toEqual([
+      'https://art/a.jpg',
+      'https://art/b.jpg',
+    ]);
+    expect(imgs.every((i) => i.getAttribute('loading') === 'lazy')).toBe(true);
+  });
+
+  it('duplicates a class via its own labeled control without opening it', async () => {
+    const onOpen = vi.fn();
+    const onDuplicate = vi.fn(() => Promise.resolve());
+    renderRail({
+      items: [makeItem({ id: '00000000-0000-4000-8000-0000000000a4', title: 'Copy me' })],
+      onOpen,
+      onDuplicate,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Duplicate Copy me' }));
+    await waitFor(() => expect(onDuplicate).toHaveBeenCalledTimes(1));
+    expect(onDuplicate.mock.calls[0]?.[0]?.id).toBe('00000000-0000-4000-8000-0000000000a4');
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+});
+
+describe('LibraryRail create-class chooser', () => {
+  it('offers template options, defaults to Blank, and toggles the selection', () => {
+    renderRail();
+    const blank = screen.getByRole('button', { name: 'Blank' });
+    const hiit = screen.getByRole('button', { name: 'HIIT' });
+    // Blank (no discipline) is the default selection.
+    expect(blank.getAttribute('aria-pressed')).toBe('true');
+    expect(hiit.getAttribute('aria-pressed')).toBe('false');
+
+    fireEvent.click(hiit);
+    expect(hiit.getAttribute('aria-pressed')).toBe('true');
+    expect(blank.getAttribute('aria-pressed')).toBe('false');
   });
 });

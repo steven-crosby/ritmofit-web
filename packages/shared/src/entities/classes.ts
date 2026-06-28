@@ -108,9 +108,30 @@ export type CreateClass = z.infer<typeof createClassSchema>;
 export const updateClassSchema = createClassSchema.partial();
 export type UpdateClass = z.infer<typeof updateClassSchema>;
 
-/** A class plus the caller's effective access level — the shape of list / get responses. */
+/** A class plus the caller's effective access level — the shape of the single-class GET. */
 export const classWithAccessSchema = classSchema.extend({ accessLevel: accessLevelSchema });
 export type ClassWithAccess = z.infer<typeof classWithAccessSchema>;
+
+/** Max album-art thumbnails a Library card carries for its track-art collage. */
+export const CLASS_LIST_ITEM_ART_LIMIT = 4;
+
+/**
+ * A class as it appears in the Library list — a `ClassWithAccess` plus the lightweight
+ * card summary the rail renders without opening the class:
+ * - `trackCount`: how many tracks the class holds.
+ * - `totalDurationMs`: assembled total runtime, resolved the **same way** as the
+ *   run-payload (clip windows + timeline mode), so the card matches the opened header.
+ * - `albumArtUrls`: up to `CLASS_LIST_ITEM_ART_LIMIT` distinct album-art URLs in track
+ *   order, for the track-art collage.
+ *
+ * These are list-only aggregates, so they live on this shape rather than the base class.
+ */
+export const classListItemSchema = classWithAccessSchema.extend({
+  trackCount: z.int().nonnegative(),
+  totalDurationMs: z.int().nonnegative(),
+  albumArtUrls: z.array(z.url()).max(CLASS_LIST_ITEM_ART_LIMIT),
+});
+export type ClassListItem = z.infer<typeof classListItemSchema>;
 
 /** Bounded keyset pagination for the private class library. */
 export const CLASS_LIST_DEFAULT_LIMIT = 30;

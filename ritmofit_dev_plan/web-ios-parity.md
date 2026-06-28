@@ -72,6 +72,12 @@ list; after the launch gate is green, it becomes the next implementation queue. 
 - Full **class builder / choreography** (timeline, cues, moves, intensity, sections, trim/beat-snap)
 - **Multi-provider track search** (SoundCloud / Spotify / Apple Music) + provider connect
 - **Library** of saved/liked tracks
+  - Library-card summary (web Session 3): `GET /classes` now returns additive per-class card
+    aggregates (`trackCount`, `totalDurationMs`, `albumArtUrls`) via the new `ClassListItem` shape, and
+    the web rail renders a track-art collage, track count, total runtime, last-opened date, a duplicate
+    ("save a copy") action, and a create-class template chooser. iOS should surface the same card
+    summary + duplicate/create affordances when its Library lands. Contract change is additive (existing
+    iOS decoding is unaffected).
 - **Explore** feed
 - **Sharing / teams** UI
 - Run-payload DTO catch-up for currently allowlisted additive fields: `RunClass.timelineMode`;
