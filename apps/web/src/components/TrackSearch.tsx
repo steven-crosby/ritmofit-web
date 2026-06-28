@@ -38,12 +38,16 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
   // "My likes" reads the caller's connected account; only providers with a
   // per-user integration support it. Catalog search stays available for all.
   const canUseLikes = providerCapabilities[provider].userLikes;
+  // Playlist import is Spotify-only today (SoundCloud 501s, Apple Music has no
+  // path); gate the mode so the UI never offers an import that always fails.
+  const canImportPlaylist = providerCapabilities[provider].playlistImport;
 
-  // If the selected provider can't serve likes, fall back to catalog search so we
-  // never fire a request that would 501.
+  // If the selected provider can't serve the current mode, fall back to catalog
+  // search so we never fire a request that would 501.
   useEffect(() => {
     if (mode === 'likes' && !canUseLikes) setMode('search');
-  }, [mode, canUseLikes]);
+    if (mode === 'playlist' && !canImportPlaylist) setMode('search');
+  }, [mode, canUseLikes, canImportPlaylist]);
 
   // Fetch results on (mode, provider, query). Search debounces and clears on an
   // empty query; "My likes" fetches the caller's liked tracks (spends their token).
@@ -157,7 +161,7 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
           "My likes" only appears for providers with a per-user integration. */}
       <div role="group" aria-label="Source" className="flex gap-1.5">
         {(['search', 'likes', 'playlist'] as Mode[])
-          .filter((m) => m !== 'likes' || canUseLikes)
+          .filter((m) => (m !== 'likes' || canUseLikes) && (m !== 'playlist' || canImportPlaylist))
           .map((m) => {
             const selected = m === mode;
             return (

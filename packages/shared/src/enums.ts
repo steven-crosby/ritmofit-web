@@ -26,22 +26,31 @@ export type Provider = z.infer<typeof providerSchema>;
  * - `catalogSearch`: public catalog search + import via the app-level token.
  * - `userConnect`: per-user OAuth account link (`POST /providers/:provider/connect`).
  * - `userLikes`: read the connected user's likes (spends their token).
+ * - `playlistImport`: import a public playlist URL (`POST /classes/:id/import-playlist`).
  *
  * Only SoundCloud has the per-user OAuth + likes path wired today; Spotify and
- * Apple Music are catalog-only until their account integrations land. The
- * `MOCK_PROVIDERS` dev seam fakes tokens but does not change real integration, so
- * this matrix stays static and provider-honest.
+ * Apple Music are catalog-only until their account integrations land. Playlist
+ * import is Spotify-only — SoundCloud needs permalink `/resolve` (returns 501) and
+ * Apple Music has no playlist-import path. The `MOCK_PROVIDERS` dev seam fakes
+ * tokens but does not change real integration, so this matrix stays static and
+ * provider-honest.
  */
 export interface ProviderCapabilities {
   catalogSearch: boolean;
   userConnect: boolean;
   userLikes: boolean;
+  playlistImport: boolean;
 }
 
 export const providerCapabilities: Record<Provider, ProviderCapabilities> = {
-  soundcloud: { catalogSearch: true, userConnect: true, userLikes: true },
-  spotify: { catalogSearch: true, userConnect: false, userLikes: false },
-  apple_music: { catalogSearch: true, userConnect: false, userLikes: false },
+  soundcloud: { catalogSearch: true, userConnect: true, userLikes: true, playlistImport: false },
+  spotify: { catalogSearch: true, userConnect: false, userLikes: false, playlistImport: true },
+  apple_music: {
+    catalogSearch: true,
+    userConnect: false,
+    userLikes: false,
+    playlistImport: false,
+  },
 };
 
 /** Does this provider support linking a per-user account (OAuth connect)? */

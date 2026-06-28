@@ -1,6 +1,10 @@
 import { env } from 'cloudflare:test';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CLASS_LIST_NEXT_CURSOR_HEADER, type ClassWithAccess } from '@ritmofit/shared';
+import {
+  CLASS_LIST_NEXT_CURSOR_HEADER,
+  type ClassWithAccess,
+  type ClassListItem,
+} from '@ritmofit/shared';
 import { authed, call, signUpUser, type TestUser } from './helpers.js';
 
 const ids = {
@@ -109,6 +113,58 @@ describe('class library pagination (integration)', () => {
     const res = await authed(viewer.cookie)('/api/v1/classes?cursor=not-a-cursor');
     expect(res.status).toBe(422);
     expect((await res.json()).error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('returns Library-card aggregates (track count, total runtime, art collage)', async () => {
+    const user = await signUpUser();
+    const api = authed(user.cookie);
+
+    const classRes = await api('/api/v1/classes', {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Card summary' }),
+    });
+    const classId = ((await classRes.json()) as { id: string }).id;
+
+    // Two tracks: one with art (180s), one without (120s) → total 300s, count 2,
+    // one collage URL.
+    await api(`/api/v1/classes/${classId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        track: {
+          title: 'With art',
+          artist: 'A',
+          durationMs: 180_000,
+          albumArtUrl: 'https://art.example/cover.jpg',
+        },
+      }),
+    });
+    await api(`/api/v1/classes/${classId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({ track: { title: 'No art', artist: 'B', durationMs: 120_000 } }),
+    });
+
+    const res = await api('/api/v1/classes');
+    expect(res.status).toBe(200);
+    const rows = (await res.json()) as ClassListItem[];
+    const card = rows.find((r) => r.id === classId);
+    expect(card).toBeDefined();
+    expect(card!.trackCount).toBe(2);
+    expect(card!.totalDurationMs).toBe(300_000);
+    expect(card!.albumArtUrls).toEqual(['https://art.example/cover.jpg']);
+  });
+
+  it('returns zeroed aggregates for a class with no tracks', async () => {
+    const user = await signUpUser();
+    const api = authed(user.cookie);
+    const classRes = await api('/api/v1/classes', {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Empty draft' }),
+    });
+    const classId = ((await classRes.json()) as { id: string }).id;
+
+    const res = await api('/api/v1/classes');
+    const card = ((await res.json()) as ClassListItem[]).find((r) => r.id === classId);
+    expect(card).toMatchObject({ trackCount: 0, totalDurationMs: 0, albumArtUrls: [] });
   });
 
   it('rejects an oversized page and exposes the cursor header to local web CORS', async () => {

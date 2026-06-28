@@ -16,18 +16,21 @@
  * `user_moves`) get their own small ownership checks in their routes — keeping
  * this helper's contract narrow and unambiguous (`authorization.md` §Non-class).
  */
-import { and, eq, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import {
   accessLevelValues,
+  CLASS_LIST_ITEM_ART_LIMIT,
   type AccessLevel,
   type ClassListCursor,
-  type ClassWithAccess,
+  type ClassListItem,
   type SharePermission,
   type ClassVisibility,
+  type TimelineMode,
 } from '@ritmofit/shared';
 import {
   classes,
   classTracks,
+  tracks,
   cues,
   classTrackMoves,
   classSections,
@@ -37,6 +40,7 @@ import {
 import { HttpError } from './errors.js';
 import type { Db } from './db.js';
 import { serializeClass } from './serialize.js';
+import { aggregateClassCards, emptyClassCardSummary } from './class-list-summary.js';
 
 /** Minimum access an operation needs; `'none'` is never a valid requirement. */
 export type MinAccessLevel = Exclude<AccessLevel, 'none'>;
@@ -173,7 +177,7 @@ interface VisibleClassRow {
 }
 
 export interface VisibleClassPage {
-  items: ClassWithAccess[];
+  items: ClassListItem[];
   nextCursor: ClassListCursor | null;
 }
 
@@ -258,10 +262,45 @@ export async function listVisibleClasses(
 
   const hasMore = options.limit != null && rows.length > options.limit;
   const pageRows = hasMore ? rows.slice(0, options.limit) : rows;
-  const items = pageRows.map((row) => ({
-    ...serializeClass({ ...row, tags: row.tagsJson ? (JSON.parse(row.tagsJson) as string[]) : [] }),
-    accessLevel: row.accessLevel,
-  }));
+
+  // Card aggregates (track count, total runtime, art collage) for just this page's
+  // classes — one bounded query (≤ page size classes), no per-class round-trip. Empty
+  // when the page has no classes so we never issue an `IN ()`.
+  const classIds = pageRows.map((r) => r.id);
+  const summaryRows = classIds.length
+    ? await db
+        .select({
+          classId: classTracks.classId,
+          position: classTracks.position,
+          startOffsetMs: classTracks.startOffsetMs,
+          durationMsOverride: classTracks.durationMsOverride,
+          clipStartMs: classTracks.clipStartMs,
+          clipEndMs: classTracks.clipEndMs,
+          trackDurationMs: tracks.durationMs,
+          albumArtUrl: tracks.albumArtUrl,
+        })
+        .from(classTracks)
+        .innerJoin(tracks, eq(tracks.id, classTracks.trackId))
+        .where(inArray(classTracks.classId, classIds))
+        .orderBy(classTracks.classId, classTracks.position)
+        .all()
+    : [];
+  const modeByClass = new Map<string, TimelineMode>(pageRows.map((r) => [r.id, r.timelineMode]));
+  const summaries = aggregateClassCards(summaryRows, modeByClass, CLASS_LIST_ITEM_ART_LIMIT);
+
+  const items: ClassListItem[] = pageRows.map((row) => {
+    const summary = summaries.get(row.id) ?? emptyClassCardSummary();
+    return {
+      ...serializeClass({
+        ...row,
+        tags: row.tagsJson ? (JSON.parse(row.tagsJson) as string[]) : [],
+      }),
+      accessLevel: row.accessLevel,
+      trackCount: summary.trackCount,
+      totalDurationMs: summary.totalDurationMs,
+      albumArtUrls: summary.albumArtUrls,
+    };
+  });
   const last = hasMore ? items.at(-1) : undefined;
   return {
     items,

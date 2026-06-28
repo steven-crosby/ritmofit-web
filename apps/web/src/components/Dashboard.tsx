@@ -11,6 +11,8 @@ import {
 import {
   type Class,
   type ClassWithAccess,
+  type ClassListItem,
+  type ClassTemplate,
   type ClassTrack,
   type Intensity,
   type RunPayload,
@@ -20,6 +22,7 @@ import { authClient } from '../lib/auth-client.js';
 import {
   listClasses,
   createClass,
+  copyClass,
   updateClass,
   deleteClass,
   listClassTracks,
@@ -37,7 +40,8 @@ import {
   getClass,
 } from '../lib/api.js';
 import { moveItem } from '../lib/reorder.js';
-import { avgBpm, formatDuration } from '../lib/class-summary.js';
+import { avgBpm, formatDuration, cardSummaryFromPayload } from '../lib/class-summary.js';
+import { formatLastOpened } from '../lib/relative-time.js';
 import {
   canRunPayload,
   formatDurationInput,
@@ -98,7 +102,7 @@ function LoadingScreen() {
 }
 
 export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
-  const [classes, setClasses] = useState<ClassWithAccess[]>([]);
+  const [classes, setClasses] = useState<ClassListItem[]>([]);
   const [listStatus, setListStatus] = useState<ListStatus>('loading');
   const [nextClassCursor, setNextClassCursor] = useState<string | null>(null);
   const [loadingMoreClasses, setLoadingMoreClasses] = useState(false);
@@ -125,7 +129,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 
   // Merge a page's tags into the known-tags set (only an unfiltered page widens
   // it; a filtered page only re-adds the active tag, which is harmless).
-  const mergeKnownTags = useCallback((items: ClassWithAccess[]) => {
+  const mergeKnownTags = useCallback((items: ClassListItem[]) => {
     setKnownTags((prev) => {
       const set = new Set(prev);
       for (const cls of items) for (const t of cls.tags) set.add(t);
@@ -225,13 +229,24 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       return;
     }
 
+    const payload = payloadResult.status === 'fulfilled' ? payloadResult.value : null;
     dispatchDetail({
       type: 'success',
       classId,
       requestId,
       tracks: tracksResult.value,
-      payload: payloadResult.status === 'fulfilled' ? payloadResult.value : null,
+      payload,
     });
+
+    // Keep this class's Library card in sync with its freshly loaded detail, so a
+    // track add/remove/edit updates the rail's count/runtime/collage immediately
+    // instead of waiting for the next full list reload. The run-payload yields the
+    // exact aggregates GET /classes computes; without it (a non-runnable class, e.g.
+    // a track missing duration) the track count is still authoritative.
+    const summary = payload
+      ? cardSummaryFromPayload(payload)
+      : { trackCount: tracksResult.value.length };
+    setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...summary } : c)));
   }, []);
 
   const openClass = useCallback(
@@ -275,9 +290,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   // Merge an updated class into the list + the open detail pane (preserving the
   // caller's access level, which PATCH responses don't carry).
   const applyClassUpdate = useCallback((updated: Class) => {
-    setClasses((prev) =>
-      prev.map((c) => (c.id === updated.id ? { ...updated, accessLevel: c.accessLevel } : c)),
-    );
+    // A PATCH response carries only class metadata, so overlay it on the existing
+    // list item to preserve the caller's access level AND the card aggregates
+    // (track count / total runtime / art), which a metadata edit doesn't change.
+    setClasses((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
     setSelected((prev) =>
       prev && prev.id === updated.id ? { ...updated, accessLevel: prev.accessLevel } : prev,
     );
@@ -423,6 +439,14 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               await applyTagFilter(null);
               await openClass({ ...cls, accessLevel: 'owner' });
             }}
+            onDuplicate={async (cls) => {
+              // "Save a copy" of an own/shared class into the caller's library, then
+              // refresh so the copy appears and open it for immediate editing.
+              const copy = await copyClass(cls.id);
+              await applyTagFilter(null);
+              await refreshClasses();
+              await openClass({ ...copy, accessLevel: 'owner' });
+            }}
             onOpen={openClass}
             onLoadMore={loadMoreClasses}
           />
@@ -486,10 +510,11 @@ export function LibraryRail({
   onSelectTag,
   onError,
   onCreate,
+  onDuplicate,
   onOpen,
   onLoadMore,
 }: {
-  classes: ClassWithAccess[];
+  classes: ClassListItem[];
   status: ListStatus;
   hasMore: boolean;
   loadingMore: boolean;
@@ -502,7 +527,9 @@ export function LibraryRail({
   onSelectTag: (tag: string | null) => void;
   onError: (msg: string | null) => void;
   onCreate: (cls: Awaited<ReturnType<typeof createClass>>) => void;
-  onOpen: (cls: ClassWithAccess) => void;
+  /** "Save a copy" of a class into the caller's library (resolves when done). */
+  onDuplicate: (cls: ClassListItem) => Promise<void>;
+  onOpen: (cls: ClassListItem) => void;
   onLoadMore: () => void;
 }) {
   // `classes` is already the server-filtered set, so an empty list under an active
@@ -540,20 +567,14 @@ export function LibraryRail({
       ) : (
         <ul className="flex flex-col gap-2">
           {classes.map((cls) => (
-            <li key={cls.id}>
-              <button
-                onClick={() => onOpen(cls)}
-                aria-pressed={selectedId === cls.id}
-                className={`w-full rounded-card bg-bg-raised p-3 text-left font-ui shadow-card ${
-                  selectedId === cls.id ? 'ring-2 ring-interactive' : ''
-                }`}
-              >
-                <span className="block truncate text-text-primary">{cls.title}</span>
-                <span className="font-data text-xs uppercase text-text-tertiary">
-                  {cls.accessLevel}
-                </span>
-              </button>
-            </li>
+            <ClassCard
+              key={cls.id}
+              cls={cls}
+              selected={selectedId === cls.id}
+              onOpen={onOpen}
+              onDuplicate={onDuplicate}
+              onError={onError}
+            />
           ))}
           {hasMore && (
             <li className="flex justify-center pt-1">
@@ -570,6 +591,123 @@ export function LibraryRail({
         </ul>
       )}
     </aside>
+  );
+}
+
+/**
+ * A single Library card — a richer summary than the title alone (design system 11):
+ * a track-art collage, the title, a meta line (access · track count · total runtime),
+ * the last-opened date, and a "Save a copy" duplicate action. The card body opens the
+ * class; the duplicate button is a separate, independently focusable control (no nested
+ * buttons). Selection is marked with a ring, never color alone.
+ */
+function ClassCard({
+  cls,
+  selected,
+  onOpen,
+  onDuplicate,
+  onError,
+}: {
+  cls: ClassListItem;
+  selected: boolean;
+  onOpen: (cls: ClassListItem) => void;
+  onDuplicate: (cls: ClassListItem) => Promise<void>;
+  onError: (msg: string | null) => void;
+}) {
+  const { busy, run } = useAsyncAction(onError);
+  const lastOpened = formatLastOpened(cls.lastOpenedAt, Date.now());
+  const trackLabel = `${cls.trackCount} ${cls.trackCount === 1 ? 'track' : 'tracks'}`;
+  return (
+    <li>
+      <div
+        className={`relative flex items-stretch overflow-hidden rounded-card bg-bg-raised shadow-card ${
+          selected ? 'ring-2 ring-interactive' : ''
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => onOpen(cls)}
+          aria-pressed={selected}
+          className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left font-ui"
+        >
+          <ArtCollage urls={cls.albumArtUrls} />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-text-primary">{cls.title}</span>
+            <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-data text-xs text-text-tertiary">
+              <span className="uppercase">{cls.accessLevel}</span>
+              <span aria-hidden>·</span>
+              <span>{trackLabel}</span>
+              {cls.totalDurationMs > 0 && (
+                <>
+                  <span aria-hidden>·</span>
+                  <span>{formatDuration(cls.totalDurationMs)}</span>
+                </>
+              )}
+            </span>
+            {lastOpened && (
+              <span className="mt-0.5 block font-ui text-xs text-text-tertiary">{lastOpened}</span>
+            )}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => void run(() => onDuplicate(cls))}
+          disabled={busy}
+          aria-label={`Duplicate ${cls.title}`}
+          title="Save a copy"
+          className="shrink-0 border-l border-interactive/20 px-3 font-ui text-xs text-text-secondary hover:text-text-primary disabled:opacity-40"
+        >
+          {busy ? '…' : 'Copy'}
+        </button>
+      </div>
+    </li>
+  );
+}
+
+/**
+ * The track-art collage (design system 11: "small bounded artwork"). A bounded 44px
+ * tile: one image when there's a single art, a 2×2 mosaic for several, and a neutral
+ * note glyph when the class has no track art yet. Purely decorative — the title carries
+ * the meaning — so images are empty-alt and the container is aria-hidden.
+ */
+function ArtCollage({ urls }: { urls: string[] }) {
+  if (urls.length === 0) {
+    return (
+      <span
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-base text-text-tertiary"
+        aria-hidden
+      >
+        ♪
+      </span>
+    );
+  }
+  if (urls.length === 1) {
+    return (
+      <img
+        src={urls[0]}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className="h-11 w-11 shrink-0 rounded-card object-cover"
+      />
+    );
+  }
+  return (
+    <span
+      className="grid h-11 w-11 shrink-0 grid-cols-2 grid-rows-2 gap-px overflow-hidden rounded-card bg-bg-base"
+      aria-hidden
+    >
+      {urls.slice(0, 4).map((url, i) => (
+        <img
+          key={i}
+          src={url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+        />
+      ))}
+    </span>
   );
 }
 
@@ -643,6 +781,19 @@ function TagFilter({
   );
 }
 
+/**
+ * The create-class chooser's template options. `null` is the default "Blank" class
+ * (no discipline); the rest map to the shared `classTemplate` enum so the picked
+ * template is carried into `POST /classes`. Labels are presentation-only.
+ */
+const CREATE_TEMPLATE_OPTIONS: ReadonlyArray<{ value: ClassTemplate | null; label: string }> = [
+  { value: null, label: 'Blank' },
+  { value: 'cycle', label: 'Cycle' },
+  { value: 'hiit', label: 'HIIT' },
+  { value: 'sculpt', label: 'Sculpt' },
+  { value: 'tread', label: 'Tread' },
+];
+
 function CreateClassForm({
   onCreated,
   onError,
@@ -651,33 +802,58 @@ function CreateClassForm({
   onError: (msg: string | null) => void;
 }) {
   const [title, setTitle] = useState('');
+  const [template, setTemplate] = useState<ClassTemplate | null>(null);
   const { busy, run } = useAsyncAction(onError);
   return (
     <form
-      className="flex gap-2"
+      className="flex flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault();
         if (!title.trim()) return;
         void run(async () => {
-          const cls = await createClass({ title: title.trim() });
+          const cls = await createClass({ title: title.trim(), template });
           setTitle('');
+          setTemplate(null);
           onCreated(cls);
         });
       }}
     >
-      <input
-        className="flex-1 rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
-        placeholder="New class title"
-        aria-label="New class title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <button
-        disabled={busy}
-        className="rounded-pill rf-btn-primary px-4 py-2 font-ui font-semibold text-text-on-accent disabled:opacity-50"
-      >
-        {busy ? '…' : 'Add'}
-      </button>
+      <div className="flex gap-2">
+        <input
+          className="flex-1 rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
+          placeholder="New class title"
+          aria-label="New class title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <button
+          disabled={busy}
+          className="rounded-pill rf-btn-primary px-4 py-2 font-ui font-semibold text-text-on-accent disabled:opacity-50"
+        >
+          {busy ? '…' : 'Add'}
+        </button>
+      </div>
+      {/* Template chooser — optional discipline for the new class (default Blank). */}
+      <div role="group" aria-label="Class template" className="flex flex-wrap gap-1.5">
+        {CREATE_TEMPLATE_OPTIONS.map(({ value, label }) => {
+          const selected = template === value;
+          return (
+            <button
+              key={label}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => setTemplate(value)}
+              className={`rounded-pill border px-2.5 py-0.5 font-ui text-xs ${
+                selected
+                  ? 'border-interactive bg-interactive/15 text-text-primary'
+                  : 'border-interactive/30 text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
     </form>
   );
 }

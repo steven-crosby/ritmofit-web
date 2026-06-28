@@ -4,6 +4,7 @@
  */
 import type {
   ClassWithAccess,
+  ClassListItem,
   Class,
   CreateClass,
   UpdateClass,
@@ -78,7 +79,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export interface ClassListPage {
-  items: ClassWithAccess[];
+  items: ClassListItem[];
   nextCursor: string | null;
 }
 
@@ -92,7 +93,7 @@ export const listClasses = async (
   if (tag) params.set('tag', tag);
   const res = await apiResponse(`/classes?${params}`);
   return {
-    items: (await res.json()) as ClassWithAccess[],
+    items: (await res.json()) as ClassListItem[],
     nextCursor: res.headers.get(CLASS_LIST_NEXT_CURSOR_HEADER),
   };
 };

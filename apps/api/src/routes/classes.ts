@@ -13,6 +13,7 @@ import {
   updateClassSchema,
   copyClassSchema,
   type ClassWithAccess,
+  type ClassListItem,
 } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
@@ -100,7 +101,7 @@ classRoutes.get('/', async (c) => {
   if (page.nextCursor) {
     c.header(CLASS_LIST_NEXT_CURSOR_HEADER, encodeClassListCursor(page.nextCursor));
   }
-  return c.json(page.items satisfies ClassWithAccess[]);
+  return c.json(page.items satisfies ClassListItem[]);
 });
 
 /**
