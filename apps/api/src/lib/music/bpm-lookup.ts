@@ -32,7 +32,15 @@ export function mockBpm(query: BpmQuery): number {
 export async function resolveBpm(env: Env, query: BpmQuery): Promise<number | null> {
   if (env.MOCK_PROVIDERS === 'true') return mockBpm(query);
   if (!env.GETSONGBPM_API_KEY) {
-    throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'BPM lookup is not configured.');
+    // User-facing copy: automatic tempo lookup is a deferred/optional path, so when
+    // its provider key is absent we tell the instructor what to do (set BPM by hand)
+    // rather than leaking an internal "not configured" detail. Surfaces on web and
+    // iOS alike, so the friendly wording lives server-side.
+    throw new HttpError(
+      503,
+      'PROVIDER_UNAVAILABLE',
+      'Automatic tempo lookup isn’t available right now — you can set the BPM manually.',
+    );
   }
   const provider = createGetSongBpmProvider({
     apiKey: env.GETSONGBPM_API_KEY,

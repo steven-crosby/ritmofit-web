@@ -90,6 +90,37 @@ Production audit findings (Session 1, 2026-06-27):
 - **Manual-add track duration is raw milliseconds — fixed pending deploy.** The builder "Add manually"
   form now uses the same positive `m:ss` duration input and parser as the track inspector.
 
+Production audit findings (Session 2, 2026-06-28 — Auth, Account, And Provider Readiness):
+
+- **Auth core verified green in production.** Email/password sign-up, sign-in, sign-out (with browser
+  `Origin`), password reset (end-to-end, rotates credentials), and signed-out/expired-session `401`
+  behavior all confirmed against `https://ritmofit.studio`.
+- **Email verification is wired correctly — the earlier "no verification artifact" read was a
+  misunderstanding, not a bug.** Better Auth has `sendOnSignUp: true` and sends the verification email
+  through the same Resend transport as password reset (which is confirmed working in prod). The
+  verification link carries a **stateless signed JWT** (`{email, iat, exp}`), so **no row is expected in
+  the `verifications` table** — its absence is correct. `email_verified = 0` after sign-up is the
+  intended **send-don't-block** posture (verification is sent but not required to use the app);
+  `requireEmailVerification` can be tightened later if desired.
+- **Provider paths verified green.** SoundCloud/Spotify/Apple Music catalog search return live results;
+  track import works; adding an imported track to a class works; SoundCloud connect start works via
+  `POST` (returns `authorizeUrl`); likes before connection return `409 NOT_CONNECTED`; a no-op
+  SoundCloud disconnect returns `204` and does not enqueue a purge.
+- **Playlist-import UI offered a dead end on non-Spotify providers — fixed (this session).** Playlist
+  import is Spotify-only on the backend (SoundCloud returns `501`, Apple Music has no path), but the
+  TrackSearch "Import Playlist" mode was shown for every provider. Added a `playlistImport` flag to the
+  shared `providerCapabilities` matrix (Spotify only) and gated the mode off it, matching the existing
+  `userLikes` pattern, so the UI no longer offers an import that always fails.
+- **BPM auto-lookup is unconfigured in prod (`GETSONGBPM_API_KEY` missing) → `503`. Decision: defer +
+  soften (owner, 2026-06-28).** Manual BPM entry is unaffected. Softened this session: the `503`
+  `PROVIDER_UNAVAILABLE` now returns instructor-facing copy ("Automatic tempo lookup isn't available
+  right now — you can set the BPM manually.") instead of leaking an internal "not configured" detail.
+  Provisioning the GetSongBPM key is a **post-launch deferral** (see Current Deferrals).
+- **Apple/Google sign-in are unprovisioned (`APPLE_CLIENT_ID/SECRET`, `GOOGLE_CLIENT_ID/SECRET` missing).
+  Decision: defer as documented (owner, 2026-06-28).** Matches decision **D2a** — social providers are
+  enabled only when both halves of a credential pair are set, so the web Login renders email/password
+  only with **no broken buttons**. Provisioning is a **post-launch deferral** (see Current Deferrals).
+
 ## Launch Gate
 
 The web app is launch-ready when all items below are true:
@@ -155,6 +186,13 @@ These do not block web launch unless a verification pass proves they break the l
 - Richer Explore merchandising: category chips, cover-art cards, and themed collection treatment.
 - Teams expansion beyond the shipped creation, membership, and team-share management flow.
 - Optional run-payload `id` on `sections[]` if iOS wants symmetry.
+- **Automatic BPM lookup (GetSongBPM):** `GETSONGBPM_API_KEY` is unprovisioned in prod, so the
+  third-party tempo-lookup path returns `503` with a friendly fallback message; manual BPM entry covers
+  the launch loop. Provision the key post-launch to enable one-tap tempo fill (owner decision,
+  2026-06-28).
+- **Apple/Google social sign-in:** `APPLE_CLIENT_ID/SECRET` and `GOOGLE_CLIENT_ID/SECRET` are
+  unprovisioned; the web Login is email/password only with no broken buttons (decision D2a). Provision
+  the OAuth credentials post-launch to enable social sign-in (owner decision, 2026-06-28).
 
 ## StructClub Reference Consolidation
 

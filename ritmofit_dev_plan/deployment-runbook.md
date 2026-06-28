@@ -23,6 +23,12 @@ is **currently email/password only** until `APPLE_CLIENT_ID`/`APPLE_CLIENT_SECRE
 client secrets) are set via `wrangler secret put`. This is a pending provisioning step, not a
 permanent exclusion.
 
+**Optional automatic BPM lookup** (GetSongBPM) is likewise unprovisioned: `GETSONGBPM_API_KEY` is not
+set in prod, so `POST /tracks/:id/bpm-lookup` returns a `503` with an instructor-facing fallback
+message and manual BPM entry covers the loop. Set the key via `wrangler secret put GETSONGBPM_API_KEY`
+post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). Both BPM and Apple/Google are
+tracked as deferrals in `web-launch-readiness.md`.
+
 ## Pre-deploy
 
 1. On `main`, clean tree, in sync with origin; the change is merged.

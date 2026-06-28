@@ -66,6 +66,38 @@ describe('TrackSearch stale-result guard', () => {
   });
 });
 
+describe('TrackSearch playlist-import provider gating', () => {
+  it('hides "Import Playlist" for the default provider (SoundCloud) and shows it only for Spotify', () => {
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+
+    // Default provider is SoundCloud, which cannot import playlists (501).
+    expect(screen.queryByRole('button', { name: 'Import Playlist' })).toBeNull();
+
+    // Spotify is the only provider with a wired playlist-import path.
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    expect(screen.getByRole('button', { name: 'Import Playlist' })).toBeTruthy();
+
+    // Apple Music has no playlist-import path either.
+    fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
+    expect(screen.queryByRole('button', { name: 'Import Playlist' })).toBeNull();
+  });
+
+  it('falls back to search when leaving playlist mode for a provider that cannot import', async () => {
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+
+    // Enter playlist mode under Spotify.
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist' }));
+    expect(screen.getByLabelText('Playlist URL')).toBeTruthy();
+
+    // Switching to SoundCloud (no playlist import) must drop back to search so we
+    // never present an import form that always fails.
+    fireEvent.click(screen.getByRole('button', { name: 'SoundCloud' }));
+    await waitFor(() => expect(screen.queryByLabelText('Playlist URL')).toBeNull());
+    expect(screen.getByRole('searchbox')).toBeTruthy();
+  });
+});
+
 describe('TrackSearch result artwork', () => {
   it('lazy-loads and async-decodes non-critical album thumbnails', async () => {
     const result: TrackSearchResult = {
