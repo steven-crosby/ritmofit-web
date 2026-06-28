@@ -606,6 +606,7 @@ native iOS UI face; SF Pro Text preserves native expression there.
 
 | Token       | Web px | Weight | Tracking | Family        | Use                       |
 | ----------- | -----: | -----: | -------: | ------------- | ------------------------- |
+| display-xl  |  52/56 |    700 |  -0.04em | Bricolage Grotesque | campaign/share display    |
 | display-lg  |  48/52 |    700 | -0.035em | Bricolage Grotesque | marketing hero            |
 | display     |  34/40 |    700 |  -0.03em | Bricolage Grotesque | section hero, Live title  |
 | title       |  24/30 |    600 |  -0.01em | Sora         | screen titles             |

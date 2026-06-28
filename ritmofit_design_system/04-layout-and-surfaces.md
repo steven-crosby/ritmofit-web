@@ -56,7 +56,7 @@ panels — without looking toy-like on web.
 
 ## Spacing
 
-4px base grid. Tokens `space.1`…`space.8` (4, 8, 12, 16, 24, 32, 48, 64). Generous space around
+4px base grid. Tokens are grid multiples — `space.1`…`space.16` map to 4, 8, 12, 16, 20, 24, 32, 40, 48, 64. Generous space around
 information-bearing elements; tighten only in deliberate dense-mode contexts.
 
 ## Atmosphere — derived, not decorative

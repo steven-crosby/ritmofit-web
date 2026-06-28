@@ -9,8 +9,9 @@ One token set, two native-feeling expressions. The goal: a class built on web an
 
 - **Web:** CSS custom properties (`--rf-*`) in `mockups/theme.css`, via
   [`scripts/build-tokens.mjs`](./scripts/build-tokens.mjs), consumed by React components.
-- **iOS:** Swift constants (`RFColor`, `RFType`, `RFSpace`, `RFRadius`, `RFMotion`, `RFTempo`,
-  `RFIntensity`, `RFSegment`, `RFRibbon`) in [`ios/RFTokens.swift`](./ios/RFTokens.swift), via
+- **iOS:** Swift constants (`RFColor`/`RFColorLight`, `RFType`, `RFSpace`, `RFRadius`, `RFMotion`,
+  `RFTempo`, `RFIntensity`, `RFSegment`, `RFMove`, `RFRibbon`, `RFGradient`) in
+  [`ios/RFTokens.swift`](./ios/RFTokens.swift), via
   [`scripts/build-tokens-ios.mjs`](./scripts/build-tokens-ios.mjs), consumed by SwiftUI. The generated
   file expects a `Color(hex:)` initializer in the host app (it does not redefine one).
 

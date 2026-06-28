@@ -47,7 +47,7 @@ In practice, for any feature PR (web *or* iOS):
   against the fields the vendored `ios-snapshot/Core/Models/RunPayload.swift` DTOs decode. A *new* drift
   in either direction fails CI; known, accepted additive lag is tracked in the script's allowlist
   (`apps/api/src/lib/contract-parity.ts` → `CONTRACT_PARITY_ALLOWLIST`). Field-name presence only —
-  type/nullability/enum drift stays the job of the manual `agent-prompts/technical/api-contract-parity.md`
+  type/nullability/enum drift stays the job of the manual `agent-prompts/remote-prompts/technical/api-contract-parity.md`
   pass. **Currently allowlisted (iOS DTO follow-ups owned in `ritmofit-ios`):** `RunClass.timelineMode`;
   `RunTrack.displayRpm` / `holdCount` (M6/D14, PR #110) / `clipStartMs` / `beatAnchorMs`; `Move.beat` /
   `Move.bar`.

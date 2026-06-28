@@ -59,7 +59,7 @@ graph pinned along the top of the timeline.
 - It is the single most _shareable_ and most _RitmoFit_ view in the product. An instructor can see — and
   screenshot — the shape of their class at a glance.
 - It is **derived from data you already have** — no new schema to ship a first version. (Segment
-  _banding_ under the ribbon waits for `class_sections`.) See the blend rule below.
+  _banding_ under the ribbon builds on the `class_sections` model.) See the blend rule below.
 - Editing a track's intensity (or a placed move's) reshapes the ribbon live. The ribbon _is_ the
   choreography summary.
 
