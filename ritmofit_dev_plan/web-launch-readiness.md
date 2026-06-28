@@ -71,6 +71,19 @@ Known launch-required polish/work items from the current audit:
 - Planning timeline playing-track pulse.
 - Segment-band track-range binding.
 
+Production audit findings (Session 1, 2026-06-27):
+
+- **PWA stale-shell crash after deploy — fixed and deployed (PR #124, merged `c0f5037`; live in Worker
+  `e6fb7c1a`).** A returning tab running an older service-worker-cached shell hard-crashed to the
+  ErrorBoundary when it lazy-imported a chunk hash the new deploy had removed. `lazyWithReload` now
+  reloads once into the fresh shell.
+- **CSP blocks an inline `<script>` on every page load** (`script-src 'self'
+  https://static.cloudflareinsights.com`; hash differs each load). The built `index.html` has no inline
+  scripts, so it is injected at runtime — most likely a Cloudflare zone setting (Rocket Loader / Web
+  Analytics auto-inject). Investigate infra-side; a console error on every load hurts launch credibility.
+- **Manual-add track duration is raw milliseconds.** The builder "Add manually" form takes duration as
+  e.g. `180000` ms (unlabeled, odd `valuemax="0"`), unlike the `m:ss` inspector field. Minor polish.
+
 ## Launch Gate
 
 The web app is launch-ready when all items below are true:
@@ -84,7 +97,11 @@ The web app is launch-ready when all items below are true:
   routes return `401`; built assets return `200`; security headers are present.
 - **Mounted-route smoke:** Explore, Teams, Shares, playlist import, and upload routes reach their real
   handlers in production; they must fail as `401`/`403`/validated domain errors when unauthenticated or
-  invalid, not as accidental `404 NOT_FOUND`.
+  invalid, not as accidental `404 NOT_FOUND`. Note: a blanket `use('*', requireSession)` makes **every**
+  `/api/v1/*` path (mounted or not) return `401` unauthenticated, so the mounted-vs-unmounted distinction
+  is not externally observable without a session — it is covered by
+  `apps/api/test/mock-gate-leak.integration.test.ts`. The unauthenticated curl smoke only proves "not a
+  bare 404."
 - **Auth/email:** sign-up, sign-in, sign-out, password reset, verification email, and expired/invalid
   session behavior are verified without exposing secrets or tokens.
 - **Core workflow:** create/edit/copy a class, add/import tracks, add cues/moves/intensity/sections,

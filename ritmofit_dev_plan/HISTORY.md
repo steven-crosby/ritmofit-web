@@ -10,6 +10,30 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-27 deployed (Worker `e6fb7c1a-a208-4ba6-9ba7-39bc19be136d`).**
+> **Web Launch Readiness Session 1 (Production Truth Audit) + the fix it surfaced.**
+> Ran the full local CI-equivalent gate (green: format, typecheck, lint, 248 api + web unit, 64
+> integration, web build, OpenAPI no-drift, audit) and production smoke on `https://ritmofit.studio`.
+> Walked the full authenticated core instructor loop live (create class → manual tracks →
+> intensity/cues/colors/moves/segments → Live Mode play+tabs → Share dialog → Explore); production test
+> data created and purged (test class deleted, verified 0 classes). **Found and fixed one bug:** PWA
+> stale-shell crash — a returning tab on an older service-worker-cached shell hard-crashes when it
+> lazy-imports a chunk hash the new deploy removed (reproduced live: cached `index-CoC1rBbD.js` shell
+> failing to fetch a gone `ChoreographyEditor-CoYYs4OY.js`). **#124** (`c0f5037`, squash-merged) —
+> **web**: `lazyWithReload` drop-in for `React.lazy` that reloads once into the fresh shell on a
+> dynamic-import failure (one-shot `sessionStorage` guard, 3 unit tests), swapped across all 9 Dashboard
+> lazy boundaries. Web-only; no migration, no API/schema/OpenAPI/parity impact (remote D1 "No migrations
+> to apply").
+>
+> Pre-deploy gates green (format, typecheck, lint, web 184 + api 248 unit, 64 integration, web build,
+> OpenAPI no-drift, audit, contract-parity). Post-deploy smoke (live): SPA `/` → `200`,
+> `/api/v1/health` → `200`, unauthenticated `/api/v1/classes` + `/explore` + `/teams` → `401`, all six
+> security headers present, served asset `index-yWIThSNv.js` matches the local build, current
+> `ChoreographyEditor-DfSufLw2.js` chunk serves as `text/javascript` (not the HTML fallback). Prior
+> Worker `2d9e0830-9662-49ef-9c8e-0c45a946f16b` (session 2026-06-27, M7 #120 batch) is the rollback
+> anchor. Open audit follow-ups (not deployed-blocking): CSP-blocked inline script (likely a Cloudflare
+> zone setting) and the ms-duration manual-add field; see `web-launch-readiness.md`.
+>
 > **Session 2026-06-27 deployed (Worker `2d9e0830-9662-49ef-9c8e-0c45a946f16b`).**
 > Shipped a five-PR batch (all squash-merged to `main`, each rebased onto the advancing tip and
 > CI-green before merge), no migration (remote D1 already at head — "No migrations to apply"):
