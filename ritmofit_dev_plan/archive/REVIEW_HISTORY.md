@@ -3,8 +3,8 @@
 Archived dated remediation entries from the pre-launch review. The live
 [`REVIEW.md`](./REVIEW.md) keeps the current status + the findings/backlog; this file is the
 chronological record of fixes (PRs, Worker versions, migration steps). For the authoritative
-current deploy state see [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](./ritmofit_dev_plan/DEVELOPMENT_PLAN.md)
-and [`ritmofit_dev_plan/HISTORY.md`](./ritmofit_dev_plan/HISTORY.md).
+current deploy state see [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md)
+and [`ritmofit_dev_plan/HISTORY.md`](../HISTORY.md).
 
 ---
 

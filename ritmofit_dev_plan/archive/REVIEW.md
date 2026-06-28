@@ -6,8 +6,8 @@ audit itself)._
 > **Current status: 0 launch blockers remain** — every blocker was remediated and deployed. The full
 > dated remediation log (each fix PR, Worker version id, and migration step) is archived in
 > [`REVIEW_HISTORY.md`](./REVIEW_HISTORY.md). For the authoritative current deploy state, see
-> [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](./ritmofit_dev_plan/DEVELOPMENT_PLAN.md) and
-> [`ritmofit_dev_plan/HISTORY.md`](./ritmofit_dev_plan/HISTORY.md).
+> [`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md) and
+> [`ritmofit_dev_plan/HISTORY.md`](../HISTORY.md).
 >
 > The sections below are the original review **findings of record** (state at audit time) plus the
 > remaining SHOULD-FIX / verification backlog. Individual findings may since have been fixed — cross-check
