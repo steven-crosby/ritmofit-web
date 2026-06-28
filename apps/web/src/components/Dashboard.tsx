@@ -1266,7 +1266,10 @@ export function ClassHeaderCard({
                 </button>
               </form>
             ) : (
-              <div className="flex items-center gap-2">
+              // min-w-0 lets the h2's `truncate` engage so a long title shortens
+              // instead of overflowing the title block and colliding with the
+              // actions row (Publish/Share/…) to its right.
+              <div className="flex items-center gap-2 min-w-0">
                 <h2 className="truncate font-display text-xl font-semibold text-text-primary">
                   {cls.title}
                 </h2>
