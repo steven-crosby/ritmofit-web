@@ -1,12 +1,14 @@
-# Next-slice planner (read-only)
+# Next-slice planner (brief)
 
 > **Remote ephemeral sandbox.** You run unattended in an isolated, ephemeral cloud sandbox —
 > not the owner's machine. The repository is a fresh clone and the container is discarded when
-> the session ends; nothing on disk persists, so this prompt's deliverable is the brief you
-> return as your final response. No human is watching in real time — never block on interactive
-> input; surface decisions as written recommendations rather than waiting.
+> the session ends, so **nothing survives unless it is committed and pushed**. No human is
+> watching in real time — never block on interactive input; surface decisions as written
+> recommendations rather than waiting.
 
-> **READ-ONLY.** Do not write code or open PRs. Produce a plan I can act on.
+> **BRIEF-ONLY.** Do not write product code or open a code PR. Produce a plan I can act on —
+> then write it as a validated agent report, commit it, and **push the branch** so it survives
+> the sandbox.
 
 **REPO:** `ritmofit-web`
 
@@ -22,6 +24,8 @@
 3. Flag anything in the plan docs that's already done but unchecked, or stale.
 4. **Gap hunt before committing to a slice.** For the feature in question, surface what's
    not yet thought through:
+
+**Do not** do broad prioritization or weekly focus (that's `roadmap-sync.md`); stay on turning one clear priority into a concrete slice.
    - **UX gaps:** missing loading / error / empty states and unhandled edge cases.
    - **API completeness:** does the `apps/api/openapi/openapi.json` contract fully support
      it (endpoints, params, error responses, pagination)? This backend is the source of
@@ -31,5 +35,15 @@
    End with **3–5 pointed clarifying questions** for me to resolve before development —
    this is a planning prompt, so prefer surfacing the right questions over guessing.
 
+You have full autonomy within this scope to analyze, propose the slice(s), hunt gaps, and produce the report without further input.
+
 Keep it tight enough to drop straight into the plan doc. (Pairs with the **Plan** agent
 for a deeper architecture pass, and with `daily/start-session.md` to kick off the build.)
+
+**Persist it.** Archive the plan as an agent report: start from this repo's
+`agent-reports/AGENT_REPORT_TEMPLATE.md`, write it to
+`agent-reports/YYYY-MM-DD/planning-next-slice-planner.md` (`inspected_head` = the remote
+default-branch head; the proposed slices go under `## Findings`; the recommended first slice is
+`## Next recommended action`), run
+`./agent-reports/validate-agent-report.sh agent-reports/YYYY-MM-DD/planning-next-slice-planner.md`,
+then commit it and push the branch. The run is incomplete until validation passes.

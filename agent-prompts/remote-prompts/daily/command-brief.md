@@ -7,7 +7,9 @@
 > `agent-reports/`. No human is watching in real time — never block on interactive input;
 > decisions that belong to the owner become written recommendations.
 
-> **READ-ONLY.** Do not modify the repository, push branches, or open PRs.
+> **BRIEF-ONLY.** Do not modify product code or open a code PR. Your deliverable is the brief
+> itself: write it as a validated agent report, commit it, and **push the branch** so it
+> survives the sandbox (chat output does not).
 > **TIMEBOX:** 10 minutes.
 
 Read **ritmofit-web**, its canonical `AGENTS.md`, the live planning sources
@@ -21,10 +23,13 @@ Validate each candidate sentinel report with
 it. Treat an invalid report or `completed: false` as an incomplete sentinel run;
 do not use its `inspected_head` as confirmed coverage.
 
-Produce a single brief, archived as a normal agent report (start from
-`agent-reports/AGENT_REPORT_TEMPLATE.md`, validate it), at:
-
-`agent-reports/YYYY-MM-DD/command-brief.md`
+**Persist it.** Write the brief as a validated agent report: start from this repo's
+`agent-reports/AGENT_REPORT_TEMPLATE.md`, write it to
+`agent-reports/YYYY-MM-DD/command-brief.md` (`inspected_head` = the remote
+default-branch head; headline decision and red flags under `## Summary`; ranked actions
+under `## Findings`; the single next step under `## Next recommended action`), run
+`./agent-reports/validate-agent-report.sh agent-reports/YYYY-MM-DD/command-brief.md`,
+then commit it and push the branch. The run is incomplete until validation passes.
 
 Keep it under 350 words and lead with decisions:
 

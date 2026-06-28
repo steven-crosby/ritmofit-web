@@ -18,6 +18,9 @@
 **Do not use when:** you only want additive coverage without changing product behavior; use
 `test-coverage.md`.
 
+For UI states, visual design drift, or accessibility behavior, defer to `design-system.md` or
+`accessibility.md`. For suspected slowness, use `performance.md` first.
+
 Hunt for what will break in prod or is silently broken now. Prefer a PR that adds a
 failing regression test reproducing a real bug, THEN fixes it.
 

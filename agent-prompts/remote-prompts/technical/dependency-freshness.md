@@ -1,4 +1,4 @@
-# Dependency freshness  (REPORT-FIRST)
+# Dependency freshness
 
 > **Remote ephemeral sandbox.** You run unattended in an isolated, ephemeral cloud sandbox —
 > not the owner's machine. The repository is a fresh clone and the container is discarded when
@@ -10,9 +10,10 @@
 > **Follow the house rules first:**
 > `agent-prompts/remote-prompts/00-house-rules.md`
 >
-> **MODE:** investigate + RECOMMEND. The proactive cousin of `security.md`'s CVE scan —
-> "what's behind, and is it safe to move?" Open a PR ONLY for a single, obviously-safe
-> patch bump with green tests. Everything else → report.
+> **PR-PRODUCING.** The proactive cousin of `security.md`'s CVE scan — "what's behind, and
+> is it safe to move?" Open a draft PR for a single, safe patch/minor bump that keeps the
+> full gate green. Major upgrades, anything needing a migration, and deliberately-pinned
+> packages stay **report-only** in the ranked plan. When in doubt, report instead of bumping.
 
 **REPO:** `ritmofit-web`
 

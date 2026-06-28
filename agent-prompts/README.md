@@ -53,11 +53,15 @@ machine — is an equivalent way to run the same prompts when you don't have a h
    keeps the full workflow within one hour.
 5. Review the command brief and draft PRs. Agents never merge or deploy.
 
-PR-producing remote prompts inherit [`remote-prompts/00-house-rules.md`](remote-prompts/00-house-rules.md): isolated
-worktrees, one draft PR maximum, deduplication, verification, a 45-minute timebox, and
-validated agent reports. Most planning prompts are read-only; `doc-drift` is
-docs-PR-producing, and `pr-triage` remains read-only unless explicitly invoked with `ACT`.
-`security` and `dependency-freshness` are **report-first**.
+Every remote prompt inherits [`remote-prompts/00-house-rules.md`](remote-prompts/00-house-rules.md)
+and **leaves a pushed branch**: isolated worktrees, one draft PR maximum, deduplication,
+verification, a 45-minute timebox, and validated agent reports. The technical prompts and
+`doc-drift` open a draft PR for the highest-value safe fix (`doc-drift` docs-only); `security`,
+`dependency-freshness`, and `observability` open a draft PR for low-risk fixes and keep
+auth/major-upgrade/infra decisions report-only. The briefs (`command-brief` and the planning
+prompts) push their validated agent report on a branch with no code PR, and `pr-triage` pushes
+safe rebases of trivially-stale green `auto-maintenance` branches (use `REPORT-ONLY` for a pure
+read-only pass). No prompt ever merges, deploys, migrates the remote D1, or changes secrets.
 
 ## Folder
 - `daily/` — **interactive**, person-in-the-loop prompts that run on your own machine:
@@ -67,7 +71,7 @@ docs-PR-producing, and `pr-triage` remains read-only unless explicitly invoked w
   (an isolated, throwaway cloud container). Each opens with a sandbox banner, and every one
   leaves its result as durable, committed-and-pushed output — a branch, a draft PR, or a
   git-tracked report — because the container is discarded when the session ends.
-  - `remote-prompts/00-house-rules.md` — shared guardrails for every PR-producing prompt.
+  - `remote-prompts/00-house-rules.md` — shared guardrails for all remote prompts (change prompts open draft PRs; briefs push report-only branches).
   - `remote-prompts/daily/`:
     - `changed-code-sentinel` — primary remote agent; reviews only the new commit delta.
     - `command-brief` — turns the sentinel result into an actionable handoff for this repo.
@@ -80,9 +84,10 @@ docs-PR-producing, and `pr-triage` remains read-only unless explicitly invoked w
 
 ## After-action reports
 
-Autonomous passes that produce findings archive a validated report to
-[`agent-reports/`](../agent-reports/) (repo-local, git-tracked). Interactive prompts that
-are live decision-aids — where you are the record — do not. The mechanics live in
+Every **remote** prompt archives a validated report to
+[`agent-reports/`](../agent-reports/) (repo-local, git-tracked) and pushes it on its branch —
+including the planning briefs, whose pushed report is now their durable deliverable. Only the
+**interactive** daily prompts (where you are the record) skip the report. The mechanics live in
 [`remote-prompts/00-house-rules.md`](remote-prompts/00-house-rules.md) §9 and
 [`../agent-reports/README.md`](../agent-reports/README.md).
 
@@ -90,9 +95,8 @@ are live decision-aids — where you are the record — do not. The mechanics li
 |---|---|
 | `remote-prompts/daily/changed-code-sentinel`, `remote-prompts/daily/command-brief` | **Yes** |
 | all `remote-prompts/technical/*` audits | **Yes** |
-| `remote-prompts/planning/pr-triage`, `remote-prompts/planning/doc-drift` | **Yes** |
+| all `remote-prompts/planning/*` (`pr-triage`, `doc-drift`, `next-slice-planner`, `roadmap-sync`, `release-readiness`) | **Yes** |
 | `daily/start-session`, `daily/close-session` | No — interactive |
-| `remote-prompts/planning/next-slice-planner`, `remote-prompts/planning/roadmap-sync`, `remote-prompts/planning/release-readiness` | No — live decision-aid |
 
 The exhaustive reports are intentionally more than anyone reads daily; a later
 reviewer/digest agent is meant to read the archive and surface only what matters.
@@ -121,6 +125,33 @@ only when a session baseline, sentinel, or roadmap brief points to that dimensio
 routine audit churn.
 
 ## Operating model
+
+The remote prompts are designed like chess pieces: each has a **laser-focused scope** ("movement rules") so an agent running in a remote ephemeral environment has full autonomy to complete its job — investigate its lane, decide on a small fix or report, verify, and produce the deliverable (pushed branch + validated report, or report only) without needing you mid-run.
+
+You are the chess master. The agents execute their piece's legal moves and leave the results (branches and reports) for your review before any merge.
+
+### Chess Piece Mapping
+
+| Prompt | Chess Piece | Movement Rule (Laser Scope) |
+|--------|-------------|-----------------------------|
+| changed-code-sentinel | Capped Scout (Knight) | Surveys recent deltas only; surfaces issues; at most **one** small regression fix. Defers UI/design/perf/a11y to the right piece. |
+| command-brief | King's Advisor | Pure synthesis into prioritized handoff report. No code. |
+| stability | Rook | Attacks prod regressions, reliability threats, and core breakage directly. |
+| performance | Bishop | Measures/fixes along specific slowness lines (CWV, bundles, D1, caching). |
+| quality | Pawn (clean advance) | Behavior-preserving cleanup and rot removal only. |
+| test-coverage | Defensive Pawn | Adds tests on high-blast-radius paths only; hands bugs to stability. |
+| design-system | Bishop (visual lines) | Tokens, components, typography, states (incl. incomplete UI states). |
+| accessibility | Knight (tricky squares) | Keyboard, screen-reader, contrast, focus, reduced-motion. |
+| content-consistency | Pawn | Terminology, labels, and microcopy only. |
+| api-contract-parity | Rook (contract lines) | Backend contracts, OpenAPI, iOS decoding. Mostly reports. |
+| security | Queen | High-value threats: secrets, auth, CVEs, unsafe patterns. |
+| dependency-freshness | Limited Pawn | Stale packages (ranked plan + rare safe bumps). |
+| observability | Bishop (diagnostic) | Logs, health, smoke coverage, error envelopes. |
+| roadmap-sync | Strategist | Weekly prioritization and focus recommendations. |
+| next-slice-planner | Tactical Planner | Turns one priority into a concrete, bounded slice + gap hunt. |
+| release-readiness | Inspector | Pre-release / pre-milestone go/no-go checklist. |
+| pr-triage | Endgame Sweeper | Verdicts + safe rebases of trivially-stale green auto PRs. |
+| doc-drift | Archivist | Written record vs actual code/docs; small docs-only fixes. |
 
 Think of the prompts as a small set of specialist teams, each with a clear owner and trigger:
 
