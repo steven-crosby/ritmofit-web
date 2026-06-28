@@ -67,9 +67,15 @@ Known launch-required polish/work items from the current audit:
   duplicate ("save a copy") action, and a create-class template chooser. iOS parity tracked in
   `web-ios-parity.md`. Mobile/desktop layout: automated suites green; a manual visual pass at 320px and
   desktop is still recommended before the launch gate.
-- Songs-by-Move as a first-class create path; the reverse lookup shipped, but it is not yet a prominent
-  class-starting workflow.
-- Class-detail read mode that interleaves songs, moves, cues, and section bands outside the editor.
+- ~~Songs-by-Move as a first-class create path; the reverse lookup shipped, but it is not yet a prominent
+  class-starting workflow.~~ **Done (web, Session 4, 2026-06-28):** each Songs-by-Move result now offers
+  "Start a class" — it creates a class and copies that choreographed `class_track` (song + its cues +
+  placed moves) into it via the existing copy-class-track route, then opens it in the builder.
+- ~~Class-detail read mode that interleaves songs, moves, cues, and section bands outside the editor.~~
+  **Done (web, Session 4, 2026-06-28):** `ClassSummaryView` now renders songs **plus** each track's
+  placed moves and cues and the section/energy bands (all from the existing run-payload), and is reachable
+  for owned classes via a "View" (Preview) action on each Library card — with an "Open in builder" CTA
+  instead of "Save a copy". No API change. iOS parity tracked in `web-ios-parity.md`.
 - Rhythm-cycle seed vocabulary expansion for the default moves library.
 - Settings/profile surface beyond sign-out.
 - Custom-move `baseMoveId` / template editing.
@@ -82,13 +88,15 @@ Production audit findings (Session 1, 2026-06-27):
   `e6fb7c1a`).** A returning tab running an older service-worker-cached shell hard-crashed to the
   ErrorBoundary when it lazy-imported a chunk hash the new deploy had removed. `lazyWithReload` now
   reloads once into the fresh shell.
-- **CSP blocks an inline `<script>` on every page load — fix pending deploy.** Live HTML showed
-  Cloudflare injecting `window.__CF$cv$params` plus `/cdn-cgi/challenge-platform/scripts/jsd/main.js`,
-  matching Cloudflare JavaScript Detections. `_headers` now sends `Cache-Control: ... no-transform` for
-  the SPA/static surface so Cloudflare does not inject the CSP-blocked script; verify after deploy that
-  live HTML no longer contains `__CF$cv$params` and the console is clean.
-- **Manual-add track duration is raw milliseconds — fixed pending deploy.** The builder "Add manually"
-  form now uses the same positive `m:ss` duration input and parser as the track inspector.
+- **CSP blocks an inline `<script>` on every page load — fixed and deployed (Worker `dafa2638`,
+  2026-06-28).** Live HTML showed Cloudflare injecting `window.__CF$cv$params` plus
+  `/cdn-cgi/challenge-platform/scripts/jsd/main.js`, matching Cloudflare JavaScript Detections.
+  `_headers` now sends `Cache-Control: ... no-transform` for the SPA/static surface so Cloudflare does
+  not inject the CSP-blocked script. Verified live: SPA `Cache-Control` includes `no-transform` and the
+  HTML contains no `__CF$cv$params` (re-confirmed on Worker `9519447a`).
+- **Manual-add track duration is raw milliseconds — fixed and deployed (Worker `dafa2638`,
+  2026-06-28).** The builder "Add manually" form now uses the same positive `m:ss` duration input and
+  parser as the track inspector.
 
 Production audit findings (Session 2, 2026-06-28 — Auth, Account, And Provider Readiness):
 

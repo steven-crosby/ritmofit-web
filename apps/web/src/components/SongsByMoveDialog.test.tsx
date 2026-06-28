@@ -63,7 +63,13 @@ describe('SongsByMoveDialog', () => {
     vi.mocked(api.listUserMoves).mockResolvedValue([userMove]);
     vi.mocked(api.songsByMove).mockResolvedValue([song()]);
 
-    render(<SongsByMoveDialog onClose={() => {}} onOpenClass={() => {}} />);
+    render(
+      <SongsByMoveDialog
+        onClose={() => {}}
+        onOpenClass={() => {}}
+        onStartClass={() => Promise.resolve()}
+      />,
+    );
 
     // Until a move is picked, an instructional prompt shows (no fetch yet).
     expect(await screen.findByText(/Pick a move to see/i)).toBeTruthy();
@@ -86,7 +92,13 @@ describe('SongsByMoveDialog', () => {
     vi.mocked(api.listUserMoves).mockResolvedValue([userMove]);
     vi.mocked(api.songsByMove).mockResolvedValue([]);
 
-    render(<SongsByMoveDialog onClose={() => {}} onOpenClass={() => {}} />);
+    render(
+      <SongsByMoveDialog
+        onClose={() => {}}
+        onOpenClass={() => {}}
+        onStartClass={() => Promise.resolve()}
+      />,
+    );
     await screen.findByText(/Pick a move to see/i);
 
     fireEvent.change(screen.getByRole('combobox'), { target: { value: `u:${userMove.id}` } });
@@ -105,7 +117,13 @@ describe('SongsByMoveDialog', () => {
     const onOpenClass = vi.fn();
     const onClose = vi.fn();
 
-    render(<SongsByMoveDialog onClose={onClose} onOpenClass={onOpenClass} />);
+    render(
+      <SongsByMoveDialog
+        onClose={onClose}
+        onOpenClass={onOpenClass}
+        onStartClass={() => Promise.resolve()}
+      />,
+    );
     await screen.findByText(/Pick a move to see/i);
     fireEvent.change(screen.getByRole('combobox'), { target: { value: `m:${move.id}` } });
 
@@ -116,5 +134,36 @@ describe('SongsByMoveDialog', () => {
       expect(onOpenClass).toHaveBeenCalledWith('00000000-0000-4000-8000-0000000000c1'),
     );
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it('starts a new class from a placement (carrying its choreography) and closes', async () => {
+    vi.mocked(api.listMoves).mockResolvedValue([move]);
+    vi.mocked(api.listUserMoves).mockResolvedValue([]);
+    vi.mocked(api.songsByMove).mockResolvedValue([song()]);
+    const onStartClass = vi.fn(() => Promise.resolve());
+    const onClose = vi.fn();
+    const onOpenClass = vi.fn();
+
+    render(
+      <SongsByMoveDialog onClose={onClose} onOpenClass={onOpenClass} onStartClass={onStartClass} />,
+    );
+    await screen.findByText(/Pick a move to see/i);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: `m:${move.id}` } });
+
+    const startButton = await screen.findByRole('button', {
+      name: /Start a new class from Shared Anthem in Monday Power/i,
+    });
+    fireEvent.click(startButton);
+
+    // Seeds from the placement's class_track + the song title, then closes.
+    await waitFor(() =>
+      expect(onStartClass).toHaveBeenCalledWith(
+        '00000000-0000-4000-8000-0000000000d1',
+        'Shared Anthem',
+      ),
+    );
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    // Starting a class does not also trigger the "open existing class" path.
+    expect(onOpenClass).not.toHaveBeenCalled();
   });
 });
