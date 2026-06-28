@@ -59,6 +59,7 @@ import {
   updateShareSchema,
   runPayloadSchema,
   userSchema,
+  updateUserProfileSchema,
 } from '@ritmofit/shared';
 
 const named: Record<string, z.ZodType> = {
@@ -103,6 +104,7 @@ const named: Record<string, z.ZodType> = {
   UpdateShare: updateShareSchema,
   RunPayload: runPayloadSchema,
   User: userSchema,
+  UpdateUserProfile: updateUserProfileSchema,
 };
 
 const schemas: Record<string, unknown> = {};
@@ -141,6 +143,24 @@ const doc = {
         responses: {
           '200': jsonResp('User', 'Canonical profile'),
           '401': { description: 'Not authenticated' },
+        },
+      },
+    },
+    '/auth/me': {
+      get: {
+        summary: 'Fetch caller profile',
+        responses: {
+          '200': jsonResp('User', 'Canonical profile'),
+          '401': { description: 'Not authenticated' },
+        },
+      },
+      patch: {
+        summary: 'Update caller profile',
+        requestBody: jsonBody('UpdateUserProfile'),
+        responses: {
+          '200': jsonResp('User', 'Updated profile'),
+          '401': { description: 'Not authenticated' },
+          '422': { description: 'Profile failed validation' },
         },
       },
     },

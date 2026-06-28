@@ -18,7 +18,6 @@ import {
   type RunPayload,
   type RunPayloadTrackEntry,
 } from '@ritmofit/shared';
-import { authClient } from '../lib/auth-client.js';
 import {
   listClasses,
   createClass,
@@ -80,6 +79,9 @@ const ExploreDialog = lazyWithReload(() =>
 const ConnectionsDialog = lazyWithReload(() =>
   import('./ConnectionsDialog.js').then((m) => ({ default: m.ConnectionsDialog })),
 );
+const AccountDialog = lazyWithReload(() =>
+  import('./AccountDialog.js').then((m) => ({ default: m.AccountDialog })),
+);
 const SongsByMoveDialog = lazyWithReload(() =>
   import('./SongsByMoveDialog.js').then((m) => ({ default: m.SongsByMoveDialog })),
 );
@@ -103,6 +105,7 @@ function LoadingScreen() {
 }
 
 export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
+  const [profileName, setProfileName] = useState(userName);
   const [classes, setClasses] = useState<ClassListItem[]>([]);
   const [listStatus, setListStatus] = useState<ListStatus>('loading');
   const [nextClassCursor, setNextClassCursor] = useState<string | null>(null);
@@ -125,6 +128,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   // distinct from the Explore public preview above.
   const [cardPreview, setCardPreview] = useState<ClassListItem | null>(null);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [songsByMoveOpen, setSongsByMoveOpen] = useState(false);
   const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
     null,
@@ -355,7 +359,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             right of the brand) and wraps below the brand on narrow viewports
             instead of overflowing. */}
         <nav className="flex flex-1 flex-wrap items-center justify-end gap-2">
-          <p className="hidden font-ui text-sm text-text-secondary sm:block">{userName}</p>
+          <p className="hidden font-ui text-sm text-text-secondary sm:block">{profileName}</p>
           <button
             className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
             onClick={() => setExploreOpen(true)}
@@ -382,9 +386,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           </button>
           <button
             className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
-            onClick={() => authClient.signOut()}
+            onClick={() => setAccountOpen(true)}
           >
-            Sign out
+            Account
           </button>
         </nav>
       </header>
@@ -400,6 +404,12 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               setConnectionsOpen(false);
               setOauthResult(null);
             }}
+          />
+        )}
+        {accountOpen && (
+          <AccountDialog
+            onClose={() => setAccountOpen(false)}
+            onProfileUpdated={(user) => setProfileName(user.displayName ?? user.email)}
           />
         )}
         {songsByMoveOpen && (
@@ -1630,7 +1640,7 @@ function SongRow({
             }
           : undefined
       }
-      className={`flex items-center gap-1 rounded-card transition-opacity ${
+      className={`flex min-w-0 flex-wrap items-stretch gap-1 rounded-card transition-opacity sm:flex-nowrap sm:items-center ${
         dropTarget ? 'ring-2 ring-interactive/60' : ''
       } ${dragging ? 'opacity-50' : ''}`}
     >
@@ -1638,7 +1648,7 @@ function SongRow({
         type="button"
         onClick={onSelect}
         aria-pressed={selected}
-        className={`flex flex-1 items-center gap-3 rounded-card bg-bg-base px-3 py-2 text-left ${
+        className={`flex min-w-0 flex-[1_1_16rem] flex-wrap items-center gap-2 rounded-card bg-bg-base px-3 py-2 text-left sm:flex-nowrap sm:gap-3 ${
           selected ? 'ring-2 ring-interactive' : ''
         }`}
       >
@@ -1660,52 +1670,54 @@ function SongRow({
             ♪
           </span>
         )}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-[1_1_9rem]">
           <p className="truncate font-ui text-sm font-semibold text-text-primary">
             {entry.track.title}
           </p>
           <p className="truncate font-ui text-xs text-text-secondary">{entry.track.artist}</p>
         </div>
-        <IntensityReadout intensity={entry.intensity} />
-        {entry.displayBpm != null && (
-          <span className="shrink-0 font-data text-sm text-text-secondary">
-            {entry.displayBpm}
-            <span className="ml-1 text-xs text-text-tertiary">BPM</span>
-          </span>
-        )}
-        {entry.displayRpm != null && (
-          <>
-            {entry.displayBpm != null && (
-              <span className="shrink-0 text-xs text-text-tertiary" aria-hidden="true">
-                ·
-              </span>
-            )}
+        <span className="flex min-w-0 flex-[1_1_100%] flex-wrap items-center gap-x-2 gap-y-1 sm:flex-[0_0_auto] sm:flex-nowrap">
+          <IntensityReadout intensity={entry.intensity} />
+          {entry.displayBpm != null && (
             <span className="shrink-0 font-data text-sm text-text-secondary">
-              {entry.displayRpm}
-              <span className="ml-1 text-xs text-text-tertiary">RPM</span>
+              {entry.displayBpm}
+              <span className="ml-1 text-xs text-text-tertiary">BPM</span>
             </span>
-          </>
-        )}
-        {entry.holdCount != null && (
-          <>
-            {(entry.displayBpm != null || entry.displayRpm != null) && (
-              <span className="shrink-0 text-xs text-text-tertiary" aria-hidden="true">
-                ·
+          )}
+          {entry.displayRpm != null && (
+            <>
+              {entry.displayBpm != null && (
+                <span className="shrink-0 text-xs text-text-tertiary" aria-hidden="true">
+                  ·
+                </span>
+              )}
+              <span className="shrink-0 font-data text-sm text-text-secondary">
+                {entry.displayRpm}
+                <span className="ml-1 text-xs text-text-tertiary">RPM</span>
               </span>
-            )}
-            <span className="shrink-0 font-data text-sm text-text-secondary">
-              {entry.holdCount}
-              <span className="ml-1 text-xs text-text-tertiary">
-                {entry.holdCount === 1 ? 'Hold' : 'Holds'}
+            </>
+          )}
+          {entry.holdCount != null && (
+            <>
+              {(entry.displayBpm != null || entry.displayRpm != null) && (
+                <span className="shrink-0 text-xs text-text-tertiary" aria-hidden="true">
+                  ·
+                </span>
+              )}
+              <span className="shrink-0 font-data text-sm text-text-secondary">
+                {entry.holdCount}
+                <span className="ml-1 text-xs text-text-tertiary">
+                  {entry.holdCount === 1 ? 'Hold' : 'Holds'}
+                </span>
               </span>
+            </>
+          )}
+          {entry.track.durationMs == null && (
+            <span className="shrink-0 font-ui text-xs font-semibold text-intensity-hard">
+              Duration needed
             </span>
-          </>
-        )}
-        {entry.track.durationMs == null && (
-          <span className="shrink-0 font-ui text-xs font-semibold text-intensity-hard">
-            Duration needed
-          </span>
-        )}
+          )}
+        </span>
       </button>
       {/* Drag grip — a dedicated reorder handle (drag) that is also keyboard-operable
           (↑/↓). Kept off the selection button so neither gesture clobbers the other. */}

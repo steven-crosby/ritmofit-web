@@ -50,6 +50,7 @@ import type {
   tracks,
   trackProviderIds,
   teams,
+  users,
   shares,
 } from '../db/schema.js';
 
@@ -121,6 +122,7 @@ export function serializeTrackProviderId(row: TrackProviderIdRow): TrackProvider
 }
 
 type TeamRow = typeof teams.$inferSelect;
+type UserRow = typeof users.$inferSelect;
 type ShareRow = typeof shares.$inferSelect;
 
 /** Map a `teams` row to the shared `Team`. */
@@ -157,6 +159,18 @@ export function serializeShareView(
     targetEmail: target.email,
     targetDisplayName: target.displayName,
     targetTeamName: target.teamName,
+  });
+}
+
+/** Map a `users` row to the shared `User`. */
+export function serializeUserRow(row: UserRow): User {
+  return userSchema.parse({
+    id: row.id,
+    email: row.email,
+    displayName: row.displayName,
+    imageUrl: row.imageUrl,
+    createdAt: toMs(row.createdAt),
+    updatedAt: toMs(row.updatedAt),
   });
 }
 

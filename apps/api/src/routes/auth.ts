@@ -5,10 +5,15 @@
  * `/api/auth/*` (see index.ts). These are our thin reconciliation + identity endpoints.
  */
 import { Hono } from 'hono';
+import { eq } from 'drizzle-orm';
+import { updateUserProfileSchema } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { createAuth } from '../lib/auth.js';
 import { requireSession } from '../middleware/auth.js';
-import { serializeUser } from '../lib/serialize.js';
+import { createDb } from '../lib/db.js';
+import { users } from '../db/schema.js';
+import { serializeUser, serializeUserRow } from '../lib/serialize.js';
+import { HttpError } from '../lib/errors.js';
 
 export const authRoutes = new Hono<AppEnv>();
 
@@ -34,3 +39,27 @@ authRoutes.post('/session', async (c) => {
  * smoke test that the session gate resolves identity and rejects anonymous calls.
  */
 authRoutes.get('/me', requireSession, (c) => c.json(c.get('user')));
+
+/**
+ * PATCH /auth/me — update the caller-owned profile fields that are safe for both
+ * collaboration display and account settings. Email/password/provider links stay
+ * under Better Auth's dedicated routes.
+ */
+authRoutes.patch('/me', requireSession, async (c) => {
+  const body = updateUserProfileSchema.parse(await c.req.json());
+  const db = createDb(c.env);
+  const patch = { ...body, updatedAt: new Date() };
+
+  await db
+    .update(users)
+    .set(patch)
+    .where(eq(users.id, c.get('userId')));
+
+  const updated = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, c.get('userId')))
+    .get();
+  if (!updated) throw new HttpError(404, 'NOT_FOUND', 'Not found.');
+  return c.json(serializeUserRow(updated));
+});

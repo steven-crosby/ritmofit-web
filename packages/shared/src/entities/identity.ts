@@ -20,6 +20,12 @@ export const userSchema = z.object({
 });
 export type User = z.infer<typeof userSchema>;
 
+/** Caller-editable profile fields. Email and identity provider links stay auth-owned. */
+export const updateUserProfileSchema = userSchema
+  .pick({ displayName: true, imageUrl: true })
+  .partial();
+export type UpdateUserProfile = z.infer<typeof updateUserProfileSchema>;
+
 /** A studio or group. `ownerUserId` is authoritative for owner-only operations. */
 export const teamSchema = z.object({
   id: uuidSchema,

@@ -31,6 +31,57 @@
         }
       }
     },
+    "/auth/me": {
+      "get": {
+        "summary": "Fetch caller profile",
+        "responses": {
+          "200": {
+            "description": "Canonical profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update caller profile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserProfile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "422": {
+            "description": "Profile failed validation"
+          }
+        }
+      }
+    },
     "/classes": {
       "get": {
         "summary": "List visible classes (owned ∪ shared), optionally paginated",
@@ -5415,6 +5466,34 @@
           "createdAt",
           "updatedAt"
         ],
+        "additionalProperties": false
+      },
+      "UpdateUserProfile": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "imageUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
         "additionalProperties": false
       }
     }
