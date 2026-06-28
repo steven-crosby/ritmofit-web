@@ -12,6 +12,7 @@ When an AI agent (e.g. Claude, Gemini) edits this file or adds a note to it, it 
 label the change with the authoring agent and date (e.g. `<!-- note (Claude, 2026-06-17): … -->`).
 
 <!-- note (Claude, 2026-06-24): Adopted the full surface-parity principle (D18) — web and iOS are co-equal surfaces; added the hard parity gate below. -->
+<!-- note (Codex, 2026-06-28): Set the active operating focus to web launch readiness first, with iOS parity wrap-up tracked next. -->
 
 ## Product & Architecture
 
@@ -37,6 +38,11 @@ the same capability landing on the other **or** a tracked, linked parity item on
 Existing asymmetries are defects, not the steady state. Allowed divergence is limited to the documented
 exceptions (iPhone-only haptics/lock-screen/motion; web-leaning second-screen presentation) and
 platform-idiomatic UX expression. When planning any feature, state its parity impact in the plan and PR.
+
+**Current operating sequence:** finish the web app to launch-ready first, then wrap the iOS app against
+the tracked parity backlog. During the web launch-readiness phase, avoid net-new product scope unless it
+is launch-critical; if a launch-critical web change increases iOS debt, record it immediately in
+`web-ios-parity.md` and keep the iOS follow-up visible for the post-launch wrap.
 
 ## Before Implementing
 

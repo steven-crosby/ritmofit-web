@@ -17,4 +17,5 @@ pre-launch and M1-era materials are superseded.
 | `session-prompts.md` | M1 build-order copy-paste implementation prompts | M1–M4 shipped |
 | `ai-working-rules.md` | M1-era plan→confirm working agreement | `../../AGENTS.md` → "Before Implementing" |
 | `brand-mockup-review.md` | One-off frontend ↔ design-system conformance review (2026-06-13) | — |
+| `structclub-parity-audit.md` | Point-in-time competitive audit vs. StructClub (2026-06-24) | `../web-launch-readiness.md`, `../DEVELOPMENT_PLAN.md` |
 | `security.md` | Pasted generic "Web Security" platform guide (not RitmoFit-specific) | — |

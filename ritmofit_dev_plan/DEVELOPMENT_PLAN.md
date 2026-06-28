@@ -22,12 +22,24 @@ A choreography and class-running tool for **rhythm spin cycle instructors**.
   unchanged. **The backend is the single source of truth; neither client is.**
 - The parity principle is locked as decision **D18**; the hard gate + current parity backlog live in
   [`web-ios-parity.md`](./web-ios-parity.md).
+- **Current operating focus:** finish the web app to launch-ready first, then wrap the iOS app against
+  the tracked parity backlog. Web launch work should be verification, polish, and operational closure
+  unless a new slice is truly launch-critical.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
 That context-switching breaks creative flow. RitmoFit's bet: *building a playlist* and *choreographing
 a class* are one creative act split by tooling — so **the class IS the playlist plus choreography**,
 modeled as a single object from day one.
+
+## Competitive reference
+
+StructClub remains the clearest product reference for rhythm-instructor expectations: fast discovery,
+rich class/library presentation, movement-oriented creation paths, and a confident live-running surface.
+RitmoFit intentionally diverges where provider constraints require it — audio playback stays in provider
+apps — and competes by making web-based planning, choreography, sharing, and live prompting stronger and
+more accessible. The old point-in-time StructClub audit is archived for provenance; active launch checks
+and deferrals now live in [`web-launch-readiness.md`](./web-launch-readiness.md).
 
 ---
 
@@ -95,15 +107,19 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 > **Where current status lives** (to avoid drift, this map carries no dated status):
-> - **Milestone state** (M1–M4 and what's done) → [`milestones.md`](./milestones.md).
+> - **Milestone state** (M1–M4 done; Web Launch Readiness active) → [`milestones.md`](./milestones.md).
+> - **Launch gate** (go/no-go checklist, verification plan, deferrals) →
+>   [`web-launch-readiness.md`](./web-launch-readiness.md).
 > - **Chronological deploy/build log** (every PR, Worker version id, migration step, the live Worker
 >   version, and remote D1 migration level) → [`HISTORY.md`](./HISTORY.md), newest entry first.
-> - **Forward work** → [`web-ios-parity.md`](./web-ios-parity.md) (the web↔iOS parity backlog).
+> - **Post-web-launch parity work** → [`web-ios-parity.md`](./web-ios-parity.md) (the web↔iOS parity
+>   backlog).
 > - **Contributor + deployment instructions** → [`../AGENTS.md`](../AGENTS.md) and
 >   [`deployment-runbook.md`](./deployment-runbook.md).
 >
 > The headline: backend **M1–M4 complete and deployed**, the app is live at `https://ritmofit.studio`
-> (one Worker, single origin), and `main` ships to prod via the manual runbook with branch protection on.
+> (one Worker, single origin), and the active milestone is **Web Launch Readiness**. Once the web launch
+> gate is green, focus moves to the iOS parity wrap.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);
@@ -116,6 +132,9 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
   Explore feed (publish via `classes.visibility`, public VIEW floor, `GET /explore`, save-a-copy). The
   two open decisions were settled: publish/visibility = a `visibility` enum; **featured = deferred** (no
   admin concept yet — it remains a future slice). All deployed.
+- **Web Launch Readiness ▶ active:** verify the full production web loop, close launch-blocking polish
+  and operational gaps, document deferrals, and deploy only through the manual runbook. Checklist:
+  [`web-launch-readiness.md`](./web-launch-readiness.md).
 
 ---
 
@@ -126,23 +145,27 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`overview.md`](./overview.md) | Product context, the user, the problem, StructClub reference |
 | [`decisions.md`](./decisions.md) | Every locked decision with rationale + tradeoffs |
 | [`architecture.md`](./architecture.md) | Cloudflare-native stack, repo layout, data flow, deployment |
-| [`schema.md`](./schema.md) | Full M1 data model (D1/SQLite): tables, columns, relationships |
+| [`schema.md`](./schema.md) | Current data model (D1/SQLite): tables, columns, relationships |
 | [`api.md`](./api.md) | REST surface, run-payload, auth, error conventions |
 | [`authorization.md`](./authorization.md) | The ownership + sharing access model (app-level gate) |
 | [`music-providers.md`](./music-providers.md) | The three hard constraints; BPM/playback strategy |
 | [`milestones.md`](./milestones.md) | Milestone breakdown, M1 build order, acceptance criteria |
+| [`web-launch-readiness.md`](./web-launch-readiness.md) | Active web launch gate, verification plan, and deferrals |
+| [`web-launch-session-plan.md`](./web-launch-session-plan.md) | Session-sized workflow for the active web launch milestone |
 | [`conventions.md`](./conventions.md) | Code style, naming, env, wrangler/D1, git, testing |
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
 | [`../agent-prompts/daily/close-session.md`](../agent-prompts/daily/close-session.md) | End-of-session runbook — say "run close-session" |
 | [`HISTORY.md`](./HISTORY.md) | Archived dated build/deploy log (PRs, Worker versions, migration steps) |
 | [`web-ios-parity.md`](./web-ios-parity.md) | Web ↔ iOS surface-parity principle (D18): the hard gate, sync points, and the cross-surface parity backlog |
-| [`structclub-parity-audit.md`](./structclub-parity-audit.md) | Point-in-time competitive audit vs. the StructClub app (analysis; forward work lives in the backlog) |
+| [`archive/structclub-parity-audit.md`](./archive/structclub-parity-audit.md) | Archived point-in-time StructClub competitive audit; active takeaways are consolidated into `web-launch-readiness.md` |
 
 ---
 
 ## Backlog / Open Items
 
-Forward work has a single home — [`web-ios-parity.md`](./web-ios-parity.md) for the cross-surface parity backlog. Don't keep a parallel list here; add to that.
+Forward work has two homes during launch sequencing: web launch blockers and deferrals live in
+[`web-launch-readiness.md`](./web-launch-readiness.md); post-web-launch cross-surface parity work lives
+in [`web-ios-parity.md`](./web-ios-parity.md). Don't keep parallel lists here.
 
 Recently closed (kept as pointers so the trail isn't lost):
 
@@ -152,5 +175,6 @@ Recently closed (kept as pointers so the trail isn't lost):
   `class_tracks.notes` channel already existed end-to-end but was write-only, and Live mode now renders
   it. If *anchored, per-moment* notes ever prove needed, add a `kind: 'cue' | 'note'` discriminator to
   `cues` (additive) rather than a new table. Full decision: [`cues-vs-notes-decision.md`](./cues-vs-notes-decision.md).
-- **Explore Feed UI** (rich categorized curation) and **featured curation** remain deferred — tracked in
-  the mockup-parity backlog (overlaps its M3).
+- **Explore feature expansion** (rich categorized curation, featured/admin curation, themed collection
+  merchandising) remains explicitly deferred from web launch scope in
+  [`web-launch-readiness.md`](./web-launch-readiness.md).

@@ -52,17 +52,16 @@
 ## Secrets & env
 - Never commit secrets. `.dev.vars` (wrangler local) and `.env` are git-ignored; commit a
   `.dev.vars.example` / `.env.example` with keys and blank values.
-- **M1 env:** Better Auth secrets (signing/session), Apple & Google sign-in client/service IDs, the D1
-  binding (in `wrangler.toml`), `ENCRYPTION_KEY` (declared now, used M2 for provider tokens).
-- **M2 placeholders (document now, unused in M1):** `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`,
-  `SOUNDCLOUD_CLIENT_ID`, `SOUNDCLOUD_CLIENT_SECRET`, `APPLE_MUSIC_KEY_ID`, `APPLE_MUSIC_TEAM_ID`,
-  `APPLE_MUSIC_PRIVATE_KEY`. Keep out of the codebase until M2.
+- **Runtime env:** Better Auth secrets, Apple & Google sign-in credentials, the D1 binding (in
+  `wrangler.toml`), `ENCRYPTION_KEY`, email delivery secrets, and provider credentials for Spotify,
+  SoundCloud, and Apple Music.
+- Keep Sign in with Apple auth credentials separate from Apple Music credentials.
 - Production secrets live in Cloudflare (`wrangler secret put`), not in the repo.
 
 ## Git
-- Small, focused commits aligned to the M1 build order.
+- Small, focused commits aligned to the active launch-readiness gate.
 - Conventional-commit style (`feat:`, `fix:`, `chore:`, `docs:`).
-- Branch per build-order step; PR back to main.
+- Branch per focused change; PR back to main.
 
 ## CORS
 - **Production is single-origin:** the SPA and the API are served by the **same Worker** at

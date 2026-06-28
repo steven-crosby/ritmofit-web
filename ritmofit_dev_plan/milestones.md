@@ -4,17 +4,18 @@ Each step follows the working agreement: **plan → confirm → code → summari
 `../AGENTS.md` → "Before Implementing").
 
 > **Status: M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ — all done, merged to `main`, and deployed** (API + web at
-> `https://ritmofit.studio`). On top of the data-flow milestones, the **web design-system build (builder
-> UI)** has shipped, and the post-launch hardening backlog has closed the launch-blocking and review
-> SHOULD-FIX work documented below. For the live Worker version and the current remote D1 migration level
-> (well past these milestones — `HISTORY.md` is the source of truth, not this block), see
-> [`HISTORY.md`](./HISTORY.md); forward work is in [`web-ios-parity.md`](./web-ios-parity.md).
+> `https://ritmofit.studio`). The active milestone is now **Web Launch Readiness**: verification, polish,
+> operational closure, and documented deferrals before shifting focus to iOS wrap-up. For the live Worker
+> version and the current remote D1 migration level (well past these milestones — `HISTORY.md` is the
+> source of truth, not this block), see [`HISTORY.md`](./HISTORY.md). The launch gate lives in
+> [`web-launch-readiness.md`](./web-launch-readiness.md); post-web-launch parity work lives in
+> [`web-ios-parity.md`](./web-ios-parity.md).
 >
 > **Surface scope:** per the parity principle (`decisions.md` D18, [`web-ios-parity.md`](./web-ios-parity.md)),
-> web and iOS are co-equal surfaces — the cross-surface parity backlog is now mostly iOS catch-up
-> (builder/library/search/explore/sharing plus allowlisted run-payload DTO fields), while web's core
-> live-run gap has shipped. Track the current ledger in `web-ios-parity.md` alongside iOS Phase 2 in the
-> separate `ritmofit-ios` repo. (The prior `REVIEW.md` launch-readiness log is archived in `archive/`.)
+> web and iOS are co-equal surfaces. During web launch readiness, do not expand iOS debt unless a web
+> change is launch-critical; track any such follow-up immediately in `web-ios-parity.md`. The iOS wrap-up
+> starts after the web launch gate is green. (The prior `REVIEW.md` launch-readiness log is archived in
+> `archive/`.)
 
 ## M1 — Auth + class/cue data model ✅ done
 
@@ -165,8 +166,8 @@ Core builder first (these validate the product), teams/sharing last.
     `resolveAccess` (unit-tested, doesn't touch `listVisibleClasses`); `GET /explore` lists public
     classes newest-first with owner label + track count (`ExploreClass`); the web app gains an **Explore**
     browser (preview a public class via its run-payload) and an owner-only **Publish / Make private**
-    toggle with a visibility indicator (icon+label, not color alone). `typecheck`/`lint`/`test` (156) green;
-    local D1 migrated. *Not yet deployed; remote D1 not yet migrated.*
+    toggle with a visibility indicator (icon+label, not color alone). `typecheck`/`lint`/`test` (156)
+    green; local D1 migrated. This slice later deployed with the rest of M4.
   - ✅ **Slice 3b — save a copy:** `POST /classes/:id/copy` (VIEW access, so public classes qualify)
     clones a whole class into the caller's library as a fresh `draft`/`private` owned class — every
     class_track with its cues + placed moves — reusing the M1 `copy-class-track` cross-user safety
@@ -211,7 +212,7 @@ Core builder first (these validate the product), teams/sharing last.
 
 ---
 
-## Builder UI, music frontend & post-launch hardening — shipped
+## Builder UI, music frontend & launch hardening — shipped
 
 The web design-system **builder UI** (energy ribbon, song rows, track inspector, choreography editor,
 timeline strip, segment band, Live HUD pulse/drop), the music-provider **frontend**
@@ -220,10 +221,27 @@ hardening** backlog all shipped and deployed. The full per-slice log (builder sl
 frontend S1–S4, hardening PRs — with Worker versions, migrations, and test counts) is archived in
 [`HISTORY.md`](./HISTORY.md).
 
-**Still deferred (flagged in code):** custom-move `baseMoveId`/`template` editing; the playing-track
-pulse in the *planning* timeline (no "playing" state in the builder); segment-band track-range binding
-(snapping boundaries to track starts); and a run-payload `id` on `sections[]` (symmetry follow-up if
-iOS wants it).
+**Launch-readiness follow-ups from shipped code:** custom-move `baseMoveId`/`template` editing; the
+playing-track pulse in the *planning* timeline (no "playing" state in the builder); and segment-band
+track-range binding (snapping boundaries to track starts). These are tracked in
+`web-launch-readiness.md` and are not deferred past launch unless the owner explicitly exempts them.
+
+**Post-launch parity follow-up:** a run-payload `id` on `sections[]` remains optional unless iOS wants
+that symmetry.
+
+## Web Launch Readiness ▶ active
+
+The current goal is to make the deployed web app launch-ready before shifting implementation focus to
+the iOS app. Treat this as a gate, not a feature milestone: the work is verification, production polish,
+bug fixing, docs/runbook closure, and explicit deferral management.
+
+**Definition of done:** [`web-launch-readiness.md`](./web-launch-readiness.md) is fully checked: CI gate
+green, launch-candidate production deploy complete, live smoke passing, auth/email/provider/core
+workflow paths verified, launch-blocking accessibility/responsive issues closed, and non-blocking
+deferrals recorded.
+
+**After this gate:** move to the iOS parity wrap in the separate `ritmofit-ios` repo, starting from the
+tracked backlog in [`web-ios-parity.md`](./web-ios-parity.md).
 
 ## Cross-cutting reminders
 - Plan before code on every feature; wait for confirmation.

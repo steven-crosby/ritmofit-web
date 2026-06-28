@@ -118,9 +118,9 @@ Do not redefine entity shapes inside `apps/api` or `apps/web`. Change a shape on
   needed**. (There is no separate `api.ritmofit.studio` origin and no Cloudflare Pages site.)
 - **Local dev:** `wrangler dev` runs the Worker against a local D1; the web app runs via Vite and
   points at the local API. Secrets in `.dev.vars` (git-ignored); never commit secrets.
-- **Provider keys** (Spotify, SoundCloud, Apple Music) are **not used in M1** — they land in M2.
-  Document required env vars as placeholders in `conventions.md`; keep keys out of the codebase until
-  then.
+- **Provider keys** (Spotify, SoundCloud, Apple Music) are live integration secrets, not committed
+  configuration. Production values live in Cloudflare Worker secrets; local values live in ignored
+  `.dev.vars`. Keep Sign in with Apple auth credentials separate from Apple Music credentials.
 
 ## D1 / SQLite notes that shape the code
 

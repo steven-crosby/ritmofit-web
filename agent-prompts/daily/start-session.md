@@ -27,6 +27,8 @@ files or begin implementation during orientation.
 5. Read the current status sources:
    - `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`
    - relevant sections of `ritmofit_dev_plan/milestones.md`
+   - `ritmofit_dev_plan/web-launch-readiness.md` and
+     `ritmofit_dev_plan/web-launch-session-plan.md` when Web Launch Readiness is active
    - `ritmofit_dev_plan/HISTORY.md` when deployment state, recent work, or blockers matter
    - `agent-prompts/remote-prompts/daily/command-brief.md` output or recent agent reports when the owner
      points to them
