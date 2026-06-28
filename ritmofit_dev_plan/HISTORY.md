@@ -10,6 +10,25 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-27 deployed (Worker `2d9e0830-9662-49ef-9c8e-0c45a946f16b`).**
+> Shipped a five-PR batch (all squash-merged to `main`, each rebased onto the advancing tip and
+> CI-green before merge), no migration (remote D1 already at head — "No migrations to apply"):
+> **#120** (`129b7ae`) — **M7 / D15** public marketing landing page (`MarketingPage`: glass nav,
+> heat-bloom hero with energy-arc SVG, feature cards, CTA strip; signed-out `/` renders it, CTAs flip
+> to Login via state with a `← Back to home` link; documented web-leaning exception, no API/parity
+> impact). **#117** (`c8fe89a`) — **api**: CI gate for web↔iOS run-payload DTO contract drift
+> (`check-contract-parity.ts` + `contract-parity.ts`, wired into `.github/workflows/ci.yml`).
+> **#115** (`7e5462e`) — **api**: default `sendEmail` to `boundFetch` so prod reset/verify email uses
+> the Worker-bound fetch. **#116** (`79564cc`) — **web**: restore the keyboard focus ring on the
+> intensity segmented control (accessibility). **#118** (`7e5f979`) — **web**: token-drive the
+> timeline beat/bar gridlines in `TimelineStrip`.
+>
+> Pre-deploy gates green (typecheck, lint, unit web + api, integration, web build, OpenAPI no-drift).
+> Post-deploy smoke (live): SPA `/` → `200`, `/api/v1/health` → `200`, unauthenticated
+> `/api/v1/classes` → `401`, all six security headers present, served asset `index-yOu-ndqj.js`
+> matches the local build. Prior Worker `23b27a25-00d1-4cc3-89c9-7e300a72f4a8` (session 2026-06-26,
+> M6 #110) is the rollback anchor.
+>
 > **Session 2026-06-26 deployed (Worker `23b27a25-00d1-4cc3-89c9-7e300a72f4a8`).**
 > Shipped **#110** (`a12cc55`, squash) — **M6 / decision D14**: per-track **RPM (cadence)** and
 > **hold count**, authored independently of music tempo (RPM is *not* derived from BPM; a hold count of
