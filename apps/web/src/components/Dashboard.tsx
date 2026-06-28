@@ -5,7 +5,6 @@ import {
   useReducer,
   useRef,
   useState,
-  lazy,
   Suspense,
   type FormEvent,
 } from 'react';
@@ -53,6 +52,7 @@ import { ErrorBoundary } from './ErrorBoundary.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { TimelineStrip } from './TimelineStrip.js';
 import { SegmentBand } from './SegmentBand.js';
+import { lazyWithReload } from '../lib/lazyWithReload.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 import { TrackSearch } from './TrackSearch.js';
@@ -60,29 +60,31 @@ import { TrackSearch } from './TrackSearch.js';
 // Code-split the heavy, interaction-gated surfaces into their own chunks so the
 // initial builder paint doesn't ship Live mode, the choreography editor, or the
 // modal dialogs. Each loads on first use behind a <Suspense> boundary below.
-const LiveMode = lazy(() => import('./LiveMode.js').then((m) => ({ default: m.LiveMode })));
-const ShareDialog = lazy(() =>
+const LiveMode = lazyWithReload(() =>
+  import('./LiveMode.js').then((m) => ({ default: m.LiveMode })),
+);
+const ShareDialog = lazyWithReload(() =>
   import('./ShareDialog.js').then((m) => ({ default: m.ShareDialog })),
 );
-const TeamsDialog = lazy(() =>
+const TeamsDialog = lazyWithReload(() =>
   import('./TeamsDialog.js').then((m) => ({ default: m.TeamsDialog })),
 );
-const ExploreDialog = lazy(() =>
+const ExploreDialog = lazyWithReload(() =>
   import('./ExploreDialog.js').then((m) => ({ default: m.ExploreDialog })),
 );
-const ConnectionsDialog = lazy(() =>
+const ConnectionsDialog = lazyWithReload(() =>
   import('./ConnectionsDialog.js').then((m) => ({ default: m.ConnectionsDialog })),
 );
-const SongsByMoveDialog = lazy(() =>
+const SongsByMoveDialog = lazyWithReload(() =>
   import('./SongsByMoveDialog.js').then((m) => ({ default: m.SongsByMoveDialog })),
 );
-const ClassSummaryView = lazy(() =>
+const ClassSummaryView = lazyWithReload(() =>
   import('./ClassSummaryView.js').then((m) => ({ default: m.ClassSummaryView })),
 );
-const CuesSection = lazy(() =>
+const CuesSection = lazyWithReload(() =>
   import('./ChoreographyEditor.js').then((m) => ({ default: m.CuesSection })),
 );
-const MovesSection = lazy(() =>
+const MovesSection = lazyWithReload(() =>
   import('./ChoreographyEditor.js').then((m) => ({ default: m.MovesSection })),
 );
 
