@@ -11,9 +11,10 @@ Each step follows the working agreement: **plan → confirm → code → summari
 > [`HISTORY.md`](./HISTORY.md); forward work is in [`web-ios-parity.md`](./web-ios-parity.md).
 >
 > **Surface scope:** per the parity principle (`decisions.md` D18, [`web-ios-parity.md`](./web-ios-parity.md)),
-> web and iOS are co-equal surfaces — the cross-surface parity backlog (web gains full live-run; iOS gains
-> builder/library/search/explore/sharing) is now first-class work alongside iOS Phase 2 in the separate
-> `ritmofit-ios` repo. (The prior `REVIEW.md` launch-readiness log is archived in `archive/`.)
+> web and iOS are co-equal surfaces — the cross-surface parity backlog is now mostly iOS catch-up
+> (builder/library/search/explore/sharing plus allowlisted run-payload DTO fields), while web's core
+> live-run gap has shipped. Track the current ledger in `web-ios-parity.md` alongside iOS Phase 2 in the
+> separate `ritmofit-ios` repo. (The prior `REVIEW.md` launch-readiness log is archived in `archive/`.)
 
 ## M1 — Auth + class/cue data model ✅ done
 

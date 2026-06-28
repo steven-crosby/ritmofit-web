@@ -332,11 +332,12 @@ haptics, lock-screen / Now-Playing integration, and motion/ambient sensing remai
 second-screen "presentation/cast" view (laptop → TV) is a web-leaning *enhancement*, not a limiter.
 "UX expression" is **platform-idiomatic**, not a unified pixel-identical UI.
 
-**Tradeoff:** Overturns the original asymmetric architecture; implies sizable near-term parity work in
-**both** directions (web gains full live-run; iOS gains builder/library/search/explore/sharing) and
-raises cross-repo coordination cost (two clients, one contract). Accepted as the cost of the core
-promise. **Open follow-on (not now):** iPad as a first-class iOS target — today the principle leans on
-web to cover iPad.
+**Tradeoff:** Overturns the original asymmetric architecture; implied sizable near-term parity work in
+**both** directions. Web's core live-run surface has since shipped; the current ledger is mostly iOS
+catch-up for builder/library/search/explore/sharing and additive run-payload fields, with future web live
+work framed as enhancements rather than the core parity gap. This raises cross-repo coordination cost
+(two clients, one contract), accepted as the cost of the core promise. **Open follow-on (not now):** iPad
+as a first-class iOS target — today the principle leans on web to cover iPad.
 
 ---
 
