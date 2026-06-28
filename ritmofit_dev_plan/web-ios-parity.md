@@ -99,6 +99,9 @@ list; after the launch gate is green, it becomes the next implementation queue. 
     action when Songs-by-Move lands. No contract change.
 - **Explore** feed
 - **Sharing / teams** UI
+- **Account/profile settings** (web Session 5 follow-up): web now has an Account dialog backed by
+  `GET /auth/me` + additive `PATCH /auth/me` for `displayName` and `imageUrl`, with sign-out still
+  available. iOS should add the same profile-view/edit surface when its account/settings surface lands.
 - Run-payload DTO catch-up for currently allowlisted additive fields: `RunClass.timelineMode`;
   `RunTrack.displayRpm` / `holdCount` / `clipStartMs` / `beatAnchorMs`; `Move.beat` / `Move.bar`
 

@@ -30,6 +30,8 @@ schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/auth/session` | Validate the Better Auth session and return the canonical profile. Better Auth's adapter **creates** the `users` row; this route **reconciles our extra columns** (`display_name`, `image_url`) on first sight — it does not mint the identity. Called once after login. |
+| GET | `/auth/me` | Return the signed-in caller's canonical profile. Used by account/settings surfaces and auth smoke checks. |
+| PATCH | `/auth/me` | Update caller-owned profile fields (`displayName`, `imageUrl`). Email, password, and provider identity remain Better Auth-owned. |
 
 (Better Auth's own sign-in/callback routes are mounted under `/api/auth/*` by the library.)
 

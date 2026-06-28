@@ -41,6 +41,8 @@ import type {
   TeamMembership,
   TeamMemberView,
   TeamRole,
+  User,
+  UpdateUserProfile,
 } from '@ritmofit/shared';
 import {
   CLASS_LIST_DEFAULT_LIMIT,
@@ -82,6 +84,11 @@ export interface ClassListPage {
   items: ClassListItem[];
   nextCursor: string | null;
 }
+
+// ── Caller profile ──────────────────────────────────────────────────────────
+export const getMe = () => api<User>('/auth/me');
+export const updateMe = (body: UpdateUserProfile) =>
+  api<User>('/auth/me', { method: 'PATCH', body: JSON.stringify(body) });
 
 export const listClasses = async (
   limit = CLASS_LIST_DEFAULT_LIMIT,
