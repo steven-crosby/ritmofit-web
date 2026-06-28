@@ -201,6 +201,42 @@
   }
 }
 
+/* The subtle planning-timeline pulse (design system 10 §2, 09): the *second* and
+   only other sanctioned pulse surface — the currently-active track's block in the
+   planning timeline. Deliberately quieter than the Live HUD pulse above: scale
+   1.0 -> 1.03 (vs 1.06) and a faint cyan border-luminance breath on the interactive
+   channel instead of the pronounced copper glow, one cycle per --rf-beat. The breath
+   rides `filter: drop-shadow` (transform + filter only, 60fps) so it coexists with
+   the block's static `ring-interactive` (box-shadow) — which stays put as the
+   non-animated selection indicator. The cyan rgb is the literal of
+   `--rf-color-semantic-interactive-default` (#3AC0D4), held at 0 alpha off-beat so
+   the glow interpolates cleanly (same channel-literal exception as rf-beat-pulse).
+   Removed entirely under reduced motion: the static ring alone marks the active
+   track (10 §6 — affect lost, information kept). */
+@keyframes rf-beat-pulse-subtle {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(58, 192, 212, 0)); /* cyan-interactive @ 0 alpha */
+  }
+  50% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 5px rgba(58, 192, 212, 0.5)); /* cyan-interactive @ 50% */
+  }
+}
+
+.rf-beat-pulse-subtle {
+  animation: rf-beat-pulse-subtle calc(60s / var(--rf-bpm, 120)) cubic-bezier(0.4, 0, 0.2, 1)
+    infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rf-beat-pulse-subtle {
+    animation: none;
+  }
+}
+
 /* The "drop" (design system 10 §5): the one big motion spend. On an All-Out cue
    advance in Live mode, a brief plasma glow blooms behind the cue card and the
    cue text cross-fades in. Rationed to all-out tracks (a handful of times per
