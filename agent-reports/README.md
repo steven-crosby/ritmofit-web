@@ -43,10 +43,9 @@ in short:
 
 - **Archive:** `remote-prompts/daily/changed-code-sentinel`,
   `remote-prompts/daily/command-brief`, every `remote-prompts/technical/*` audit,
-  `remote-prompts/planning/pr-triage`, `remote-prompts/planning/doc-drift`.
-- **No report:** `daily/start-session`, `daily/close-session` (interactive, not relocated),
-  `remote-prompts/planning/next-slice-planner`, `remote-prompts/planning/roadmap-sync`,
-  `remote-prompts/planning/release-readiness`.
+  all `remote-prompts/planning/*` (`pr-triage`, `doc-drift`, `next-slice-planner`,
+  `roadmap-sync`, `release-readiness`).
+- **No report:** `daily/start-session`, `daily/close-session` (interactive).
 
 ## Rules (from [`../agent-prompts/remote-prompts/00-house-rules.md`](../agent-prompts/remote-prompts/00-house-rules.md))
 

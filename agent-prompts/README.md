@@ -71,7 +71,7 @@ read-only pass). No prompt ever merges, deploys, migrates the remote D1, or chan
   (an isolated, throwaway cloud container). Each opens with a sandbox banner, and every one
   leaves its result as durable, committed-and-pushed output — a branch, a draft PR, or a
   git-tracked report — because the container is discarded when the session ends.
-  - `remote-prompts/00-house-rules.md` — shared guardrails for every PR-producing prompt.
+  - `remote-prompts/00-house-rules.md` — shared guardrails for all remote prompts (change prompts open draft PRs; briefs push report-only branches).
   - `remote-prompts/daily/`:
     - `changed-code-sentinel` — primary remote agent; reviews only the new commit delta.
     - `command-brief` — turns the sentinel result into an actionable handoff for this repo.

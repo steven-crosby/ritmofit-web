@@ -1,5 +1,5 @@
 ---
-prompt: remote-prompts/daily/command-brief
+prompt: daily/command-brief
 repo: ritmofit-web
 agent: claude-opus-4-8
 date: 2026-06-27
@@ -59,7 +59,7 @@ contract parity (owned by the manual `api-contract-parity` pass, not this queue)
 ## Blockers
 
 No sentinel report on `main` to validate, so the recent-delta coverage claim cannot be confirmed
-from the default branch. Merging/flipping drafts is an owner decision (read-only run).
+from the default branch. Merging/flipping drafts is an owner decision (brief-only run; report branch pushed).
 
 ## Next recommended action
 
