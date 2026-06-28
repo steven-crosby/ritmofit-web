@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
-import { avgBpm, formatDuration } from './class-summary.js';
+import { avgBpm, cardSummaryFromPayload, formatDuration } from './class-summary.js';
 
 /** Minimal track entry; only the fields the summary helpers read need to be real. */
 function entry(displayBpm: number | null): RunPayloadTrackEntry {
@@ -24,6 +24,46 @@ describe('avgBpm', () => {
   it('returns null when no track has a BPM', () => {
     expect(avgBpm(payload(null, null))).toBeNull();
     expect(avgBpm(payload())).toBeNull();
+  });
+});
+
+describe('cardSummaryFromPayload', () => {
+  /** Build a payload with a class total and a list of (albumArtUrl) tracks. */
+  function artPayload(totalDurationMs: number, arts: (string | null)[]): RunPayload {
+    return {
+      class: { totalDurationMs },
+      tracks: arts.map((albumArtUrl) => ({ track: { albumArtUrl } })),
+    } as RunPayload;
+  }
+
+  it('derives count + total runtime and distinct art in order, capped at 4', () => {
+    const summary = cardSummaryFromPayload(
+      artPayload(630_000, [
+        'https://art/a.jpg',
+        null,
+        'https://art/a.jpg', // dup
+        'https://art/b.jpg',
+        'https://art/c.jpg',
+        'https://art/d.jpg',
+        'https://art/e.jpg', // beyond the cap
+      ]),
+    );
+    expect(summary.trackCount).toBe(7);
+    expect(summary.totalDurationMs).toBe(630_000);
+    expect(summary.albumArtUrls).toEqual([
+      'https://art/a.jpg',
+      'https://art/b.jpg',
+      'https://art/c.jpg',
+      'https://art/d.jpg',
+    ]);
+  });
+
+  it('is all-empty for a class with no tracks', () => {
+    expect(cardSummaryFromPayload(artPayload(0, []))).toEqual({
+      trackCount: 0,
+      totalDurationMs: 0,
+      albumArtUrls: [],
+    });
   });
 });
 

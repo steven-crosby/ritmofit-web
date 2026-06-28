@@ -40,7 +40,7 @@ import {
   getClass,
 } from '../lib/api.js';
 import { moveItem } from '../lib/reorder.js';
-import { avgBpm, formatDuration } from '../lib/class-summary.js';
+import { avgBpm, formatDuration, cardSummaryFromPayload } from '../lib/class-summary.js';
 import { formatLastOpened } from '../lib/relative-time.js';
 import {
   canRunPayload,
@@ -229,13 +229,24 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       return;
     }
 
+    const payload = payloadResult.status === 'fulfilled' ? payloadResult.value : null;
     dispatchDetail({
       type: 'success',
       classId,
       requestId,
       tracks: tracksResult.value,
-      payload: payloadResult.status === 'fulfilled' ? payloadResult.value : null,
+      payload,
     });
+
+    // Keep this class's Library card in sync with its freshly loaded detail, so a
+    // track add/remove/edit updates the rail's count/runtime/collage immediately
+    // instead of waiting for the next full list reload. The run-payload yields the
+    // exact aggregates GET /classes computes; without it (a non-runnable class, e.g.
+    // a track missing duration) the track count is still authoritative.
+    const summary = payload
+      ? cardSummaryFromPayload(payload)
+      : { trackCount: tracksResult.value.length };
+    setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...summary } : c)));
   }, []);
 
   const openClass = useCallback(

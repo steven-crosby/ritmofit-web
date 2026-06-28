@@ -4,7 +4,34 @@
  * run-payload — no new schema or data. Kept here so they're unit-testable and
  * the layout component stays presentational.
  */
-import type { RunPayload } from '@ritmofit/shared';
+import { CLASS_LIST_ITEM_ART_LIMIT, type ClassListItem, type RunPayload } from '@ritmofit/shared';
+
+/** The Library-card aggregates a class list item carries. */
+export type CardSummary = Pick<ClassListItem, 'trackCount' | 'totalDurationMs' | 'albumArtUrls'>;
+
+/**
+ * Derive the Library-card aggregates from a class's run-payload — the *same* values
+ * `GET /classes` computes server-side (the run-payload uses the identical timeline +
+ * clip-window resolution, and album art is collected in track order). Lets the open
+ * class's card update in place after a track change without refetching the whole list.
+ */
+export function cardSummaryFromPayload(payload: RunPayload): CardSummary {
+  const albumArtUrls: string[] = [];
+  const seen = new Set<string>();
+  for (const entry of payload.tracks) {
+    if (albumArtUrls.length >= CLASS_LIST_ITEM_ART_LIMIT) break;
+    const url = entry.track.albumArtUrl;
+    if (url && !seen.has(url)) {
+      seen.add(url);
+      albumArtUrls.push(url);
+    }
+  }
+  return {
+    trackCount: payload.tracks.length,
+    totalDurationMs: payload.class.totalDurationMs,
+    albumArtUrls,
+  };
+}
 
 /**
  * Average display BPM across the tracks that have one, rounded to a whole

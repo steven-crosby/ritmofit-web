@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ClassTrack, ClassWithAccess, ClassListItem } from '@ritmofit/shared';
+import type { ClassTrack, ClassWithAccess, ClassListItem, RunPayload } from '@ritmofit/shared';
 import { Dashboard } from './Dashboard.js';
 import * as api from '../lib/api.js';
 import type { ClassListPage } from '../lib/api.js';
@@ -166,6 +166,29 @@ describe('Dashboard class detail', () => {
     // The second load succeeds, so the workspace replaces the error panel.
     expect(await screen.findByRole('heading', { name: 'Broken ride' })).toBeTruthy();
     await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+  });
+
+  it('updates the Library card aggregates in place once a class detail loads', async () => {
+    // The list returns the class with stale (zero) aggregates; opening it loads a
+    // run-payload with two tracks, and the rail card must reflect that immediately.
+    const ride = makeClass('Stale card');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([{}, {}] as ClassTrack[]);
+    vi.mocked(api.getRunPayload).mockResolvedValue({
+      class: { totalDurationMs: 420_000 },
+      tracks: [{ track: { albumArtUrl: 'https://art/x.jpg' } }, { track: { albumArtUrl: null } }],
+    } as unknown as RunPayload);
+
+    renderDashboard();
+    // Initially the card shows 0 tracks (the list response's aggregate).
+    expect(await screen.findByRole('button', { name: /^Stale card.*0 tracks/i })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Stale card/i }));
+
+    // After the detail (run-payload) loads, the rail card reflects 2 tracks · 7:00.
+    expect(
+      await screen.findByRole('button', { name: /^Stale card.*2 tracks.*7:00/i }),
+    ).toBeTruthy();
   });
 
   it('submits manually added track durations as parsed minutes and seconds', async () => {
