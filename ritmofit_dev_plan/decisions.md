@@ -142,7 +142,7 @@ track would be a real schema change — revisit deliberately.
 ## D8 — Moves library (global + user) vs move placements  **[Resolved]**
 
 **Decision:** Reconcile the two drafts' different "move" models into two layers:
-- **Library** — `moves` (global seed: Climb, Sprint, Jog, Tap Back, Push, Recovery) + `user_moves`
+- **Library** — `moves` (global seed: Climb, Sprint, Jog, Tap Back, Push, Recovery, … — full seed list in `schema.md`) + `user_moves`
   (a user's custom moves / personal coaching language, optional `base_move_id` → `moves`).
 - **Placement** — `class_track_moves` is a *timeline instance* on a `class_track` (anchored by
   `anchor_ms`, optional intensity) that references a library move (`move_id` or `user_move_id`) or
@@ -300,7 +300,7 @@ the prod effort labels (easy/moderate/hard) and the design-system "movement" lab
 competing vocabularies that had drifted apart.
 
 **Tradeoff:** Backward-compatible (labels only). Pairs with flipping the intensity control from a
-raw-enum dropdown to a labeled **segmented control** (backlog M1 + P2), and updating the design-system
+raw-enum dropdown to a labeled **segmented control** (mockup-parity backlog), and updating the design-system
 rhythm/intensity doc to name the zones canonically.
 
 ---

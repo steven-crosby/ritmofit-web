@@ -49,7 +49,7 @@ In practice, for any feature PR (web *or* iOS):
   (`apps/api/src/lib/contract-parity.ts` → `CONTRACT_PARITY_ALLOWLIST`). Field-name presence only —
   type/nullability/enum drift stays the job of the manual `agent-prompts/remote-prompts/technical/api-contract-parity.md`
   pass. **Currently allowlisted (iOS DTO follow-ups owned in `ritmofit-ios`):** `RunClass.timelineMode`;
-  `RunTrack.displayRpm` / `holdCount` (M6/D14, PR #110) / `clipStartMs` / `beatAnchorMs`; `Move.beat` /
+  `RunTrack.displayRpm` / `holdCount` (D14, PR #110) / `clipStartMs` / `beatAnchorMs`; `Move.beat` /
   `Move.bar`.
 - **Still open: no design-token drift check for the iOS-vendored copy.** iOS vendors its own
   `ritmofit-ios/design-tokens/tokens.json` and `…/Core/DesignSystem/RFTokens.swift`, hand-synced from web

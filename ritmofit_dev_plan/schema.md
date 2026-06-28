@@ -18,7 +18,8 @@ match it; if they diverge, reconcile here first.
 > matching Better Auth 1.6.x's canonical models; treat them as owned-but-managed. We extend `users` with
 > our own columns and map Better Auth's `name` / `image` fields onto `display_name` / `image_url`, so the
 > shared `userSchema` contract is unchanged. Better Auth date columns are stored as epoch ms
-> (`timestamp_ms`), consistent with D10.
+> (`timestamp_ms`), consistent with D10. The Better-Auth rate-limit counter table (`rate_limit`, in
+> `apps/api/src/db/schema.ts`) is likewise owned-but-managed infrastructure and is not modeled in detail here.
 
 ---
 

@@ -24,7 +24,7 @@ numbers, icons, position, and weight**; color makes it feel confident on top of 
 colorblindness, low light, sweat, and glances. (Red/green avoidance is a personality guideline;
 redundant encoding is the durable rule.)
 
-## 4. One interactive language, one identity, one drop
+## 4. One identity, one interactive language, one drop
 
 Three reserved channels, never swapped:
 

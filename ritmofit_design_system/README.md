@@ -81,10 +81,15 @@ npm run verify      # build --check (both) + lint-tokens + check-contrast, no wr
 ```
 
 Both emitters accept `--check`: they never write and exit non-zero if their generated output has
-drifted from `tokens.json`, so `verify` is a safe read-only gate.
+drifted from `tokens.json`, so `verify` is a safe read-only gate. Use `verify` as the read-only gate —
+**not** `build:all -- --check`: `build:all` is `build && build:ios`, so a trailing `--check` is not
+forwarded to the emitters and they run in **write** mode.
 
 The component rules below the generated block in `theme.css` are still authored by hand. `RFTokens.swift`
-expects a `Color(hex:)` initializer in the host app (the iOS repo provides one).
+expects a `Color(hex:)` initializer in the host app (the iOS repo provides one). The `ritmofit-ios` repo
+vendors its own hand-synced copy of `tokens.json` + `RFTokens.swift`; that cross-repo copy is **not**
+drift-gated from here and is reconciled as part of the post-launch iOS wrap-up (see
+[`../ritmofit_dev_plan/web-ios-parity.md`](../ritmofit_dev_plan/web-ios-parity.md) › "Known seam gaps").
 
 A complete **light theme** is generated too, but **opt-in**: web emits a `[data-theme="light"]` override
 block, iOS an `RFColorLight` enum. Dark stays the default; set `data-theme="light"` on a root element (or
