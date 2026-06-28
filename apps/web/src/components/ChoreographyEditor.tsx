@@ -692,7 +692,7 @@ export function MovesSection({
               type="button"
               className="font-ui text-xs text-interactive"
               onClick={onOpenSongsByMove}
-              title="Find songs you've choreographed with a move"
+              title="Find songs you’ve choreographed with a move"
             >
               Songs by move…
             </button>

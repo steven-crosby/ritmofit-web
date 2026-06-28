@@ -77,7 +77,7 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
           setResults(null);
           setError(
             mode === 'likes'
-              ? `Couldn't load your ${providerLabel(provider)} likes — connect the account first (Connections).`
+              ? `Couldn’t load your ${providerLabel(provider)} likes — connect the account first (Connections).`
               : (e as Error).message,
           );
         }
