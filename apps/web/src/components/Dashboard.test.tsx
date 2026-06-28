@@ -86,7 +86,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
 
-    expect(await screen.findByText("Couldn't load your classes — try again.")).toBeTruthy();
+    expect(await screen.findByText('Couldn’t load your classes — try again.')).toBeTruthy();
     // The top-level banner surfaces the underlying message too.
     expect(screen.getByText('network down')).toBeTruthy();
   });

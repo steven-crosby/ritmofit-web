@@ -525,7 +525,7 @@ export function LibraryRail({
         <p className="font-ui text-sm text-text-tertiary">Loading your classes…</p>
       ) : view === 'error' ? (
         <p className="font-ui text-sm text-text-tertiary">
-          Couldn't load your classes — try again.
+          Couldn’t load your classes — try again.
         </p>
       ) : view === 'empty' ? (
         activeTag != null ? (

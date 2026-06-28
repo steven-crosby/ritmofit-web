@@ -175,7 +175,7 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
             onClick={onSignIn}
             className="rounded-pill rf-btn-primary px-8 py-3 font-ui text-base font-semibold text-text-on-accent"
           >
-            Start building — it's free
+            Start building — it’s free
           </button>
         </section>
       </main>

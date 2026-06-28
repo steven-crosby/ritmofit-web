@@ -246,7 +246,7 @@ export function ConnectionsDialog({
       )}
 
       <p className="font-ui text-xs text-text-tertiary">
-        Disconnecting forgets your tokens immediately and schedules removal of that provider's
+        Disconnecting forgets your tokens immediately and schedules removal of that provider’s
         imported references within 7 days.
       </p>
     </Dialog>
