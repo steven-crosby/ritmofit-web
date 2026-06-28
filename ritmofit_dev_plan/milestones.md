@@ -221,10 +221,12 @@ hardening** backlog all shipped and deployed. The full per-slice log (builder sl
 frontend S1–S4, hardening PRs — with Worker versions, migrations, and test counts) is archived in
 [`HISTORY.md`](./HISTORY.md).
 
-**Launch-readiness follow-ups from shipped code:** custom-move `baseMoveId`/`template` editing; the
-playing-track pulse in the *planning* timeline (no "playing" state in the builder); and segment-band
-track-range binding (snapping boundaries to track starts). These are tracked in
-`web-launch-readiness.md` and are not deferred past launch unless the owner explicitly exempts them.
+**Launch-readiness follow-ups from shipped code — all shipped + deployed (Session 5, 2026-06-28,
+PRs #137–#140):** custom-move `baseMoveId`/`template` editing (#139); the playing-track pulse in the
+*planning* timeline, driven by the active/selected track since the builder has no "playing" state (#137);
+segment-band track-range binding via "snap to track starts" (#140); and the rhythm-cycle move-vocabulary
+expansion (#138). See `HISTORY.md`. Remaining launch-readiness polish is tracked in
+`web-launch-readiness.md` (e.g. a settings/profile surface beyond sign-out).
 
 **Post-launch parity follow-up:** a run-payload `id` on `sections[]` remains optional unless iOS wants
 that symmetry.

@@ -51,12 +51,22 @@ Goal: make the planning loop discoverable instead of buried.
 
 ## Session 5 — Builder Polish
 
+Status: **done and deployed (2026-06-28).** All four shipped-code gaps closed (PRs #137–#140, Workers
+`4eab08f3` → `c34515d1`). See `HISTORY.md`.
+
 Goal: close the known shipped-code gaps.
 
-- Add custom-move `baseMoveId` / template editing.
-- Add the planning timeline playing-track pulse.
-- Add segment-band track-range binding.
-- Expand the rhythm-cycle default move vocabulary.
+- ~~Add custom-move `baseMoveId` / template editing.~~ Done (#139) — manager edit form sets discipline +
+  base move; UI-only, contract/API already supported it.
+- ~~Add the planning timeline playing-track pulse.~~ Done (#137) — the active track's block carries the
+  design system's second sanctioned tempo pulse, reduced-motion-safe.
+- ~~Add segment-band track-range binding.~~ Done (#140) — "Snap to tracks" snaps a dragged/keyed segment
+  boundary to the nearest track edge; authoring affordance, no contract change.
+- ~~Expand the rhythm-cycle default move vocabulary.~~ Done (#138) — +7 cycle moves; data-only seed, remote
+  re-seed applied.
+
+Deferred follow-ups (not Session 5 scope): manual visual passes (pulse cadence + reduced motion, segment
+snap, 320px/desktop) and the launch-listed settings/profile surface beyond sign-out.
 
 ## Session 6 — Live Mode And StructClub Parity Pass
 
