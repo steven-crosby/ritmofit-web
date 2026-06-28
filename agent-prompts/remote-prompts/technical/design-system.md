@@ -12,8 +12,9 @@
 
 **REPO:** `ritmofit-web`
 
-**Use when:** UI implementation may have drifted from tokens, components, typography, states, or
-cross-platform design guidance.
+**Use when:** UI implementation may have drifted from tokens, components, typography, states
+(including incomplete loading / empty / error / offline / permission states on changed surfaces),
+or cross-platform design guidance.
 **Do not use when:** the main concern is WCAG-level interaction or assistive-technology behavior;
 use `accessibility.md` instead.
 

@@ -11,6 +11,8 @@
 > `agent-prompts/remote-prompts/00-house-rules.md`
 > **PR-PRODUCING, DOCS ONLY** — never touch product code from this prompt.
 
+You have full autonomy within this scope to find drift, make small docs-only corrections, or report larger judgment calls.
+
 **REPO:** `ritmofit-web`
 
 Find where the written record and the code / reality have diverged:

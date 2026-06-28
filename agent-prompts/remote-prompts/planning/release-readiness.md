@@ -10,6 +10,8 @@
 > go / no-go checklist with evidence, then write it as a validated agent report, commit it, and
 > **push the branch** so it survives the sandbox.
 
+You have full autonomy within this scope to inspect, mark the checklist, and produce the report without further input.
+
 **REPO:** `ritmofit-web`
 
 Check and mark ✅ / ❌ / ⚠️ with a one-line note + pointer each:

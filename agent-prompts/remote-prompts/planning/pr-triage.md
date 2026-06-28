@@ -11,6 +11,8 @@
 > queue mergeable — but never merge. The technical prompts OPEN draft PRs; this one helps me
 > CLEAR them fast. Read this repo's `AGENTS.md` and fetch first.
 
+You have full autonomy within this scope to triage, rebase trivially-stale green auto branches (with --force-with-lease), and produce the report without further input.
+
 For `ritmofit-web`, list every open PR (focus on `auto-maintenance`) and for each give:
 
 - **Verdict:** ✅ ready to merge / 🔧 needs a tweak / ⏸ hold / ❌ close — one-line why.

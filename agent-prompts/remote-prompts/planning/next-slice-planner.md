@@ -24,6 +24,8 @@
 3. Flag anything in the plan docs that's already done but unchecked, or stale.
 4. **Gap hunt before committing to a slice.** For the feature in question, surface what's
    not yet thought through:
+
+**Do not** do broad prioritization or weekly focus (that's `roadmap-sync.md`); stay on turning one clear priority into a concrete slice.
    - **UX gaps:** missing loading / error / empty states and unhandled edge cases.
    - **API completeness:** does the `apps/api/openapi/openapi.json` contract fully support
      it (endpoints, params, error responses, pagination)? This backend is the source of
@@ -32,6 +34,8 @@
    - **Safety/architecture:** any shared-safety-rule risk (provider audio, exposed keys).
    End with **3–5 pointed clarifying questions** for me to resolve before development —
    this is a planning prompt, so prefer surfacing the right questions over guessing.
+
+You have full autonomy within this scope to analyze, propose the slice(s), hunt gaps, and produce the report without further input.
 
 Keep it tight enough to drop straight into the plan doc. (Pairs with the **Plan** agent
 for a deeper architecture pass, and with `daily/start-session.md` to kick off the build.)

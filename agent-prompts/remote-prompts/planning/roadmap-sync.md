@@ -11,6 +11,8 @@
 > sandbox. Self-label with agent + date. Reads the vendored `ios-snapshot/` (read-only iOS
 > client source) only to map dependencies.
 
+**You have full autonomy within this scope** to analyze, decide the ranking, and produce the report without further input.
+
 Answer: **what should I focus on in `ritmofit-web` this week?**
 
 - **Current state:** milestone / slice from the live source of truth
@@ -24,6 +26,8 @@ Answer: **what should I focus on in `ritmofit-web` this week?**
 - **Recommendation:** a ranked week plan — "land these, in this order, because…" — and
   what to explicitly defer. Call out anything you should ship *first* because the iOS app
   is waiting on it.
+
+**Do not** turn priorities into detailed implementation slices (use `next-slice-planner.md` for that) or open any code PRs.
 
 One page max. Lead with the single most important call for the week.
 

@@ -43,31 +43,27 @@ Worker/API).
 If the full required gate cannot complete inside the timebox, do not open the PR. Preserve
 the branch if useful and report the exact remaining verification.
 
-Review the changed code and its immediate callers for:
+Review the changed code and its immediate callers for regression risk:
 
-- regression risk and incorrect edge-case handling;
-- missing or weakened tests;
-- API/OpenAPI contract drift the iOS client decodes, especially nullability and enums;
-- missing authorization or hidden-resource behavior;
-- swallowed errors, unsafe logging, timeout/retry mistakes, or crash paths;
-- incomplete loading, empty, error, offline, permission, accessibility, or reduced-motion
-  states on changed UI;
-- hardcoded values that bypass the documented design-token source;
-- stale plan or setup documentation directly caused by the inspected changes.
+- failing / skipped / flaky tests or tests that assert nothing;
+- incorrect edge-case handling, swallowed errors, unsafe logging, timeout/retry mistakes, or crash paths;
+- missing or weakened authorization / hidden-resource behavior;
+- run-payload nullability/enum contract drift that the iOS client decodes;
+- D1 migrations that could fail forward.
+
+For UI states, design tokens, performance, accessibility, or content/copy issues, **surface them briefly for the relevant specialist prompt** (design-system.md, accessibility.md, performance.md, content-consistency.md, etc.) rather than investigating deeply yourself.
 
 Prioritize user-facing breakage, data loss, authorization, live-class reliability, and
 cross-client incompatibility. Ignore unrelated pre-existing cleanup.
 
-You may open at most **1 draft PR**, and only when the fix is:
+You have full authority within this scope to autonomously decide and execute **at most one** small draft PR, but only when **all** of the following are true:
 
-- supported by concrete evidence;
-- small enough to review quickly;
-- accompanied by a focused regression test when behavior changes;
-- fully verified with the repo's required relevant gates.
+- you have concrete evidence of a recent regression;
+- the fix is narrow and small enough for quick review;
+- you add a focused regression test (when behavior changes);
+- you can complete the full relevant verification gate inside the timebox.
 
-Do not weaken, skip, or delete a test to get green. Do not make backend contract,
-database migration, authentication architecture, dependency-major, or visual-design
-decisions unattended; report those with a recommended next step.
+If the fix belongs primarily to another specialist dimension (UI, performance, design tokens, etc.), report it instead of opening a PR.
 
 End by writing the agent report required by the house rules. Rank unresolved findings as
 P0–P3 and include `file:line`, evidence, user impact, recommended owner, and whether a

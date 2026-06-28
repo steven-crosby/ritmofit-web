@@ -126,6 +126,33 @@ routine audit churn.
 
 ## Operating model
 
+The remote prompts are designed like chess pieces: each has a **laser-focused scope** ("movement rules") so an agent running in a remote ephemeral environment has full autonomy to complete its job — investigate its lane, decide on a small fix or report, verify, and produce the deliverable (pushed branch + validated report, or report only) without needing you mid-run.
+
+You are the chess master. The agents execute their piece's legal moves and leave the results (branches and reports) for your review before any merge.
+
+### Chess Piece Mapping
+
+| Prompt | Chess Piece | Movement Rule (Laser Scope) |
+|--------|-------------|-----------------------------|
+| changed-code-sentinel | Capped Scout (Knight) | Surveys recent deltas only; surfaces issues; at most **one** small regression fix. Defers UI/design/perf/a11y to the right piece. |
+| command-brief | King's Advisor | Pure synthesis into prioritized handoff report. No code. |
+| stability | Rook | Attacks prod regressions, reliability threats, and core breakage directly. |
+| performance | Bishop | Measures/fixes along specific slowness lines (CWV, bundles, D1, caching). |
+| quality | Pawn (clean advance) | Behavior-preserving cleanup and rot removal only. |
+| test-coverage | Defensive Pawn | Adds tests on high-blast-radius paths only; hands bugs to stability. |
+| design-system | Bishop (visual lines) | Tokens, components, typography, states (incl. incomplete UI states). |
+| accessibility | Knight (tricky squares) | Keyboard, screen-reader, contrast, focus, reduced-motion. |
+| content-consistency | Pawn | Terminology, labels, and microcopy only. |
+| api-contract-parity | Rook (contract lines) | Backend contracts, OpenAPI, iOS decoding. Mostly reports. |
+| security | Queen | High-value threats: secrets, auth, CVEs, unsafe patterns. |
+| dependency-freshness | Limited Pawn | Stale packages (ranked plan + rare safe bumps). |
+| observability | Bishop (diagnostic) | Logs, health, smoke coverage, error envelopes. |
+| roadmap-sync | Strategist | Weekly prioritization and focus recommendations. |
+| next-slice-planner | Tactical Planner | Turns one priority into a concrete, bounded slice + gap hunt. |
+| release-readiness | Inspector | Pre-release / pre-milestone go/no-go checklist. |
+| pr-triage | Endgame Sweeper | Verdicts + safe rebases of trivially-stale green auto PRs. |
+| doc-drift | Archivist | Written record vs actual code/docs; small docs-only fixes. |
+
 Think of the prompts as a small set of specialist teams, each with a clear owner and trigger:
 
 | Team | Prompt(s) | Use when |
