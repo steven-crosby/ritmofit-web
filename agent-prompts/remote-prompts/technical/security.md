@@ -1,4 +1,4 @@
-# Security & dependency hygiene  (REPORT-FIRST)
+# Security & dependency hygiene
 
 > **Remote ephemeral sandbox.** You run unattended in an isolated, ephemeral cloud sandbox —
 > not the owner's machine. The repository is a fresh clone and the container is discarded when
@@ -10,9 +10,11 @@
 > **Follow the house rules first:**
 > `agent-prompts/remote-prompts/00-house-rules.md`
 >
-> **MODE OVERRIDE:** investigate + RECOMMEND. Open PRs ONLY for trivially-safe fixes
-> (e.g. deleting a log line that prints a token, a single patch-level pin). Auth
-> changes and any non-trivial dependency upgrade go in the report — do NOT auto-change.
+> **PR-PRODUCING.** Open a draft PR for the highest-value, low-risk fix you can fully
+> verify (e.g. deleting a log line that prints a token, a single patch-level pin, a missing
+> validation guard). Auth/session redesign, authorization-model changes, and any non-trivial
+> dependency upgrade stay **report-only** recommendations — never auto-change them unattended.
+> When in doubt about safety, report instead of opening a PR.
 
 **REPO:** `ritmofit-web`
 

@@ -7,10 +7,13 @@
 > into the git-tracked `agent-reports/`. No human is watching in real time — never block on
 > interactive input; decisions that belong to the owner become written recommendations.
 
-Every **PR-producing** prompt in this library inherits these rules, including the
-docs-only drift prompt. Read-only prompts use their own lighter header. All work here
-branches in **ritmofit-web**; the iOS client is only ever read-only context (vendored as a
-snapshot in `ios-snapshot/`, so no sibling iOS checkout is needed).
+Every prompt in this library inherits these rules and **leaves a pushed branch** — the
+deliverable never lives only in chat, because the container is discarded at the end. Change
+prompts (the technical prompts and `doc-drift`) open a draft PR; brief/analysis prompts
+(`command-brief` and the planning briefs) push their validated agent report on a branch with
+no code PR; `pr-triage` may push rebased branches. All work here branches in **ritmofit-web**;
+the iOS client is only ever read-only context (vendored as a snapshot in `ios-snapshot/`, so no
+sibling iOS checkout is needed).
 
 You are running unattended in this sandbox for at most **45 minutes**. Spend the final
 5 minutes recording results and cleaning up — and because the container is discarded at the

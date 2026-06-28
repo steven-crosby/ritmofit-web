@@ -53,11 +53,15 @@ machine — is an equivalent way to run the same prompts when you don't have a h
    keeps the full workflow within one hour.
 5. Review the command brief and draft PRs. Agents never merge or deploy.
 
-PR-producing remote prompts inherit [`remote-prompts/00-house-rules.md`](remote-prompts/00-house-rules.md): isolated
-worktrees, one draft PR maximum, deduplication, verification, a 45-minute timebox, and
-validated agent reports. Most planning prompts are read-only; `doc-drift` is
-docs-PR-producing, and `pr-triage` remains read-only unless explicitly invoked with `ACT`.
-`security` and `dependency-freshness` are **report-first**.
+Every remote prompt inherits [`remote-prompts/00-house-rules.md`](remote-prompts/00-house-rules.md)
+and **leaves a pushed branch**: isolated worktrees, one draft PR maximum, deduplication,
+verification, a 45-minute timebox, and validated agent reports. The technical prompts and
+`doc-drift` open a draft PR for the highest-value safe fix (`doc-drift` docs-only); `security`,
+`dependency-freshness`, and `observability` open a draft PR for low-risk fixes and keep
+auth/major-upgrade/infra decisions report-only. The briefs (`command-brief` and the planning
+prompts) push their validated agent report on a branch with no code PR, and `pr-triage` pushes
+safe rebases of trivially-stale green `auto-maintenance` branches (use `REPORT-ONLY` for a pure
+read-only pass). No prompt ever merges, deploys, migrates the remote D1, or changes secrets.
 
 ## Folder
 - `daily/` — **interactive**, person-in-the-loop prompts that run on your own machine:
@@ -80,9 +84,10 @@ docs-PR-producing, and `pr-triage` remains read-only unless explicitly invoked w
 
 ## After-action reports
 
-Autonomous passes that produce findings archive a validated report to
-[`agent-reports/`](../agent-reports/) (repo-local, git-tracked). Interactive prompts that
-are live decision-aids — where you are the record — do not. The mechanics live in
+Every **remote** prompt archives a validated report to
+[`agent-reports/`](../agent-reports/) (repo-local, git-tracked) and pushes it on its branch —
+including the planning briefs, whose pushed report is now their durable deliverable. Only the
+**interactive** daily prompts (where you are the record) skip the report. The mechanics live in
 [`remote-prompts/00-house-rules.md`](remote-prompts/00-house-rules.md) §9 and
 [`../agent-reports/README.md`](../agent-reports/README.md).
 
@@ -90,9 +95,8 @@ are live decision-aids — where you are the record — do not. The mechanics li
 |---|---|
 | `remote-prompts/daily/changed-code-sentinel`, `remote-prompts/daily/command-brief` | **Yes** |
 | all `remote-prompts/technical/*` audits | **Yes** |
-| `remote-prompts/planning/pr-triage`, `remote-prompts/planning/doc-drift` | **Yes** |
+| all `remote-prompts/planning/*` (`pr-triage`, `doc-drift`, `next-slice-planner`, `roadmap-sync`, `release-readiness`) | **Yes** |
 | `daily/start-session`, `daily/close-session` | No — interactive |
-| `remote-prompts/planning/next-slice-planner`, `remote-prompts/planning/roadmap-sync`, `remote-prompts/planning/release-readiness` | No — live decision-aid |
 
 The exhaustive reports are intentionally more than anyone reads daily; a later
 reviewer/digest agent is meant to read the archive and surface only what matters.

@@ -1,4 +1,4 @@
-# Observability & smoke evidence  (REPORT-FIRST)
+# Observability & smoke evidence
 
 > **Remote ephemeral sandbox.** You run unattended in an isolated, ephemeral cloud sandbox —
 > not the owner's machine. The repository is a fresh clone and the container is discarded when
@@ -10,9 +10,11 @@
 > **Follow the house rules first:**
 > `agent-prompts/remote-prompts/00-house-rules.md`
 >
-> **MODE:** investigate + RECOMMEND. Open PRs only for trivially safe instrumentation or
-> smoke-test documentation fixes. Do not add external monitoring vendors, telemetry pipelines,
-> production cron jobs, or new infrastructure unattended.
+> **PR-PRODUCING.** Open a draft PR for a low-risk, fully-verified improvement (a missing
+> non-secret log field, a corrected smoke-test doc, an extended smoke checklist). External
+> monitoring vendors, telemetry pipelines, production cron jobs, alerting thresholds, retention
+> or privacy tradeoffs, and any new infrastructure stay **report-only** — never stand them up
+> unattended.
 
 **REPO:** `ritmofit-web`
 

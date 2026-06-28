@@ -7,7 +7,9 @@
 > `agent-reports/`. No human is watching in real time — never block on interactive input;
 > decisions that belong to the owner become written recommendations.
 
-> **READ-ONLY.** Do not modify the repository, push branches, or open PRs.
+> **BRIEF-ONLY.** Do not modify product code or open a code PR. Your deliverable is the brief
+> itself: write it as a validated agent report, commit it, and **push the branch** so it
+> survives the sandbox (chat output does not).
 > **TIMEBOX:** 10 minutes.
 
 Read **ritmofit-web**, its canonical `AGENTS.md`, the live planning sources
