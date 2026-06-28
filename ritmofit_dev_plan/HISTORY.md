@@ -10,6 +10,28 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-28 deployed (Worker `9519447a-dc0b-4b27-9f74-13783f1cf3f2`).**
+> **Web Launch Readiness Sessions 2–4** landed to production (PRs #130, #131, #132, #134, squash-merged
+> to `main`). **Session 2 (#130):** softened the unconfigured BPM lookup `503` to instructor-facing copy
+> and gated TrackSearch's "Import Playlist" to Spotify via a new `playlistImport` capability flag.
+> **Session 3 (#131):** `GET /classes` now returns additive Library-card aggregates (`trackCount`,
+> `totalDurationMs`, `albumArtUrls`) via a new `ClassListItem` shape, and the Library rail renders a
+> track-art collage, count + runtime, last-opened date, a duplicate action, and a create-class template
+> chooser. **#132:** fixed the class-header title overflowing into the actions row (`min-w-0`).
+> **Session 4 (#134):** read-only class detail (songs + placed moves + cues + section bands) reachable
+> from a Library-card "View"; Songs-by-Move results gain "Start a class" (copies the choreographed
+> class_track into a new class).
+>
+> **No migration** — remote D1 reported "No migrations to apply" before deploy (the list aggregates are
+> computed at query time, no schema change). Pre-deploy gates green: format, typecheck, lint, unit
+> (web 206 + api 257), integration 66, web build, OpenAPI no-drift, audit, design-system verify, and
+> contract-parity. Post-deploy smoke (live `https://ritmofit.studio`): SPA `/` → `200`,
+> `/api/v1/health` → `200`, unauthenticated `/api/v1/classes` + `/explore` + `/teams` +
+> `POST /classes/x/import-playlist` → `401`, all six security headers present, SPA `Cache-Control`
+> includes `no-transform`, live HTML contains no `__CF$cv$params` injection, and the served asset
+> `index-BHeK3sAC.js` matches the local build. Prior Worker
+> `dafa2638-4383-4145-8f50-531fcfb235ec` is the rollback anchor.
+>
 > **Session 2026-06-28 deployed (Worker `dafa2638-4383-4145-8f50-531fcfb235ec`).**
 > Closed the remaining Web Launch Readiness Session 1 production-audit polish items from the `e6fb7c1a`
 > deploy. **`d694b02`** — **web**: manual "Add track" duration now uses the same positive `m:ss`
