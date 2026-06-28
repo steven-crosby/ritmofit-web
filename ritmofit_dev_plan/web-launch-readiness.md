@@ -73,9 +73,10 @@ Known launch-required polish/work items from the current audit:
 
 Production audit findings (Session 1, 2026-06-27):
 
-- **PWA stale-shell crash after deploy — fixed (PR #124, merged `c0f5037`).** A returning tab running an
-  older service-worker-cached shell hard-crashed to the ErrorBoundary when it lazy-imported a chunk hash
-  the new deploy had removed. `lazyWithReload` now reloads once into the fresh shell. Not yet deployed.
+- **PWA stale-shell crash after deploy — fixed and deployed (PR #124, merged `c0f5037`; live in Worker
+  `e6fb7c1a`).** A returning tab running an older service-worker-cached shell hard-crashed to the
+  ErrorBoundary when it lazy-imported a chunk hash the new deploy had removed. `lazyWithReload` now
+  reloads once into the fresh shell.
 - **CSP blocks an inline `<script>` on every page load** (`script-src 'self'
   https://static.cloudflareinsights.com`; hash differs each load). The built `index.html` has no inline
   scripts, so it is injected at runtime — most likely a Cloudflare zone setting (Rocket Loader / Web
