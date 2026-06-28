@@ -76,12 +76,14 @@ Known launch-required polish/work items from the current audit:
   placed moves and cues and the section/energy bands (all from the existing run-payload), and is reachable
   for owned classes via a "View" (Preview) action on each Library card — with an "Open in builder" CTA
   instead of "Save a copy". No API change. iOS parity tracked in `web-ios-parity.md`.
-- Rhythm-cycle seed vocabulary expansion for the default moves library.
+- ~~Rhythm-cycle seed vocabulary expansion for the default moves library.~~ **Done (web/api, Session 5,
+  2026-06-28):** +7 cycle seed moves landed in `seed.sql` (data-only, no migration), and the remote
+  idempotent re-seed was applied during the Session 5 deploy chain.
 - ~~Settings/profile surface beyond sign-out.~~ **Done (web, Session 5 follow-up, 2026-06-28):** the
   top nav now opens an Account dialog that fetches `/auth/me`, shows the signed-in email, edits
   `displayName` and `imageUrl` via the new protected `PATCH /auth/me`, and keeps sign-out reachable
-  inside the dialog. No migration; shared/API contract change is additive. iOS parity tracked in
-  `web-ios-parity.md`.
+  inside the dialog. Deployed in Worker `92d3904e`. No migration; shared/API contract change is
+  additive. iOS parity tracked in `web-ios-parity.md`.
 - ~~Custom-move `baseMoveId` / template editing.~~ **Done (web, Session 5, 2026-06-28):** the custom-move
   manager (`CustomMovesDialog`) edit form now exposes a **Discipline** (`template`) select and a **Based
   on** (`baseMoveId`) library-move picker, persisted via the existing `updateUserMove`; the read row

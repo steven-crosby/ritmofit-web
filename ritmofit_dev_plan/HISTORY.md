@@ -10,6 +10,31 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-28 (Session 5 follow-up) — deployed (Worker
+> `92d3904e-733a-4f39-8f3d-6fa156616757`).** Shipped **#143** (`9427d07`, merge
+> `0b1517c`) to close the remaining Session 5 launch-listed follow-ups:
+> **manual visual verification + 320px overflow fix** and **settings/profile beyond sign-out**.
+>
+> - **Visual verification / 320px fix:** manually verified planning timeline tempo pulse cadence, the
+>   source-level `prefers-reduced-motion` fallback, segment "Snap to tracks" drag/keyboard behavior, and
+>   320px + desktop layouts. The check found a 320px track-list overflow in `Dashboard` song rows; #143
+>   fixed it by letting the row and metadata wrap inside the available width instead of forcing
+>   horizontal scroll.
+> - **Account/profile surface:** the signed-in top nav now opens an Account dialog that fetches
+>   `/auth/me`, shows the signed-in email, edits `displayName` + `imageUrl` through the new protected
+>   `PATCH /auth/me`, and keeps sign-out reachable inside the dialog. Additive shared/API/OpenAPI change;
+>   **no migration** (uses existing `users.display_name` / `users.image_url` columns). iOS parity follow-up
+>   tracked in `web-ios-parity.md`.
+>
+> Remote D1 reported **"No migrations to apply"** before and after deploy. CI for #143 was green
+> (`format · typecheck · lint · test · build · audit`). Local verification also covered tracked-files
+> Prettier, `pnpm -r typecheck`, `pnpm lint`, `pnpm test`, API integration, web build, OpenAPI no-drift,
+> audit, `git diff --check`, and local 320px/desktop browser checks. Post-deploy smoke on live
+> `https://ritmofit.studio`: SPA `/` → `200` with `Cache-Control: ... no-transform` and no
+> `__CF$cv$params` injection marker; `/api/v1/health` → `200`; unauthenticated `/api/v1/auth/me` → `401`
+> standard envelope; remote D1 still no pending migrations. Prior Worker
+> `c34515d1-39a2-4069-aed5-a00d2844953a` is the rollback anchor.
+>
 > **Session 2026-06-28 (Session 5, Builder Polish) — deployed across four steps; live Worker
 > `c34515d1-39a2-4069-aed5-a00d2844953a`.** Closed all four Web Launch Readiness **Session 5** items
 > (PRs #137–#140, each CI-green and squash-merged to `main`), plus the **#136** design-system/dev-plan
