@@ -78,7 +78,12 @@ Known launch-required polish/work items from the current audit:
   instead of "Save a copy". No API change. iOS parity tracked in `web-ios-parity.md`.
 - Rhythm-cycle seed vocabulary expansion for the default moves library.
 - Settings/profile surface beyond sign-out.
-- Custom-move `baseMoveId` / template editing.
+- ~~Custom-move `baseMoveId` / template editing.~~ **Done (web, Session 5, 2026-06-28):** the custom-move
+  manager (`CustomMovesDialog`) edit form now exposes a **Discipline** (`template`) select and a **Based
+  on** (`baseMoveId`) library-move picker, persisted via the existing `updateUserMove`; the read row
+  shows both when set. The contract/API already supported both fields, so this is UI-only — no
+  shared-contract, API, or schema/migration change. The fast inline builder creation stays name-only by
+  design. iOS parity tracked in `web-ios-parity.md`.
 - ~~Planning timeline playing-track pulse.~~ **Done (web, Session 5, 2026-06-28):** the active track's
   block in the planning `TimelineStrip` now carries the design system's second sanctioned tempo pulse
   (10 §2) — a subtle `scale 1.0→1.03` + faint cyan border-luminance breath retimed per the track's BPM
