@@ -20,6 +20,7 @@ import {
   MAX_CLASS_COVER_BYTES,
   classSchema,
   classWithAccessSchema,
+  classListItemSchema,
   createClassSchema,
   updateClassSchema,
   classTrackSchema,
@@ -63,6 +64,7 @@ import {
 const named: Record<string, z.ZodType> = {
   Class: classSchema,
   ClassWithAccess: classWithAccessSchema,
+  ClassListItem: classListItemSchema,
   CreateClass: createClassSchema,
   UpdateClass: updateClassSchema,
   ClassTrack: classTrackSchema,
@@ -175,7 +177,7 @@ const doc = {
         ],
         responses: {
           '200': {
-            ...arrayResp('ClassWithAccess', 'Visible classes'),
+            ...arrayResp('ClassListItem', 'Visible classes'),
             headers: {
               [CLASS_LIST_NEXT_CURSOR_HEADER]: {
                 description: 'Opaque cursor for the next page; absent on the final page.',

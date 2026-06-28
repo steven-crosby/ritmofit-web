@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ClassTrack, ClassWithAccess } from '@ritmofit/shared';
+import type { ClassTrack, ClassWithAccess, ClassListItem, RunPayload } from '@ritmofit/shared';
 import { Dashboard } from './Dashboard.js';
 import * as api from '../lib/api.js';
 import type { ClassListPage } from '../lib/api.js';
@@ -45,10 +45,13 @@ function makeClass(title: string, accessLevel: ClassWithAccess['accessLevel'] = 
     coverImageUrl: null,
     tags: [],
     accessLevel,
-  } satisfies ClassWithAccess;
+    trackCount: 0,
+    totalDurationMs: 0,
+    albumArtUrls: [],
+  } satisfies ClassListItem;
 }
 
-function page(items: ClassWithAccess[]): ClassListPage {
+function page(items: ClassListItem[]): ClassListPage {
   return { items, nextCursor: null };
 }
 
@@ -109,7 +112,7 @@ describe('Dashboard class detail', () => {
     vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
 
     renderDashboard();
-    fireEvent.click(await screen.findByRole('button', { name: /Sunset climb/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Sunset climb/ }));
 
     expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
     expect(screen.getByText(/No tracks yet/)).toBeTruthy();
@@ -128,8 +131,8 @@ describe('Dashboard class detail', () => {
 
     renderDashboard();
     // Select the slow class, then immediately switch to the fast one.
-    fireEvent.click(await screen.findByRole('button', { name: /First ride/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Second ride/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^First ride/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Second ride/ }));
 
     expect(await screen.findByRole('heading', { name: 'Second ride' })).toBeTruthy();
 
@@ -153,7 +156,7 @@ describe('Dashboard class detail', () => {
       .mockResolvedValue([] as ClassTrack[]);
 
     renderDashboard();
-    fireEvent.click(await screen.findByRole('button', { name: /Broken ride/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Broken ride/ }));
 
     expect(await screen.findByText('detail boom')).toBeTruthy();
     const retry = screen.getByRole('button', { name: 'Retry class' });
@@ -165,6 +168,29 @@ describe('Dashboard class detail', () => {
     await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
   });
 
+  it('updates the Library card aggregates in place once a class detail loads', async () => {
+    // The list returns the class with stale (zero) aggregates; opening it loads a
+    // run-payload with two tracks, and the rail card must reflect that immediately.
+    const ride = makeClass('Stale card');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([{}, {}] as ClassTrack[]);
+    vi.mocked(api.getRunPayload).mockResolvedValue({
+      class: { totalDurationMs: 420_000 },
+      tracks: [{ track: { albumArtUrl: 'https://art/x.jpg' } }, { track: { albumArtUrl: null } }],
+    } as unknown as RunPayload);
+
+    renderDashboard();
+    // Initially the card shows 0 tracks (the list response's aggregate).
+    expect(await screen.findByRole('button', { name: /^Stale card.*0 tracks/i })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Stale card/i }));
+
+    // After the detail (run-payload) loads, the rail card reflects 2 tracks · 7:00.
+    expect(
+      await screen.findByRole('button', { name: /^Stale card.*2 tracks.*7:00/i }),
+    ).toBeTruthy();
+  });
+
   it('submits manually added track durations as parsed minutes and seconds', async () => {
     const ride = makeClass('Manual ride');
     vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
@@ -173,7 +199,7 @@ describe('Dashboard class detail', () => {
     vi.mocked(api.addTrack).mockResolvedValue({} as ClassTrack);
 
     renderDashboard();
-    fireEvent.click(await screen.findByRole('button', { name: /Manual ride/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Manual ride/ }));
     const durationInputs = await screen.findAllByLabelText('Track duration in minutes and seconds');
     const durationInput = durationInputs[0];
     if (!durationInput) throw new Error('Expected a manual track duration input.');

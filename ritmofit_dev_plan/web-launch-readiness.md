@@ -60,8 +60,13 @@ The launch backlog should be cut from these sources, in this order:
 
 Known launch-required polish/work items from the current audit:
 
-- Richer Library presentation: track-art collage, duration, last-opened date, duplicate action, and a
-  create-class chooser.
+- ~~Richer Library presentation: track-art collage, duration, last-opened date, duplicate action, and a
+  create-class chooser.~~ **Done (web, Session 3, 2026-06-28):** `GET /classes` now returns additive
+  card aggregates (`trackCount`, `totalDurationMs`, `albumArtUrls`) via a new `ClassListItem` shape, and
+  the Library rail renders a track-art collage, track count + total runtime, a last-opened date, a
+  duplicate ("save a copy") action, and a create-class template chooser. iOS parity tracked in
+  `web-ios-parity.md`. Mobile/desktop layout: automated suites green; a manual visual pass at 320px and
+  desktop is still recommended before the launch gate.
 - Songs-by-Move as a first-class create path; the reverse lookup shipped, but it is not yet a prominent
   class-starting workflow.
 - Class-detail read mode that interleaves songs, moves, cues, and section bands outside the editor.
