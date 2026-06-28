@@ -10,6 +10,26 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-28 deployed (Worker `dafa2638-4383-4145-8f50-531fcfb235ec`).**
+> Closed the remaining Web Launch Readiness Session 1 production-audit polish items from the `e6fb7c1a`
+> deploy. **`d694b02`** — **web**: manual "Add track" duration now uses the same positive `m:ss`
+> parser as the track inspector (`4:05` → `245000` ms for the API), with Dashboard regression coverage.
+> **static assets/security headers**: `_headers` now adds
+> `Cache-Control: public, max-age=0, must-revalidate, no-transform` on the SPA/static surface so
+> Cloudflare JavaScript Detections do not inject the CSP-blocked inline `__CF$cv$params` challenge
+> script into `index.html`. Updated `web-launch-readiness.md` with the confirmed Cloudflare JSD cause
+> and deploy verification.
+>
+> No migration. Remote D1 reported "No migrations to apply" before and after deploy. Pre-deploy gates
+> green: format, typecheck, lint, unit (web 185 + api 248), integration 64, web build, OpenAPI no-drift,
+> audit, design-system verify, and contract-parity (tracked iOS lag only). Post-deploy smoke (live):
+> SPA `/` → `200`, `/api/v1/health` → `200`, unauthenticated `/api/v1/classes` + `/explore` + `/teams`
+> → `401`, mounted route probes for shares / playlist import / uploads / provider connections/search /
+> class tags all reached auth (`401`, not `404`), all six security headers present, served asset
+> `index-s2OQZ8O-.js` matches the local build, live HTML includes `no-transform`, and live HTML contains
+> no `__CF` / `__CF$cv$params` injection. Prior Worker `e6fb7c1a-a208-4ba6-9ba7-39bc19be136d` is the
+> rollback anchor.
+>
 > **Session 2026-06-27 deployed (Worker `e6fb7c1a-a208-4ba6-9ba7-39bc19be136d`).**
 > **Web Launch Readiness Session 1 (Production Truth Audit) + the fix it surfaced.**
 > Ran the full local CI-equivalent gate (green: format, typecheck, lint, 248 api + web unit, 64

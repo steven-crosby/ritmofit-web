@@ -12,7 +12,10 @@
 #   font-src    'self' — the three OFL faces are self-hosted under /fonts (no CDN).
 #   img-src     https: + data: for provider album artwork from arbitrary CDNs.
 #   connect-src 'self' (same-origin /api) + the insights beacon endpoint.
+#   Cache-Control includes `no-transform` so Cloudflare JavaScript Detections do
+#   not inject a CSP-blocked inline challenge script into the SPA HTML.
 /*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
   Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self' https://static.cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff

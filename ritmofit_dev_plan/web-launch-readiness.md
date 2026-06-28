@@ -77,12 +77,13 @@ Production audit findings (Session 1, 2026-06-27):
   `e6fb7c1a`).** A returning tab running an older service-worker-cached shell hard-crashed to the
   ErrorBoundary when it lazy-imported a chunk hash the new deploy had removed. `lazyWithReload` now
   reloads once into the fresh shell.
-- **CSP blocks an inline `<script>` on every page load** (`script-src 'self'
-  https://static.cloudflareinsights.com`; hash differs each load). The built `index.html` has no inline
-  scripts, so it is injected at runtime — most likely a Cloudflare zone setting (Rocket Loader / Web
-  Analytics auto-inject). Investigate infra-side; a console error on every load hurts launch credibility.
-- **Manual-add track duration is raw milliseconds.** The builder "Add manually" form takes duration as
-  e.g. `180000` ms (unlabeled, odd `valuemax="0"`), unlike the `m:ss` inspector field. Minor polish.
+- **CSP blocks an inline `<script>` on every page load — fix pending deploy.** Live HTML showed
+  Cloudflare injecting `window.__CF$cv$params` plus `/cdn-cgi/challenge-platform/scripts/jsd/main.js`,
+  matching Cloudflare JavaScript Detections. `_headers` now sends `Cache-Control: ... no-transform` for
+  the SPA/static surface so Cloudflare does not inject the CSP-blocked script; verify after deploy that
+  live HTML no longer contains `__CF$cv$params` and the console is clean.
+- **Manual-add track duration is raw milliseconds — fixed pending deploy.** The builder "Add manually"
+  form now uses the same positive `m:ss` duration input and parser as the track inspector.
 
 ## Launch Gate
 
