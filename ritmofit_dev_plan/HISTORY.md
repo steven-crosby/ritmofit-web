@@ -10,6 +10,42 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-28 (Session 5, Builder Polish) — deployed across four steps; live Worker
+> `c34515d1-39a2-4069-aed5-a00d2844953a`.** Closed all four Web Launch Readiness **Session 5** items
+> (PRs #137–#140, each CI-green and squash-merged to `main`), plus the **#136** design-system/dev-plan
+> docs reconciliation (`d6802e5`). Deploy chain: prior live `9519447a` → **`4eab08f3`** (#137 pulse) →
+> **`431d5c6b`** (#138 + #139) → **`c34515d1`** (#140). **No migration** at any step — remote D1 reported
+> "No migrations to apply" before each deploy.
+>
+> - **#137 — planning-timeline tempo pulse (web):** the active track's block in the planning
+>   `TimelineStrip` carries the design system's *second* sanctioned tempo pulse (10 §2) — subtle
+>   `scale 1.0→1.03` + a faint cyan border-luminance breath retimed per the track's BPM via `--rf-bpm`
+>   (new `.rf-beat-pulse-subtle` keyframe). One pulse per screen, gated to a known tempo, removed under
+>   `prefers-reduced-motion` (the static selection ring alone marks the active track). Client-only.
+> - **#138 — rhythm-cycle seed vocabulary (api):** +7 cycle moves (Running, Hovers, Press-Ups, Crunches,
+>   Oblique Twists, Pyramid, Sprint on a Hill) in `seed.sql` (stable UUIDs `…015`–`…01b`, idempotent
+>   `INSERT OR IGNORE`); `schema.md` M1 seed table extended to match. Data, not schema — **no migration**.
+>   Because `seed.sql` is not auto-applied on deploy, the **remote seed was re-run**
+>   (`wrangler d1 execute ritmofit --remote --file=./src/db/seed.sql`); remote `moves` now **21 total /
+>   15 cycle**.
+> - **#139 — custom-move discipline + base-move editing (web):** the custom-move manager
+>   (`CustomMovesDialog`) edit form now sets a move's `template` (discipline) and `baseMoveId` (link to a
+>   global library move) via the existing `updateUserMove`, with both shown on the read row. UI-only — the
+>   contract/API already supported both fields. The fast inline builder creation stays name-only.
+> - **#140 — segment-band track-range snapping (web):** a "Snap to tracks" toggle (default on, edit-only)
+>   snaps a dragged or arrow-keyed segment boundary to the nearest track edge (class start, each track's
+>   `startOffsetMs`, class end); arrow keys jump between boundaries under snap for keyboard parity, and the
+>   numeric editor stays exact. Authoring affordance, **no contract change** (sections still store a free
+>   `startOffsetMs`).
+>
+> Pre-deploy gates green each step (web unit grew 206 → **224**, api integration 66, typecheck, lint,
+> web build, format:check, audit). Post-deploy smoke on live `https://ritmofit.studio` at the final
+> Worker `c34515d1`: SPA `/` → `200`, `/api/v1/health` → `200`, unauthenticated `/api/v1/classes` +
+> `/explore` + `/teams` → `401`, all six security headers present, and served asset `index-DlGE-dL9.js`
+> matches the local build. iOS parity follow-ups for all four web slices tracked in `web-ios-parity.md`.
+> Prior Worker `431d5c6b-910a-4987-a6d1-76e595cc45fb` is the rollback anchor. Manual visual passes (pulse
+> cadence + reduced motion, segment snap, 320px/desktop) remain recommended before the launch gate.
+>
 > **Session 2026-06-28 deployed (Worker `9519447a-dc0b-4b27-9f74-13783f1cf3f2`).**
 > **Web Launch Readiness Sessions 2–4** landed to production (PRs #130, #131, #132, #134, squash-merged
 > to `main`). **Session 2 (#130):** softened the unconfigured BPM lookup `503` to instructor-facing copy
