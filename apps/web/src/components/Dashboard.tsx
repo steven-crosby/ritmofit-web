@@ -1058,6 +1058,7 @@ function ClassWorkspace({
               classId={cls.id}
               totalDurationMs={payload.class.totalDurationMs}
               canEdit={canEdit}
+              trackStartsMs={payload.tracks.map((t) => t.startOffsetMs ?? 0)}
               onChanged={onTrackChanged}
             />
           </div>

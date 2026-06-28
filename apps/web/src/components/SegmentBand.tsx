@@ -103,6 +103,49 @@ export function clampSectionStart(
 }
 
 /**
+ * The snap targets for track-range binding: the class start (0), each track's
+ * start offset, and the class end — unique, in-range, ascending. Interior track
+ * starts at/beyond the class bounds are ignored (clamped out). Snapping a section
+ * boundary to one of these aligns segment bands to track edges (milestones.md:
+ * "snapping boundaries to track starts").
+ */
+export function trackBoundaries(trackStartsMs: ReadonlyArray<number>, totalMs: number): number[] {
+  const total = Math.round(Math.max(0, totalMs));
+  const set = new Set<number>([0, total]);
+  for (const s of trackStartsMs) {
+    const ms = Math.round(s);
+    if (ms > 0 && ms < total) set.add(ms);
+  }
+  return [...set].sort((a, b) => a - b);
+}
+
+/** The boundary nearest `rawMs` (ties → the lower one). `boundaries` must be non-empty. */
+export function snapToTrackStart(rawMs: number, boundaries: ReadonlyArray<number>): number {
+  let best = boundaries[0]!;
+  for (const b of boundaries) {
+    if (Math.abs(b - rawMs) < Math.abs(best - rawMs)) best = b;
+  }
+  return best;
+}
+
+/**
+ * The boundary strictly beyond `fromMs` in direction `dir` (+1 next / -1 prev),
+ * for keyboard snapping; falls back to the extreme boundary when there's none
+ * further. `boundaries` must be ascending and non-empty.
+ */
+export function adjacentBoundary(
+  fromMs: number,
+  boundaries: ReadonlyArray<number>,
+  dir: 1 | -1,
+): number {
+  if (dir > 0) return boundaries.find((b) => b > fromMs) ?? boundaries[boundaries.length - 1]!;
+  for (let i = boundaries.length - 1; i >= 0; i--) {
+    if (boundaries[i]! < fromMs) return boundaries[i]!;
+  }
+  return boundaries[0]!;
+}
+
+/**
  * Pure geometry: tile bands across the timeline. Each section (ordered by start)
  * runs from its `startOffsetMs` to the next section's start, or the class end.
  * A leading gap before the first section is left untinted. Zero/negative-width
@@ -143,16 +186,23 @@ export function SegmentBand({
   classId,
   totalDurationMs,
   canEdit,
+  trackStartsMs = [],
   onChanged,
 }: {
   classId: string;
   totalDurationMs: number;
   canEdit: boolean;
+  /** Track start offsets (ms) on the class timeline — the snap targets for the
+   *  "Snap to tracks" boundary binding. The class start/end are always targets. */
+  trackStartsMs?: ReadonlyArray<number>;
   /** Parent reload (run-payload → ribbon/timeline + the live contract) after a change. */
   onChanged?: () => void;
 }) {
   const [sections, setSections] = useState<ClassSection[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Track-range binding: snap dragged/keyed boundaries to track edges. Default on;
+  // the numeric editor below stays exact regardless, as the precise path.
+  const [snapTracks, setSnapTracks] = useState(true);
   const bandRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -185,6 +235,11 @@ export function SegmentBand({
   const bands = computeSegmentBands(sections ?? [], totalDurationMs);
   const hasBand = bands.length > 0;
   const sorted = [...(sections ?? [])].sort((a, b) => a.startOffsetMs - b.startOffsetMs);
+  const boundaries = trackBoundaries(trackStartsMs, totalDurationMs);
+  // Only offer snapping when there are interior track starts to snap to (more than
+  // just the class start/end).
+  const canSnap = boundaries.length > 2;
+  const snap = snapTracks && canSnap;
 
   // Nothing to show and not editable → render nothing (keeps a view-only class clean).
   if (!hasBand && !canEdit) return null;
@@ -193,8 +248,18 @@ export function SegmentBand({
 
   return (
     <figure className="mt-2 flex flex-col gap-1">
-      <figcaption className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-        Segments
+      <figcaption className="flex items-center justify-between font-ui text-xs uppercase tracking-wide text-text-tertiary">
+        <span>Segments</span>
+        {canEdit && canSnap && (
+          <label className="flex items-center gap-1.5 normal-case tracking-normal text-text-secondary">
+            <input
+              type="checkbox"
+              checked={snapTracks}
+              onChange={(e) => setSnapTracks(e.target.checked)}
+            />
+            Snap to tracks
+          </label>
+        )}
       </figcaption>
       {hasBand ? (
         <div
@@ -228,6 +293,8 @@ export function SegmentBand({
                 prevStartMs={i > 0 ? sorted[i - 1]!.startOffsetMs : null}
                 nextStartMs={i + 1 < sorted.length ? sorted[i + 1]!.startOffsetMs : null}
                 totalMs={totalDurationMs}
+                snap={snap}
+                boundaries={boundaries}
                 getRect={() => bandRef.current?.getBoundingClientRect()}
                 onCommit={commitStart}
                 onError={setError}
@@ -261,6 +328,8 @@ function SegmentHandle({
   prevStartMs,
   nextStartMs,
   totalMs,
+  snap,
+  boundaries,
   getRect,
   onCommit,
   onError,
@@ -269,6 +338,10 @@ function SegmentHandle({
   prevStartMs: number | null;
   nextStartMs: number | null;
   totalMs: number;
+  /** Snap a dragged/keyed boundary to the nearest track edge (track-range binding). */
+  snap: boolean;
+  /** Ascending snap targets (class start, track starts, class end). */
+  boundaries: ReadonlyArray<number>;
   getRect: () => DOMRect | undefined;
   onCommit: (id: string, startOffsetMs: number) => Promise<void>;
   onError: (msg: string) => void;
@@ -287,7 +360,8 @@ function SegmentHandle({
     const rect = getRect();
     if (!rect) return section.startOffsetMs;
     const raw = boundaryMsFromPointer(clientX, rect, totalMs);
-    return clampSectionStart(raw, prevStartMs, nextStartMs, MIN_GAP_MS, totalMs);
+    const aligned = snap ? snapToTrackStart(raw, boundaries) : raw;
+    return clampSectionStart(aligned, prevStartMs, nextStartMs, MIN_GAP_MS, totalMs);
   };
 
   const commit = async (next: number) => {
@@ -325,13 +399,17 @@ function SegmentHandle({
       e.preventDefault();
       setDraftMs(clampSectionStart(raw, prevStartMs, nextStartMs, MIN_GAP_MS, totalMs));
     };
+    // Under snap, arrows jump between track boundaries (keyboard-accessible
+    // snapping); otherwise they nudge by 1s (5s with Shift).
+    const stepRight = () => set(snap ? adjacentBoundary(draftMs, boundaries, 1) : draftMs + step);
+    const stepLeft = () => set(snap ? adjacentBoundary(draftMs, boundaries, -1) : draftMs - step);
     switch (e.key) {
       case 'ArrowRight':
       case 'ArrowUp':
-        return set(draftMs + step);
+        return stepRight();
       case 'ArrowLeft':
       case 'ArrowDown':
-        return set(draftMs - step);
+        return stepLeft();
       case 'Home':
         return set(0);
       case 'End':

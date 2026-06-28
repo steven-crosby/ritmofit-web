@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import type { SegmentType } from '@ritmofit/shared';
-import { boundaryMsFromPointer, clampSectionStart, computeSegmentBands } from './SegmentBand.js';
+import {
+  adjacentBoundary,
+  boundaryMsFromPointer,
+  clampSectionStart,
+  computeSegmentBands,
+  snapToTrackStart,
+  trackBoundaries,
+} from './SegmentBand.js';
 
 const sec = (type: SegmentType, startOffsetMs: number) => ({ type, startOffsetMs });
 
@@ -82,5 +89,53 @@ describe('clampSectionStart', () => {
   it('falls back to the low bound when neighbors leave no room', () => {
     // prev=10000, next=10500, gap=1000 → hi(9500) < lo(11000) → clamp to lo
     expect(clampSectionStart(10250, 10000, 10500, 1000, 240000)).toBe(11000);
+  });
+});
+
+describe('trackBoundaries (track-range snap targets)', () => {
+  it('always includes the class start and end, plus interior track starts', () => {
+    expect(trackBoundaries([0, 60000, 150000], 240000)).toEqual([0, 60000, 150000, 240000]);
+  });
+
+  it('dedupes, sorts, rounds, and drops out-of-range starts', () => {
+    // 0 dupes the class start; 240000 dupes the end; 300000 is past the end.
+    expect(trackBoundaries([150000.4, 0, 60000, 240000, 300000], 240000)).toEqual([
+      0, 60000, 150000, 240000,
+    ]);
+  });
+
+  it('collapses to just [0, total] when there are no interior starts', () => {
+    expect(trackBoundaries([0], 240000)).toEqual([0, 240000]);
+  });
+});
+
+describe('snapToTrackStart', () => {
+  const bounds = [0, 60000, 150000, 240000];
+
+  it('snaps a raw time to the nearest boundary', () => {
+    expect(snapToTrackStart(58000, bounds)).toBe(60000);
+    expect(snapToTrackStart(100000, bounds)).toBe(60000); // 40k vs 50k away
+    expect(snapToTrackStart(120000, bounds)).toBe(150000); // 60k vs 30k away
+  });
+
+  it('breaks an exact tie toward the lower boundary', () => {
+    // 105000 is equidistant (45000) from 60000 and 150000 → lower wins.
+    expect(snapToTrackStart(105000, bounds)).toBe(60000);
+  });
+});
+
+describe('adjacentBoundary (keyboard snapping)', () => {
+  const bounds = [0, 60000, 150000, 240000];
+
+  it('moves to the next/previous boundary strictly past the current value', () => {
+    expect(adjacentBoundary(60000, bounds, 1)).toBe(150000);
+    expect(adjacentBoundary(60000, bounds, -1)).toBe(0);
+    expect(adjacentBoundary(70000, bounds, 1)).toBe(150000);
+    expect(adjacentBoundary(70000, bounds, -1)).toBe(60000);
+  });
+
+  it('stays at the extreme boundary when there is none further', () => {
+    expect(adjacentBoundary(240000, bounds, 1)).toBe(240000);
+    expect(adjacentBoundary(0, bounds, -1)).toBe(0);
   });
 });

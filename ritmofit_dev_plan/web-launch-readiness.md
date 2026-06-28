@@ -91,7 +91,13 @@ Known launch-required polish/work items from the current audit:
   screen, gated to a known tempo, and removed entirely under `prefers-reduced-motion` (the static
   selection ring alone marks the active track). Client-only off the run-payload; no schema/API change.
   iOS parity tracked in `web-ios-parity.md`.
-- Segment-band track-range binding.
+- ~~Segment-band track-range binding.~~ **Done (web, Session 5, 2026-06-28):** the segment band gains a
+  "Snap to tracks" toggle (default on, edit-only) that snaps a dragged or arrow-keyed boundary to the
+  nearest track edge (class start, each track's `startOffsetMs`, class end); arrow keys jump between
+  boundaries under snap for keyboard parity, and the numeric editor stays exact as the precise path. As
+  documented (`milestones.md`), this is snapping-to-track-starts — a client-side authoring affordance,
+  **no contract/schema/migration change** (sections still store a free `startOffsetMs`). iOS parity
+  tracked in `web-ios-parity.md`.
 
 Production audit findings (Session 1, 2026-06-27):
 

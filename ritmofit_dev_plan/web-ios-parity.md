@@ -70,6 +70,9 @@ list; after the launch gate is green, it becomes the next implementation queue. 
 **Web has, iOS needs:**
 
 - Full **class builder / choreography** (timeline, cues, moves, intensity, sections, trim/beat-snap)
+  - Segment-band track-range snapping (web Session 5): a "Snap to tracks" toggle snaps a dragged/keyed
+    section boundary to the nearest track edge (authoring affordance; sections still store a free
+    `startOffsetMs`, so no contract change). iOS should offer the same snap when its segment editor lands.
   - Custom-move discipline + base-move editing (web Session 5): the custom-move manager edit form now
     sets a move's `template` (discipline) and `baseMoveId` (link to a global library move); both already
     existed in the contract/API. iOS should expose the same two fields when its custom-move manager
