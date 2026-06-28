@@ -67,9 +67,15 @@ Known launch-required polish/work items from the current audit:
   duplicate ("save a copy") action, and a create-class template chooser. iOS parity tracked in
   `web-ios-parity.md`. Mobile/desktop layout: automated suites green; a manual visual pass at 320px and
   desktop is still recommended before the launch gate.
-- Songs-by-Move as a first-class create path; the reverse lookup shipped, but it is not yet a prominent
-  class-starting workflow.
-- Class-detail read mode that interleaves songs, moves, cues, and section bands outside the editor.
+- ~~Songs-by-Move as a first-class create path; the reverse lookup shipped, but it is not yet a prominent
+  class-starting workflow.~~ **Done (web, Session 4, 2026-06-28):** each Songs-by-Move result now offers
+  "Start a class" — it creates a class and copies that choreographed `class_track` (song + its cues +
+  placed moves) into it via the existing copy-class-track route, then opens it in the builder.
+- ~~Class-detail read mode that interleaves songs, moves, cues, and section bands outside the editor.~~
+  **Done (web, Session 4, 2026-06-28):** `ClassSummaryView` now renders songs **plus** each track's
+  placed moves and cues and the section/energy bands (all from the existing run-payload), and is reachable
+  for owned classes via a "View" (Preview) action on each Library card — with an "Open in builder" CTA
+  instead of "Save a copy". No API change. iOS parity tracked in `web-ios-parity.md`.
 - Rhythm-cycle seed vocabulary expansion for the default moves library.
 - Settings/profile surface beyond sign-out.
 - Custom-move `baseMoveId` / template editing.

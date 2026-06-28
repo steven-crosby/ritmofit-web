@@ -78,6 +78,12 @@ list; after the launch gate is green, it becomes the next implementation queue. 
     ("save a copy") action, and a create-class template chooser. iOS should surface the same card
     summary + duplicate/create affordances when its Library lands. Contract change is additive (existing
     iOS decoding is unaffected).
+  - Class-detail read mode (web Session 4): a read-only class view (songs + placed moves + cues + section
+    bands, from the run-payload) reachable from a Library card "View" action, with "Open in builder".
+    iOS should offer the same at-a-glance read view. No contract change (reuses `GET /run-payload`).
+  - Songs-by-Move "Start a class" (web Session 4): a Songs-by-Move result can seed a new class from a
+    choreographed song via the existing copy-class-track route. iOS should add the same class-starting
+    action when Songs-by-Move lands. No contract change.
 - **Explore** feed
 - **Sharing / teams** UI
 - Run-payload DTO catch-up for currently allowlisted additive fields: `RunClass.timelineMode`;

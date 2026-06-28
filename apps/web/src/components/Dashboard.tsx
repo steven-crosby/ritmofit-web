@@ -23,6 +23,7 @@ import {
   listClasses,
   createClass,
   copyClass,
+  copyClassTrack,
   updateClass,
   deleteClass,
   listClassTracks,
@@ -120,6 +121,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
   const [previewClassId, setPreviewClassId] = useState<string | null>(null);
+  // Read-only preview of one of the caller's OWN classes (from a Library card),
+  // distinct from the Explore public preview above.
+  const [cardPreview, setCardPreview] = useState<ClassListItem | null>(null);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
   const [songsByMoveOpen, setSongsByMoveOpen] = useState(false);
   const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
@@ -257,6 +261,21 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     [loadDetail],
   );
 
+  // Start a new class seeded from a previously choreographed song (Songs by Move):
+  // create a blank class, then copy that class_track — with its cues and placed
+  // moves — into it, and open it in the builder. Reuses the copy-class-track route,
+  // so the move/cue work carries over rather than starting from an empty track.
+  const startClassFromPlacement = useCallback(
+    async (sourceClassTrackId: string, title: string) => {
+      const created = await createClass({ title });
+      await copyClassTrack(sourceClassTrackId, created.id);
+      // Clear any active tag filter so the new (untagged) class is visible, then open it.
+      await applyTagFilter(null);
+      await openClass({ ...created, accessLevel: 'owner' });
+    },
+    [applyTagFilter, openClass],
+  );
+
   // Open a class by id when we don't already hold its full record (e.g. from the
   // Songs-by-Move results, where a match may be on a library page we haven't
   // loaded). Prefer the in-memory list; otherwise fetch it.
@@ -387,6 +406,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           <SongsByMoveDialog
             onClose={() => setSongsByMoveOpen(false)}
             onOpenClass={openClassById}
+            onStartClass={startClassFromPlacement}
           />
         )}
         {exploreOpen && (
@@ -411,6 +431,17 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               setPreviewClassId(null);
               await refreshClasses();
               await openClass({ ...cls, accessLevel: 'owner' });
+            }}
+          />
+        )}
+        {cardPreview && (
+          <ClassSummaryView
+            classId={cardPreview.id}
+            onClose={() => setCardPreview(null)}
+            onOpenInBuilder={() => {
+              const cls = cardPreview;
+              setCardPreview(null);
+              void openClass(cls);
             }}
           />
         )}
@@ -448,6 +479,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               await openClass({ ...copy, accessLevel: 'owner' });
             }}
             onOpen={openClass}
+            onPreview={(cls) => setCardPreview(cls)}
             onLoadMore={loadMoreClasses}
           />
 
@@ -511,6 +543,7 @@ export function LibraryRail({
   onError,
   onCreate,
   onDuplicate,
+  onPreview,
   onOpen,
   onLoadMore,
 }: {
@@ -529,6 +562,8 @@ export function LibraryRail({
   onCreate: (cls: Awaited<ReturnType<typeof createClass>>) => void;
   /** "Save a copy" of a class into the caller's library (resolves when done). */
   onDuplicate: (cls: ClassListItem) => Promise<void>;
+  /** Open a read-only preview of the class (without entering the builder). */
+  onPreview: (cls: ClassListItem) => void;
   onOpen: (cls: ClassListItem) => void;
   onLoadMore: () => void;
 }) {
@@ -572,6 +607,7 @@ export function LibraryRail({
               cls={cls}
               selected={selectedId === cls.id}
               onOpen={onOpen}
+              onPreview={onPreview}
               onDuplicate={onDuplicate}
               onError={onError}
             />
@@ -605,12 +641,14 @@ function ClassCard({
   cls,
   selected,
   onOpen,
+  onPreview,
   onDuplicate,
   onError,
 }: {
   cls: ClassListItem;
   selected: boolean;
   onOpen: (cls: ClassListItem) => void;
+  onPreview: (cls: ClassListItem) => void;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
   onError: (msg: string | null) => void;
 }) {
@@ -649,16 +687,29 @@ function ClassCard({
             )}
           </span>
         </button>
-        <button
-          type="button"
-          onClick={() => void run(() => onDuplicate(cls))}
-          disabled={busy}
-          aria-label={`Duplicate ${cls.title}`}
-          title="Save a copy"
-          className="shrink-0 border-l border-interactive/20 px-3 font-ui text-xs text-text-secondary hover:text-text-primary disabled:opacity-40"
-        >
-          {busy ? '…' : 'Copy'}
-        </button>
+        {/* Per-card actions, stacked so they stay reachable at the 266px rail width.
+            Each is independently focusable and labeled (no nested buttons). */}
+        <div className="flex shrink-0 flex-col border-l border-interactive/20">
+          <button
+            type="button"
+            onClick={() => onPreview(cls)}
+            aria-label={`Preview ${cls.title}`}
+            title="Read-only preview"
+            className="flex-1 px-3 py-1.5 font-ui text-xs text-text-secondary hover:text-text-primary"
+          >
+            View
+          </button>
+          <button
+            type="button"
+            onClick={() => void run(() => onDuplicate(cls))}
+            disabled={busy}
+            aria-label={`Duplicate ${cls.title}`}
+            title="Save a copy"
+            className="flex-1 border-t border-interactive/20 px-3 py-1.5 font-ui text-xs text-text-secondary hover:text-text-primary disabled:opacity-40"
+          >
+            {busy ? '…' : 'Copy'}
+          </button>
+        </div>
       </div>
     </li>
   );
