@@ -6,8 +6,7 @@ date: 2026-06-27
 inspected_head: d7d1246a0a82b2aa90870ff24428d2fffcdef432
 inspected_range: n/a
 completed: true
-prs:
-  []
+prs: []
 ---
 
 # command-brief — 2026-06-27
@@ -32,21 +31,22 @@ delta is unconfirmed from `main` alone.
 ## Findings
 
 **1. Do next (ordered):**
-- **Merge #115** (`fix(api): default sendEmail to boundFetch`). *Verified*: prod password-reset
+
+- **Merge #115** (`fix(api): default sendEmail to boundFetch`). _Verified_: prod password-reset
   / email-verification silently fail when `RESEND_API_KEY` is set (detached global `fetch`);
   bug reproduced, full gate green. Highest user impact, lowest risk. Flip from draft first.
 - **Merge #117** (`gate web↔iOS run-payload DTO drift in CI`). Ready (non-draft), tooling+CI
-  +docs only, no runtime change; strengthens the D18 parity gate. *Inference*: low risk.
+  +docs only, no runtime change; strengthens the D18 parity gate. _Inference_: low risk.
 - **Land the missing sentinel report on `main`** (see red flag) so daily coverage is auditable.
 
 **2. Ready to review (suggested merge order):** #115 (P0 prod fix, CI green) → #117 (ready,
 no runtime change) → #116 (a11y focus ring, CSS-only, draft) → #118 (timeline gridline tokens,
-draft; visual check was *synthetic*, not the real builder — re-verify in-app before merge).
+draft; visual check was _synthetic_, not the real builder — re-verify in-app before merge).
 
 **3. Product position:** Recent web slices — M6 per-track RPM/hold (#110), spin-zone intensity
 control (#106), Songs-by-Move search (#99). The backend run-payload contract is **ahead** of
 iOS; #117 tracks 7 DTO fields iOS lags (`timelineMode`, `displayRpm`, `holdCount`,
-`clipStartMs`, `beatAnchorMs`, `Move.beat/bar`). *No backend dependency is blocking iOS* —
+`clipStartMs`, `beatAnchorMs`, `Move.beat/bar`). _No backend dependency is blocking iOS_ —
 the open work is iOS catching up.
 
 **4. Red flags:** Sentinel report absent from `main` (PRs reference `agent-reports/2026-06-26/*`
