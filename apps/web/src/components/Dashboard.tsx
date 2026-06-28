@@ -1958,7 +1958,7 @@ function AddTrackForm({
 }) {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
-  const [durationMs, setDurationMs] = useState('180000');
+  const [duration, setDuration] = useState('3:00');
   const [intensity, setIntensity] = useState<Intensity>('mod');
   const { busy, run } = useAsyncAction(onError);
 
@@ -1968,12 +1968,18 @@ function AddTrackForm({
       onSubmit={(e) => {
         e.preventDefault();
         if (!title.trim() || !artist.trim()) return;
+        const parsedDuration = parseDurationInput(duration);
+        if (parsedDuration == null) {
+          onError('Enter a positive duration as minutes:seconds, for example 3:45.');
+          return;
+        }
+        onError(null);
         void run(async () => {
           await addTrack(classId, {
             track: {
               title: title.trim(),
               artist: artist.trim(),
-              durationMs: Number(durationMs) || null,
+              durationMs: parsedDuration,
             },
             intensity,
           });
@@ -2008,11 +2014,11 @@ function AddTrackForm({
         />
         <input
           className="w-28 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-data text-sm text-text-primary"
-          type="number"
-          placeholder="ms"
-          aria-label="Track duration in milliseconds"
-          value={durationMs}
-          onChange={(e) => setDurationMs(e.target.value)}
+          inputMode="numeric"
+          placeholder="3:00"
+          aria-label="Track duration in minutes and seconds"
+          value={duration}
+          onChange={(e) => setDuration(e.target.value)}
         />
         <button
           disabled={busy}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ClassTrack, ClassWithAccess } from '@ritmofit/shared';
 import { Dashboard } from './Dashboard.js';
 import * as api from '../lib/api.js';
@@ -163,5 +163,40 @@ describe('Dashboard class detail', () => {
     // The second load succeeds, so the workspace replaces the error panel.
     expect(await screen.findByRole('heading', { name: 'Broken ride' })).toBeTruthy();
     await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+  });
+
+  it('submits manually added track durations as parsed minutes and seconds', async () => {
+    const ride = makeClass('Manual ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([] as ClassTrack[]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    vi.mocked(api.addTrack).mockResolvedValue({} as ClassTrack);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /Manual ride/ }));
+    const durationInputs = await screen.findAllByLabelText('Track duration in minutes and seconds');
+    const durationInput = durationInputs[0];
+    if (!durationInput) throw new Error('Expected a manual track duration input.');
+    const form = durationInput.closest('form');
+    if (!form) throw new Error('Expected the duration input to live inside a form.');
+    const addTrackForm = within(form as HTMLFormElement);
+
+    fireEvent.change(addTrackForm.getByLabelText('Track title'), { target: { value: 'Ride On' } });
+    fireEvent.change(addTrackForm.getByLabelText('Track artist'), {
+      target: { value: 'The Tempo' },
+    });
+    fireEvent.change(durationInput, { target: { value: '4:05' } });
+    fireEvent.click(addTrackForm.getByRole('button', { name: 'Add track' }));
+
+    await waitFor(() =>
+      expect(api.addTrack).toHaveBeenCalledWith(ride.id, {
+        track: {
+          title: 'Ride On',
+          artist: 'The Tempo',
+          durationMs: 245000,
+        },
+        intensity: 'mod',
+      }),
+    );
   });
 });
