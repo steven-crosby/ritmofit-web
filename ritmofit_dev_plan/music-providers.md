@@ -13,10 +13,10 @@ Spotify deprecated the audio-features endpoint (which included tempo/BPM) for ne
 BPM were likely grandfathered in or source it elsewhere — we cannot replicate that.
 
 **Our approach:**
-- **M1:** BPM is **manual entry** — `tracks.display_bpm`, with an optional per-class override
+- BPM is **our own data** — `tracks.display_bpm`, with an optional per-class override
   `class_tracks.display_bpm_override`.
-- **M2 (optional):** integrate a **third-party BPM provider**, or run analysis only on audio we're
-  legally permitted to process. None assumed yet; to be chosen and verified.
+- Optional tempo lookup must use a permitted third-party BPM provider or audio we are legally allowed to
+  process. Never source BPM from Spotify.
 
 > Always verify the current state of provider APIs before building against them — these terms change.
 
@@ -58,21 +58,20 @@ hand-marked). Decline or redesign requests that need one of these rather than sc
 - The provider-agnostic track model (`tracks` + `track_provider_ids`) exists precisely so a class can
   hand off to whichever provider app the instructor opens live.
 - SoundCloud is a core differentiator (independent/emerging artists Spotify and Apple Music cut off) —
-  but its API terms still constrain us; treat its streaming rules as strict. It's the **first**
-  provider integrated in M2.
+  but its API terms still constrain us; treat its streaming rules as strict.
 
 ## Credentials status
 
-Client IDs/secrets exist for Spotify and SoundCloud, plus Apple sign-in and Apple Music keys. These are
-**not used in M1** — provider integration is M2. Keep keys out of the codebase until then; document
-required env vars as placeholders in `conventions.md`. When stored (M2), provider tokens live encrypted
-in `music_connections` (`ENCRYPTION_KEY`) and are never returned to clients.
+Client IDs/secrets exist for Spotify and SoundCloud, plus Apple sign-in and Apple Music keys. Keep keys
+out of the codebase; production values live in Cloudflare Worker secrets and local values live in
+ignored `.dev.vars`. Provider tokens live encrypted in `music_connections` (`ENCRYPTION_KEY`) and are
+never returned to clients.
 
 ## Apple: two separate integrations
 
 Keep these strictly separate in code and config:
-1. **Sign in with Apple** — authentication (handled via Better Auth in M1).
-2. **Apple Music / MusicKit** — a playback provider in `track_provider_ids` (M2).
+1. **Sign in with Apple** — authentication (handled via Better Auth).
+2. **Apple Music / MusicKit** — a playback provider in `track_provider_ids`.
 
 Don't mix the Apple sign-in client/service IDs with the Apple Music developer token/key/team/key IDs.
 

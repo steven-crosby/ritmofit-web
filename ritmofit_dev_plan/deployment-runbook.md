@@ -28,10 +28,20 @@ permanent exclusion.
 1. On `main`, clean tree, in sync with origin; the change is merged.
 2. Run the CI-equivalent gates (also enforced by `.github/workflows/ci.yml`):
    ```bash
-   pnpm -r typecheck && pnpm lint && pnpm test \
-     && pnpm --filter @ritmofit/api test:integration \
-     && pnpm --filter @ritmofit/web build \
-     && pnpm --filter @ritmofit/api openapi && git diff --exit-code apps/api/openapi/openapi.json
+   pnpm format:check
+   pnpm -r typecheck
+   pnpm lint
+   pnpm test
+   pnpm --filter @ritmofit/api test:integration
+   pnpm --filter @ritmofit/web build
+   pnpm --filter @ritmofit/api openapi
+   git diff --exit-code apps/api/openapi/openapi.json
+   pnpm audit:ci
+   ```
+   For launch candidates, also run the design-system and contract parity checks used by CI:
+   ```bash
+   (cd ritmofit_design_system && npm run verify)
+   pnpm --filter @ritmofit/api contract-parity
    ```
 3. Record the current live version for rollback (see below): `wrangler deployments status`.
 4. Check remote D1 migration state: `wrangler d1 migrations list ritmofit --remote`.
@@ -60,10 +70,17 @@ Note the printed **Current Version ID** — that is the new live version.
 curl -s -o /dev/null -w "%{http_code}\n" https://ritmofit.studio/                      # SPA → 200
 curl -s -o /dev/null -w "%{http_code}\n" https://ritmofit.studio/api/v1/health         # → 200
 curl -s -o /dev/null -w "%{http_code}\n" https://ritmofit.studio/api/v1/classes        # unauth → 401
+curl -s -o /dev/null -w "%{http_code}\n" https://ritmofit.studio/api/v1/explore        # unauth → 401
+curl -s -o /dev/null -w "%{http_code}\n" https://ritmofit.studio/api/v1/teams          # unauth → 401
 curl -s -D - -o /dev/null https://ritmofit.studio/api/v1/health | \
   grep -iE 'strict-transport|content-security|x-frame|x-content-type|referrer|permissions'  # headers present
 curl -s https://ritmofit.studio/ | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js'          # matches the built hash
 ```
+
+Also smoke mounted launch routes so accidental route regressions show up as something other than
+`404 NOT_FOUND`: class shares, playlist import, cover upload serving, provider search/import, and the
+class cover/tag endpoints should reach their real handlers and fail as `401`/`403`/validation/domain
+errors when unauthenticated or given invalid test data.
 
 For UI-affecting changes, also run the browser smokes against a local stack (see
 `apps/web/smoke/README.md`). Confirm the new Worker version: `wrangler deployments status`.

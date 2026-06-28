@@ -33,8 +33,9 @@ see as a marker on the timeline. **Distinct from a cue.**
 **Intensity** — Effort level: none / easy / mod / hard / all_out. Lives on a `class_track` (and
 optionally per placed move).
 
-**Display BPM** — The tempo shown to the instructor. Our own data: manually entered in M1 (no Spotify
-BPM). Can be overridden per `class_track` (`display_bpm_override`).
+**Display BPM** — The tempo shown to the instructor. Our own data: manually entered or sourced from a
+permitted tempo provider, never Spotify BPM. Can be overridden per `class_track`
+(`display_bpm_override`).
 
 **Beat-drop** — A musically significant moment instructors often anchor cues to. In our model it's just
 a cue/move at a specific `anchor_ms` (and optionally beat/bar) — not a distinct anchor type.
@@ -70,5 +71,5 @@ timers, intensity readouts.
 **Provider** — A music service: Spotify, Apple Music, or SoundCloud. RitmoFit hands off playback to
 these; it does not stream or mix audio itself.
 
-**Mock-track seam** — A dev-only path that creates tracks without any provider API, so the M1 builder is
-fully exercisable with zero credentials.
+**Mock-track seam** — A dev-only path that creates tracks without any provider API, so local builder
+flows remain exercisable with zero credentials.

@@ -1,4 +1,5 @@
 <!-- note (Claude, 2026-06-24): Relocated from the untracked workspace root into the web repo so it's version-controlled. Point-in-time competitive audit; live forward work is in web-ios-parity.md. -->
+<!-- note (Codex, 2026-06-28): Archived during web-launch-readiness refactor. Active StructClub-derived launch checks and deferrals now live in ../web-launch-readiness.md; this file is provenance only. -->
 
 # RitmoFit Web — StructClub Feature-Parity Audit
 
@@ -56,10 +57,9 @@ production path. **Real blast radius is wider than Explore+Teams: sharing (`/sha
 playlist import (`/classes/:id/playlist-import`), and custom cover images (`/uploads/:key`) are also 404 in
 production.**
 
-**Fix applied** (in the working tree, not yet deployed): scope the gate to `mockRoutes.use('/mock/*', …)` so
-it can never leak, plus two regression tests (a unit test reproducing the leak against the real `mockRoutes`,
-and a full-app integration test that drives the worker with `MOCK_PROVIDERS` unset). All gates green; awaiting
-owner confirmation to deploy. See §6 P0.
+**Fix applied at the time:** scoped the gate to `mockRoutes.use('/mock/*', …)` so it could never leak,
+plus two regression tests (a unit test reproducing the leak against the real `mockRoutes`, and a
+full-app integration test that drives the worker with `MOCK_PROVIDERS` unset). See §6 P0.
 
 ---
 

@@ -332,17 +332,19 @@ haptics, lock-screen / Now-Playing integration, and motion/ambient sensing remai
 second-screen "presentation/cast" view (laptop → TV) is a web-leaning *enhancement*, not a limiter.
 "UX expression" is **platform-idiomatic**, not a unified pixel-identical UI.
 
-**Tradeoff:** Overturns the original asymmetric architecture; implies sizable near-term parity work in
-**both** directions (web gains full live-run; iOS gains builder/library/search/explore/sharing) and
-raises cross-repo coordination cost (two clients, one contract). Accepted as the cost of the core
-promise. **Open follow-on (not now):** iPad as a first-class iOS target — today the principle leans on
-web to cover iPad.
+**Tradeoff:** Overturns the original asymmetric architecture; implied sizable near-term parity work in
+**both** directions. Web's core live-run surface has since shipped. The current operating sequence is web
+launch readiness first, then iOS catch-up for builder/library/search/explore/sharing and additive
+run-payload fields; future web live work is framed as enhancement rather than the core parity gap. This
+raises cross-repo coordination cost (two clients, one contract), accepted as the cost of the core
+promise. **Open follow-on (not now):** iPad as a first-class iOS target — today the principle leans on web
+to cover iPad.
 
 ---
 
-## Cut from M1 (flagged, not built)
+## Deferred from M1
 
-- **Segments / class sections.** *(Cut from M1; **shipped later**.)* In M1 segments were a design
+- **Segments / class sections.** *(Deferred from M1; **shipped later**.)* In M1 segments were a design
   concept only — no `class_sections` table. They were added in the design-system builder build
   (**slice 16, migration `0006`**, PR #31) as a `class_sections` table with a fixed `segmentType` enum
   (`warm_up`/`climb`/`sprint`/`recovery`/`cool_down`) plus an additive run-payload `sections[]`

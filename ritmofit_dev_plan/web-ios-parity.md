@@ -17,6 +17,11 @@ desk, iOS in the room) but is **never capability-limited**. Full rationale + tra
 linked parity item on the other surface.** Existing asymmetries are **defects**, worked down ahead of
 most net-new feature work.
 
+**Current sequence:** web launch readiness is the active milestone. This is a sequencing choice, not a
+parity exemption: iOS gaps remain tracked here, and launch-critical web changes that increase iOS debt
+must add or update a linked backlog item before merge. Once the web launch gate is green, focus shifts to
+the iOS wrap-up.
+
 In practice, for any feature PR (web *or* iOS):
 
 1. State the parity impact in the PR description: does this ship on both surfaces, or does it open a
@@ -56,9 +61,11 @@ In practice, for any feature PR (web *or* iOS):
   run-payload surface. Re-verify the iOS DTO against the current contract before integration work; refresh
   `ios-snapshot/` so the gate compares against current iOS.
 
-## Parity backlog (current asymmetries — these are the defects to close)
+## Post-Web-Launch Parity Backlog
 
-Capability-level, both directions. Track concrete slices in `milestones.md` (web) and `BUILD_ORDER.md` (iOS); this is the cross-surface ledger.
+Capability-level, both directions. During web launch readiness, this ledger is a controlled deferral
+list; after the launch gate is green, it becomes the next implementation queue. Track concrete slices in
+`milestones.md` (web) and `BUILD_ORDER.md` (iOS).
 
 **Web has, iOS needs:**
 
@@ -67,12 +74,15 @@ Capability-level, both directions. Track concrete slices in `milestones.md` (web
 - **Library** of saved/liked tracks
 - **Explore** feed
 - **Sharing / teams** UI
+- Run-payload DTO catch-up for currently allowlisted additive fields: `RunClass.timelineMode`;
+  `RunTrack.displayRpm` / `holdCount` / `clipStartMs` / `beatAnchorMs`; `Move.beat` / `Move.bar`
 
 **iOS has, web needs:**
 
-- Full **live-run** experience — cue prompter, HUD, interval timers, rhythm signature, virtual clock
-  driving off `run-payload`. (Web answer: full live-run, **not** presenter-only — D18. A laptop/tablet
-  at the front of the room, including iPad and Android tablets the iPhone-only app can't serve.)
+- No current capability-level backlog item. The prior full **live-run** gap is closed on web:
+  `LiveMode` now provides the cue prompter, virtual clock, interval timers, intensity readouts, and
+  provider handoff from `run-payload`. Future web live work should be framed as enhancement
+  (for example, second-screen presentation), not as closing the core parity gap.
 
 ## Documented exceptions (allowed divergence)
 

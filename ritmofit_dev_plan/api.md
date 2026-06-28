@@ -1,8 +1,8 @@
 # API
 
-REST surface for M1, documented with OpenAPI so web and iOS share one contract. This lists the shape
-and intent of endpoints; exact request/response bodies are the Zod schemas in `packages/shared`,
-surfaced in the generated OpenAPI spec.
+REST surface for the current RitmoFit backend, documented with OpenAPI so web and iOS share one
+contract. This lists the shape and intent of endpoints; exact request/response bodies are the Zod
+schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 
 ## Conventions
 
@@ -20,8 +20,8 @@ surfaced in the generated OpenAPI spec.
   `lib/authz.ts` (see `authorization.md`). Never inline ad-hoc checks — D1 has no RLS back-stop.
 - **Casing:** responses map snake_case DB columns to camelCase via the shared schemas.
 
-> **Build order:** the **bold** groups below are the M1 core (built first, behind the class builder).
-> The *Teams* and *Shares* groups are M1 schema-complete but their **routes are built last** (D9).
+> **Contract source:** `apps/api/openapi/openapi.json` is the generated contract of record. Keep this
+> narrative route map in sync when route groups ship or change behavior.
 
 ---
 
@@ -35,7 +35,7 @@ surfaced in the generated OpenAPI spec.
 
 ---
 
-## **Classes** (M1 core)
+## Classes
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -45,19 +45,22 @@ surfaced in the generated OpenAPI spec.
 | PATCH | `/classes/:id` | Update class fields (edit access). Setting `visibility` (`private`/`public`) is how an owner publishes to / unpublishes from Explore (M4). |
 | DELETE | `/classes/:id` | Delete (owner only). |
 | GET | `/classes/:id/run-payload` | **Versioned single-fetch payload to run the class live** (see below). |
+| POST | `/classes/:id/cover` | Upload/replace a class cover image (owner/edit access; stored in R2 when configured). |
+| POST | `/classes/:id/tags` | Add a lowercase class tag. |
+| DELETE | `/classes/:id/tags/:tag` | Remove a class tag. |
 
-## **Tracks within a class** (M1 core)
+## Tracks within a class
 
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/classes/:id/tracks` | Add a track to a class → creates a `class_track`. Body references an existing `track` or creates one. Edit access. |
 | GET | `/classes/:id/tracks` | List `class_tracks` in `position` order, with cues + moves. |
-| PATCH | `/class-tracks/:id` | Update intensity, bpm override, start offset, notes. |
+| PATCH | `/class-tracks/:id` | Update intensity, bpm/RPM/count overrides, trim/beat anchors, start offset, notes. |
 | DELETE | `/class-tracks/:id` | Remove a track from the class. |
 | POST | `/classes/:id/tracks/reorder` | Reorder `class_tracks` (accepts the new ordered list of ids). |
 | POST | `/class-tracks/:id/copy` | Copy this class_track **with its cues/moves** into a target class (D7). |
 
-## **Cues** (M1 core)
+## Cues
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -66,7 +69,7 @@ surfaced in the generated OpenAPI spec.
 | PATCH | `/cues/:id` | Update a cue. |
 | DELETE | `/cues/:id` | Delete a cue. |
 
-## **Moves on the timeline** (M1 core)
+## Moves on the timeline
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -75,21 +78,23 @@ surfaced in the generated OpenAPI spec.
 | PATCH | `/class-track-moves/:id` | Update a placed move. |
 | DELETE | `/class-track-moves/:id` | Remove a placed move. |
 
-## **Moves library** (M1 core)
+## Moves library
 
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/moves?template=cycle` | List global library moves (optionally by template). |
+| GET | `/moves/:id/songs` | Reverse lookup songs/classes that use a global move. |
 | GET | `/user-moves` | List the caller's custom moves. |
 | POST | `/user-moves` | Create a custom move (optional `baseMoveId`). |
+| GET | `/user-moves/:id/songs` | Reverse lookup songs/classes that use a custom move. |
 | PATCH | `/user-moves/:id` | Update a custom move. |
 | DELETE | `/user-moves/:id` | Delete a custom move. |
 
-## **Tracks & provider IDs** (M1 core — hand-entered)
+## Tracks & provider IDs
 
-In M1 these are hand-entered (no provider API calls). M2 adds search/resolution. Tracks are a
-**per-user library** (D4): creation sets `owner_user_id` = caller, and update/delete/attach are
-**owner-only** (a simple ownership check, *not* `requireAccess` — see `authorization.md`).
+Tracks are a **per-user library** (D4): creation sets `owner_user_id` = caller, and
+update/delete/attach are **owner-only** (a simple ownership check, *not* `requireAccess` — see
+`authorization.md`). They can be hand-entered or imported from a connected provider.
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -97,13 +102,33 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
 | GET | `/tracks/:id` | Fetch a track with its provider IDs (owner only). |
 | PATCH | `/tracks/:id` | Update track fields, e.g. set/correct manual BPM (owner only). |
 | POST | `/tracks/:id/provider-ids` | Attach a provider ID — provider + providerTrackId + optional uri (owner only). |
+| POST | `/tracks/:id/bpm-lookup` | Optional third-party tempo lookup; never uses Spotify audio features. |
 | DELETE | `/track-provider-ids/:id` | Remove a provider ID (owner of the parent track only). |
 
 > `POST /classes/:id/tracks` may inline-create a track (per its body); the inline-create sets
 > `owner_user_id` = caller and uses the **same** shared Zod shape as `POST /tracks`. Referencing an
 > *existing* track in that route requires the caller to own it.
 
-## **Explore** (M4 — public discovery)
+## Providers & playlist import
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/providers/:provider/search` | Search a connected/supported provider catalog for import candidates. |
+| GET | `/providers/:provider/likes` | Fetch liked/saved tracks when the provider supports it. |
+| POST | `/providers/track-import` | Import a provider result into the caller's per-user track library with provider refs. |
+| GET | `/providers/:provider/connect` | Start provider OAuth. |
+| GET | `/providers/:provider/callback` | Complete provider OAuth and store encrypted tokens. |
+| GET | `/providers/connections` | List the caller's connected providers. |
+| DELETE | `/providers/:provider/connection` | Disconnect a provider and enqueue required provider-metadata purge work. |
+| POST | `/classes/:id/import-playlist` | Import provider playlist items into a class as `class_tracks`. |
+
+## Uploads
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/uploads/covers/:filename` | Serve uploaded class cover images from the configured storage layer. |
+
+## Explore
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -112,7 +137,7 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
 
 ---
 
-## Teams *(schema in M1; routes built last)*
+## Teams
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -123,7 +148,7 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
 | POST | `/teams/:id/members` | Add a member (owner/admin only). Targets **exactly one** of `userId` or `email`; `email` is resolved to a user id server-side (M4) — same privacy stance as `POST /shares` (no user-search endpoint). Unknown email → `422`; already a member → `409`. |
 | DELETE | `/teams/:id/members/:userId` | Remove a member (owner/admin, or self-leave). |
 
-## Shares *(schema in M1; routes built last)*
+## Shares
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -155,6 +180,8 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
       "classTrackId": "…",
       "position": 0,
       "displayBpm": 122,
+      "displayRpm": 75,
+      "holdCount": 8,
       "intensity": "mod",
       "startOffsetMs": 0,
       "clipStartMs": 0,
@@ -179,7 +206,7 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
     }
   ],
   "sections": [
-    { "id": "…", "type": "climb", "label": "Climb", "startOffsetMs": 300000 }
+    { "type": "climb", "startOffsetMs": 300000 }
   ]
 }
 ```
@@ -188,7 +215,7 @@ In M1 these are hand-entered (no provider API calls). M2 adds search/resolution.
 > bands — builder slice 16, migration `0006`) and a stable **`id`** on every cue and placed move
 > (slice 17, so two cues/moves at the same `anchorMs` disambiguate). `sections[]` carries no `id` yet.
 > Per-track **`clipStartMs`** + **`beatAnchorMs`** (trimming + beat-snapping) and derived **`beat`/`bar`**
-> on cues *and* moves. With trimming, cue/move `anchorMs` are **re-based to the clip start** (so the live
+> on cues *and* moves; per-track **`displayRpm`** and **`holdCount`**. With trimming, cue/move `anchorMs` are **re-based to the clip start** (so the live
 > timeline lines up); `beat`/`bar` are derived from the original track-relative anchor + BPM + downbeat
 > (4/4), null without a tempo or before bar 1. Top-level **`class.timelineMode`** (`sequential` | `free`):
 > in `free` mode `startOffsetMs` is author-set with gaps, and `totalDurationMs` is the latest track end —
@@ -199,19 +226,21 @@ contract — one fetch so the iOS app isn't composing the live view from a dozen
 
 **Server-side resolution (the contract the clients depend on):**
 - **`displayBpm`** = `class_track.display_bpm_override ?? track.display_bpm` (the override wins; may be
-  `null` if neither is set — BPM is optional/manual in M1).
-- **`track.durationMs`** = `class_track.duration_ms_override ?? track.duration_ms` (the class-specific
-  correction wins; may be `null`). Live mode must not start while any entry is null.
+  `null` if neither is set — BPM is optional/manual or from a permitted tempo provider).
+- **`displayRpm` / `holdCount`** are emitted from the per-class track fields and may be `null`.
+- **`track.durationMs`** = the effective played duration:
+  `min(clipEndMs ?? baseDurationMs, baseDurationMs) - clipStartMs`, where
+  `baseDurationMs = class_track.duration_ms_override ?? track.duration_ms`. Live mode must not start
+  while any entry is null.
 - **move `name`** = `move.name ?? user_move.name ?? class_track_move.name_override` (resolve the library
   reference; fall back to the freeform name). Exactly one source is set per placement.
-- **`startOffsetMs`** is **server-derived** (sequential, back-to-back from preceding `durationMs`);
-  clients treat it as read-only. See `schema.md` → `class_tracks`. **M3:** the run-payload **recomputes**
-  the timeline at read time (reusing the write-path sequencing), so per-track offsets are authoritative
-  even if a persisted `start_offset_ms` ever drifted. Each entry runs `startOffsetMs` →
+- **`startOffsetMs`** is recomputed in `sequential` mode (back-to-back from preceding effective
+  durations) and read from persisted authored offsets in `free` mode. Each entry runs `startOffsetMs` →
   `startOffsetMs + track.durationMs`.
-- **`class.totalDurationMs`** (**M3**) is the assembled timeline length — the sum of effective
-  `track.durationMs` values (null = 0), distinct from the instructor's planned `targetDurationMs`.
-  Drives the live interval timer without client-side summing. `0` for an empty class.
+- **`class.totalDurationMs`** is the assembled timeline length: the sum of effective durations in
+  `sequential` mode, and the latest track end in `free` mode. It is distinct from the instructor's
+  planned `targetDurationMs` and drives the live interval timer without client-side summing. `0` for an
+  empty class.
 - **`tracks`** are emitted in `position` order.
 
 ---
@@ -222,7 +251,3 @@ contract — one fetch so the iOS app isn't composing the live view from a dozen
   See `authorization.md` for the access predicate and pagination shape.
 - Choreography endpoints (`cues`, `moves`) inherit the parent class's access level via the
   `cue/move → class_track → class` chain, resolved by the authz helper.
-- **M2 adds** (shipped): `GET /providers/:provider/search` (provider search) + `POST
-  /providers/track-import`, per-user OAuth (`connect`/`callback`/`list`/`disconnect`) with encrypted
-  `music_connections`, `GET /providers/:provider/likes`, provider-ID resolution / same-song matching,
-  and optional third-party BPM lookup (`POST /tracks/:id/bpm-lookup`, never Spotify).
