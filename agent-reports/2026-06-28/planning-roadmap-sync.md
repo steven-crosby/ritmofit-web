@@ -13,7 +13,7 @@ prs: []
 
 ## Summary
 
-**The single most important call: this is a launch-*closing* week, not a feature week — drive the
+**The single most important call: this is a launch-_closing_ week, not a feature week — drive the
 Web Launch Gate to green, don't open new slices.** `main` is clean at `ba6d627`, CI-green, zero open
 PRs, production aligned (Worker `e6fb7c1a`, remote D1 at head). M1–M4 are done and deployed; the only
 active milestone is **Web Launch Readiness**, and its gate still has unchecked verification and one
@@ -32,7 +32,7 @@ current sequence.
 - Read source-of-truth docs: `DEVELOPMENT_PLAN.md`, `web-launch-readiness.md`, `web-ios-parity.md`,
   `HISTORY.md`, prior `2026-06-28/command-brief.md`.
 - Inspected contract-parity allowlist (`apps/api/src/lib/contract-parity.ts`) + `ios-snapshot/` →
-  confirmed all iOS-lagging run-payload fields are *advertised by the contract already*.
+  confirmed all iOS-lagging run-payload fields are _advertised by the contract already_.
 - This is a brief-only run: no code, no PR, no full local gate re-run (CI was green at `ba6d627`).
 
 ## Findings
@@ -50,7 +50,7 @@ Ranked by what should claim the week.
   - Evidence: gate requires verified auth/email (reset, verification, expired session) and a full
     production core-workflow pass (create/edit/copy class, import tracks, cues/moves/sections, Live Mode,
     Explore save, share/team-share). Session 1 walked the loop once; these are not yet gate-signed.
-  - User impact: these *are* the launch decision — unverified means not launch-ready.
+  - User impact: these _are_ the launch decision — unverified means not launch-ready.
   - Recommended owner: web.
   - Recheck next run? yes.
 - **[P2] First-impression library/discovery polish (StructClub gap, launch-required)** —
