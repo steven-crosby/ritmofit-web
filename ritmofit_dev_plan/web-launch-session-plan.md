@@ -52,7 +52,8 @@ Goal: make the planning loop discoverable instead of buried.
 ## Session 5 — Builder Polish
 
 Status: **done and deployed (2026-06-28).** All four shipped-code gaps closed (PRs #137–#140, Workers
-`4eab08f3` → `c34515d1`). See `HISTORY.md`.
+`4eab08f3` → `c34515d1`), then the Session 5 follow-up PR #143 deployed at Worker `92d3904e`. See
+`HISTORY.md`.
 
 Goal: close the known shipped-code gaps.
 
@@ -64,9 +65,12 @@ Goal: close the known shipped-code gaps.
   boundary to the nearest track edge; authoring affordance, no contract change.
 - ~~Expand the rhythm-cycle default move vocabulary.~~ Done (#138) — +7 cycle moves; data-only seed, remote
   re-seed applied.
+- ~~Manual visual pass + 320px layout fix.~~ Done (#143) — pulse cadence, reduced-motion fallback,
+  segment snap, and 320px/desktop layouts verified; fixed track-list overflow at 320px.
+- ~~Settings/profile surface beyond sign-out.~~ Done (#143) — Account dialog backed by `GET/PATCH
+  /auth/me`, with sign-out retained inside the dialog.
 
-Deferred follow-ups (not Session 5 scope): manual visual passes (pulse cadence + reduced motion, segment
-snap, 320px/desktop) and the launch-listed settings/profile surface beyond sign-out.
+Deferred follow-ups: none for Session 5. Continue with Session 6.
 
 ## Session 6 — Live Mode And StructClub Parity Pass
 
