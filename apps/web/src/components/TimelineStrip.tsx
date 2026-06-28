@@ -235,7 +235,19 @@ export function TimelineStrip({
         {blocks.map((b) => {
           const selected = b.classTrackId === selectedTrackId;
           const ring = selected ? 'ring-2 ring-interactive' : '';
-          const style = { left: `${b.leftPct}%`, width: `${b.widthPct}%` };
+          // The active track's block carries the subtle on-beat pulse (design system
+          // 10 §2) — the planning timeline's single sanctioned pulse, retimed by the
+          // track's own BPM via --rf-bpm. Only when a tempo is known; the static ring
+          // marks selection on its own (and survives reduced motion).
+          const pulse = selected && b.bpm != null;
+          const style: CSSProperties = pulse
+            ? ({
+                left: `${b.leftPct}%`,
+                width: `${b.widthPct}%`,
+                '--rf-bpm': b.bpm,
+              } as CSSProperties)
+            : { left: `${b.leftPct}%`, width: `${b.widthPct}%` };
+          const pulseClass = pulse ? ' rf-beat-pulse-subtle' : '';
           const inner = (
             <span className="font-data text-[10px] text-text-tertiary">{b.position + 1}</span>
           );
@@ -260,7 +272,7 @@ export function TimelineStrip({
               aria-label={`Select track ${b.position + 1}`}
               onClick={() => onSelectTrack(b.classTrackId)}
               style={style}
-              className={`absolute top-0 flex h-5 items-center justify-center overflow-hidden rounded-sm border-l border-interactive/15 first:border-l-0 hover:bg-bg-raised ${ring}`}
+              className={`absolute top-0 flex h-5 items-center justify-center overflow-hidden rounded-sm border-l border-interactive/15 first:border-l-0 hover:bg-bg-raised ${ring}${pulseClass}`}
             >
               {inner}
             </button>
@@ -358,6 +370,9 @@ function TrackBlockHandle({
 
   const leftPct = totalMs > 0 ? clamp((draftStart / totalMs) * 100, 0, 100) : 0;
   const widthPct = totalMs > 0 ? (block.durMs / totalMs) * 100 : 0;
+  // Same single planning-timeline pulse as the non-draggable block (design system
+  // 10 §2): the active block breathes at its own BPM, only when a tempo is known.
+  const pulse = selected && block.bpm != null;
 
   // Pointer x → the block's new (snapped, ≥ 0) start, keeping its left edge under the cursor.
   const fromPointer = (clientX: number): number => {
@@ -431,8 +446,12 @@ function TrackBlockHandle({
       onPointerUp={onPointerUp}
       onKeyDown={onKeyDown}
       onBlur={() => void commit(draftStart)}
-      style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-      className={`absolute top-0 flex h-5 cursor-ew-resize touch-none items-center justify-center overflow-hidden rounded-sm border-l border-interactive/15 hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive ${selected ? 'ring-2 ring-interactive' : ''}`}
+      style={
+        pulse
+          ? ({ left: `${leftPct}%`, width: `${widthPct}%`, '--rf-bpm': block.bpm } as CSSProperties)
+          : { left: `${leftPct}%`, width: `${widthPct}%` }
+      }
+      className={`absolute top-0 flex h-5 cursor-ew-resize touch-none items-center justify-center overflow-hidden rounded-sm border-l border-interactive/15 hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive ${selected ? 'ring-2 ring-interactive' : ''}${pulse ? ' rf-beat-pulse-subtle' : ''}`}
     >
       <span className="font-data text-[10px] text-text-tertiary">{block.position + 1}</span>
     </button>

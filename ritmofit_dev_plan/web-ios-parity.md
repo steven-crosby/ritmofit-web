@@ -70,6 +70,12 @@ list; after the launch gate is green, it becomes the next implementation queue. 
 **Web has, iOS needs:**
 
 - Full **class builder / choreography** (timeline, cues, moves, intensity, sections, trim/beat-snap)
+  - Planning-timeline tempo pulse (web Session 5): the active track's block in the builder timeline
+    carries the design system's second sanctioned pulse (`10-rhythm-system.md` §2) — a subtle
+    `scale 1.0→1.03` + faint border-luminance breath retimed by the track's BPM, suppressed under reduce
+    motion. iOS should add the equivalent SwiftUI `beatDuration` pulse on its builder play indicator when
+    its choreography surface lands (`08-ios-web-alignment.md` already specifies "same two places"). No
+    contract change (BPM is already in the run-payload via `displayBpm`).
 - **Multi-provider track search** (SoundCloud / Spotify / Apple Music) + provider connect
 - **Library** of saved/liked tracks
   - Library-card summary (web Session 3): `GET /classes` now returns additive per-class card

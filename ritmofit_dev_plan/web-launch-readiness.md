@@ -79,7 +79,13 @@ Known launch-required polish/work items from the current audit:
 - Rhythm-cycle seed vocabulary expansion for the default moves library.
 - Settings/profile surface beyond sign-out.
 - Custom-move `baseMoveId` / template editing.
-- Planning timeline playing-track pulse.
+- ~~Planning timeline playing-track pulse.~~ **Done (web, Session 5, 2026-06-28):** the active track's
+  block in the planning `TimelineStrip` now carries the design system's second sanctioned tempo pulse
+  (10 §2) — a subtle `scale 1.0→1.03` + faint cyan border-luminance breath retimed per the track's BPM
+  via `--rf-bpm` (new `.rf-beat-pulse-subtle` keyframe). Quieter than the Live HUD pulse, exactly one per
+  screen, gated to a known tempo, and removed entirely under `prefers-reduced-motion` (the static
+  selection ring alone marks the active track). Client-only off the run-payload; no schema/API change.
+  iOS parity tracked in `web-ios-parity.md`.
 - Segment-band track-range binding.
 
 Production audit findings (Session 1, 2026-06-27):
