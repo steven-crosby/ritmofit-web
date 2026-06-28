@@ -10,12 +10,31 @@
  * the placed-move rows, and the run-payload-derived views.
  */
 import { useCallback, useEffect, useState } from 'react';
-import type { UserMove } from '@ritmofit/shared';
-import { listUserMoves, updateUserMove, deleteUserMove } from '../lib/api.js';
+import type { ClassTemplate, Move, UserMove } from '@ritmofit/shared';
+import { listMoves, listUserMoves, updateUserMove, deleteUserMove } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import { Dialog } from './Dialog.js';
 import { PendingList } from './PendingList.js';
+
+/**
+ * Discipline options for a custom move (`user_moves.template`). `''` is the
+ * unset/"no discipline" choice that maps back to a `null` template. Labels are
+ * presentation-only and mirror the create-class chooser's wording.
+ */
+const TEMPLATE_OPTIONS: ReadonlyArray<{ value: ClassTemplate | ''; label: string }> = [
+  { value: '', label: 'No discipline' },
+  { value: 'cycle', label: 'Cycle' },
+  { value: 'hiit', label: 'HIIT' },
+  { value: 'sculpt', label: 'Sculpt' },
+  { value: 'tread', label: 'Tread' },
+];
+const TEMPLATE_LABEL: Record<ClassTemplate, string> = {
+  cycle: 'Cycle',
+  hiit: 'HIIT',
+  sculpt: 'Sculpt',
+  tread: 'Tread',
+};
 
 export function CustomMovesDialog({
   onClose,
@@ -26,12 +45,17 @@ export function CustomMovesDialog({
   onChanged: () => void;
 }) {
   const [moves, setMoves] = useState<UserMove[] | null>(null);
+  // The read-only global library, used to populate the "based on" picker and to
+  // resolve a move's baseMoveId → name for display. Fetched with the user moves.
+  const [globalMoves, setGlobalMoves] = useState<Move[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setError(null);
     try {
-      setMoves(await listUserMoves());
+      const [userMoves, global] = await Promise.all([listUserMoves(), listMoves()]);
+      setMoves(userMoves);
+      setGlobalMoves(global);
     } catch (e) {
       setError(errMessage(e));
     }
@@ -85,7 +109,13 @@ export function CustomMovesDialog({
       ) : (
         <ul className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto">
           {moves.map((m) => (
-            <CustomMoveRow key={m.id} move={m} onChanged={afterChange} onError={setError} />
+            <CustomMoveRow
+              key={m.id}
+              move={m}
+              globalMoves={globalMoves}
+              onChanged={afterChange}
+              onError={setError}
+            />
           ))}
         </ul>
       )}
@@ -95,24 +125,35 @@ export function CustomMovesDialog({
 
 function CustomMoveRow({
   move,
+  globalMoves,
   onChanged,
   onError,
 }: {
   move: UserMove;
+  globalMoves: Move[];
   onChanged: () => Promise<void>;
   onError: (msg: string | null) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(move.name);
   const [description, setDescription] = useState(move.description ?? '');
+  // '' is the unset choice for both selects, mapped back to null on save.
+  const [template, setTemplate] = useState<ClassTemplate | ''>(move.template ?? '');
+  const [baseMoveId, setBaseMoveId] = useState<string>(move.baseMoveId ?? '');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   // useAsyncAction owns the in-flight flag + error capture, so `busy` always clears
   // (the old hand-rolled remove left it stuck true on success).
   const { busy, run } = useAsyncAction(onError);
 
+  const baseMove = move.baseMoveId
+    ? (globalMoves.find((g) => g.id === move.baseMoveId) ?? null)
+    : null;
+
   const startEdit = () => {
     setName(move.name);
     setDescription(move.description ?? '');
+    setTemplate(move.template ?? '');
+    setBaseMoveId(move.baseMoveId ?? '');
     setEditing(true);
   };
 
@@ -122,6 +163,8 @@ function CustomMoveRow({
       await updateUserMove(move.id, {
         name: name.trim(),
         description: description.trim() === '' ? null : description.trim(),
+        template: template === '' ? null : template,
+        baseMoveId: baseMoveId === '' ? null : baseMoveId,
       });
       setEditing(false);
       await onChanged();
@@ -152,6 +195,39 @@ function CustomMoveRow({
           onChange={(e) => setDescription(e.target.value)}
           aria-label="Move description"
         />
+        <div className="flex flex-wrap gap-2">
+          <label className="flex min-w-0 flex-1 flex-col gap-1 font-ui text-xs text-text-tertiary">
+            Discipline
+            <select
+              className="rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-ui text-sm text-text-primary"
+              value={template}
+              onChange={(e) => setTemplate(e.target.value as ClassTemplate | '')}
+              aria-label="Move discipline"
+            >
+              {TEMPLATE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex min-w-0 flex-1 flex-col gap-1 font-ui text-xs text-text-tertiary">
+            Based on
+            <select
+              className="rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-ui text-sm text-text-primary"
+              value={baseMoveId}
+              onChange={(e) => setBaseMoveId(e.target.value)}
+              aria-label="Based on library move"
+            >
+              <option value="">No base move</option>
+              {globalMoves.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="flex items-center gap-2">
           <button
             className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
@@ -178,6 +254,16 @@ function CustomMoveRow({
         <p className="truncate font-ui text-sm text-text-primary">{move.name}</p>
         {move.description && (
           <p className="truncate font-ui text-xs text-text-tertiary">{move.description}</p>
+        )}
+        {(move.template || baseMove) && (
+          <p className="truncate font-ui text-xs text-text-tertiary">
+            {[
+              move.template ? TEMPLATE_LABEL[move.template] : null,
+              baseMove ? `based on ${baseMove.name}` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
         )}
       </div>
       {confirmingDelete ? (

@@ -70,6 +70,10 @@ list; after the launch gate is green, it becomes the next implementation queue. 
 **Web has, iOS needs:**
 
 - Full **class builder / choreography** (timeline, cues, moves, intensity, sections, trim/beat-snap)
+  - Custom-move discipline + base-move editing (web Session 5): the custom-move manager edit form now
+    sets a move's `template` (discipline) and `baseMoveId` (link to a global library move); both already
+    existed in the contract/API. iOS should expose the same two fields when its custom-move manager
+    lands. No contract change.
   - Planning-timeline tempo pulse (web Session 5): the active track's block in the builder timeline
     carries the design system's second sanctioned pulse (`10-rhythm-system.md` §2) — a subtle
     `scale 1.0→1.03` + faint border-luminance breath retimed by the track's BPM, suppressed under reduce
