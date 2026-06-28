@@ -1,7 +1,7 @@
 # Session Prompts
 
 Copy-paste prompts for driving implementation with Claude, mapped 1:1 to the M1 build order in
-[`milestones.md`](./milestones.md). All of them rely on the working agreement in
+[`milestones.md`](../milestones.md). All of them rely on the working agreement in
 [`ai-working-rules.md`](./ai-working-rules.md): **plan → confirm → code → summarize**. Claude proposes
 before it builds; you confirm; it implements; it summarizes.
 
@@ -11,7 +11,7 @@ before it builds; you confirm; it implements; it summarizes.
 - **When a step touches UI (steps 6+ and 12), point at the design system** (`ritmofit_design_system/`)
   so Claude uses the tokens, the energy ribbon, Martian Mono for BPM, and the redundant-encoding rules
   rather than inventing styling.
-- The root [`AGENTS.md`](../AGENTS.md) is the canonical agent guide and directs agents to the relevant
+- The root [`AGENTS.md`](../../AGENTS.md) is the canonical agent guide and directs agents to the relevant
   plans, so these prompts can stay
   short.
 
@@ -137,7 +137,7 @@ tokens/components. Acceptance: spec generates; the end-to-end flow works in the 
 
 ## After M1
 
-M1's "definition of done" (see [`milestones.md`](./milestones.md)): a logged-in user can create a
+M1's "definition of done" (see [`milestones.md`](../milestones.md)): a logged-in user can create a
 class, add hand-entered tracks, tag them with cues/moves/intensity, place them on a timeline, share
 with a user or team, and fetch the whole thing as a versioned run-payload — all through the backend.
 

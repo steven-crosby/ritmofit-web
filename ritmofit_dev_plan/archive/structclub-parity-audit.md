@@ -4,7 +4,7 @@
 # RitmoFit Web — StructClub Feature-Parity Audit
 
 > **Point-in-time competitive audit** (vs. the StructClub iOS app). Forward work distilled from it is
-> tracked in [`web-ios-parity.md`](./web-ios-parity.md). This file is the captured analysis, not a live backlog.
+> tracked in [`web-ios-parity.md`](../web-ios-parity.md). This file is the captured analysis, not a live backlog.
 
 **Date:** 2026-06-24
 **Subject:** `ritmofit-web` (planning surface at https://ritmofit.studio) vs. **StructClub** iOS app
