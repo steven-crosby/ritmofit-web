@@ -155,8 +155,9 @@ offsets + total).
 The snap *math* is trivial (`beatLenMs = 60000 / bpm`; round anchor to nearest beat). A credible
 feature needs a **beat grid**, which needs three things — and we have only one and a half:
 1. **BPM** — `displayBpm` (track) / `displayBpmOverride` (class_track) exist but are usually null /
-   manual. The optional GetSongBPM provider from M2 (`POST /tracks/:id/bpm-lookup`) can fill it, but
-   stays behind the mock until `GETSONGBPM_API_KEY` lands.
+   manual. The optional GetSongBPM provider from M2 (`POST /tracks/:id/bpm-lookup`) can fill it when
+   `GETSONGBPM_API_KEY` is provisioned; otherwise instructors enter BPM manually. Local mock mode still
+   returns deterministic spin-band BPM for development.
 2. **Downbeat / phase offset** — **does not exist anywhere.** A constant grid from t=0 is wrong for
    any track with an intro/lead-in. This is exactly why `milestones.md` calls beat/bar
    "non-functional in M1 (no downbeat phase to derive from)."

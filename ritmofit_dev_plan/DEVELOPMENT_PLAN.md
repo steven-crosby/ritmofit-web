@@ -4,9 +4,8 @@
 > what we're building, the decisions locked in, the platform realities that constrain every music
 > feature, and where to find detail. Deep context lives alongside this file; this is the map.
 >
-> This plan is the **synthesis** of two earlier drafts (`chatgpt_dev_plan/`, `claude_dev_plan/`).
-> It takes the reasoned doc structure and platform-awareness of the Claude draft, the Cloudflare-native
-> stack and the run-payload/mock-track ideas of the ChatGPT draft, and resolves the schema into one.
+> This plan began as the synthesis of earlier draft plans. The draft sources are no longer part of the
+> live documentation set; use the index below for current source-of-truth files.
 
 ---
 
@@ -127,8 +126,9 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
   routes in builder-first order — class builder + cues/moves end-to-end (with a **mock-track seam**)
   before teams/sharing routes. No provider API calls; BPM hand-entered. Versioned **run-payload** ships.
 - **M2 ✅ done: Music-provider integration.** SoundCloud first; search, provider-ID resolution, optional
-  third-party BPM, deep-link playback. Spotify + Apple Music adapters are live in production behind
-  server-side credentials.
+  third-party BPM, deep-link playback. SoundCloud, Spotify, and Apple Music catalog adapters are live
+  when production credentials are present; unsupported account-specific capabilities stay hidden by the
+  shared provider-capability matrix.
 - **M3 ✅ done: Live mode + iOS parity polish.** Cue prompter, interval timers; run-payload hardened.
 - **M4 ✅ done: Explore / sharing UX** on the M1 `shares` model — share-by-email, team-sharing, and the
   Explore feed (publish via `classes.visibility`, public VIEW floor, `GET /explore`, save-a-copy). The

@@ -9,7 +9,7 @@
 
 > **Follow the house rules first:**
 > `agent-prompts/remote-prompts/00-house-rules.md`
-> This one reads the vendored [`ios-snapshot/`](../../ios-snapshot/) (a read-only copy of the
+> This one reads the vendored [`ios-snapshot/`](../../../ios-snapshot/) (a read-only copy of the
 > iOS client source) for context — no sibling iOS checkout required; you branch only here in
 > `ritmofit-web`. It catches the classic companion-app bug: the iOS client and this backend
 > drifting apart. Because this repo is the source of truth, most genuine

@@ -34,11 +34,13 @@ deployment behavior changed, run the full CI-equivalent gate:
 - [ ] `pnpm format:check`
 - [ ] `pnpm -r typecheck`
 - [ ] `pnpm lint`
+- [ ] `(cd ritmofit_design_system && npm run verify)`
 - [ ] `pnpm test`
 - [ ] `pnpm --filter @ritmofit/api test:integration`
 - [ ] `pnpm --filter @ritmofit/web build`
 - [ ] `pnpm --filter @ritmofit/api openapi`
 - [ ] `git diff --exit-code apps/api/openapi/openapi.json`
+- [ ] `pnpm --filter @ritmofit/api contract-parity`
 - [ ] `pnpm audit:ci`
 
 ## 4. Deployment state
@@ -75,7 +77,7 @@ deployment behavior changed, run the full CI-equivalent gate:
   open `- [ ]` item to its real home using the routing table in `INBOX.md`
   (decision → `decisions.md`, scope → `DEVELOPMENT_PLAN.md`/`milestones.md`, parity →
   `web-ios-parity.md`, durable fact → memory, reusable prompt → `agent-prompts/`, concrete
-  bug → draft PR / `spawn_task`). **Delete each line once routed**, and delete stale ones.
+  bug → draft PR / focused follow-up). **Delete each line once routed**, and delete stale ones.
   Leave only genuinely unshaped ideas for next session.
 - [ ] Keep `AGENTS.md` limited to durable contributor rules; update it only when workflows,
   architecture boundaries, or canonical commands change.
@@ -121,11 +123,13 @@ gh pr list --state open
 pnpm format:check
 pnpm -r typecheck
 pnpm lint
+(cd ritmofit_design_system && npm run verify)
 pnpm test
 pnpm --filter @ritmofit/api test:integration
 pnpm --filter @ritmofit/web build
 pnpm --filter @ritmofit/api openapi
 git diff --exit-code apps/api/openapi/openapi.json
+pnpm --filter @ritmofit/api contract-parity
 pnpm audit:ci
 
 pnpm --filter @ritmofit/api exec wrangler d1 migrations apply ritmofit --remote

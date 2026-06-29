@@ -1,10 +1,11 @@
 /**
  * Provider connections (design system `09`: "clear connected/disconnected states,
- * never a dead end"). Per-user OAuth links to SoundCloud / Spotify / Apple Music,
- * used by "search my likes" (S3) and token-spending calls. Connect starts the flow
- * (the dev mock seam links immediately; the live flow opens the provider's
- * authorize URL); disconnect forgets the tokens now and triggers the 7-day
- * metadata purge server-side — so it's a deliberate, confirmed action.
+ * never a dead end"). Per-user OAuth links are currently SoundCloud-only; Spotify
+ * and Apple Music are catalog-search surfaces until provider account support is
+ * added. Connect starts the flow (the dev mock seam links immediately; the live
+ * flow opens the provider's authorize URL); disconnect forgets the tokens now and
+ * triggers the 7-day metadata purge server-side — so it's a deliberate, confirmed
+ * action.
  *
  * State is encoded with glyph + label + text (never color alone, 05/11): each
  * provider shows an explicit status — ✓ Connected, ⧖ Session expired, ○ Not

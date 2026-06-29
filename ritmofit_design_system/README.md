@@ -1,8 +1,8 @@
 # RitmoFit Design System
 
 This folder is the **canonical** design-system reference for RitmoFit, adopted by the web app here and
-bridged into iOS via `tokens.json`. (The workspace-root `ritmofit-design-system-final/` is a separate
-audit/review snapshot — a source for reconciliation, not the canonical system.)
+bridged into iOS via `tokens.json`. Historical design snapshots may be referenced from
+`ritmofit_dev_plan/HISTORY.md`, but this repo does not vendor from a sibling design-system folder.
 
 ## Product truth
 

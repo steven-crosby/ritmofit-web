@@ -47,17 +47,14 @@ are present and the current slice is deployed.
    pnpm format:check
    pnpm -r typecheck
    pnpm lint
+   (cd ritmofit_design_system && npm run verify)
    pnpm test
    pnpm --filter @ritmofit/api test:integration
    pnpm --filter @ritmofit/web build
    pnpm --filter @ritmofit/api openapi
    git diff --exit-code apps/api/openapi/openapi.json
-   pnpm audit:ci
-   ```
-   For launch candidates, also run the design-system and contract parity checks used by CI:
-   ```bash
-   (cd ritmofit_design_system && npm run verify)
    pnpm --filter @ritmofit/api contract-parity
+   pnpm audit:ci
    ```
 3. Record the current live version for rollback (see below): `wrangler deployments status`.
 4. Check remote D1 migration state: `wrangler d1 migrations list ritmofit --remote`.

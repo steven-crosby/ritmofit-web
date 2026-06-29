@@ -535,7 +535,7 @@ const doc = {
         },
       ],
       get: {
-        summary: 'Search a music provider (M2; SoundCloud live, others mock/pending)',
+        summary: 'Search a configured music provider catalog',
         parameters: [{ name: 'q', in: 'query', required: false, schema: { type: 'string' } }],
         responses: {
           '200': arrayResp('TrackSearchResult', 'Candidates'),
