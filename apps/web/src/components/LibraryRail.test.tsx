@@ -56,9 +56,11 @@ function renderRail(
     onDuplicate?: (cls: ClassListItem) => Promise<void>;
     onPreview?: (cls: ClassListItem) => void;
     onOpen?: (cls: ClassListItem) => void;
+    onRetry?: () => void;
   } = {},
 ) {
   const onLoadMore = vi.fn();
+  const onRetry = options.onRetry ?? vi.fn();
   render(
     <LibraryRail
       classes={options.items ?? classes}
@@ -75,14 +77,15 @@ function renderRail(
       onPreview={options.onPreview ?? (() => {})}
       onOpen={options.onOpen ?? (() => {})}
       onLoadMore={onLoadMore}
+      onRetry={onRetry}
     />,
   );
-  return onLoadMore;
+  return { onLoadMore, onRetry };
 }
 
 describe('LibraryRail pagination', () => {
   it('labels the count as loaded and requests the next page', () => {
-    const onLoadMore = renderRail();
+    const { onLoadMore } = renderRail();
     expect(screen.getByText('2 loaded')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
     expect(onLoadMore).toHaveBeenCalledTimes(1);
@@ -128,6 +131,19 @@ describe('LibraryRail tag search', () => {
     renderRail({ items: [], activeTag: 'hiit', knownTags: ['hiit'] });
     expect(screen.getByText(/No classes tagged/i)).toBeTruthy();
     expect(screen.queryByText(/create your first/i)).toBeNull();
+  });
+});
+
+describe('LibraryRail load failure', () => {
+  it('announces a failed load and offers a working retry', () => {
+    const onRetry = vi.fn();
+    renderRail({ items: [], status: 'error', onRetry });
+    // The failure is announced (role=alert), not just muted tertiary text.
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.getByText(/Couldn’t load your classes/i)).toBeTruthy();
+    // And it gives a real affordance rather than dead-ending on "try again" copy.
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });
 

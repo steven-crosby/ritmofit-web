@@ -84,14 +84,19 @@ describe('Dashboard class library states', () => {
     expect(screen.getByText('Select or create a class to start building.')).toBeTruthy();
   });
 
-  it('shows a distinct error state when the class list fails to load', async () => {
-    vi.mocked(api.listClasses).mockRejectedValue(new Error('network down'));
+  it('shows a distinct error state when the class list fails to load, and retries', async () => {
+    vi.mocked(api.listClasses).mockRejectedValueOnce(new Error('network down'));
 
     renderDashboard();
 
-    expect(await screen.findByText('Couldn’t load your classes — try again.')).toBeTruthy();
+    expect(await screen.findByText('Couldn’t load your classes.')).toBeTruthy();
     // The top-level banner surfaces the underlying message too.
     expect(screen.getByText('network down')).toBeTruthy();
+
+    // Retry actually re-fetches and recovers — not just dead-end "try again" copy.
+    vi.mocked(api.listClasses).mockResolvedValueOnce(page([makeClass('Recovered ride')]));
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('Recovered ride')).toBeTruthy();
   });
 
   it('shows the empty state when the library is genuinely empty', async () => {
