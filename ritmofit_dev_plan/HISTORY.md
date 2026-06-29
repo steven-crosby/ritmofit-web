@@ -321,7 +321,7 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 > `pnpm lint` matches CI), **#92** (`3c3f1fd`, docs: sweep housekeeping — backlog section,
 > self-contained `AGENTS.md`, removed obsolete `design-system-audits/`), **#93** (`8c70a6b`, feat:
 > surface track `notes` in Live mode + the Cues-vs-Notes decision doc;
-> [`cues-vs-notes-decision.md`](./cues-vs-notes-decision.md)), and **#94** (close-session docs).
+> [`archive/cues-vs-notes-decision.md`](./archive/cues-vs-notes-decision.md)), and **#94** (close-session docs).
 > Deployed from `main` (`69dcdcd`); prior Worker `e3528c85` (PR #84) is the rollback anchor.
 > **No migrations applied — remote D1 was already current at `0016`** (clip-window `0014`, `beat_anchor_ms`
 > `0015`, free-timeline `0016` had been applied previously; the earlier "remote at `0013`" note was
@@ -590,7 +590,7 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From milestones.md — builder-UI / music-frontend / post-launch hardening log
 
-## Web design-system build (builder UI) — in progress
+## Web design-system build (builder UI) — shipped & deployed
 
 Not a numbered milestone: this is the **rich planning UI M1 deferred** ("layered on after the data flow
 works"), turning the functional-but-skeleton builder into the surface specified in

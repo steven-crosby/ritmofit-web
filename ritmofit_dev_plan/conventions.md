@@ -59,7 +59,7 @@
 - Production secrets live in Cloudflare (`wrangler secret put`), not in the repo.
 
 ## Git
-- Small, focused commits aligned to the active launch-readiness gate.
+- Small, focused commits aligned to the current milestone (web launch shipped; iOS parity wrap next).
 - Conventional-commit style (`feat:`, `fix:`, `chore:`, `docs:`).
 - Branch per focused change; PR back to main.
 

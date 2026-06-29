@@ -152,9 +152,10 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`api.md`](./api.md) | REST surface, run-payload, auth, error conventions |
 | [`authorization.md`](./authorization.md) | The ownership + sharing access model (app-level gate) |
 | [`music-providers.md`](./music-providers.md) | The three hard constraints; BPM/playback strategy |
+| [`editing-granularity-scoping.md`](./editing-granularity-scoping.md) | As-built record of trim / beat-snap / free-placement; the granularity boundary (D13) and open follow-ups |
 | [`milestones.md`](./milestones.md) | Milestone breakdown, M1 build order, acceptance criteria |
-| [`web-launch-readiness.md`](./web-launch-readiness.md) | Active web launch gate, verification plan, and deferrals |
-| [`web-launch-session-plan.md`](./web-launch-session-plan.md) | Session-sized workflow for the active web launch milestone |
+| [`web-launch-readiness.md`](./web-launch-readiness.md) | Completed web launch gate, verification plan, and live deferrals |
+| [`deployment-runbook.md`](./deployment-runbook.md) | Production deploy + rollback/recovery procedure, secrets matrix, smoke checks |
 | [`conventions.md`](./conventions.md) | Code style, naming, env, wrangler/D1, git, testing |
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
 | [`../agent-prompts/daily/close-session.md`](../agent-prompts/daily/close-session.md) | End-of-session runbook — say "run close-session" |
@@ -177,7 +178,7 @@ Recently closed (kept as pointers so the trail isn't lost):
 - **Cues vs. Notes — ✅ resolved + read-path shipped.** Decided *not* to split the schema; the
   `class_tracks.notes` channel already existed end-to-end but was write-only, and Live mode now renders
   it. If *anchored, per-moment* notes ever prove needed, add a `kind: 'cue' | 'note'` discriminator to
-  `cues` (additive) rather than a new table. Full decision: [`cues-vs-notes-decision.md`](./cues-vs-notes-decision.md).
+  `cues` (additive) rather than a new table. Full decision (archived): [`archive/cues-vs-notes-decision.md`](./archive/cues-vs-notes-decision.md).
 - **Explore feature expansion** (rich categorized curation, featured/admin curation, themed collection
   merchandising) remains explicitly deferred from web launch scope in
   [`web-launch-readiness.md`](./web-launch-readiness.md).

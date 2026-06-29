@@ -17,9 +17,9 @@ data through the backend in this repo — a class built on web opens on iOS unch
 The parity principle is locked as **D18**; the gate + current parity backlog live in
 [`web-ios-parity.md`](./web-ios-parity.md).
 
-Current sequence: finalize the web app for launch first, with everything in this folder launch-required
-except Explore feature expansion and Teams feature expansion; then wrap the iOS app against the same
-backend contract and parity backlog.
+Current sequence: the web app's launch gate is green and deployed (everything in this folder was
+launch-required except Explore feature expansion and Teams feature expansion); focus now moves to
+wrapping the iOS app against the same backend contract and parity backlog.
 
 ## Who the user is
 
