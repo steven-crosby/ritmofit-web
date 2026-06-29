@@ -50,3 +50,5 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 ## Breadcrumbs
 
 <!-- newest at top; one per line -->
+
+- [ ] (2026-06-28) Live Mode: announce section/energy-arc transitions to screen readers — the new section bar is visual-only; the `aria-live` region announces cues/gaps/end but not Climb→Sprint changes. Prefer `polite`, composed into the existing announcement string, on-change only. Pick up in Session 7 (accessibility sweep). — #idea
