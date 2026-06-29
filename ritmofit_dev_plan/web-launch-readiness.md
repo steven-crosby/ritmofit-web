@@ -4,7 +4,8 @@ This is the completed launch-readiness record for `ritmofit-web`: the web app is
 production, and focus shifts to the iOS wrap-up and parity close. It does not weaken the D18 parity
 principle; it defines the current sequence.
 
-Use `web-launch-session-plan.md` for the session-sized execution order.
+The session-by-session execution log for this (now-complete) milestone is archived at
+`archive/web-launch-session-plan.md`; the per-deploy chronology lives in `HISTORY.md`.
 
 ## Goal
 

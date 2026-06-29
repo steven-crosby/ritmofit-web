@@ -29,8 +29,20 @@ Apple Music is separate from Apple sign-in. Prefer `APPLE_MUSIC_TEAM_ID`, `APPLE
 as a static fallback. Optional `APPLE_MUSIC_STOREFRONT` defaults to `us`.
 
 SoundCloud OAuth connect uses `https://ritmofit.studio/api/v1/providers/soundcloud/callback` unless
-`SOUNDCLOUD_REDIRECT_URI` overrides it. Spotify catalog search/import and playlist import use the
-server-side client-credentials pair only; no Spotify user OAuth or BPM path is configured.
+`SOUNDCLOUD_REDIRECT_URI` overrides it. Spotify now supports **both** server-side catalog/playlist
+search (the client-credentials pair) **and** a per-user OAuth connect ("search my Spotify" likes —
+Authorization Code + PKCE, scope `user-library-read`, callback
+`https://ritmofit.studio/api/v1/providers/spotify/callback` unless `SPOTIFY_REDIRECT_URI` overrides),
+reusing the same `SPOTIFY_CLIENT_ID`/`_SECRET`. To enable it in production, deploy the connect code and
+register that callback in the Spotify app dashboard. There is still **no Spotify BPM path** (permanent
+constraint — `music-providers.md`). Apple Music per-user connect uses **MusicKit JS** in the browser (no
+redirect or new secret beyond the existing Apple Music developer-token creds): the SPA mints a
+Music-User-Token and `POST`s it to `/providers/apple_music/connection`, stored encrypted.
+
+> **Deploy state (verify before relying on connect in prod):** both per-user connect paths (Spotify +
+> Apple Music) are committed but were **ahead of the last deployed prod Worker** at audit time, so they
+> are not live until the next deploy. Confirm with `wrangler deployments status` and re-check
+> `/api/v1/providers/connections` behavior after deploying.
 
 **Optional automatic BPM lookup** (GetSongBPM) is likewise unprovisioned: `GETSONGBPM_API_KEY` is not
 set in prod, so `POST /tracks/:id/bpm-lookup` returns a `503` with an instructor-facing fallback

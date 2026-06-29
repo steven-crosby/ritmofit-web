@@ -86,7 +86,7 @@ Owned by exactly one user. No `team_id` — ownership is always a user; others g
 | status | text enum(`draft`,`ready`,`archived`) | Default `draft` |
 | visibility | text enum(`private`,`public`) | Default `private` |
 | timeline_mode | text enum(`sequential`,`free`) | Default `sequential`. `sequential` = back-to-back, server-derived offsets; `free` = author offsets with gaps (overlaps rejected), positions derived from offset order |
-| featured_category | text | Nullable; marks this class for curated Explore rows |
+| featured_category | text | Nullable; **reserved** — column exists in code but is currently unused: featured/admin Explore curation is a deliberately deferred slice (see `decisions.md` → Explore, `web-launch-readiness.md`). Intended to mark a class for curated Explore rows once that ships |
 | cover_image_url | text | Nullable; custom uploaded R2 image URL |
 | target_duration_ms | int | Nullable; total planned class length |
 | created_at / updated_at | int (ms) | |
