@@ -11,11 +11,12 @@
  * the accessibility rules — never color alone.
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import type { RunPayload, RunPayloadTrackEntry, Intensity } from '@ritmofit/shared';
+import type { RunPayload, RunPayloadTrackEntry, Intensity, SegmentType } from '@ritmofit/shared';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { useWakeLock } from '../lib/use-wake-lock.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { LiveTimeline } from './LiveTimeline.js';
+import { SEGMENT_META, SegmentIcon } from './SegmentBand.js';
 
 type View = 'cue' | 'list';
 
@@ -123,6 +124,68 @@ function eventsFor(entry: RunPayloadTrackEntry): TimelineEvent[] {
   return [...cues, ...moves].sort((a, b) => a.atMs - b.atMs);
 }
 
+/** The active section + the one after it, for the live energy-arc indicator. */
+export interface LiveSection {
+  type: SegmentType;
+  /** The next section ahead (null when the current one runs to the class end). */
+  next: { type: SegmentType; inMs: number } | null;
+}
+
+/**
+ * The section band active at a class-absolute time: the last section whose start
+ * has been reached, or `null` before the first section (a leading gap with no
+ * band) or when the class has no sections. Defensively sorts by `startOffsetMs`
+ * so an unordered payload still resolves correctly.
+ */
+export function liveSectionAt(
+  sections: RunPayload['sections'],
+  elapsedMs: number,
+): LiveSection | null {
+  if (sections.length === 0) return null;
+  const sorted = [...sections].sort((a, b) => a.startOffsetMs - b.startOffsetMs);
+  let idx = -1;
+  sorted.forEach((s, i) => {
+    if (s.startOffsetMs <= elapsedMs) idx = i;
+  });
+  if (idx < 0) return null; // before the first section
+  const upcoming = sorted[idx + 1];
+  return {
+    type: sorted[idx]!.type,
+    next: upcoming ? { type: upcoming.type, inMs: upcoming.startOffsetMs - elapsedMs } : null,
+  };
+}
+
+/**
+ * The compact live energy-arc indicator: a slim, full-width band under the header
+ * naming the current section (icon + tint + label, never color alone) and, when a
+ * later section is ahead, a muted countdown to it. View-independent (shows in both
+ * Cue-by-Cue and Full List) so the instructor always knows where they are in the
+ * arc. Static — no motion to gate under reduced-motion.
+ */
+function LiveSectionBar({ section }: { section: LiveSection }) {
+  const meta = SEGMENT_META[section.type];
+  return (
+    <div
+      className="flex items-center justify-between gap-3 border-b border-interactive/15 px-6 py-2"
+      aria-label={`Current section: ${meta.label}`}
+    >
+      <span className="flex min-w-0 items-center gap-2">
+        <span style={{ color: meta.tint }}>
+          <SegmentIcon type={section.type} />
+        </span>
+        <span className="truncate font-ui text-sm font-semibold text-text-secondary">
+          {meta.label}
+        </span>
+      </span>
+      {section.next && (
+        <span className="shrink-0 font-data text-xs text-text-tertiary">
+          {SEGMENT_META[section.next.type].label} in {fmt(section.next.inMs)}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () => void }) {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -211,6 +274,11 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   // text, gap, end) — never the per-frame countdown — so it speaks once per change
   // rather than continuously. The live region below re-announces only when this
   // string actually changes.
+  const section = useMemo(
+    () => liveSectionAt(payload.sections, elapsedMs),
+    [payload.sections, elapsedMs],
+  );
+
   const ended = payload.class.totalDurationMs > 0 && elapsedMs >= payload.class.totalDurationMs;
   let announcement = '';
   if (payload.tracks.length === 0) {
@@ -253,6 +321,8 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
           </button>
         </div>
       </header>
+
+      {section && <LiveSectionBar section={section} />}
 
       <div className="min-h-0 flex-1 overflow-auto">
         {view === 'cue' ? (

@@ -46,7 +46,7 @@ const SEGMENT_ICON_POINTS: Record<SegmentType, string> = {
   cool_down: '2,5 8,10 14,11', // settle down
 };
 
-function SegmentIcon({ type }: { type: SegmentType }) {
+export function SegmentIcon({ type }: { type: SegmentType }) {
   return (
     <svg
       aria-hidden
