@@ -296,6 +296,14 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     announcement = `Track ${live.index + 1}: ${live.entry.track.title}.`;
   }
 
+  // Section/energy-arc transitions get their own *polite* region, separate from
+  // the assertive cue stream above: a Climb→Sprint change is context, not a cue,
+  // and must never interrupt the cue the instructor is acting on. The text is
+  // derived only from the section type, so the DOM string changes solely at a
+  // boundary — which is exactly when a live region re-announces. On-change only,
+  // no per-frame churn. (The visible LiveSectionBar is not itself a live region.)
+  const sectionAnnouncement = section ? `${SEGMENT_META[section.type].label} section.` : '';
+
   // Live runs on bg-live (ink-950, darker than bg-base) for maximum AAA contrast
   // in a dim studio — and stays dark in both themes (02/04-layout).
   return (
@@ -304,6 +312,11 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
           Visually hidden; the Cue-by-Cue card carries the same content on screen. */}
       <p className="sr-only" aria-live="assertive" aria-atomic="true">
         {announcement}
+      </p>
+      {/* Section/energy-arc transitions, announced politely so they don't cut off
+          the cue above. The visible band (LiveSectionBar) carries this on screen. */}
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {sectionAnnouncement}
       </p>
       <header className="flex items-center justify-between border-b border-interactive/20 px-6 py-3">
         <div>
