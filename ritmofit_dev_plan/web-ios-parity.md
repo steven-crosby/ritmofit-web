@@ -17,10 +17,9 @@ desk, iOS in the room) but is **never capability-limited**. Full rationale + tra
 linked parity item on the other surface.** Existing asymmetries are **defects**, worked down ahead of
 most net-new feature work.
 
-**Current sequence:** web launch readiness is the active milestone. This is a sequencing choice, not a
-parity exemption: iOS gaps remain tracked here, and launch-critical web changes that increase iOS debt
-must add or update a linked backlog item before merge. Once the web launch gate is green, focus shifts to
-the iOS wrap-up.
+**Current sequence:** the web launch gate is green and deployed, so focus shifts to the iOS wrap-up. iOS
+gaps remain tracked here, and launch-critical web fixes that increase iOS debt must add or update a
+linked backlog item before merge.
 
 In practice, for any feature PR (web *or* iOS):
 
@@ -50,7 +49,8 @@ In practice, for any feature PR (web *or* iOS):
   type/nullability/enum drift stays the job of the manual `agent-prompts/remote-prompts/technical/api-contract-parity.md`
   pass. **Currently allowlisted (iOS DTO follow-ups owned in `ritmofit-ios`):** `RunClass.timelineMode`;
   `RunTrack.displayRpm` / `holdCount` (D14, PR #110) / `clipStartMs` / `beatAnchorMs`; `Move.beat` /
-  `Move.bar`.
+  `Move.bar`. Last verified during Session 9 on 2026-06-29: OpenAPI regenerated cleanly (`42 schemas,
+  44 paths`) and `pnpm --filter @ritmofit/api contract-parity` reported no untracked drift.
 - **Still open: no design-token drift check for the iOS-vendored copy.** iOS vendors its own
   `ritmofit-ios/design-tokens/tokens.json` and `…/Core/DesignSystem/RFTokens.swift`, hand-synced from web
   canon; nothing fails when they drift from `ritmofit-web/ritmofit_design_system/tokens.json` (live

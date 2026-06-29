@@ -3,19 +3,17 @@
 Each step follows the working agreement: **plan → confirm → code → summarize** (see
 `../AGENTS.md` → "Before Implementing").
 
-> **Status: M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ — all done, merged to `main`, and deployed** (API + web at
-> `https://ritmofit.studio`). The active milestone is now **Web Launch Readiness**: verification, polish,
-> operational closure, and documented deferrals before shifting focus to iOS wrap-up. For the live Worker
-> version and the current remote D1 migration level (well past these milestones — `HISTORY.md` is the
-> source of truth, not this block), see [`HISTORY.md`](./HISTORY.md). The launch gate lives in
-> [`web-launch-readiness.md`](./web-launch-readiness.md); post-web-launch parity work lives in
-> [`web-ios-parity.md`](./web-ios-parity.md).
+> **Status: M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ · Web Launch Readiness ✅ — all done, merged to `main`, and
+> deployed** (API + web at `https://ritmofit.studio`). The active focus is now the **iOS handoff /
+> parity wrap**. For the live Worker version and the current remote D1 migration level (well past these
+> milestones — `HISTORY.md` is the source of truth, not this block), see [`HISTORY.md`](./HISTORY.md).
+> The launch gate lives in [`web-launch-readiness.md`](./web-launch-readiness.md); post-web-launch
+> parity work lives in [`web-ios-parity.md`](./web-ios-parity.md).
 >
 > **Surface scope:** per the parity principle (`decisions.md` D18, [`web-ios-parity.md`](./web-ios-parity.md)),
-> web and iOS are co-equal surfaces. During web launch readiness, do not expand iOS debt unless a web
-> change is launch-critical; track any such follow-up immediately in `web-ios-parity.md`. The iOS wrap-up
-> starts after the web launch gate is green. (The prior `REVIEW.md` launch-readiness log is archived in
-> `archive/`.)
+> web and iOS are co-equal surfaces. With the web launch gate green, the iOS wrap-up is the next product
+> focus; any launch-critical web fix that expands iOS debt still needs an immediate `web-ios-parity.md`
+> follow-up. (The prior `REVIEW.md` launch-readiness log is archived in `archive/`.)
 
 ## M1 — Auth + class/cue data model ✅ done
 
@@ -89,7 +87,7 @@ Core builder first (these validate the product), teams/sharing last.
 
 ## M2 — Music-provider integration ✅ done
 
-> **Progress (behind the mock until live SoundCloud creds + a registered redirect URI land):**
+> **Progress:**
 > - ✅ **Slice 1** — SoundCloud search → track creation. `packages/music` `MusicProvider` abstraction +
 >   `client_credentials` adapter behind a mock-fallback registry. `GET /providers/:provider/search`,
 >   `POST /providers/track-import`. (PR #1, **merged to `main`**)
@@ -121,7 +119,9 @@ Core builder first (these validate the product), teams/sharing last.
 >
 > **M2 complete** — all three providers (SoundCloud/Spotify/Apple Music) behind one interface, per-user
 > OAuth + refresh, likes, metadata-purge-on-disconnect, same-song resolution, and the optional BPM
-> provider. Live provider calls are behind the mock until real creds land.
+> provider. Live Spotify and Apple Music search/import now run from server-side production credentials;
+> Apple Music can use either a static developer token or Worker-signed developer tokens from Apple key
+> secrets.
 
 - **SoundCloud first** (the differentiator): provider search feeding track creation; provider-ID
   resolution and the same-song matching problem; deep-link/hand-off playback via `provider_uri`.
@@ -231,18 +231,17 @@ expansion (#138). See `HISTORY.md`. Remaining launch-readiness polish is tracked
 **Post-launch parity follow-up:** a run-payload `id` on `sections[]` remains optional unless iOS wants
 that symmetry.
 
-## Web Launch Readiness ▶ active
+## Web Launch Readiness ✅ done
 
-The current goal is to make the deployed web app launch-ready before shifting implementation focus to
-the iOS app. Treat this as a gate, not a feature milestone: the work is verification, production polish,
-bug fixing, docs/runbook closure, and explicit deferral management.
+The deployed web app has passed the launch gate. Treat this section as the completed gate record; new
+web work should be production support, launch-critical fixes, or explicitly approved follow-up slices.
 
 **Definition of done:** [`web-launch-readiness.md`](./web-launch-readiness.md) is fully checked: CI gate
-green, launch-candidate production deploy complete, live smoke passing, auth/email/provider/core
-workflow paths verified, launch-blocking accessibility/responsive issues closed, and non-blocking
-deferrals recorded.
+green, launch-candidate production deploy complete, Apple Sign In/provider credentials deployed, live
+smoke passing, auth/email/provider/core workflow paths verified, launch-blocking
+accessibility/responsive issues closed, and non-blocking deferrals recorded.
 
-**After this gate:** move to the iOS parity wrap in the separate `ritmofit-ios` repo, starting from the
+**Next focus:** move to the iOS parity wrap in the separate `ritmofit-ios` repo, starting from the
 tracked backlog in [`web-ios-parity.md`](./web-ios-parity.md).
 
 ## Cross-cutting reminders

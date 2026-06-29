@@ -1,8 +1,8 @@
 # Web Launch Readiness
 
-This is the active operating milestone for `ritmofit-web`: make the web app launch-ready on production,
-then shift focus to the iOS wrap-up and parity close. It does not weaken the D18 parity principle; it
-defines the current sequence.
+This is the completed launch-readiness record for `ritmofit-web`: the web app is launch-ready on
+production, and focus shifts to the iOS wrap-up and parity close. It does not weaken the D18 parity
+principle; it defines the current sequence.
 
 Use `web-launch-session-plan.md` for the session-sized execution order.
 
@@ -15,10 +15,14 @@ agent hand-holding.
 
 ## Scope
 
-Launch readiness is the active product gate. Per owner direction (2026-06-28), **everything documented
+Launch readiness was the active product gate. Per owner direction (2026-06-28), **everything documented
 in `ritmofit_dev_plan/` is launch-required except Explore feature expansion and Teams feature
 expansion**. StructClub parity and polish are also **100% launch-required** for the launch-scoped web
 surface, not an audit archive.
+
+Status (2026-06-29): the web launch gate is green and deployed. The launch-candidate deploy shipped from
+`main`, then the credential-backed Apple Sign In / Apple Music / Spotify provider follow-up was merged
+through PR #154 and redeployed from `main` as Worker `e60e5138-3248-4c0f-a926-997955016199`.
 
 New feature work is still controlled: build only what is necessary to satisfy the documented launch
 surface, close StructClub-critical parity/polish gaps, or make an already-shipped capability usable,
@@ -157,8 +161,8 @@ Production audit findings (Session 2, 2026-06-28 — Auth, Account, And Provider
   `PROVIDER_UNAVAILABLE` now returns instructor-facing copy ("Automatic tempo lookup isn't available
   right now — you can set the BPM manually.") instead of leaking an internal "not configured" detail.
   Provisioning the GetSongBPM key is a **post-launch deferral** (see Current Deferrals).
-- **Apple/Google sign-in were unprovisioned in the Session 2 audit.** Apple sign-in is now being completed
-  as a credential-backed launch slice: the Worker can sign Apple client-secret JWTs from
+- **Apple/Google sign-in were unprovisioned in the Session 2 audit.** Apple sign-in is now completed and
+  deployed as a credential-backed launch slice: the Worker signs Apple client-secret JWTs from
   `APPLE_CLIENT_ID` + Team/Key/private-key secrets, and the web Login only renders "Continue with Apple"
   when `/auth/capabilities` reports the backend is configured. Google remains a post-launch provisioning
   deferral.
