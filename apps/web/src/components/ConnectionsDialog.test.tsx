@@ -31,13 +31,13 @@ describe('ConnectionsDialog capability gating', () => {
 
     render(<ConnectionsDialog onClose={() => {}} />);
 
-    // SoundCloud supports a per-user account, so it offers Connect.
-    expect(await screen.findByRole('button', { name: 'Connect' })).toBeTruthy();
-    // The disconnected provider shows an explicit glyph+label status, not color alone.
-    expect(screen.getByText('Not connected')).toBeTruthy();
-    // Catalog-only providers show a muted state instead of a dead-end Connect.
-    expect(screen.getAllByText('Catalog search only').length).toBe(2);
-    expect(screen.getAllByText('Sign-in not yet supported').length).toBe(2);
+    // SoundCloud + Spotify support per-user accounts, so each offers Connect.
+    expect(await screen.findAllByRole('button', { name: 'Connect' })).toHaveLength(2);
+    // Each disconnected provider shows an explicit glyph+label status, not color alone.
+    expect(screen.getAllByText('Not connected').length).toBe(2);
+    // Apple Music stays catalog-only — a muted state, not a dead-end Connect.
+    expect(screen.getAllByText('Catalog search only').length).toBe(1);
+    expect(screen.getAllByText('Sign-in not yet supported').length).toBe(1);
   });
 
   it('confirms before disconnecting a connected provider and refreshes after', async () => {
@@ -55,8 +55,9 @@ describe('ConnectionsDialog capability gating', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     await waitFor(() => expect(api.disconnectProvider).toHaveBeenCalledWith('soundcloud'));
-    // After the refresh returns no connections, SoundCloud falls back to Connect.
-    expect(await screen.findByRole('button', { name: 'Connect' })).toBeTruthy();
+    // After the refresh returns no connections, SoundCloud rejoins Spotify in
+    // offering Connect (both are connect-capable).
+    expect(await screen.findAllByRole('button', { name: 'Connect' })).toHaveLength(2);
   });
 
   it('shows a success notice when an OAuth round-trip connected a provider', async () => {

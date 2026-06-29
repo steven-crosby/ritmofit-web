@@ -63,6 +63,15 @@ const spPlaylistPageSchema = z.object({
   total: z.number().int().nonnegative(),
 });
 
+// The saved-tracks endpoint wraps each track in a `{ added_at, track }` envelope,
+// same `total`-paged shape as playlist items.
+const spSavedPageSchema = z.object({
+  items: z.array(z.object({ track: z.unknown() })),
+  total: z.number().int().nonnegative(),
+});
+
+const SAVED_TRACKS_PAGE_LIMIT = 50;
+
 export function createSpotifyProvider(config: SpotifyConfig): MusicProvider {
   return new SpotifyProvider(config);
 }
@@ -139,24 +148,7 @@ class SpotifyProvider implements MusicProvider {
 
   /** Map a Spotify track object → contract candidate, or null if it can't satisfy the schema. */
   private toCandidate(raw: unknown): TrackSearchResult | null {
-    const parsed = spTrackSchema.safeParse(raw);
-    if (!parsed.success) return null;
-    const t: SpTrack = parsed.data;
-    const artist = (t.artists ?? [])
-      .map((a) => a.name)
-      .filter(Boolean)
-      .join(', ');
-    const candidate = {
-      provider: 'spotify' as const,
-      providerTrackId: t.id,
-      providerUri: t.uri ?? t.external_urls?.spotify ?? null,
-      title: t.name ?? '',
-      artist,
-      albumArtUrl: t.album?.images?.[0]?.url ?? null,
-      durationMs: t.duration_ms ?? null,
-    };
-    const out = trackSearchResultSchema.safeParse(candidate);
-    return out.success ? out.data : null;
+    return toSpotifyCandidate(raw);
   }
 
   private async authedGet(url: string): Promise<unknown> {
@@ -188,4 +180,80 @@ class SpotifyProvider implements MusicProvider {
     }
     return readJson(res, 'spotify');
   }
+}
+
+/** Map a raw Spotify track object → contract candidate, or null if it can't be one. */
+function toSpotifyCandidate(raw: unknown): TrackSearchResult | null {
+  const parsed = spTrackSchema.safeParse(raw);
+  if (!parsed.success) return null;
+  const t: SpTrack = parsed.data;
+  const artist = (t.artists ?? [])
+    .map((a) => a.name)
+    .filter(Boolean)
+    .join(', ');
+  const candidate = {
+    provider: 'spotify' as const,
+    providerTrackId: t.id,
+    providerUri: t.uri ?? t.external_urls?.spotify ?? null,
+    title: t.name ?? '',
+    artist,
+    albumArtUrl: t.album?.images?.[0]?.url ?? null,
+    durationMs: t.duration_ms ?? null,
+  };
+  const out = trackSearchResultSchema.safeParse(candidate);
+  return out.success ? out.data : null;
+}
+
+/**
+ * Thrown when Spotify rejects a **user** token with 401 — the signal `apps/api`
+ * uses to refresh the stored token once and retry. (App-token calls inside the
+ * adapter never surface this; they re-mint on their own cache miss.)
+ */
+export class SpotifyUnauthorizedError extends Error {
+  readonly status = 401 as const;
+  constructor() {
+    super('Spotify rejected the user token (401).');
+    this.name = 'SpotifyUnauthorizedError';
+  }
+}
+
+/**
+ * Fetch the connected user's saved tracks with a **per-user** access token
+ * (`music_connections`), mapped to the shared contract — the "search my Spotify"
+ * surface. Stays a pure adapter: the caller owns the token's decryption, refresh,
+ * and persistence. Throws `SpotifyUnauthorizedError` on 401 so the caller can
+ * refresh + retry; throws on any other non-ok. Paginates the `total`-counted feed.
+ */
+export async function fetchSpotifySavedTracks(cfg: {
+  accessToken: string;
+  fetchImpl: FetchLike;
+  apiBase?: string;
+  /** Stop after this many tracks so a huge library can't run unbounded. */
+  maxTracks?: number;
+}): Promise<TrackSearchResult[]> {
+  const base = cfg.apiBase ?? DEFAULT_API_BASE;
+  const cap = cfg.maxTracks ?? 200;
+  const out: TrackSearchResult[] = [];
+  let offset = 0;
+  let total = Number.POSITIVE_INFINITY;
+
+  while (offset < total && out.length < cap) {
+    const res = await cfg.fetchImpl(
+      `${base}/me/tracks?limit=${SAVED_TRACKS_PAGE_LIMIT}&offset=${offset}`,
+      { headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' } },
+    );
+    if (res.status === 401) throw new SpotifyUnauthorizedError();
+    if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for /me/tracks`);
+    const parsed = spSavedPageSchema.safeParse(await readJson(res, 'spotify'));
+    if (!parsed.success) break;
+    const pageItems = parsed.data.items;
+    for (const item of pageItems) {
+      const candidate = toSpotifyCandidate(item.track);
+      if (candidate) out.push(candidate);
+    }
+    total = parsed.data.total;
+    if (pageItems.length === 0) break;
+    offset += pageItems.length;
+  }
+  return out;
 }

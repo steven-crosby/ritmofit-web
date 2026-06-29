@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { createSpotifyProvider, type FetchLike } from '@ritmofit/music';
+import {
+  createSpotifyProvider,
+  fetchSpotifySavedTracks,
+  SpotifyUnauthorizedError,
+  type FetchLike,
+} from '@ritmofit/music';
 
 /** A scripted fetch: route by URL prefix, record calls, return canned JSON. */
 function fakeFetch(handlers: Record<string, unknown>) {
@@ -186,6 +191,66 @@ describe('SpotifyProvider.getPlaylist', () => {
         .filter((call) => call.url.startsWith(`${API_BASE}/playlists`))
         .map((call) => call.authorization),
     ).toEqual(['Bearer tok-1', 'Bearer tok-2']);
+  });
+});
+
+describe('fetchSpotifySavedTracks', () => {
+  const SAVED_URL = `${API_BASE}/me/tracks`;
+
+  it('maps the `{ track }`-wrapped saved items with a per-user Bearer token', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${SAVED_URL}?limit=50&offset=0`]: { items: [{ track: SP_TRACK }], total: 1 },
+    });
+    const results = await fetchSpotifySavedTracks({
+      accessToken: 'user-tok',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results).toEqual([
+      {
+        provider: 'spotify',
+        providerTrackId: '4cOdK2wGLETKBW3PvgPWqT',
+        providerUri: 'spotify:track:4cOdK2wGLETKBW3PvgPWqT',
+        title: 'Never Gonna Give You Up',
+        artist: 'Rick Astley, PWL',
+        albumArtUrl: 'https://i.scdn.co/image/big.jpg',
+        durationMs: 213000,
+      },
+    ]);
+    // Spends the user's token directly — no client-credentials app token.
+    expect(calls[0]?.init?.headers?.Authorization).toBe('Bearer user-tok');
+  });
+
+  it('paginates the total-counted feed in 50-track pages', async () => {
+    const firstPage = Array.from({ length: 50 }, (_, index) => ({
+      track: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
+    }));
+    const { fetchImpl, calls } = fakeFetch({
+      [`${SAVED_URL}?limit=50&offset=0`]: { items: firstPage, total: 51 },
+      [`${SAVED_URL}?limit=50&offset=50`]: { items: [{ track: SP_TRACK }], total: 51 },
+    });
+    const results = await fetchSpotifySavedTracks({
+      accessToken: 't',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results).toHaveLength(51);
+    expect(calls.filter((c) => c.url.startsWith(SAVED_URL)).map((c) => c.url)).toEqual([
+      `${SAVED_URL}?limit=50&offset=0`,
+      `${SAVED_URL}?limit=50&offset=50`,
+    ]);
+  });
+
+  it('throws SpotifyUnauthorizedError on a 401 so the caller can refresh + retry', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({}),
+      text: async () => 'expired',
+    });
+    await expect(
+      fetchSpotifySavedTracks({ accessToken: 'stale', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toBeInstanceOf(SpotifyUnauthorizedError);
   });
 });
 

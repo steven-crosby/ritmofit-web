@@ -98,20 +98,33 @@ describe('provider OAuth callback configuration (integration)', () => {
   });
 
   it('returns unsupported_provider for a valid state on a catalog-only provider', async () => {
+    // Apple Music stays catalog-only (its user-token flow is MusicKit-JS, not OAuth).
     const res = await callback(
-      'spotify',
+      'apple_music',
       '?code=abc&state=state-token',
-      await stateCookie({ provider: 'spotify' }),
+      await stateCookie({ provider: 'apple_music' }),
     );
     expect(res.status).toBe(302);
     expect(locationOf(res)).toBe(`${ORIGIN}/?error=unsupported_provider`);
   });
 
-  it('returns connect_failed when the token exchange cannot complete', async () => {
+  it('returns connect_failed when the SoundCloud token exchange cannot complete', async () => {
     // Valid state passes every check and reaches the SoundCloud token exchange,
     // which has no live network/credentials here — the route swallows the detail
     // and redirects with a generic reason rather than 500.
     const res = await callback('soundcloud', '?code=abc&state=state-token', await stateCookie());
+    expect(res.status).toBe(302);
+    expect(locationOf(res)).toBe(`${ORIGIN}/?error=connect_failed`);
+  });
+
+  it('returns connect_failed when the Spotify token exchange cannot complete', async () => {
+    // Spotify is now a connect-capable provider, so a valid state reaches its token
+    // exchange — which likewise can't complete here and degrades to a generic reason.
+    const res = await callback(
+      'spotify',
+      '?code=abc&state=state-token',
+      await stateCookie({ provider: 'spotify' }),
+    );
     expect(res.status).toBe(302);
     expect(locationOf(res)).toBe(`${ORIGIN}/?error=connect_failed`);
   });

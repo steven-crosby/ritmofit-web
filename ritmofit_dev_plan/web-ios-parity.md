@@ -84,6 +84,16 @@ list; after the launch gate is green, it becomes the next implementation queue. 
     its choreography surface lands (`08-ios-web-alignment.md` already specifies "same two places"). No
     contract change (BPM is already in the run-payload via `displayBpm`).
 - **Multi-provider track search** (SoundCloud / Spotify / Apple Music) + provider connect
+  - Spotify per-user OAuth connect (web, 2026-06-29): web now wires the Spotify account-connect flow
+    (Authorization Code + PKCE, scope `user-library-read`) behind the same `music_connections` /
+    encrypted-token / disconnect-purge machinery as SoundCloud; `providerCapabilities.spotify` flips
+    `userConnect`/`userLikes` to `true`, so "search my Spotify" (saved tracks via `GET /me/tracks`) goes
+    live. **iOS parity follow-up:** iOS should add the Spotify connect flow via
+    `ASWebAuthenticationSession` (server endpoints `POST /providers/spotify/connect` +
+    `GET /providers/spotify/callback` are provider-agnostic and already serve it) and surface the
+    connected provider in its Connections UI + likes search. No contract change (the connect/likes routes
+    and the capability matrix are shared). Apple Music user-connect remains catalog-only on both surfaces
+    (its MusicKit-based user-token flow is a separate slice).
 - **Library** of saved/liked tracks
   - Library-card summary (web Session 3): `GET /classes` now returns additive per-class card
     aggregates (`trackCount`, `totalDurationMs`, `albumArtUrls`) via the new `ClassListItem` shape, and

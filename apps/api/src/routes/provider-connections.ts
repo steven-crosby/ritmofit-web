@@ -1,7 +1,8 @@
 /**
  * Provider OAuth connection routes — connect a user's music account, list
- * connections, disconnect. Per-user OAuth is currently SoundCloud-only; Spotify
- * and Apple Music still support app-level catalog search via provider credentials.
+ * connections, disconnect. Per-user OAuth (Authorization Code + PKCE) is wired for
+ * SoundCloud and Spotify via the `PROVIDER_OAUTH` registry below; Apple Music is
+ * still catalog-only (its user-token flow is MusicKit-JS-based, a separate slice).
  * The `music_connections` table already exists (no migration).
  *
  * Flow (Authorization Code + PKCE, confidential client → secret server-side):
@@ -32,7 +33,13 @@ import {
   type ConnectProviderResponse,
   type MusicConnectionView,
 } from '@ritmofit/shared';
-import { buildSoundCloudAuthorizeUrl, exchangeSoundCloudCode } from '@ritmofit/music';
+import {
+  buildSoundCloudAuthorizeUrl,
+  exchangeSoundCloudCode,
+  buildSpotifyAuthorizeUrl,
+  exchangeSpotifyCode,
+  type OAuthTokens,
+} from '@ritmofit/music';
 import type { AppEnv, Env } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { rateLimit } from '../lib/rate-limit.js';
@@ -40,7 +47,11 @@ import { createDb, type Db } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { boundFetch } from '../lib/fetch.js';
 import { encryptSecret, decryptSecret } from '../lib/crypto.js';
-import { requireEncryptionKey, soundcloudCreds } from '../lib/music/provider-config.js';
+import {
+  requireEncryptionKey,
+  soundcloudCreds,
+  spotifyCreds,
+} from '../lib/music/provider-config.js';
 import { generateCodeVerifier, challengeFromVerifier, randomToken } from '../lib/pkce.js';
 import { enqueueProviderPurge } from '../lib/music/purge.js';
 import { musicConnections } from '../db/schema.js';
@@ -58,11 +69,49 @@ function parseProvider(raw: string): Provider {
   return parsed.data;
 }
 
-function redirectUriFor(env: Env): string {
-  return (
-    env.SOUNDCLOUD_REDIRECT_URI ?? `${env.BETTER_AUTH_URL}/api/v1/providers/soundcloud/callback`
-  );
+/**
+ * Per-provider OAuth wiring — the implementation behind the capability matrix's
+ * `userConnect` flag. The connect/callback routes stay provider-agnostic: they own
+ * the PKCE state cookie, the encryption, and the redirects, and defer the
+ * provider-specific URL/credential/exchange details to one of these entries. Keep
+ * this map's keys in lockstep with `supportsUserAccount` — a provider that reports
+ * `userConnect: true` without an entry here would 501 mid-flow.
+ */
+interface ProviderOAuth {
+  creds(env: Env): { clientId: string; clientSecret: string };
+  redirectUri(env: Env): string;
+  buildAuthorizeUrl(p: {
+    clientId: string;
+    redirectUri: string;
+    codeChallenge: string;
+    state: string;
+  }): string;
+  exchangeCode(cfg: {
+    clientId: string;
+    clientSecret: string;
+    redirectUri: string;
+    code: string;
+    codeVerifier: string;
+    fetchImpl: typeof boundFetch;
+  }): Promise<OAuthTokens>;
 }
+
+const PROVIDER_OAUTH: Partial<Record<Provider, ProviderOAuth>> = {
+  soundcloud: {
+    creds: soundcloudCreds,
+    redirectUri: (env) =>
+      env.SOUNDCLOUD_REDIRECT_URI ?? `${env.BETTER_AUTH_URL}/api/v1/providers/soundcloud/callback`,
+    buildAuthorizeUrl: buildSoundCloudAuthorizeUrl,
+    exchangeCode: exchangeSoundCloudCode,
+  },
+  spotify: {
+    creds: spotifyCreds,
+    redirectUri: (env) =>
+      env.SPOTIFY_REDIRECT_URI ?? `${env.BETTER_AUTH_URL}/api/v1/providers/spotify/callback`,
+    buildAuthorizeUrl: buildSpotifyAuthorizeUrl,
+    exchangeCode: exchangeSpotifyCode,
+  },
+};
 
 function spaUrl(env: Env, path: string): string {
   return `${env.WEB_ORIGIN ?? env.BETTER_AUTH_URL}${path}`;
@@ -158,10 +207,11 @@ providerConnectionRoutes.post(
       return c.json(body);
     }
 
-    if (!supportsUserAccount(provider)) {
+    const oauth = PROVIDER_OAUTH[provider];
+    if (!supportsUserAccount(provider) || !oauth) {
       throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
     }
-    const { clientId } = soundcloudCreds(c.env);
+    const { clientId } = oauth.creds(c.env);
 
     const verifier = generateCodeVerifier();
     const challenge = await challengeFromVerifier(verifier);
@@ -178,9 +228,9 @@ providerConnectionRoutes.post(
       maxAge: STATE_TTL_MS / 1000,
     });
 
-    const authorizeUrl = buildSoundCloudAuthorizeUrl({
+    const authorizeUrl = oauth.buildAuthorizeUrl({
       clientId,
-      redirectUri: redirectUriFor(c.env),
+      redirectUri: oauth.redirectUri(c.env),
       codeChallenge: challenge,
       state,
     });
@@ -214,15 +264,16 @@ providerConnectionRoutes.get('/providers/:provider/callback', async (c) => {
     return fail('state_mismatch');
   }
   if (Date.now() > payload.exp) return fail('state_expired');
-  if (!supportsUserAccount(provider)) return fail('unsupported_provider');
+  const oauth = PROVIDER_OAUTH[provider];
+  if (!supportsUserAccount(provider) || !oauth) return fail('unsupported_provider');
 
   const key = c.env.ENCRYPTION_KEY!; // requireEncryptionKey already succeeded above
   try {
-    const { clientId, clientSecret } = soundcloudCreds(c.env);
-    const tokens = await exchangeSoundCloudCode({
+    const { clientId, clientSecret } = oauth.creds(c.env);
+    const tokens = await oauth.exchangeCode({
       clientId,
       clientSecret,
-      redirectUri: redirectUriFor(c.env),
+      redirectUri: oauth.redirectUri(c.env),
       code,
       codeVerifier: payload.verifier,
       fetchImpl: boundFetch,
