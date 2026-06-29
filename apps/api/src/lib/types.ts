@@ -37,8 +37,10 @@ export interface Env {
   SOUNDCLOUD_CLIENT_SECRET?: string;
   /**
    * Spotify app credentials (M2). Both halves required to enable the live
-   * provider; used for client-credentials search/lookup only. Per the hard music
-   * rules we NEVER read Spotify BPM (audio-features deprecated Nov 2024).
+   * provider; used for client-credentials catalog search/lookup AND the per-user
+   * OAuth connect flow ("search my Spotify" likes, scope `user-library-read`).
+   * Per the hard music rules we NEVER read Spotify BPM (audio-features deprecated
+   * Nov 2024).
    */
   SPOTIFY_CLIENT_ID?: string;
   SPOTIFY_CLIENT_SECRET?: string;
@@ -64,6 +66,12 @@ export interface Env {
    * to `${BETTER_AUTH_URL}/api/v1/providers/soundcloud/callback` when unset.
    */
   SOUNDCLOUD_REDIRECT_URI?: string;
+  /**
+   * The registered OAuth redirect URI for the Spotify connect flow. Defaults to
+   * `${BETTER_AUTH_URL}/api/v1/providers/spotify/callback` when unset. Must be
+   * registered verbatim in the Spotify developer dashboard.
+   */
+  SPOTIFY_REDIRECT_URI?: string;
   /**
    * Secret that derives the AES-GCM key for encrypting provider tokens at rest
    * (and the OAuth state cookie). Required for the provider-connection routes;

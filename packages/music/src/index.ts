@@ -19,7 +19,18 @@ export {
   refreshSoundCloudToken,
   type OAuthTokens,
 } from './soundcloud-oauth.js';
-export { createSpotifyProvider, type SpotifyConfig } from './spotify.js';
+export {
+  createSpotifyProvider,
+  fetchSpotifySavedTracks,
+  SpotifyUnauthorizedError,
+  type SpotifyConfig,
+} from './spotify.js';
+export {
+  buildSpotifyAuthorizeUrl,
+  exchangeSpotifyCode,
+  refreshSpotifyToken,
+  SPOTIFY_CONNECT_SCOPE,
+} from './spotify-oauth.js';
 export { createAppleMusicProvider, type AppleMusicConfig } from './apple-music.js';
 export {
   createGetSongBpmProvider,

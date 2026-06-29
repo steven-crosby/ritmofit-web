@@ -1,13 +1,14 @@
 /**
- * Consume a user's provider OAuth token (M2 slice 3) — the first read that spends
- * the per-user `music_connections` token rather than the app-level client token:
- * "search my SoundCloud likes".
+ * Consume a user's provider OAuth token (M2) — the read that spends the per-user
+ * `music_connections` token rather than the app-level client token: "search my
+ * SoundCloud / Spotify".
  *
- * This module owns everything the pure `@ritmofit/music` adapter deliberately
- * doesn't: loading the caller's connection, decrypting the access token, proactive
+ * This module owns everything the pure `@ritmofit/music` adapters deliberately
+ * don't: loading the caller's connection, decrypting the access token, proactive
  * + reactive **token refresh**, and persisting the rotated tokens back (encrypted).
- * The adapter just maps SoundCloud JSON → contract DTOs and raises
- * `SoundCloudUnauthorizedError` on a 401 so we can refresh once and retry.
+ * The adapters just map provider JSON → contract DTOs and raise a provider-specific
+ * `*UnauthorizedError` on a 401 so we can refresh once and retry. The per-provider
+ * details live in `LIKES_ADAPTERS`; the refresh/retry/persist machinery is shared.
  *
  * Tokens are never logged or returned to clients (conventions.md). With
  * `MOCK_PROVIDERS=true` this serves the mock catalog so the flow runs with zero
@@ -18,6 +19,10 @@ import {
   fetchSoundCloudLikes,
   refreshSoundCloudToken,
   SoundCloudUnauthorizedError,
+  fetchSpotifySavedTracks,
+  refreshSpotifyToken,
+  SpotifyUnauthorizedError,
+  type OAuthTokens,
 } from '@ritmofit/music';
 import { providerCapabilities, type Provider, type TrackSearchResult } from '@ritmofit/shared';
 import type { Db } from '../db.js';
@@ -25,12 +30,48 @@ import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
 import { boundFetch } from '../fetch.js';
 import { encryptSecret, decryptSecret } from '../crypto.js';
-import { requireEncryptionKey, soundcloudCreds } from './provider-config.js';
+import { requireEncryptionKey, soundcloudCreds, spotifyCreds } from './provider-config.js';
 import { searchMockCatalog } from '../mock-catalog.js';
 import { musicConnections } from '../../db/schema.js';
 
 // Refresh a little early so a token that expires mid-request doesn't 401.
 const EXPIRY_SKEW_MS = 60_000;
+
+type Creds = { clientId: string; clientSecret: string };
+
+/** Per-provider wiring behind the `userLikes` capability flag. */
+interface LikesAdapter {
+  label: string;
+  creds(env: Env): Creds;
+  fetchLikes(cfg: {
+    accessToken: string;
+    fetchImpl: typeof boundFetch;
+  }): Promise<TrackSearchResult[]>;
+  refreshToken(cfg: {
+    clientId: string;
+    clientSecret: string;
+    refreshToken: string;
+    fetchImpl: typeof boundFetch;
+  }): Promise<OAuthTokens>;
+  isUnauthorized(err: unknown): boolean;
+}
+
+const LIKES_ADAPTERS: Partial<Record<Provider, LikesAdapter>> = {
+  soundcloud: {
+    label: 'SoundCloud',
+    creds: soundcloudCreds,
+    fetchLikes: fetchSoundCloudLikes,
+    refreshToken: refreshSoundCloudToken,
+    isUnauthorized: (err) => err instanceof SoundCloudUnauthorizedError,
+  },
+  spotify: {
+    label: 'Spotify',
+    creds: spotifyCreds,
+    fetchLikes: fetchSpotifySavedTracks,
+    refreshToken: refreshSpotifyToken,
+    isUnauthorized: (err) => err instanceof SpotifyUnauthorizedError,
+  },
+};
 
 /** Return the caller's liked tracks at `provider`, mapped to the shared contract. */
 export async function fetchUserLikes(
@@ -43,41 +84,42 @@ export async function fetchUserLikes(
   if (env.MOCK_PROVIDERS === 'true') {
     return searchMockCatalog('', provider);
   }
-  if (!providerCapabilities[provider].userLikes) {
+  const adapter = LIKES_ADAPTERS[provider];
+  if (!providerCapabilities[provider].userLikes || !adapter) {
     throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
   }
 
   const key = requireEncryptionKey(env);
-  const creds = soundcloudCreds(env);
+  const creds = adapter.creds(env);
   const conn = await db
     .select()
     .from(musicConnections)
     .where(and(eq(musicConnections.userId, userId), eq(musicConnections.provider, provider)))
     .get();
   if (!conn) {
-    throw new HttpError(409, 'NOT_CONNECTED', 'Connect your SoundCloud account first.');
+    throw new HttpError(409, 'NOT_CONNECTED', `Connect your ${adapter.label} account first.`);
   }
 
   // Proactively refresh an access token that's expired (or about to).
   const expired = conn.expiresAt !== null && Date.now() > conn.expiresAt - EXPIRY_SKEW_MS;
   let refreshed = expired;
   let accessToken = expired
-    ? await refreshAndPersist(db, key, creds, conn)
+    ? await refreshAndPersist(db, key, adapter, creds, conn)
     : await decryptSecret(conn.accessTokenEncrypted, key);
 
   try {
-    return await fetchSoundCloudLikes({ accessToken, fetchImpl: boundFetch });
+    return await adapter.fetchLikes({ accessToken, fetchImpl: boundFetch });
   } catch (err) {
-    if (!(err instanceof SoundCloudUnauthorizedError)) throw err;
+    if (!adapter.isUnauthorized(err)) throw err;
     // The provider rejected the token. If we already refreshed once this request,
     // the grant is dead (and `conn` now holds a SPENT refresh token — re-refreshing
     // would replay it) → ask the user to reconnect. Otherwise refresh once and retry.
     if (refreshed || !conn.refreshTokenEncrypted) {
-      throw new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your SoundCloud account.');
+      throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
     }
     refreshed = true;
-    accessToken = await refreshAndPersist(db, key, creds, conn);
-    return await fetchSoundCloudLikes({ accessToken, fetchImpl: boundFetch });
+    accessToken = await refreshAndPersist(db, key, adapter, creds, conn);
+    return await adapter.fetchLikes({ accessToken, fetchImpl: boundFetch });
   }
 }
 
@@ -88,17 +130,18 @@ export async function fetchUserLikes(
 async function refreshAndPersist(
   db: Db,
   key: string,
-  creds: { clientId: string; clientSecret: string },
+  adapter: LikesAdapter,
+  creds: Creds,
   conn: typeof musicConnections.$inferSelect,
 ): Promise<string> {
   if (!conn.refreshTokenEncrypted) {
-    throw new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your SoundCloud account.');
+    throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
   }
 
   let tokens;
   try {
     const refreshToken = await decryptSecret(conn.refreshTokenEncrypted, key);
-    tokens = await refreshSoundCloudToken({
+    tokens = await adapter.refreshToken({
       clientId: creds.clientId,
       clientSecret: creds.clientSecret,
       refreshToken,
@@ -106,14 +149,14 @@ async function refreshAndPersist(
     });
   } catch {
     // A failed refresh means the grant is dead — surface a reconnect, not detail.
-    throw new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your SoundCloud account.');
+    throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
   }
 
   await db
     .update(musicConnections)
     .set({
       accessTokenEncrypted: await encryptSecret(tokens.accessToken, key),
-      // SoundCloud may rotate the refresh token; keep the old one if it didn't.
+      // The provider may rotate the refresh token; keep the old one if it didn't.
       refreshTokenEncrypted: tokens.refreshToken
         ? await encryptSecret(tokens.refreshToken, key)
         : conn.refreshTokenEncrypted,

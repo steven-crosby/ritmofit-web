@@ -75,13 +75,14 @@ describe('provider capability matrix', () => {
     for (const p of providerValues) expect(providerCapabilities[p].catalogSearch).toBe(true);
   });
 
-  it('integrates per-user connect + likes for SoundCloud only', () => {
-    expect(providerCapabilities.soundcloud.userConnect).toBe(true);
-    expect(providerCapabilities.soundcloud.userLikes).toBe(true);
-    for (const p of ['spotify', 'apple_music'] as const) {
-      expect(providerCapabilities[p].userConnect).toBe(false);
-      expect(providerCapabilities[p].userLikes).toBe(false);
+  it('integrates per-user connect + likes for SoundCloud and Spotify', () => {
+    for (const p of ['soundcloud', 'spotify'] as const) {
+      expect(providerCapabilities[p].userConnect).toBe(true);
+      expect(providerCapabilities[p].userLikes).toBe(true);
     }
+    // Apple Music stays catalog-only until its MusicKit-JS connect slice lands.
+    expect(providerCapabilities.apple_music.userConnect).toBe(false);
+    expect(providerCapabilities.apple_music.userLikes).toBe(false);
   });
 
   it('supportsUserAccount tracks the userConnect capability', () => {
@@ -96,7 +97,7 @@ describe('providerConnectionState', () => {
 
   it('reports catalog-only for providers without per-user accounts', () => {
     // Even given a (hypothetical) connection, a catalog-only provider stays catalog-only.
-    expect(providerConnectionState('spotify', { expiresAt: null }, NOW)).toBe('catalog-only');
+    expect(providerConnectionState('apple_music', { expiresAt: null }, NOW)).toBe('catalog-only');
     expect(providerConnectionState('apple_music', undefined, NOW)).toBe('catalog-only');
   });
 
