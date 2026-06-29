@@ -16,6 +16,28 @@ import { createDb } from './db.js';
 import { users, sessions, accounts, verifications, rateLimits } from '../db/schema.js';
 import type { Env } from './types.js';
 import { sendEmail, actionEmail } from './email.js';
+import { signAppleJwt } from './apple-jwt.js';
+
+export function hasAppleSignInConfig(env: Env): boolean {
+  return Boolean(
+    env.APPLE_CLIENT_ID &&
+    (env.APPLE_CLIENT_SECRET || (env.APPLE_TEAM_ID && env.APPLE_KEY_ID && env.APPLE_PRIVATE_KEY)),
+  );
+}
+
+async function appleClientSecret(env: Env): Promise<string> {
+  if (env.APPLE_CLIENT_SECRET) return env.APPLE_CLIENT_SECRET;
+  if (!env.APPLE_CLIENT_ID || !env.APPLE_TEAM_ID || !env.APPLE_KEY_ID || !env.APPLE_PRIVATE_KEY) {
+    throw new Error('Sign in with Apple is not fully configured.');
+  }
+  return signAppleJwt({
+    teamId: env.APPLE_TEAM_ID,
+    keyId: env.APPLE_KEY_ID,
+    privateKey: env.APPLE_PRIVATE_KEY,
+    audience: 'https://appleid.apple.com',
+    subject: env.APPLE_CLIENT_ID,
+  });
+}
 
 export function createAuth(env: Env) {
   const db = createDb(env);
@@ -26,16 +48,16 @@ export function createAuth(env: Env) {
     ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
       ? { google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } }
       : {}),
-    ...(env.APPLE_CLIENT_ID && env.APPLE_CLIENT_SECRET
+    ...(hasAppleSignInConfig(env)
       ? {
-          apple: {
-            clientId: env.APPLE_CLIENT_ID,
-            clientSecret: env.APPLE_CLIENT_SECRET,
+          apple: async () => ({
+            clientId: env.APPLE_CLIENT_ID!,
+            clientSecret: await appleClientSecret(env),
             // Native iOS Sign in with Apple issues ID tokens whose audience is the
             // app bundle id (not the web Services ID). Declaring it lets Better Auth
             // accept tokens posted from the iOS client to /sign-in/social.
             appBundleIdentifier: 'studio.ritmofit.RitmoFit',
-          },
+          }),
         }
       : {}),
   };

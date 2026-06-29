@@ -1,6 +1,7 @@
 /** Email/password login + sign-up against Better Auth. */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { authClient } from '../lib/auth-client.js';
+import { getAuthCapabilities } from '../lib/api.js';
 
 interface LoginProps {
   /** Optional: return to the marketing landing page. */
@@ -15,6 +16,22 @@ export function Login({ onBack }: LoginProps = {}) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [socialBusy, setSocialBusy] = useState(false);
+  const [appleSignInEnabled, setAppleSignInEnabled] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAuthCapabilities()
+      .then((capabilities) => {
+        if (!cancelled) setAppleSignInEnabled(capabilities.socialProviders.apple);
+      })
+      .catch(() => {
+        if (!cancelled) setAppleSignInEnabled(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,6 +67,33 @@ export function Login({ onBack }: LoginProps = {}) {
     setMode(next);
     setError(null);
     setNotice(null);
+  }
+
+  async function signInWithApple() {
+    setError(null);
+    setNotice(null);
+    setSocialBusy(true);
+    try {
+      const res = await authClient.signIn.social({
+        provider: 'apple',
+        callbackURL: window.location.origin,
+        errorCallbackURL: window.location.origin,
+        disableRedirect: true,
+      });
+      if (res.error) {
+        setError(res.error.message ?? 'Apple sign-in failed');
+        return;
+      }
+      if (res.data?.url) {
+        window.location.assign(res.data.url);
+        return;
+      }
+      setError('Apple sign-in did not return a redirect URL.');
+    } catch {
+      setError('Something went wrong. Check your connection and try again.');
+    } finally {
+      setSocialBusy(false);
+    }
   }
 
   return (
@@ -157,6 +201,17 @@ export function Login({ onBack }: LoginProps = {}) {
                   ? 'Send reset link'
                   : 'Sign in'}
           </button>
+          {mode === 'signin' && appleSignInEnabled && (
+            <button
+              type="button"
+              disabled={socialBusy}
+              aria-busy={socialBusy}
+              onClick={signInWithApple}
+              className="rounded-pill border border-text-primary/30 bg-bg-base px-5 py-2 font-ui font-semibold text-text-primary disabled:opacity-50"
+            >
+              {socialBusy ? '…' : 'Continue with Apple'}
+            </button>
+          )}
           {mode === 'signin' && (
             <button
               type="button"

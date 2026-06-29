@@ -67,6 +67,15 @@ out of the codebase; production values live in Cloudflare Worker secrets and loc
 ignored `.dev.vars`. Provider tokens live encrypted in `music_connections` (`ENCRYPTION_KEY`) and are
 never returned to clients.
 
+Apple key material is used in two separate Worker-signed JWT flows:
+
+- **Sign in with Apple:** `APPLE_CLIENT_ID` (web Services ID) + `APPLE_TEAM_ID` +
+  `APPLE_KEY_ID` + `APPLE_PRIVATE_KEY` produce the Better Auth client-secret JWT. Static
+  `APPLE_CLIENT_SECRET` is only a fallback.
+- **Apple Music API:** `APPLE_MUSIC_TEAM_ID` + `APPLE_MUSIC_KEY_ID` +
+  `APPLE_MUSIC_PRIVATE_KEY` produce the MusicKit developer token. Static
+  `APPLE_MUSIC_DEVELOPER_TOKEN` is only a fallback.
+
 ## Apple: two separate integrations
 
 Keep these strictly separate in code and config:

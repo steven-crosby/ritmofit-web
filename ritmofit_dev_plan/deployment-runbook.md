@@ -12,22 +12,32 @@ Owner / deployer: `steven.crosby09@gmail.com` (Cloudflare account holder).
 | Where                             | Contents                                                                                                                                                               | Notes                                                                               |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `apps/api/wrangler.toml` `[vars]` | `BETTER_AUTH_URL`, `WEB_ORIGIN` (both `https://ritmofit.studio`)                                                                                                       | Committed, non-secret. The session cookie binds to `BETTER_AUTH_URL`.               |
-| Worker secrets (prod)             | `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `SOUNDCLOUD_CLIENT_ID`/`_SECRET`, `SPOTIFY_CLIENT_ID`/`_SECRET`, `APPLE_MUSIC_DEVELOPER_TOKEN` | `wrangler secret list` (names only). Already provisioned — do **not** re-provision. |
+| Worker secrets (prod)             | `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `SOUNDCLOUD_CLIENT_ID`/`_SECRET`, `SPOTIFY_CLIENT_ID`/`_SECRET`, Apple sign-in (`APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` or static `APPLE_CLIENT_SECRET`), Apple Music (`APPLE_MUSIC_TEAM_ID`, `APPLE_MUSIC_KEY_ID`, `APPLE_MUSIC_PRIVATE_KEY` or static `APPLE_MUSIC_DEVELOPER_TOKEN`) | `wrangler secret list` shows names only. Never echo values in terminal logs or docs. |
 | D1                                | database `ritmofit`, bound as `DB`                                                                                                                                     | Forward-only Drizzle migrations under `apps/api/migrations`. For the live level, run `wrangler d1 migrations list ritmofit --remote` (don't trust a number hard-coded here). |
 | Local dev                         | `apps/api/.dev.vars` (gitignored), `MOCK_PROVIDERS=true`, no `RESEND_API_KEY` (email logs to console)                                                                  | Never commit secrets.                                                               |
 
 `MOCK_PROVIDERS` is unset in prod (live providers). **Auth target: email/password + Apple + Google
-sign-in** on both web and iOS. Apple/Google are implemented (Better Auth providers; the iOS Sign in
-with Apple button is built), but their **prod secrets are not yet provisioned**, so the live Login UI
-is **currently email/password only** until `APPLE_CLIENT_ID`/`APPLE_CLIENT_SECRET` (and the Google
-client secrets) are set via `wrangler secret put`. This is a pending provisioning step, not a
-permanent exclusion.
+sign-in** on both web and iOS. Apple sign-in uses Better Auth plus a Worker-signed ES256 client-secret
+JWT. Set `APPLE_CLIENT_ID` (the web Services ID), `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and
+`APPLE_PRIVATE_KEY`; the legacy/static `APPLE_CLIENT_SECRET` fallback is accepted but expires and should
+not be the default. The web Apple callback must be registered in Apple as
+`https://ritmofit.studio/api/auth/callback/apple`. Google remains credential-gated by
+`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
+
+Apple Music is separate from Apple sign-in. Prefer `APPLE_MUSIC_TEAM_ID`, `APPLE_MUSIC_KEY_ID`, and
+`APPLE_MUSIC_PRIVATE_KEY` so the Worker signs the developer token; `APPLE_MUSIC_DEVELOPER_TOKEN` remains
+as a static fallback. Optional `APPLE_MUSIC_STOREFRONT` defaults to `us`.
+
+SoundCloud OAuth connect uses `https://ritmofit.studio/api/v1/providers/soundcloud/callback` unless
+`SOUNDCLOUD_REDIRECT_URI` overrides it. Spotify catalog search/import and playlist import use the
+server-side client-credentials pair only; no Spotify user OAuth or BPM path is configured.
 
 **Optional automatic BPM lookup** (GetSongBPM) is likewise unprovisioned: `GETSONGBPM_API_KEY` is not
 set in prod, so `POST /tracks/:id/bpm-lookup` returns a `503` with an instructor-facing fallback
 message and manual BPM entry covers the loop. Set the key via `wrangler secret put GETSONGBPM_API_KEY`
-post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). Both BPM and Apple/Google are
-tracked as deferrals in `web-launch-readiness.md`.
+post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). BPM and Google sign-in remain
+tracked as deferrals in `web-launch-readiness.md`; Apple sign-in is enabled when the Apple secrets above
+are present and the current slice is deployed.
 
 ## Pre-deploy
 

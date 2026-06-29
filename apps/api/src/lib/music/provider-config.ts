@@ -6,6 +6,7 @@
  */
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
+import { signAppleJwt } from '../apple-jwt.js';
 
 /** The AES-GCM key for token-at-rest crypto, or 503 when unconfigured. */
 export function requireEncryptionKey(env: Env): string {
@@ -31,13 +32,30 @@ export function spotifyCreds(env: Env): { clientId: string; clientSecret: string
   return { clientId: env.SPOTIFY_CLIENT_ID, clientSecret: env.SPOTIFY_CLIENT_SECRET };
 }
 
+export function hasAppleMusicConfig(env: Env): boolean {
+  return Boolean(
+    env.APPLE_MUSIC_DEVELOPER_TOKEN ||
+    (env.APPLE_MUSIC_TEAM_ID && env.APPLE_MUSIC_KEY_ID && env.APPLE_MUSIC_PRIVATE_KEY),
+  );
+}
+
 /** Apple Music developer-token config, or 503 when unconfigured. */
-export function appleMusicCreds(env: Env): { developerToken: string; storefront?: string } {
-  if (!env.APPLE_MUSIC_DEVELOPER_TOKEN) {
+export async function appleMusicCreds(
+  env: Env,
+): Promise<{ developerToken: string; storefront?: string }> {
+  if (!hasAppleMusicConfig(env)) {
     throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Apple Music is not configured.');
   }
+  const developerToken =
+    env.APPLE_MUSIC_DEVELOPER_TOKEN ??
+    (await signAppleJwt({
+      teamId: env.APPLE_MUSIC_TEAM_ID!,
+      keyId: env.APPLE_MUSIC_KEY_ID!,
+      privateKey: env.APPLE_MUSIC_PRIVATE_KEY!,
+      audience: 'appstoreconnect-v1',
+    }));
   return {
-    developerToken: env.APPLE_MUSIC_DEVELOPER_TOKEN,
+    developerToken,
     storefront: env.APPLE_MUSIC_STOREFRONT,
   };
 }

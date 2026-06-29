@@ -157,10 +157,11 @@ Production audit findings (Session 2, 2026-06-28 — Auth, Account, And Provider
   `PROVIDER_UNAVAILABLE` now returns instructor-facing copy ("Automatic tempo lookup isn't available
   right now — you can set the BPM manually.") instead of leaking an internal "not configured" detail.
   Provisioning the GetSongBPM key is a **post-launch deferral** (see Current Deferrals).
-- **Apple/Google sign-in are unprovisioned (`APPLE_CLIENT_ID/SECRET`, `GOOGLE_CLIENT_ID/SECRET` missing).
-  Decision: defer as documented (owner, 2026-06-28).** Matches decision **D2a** — social providers are
-  enabled only when both halves of a credential pair are set, so the web Login renders email/password
-  only with **no broken buttons**. Provisioning is a **post-launch deferral** (see Current Deferrals).
+- **Apple/Google sign-in were unprovisioned in the Session 2 audit.** Apple sign-in is now being completed
+  as a credential-backed launch slice: the Worker can sign Apple client-secret JWTs from
+  `APPLE_CLIENT_ID` + Team/Key/private-key secrets, and the web Login only renders "Continue with Apple"
+  when `/auth/capabilities` reports the backend is configured. Google remains a post-launch provisioning
+  deferral.
 
 ## Launch Gate
 
@@ -231,9 +232,9 @@ These do not block web launch unless a verification pass proves they break the l
   third-party tempo-lookup path returns `503` with a friendly fallback message; manual BPM entry covers
   the launch loop. Provision the key post-launch to enable one-tap tempo fill (owner decision,
   2026-06-28).
-- **Apple/Google social sign-in:** `APPLE_CLIENT_ID/SECRET` and `GOOGLE_CLIENT_ID/SECRET` are
-  unprovisioned; the web Login is email/password only with no broken buttons (decision D2a). Provision
-  the OAuth credentials post-launch to enable social sign-in (owner decision, 2026-06-28).
+- **Google social sign-in:** `GOOGLE_CLIENT_ID/SECRET` are unprovisioned; the web Login stays
+  email/password + Apple when Apple is configured, with no broken Google button (decision D2a). Provision
+  Google OAuth credentials post-launch to enable Google sign-in (owner decision, 2026-06-28).
 
 ## StructClub Reference Consolidation
 

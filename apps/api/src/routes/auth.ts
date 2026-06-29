@@ -8,7 +8,7 @@ import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { updateUserProfileSchema } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
-import { createAuth } from '../lib/auth.js';
+import { createAuth, hasAppleSignInConfig } from '../lib/auth.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { users } from '../db/schema.js';
@@ -16,6 +16,14 @@ import { serializeUser, serializeUserRow } from '../lib/serialize.js';
 import { HttpError } from '../lib/errors.js';
 
 export const authRoutes = new Hono<AppEnv>();
+
+authRoutes.get('/capabilities', (c) =>
+  c.json({
+    socialProviders: {
+      apple: hasAppleSignInConfig(c.env),
+    },
+  }),
+);
 
 /**
  * POST /auth/session — called once after login (api.md). Validates the Better Auth
