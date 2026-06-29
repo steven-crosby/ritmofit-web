@@ -94,12 +94,27 @@ Goal: pass the core competitor comparison without compromising RitmoFit's constr
 
 ## Session 7 — Accessibility And Responsive Sweep
 
+Status: **done (web, 2026-06-29).** Swept the launch surface for a11y and responsive issues; the
+surface was already in strong shape (centralized `Dialog` focus-trap primitive, `PendingList`
+loading→retry primitive, global 401→sign-out→`<Login>`), so this stayed surgical — two launch-blocking
+fixes, no churn. Verified live via a real-browser screen-reader + responsive walk at 320/768/1280.
+Web-only, no contract/schema change; iOS parity tracked in `web-ios-parity.md`. Continue with Session 8.
+
 Goal: reach launch-grade usability.
 
-- Verify keyboard focus, labels, and reduced-motion behavior.
-- Check mobile, tablet, and desktop layouts.
-- Verify empty, error, loading, and permission states.
-- Fix launch-blocking design-system issues only.
+- ~~Verify keyboard focus, labels, and reduced-motion behavior.~~ Done — centralized dialog focus trap
+  (inert background + restore + Escape), zero clickable non-buttons, all imgs carry alt, reduced-motion
+  handled in CSS + the two motion components; confirmed in the browser walk.
+- ~~Check mobile, tablet, and desktop layouts.~~ Done — Live Mode, dashboard, and the builder verified at
+  320/768/1280 with zero horizontal-overflow offenders (programmatic check + screenshots).
+- ~~Verify empty, error, loading, and permission states.~~ Done — audited every surface; closed the one
+  launch-blocker (the class-library load-error had no retry, PR #151). Added a `role="alert"` + working
+  "Try again" matching the dialogs' `PendingList` pattern.
+- ~~Fix launch-blocking design-system issues only.~~ Done — also added Live Mode section/energy-arc
+  screen-reader announcements (a polite live region, on-change only, PR #150), the one a11y gap the
+  Session 6 section bar left.
+
+Deferred follow-ups: none for Session 7. Continue with Session 8.
 
 ## Session 8 — Launch Candidate
 
@@ -123,6 +138,8 @@ Goal: move cleanly from web launch to iOS parity wrap.
 
 ## Current Recommendation
 
-Sessions 1–6 are done. Start with **Session 7 — Accessibility And Responsive Sweep**: keyboard focus,
-labels, reduced-motion, empty/error/loading/permission states, and mobile/tablet/desktop layouts across
-the launch-scoped surface, fixing launch-blocking design-system issues only.
+Sessions 1–7 are done. Start with **Session 8 — Launch Candidate**: run the full launch gate, build the
+SPA, apply any required remote D1 migrations before code, deploy manually through
+`deployment-runbook.md`, run production smoke, delete any production test data, and update `HISTORY.md`
+plus launch notes. No schema/migration changes are pending from Sessions 6–7 (both web-only), so the
+deploy is code-only.
