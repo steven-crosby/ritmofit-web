@@ -22,9 +22,9 @@ A choreography and class-running tool for **rhythm spin cycle instructors**.
   unchanged. **The backend is the single source of truth; neither client is.**
 - The parity principle is locked as decision **D18**; the hard gate + current parity backlog live in
   [`web-ios-parity.md`](./web-ios-parity.md).
-- **Current operating focus:** finish the web app to launch-ready first, then wrap the iOS app against
-  the tracked parity backlog. Web launch work should be verification, polish, and operational closure
-  unless a new slice is truly launch-critical.
+- **Current operating focus:** the web launch gate is green and deployed; shift to the iOS handoff /
+  parity wrap against the tracked backlog. New web work should be limited to production support,
+  launch-critical fixes, or explicitly approved follow-up slices.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
@@ -107,7 +107,8 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 > **Where current status lives** (to avoid drift, this map carries no dated status):
-> - **Milestone state** (M1–M4 done; Web Launch Readiness active) → [`milestones.md`](./milestones.md).
+> - **Milestone state** (M1–M4 and Web Launch Readiness done; iOS parity wrap next) →
+>   [`milestones.md`](./milestones.md).
 > - **Launch gate** (go/no-go checklist, verification plan, deferrals) →
 >   [`web-launch-readiness.md`](./web-launch-readiness.md).
 > - **Chronological deploy/build log** (every PR, Worker version id, migration step, the live Worker
@@ -117,23 +118,25 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 > - **Contributor + deployment instructions** → [`../AGENTS.md`](../AGENTS.md) and
 >   [`deployment-runbook.md`](./deployment-runbook.md).
 >
-> The headline: backend **M1–M4 complete and deployed**, the app is live at `https://ritmofit.studio`
-> (one Worker, single origin), and the active milestone is **Web Launch Readiness**. Once the web launch
-> gate is green, focus moves to the iOS parity wrap.
+> The headline: backend **M1–M4 complete and deployed**, the web launch gate is green, and the app is
+> live at `https://ritmofit.studio` (one Worker, single origin). Current focus moves to the iOS parity
+> wrap.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);
   routes in builder-first order — class builder + cues/moves end-to-end (with a **mock-track seam**)
   before teams/sharing routes. No provider API calls; BPM hand-entered. Versioned **run-payload** ships.
 - **M2 ✅ done: Music-provider integration.** SoundCloud first; search, provider-ID resolution, optional
-  third-party BPM, deep-link playback. Spotify + Apple Music adapters behind the mock until real creds.
+  third-party BPM, deep-link playback. Spotify + Apple Music adapters are live in production behind
+  server-side credentials.
 - **M3 ✅ done: Live mode + iOS parity polish.** Cue prompter, interval timers; run-payload hardened.
 - **M4 ✅ done: Explore / sharing UX** on the M1 `shares` model — share-by-email, team-sharing, and the
   Explore feed (publish via `classes.visibility`, public VIEW floor, `GET /explore`, save-a-copy). The
   two open decisions were settled: publish/visibility = a `visibility` enum; **featured = deferred** (no
   admin concept yet — it remains a future slice). All deployed.
-- **Web Launch Readiness ▶ active:** verify the full production web loop, close launch-blocking polish
-  and operational gaps, document deferrals, and deploy only through the manual runbook. Checklist:
+- **Web Launch Readiness ✅ done:** full production web loop verified, launch-blocking polish and
+  operational gaps closed, Apple Sign In/provider credentials deployed, and deferrals documented.
+  Checklist:
   [`web-launch-readiness.md`](./web-launch-readiness.md).
 
 ---

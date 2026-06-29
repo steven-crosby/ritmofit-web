@@ -125,7 +125,7 @@ mounted launch routes, security headers, no Cloudflare injection marker, live as
 `index-72oZbOhu.js` matching the build). No production test data was created. Continue with Session 9.
 
 Post-launch credential follow-up: Apple Sign In plus Apple Music dynamic-token support deployed on
-2026-06-29 to Worker `92075db9-3f6e-4c39-995b-163eee2959c2` from
+2026-06-29 to Worker `e60e5138-3248-4c0f-a926-997955016199` from
 `codex/apple-signin-provider-config`. Remote D1 again had no pending migrations. Live smoke confirmed
 `/api/v1/auth/capabilities` returns Apple enabled, the Better Auth Apple flow returns an Apple
 authorization URL with callback `https://ritmofit.studio/api/auth/callback/apple`, provider search stays
@@ -143,15 +143,23 @@ Goal: ship the web app.
 
 ## Session 9 — iOS Handoff Prep
 
+Status: **done (web, 2026-06-29).** OpenAPI regenerated cleanly (`42 schemas, 44 paths`) with no
+generated-file drift, and the run-payload DTO parity gate passed with **no untracked drift**. The only
+remaining DTO differences are the tracked allowlist in `web-ios-parity.md`: `RunClass.timelineMode`;
+`RunTrack.displayRpm`, `holdCount`, `clipStartMs`, `beatAnchorMs`; and `Move.beat`, `bar`. A read-only
+production check confirmed the current web Worker is
+`e60e5138-3248-4c0f-a926-997955016199` and remote D1 has no pending migrations.
+
 Goal: move cleanly from web launch to iOS parity wrap.
 
-- Refresh OpenAPI and run-payload expectations.
-- Reconcile `web-ios-parity.md`.
-- Start iOS wrap with contract/design drift first, then capability parity.
+- ~~Refresh OpenAPI and run-payload expectations.~~ Done — generated spec still matches the committed
+  contract.
+- ~~Reconcile `web-ios-parity.md`.~~ Done — allowlisted DTO lag is current and unchanged.
+- ~~Start iOS wrap with contract/design drift first, then capability parity.~~ Done — next work should
+  happen in `ritmofit-ios`, beginning with the run-payload DTO catch-up and design-token drift check.
 
 ## Current Recommendation
 
-Sessions 1–8 are done. Start with **Session 9 — iOS Handoff Prep**: refresh OpenAPI and run-payload
-expectations, reconcile `web-ios-parity.md`, and move the next implementation focus to the iOS parity
-wrap. The current web production deploy is Worker `92075db9-3f6e-4c39-995b-163eee2959c2`, with no pending
-remote D1 migrations.
+Sessions 1–9 are done. Move the next implementation focus to the iOS parity wrap in `ritmofit-ios`:
+contract/design drift first, then capability parity from `web-ios-parity.md`. The current web production
+deploy is Worker `e60e5138-3248-4c0f-a926-997955016199`, with no pending remote D1 migrations.

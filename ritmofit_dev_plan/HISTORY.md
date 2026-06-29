@@ -11,7 +11,7 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
 > **Session 2026-06-29 (Apple Sign In + provider credential deploy) — deployed (Worker
-> `92075db9-3f6e-4c39-995b-163eee2959c2`).** Shipped the credential-backed Apple Sign In slice plus
+> `e60e5138-3248-4c0f-a926-997955016199`).** Shipped the credential-backed Apple Sign In slice plus
 > dynamic Apple Music developer-token support on branch `codex/apple-signin-provider-config`. The Worker
 > now generates the Apple Sign In client-secret JWT from `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and
 > `APPLE_PRIVATE_KEY`; exposes `/api/v1/auth/capabilities`; shows the web "Continue with Apple" entry
@@ -25,7 +25,10 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 > returned `{"socialProviders":{"apple":true}}`; unauthenticated `/api/v1/classes` and provider search
 > routes returned `401`; served SPA asset `index-DiUG_dBK.js` matched the build; security headers were
 > present; and `POST /api/auth/sign-in/social` for provider `apple` returned an Apple authorization URL
-> with callback `https://ritmofit.studio/api/auth/callback/apple`. No production test data was created.
+> with callback `https://ritmofit.studio/api/auth/callback/apple`. A Session 9 read-only check later the
+> same day confirmed Wrangler's live deployment status at 100% on Worker
+> `e60e5138-3248-4c0f-a926-997955016199`, remote D1 still reporting **"No migrations to apply"**, health
+> `200`, and Apple auth capability enabled. No production test data was created.
 >
 > **Session 2026-06-29 (Session 8, Launch Candidate) — deployed (Worker
 > `e3f17b56-b3bc-4684-bfad-eadf260e9195`).** Shipped current `main` (`d2b7b4f`) to production, bringing
