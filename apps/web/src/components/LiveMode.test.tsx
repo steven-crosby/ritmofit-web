@@ -268,18 +268,21 @@ describe('LiveMode section indicator', () => {
   it('shows the current section and a countdown to the next, in both views', () => {
     render(<LiveMode payload={sectionedPayload} onExit={() => {}} />);
 
-    const bar = screen.getByLabelText('Current section: Warm-up');
-    expect(bar).toBeTruthy();
-    expect(bar.textContent).toContain('Sprint in 1:00');
+    // The accessible content is real text in reading order (sr-only framing + the
+    // visible label/countdown), so AT gets the current section AND what's next.
+    expect(screen.getByText('Current section:')).toBeTruthy();
+    expect(screen.getByText('Warm-up')).toBeTruthy();
+    expect(screen.getByText(/Sprint in 1:00/)).toBeTruthy();
 
     // View-independent: it persists in Full List.
     fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
-    expect(screen.getByLabelText('Current section: Warm-up')).toBeTruthy();
+    expect(screen.getByText('Current section:')).toBeTruthy();
+    expect(screen.getByText('Warm-up')).toBeTruthy();
   });
 
   it('renders no section indicator when the class has no sections', () => {
     render(<LiveMode payload={payload} onExit={() => {}} />);
-    expect(screen.queryByLabelText(/Current section/)).toBeNull();
+    expect(screen.queryByText('Current section:')).toBeNull();
   });
 });
 

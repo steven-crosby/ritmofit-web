@@ -164,21 +164,24 @@ export function liveSectionAt(
  */
 function LiveSectionBar({ section }: { section: LiveSection }) {
   const meta = SEGMENT_META[section.type];
+  // Accessible name comes from real text in reading order (sr-only framing + the
+  // visible label/countdown), not a container `aria-label` — a name-replacing label
+  // on this text-bearing element would mask the countdown from AT. Matches the
+  // IntensityReadout pattern: icon decorative (aria-hidden), text carries meaning.
   return (
-    <div
-      className="flex items-center justify-between gap-3 border-b border-interactive/15 px-6 py-2"
-      aria-label={`Current section: ${meta.label}`}
-    >
+    <div className="flex items-center justify-between gap-3 border-b border-interactive/15 px-6 py-2">
       <span className="flex min-w-0 items-center gap-2">
-        <span style={{ color: meta.tint }}>
+        <span aria-hidden style={{ color: meta.tint }}>
           <SegmentIcon type={section.type} />
         </span>
         <span className="truncate font-ui text-sm font-semibold text-text-secondary">
+          <span className="sr-only">Current section: </span>
           {meta.label}
         </span>
       </span>
       {section.next && (
         <span className="shrink-0 font-data text-xs text-text-tertiary">
+          <span className="sr-only">Next: </span>
           {SEGMENT_META[section.next.type].label} in {fmt(section.next.inMs)}
         </span>
       )}
