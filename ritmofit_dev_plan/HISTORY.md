@@ -10,6 +10,33 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-28 (Session 6, Live Mode & StructClub parity) — deployed (Worker
+> `b59b2de9-f253-4b84-8e8e-4a089e7f6d3f`).** Shipped **#146** (`f5fec5f`) — the Web Launch Readiness
+> **Session 6** Live Mode / StructClub parity pass. The pass was mostly verification (cue prompter,
+> virtual interval timer, intensity, notes, trim/clip, beat pulse, cue colors, wake lock, and the
+> no-in-app-playback constraint all confirmed via a browser walk at desktop and 320px); one gap was
+> found and closed.
+>
+> - **Live Mode current-section indicator (web):** the live prompter dropped the energy-arc **sections**
+>   the run-payload already carries (the builder and class-detail read view show them, Live did not). #146
+>   adds a compact, view-independent section band under the Live header — current section as icon + tint +
+>   label (never color alone) plus a muted countdown to the next section — computed from run-payload
+>   `sections[]` via a new `liveSectionAt` helper, reusing the `SegmentBand` icon/tint language
+>   (`SegmentIcon` now exported). A code-review follow-up (`9f98b68`, squashed into #146) made the bar
+>   fully screen-reader accessible (sr-only "Current section:" / "Next:" framing instead of a
+>   name-replacing container `aria-label`). **Client-only off the run-payload — no shared-contract, API,
+>   OpenAPI, or migration change.** iOS parity follow-up tracked in `web-ios-parity.md`.
+>
+> Remote D1 reported **"No migrations to apply"** before deploy (web-only change). CI for #146 was green
+> (`format · typecheck · lint · test · build · audit`). Local pre-deploy gate also covered Prettier,
+> `pnpm -r typecheck`, `pnpm lint`, `pnpm test` (api 257 / web 233), API integration (69), web build,
+> OpenAPI no-drift, `audit:ci`, design-system `npm run verify` (AA contrast), and `contract-parity`
+> (no untracked drift). Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`;
+> `/api/v1/health` → `200`; unauthenticated `/api/v1/classes`, `/explore`, `/teams`, `/shares` → `401`;
+> all six security headers present (HSTS, CSP, Permissions-Policy, Referrer-Policy, X-Content-Type-Options,
+> X-Frame-Options); served SPA asset hash `index-NNdJRVHx.js` matches the build. Prior Worker
+> `92d3904e-733a-4f39-8f3d-6fa156616757` is the rollback anchor.
+>
 > **Session 2026-06-28 (Session 5 follow-up) — deployed (Worker
 > `92d3904e-733a-4f39-8f3d-6fa156616757`).** Shipped **#143** (`9427d07`, merge
 > `0b1517c`) to close the remaining Session 5 launch-listed follow-ups:
