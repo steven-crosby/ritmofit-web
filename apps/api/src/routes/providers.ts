@@ -66,7 +66,7 @@ const importLimiter = rateLimit({
 providerRoutes.get('/providers/:provider/search', searchLimiter, async (c) => {
   const provider = parseProvider(c.req.param('provider'));
   const q = (c.req.query('q') ?? '').slice(0, MAX_QUERY_LEN);
-  const adapter = getMusicProvider(provider, c.env);
+  const adapter = await getMusicProvider(provider, c.env);
   const results: TrackSearchResult[] = await adapter.search(q);
   return c.json(results);
 });
@@ -86,7 +86,7 @@ providerRoutes.get('/providers/:provider/likes', likesLimiter, async (c) => {
  */
 providerRoutes.post('/providers/track-import', importLimiter, async (c) => {
   const { provider, providerTrackId } = importProviderTrackSchema.parse(await c.req.json());
-  const adapter = getMusicProvider(provider, c.env);
+  const adapter = await getMusicProvider(provider, c.env);
   const candidate = await adapter.lookup(providerTrackId);
   if (!candidate) {
     throw new HttpError(404, 'NOT_FOUND', 'No such track at the provider.');

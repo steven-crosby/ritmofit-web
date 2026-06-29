@@ -85,7 +85,14 @@ export interface ClassListPage {
   nextCursor: string | null;
 }
 
+export interface AuthCapabilities {
+  socialProviders: {
+    apple: boolean;
+  };
+}
+
 // ── Caller profile ──────────────────────────────────────────────────────────
+export const getAuthCapabilities = () => api<AuthCapabilities>('/auth/capabilities');
 export const getMe = () => api<User>('/auth/me');
 export const updateMe = (body: UpdateUserProfile) =>
   api<User>('/auth/me', { method: 'PATCH', body: JSON.stringify(body) });

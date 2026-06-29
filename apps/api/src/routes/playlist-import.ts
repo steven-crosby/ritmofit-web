@@ -68,7 +68,7 @@ playlistImportRoutes.post('/classes/:id/import-playlist', importLimiter, async (
     );
   }
 
-  const adapter = getMusicProvider(provider, c.env);
+  const adapter = await getMusicProvider(provider, c.env);
   const candidates = await adapter.getPlaylist(playlistId);
 
   if (!candidates.length) {

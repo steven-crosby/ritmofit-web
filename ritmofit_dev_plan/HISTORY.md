@@ -10,6 +10,42 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-29 (Apple Sign In + provider credential deploy) — deployed (Worker
+> `92075db9-3f6e-4c39-995b-163eee2959c2`).** Shipped the credential-backed Apple Sign In slice plus
+> dynamic Apple Music developer-token support on branch `codex/apple-signin-provider-config`. The Worker
+> now generates the Apple Sign In client-secret JWT from `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and
+> `APPLE_PRIVATE_KEY`; exposes `/api/v1/auth/capabilities`; shows the web "Continue with Apple" entry
+> point only when Apple config is present; and can generate Apple Music developer tokens from
+> `APPLE_MUSIC_TEAM_ID`, `APPLE_MUSIC_KEY_ID`, and `APPLE_MUSIC_PRIVATE_KEY` while preserving the
+> existing `APPLE_MUSIC_DEVELOPER_TOKEN` fallback. Spotify and SoundCloud credentials remained
+> server-side secrets.
+>
+> Remote D1 reported **"No migrations to apply"** before and after deploy. Production smoke on live
+> `https://ritmofit.studio`: SPA `/` → `200`; `/api/v1/health` → `200`; `/api/v1/auth/capabilities`
+> returned `{"socialProviders":{"apple":true}}`; unauthenticated `/api/v1/classes` and provider search
+> routes returned `401`; served SPA asset `index-DiUG_dBK.js` matched the build; security headers were
+> present; and `POST /api/auth/sign-in/social` for provider `apple` returned an Apple authorization URL
+> with callback `https://ritmofit.studio/api/auth/callback/apple`. No production test data was created.
+>
+> **Session 2026-06-29 (Session 8, Launch Candidate) — deployed (Worker
+> `e3f17b56-b3bc-4684-bfad-eadf260e9195`).** Shipped current `main` (`d2b7b4f`) to production, bringing
+> the Web Launch Readiness **Session 7** accessibility/responsive fixes live: Live Mode section-change
+> screen-reader announcements (#150), the class-library load-error retry state (#151), and the Session 7
+> close docs/prompt additions (#152).
+>
+> Remote D1 reported **"No migrations to apply"** before and after deploy. Pre-deploy launch gate was
+> green: `pnpm format:check`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test` (web 237 / api 257),
+> `pnpm --filter @ritmofit/api test:integration` (69), `pnpm --filter @ritmofit/web build`,
+> `pnpm --filter @ritmofit/api openapi`, OpenAPI no-drift, `pnpm audit:ci`, design-system
+> `npm run verify` (AA contrast), and `pnpm --filter @ritmofit/api contract-parity` (only tracked iOS
+> allowlisted lag). Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`;
+> `/api/v1/health` → `200`; unauthenticated `/api/v1/classes`, `/explore`, `/teams`, `/shares`,
+> playlist import, provider search/import, cover upload serving, and class tags all returned `401` from
+> real protected handlers; security headers were present; SPA `Cache-Control` retained `no-transform`;
+> live HTML contained no `__CF$cv$params` injection marker; and the served asset
+> `index-72oZbOhu.js` matched the local build. No production test data was created, so no cleanup was
+> required. Prior Worker `b59b2de9-f253-4b84-8e8e-4a089e7f6d3f` is the rollback anchor.
+>
 > **Session 2026-06-28 (Session 6, Live Mode & StructClub parity) — deployed (Worker
 > `b59b2de9-f253-4b84-8e8e-4a089e7f6d3f`).** Shipped **#146** (`f5fec5f`) — the Web Launch Readiness
 > **Session 6** Live Mode / StructClub parity pass. The pass was mostly verification (cue prompter,

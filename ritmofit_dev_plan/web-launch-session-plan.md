@@ -118,15 +118,28 @@ Deferred follow-ups: none for Session 7. Continue with Session 8.
 
 ## Session 8 — Launch Candidate
 
+Status: **done and deployed (2026-06-29).** Full launch gate passed locally, remote D1 had no pending
+migrations, and current `main` (`d2b7b4f`) was deployed to Worker
+`e3f17b56-b3bc-4684-bfad-eadf260e9195`. Production smoke passed (`/`, health, protected-route `401`s,
+mounted launch routes, security headers, no Cloudflare injection marker, live asset
+`index-72oZbOhu.js` matching the build). No production test data was created. Continue with Session 9.
+
+Post-launch credential follow-up: Apple Sign In plus Apple Music dynamic-token support deployed on
+2026-06-29 to Worker `92075db9-3f6e-4c39-995b-163eee2959c2` from
+`codex/apple-signin-provider-config`. Remote D1 again had no pending migrations. Live smoke confirmed
+`/api/v1/auth/capabilities` returns Apple enabled, the Better Auth Apple flow returns an Apple
+authorization URL with callback `https://ritmofit.studio/api/auth/callback/apple`, provider search stays
+auth-gated, and live asset `index-DiUG_dBK.js` is served.
+
 Goal: ship the web app.
 
-- Run the full launch gate.
-- Build the web app.
-- Apply any required remote D1 migrations before code.
-- Deploy manually through `deployment-runbook.md`.
-- Run production smoke.
-- Delete production test data.
-- Update `HISTORY.md` and launch notes.
+- ~~Run the full launch gate.~~ Done.
+- ~~Build the web app.~~ Done.
+- ~~Apply any required remote D1 migrations before code.~~ Done — no migrations to apply.
+- ~~Deploy manually through `deployment-runbook.md`.~~ Done — Worker `e3f17b56-b3bc-4684-bfad-eadf260e9195`.
+- ~~Run production smoke.~~ Done.
+- ~~Delete production test data.~~ Done — none was created.
+- ~~Update `HISTORY.md` and launch notes.~~ Done.
 
 ## Session 9 — iOS Handoff Prep
 
@@ -138,8 +151,7 @@ Goal: move cleanly from web launch to iOS parity wrap.
 
 ## Current Recommendation
 
-Sessions 1–7 are done. Start with **Session 8 — Launch Candidate**: run the full launch gate, build the
-SPA, apply any required remote D1 migrations before code, deploy manually through
-`deployment-runbook.md`, run production smoke, delete any production test data, and update `HISTORY.md`
-plus launch notes. No schema/migration changes are pending from Sessions 6–7 (both web-only), so the
-deploy is code-only.
+Sessions 1–8 are done. Start with **Session 9 — iOS Handoff Prep**: refresh OpenAPI and run-payload
+expectations, reconcile `web-ios-parity.md`, and move the next implementation focus to the iOS parity
+wrap. The current web production deploy is Worker `92075db9-3f6e-4c39-995b-163eee2959c2`, with no pending
+remote D1 migrations.

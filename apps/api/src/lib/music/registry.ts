@@ -59,7 +59,7 @@ function memoize(key: string, build: () => MusicProvider): MusicProvider {
   return adapter;
 }
 
-export function getMusicProvider(provider: Provider, env: Env): MusicProvider {
+export async function getMusicProvider(provider: Provider, env: Env): Promise<MusicProvider> {
   if (env.MOCK_PROVIDERS === 'true') {
     return new MockMusicProvider(provider);
   }
@@ -81,10 +81,11 @@ export function getMusicProvider(provider: Provider, env: Env): MusicProvider {
       );
     }
     case 'apple_music': {
-      const creds = appleMusicCreds(env);
-      return memoize(`apple_music:${creds.developerToken}`, () =>
-        createAppleMusicProvider({ ...creds, fetchImpl: boundFetch }),
-      );
+      const creds = await appleMusicCreds(env);
+      const cacheKey = env.APPLE_MUSIC_DEVELOPER_TOKEN
+        ? `apple_music:${creds.developerToken}`
+        : `apple_music:${env.APPLE_MUSIC_TEAM_ID}:${env.APPLE_MUSIC_KEY_ID}`;
+      return memoize(cacheKey, () => createAppleMusicProvider({ ...creds, fetchImpl: boundFetch }));
     }
     default:
       throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);

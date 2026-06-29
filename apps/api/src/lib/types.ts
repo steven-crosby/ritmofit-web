@@ -17,8 +17,17 @@ export interface Env {
   WEB_ORIGIN?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  /**
+   * Sign in with Apple. `APPLE_CLIENT_ID` is the web Services ID; the JWT client
+   * secret is signed from the Apple `.p8` key material when team/key/private-key
+   * fields are present. `APPLE_CLIENT_SECRET` is kept as a static fallback for
+   * already-generated Apple client-secret JWTs.
+   */
   APPLE_CLIENT_ID?: string;
   APPLE_CLIENT_SECRET?: string;
+  APPLE_TEAM_ID?: string;
+  APPLE_KEY_ID?: string;
+  APPLE_PRIVATE_KEY?: string;
   /**
    * SoundCloud API app credentials (M2). Both halves required to enable the live
    * provider; absent → SoundCloud routes report the provider as unavailable.
@@ -34,11 +43,15 @@ export interface Env {
   SPOTIFY_CLIENT_ID?: string;
   SPOTIFY_CLIENT_SECRET?: string;
   /**
-   * Apple Music **developer token** (ES256 JWT signed from the `.p8` key, out of
-   * band) and optional storefront (default 'us'). Distinct from Sign in with
-   * Apple. Absent → Apple Music search reports the provider as unavailable.
+   * Apple Music **developer token** config and optional storefront (default 'us').
+   * The token is generated from key material when possible; the static
+   * APPLE_MUSIC_DEVELOPER_TOKEN remains as a fallback for manually generated
+   * tokens. Distinct from Sign in with Apple.
    */
   APPLE_MUSIC_DEVELOPER_TOKEN?: string;
+  APPLE_MUSIC_TEAM_ID?: string;
+  APPLE_MUSIC_KEY_ID?: string;
+  APPLE_MUSIC_PRIVATE_KEY?: string;
   APPLE_MUSIC_STOREFRONT?: string;
   /**
    * API key for the third-party BPM provider (GetSongBPM) used to fill
