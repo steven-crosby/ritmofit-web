@@ -104,6 +104,16 @@ Known launch-required polish/work items from the current audit:
   documented (`milestones.md`), this is snapping-to-track-starts — a client-side authoring affordance,
   **no contract/schema/migration change** (sections still store a free `startOffsetMs`). iOS parity
   tracked in `web-ios-parity.md`.
+- ~~Live Mode dropped the energy-arc sections the run-payload carries.~~ **Done (web, Session 6,
+  2026-06-28):** the live prompter now renders a compact current-section band under the header (icon +
+  tint + label, never color alone) with a muted countdown to the next section, computed from the
+  run-payload `sections[]` via a new `liveSectionAt` helper. View-independent (Cue-by-Cue and Full List)
+  and hidden when a class has no sections or before the first one starts. Reuses the existing `SegmentBand`
+  icon/tint language (now an exported `SegmentIcon`). Client-only off the run-payload — **no
+  shared-contract, API, or schema/migration change**. The rest of the Session 6 Live Mode / StructClub
+  parity pass (cue prompter, timer, intensity, notes, trim, beat pulse, cue colors, wake lock, and the
+  no-in-app-playback constraint) was verified green in a browser walk at desktop and 320px. iOS parity
+  tracked in `web-ios-parity.md`.
 
 Production audit findings (Session 1, 2026-06-27):
 

@@ -2,7 +2,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
-import { LiveMode, lastAtOrBefore, trackIndexAt, type TimelineEvent } from './LiveMode.js';
+import {
+  LiveMode,
+  lastAtOrBefore,
+  liveSectionAt,
+  trackIndexAt,
+  type TimelineEvent,
+} from './LiveMode.js';
 
 afterEach(cleanup);
 
@@ -200,6 +206,83 @@ describe('trackIndexAt', () => {
   it('clamps to the first track before its start offset', () => {
     const delayed = { ...payload, tracks: [trackAt(5000), trackAt(60000)] } satisfies RunPayload;
     expect(trackIndexAt(delayed, 0)).toBe(0);
+  });
+});
+
+describe('liveSectionAt', () => {
+  const sections = [
+    { type: 'warm_up', startOffsetMs: 0 },
+    { type: 'sprint', startOffsetMs: 60000 },
+    { type: 'cool_down', startOffsetMs: 150000 },
+  ] satisfies RunPayload['sections'];
+
+  it('returns null when the class has no sections', () => {
+    expect(liveSectionAt([], 0)).toBeNull();
+  });
+
+  it('returns null before the first section starts', () => {
+    const delayed = [{ type: 'sprint', startOffsetMs: 5000 }] satisfies RunPayload['sections'];
+    expect(liveSectionAt(delayed, 0)).toBeNull();
+  });
+
+  it('selects the last section whose start has been reached, with the next ahead', () => {
+    expect(liveSectionAt(sections, 0)).toEqual({
+      type: 'warm_up',
+      next: { type: 'sprint', inMs: 60000 },
+    });
+    expect(liveSectionAt(sections, 59999)).toEqual({
+      type: 'warm_up',
+      next: { type: 'sprint', inMs: 1 },
+    });
+    expect(liveSectionAt(sections, 60000)).toEqual({
+      type: 'sprint',
+      next: { type: 'cool_down', inMs: 90000 },
+    });
+  });
+
+  it('leaves no next section once the final band is active', () => {
+    expect(liveSectionAt(sections, 150000)).toEqual({ type: 'cool_down', next: null });
+  });
+
+  it('resolves correctly even when sections arrive unsorted', () => {
+    const unsorted = [
+      { type: 'sprint', startOffsetMs: 60000 },
+      { type: 'warm_up', startOffsetMs: 0 },
+    ] satisfies RunPayload['sections'];
+    expect(liveSectionAt(unsorted, 30000)).toEqual({
+      type: 'warm_up',
+      next: { type: 'sprint', inMs: 30000 },
+    });
+  });
+});
+
+describe('LiveMode section indicator', () => {
+  const sectionedPayload = {
+    ...payload,
+    sections: [
+      { type: 'warm_up', startOffsetMs: 0 },
+      { type: 'sprint', startOffsetMs: 60000 },
+    ],
+  } satisfies RunPayload;
+
+  it('shows the current section and a countdown to the next, in both views', () => {
+    render(<LiveMode payload={sectionedPayload} onExit={() => {}} />);
+
+    // The accessible content is real text in reading order (sr-only framing + the
+    // visible label/countdown), so AT gets the current section AND what's next.
+    expect(screen.getByText('Current section:')).toBeTruthy();
+    expect(screen.getByText('Warm-up')).toBeTruthy();
+    expect(screen.getByText(/Sprint in 1:00/)).toBeTruthy();
+
+    // View-independent: it persists in Full List.
+    fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+    expect(screen.getByText('Current section:')).toBeTruthy();
+    expect(screen.getByText('Warm-up')).toBeTruthy();
+  });
+
+  it('renders no section indicator when the class has no sections', () => {
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    expect(screen.queryByText('Current section:')).toBeNull();
   });
 });
 

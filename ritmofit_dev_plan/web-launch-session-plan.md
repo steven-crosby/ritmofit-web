@@ -74,12 +74,23 @@ Deferred follow-ups: none for Session 5. Continue with Session 6.
 
 ## Session 6 — Live Mode And StructClub Parity Pass
 
+Status: **done (web, 2026-06-28).** Live Mode verified via a browser walk (desktop + 320px): cue
+prompter, virtual interval timer, intensity (bars + label + color), notes, trim/clip handling, beat
+pulse, cue colors, wake lock, and the no-in-app-playback constraint all hold. One gap closed — the live
+prompter now renders a compact current-section energy-arc band from the run-payload `sections[]` (it was
+previously dropped in Live). Web-only, no contract/schema change; iOS parity tracked in
+`web-ios-parity.md`. Continue with Session 7.
+
 Goal: pass the core competitor comparison without compromising RitmoFit's constraints.
 
-- Verify cue prompter, timer, intensity, notes, sections, trim, and beat behavior.
-- Confirm beat-aware authoring, cue colors, class copying, sharing, and team-share support.
-- Confirm the UI does not imply in-app playback, embedded provider playback, audio mixing, or Spotify
-  BPM.
+- ~~Verify cue prompter, timer, intensity, notes, sections, trim, and beat behavior.~~ Done — all
+  verified; the missing live **sections** indicator was added (compact current-section band).
+- ~~Confirm beat-aware authoring, cue colors, class copying, sharing, and team-share support.~~ Done —
+  cue colors render in Live (focal card, full-list pill, timeline markers); copying/sharing/team-share
+  verified in earlier sessions.
+- ~~Confirm the UI does not imply in-app playback, embedded provider playback, audio mixing, or Spotify
+  BPM.~~ Done — Play/Pause drives the virtual prompter clock only; provider handoff is validated external
+  links; BPM is manual `displayBpm`.
 
 ## Session 7 — Accessibility And Responsive Sweep
 
@@ -112,5 +123,6 @@ Goal: move cleanly from web launch to iOS parity wrap.
 
 ## Current Recommendation
 
-Start with **Session 1 — Production Truth Audit**. It creates the evidence-backed launch blocker list
-before additional polish work begins.
+Sessions 1–6 are done. Start with **Session 7 — Accessibility And Responsive Sweep**: keyboard focus,
+labels, reduced-motion, empty/error/loading/permission states, and mobile/tablet/desktop layouts across
+the launch-scoped surface, fixing launch-blocking design-system issues only.
