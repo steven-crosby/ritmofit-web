@@ -491,6 +491,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             onOpen={openClass}
             onPreview={(cls) => setCardPreview(cls)}
             onLoadMore={loadMoreClasses}
+            onRetry={() => {
+              setListStatus('loading');
+              void refreshClasses();
+            }}
           />
 
           {selected && detail.classId === selected.id && detail.status === 'ready' ? (
@@ -556,6 +560,7 @@ export function LibraryRail({
   onPreview,
   onOpen,
   onLoadMore,
+  onRetry,
 }: {
   classes: ClassListItem[];
   status: ListStatus;
@@ -576,6 +581,8 @@ export function LibraryRail({
   onPreview: (cls: ClassListItem) => void;
   onOpen: (cls: ClassListItem) => void;
   onLoadMore: () => void;
+  /** Reload the class library from page 1 after a failed initial load. */
+  onRetry: () => void;
 }) {
   // `classes` is already the server-filtered set, so an empty list under an active
   // tag is "no matches", not "no classes at all".
@@ -596,9 +603,16 @@ export function LibraryRail({
       {view === 'loading' ? (
         <p className="font-ui text-sm text-text-tertiary">Loading your classes…</p>
       ) : view === 'error' ? (
-        <p className="font-ui text-sm text-text-tertiary">
-          Couldn’t load your classes — try again.
-        </p>
+        <div className="flex flex-col items-start gap-2" role="alert">
+          <p className="font-ui text-sm text-state-danger">Couldn’t load your classes.</p>
+          <button
+            type="button"
+            className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+            onClick={onRetry}
+          >
+            Try again
+          </button>
+        </div>
       ) : view === 'empty' ? (
         activeTag != null ? (
           <p className="font-ui text-sm text-text-tertiary">
