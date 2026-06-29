@@ -171,6 +171,45 @@ describe('LiveMode screen-reader announcements', () => {
     render(<LiveMode payload={withCue} onExit={() => {}} />);
     expect(screen.getByText('Cue: Stand and sprint.')).toBeTruthy();
   });
+
+  it('announces the current section in a polite region, apart from the assertive cue', () => {
+    const sectioned = {
+      ...payload,
+      sections: [
+        { type: 'warm_up', startOffsetMs: 0 },
+        { type: 'sprint', startOffsetMs: 60000 },
+      ],
+    } satisfies RunPayload;
+    render(<LiveMode payload={sectioned} onExit={() => {}} />);
+    const region = screen.getByText('Warm-up section.');
+    // Section context must not interrupt the cue: it lives in aria-live="polite",
+    // not the assertive cue region.
+    expect(region.getAttribute('aria-live')).toBe('polite');
+  });
+
+  it('announces the new section when a boundary is crossed', () => {
+    const sectioned = {
+      ...payload,
+      sections: [
+        { type: 'warm_up', startOffsetMs: 0 },
+        { type: 'sprint', startOffsetMs: 60000 },
+      ],
+    } satisfies RunPayload;
+    render(<LiveMode payload={sectioned} onExit={() => {}} />);
+    expect(screen.getByText('Warm-up section.')).toBeTruthy();
+    // Seek across the 60s boundary (PageUp jumps +30s) — the polite text updates,
+    // which is what re-announces. On-change only: it tracks section.type, not frames.
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    fireEvent.keyDown(slider, { key: 'PageUp' }); // 30s — still warm-up
+    expect(screen.getByText('Warm-up section.')).toBeTruthy();
+    fireEvent.keyDown(slider, { key: 'PageUp' }); // 60s — sprint begins
+    expect(screen.getByText('Sprint section.')).toBeTruthy();
+  });
+
+  it('makes no section announcement when the class has no sections', () => {
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    expect(screen.queryByText(/ section\.$/)).toBeNull();
+  });
 });
 
 describe('LiveMode timeline scrubber', () => {
