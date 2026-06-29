@@ -62,10 +62,11 @@ hand-marked). Decline or redesign requests that need one of these rather than sc
 
 ## Credentials status
 
-Client IDs/secrets exist for Spotify and SoundCloud, plus Apple sign-in and Apple Music keys. Keep keys
-out of the codebase; production values live in Cloudflare Worker secrets and local values live in
-ignored `.dev.vars`. Provider tokens live encrypted in `music_connections` (`ENCRYPTION_KEY`) and are
-never returned to clients.
+Provider, auth, and tempo credentials are provisioned independently. Keep all keys out of the codebase;
+production values live in Cloudflare Worker secrets and local values live in ignored `.dev.vars`.
+`deployment-runbook.md` is the operational source of truth for which production secrets are currently
+set or intentionally deferred. Provider tokens live encrypted in `music_connections` (`ENCRYPTION_KEY`)
+and are never returned to clients.
 
 Apple key material is used in two separate Worker-signed JWT flows:
 

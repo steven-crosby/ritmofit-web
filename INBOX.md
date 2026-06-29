@@ -5,9 +5,9 @@ work: **an idea isn't "saved" until it's a line in a tracked file.** Chat transc
 (Claude.ai Projects) are scratch; this repo is canon. Capture here from either surface,
 then drain into a real home.
 
-This file is the only place that is allowed to be messy. Everything else
-(`decisions.md`, `DEVELOPMENT_PLAN.md`, the memory directory) stays curated because this
-catches the noise first.
+This file is the only place that is allowed to be messy. Everything else (`decisions.md`,
+`DEVELOPMENT_PLAN.md`, parity trackers, runbooks, and agent prompts) stays curated because this catches
+the noise first.
 
 ## How to capture
 
@@ -38,9 +38,9 @@ here** — an inbox you drain is the difference between capture and hoarding.
 | A decision or locked principle          | `ritmofit_dev_plan/decisions.md` (D-number, the D18 pattern) | delete the line      |
 | "Build / fix this next", scope          | `ritmofit_dev_plan/DEVELOPMENT_PLAN.md` / `milestones.md`    | delete the line      |
 | Forward parity work                     | `ritmofit_dev_plan/web-ios-parity.md`                        | delete the line      |
-| A non-obvious fact to outlive this work | the memory directory (`MEMORY.md` + a file)                  | delete the line      |
+| A non-obvious fact to outlive this work | the most specific durable doc in `ritmofit_dev_plan/`        | delete the line      |
 | A reusable workflow/prompt              | `agent-prompts/` (web) or the iOS copy                       | delete the line      |
-| A concrete bug/cleanup                  | a draft PR or a `spawn_task` chip                            | delete the line      |
+| A concrete bug/cleanup                  | a draft PR or focused follow-up                              | delete the line      |
 | Stale / no longer wanted                | —                                                            | just delete the line |
 
 If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete it.

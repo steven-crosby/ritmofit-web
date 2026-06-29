@@ -87,7 +87,7 @@ Core builder first (these validate the product), teams/sharing last.
 
 ## M2 — Music-provider integration ✅ done
 
-> **Progress:**
+> **Historical build slices:**
 > - ✅ **Slice 1** — SoundCloud search → track creation. `packages/music` `MusicProvider` abstraction +
 >   `client_credentials` adapter behind a mock-fallback registry. `GET /providers/:provider/search`,
 >   `POST /providers/track-import`. (PR #1, **merged to `main`**)
@@ -110,18 +110,19 @@ Core builder first (these validate the product), teams/sharing last.
 >   conservative normalized title+artist + duration tolerance, never double-attaches a provider).
 > - ✅ **Slice 6** — **Spotify + Apple Music behind the same `MusicProvider`**: client-credentials
 >   (Spotify, never BPM) and developer-token (Apple Music) adapters in `packages/music`, wired into the
->   registry's mock fallback; `SPOTIFY_*` / `APPLE_MUSIC_*` env documented. Pure, unit-tested, behind the
->   mock until creds land.
+>   registry's mock fallback; `SPOTIFY_*` / `APPLE_MUSIC_*` env documented. Pure and unit-tested; production
+>   uses live adapters when the relevant credentials are present.
 > - ✅ **Slice 7** — *(optional)* third-party **BPM** provider for `display_bpm`: a pluggable `BpmProvider`
 >   (GetSongBPM adapter, `normalizeBpm`) fills BPM from a dedicated tempo service — **never Spotify**.
->   `POST /tracks/:id/bpm-lookup` (owner-only) persists a confident match; behind the mock
->   (deterministic spin-band BPM) until `GETSONGBPM_API_KEY` lands, so BPM stays manual otherwise.
+>   `POST /tracks/:id/bpm-lookup` (owner-only) persists a confident match. In local mock mode it returns a
+>   deterministic spin-band BPM; in production it requires `GETSONGBPM_API_KEY`, so BPM stays manual until
+>   that optional secret is provisioned.
 >
 > **M2 complete** — all three providers (SoundCloud/Spotify/Apple Music) behind one interface, per-user
 > OAuth + refresh, likes, metadata-purge-on-disconnect, same-song resolution, and the optional BPM
 > provider. Live Spotify and Apple Music search/import now run from server-side production credentials;
 > Apple Music can use either a static developer token or Worker-signed developer tokens from Apple key
-> secrets.
+> secrets. The mock remains a local/dev seam; production runs with `MOCK_PROVIDERS` unset.
 
 - **SoundCloud first** (the differentiator): provider search feeding track creation; provider-ID
   resolution and the same-song matching problem; deep-link/hand-off playback via `provider_uri`.
@@ -225,8 +226,8 @@ frontend S1–S4, hardening PRs — with Worker versions, migrations, and test c
 PRs #137–#140):** custom-move `baseMoveId`/`template` editing (#139); the playing-track pulse in the
 *planning* timeline, driven by the active/selected track since the builder has no "playing" state (#137);
 segment-band track-range binding via "snap to track starts" (#140); and the rhythm-cycle move-vocabulary
-expansion (#138). See `HISTORY.md`. Remaining launch-readiness polish is tracked in
-`web-launch-readiness.md` (e.g. a settings/profile surface beyond sign-out).
+expansion (#138). The Session 5 follow-up also shipped the account/profile dialog. See `HISTORY.md`.
+Remaining launch-readiness work is tracked only in `web-launch-readiness.md`.
 
 **Post-launch parity follow-up:** a run-payload `id` on `sections[]` remains optional unless iOS wants
 that symmetry.

@@ -1,7 +1,8 @@
 /**
- * Provider OAuth connection routes (M2 slice 2) — connect a user's music account,
- * list connections, disconnect. SoundCloud is the live provider; others 501 until
- * integrated. The `music_connections` table already exists (no migration).
+ * Provider OAuth connection routes — connect a user's music account, list
+ * connections, disconnect. Per-user OAuth is currently SoundCloud-only; Spotify
+ * and Apple Music still support app-level catalog search via provider credentials.
+ * The `music_connections` table already exists (no migration).
  *
  * Flow (Authorization Code + PKCE, confidential client → secret server-side):
  *  1. POST /providers/:provider/connect  — authed. Mint PKCE verifier + state,

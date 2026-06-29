@@ -1,8 +1,9 @@
 # ritmofit-web
 
-RitmoFit is a choreography and class-running tool for rhythm spin cycle instructors. The web app is
-where instructors do most of their planning — assembling classes on a laptop with a large screen,
-multiple windows, and the time to audition many tracks. The iOS app is where they run classes live.
+RitmoFit is a choreography and class-running tool for rhythm spin cycle instructors, delivered as two
+complete surfaces of one product: this web app and the companion iOS app. Both surfaces carry the full
+instructor loop — build and choreograph, manage the library, search and import music, explore, share,
+and run class live — in platform-native form.
 
 This repository is a pnpm TypeScript monorepo: a React/Vite/Tailwind SPA (`apps/web`) and the
 authoritative Hono/Cloudflare Workers + D1 backend (`apps/api`) it shares with the iOS client, plus
@@ -58,10 +59,12 @@ The CI-equivalent gates (also documented in [`AGENTS.md`](AGENTS.md)):
 pnpm format:check
 pnpm -r typecheck
 pnpm lint
+(cd ritmofit_design_system && npm run verify)
 pnpm test                                      # fast Vitest unit/component suites
 pnpm --filter @ritmofit/api test:integration   # mounted Worker against Miniflare D1
 pnpm --filter @ritmofit/web build
 pnpm --filter @ritmofit/api openapi && git diff --exit-code apps/api/openapi/openapi.json
+pnpm --filter @ritmofit/api contract-parity
 pnpm audit:ci
 ```
 
@@ -76,9 +79,9 @@ pnpm build   # all workspaces
 The UI is driven by design tokens, not ad-hoc colors. The flow is single-source:
 
 - `ritmofit_design_system/tokens.json` is the **canonical** design-system token source
-  of truth for the app — edit token values here. (The workspace-root
-  `ritmofit-design-system-final/` is an audit/review snapshot, **not** an upstream this
-  is vendored from.) Never hand-edit the generated token CSS in app code.
+  of truth for the app — edit token values here. Historical design snapshots may be
+  referenced from `ritmofit_dev_plan/HISTORY.md`, but this repo does not vendor from a
+  sibling design-system folder. Never hand-edit the generated token CSS in app code.
 - `pnpm --filter @ritmofit/web tokens` (auto-runs on `dev`/`build`) regenerates
   `src/styles/tokens.css`: the dark `:root` set plus an **opt-in**
   `[data-theme="light"]` block. Dark is the default; nothing sets `data-theme`, so

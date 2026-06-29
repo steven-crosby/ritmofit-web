@@ -34,8 +34,8 @@ In practice, for any feature PR (web *or* iOS):
 
 | Layer | Mechanism | Enforced? |
 |---|---|---|
-| **Data** | Versioned **`GET /classes/:id/run-payload`** + the rest of the REST surface; shared Zod types in `packages/shared`; `apps/api/openapi/openapi.json` is generated and **drift-gated** in web CI. | ✅ within web; iOS Swift models reconciled **by hand** against the spec |
-| **Design** | `ritmofit_design_system/tokens.json` is the platform-agnostic source of truth → web `theme.css` + `ios/RFTokens.swift`, both **drift-gated** by the web "Design system verify" CI step. | ✅ within web |
+| **Data** | Versioned **`GET /classes/:id/run-payload`** + the rest of the REST surface; shared Zod types in `packages/shared`; `apps/api/openapi/openapi.json` is generated and **drift-gated** in web CI. A vendored iOS run-payload snapshot is also checked for additive field drift. | ✅ within web; iOS type/nullability/enum review remains manual |
+| **Design** | `ritmofit_design_system/tokens.json` is the platform-agnostic source of truth. Web token CSS and the in-repo generated `ritmofit_design_system/ios/RFTokens.swift` are drift-gated by the web "Design system verify" CI step. The separate iOS repo's vendored token copy is not yet cross-repo gated. | ⚠️ partial |
 | **Capability** | This doc + the D18 hard gate. | ⚠️ **manual** — no automated cross-repo capability check |
 
 ### Known seam gaps (process debt to close)

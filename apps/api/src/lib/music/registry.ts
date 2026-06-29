@@ -3,9 +3,8 @@
  *
  * - `MOCK_PROVIDERS=true` (local dev) → the static mock catalog for every provider,
  *   so the builder runs with zero credentials.
- * - otherwise → the live adapter when its credentials are present; SoundCloud is
- *   the only one integrated so far. Missing creds / not-yet-integrated providers
- *   surface as typed HTTP errors the route renders.
+ * - otherwise → the live adapter when that provider's app credentials are present.
+ *   Missing credentials surface as typed HTTP errors the route renders.
  *
  * Keeping selection here (not in `packages/music`) means the pure adapters stay
  * free of app env/secrets.

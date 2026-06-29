@@ -14,6 +14,7 @@ label the change with the authoring agent and date (e.g. `<!-- note (Claude, 202
 <!-- note (Claude, 2026-06-24): Adopted the full surface-parity principle (D18) — web and iOS are co-equal surfaces; added the hard parity gate below. -->
 <!-- note (Codex, 2026-06-28): Set the active operating focus to web launch readiness first, with iOS parity wrap-up tracked next. -->
 <!-- note (Codex, 2026-06-29): Web launch gate is green/deployed; active operating focus moves to iOS handoff and parity wrap. -->
+<!-- note (Codex, 2026-06-29): Synced the CI-equivalent gate with the live workflow: design-system verify and iOS contract parity are always part of the gate. -->
 
 ## Product & Architecture
 
@@ -144,17 +145,20 @@ Before submitting code, run the CI-equivalent gates:
 pnpm format:check
 pnpm -r typecheck
 pnpm lint
+(cd ritmofit_design_system && npm run verify)
 pnpm test
 pnpm --filter @ritmofit/api test:integration
 pnpm --filter @ritmofit/web build
 pnpm --filter @ritmofit/api openapi
 git diff --exit-code apps/api/openapi/openapi.json
+pnpm --filter @ritmofit/api contract-parity
 pnpm audit:ci
 ```
 
-CI is advisory and never deploys, but it now runs all of the above — including `format:check` and
-`pnpm audit:ci`. Prettier owns code and top-level docs; generated artifacts and the long-form
-reference doc trees (`ritmofit_dev_plan/`, `ritmofit_design_system/`) are excluded in `.prettierignore`.
+CI is advisory and never deploys, but it now runs all of the above. Prettier owns code and top-level
+docs; generated artifacts, long-form reference doc trees (`ritmofit_dev_plan/`,
+`ritmofit_design_system/`), agent prompts, and the vendored iOS snapshot are excluded in
+`.prettierignore`.
 `audit:ci` accepts the documented dev/build-only advisories via `auditConfig.ignoreGhsas` in
 `pnpm-workspace.yaml`; any new advisory fails the gate.
 

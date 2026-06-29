@@ -5,7 +5,7 @@ This is the session-sized workflow for the active Web Launch Readiness milestone
 
 ## Session 0 — Lock The Docs
 
-Status: mostly done.
+Status: done.
 
 - Review the launch-readiness documentation diff.
 - Commit the launch-readiness refactor.
@@ -14,6 +14,8 @@ Status: mostly done.
 - Confirm StructClub parity and polish are launch-critical for the web launch surface.
 
 ## Session 1 — Production Truth Audit
+
+Status: done; findings are folded into `web-launch-readiness.md`.
 
 Goal: find what is actually broken or rough before building more.
 
@@ -25,6 +27,8 @@ Goal: find what is actually broken or rough before building more.
 
 ## Session 2 — Auth, Account, And Provider Readiness
 
+Status: done; Apple/Google auth and automatic BPM lookup are documented post-launch deferrals.
+
 Goal: remove first-user friction.
 
 - Verify sign-up, sign-in, sign-out, password reset, verification email, and expired-session behavior.
@@ -34,6 +38,8 @@ Goal: remove first-user friction.
 
 ## Session 3 — Library Polish
 
+Status: done and deployed.
+
 Goal: make the first impression feel launch-worthy.
 
 - Improve Library presentation: track-art collage, duration, last-opened date, and duplicate action.
@@ -42,6 +48,8 @@ Goal: make the first impression feel launch-worthy.
 - Check mobile and desktop layouts.
 
 ## Session 4 — Class Detail And Songs By Move
+
+Status: done and deployed.
 
 Goal: make the planning loop discoverable instead of buried.
 

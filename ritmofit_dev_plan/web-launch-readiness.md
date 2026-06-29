@@ -172,7 +172,8 @@ Production audit findings (Session 2, 2026-06-28 — Auth, Account, And Provider
 The web app is launch-ready when all items below are true:
 
 - **Git/CI:** `main` is clean, branch-protected, and CI-green with the full gate:
-  `format:check`, typecheck, lint, unit, integration, web build, OpenAPI no-drift, and `audit:ci`.
+  `format:check`, typecheck, lint, design-system verify, unit, integration, web build, OpenAPI
+  no-drift, iOS contract parity, and `audit:ci`.
 - **Production deploy:** latest launch-candidate runtime is deployed manually through
   `deployment-runbook.md`; remote D1 has no pending migrations, or required migrations were applied
   before code.
@@ -211,11 +212,13 @@ Use the normal CI-equivalent gate before a launch-candidate deploy:
 pnpm format:check
 pnpm -r typecheck
 pnpm lint
+(cd ritmofit_design_system && npm run verify)
 pnpm test
 pnpm --filter @ritmofit/api test:integration
 pnpm --filter @ritmofit/web build
 pnpm --filter @ritmofit/api openapi
 git diff --exit-code apps/api/openapi/openapi.json
+pnpm --filter @ritmofit/api contract-parity
 pnpm audit:ci
 ```
 

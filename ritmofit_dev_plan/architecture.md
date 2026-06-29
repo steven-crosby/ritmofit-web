@@ -80,9 +80,9 @@ ritmofit/
 └─ tsconfig.base.json           # shared TS config / project refs
 ```
 
-> Start with these three packages. Add `packages/music` (provider adapters) when M2 begins, and
-> `packages/ui` only if component sharing between web and a future marketing surface is real — not
-> preemptively. Six empty packages before a feature exists is structure-as-theater.
+> Current package boundary: keep shared contracts in `packages/shared`, provider logic in
+> `packages/music`, and app-specific UI inside `apps/web` unless a real second consumer earns a new
+> package. Avoid adding empty shared packages ahead of an actual reuse path.
 
 ## Data flow: a typical write
 
@@ -110,8 +110,8 @@ Do not redefine entity shapes inside `apps/api` or `apps/web`. Change a shape on
   `wrangler d1 migrations apply`. **Deploys are intentionally manual** (run `pnpm --filter @ritmofit/api
   deploy` from a checkout) — the Cloudflare **Workers Builds** git integration was deliberately
   disconnected (2026-06-12) so a push to `main` does **not** auto-deploy to production. Don't reconnect
-  it without deciding you want push-to-deploy CI/CD; a future CI should gate on `pnpm -r typecheck` +
-  `pnpm test` before any deploy.
+  it without deciding you want push-to-deploy CI/CD; the existing GitHub Actions CI is advisory and
+  blocks regressions, but deployment remains a separate manual step.
 - **Web:** Vite build → **Workers static assets** served by the **same Worker** as the API (`[assets]`
   in `wrangler.toml`, `run_worker_first=["/api/*"]`, SPA fallback). SPA and API share **one origin**
   (`https://ritmofit.studio`), so the session cookie is first-party and **no cross-origin CORS is
