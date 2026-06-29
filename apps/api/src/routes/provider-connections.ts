@@ -1,20 +1,28 @@
 /**
- * Provider OAuth connection routes — connect a user's music account, list
- * connections, disconnect. Per-user OAuth (Authorization Code + PKCE) is wired for
- * SoundCloud and Spotify via the `PROVIDER_OAUTH` registry below; Apple Music is
- * still catalog-only (its user-token flow is MusicKit-JS-based, a separate slice).
- * The `music_connections` table already exists (no migration).
+ * Provider connection routes — connect a user's music account, list connections,
+ * disconnect. Two connect mechanisms share the `music_connections` table (no
+ * migration): redirect OAuth (Authorization Code + PKCE) for SoundCloud and Spotify
+ * via the `PROVIDER_OAUTH` registry below, and a MusicKit-JS token handoff for Apple
+ * Music (no redirect OAuth exists for it).
  *
- * Flow (Authorization Code + PKCE, confidential client → secret server-side):
+ * Redirect-OAuth flow (confidential client → secret server-side):
  *  1. POST /providers/:provider/connect  — authed. Mint PKCE verifier + state,
  *     stash them in a short-lived **encrypted httpOnly cookie** (carries userId,
  *     so the callback needs no session), return the authorize URL.
- *  2. GET  /providers/:provider/callback — SoundCloud redirects here. Validate the
+ *  2. GET  /providers/:provider/callback — the provider redirects here. Validate the
  *     state cookie (CSRF + identity), exchange the code, encrypt + upsert the
  *     tokens, redirect back to the SPA. No `requireSession` — the cookie is the
  *     identity, and a JSON 401 would break the browser redirect.
- *  3. GET  /providers/connections        — authed. Token-free view only.
- *  4. DELETE /providers/:provider/connection — authed. Immediate disconnect.
+ *
+ * Apple Music (MusicKit JS) flow — no redirect, no cookie:
+ *  - GET  /providers/apple_music/config     — authed. The developer token the SPA
+ *    passes to `MusicKit.configure()`.
+ *  - POST /providers/apple_music/connection — authed. Store the Music-User-Token the
+ *    browser obtained (encrypted; no refresh token — MusicKit re-mints on expiry).
+ *
+ * Shared:
+ *  - GET    /providers/connections          — authed. Token-free view only.
+ *  - DELETE /providers/:provider/connection — authed. Immediate disconnect.
  *
  * Tokens are encrypted at rest and NEVER returned to a client. Never log tokens
  * or the code (conventions.md). Disconnect forgets the tokens immediately and
@@ -28,10 +36,12 @@ import { z } from 'zod';
 import {
   providerSchema,
   musicConnectionViewSchema,
+  connectAppleMusicSchema,
   supportsUserAccount,
   type Provider,
   type ConnectProviderResponse,
   type MusicConnectionView,
+  type AppleMusicClientConfig,
 } from '@ritmofit/shared';
 import {
   buildSoundCloudAuthorizeUrl,
@@ -51,6 +61,8 @@ import {
   requireEncryptionKey,
   soundcloudCreds,
   spotifyCreds,
+  appleMusicCreds,
+  hasAppleMusicConfig,
 } from '../lib/music/provider-config.js';
 import { generateCodeVerifier, challengeFromVerifier, randomToken } from '../lib/pkce.js';
 import { enqueueProviderPurge } from '../lib/music/purge.js';
@@ -295,6 +307,58 @@ providerConnectionRoutes.get('/providers/:provider/callback', async (c) => {
   }
   return c.redirect(spaUrl(c.env, `/?connected=${provider}`));
 });
+
+/**
+ * GET /providers/apple_music/config — the developer token + storefront MusicKit JS
+ * needs to configure in the browser. Apple Music has no redirect OAuth, so the SPA
+ * configures MusicKit, lets the user authorize, and posts the resulting
+ * Music-User-Token to the connection endpoint below. The developer token is a public
+ * client credential by design, but we serve it only to authenticated callers.
+ */
+providerConnectionRoutes.get('/providers/apple_music/config', requireSession, async (c) => {
+  // Dev seam: hand MusicKit a placeholder token so the flow runs with zero creds.
+  if (c.env.MOCK_PROVIDERS === 'true') {
+    const mock: AppleMusicClientConfig = {
+      developerToken: 'mock-developer-token',
+      storefront: null,
+    };
+    return c.json(mock);
+  }
+  const { developerToken, storefront } = await appleMusicCreds(c.env);
+  const body: AppleMusicClientConfig = { developerToken, storefront: storefront ?? null };
+  return c.json(body);
+});
+
+/**
+ * POST /providers/apple_music/connection — store the Music-User-Token MusicKit
+ * returned in the browser. There is no OAuth code exchange and no refresh token:
+ * the Music-User-Token is long-lived (~6 months) and re-minted by MusicKit on
+ * expiry, so we persist it (encrypted) with no hard expiry and surface a reconnect
+ * prompt if Apple later rejects it.
+ */
+providerConnectionRoutes.post(
+  '/providers/apple_music/connection',
+  requireSession,
+  connectLimiter,
+  async (c) => {
+    const key = requireEncryptionKey(c.env);
+    // Outside the dev mock seam, refuse to store a token we could never spend.
+    if (c.env.MOCK_PROVIDERS !== 'true' && !hasAppleMusicConfig(c.env)) {
+      throw new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Apple Music is not configured.');
+    }
+    const { musicUserToken } = connectAppleMusicSchema.parse(await c.req.json());
+    await upsertConnection(createDb(c.env), {
+      userId: c.get('userId'),
+      provider: 'apple_music',
+      accessTokenEncrypted: await encryptSecret(musicUserToken, key),
+      refreshTokenEncrypted: null,
+      providerUserId: null,
+      scope: null,
+      expiresAt: null,
+    });
+    return c.body(null, 204);
+  },
+);
 
 /** GET /providers/connections — the caller's connections (tokens stripped). */
 providerConnectionRoutes.get('/providers/connections', requireSession, async (c) => {

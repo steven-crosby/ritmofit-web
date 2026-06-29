@@ -11,12 +11,19 @@
 #               injected styles.
 #   font-src    'self' — the three OFL faces are self-hosted under /fonts (no CDN).
 #   img-src     https: + data: for provider album artwork from arbitrary CDNs.
-#   connect-src 'self' (same-origin /api) + the insights beacon endpoint.
+#   connect-src 'self' (same-origin /api) + the insights beacon endpoint + Apple
+#               Music API hosts (api.music.apple.com / *.mzstatic.com) that MusicKit
+#               JS calls once a user connects their Apple Music account.
+#   script-src  also allows js-cdn.music.apple.com (the MusicKit JS library, loaded
+#               on demand only when a user starts the Apple Music connect flow).
+#   frame-src   allows the Apple Music / Apple ID authorization surfaces MusicKit
+#               opens for consent. NOTE: the exact Apple host set is verified live —
+#               tune against CSP violation reports during the first real connect.
 #   Cache-Control includes `no-transform` so Cloudflare JavaScript Detections do
 #   not inject a CSP-blocked inline challenge script into the SPA HTML.
 /*
   Cache-Control: public, max-age=0, must-revalidate, no-transform
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self' https://static.cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://js-cdn.music.apple.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self' https://static.cloudflareinsights.com https://*.music.apple.com https://*.mzstatic.com; frame-src https://authorize.music.apple.com https://idmsa.apple.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY

@@ -31,7 +31,12 @@ export {
   refreshSpotifyToken,
   SPOTIFY_CONNECT_SCOPE,
 } from './spotify-oauth.js';
-export { createAppleMusicProvider, type AppleMusicConfig } from './apple-music.js';
+export {
+  createAppleMusicProvider,
+  fetchAppleMusicLibrarySongs,
+  AppleMusicUnauthorizedError,
+  type AppleMusicConfig,
+} from './apple-music.js';
 export {
   createGetSongBpmProvider,
   normalizeBpm,

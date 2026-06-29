@@ -17,6 +17,7 @@ import type {
   Provider,
   MusicConnectionView,
   ConnectProviderResponse,
+  AppleMusicClientConfig,
   Cue,
   CreateCue,
   UpdateCue,
@@ -198,6 +199,15 @@ export const connectProvider = (provider: Provider) =>
 /** Disconnect — forgets tokens now; enqueues the 7-day metadata purge server-side. */
 export const disconnectProvider = (provider: Provider) =>
   api<void>(`/providers/${provider}/connection`, { method: 'DELETE' });
+/** The Apple Music developer token MusicKit JS needs to configure in the browser. */
+export const getAppleMusicConfig = () =>
+  api<AppleMusicClientConfig>('/providers/apple_music/config');
+/** Store the Music-User-Token MusicKit returned after the user authorized. */
+export const connectAppleMusic = (musicUserToken: string) =>
+  api<void>('/providers/apple_music/connection', {
+    method: 'POST',
+    body: JSON.stringify({ musicUserToken }),
+  });
 
 // ── BPM lookup (third-party tempo provider — never Spotify) ───────────────────
 /** Owner-only: fill the track's display BPM from the tempo service (or mock). */

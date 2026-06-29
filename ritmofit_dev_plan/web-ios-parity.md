@@ -92,8 +92,18 @@ list; after the launch gate is green, it becomes the next implementation queue. 
     `ASWebAuthenticationSession` (server endpoints `POST /providers/spotify/connect` +
     `GET /providers/spotify/callback` are provider-agnostic and already serve it) and surface the
     connected provider in its Connections UI + likes search. No contract change (the connect/likes routes
-    and the capability matrix are shared). Apple Music user-connect remains catalog-only on both surfaces
-    (its MusicKit-based user-token flow is a separate slice).
+    and the capability matrix are shared).
+  - Apple Music per-user connect (web, 2026-06-29): web wires Apple Music account-connect via **MusicKit
+    JS** (no redirect OAuth — the browser mints a Music-User-Token the SPA posts to
+    `POST /providers/apple_music/connection`; `GET /providers/apple_music/config` serves the developer
+    token MusicKit needs). `providerCapabilities.apple_music` flips `userConnect`/`userLikes` to `true`;
+    "search my Apple Music" reads the user's library via `GET /me/library/songs` (developer token +
+    Music-User-Token). With this, **all three providers are connect-capable on web.** **iOS parity
+    follow-up:** iOS should connect Apple Music through **native MusicKit** (`MusicAuthorization` /
+    `MusicKit` framework) rather than MusicKit JS, storing the resulting user token via the same
+    `POST /providers/apple_music/connection` endpoint (shared, no contract change), and surface it in its
+    Connections UI + likes search. The web MusicKit-JS browser handshake itself is verified live, not in
+    CI.
 - **Library** of saved/liked tracks
   - Library-card summary (web Session 3): `GET /classes` now returns additive per-class card
     aggregates (`trackCount`, `totalDurationMs`, `albumArtUrls`) via the new `ClassListItem` shape, and

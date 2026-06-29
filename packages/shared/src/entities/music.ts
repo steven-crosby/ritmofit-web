@@ -43,3 +43,26 @@ export const connectProviderResponseSchema = z.object({
   connected: z.boolean(),
 });
 export type ConnectProviderResponse = z.infer<typeof connectProviderResponseSchema>;
+
+/**
+ * Apple Music has no redirect OAuth: MusicKit JS authorizes in the browser and
+ * returns a **Music-User-Token**, which the SPA posts here to be stored (encrypted)
+ * like an access token. The developer token MusicKit needs to configure is served
+ * separately by `GET /providers/apple_music/config`.
+ */
+export const connectAppleMusicSchema = z.object({
+  musicUserToken: z.string().min(1).max(8192),
+});
+export type ConnectAppleMusic = z.infer<typeof connectAppleMusicSchema>;
+
+/**
+ * The Apple Music developer token (ES256 JWT) the SPA passes to
+ * `MusicKit.configure()`, plus the optional storefront. The developer token is a
+ * public client credential (MusicKit exposes it to the browser by design), but it
+ * is served only to authenticated callers to limit casual scraping.
+ */
+export const appleMusicClientConfigSchema = z.object({
+  developerToken: z.string().min(1),
+  storefront: z.string().nullable(),
+});
+export type AppleMusicClientConfig = z.infer<typeof appleMusicClientConfigSchema>;
