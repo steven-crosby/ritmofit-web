@@ -426,80 +426,63 @@ function CueByCue({
   gap: { untilMs: number; nextTitle: string | null } | null;
 }) {
   if (!live) {
-    return <p className="p-8 font-ui text-text-tertiary">This class has no tracks yet.</p>;
+    return (
+      <div className="flex min-h-full items-center justify-center p-8">
+        <p className="font-ui text-text-tertiary">This class has no tracks yet.</p>
+      </div>
+    );
   }
   if (gap) {
     return (
-      <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 p-8 text-center">
-        <div className="flex w-full flex-col items-center gap-1 rounded-card bg-bg-raised py-10 shadow-card">
-          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Silence</p>
-          <p className="font-display text-3xl font-semibold text-text-secondary">
+      <div className="flex min-h-full flex-col items-center justify-center gap-8 p-6 text-center sm:p-10">
+        <div className="flex flex-col items-center gap-2">
+          <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
+            Silence
+          </p>
+          <p className="font-display text-[clamp(2.25rem,6vw,4.5rem)] font-semibold leading-[0.95] text-text-secondary">
             No track playing
           </p>
         </div>
-        <div className="flex w-full items-center justify-between rounded-card bg-bg-raised p-4 shadow-card">
-          <div className="text-left">
-            <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Next track</p>
-            <p className="font-ui text-text-primary">{gap.nextTitle ?? '—'}</p>
+        <div className="flex w-full max-w-md flex-col gap-3">
+          <div className="rounded-card bg-bg-raised p-5 shadow-card">
+            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+              Next track
+            </p>
+            <div className="mt-2 flex items-baseline justify-between gap-3">
+              <p className="min-w-0 truncate font-display text-lg font-semibold text-text-primary">
+                {gap.nextTitle ?? '—'}
+              </p>
+              <span
+                className="shrink-0 font-data text-3xl text-interactive"
+                aria-label="Time to next track"
+              >
+                {fmt(gap.untilMs - elapsedMs)}
+              </span>
+            </div>
           </div>
-          <span className="font-data text-2xl text-interactive" aria-label="Time to next track">
-            {fmt(gap.untilMs - elapsedMs)}
-          </span>
-        </div>
-        <div className="flex w-full justify-end font-data text-sm text-text-tertiary">
-          <span>Class ends in {fmt(classTotalMs - elapsedMs)}</span>
+          <p className="font-data text-sm text-text-tertiary">
+            Class ends in {fmt(classTotalMs - elapsedMs)}
+          </p>
         </div>
       </div>
     );
   }
   const { entry } = live;
-  // The on-beat pulse: the focal "Now" card breathes on the track's beat while
-  // playing (design system 10). Needs a BPM to time the beat; removed under
-  // reduced motion by CSS. Exactly one pulsing element on screen.
+  // The on-beat pulse (design system 10 §1–2): a single focal element breathes one
+  // cycle per beat while playing. It lives on the BPM readout — the literal heartbeat
+  // of the instrument — so the giant cue can stay rock-steady to read across a dim
+  // room. Needs a BPM to time the beat; removed under reduced motion by CSS. One only.
   const pulse = playing && entry.displayBpm != null;
   // "The drop" (design system 10 §5): the one big motion spend, rationed to All-Out
-  // tracks. On each cue advance there, a plasma glow blooms behind the card and the
-  // cue text cross-fades in. Reduced motion degrades both to an instant swap (CSS).
+  // tracks. On each cue advance there, a plasma glow blooms behind the focal cue and
+  // the cue text cross-fades in. Reduced motion degrades both to an instant swap (CSS).
   const isAllOut = entry.intensity === 'all_out';
   const nowText = currentEvent ? currentEvent.text : '—';
   return (
-    <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 p-8 text-center">
-      <div className="flex w-full items-center justify-between">
-        <div className="text-left">
-          <p className="font-data text-xs uppercase tracking-wide text-text-tertiary">
-            Track {live.index + 1}
-          </p>
-          <p className="font-display text-xl font-semibold text-text-primary">
-            {entry.track.title}
-          </p>
-          <p className="font-ui text-sm text-text-secondary">{entry.track.artist}</p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <IntensityReadout intensity={entry.intensity} />
-          {entry.displayBpm != null && (
-            <span className="font-data text-sm text-text-secondary">{entry.displayBpm} BPM</span>
-          )}
-          {entry.displayRpm != null && (
-            <span className="font-data text-sm text-text-secondary">{entry.displayRpm} RPM</span>
-          )}
-          {entry.holdCount != null && (
-            <span className="font-data text-sm text-text-secondary">
-              {entry.holdCount} {entry.holdCount === 1 ? 'Hold' : 'Holds'}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {entry.notes && (
-        <div className="w-full rounded-card border border-interactive/15 p-3 text-left">
-          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Notes</p>
-          <p className="whitespace-pre-wrap font-ui text-sm text-text-secondary">{entry.notes}</p>
-        </div>
-      )}
-
-      <ProviderHandoffLinks entry={entry} />
-
-      <div className="relative w-full">
+    <div className="flex min-h-full flex-col gap-4 p-4 sm:p-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:p-8">
+      {/* LEFT — the focal cue: the one thing the instructor reads across the room.
+          Carries the All-Out drop; otherwise it holds still so it's always legible. */}
+      <div className="relative flex min-h-[42vh] flex-col justify-center overflow-hidden rounded-card bg-bg-raised p-6 shadow-card sm:p-8 lg:col-span-3 lg:min-h-0">
         {/* The drop's plasma bloom — keyed on the cue so it replays per advance. */}
         {isAllOut && currentEvent && (
           <span
@@ -508,47 +491,138 @@ function CueByCue({
             className="rf-drop-bloom pointer-events-none absolute inset-0 rounded-card"
           />
         )}
-        <div
-          className={`relative flex w-full flex-col items-center gap-1 rounded-card bg-bg-raised py-8 shadow-card ${
-            pulse ? 'rf-beat-pulse' : ''
+        <p className="relative font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
+          Now
+        </p>
+        <p
+          key={nowText}
+          className={`relative mt-3 break-words font-display text-[clamp(2.75rem,7vw,6rem)] font-semibold leading-[0.95] text-text-primary ${
+            isAllOut ? 'rf-drop-in' : ''
           }`}
-          style={pulse ? ({ '--rf-bpm': entry.displayBpm } as CSSProperties) : undefined}
+          style={currentEvent?.color ? { color: currentEvent.color } : undefined}
         >
-          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Now</p>
-          <p
-            key={nowText}
-            className={`font-display text-4xl font-semibold leading-tight text-text-primary ${
-              isAllOut ? 'rf-drop-in' : ''
-            }`}
-            style={currentEvent?.color ? { color: currentEvent.color } : undefined}
-          >
-            {nowText}
-          </p>
-          {currentEvent?.kind === 'move' && currentEvent.intensity && (
+          {nowText}
+        </p>
+        {currentEvent?.kind === 'move' && currentEvent.intensity && (
+          <div className="relative mt-5">
             <IntensityReadout intensity={currentEvent.intensity} />
-          )}
-        </div>
-      </div>
-
-      <div className="flex w-full items-center justify-between rounded-card bg-bg-raised p-4 shadow-card">
-        <div className="text-left">
-          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Next</p>
-          <p className="font-ui text-text-primary">{nextEvent ? nextEvent.text : 'End of track'}</p>
-        </div>
-        {nextEvent && (
-          <span className="font-data text-2xl text-interactive" aria-label="Time to next cue">
-            {fmt(nextEvent.atMs - elapsedMs)}
-          </span>
+          </div>
         )}
       </div>
 
-      <div className="flex w-full justify-between font-data text-sm text-text-tertiary">
-        <span>
-          {trackHasDuration
-            ? `Track ends in ${fmt(trackEndMs - elapsedMs)}`
-            : 'No track duration set'}
-        </span>
-        <span>Class ends in {fmt(classTotalMs - elapsedMs)}</span>
+      {/* RIGHT — the instrument rail: what's next, the vitals, the timers, the track. */}
+      <div className="flex min-w-0 flex-col gap-3 lg:col-span-2 lg:gap-4">
+        {/* Next cue + countdown. */}
+        <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
+          <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+            Next
+          </p>
+          <div className="mt-2 flex items-baseline justify-between gap-3">
+            <p className="min-w-0 font-display text-xl font-semibold text-text-primary">
+              {nextEvent ? nextEvent.text : 'End of track'}
+            </p>
+            {nextEvent && (
+              <span
+                className="shrink-0 font-data text-3xl text-interactive"
+                aria-label="Time to next cue"
+              >
+                {fmt(nextEvent.atMs - elapsedMs)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Vitals — the BPM heartbeat (the one pulsing element) + current effort. */}
+        <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+              Effort
+            </p>
+            <IntensityReadout intensity={entry.intensity} />
+          </div>
+          <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">
+            {entry.displayBpm != null ? (
+              <p
+                className={`flex items-baseline gap-2 ${pulse ? 'rf-beat-pulse' : ''}`}
+                style={pulse ? ({ '--rf-bpm': entry.displayBpm } as CSSProperties) : undefined}
+              >
+                <span className="font-data text-[clamp(2.75rem,6vw,4.75rem)] font-bold leading-none text-text-primary">
+                  {entry.displayBpm}
+                </span>
+                <span className="font-data text-sm uppercase tracking-wide text-text-tertiary">
+                  BPM
+                </span>
+              </p>
+            ) : (
+              <p className="font-data text-sm text-text-tertiary">No BPM set</p>
+            )}
+            {entry.displayRpm != null && (
+              <p className="flex items-baseline gap-1.5">
+                <span className="font-data text-2xl font-semibold text-text-secondary">
+                  {entry.displayRpm}
+                </span>
+                <span className="font-data text-xs uppercase text-text-tertiary">RPM</span>
+              </p>
+            )}
+            {entry.holdCount != null && (
+              <p className="flex items-baseline gap-1.5">
+                <span className="font-data text-2xl font-semibold text-text-secondary">
+                  {entry.holdCount}
+                </span>
+                <span className="font-data text-xs uppercase text-text-tertiary">
+                  {entry.holdCount === 1 ? 'Hold' : 'Holds'}
+                </span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Timers — track + class countdowns, the performance's running clock. */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-card bg-bg-raised p-4 shadow-card">
+            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+              Track left
+            </p>
+            <p className="mt-1 font-data text-2xl text-text-primary">
+              {trackHasDuration ? fmt(trackEndMs - elapsedMs) : '—'}
+            </p>
+            {!trackHasDuration && (
+              <p className="mt-0.5 font-ui text-xs text-text-tertiary">No duration set</p>
+            )}
+          </div>
+          <div className="rounded-card bg-bg-raised p-4 shadow-card">
+            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+              Class left
+            </p>
+            <p className="mt-1 font-data text-2xl text-text-primary">
+              {fmt(classTotalMs - elapsedMs)}
+            </p>
+          </div>
+        </div>
+
+        {/* Track identity + provider handoff (+ any instructor notes). */}
+        <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
+          <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+            Track {live.index + 1}
+          </p>
+          <p className="mt-1 truncate font-display text-lg font-semibold text-text-primary">
+            {entry.track.title}
+          </p>
+          <p className="truncate font-ui text-sm text-text-secondary">{entry.track.artist}</p>
+          {entry.notes && (
+            <div className="mt-3 border-t border-interactive/15 pt-3">
+              <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+                Notes
+              </p>
+              <p className="mt-1 whitespace-pre-wrap font-ui text-sm text-text-secondary">
+                {entry.notes}
+              </p>
+            </div>
+          )}
+          <div className="mt-3">
+            <ProviderHandoffLinks entry={entry} />
+          </div>
+        </div>
       </div>
     </div>
   );
