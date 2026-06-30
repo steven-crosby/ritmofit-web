@@ -2,6 +2,10 @@
 
 > **Location:** `agent-prompts/codex design critique/`
 
+> **Status:** older Codex-specific draft. For new owner-led Studio critique runs, prefer the
+> canonical workflow in `agent-prompts/claude-design-critique/` unless intentionally
+> comparing prompt variants.
+
 This prompt set runs a two-stage, read-only design evaluation of **RitmoFit Studio**,
 defined here as the **whole web app**: auth, marketing, dashboard, builder,
 choreography editor, library, explore, sharing, dialogs, and live class mode.
