@@ -17,6 +17,7 @@ import { parseMovePick } from '../lib/move-pick.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import { INTENSITY_LABEL } from './IntensityReadout.js';
 import { Dialog } from './Dialog.js';
+import { DialogState } from './DialogState.js';
 
 export function SongsByMoveDialog({
   onClose,
@@ -139,16 +140,23 @@ export function SongsByMoveDialog({
       )}
 
       {loading ? (
-        <p className="font-ui text-sm text-text-tertiary">Searching…</p>
+        <DialogState
+          title="Searching move history"
+          description="Looking across your choreographed songs for this move."
+          placeholder="move-rows"
+        />
       ) : !pick ? (
-        <p className="font-ui text-sm text-text-tertiary">
-          Pick a move to see the songs you’ve used it with.
-        </p>
+        <DialogState
+          title="Pick a move"
+          description="Choose a library or custom move to see the songs you have used it with."
+          placeholder="move-rows"
+        />
       ) : songs && songs.length === 0 ? (
-        <p className="font-ui text-sm text-text-tertiary">
-          You haven’t choreographed any songs with{' '}
-          <span className="text-text-secondary">{pickedName ?? 'this move'}</span> yet.
-        </p>
+        <DialogState
+          title="No songs for this move yet"
+          description={`You have not choreographed any songs with ${pickedName ?? 'this move'} yet.`}
+          placeholder="move-rows"
+        />
       ) : songs && songs.length > 0 ? (
         <ul className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto">
           {songs.map((s) => (

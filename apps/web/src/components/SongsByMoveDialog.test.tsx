@@ -72,7 +72,7 @@ describe('SongsByMoveDialog', () => {
     );
 
     // Until a move is picked, an instructional prompt shows (no fetch yet).
-    expect(await screen.findByText(/Pick a move to see/i)).toBeTruthy();
+    expect(await screen.findByText('Pick a move')).toBeTruthy();
     expect(api.songsByMove).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByRole('combobox'), { target: { value: `m:${move.id}` } });
@@ -99,7 +99,7 @@ describe('SongsByMoveDialog', () => {
         onStartClass={() => Promise.resolve()}
       />,
     );
-    await screen.findByText(/Pick a move to see/i);
+    await screen.findByText('Pick a move');
 
     fireEvent.change(screen.getByRole('combobox'), { target: { value: `u:${userMove.id}` } });
 
@@ -107,7 +107,8 @@ describe('SongsByMoveDialog', () => {
       expect(api.songsByMove).toHaveBeenCalledWith({ kind: 'user', id: userMove.id }),
     );
     // Empty result names the picked move so the instructor knows the search ran.
-    expect(await screen.findByText(/haven.t choreographed any songs with/i)).toBeTruthy();
+    expect(await screen.findByText(/No songs for this move yet/i)).toBeTruthy();
+    expect(screen.getByText(/songs with Signature Tap yet/i)).toBeTruthy();
   });
 
   it('opens a class and closes when a placement is clicked', async () => {
@@ -124,7 +125,7 @@ describe('SongsByMoveDialog', () => {
         onStartClass={() => Promise.resolve()}
       />,
     );
-    await screen.findByText(/Pick a move to see/i);
+    await screen.findByText('Pick a move');
     fireEvent.change(screen.getByRole('combobox'), { target: { value: `m:${move.id}` } });
 
     const openButton = await screen.findByRole('button', { name: 'Monday Power' });
@@ -147,7 +148,7 @@ describe('SongsByMoveDialog', () => {
     render(
       <SongsByMoveDialog onClose={onClose} onOpenClass={onOpenClass} onStartClass={onStartClass} />,
     );
-    await screen.findByText(/Pick a move to see/i);
+    await screen.findByText('Pick a move');
     fireEvent.change(screen.getByRole('combobox'), { target: { value: `m:${move.id}` } });
 
     const startButton = await screen.findByRole('button', {

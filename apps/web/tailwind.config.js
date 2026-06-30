@@ -56,6 +56,11 @@ export default {
           danger: 'var(--rf-color-semantic-state-danger)',
           info: 'var(--rf-color-semantic-state-info)',
         },
+        border: {
+          subtle: 'var(--rf-color-semantic-border-subtle)',
+          DEFAULT: 'var(--rf-color-semantic-border-default)',
+          strong: 'var(--rf-color-semantic-border-strong)',
+        },
         // Segment-track tints — quiet, label-first reinforcement (02). Not the
         // interactive channel; never used as a fill.
         segment: {

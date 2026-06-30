@@ -10,7 +10,7 @@ import type { TeamWithRole, TeamMemberView } from '@ritmofit/shared';
 import { listTeams, createTeam, listMembers, addMember, removeMember } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
 import { Dialog } from './Dialog.js';
-import { PendingList } from './PendingList.js';
+import { DialogState } from './DialogState.js';
 
 export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () => void }) {
   const [teams, setTeams] = useState<TeamWithRole[] | null>(null);
@@ -57,7 +57,7 @@ export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () =
         </p>
       )}
 
-      <div className="grid grid-cols-[1fr_1.4fr] gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1.4fr]">
         <section className="flex flex-col gap-3">
           <CreateTeamForm
             onCreated={async () => {
@@ -67,11 +67,32 @@ export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () =
             onError={setError}
           />
           {teams === null ? (
-            <PendingList error={error} onRetry={() => void refreshTeams()} />
+            <DialogState
+              title={error ? 'Teams did not load' : 'Loading team spaces'}
+              description={
+                error
+                  ? 'Team rows are waiting for a clean refresh.'
+                  : 'Checking the studios and crews you can share classes with.'
+              }
+              placeholder="team-rows"
+              action={
+                error ? (
+                  <button
+                    type="button"
+                    onClick={() => void refreshTeams()}
+                    className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+                  >
+                    Try again
+                  </button>
+                ) : undefined
+              }
+            />
           ) : teams.length === 0 ? (
-            <p className="font-ui text-sm text-text-tertiary">
-              No teams yet. Create one to share with a group.
-            </p>
+            <DialogState
+              title="No teams yet"
+              description="Create a team when you are ready to share classes with a studio or crew."
+              placeholder="team-rows"
+            />
           ) : (
             <ul className="flex flex-col gap-2">
               {teams.map((t) => (
@@ -97,7 +118,11 @@ export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () =
           {selected ? (
             <TeamMembers team={selected} meUserId={userId} onError={setError} />
           ) : (
-            <p className="font-ui text-sm text-text-tertiary">Select a team to manage members.</p>
+            <DialogState
+              title="Choose a team"
+              description="Select a team to see its member rows and sharing roles."
+              placeholder="team-rows"
+            />
           )}
         </section>
       </div>
@@ -234,7 +259,26 @@ function TeamMembers({
       )}
 
       {members === null ? (
-        <PendingList error={loadError} onRetry={() => void refresh()} />
+        <DialogState
+          title={loadError ? 'Members did not load' : 'Loading member rows'}
+          description={
+            loadError
+              ? 'Member access can be retried without leaving this team.'
+              : 'Reading roles before showing remove or leave actions.'
+          }
+          placeholder="team-rows"
+          action={
+            loadError ? (
+              <button
+                type="button"
+                onClick={() => void refresh()}
+                className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+              >
+                Try again
+              </button>
+            ) : undefined
+          }
+        />
       ) : (
         <ul className="flex flex-col gap-2">
           {members.map((m) => {
