@@ -4,11 +4,20 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { Login } from './Login.js';
 import * as api from '../lib/api.js';
 
+const authMocks = vi.hoisted(() => ({
+  requestPasswordReset: vi.fn(),
+  signInEmail: vi.fn(),
+  signInSocial: vi.fn(),
+  signUpEmail: vi.fn(),
+}));
+
 // The component imports the Better Auth client at module load; stub it so the
 // render is side-effect free (these tests only assert label associations).
 vi.mock('../lib/auth-client.js', () => ({
   authClient: {
-    signIn: { social: vi.fn() },
+    requestPasswordReset: authMocks.requestPasswordReset,
+    signIn: { email: authMocks.signInEmail, social: authMocks.signInSocial },
+    signUp: { email: authMocks.signUpEmail },
   },
 }));
 vi.mock('../lib/api.js');
@@ -62,5 +71,45 @@ describe('Login accessible labels', () => {
     render(<Login />);
 
     expect(await screen.findByRole('button', { name: 'Continue with Apple' })).toBeTruthy();
+  });
+
+  it('notifies the app after a successful sign-up', async () => {
+    const onSignedUp = vi.fn();
+    authMocks.signUpEmail.mockResolvedValue({ error: null });
+
+    render(<Login onSignedUp={onSignedUp} />);
+    fireEvent.click(screen.getByText('Need an account? Sign up'));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Instructor' } });
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'instructor@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+    await waitFor(() =>
+      expect(authMocks.signUpEmail).toHaveBeenCalledWith({
+        email: 'instructor@example.com',
+        password: 'password123',
+        name: 'New Instructor',
+      }),
+    );
+    expect(onSignedUp).toHaveBeenCalledOnce();
+  });
+
+  it('does not notify the app when sign-up fails', async () => {
+    const onSignedUp = vi.fn();
+    authMocks.signUpEmail.mockResolvedValue({ error: { message: 'Email already exists' } });
+
+    render(<Login onSignedUp={onSignedUp} />);
+    fireEvent.click(screen.getByText('Need an account? Sign up'));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Instructor' } });
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'instructor@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(await screen.findByText('Email already exists')).toBeTruthy();
+    expect(onSignedUp).not.toHaveBeenCalled();
   });
 });

@@ -60,6 +60,11 @@ import { lazyWithReload } from '../lib/lazyWithReload.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 import { TrackSearch } from './TrackSearch.js';
+import {
+  consumeOnboardingVideoPending,
+  markOnboardingVideoDismissed,
+} from '../lib/onboarding-video.js';
+import { OnboardingVideoDialog } from './OnboardingVideoDialog.js';
 
 // Code-split the heavy, interaction-gated surfaces into their own chunks so the
 // initial builder paint doesn't ship Live mode, the choreography editor, or the
@@ -130,6 +135,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [connectionsOpen, setConnectionsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [songsByMoveOpen, setSongsByMoveOpen] = useState(false);
+  const [onboardingVideoOpen, setOnboardingVideoOpen] = useState(false);
   const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
     null,
   );
@@ -192,6 +198,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   useEffect(() => {
     void refreshClasses();
   }, [refreshClasses]);
+
+  useEffect(() => {
+    if (consumeOnboardingVideoPending()) setOnboardingVideoOpen(true);
+  }, []);
 
   // A provider OAuth round-trip returns the browser to "/?connected=…" or
   // "/?error=…". Open the connections dialog with that result, then strip the
@@ -417,6 +427,14 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             onClose={() => setSongsByMoveOpen(false)}
             onOpenClass={openClassById}
             onStartClass={startClassFromPlacement}
+          />
+        )}
+        {onboardingVideoOpen && (
+          <OnboardingVideoDialog
+            onClose={() => {
+              markOnboardingVideoDismissed();
+              setOnboardingVideoOpen(false);
+            }}
           />
         )}
         {exploreOpen && (

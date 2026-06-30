@@ -3,8 +3,8 @@
  * Content from ritmofit_design_system/mockups/marketing.html.
  * Uses existing index.css recipes: rf-topbar, rf-brand-mark, rf-eyebrow,
  * rf-heat-bloom, rf-heat-text, rf-btn-primary.
- * SVG gradient stops reference token CSS vars from tokens.css.
  */
+import { TutorialVideo } from './TutorialVideo.js';
 
 interface MarketingPageProps {
   /** Called when the user clicks "Sign in" or "Start building". */
@@ -114,21 +114,12 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
             </span>
           </div>
 
-          {/* Energy-shape SVG — the signature class arc */}
-          <div
+          <TutorialVideo
             id="class-shape"
-            className="flex w-full max-w-xl flex-col gap-3 scroll-mt-20 rounded-card bg-bg-raised p-6 shadow-card"
-          >
-            <div className="flex flex-col gap-1">
-              <span className="font-ui text-sm font-medium text-text-primary">
-                Saturday rhythm build
-              </span>
-              <span className="font-data text-xs text-text-tertiary">
-                45:00 · 11 tracks · 126 avg BPM
-              </span>
-            </div>
-            <EnergyShapeSvg />
-          </div>
+            variant="landing"
+            autoPlay
+            className="w-full max-w-2xl scroll-mt-20"
+          />
         </section>
 
         {/* Feature grid */}
@@ -209,79 +200,5 @@ function FeatureCard({ eyebrow, heading, body, id }: FeatureCardProps) {
       <h3 className="font-display text-xl font-bold text-text-primary">{heading}</h3>
       <p className="font-ui text-sm text-text-secondary">{body}</p>
     </article>
-  );
-}
-
-/**
- * The class energy-arc SVG from marketing.html.
- * Gradient stops reference token CSS vars — copper→ember line, ember→transparent fill.
- * Peak dot glows with plasma shadow (design-system: plasma is peak affect only).
- */
-function EnergyShapeSvg() {
-  return (
-    <svg
-      viewBox="0 0 800 390"
-      preserveAspectRatio="none"
-      role="img"
-      aria-label="Class shape: gradual build, three strong attacks, one All-Out peak, and a controlled cooldown."
-      className="w-full"
-      style={{ height: 180 }}
-    >
-      <defs>
-        {/* Line gradient: copper (Build) → ember (Push/Attack) → ember (cooldown) */}
-        <linearGradient id="mkt-line-grad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="var(--rf-color-intensity-easy)" />
-          <stop offset="55%" stopColor="var(--rf-color-intensity-mod)" />
-          <stop offset="84%" stopColor="var(--rf-color-intensity-hard)" />
-          <stop offset="94%" stopColor="var(--rf-color-intensity-all_out)" />
-          <stop offset="100%" stopColor="var(--rf-color-intensity-hard)" />
-        </linearGradient>
-        {/* Fill gradient: vertical ember→transparent */}
-        <linearGradient id="mkt-fill-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--rf-color-intensity-mod)" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="var(--rf-color-intensity-mod)" stopOpacity="0.02" />
-        </linearGradient>
-        {/* Plasma glow filter for the peak dot */}
-        <filter id="mkt-peak-glow" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="5" result="blur" />
-          <feFlood
-            floodColor="var(--rf-color-semantic-peak-glow)"
-            floodOpacity="0.6"
-            result="color"
-          />
-          <feComposite in="color" in2="blur" operator="in" result="glow" />
-          <feMerge>
-            <feMergeNode in="glow" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
-      {/* Area fill */}
-      <path
-        d="M0 330 L70 318 L145 276 L210 294 L282 230 L350 252 L422 172 L490 198 L566 114 L632 42 L688 148 L742 238 L800 310 L800 390 L0 390 Z"
-        fill="url(#mkt-fill-grad)"
-      />
-
-      {/* Energy line */}
-      <path
-        d="M0 330 L70 318 L145 276 L210 294 L282 230 L350 252 L422 172 L490 198 L566 114 L632 42 L688 148 L742 238 L800 310"
-        fill="none"
-        stroke="url(#mkt-line-grad)"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-      />
-
-      {/* All-Out peak dot */}
-      <circle
-        cx="632"
-        cy="42"
-        r="7"
-        fill="var(--rf-color-intensity-all_out)"
-        filter="url(#mkt-peak-glow)"
-      />
-    </svg>
   );
 }
