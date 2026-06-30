@@ -127,6 +127,14 @@ list; after the launch gate is green, it becomes the next implementation queue. 
   to the next section, derived from the run-payload `sections[]`. It is view-independent (Cue-by-Cue and
   Full List) and hidden when a class has no sections. iOS live mode should surface the same
   current-section indicator. No contract change (reuses `GET /run-payload` `sections`).
+- **Live Mode performance re-stage** (web — Studio redesign slice 1, see
+  `agent-reports/studio-redesign-prescription.md` #1): the Cue-by-Cue prompter moved from a small
+  centered card to a split performance layout — a large focal current cue on the left, with next cue,
+  BPM/effort, track/class timers, and provider handoff as a right-side instrument rail (stacked on
+  narrow widths, current cue first and large). The single sanctioned beat-pulse now rides the BPM
+  numeral; the All-Out drop and reduced-motion contract are unchanged. iOS live mode should mirror this
+  glanceable hierarchy (huge current cue + BPM/effort/timers as the instrument). Presentation only — no
+  contract change (same `GET /run-payload`).
 - Run-payload DTO catch-up for currently allowlisted additive fields: `RunClass.timelineMode`;
   `RunTrack.displayRpm` / `holdCount` / `clipStartMs` / `beatAnchorMs`; `Move.beat` / `Move.bar`
 
