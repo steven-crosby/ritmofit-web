@@ -135,6 +135,14 @@ list; after the launch gate is green, it becomes the next implementation queue. 
   numeral; the All-Out drop and reduced-motion contract are unchanged. iOS live mode should mirror this
   glanceable hierarchy (huge current cue + BPM/effort/timers as the instrument). Presentation only — no
   contract change (same `GET /run-payload`).
+- **Builder energy-arc workbench** (web — Studio redesign slice 2, see
+  `agent-reports/studio-redesign-prescription.md` #2): the energy arc, timeline, and segment band were
+  three stacked strips; they now form one "Class shape" workbench — the arc scaled up (~64→~128px) as
+  the hero, with the timeline blocks/markers riding directly beneath it on one shared time axis (each
+  block under its crest) and reduced card fragmentation. The arc stays static (no animation), height +
+  label + grayscale encoding intact, plasma only at the all-out crest. iOS builder should mirror the
+  class-shape workbench (arc as the central instrument) when its builder surface lands. Presentation
+  only — derived from the existing run-payload, no contract change.
 - Run-payload DTO catch-up for currently allowlisted additive fields: `RunClass.timelineMode`;
   `RunTrack.displayRpm` / `holdCount` / `clipStartMs` / `beatAnchorMs`; `Move.beat` / `Move.bar`
 
