@@ -97,8 +97,10 @@ describe('provider OAuth callback configuration (integration)', () => {
     expect(locationOf(res)).toBe(`${ORIGIN}/?error=state_expired`);
   });
 
-  it('returns unsupported_provider for a valid state on a catalog-only provider', async () => {
-    // Apple Music stays catalog-only (its user-token flow is MusicKit-JS, not OAuth).
+  it('returns unsupported_provider for a provider with no redirect-OAuth callback', async () => {
+    // Apple Music is connect-capable but has NO redirect-OAuth callback (it connects
+    // via MusicKit JS + POST /providers/apple_music/connection), so hitting the
+    // generic callback for it has no OAuth registry entry and is rejected.
     const res = await callback(
       'apple_music',
       '?code=abc&state=state-token',

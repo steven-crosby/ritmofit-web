@@ -26,18 +26,17 @@ afterEach(() => {
 });
 
 describe('ConnectionsDialog capability gating', () => {
-  it('only offers Connect for providers with per-user accounts', async () => {
+  it('offers Connect for every provider (all three are connect-capable)', async () => {
     vi.mocked(api.listConnections).mockResolvedValue([]);
 
     render(<ConnectionsDialog onClose={() => {}} />);
 
-    // SoundCloud + Spotify support per-user accounts, so each offers Connect.
-    expect(await screen.findAllByRole('button', { name: 'Connect' })).toHaveLength(2);
+    // SoundCloud, Spotify, and Apple Music all support a per-user account link.
+    expect(await screen.findAllByRole('button', { name: 'Connect' })).toHaveLength(3);
     // Each disconnected provider shows an explicit glyph+label status, not color alone.
-    expect(screen.getAllByText('Not connected').length).toBe(2);
-    // Apple Music stays catalog-only — a muted state, not a dead-end Connect.
-    expect(screen.getAllByText('Catalog search only').length).toBe(1);
-    expect(screen.getAllByText('Sign-in not yet supported').length).toBe(1);
+    expect(screen.getAllByText('Not connected').length).toBe(3);
+    // No provider is a catalog-only dead end anymore.
+    expect(screen.queryByText('Catalog search only')).toBeNull();
   });
 
   it('confirms before disconnecting a connected provider and refreshes after', async () => {
@@ -55,9 +54,8 @@ describe('ConnectionsDialog capability gating', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     await waitFor(() => expect(api.disconnectProvider).toHaveBeenCalledWith('soundcloud'));
-    // After the refresh returns no connections, SoundCloud rejoins Spotify in
-    // offering Connect (both are connect-capable).
-    expect(await screen.findAllByRole('button', { name: 'Connect' })).toHaveLength(2);
+    // After the refresh returns no connections, all three providers offer Connect.
+    expect(await screen.findAllByRole('button', { name: 'Connect' })).toHaveLength(3);
   });
 
   it('shows a success notice when an OAuth round-trip connected a provider', async () => {

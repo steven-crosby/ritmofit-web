@@ -75,14 +75,11 @@ describe('provider capability matrix', () => {
     for (const p of providerValues) expect(providerCapabilities[p].catalogSearch).toBe(true);
   });
 
-  it('integrates per-user connect + likes for SoundCloud and Spotify', () => {
-    for (const p of ['soundcloud', 'spotify'] as const) {
+  it('integrates per-user connect + likes for every provider', () => {
+    for (const p of providerValues) {
       expect(providerCapabilities[p].userConnect).toBe(true);
       expect(providerCapabilities[p].userLikes).toBe(true);
     }
-    // Apple Music stays catalog-only until its MusicKit-JS connect slice lands.
-    expect(providerCapabilities.apple_music.userConnect).toBe(false);
-    expect(providerCapabilities.apple_music.userLikes).toBe(false);
   });
 
   it('supportsUserAccount tracks the userConnect capability', () => {
@@ -95,10 +92,12 @@ describe('provider capability matrix', () => {
 describe('providerConnectionState', () => {
   const NOW = 1_000_000;
 
-  it('reports catalog-only for providers without per-user accounts', () => {
-    // Even given a (hypothetical) connection, a catalog-only provider stays catalog-only.
-    expect(providerConnectionState('apple_music', { expiresAt: null }, NOW)).toBe('catalog-only');
-    expect(providerConnectionState('apple_music', undefined, NOW)).toBe('catalog-only');
+  it('treats Apple Music as connect-capable (MusicKit), not catalog-only', () => {
+    // All three real providers are connect-capable now (catalog-only is a defensive
+    // default the matrix no longer triggers); Apple Music reports real link states.
+    expect(providerConnectionState('apple_music', undefined, NOW)).toBe('disconnected');
+    expect(providerConnectionState('apple_music', { expiresAt: null }, NOW)).toBe('connected');
+    expect(providerConnectionState('apple_music', { expiresAt: NOW - 1 }, NOW)).toBe('expired');
   });
 
   it('reports disconnected when a connect-capable provider has no connection', () => {

@@ -28,13 +28,13 @@ export type Provider = z.infer<typeof providerSchema>;
  * - `userLikes`: read the connected user's likes (spends their token).
  * - `playlistImport`: import a public playlist URL (`POST /classes/:id/import-playlist`).
  *
- * SoundCloud and Spotify have the per-user OAuth + likes path wired (Authorization
- * Code + PKCE; "search my SoundCloud / Spotify"). Apple Music is catalog-only —
- * its user-token flow is MusicKit-JS-based, not redirect OAuth, and lands in a
- * separate slice. Playlist import is Spotify-only — SoundCloud needs permalink
- * `/resolve` (returns 501) and Apple Music has no playlist-import path. The
- * `MOCK_PROVIDERS` dev seam fakes tokens but does not change real integration, so
- * this matrix stays static and provider-honest.
+ * All three providers have a per-user connect + likes path. SoundCloud and Spotify
+ * use redirect OAuth (Authorization Code + PKCE); Apple Music uses MusicKit JS in
+ * the browser (no redirect OAuth) to mint a Music-User-Token the SPA posts to the
+ * server. Playlist import is Spotify-only — SoundCloud needs permalink `/resolve`
+ * (returns 501) and Apple Music has no playlist-import path. The `MOCK_PROVIDERS`
+ * dev seam fakes tokens but does not change real integration, so this matrix stays
+ * static and provider-honest.
  */
 export interface ProviderCapabilities {
   catalogSearch: boolean;
@@ -48,8 +48,8 @@ export const providerCapabilities: Record<Provider, ProviderCapabilities> = {
   spotify: { catalogSearch: true, userConnect: true, userLikes: true, playlistImport: true },
   apple_music: {
     catalogSearch: true,
-    userConnect: false,
-    userLikes: false,
+    userConnect: true,
+    userLikes: true,
     playlistImport: false,
   },
 };

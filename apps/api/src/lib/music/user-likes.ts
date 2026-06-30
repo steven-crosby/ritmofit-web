@@ -22,6 +22,8 @@ import {
   fetchSpotifySavedTracks,
   refreshSpotifyToken,
   SpotifyUnauthorizedError,
+  fetchAppleMusicLibrarySongs,
+  AppleMusicUnauthorizedError,
   type OAuthTokens,
 } from '@ritmofit/music';
 import { providerCapabilities, type Provider, type TrackSearchResult } from '@ritmofit/shared';
@@ -30,7 +32,12 @@ import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
 import { boundFetch } from '../fetch.js';
 import { encryptSecret, decryptSecret } from '../crypto.js';
-import { requireEncryptionKey, soundcloudCreds, spotifyCreds } from './provider-config.js';
+import {
+  requireEncryptionKey,
+  soundcloudCreds,
+  spotifyCreds,
+  appleMusicCreds,
+} from './provider-config.js';
 import { searchMockCatalog } from '../mock-catalog.js';
 import { musicConnections } from '../../db/schema.js';
 
@@ -84,8 +91,17 @@ export async function fetchUserLikes(
   if (env.MOCK_PROVIDERS === 'true') {
     return searchMockCatalog('', provider);
   }
+  if (!providerCapabilities[provider].userLikes) {
+    throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
+  }
+  // Apple Music's user flow has no OAuth refresh (the Music-User-Token is re-minted
+  // by MusicKit in the browser, not refreshed server-side), so it takes its own path
+  // rather than the OAuth-shaped adapter below.
+  if (provider === 'apple_music') {
+    return fetchAppleMusicLikes(db, env, userId);
+  }
   const adapter = LIKES_ADAPTERS[provider];
-  if (!providerCapabilities[provider].userLikes || !adapter) {
+  if (!adapter) {
     throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
   }
 
@@ -167,4 +183,39 @@ async function refreshAndPersist(
     .where(eq(musicConnections.id, conn.id));
 
   return tokens.accessToken;
+}
+
+/**
+ * Apple Music likes: read the connected user's **library** songs with the app's
+ * developer token (Bearer) + the stored Music-User-Token. No refresh — a rejected
+ * token means the user must reconnect via MusicKit (409 REAUTH_REQUIRED).
+ */
+async function fetchAppleMusicLikes(
+  db: Db,
+  env: Env,
+  userId: string,
+): Promise<TrackSearchResult[]> {
+  const key = requireEncryptionKey(env);
+  const { developerToken } = await appleMusicCreds(env);
+  const conn = await db
+    .select()
+    .from(musicConnections)
+    .where(and(eq(musicConnections.userId, userId), eq(musicConnections.provider, 'apple_music')))
+    .get();
+  if (!conn) {
+    throw new HttpError(409, 'NOT_CONNECTED', 'Connect your Apple Music account first.');
+  }
+  const musicUserToken = await decryptSecret(conn.accessTokenEncrypted, key);
+  try {
+    return await fetchAppleMusicLibrarySongs({
+      developerToken,
+      musicUserToken,
+      fetchImpl: boundFetch,
+    });
+  } catch (err) {
+    if (err instanceof AppleMusicUnauthorizedError) {
+      throw new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your Apple Music account.');
+    }
+    throw err;
+  }
 }

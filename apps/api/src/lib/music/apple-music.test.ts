@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { createAppleMusicProvider, type FetchLike } from '@ritmofit/music';
+import {
+  createAppleMusicProvider,
+  fetchAppleMusicLibrarySongs,
+  AppleMusicUnauthorizedError,
+  type FetchLike,
+} from '@ritmofit/music';
 
 function fakeFetch(handlers: Record<string, unknown>) {
   const calls: { url: string; init?: Parameters<FetchLike>[1] }[] = [];
@@ -87,5 +92,122 @@ describe('AppleMusicProvider.lookup', () => {
   it('returns null when the lookup has no data', async () => {
     const { provider } = makeProvider({ [`${API_BASE}/catalog/us/songs/`]: { data: [] } });
     expect(await provider.lookup('nope')).toBeNull();
+  });
+});
+
+describe('fetchAppleMusicLibrarySongs', () => {
+  const ORIGIN = 'https://am.test';
+  const LIBRARY_URL = `${ORIGIN}/v1/me/library/songs`;
+
+  // A library song: catalog id lives under playParams; the library id differs.
+  const AM_LIBRARY_SONG = {
+    id: 'i.libraryId123',
+    type: 'library-songs',
+    attributes: {
+      name: 'Bohemian Rhapsody',
+      artistName: 'Queen',
+      durationInMillis: 354947,
+      url: 'https://music.apple.com/us/album/bohemian-rhapsody/1440857781',
+      playParams: { id: 'i.libraryId123', catalogId: '1440857781' },
+      artwork: { url: 'https://is1.mzstatic.com/image/{w}x{h}.jpg', width: 3000, height: 3000 },
+    },
+  };
+
+  it('sends developer Bearer + Music-User-Token and prefers the catalog id', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${LIBRARY_URL}?limit=100`]: { data: [AM_LIBRARY_SONG] },
+    });
+    const results = await fetchAppleMusicLibrarySongs({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results).toEqual([
+      {
+        provider: 'apple_music',
+        providerTrackId: '1440857781', // catalogId, not the library id
+        providerUri: 'https://music.apple.com/us/album/bohemian-rhapsody/1440857781',
+        title: 'Bohemian Rhapsody',
+        artist: 'Queen',
+        albumArtUrl: 'https://is1.mzstatic.com/image/512x512.jpg',
+        durationMs: 354947,
+      },
+    ]);
+    expect(calls[0]?.init?.headers?.Authorization).toBe('Bearer devtok');
+    expect(calls[0]?.init?.headers?.['Music-User-Token']).toBe('mut-1');
+  });
+
+  it('follows Apple’s relative `next` cursor across pages', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${LIBRARY_URL}?limit=100`]: {
+        data: [AM_LIBRARY_SONG],
+        next: '/v1/me/library/songs?offset=100',
+      },
+      [`${LIBRARY_URL}?offset=100`]: { data: [AM_LIBRARY_SONG] },
+    });
+    const results = await fetchAppleMusicLibrarySongs({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results).toHaveLength(2);
+    expect(calls.map((c) => c.url)).toEqual([
+      `${LIBRARY_URL}?limit=100`,
+      `${LIBRARY_URL}?offset=100`,
+    ]);
+  });
+
+  it('falls back to the library id when there is no catalog equivalent', async () => {
+    const noCatalog = {
+      ...AM_LIBRARY_SONG,
+      attributes: { ...AM_LIBRARY_SONG.attributes, playParams: { id: 'i.libraryId123' } },
+    };
+    const { fetchImpl } = fakeFetch({ [`${LIBRARY_URL}?limit=100`]: { data: [noCatalog] } });
+    const results = await fetchAppleMusicLibrarySongs({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results[0]?.providerTrackId).toBe('i.libraryId123');
+  });
+
+  it('stops instead of looping forever on a non-advancing `next` cursor', async () => {
+    // Degenerate upstream response: an empty page that still hands back a `next`
+    // pointing back at itself. The cap gates on collected tracks, not iterations,
+    // so without the empty-page guard `out.length < cap` never trips and the loop
+    // spins forever. Keyed at the base URL so every paged request matches.
+    const { fetchImpl, calls } = fakeFetch({
+      [LIBRARY_URL]: { data: [], next: '/v1/me/library/songs?offset=0' },
+    });
+    const results = await fetchAppleMusicLibrarySongs({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results).toEqual([]);
+    expect(calls).toHaveLength(1); // broke after the first empty page
+  });
+
+  it('throws AppleMusicUnauthorizedError on 401/403 (reconnect signal)', async () => {
+    for (const status of [401, 403]) {
+      const fetchImpl: FetchLike = async () => ({
+        ok: false,
+        status,
+        json: async () => ({}),
+        text: async () => 'unauthorized',
+      });
+      await expect(
+        fetchAppleMusicLibrarySongs({
+          developerToken: 'devtok',
+          musicUserToken: 'stale',
+          fetchImpl,
+          apiBase: API_BASE,
+        }),
+      ).rejects.toBeInstanceOf(AppleMusicUnauthorizedError);
+    }
   });
 });

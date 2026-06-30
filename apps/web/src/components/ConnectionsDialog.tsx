@@ -1,11 +1,10 @@
 /**
  * Provider connections (design system `09`: "clear connected/disconnected states,
- * never a dead end"). Per-user OAuth links are currently SoundCloud-only; Spotify
- * and Apple Music are catalog-search surfaces until provider account support is
- * added. Connect starts the flow (the dev mock seam links immediately; the live
- * flow opens the provider's authorize URL); disconnect forgets the tokens now and
- * triggers the 7-day metadata purge server-side — so it's a deliberate, confirmed
- * action.
+ * never a dead end"). All three providers support a per-user account link: Connect
+ * starts the flow — SoundCloud and Spotify hand off to the provider's authorize URL
+ * (redirect OAuth); Apple Music authorizes in place via MusicKit JS — while the dev
+ * mock seam links immediately. Disconnect forgets the tokens now and triggers the
+ * 7-day metadata purge server-side — so it's a deliberate, confirmed action.
  *
  * State is encoded with glyph + label + text (never color alone, 05/11): each
  * provider shows an explicit status — ✓ Connected, ⧖ Session expired, ○ Not
@@ -19,7 +18,14 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { type MusicConnectionView, type Provider } from '@ritmofit/shared';
-import { listConnections, connectProvider, disconnectProvider } from '../lib/api.js';
+import {
+  listConnections,
+  connectProvider,
+  disconnectProvider,
+  getAppleMusicConfig,
+  connectAppleMusic,
+} from '../lib/api.js';
+import { authorizeAppleMusic } from '../lib/musickit.js';
 import {
   PROVIDER_ORDER,
   providerLabel,
@@ -91,6 +97,17 @@ export function ConnectionsDialog({
     setBusyProvider(provider);
     setError(null);
     try {
+      // Apple Music has no redirect OAuth: MusicKit JS authorizes in the browser
+      // and hands back a Music-User-Token we post to the server. It connects in
+      // place (no full-page redirect), so refresh + show the same success notice.
+      if (provider === 'apple_music') {
+        const config = await getAppleMusicConfig();
+        const token = await authorizeAppleMusic(config);
+        await connectAppleMusic(token);
+        await refresh();
+        setNotice(`Connected to ${providerLabel(provider)}.`);
+        return;
+      }
       const res = await connectProvider(provider);
       if (res.authorizeUrl) {
         // Live flow: hand off to the provider's consent screen.

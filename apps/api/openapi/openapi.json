@@ -1490,6 +1490,58 @@
         }
       }
     },
+    "/providers/apple_music/config": {
+      "get": {
+        "summary": "Apple Music developer token + storefront for MusicKit.configure()",
+        "responses": {
+          "200": {
+            "description": "Developer token + storefront",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppleMusicClientConfig"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "503": {
+            "description": "Apple Music not configured"
+          }
+        }
+      }
+    },
+    "/providers/apple_music/connection": {
+      "post": {
+        "summary": "Store the Music-User-Token MusicKit returned (encrypted; no refresh)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectAppleMusic"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Stored"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Invalid request body"
+          },
+          "503": {
+            "description": "Apple Music not configured"
+          }
+        }
+      }
+    },
     "/mock/track-search": {
       "get": {
         "summary": "Dev-only mock provider search",
@@ -4622,6 +4674,46 @@
         "required": [
           "authorizeUrl",
           "connected"
+        ],
+        "additionalProperties": false
+      },
+      "AppleMusicClientConfig": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "developerToken": {
+            "type": "string",
+            "minLength": 1
+          },
+          "storefront": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "developerToken",
+          "storefront"
+        ],
+        "additionalProperties": false
+      },
+      "ConnectAppleMusic": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "musicUserToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192
+          }
+        },
+        "required": [
+          "musicUserToken"
         ],
         "additionalProperties": false
       },
