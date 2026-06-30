@@ -7,6 +7,16 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // The SPA navigation fallback serves index.html for client-side routes,
+        // but it must NOT swallow top-level navigations to the same-origin API —
+        // OAuth redirect callbacks (`/api/v1/providers/:provider/callback`) and
+        // Better Auth social callbacks (`/api/auth/callback/*`) are real browser
+        // navigations the Worker must handle. Without this denylist the service
+        // worker returns the cached app shell for them, so the provider's `?code`
+        // never reaches the server and the connect flow dead-ends on the SPA 404.
+        navigateFallbackDenylist: [/^\/api\//],
+      },
       manifest: {
         name: 'RitmoFit',
         short_name: 'RitmoFit',
