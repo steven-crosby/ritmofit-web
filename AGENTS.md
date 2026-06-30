@@ -174,8 +174,21 @@ configuration, secret, and deployment impacts. Do not include unrelated cleanup.
 Never commit `.env`, `.dev.vars`, credentials, tokens, or private keys. Local secrets belong in ignored
 files; production secrets are managed with `wrangler secret put`.
 
-Deployments are manual and production-facing, so obtain confirmation before deploying. If migrations
-are required, apply them before code that depends on them:
+Deployments are manual and production-facing, so obtain confirmation before deploying.
+
+**Deploy cadence — merging is not deploying.** Do **not** deploy after every PR merge. Keep `main` as
+the always-green, deployable integration line and merge slices as they pass the gate, but ship to
+production in deliberate batches:
+
+- **Default — batch at a checkpoint.** Group related, low-risk slices (especially presentation-only
+  ones) into one deploy at a natural boundary: a finished feature, the end of a work session, or a
+  milestone. One Worker version per coherent change set keeps rollback clean.
+- **Deploy immediately, out of band,** only for a production bug, regression, security fix, or
+  something surfaced during live verification.
+- **Deploy on its own,** never batched with unrelated work, for any schema/migration, auth, provider,
+  or infrastructure change — apply migrations before dependent code and prefer off-peak timing.
+
+If migrations are required, apply them before code that depends on them:
 
 ```bash
 pnpm --filter @ritmofit/api exec wrangler d1 migrations apply ritmofit --remote
