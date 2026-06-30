@@ -33,6 +33,42 @@ const fail = (name, detail = '') => results.push({ ok: false, name, detail });
 const shot = (page, name) =>
   page.screenshot({ path: join(shotsDir, `fn-${name}.png`) }).catch(() => {});
 
+/**
+ * Signed-out "/" is the public MarketingPage now, not Login. Click its sign-in CTA
+ * to reach the auth form and wait for the sign-up toggle so the form is interactive.
+ */
+async function openLogin(page) {
+  await page.locator('#marketing-signin-btn').click();
+  await page.getByText('Need an account? Sign up').waitFor({ timeout: 10000 });
+}
+
+/**
+ * A fresh signup opens the onboarding tutorial dialog over the dashboard. Close it
+ * so the dashboard is interactive. No-op if it isn't shown (already dismissed).
+ */
+async function dismissOnboarding(page) {
+  const dlg = page.getByRole('dialog', { name: 'New instructor tutorial video' });
+  try {
+    await dlg.waitFor({ state: 'visible', timeout: 8000 });
+  } catch {
+    return;
+  }
+  await page.getByRole('button', { name: 'Close tutorial video' }).click();
+  await dlg.waitFor({ state: 'detached', timeout: 5000 });
+}
+
+/** Sign-out now lives inside the Account dialog, not the top-level header. */
+async function signOut(page) {
+  await page.getByRole('button', { name: 'Account', exact: true }).click();
+  const dlg = page.getByRole('dialog', { name: 'Account settings' });
+  await dlg.waitFor({ timeout: 10000 });
+  // The click unmounts the dialog + dashboard as the session clears, which can race
+  // the click's post-action checks; assert the outcome instead. Sign-out drops
+  // straight onto the Login form (the app keeps showLogin set), not marketing.
+  await dlg.getByRole('button', { name: 'Sign out', exact: true }).click({ noWaitAfter: true });
+  await page.getByText('Need an account? Sign up').waitFor({ timeout: 15000 });
+}
+
 /** Run one named section, recording pass/fail and never aborting the suite. */
 async function section(name, fn) {
   try {
@@ -54,24 +90,27 @@ try {
   // ── Auth: sign up ───────────────────────────────────────────────────────
   await section('auth:signup', async () => {
     await page.goto(WEB, { waitUntil: 'networkidle' });
+    await openLogin(page);
     await page.getByText('Need an account? Sign up').click();
     await page.getByLabel('Name').fill('Smoke Tester');
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password').fill(password);
     await page.getByRole('button', { name: 'Create account' }).click();
-    await page.getByRole('button', { name: 'Sign out', exact: true }).waitFor({ timeout: 10000 });
+    await dismissOnboarding(page);
+    // The signed-in dashboard surfaces an Account button (sign-out lives inside it).
+    await page.getByRole('button', { name: 'Account', exact: true }).waitFor({ timeout: 10000 });
   });
 
   // ── Auth: sign out → sign in ────────────────────────────────────────────
   await section('auth:signout', async () => {
-    await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-    await page.getByText('Need an account? Sign up').waitFor({ timeout: 10000 });
+    // Sign-out drops straight onto the Login form (showLogin stays set).
+    await signOut(page);
   });
   await section('auth:signin', async () => {
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password').fill(password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await page.getByRole('button', { name: 'Sign out', exact: true }).waitFor({ timeout: 10000 });
+    await page.getByRole('button', { name: 'Account', exact: true }).waitFor({ timeout: 10000 });
   });
 
   // ── Class lifecycle: create + open + add a track ────────────────────────
@@ -79,14 +118,18 @@ try {
     const t = page.getByLabel('New class title');
     await t.fill('Functional Smoke A');
     await t.press('Enter');
-    await page.getByRole('button', { name: /Functional Smoke A/ }).click();
+    // .first() targets the row toggle; the row's View/Copy actions share the title.
+    await page
+      .getByRole('button', { name: /Functional Smoke A/ })
+      .first()
+      .click();
     await page.getByRole('heading', { name: 'Functional Smoke A' }).waitFor({ timeout: 10000 });
   });
   await section('class:add-track', async () => {
     await page.getByText('Add manually').click();
     await page.getByLabel('Track title').fill('Smoke Anthem');
     await page.getByLabel('Track artist').fill('The Testers');
-    await page.getByLabel('Track duration in milliseconds').fill('180000');
+    await page.getByLabel('Track duration in minutes and seconds').fill('3:00');
     await page.getByRole('button', { name: 'Add track' }).click();
     await page.getByText('Smoke Anthem').waitFor({ timeout: 10000 });
   });
@@ -94,7 +137,10 @@ try {
   // ── Reopen (reload + re-select): the track persisted ────────────────────
   await section('class:reopen', async () => {
     await page.reload({ waitUntil: 'networkidle' });
-    await page.getByRole('button', { name: /Functional Smoke A/ }).click();
+    await page
+      .getByRole('button', { name: /Functional Smoke A/ })
+      .first()
+      .click();
     await page.getByText('Smoke Anthem').waitFor({ timeout: 10000 });
   });
 
@@ -148,7 +194,9 @@ try {
     // SoundCloud is the connectable provider; the mock seam links immediately.
     // `exact` avoids matching the "Close connections dialog" button (substring).
     await dlg.getByRole('button', { name: 'Connect', exact: true }).first().click();
-    await dlg.getByText('✓ Connected').first().waitFor({ timeout: 10000 });
+    // Connected status renders the ✓ glyph and label as separate nodes; the row's
+    // Disconnect button is the unambiguous "now connected" signal.
+    await dlg.getByRole('button', { name: 'Disconnect', exact: true }).first().waitFor({ timeout: 10000 });
     await dlg.getByRole('button', { name: 'Close connections dialog' }).click();
     await dlg.waitFor({ state: 'detached', timeout: 5000 });
   });
@@ -188,7 +236,10 @@ try {
     const t = page.getByLabel('New class title');
     await t.fill('Functional Smoke B');
     await t.press('Enter');
-    await page.getByRole('button', { name: /Functional Smoke B/ }).waitFor({ timeout: 10000 });
+    await page
+      .getByRole('button', { name: /Functional Smoke B/ })
+      .first()
+      .waitFor({ timeout: 10000 });
     for (let i = 0; i < 4; i++) {
       await page
         .getByRole('button', { name: /Functional Smoke A/ })
@@ -229,6 +280,7 @@ try {
     await page.getByRole('button', { name: 'Delete class', exact: true }).click();
     await page
       .getByRole('button', { name: /Functional Smoke B/ })
+      .first()
       .waitFor({ state: 'detached', timeout: 10000 });
   });
 } catch (err) {

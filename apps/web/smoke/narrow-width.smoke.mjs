@@ -47,6 +47,30 @@ async function checkNoOverflow(page, label) {
   else fail(`no-overflow:${label}`, `${px}px horizontal overflow`);
 }
 
+/**
+ * Signed-out "/" is the public MarketingPage now, not Login. Click its sign-in CTA
+ * to reach the auth form and wait for the sign-up toggle so the form is interactive.
+ */
+async function openLogin(page) {
+  await page.locator('#marketing-signin-btn').click();
+  await page.getByText('Need an account? Sign up').waitFor({ timeout: 10000 });
+}
+
+/**
+ * A fresh signup opens the onboarding tutorial dialog over the dashboard. Close it
+ * so the dashboard is interactive. No-op if it isn't shown (already dismissed).
+ */
+async function dismissOnboarding(page) {
+  const dlg = page.getByRole('dialog', { name: 'New instructor tutorial video' });
+  try {
+    await dlg.waitFor({ state: 'visible', timeout: 8000 });
+  } catch {
+    return;
+  }
+  await page.getByRole('button', { name: 'Close tutorial video' }).click();
+  await dlg.waitFor({ state: 'detached', timeout: 5000 });
+}
+
 /** Exercise one dialog opened by clicking `triggerName`; `dialogName` is its aria-label. */
 async function checkDialog(page, triggerName, dialogName) {
   const trigger = page.getByRole('button', { name: triggerName, exact: true });
@@ -102,8 +126,10 @@ async function checkDialog(page, triggerName, dialogName) {
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: VIEWPORT });
 try {
-  // 1. Sign up a fresh instructor.
+  // 1. Sign up a fresh instructor (via the public marketing front door).
   await page.goto(WEB, { waitUntil: 'networkidle' });
+  await checkNoOverflow(page, 'marketing');
+  await openLogin(page);
   await checkNoOverflow(page, 'login');
   await page.getByText('Need an account? Sign up').click();
   const email = `smoke+${Date.now()}@example.com`;
@@ -111,6 +137,7 @@ try {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill('smoke-pass-1234');
   await page.getByRole('button', { name: 'Create account' }).click();
+  await dismissOnboarding(page);
 
   // 2. Land on the dashboard.
   await page.getByRole('button', { name: 'Explore', exact: true }).waitFor({ timeout: 10000 });
@@ -121,7 +148,9 @@ try {
   const titleInput = page.getByLabel('New class title');
   await titleInput.fill('Narrow Width Smoke');
   await titleInput.press('Enter');
-  const classBtn = page.getByRole('button', { name: /Narrow Width Smoke/ });
+  // The class row exposes a toggle plus View/Copy actions whose aria-labels also
+  // contain the title; .first() targets the row toggle (first in DOM order).
+  const classBtn = page.getByRole('button', { name: /Narrow Width Smoke/ }).first();
   await classBtn.waitFor({ timeout: 10000 });
   await classBtn.click();
 
@@ -129,7 +158,7 @@ try {
   await page.getByText('Add manually').click();
   await page.getByLabel('Track title').fill('Smoke Anthem');
   await page.getByLabel('Track artist').fill('The Testers');
-  await page.getByLabel('Track duration in milliseconds').fill('180000');
+  await page.getByLabel('Track duration in minutes and seconds').fill('3:00');
   await page.getByRole('button', { name: 'Add track' }).click();
   await page.getByText('Smoke Anthem').waitFor({ timeout: 10000 });
   await checkNoOverflow(page, 'dashboard-with-track');
