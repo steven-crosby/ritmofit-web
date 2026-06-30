@@ -10,6 +10,31 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-30 (Studio redesign slices 1–3: Live re-stage + builder title fix + energy-arc
+> workbench) — deployed (Worker `e8b83edf-e2f0-474f-9b66-ab827998a371`).** Shipped `main` (`83204ed`)
+> bringing **#164**, **#165**, and **#166** live together — all presentation-only, no schema / API /
+> provider change:
+>
+> - **#164** re-stages **Live mode** as a split performance instrument (large focal current cue + a
+>   BPM/effort/timer instrument rail; the single sanctioned beat-pulse moved onto the BPM numeral; the
+>   All-Out drop and reduced-motion contract intact). Also repaired the stale browser smokes
+>   (marketing→login entry via `openLogin`, post-signup onboarding dismissal, drifted class-row/duration/
+>   connected-state selectors, sign-out via the Account dialog): functional **16/16**, narrow **19/19**.
+> - **#165** fixes the builder **class-detail title collapsing to 0 width** — the non-shrinking actions
+>   row consumed the flex row, so `truncate` clipped the title to nothing (present in the DOM but
+>   invisible to users and absent from the a11y tree, which broke `getByRole('heading')`). The header now
+>   wraps and the title block keeps a readable `min-w` floor at `sm+`.
+> - **#166** makes the builder **energy arc the central "class shape" workbench** (arc ~64→~128px,
+>   frameless, sharing one time axis with the timeline so each block sits under its crest; reduced card
+>   fragmentation). Static, grayscale-readable, plasma only at the all-out crest.
+>
+> Rollback anchor: prior live `57b20736-3f15-40fd-8877-f35f9ac3eb7d`. Remote D1: **No migrations to
+> apply** (no schema change in any of the three). Pre-deploy gate green (246 web tests / `tsc --noEmit` /
+> eslint / `format:check` / web build; functional smoke 16/16, narrow 19/19). Post-deploy smoke on live
+> `https://ritmofit.studio`: SPA `/` → `200` (serves `<title>RitmoFit</title>`), `/api/v1/health` →
+> `200`, protected `/api/v1/classes` → `401`, SPA fallback `/app` → `200`. iOS parity items recorded in
+> `web-ios-parity.md` for the Live re-stage and the energy-arc workbench (both presentation-only).
+
 > **Session 2026-06-29 (Apple Music connect + PWA navigation fix) — two deploys.**
 >
 > **Deploy 1 — Worker `c3f0add1-0836-4ecb-a6d3-da469401a9bb`.** Shipped `main` (`6135339`) bringing
