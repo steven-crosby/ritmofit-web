@@ -40,7 +40,12 @@ import {
   getClass,
 } from '../lib/api.js';
 import { moveItem } from '../lib/reorder.js';
-import { avgBpm, formatDuration, cardSummaryFromPayload } from '../lib/class-summary.js';
+import {
+  avgBpm,
+  formatDuration,
+  cardSummaryFromPayload,
+  formatTemplateLabel,
+} from '../lib/class-summary.js';
 import { formatLastOpened } from '../lib/relative-time.js';
 import {
   canRunPayload,
@@ -673,11 +678,12 @@ export function LibraryRail({
 }
 
 /**
- * A single Library card — a richer summary than the title alone (design system 11):
- * a track-art collage, the title, a meta line (access · track count · total runtime),
- * the last-opened date, and a "Save a copy" duplicate action. The card body opens the
- * class; the duplicate button is a separate, independently focusable control (no nested
- * buttons). Selection is marked with a ring, never color alone.
+ * A single Library card (design system 11, tightened for music-forward queue):
+ * bounded album-art collage, title, shape-first meta (template · track count · runtime),
+ * quiet last-opened. Primary action is opening the card (main area). Copy/View are
+ * deliberately quieter secondary actions in a compact footer (no dominating vertical
+ * divider). Access level is de-emphasized. Independently focusable controls; ring for
+ * selection (never color alone).
  */
 function ClassCard({
   cls,
@@ -697,10 +703,11 @@ function ClassCard({
   const { busy, run } = useAsyncAction(onError);
   const lastOpened = formatLastOpened(cls.lastOpenedAt, Date.now());
   const trackLabel = `${cls.trackCount} ${cls.trackCount === 1 ? 'track' : 'tracks'}`;
+  const templateLabel = formatTemplateLabel(cls.template);
   return (
     <li>
       <div
-        className={`relative flex items-stretch overflow-hidden rounded-card bg-bg-raised shadow-card ${
+        className={`relative flex flex-col overflow-hidden rounded-card bg-bg-raised shadow-card ${
           selected ? 'ring-2 ring-interactive' : ''
         }`}
       >
@@ -714,8 +721,12 @@ function ClassCard({
           <span className="min-w-0 flex-1">
             <span className="block truncate text-text-primary">{cls.title}</span>
             <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-data text-xs text-text-tertiary">
-              <span className="uppercase">{cls.accessLevel}</span>
-              <span aria-hidden>·</span>
+              {templateLabel && (
+                <>
+                  <span className="text-text-secondary">{templateLabel}</span>
+                  <span aria-hidden>·</span>
+                </>
+              )}
               <span>{trackLabel}</span>
               {cls.totalDurationMs > 0 && (
                 <>
@@ -723,31 +734,37 @@ function ClassCard({
                   <span>{formatDuration(cls.totalDurationMs)}</span>
                 </>
               )}
+              <span className="ml-1 text-[10px] uppercase tracking-[0.5px] text-text-tertiary/70">
+                {cls.accessLevel}
+              </span>
             </span>
             {lastOpened && (
               <span className="mt-0.5 block font-ui text-xs text-text-tertiary">{lastOpened}</span>
             )}
           </span>
         </button>
-        {/* Per-card actions, stacked so they stay reachable at the 266px rail width.
-            Each is independently focusable and labeled (no nested buttons). */}
-        <div className="flex shrink-0 flex-col border-l border-interactive/20">
+        {/* Quiet horizontal footer for secondary actions. Each independently focusable
+            and labeled (no nested buttons). Much lower visual weight than before. */}
+        <div className="flex items-center justify-end gap-x-2 border-t border-interactive/10 px-3 py-0.5 text-[10px] font-ui text-text-tertiary">
           <button
             type="button"
             onClick={() => onPreview(cls)}
             aria-label={`Preview ${cls.title}`}
             title="Read-only preview"
-            className="flex-1 px-3 py-1.5 font-ui text-xs text-text-secondary hover:text-text-primary"
+            className="px-1 hover:text-text-primary"
           >
             View
           </button>
+          <span aria-hidden className="text-text-tertiary/40">
+            ·
+          </span>
           <button
             type="button"
             onClick={() => void run(() => onDuplicate(cls))}
             disabled={busy}
             aria-label={`Duplicate ${cls.title}`}
             title="Save a copy"
-            className="flex-1 border-t border-interactive/20 px-3 py-1.5 font-ui text-xs text-text-secondary hover:text-text-primary disabled:opacity-40"
+            className="px-1 hover:text-text-primary disabled:opacity-40"
           >
             {busy ? '…' : 'Copy'}
           </button>

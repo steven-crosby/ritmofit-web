@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { ClassWithAccess, RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
 import { getRunPayload, copyClass } from '../lib/api.js';
 import { Dialog } from './Dialog.js';
-import { formatDuration, avgBpm } from '../lib/class-summary.js';
+import { formatDuration, avgBpm, formatTemplateLabel } from '../lib/class-summary.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import { SEGMENT_META } from './SegmentBand.js';
 import { INTENSITY_LABEL } from './IntensityReadout.js';
@@ -66,6 +66,7 @@ export function ClassSummaryView({
   };
 
   const averageBpm = payload ? avgBpm(payload) : null;
+  const templateLabel = payload ? formatTemplateLabel(payload.class.template) : null;
 
   return (
     <Dialog
@@ -80,6 +81,14 @@ export function ClassSummaryView({
           </h2>
           {payload && (
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-data text-xs text-text-secondary">
+              {templateLabel && (
+                <>
+                  <span className="text-text-primary">{templateLabel}</span>
+                  <span aria-hidden className="text-text-tertiary">
+                    ·
+                  </span>
+                </>
+              )}
               <span>{payload.tracks.length} tracks</span>
               <span aria-hidden className="text-text-tertiary">
                 ·

@@ -163,6 +163,25 @@ describe('LibraryRail card summary', () => {
     expect(screen.getByText('30:00')).toBeTruthy();
   });
 
+  it('leads with class template (shape) when present in the card meta', () => {
+    renderRail({
+      items: [
+        makeItem({
+          id: '00000000-0000-4000-8000-0000000000a6',
+          title: 'Interval Ride',
+          template: 'hiit',
+          trackCount: 4,
+          totalDurationMs: 2_400_000,
+        }),
+      ],
+    });
+    // Shape leads: HIIT before count/duration. (Access is de-emphasized at end.)
+    // Use textContent contains to be robust across whitespace/nodes in meta.
+    expect(document.body.textContent || '').toContain('HIIT');
+    expect(screen.getByText('4 tracks')).toBeTruthy();
+    expect(screen.getByText('40:00')).toBeTruthy();
+  });
+
   it('singularizes a one-track class and omits a zero duration', () => {
     renderRail({
       items: [

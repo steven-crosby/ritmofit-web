@@ -111,6 +111,11 @@ list; after the launch gate is green, it becomes the next implementation queue. 
     ("save a copy") action, and a create-class template chooser. iOS should surface the same card
     summary + duplicate/create affordances when its Library lands. Contract change is additive (existing
     iOS decoding is unaffected).
+    - Visual tightening (Studio redesign slice 3): rail cards now lead with class-shape summary
+      (template first) + track count/runtime, bounded collage; Copy/View demoted to quiet footer
+      actions (primary affordance remains opening the row). Presentation only. iOS library cards
+      should adopt equivalent music-forward hierarchy + action quieting when the surface lands.
+      See `agent-reports/studio-redesign-prescription.md` #3. No contract change.
   - Class-detail read mode (web Session 4): a read-only class view (songs + placed moves + cues + section
     bands, from the run-payload) reachable from a Library card "View" action, with "Open in builder".
     iOS should offer the same at-a-glance read view. No contract change (reuses `GET /run-payload`).
