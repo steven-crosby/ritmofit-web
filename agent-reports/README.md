@@ -24,6 +24,8 @@ agent-reports/
   README.md                     # this file
   AGENT_REPORT_TEMPLATE.md      # copy this to start a report
   validate-agent-report.sh      # a run is incomplete until this passes
+  studio-aesthetic-critique.md  # special Studio design critique output
+  studio-redesign-prescription.md # special ranked redesign prescription output
   YYYY-MM-DD/
     <prompt-slug>.md            # e.g. 2026-06-26/changed-code-sentinel.md
     <prompt-slug>.md            # e.g. 2026-06-26/technical-security.md
@@ -34,6 +36,10 @@ agent-reports/
   `technical/security` → `technical-security.md` — no `remote-prompts-` prefix).
 - If the same prompt runs twice in one day, suffix the second `-2`, `-3`, ….
 - The repo is implied by the location, so filenames don't repeat `-web`.
+- Exception: the two-stage Studio design critique writes root-level reports
+  (`studio-aesthetic-critique.md` and `studio-redesign-prescription.md`) by design, because
+  those reports are handoff artifacts for owner-led redesign planning rather than recurring
+  maintenance audit records. Re-runs should use a date/version suffix at the root.
 
 ## Which prompts write here
 
@@ -45,6 +51,8 @@ in short:
   `remote-prompts/daily/command-brief`, every `remote-prompts/technical/*` audit,
   all `remote-prompts/planning/*` (`pr-triage`, `doc-drift`, `next-slice-planner`,
   `roadmap-sync`, `release-readiness`).
+- **Root-level special reports:** `claude-design-critique/studio-aesthetic-critique` and
+  `claude-design-critique/studio-redesign-prescription`.
 - **No report:** `daily/start-session`, `daily/close-session` (interactive).
 
 ## Rules (from [`../agent-prompts/remote-prompts/00-house-rules.md`](../agent-prompts/remote-prompts/00-house-rules.md))

@@ -11,9 +11,13 @@ precision/poise, *not* DAW granularity), and **MainStage** (live-performance
 instrument). A motivational/energy lens (e.g. Peloton) is intentionally out of
 scope for this launch-readiness pass — establish these three first.
 
-Companion to `design-system-masterclass.md`, but a different job: the masterclass
-audits compliance and engineering hygiene; this pair audits **taste, craft, and
-experiential quality** and prescribes a ranked redesign.
+This pair audits **taste, craft, and experiential quality** and prescribes a
+ranked redesign. It is intentionally separate from design-token compliance and
+implementation hygiene review.
+
+This is the canonical critique workflow for new owner-led Studio redesign runs. The
+older `agent-prompts/codex design critique/` set remains tracked as a Codex-specific
+draft, but prefer this directory unless intentionally comparing prompt variants.
 
 ## The two stages
 
@@ -35,10 +39,12 @@ is useful steering input.
 The critique is only as good as what the agent can see, so give it a running app:
 
 ```bash
-# Two terminals, mock providers on, local DB migrated + seeded:
-MOCK_PROVIDERS=true pnpm dev:api          # Worker → http://localhost:8787
+# Mock providers on, local DB migrated + seeded:
 pnpm --filter @ritmofit/api db:migrate:local
 pnpm --filter @ritmofit/api db:seed:local
+
+# Then two terminals:
+MOCK_PROVIDERS=true pnpm dev:api          # Worker → http://localhost:8787
 pnpm dev:web                              # Vite → http://localhost:5173
 ```
 
@@ -70,9 +76,9 @@ when its report lands and you've read it, launch Stage 2.
 
 - Both stages are **read-only**: no source/token/doc/CSS/mockup edits, no product
   PRs.
-- Reports land at the `agent-reports/` root (not under a dated subfolder),
-  matching the `design-system-masterclass` precedent. Re-runs get a date/version
-  suffix to preserve history.
+- Reports land at the `agent-reports/` root (not under a dated subfolder) so
+  they are easy to find during review. Re-runs get a date/version suffix to
+  preserve history.
 - On an unattended remote run, push a branch containing only the report(s);
   locally, commit the report cleanly into `agent-reports/`.
 
