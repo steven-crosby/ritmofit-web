@@ -1289,8 +1289,11 @@ export function ClassHeaderCard({
 
   return (
     <div className="flex flex-col gap-3 rounded-card bg-bg-raised p-5 shadow-card">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
-        <div className="flex flex-1 items-start gap-4 min-w-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-2">
+        {/* min-w on sm+ reserves a readable title width so the (non-shrinking) actions
+            wrap below instead of squeezing the truncating title to zero width in the
+            narrow center column. min-w-0 at base keeps the stacked mobile layout safe. */}
+        <div className="flex flex-1 items-start gap-4 min-w-0 sm:min-w-[20rem]">
           {/* Cover image area */}
           <div className="relative shrink-0 flex flex-col items-center">
             {cls.coverImageUrl ? (
