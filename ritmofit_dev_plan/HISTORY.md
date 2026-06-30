@@ -10,6 +10,28 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-29 (Spotify connect + onboarding tutorial + dev-plan docs) — deployed (Worker
+> `26930c2a-684c-40c6-8839-56e0383d769b`).** Shipped current `main` (`76bda7b`) to production, bringing
+> three merged PRs live: **#156** (Spotify per-user OAuth connect + likes — Authorization Code + PKCE,
+> scope `user-library-read`; the "Connect Spotify" capability flips on, redirect URI registered in the
+> Spotify dashboard by the owner), **#159** (in-app onboarding tutorial video — frontend-only: animated
+> `TutorialVideo`, shown once after email sign-up via SSR-safe `localStorage` state, and embedded on the
+> marketing landing page in place of the static energy-arc SVG), and **#158** (dev-plan docs audit +
+> consolidation — archived the completed launch session-plan / live-test-report / cues-vs-notes records,
+> reconciled the runbook + schema, fixed the index and stale framing).
+>
+> Each PR passed the full CI gate; #159 was branched off `main` after #156, so the two were CI-tested
+> together. Remote D1 reported **"No migrations to apply"** before deploy (no schema change in any of the
+> three). Pre-deploy: tree clean and `== origin/main`, prior live Worker `e60e5138-3248-4c0f-a926-997955016199`
+> recorded as the rollback anchor. Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`;
+> `/api/v1/health` → `200`; unauthenticated `/api/v1/classes`, `/explore`, `/teams`, class `shares`,
+> `import-playlist`, provider `search`, and `providers/spotify/connect` all returned `401` from real
+> protected handlers (not `404`); `/api/v1/auth/capabilities` reported Apple enabled; security headers
+> present; live HTML had no `__CF$cv$params` injection marker; served asset `index-CvZxZwnG.js` matched
+> the local build; purge cron (`17 3 * * *`) and D1/R2 bindings intact. No production test data was
+> created. **#157** (Apple Music per-user connect via MusicKit JS) remained a draft, intentionally **not**
+> deployed.
+>
 > **Session 2026-06-29 (Apple Sign In + provider credential deploy) — deployed (Worker
 > `e60e5138-3248-4c0f-a926-997955016199`).** Shipped the credential-backed Apple Sign In slice plus
 > dynamic Apple Music developer-token support on branch `codex/apple-signin-provider-config`. The Worker
