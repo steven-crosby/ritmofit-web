@@ -10,6 +10,48 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-06-29 (Apple Music connect + PWA navigation fix) — two deploys.**
+>
+> **Deploy 1 — Worker `c3f0add1-0836-4ecb-a6d3-da469401a9bb`.** Shipped `main` (`6135339`) bringing
+> **#157** live (Apple Music per-user connect via **MusicKit JS**, Slice B of 2 — the SPA mints a
+> Music-User-Token and `POST`s it to `/providers/apple_music/connection`, stored encrypted; no redirect
+> OAuth, no refresh). The PR landed with three review-driven fixes: the two new `apple_music` routes
+> (`GET /config`, `POST /connection`) + their `AppleMusicClientConfig`/`ConnectAppleMusic` schemas were
+> added to the OpenAPI spec (the generator hardcodes paths, so the no-drift gate could not catch the
+> omission — iOS consumes this contract); an empty-page guard on `fetchAppleMusicLibrarySongs` so a
+> non-advancing `next` cursor can't spin the pagination loop forever (mirrors the Spotify adapter, +
+> regression test); and an integration test proving the real (non-mock) Apple Music likes path returns
+> `409 NOT_CONNECTED` (the `userLikes` capability flip routes to the real path, not a `501`). Rollback
+> anchor recorded: prior live `26930c2a`. Remote D1: **No migrations to apply**. Full pre-deploy gate
+> green (271 unit / 76 integration / web build / openapi no-drift / contract-parity / design-system AA).
+> Post-deploy smoke green (SPA `200`, health `200`, protected routes `401`, served asset hash matched the
+> build); the SPA CSP now serves the MusicKit allowances (`js-cdn.music.apple.com`, `*.music.apple.com`,
+> `*.mzstatic.com`, Apple auth frames). **Live-verified: Apple Music connect → "✓ Connected" in prod.**
+>
+> **Deploy 2 — Worker `57b20736-3f15-40fd-8877-f35f9ac3eb7d`.** Shipped `main` (`bc13cd5`) = **#161**
+> (PWA navigation-fallback denylist). Surfaced during live verification: connecting **SoundCloud**
+> dead-ended on the SPA **404**. Root cause was the service worker, not the API — the generated `sw.js`
+> registered `NavigationRoute(createHandlerBoundToURL("index.html"))` with **no denylist**, so it served
+> the cached app shell for *every* top-level navigation, including the same-origin OAuth redirect
+> callbacks (`/api/v1/providers/:provider/callback`) and Better Auth social callbacks
+> (`/api/auth/callback/*`). The provider's `?code` never reached the Worker (`curl` — which bypasses the
+> SW — correctly returned the `302 → /?error=…`). Fix: `navigateFallbackDenylist: [/^\/api\//]` in the
+> VitePWA workbox config. Rollback anchor: `c3f0add1`. No migrations. Gate green. Post-deploy: the
+> deployed `/sw.js` carries `{denylist:[/^\/api\//]}`, and the SoundCloud callback now reaches the Worker.
+> Apple Music connect was unaffected throughout (MusicKit authorizes **in-page**, so it is not a
+> navigation the SW can intercept).
+>
+> **Open follow-up (SoundCloud/Spotify connect — token exchange):** with the SW fix in place, SoundCloud
+> per-user connect now reaches the Worker but the **token exchange itself fails** (`connect_failed` —
+> `secure.soundcloud.com/oauth/token` returns non-2xx; the callback's `catch` swallows the reason with no
+> log). This was the first real end-to-end test of the SoundCloud exchange (Spotify shares the same
+> redirect-OAuth machinery and is likewise unverified end-to-end). No `SOUNDCLOUD_REDIRECT_URI` /
+> `SPOTIFY_REDIRECT_URI` override is set, so the `redirect_uri` defaults — in both authorize and exchange
+> — to `https://ritmofit.studio/api/v1/providers/<provider>/callback`. Most likely cause: the registered
+> redirect URI in the provider dashboard not matching that string, or a stale client secret. Tracked as a
+> follow-up: add server-side logging to the callback failure path to capture the provider status, then
+> verify the dashboard registration. **Apple Music connect is unaffected and verified working.**
+>
 > **Session 2026-06-29 (Spotify connect + onboarding tutorial + dev-plan docs) — deployed (Worker
 > `26930c2a-684c-40c6-8839-56e0383d769b`).** Shipped current `main` (`76bda7b`) to production, bringing
 > three merged PRs live: **#156** (Spotify per-user OAuth connect + likes — Authorization Code + PKCE,
