@@ -118,6 +118,12 @@ list; after the launch gate is green, it becomes the next implementation queue. 
     choreographed song via the existing copy-class-track route. iOS should add the same class-starting
     action when Songs-by-Move lands. No contract change.
 - **Explore** feed
+  - Dialog loading/empty-state polish (web — Studio redesign slice 4, see
+    `agent-reports/studio-redesign-prescription.md` #4): Explore, Connections, Teams, and
+    Songs-by-Move now use compact state headers, surface-specific copy, and static structured
+    placeholders (class cards, provider rows, team/member rows, move rows) instead of generic
+    "Loading…" text. iOS should mirror this state-language pattern when these supporting dialogs land.
+    Presentation only — no schema/API/provider/deploy impact and no contract change.
 - **Sharing / teams** UI
 - **Account/profile settings** (web Session 5 follow-up): web now has an Account dialog backed by
   `GET /auth/me` + additive `PATCH /auth/me` for `displayName` and `imageUrl`, with sign-out still

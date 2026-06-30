@@ -33,7 +33,7 @@ import {
   type ProviderConnectionState,
 } from '../lib/providers.js';
 import { Dialog } from './Dialog.js';
-import { PendingList } from './PendingList.js';
+import { DialogState } from './DialogState.js';
 
 /**
  * Presentation per state: a glyph and label carry the meaning; the tone maps to
@@ -173,7 +173,26 @@ export function ConnectionsDialog({
       )}
 
       {connections === null ? (
-        <PendingList error={error} onRetry={() => void refresh()} />
+        <DialogState
+          title={error ? 'Connections did not load' : 'Checking provider links'}
+          description={
+            error
+              ? 'Provider rows are waiting for a clean refresh.'
+              : 'Reading your Spotify, Apple Music, and SoundCloud connection states.'
+          }
+          placeholder="provider-rows"
+          action={
+            error ? (
+              <button
+                type="button"
+                onClick={() => void refresh()}
+                className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+              >
+                Try again
+              </button>
+            ) : undefined
+          }
+        />
       ) : (
         <ul className="flex flex-col gap-2">
           {PROVIDER_ORDER.map((provider) => {

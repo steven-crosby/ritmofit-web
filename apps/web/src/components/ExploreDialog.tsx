@@ -10,7 +10,7 @@ import { listExplore, copyClass } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import { Dialog } from './Dialog.js';
-import { PendingList } from './PendingList.js';
+import { DialogState } from './DialogState.js';
 
 export function ExploreDialog({
   onPreview,
@@ -107,11 +107,32 @@ export function ExploreDialog({
       )}
 
       {items === null ? (
-        <PendingList error={error} onRetry={() => void refresh()} />
+        <DialogState
+          title={error ? 'Explore feed paused' : 'Loading class shapes'}
+          description={
+            error
+              ? 'The public feed did not arrive. Try again when your connection is steady.'
+              : 'Pulling public classes into a shape-first view.'
+          }
+          placeholder="class-cards"
+          action={
+            error ? (
+              <button
+                type="button"
+                onClick={() => void refresh()}
+                className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+              >
+                Try again
+              </button>
+            ) : undefined
+          }
+        />
       ) : items.length === 0 ? (
-        <p className="font-ui text-sm text-text-tertiary">
-          No public classes yet. Publish one of yours to share it here.
-        </p>
+        <DialogState
+          title="No public classes yet"
+          description="Publish one of yours to let other instructors preview its track count and class shape."
+          placeholder="class-cards"
+        />
       ) : (
         <div className="flex flex-col gap-6 overflow-y-auto">
           {Object.entries(
