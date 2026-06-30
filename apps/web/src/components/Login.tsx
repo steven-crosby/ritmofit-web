@@ -6,9 +6,11 @@ import { getAuthCapabilities } from '../lib/api.js';
 interface LoginProps {
   /** Optional: return to the marketing landing page. */
   onBack?: () => void;
+  /** Called after a successful email sign-up, before App flips to the dashboard. */
+  onSignedUp?: () => void;
 }
 
-export function Login({ onBack }: LoginProps = {}) {
+export function Login({ onBack, onSignedUp }: LoginProps = {}) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -55,6 +57,7 @@ export function Login({ onBack }: LoginProps = {}) {
           ? await authClient.signUp.email({ email, password, name })
           : await authClient.signIn.email({ email, password });
       if (res.error) setError(res.error.message ?? 'Authentication failed');
+      else if (mode === 'signup') onSignedUp?.();
       // On success, the useSession() hook in App flips to the dashboard.
     } catch {
       setError('Something went wrong. Check your connection and try again.');

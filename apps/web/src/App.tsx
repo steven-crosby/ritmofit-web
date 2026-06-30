@@ -13,6 +13,7 @@ import { Dashboard } from './components/Dashboard.js';
 import { MarketingPage } from './components/MarketingPage.js';
 import { ResetPassword } from './components/ResetPassword.js';
 import { NotFound } from './components/NotFound.js';
+import { markOnboardingVideoPending } from './lib/onboarding-video.js';
 
 // The app navigates in-component (no router); the real URL surface is '/' and
 // '/reset-password'. Everything else is an unknown path → NotFound.
@@ -62,7 +63,7 @@ export function App() {
     return (
       <>
         {skipLink}
-        <Login onBack={() => setShowLogin(false)} />
+        <Login onBack={() => setShowLogin(false)} onSignedUp={markOnboardingVideoPending} />
       </>
     );
   }

@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ClassTrack, ClassWithAccess, ClassListItem, RunPayload } from '@ritmofit/shared';
 import { Dashboard } from './Dashboard.js';
 import * as api from '../lib/api.js';
 import type { ClassListPage } from '../lib/api.js';
+import {
+  hasDismissedOnboardingVideo,
+  markOnboardingVideoPending,
+} from '../lib/onboarding-video.js';
 
 vi.mock('../lib/api.js');
 // Dashboard imports the auth client for "Sign out"; stub it so the module's
@@ -59,9 +63,33 @@ function renderDashboard() {
   return render(<Dashboard userId="me" userName="Tester" />);
 }
 
+function installLocalStorage() {
+  const values = new Map<string, string>();
+  const localStorage = {
+    get length() {
+      return values.size;
+    },
+    clear: () => values.clear(),
+    getItem: (key: string) => values.get(key) ?? null,
+    key: (index: number) => Array.from(values.keys())[index] ?? null,
+    removeItem: (key: string) => values.delete(key),
+    setItem: (key: string, value: string) => values.set(key, String(value)),
+  } satisfies Storage;
+
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: localStorage,
+  });
+}
+
+beforeEach(() => {
+  installLocalStorage();
+});
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  window.localStorage?.clear();
 });
 
 describe('Dashboard class library states', () => {
@@ -105,6 +133,36 @@ describe('Dashboard class library states', () => {
     renderDashboard();
 
     expect(await screen.findByText(/No classes yet/)).toBeTruthy();
+  });
+});
+
+describe('Dashboard onboarding video', () => {
+  it('opens the guided tutorial after first signup and dismisses it once', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    markOnboardingVideoPending();
+
+    renderDashboard();
+
+    const dialog = await screen.findByRole('dialog', { name: 'New instructor tutorial video' });
+    expect(within(dialog).getByText('Build your first class in one loop')).toBeTruthy();
+    expect(within(dialog).queryByText(/Teams/i)).toBeNull();
+    expect(within(dialog).queryByText(/Explore/i)).toBeNull();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start building' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'New instructor tutorial video' })).toBeNull(),
+    );
+    expect(hasDismissedOnboardingVideo()).toBe(true);
+  });
+
+  it('does not show the tutorial without a pending signup marker', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+
+    renderDashboard();
+
+    await screen.findByText(/No classes yet/);
+    expect(screen.queryByRole('dialog', { name: 'New instructor tutorial video' })).toBeNull();
   });
 });
 
