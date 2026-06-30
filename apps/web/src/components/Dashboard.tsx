@@ -1058,44 +1058,56 @@ function ClassWorkspace({
         {/* The energy arc + timeline — the class's shape and its cue/move markers,
             sharing one time axis, both derived from the run-payload (no new schema). */}
         {payload && payload.tracks.length > 0 && (
-          <div className="rounded-card bg-bg-raised p-4 shadow-card">
-            {canEdit && (
-              <div className="mb-2 flex items-center justify-end gap-2">
-                <span className="font-ui text-xs text-text-tertiary">
-                  {isFree ? 'Free placement (gaps allowed)' : 'Back-to-back'}
-                </span>
-                <button
-                  type="button"
-                  onClick={toggleTimelineMode}
-                  className="rounded-pill border border-interactive/40 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
-                >
-                  {isFree ? 'Switch to back-to-back' : 'Switch to free placement'}
-                </button>
-              </div>
-            )}
-            <IntensityRibbon payload={payload} />
-            <TimelineStrip
-              payload={payload}
-              selectedTrackId={selectedTrackId}
-              onSelectTrack={selectFromTimeline}
-              onMoveMarker={
-                canEdit
-                  ? async (marker, anchorMs) => {
-                      if (marker.kind === 'cue') await updateCue(marker.id, { anchorMs });
-                      else await updatePlacedMove(marker.id, { anchorMs });
-                      onTrackChanged();
-                    }
-                  : undefined
-              }
-              onMoveTrack={
-                canEdit && isFree
-                  ? async (classTrackId, startOffsetMs) => {
-                      await updateClassTrack(classTrackId, { startOffsetMs });
-                      onTrackChanged();
-                    }
-                  : undefined
-              }
-            />
+          <div className="flex flex-col gap-3 rounded-card bg-bg-raised p-4 shadow-card">
+            {/* Workbench heading — the class shape is the central instrument, so it
+                gets one clear identity + the placement control, not a bare toolbar. */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                Class shape
+              </span>
+              {canEdit && (
+                <div className="flex items-center gap-2">
+                  <span className="font-ui text-xs text-text-tertiary">
+                    {isFree ? 'Free placement (gaps allowed)' : 'Back-to-back'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={toggleTimelineMode}
+                    className="rounded-pill border border-interactive/40 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+                  >
+                    {isFree ? 'Switch to back-to-back' : 'Switch to free placement'}
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* The shape surface — the energy arc (hero) and the timeline ride one
+                shared time axis on a single inset surface, so they read as one object
+                (height = intensity above, blocks/markers below) instead of stacked strips. */}
+            <div className="flex flex-col gap-1.5 rounded-card bg-bg-base p-3">
+              <IntensityRibbon payload={payload} />
+              <TimelineStrip
+                payload={payload}
+                selectedTrackId={selectedTrackId}
+                onSelectTrack={selectFromTimeline}
+                onMoveMarker={
+                  canEdit
+                    ? async (marker, anchorMs) => {
+                        if (marker.kind === 'cue') await updateCue(marker.id, { anchorMs });
+                        else await updatePlacedMove(marker.id, { anchorMs });
+                        onTrackChanged();
+                      }
+                    : undefined
+                }
+                onMoveTrack={
+                  canEdit && isFree
+                    ? async (classTrackId, startOffsetMs) => {
+                        await updateClassTrack(classTrackId, { startOffsetMs });
+                        onTrackChanged();
+                      }
+                    : undefined
+                }
+              />
+            </div>
             <SegmentBand
               classId={cls.id}
               totalDurationMs={payload.class.totalDurationMs}

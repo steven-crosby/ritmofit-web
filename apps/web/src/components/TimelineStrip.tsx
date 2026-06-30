@@ -201,21 +201,23 @@ export function TimelineStrip({
   const interactive = !!onSelectTrack;
 
   return (
-    <figure className="mt-2 flex flex-col gap-1">
-      <figcaption className="flex items-center justify-between font-ui text-xs uppercase tracking-wide text-text-tertiary">
-        <span>Timeline</span>
-        {editable && gridAvailable && (
-          <label className="flex items-center gap-1.5 normal-case tracking-normal text-text-secondary">
+    // Frameless: rides directly under the energy arc on the workbench's shared
+    // shape surface (same time axis). The arc is the labeled hero; this is its
+    // base. The Snap control stays here, right-aligned, only when it applies.
+    <figure className="flex flex-col gap-1">
+      {editable && gridAvailable && (
+        <figcaption className="flex items-center justify-end font-ui text-xs text-text-tertiary">
+          <label className="flex items-center gap-1.5 text-text-secondary">
             <input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)} />
             Snap to beat
           </label>
-        )}
-      </figcaption>
+        </figcaption>
+      )}
       <div
         ref={stripRef}
         role={interactive ? undefined : 'img'}
         aria-label={interactive ? undefined : summary}
-        className="relative h-10 w-full rounded-card bg-bg-base"
+        className="relative h-10 w-full"
       >
         {/* Beat/bar grid — faint, full-height, behind blocks and markers. */}
         {blocks.map((b) => {
