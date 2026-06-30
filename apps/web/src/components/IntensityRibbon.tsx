@@ -75,62 +75,61 @@ export function IntensityRibbon({ payload }: { payload: RunPayload }) {
     .join(', ');
   const summary = `${segments.length} track${segments.length === 1 ? '' : 's'}, intensity over time: ${arc}`;
 
+  // The hero of the workbench: a tall, frameless area graph that sits as the top
+  // layer of the shared "class shape" surface (the timeline rides directly below it
+  // on the same time axis). No own caption/box — the workbench labels it once.
+  if (segments.length === 0) {
+    return (
+      <div className="flex h-32 items-center justify-center">
+        <span className="font-ui text-xs text-text-tertiary">
+          Set track durations to see the shape of the class
+        </span>
+      </div>
+    );
+  }
   return (
-    <figure className="flex flex-col gap-1">
-      <figcaption className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-        Energy arc
-      </figcaption>
-      {segments.length === 0 ? (
-        <div className="flex h-16 items-center justify-center rounded-card bg-bg-base">
-          <span className="font-ui text-xs text-text-tertiary">
-            Set track durations to see the shape of the class
-          </span>
-        </div>
-      ) : (
-        <svg
-          role="img"
-          aria-label={summary}
-          viewBox={`0 0 ${VB_W} ${VB_H}`}
-          preserveAspectRatio="none"
-          className="h-16 w-full rounded-card bg-bg-base"
-        >
-          {/* baseline rule */}
-          <rect
-            x={0}
-            y={VB_H - 1}
-            width={VB_W}
-            height={1}
-            style={{ fill: 'var(--rf-color-ribbon-baseline)' }}
-          />
-          {segments.map((s, i) => {
-            const peak = s.intensity === 'all_out';
-            const zoneColor = `var(--rf-color-intensity-${s.intensity})`;
-            return (
-              <g key={i}>
-                {/* area fill — faint; the height carries the meaning */}
-                <rect
-                  x={s.x}
-                  y={s.top}
-                  width={s.width}
-                  height={VB_H - s.top}
-                  style={{ fill: zoneColor, fillOpacity: 'var(--rf-color-ribbon-fill-opacity)' }}
-                />
-                {/* crest line — a rationed plasma kiss at all-out peaks, else the zone color */}
-                <rect
-                  x={s.x}
-                  y={s.top}
-                  width={s.width}
-                  height={TOP_ACCENT}
-                  style={{
-                    fill: peak ? 'var(--rf-color-semantic-peak-glow)' : zoneColor,
-                    fillOpacity: 'var(--rf-color-ribbon-line-opacity)',
-                  }}
-                />
-              </g>
-            );
-          })}
-        </svg>
-      )}
-    </figure>
+    <svg
+      role="img"
+      aria-label={summary}
+      viewBox={`0 0 ${VB_W} ${VB_H}`}
+      preserveAspectRatio="none"
+      className="block h-32 w-full"
+    >
+      {/* baseline rule */}
+      <rect
+        x={0}
+        y={VB_H - 1}
+        width={VB_W}
+        height={1}
+        style={{ fill: 'var(--rf-color-ribbon-baseline)' }}
+      />
+      {segments.map((s, i) => {
+        const peak = s.intensity === 'all_out';
+        const zoneColor = `var(--rf-color-intensity-${s.intensity})`;
+        return (
+          <g key={i}>
+            {/* area fill — faint; the height carries the meaning */}
+            <rect
+              x={s.x}
+              y={s.top}
+              width={s.width}
+              height={VB_H - s.top}
+              style={{ fill: zoneColor, fillOpacity: 'var(--rf-color-ribbon-fill-opacity)' }}
+            />
+            {/* crest line — a rationed plasma kiss at all-out peaks, else the zone color */}
+            <rect
+              x={s.x}
+              y={s.top}
+              width={s.width}
+              height={TOP_ACCENT}
+              style={{
+                fill: peak ? 'var(--rf-color-semantic-peak-glow)' : zoneColor,
+                fillOpacity: 'var(--rf-color-ribbon-line-opacity)',
+              }}
+            />
+          </g>
+        );
+      })}
+    </svg>
   );
 }
