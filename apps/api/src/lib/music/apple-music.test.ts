@@ -174,6 +174,24 @@ describe('fetchAppleMusicLibrarySongs', () => {
     expect(results[0]?.providerTrackId).toBe('i.libraryId123');
   });
 
+  it('stops instead of looping forever on a non-advancing `next` cursor', async () => {
+    // Degenerate upstream response: an empty page that still hands back a `next`
+    // pointing back at itself. The cap gates on collected tracks, not iterations,
+    // so without the empty-page guard `out.length < cap` never trips and the loop
+    // spins forever. Keyed at the base URL so every paged request matches.
+    const { fetchImpl, calls } = fakeFetch({
+      [LIBRARY_URL]: { data: [], next: '/v1/me/library/songs?offset=0' },
+    });
+    const results = await fetchAppleMusicLibrarySongs({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results).toEqual([]);
+    expect(calls).toHaveLength(1); // broke after the first empty page
+  });
+
   it('throws AppleMusicUnauthorizedError on 401/403 (reconnect signal)', async () => {
     for (const status of [401, 403]) {
       const fetchImpl: FetchLike = async () => ({

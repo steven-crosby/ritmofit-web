@@ -233,10 +233,16 @@ export async function fetchAppleMusicLibrarySongs(cfg: {
       throw new ProviderError('apple_music', `Apple Music API ${res.status} for /me/library/songs`);
     const parsed = amLibraryPageSchema.safeParse(await readJson(res, 'apple_music'));
     if (!parsed.success) break;
-    for (const raw of parsed.data.data ?? []) {
+    const page = parsed.data.data ?? [];
+    for (const raw of page) {
       const candidate = toLibraryCandidate(raw);
       if (candidate) out.push(candidate);
     }
+    // Guard against a non-advancing `next` cursor (e.g. a page that returns no
+    // rows but still hands back a `next`): without this the `out.length < cap`
+    // bound never trips and the loop would spin forever. Mirrors the Spotify
+    // adapter's empty-page break.
+    if (page.length === 0) break;
     path = parsed.data.next ?? null;
   }
   return out;

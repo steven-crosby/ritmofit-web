@@ -49,6 +49,8 @@ import {
   importProviderTrackSchema,
   musicConnectionViewSchema,
   connectProviderResponseSchema,
+  appleMusicClientConfigSchema,
+  connectAppleMusicSchema,
   teamSchema,
   teamWithRoleSchema,
   createTeamSchema,
@@ -94,6 +96,8 @@ const named: Record<string, z.ZodType> = {
   ImportProviderTrack: importProviderTrackSchema,
   MusicConnectionView: musicConnectionViewSchema,
   ConnectProviderResponse: connectProviderResponseSchema,
+  AppleMusicClientConfig: appleMusicClientConfigSchema,
+  ConnectAppleMusic: connectAppleMusicSchema,
   Team: teamSchema,
   TeamWithRole: teamWithRoleSchema,
   CreateTeam: createTeamSchema,
@@ -632,6 +636,30 @@ const doc = {
       delete: {
         summary: 'Disconnect a provider (immediate token forget)',
         responses: { '204': { description: 'Disconnected' } },
+      },
+    },
+    // Apple Music has no redirect OAuth: these two concrete routes replace the
+    // generic connect/callback pair (MusicKit JS authorizes in the browser).
+    '/providers/apple_music/config': {
+      get: {
+        summary: 'Apple Music developer token + storefront for MusicKit.configure()',
+        responses: {
+          '200': jsonResp('AppleMusicClientConfig', 'Developer token + storefront'),
+          '401': { description: 'Authentication required' },
+          '503': { description: 'Apple Music not configured' },
+        },
+      },
+    },
+    '/providers/apple_music/connection': {
+      post: {
+        summary: 'Store the Music-User-Token MusicKit returned (encrypted; no refresh)',
+        requestBody: jsonBody('ConnectAppleMusic'),
+        responses: {
+          '204': { description: 'Stored' },
+          '401': { description: 'Authentication required' },
+          '422': { description: 'Invalid request body' },
+          '503': { description: 'Apple Music not configured' },
+        },
       },
     },
     '/mock/track-search': {
