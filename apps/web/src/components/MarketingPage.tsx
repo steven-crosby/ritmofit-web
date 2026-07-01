@@ -23,9 +23,13 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
       </a>
 
       {/* ── Top navigation ────────────────────────────────────────────── */}
-      <header className="rf-topbar flex items-center justify-between gap-6 px-6 py-3">
+      <header className="rf-topbar flex items-center justify-between gap-3 px-4 py-3 sm:gap-6 sm:px-6">
         {/* Brand */}
-        <a href="/" className="flex items-center gap-2.5 no-underline" aria-label="RitmoFit home">
+        <a
+          href="/"
+          className="flex items-center gap-2 no-underline sm:gap-2.5"
+          aria-label="RitmoFit home"
+        >
           <span className="rf-brand-mark" aria-hidden="true">
             R
           </span>
@@ -55,22 +59,24 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
         </nav>
 
         {/* CTA row */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             id="marketing-signin-btn"
             type="button"
             onClick={onSignIn}
-            className="rounded-pill border border-interactive/30 px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:border-interactive/60 hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+            className="rounded-pill border border-interactive/30 px-3 py-1.5 font-ui text-sm text-interactive transition-colors hover:border-interactive/60 hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:px-4"
           >
             Sign in
           </button>
           <button
             id="marketing-start-building-btn"
             type="button"
+            aria-label="Start building"
             onClick={onSignIn}
-            className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent"
+            className="rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-sm font-semibold text-text-on-accent sm:px-4"
           >
-            Start building
+            <span className="sm:hidden">Start</span>
+            <span className="hidden sm:inline">Start building</span>
           </button>
         </div>
       </header>
