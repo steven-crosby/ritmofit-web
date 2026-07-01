@@ -4,7 +4,12 @@
  * run-payload — no new schema or data. Kept here so they're unit-testable and
  * the layout component stays presentational.
  */
-import { CLASS_LIST_ITEM_ART_LIMIT, type ClassListItem, type RunPayload } from '@ritmofit/shared';
+import {
+  CLASS_LIST_ITEM_ART_LIMIT,
+  type ClassListItem,
+  type ClassTemplate,
+  type RunPayload,
+} from '@ritmofit/shared';
 
 /** The Library-card aggregates a class list item carries. */
 export type CardSummary = Pick<ClassListItem, 'trackCount' | 'totalDurationMs' | 'albumArtUrls'>;
@@ -57,4 +62,20 @@ export function formatDuration(ms: number): string {
   const ss = seconds.toString().padStart(2, '0');
   if (hours > 0) return `${hours}:${minutes.toString().padStart(2, '0')}:${ss}`;
   return `${minutes}:${ss}`;
+}
+
+/**
+ * Human-friendly label for a class template/discipline (shape).
+ * Leads the card meta so the rail reads as a music-forward creation queue
+ * (shape first). Matches labels from the create form where possible.
+ */
+export function formatTemplateLabel(template: ClassTemplate | null | undefined): string | null {
+  if (!template) return null;
+  const labels: Record<ClassTemplate, string> = {
+    cycle: 'Cycle',
+    hiit: 'HIIT',
+    sculpt: 'Sculpt',
+    tread: 'Tread',
+  };
+  return labels[template] ?? null;
 }
