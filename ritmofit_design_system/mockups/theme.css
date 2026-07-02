@@ -1063,20 +1063,24 @@ textarea.input {
 }
 
 .track-row {
+  position: relative;
   display: grid;
-  min-height: 68px;
-  grid-template-columns: minmax(54px, auto) auto minmax(170px, 1fr) minmax(118px, auto) minmax(
-      76px,
-      auto
-    ) auto;
+  min-height: 66px;
+  grid-template-columns: 46px 42px minmax(138px, 1fr) 70px 76px 14px;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  overflow: hidden;
   border: 1px solid transparent;
   border-radius: var(--rf-radius-card);
   background: var(--rf-bg-sunken);
   color: inherit;
-  padding: 9px 12px;
+  padding: 9px 10px;
   text-align: left;
+  transition:
+    background-color var(--rf-dur-fast) var(--rf-ease),
+    border-color var(--rf-dur-fast) var(--rf-ease),
+    box-shadow var(--rf-dur-fast) var(--rf-ease),
+    transform var(--rf-dur-fast) var(--rf-ease);
 }
 
 button.track-row {
@@ -1090,9 +1094,9 @@ button.track-row {
 }
 
 .track-row.is-selected {
-  border-color: color-mix(in oklch, var(--rf-interactive) 58%, transparent);
+  border-color: var(--rf-border-strong);
   background: var(--rf-bg-raised);
-  box-shadow: inset 3px 0 0 var(--rf-interactive);
+  box-shadow: inset 3px 0 0 color-mix(in oklch, var(--rf-interactive) 76%, transparent);
 }
 
 .track-row.is-playing .playing-dot {
@@ -1101,6 +1105,7 @@ button.track-row {
 
 .track-state {
   display: inline-flex;
+  width: 46px;
   min-width: 0;
   align-items: center;
   gap: 7px;
@@ -1130,6 +1135,16 @@ button.track-row {
   font-size: 0.75rem;
 }
 
+.track-index {
+  display: inline-grid;
+  width: 32px;
+  min-height: 28px;
+  place-items: center;
+  border: 1px solid var(--rf-border-subtle);
+  border-radius: var(--rf-radius-control);
+  background: color-mix(in oklch, var(--rf-bone-50) 2.5%, transparent);
+}
+
 .playing-dot {
   width: 10px;
   height: 10px;
@@ -1141,6 +1156,12 @@ button.track-row {
 
 .track-copy {
   min-width: 0;
+}
+
+.track-row .art {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
 }
 
 .track-title {
@@ -1161,19 +1182,54 @@ button.track-row {
   white-space: nowrap;
 }
 
-.bpm {
+.track-row .bpm {
+  display: inline-flex;
+  min-width: 74px;
   justify-self: end;
+  justify-content: flex-end;
+  border: 1px solid var(--rf-border-subtle);
+  border-radius: var(--rf-radius-control);
+  background: color-mix(in oklch, var(--rf-bone-50) 3.5%, transparent);
   color: var(--rf-text-primary);
-  font-size: 0.9rem;
-  font-weight: 650;
+  padding: 6px 7px;
+  font-size: 0.96rem;
+  font-weight: 700;
+  line-height: 1;
   white-space: nowrap;
 }
 
-.bpm small {
+.track-row .bpm > span {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.track-row .bpm small {
   margin-left: 4px;
   color: var(--rf-text-tertiary);
   font-size: 0.58rem;
   letter-spacing: 0.08em;
+}
+
+.track-row .intensity {
+  width: 70px;
+  justify-content: space-between;
+}
+
+.track-row .zone-copy {
+  max-width: 28px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-row .grip {
+  justify-self: end;
+  opacity: 0.56;
+}
+
+.track-row:hover .grip,
+.track-row:focus-visible .grip {
+  opacity: 1;
 }
 
 .provider {
@@ -2259,6 +2315,29 @@ button.track-row {
   padding: 18px;
 }
 
+.phone .track-row {
+  min-height: 64px;
+  grid-template-columns: 34px 36px minmax(0, 1fr) minmax(70px, auto);
+  gap: 7px;
+  padding: 8px;
+}
+
+.phone .track-row .track-index {
+  width: 30px;
+  min-height: 28px;
+}
+
+.phone .track-row .art {
+  width: 36px;
+  height: 36px;
+  flex-basis: 36px;
+}
+
+.phone .track-row .bpm {
+  min-width: 70px;
+  padding: 5px 6px;
+}
+
 .phone-nav {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2732,8 +2811,9 @@ button.track-row {
   }
 
   .track-row {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 8px 10px;
+    min-height: 84px;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 7px 10px;
     padding: 10px;
   }
 
@@ -2741,8 +2821,13 @@ button.track-row {
     grid-template-columns: auto auto minmax(0, 1fr) auto;
   }
 
+  .track-row.library-row .track-copy {
+    grid-column: 2 / 4;
+  }
+
   .track-row .track-state,
   .track-row .track-index {
+    width: 34px;
     grid-column: 1;
     grid-row: 1;
     align-self: start;
@@ -2751,6 +2836,9 @@ button.track-row {
   .track-row .art {
     grid-column: 1;
     grid-row: 2 / span 2;
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
   }
 
   .track-row .track-copy {
@@ -2765,11 +2853,14 @@ button.track-row {
 
   .track-row .intensity {
     grid-column: 2;
+    width: min(100%, 116px);
     justify-self: start;
   }
 
   .track-row .bpm {
     grid-column: 3;
+    min-width: 78px;
+    padding: 5px 7px;
     justify-self: end;
   }
 
@@ -2777,9 +2868,11 @@ button.track-row {
     grid-column: 2 / -1;
     grid-row: 3;
     justify-self: end;
+    display: none;
   }
 
   .track-state {
+    width: 34px;
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
@@ -2789,6 +2882,10 @@ button.track-row {
     min-height: 18px;
     padding: 2px 5px;
     font-size: 0.56rem;
+  }
+
+  .track-row .zone-copy {
+    max-width: 62px;
   }
 
   .track-row .provider,
