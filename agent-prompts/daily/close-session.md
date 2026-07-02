@@ -47,6 +47,11 @@ deployment behavior changed, run the full CI-equivalent gate:
 
 - [ ] Determine whether production appears aligned with `main`. Deploys are manual, so code
   merged to `main` this session is not live until deployed.
+- [ ] Default to **not** deploying just because code merged this session. RitmoFit ships in
+  deliberate batches, not once per merge (see AGENTS.md "Deploy cadence — merging is not deploying").
+  Deploy now only for a batch the owner wants live, an urgent fix (prod bug / regression / security /
+  live-verification finding), or a risky change (schema/migration, auth, provider, infra) that should
+  ship on its own.
 - [ ] If a deploy is wanted, confirm with the owner first.
 - [ ] If new migrations landed and deployment is confirmed, apply remote D1 migrations before
   code:
