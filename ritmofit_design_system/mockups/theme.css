@@ -2139,6 +2139,27 @@ button.track-row {
   width: min(100%, 390px);
 }
 
+/* Mobile sign-in identity: when the story panel is hidden, a compact non-peak
+   class-shape strip keeps the music-first cue near the form. Copper/ember only —
+   plasma stays reserved for true peaks. Hidden on desktop, where the story
+   panel already carries the shape. */
+.auth-shape {
+  display: none;
+  width: min(100%, 200px);
+  height: 40px;
+  align-items: flex-end;
+  gap: 3px;
+  border-radius: var(--rf-radius-input);
+  background: var(--rf-bg-sunken);
+  padding: 6px 8px;
+}
+
+.auth-shape i {
+  flex: 1;
+  border-radius: 3px 3px 1px 1px;
+  background: var(--rf-copper-300);
+}
+
 .auth-divider {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -2689,6 +2710,10 @@ button.track-row {
 
   .auth-story {
     display: none;
+  }
+
+  .auth-shape {
+    display: flex;
   }
 
   .component-grid {
