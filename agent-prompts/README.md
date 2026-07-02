@@ -26,18 +26,6 @@ is no shared workspace-level report folder.
 Use these prompts repeatedly throughout the day. They are interactive and expect a person in
 the loop; they do not run unattended, merge, deploy, or make owner decisions.
 
-### Special design critique runs
-
-Use `claude-design-critique/` for an as-needed, two-stage critique of RitmoFit Studio's
-visual craft and UX quality. This is a read-only, owner-steered workflow: Stage 1 writes
-`agent-reports/studio-aesthetic-critique.md`, then Stage 2 consumes it and writes
-`agent-reports/studio-redesign-prescription.md`. Those reports intentionally land at the
-`agent-reports/` root so they stay easy to find during redesign planning.
-
-The older `codex design critique/` prompt set remains tracked as a Codex-specific draft of
-the same idea, but new critique runs should prefer `claude-design-critique/` unless the
-owner explicitly asks for the Codex variant.
-
 ### Remote/background runs
 
 The `remote-prompts/` prompts are written for a **remote ephemeral sandbox** — an isolated,
@@ -79,12 +67,6 @@ read-only pass). No prompt ever merges, deploys, migrates the remote D1, or chan
 - `daily/` — **interactive**, person-in-the-loop prompts that run on your own machine:
   - `start-session` — interactive orientation before a personal work block.
   - `close-session` — interactive cleanup, verification, PR/deploy hygiene, and handoff.
-- `claude-design-critique/` — **special, read-only** two-stage Studio critique:
-  - `studio-aesthetic-critique` — captures real app pixels and produces the brutal Stage-1 critique.
-  - `studio-redesign-prescription` — turns Stage 1 into a ranked redesign prescription.
-  - `studio-critique-invocation` — runbook and prerequisites for the two-stage pass.
-- `codex design critique/` — earlier Codex-specific draft of the same critique workflow; prefer
-  `claude-design-critique/` for new owner-led runs unless intentionally comparing prompt variants.
 - `remote-prompts/` — prompts written to run **unattended in a remote ephemeral sandbox**
   (an isolated, throwaway cloud container). Each opens with a sandbox banner, and every one
   leaves its result as durable, committed-and-pushed output — a branch, a draft PR, or a
@@ -114,7 +96,6 @@ including the planning briefs, whose pushed report is now their durable delivera
 | `remote-prompts/daily/changed-code-sentinel`, `remote-prompts/daily/command-brief` | **Yes** |
 | all `remote-prompts/technical/*` audits | **Yes** |
 | all `remote-prompts/planning/*` (`pr-triage`, `doc-drift`, `next-slice-planner`, `roadmap-sync`, `release-readiness`) | **Yes** |
-| `claude-design-critique/studio-aesthetic-critique`, `claude-design-critique/studio-redesign-prescription` | Yes — root-level special reports |
 | `daily/start-session`, `daily/close-session` | No — interactive |
 
 The exhaustive reports are intentionally more than anyone reads daily; a later
@@ -181,7 +162,6 @@ Think of the prompts as a small set of specialist teams, each with a clear owner
 | Web reliability | `remote-prompts/technical/stability`, `remote-prompts/technical/performance` | Production behavior, runtime correctness, live-class reliability, or speed is the concern. |
 | Product quality | `remote-prompts/technical/quality`, `remote-prompts/technical/test-coverage` | You want maintainability cleanup or a stronger regression net without changing product behavior. |
 | Design systems | `remote-prompts/technical/design-system`, `remote-prompts/technical/accessibility`, `remote-prompts/technical/content-consistency` | UI fidelity, WCAG behavior, terminology, or cross-surface copy consistency needs attention. |
-| Design direction | `claude-design-critique/studio-aesthetic-critique`, then `claude-design-critique/studio-redesign-prescription` | You need a brutal visual/UX critique and ranked redesign prescription before implementing a UI refinement slice. |
 | Platform/API | `remote-prompts/technical/api-contract-parity` | The backend contract, OpenAPI output, or iOS decode compatibility may have drifted. |
 | Security & supply chain | `remote-prompts/technical/security`, `remote-prompts/technical/dependency-freshness` | Secrets, auth/session risk, CVEs, or dependency upgrade posture needs review. |
 | Observability | `remote-prompts/technical/observability` | Logs, health checks, smoke coverage, or deploy evidence may be too thin to diagnose production issues. |
@@ -205,9 +185,6 @@ Think of the prompts as a small set of specialist teams, each with a clear owner
 - **A production issue would be hard to detect or diagnose:** use
   `remote-prompts/technical/observability`.
 - **The UI looks off or inconsistent:** use `remote-prompts/technical/design-system`.
-- **The app needs a design-direction reset before implementation:** use
-  `claude-design-critique/studio-aesthetic-critique`, then
-  `claude-design-critique/studio-redesign-prescription`.
 - **Keyboard, screen reader, contrast, or motion behavior is the risk:** use
   `remote-prompts/technical/accessibility`.
 - **The web API may break iOS:** use `remote-prompts/technical/api-contract-parity`.
