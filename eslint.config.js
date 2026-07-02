@@ -19,6 +19,11 @@ export default tseslint.config(
       // `pnpm lint` match CI instead of drowning in ~600 errors from generated code.
       '**/.ds-sync/**',
       '**/ds-bundle/**',
+      // Git-ignored Claude Code local state (settings + agent worktrees). Worktrees
+      // are full repo copies, so rooted ignores like `ritmofit_design_system/**`
+      // don't match their nested paths — without this, local `pnpm lint` diverges
+      // from CI whenever a worktree exists.
+      '.claude/**',
     ],
   },
   js.configs.recommended,
