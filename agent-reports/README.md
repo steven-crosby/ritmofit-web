@@ -51,8 +51,6 @@ in short:
   `remote-prompts/daily/command-brief`, every `remote-prompts/technical/*` audit,
   all `remote-prompts/planning/*` (`pr-triage`, `doc-drift`, `next-slice-planner`,
   `roadmap-sync`, `release-readiness`).
-- **Root-level special reports:** `claude-design-critique/studio-aesthetic-critique` and
-  `claude-design-critique/studio-redesign-prescription`.
 - **No report:** `daily/start-session`, `daily/close-session` (interactive).
 
 ## Rules (from [`../agent-prompts/remote-prompts/00-house-rules.md`](../agent-prompts/remote-prompts/00-house-rules.md))
