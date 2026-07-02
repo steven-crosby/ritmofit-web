@@ -2743,6 +2743,35 @@ button.track-row {
     grid-template-columns: 1fr;
   }
 
+  .class-rail {
+    display: grid;
+    gap: 10px;
+  }
+
+  .class-rail .card-pad {
+    padding: 8px 10px;
+  }
+
+  .class-rail .rail-list {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scroll-snap-type: x proximity;
+  }
+
+  .class-rail .rail-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .class-link {
+    min-width: 196px;
+    min-height: 54px;
+    flex: 0 0 min(72vw, 236px);
+    scroll-snap-align: start;
+  }
+
   .class-header {
     padding: 16px;
   }
@@ -2753,7 +2782,7 @@ button.track-row {
 
   .class-metrics {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -2768,7 +2797,7 @@ button.track-row {
   .class-actions {
     display: grid;
     width: 100%;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .class-actions .button {
@@ -2790,12 +2819,24 @@ button.track-row {
     gap: 10px;
   }
 
+  .energy-ribbon figcaption strong {
+    display: block;
+    max-width: 20ch;
+    font-size: 0.98rem;
+    line-height: 1.25;
+  }
+
+  .ribbon-summary {
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+
   .energy-ribbon svg {
-    height: 104px;
+    height: 88px;
   }
 
   .timeline-strip {
-    height: 42px;
+    height: 38px;
     overflow: hidden;
   }
 
@@ -3043,8 +3084,6 @@ button.track-row {
     padding-inline: 14px;
   }
 
-  .class-metrics,
-  .class-actions,
   .live-header [data-view-group] {
     grid-template-columns: 1fr;
   }
