@@ -10,6 +10,27 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-02 (checkpoint deploy: design-audit batch + builder/dialog polish) — deployed
+> (Worker `3ee0a8c3-1ce7-488e-b708-e521ad03bc1b`).** Shipped `main` (`0f52a04`) bringing the
+> accumulated presentation checkpoint live — everything merged since the 2026-06-30 deploy, all
+> presentation- or docs-only, no schema / API / provider change: **#168** (dialog loading-state
+> polish), **#170** (class/library rail re-staged as the music-forward creation queue), **#171**
+> (narrow-viewport action density), the design-audit slices **#172–#176** (mockup refinements, builder
+> row hierarchy, compact builder mobile composition, Live next-cue anchored on the countdown, mobile
+> sign-in music identity), **#177** (builder mockup: duplicate `builder-layout` grid dropped from the
+> page wrapper), **#178** (ESLint now ignores git-ignored `.claude/` local state so local `pnpm lint`
+> matches CI when agent worktrees exist), and docs **#167** / **#169** (deploy-cadence policy).
+>
+> Rollback anchor: prior live `e8b83edf-e2f0-474f-9b66-ab827998a371`. Remote D1: **No migrations to
+> apply**. Pre-deploy gate green (format / typecheck / lint / design-system verify / 249 web + 271 api
+> unit tests / 76 integration / web build / openapi no-drift / contract-parity / audit). Post-deploy
+> smoke on live `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` → `200`, protected
+> `/api/v1/classes` / `/explore` / `/teams` → `401`, SPA fallback `/app` → `200`, security headers
+> present, served asset hash matches the build (`index-BU64c-uM.js`; the first hash read was a CF
+> edge-cache `HIT` of the prior HTML — it revalidates immediately under `max-age=0, must-revalidate`).
+> No new parity debt: the batch is presentation-only and its iOS parity notes were recorded on the
+> merged PRs.
+
 > **Session 2026-06-30 (Studio redesign slices 1–3: Live re-stage + builder title fix + energy-arc
 > workbench) — deployed (Worker `e8b83edf-e2f0-474f-9b66-ab827998a371`).** Shipped `main` (`83204ed`)
 > bringing **#164**, **#165**, and **#166** live together — all presentation-only, no schema / API /
