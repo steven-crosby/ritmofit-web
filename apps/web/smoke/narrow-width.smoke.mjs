@@ -29,7 +29,10 @@ try {
 }
 
 const WEB = process.env.SMOKE_WEB_URL ?? 'http://localhost:5173';
-const VIEWPORT = { width: 390, height: 844 };
+const VIEWPORT = {
+  width: Number(process.env.SMOKE_WIDTH ?? 390),
+  height: Number(process.env.SMOKE_HEIGHT ?? 844),
+};
 const shotsDir = join(dirname(fileURLToPath(import.meta.url)), 'shots');
 mkdirSync(shotsDir, { recursive: true });
 
@@ -116,7 +119,9 @@ async function checkDialog(page, triggerName, dialogName) {
   await page.keyboard.press('Escape');
   await dialog.waitFor({ state: 'detached', timeout: 5000 });
   const returned = await page.evaluate(
-    (name) => document.activeElement?.textContent?.trim() === name,
+    (name) =>
+      document.activeElement?.getAttribute('aria-label') === name ||
+      document.activeElement?.textContent?.trim() === name,
     triggerName,
   );
   if (returned) pass(`focus-return:${triggerName}`);

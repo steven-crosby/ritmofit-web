@@ -370,40 +370,48 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             RitmoFit
           </h1>
         </div>
-        {/* Destinations cluster — grows to fill on wide screens (so it sits hard
-            right of the brand) and wraps below the brand on narrow viewports
-            instead of overflowing. */}
-        <nav className="flex flex-1 flex-wrap items-center justify-end gap-2">
+        {/* Destinations cluster — on narrow viewports this becomes a compact
+            horizontal command rail, so the first screen stays about the class
+            queue/workbench rather than a wall of navigation pills. */}
+        <nav className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:flex-1 sm:flex-wrap sm:justify-end sm:overflow-visible sm:pb-0">
           <p className="hidden font-ui text-sm text-text-secondary sm:block">{profileName}</p>
           <button
-            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
+            aria-label="Explore"
+            className="min-h-11 shrink-0 rounded-control border border-interactive/40 bg-bg-raised/70 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 sm:min-h-0 sm:rounded-pill sm:bg-transparent sm:px-4 sm:py-1.5 sm:text-sm"
             onClick={() => setExploreOpen(true)}
           >
             Explore
           </button>
           <button
-            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
+            aria-label="Songs by move"
+            className="min-h-11 shrink-0 rounded-control border border-interactive/40 bg-bg-raised/70 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 sm:min-h-0 sm:rounded-pill sm:bg-transparent sm:px-4 sm:py-1.5 sm:text-sm"
             onClick={() => setSongsByMoveOpen(true)}
           >
-            Songs by move
+            <span className="sm:hidden">Moves</span>
+            <span className="hidden sm:inline">Songs by move</span>
           </button>
           <button
-            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
+            aria-label="Teams"
+            className="min-h-11 shrink-0 rounded-control border border-interactive/40 bg-bg-raised/70 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 sm:min-h-0 sm:rounded-pill sm:bg-transparent sm:px-4 sm:py-1.5 sm:text-sm"
             onClick={() => setTeamsOpen(true)}
           >
             Teams
           </button>
           <button
-            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
+            aria-label="Connections"
+            className="min-h-11 shrink-0 rounded-control border border-interactive/40 bg-bg-raised/70 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 sm:min-h-0 sm:rounded-pill sm:bg-transparent sm:px-4 sm:py-1.5 sm:text-sm"
             onClick={() => setConnectionsOpen(true)}
           >
-            Connections
+            <span className="sm:hidden">Music</span>
+            <span className="hidden sm:inline">Connections</span>
           </button>
           <button
-            className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive transition-colors hover:bg-interactive/10"
+            aria-label="Account"
+            className="min-h-11 shrink-0 rounded-control border border-interactive/40 bg-bg-raised/70 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 sm:min-h-0 sm:rounded-pill sm:bg-transparent sm:px-4 sm:py-1.5 sm:text-sm"
             onClick={() => setAccountOpen(true)}
           >
-            Account
+            <span className="sm:hidden">Me</span>
+            <span className="hidden sm:inline">Account</span>
           </button>
         </nav>
       </header>
@@ -928,9 +936,9 @@ function CreateClassForm({
         });
       }}
     >
-      <div className="flex gap-2">
+      <div className="flex min-w-0 gap-2">
         <input
-          className="flex-1 rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
+          className="min-h-11 min-w-0 flex-1 rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary sm:rounded-pill sm:px-4 sm:text-base"
           placeholder="New class title"
           aria-label="New class title"
           value={title}
@@ -938,13 +946,17 @@ function CreateClassForm({
         />
         <button
           disabled={busy}
-          className="rounded-pill rf-btn-primary px-4 py-2 font-ui font-semibold text-text-on-accent disabled:opacity-50"
+          className="min-h-11 shrink-0 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50 sm:rounded-pill sm:px-4 sm:text-base"
         >
           {busy ? '…' : 'Add'}
         </button>
       </div>
       {/* Template chooser — optional discipline for the new class (default Blank). */}
-      <div role="group" aria-label="Class template" className="flex flex-wrap gap-1.5">
+      <div
+        role="group"
+        aria-label="Class template"
+        className="flex gap-1.5 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
+      >
         {CREATE_TEMPLATE_OPTIONS.map(({ value, label }) => {
           const selected = template === value;
           return (
@@ -953,7 +965,7 @@ function CreateClassForm({
               type="button"
               aria-pressed={selected}
               onClick={() => setTemplate(value)}
-              className={`rounded-pill border px-2.5 py-0.5 font-ui text-xs ${
+              className={`min-h-8 shrink-0 rounded-pill border px-2.5 font-ui text-xs ${
                 selected
                   ? 'border-interactive bg-interactive/15 text-text-primary'
                   : 'border-interactive/30 text-text-secondary hover:text-text-primary'
@@ -1452,10 +1464,10 @@ export function ClassHeaderCard({
         </div>
         {/* Actions wrap below the title on narrow viewports instead of forcing
             horizontal overflow; single row to the right of the title on sm+. */}
-        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+        <div className="grid w-full grid-cols-2 items-center gap-2 sm:w-auto sm:flex sm:flex-wrap sm:shrink-0">
           {isOwner && (
             <button
-              className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+              className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm text-interactive disabled:opacity-40 sm:min-h-0 sm:rounded-pill sm:px-4 sm:py-1.5"
               onClick={togglePublish}
               disabled={publishing}
             >
@@ -1464,7 +1476,7 @@ export function ClassHeaderCard({
           )}
           {isOwner && (
             <button
-              className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive"
+              className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm text-interactive sm:min-h-0 sm:rounded-pill sm:px-4 sm:py-1.5"
               onClick={onShare}
             >
               Share
@@ -1473,16 +1485,16 @@ export function ClassHeaderCard({
           {/* Owner-only delete with inline confirm (no native confirm() dialog). */}
           {isOwner &&
             (confirmingDelete ? (
-              <span className="flex items-center gap-1">
+              <span className="col-span-2 grid grid-cols-2 gap-1 sm:flex sm:items-center">
                 <button
-                  className="rounded-pill bg-state-danger/15 px-3 py-1.5 font-ui text-sm font-semibold text-state-danger disabled:opacity-40"
+                  className="min-h-11 rounded-control bg-state-danger/15 px-3 font-ui text-sm font-semibold text-state-danger disabled:opacity-40 sm:min-h-0 sm:rounded-pill sm:py-1.5"
                   onClick={confirmDelete}
                   disabled={deleting}
                 >
                   {deleting ? '…' : 'Delete class'}
                 </button>
                 <button
-                  className="rounded-pill border border-interactive/40 px-3 py-1.5 font-ui text-sm text-text-secondary"
+                  className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary sm:min-h-0 sm:rounded-pill sm:py-1.5"
                   onClick={() => setConfirmingDelete(false)}
                   disabled={deleting}
                 >
@@ -1491,7 +1503,7 @@ export function ClassHeaderCard({
               </span>
             ) : (
               <button
-                className="rounded-pill border border-state-danger/50 px-4 py-1.5 font-ui text-sm text-state-danger"
+                className="min-h-11 rounded-control border border-state-danger/50 px-3 font-ui text-sm text-state-danger sm:min-h-0 sm:rounded-pill sm:px-4 sm:py-1.5"
                 onClick={() => setConfirmingDelete(true)}
                 title="Delete this class"
               >
@@ -1499,7 +1511,7 @@ export function ClassHeaderCard({
               </button>
             ))}
           <button
-            className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+            className="order-first col-span-2 min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:order-none sm:col-span-auto sm:min-h-0 sm:rounded-pill sm:px-4 sm:py-1.5"
             onClick={onRun}
             disabled={!canRun}
             title={canRun ? 'Run this class live' : 'Every track needs a duration'}
