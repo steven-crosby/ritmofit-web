@@ -25,10 +25,15 @@ The class builder is the heart of the web app and the place the design system ea
 Main column = energy ribbon + timeline + ordered track list. Right = the selected track's editor. Keep it
 a **creative workstation, not a DAW** — no Adobe-Premiere density yet. A dense mode can come later.
 
-The class title is an unboxed workbench heading: title + actions, then operational metrics, then a quiet
-save/provider line. The ribbon is the first contained product artifact. At 1180px and below, the class
-archive collapses into a compact toolbar with count, active-class select, and inline “+ Add from Library”
-action; it must not become a large preamble before the work.
+The class title is an unboxed workbench heading: title + actions, then operational metrics, then the
+readiness panel, then a quiet save/provider line. The ribbon is the first contained product artifact. At
+1180px and below, the class archive collapses into a compact toolbar with count, active-class select, and
+inline “+ Add from Library” action; it must not become a large preamble before the work.
+
+**Mobile recomposes; it does not compress.** At phone widths the three regions stack into one legible
+column (header → readiness → class-shape workbench → track list → inspector) — never the desktop
+three-pane squeezed sideways. No horizontal overflow and no overlapping controls at 390px (and 320px) is
+a **P0 acceptance gate**, verified by `apps/web/smoke/narrow-width.smoke.mjs`; touch targets stay ≥44px.
 
 ## The energy ribbon (the signature planning view)
 
@@ -106,6 +111,36 @@ Segments band the timeline with icon + label and a quiet tint, _under_ the energ
 `segmentType` keys retain their schema-honest fallbacks (Warm-up, Climb, Sprint, Recovery, Cool-down).
 A reviewed discipline template or instructor-authored section name may override the visible label. The
 band supports class structure and must not compete with the intensity ribbon.
+
+## Readiness — is the class ready to run?
+
+Before an instructor is on stage, the builder header answers one question plainly: **is this class ready
+to run, and if not, what's missing?** Readiness is derived from the run-payload (no new schema) across
+four dimensions, each mapped to something the instructor must trust:
+
+- **Duration** — the class clock. The one _hard_ gate: Live can't start until every track has a length
+  (mirrors the existing run guard, `duration.ts`). Marked `Blocks Live`.
+- **Tempo** — display BPM drives the beat pulse and tempo identity ([`10-rhythm-system.md`](./10-rhythm-system.md)
+  §1–2). Missing BPM turns the pulse off; that is a readiness state ("Tempo missing — pulse off"), not
+  quiet metadata.
+- **Cues & moves** — the instructor's guidance. Without any, Live is a bare prompter.
+- **Music** — a provider link per track so Live can play audio; without one the class runs prompter-only.
+  Builder readiness asks only "does the track carry a provider reference?" — the stronger
+  _connected-and-playable_ check is Live preflight's job (`LivePreflight.tsx`), kept distinct so the two
+  never contradict.
+
+Rules:
+
+- Only **Duration** blocks Run live. The other three are **attention** states — the class can still run,
+  and the instructor sees exactly what's incomplete instead of discovering it mid-class.
+- Encode state by **glyph + word + severity, never color alone**: the label itself names the state
+  ("set" / "missing" / "needed"). Warnings use the **caution channel only** — no new accent, and never
+  plasma (see [`02-color-system.md`](./02-color-system.md), 10 §10).
+- Ready dimensions stay quiet (one line). Anything needing attention expands with its impact and
+  **click-to-fix track chips** that jump the inspector to the track that needs work.
+- Placement: in the class header, directly under the summary metrics — the first thing read after the
+  title and the last check before Run live. Implemented as `ClassReadinessSummary` from the pure
+  `readiness.ts` derivation.
 
 ## States that matter here
 
