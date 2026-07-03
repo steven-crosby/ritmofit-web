@@ -180,16 +180,15 @@ in [`web-ios-parity.md`](./web-ios-parity.md). Don't keep parallel lists here.
 
 **Open production issues:**
 
-- **SoundCloud (and unverified Spotify) per-user connect token exchange fails in prod** (first seen
-  2026-06-29; still open as of 2026-07-02): SoundCloud connect returns `connect_failed` — the
-  `secure.soundcloud.com/oauth/token` exchange returns non-2xx (likely a provider-dashboard
-  redirect-URI mismatch or stale client secret); the Spotify exchange is deployed but unverified
-  end-to-end. Details in [`deployment-runbook.md`](./deployment-runbook.md). **This is a prerequisite
-  for the provider-authorized playback initiative** (Spotify playback rides per-user OAuth plus a
-  scope expansion).
+- _None currently tracked here._
 
 Recently closed (kept as pointers so the trail isn't lost):
 
+- **Provider connect prerequisite for playback — ✅ verified** (2026-07-03, Worker
+  `94126954-0e61-408e-b404-bb380c338141`): Apple Music, SoundCloud, and Spotify production connect are
+  all verified working. SoundCloud required an OAuth request-shape fix; Spotify required registering
+  `https://ritmofit.studio/api/v1/providers/spotify/callback` in the Spotify app dashboard. See
+  [`deployment-runbook.md`](./deployment-runbook.md).
 - **"Songs by Move" / track-and-theme reverse search — ✅ shipped** (PRs #99; reverse move→songs search
   + server-side class tag/theme search). See [`HISTORY.md`](./HISTORY.md).
 - **Cues vs. Notes — ✅ resolved + read-path shipped.** Decided *not* to split the schema; the

@@ -31,7 +31,7 @@ as a static fallback. Optional `APPLE_MUSIC_STOREFRONT` defaults to `us`.
 SoundCloud OAuth connect uses `https://ritmofit.studio/api/v1/providers/soundcloud/callback` unless
 `SOUNDCLOUD_REDIRECT_URI` overrides it. Spotify now supports **both** server-side catalog/playlist
 search (the client-credentials pair) **and** a per-user OAuth connect ("search my Spotify" likes —
-Authorization Code + PKCE, scope `user-library-read`, callback
+confidential Authorization Code, scope `user-library-read`, callback
 `https://ritmofit.studio/api/v1/providers/spotify/callback` unless `SPOTIFY_REDIRECT_URI` overrides),
 reusing the same `SPOTIFY_CLIENT_ID`/`_SECRET`. To enable it in production, deploy the connect code and
 register that callback in the Spotify app dashboard. There is still **no Spotify BPM path** (permanent
@@ -39,18 +39,19 @@ constraint — `music-providers.md`). Apple Music per-user connect uses **MusicK
 redirect or new secret beyond the existing Apple Music developer-token creds): the SPA mints a
 Music-User-Token and `POST`s it to `/providers/apple_music/connection`, stored encrypted.
 
-> **Connect-path state (verified 2026-06-29; still the known state as of 2026-07-02 — the deploys
-> since, latest Worker `3ee0a8c3` per `HISTORY.md`, were presentation/docs-only and did not touch
-> these routes):** All three per-user connect paths are **deployed**. **Apple Music** connect is
-> **live and verified working** in prod (MusicKit JS → Music-User-Token →
-> `/providers/apple_music/connection`). **SoundCloud** and **Spotify** connect routes are deployed but
-> their **token exchange is not verified end-to-end** — SoundCloud returns `connect_failed`
-> (the `secure.soundcloud.com/oauth/token` exchange returns non-2xx; likely a provider-dashboard
-> redirect-URI mismatch or a stale client secret). This is now tracked as an **open production issue**
-> in `DEVELOPMENT_PLAN.md` and is a **prerequisite for the provider-authorized playback initiative**
-> (`provider-playback-implementation.md`). No `SOUNDCLOUD_REDIRECT_URI` / `SPOTIFY_REDIRECT_URI`
-> override is set, so the registered dashboard redirect URI must exactly match
-> `https://ritmofit.studio/api/v1/providers/<provider>/callback`. **Note:** redirect-OAuth callbacks are
+> **Connect-path state (verified 2026-07-03 on Worker
+> `94126954-0e61-408e-b404-bb380c338141`):** All three per-user connect paths are **deployed**.
+> **Apple Music** connect is **live and verified working** in prod (MusicKit JS → Music-User-Token →
+> `/providers/apple_music/connection`). **SoundCloud** connect is also **live and verified working** in
+> prod after the OAuth request-shape fix: authorization-code + PKCE exchanges send `client_id` and
+> `client_secret` in the form body. **Spotify** connect is now **live and verified working** in prod
+> after registering `https://ritmofit.studio/api/v1/providers/spotify/callback` in the Spotify app
+> dashboard; the Worker log showed `GET /api/v1/providers/spotify/callback?... - Ok`, and the
+> Connections dialog showed `Connected to Spotify.` Spotify uses confidential Authorization Code with
+> Basic auth and no PKCE verifier. No `SOUNDCLOUD_REDIRECT_URI` / `SPOTIFY_REDIRECT_URI` override is
+> set, so the registered dashboard redirect URI must exactly match
+> `https://ritmofit.studio/api/v1/providers/<provider>/callback`.
+> **Note:** redirect-OAuth callbacks are
 > top-level browser navigations, so the SPA's PWA service worker must keep `/api/` in its
 > `navigateFallbackDenylist` (PR #161) or the callback never reaches the Worker (it dead-ends on the
 > SPA 404). Apple Music is immune — MusicKit authorizes in-page, not via a navigation.
