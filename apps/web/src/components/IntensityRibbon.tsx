@@ -39,6 +39,8 @@ export type RibbonSegment = {
   /** Y of the block crest, viewBox units (0 = top). */
   top: number;
   intensity: Intensity;
+  /** Owning class-track, so the ribbon can share the timeline's selection. */
+  classTrackId: string;
 };
 
 /**
@@ -60,12 +62,20 @@ export function computeRibbonSegments(
     const x = ((t.startOffsetMs ?? 0) / totalDurationMs) * VB_W;
     const width = (dur / totalDurationMs) * VB_W;
     const top = VB_H - ZONE_HEIGHT[t.intensity] * VB_H;
-    segments.push({ x, width, top, intensity: t.intensity });
+    segments.push({ x, width, top, intensity: t.intensity, classTrackId: t.classTrackId });
   }
   return segments;
 }
 
-export function IntensityRibbon({ payload }: { payload: RunPayload }) {
+export function IntensityRibbon({
+  payload,
+  selectedClassTrackId = null,
+}: {
+  payload: RunPayload;
+  /** The selected track — its ribbon segment shares the timeline's cyan selection,
+   *  so the arc and the time axis read as one workbench (design system 09). */
+  selectedClassTrackId?: string | null;
+}) {
   const segments = computeRibbonSegments(payload.tracks, payload.class.totalDurationMs);
 
   // The arc as words, so it reads with no color and no pixels (screen readers / grayscale).
@@ -80,7 +90,7 @@ export function IntensityRibbon({ payload }: { payload: RunPayload }) {
   // on the same time axis). No own caption/box — the workbench labels it once.
   if (segments.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center">
+      <div className="flex h-36 items-center justify-center sm:h-44 lg:h-52">
         <span className="font-ui text-xs text-text-tertiary">
           Set track durations to see the shape of the class
         </span>
@@ -93,7 +103,7 @@ export function IntensityRibbon({ payload }: { payload: RunPayload }) {
       aria-label={summary}
       viewBox={`0 0 ${VB_W} ${VB_H}`}
       preserveAspectRatio="none"
-      className="block h-32 w-full"
+      className="block h-36 w-full sm:h-44 lg:h-52"
     >
       {/* baseline rule */}
       <rect
@@ -105,9 +115,23 @@ export function IntensityRibbon({ payload }: { payload: RunPayload }) {
       />
       {segments.map((s, i) => {
         const peak = s.intensity === 'all_out';
+        const selected = selectedClassTrackId != null && s.classTrackId === selectedClassTrackId;
         const zoneColor = `var(--rf-color-intensity-${s.intensity})`;
+        const cyan = 'var(--rf-color-semantic-interactive-default)';
         return (
           <g key={i}>
+            {/* Selected track — a faint cyan column + base bar tie the arc to the
+                timeline's cyan selection, so the two read as one workbench. Cyan is
+                the interaction channel, never intensity, so it can't be misread. */}
+            {selected && (
+              <rect
+                x={s.x}
+                y={0}
+                width={s.width}
+                height={VB_H}
+                style={{ fill: cyan, fillOpacity: 0.08 }}
+              />
+            )}
             {/* area fill — faint; the height carries the meaning */}
             <rect
               x={s.x}
@@ -127,6 +151,9 @@ export function IntensityRibbon({ payload }: { payload: RunPayload }) {
                 fillOpacity: 'var(--rf-color-ribbon-line-opacity)',
               }}
             />
+            {selected && (
+              <rect x={s.x} y={VB_H - 2.5} width={s.width} height={2.5} style={{ fill: cyan }} />
+            )}
           </g>
         );
       })}
