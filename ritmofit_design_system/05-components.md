@@ -118,6 +118,12 @@ Structured solid/glass surfaces over the dark Live ground, maximum-contrast text
 queued, BPM + timecode persistent **and pulsing on the beat**. The All-Out cue advance is the one "drop"
 moment (plasma glow bloom, on-beat cross-fade). Minimal controls, large targets.
 
+Sparse-data fallbacks are first-class, never a bare dash: with no current cue the focal card reads
+**"No cue set"** plus the playing track (mirroring the assertive screen-reader announcement); a missing
+BPM reads **"Tempo missing · pulse off"** on the caution channel (see
+[`10-rhythm-system.md`](./10-rhythm-system.md) §1a), not faint tertiary metadata. Provider handoff links
+appear **only** in the playback-failure recovery alert, never on the prompter surfaces (D19).
+
 ## Empty & error states
 
 An empty screen is an invitation to act ("Add your first track"); an error states what happened and how
