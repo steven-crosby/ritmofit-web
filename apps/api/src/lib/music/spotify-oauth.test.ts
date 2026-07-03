@@ -24,7 +24,7 @@ const TOKEN_RESP = {
 };
 
 describe('buildSpotifyAuthorizeUrl', () => {
-  it('includes the PKCE + OAuth params and the library-read scope only', () => {
+  it('includes the confidential OAuth params and the library-read scope only', () => {
     const url = buildSpotifyAuthorizeUrl({
       clientId: 'cid',
       redirectUri: 'https://api.test/cb',
@@ -35,8 +35,8 @@ describe('buildSpotifyAuthorizeUrl', () => {
     expect(url).toContain('client_id=cid');
     expect(url).toContain('redirect_uri=https%3A%2F%2Fapi.test%2Fcb');
     expect(url).toContain('response_type=code');
-    expect(url).toContain('code_challenge=chal');
-    expect(url).toContain('code_challenge_method=S256');
+    expect(url).not.toContain('code_challenge=');
+    expect(url).not.toContain('code_challenge_method=');
     expect(url).toContain('state=st');
     // The only scope we ever request: read the user's saved tracks. Never playback/BPM.
     expect(SPOTIFY_CONNECT_SCOPE).toBe('user-library-read');
@@ -45,7 +45,7 @@ describe('buildSpotifyAuthorizeUrl', () => {
 });
 
 describe('exchangeSpotifyCode', () => {
-  it('posts the auth-code grant with Basic auth + PKCE verifier, maps the tokens', async () => {
+  it('posts the auth-code grant with Basic auth and maps the tokens', async () => {
     const { fetchImpl, calls } = captureFetch(TOKEN_RESP);
     const tokens = await exchangeSpotifyCode({
       clientId: 'cid',
@@ -68,7 +68,7 @@ describe('exchangeSpotifyCode', () => {
     expect(call?.init?.method).toBe('POST');
     expect(call?.init?.headers?.Authorization).toBe(`Basic ${btoa('cid:sec')}`);
     expect(call?.init?.body).toContain('grant_type=authorization_code');
-    expect(call?.init?.body).toContain('code_verifier=the-verifier');
+    expect(call?.init?.body).not.toContain('code_verifier=');
     expect(call?.init?.body).toContain('code=the-code');
   });
 

@@ -10,6 +10,21 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-03 (out-of-band deploy: provider connect fixes) — deployed (Worker
+> `94126954-0e61-408e-b404-bb380c338141`).** Provider-change deploy shipped on its own per the deploy
+> cadence: SoundCloud OAuth token-exchange request-shape fix and Spotify connect verification
+> (`packages/music` + `apps/api` provider-connections route). Live verification: Apple Music,
+> SoundCloud, and Spotify production connect all round-trip successfully — the connect prerequisite
+> for the provider-authorized playback initiative (D19) is done. Spotify additionally required
+> registering `https://ritmofit.studio/api/v1/providers/spotify/callback` in the Spotify app
+> dashboard (dashboard config, no code). Remote D1: no migrations in this slice (a `wrangler d1
+> migrations list --remote` check failed with Cloudflare auth code `7403` — auth to re-verify next
+> remote-migration session). Pre-deploy gate green; post-deploy smoke passed. Rollback anchor: prior
+> live `3ee0a8c3-1ce7-488e-b708-e521ad03bc1b`. Same-day follow-on work (not deployed): the web
+> playback layer — `apps/web/src/lib/playback/` (selection/preflight core, runtime coordinator,
+> SoundCloud Widget adapter) + Live Mode wiring (preflight screen, player rail, recoverable playback
+> failure) — landing via PR after this session.
+
 > **Session 2026-07-02 (checkpoint deploy: design-audit batch + builder/dialog polish) — deployed
 > (Worker `3ee0a8c3-1ce7-488e-b708-e521ad03bc1b`).** Shipped `main` (`0f52a04`) bringing the
 > accumulated presentation checkpoint live — everything merged since the 2026-06-30 deploy, all

@@ -41,7 +41,7 @@ describe('buildSoundCloudAuthorizeUrl', () => {
 });
 
 describe('exchangeSoundCloudCode', () => {
-  it('posts the auth-code grant with Basic auth + PKCE verifier, maps the tokens', async () => {
+  it('posts the auth-code grant with form credentials + PKCE verifier, maps the tokens', async () => {
     const { fetchImpl, calls } = captureFetch(TOKEN_RESP);
     const tokens = await exchangeSoundCloudCode({
       clientId: 'cid',
@@ -62,8 +62,10 @@ describe('exchangeSoundCloudCode', () => {
     const call = calls[0];
     expect(call?.url).toBe('https://token.test/oauth/token');
     expect(call?.init?.method).toBe('POST');
-    expect(call?.init?.headers?.Authorization).toBe(`Basic ${btoa('cid:sec')}`);
+    expect(call?.init?.headers).not.toHaveProperty('Authorization');
     expect(call?.init?.body).toContain('grant_type=authorization_code');
+    expect(call?.init?.body).toContain('client_id=cid');
+    expect(call?.init?.body).toContain('client_secret=sec');
     expect(call?.init?.body).toContain('code_verifier=the-verifier');
     expect(call?.init?.body).toContain('code=the-code');
   });
@@ -96,6 +98,8 @@ describe('refreshSoundCloudToken', () => {
     expect(tokens.accessToken).toBe('acc-2');
     expect(tokens.refreshToken).toBeNull();
     expect(calls[0]?.init?.body).toContain('grant_type=refresh_token');
+    expect(calls[0]?.init?.body).toContain('client_id=cid');
+    expect(calls[0]?.init?.body).toContain('client_secret=sec');
     expect(calls[0]?.init?.body).toContain('refresh_token=ref-1');
   });
 });
