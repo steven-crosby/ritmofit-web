@@ -79,6 +79,14 @@ describe('computeRibbonSegments', () => {
     for (let i = 1; i < tops.length; i++) expect(tops[i]).toBeLessThan(tops[i - 1]);
   });
 
+  it('tags each segment with its class-track id (so the ribbon can share the timeline selection)', () => {
+    const segs = computeRibbonSegments([entry('mod', 1000, 0), entry('hard', 1000, 1)], 2000);
+    expect(segs.map((s) => s.classTrackId)).toEqual([
+      '00000000-0000-0000-0000-000000000000',
+      '00000000-0000-0000-0000-000000000001',
+    ]);
+  });
+
   it('skips tracks with no duration (they contribute 0 width and do not advance x)', () => {
     const segs = computeRibbonSegments(
       [entry('mod', null, 0), entry('hard', 1000, 1), entry('easy', 0, 2)],
