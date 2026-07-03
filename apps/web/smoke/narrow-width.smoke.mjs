@@ -184,6 +184,15 @@ try {
   }
   await page.screenshot({ path: join(shotsDir, 'dashboard-with-track.png'), fullPage: true });
 
+  // 4b. Select the track to open the side inspector (intensity/BPM/cues/moves) and
+  // re-check overflow — the inspector was previously untested at 390px, where its
+  // "Add cue"/"Add move" rows overflowed. Row buttons include the artist in their
+  // accessible name (readiness chips carry only the title), so match on that.
+  await page.getByRole('button', { name: /The Testers/ }).first().click();
+  await page.getByRole('button', { name: 'Add cue' }).waitFor({ timeout: 10000 });
+  await checkNoOverflow(page, 'dashboard-inspector-open');
+  await page.screenshot({ path: join(shotsDir, 'dashboard-inspector-open.png'), fullPage: true });
+
   // 5. Exercise the nav dialogs (the adopted Dialog primitive).
   await checkDialog(page, 'Explore', 'Explore public classes');
   await checkDialog(page, 'Teams', 'Manage teams');
