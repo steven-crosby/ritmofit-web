@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RitmoFit - Live playback states</title>
+    <link
+      rel="preload"
+      href="fonts/sora-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="fonts/azeret-mono-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="app-header">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        RitmoFit
+      </a>
+      <nav class="app-nav" aria-label="Reference navigation">
+        <a href="index.html">Mockups</a>
+        <a href="components.html">Components</a>
+        <a href="live.html">Live</a>
+        <a href="live-preflight.html" aria-current="page">Live playback</a>
+      </nav>
+    </header>
+
+    <main class="page page-narrow" id="content">
+      <section class="gallery-hero stack gap-4">
+        <span class="eyebrow">Live · provider-authorized playback</span>
+        <h1 class="title-lg">Hands-free after start.</h1>
+        <p class="lead">
+          RitmoFit owns the class timeline; provider SDKs own the audio. Before
+          class, every track resolves to a named playable provider or a fixable
+          verdict. During class, one rail chip always states what the music is
+          doing — and a failure is a recoverable alert, never a dead end.
+        </p>
+      </section>
+
+      <!-- PREFLIGHT: READY -->
+      <section class="component-section stack gap-4">
+        <div>
+          <span class="section-label">Preflight · ready</span>
+          <h2 class="title-md">Every track passes before the instructor is on stage.</h2>
+        </div>
+        <div class="panel panel-pad stack gap-4">
+          <div class="stack gap-1">
+            <span class="eyebrow">Preflight</span>
+            <h3 class="title-md">Ready to run?</h3>
+            <p class="muted">
+              Every track needs a connected provider so the class can run
+              hands-free.
+            </p>
+          </div>
+          <div class="preflight-list" role="list" aria-label="Track playback check">
+            <div class="preflight-row" role="listitem">
+              <span class="preflight-index">#1</span>
+              <strong>Pulso de Noche</strong>
+              <span class="preflight-verdict">
+                <span class="verdict-line verdict-pass">
+                  <span aria-hidden="true">✓</span>Plays on Spotify
+                </span>
+              </span>
+            </div>
+            <div class="preflight-row" role="listitem">
+              <span class="preflight-index">#2</span>
+              <strong>The Marble Has a Beat</strong>
+              <span class="preflight-verdict">
+                <span class="verdict-line verdict-pass">
+                  <span aria-hidden="true">✓</span>Plays on SoundCloud
+                </span>
+              </span>
+            </div>
+            <div class="preflight-row" role="listitem">
+              <span class="preflight-index">#3</span>
+              <strong>Brasa</strong>
+              <span class="preflight-verdict">
+                <span class="verdict-line verdict-pass">
+                  <span aria-hidden="true">✓</span>Plays on Apple Music
+                </span>
+              </span>
+            </div>
+          </div>
+          <div class="row gap-3 wrap">
+            <a class="button button-primary" href="live.html">Start class</a>
+            <button class="button button-ghost">Run without music</button>
+          </div>
+        </div>
+        <p class="muted">
+          A mixed-provider class is normal: each track is its own playback job,
+          and RitmoFit stays the master timeline. “Run without music” is the
+          prompter-only capability — always available, never a handoff.
+        </p>
+      </section>
+
+      <!-- PREFLIGHT: BLOCKED -->
+      <section class="component-section stack gap-4">
+        <div>
+          <span class="section-label">Preflight · blocked</span>
+          <h2 class="title-md">A blocked verdict names the track and the fix.</h2>
+        </div>
+        <div class="panel panel-pad stack gap-4">
+          <div class="preflight-list" role="list" aria-label="Track playback check">
+            <div class="preflight-row" role="listitem">
+              <span class="preflight-index">#1</span>
+              <strong>Pulso de Noche</strong>
+              <span class="preflight-verdict">
+                <span class="verdict-line verdict-blocked">
+                  <span aria-hidden="true">⊘</span>Premium required
+                </span>
+                <span class="preflight-fix"
+                  >Spotify playback needs a Premium account — connected isn’t
+                  the same as playable.</span
+                >
+              </span>
+            </div>
+            <div class="preflight-row" role="listitem">
+              <span class="preflight-index">#2</span>
+              <strong>Brasa</strong>
+              <span class="preflight-verdict">
+                <span class="verdict-line verdict-blocked">
+                  <span aria-hidden="true">⊘</span>Authorize Apple Music
+                </span>
+                <span class="preflight-fix"
+                  >Re-authorize your Apple Music subscription to play this
+                  track.</span
+                >
+              </span>
+            </div>
+            <div class="preflight-row" role="listitem">
+              <span class="preflight-index">#3</span>
+              <strong>Slow Pressure</strong>
+              <span class="preflight-verdict">
+                <span class="verdict-line verdict-blocked">
+                  <span aria-hidden="true">⊘</span>No provider link
+                </span>
+                <span class="preflight-fix"
+                  >Add a music provider to this track in the builder.</span
+                >
+              </span>
+            </div>
+          </div>
+          <div class="row gap-3 wrap">
+            <button class="button button-primary" disabled>Start class</button>
+            <button class="button button-ghost">Run without music</button>
+            <span class="status status-warning" role="status"
+              >3 tracks can’t play yet</span
+            >
+          </div>
+        </div>
+        <p class="muted">
+          Pre-class verdicts are fixable, so they sit on the caution channel with
+          the recovery hint inline. The primary action enables only when every
+          track passes.
+        </p>
+      </section>
+
+      <!-- PLAYER RAIL VOCABULARY -->
+      <section class="component-section stack gap-4">
+        <div>
+          <span class="section-label">Player rail</span>
+          <h2 class="title-md">The music always says what it’s doing.</h2>
+        </div>
+        <div class="row gap-3 wrap">
+          <span class="rail-chip"
+            ><span class="rail-note" aria-hidden="true">♪</span>SoundCloud</span
+          >
+          <span class="rail-chip"
+            ><span class="rail-note" aria-hidden="true">♪</span>Preparing Apple
+            Music…</span
+          >
+          <span class="rail-chip"
+            ><span class="rail-note" aria-hidden="true">♪</span>Silence</span
+          >
+          <span class="rail-chip"
+            ><span class="rail-note" aria-hidden="true">♪</span>Paused</span
+          >
+          <span class="rail-chip"
+            ><span class="rail-note" aria-hidden="true">♪</span>Playback
+            ended</span
+          >
+          <span class="rail-chip"
+            ><span class="rail-note" aria-hidden="true">♪</span>Music off</span
+          >
+          <span class="rail-chip is-error"
+            ><span class="rail-note" aria-hidden="true">⚠</span>Playback
+            error</span
+          >
+        </div>
+        <p class="muted">
+          One chip in the transport, Azeret Mono, no provider branding walls.
+          “Silence” marks an authored free-timeline gap — a choice, not a
+          mystery. “Music off” is prompter-only mode.
+        </p>
+      </section>
+
+      <!-- RUNTIME FAILURE -->
+      <section class="component-section stack gap-4">
+        <div>
+          <span class="section-label">Runtime playback failure</span>
+          <h2 class="title-md">Mid-class failure is serious — and recoverable.</h2>
+        </div>
+        <div class="playback-alert" role="alert">
+          <span class="alert-icon" aria-hidden="true">⚠</span>
+          <div class="stack gap-3" style="flex: 1; min-width: 260px">
+            <div class="stack gap-1">
+              <strong>Spotify stopped responding during “Pulso de Noche”.</strong>
+              <span class="muted"
+                >The class clock is still running. Pick a recovery — the
+                prompter never stops.</span
+              >
+            </div>
+            <div class="row gap-2 wrap">
+              <button class="button button-primary">Retry playback</button>
+              <button class="button button-action">Reconnect Spotify</button>
+              <button class="button button-ghost">Continue without music</button>
+            </div>
+            <span class="recovery-handoff"
+              >Last resort for browser/session issues:
+              <a href="#">open this track in Spotify</a>. Handoff links live only
+              inside this recovery surface — never as a primary action.</span
+            >
+          </div>
+        </div>
+        <p class="muted">
+          Unlike preflight verdicts, a runtime failure uses the danger channel:
+          a <code>role="alert"</code> surface offering retry, reconnect, and
+          continue-without-music.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

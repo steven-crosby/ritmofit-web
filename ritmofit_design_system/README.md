@@ -108,12 +108,14 @@ Open [`mockups/index.html`](./mockups/index.html) to browse the full set:
 - Move library
 - Builder
 - Live
-- Explore, future-facing
+- Live playback (D19: preflight, player rail, runtime recovery)
+- Explore (shipped in M4 as the Explore feed)
 - Teams, future-facing
 - Sign in
 - Share card
 - iOS direction
 - Component reference
+- Builder states
 - Light theme (the opt-in light palette, shipped at rest)
 
 The mockups use no remote imagery and no framework. Artwork is CSS-generated so the package remains
@@ -131,6 +133,7 @@ System fonts remain the fallback in each `--rf-font-*` stack if a file fails to 
 ## Schema honesty
 
 These screens demonstrate product behavior, not new contracts. Existing fields and concepts are used
-where known, including the current `class_sections` model and the `moves` / `user_moves` / `class_track_moves` model behind the move library. Explore and Teams remain explicitly
-future-facing product concepts. Do not infer schema or API requirements from visual-only labels
+where known, including the current `class_sections` model and the `moves` / `user_moves` / `class_track_moves` model behind the move library. Explore shipped in M4 (publish via
+`classes.visibility`, `GET /explore`, save-a-copy); Teams remains an explicitly future-facing
+product concept. Do not infer schema or API requirements from visual-only labels
 without checking the shared contracts.

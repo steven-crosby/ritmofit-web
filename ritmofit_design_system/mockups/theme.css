@@ -1291,6 +1291,207 @@ button.track-row {
   color: var(--rf-danger);
 }
 
+/* Playback verdict states (D19) — layered on top of connection state for Live
+   preflight and Builder preview. Same contract as .provider-state: the label and
+   glyph carry the meaning, color only reinforces, and every blocked verdict pairs
+   with an inline recovery hint. Pre-class verdicts sit on caution (fixable);
+   only a runtime failure uses danger. */
+.playback-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  border: 1px solid var(--rf-border-default);
+  border-radius: var(--rf-radius-pill);
+  padding: 4px 13px 4px 4px;
+  color: var(--rf-text-secondary);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.playback-state .ps-icon {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.pb-eligible .ps-icon {
+  background: color-mix(in oklch, var(--rf-interactive) 16%, transparent);
+  color: var(--rf-interactive-hover);
+}
+
+.pb-premium .ps-icon,
+.pb-auth .ps-icon,
+.pb-unavailable .ps-icon {
+  background: color-mix(in oklch, var(--rf-caution) 18%, transparent);
+  color: var(--rf-caution);
+}
+
+.pb-failure .ps-icon {
+  background: color-mix(in oklch, var(--rf-danger) 18%, transparent);
+  color: var(--rf-danger);
+}
+
+/* Player rail chip — the always-explicit statement of what the music is doing
+   (♪ {provider} / Preparing… / Silence / Paused / Playback ended / Music off /
+   ⚠ Playback error). One chip, data face, no provider branding walls. */
+.rail-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  white-space: nowrap;
+  border: 1px solid var(--rf-border-subtle);
+  border-radius: var(--rf-radius-pill);
+  background: var(--rf-bg-raised);
+  padding: 5px 14px;
+  color: var(--rf-text-secondary);
+  font-family: var(--rf-font-data);
+  font-size: 0.72rem;
+}
+
+.rail-chip .rail-note {
+  color: var(--rf-interactive-hover);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.rail-chip.is-error {
+  border-color: color-mix(in oklch, var(--rf-danger) 45%, transparent);
+  color: var(--rf-text-primary);
+}
+
+.rail-chip.is-error .rail-note {
+  color: var(--rf-danger);
+}
+
+/* Preflight — every track resolves to a named playable provider (✓) or an
+   unplayable verdict with its fix, before the instructor is on stage. */
+.preflight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preflight-row {
+  display: grid;
+  min-height: 60px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--rf-border-subtle);
+  border-radius: var(--rf-radius-input);
+  background: var(--rf-bg-raised);
+  padding: 12px 16px;
+}
+
+.preflight-index {
+  color: var(--rf-text-tertiary);
+  font-family: var(--rf-font-data);
+  font-size: 0.72rem;
+}
+
+.preflight-verdict {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+/* Verdict labels stay in text colors for AA at this size; the glyph alone
+   carries the channel color (icons need only 3:1 — same rule as .ps-icon). */
+.verdict-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--rf-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.verdict-line.verdict-blocked {
+  color: var(--rf-text-primary);
+}
+
+.verdict-line.verdict-pass > [aria-hidden] {
+  color: var(--rf-interactive-hover);
+}
+
+.verdict-line.verdict-blocked > [aria-hidden] {
+  color: var(--rf-caution);
+}
+
+.preflight-fix {
+  color: var(--rf-text-tertiary);
+  font-size: 0.72rem;
+}
+
+/* Runtime playback failure — the danger channel. A recoverable alert in the
+   transport, not a handoff link: retry / reconnect / continue without music.
+   Provider handoff exists only inside this recovery surface. */
+.playback-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid color-mix(in oklch, var(--rf-danger) 40%, transparent);
+  border-radius: var(--rf-radius-card);
+  background: color-mix(in oklch, var(--rf-danger) 7%, transparent);
+  padding: 16px 18px;
+}
+
+.playback-alert .alert-icon {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--rf-danger) 18%, transparent);
+  color: var(--rf-danger);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.playback-alert .recovery-handoff {
+  color: var(--rf-text-tertiary);
+  font-size: 0.74rem;
+}
+
+.playback-alert .recovery-handoff a {
+  color: var(--rf-text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Clip window (non-destructive shortening, D13/D19) — a saved playback window
+   over the full track, never an edit of the audio. The bar shows the kept range. */
+.clip-window {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.clip-bar {
+  position: relative;
+  height: 10px;
+  border-radius: var(--rf-radius-pill);
+  background: var(--rf-bg-overlay);
+}
+
+.clip-bar i {
+  position: absolute;
+  /* 0:14–3:28 of 3:42 — both edges ≈ 6.3% */
+  inset: 0 6% 0 6%;
+  border-radius: inherit;
+  background: color-mix(in oklch, var(--rf-interactive) 55%, transparent);
+}
+
 /* Class-section (segment) tags — backed by the segment palette in tokens.json.
    Identified by label first; the tint dot is a soft reinforcing color channel. */
 .segment-tag {
@@ -1751,7 +1952,7 @@ button.track-row {
   position: relative;
   display: grid;
   height: 48px;
-  grid-template-columns: 1.1fr 0.9fr 1.2fr 0.8fr 1fr 1.1fr;
+  grid-template-columns: 1.1fr 0.9fr 1.2fr 0.8fr 0.5fr 1fr 1.1fr;
   gap: 3px;
   margin-top: 8px;
 }
@@ -1771,6 +1972,17 @@ button.track-row {
 .timeline-block.is-active {
   border-color: color-mix(in oklch, var(--rf-interactive) 50%, transparent);
   background: color-mix(in oklch, var(--rf-interactive) 9%, transparent);
+}
+
+/* An intentional free-timeline gap. Silence is a choice, not a mystery: the
+   dashed boundary and label keep it legible as authored quiet, and Live renders
+   it as the ♪ Silence rail state. */
+.timeline-block.gap {
+  justify-content: center;
+  border-style: dashed;
+  background: transparent;
+  white-space: nowrap;
+  font-size: 0.58rem;
 }
 
 .timeline-marker {
@@ -2605,6 +2817,94 @@ button.track-row {
   gap: 10px;
 }
 
+/* Builder audition tray — the persistent preview affordance. Borrows the
+   persistence principle from a player bar but stays a class-building tool:
+   current preview, quick pause, track position, and return-to-row, docked to
+   the bottom of the work column so auditioning never loses the instructor's
+   place in the sequence. Same glass-tray family as .selection-tray, and
+   deliberately quieter than the Live transport: cyan interaction channel only
+   (no copper primary, no peak color), and the sequence row's playing dot stays
+   the one moving indicator. Playback itself belongs to the connected provider —
+   this is only the control surface, never an embedded player. */
+.audition-tray {
+  position: sticky;
+  bottom: 14px;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 14px;
+  border: 1px solid color-mix(in oklch, var(--rf-interactive-hover) 28%, transparent);
+  border-radius: var(--rf-radius-card);
+  background: var(--rf-glass-strong);
+  padding: 10px 14px;
+  box-shadow: var(--rf-shadow-lifted);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.audition-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.audition-copy {
+  min-width: 0;
+}
+
+.audition-copy strong,
+.audition-copy span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audition-copy strong {
+  color: var(--rf-text-primary);
+  font-size: 0.88rem;
+}
+
+.audition-copy span {
+  color: var(--rf-text-tertiary);
+  font-size: 0.74rem;
+}
+
+.audition-position {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 10px;
+}
+
+.audition-position .seek {
+  --seek: 34%;
+  height: 6px;
+}
+
+.audition-position .seek::after {
+  width: 14px;
+  height: 14px;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--rf-interactive) 28%, transparent);
+}
+
+.audition-position .timecode {
+  color: var(--rf-text-secondary);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.audition-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.audition-actions .button {
+  padding-inline: 14px;
+  white-space: nowrap;
+}
+
 @media (max-width: 1180px) {
   .builder-layout {
     grid-template-columns: minmax(0, 1fr) 320px;
@@ -2756,6 +3056,23 @@ button.track-row {
     gap: 10px;
   }
 
+  .audition-tray {
+    bottom: 10px;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px 12px;
+    padding: 10px 12px;
+  }
+
+  .audition-actions {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .audition-actions .button {
+    width: 100%;
+  }
+
   .selection-tray .selection-copy {
     grid-column: 1 / -1;
   }
@@ -2839,10 +3156,21 @@ button.track-row {
     padding-inline: 12px;
   }
 
-  .provider-state {
+  .provider-state,
+  .playback-state {
     max-width: 100%;
     padding-right: 10px;
     font-size: 0.7rem;
+  }
+
+  .preflight-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .preflight-verdict {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .energy-ribbon {
@@ -2965,6 +3293,7 @@ button.track-row {
 
   .track-row .provider,
   .track-row .provider-state,
+  .track-row .playback-state,
   .library-row .timecode {
     grid-column: 3 / -1;
     justify-self: start;
@@ -3157,6 +3486,7 @@ button.track-row {
 @supports not (backdrop-filter: blur(1px)) {
   .surface-glass,
   .selection-tray,
+  .audition-tray,
   .app-header {
     background: var(--rf-bg-overlay);
   }
