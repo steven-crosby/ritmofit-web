@@ -3,9 +3,9 @@
  *
  * Verified June 2026: authorize at `https://secure.soundcloud.com/authorize`
  * (response_type=code, code_challenge_method=S256); exchange/refresh at
- * `https://secure.soundcloud.com/oauth/token` with the client secret as HTTP
- * Basic auth (confidential client). Token response carries access_token,
- * refresh_token, expires_in, scope.
+ * `https://secure.soundcloud.com/oauth/token` with `client_id` and
+ * `client_secret` in the form body for authorization-code and refresh grants.
+ * Token response carries access_token, refresh_token, expires_in, scope.
  *
  * Pure functions: no storage, no secrets at rest — the app holds the secret and
  * persists the (encrypted) result. Network is injected for tests. Re-verify the
@@ -14,10 +14,6 @@
 import { z } from 'zod';
 import type { FetchLike } from './provider.js';
 import { readJson, parseProvider, ProviderError } from './errors.js';
-
-// Available in Workers and Node ≥18 (vitest). Declared so the package needs no
-// DOM/Workers ambient lib.
-declare const btoa: (data: string) => string;
 
 const AUTHORIZE_URL = 'https://secure.soundcloud.com/authorize';
 const TOKEN_URL = 'https://secure.soundcloud.com/oauth/token';
@@ -56,16 +52,12 @@ export function buildSoundCloudAuthorizeUrl(p: {
 
 async function postToken(
   fetchImpl: FetchLike,
-  clientId: string,
-  clientSecret: string,
   body: string,
   tokenUrl: string,
 ): Promise<OAuthTokens> {
-  const basic = btoa(`${clientId}:${clientSecret}`);
   const res = await fetchImpl(tokenUrl, {
     method: 'POST',
     headers: {
-      Authorization: `Basic ${basic}`,
       'Content-Type': 'application/x-www-form-urlencoded',
       Accept: 'application/json',
     },
@@ -96,10 +88,11 @@ export function exchangeSoundCloudCode(cfg: {
   const body =
     `grant_type=authorization_code` +
     `&client_id=${encodeURIComponent(cfg.clientId)}` +
+    `&client_secret=${encodeURIComponent(cfg.clientSecret)}` +
     `&redirect_uri=${encodeURIComponent(cfg.redirectUri)}` +
     `&code_verifier=${encodeURIComponent(cfg.codeVerifier)}` +
     `&code=${encodeURIComponent(cfg.code)}`;
-  return postToken(cfg.fetchImpl, cfg.clientId, cfg.clientSecret, body, cfg.tokenUrl ?? TOKEN_URL);
+  return postToken(cfg.fetchImpl, body, cfg.tokenUrl ?? TOKEN_URL);
 }
 
 /** Renew an access token from a refresh token. */
@@ -113,6 +106,7 @@ export function refreshSoundCloudToken(cfg: {
   const body =
     `grant_type=refresh_token` +
     `&client_id=${encodeURIComponent(cfg.clientId)}` +
+    `&client_secret=${encodeURIComponent(cfg.clientSecret)}` +
     `&refresh_token=${encodeURIComponent(cfg.refreshToken)}`;
-  return postToken(cfg.fetchImpl, cfg.clientId, cfg.clientSecret, body, cfg.tokenUrl ?? TOKEN_URL);
+  return postToken(cfg.fetchImpl, body, cfg.tokenUrl ?? TOKEN_URL);
 }

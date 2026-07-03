@@ -1,9 +1,9 @@
 /**
  * Provider connection routes — connect a user's music account, list connections,
  * disconnect. Two connect mechanisms share the `music_connections` table (no
- * migration): redirect OAuth (Authorization Code + PKCE) for SoundCloud and Spotify
- * via the `PROVIDER_OAUTH` registry below, and a MusicKit-JS token handoff for Apple
- * Music (no redirect OAuth exists for it).
+ * migration): redirect OAuth for SoundCloud (Authorization Code + PKCE) and Spotify
+ * (confidential Authorization Code) via the `PROVIDER_OAUTH` registry below, and a
+ * MusicKit-JS token handoff for Apple Music (no redirect OAuth exists for it).
  *
  * Redirect-OAuth flow (confidential client → secret server-side):
  *  1. POST /providers/:provider/connect  — authed. Mint PKCE verifier + state,
@@ -127,6 +127,11 @@ const PROVIDER_OAUTH: Partial<Record<Provider, ProviderOAuth>> = {
 
 function spaUrl(env: Env, path: string): string {
   return `${env.WEB_ORIGIN ?? env.BETTER_AUTH_URL}${path}`;
+}
+
+function describeOAuthConnectFailure(provider: Provider, err: unknown): string {
+  if (err instanceof Error) return `[provider-connect:${provider}] ${err.name}: ${err.message}`;
+  return `[provider-connect:${provider}] ${String(err)}`;
 }
 
 /** The encrypted-cookie payload tying a callback to the user who started it. */
@@ -301,8 +306,10 @@ providerConnectionRoutes.get('/providers/:provider/callback', async (c) => {
       scope: tokens.scope,
       expiresAt: tokens.expiresInSec ? Date.now() + tokens.expiresInSec * 1000 : null,
     });
-  } catch {
-    // Never surface token-exchange detail to the browser or logs.
+  } catch (err) {
+    // Never surface token-exchange detail to the browser. Logs keep only provider,
+    // error class, and sanitized messages from our helpers; no tokens/codes/secrets.
+    console.warn(describeOAuthConnectFailure(provider, err));
     return fail('connect_failed');
   }
   return c.redirect(spaUrl(c.env, `/?connected=${provider}`));

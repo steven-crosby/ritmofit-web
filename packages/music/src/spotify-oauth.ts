@@ -1,24 +1,16 @@
 /**
- * Spotify user-OAuth — Authorization Code + PKCE (confidential client).
+ * Spotify user-OAuth — Authorization Code flow (confidential client).
  *
  * Verified against Spotify's Web API authorization docs (June 2026): authorize at
  * `https://accounts.spotify.com/authorize` (response_type=code,
- * code_challenge_method=S256, space-delimited `scope`); exchange/refresh at
- * `https://accounts.spotify.com/api/token` with the client secret as HTTP Basic
- * auth (we run server-side, so the app is a confidential client). The token
- * response carries access_token, refresh_token, expires_in, scope.
+ * space-delimited `scope`); exchange/refresh at `https://accounts.spotify.com/api/token`
+ * with the client secret as HTTP Basic auth (we run server-side, so the app is a
+ * confidential client). The token response carries access_token, refresh_token,
+ * expires_in, scope.
  *
  * We request only `user-library-read` — the connection's single purpose is the
  * "search my Spotify" likes read (`GET /me/tracks`). Never request playback or
  * audio-features scopes: BPM from Spotify is forbidden (music-providers.md).
- *
- * PKCE note: we send the PKCE `code_verifier` *and* the client secret. Spotify's
- * token endpoint accepts a confidential client authenticating with Basic auth
- * while still presenting a verifier (OAuth 2.1 belt-and-suspenders), which lets
- * the connect route reuse the same PKCE-state-cookie machinery for every
- * provider. If a live credential check ever rejects the combination, drop
- * `code_verifier` from `exchangeSpotifyCode` (standard confidential flow) — the
- * authorize URL's `code_challenge` is then simply ignored by Spotify.
  *
  * Pure functions: no storage, no secrets at rest — the app holds the secret and
  * persists the (encrypted) result. Network is injected for tests. Re-verify the
@@ -56,8 +48,6 @@ export function buildSpotifyAuthorizeUrl(p: {
     `client_id=${encodeURIComponent(p.clientId)}` +
     `&redirect_uri=${encodeURIComponent(p.redirectUri)}` +
     `&response_type=code` +
-    `&code_challenge=${encodeURIComponent(p.codeChallenge)}` +
-    `&code_challenge_method=S256` +
     `&scope=${encodeURIComponent(SPOTIFY_CONNECT_SCOPE)}` +
     `&state=${encodeURIComponent(p.state)}`;
   return `${AUTHORIZE_URL}?${q}`;
@@ -92,7 +82,7 @@ async function postToken(
   };
 }
 
-/** Exchange an authorization code (+ PKCE verifier) for tokens. */
+/** Exchange an authorization code for tokens. */
 export function exchangeSpotifyCode(cfg: {
   clientId: string;
   clientSecret: string;
@@ -105,7 +95,6 @@ export function exchangeSpotifyCode(cfg: {
   const body =
     `grant_type=authorization_code` +
     `&redirect_uri=${encodeURIComponent(cfg.redirectUri)}` +
-    `&code_verifier=${encodeURIComponent(cfg.codeVerifier)}` +
     `&code=${encodeURIComponent(cfg.code)}`;
   return postToken(cfg.fetchImpl, cfg.clientId, cfg.clientSecret, body, cfg.tokenUrl ?? TOKEN_URL);
 }
