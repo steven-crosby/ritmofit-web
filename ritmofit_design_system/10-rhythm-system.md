@@ -23,6 +23,18 @@ and derive a beat duration from it:
 On iOS the equivalent is a `beatDuration = 60.0 / bpm` published to the view tree. Same concept, native
 grammar.
 
+### 1a. Missing tempo is a readiness state, not quiet metadata
+
+A track without a BPM has no beat: `--rf-bpm` is unset, the pulse cannot run, and the tempo identity is
+absent. That absence is **surfaced as readiness**, never buried as small print — in the builder as the
+tempo dimension of the readiness panel ("Tempo missing — pulse off", see
+[`09-class-builder-guidelines.md`](./09-class-builder-guidelines.md) §Readiness), and in Live as a
+first-class state rather than a faint tertiary label. The fallback keeps meaning without motion: where
+BPM is absent the pulse is simply off (exactly as under reduced motion, §6), timers and cues stay fully
+legible, and the fix ("Add BPM so the class keeps time") is one tap away. Missing tempo warns on the
+**caution channel**; it never blocks a run on its own — only missing durations do that. And never obtain
+BPM from Spotify: manual BPM or the dedicated tempo-provider path only (music constraints).
+
 ## 2. Where it pulses (the entire allowlist)
 
 The pulse is **scarce on purpose.** It appears in exactly two places:

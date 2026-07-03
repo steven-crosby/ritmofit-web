@@ -84,6 +84,12 @@ list; after the launch gate is green, it becomes the next implementation queue. 
     motion. iOS should add the equivalent SwiftUI `beatDuration` pulse on its builder play indicator when
     its choreography surface lands (`08-ios-web-alignment.md` already specifies "same two places"). No
     contract change (BPM is already in the run-payload via `displayBpm`).
+  - Class readiness panel (web, 2026-07-03): the builder header derives a four-dimension readiness model
+    from the run-payload — duration (the one hard run gate), tempo/BPM (beat pulse), cues & moves, and
+    provider/music link — and surfaces it as glyph + word + severity with click-to-fix track chips
+    (`apps/web/src/lib/readiness.ts`, `ClassReadinessSummary.tsx`; design system `09-class-builder-guidelines.md`
+    §Readiness). No contract change — every input is already in the run-payload. iOS should show the same
+    pre-Live readiness (duration/tempo/cues-moves/music) in its builder header when the surface lands.
 - **Multi-provider track search** (SoundCloud / Spotify / Apple Music) + provider connect
   - Spotify per-user OAuth connect (web, 2026-06-29): web now wires the Spotify account-connect flow
     (confidential Authorization Code, scope `user-library-read`) behind the same `music_connections` /

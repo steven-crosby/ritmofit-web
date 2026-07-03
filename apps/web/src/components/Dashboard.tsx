@@ -52,8 +52,8 @@ import {
   formatDurationInput,
   parseDurationInput,
   runBlockedMessage,
-  tracksMissingDuration,
 } from '../lib/duration.js';
+import { classReadiness } from '../lib/readiness.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
 import { libraryView, type ListStatus } from '../lib/library-state.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
@@ -64,6 +64,7 @@ import { SegmentBand } from './SegmentBand.js';
 import { lazyWithReload } from '../lib/lazyWithReload.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
+import { ClassReadinessSummary } from './ClassReadinessSummary.js';
 import { TrackSearch } from './TrackSearch.js';
 import {
   consumeOnboardingVideoPending,
@@ -1024,7 +1025,6 @@ function ClassWorkspace({
   const isOwner = cls.accessLevel === 'owner';
   const canEdit = cls.accessLevel === 'owner' || cls.accessLevel === 'edit';
   const isFree = cls.timelineMode === 'free';
-  const missingDurationTracks = payload ? tracksMissingDuration(payload) : [];
 
   // Toggle the class between back-to-back (sequential) and free placement. The
   // server seeds/repacks offsets; refresh both the class and the run-payload.
@@ -1075,7 +1075,6 @@ function ClassWorkspace({
           isOwner={isOwner}
           canEdit={canEdit}
           canRun={payload != null && canRunPayload(payload)}
-          missingDurationTracks={missingDurationTracks}
           onError={onError}
           onRun={onRun}
           onSelectTrack={setSelectedTrackId}
@@ -1232,7 +1231,6 @@ export function ClassHeaderCard({
   isOwner,
   canEdit,
   canRun,
-  missingDurationTracks,
   onError,
   onRun,
   onSelectTrack,
@@ -1246,7 +1244,6 @@ export function ClassHeaderCard({
   isOwner: boolean;
   canEdit: boolean;
   canRun: boolean;
-  missingDurationTracks: RunPayloadTrackEntry[];
   onError: (msg: string | null) => void;
   onRun: () => void;
   onSelectTrack: (classTrackId: string) => void;
@@ -1264,6 +1261,9 @@ export function ClassHeaderCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isPublic = cls.visibility === 'public';
   const averageBpm = payload ? avgBpm(payload) : null;
+  // Readiness is derived from the run-payload (no new data): duration/tempo/
+  // cues-moves/music, surfaced before Live instead of on stage (P0 #2).
+  const readiness = payload ? classReadiness(payload) : null;
 
   const togglePublish = () =>
     void run(async () => {
@@ -1544,32 +1544,15 @@ export function ClassHeaderCard({
           </>
         )}
       </div>
-      {missingDurationTracks.length > 0 && (
-        <div
-          className="rounded-card border border-intensity-hard/50 bg-intensity-hard/10 p-3"
-          role="status"
-        >
-          <p className="font-ui text-sm font-semibold text-text-primary">
-            Duration needed before Live mode
-          </p>
-          <p className="mt-1 font-ui text-xs text-text-secondary">
-            {canEdit
-              ? 'Select each track and enter its duration:'
-              : 'An owner or editor must set a duration for:'}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {missingDurationTracks.map((entry) => (
-              <button
-                key={entry.classTrackId}
-                type="button"
-                className="rounded-pill border border-interactive/50 px-3 py-1 font-ui text-xs text-interactive"
-                onClick={() => onSelectTrack(entry.classTrackId)}
-              >
-                {entry.track.title}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* Readiness — duration/tempo/cues-moves/music, derived from the run-payload
+          and surfaced before Live (P0 #2). Shown once the class has tracks; an
+          empty class already prompts to add one below the ribbon. */}
+      {readiness && trackCount > 0 && (
+        <ClassReadinessSummary
+          readiness={readiness}
+          canEdit={canEdit}
+          onSelectTrack={onSelectTrack}
+        />
       )}
     </div>
   );
