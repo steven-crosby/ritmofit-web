@@ -33,8 +33,12 @@ const cls = {
 
 const missingEntry = {
   classTrackId: '00000000-0000-4000-8000-000000000002',
+  displayBpm: null,
+  cues: [],
+  moves: [],
+  providerRefs: [],
   track: { title: 'Unknown Length', durationMs: null },
-} as RunPayloadTrackEntry;
+} as unknown as RunPayloadTrackEntry;
 
 const payload = {
   class: { totalDurationMs: 0 },
@@ -53,7 +57,6 @@ describe('ClassHeaderCard Live readiness', () => {
         isOwner
         canEdit
         canRun={false}
-        missingDurationTracks={[missingEntry]}
         onError={() => {}}
         onRun={onRun}
         onSelectTrack={onSelectTrack}
@@ -68,9 +71,14 @@ describe('ClassHeaderCard Live readiness', () => {
     fireEvent.click(runButton);
     expect(onRun).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Unknown Length' }));
+    // This track is flagged by three dimensions (no duration, no BPM, no provider),
+    // so it shows as a fix-chip in each ("Fix duration on Unknown Length", …); any
+    // chip jumps the inspector to it.
+    fireEvent.click(screen.getAllByRole('button', { name: /Unknown Length/ })[0]!);
     expect(onSelectTrack).toHaveBeenCalledWith(missingEntry.classTrackId);
-    expect(screen.getByText(/duration needed before live mode/i)).toBeTruthy();
+    // Readiness names the gap and marks it as the one thing blocking Live.
+    expect(screen.getByText(/duration needed/i)).toBeTruthy();
+    expect(screen.getByText(/blocks live/i)).toBeTruthy();
   });
 });
 
@@ -78,7 +86,6 @@ const baseProps = {
   payload: null,
   trackCount: 0,
   canRun: false,
-  missingDurationTracks: [],
   onError: () => {},
   onRun: () => {},
   onSelectTrack: () => {},

@@ -165,7 +165,9 @@ try {
   await page.getByLabel('Track artist').fill('The Testers');
   await page.getByLabel('Track duration in minutes and seconds').fill('3:00');
   await page.getByRole('button', { name: 'Add track' }).click();
-  await page.getByText('Smoke Anthem').waitFor({ timeout: 10000 });
+  // The title now appears in the track row AND as readiness fix-chips (a manual
+  // track has no BPM/provider yet), so match the first occurrence, not exactly one.
+  await page.getByText('Smoke Anthem').first().waitFor({ timeout: 10000 });
   await checkNoOverflow(page, 'dashboard-with-track');
   if (process.env.SMOKE_DIAG) {
     const offenders = await page.evaluate(() => {
