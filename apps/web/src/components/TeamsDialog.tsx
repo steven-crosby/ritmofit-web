@@ -89,9 +89,8 @@ export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () =
             />
           ) : teams.length === 0 ? (
             <DialogState
-              title="No teams yet"
-              description="Create a team when you are ready to share classes with a studio or crew."
-              placeholder="team-rows"
+              title="No studio crews yet"
+              description="Build a studio crew when classes need shared access."
             />
           ) : (
             <ul className="flex flex-col gap-2">
@@ -120,8 +119,7 @@ export function TeamsDialog({ userId, onClose }: { userId: string; onClose: () =
           ) : (
             <DialogState
               title="Choose a team"
-              description="Select a team to see its member rows and sharing roles."
-              placeholder="team-rows"
+              description="Select a team to see its members and sharing roles."
             />
           )}
         </section>

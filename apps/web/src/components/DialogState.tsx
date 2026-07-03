@@ -18,7 +18,9 @@ export function DialogState({
 }: {
   title: string;
   description: string;
-  placeholder: DialogStatePlaceholder;
+  /** Skeleton rows for a *loading* state. Omit on a genuinely empty state so it
+   *  reads as a clean panel, not scaffolding (audit: no fake empty-state rows). */
+  placeholder?: DialogStatePlaceholder;
   action?: ReactNode;
 }) {
   return (
@@ -27,7 +29,7 @@ export function DialogState({
         <h3 className="font-ui text-sm font-semibold text-text-primary">{title}</h3>
         <p className="font-ui text-sm text-text-tertiary">{description}</p>
       </div>
-      <DialogStatePlaceholder kind={placeholder} />
+      {placeholder && <DialogStatePlaceholder kind={placeholder} />}
       {action && <div className="mt-4 flex">{action}</div>}
     </section>
   );
@@ -90,11 +92,9 @@ function PlaceholderGlyph({ kind, index }: { kind: DialogStatePlaceholder; index
     );
   }
   if (kind === 'team-rows') {
-    return (
-      <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-bg-overlay font-ui text-xs font-semibold text-text-tertiary">
-        {index === 0 ? 'O' : 'M'}
-      </span>
-    );
+    // A neutral avatar-shaped blank — never literal initials, which read as real
+    // (scaffold-looking) members leaking into a loading/empty surface.
+    return <span className="h-8 w-8 rounded-pill bg-bg-overlay" />;
   }
   return <span className="h-8 w-8 rounded-control bg-bg-overlay" />;
 }
