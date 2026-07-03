@@ -10,10 +10,27 @@
  * States: idle prompt · searching · empty · error · per-row import busy/added.
  */
 import { useEffect, useRef, useState } from 'react';
-import { providerCapabilities, type Provider, type TrackSearchResult } from '@ritmofit/shared';
-import { addTrack, importPlaylist, importTrack, listLikes, searchProvider } from '../lib/api.js';
+import {
+  providerCapabilities,
+  type MusicConnectionView,
+  type Provider,
+  type TrackSearchResult,
+} from '@ritmofit/shared';
+import {
+  addTrack,
+  importPlaylist,
+  importTrack,
+  listConnections,
+  listLikes,
+  searchProvider,
+} from '../lib/api.js';
 import { formatDuration } from '../lib/class-summary.js';
-import { DEFAULT_PROVIDER, PROVIDER_ORDER, providerLabel } from '../lib/providers.js';
+import {
+  DEFAULT_PROVIDER,
+  PROVIDER_ORDER,
+  providerConnectionState,
+  providerLabel,
+} from '../lib/providers.js';
 
 /** A stable key for a candidate (provider + provider track id). */
 const candidateKey = (r: TrackSearchResult) => `${r.provider}:${r.providerTrackId}`;
@@ -34,6 +51,31 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
   const [importingPlaylist, setImportingPlaylist] = useState(false);
   // Guards against a stale async fetch overwriting a newer one's results.
   const reqId = useRef(0);
+  // Provider connection readiness — surfaced proactively so "search my Spotify"
+  // reflects an expired/absent account *before* a failed likes fetch (audit #7,
+  // cross-surface provider coherence). Best-effort: a failed fetch just hides it.
+  const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const c = await listConnections();
+        if (alive && c) setConnections(c);
+      } catch {
+        // Best-effort: readiness is a hint, not a blocker for catalog search.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const connectionState = connections
+    ? providerConnectionState(
+        provider,
+        connections.find((c) => c.provider === provider),
+        Date.now(),
+      )
+    : null;
 
   // "My likes" reads the caller's connected account; only providers with a
   // per-user integration support it. Catalog search stays available for all.
@@ -156,6 +198,44 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
           );
         })}
       </div>
+
+      {/* Provider readiness — glyph + label, never color alone (05/11). A quiet
+          positive when connected; the caution channel when the session expired
+          (the one that needs action); a neutral hint when simply not connected,
+          since catalog search still works without an account. */}
+      {connectionState && connectionState !== 'catalog-only' && (
+        <p role="status" className="flex items-center gap-1.5 font-ui text-xs">
+          {connectionState === 'connected' ? (
+            <>
+              <span aria-hidden className="text-state-positive">
+                ✓
+              </span>
+              <span className="text-text-tertiary">
+                {providerLabel(provider)} connected — your likes are searchable
+              </span>
+            </>
+          ) : connectionState === 'expired' ? (
+            <>
+              <span aria-hidden className="text-state-caution">
+                ⊘
+              </span>
+              <span className="text-state-caution">
+                {providerLabel(provider)} session expired — reconnect in Connections to search your
+                library
+              </span>
+            </>
+          ) : (
+            <>
+              <span aria-hidden className="text-text-tertiary">
+                ○
+              </span>
+              <span className="text-text-tertiary">
+                {providerLabel(provider)} not connected — connect it to search your likes
+              </span>
+            </>
+          )}
+        </p>
+      )}
 
       {/* Mode toggle — search the catalog, or browse the caller's own likes (S3).
           "My likes" only appears for providers with a per-user integration. */}

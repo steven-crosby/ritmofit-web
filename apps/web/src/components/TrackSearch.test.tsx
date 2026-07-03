@@ -1,11 +1,25 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
-import type { TrackSearchResult } from '@ritmofit/shared';
+import type { MusicConnectionView, TrackSearchResult } from '@ritmofit/shared';
 import { TrackSearch } from './TrackSearch.js';
 import * as api from '../lib/api.js';
 
 vi.mock('../lib/api.js');
+
+/** A SoundCloud connection view; `expiresAt` decides connected vs expired. */
+function soundcloudConnection(expiresAt: number | null): MusicConnectionView {
+  return {
+    id: 'conn-1',
+    userId: 'u1',
+    provider: 'soundcloud',
+    providerUserId: null,
+    scope: null,
+    expiresAt,
+    createdAt: 1,
+    updatedAt: 1,
+  };
+}
 
 /** A promise whose resolution we control, to model a slow in-flight request. */
 function deferred<T>() {
@@ -118,5 +132,28 @@ describe('TrackSearch result artwork', () => {
     expect(img.getAttribute('src')).toBe(result.albumArtUrl);
     expect(img.getAttribute('loading')).toBe('lazy');
     expect(img.getAttribute('decoding')).toBe('async');
+  });
+});
+
+describe('TrackSearch provider readiness', () => {
+  it('warns proactively when the selected provider session is expired', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([soundcloudConnection(1)]); // expired (1970)
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    // Default provider is SoundCloud → expired, before any search is attempted.
+    expect(
+      await screen.findByText(/SoundCloud session expired — reconnect in Connections/i),
+    ).toBeTruthy();
+  });
+
+  it('confirms a connected provider', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([soundcloudConnection(null)]); // no expiry
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    expect(await screen.findByText(/SoundCloud connected/i)).toBeTruthy();
+  });
+
+  it('shows a neutral not-connected hint when the account is absent', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    expect(await screen.findByText(/SoundCloud not connected — connect it/i)).toBeTruthy();
   });
 });
