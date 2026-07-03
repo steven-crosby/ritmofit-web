@@ -88,7 +88,10 @@ export function classReadiness(payload: RunPayload): ClassReadiness {
   // 2) TEMPO — display BPM drives the beat pulse + tempo identity (10-rhythm §1–2).
   const missingBpm = tracks.filter((t) => t.displayBpm == null);
   const tempo: ReadinessDimension =
-    count > 0 && missingBpm.length === 0
+    // No tracks, or every track has a BPM → nothing to flag. An empty class's one
+    // action ("add a track") is the duration dimension's job, so tempo/music/
+    // choreography stay neutral rather than warning about zero tracks.
+    missingBpm.length === 0
       ? {
           key: 'tempo',
           level: 'ready',
@@ -118,7 +121,7 @@ export function classReadiness(payload: RunPayload): ClassReadiness {
   const cueCount = tracks.reduce((n, t) => n + (t.cues?.length ?? 0), 0);
   const moveCount = tracks.reduce((n, t) => n + (t.moves?.length ?? 0), 0);
   const choreography: ReadinessDimension =
-    cueCount + moveCount > 0
+    count === 0 || cueCount + moveCount > 0
       ? {
           key: 'choreography',
           level: 'ready',
@@ -137,7 +140,7 @@ export function classReadiness(payload: RunPayload): ClassReadiness {
   // 4) MUSIC — a provider link per track (builder-level; see file header note).
   const missingProvider = tracks.filter((t) => (t.providerRefs?.length ?? 0) === 0);
   const music: ReadinessDimension =
-    count > 0 && missingProvider.length === 0
+    missingProvider.length === 0
       ? {
           key: 'music',
           level: 'ready',

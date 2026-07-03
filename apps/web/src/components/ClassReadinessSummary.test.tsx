@@ -57,8 +57,13 @@ describe('ClassReadinessSummary', () => {
     expect(screen.getByText(/no music linked — prompter only/i)).toBeTruthy();
     expect(screen.queryByText(/blocks live/i)).toBeNull();
 
+    // Chips carry an action-bearing accessible name (distinct from the track row,
+    // and telling a screen-reader user what the chip does).
+    expect(screen.getByRole('button', { name: 'Fix tempo on Solo' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Fix music on Solo' })).toBeTruthy();
+
     // The tempo + music dimensions both flag this track — clicking a chip selects it.
-    fireEvent.click(screen.getAllByRole('button', { name: 'Solo' })[0]!);
+    fireEvent.click(screen.getAllByRole('button', { name: /Solo/ })[0]!);
     expect(onSelectTrack).toHaveBeenCalledWith('ct-9');
   });
 

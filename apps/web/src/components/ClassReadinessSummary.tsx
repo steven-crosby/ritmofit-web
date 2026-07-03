@@ -15,12 +15,20 @@
  * Warnings use the caution channel only (design system 10 §Visual — amber for
  * readiness gaps, no new accent channel). Plasma/danger are never spent here.
  */
-import type { ClassReadiness, ReadinessLevel } from '../lib/readiness.js';
+import type { ClassReadiness, ReadinessKey, ReadinessLevel } from '../lib/readiness.js';
 
 const GLYPH: Record<ReadinessLevel, string> = {
   ready: '✓',
   attention: '!',
   blocked: '!',
+};
+
+/** Friendly noun per dimension, for an action-bearing fix-chip label. */
+const DIMENSION_NOUN: Record<ReadinessKey, string> = {
+  duration: 'duration',
+  tempo: 'tempo',
+  choreography: 'cues and moves',
+  music: 'music',
 };
 
 function headline(readiness: ClassReadiness): { text: string; tone: string } {
@@ -84,6 +92,11 @@ export function ClassReadinessSummary({
                     <button
                       key={t.classTrackId}
                       type="button"
+                      // Action-bearing name so a screen-reader/keyboard user can tell
+                      // this fix-chip apart from the identically-titled track row, and
+                      // knows what it does. Keeps the visible title in the name
+                      // (label-in-name / voice control).
+                      aria-label={`Fix ${DIMENSION_NOUN[d.key]} on ${t.track.title}`}
                       className="min-h-8 rounded-pill border border-interactive/50 px-2.5 py-0.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive"
                       onClick={() => onSelectTrack(t.classTrackId)}
                     >

@@ -67,10 +67,18 @@ describe('classReadiness — dimensions', () => {
     expect(classReadiness(p).runnable).toBe(false);
   });
 
-  it('treats an empty class as blocked, not crashy', () => {
-    const duration = dim(payload(), 'duration');
+  it('treats an empty class as blocked on duration only — no spurious tempo/music warnings', () => {
+    const r = classReadiness(payload());
+    const duration = r.dimensions.find((d) => d.key === 'duration')!;
     expect(duration.level).toBe('blocked');
     expect(duration.label).toMatch(/add a track/i);
+    // The other three have nothing to assess yet, so they must not fire "attention"
+    // (they'd otherwise read "Tempo missing — pulse off" about zero tracks).
+    expect(r.dimensions.filter((d) => d.key !== 'duration').every((d) => d.level === 'ready')).toBe(
+      true,
+    );
+    expect(r.attentionCount).toBe(1);
+    expect(r.runnable).toBe(false);
   });
 
   it('flags tempo off when no track has a BPM and incomplete when some do', () => {

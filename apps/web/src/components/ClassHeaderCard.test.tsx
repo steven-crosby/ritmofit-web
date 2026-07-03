@@ -72,8 +72,9 @@ describe('ClassHeaderCard Live readiness', () => {
     expect(onRun).not.toHaveBeenCalled();
 
     // This track is flagged by three dimensions (no duration, no BPM, no provider),
-    // so it shows as a fix-chip in each; any chip jumps the inspector to it.
-    fireEvent.click(screen.getAllByRole('button', { name: 'Unknown Length' })[0]!);
+    // so it shows as a fix-chip in each ("Fix duration on Unknown Length", …); any
+    // chip jumps the inspector to it.
+    fireEvent.click(screen.getAllByRole('button', { name: /Unknown Length/ })[0]!);
     expect(onSelectTrack).toHaveBeenCalledWith(missingEntry.classTrackId);
     // Readiness names the gap and marks it as the one thing blocking Live.
     expect(screen.getByText(/duration needed/i)).toBeTruthy();
