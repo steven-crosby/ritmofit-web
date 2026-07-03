@@ -107,8 +107,9 @@
                 <strong>Your playlist has a shape. Make it visible.</strong>
               </div>
               <span class="ribbon-summary">
-                25 minutes, 2 peak efforts, highest zone All Out, controlled
-                release in the final 4 minutes.
+                25 minutes, 2 peak efforts, highest zone All Out, a 30-second
+                authored silence after the peak, controlled release in the
+                final 4 minutes.
               </span>
             </figcaption>
             <div class="timeline-ruler" aria-hidden="true">
@@ -119,7 +120,7 @@
               viewBox="0 0 1000 130"
               preserveAspectRatio="none"
               role="img"
-              aria-label="Class energy shape: builds through tracks one and two, attacks in track three, reaches All Out in track four, releases in track five, and finishes with a final attack."
+              aria-label="Class energy shape: builds through tracks one and two, attacks in track three, reaches All Out in track four, rests in a 30-second authored silence, releases in track five, and finishes with a final attack."
             >
               <defs>
                 <linearGradient id="builder-ribbon" x1="0" y1="1" x2="0" y2="0">
@@ -131,18 +132,18 @@
               </defs>
               <path
                 class="ribbon-area"
-                d="M0 104 L90 104 L90 82 L245 82 L245 46 L420 46 L420 10 L600 10 L600 92 L735 92 L735 48 L1000 48 L1000 130 L0 130 Z"
+                d="M0 104 L167 104 L167 82 L303 82 L303 46 L485 46 L485 10 L606 10 L606 128 L682 128 L682 92 L833 92 L833 48 L1000 48 L1000 130 L0 130 Z"
                 fill="url(#builder-ribbon)"
               />
               <path
-                d="M0 104 L90 104 L90 82 L245 82 L245 46 L420 46 L420 10 L600 10 L600 92 L735 92 L735 48 L1000 48"
+                d="M0 104 L167 104 L167 82 L303 82 L303 46 L485 46 L485 10 L606 10 L606 128 L682 128 L682 92 L833 92 L833 48 L1000 48"
                 class="ribbon-line"
                 fill="none"
                 stroke="url(#builder-ribbon)"
                 stroke-width="3"
                 vector-effect="non-scaling-stroke"
               />
-              <circle cx="510" cy="10" r="5" class="rf-fill-peak" />
+              <circle cx="545" cy="10" r="5" class="rf-fill-peak" />
               <line
                 x1="0"
                 y1="128"
@@ -156,7 +157,10 @@
               <button class="timeline-block">02</button>
               <button class="timeline-block is-active">03 · editing</button>
               <button class="timeline-block">04</button>
-              <button class="timeline-block gap" aria-label="Intentional silence, 30 seconds">
+              <button
+                class="timeline-block gap"
+                aria-label="0:30 gap — intentional silence"
+              >
                 0:30 gap
               </button>
               <button class="timeline-block">05</button>
@@ -184,7 +188,7 @@
               </button>
               <button
                 class="timeline-marker move"
-                style="left: 66%"
+                style="left: 74%"
                 aria-label="Move at 16 minutes"
               >
                 ◆

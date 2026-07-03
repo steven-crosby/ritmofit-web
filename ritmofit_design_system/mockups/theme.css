@@ -1403,19 +1403,26 @@ button.track-row {
   text-align: right;
 }
 
+/* Verdict labels stay in text colors for AA at this size; the glyph alone
+   carries the channel color (icons need only 3:1 — same rule as .ps-icon). */
 .verdict-line {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  color: var(--rf-text-secondary);
   font-size: 0.8rem;
   font-weight: 650;
 }
 
-.verdict-line.verdict-pass {
+.verdict-line.verdict-blocked {
+  color: var(--rf-text-primary);
+}
+
+.verdict-line.verdict-pass > [aria-hidden] {
   color: var(--rf-interactive-hover);
 }
 
-.verdict-line.verdict-blocked {
+.verdict-line.verdict-blocked > [aria-hidden] {
   color: var(--rf-caution);
 }
 
@@ -1458,6 +1465,8 @@ button.track-row {
 
 .playback-alert .recovery-handoff a {
   color: var(--rf-text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* Clip window (non-destructive shortening, D13/D19) — a saved playback window
@@ -1477,7 +1486,8 @@ button.track-row {
 
 .clip-bar i {
   position: absolute;
-  inset: 0 12% 0 6%;
+  /* 0:14–3:28 of 3:42 — both edges ≈ 6.3% */
+  inset: 0 6% 0 6%;
   border-radius: inherit;
   background: color-mix(in oklch, var(--rf-interactive) 55%, transparent);
 }
@@ -3041,10 +3051,21 @@ button.track-row {
     padding-inline: 12px;
   }
 
-  .provider-state {
+  .provider-state,
+  .playback-state {
     max-width: 100%;
     padding-right: 10px;
     font-size: 0.7rem;
+  }
+
+  .preflight-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .preflight-verdict {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .energy-ribbon {
@@ -3167,6 +3188,7 @@ button.track-row {
 
   .track-row .provider,
   .track-row .provider-state,
+  .track-row .playback-state,
   .library-row .timecode {
     grid-column: 3 / -1;
     justify-self: start;
