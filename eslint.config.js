@@ -14,11 +14,6 @@ export default tseslint.config(
       // Vendored design-system reference package — owns its own gates
       // (`ritmofit_design_system` → npm run verify) and is Prettier-ignored too.
       'ritmofit_design_system/**',
-      // Git-ignored DesignSync local artifacts (bundle output + sync tooling).
-      // CI never sees these (they're untracked); ignoring them here makes a local
-      // `pnpm lint` match CI instead of drowning in ~600 errors from generated code.
-      '**/.ds-sync/**',
-      '**/ds-bundle/**',
       // Git-ignored Claude Code local state (settings + agent worktrees). Worktrees
       // are full repo copies, so rooted ignores like `ritmofit_design_system/**`
       // don't match their nested paths — without this, local `pnpm lint` diverges
