@@ -32,7 +32,6 @@
         <a href="moves.html">Moves</a>
         <a href="builder.html" aria-current="page">Builder</a>
         <a href="explore.html">Explore</a>
-        <a href="teams.html">Teams</a>
       </nav>
       <div class="header-actions">
         <button class="button button-ghost">New class</button>
@@ -67,7 +66,7 @@
           </div>
           <div class="card-pad">
             <a class="button button-action button-block" href="library.html"
-              >Add from Library</a
+              >+ Add from Library</a
             >
           </div>
         </aside>
@@ -157,6 +156,9 @@
               <button class="timeline-block">02</button>
               <button class="timeline-block is-active">03 · editing</button>
               <button class="timeline-block">04</button>
+              <button class="timeline-block gap" aria-label="Intentional silence, 30 seconds">
+                0:30 gap
+              </button>
               <button class="timeline-block">05</button>
               <button class="timeline-block">06</button>
               <button
@@ -217,7 +219,7 @@
               <span class="section-label" id="track-list-title"
                 >Track sequence</span
               >
-              <a class="button button-action" href="library.html">Add tracks</a>
+              <a class="button button-action" href="library.html">+ Add tracks</a>
             </div>
 
             <div class="track-list">
@@ -402,10 +404,35 @@ Hold tension through the break. Release after the vocal drop.</textarea
             </label>
           </section>
 
+          <section class="inspector-section stack gap-3">
+            <div class="between gap-2">
+              <span class="field-label">Playback</span>
+              <span class="playback-state pb-eligible">
+                <span class="ps-icon" aria-hidden="true">✓</span>Plays on
+                SoundCloud
+              </span>
+            </div>
+            <div class="clip-window">
+              <label class="field">
+                <span>Window start</span>
+                <input class="input data" value="0:14" />
+              </label>
+              <label class="field">
+                <span>Window end</span>
+                <input class="input data" value="3:28" />
+              </label>
+            </div>
+            <div class="clip-bar" aria-hidden="true"><i></i></div>
+            <span class="dim"
+              >A saved playback window — the track itself is never edited.</span
+            >
+            <button class="button button-action">▶ Preview 0:14–3:28</button>
+          </section>
+
           <section class="inspector-section stack gap-2">
             <div class="between">
               <span class="field-label">Cues</span>
-              <button class="button button-action">Add cue</button>
+              <button class="button button-action">+ Add cue</button>
             </div>
             <div class="cue-row">
               <span class="timecode">0:24</span>
@@ -434,7 +461,7 @@ Hold tension through the break. Release after the vocal drop.</textarea
           <section class="inspector-section stack gap-2">
             <div class="between">
               <span class="field-label">Moves</span>
-              <a class="button button-action" href="moves.html">Add move</a>
+              <a class="button button-action" href="moves.html">+ Add move</a>
             </div>
             <div class="cue-row">
               <span class="timecode">0:38</span>

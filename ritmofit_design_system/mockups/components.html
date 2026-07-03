@@ -144,6 +144,54 @@
 
       <section class="component-section stack gap-5">
         <div>
+          <span class="section-label">Playback states</span>
+          <h2 class="title-md">Connected isn’t the same as playable.</h2>
+        </div>
+        <div class="row gap-3 wrap">
+          <span class="playback-state pb-eligible">
+            <span class="ps-icon" aria-hidden="true">✓</span>Plays on Spotify
+          </span>
+          <span class="playback-state pb-premium">
+            <span class="ps-icon" aria-hidden="true">⊘</span>Premium required
+          </span>
+          <span class="playback-state pb-auth">
+            <span class="ps-icon" aria-hidden="true">⊘</span>Authorize Apple
+            Music
+          </span>
+          <span class="playback-state pb-unavailable">
+            <span class="ps-icon" aria-hidden="true">⊘</span>Playback
+            unavailable
+          </span>
+          <span class="playback-state pb-failure">
+            <span class="ps-icon" aria-hidden="true">⚠</span>Playback failure
+          </span>
+        </div>
+        <div class="row gap-3 wrap">
+          <span class="rail-chip"
+            ><span class="rail-note" aria-hidden="true">♪</span>SoundCloud</span
+          >
+          <span class="rail-chip"
+            ><span class="rail-note" aria-hidden="true">♪</span>Silence</span
+          >
+          <span class="rail-chip"
+            ><span class="rail-note" aria-hidden="true">♪</span>Music off</span
+          >
+          <span class="rail-chip is-error"
+            ><span class="rail-note" aria-hidden="true">⚠</span>Playback
+            error</span
+          >
+        </div>
+        <p class="muted">
+          Provider-authorized playback (D19) layers per-track verdicts on top of
+          connection state. Pre-class verdicts are caution — fixable, with the
+          fix inline. Only a runtime failure is danger. The full preflight and
+          recovery surfaces live in
+          <a href="live-preflight.html">Live playback</a>.
+        </p>
+      </section>
+
+      <section class="component-section stack gap-5">
+        <div>
           <span class="section-label">Class sections</span>
           <h2 class="title-md">Segments read by label, tinted by role.</h2>
         </div>
@@ -208,11 +256,15 @@
         </div>
         <div class="row gap-3 wrap">
           <button class="button button-primary">Primary</button>
-          <button class="button button-action">Action</button>
+          <button class="button button-action">+ Add track</button>
           <button class="button button-ghost">Ghost</button>
           <button class="button button-danger">Destructive</button>
           <button class="button button-ghost" disabled>Disabled</button>
         </div>
+        <p class="muted">
+          Inline add actions carry the <code>+</code> prefix — add track, cue,
+          move, or library item. One primary per surface.
+        </p>
         <div class="component-grid">
           <label class="field">
             <span>Class title</span>
