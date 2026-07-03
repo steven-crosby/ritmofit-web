@@ -704,7 +704,6 @@ function CueByCue({
   // tracks. On each cue advance there, a plasma glow blooms behind the focal cue and
   // the cue text cross-fades in. Reduced motion degrades both to an instant swap (CSS).
   const isAllOut = entry.intensity === 'all_out';
-  const nowText = currentEvent ? currentEvent.text : '—';
   return (
     <div className="flex min-h-full flex-col gap-4 p-4 sm:p-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:p-8">
       {/* LEFT — the focal cue: the one thing the instructor reads across the room.
@@ -713,7 +712,7 @@ function CueByCue({
         {/* The drop's plasma bloom — keyed on the cue so it replays per advance. */}
         {isAllOut && currentEvent && (
           <span
-            key={nowText}
+            key={currentEvent.text}
             aria-hidden
             className="rf-drop-bloom pointer-events-none absolute inset-0 rounded-card"
           />
@@ -721,19 +720,41 @@ function CueByCue({
         <p className="relative font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
           Now
         </p>
-        <p
-          key={nowText}
-          className={`relative mt-3 break-words font-display text-[clamp(2.75rem,7vw,6rem)] font-semibold leading-[0.95] text-text-primary ${
-            isAllOut ? 'rf-drop-in' : ''
-          }`}
-          style={currentEvent?.color ? { color: currentEvent.color } : undefined}
-        >
-          {nowText}
-        </p>
-        {currentEvent?.kind === 'move' && currentEvent.intensity && (
-          <div className="relative mt-5">
-            <IntensityReadout intensity={currentEvent.intensity} />
-          </div>
+        {currentEvent ? (
+          <>
+            <p
+              key={currentEvent.text}
+              className={`relative mt-3 break-words font-display text-[clamp(2.75rem,7vw,6rem)] font-semibold leading-[0.95] text-text-primary ${
+                isAllOut ? 'rf-drop-in' : ''
+              }`}
+              style={currentEvent.color ? { color: currentEvent.color } : undefined}
+            >
+              {currentEvent.text}
+            </p>
+            {currentEvent.kind === 'move' && currentEvent.intensity && (
+              <div className="relative mt-5">
+                <IntensityReadout intensity={currentEvent.intensity} />
+              </div>
+            )}
+          </>
+        ) : (
+          // No cue at this moment: never a bare dash. Name the state, then what's
+          // playing, so the focal card stays meaningful across a dim room (audit P0
+          // #3; prescription §8 "No cue set + current track"). Mirrors the assertive
+          // screen-reader announcement, which already falls back to the track.
+          <>
+            <p className="relative mt-3 font-display text-[clamp(2.25rem,5.5vw,4rem)] font-semibold leading-[0.95] text-text-secondary">
+              No cue set
+            </p>
+            <p className="relative mt-4 flex min-w-0 items-baseline gap-2">
+              <span aria-hidden className="shrink-0 font-data text-base text-text-tertiary">
+                ♫
+              </span>
+              <span className="truncate font-display text-[clamp(1.5rem,3.5vw,2.5rem)] font-semibold text-text-primary">
+                {entry.track.title}
+              </span>
+            </p>
+          </>
         )}
       </div>
 
@@ -781,7 +802,15 @@ function CueByCue({
                 </span>
               </p>
             ) : (
-              <p className="font-data text-sm text-text-tertiary">No BPM set</p>
+              // Missing tempo is a readiness state, not quiet metadata (audit P0 #3;
+              // rhythm-system §1a): the pulse is off, said plainly on the caution
+              // channel — never a faint "No BPM set". Not alarming, just honest.
+              <p className="flex flex-col gap-0.5">
+                <span className="font-data text-xl font-semibold text-state-caution">
+                  Tempo missing
+                </span>
+                <span className="font-ui text-xs text-text-tertiary">Pulse off</span>
+              </p>
             )}
             {entry.displayRpm != null && (
               <p className="flex items-baseline gap-1.5">
