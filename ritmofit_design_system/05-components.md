@@ -147,6 +147,43 @@ Catalog-only providers use an explicit `catalog available` label rather than a c
 Connected and reconnecting states are borderless icon + text. Warning and error states may opt into a
 bordered container because the boundary helps communicate an actionable problem.
 
+## Playback states (Live Mode & Builder preview)
+
+<!-- note (Claude, 2026-07-03): Added with the first player UI slice, per the provider-playback plan. -->
+
+Provider-authorized playback (D19) adds per-track playback verdicts on top of connection state. Same
+rules: glyph + label carry meaning, color only reinforces, and every failure pairs with an inline
+recovery action.
+
+| State                                | Glyph | Color channel | Note                                          |
+| ------------------------------------ | :---: | ------------- | --------------------------------------------- |
+| Playback eligible                    |   ✓   | cyan          | "Plays on {provider}"                         |
+| Premium required                     |   ⊘   | caution/amber | Spotify: connected ≠ playable                 |
+| Subscriber authorization required    |   ⊘   | caution/amber | Apple Music: MusicKit re-authorize            |
+| Playback unavailable                 |   ⊘   | caution/amber | no provider link / no connected provider / no duration — named, with the fix |
+| Playback failure (runtime)           |   ⚠   | danger/ember  | mid-class stream/SDK failure — recoverable alert |
+
+Preflight verdicts are pre-class and fixable, so they sit on the **caution** channel with the recovery
+hint inline. A **runtime** playback failure mid-class is the danger channel: a `role="alert"` surface
+offering retry / reconnect / provider handoff / continue-without-music. Provider handoff links exist
+*only* inside that recovery surface — never as a primary or casual action.
+
+### Player rail
+
+Live Mode has a single RitmoFit control surface (transport: play/pause, reset, scrubber) plus a compact
+playback rail chip that always states what the music is doing: `♪ {provider}` while playing,
+`♪ Preparing {provider}…`, `♪ Silence` (intentional gaps), `♪ Paused`, `♪ Playback ended`,
+`⚠ Playback error`, and `♪ Music off` in prompter-only mode. Silence must read as a choice, not a
+mystery. No provider branding walls, no marketing player: this is a performance tool for an instructor
+on stage. All transport controls stay keyboard accessible and visibly focused.
+
+### Preflight screen
+
+Shown before class start: each track resolves to a named connected provider (✓) or an unplayable
+verdict with its fix. The primary action (`Start class`) enables only when every track passes;
+`Run without music` (the prompter-only path) is always available and is a capability, not a fallback
+to provider handoff.
+
 ## Icons
 
 Use a consistent rounded icon family on web and SF Symbols on iOS. **Filled = active, outline =

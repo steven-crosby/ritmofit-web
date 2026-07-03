@@ -1,23 +1,49 @@
 /**
- * M3 live mode — the cue prompter the instructor runs a class against, consuming
- * the hardened run-payload (one fetch). Today it is a synchronized prompter +
- * interval timer over the class timeline with provider handoff links. The next
- * player initiative replaces those primary links with official provider-authorized
- * playback adapters; see ritmofit_dev_plan/provider-playback-implementation.md.
+ * M3 live mode — the cue prompter + player the instructor runs a class against,
+ * consuming the hardened run-payload (one fetch). A preflight screen resolves
+ * every track to a connected provider before start; the class then runs
+ * hands-free with official provider-authorized playback (D19,
+ * ritmofit_dev_plan/provider-playback-implementation.md) — or prompter-only via
+ * "Run without music", the pre-playback behavior.
  *
  * A single virtual clock (`elapsedMs`) drives everything: which track is live,
- * the current/next cue, the countdowns, and the intensity readout. Two views:
- * Cue-by-Cue (one big current cue + what's next) and Full List (the whole
- * timeline). Intensity is redundantly encoded (color + label + filled bars) per
- * the accessibility rules — never color alone.
+ * the current/next cue, the countdowns, the intensity readout, AND provider
+ * playback — the rAF loop ticks the RuntimePlaybackCoordinator, so RitmoFit's
+ * class timeline stays the master and provider SDKs follow. Playback failure is
+ * a serious recoverable alert (retry / handoff / continue without music), never
+ * a silent skip; handoff links live only inside that recovery surface. Two
+ * views: Cue-by-Cue (one big current cue + what's next) and Full List (the
+ * whole timeline). Intensity is redundantly encoded (color + label + filled
+ * bars) per the accessibility rules — never color alone.
  */
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import type { RunPayload, RunPayloadTrackEntry, Intensity, SegmentType } from '@ritmofit/shared';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import type {
+  MusicConnectionView,
+  RunPayload,
+  RunPayloadTrackEntry,
+  Intensity,
+  SegmentType,
+} from '@ritmofit/shared';
+import { listConnections } from '../lib/api.js';
+import { preflightPayload } from '../lib/playback/coordinator.js';
+import { RuntimePlaybackCoordinator, type CoordinatorStatus } from '../lib/playback/runtime.js';
+import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
+import type { AdapterRegistry } from '../lib/playback/types.js';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { useWakeLock } from '../lib/use-wake-lock.js';
 import { IntensityReadout } from './IntensityReadout.js';
+import { LivePreflight } from './LivePreflight.js';
 import { LiveTimeline } from './LiveTimeline.js';
 import { SEGMENT_META, SegmentIcon } from './SegmentBand.js';
+
+/**
+ * The providers the web player can drive today; grows as adapter slices land
+ * (Apple Music, then Spotify after its scope expansion). Preflight filters
+ * connections to this registry, so a connected-but-not-yet-playable provider
+ * reads honestly as "no connected provider can play this" instead of passing
+ * preflight and failing at prepare.
+ */
+const PLAYBACK_ADAPTERS: AdapterRegistry = { soundcloud: soundcloudAdapterFactory };
 
 type View = 'cue' | 'list';
 
@@ -40,6 +66,12 @@ export interface TimelineEvent {
 /** Stable empty reference so a track-less / pre-roll frame doesn't churn memos. */
 const NO_EVENTS: TimelineEvent[] = [];
 
+/**
+ * Provider handoff links — recovery-surface only (plan: "not a primary or
+ * casual fallback"). Rendered inside the playback-failure alert for rare
+ * browser/session issues (stale provider auth, SDK load failure), never on the
+ * normal prompter surfaces.
+ */
 function ProviderHandoffLinks({ entry }: { entry: RunPayloadTrackEntry }) {
   const refs = PROVIDER_ORDER.flatMap((provider) => {
     const ref = entry.providerRefs.find((candidate) => candidate.provider === provider);
@@ -194,6 +226,48 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   const [elapsedMs, setElapsedMs] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [view, setView] = useState<View>('cue');
+  // Preflight gates class start (plan: "preflight every track before class
+  // start"). An empty class has nothing to preflight — straight to the prompter.
+  const [phase, setPhase] = useState<'preflight' | 'live'>(
+    payload.tracks.length === 0 ? 'live' : 'preflight',
+  );
+  const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
+  const [connectionsError, setConnectionsError] = useState<string | null>(null);
+  const [playback, setPlayback] = useState<CoordinatorStatus>({ kind: 'idle' });
+  // Null = prompter-only (no music started, or the instructor bailed out of a
+  // playback failure). The coordinator is imperative on purpose: the rAF clock
+  // drives it, and React state only mirrors its status for display.
+  const coordinatorRef = useRef<RuntimePlaybackCoordinator | null>(null);
+
+  const refreshConnections = useCallback(async () => {
+    setConnectionsError(null);
+    try {
+      setConnections(await listConnections());
+    } catch (e) {
+      setConnectionsError((e as Error).message);
+    }
+  }, []);
+  useEffect(() => {
+    void refreshConnections();
+  }, [refreshConnections]);
+  // Release the provider SDK/widget when the instructor exits Live Mode.
+  useEffect(
+    () => () => {
+      coordinatorRef.current?.destroy();
+    },
+    [],
+  );
+
+  // Static preflight against the providers the player can actually drive.
+  const playableConnections = useMemo(
+    () => (connections ?? []).filter((c) => c.provider in PLAYBACK_ADAPTERS),
+    [connections],
+  );
+  const preflight = useMemo(
+    () =>
+      connections ? preflightPayload(payload, playableConnections, { now: Date.now() }) : null,
+    [connections, playableConnections, payload],
+  );
 
   // Virtual clock: accumulate real time only while playing, via rAF.
   const baseRef = useRef(0); // elapsed banked before the current play segment
@@ -206,6 +280,10 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
       const live = baseRef.current + (performance.now() - startRef.current);
       const capped = Math.min(live, payload.class.totalDurationMs);
       setElapsedMs(capped);
+      // The class clock is master: each frame lets the playback coordinator
+      // follow it (auto-advance, gap silence, end). Fire-and-forget — a frame
+      // is a poll, and the coordinator absorbs overlapping ticks itself.
+      void coordinatorRef.current?.tick(capped);
       if (capped >= payload.class.totalDurationMs) {
         baseRef.current = payload.class.totalDurationMs;
         setPlaying(false);
@@ -230,6 +308,45 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     // time already elapsed since play started (jumping the clock forward).
     startRef.current = performance.now();
     setElapsedMs(clamped);
+    // Re-cue provider playback at the new position (no-op while paused — the
+    // next resume enters at the clock position anyway).
+    void coordinatorRef.current?.seek(clamped);
+  };
+
+  /** Start hands-free: build the coordinator and begin playback at 0 (a user gesture). */
+  const startClass = () => {
+    const coordinator = new RuntimePlaybackCoordinator(payload, playableConnections, {
+      now: Date.now(),
+      adapters: PLAYBACK_ADAPTERS,
+      onStatus: setPlayback,
+    });
+    coordinatorRef.current = coordinator;
+    setPhase('live');
+    setPlaying(true);
+    void coordinator.start(0);
+  };
+
+  const togglePlay = () => {
+    const next = !playing;
+    const coordinator = coordinatorRef.current;
+    if (coordinator) {
+      if (next) void coordinator.resume(elapsedMs);
+      else void coordinator.pause();
+    }
+    setPlaying(next);
+  };
+
+  /** Retry from a playback failure: re-enter the segment at the clock position. */
+  const retryPlayback = () => {
+    if (!playing) setPlaying(true);
+    void coordinatorRef.current?.resume(elapsedMs);
+  };
+
+  /** Abandon playback but keep the class running (prompter + timers stay live). */
+  const continueWithoutMusic = () => {
+    coordinatorRef.current?.destroy();
+    coordinatorRef.current = null;
+    setPlayback({ kind: 'idle' });
   };
 
   // Flatten + sort each track's cues/moves once per payload, not on every animation
@@ -307,6 +424,33 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
 
   // Live runs on bg-live (ink-950, darker than bg-base) for maximum AAA contrast
   // in a dim studio — and stays dark in both themes (02/04-layout).
+  if (phase === 'preflight') {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col bg-live">
+        <header className="flex items-center justify-between border-b border-interactive/20 px-6 py-3">
+          <h1 className="font-display text-lg font-semibold text-text-primary">
+            {payload.class.title}
+          </h1>
+          <button
+            className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+            onClick={onExit}
+          >
+            Exit
+          </button>
+        </header>
+        <div className="min-h-0 flex-1 overflow-auto">
+          <LivePreflight
+            preflight={preflight}
+            connectionsError={connectionsError}
+            onRetryConnections={() => void refreshConnections()}
+            onStart={startClass}
+            onRunWithoutMusic={() => setPhase('live')}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-live">
       {/* The advancing cue, spoken for screen readers — the prompter's core function.
@@ -365,18 +509,100 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
         )}
       </div>
 
+      {/* Playback failure — serious and recoverable (plan): the class clock and
+          prompter keep running while the instructor retries, hands off to the
+          provider app (recovery-only surface), or continues without music. */}
+      {playback.kind === 'error' && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-state-danger/40 bg-bg-raised px-6 py-3"
+        >
+          <p className="font-ui text-sm font-semibold text-text-primary">
+            <span aria-hidden className="mr-1.5 text-state-danger">
+              ⚠
+            </span>
+            Playback stopped: {playback.error.message}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              className="min-h-11 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
+              onClick={retryPlayback}
+            >
+              Retry
+            </button>
+            <button
+              className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive"
+              onClick={continueWithoutMusic}
+            >
+              Continue without music
+            </button>
+            {live && <ProviderHandoffLinks entry={live.entry} />}
+          </div>
+        </div>
+      )}
+
       <Transport
         playing={playing}
-        onToggle={() => setPlaying((p) => !p)}
+        onToggle={togglePlay}
         onReset={() => {
           setPlaying(false);
+          void coordinatorRef.current?.pause();
           seek(0);
         }}
         payload={payload}
         elapsedMs={elapsedMs}
         onSeek={seek}
+        playback={coordinatorRef.current ? playback : null}
       />
     </div>
+  );
+}
+
+/**
+ * The player rail chip: an always-explicit statement of what the music is
+ * doing (glyph + label, never color alone). `status` is null in prompter-only
+ * mode, which is itself stated — silence must be legible as a choice, not a
+ * mystery, to an instructor mid-class.
+ */
+function PlaybackRail({ status }: { status: CoordinatorStatus | null }) {
+  let text: string;
+  if (status == null) {
+    text = 'Music off';
+  } else {
+    switch (status.kind) {
+      case 'preparing':
+        text = `Preparing ${providerLabel(status.provider)}…`;
+        break;
+      case 'playing':
+        text = providerLabel(status.provider);
+        break;
+      case 'silence':
+        text = 'Silence';
+        break;
+      case 'paused':
+        text = 'Paused';
+        break;
+      case 'ended':
+        text = 'Playback ended';
+        break;
+      case 'error':
+        text = 'Playback error';
+        break;
+      default:
+        text = 'Music ready';
+    }
+  }
+  const isError = status?.kind === 'error';
+  return (
+    <p
+      className={`flex shrink-0 items-center gap-1.5 font-data text-xs ${
+        isError ? 'font-semibold text-state-danger' : 'text-text-tertiary'
+      }`}
+    >
+      <span aria-hidden>{isError ? '⚠' : '♪'}</span>
+      <span className="sr-only">Playback: </span>
+      {text}
+    </p>
   );
 }
 
@@ -601,7 +827,8 @@ function CueByCue({
           </div>
         </div>
 
-        {/* Track identity + provider handoff (+ any instructor notes). */}
+        {/* Track identity (+ any instructor notes). Provider handoff links left
+            this card for the playback-failure recovery surface (D19). */}
         <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
           <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
             Track {live.index + 1}
@@ -620,9 +847,6 @@ function CueByCue({
               </p>
             </div>
           )}
-          <div className="mt-3">
-            <ProviderHandoffLinks entry={entry} />
-          </div>
         </div>
       </div>
     </div>
@@ -687,11 +911,6 @@ function FullList({
                 {t.notes}
               </p>
             )}
-            {isLive && (
-              <div className="mt-3 border-t border-interactive/15 pt-3">
-                <ProviderHandoffLinks entry={t} />
-              </div>
-            )}
             {(t.cues.length > 0 || t.moves.length > 0) && (
               <ul className="mt-3 flex flex-col gap-1 border-t border-interactive/15 pt-2">
                 {eventsByTrack[i]!.map((e, j) => {
@@ -742,6 +961,7 @@ function Transport({
   payload,
   elapsedMs,
   onSeek,
+  playback,
 }: {
   playing: boolean;
   onToggle: () => void;
@@ -749,6 +969,8 @@ function Transport({
   payload: RunPayload;
   elapsedMs: number;
   onSeek: (ms: number) => void;
+  /** Coordinator status while music runs; null in prompter-only mode. */
+  playback: CoordinatorStatus | null;
 }) {
   return (
     <div className="flex items-center gap-4 border-t border-interactive/20 px-6 py-4">
@@ -764,6 +986,7 @@ function Transport({
       >
         Reset
       </button>
+      <PlaybackRail status={playback} />
       <LiveTimeline payload={payload} elapsedMs={elapsedMs} onSeek={onSeek} />
     </div>
   );
