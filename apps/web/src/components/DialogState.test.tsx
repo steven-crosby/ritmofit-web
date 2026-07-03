@@ -37,4 +37,27 @@ describe('DialogState', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
+
+  it('omits the skeleton entirely when no placeholder is given (clean empty state)', () => {
+    const { container } = render(
+      <DialogState
+        title="No studio crews yet"
+        description="Build a studio crew when classes need shared access."
+      />,
+    );
+    // A genuinely empty state is a clean panel, not fake scaffold rows.
+    expect(container.querySelector('[aria-hidden="true"]')).toBeNull();
+  });
+
+  it('never renders literal initials in the team-rows skeleton', () => {
+    render(
+      <DialogState
+        title="Loading team spaces"
+        description="Checking crews."
+        placeholder="team-rows"
+      />,
+    );
+    expect(screen.queryByText('O')).toBeNull();
+    expect(screen.queryByText('M')).toBeNull();
+  });
 });

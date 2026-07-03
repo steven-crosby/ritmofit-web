@@ -28,12 +28,15 @@ afterEach(() => {
 });
 
 describe('TeamsDialog', () => {
-  it('shows the empty state when the caller has no teams', async () => {
+  it('shows a clean empty state (no scaffold rows) when the caller has no teams', async () => {
     vi.mocked(api.listTeams).mockResolvedValue([]);
 
     render(<TeamsDialog userId="me" onClose={() => {}} />);
 
-    expect(await screen.findByText(/No teams yet/)).toBeTruthy();
+    expect(await screen.findByText(/No studio crews yet/)).toBeTruthy();
+    // The empty state must not leak fake member scaffolding (audit: no "O/M/M" rows).
+    expect(screen.queryByText('O')).toBeNull();
+    expect(screen.queryByText('M')).toBeNull();
   });
 
   it('loads a team’s members on selection and adds a member by email', async () => {
