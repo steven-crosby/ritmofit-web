@@ -51,8 +51,9 @@ files or begin implementation during orientation.
   and say whether they appear related to the requested work.
 - Do not run the full test suite merely to start a session. Run gates after scope is confirmed,
   or run targeted checks only when needed to understand the baseline.
-- Preserve RitmoFit's music constraints: no provider audio caching, no Spotify BPM, and no
-  in-app playback mixing or embedding.
+- Preserve RitmoFit's music constraints: no provider audio caching, no Spotify BPM, no audio
+  mixing/crossfade, and in-app playback only through official provider-authorized SDKs/widgets
+  (see `ritmofit_dev_plan/music-providers.md`).
 - Shared contracts originate in `packages/shared`; class-scoped access requires centralized
   authorization; D1 migrations are generated and never rewritten after application.
 - Surface parity is a hard gate: web and iOS are co-equal product surfaces. State parity impact

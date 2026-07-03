@@ -62,14 +62,25 @@ share management.
 everything needed to run a class live. The read-optimized iOS contract; the granular REST endpoints are
 the edit surface.
 
-**Planning surface** — What the web app is: where instructors build and choreograph. Distinct from
-playback, which happens in the providers' own apps.
+**Planning surface** — The build/choreograph side of the product (as opposed to running a class
+live). Playback is provider-authorized: official provider SDK/widget playback in-app, or handoff to
+the provider's own app.
 
-**Live mode** — Running a class in front of a room (primarily the iOS app): cue prompter, interval
-timers, intensity readouts.
+**Live mode** — Running a class in front of a room (a co-equal capability on web and iOS — D18): cue
+prompter, interval timers, intensity readouts, provider-authorized playback.
 
-**Provider** — A music service: Spotify, Apple Music, or SoundCloud. RitmoFit hands off playback to
-these; it does not stream or mix audio itself.
+**Provider** — A music service: Spotify, Apple Music, or SoundCloud. RitmoFit plays through these via
+official SDKs/widgets or hands off to their apps; it never streams, proxies, or mixes audio itself.
+
+**Provider-authorized playback** — In-app playback controlled exclusively through a provider's
+official mechanism (Spotify Web Playback SDK/Connect, Apple Music MusicKit on the Web, SoundCloud
+Widget API), under the provider's own authorization, subscription, and availability rules. The
+provider owns the audio stream; RitmoFit owns the class timeline. See
+`provider-playback-implementation.md`.
+
+**Playback window** — The saved per-class cue range a track plays within: start at `clip_start_ms`,
+end at `clip_start_ms` + effective duration (`clip_end_ms`). A stored range honored at playback time —
+never an edited audio file.
 
 **Mock-track seam** — A dev-only path that creates tracks without any provider API, so local builder
 flows remain exercisable with zero credentials.

@@ -78,8 +78,8 @@ Disconnected copy:
 
 > Your music link dropped. Reconnect to keep building.
 
-Provider audio is never embedded or cached. Provider controls hand off to approved provider
-applications or links.
+Provider audio is never cached or re-hosted. Provider controls drive official provider-authorized
+playback (SDKs/widgets) or hand off to approved provider applications or links.
 
 ## Selection and accessibility
 

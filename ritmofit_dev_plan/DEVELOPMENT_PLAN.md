@@ -21,9 +21,12 @@ A choreography and class-running tool for **rhythm spin cycle instructors**.
   unchanged. **The backend is the single source of truth; neither client is.**
 - The parity principle is locked as decision **D18**; the hard gate + current parity backlog live in
   [`web-ios-parity.md`](./web-ios-parity.md).
-- **Current operating focus:** the web launch gate is green and deployed; shift to the iOS handoff /
-  parity wrap against the tracked backlog. New web work should be limited to production support,
-  launch-critical fixes, or explicitly approved follow-up slices.
+- **Current operating focus (2026-07-02):** the web launch gate is green and deployed. The active web
+  track is the **provider-authorized playback initiative**
+  ([`provider-playback-implementation.md`](./provider-playback-implementation.md)) alongside continuing
+  owner-approved design/polish slices. The iOS handoff / parity wrap is queued behind it; its backlog
+  stays tracked in [`web-ios-parity.md`](./web-ios-parity.md), and the parity gate still applies to
+  every web feature merge.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
@@ -35,10 +38,12 @@ modeled as a single object from day one.
 
 StructClub remains the clearest product reference for rhythm-instructor expectations: fast discovery,
 rich class/library presentation, movement-oriented creation paths, and a confident live-running surface.
-RitmoFit intentionally diverges where provider constraints require it — audio playback stays in provider
-apps — and competes by making web-based planning, choreography, sharing, and live prompting stronger and
-more accessible. The old point-in-time StructClub audit is archived for provenance; active launch checks
-and deferrals now live in [`web-launch-readiness.md`](./web-launch-readiness.md).
+RitmoFit intentionally diverges where provider constraints require it: playback may be controlled inside
+RitmoFit only through official provider SDKs/widgets, while providers still own the audio stream and
+availability. RitmoFit competes by making web-based planning, choreography, sharing, live prompting, and
+provider-authorized playback feel like one instructor workflow. The old point-in-time StructClub audit
+is archived for provenance; active launch checks and deferrals now live in
+[`web-launch-readiness.md`](./web-launch-readiness.md).
 
 ---
 
@@ -50,9 +55,9 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 1. **No BPM from Spotify.** Spotify deprecated the audio-features (tempo) endpoint for new apps in
    **November 2024**. BPM is **manual entry** in M1 (`tracks.display_bpm`, optional per-class override);
    an optional third-party BPM provider may come later. Never build against Spotify BPM.
-2. **No in-app audio mixing / crossfade.** RitmoFit is a **planning surface**. Audio plays through the
-   user's own provider apps; we deep-link / hand off via `track_provider_ids.provider_uri`. We never
-   stream or mix tracks ourselves.
+2. **Official provider playback only; no mixing / crossfade.** RitmoFit may control playback through
+   official Spotify, Apple Music, and SoundCloud SDKs/widgets. It never downloads, proxies, re-hosts,
+   mixes, beatmatches, or crossfades provider audio.
 3. **No caching of audio or platform-derived data.** We store **references** (provider IDs/URIs) and
    **our own** metadata (classes, cues, moves, intensity, timeline, manual BPM) — never audio.
 
@@ -81,6 +86,7 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 | Moves library | Global `moves` seed + `user_moves` custom language; placements reference them |
 | Time encoding | **Milliseconds everywhere** (`anchor_ms`, `start_offset_ms`, `duration_ms`) |
 | iOS live contract | A versioned **`GET /classes/:id/run-payload`** — one request runs a class |
+| Playback | **Provider-authorized only** (D19) — official SDKs/widgets (Spotify Web Playback SDK, MusicKit on the Web, SoundCloud Widget API); providers own the audio stream, RitmoFit owns the class timeline and playback windows |
 
 Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
@@ -106,8 +112,8 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 > **Where current status lives** (to avoid drift, this map carries no dated status):
-> - **Milestone state** (M1–M4 and Web Launch Readiness done; iOS parity wrap next) →
->   [`milestones.md`](./milestones.md).
+> - **Milestone state** (M1–M4 and Web Launch Readiness done; provider-playback initiative active,
+>   iOS parity wrap queued) → [`milestones.md`](./milestones.md).
 > - **Launch gate** (go/no-go checklist, verification plan, deferrals) →
 >   [`web-launch-readiness.md`](./web-launch-readiness.md).
 > - **Chronological deploy/build log** (every PR, Worker version id, migration step, the live Worker
@@ -118,8 +124,8 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 >   [`deployment-runbook.md`](./deployment-runbook.md).
 >
 > The headline: backend **M1–M4 complete and deployed**, the web launch gate is green, and the app is
-> live at `https://ritmofit.studio` (one Worker, single origin). Current focus moves to the iOS parity
-> wrap.
+> live at `https://ritmofit.studio` (one Worker, single origin). The active track is the
+> provider-authorized playback initiative; the iOS parity wrap is queued behind it.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);
@@ -152,6 +158,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`api.md`](./api.md) | REST surface, run-payload, auth, error conventions |
 | [`authorization.md`](./authorization.md) | The ownership + sharing access model (app-level gate) |
 | [`music-providers.md`](./music-providers.md) | The three hard constraints; BPM/playback strategy |
+| [`provider-playback-implementation.md`](./provider-playback-implementation.md) | Planned RitmoFit player architecture: provider adapters, Live Mode preflight/auto-advance, mixed-provider classes |
 | [`editing-granularity-scoping.md`](./editing-granularity-scoping.md) | As-built record of trim / beat-snap / free-placement; the granularity boundary (D13) and open follow-ups |
 | [`milestones.md`](./milestones.md) | Milestone breakdown, M1 build order, acceptance criteria |
 | [`web-launch-readiness.md`](./web-launch-readiness.md) | Completed web launch gate, verification plan, and live deferrals |
@@ -170,6 +177,16 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 Forward work has two homes during launch sequencing: web launch blockers and deferrals live in
 [`web-launch-readiness.md`](./web-launch-readiness.md); post-web-launch cross-surface parity work lives
 in [`web-ios-parity.md`](./web-ios-parity.md). Don't keep parallel lists here.
+
+**Open production issues:**
+
+- **SoundCloud (and unverified Spotify) per-user connect token exchange fails in prod** (first seen
+  2026-06-29; still open as of 2026-07-02): SoundCloud connect returns `connect_failed` — the
+  `secure.soundcloud.com/oauth/token` exchange returns non-2xx (likely a provider-dashboard
+  redirect-URI mismatch or stale client secret); the Spotify exchange is deployed but unverified
+  end-to-end. Details in [`deployment-runbook.md`](./deployment-runbook.md). **This is a prerequisite
+  for the provider-authorized playback initiative** (Spotify playback rides per-user OAuth plus a
+  scope expansion).
 
 Recently closed (kept as pointers so the trail isn't lost):
 

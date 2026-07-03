@@ -4,16 +4,19 @@ Each step follows the working agreement: **plan → confirm → code → summari
 `../AGENTS.md` → "Before Implementing").
 
 > **Status: M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ · Web Launch Readiness ✅ — all done, merged to `main`, and
-> deployed** (API + web at `https://ritmofit.studio`). The active focus is now the **iOS handoff /
-> parity wrap**. For the live Worker version and the current remote D1 migration level (well past these
-> milestones — `HISTORY.md` is the source of truth, not this block), see [`HISTORY.md`](./HISTORY.md).
-> The launch gate lives in [`web-launch-readiness.md`](./web-launch-readiness.md); post-web-launch
-> parity work lives in [`web-ios-parity.md`](./web-ios-parity.md).
+> deployed** (API + web at `https://ritmofit.studio`). The active focus (2026-07-02) is the
+> **provider-authorized playback initiative**
+> ([`provider-playback-implementation.md`](./provider-playback-implementation.md)); the **iOS handoff /
+> parity wrap** is queued behind it. For the live Worker version and the current remote D1 migration
+> level (well past these milestones — `HISTORY.md` is the source of truth, not this block), see
+> [`HISTORY.md`](./HISTORY.md). The launch gate lives in
+> [`web-launch-readiness.md`](./web-launch-readiness.md); post-web-launch parity work lives in
+> [`web-ios-parity.md`](./web-ios-parity.md).
 >
 > **Surface scope:** per the parity principle (`decisions.md` D18, [`web-ios-parity.md`](./web-ios-parity.md)),
-> web and iOS are co-equal surfaces. With the web launch gate green, the iOS wrap-up is the next product
-> focus; any launch-critical web fix that expands iOS debt still needs an immediate `web-ios-parity.md`
-> follow-up. (The prior `REVIEW.md` launch-readiness log is archived in `archive/`.)
+> web and iOS are co-equal surfaces. Any web work that expands iOS debt — including the playback
+> initiative — still needs an immediate `web-ios-parity.md` follow-up before merge. (The prior
+> `REVIEW.md` launch-readiness log is archived in `archive/`.)
 
 ## M1 — Auth + class/cue data model ✅ done
 
@@ -125,7 +128,8 @@ Core builder first (these validate the product), teams/sharing last.
 > secrets. The mock remains a local/dev seam; production runs with `MOCK_PROVIDERS` unset.
 
 - **SoundCloud first** (the differentiator): provider search feeding track creation; provider-ID
-  resolution and the same-song matching problem; deep-link/hand-off playback via `provider_uri`.
+  resolution and the same-song matching problem; provider refs via `provider_uri` for handoff-era links
+  and the planned provider-authorized playback adapters.
 - Spotify and Apple Music behind the same provider interface (add `packages/music` here).
 - Optional third-party BPM provider to populate `display_bpm`.
 - Music-connection OAuth + encrypted token storage (`music_connections`, `ENCRYPTION_KEY`).
@@ -148,7 +152,9 @@ Core builder first (these validate the product), teams/sharing last.
 > - ✅ **Interval countdown timer** — a virtual clock (play/pause/seek/reset) drives current-track and
 >   class "ends in" countdowns and the time-to-next-cue.
 > - ✅ **Intensity readouts** — redundant encoding (color + 0–4 filled bars + label), never color alone.
-> - No in-app audio — playback stays in the provider apps (the three music rules).
+> - Live transport originally drove only the virtual prompter clock; provider handoff links shipped as
+>   the handoff-era fallback. The next player initiative replaces this primary path with official
+>   provider-authorized playback (see `provider-playback-implementation.md`).
 >
 > **M3 complete for the web repo.** The native **iOS** live surface (Phase 2 / `ritmofit-ios`) will
 > reimplement the prompter against the same run-payload, plus a Landscape view and device-specific polish.
@@ -242,8 +248,10 @@ green, launch-candidate production deploy complete, Apple Sign In/provider crede
 smoke passing, auth/email/provider/core workflow paths verified, launch-blocking
 accessibility/responsive issues closed, and non-blocking deferrals recorded.
 
-**Next focus:** move to the iOS parity wrap in the separate `ritmofit-ios` repo, starting from the
-tracked backlog in [`web-ios-parity.md`](./web-ios-parity.md).
+**Next focus (updated 2026-07-02):** the provider-authorized playback initiative
+([`provider-playback-implementation.md`](./provider-playback-implementation.md)) is the active web
+track; the iOS parity wrap in the separate `ritmofit-ios` repo follows, starting from the tracked
+backlog in [`web-ios-parity.md`](./web-ios-parity.md).
 
 ## Cross-cutting reminders
 - Plan before code on every feature; wait for confirmation.

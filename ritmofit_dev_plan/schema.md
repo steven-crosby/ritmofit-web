@@ -128,7 +128,7 @@ One row per provider for a track — what makes a track provider-agnostic.
 | track_id | text (FK → tracks.id) | |
 | provider | text enum(`spotify`,`apple_music`,`soundcloud`) | |
 | provider_track_id | text | The provider's own ID |
-| provider_uri | text | Nullable; Spotify URI / SoundCloud URL for deep-link playback |
+| provider_uri | text | Nullable; Spotify URI / SoundCloud URL — feeds provider playback adapters and handoff links |
 | created_at / updated_at | int (ms) | |
 
 Unique on (`owner_user_id`, `provider`, `provider_track_id`).

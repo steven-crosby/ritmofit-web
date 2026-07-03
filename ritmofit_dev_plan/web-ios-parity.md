@@ -17,9 +17,10 @@ desk, iOS in the room) but is **never capability-limited**. Full rationale + tra
 linked parity item on the other surface.** Existing asymmetries are **defects**, worked down ahead of
 most net-new feature work.
 
-**Current sequence:** the web launch gate is green and deployed, so focus shifts to the iOS wrap-up. iOS
-gaps remain tracked here, and launch-critical web fixes that increase iOS debt must add or update a
-linked backlog item before merge.
+**Current sequence (2026-07-02):** the web launch gate is green and deployed; the active web track is
+the provider-authorized playback initiative (`provider-playback-implementation.md`), with the iOS
+wrap-up queued behind it. iOS gaps remain tracked here, and web work that increases iOS debt —
+including the playback initiative — must add or update a linked backlog item before merge.
 
 In practice, for any feature PR (web *or* iOS):
 
@@ -104,6 +105,19 @@ list; after the launch gate is green, it becomes the next implementation queue. 
     `POST /providers/apple_music/connection` endpoint (shared, no contract change), and surface it in its
     Connections UI + likes search. The web MusicKit-JS browser handshake itself is verified live, not in
     CI.
+- **Provider-authorized playback in Live Mode and Builder preview** (planned web feature; see
+  `provider-playback-implementation.md`): web will replace provider handoff as the primary path with a
+  single RitmoFit player UI backed by provider-specific adapters for SoundCloud, Spotify, and Apple
+  Music. Live Mode owns the class timeline, supports mixed-provider classes, preflights every track
+  before class start, auto-advances without instructor action, and uses `clipStartMs` + effective
+  `track.durationMs` as each provider playback window. **iOS parity follow-up:** iOS needs equivalent
+  native/provider-authorized playback control, preflight, mixed-provider track selection, auto-advance,
+  and Builder range preview. Platform APIs may differ, but capability cannot be omitted without a
+  tracked documented exception. Potential native paths: MusicKit for Apple Music, Spotify SDK/App Remote
+  where allowed, and a SoundCloud provider-approved path. **Open question (flagged 2026-07-02):**
+  SoundCloud has no native-iOS equivalent of the web Widget API; if no provider-approved native path
+  exists, SoundCloud playback on iOS becomes a **Documented exception** below (handoff-only on iOS)
+  rather than a silent gap — decide before the iOS playback slice starts.
 - **Library** of saved/liked tracks
   - Library-card summary (web Session 3): `GET /classes` now returns additive per-class card
     aggregates (`trackCount`, `totalDurationMs`, `albumArtUrls`) via the new `ClassListItem` shape, and

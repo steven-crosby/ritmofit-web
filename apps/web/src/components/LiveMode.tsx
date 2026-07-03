@@ -1,8 +1,9 @@
 /**
  * M3 live mode — the cue prompter the instructor runs a class against, consuming
- * the hardened run-payload (one fetch). It does NOT play audio (the three music
- * rules: playback stays in the provider apps) — it's a synchronized prompter +
- * interval timer over the class timeline.
+ * the hardened run-payload (one fetch). Today it is a synchronized prompter +
+ * interval timer over the class timeline with provider handoff links. The next
+ * player initiative replaces those primary links with official provider-authorized
+ * playback adapters; see ritmofit_dev_plan/provider-playback-implementation.md.
  *
  * A single virtual clock (`elapsedMs`) drives everything: which track is live,
  * the current/next cue, the countdowns, and the intensity readout. Two views:

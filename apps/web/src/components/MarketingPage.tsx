@@ -116,7 +116,7 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
               </a>
             </div>
             <span className="font-ui text-sm text-text-tertiary">
-              Music providers connected by approved handoff
+              Music providers connected by approved playback
             </span>
           </div>
 
