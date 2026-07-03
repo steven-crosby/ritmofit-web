@@ -2817,6 +2817,94 @@ button.track-row {
   gap: 10px;
 }
 
+/* Builder audition tray — the persistent preview affordance. Borrows the
+   persistence principle from a player bar but stays a class-building tool:
+   current preview, quick pause, track position, and return-to-row, docked to
+   the bottom of the work column so auditioning never loses the instructor's
+   place in the sequence. Same glass-tray family as .selection-tray, and
+   deliberately quieter than the Live transport: cyan interaction channel only
+   (no copper primary, no peak color), and the sequence row's playing dot stays
+   the one moving indicator. Playback itself belongs to the connected provider —
+   this is only the control surface, never an embedded player. */
+.audition-tray {
+  position: sticky;
+  bottom: 14px;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 14px;
+  border: 1px solid color-mix(in oklch, var(--rf-interactive-hover) 28%, transparent);
+  border-radius: var(--rf-radius-card);
+  background: var(--rf-glass-strong);
+  padding: 10px 14px;
+  box-shadow: var(--rf-shadow-lifted);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.audition-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.audition-copy {
+  min-width: 0;
+}
+
+.audition-copy strong,
+.audition-copy span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audition-copy strong {
+  color: var(--rf-text-primary);
+  font-size: 0.88rem;
+}
+
+.audition-copy span {
+  color: var(--rf-text-tertiary);
+  font-size: 0.74rem;
+}
+
+.audition-position {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 10px;
+}
+
+.audition-position .seek {
+  --seek: 34%;
+  height: 6px;
+}
+
+.audition-position .seek::after {
+  width: 14px;
+  height: 14px;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--rf-interactive) 28%, transparent);
+}
+
+.audition-position .timecode {
+  color: var(--rf-text-secondary);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.audition-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.audition-actions .button {
+  padding-inline: 14px;
+  white-space: nowrap;
+}
+
 @media (max-width: 1180px) {
   .builder-layout {
     grid-template-columns: minmax(0, 1fr) 320px;
@@ -2966,6 +3054,23 @@ button.track-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+  }
+
+  .audition-tray {
+    bottom: 10px;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px 12px;
+    padding: 10px 12px;
+  }
+
+  .audition-actions {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .audition-actions .button {
+    width: 100%;
   }
 
   .selection-tray .selection-copy {
@@ -3381,6 +3486,7 @@ button.track-row {
 @supports not (backdrop-filter: blur(1px)) {
   .surface-glass,
   .selection-tray,
+  .audition-tray,
   .app-header {
     background: var(--rf-bg-overlay);
   }
