@@ -519,7 +519,7 @@ The `:root` in `mockups/theme.css` is generated from `tokens.json` by
 
 ```css
 :root {
-  --rf-bg-base: #0b0a08;
+  --rf-bg-base: #050403;
   --rf-bg-raised: #1a1712;
   --rf-bg-overlay: #241f18;
   --rf-bg-sunken: #12100c;
@@ -527,7 +527,7 @@ The `:root` in `mockups/theme.css` is generated from `tokens.json` by
   --rf-text-primary: #fbf7f0;
   --rf-text-secondary: #c9beaa;
   --rf-text-tertiary: #9e927e;
-  --rf-text-on-accent: #0b0a08;
+  --rf-text-on-accent: #050403;
 
   --rf-brand-primary: #e07e3c;
   --rf-brand-strong: #c8682a;
@@ -1142,7 +1142,7 @@ Example structure:
 
 ```swift
 enum RFColor {
-    static let bgBase = Color(hex: "0B0A08")
+    static let bgBase = Color(hex: "050403")
     static let bgRaised = Color(hex: "1A1712")
     static let textPrimary = Color(hex: "FBF7F0")
     static let brandPrimary = Color(hex: "E07E3C")

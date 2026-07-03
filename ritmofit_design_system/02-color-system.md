@@ -33,11 +33,11 @@ The most important rule: **copper = identity, cyan = interaction, plasma = peak.
 
 ## Surfaces & text
 
-- `bg/base` `#0B0A08` — app background (warm espresso black, not pure black; carries studio warmth).
+- `bg/base` `#050403` — app background (deep warm espresso, near-black; not pure black, carries studio warmth).
 - `bg/raised` `#1A1712` — cards, solid editing surfaces.
 - `bg/overlay` `#241F18` — elevated/solid popovers.
 - `text/primary` `#FBF7F0` (bone-50), `text/secondary` `#C9BEAA`, `text/tertiary` `#9E927E`.
-- On copper/cyan/plasma fills, text flips to `text/on-accent` `#0B0A08` (ink) for contrast.
+- On copper/cyan/plasma fills, text flips to `text/on-accent` `#050403` (ink) for contrast.
 
 ## Brand — copper
 
