@@ -9,8 +9,8 @@
   --in-oklch: ;
 
   /* primitives */
-  --rf-ink-950: #060504;
-  --rf-ink-900: #0b0a08;
+  --rf-ink-950: #020201;
+  --rf-ink-900: #050403;
   --rf-ink-850: #12100c;
   --rf-ink-800: #1a1712;
   --rf-ink-700: #241f18;
@@ -121,7 +121,7 @@
   --rf-glass-border: rgba(251,247,240,0.12);
   --rf-glass-highlight: rgba(251,247,240,0.06);
   --rf-glass: var(--rf-glass-strong);
-  --rf-header-fill: #0B0A08;
+  --rf-header-fill: #050403;
 
   /* campaign heat (brand-front only) */
   --rf-gradient-heat: linear-gradient(96deg var(--in-oklch, ), var(--rf-copper-400) 0%, var(--rf-ember-500) 100%);
