@@ -253,6 +253,29 @@ describe('LiveMode track notes', () => {
   });
 });
 
+describe('LiveMode sparse-data fallbacks', () => {
+  it('shows a meaningful current state instead of a bare dash when no cue is set', async () => {
+    // activeTrack has no cues, so at 0:00 there is no current cue.
+    await renderLive();
+    expect(screen.getByText('No cue set')).toBeTruthy();
+    // The focal card names what's playing (also shown in the Track rail → 2+ matches),
+    // and never a naked "—".
+    expect(screen.getAllByText('Active Track').length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText('—')).toBeNull();
+  });
+
+  it('elevates a missing BPM to a readiness state, not quiet metadata', async () => {
+    const noBpm = {
+      ...payload,
+      tracks: [{ ...activeTrack, displayBpm: null }],
+    } satisfies RunPayload;
+    await renderLive(noBpm);
+    expect(screen.getByText('Tempo missing')).toBeTruthy();
+    expect(screen.getByText('Pulse off')).toBeTruthy();
+    expect(screen.queryByText('No BPM set')).toBeNull();
+  });
+});
+
 describe('LiveMode screen-reader announcements', () => {
   it('announces the live track when no cue is active', async () => {
     await renderLive();
