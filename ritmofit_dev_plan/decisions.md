@@ -183,13 +183,13 @@ beat-grid alignment only when the live iOS player needs it.
 
 ---
 
-## D11 — BPM is manual in M1; playback is external
+## D11 — BPM is manual; playback is provider-authorized  **[Amended by D19, 2026-07-02]**
 
 See [`music-providers.md`](./music-providers.md). Summary: Spotify BPM is unavailable to new apps
 (deprecated Nov 2024), so BPM is hand-entered in M1 (`tracks.display_bpm`, optional
-`class_tracks.display_bpm_override`); an optional third-party provider may come in M2. The app is a
-planning surface; audio plays through the user's own provider apps; we never cache audio or
-platform-derived data.
+`class_tracks.display_bpm_override`); an optional third-party provider may come in M2. RitmoFit may
+control playback inside the web app only through official provider-authorized SDKs/widgets. We never
+cache audio, derive provider analysis, or treat provider playback as audio we own.
 
 ---
 
@@ -205,20 +205,26 @@ endpoints still exist for editing; run-payload is the read-optimized live contra
 
 ---
 
-## D13 — Permanent non-goals: a planning surface, not a player or a DAW
+## D13 — Permanent non-goals: provider playback control, not audio ownership or a DAW  **[Amended by D19, 2026-07-02]**
+
+> Original D13 item 1 read "no in-app audio playback / streaming — RitmoFit never plays tracks
+> itself; it deep-links / hands off to the provider app." **D19** supersedes that half: official
+> provider-authorized in-app playback is now allowed. Items 2–4 and the no-audio-ownership boundary
+> are unchanged.
 
 **Decision:** The following are **permanent product non-goals** — not "later milestones." They are
 ruled out by the music-provider constraints ([`music-providers.md`](./music-providers.md)) and by the
-product's purpose (synthesize *planning + choreography*, not own playback or audio production). A
-feature request that requires one of these should be **declined or redesigned**, not scheduled.
+product's purpose (synthesize *planning + choreography* with provider-authorized playback, not own audio
+or become a production tool). A feature request that requires one of these should be **declined or
+redesigned**, not scheduled.
 
-1. **No in-app audio playback / streaming.** RitmoFit never plays tracks itself; it deep-links / hands
-   off to the user's Spotify / Apple Music / SoundCloud app (`track_provider_ids.provider_uri`). The
-   "play"-like controls (Live transport, scrubber) drive the **virtual prompter clock**, not a media
-   engine. *(music-providers.md #2/#3.)*
+1. **No RitmoFit-owned audio playback / streaming.** RitmoFit may control playback through official
+   Spotify / Apple Music / SoundCloud SDKs/widgets, but the provider owns the audio stream,
+   authorization, subscription checks, and availability. RitmoFit never downloads, proxies, caches,
+   re-hosts, or serves provider audio. *(music-providers.md #2/#3.)*
 2. **No audio mixing / crossfade between tracks.** We do not mix, beatmatch, or crossfade audio.
    Free-placement deliberately **rejects overlaps** for this reason: a class is a single playback
-   stream, and any crossfade defers to the provider app's own setting. *(music-providers.md #2.)*
+   timeline, and any provider-native gapless behavior remains provider-owned. *(music-providers.md #2.)*
 3. **No destructive audio editing.** "Trimming" sets a per-class **playback window**
    (`clip_start_ms` / `clip_end_ms`), never an edit to the source file; there is no waveform/DSP layer.
    RitmoFit is not a DAW — the editing-granularity work (trim / beat-snap / free placement) raises
@@ -230,14 +236,15 @@ feature request that requires one of these should be **declined or redesigned**,
    (`beat_anchor_ms`). *(music-providers.md #1/#3.)*
 
 **Why:** These aren't backlog items waiting for capacity — they're platform/legal realities
-(provider terms) and a scope boundary (planning vs. production). Listing them as locked decisions stops
-each one from being re-proposed as "just one more feature" and keeps the build honest about what
-RitmoFit is.
+(provider terms) and a scope boundary (provider playback control vs. audio ownership/production).
+Listing them as locked decisions stops each one from being re-proposed as "just one more feature" and
+keeps the build honest about what RitmoFit is.
 
 **Revisit only if** the underlying provider terms materially change (e.g. a license that permits
-first-party streaming/mixing), in which case treat it as a new, deliberately-scoped initiative — and
-update [`music-providers.md`](./music-providers.md) first. Adjacent capabilities that are *not* ruled
-out (and are tracked as optional follow-ups in `editing-granularity-scoping.md`): beat-snapping a
+first-party hosting, mixing, or derived audio), in which case treat it as a new, deliberately-scoped
+initiative — and update [`music-providers.md`](./music-providers.md) first. Adjacent capabilities that
+are *not* ruled out: official provider-authorized in-app playback
+([`provider-playback-implementation.md`](./provider-playback-implementation.md)), beat-snapping a
 dragged track start, carrying `timeline_mode` through whole-class copy, and per-track time signatures.
 
 ---
@@ -339,6 +346,41 @@ run-payload fields; future web live work is framed as enhancement rather than th
 raises cross-repo coordination cost (two clients, one contract), accepted as the cost of the core
 promise. **Open follow-on (not now):** iPad as a first-class iOS target — today the principle leans on web
 to cover iPad.
+
+---
+
+## D19 — Provider-authorized in-app playback  **[Resolved 2026-07-02]**
+
+**Decision:** RitmoFit may control music playback **inside the app**, exclusively through **official
+provider-authorized mechanisms**: the Spotify Web Playback SDK / Connect playback (Premium required),
+Apple Music MusicKit on the Web (subscriber authorization required), and the official SoundCloud
+Widget API. One RitmoFit player surface, provider-specific adapters underneath; the provider owns the
+audio stream, authorization, subscription checks, and availability — RitmoFit owns the class timeline,
+playback windows, and provider choice. Implementation plan:
+[`provider-playback-implementation.md`](./provider-playback-implementation.md).
+
+**Why:** Sending an instructor to a provider app mid-class breaks the core promise (one continuous
+creative/performance surface), and official browser SDKs/widgets now provide a terms-compliant path.
+This is the deliberately-scoped initiative D13's revisit clause called for.
+
+**Supersedes:** the playback halves of **D11** ("playback is external") and **D13 item 1** ("no in-app
+audio playback/streaming — deep-link/hand-off only"). Provider handoff links remain only as a
+recovery/fallback affordance, not the primary path.
+
+**Explicitly unchanged:** everything else in D11/D13 and `music-providers.md` — no downloading,
+proxying, caching, re-hosting, remixing, mixing, crossfading, beatmatching, decoding, analyzing, or
+derivative provider audio; no BPM from Spotify; "shortening a song" stays a saved **playback window**
+(`clip_start_ms` / `clip_end_ms`), never an edited audio asset; disconnect-purge behavior intact.
+
+**Token boundary:** stored provider tokens are still never returned to clients. The single documented
+exception is short-lived, provider-scoped **browser playback credentials** an official SDK requires —
+minted per session, never logged or persisted client-side, never used for catalog/BPM shortcuts.
+
+**Tradeoff:** entitlement-gated UX (Premium/subscriber checks, per-provider availability states),
+expanded Spotify OAuth scopes with a reconnection path, and a parity obligation — iOS needs equivalent
+native provider-authorized playback (tracked in [`web-ios-parity.md`](./web-ios-parity.md); a
+provider-approved SoundCloud path on native iOS is an open question and may become a documented
+exception).
 
 ---
 

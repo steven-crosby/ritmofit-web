@@ -56,7 +56,9 @@ machine — is an equivalent way to run the same prompts when you don't have a h
 Every remote prompt inherits [`remote-prompts/00-house-rules.md`](remote-prompts/00-house-rules.md)
 and **leaves a pushed branch**: isolated worktrees, one draft PR maximum, deduplication,
 verification, a 45-minute timebox, and validated agent reports. The technical prompts and
-`doc-drift` open a draft PR for the highest-value safe fix (`doc-drift` docs-only); `security`,
+`doc-drift` open a draft PR for the highest-value safe fix (`doc-drift` docs-only) — except
+`design-system`, which is a **report-only deep audit** run in a local worktree with a browser
+(4-hour timebox) that pushes its validated report with no code PR; `security`,
 `dependency-freshness`, and `observability` open a draft PR for low-risk fixes and keep
 auth/major-upgrade/infra decisions report-only. The briefs (`command-brief` and the planning
 prompts) push their validated agent report on a branch with no code PR, and `pr-triage` pushes
@@ -101,28 +103,17 @@ including the planning briefs, whose pushed report is now their durable delivera
 The exhaustive reports are intentionally more than anyone reads daily; a later
 reviewer/digest agent is meant to read the archive and surface only what matters.
 
-## Suggested cadence
+## Cadence
 
-For the full reference schedule and trigger map, see [`SCHEDULE.md`](SCHEDULE.md).
+**[`SCHEDULE.md`](SCHEDULE.md) is the single source of truth for cadence** — the personal-session
+loop, the remote/background loop, the weekly rotation, monthly checks, the release gate, the trigger
+map, and the anti-churn rules. This README describes *what each prompt is*; SCHEDULE.md says *when to
+run it*. (Do not duplicate the schedule tables here — they drifted once already.)
 
-| When | Run |
-|---|---|
-| Start any personal work block | `daily/start-session` |
-| End any personal work block | `daily/close-session` |
-| Remote/background commute run | `remote-prompts/daily/changed-code-sentinel`, then the command brief |
-| Mon | `remote-prompts/planning/next-slice-planner`, then `remote-prompts/technical/stability` (deep) |
-| Tue | `remote-prompts/technical/quality` (deep) + `remote-prompts/technical/test-coverage` |
-| Wed | `remote-prompts/technical/design-system` (deep) + `remote-prompts/technical/accessibility` |
-| Thu | `remote-prompts/technical/security` (deep) + `remote-prompts/technical/dependency-freshness` |
-| Fri | `remote-prompts/planning/pr-triage` + merge the week's queue |
-| Weekly | Contract parity, performance, content consistency, and roadmap sync |
-| Monthly | `remote-prompts/planning/doc-drift` |
-| Before a release | `remote-prompts/planning/release-readiness` |
-
-The realistic daily minimum for personal work is `start-session` and `close-session`. Add
-the sentinel and command brief when you want a remote/background agent pass. Run deep prompts
-only when a session baseline, sentinel, or roadmap brief points to that dimension; avoid
-routine audit churn.
+The realistic daily minimum for personal work is `daily/start-session` and `daily/close-session`. Add
+the sentinel and command brief when you want a remote/background agent pass. Run deep prompts only
+when a session baseline, sentinel, or roadmap brief points to that dimension; avoid routine audit
+churn.
 
 ## Operating model
 
@@ -140,7 +131,7 @@ You are the chess master. The agents execute their piece's legal moves and leave
 | performance | Bishop | Measures/fixes along specific slowness lines (CWV, bundles, D1, caching). |
 | quality | Pawn (clean advance) | Behavior-preserving cleanup and rot removal only. |
 | test-coverage | Defensive Pawn | Adds tests on high-blast-radius paths only; hands bugs to stability. |
-| design-system | Bishop (visual lines) | Tokens, components, typography, states (incl. incomplete UI states). |
+| design-system | Bishop (visual lines) | Report-only deep audit: canon integrity, code adherence, rendered truth (tokens, components, typography, states). Local worktree + browser; no PR. |
 | accessibility | Knight (tricky squares) | Keyboard, screen-reader, contrast, focus, reduced-motion. |
 | content-consistency | Pawn | Terminology, labels, and microcopy only. |
 | api-contract-parity | Rook (contract lines) | Backend contracts, OpenAPI, iOS decoding. Mostly reports. |

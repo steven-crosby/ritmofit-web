@@ -9,9 +9,12 @@
 
 Every prompt in this library inherits these rules and **leaves a pushed branch** — the
 deliverable never lives only in chat, because the container is discarded at the end. Change
-prompts (the technical prompts and `doc-drift`) open a draft PR; brief/analysis prompts
-(`command-brief` and the planning briefs) push their validated agent report on a branch with
-no code PR; `pr-triage` may push rebased branches. All work here branches in **ritmofit-web**;
+prompts (the technical prompts other than `design-system`, plus `doc-drift`) open a draft PR;
+report-only prompts (`command-brief`, the planning briefs, and the `technical/design-system`
+deep audit) push their validated agent report on a branch with no code PR; `pr-triage` may
+push rebased branches. `technical/design-system` is also the one prompt written for a
+**local worktree** rather than a remote sandbox (it needs a real browser) — its banner
+carries its deviations (report-only, 4-hour timebox, local-machine safety). All work here branches in **ritmofit-web**;
 the iOS client is only ever read-only context (vendored as a snapshot in `ios-snapshot/`, so no
 sibling iOS checkout is needed).
 

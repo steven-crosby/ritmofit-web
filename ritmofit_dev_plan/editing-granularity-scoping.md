@@ -7,8 +7,9 @@
 > Context: the planning surface today is strong on *ordering* and *annotation* but caps out
 > below a DAW on fine-grained control. These three deferred features are the realistic levers
 > to raise that ceiling **without** turning RitmoFit into an audio editor (the three music
-> constraints in `music-providers.md` stay inviolable — no in-app audio, no mixing, no trimming
-> of the *audio file itself*; "trimming" here means clipping the *playback window*, not the file).
+> constraints in `music-providers.md` stay inviolable — official provider-authorized playback only,
+> no mixing, no trimming of the *audio file itself*; "trimming" here means clipping the *playback
+> window*, not the file).
 
 This doc compares all three: what changes, effort, risk, and a recommended order. Estimates are
 grounded in the current code (file paths inline).
@@ -70,7 +71,10 @@ follows automatically.
 - **Run-payload projection:** the one genuinely new logic — when `clipStart > 0`, emit cue/move
   `anchorMs` as **offset from clip start** (`anchor − clipStart`) so the live prompter lines up, and
   emit the clipped `durationMs` (already handled by `effectiveDurationMs`). Deep-link start position
-  into the provider app is **out of scope** (providers differ); note as a follow-up.
+  into the provider app was noted as an out-of-scope follow-up; that follow-up is now **superseded by
+  the provider-authorized playback plan** — playback adapters seek directly to the playback window
+  (start at `clipStartMs`, end at `clipStartMs` + effective duration); see
+  `provider-playback-implementation.md`.
 
 ### The one real design decision
 Are cue/move anchors stored relative to the **original track start** (simplest; require the clip
@@ -195,11 +199,11 @@ feature needs a **beat grid**, which needs three things — and we have only one
 math and stayed additive; free placement was the real project — gated behind `timeline_mode` so the
 deployed sequential/iOS behavior is untouched, with overlaps rejected and a Live silence state for gaps.
 Together they move the class-builder's editing granularity from ~3/10 toward ~5–6/10 for *choreography*
-(still, by design, not a DAW — audio stays in the provider apps per `music-providers.md`).
+(still, by design, not a DAW — provider audio stays provider-owned per `music-providers.md`).
 
 The boundary this work stops at is locked as **decision D13** ([`decisions.md`](./decisions.md)): no
-in-app playback, mixing/crossfade, destructive audio editing, or audio analysis — RitmoFit is a planning
-surface, not a DAW.
+RitmoFit-owned playback, mixing/crossfade, destructive audio editing, or audio analysis — RitmoFit
+controls choreography and provider-authorized playback windows, not audio production.
 
 Possible follow-ups (not built, and *not* ruled out by D13): snapping a dragged track start to the beat
 grid (track starts currently snap to whole seconds); carrying `timeline_mode` + authored offsets through

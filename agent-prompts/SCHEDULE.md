@@ -1,6 +1,8 @@
 # Agent Prompt Schedule
 
-Use this schedule as the operating rhythm for `ritmofit-web` prompts. The default is
+**This file is the single source of truth for prompt cadence** (the README describes the prompts;
+this file says when to run them). Use this schedule as the operating rhythm for `ritmofit-web`
+prompts. The default is
 intentionally lightweight: use `daily/start-session.md` and `daily/close-session.md` for
 personal work blocks, run remote/background agents only when useful, and leave
 merge/deploy decisions to the owner.
@@ -33,7 +35,7 @@ default personal-session path.
 |---|---|---|---|
 | Monday | `remote-prompts/planning/roadmap-sync.md` | `remote-prompts/planning/next-slice-planner.md` | Choose the week's highest-value product slice and expose unresolved questions. |
 | Tuesday | `remote-prompts/technical/stability.md` | `remote-prompts/technical/test-coverage.md` | Hunt regressions first, then add coverage around high-blast-radius paths. |
-| Wednesday | `remote-prompts/technical/design-system.md` | `remote-prompts/technical/accessibility.md` | Check visual consistency, tokens, states, keyboard flow, contrast, and motion. |
+| Wednesday | `remote-prompts/technical/design-system.md` | `remote-prompts/technical/accessibility.md` | Check visual consistency, tokens, states, keyboard flow, contrast, and motion. (`design-system` is a report-only deep audit; run it in a local worktree with a browser.) |
 | Thursday | `remote-prompts/technical/security.md` | `remote-prompts/technical/dependency-freshness.md` | Review auth, secrets, CVEs, and package freshness. |
 | Friday | `remote-prompts/planning/pr-triage.md` | `remote-prompts/daily/command-brief.md` | Clear the maintenance queue and decide what is ready for human review. |
 
@@ -90,6 +92,7 @@ Do not deploy from an unattended prompt. Deployment remains an explicit owner de
 
 - Do not run specialist prompts just to keep the schedule full.
 - Do not open a PR unless the prompt has concrete evidence and can meet its verification gate.
-- Do not use legacy daily prompts when the sentinel and command brief can run.
+- For unattended coverage of recent changes, prefer the sentinel + command brief over ad-hoc
+  specialist runs.
 - Do not let unattended prompts make schema, auth, migration, visual redesign, deployment, or
   product-scope decisions. Those become report-only recommendations.

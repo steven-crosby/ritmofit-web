@@ -17,9 +17,11 @@ data through the backend in this repo — a class built on web opens on iOS unch
 The parity principle is locked as **D18**; the gate + current parity backlog live in
 [`web-ios-parity.md`](./web-ios-parity.md).
 
-Current sequence: the web app's launch gate is green and deployed (everything in this folder was
-launch-required except Explore feature expansion and Teams feature expansion); focus now moves to
-wrapping the iOS app against the same backend contract and parity backlog.
+Current sequence (2026-07-02): the web app's launch gate is green and deployed (everything in this
+folder was launch-required except Explore feature expansion and Teams feature expansion). The active
+web track is the provider-authorized playback initiative
+([`provider-playback-implementation.md`](./provider-playback-implementation.md)); wrapping the iOS app
+against the same backend contract and parity backlog is queued behind it.
 
 ## Who the user is
 
@@ -53,13 +55,15 @@ provider track, but it isn't merely "a row imported from Spotify."
 
 ## What we're explicitly NOT building
 
-RitmoFit is a **planning + choreography surface**, not a player or an audio editor. These are
-**permanent non-goals** (locked as decision **D13** in [`decisions.md`](./decisions.md), rooted in the
-provider terms in [`music-providers.md`](./music-providers.md)) — decline or redesign requests that need
-them rather than scheduling them:
+RitmoFit is a **planning + choreography + provider-authorized playback surface**, not an audio host or
+audio editor. These are **permanent non-goals** (locked as decision **D13** in
+[`decisions.md`](./decisions.md), rooted in the provider terms in
+[`music-providers.md`](./music-providers.md)) — decline or redesign requests that need them rather than
+scheduling them:
 
-- **No in-app audio playback / streaming** — playback hands off to the instructor's provider app.
-- **No audio mixing / crossfade** — a class is one stream (this is why free placement rejects overlaps).
+- **No RitmoFit-owned audio playback / streaming** — in-app playback may only use official provider
+  SDKs/widgets; providers own the audio stream, authorization, subscription checks, and availability.
+- **No audio mixing / crossfade** — a class is one timeline (this is why free placement rejects overlaps).
 - **No destructive audio editing** — "trimming" is a per-class playback *window*, not a file edit; this
   is not a DAW.
 - **No in-app audio analysis / decoding** — BPM is manual or from a third-party tempo service; the beat
@@ -72,7 +76,7 @@ short of audio production on purpose — see [`editing-granularity-scoping.md`](
 
 SoundCloud is a core differentiator: it carries independent and emerging artists that Spotify and Apple
 Music don't. The provider-agnostic track model (one track, many provider IDs) is what lets a class play
-back on whichever service the instructor opens live — including SoundCloud. It's the **first** provider
+back on the best available connected provider per track — including SoundCloud. It's the **first** provider
 in M2, ahead of Spotify/Apple Music.
 
 ## Reference point: StructClub

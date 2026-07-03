@@ -15,6 +15,8 @@ label the change with the authoring agent and date (e.g. `<!-- note (Claude, 202
 <!-- note (Codex, 2026-06-28): Set the active operating focus to web launch readiness first, with iOS parity wrap-up tracked next. -->
 <!-- note (Codex, 2026-06-29): Web launch gate is green/deployed; active operating focus moves to iOS handoff and parity wrap. -->
 <!-- note (Codex, 2026-06-29): Synced the CI-equivalent gate with the live workflow: design-system verify and iOS contract parity are always part of the gate. -->
+<!-- note (Codex, 2026-07-02): Updated music constraints for official provider-authorized in-app playback (D19). -->
+<!-- note (Claude, 2026-07-02): Doc audit — current operating sequence now names the provider-playback initiative; cadence source of truth is agent-prompts/SCHEDULE.md. -->
 
 ## Product & Architecture
 
@@ -41,10 +43,11 @@ Existing asymmetries are defects, not the steady state. Allowed divergence is li
 exceptions (iPhone-only haptics/lock-screen/motion; web-leaning second-screen presentation) and
 platform-idiomatic UX expression. When planning any feature, state its parity impact in the plan and PR.
 
-**Current operating sequence:** the web launch gate is green and deployed; move to the iOS handoff and
-parity wrap against the tracked backlog. Keep new web scope limited to production support,
-launch-critical fixes, or explicitly approved follow-up slices; if a launch-critical web change
-increases iOS debt, record it immediately in `web-ios-parity.md`.
+**Current operating sequence (2026-07-02):** the web launch gate is green and deployed. The active web
+track is the **provider-authorized playback initiative**
+(`ritmofit_dev_plan/provider-playback-implementation.md`) alongside owner-approved design/polish
+slices; the iOS handoff and parity wrap are queued behind it. The parity gate still applies: any web
+change that increases iOS debt records a linked item in `web-ios-parity.md` before merge.
 
 ## Before Implementing
 
@@ -122,7 +125,9 @@ These music rules are non-negotiable:
 - Never cache provider audio or provider-derived analysis. Store only documented provider references
   and permitted metadata, and preserve required disconnect-purge behavior.
 - Never obtain BPM from Spotify; use manual BPM or the dedicated tempo-provider path.
-- Never mix, crossfade, or embed provider playback in the app.
+- Never download, proxy, remix, mix, crossfade, decode, analyze, or create derivative provider audio.
+- In-app playback is allowed only through official provider-authorized SDKs/widgets. RitmoFit controls
+  playback windows and class timing; providers own the audio stream and provider-specific availability.
 
 If a request appears to require breaking one of these rules, stop and flag it. Re-verify current
 provider API and authentication behavior before changing integrations. Keep Sign in with Apple

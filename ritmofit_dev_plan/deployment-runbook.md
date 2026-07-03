@@ -39,13 +39,17 @@ constraint — `music-providers.md`). Apple Music per-user connect uses **MusicK
 redirect or new secret beyond the existing Apple Music developer-token creds): the SPA mints a
 Music-User-Token and `POST`s it to `/providers/apple_music/connection`, stored encrypted.
 
-> **Deploy state (2026-06-29, Worker `57b20736`):** All three per-user connect paths are **deployed**.
-> **Apple Music** connect is **live and verified working** in prod (MusicKit JS → Music-User-Token →
+> **Connect-path state (verified 2026-06-29; still the known state as of 2026-07-02 — the deploys
+> since, latest Worker `3ee0a8c3` per `HISTORY.md`, were presentation/docs-only and did not touch
+> these routes):** All three per-user connect paths are **deployed**. **Apple Music** connect is
+> **live and verified working** in prod (MusicKit JS → Music-User-Token →
 > `/providers/apple_music/connection`). **SoundCloud** and **Spotify** connect routes are deployed but
-> their **token exchange is not yet verified end-to-end** — SoundCloud currently returns `connect_failed`
+> their **token exchange is not verified end-to-end** — SoundCloud returns `connect_failed`
 > (the `secure.soundcloud.com/oauth/token` exchange returns non-2xx; likely a provider-dashboard
-> redirect-URI mismatch or a stale client secret — tracked follow-up). No `SOUNDCLOUD_REDIRECT_URI` /
-> `SPOTIFY_REDIRECT_URI` override is set, so the registered dashboard redirect URI must exactly match
+> redirect-URI mismatch or a stale client secret). This is now tracked as an **open production issue**
+> in `DEVELOPMENT_PLAN.md` and is a **prerequisite for the provider-authorized playback initiative**
+> (`provider-playback-implementation.md`). No `SOUNDCLOUD_REDIRECT_URI` / `SPOTIFY_REDIRECT_URI`
+> override is set, so the registered dashboard redirect URI must exactly match
 > `https://ritmofit.studio/api/v1/providers/<provider>/callback`. **Note:** redirect-OAuth callbacks are
 > top-level browser navigations, so the SPA's PWA service worker must keep `/api/` in its
 > `navigateFallbackDenylist` (PR #161) or the callback never reaches the Worker (it dead-ends on the
