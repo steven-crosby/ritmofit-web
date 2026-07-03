@@ -86,7 +86,7 @@ list; after the launch gate is green, it becomes the next implementation queue. 
     contract change (BPM is already in the run-payload via `displayBpm`).
 - **Multi-provider track search** (SoundCloud / Spotify / Apple Music) + provider connect
   - Spotify per-user OAuth connect (web, 2026-06-29): web now wires the Spotify account-connect flow
-    (Authorization Code + PKCE, scope `user-library-read`) behind the same `music_connections` /
+    (confidential Authorization Code, scope `user-library-read`) behind the same `music_connections` /
     encrypted-token / disconnect-purge machinery as SoundCloud; `providerCapabilities.spotify` flips
     `userConnect`/`userLikes` to `true`, so "search my Spotify" (saved tracks via `GET /me/tracks`) goes
     live. **iOS parity follow-up:** iOS should add the Spotify connect flow via

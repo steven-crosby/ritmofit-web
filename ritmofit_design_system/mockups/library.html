@@ -56,9 +56,9 @@
               <span class="ps-icon" aria-hidden="true">✓</span>SoundCloud
               connected
             </span>
-            <span class="provider-state ps-expired">
-              <span class="ps-icon" aria-hidden="true">⧖</span>Apple Music —
-              session expired
+            <span class="provider-state ps-connected">
+              <span class="ps-icon" aria-hidden="true">✓</span>Apple Music
+              connected
             </span>
             <button class="button button-action button-block">
               Manage connections
@@ -88,17 +88,12 @@
                 placeholder="Search tracks, artists, or playlists"
               />
             </label>
-            <select class="input" aria-label="Provider filter">
-              <option>All providers</option>
-              <option>Spotify</option>
-              <option>SoundCloud</option>
-              <option>Apple Music</option>
-            </select>
-            <select class="input" aria-label="Sort library">
-              <option>Recently saved</option>
-              <option>Title</option>
-              <option>BPM</option>
-            </select>
+            <button class="menu-trigger" aria-haspopup="menu" aria-expanded="false">
+              All providers
+            </button>
+            <button class="menu-trigger" aria-haspopup="menu" aria-expanded="false">
+              Recently saved
+            </button>
           </div>
 
           <div class="library-table" aria-label="Saved tracks">
@@ -218,9 +213,9 @@
               </span>
               <span class="bpm">104<small>BPM</small></span>
               <span class="timecode dim">4:47</span>
-              <span class="provider-state ps-expired">
-                <span class="ps-icon" aria-hidden="true">⧖</span>Apple Music
-                expired
+              <span class="playback-state ps-expired">
+                <span class="ps-icon" aria-hidden="true">⊘</span>Subscriber
+                auth required
               </span>
               <button
                 class="button button-square button-ghost"

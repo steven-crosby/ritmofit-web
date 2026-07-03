@@ -59,11 +59,11 @@ Selection copy:
 
 Provider capability is explicit. Current implementation truth:
 
-- Spotify: catalog search/import; no user connection or likes.
-- Apple Music: catalog search/import; no user connection or likes.
+- Spotify: catalog search/import plus user connection and saved-track library access.
+- Apple Music: catalog search/import plus user connection and library-song access.
 - SoundCloud: catalog search/import plus user connection and likes.
 
-The connection-state matrix below applies only to providers that support user accounts:
+The connection-state matrix below applies to providers that support user accounts:
 
 | State            | Treatment                                         |
 | ---------------- | ------------------------------------------------- |

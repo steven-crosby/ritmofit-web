@@ -113,6 +113,9 @@
           <button class="button button-ghost">Ghost</button>
           <button class="button button-danger">Destructive</button>
           <button class="button button-ghost" disabled>Disabled</button>
+          <button class="menu-trigger" aria-haspopup="menu" aria-expanded="false">
+            All providers
+          </button>
         </div>
         <div class="component-grid">
           <label class="field">
@@ -193,6 +196,29 @@
               <span class="ps-icon" aria-hidden="true">×</span>Provider error
             </span>
             <button class="button button-action">Retry</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="component-section stack gap-5">
+        <div>
+          <span class="section-label">Playback verdicts</span>
+          <h2 class="title-md">Readable on cream, still not color-only.</h2>
+        </div>
+        <div class="component-grid">
+          <div class="surface card-pad between gap-3 wrap">
+            <span class="playback-state ps-connected">
+              <span class="ps-icon" aria-hidden="true">✓</span>Plays on
+              SoundCloud
+            </span>
+            <span class="rail-chip">♪ Ready</span>
+          </div>
+          <div class="surface card-pad between gap-3 wrap">
+            <span class="playback-state ps-expired">
+              <span class="ps-icon" aria-hidden="true">⊘</span>Subscriber
+              authorization required
+            </span>
+            <button class="button button-action">Re-authorize</button>
           </div>
         </div>
       </section>

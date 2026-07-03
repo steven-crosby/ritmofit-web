@@ -125,11 +125,12 @@ to fix it, in the interface's voice. Never vague, never an apology.
 
 ## Provider connection states
 
-Music providers are core to trust. Catalog availability and user-account connection are different
-capabilities and must not be conflated. Today, Spotify and Apple Music are catalog sources;
-SoundCloud supports user connection and likes. For providers with a user-account integration,
-connection state is always explicit — six states, never a silent failure (see brief §9.8). The label
-and glyph carry meaning; color only reinforces (`.provider-state`):
+Music providers are core to trust. Catalog availability, user-account connection, library access, and
+playback eligibility are different capabilities and must not be conflated. Spotify, Apple Music, and
+SoundCloud all have user-account connection paths; provider-specific playback requirements still differ
+by account, subscription, scope, SDK/widget, and track availability. Connection state is always explicit
+— six states, never a silent failure (see brief §9.8). The label and glyph carry meaning; color only
+reinforces (`.provider-state`):
 
 | State          | Glyph | Color channel | Note                                    |
 | -------------- | :---: | ------------- | --------------------------------------- |
@@ -142,7 +143,8 @@ and glyph carry meaning; color only reinforces (`.provider-state`):
 
 Every failure state pairs with an inline recovery action.
 
-Catalog-only providers use an explicit `catalog available` label rather than a connected state.
+If a future provider is catalog-only, use an explicit `catalog available` label rather than a connected
+state.
 
 Connected and reconnecting states are borderless icon + text. Warning and error states may opt into a
 bordered container because the boundary helps communicate an actionable problem.
