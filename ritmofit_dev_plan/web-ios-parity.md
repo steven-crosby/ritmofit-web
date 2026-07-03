@@ -105,12 +105,16 @@ list; after the launch gate is green, it becomes the next implementation queue. 
     `POST /providers/apple_music/connection` endpoint (shared, no contract change), and surface it in its
     Connections UI + likes search. The web MusicKit-JS browser handshake itself is verified live, not in
     CI.
-- **Provider-authorized playback in Live Mode and Builder preview** (planned web feature; see
-  `provider-playback-implementation.md`): web will replace provider handoff as the primary path with a
+- **Provider-authorized playback in Live Mode and Builder preview** (in progress on web; see
+  `provider-playback-implementation.md`): web replaces provider handoff as the primary path with a
   single RitmoFit player UI backed by provider-specific adapters for SoundCloud, Spotify, and Apple
   Music. Live Mode owns the class timeline, supports mixed-provider classes, preflights every track
   before class start, auto-advances without instructor action, and uses `clipStartMs` + effective
-  `track.durationMs` as each provider playback window. **iOS parity follow-up:** iOS needs equivalent
+  `track.durationMs` as each provider playback window. **Web status (2026-07-03):** the playback core
+  (`apps/web/src/lib/playback/` — selection/preflight, runtime coordinator, SoundCloud Widget adapter)
+  and the Live Mode wiring (preflight screen, player rail, recoverable-failure alert with
+  recovery-only handoff links) are built; Apple Music and Spotify adapters plus Builder preview are
+  still pending, so the iOS follow-up below covers the full capability either way. **iOS parity follow-up:** iOS needs equivalent
   native/provider-authorized playback control, preflight, mixed-provider track selection, auto-advance,
   and Builder range preview. Platform APIs may differ, but capability cannot be omitted without a
   tracked documented exception. Potential native paths: MusicKit for Apple Music, Spotify SDK/App Remote

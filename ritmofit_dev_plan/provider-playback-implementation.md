@@ -2,6 +2,7 @@
 
 <!-- note (Codex, 2026-07-02): Created from the RitmoFit player planning session. -->
 <!-- note (Claude, 2026-07-02): Doc audit pass — added the prod connect-exchange prerequisite and design-system playback states. -->
+<!-- note (Claude, 2026-07-03): Connect prerequisite marked completed (Worker 94126954); marked the built playback-layer modules in Architecture; recorded Live Mode wiring status. -->
 
 ## Goal
 
@@ -81,10 +82,14 @@ choreographing.
 
 Add the web playback layer under `apps/web/src/lib/playback/`:
 
-- `types.ts`: shared adapter/coordinator contracts.
-- `coordinator.ts`: class timeline, provider selection, preflight, auto-advance, gap handling, and
-  synchronization with Live Mode elapsed time.
-- `soundcloud-adapter.ts`: official SoundCloud Widget API.
+- `types.ts`: shared adapter/coordinator contracts. **(built)**
+- `coordinator.ts`: the pure decision core — provider selection, clip-window math, provider-time
+  translation, and static class preflight. **(built)**
+- `runtime.ts`: the runtime coordinator (`RuntimePlaybackCoordinator`) — segment resolution over the
+  class timeline, auto-advance, gap handling, mid-track entry after seek, pause/resume, and
+  recoverable-error surfacing. Host-clock driven: Live Mode's rAF loop calls `tick(elapsedMs)`; the
+  coordinator never runs its own timer, and the class timeline stays master. **(built)**
+- `soundcloud-adapter.ts`: official SoundCloud Widget API. **(built — needs live verification)**
 - `apple-music-adapter.ts`: MusicKit JS playback, building on `apps/web/src/lib/musickit.ts`.
 - `spotify-adapter.ts`: Spotify Web Playback SDK / Connect playback.
 - focused tests for provider selection, clip-window math, preflight results, auto-advance decisions, and
@@ -138,11 +143,11 @@ Spotify playback requires a connected Premium user and playback-capable OAuth sc
 Spotify connect scope is intentionally only `user-library-read`; adding playback requires a deliberate
 scope update and reconnection path.
 
-**Prerequisite (open production issue, 2026-07-02):** the per-user connect token exchange is currently
-broken/unverified in prod — SoundCloud connect returns `connect_failed` and the Spotify exchange has
-never been verified end-to-end (see `deployment-runbook.md` and the open-issues list in
-`DEVELOPMENT_PLAN.md`). Fix and verify the base connect flow **before** building playback on top of
-it; the scope expansion then forces reconnection anyway, so sequence the two together.
+**Prerequisite (completed 2026-07-03):** Apple Music, SoundCloud, and Spotify production connect are
+verified working on Worker `94126954-0e61-408e-b404-bb380c338141` (see `deployment-runbook.md` and the
+recently closed item in `DEVELOPMENT_PLAN.md`). The next Spotify-specific prerequisite is the playback
+scope expansion and reconnection path; sequence that deliberately because existing Spotify connections
+only have `user-library-read`.
 
 Likely scopes to review against current Spotify docs before implementation:
 
@@ -192,10 +197,18 @@ Builder:
 Use `ritmofit_design_system` tokens and existing Live Mode layout patterns. Do not add a marketing-style
 player surface; this is a performance tool for an instructor on stage.
 
-Design-system follow-up: the provider-state table in `ritmofit_design_system/05-components.md` needs
-the new playback states (playback-eligible, Premium required, subscriber authorization required,
-playback unavailable) under the same icon+label rules — never color alone — plus component guidance
-for the player rail and preflight screen. Do this with (or before) the first player UI slice.
+Design-system follow-up **(done 2026-07-03)**: `ritmofit_design_system/05-components.md` now has the
+playback-states table (playback-eligible, Premium required, subscriber authorization required,
+playback unavailable, runtime playback failure) under the same icon+label rules — never color alone —
+plus component guidance for the player rail and preflight screen.
+
+**Live Mode wiring status (2026-07-03):** built — preflight screen (`LivePreflight.tsx`) gating class
+start, `RuntimePlaybackCoordinator` driven from the existing rAF clock, player rail in the transport,
+recoverable playback-failure alert (retry / continue-without-music / handoff links moved there as the
+recovery-only surface), wake lock preserved. "Run without music" keeps the prompter-only path. Only
+SoundCloud is registered in the adapter registry so far; preflight filters connections to registered
+adapters, so Apple-Music/Spotify-only tracks read as unplayable until their adapters land. Builder
+preview is not wired yet.
 
 ## Verification
 

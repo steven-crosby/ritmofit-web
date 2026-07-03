@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import type { MusicConnectionView, RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
+import { listConnections } from '../lib/api.js';
+import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
+import type { PlaybackAdapter } from '../lib/playback/types.js';
 import {
   LiveMode,
   lastAtOrBefore,
@@ -9,6 +12,13 @@ import {
   trackIndexAt,
   type TimelineEvent,
 } from './LiveMode.js';
+
+vi.mock('../lib/api.js', () => ({
+  listConnections: vi.fn(),
+}));
+vi.mock('../lib/playback/soundcloud-adapter.js', () => ({
+  soundcloudAdapterFactory: vi.fn(),
+}));
 
 afterEach(cleanup);
 
@@ -65,45 +75,145 @@ const payload = {
   sections: [],
 } satisfies RunPayload;
 
-describe('LiveMode provider handoff', () => {
-  it('shows only trusted provider links for the active track in Cue-by-Cue', () => {
-    render(<LiveMode payload={payload} onExit={() => {}} />);
+const soundcloudConnection: MusicConnectionView = {
+  id: '00000000-0000-4000-8000-00000000000c',
+  userId: 'user-1',
+  provider: 'soundcloud',
+  providerUserId: null,
+  scope: null,
+  expiresAt: null,
+  createdAt: 1,
+  updatedAt: 1,
+};
 
-    const spotify = screen.getByRole('link', { name: 'Open Active Track in Spotify' });
-    expect(spotify.getAttribute('href')).toBe('spotify:track:4cOdK2wGLETKBW3PvgPWqT');
-    expect(spotify.getAttribute('target')).toBe('_blank');
-    expect(screen.getByRole('link', { name: 'Open Active Track in Apple Music' })).toBeTruthy();
-    expect(screen.queryByRole('link', { name: /SoundCloud/ })).toBeNull();
+/** A playback adapter whose prepare resolves immediately (widget stubbed out). */
+function workingAdapter(): PlaybackAdapter {
+  return {
+    provider: 'soundcloud',
+    prepare: (entry) =>
+      Promise.resolve({ provider: 'soundcloud' as const, classTrackId: entry.classTrackId }),
+    play: () => Promise.resolve(),
+    pause: () => Promise.resolve(),
+    seek: () => Promise.resolve(),
+    stop: () => Promise.resolve(),
+    destroy: () => {},
+  };
+}
+
+beforeEach(() => {
+  vi.mocked(listConnections).mockReset().mockResolvedValue([]);
+  vi.mocked(soundcloudAdapterFactory)
+    .mockReset()
+    .mockImplementation(() => workingAdapter());
+});
+
+/**
+ * Render Live Mode and pass the preflight gate into the prompter without
+ * music — the path every pre-playback behavior lives behind now.
+ */
+async function renderLive(p: RunPayload = payload) {
+  render(<LiveMode payload={p} onExit={() => {}} />);
+  if (p.tracks.length > 0) {
+    // Wait for connections to land so the async state update stays inside RTL.
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Run without music' }));
+  }
+}
+
+describe('LiveMode preflight', () => {
+  it('lists per-track verdicts and blocks hands-free start when a track cannot play', async () => {
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    const list = await screen.findByRole('list', { name: 'Track playback check' });
+    expect(within(list).getByText('Active Track')).toBeTruthy();
+    // No connections → the soundcloud ref has no connected playable provider.
+    expect(within(list).getByText('No connected provider can play this')).toBeTruthy();
+    expect(screen.getByText('1 track can’t play yet.')).toBeTruthy();
+    const start = screen.getByRole('button', { name: 'Start class' });
+    expect((start as HTMLButtonElement).disabled).toBe(true);
+    // The prompter path stays available.
+    expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
   });
 
-  it('keeps the active-track handoff available in Full List', () => {
+  it('passes preflight with a connected provider and starts hands-free playback', async () => {
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
     render(<LiveMode payload={payload} onExit={() => {}} />);
+    const list = await screen.findByRole('list', { name: 'Track playback check' });
+    expect(within(list).getByText('Plays on SoundCloud')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    // Start = begin the class: the clock runs (Pause offered) and the player
+    // rail names the provider once playback is live.
+    expect(await screen.findByRole('button', { name: 'Pause' })).toBeTruthy();
+    expect(await screen.findByText('SoundCloud')).toBeTruthy();
+  });
+
+  it('skips the preflight screen entirely for an empty class', () => {
+    const empty = { ...payload, tracks: [] } satisfies RunPayload;
+    render(<LiveMode payload={empty} onExit={() => {}} />);
+    expect(screen.getByText('This class has no tracks yet.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Start class' })).toBeNull();
+  });
+
+  it('states prompter-only mode explicitly in the player rail', async () => {
+    await renderLive();
+    expect(screen.getByText('Music off')).toBeTruthy();
+  });
+
+  it('surfaces a connections failure with a retry, keeping the prompter available', async () => {
+    vi.mocked(listConnections)
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce([soundcloudConnection]);
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    expect(
+      await screen.findByText(/Could not check your provider connections: network down/),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    const list = await screen.findByRole('list', { name: 'Track playback check' });
+    expect(within(list).getByText('Plays on SoundCloud')).toBeTruthy();
+  });
+});
+
+describe('LiveMode playback failure', () => {
+  it('halts into a recoverable alert with retry, handoff, and prompter-only options', async () => {
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(
+      (): PlaybackAdapter => ({
+        ...workingAdapter(),
+        prepare: () => Promise.reject(new Error('widget failed')),
+      }),
+    );
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByText(/Playback stopped: widget failed/)).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'Retry' })).toBeTruthy();
+
+    // Handoff links live ONLY here (recovery surface), and only trusted URIs:
+    // the track's soundcloud ref is a javascript: URI and must not render.
+    const spotify = within(alert).getByRole('link', { name: 'Open Active Track in Spotify' });
+    expect(spotify.getAttribute('href')).toBe('spotify:track:4cOdK2wGLETKBW3PvgPWqT');
+    expect(
+      within(alert).getByRole('link', { name: 'Open Active Track in Apple Music' }),
+    ).toBeTruthy();
+    expect(within(alert).queryByRole('link', { name: /SoundCloud/ })).toBeNull();
+
+    // Bailing out keeps the class running, prompter-only.
+    fireEvent.click(within(alert).getByRole('button', { name: 'Continue without music' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('Music off')).toBeTruthy();
+  });
+});
+
+describe('LiveMode provider handoff', () => {
+  it('keeps handoff links off the prompter surfaces (recovery alert only)', async () => {
+    await renderLive();
+    expect(screen.queryByRole('link', { name: /^Open / })).toBeNull();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
-
-    expect(screen.getByRole('link', { name: 'Open Active Track in Spotify' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Open Active Track in Apple Music' })).toBeTruthy();
-  });
-
-  it('renders no handoff control when the active track has no trusted URI', () => {
-    const noHandoffPayload: RunPayload = {
-      ...payload,
-      tracks: [
-        {
-          ...activeTrack,
-          providerRefs: [
-            {
-              provider: 'soundcloud',
-              providerTrackId: 'soundcloud-id',
-              providerUri: 'https://example.com/not-soundcloud',
-            },
-          ],
-        },
-      ],
-    };
-    render(<LiveMode payload={noHandoffPayload} onExit={() => {}} />);
-
-    expect(screen.queryByRole('navigation', { name: /music provider/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /^Open / })).toBeNull();
   });
 });
@@ -118,8 +228,8 @@ describe('LiveMode track notes', () => {
     tracks: [{ ...activeTrack, notes: 'Watch the new rider in row 2' }],
   } satisfies RunPayload;
 
-  it('surfaces the active track notes in Cue-by-Cue without making them the focal cue', () => {
-    render(<LiveMode payload={notedPayload} onExit={() => {}} />);
+  it('surfaces the active track notes in Cue-by-Cue without making them the focal cue', async () => {
+    await renderLive(notedPayload);
 
     expect(screen.getByText('Watch the new rider in row 2')).toBeTruthy();
     // The notes are a subordinate block, not the focal cue: the "Now" card and its
@@ -128,28 +238,28 @@ describe('LiveMode track notes', () => {
     expect(screen.getByText('Notes')).toBeTruthy();
   });
 
-  it('shows the notes in Full List too', () => {
-    render(<LiveMode payload={notedPayload} onExit={() => {}} />);
+  it('shows the notes in Full List too', async () => {
+    await renderLive(notedPayload);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
 
     expect(screen.getByText('Watch the new rider in row 2')).toBeTruthy();
   });
 
-  it('renders no notes block when the track has none', () => {
-    render(<LiveMode payload={payload} onExit={() => {}} />);
+  it('renders no notes block when the track has none', async () => {
+    await renderLive();
 
     expect(screen.queryByText(/Notes/)).toBeNull();
   });
 });
 
 describe('LiveMode screen-reader announcements', () => {
-  it('announces the live track when no cue is active', () => {
-    render(<LiveMode payload={payload} onExit={() => {}} />);
+  it('announces the live track when no cue is active', async () => {
+    await renderLive();
     expect(screen.getByText('Track 1: Active Track.')).toBeTruthy();
   });
 
-  it('announces the current cue once one is reached', () => {
+  it('announces the current cue once one is reached', async () => {
     const withCue: RunPayload = {
       ...payload,
       tracks: [
@@ -168,11 +278,11 @@ describe('LiveMode screen-reader announcements', () => {
         },
       ],
     };
-    render(<LiveMode payload={withCue} onExit={() => {}} />);
+    await renderLive(withCue);
     expect(screen.getByText('Cue: Stand and sprint.')).toBeTruthy();
   });
 
-  it('announces the current section in a polite region, apart from the assertive cue', () => {
+  it('announces the current section in a polite region, apart from the assertive cue', async () => {
     const sectioned = {
       ...payload,
       sections: [
@@ -180,14 +290,14 @@ describe('LiveMode screen-reader announcements', () => {
         { type: 'sprint', startOffsetMs: 60000 },
       ],
     } satisfies RunPayload;
-    render(<LiveMode payload={sectioned} onExit={() => {}} />);
+    await renderLive(sectioned);
     const region = screen.getByText('Warm-up section.');
     // Section context must not interrupt the cue: it lives in aria-live="polite",
     // not the assertive cue region.
     expect(region.getAttribute('aria-live')).toBe('polite');
   });
 
-  it('announces the new section when a boundary is crossed', () => {
+  it('announces the new section when a boundary is crossed', async () => {
     const sectioned = {
       ...payload,
       sections: [
@@ -195,7 +305,7 @@ describe('LiveMode screen-reader announcements', () => {
         { type: 'sprint', startOffsetMs: 60000 },
       ],
     } satisfies RunPayload;
-    render(<LiveMode payload={sectioned} onExit={() => {}} />);
+    await renderLive(sectioned);
     expect(screen.getByText('Warm-up section.')).toBeTruthy();
     // Seek across the 60s boundary (PageUp jumps +30s) — the polite text updates,
     // which is what re-announces. On-change only: it tracks section.type, not frames.
@@ -206,15 +316,15 @@ describe('LiveMode screen-reader announcements', () => {
     expect(screen.getByText('Sprint section.')).toBeTruthy();
   });
 
-  it('makes no section announcement when the class has no sections', () => {
-    render(<LiveMode payload={payload} onExit={() => {}} />);
+  it('makes no section announcement when the class has no sections', async () => {
+    await renderLive();
     expect(screen.queryByText(/ section\.$/)).toBeNull();
   });
 });
 
 describe('LiveMode timeline scrubber', () => {
-  it('seeks the virtual clock from the timeline (keyboard)', () => {
-    render(<LiveMode payload={payload} onExit={() => {}} />);
+  it('seeks the virtual clock from the timeline (keyboard)', async () => {
+    await renderLive();
     // The transport scrubber replaces the old plain range input.
     const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
     // Clock starts at 0:00 / 3:00; a right-arrow nudges +5s.
@@ -304,8 +414,8 @@ describe('LiveMode section indicator', () => {
     ],
   } satisfies RunPayload;
 
-  it('shows the current section and a countdown to the next, in both views', () => {
-    render(<LiveMode payload={sectionedPayload} onExit={() => {}} />);
+  it('shows the current section and a countdown to the next, in both views', async () => {
+    await renderLive(sectionedPayload);
 
     // The accessible content is real text in reading order (sr-only framing + the
     // visible label/countdown), so AT gets the current section AND what's next.
@@ -319,8 +429,8 @@ describe('LiveMode section indicator', () => {
     expect(screen.getByText('Warm-up')).toBeTruthy();
   });
 
-  it('renders no section indicator when the class has no sections', () => {
-    render(<LiveMode payload={payload} onExit={() => {}} />);
+  it('renders no section indicator when the class has no sections', async () => {
+    await renderLive();
     expect(screen.queryByText('Current section:')).toBeNull();
   });
 });
