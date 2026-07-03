@@ -758,6 +758,31 @@ svg {
   color: var(--rf-bone-500);
 }
 
+.menu-trigger {
+  min-height: 44px;
+  border: 1px solid var(--rf-border-default);
+  border-radius: var(--rf-radius-control);
+  background: var(--rf-bg-base);
+  padding: 10px 40px 10px 14px;
+  color: var(--rf-text-secondary);
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+}
+
+.menu-trigger::after {
+  float: right;
+  margin-right: -25px;
+  color: var(--rf-text-tertiary);
+  content: "⌄";
+}
+
+.menu-trigger:hover,
+.menu-trigger:focus-visible {
+  border-color: var(--rf-border-strong);
+  outline: none;
+}
+
 textarea.input {
   min-height: 88px;
   resize: vertical;
@@ -2028,6 +2053,21 @@ button.track-row {
 .inspector-header,
 .inspector-section {
   padding: 18px;
+}
+
+.preview-console {
+  margin: 0 18px 18px;
+  border: 1px solid var(--rf-border-subtle);
+  border-radius: var(--rf-radius-card);
+  background: var(--rf-bg-overlay);
+  padding: 14px;
+}
+
+.preview-window {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px;
 }
 
 .inspector-section {
