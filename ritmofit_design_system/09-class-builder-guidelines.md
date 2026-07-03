@@ -50,6 +50,10 @@ view that makes RitmoFit feel like a rhythm tool instead of a track list.
   immediately.
 - It's the most shareable artifact in the product: an instructor can see and screenshot the _shape_ of
   their class. Full spec: [`10-rhythm-system.md`](./10-rhythm-system.md) §4.
+- **Shares the timeline's selection:** the selected track's ribbon segment carries a faint cyan column +
+  base bar — the same cyan the timeline block and song row use — so the arc, the time axis, and the track
+  list read as **one workbench**, not three separate widgets. Cyan is interaction only, never intensity,
+  so it can't be misread as a zone. The ribbon is sized as the workbench hero (taller than a peer card).
 
 ## Song row — eliminate noise (the explicit brief)
 

@@ -448,7 +448,7 @@ export function CuesSection({
             title={`Time in seconds${anchorHint(durationMs)}`}
           />
           <input
-            className={`flex-1 ${fieldClass}`}
+            className={`min-w-0 flex-1 ${fieldClass}`}
             placeholder="Cue text"
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -851,7 +851,7 @@ export function MovesSection({
         </select>
         {addNeedsName && (
           <input
-            className={`flex-1 ${fieldClass}`}
+            className={`min-w-0 flex-1 ${fieldClass}`}
             placeholder={addSel.kind === 'new' ? 'New custom move name' : 'Move name'}
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
