@@ -1086,13 +1086,17 @@ function ClassWorkspace({
         {/* The energy arc + timeline — the class's shape and its cue/move markers,
             sharing one time axis, both derived from the run-payload (no new schema). */}
         {payload && payload.tracks.length > 0 && (
-          <div className="flex flex-col gap-3 rounded-card bg-bg-raised p-4 shadow-card">
-            {/* Workbench heading — the class shape is the central instrument, so it
-                gets one clear identity + the placement control, not a bare toolbar. */}
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                Class shape
-              </span>
+          <div className="flex flex-col gap-4 rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
+            {/* Workbench heading — the class shape is the builder's central instrument,
+                so it carries a real title (not a peer section label) alongside the
+                placement control (design system 09: "shape is the instrument"). */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col">
+                <h3 className="font-display text-lg font-semibold leading-tight text-text-primary">
+                  Class shape
+                </h3>
+                <p className="font-ui text-xs text-text-tertiary">Intensity across the class</p>
+              </div>
               {canEdit && (
                 <div className="flex items-center gap-2">
                   <span className="font-ui text-xs text-text-tertiary">
@@ -1111,8 +1115,8 @@ function ClassWorkspace({
             {/* The shape surface — the energy arc (hero) and the timeline ride one
                 shared time axis on a single inset surface, so they read as one object
                 (height = intensity above, blocks/markers below) instead of stacked strips. */}
-            <div className="flex flex-col gap-1.5 rounded-card bg-bg-base p-3">
-              <IntensityRibbon payload={payload} />
+            <div className="flex flex-col gap-2 rounded-card bg-bg-base p-3 sm:p-4">
+              <IntensityRibbon payload={payload} selectedClassTrackId={selectedTrackId} />
               <TimelineStrip
                 payload={payload}
                 selectedTrackId={selectedTrackId}
