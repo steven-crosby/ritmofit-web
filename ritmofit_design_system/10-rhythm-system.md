@@ -25,15 +25,18 @@ grammar.
 
 ### 1a. Missing tempo is a readiness state, not quiet metadata
 
-A track without a BPM has no beat: `--rf-bpm` is unset, the pulse cannot run, and the tempo identity is
-absent. That absence is **surfaced as readiness**, never buried as small print — in the builder as the
-tempo dimension of the readiness panel ("Tempo missing — pulse off", see
-[`09-class-builder-guidelines.md`](./09-class-builder-guidelines.md) §Readiness), and in Live as a
-first-class state rather than a faint tertiary label. The fallback keeps meaning without motion: where
-BPM is absent the pulse is simply off (exactly as under reduced motion, §6), timers and cues stay fully
-legible, and the fix ("Add BPM so the class keeps time") is one tap away. Missing tempo warns on the
-**caution channel**; it never blocks a run on its own — only missing durations do that. And never obtain
-BPM from Spotify: manual BPM or the dedicated tempo-provider path only (music constraints).
+A track without a confirmed BPM still has a tempo state. If a manual value or approved tempo-provider
+result exists, show it as confirmed. If the system can only make an existing-data estimate, show a
+**provisional BPM** with `~`, an icon, and an `auto` label on the **caution channel**. The pulse may use
+confirmed BPM; a provisional BPM can populate rows, averages, and the Live at-rest display, but it must
+be visibly refinable before the instructor relies on it.
+
+If no tempo value exists at all, the pulse is simply off (exactly as under reduced motion, §6), timers
+and cues stay fully legible, and the fix ("Add BPM so the class keeps time") is one tap away. Missing or
+provisional tempo is **surfaced as readiness**, never buried as small print — in the builder as the tempo
+dimension of the readiness panel, and in Live as supporting status under an affirmative ready state.
+Tempo warnings never block a run on their own; only missing durations do that. Never obtain BPM from
+Spotify: manual BPM or the dedicated tempo-provider path only.
 
 ## 2. Where it pulses (the entire allowlist)
 
@@ -74,6 +77,11 @@ graph pinned along the top of the timeline.
   _banding_ under the ribbon builds on the `class_sections` model.) See the blend rule below.
 - Editing a track's intensity (or a placed move's) reshapes the ribbon live. The ribbon _is_ the
   choreography summary.
+- It is **alive at rest**. A class with tracks but no hand-authored shaping still renders a provisional
+  non-flat shape: derive a baseline from `class_track.intensity`, `position` / derived
+  `start_offset_ms`, and `duration_ms`; when every track carries the same stored intensity, use
+  documented position/section/duration assumptions to produce a warm-up → build → peak → release draft.
+  Mark the draft provisional with caution + icon + label and provide an Auto-shape / refine affordance.
 
 **The blend rule (hybrid).** The ribbon has two inputs, both already in the schema:
 
@@ -87,6 +95,12 @@ graph pinned along the top of the timeline.
 Important: `anchor_ms` lives on **cues/placed-moves**, never on `class_tracks` — so the baseline is the
 per-track value and the intra-track detail comes from placements. Don't reach for a `class_tracks.anchor_ms`
 field; it doesn't exist. The ribbon is a path computed per edit, not per frame (see §7).
+
+**Derivation discipline.** Provisionals come only from fields already present in the class payload:
+`class_track.intensity`, order, `position` / derived `start_offset_ms`, `duration_ms`, `class_sections`,
+placed-move intensity, and manual or approved tempo-provider BPM. Do not infer BPM from Spotify and do
+not invent hidden fields. Where a better persisted field is missing, leave a TODO in implementation notes
+instead of pretending the data exists.
 
 ## 5. The one "drop"
 

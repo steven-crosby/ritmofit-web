@@ -110,6 +110,10 @@ RitmoFit is a creative instrument. It should feel less like filling out a workou
 
 The class is not merely assembled. It is discovered.
 
+The instrument is **alive at rest**. A class with tracks should already show a useful provisional shape,
+tempo, structure, and music object before the instructor hand-authors every detail. Derive from existing
+class data, mark the result as provisional, then make refinement fast.
+
 Use this framing throughout product and marketing:
 
 - The instructor **finds** the class inside the music.
@@ -124,6 +128,7 @@ Implementation should prefer choices that make the workflow feel like creative d
 - Visible BPM and structure.
 - Low-friction cue placement.
 - Energy arc/ribbon always close to the timeline.
+- Derived provisional defaults instead of empty signature surfaces.
 - Clear relationship between music, movement, and effort.
 - Live mode that helps the instructor lead, not stare at UI chrome.
 
@@ -238,6 +243,16 @@ Hard boundary: none of this appears on Builder, sign-in, inspector, forms, dense
 No decoration that does not serve rhythm, hierarchy, clarity, or brand recognition.
 
 Do not add generic two-orb AI SaaS backgrounds. If texture is needed, derive it from rhythmic data such as beat grids, bars, timelines, or class shape.
+
+### 3.8 Alive at rest
+
+No signature surface ships empty or flat by default. When complete authorship data is missing, derive a
+provisional from fields already in the schema (`class_track.intensity`, order, duration, sections,
+placed-move intensity, and manual or approved tempo-provider BPM), mark it with caution + icon + label,
+and let the instructor refine it.
+
+Derive, never invent. Do not infer BPM from Spotify, do not imply new persisted fields from a visual
+state, and do not use color alone to distinguish provisional from confirmed.
 
 ---
 
@@ -412,7 +427,7 @@ Good:
 - Score movement with precision.
 - Cue the drop. Keep control.
 - Your playlist has a shape. Make it visible.
-- Built for instructors who create.
+- For instructors who build the class.
 - Every cue, on time.
 - Rhythm in. Movement out.
 - Lead the room without losing the beat.
@@ -470,6 +485,10 @@ Share/export:
 Onboarding headline:
 
 > RitmoFit is for instructors who are creators.
+
+Canonical eyebrow/tagline:
+
+> For instructors who build the class.
 
 Onboarding subhead:
 
@@ -770,6 +789,9 @@ Sizes:
 
 Hero readout may pulse on beat only in Live mode and only if reduced motion is off.
 
+Provisional BPM uses the same data face plus `~`, an icon, and an `auto` label on the caution channel.
+Confirmed BPM is plain data. Missing BPM is a readiness item with a fix, not a headline of absence.
+
 ### 9.5 Track row / song card
 
 Track row must be low-noise and structure-forward.
@@ -806,6 +828,7 @@ Rules:
 - Plasma appears only at Zone 4 peaks.
 - It must be legible in grayscale.
 - It updates when track or placed-move intensity changes.
+- It is alive at rest: with tracks present, show a derived provisional shape instead of a flat default.
 - It is shareable: should work in screenshots/share cards.
 
 Data inputs:
@@ -814,6 +837,12 @@ Data inputs:
 - Refinement from placed moves/cues with intensity and anchor time.
 
 Do not invent nonexistent schema fields. If exact schema differs, map carefully and document assumptions in comments.
+
+### 9.6a Provisional / derived state
+
+Use this state for auto-shaped ribbon, auto-banded segments, provisional BPM, and derived artwork tiles.
+The encoding is fixed: caution channel + icon/glyph + visible label (`auto`, `derived`, or `confirm`) +
+the value itself. Do not add a new color token; do not make color the only difference.
 
 ### 9.7 Cue and move markers
 
@@ -1341,7 +1370,7 @@ With phrases like:
 - Find the class inside the music.
 - Shape the room from the first track.
 - Score movement with precision.
-- Built for instructors who create.
+- For instructors who build the class.
 
 ### 16.5 Accessibility audit
 
@@ -1373,11 +1402,14 @@ An implementation change is successful when:
 - Data values use Azeret Mono or approved data font fallback.
 - Album art is bounded and not dominant in builder workflows.
 - Energy ribbon/class shape is prominent where applicable.
+- Signature surfaces are alive at rest: tracks produce provisional shape, tempo, structure, and music
+  presence instead of blank or flat defaults.
 
 ### Interaction
 
 - Builder is calm and usable.
 - Live mode is high-contrast and glanceable.
+- Live at rest leads with an affirmative ready state, not absence as the focal message.
 - Pulse is beat-derived and rationed.
 - Reduced motion removes pulse without removing meaning.
 - Provider failures are clear and recoverable.
@@ -1397,6 +1429,7 @@ An implementation change is successful when:
 - Component styles consume tokens.
 - Schema assumptions are documented.
 - No invented data fields are silently introduced.
+- Derived states use only existing data sources and are clearly marked provisional.
 - Web and iOS share roles even when native implementation differs.
 
 ---

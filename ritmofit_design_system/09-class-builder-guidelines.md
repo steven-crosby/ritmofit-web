@@ -30,6 +30,10 @@ readiness panel, then a quiet save/provider line. The ribbon is the first contai
 1180px and below, the class archive collapses into a compact toolbar with count, active-class select, and
 inline “+ Add from Library” action; it must not become a large preamble before the work.
 
+Readiness is the builder spine. The header should answer "what shape have I built, and can I take it
+live?" before it asks the instructor to fill fields. When all required run data is present, the all-clear
+state is affirmative: **Class shape ready · take it live**.
+
 **Mobile recomposes; it does not compress.** At phone widths the three regions stack into one legible
 column (header → readiness → class-shape workbench → track list → inspector) — never the desktop
 three-pane squeezed sideways. No horizontal overflow and no overlapping controls at 390px (and 320px) is
@@ -50,6 +54,11 @@ view that makes RitmoFit feel like a rhythm tool instead of a track list.
   immediately.
 - It's the most shareable artifact in the product: an instructor can see and screenshot the _shape_ of
   their class. Full spec: [`10-rhythm-system.md`](./10-rhythm-system.md) §4.
+- A class with tracks is never allowed to show a dead flat slab just because the instructor has not
+  authored every zone. Render a derived provisional staircase/arc from the existing track order,
+  duration, sections, intensity, and placed-move intensity; mark it with caution + icon + `auto`, and
+  offer **Auto-shape** / refine controls near the ribbon. The instructor edits from a useful draft, not a
+  blank.
 - **Shares the timeline's selection:** the selected track's ribbon segment carries a faint cyan column +
   base bar — the same cyan the timeline block and song row use — so the arc, the time axis, and the track
   list read as **one workbench**, not three separate widgets. Cyan is interaction only, never intensity,
@@ -116,6 +125,24 @@ Segments band the timeline with icon + label and a quiet tint, _under_ the energ
 A reviewed discipline template or instructor-authored section name may override the visible label. The
 band supports class structure and must not compete with the intensity ribbon.
 
+If the instructor has tracks but no authored sections, show auto-banded provisional structure (warm-up →
+build/peak → release) derived from track order, duration, intensity, and any `class_sections` already
+present. Mark it `auto`, make it editable, and document the assumptions. Do not create new persisted
+section types from a visual mockup.
+
+## Inspector — score, don't fill
+
+The selected-track inspector opens on **Essentials**:
+
+- Intensity, with zone number + bars + label.
+- BPM, confirmed or provisional, in the data face.
+- One-tap cue entry and the current clip/window summary.
+- Creator note, if present.
+
+Long-tail fields sit under a collapsed **Advanced** disclosure: cadence/RPM, holds, trim start/end,
+downbeat, detailed notes, and provider/debug metadata. Advanced fields are still important; they are not
+the first impression. The common act should feel like scoring the class, not completing a record.
+
 ## Readiness — is the class ready to run?
 
 Before an instructor is on stage, the builder header answers one question plainly: **is this class ready
@@ -125,8 +152,8 @@ four dimensions, each mapped to something the instructor must trust:
 - **Duration** — the class clock. The one _hard_ gate: Live can't start until every track has a length
   (mirrors the existing run guard, `duration.ts`). Marked `Blocks Live`.
 - **Tempo** — display BPM drives the beat pulse and tempo identity ([`10-rhythm-system.md`](./10-rhythm-system.md)
-  §1–2). Missing BPM turns the pulse off; that is a readiness state ("Tempo missing — pulse off"), not
-  quiet metadata.
+  §1–2). Confirmed BPM is ready. Provisional BPM is useful but marked `auto` on the caution channel.
+  Missing BPM turns the pulse off; readiness names the next action instead of making absence the headline.
 - **Cues & moves** — the instructor's guidance. Without any, Live is a bare prompter.
 - **Music** — a provider link per track so Live can play audio; without one the class runs prompter-only.
   Builder readiness asks only "does the track carry a provider reference?" — the stronger
@@ -150,6 +177,9 @@ Rules:
 
 - **Empty class:** "Start with a track. Shape the room from there." — an invitation with a clear path
   to Library, search, or import.
+- **Tracks added, no hand shaping:** derived class shape + auto-banded sections + an Auto-shape refine
+  action.
+- **All green:** "Class shape ready · take it live." The primary action is Run live.
 - **Provider disconnected:** explain what broke and how to reconnect; never a silent failure.
 - **Unsaved/unsynced:** caution state (amber + icon), with the save confirmation microinteraction on
   resolve.

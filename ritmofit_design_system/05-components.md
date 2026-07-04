@@ -54,11 +54,31 @@ The product's hero value. Three sizes, all Azeret Mono / tabular:
   **pulses on `--rf-beat`** (see [`10-rhythm-system.md`](./10-rhythm-system.md)). Everywhere else it is
   static.
 
+Confirmed values render as plain data. Provisional values render with a leading `~`, an icon, and an
+explicit `auto` label on the caution channel; color only reinforces. Do not add a new token for this
+state.
+
+## Provisional / derived state
+
+Use when the system has derived a useful draft from existing class data and the instructor can refine it:
+auto-shaped ribbon, auto-banded segments, provisional BPM, derived artwork tiles.
+
+Contract:
+
+- caution channel (`--rf-caution`)
+- icon or glyph
+- visible label (`auto`, `derived`, or `confirm`)
+- underlying value still present in text or shape
+
+Never show a provisional as a blank, a dash, or color-only tint. Never use plasma for provisional state.
+
 ## Song row / track card
 
 The signature list item. **Low noise** (see [`09-class-builder-guidelines.md`](./09-class-builder-guidelines.md)):
 
 - Small album art (44pt, `control` radius) — a creative trigger, not a focal point.
+  Real art wins; otherwise use a derived rhythmic tile keyed to known BPM/energy. Never fall back to a
+  bare music-note placeholder on a signature track surface.
 - Title (`body-strong`) + artist (`body`, secondary).
 - **BPM** in `data` (Azeret Mono), visually weighted — the planning-critical value.
 - Drag grip for reorder; intensity indicator (zone bars) when assigned.
@@ -80,6 +100,10 @@ recomputed on edit. Derived **hybrid**: a per-track baseline from `class_tracks.
 placed moves carry `class_track_moves.intensity` at their `anchor_ms` — ships without new schema. (No
 `class_tracks.anchor_ms` field exists; see the blend rule in
 [`10-rhythm-system.md`](./10-rhythm-system.md) §4.) The most shareable view in the app.
+
+Alive-at-rest rule: with tracks present, the ribbon never defaults to a flat empty slab. If authored
+shaping is incomplete, render the derived provisional shape and mark it with the provisional-state
+contract above.
 
 ## TempoPulse (new — behavior, not a box)
 
@@ -118,16 +142,26 @@ Structured solid/glass surfaces over the dark Live ground, maximum-contrast text
 queued, BPM + timecode persistent **and pulsing on the beat**. The All-Out cue advance is the one "drop"
 moment (plasma glow bloom, on-beat cross-fade). Minimal controls, large targets.
 
-Sparse-data fallbacks are first-class, never a bare dash: with no current cue the focal card reads
-**"No cue set"** plus the playing track (mirroring the assertive screen-reader announcement); a missing
-BPM reads **"Tempo missing · pulse off"** on the caution channel (see
-[`10-rhythm-system.md`](./10-rhythm-system.md) §1a), not faint tertiary metadata. Provider handoff links
-appear **only** in the playback-failure recovery alert, never on the prompter surfaces (D19).
+At rest, Live leads with confidence: **"Ready — press play"**, a next-cue preview, BPM (confirmed or
+provisional), and a class-shape mini-map. Sparse-data fallbacks are first-class, never a bare dash:
+missing cue or tempo appears as supporting readiness copy with a clear fix, not as the largest element on
+the screen. Provider handoff links appear **only** in the playback-failure recovery alert, never on the
+prompter surfaces (D19).
+
+## Track inspector
+
+Default inspector composition is **Essentials first**: intensity, BPM, one-tap cue, clip/window summary,
+and creator note. The long tail is a collapsed **Advanced** disclosure: cadence/RPM, holds, trim,
+downbeat, detailed notes, and provider/debug metadata. The goal is scoring the class, not filling every
+field before the instructor sees shape.
 
 ## Empty & error states
 
 An empty screen is an invitation to act ("Add your first track"); an error states what happened and how
 to fix it, in the interface's voice. Never vague, never an apology.
+
+Signature surfaces do not use empty states when tracks exist. Show derived provisional shape, tempo,
+artwork, and structure wherever the data supports it, then invite refinement.
 
 ## Provider connection states
 

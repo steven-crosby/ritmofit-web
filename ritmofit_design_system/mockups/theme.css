@@ -722,6 +722,24 @@ svg {
   content: "!";
 }
 
+.status-ready {
+  border-color: color-mix(in oklch, var(--rf-interactive) 28%, transparent);
+  background: color-mix(in oklch, var(--rf-interactive) 7%, transparent);
+  color: var(--rf-interactive-hover);
+}
+
+.status-provisional {
+  border-color: color-mix(in oklch, var(--rf-caution) 38%, transparent);
+  background: color-mix(in oklch, var(--rf-caution) 8%, transparent);
+  color: var(--rf-caution);
+}
+
+.status-provisional::before {
+  background: color-mix(in oklch, var(--rf-caution) 13%, transparent);
+  color: var(--rf-caution);
+  content: "~";
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -1007,6 +1025,53 @@ textarea.input {
   text-align: right;
 }
 
+.ribbon-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: -2px 0 10px;
+}
+
+.readiness-rail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.readiness-item {
+  border: 1px solid var(--rf-border-subtle);
+  border-radius: var(--rf-radius-input);
+  background: var(--rf-bg-raised);
+  padding: 9px 10px;
+}
+
+.readiness-item strong,
+.readiness-item span {
+  display: block;
+}
+
+.readiness-item strong {
+  font-size: 0.78rem;
+}
+
+.readiness-item span {
+  color: var(--rf-text-tertiary);
+  font-size: 0.7rem;
+}
+
+.readiness-item.ready strong {
+  color: var(--rf-interactive-hover);
+}
+
+.readiness-item.warn {
+  border-color: color-mix(in oklch, var(--rf-caution) 28%, transparent);
+}
+
+.readiness-item.warn strong {
+  color: var(--rf-caution);
+}
+
 /* Canonical energy-ribbon gradient ramp. SVG <stop>s reference these classes
    instead of hardcoding hex, so the ramp lives in tokens (build/push/attack/peak
    = copper-200 -> copper-400 -> ember-500 -> plasma-500). Geometry (axis/offset)
@@ -1233,6 +1298,11 @@ button.track-row {
   color: var(--rf-text-tertiary);
   font-size: 0.58rem;
   letter-spacing: 0.08em;
+}
+
+.track-row .bpm.is-provisional {
+  border-color: color-mix(in oklch, var(--rf-caution) 34%, transparent);
+  color: var(--rf-caution);
 }
 
 .track-row .intensity {
@@ -1497,6 +1567,43 @@ button.track-row {
 /* Clip window (non-destructive shortening, D13/D19) — a saved playback window
    over the full track, never an edit of the audio. The bar shows the kept range. */
 .clip-window {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.advanced-panel {
+  border-top: 1px solid var(--rf-border-subtle);
+  padding: 0 18px 18px;
+}
+
+.advanced-panel summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--rf-interactive-hover);
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+
+.advanced-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-panel summary::after {
+  color: var(--rf-text-tertiary);
+  content: "+";
+  font-family: var(--rf-font-data);
+}
+
+.advanced-panel[open] summary::after {
+  content: "-";
+}
+
+.advanced-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
@@ -2170,12 +2277,21 @@ button.track-row {
   padding: 28px;
 }
 
+.live-body.is-compare {
+  align-items: stretch;
+}
+
 .live-hud {
   display: grid;
   width: min(100%, 1120px);
   min-width: 0;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 18px;
+}
+
+.live-hud.is-compare {
+  width: min(100%, 1260px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .current-cue {
@@ -2205,6 +2321,50 @@ button.track-row {
     ),
     var(--rf-bg-sunken);
   box-shadow: var(--rf-shadow-peak-bloom);
+}
+
+.current-cue.is-ready {
+  border-color: color-mix(in oklch, var(--rf-interactive) 26%, transparent);
+  background:
+    radial-gradient(
+      circle at 82% 8%,
+      color-mix(in oklch, var(--rf-interactive) 12%, transparent),
+      transparent 32%
+    ),
+    var(--rf-bg-sunken);
+}
+
+.current-cue.is-ready .current-cue-copy {
+  max-width: 13ch;
+  color: var(--rf-text-primary);
+}
+
+.current-cue.is-ready .current-cue-meta {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.current-cue.is-ready .live-bpm strong {
+  font-size: clamp(3.8rem, 7vw, 5.8rem);
+}
+
+.ready-map {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  align-items: end;
+  gap: 3px;
+  min-height: 58px;
+}
+
+.ready-map i {
+  display: block;
+  border-radius: 3px 3px 1px 1px;
+  background: var(--rf-copper-300);
+}
+
+.ready-map i:nth-child(4) {
+  background: var(--rf-peak);
+  box-shadow: var(--rf-shadow-peak-glow);
 }
 
 .current-cue-copy {
@@ -2544,7 +2704,7 @@ button.track-row {
 
 .share-metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 
@@ -3035,6 +3195,10 @@ button.track-row {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .live-hud.is-compare {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .live-side {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: auto;
@@ -3057,6 +3221,14 @@ button.track-row {
   }
 
   .component-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .readiness-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .advanced-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -3094,6 +3266,20 @@ button.track-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+  }
+
+  .ribbon-tools {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .readiness-rail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .source-rail .rail-list,
+  .class-rail .rail-list {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .audition-tray {
@@ -3144,12 +3330,11 @@ button.track-row {
   }
 
   .class-rail .rail-list {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
-    overflow-x: auto;
+    overflow-x: visible;
     padding-bottom: 2px;
-    scroll-snap-type: x proximity;
   }
 
   .class-rail .rail-list::-webkit-scrollbar {
@@ -3157,10 +3342,8 @@ button.track-row {
   }
 
   .class-link {
-    min-width: 196px;
+    min-width: 0;
     min-height: 54px;
-    flex: 0 0 min(72vw, 236px);
-    scroll-snap-align: start;
   }
 
   .class-header {

@@ -76,6 +76,7 @@
             <div class="stack gap-3">
               <div class="row gap-2 wrap">
                 <span class="eyebrow">Class shape saved</span>
+                <span class="status status-ready">Class shape ready · take it live</span>
                 <span class="provider-state ps-connected">
                   <span class="ps-icon" aria-hidden="true">✓</span>Spotify
                   connected
@@ -93,7 +94,7 @@
               <div class="class-metrics">
                 <span>6 tracks</span>
                 <span>25:31 total</span>
-                <span>126 avg BPM</span>
+                <span>126 avg BPM · 1 auto</span>
                 <span>4 cues</span>
                 <span>5 moves</span>
               </div>
@@ -104,6 +105,25 @@
             </div>
           </header>
 
+          <section class="readiness-rail" aria-label="Run readiness">
+            <div class="readiness-item ready">
+              <strong>✓ Duration set</strong>
+              <span>All tracks timed</span>
+            </div>
+            <div class="readiness-item warn">
+              <strong>~ Tempo derived</strong>
+              <span>1 auto BPM to confirm</span>
+            </div>
+            <div class="readiness-item ready">
+              <strong>✓ Cues placed</strong>
+              <span>Next cue ready</span>
+            </div>
+            <div class="readiness-item ready">
+              <strong>✓ Music linked</strong>
+              <span>Provider checks pass</span>
+            </div>
+          </section>
+
           <figure class="energy-ribbon">
             <figcaption>
               <div class="stack gap-1">
@@ -111,11 +131,15 @@
                 <strong>Your playlist has a shape. Make it visible.</strong>
               </div>
               <span class="ribbon-summary">
-                25 minutes, 2 peak efforts, highest zone All Out, a 30-second
-                authored silence after the peak, controlled release in the
-                final 4 minutes.
+                Derived from track order, duration, intensity, sections, and
+                placed moves. Provisional segments are marked auto until
+                refined.
               </span>
             </figcaption>
+            <div class="ribbon-tools" aria-label="Class shape derivation">
+              <span class="status status-provisional">Auto-shaped draft</span>
+              <button class="button button-action">Auto-shape</button>
+            </div>
             <div class="timeline-ruler" aria-hidden="true">
               <span data-beat="1"></span><span data-beat="2"></span><span data-beat="3"></span><span data-beat="4"></span>
               <span data-beat="5"></span><span data-beat="6"></span><span data-beat="7"></span><span data-beat="8"></span>
@@ -205,10 +229,10 @@
             <span class="section-label" id="segment-band-title">Segments</span>
             <div class="row gap-2 wrap" aria-label="Class segments in order">
               <span class="segment-tag seg-warmup">
-                <span class="seg-dot" aria-hidden="true"></span>Warm-up
+                <span class="seg-dot" aria-hidden="true"></span>Warm-up · auto
               </span>
               <span class="segment-tag seg-climb">
-                <span class="seg-dot" aria-hidden="true"></span>Climb
+                <span class="seg-dot" aria-hidden="true"></span>Climb · auto
               </span>
               <span class="segment-tag seg-sprint">
                 <span class="seg-dot" aria-hidden="true"></span>Sprint
@@ -287,8 +311,8 @@
                   ></span>
                   <span class="zone-copy">Z3</span>
                 </span>
-                <span class="bpm">
-                  <span class="metric-spin">132<small>RPM</small></span>
+                <span class="bpm is-provisional" aria-label="Provisional BPM 132, auto">
+                  <span class="metric-spin">~132<small>auto BPM</small></span>
                   <span class="metric-pilates">5<small>Holds</small></span>
                 </span>
                 <span class="grip" aria-hidden="true">⠿</span>
@@ -404,6 +428,11 @@
             <span class="dim">North Room · 3:42 · SoundCloud</span>
           </div>
 
+          <div class="inspector-section stack gap-2">
+            <span class="eyebrow">Essentials</span>
+            <span class="dim">Score the track first. Advanced timing stays tucked away.</span>
+          </div>
+
           <section class="preview-console stack gap-3">
             <div class="between gap-3 wrap">
               <span class="playback-state ps-connected">
@@ -455,7 +484,7 @@
             <label class="field">
               <span
                 >Display BPM
-                <span class="dim">(manual or approved tempo source)</span></span
+                <span class="dim">(~132 auto · confirm or refine)</span></span
               >
               <input class="input data" type="number" value="132" />
             </label>
@@ -466,6 +495,46 @@ Hold tension through the break. Release after the vocal drop.</textarea
               >
             </label>
           </section>
+
+          <section class="inspector-section stack gap-2">
+            <div class="between">
+              <span class="field-label">Next cue</span>
+              <button class="button button-action">+ Add cue</button>
+            </div>
+            <div class="cue-row">
+              <span class="timecode">0:24</span>
+              <span class="cue-kind">Cue</span>
+              <span>Build resistance</span>
+              <button
+                class="button button-square button-ghost"
+                aria-label="Delete cue"
+              >
+                ×
+              </button>
+            </div>
+          </section>
+
+          <details class="advanced-panel">
+            <summary>Advanced</summary>
+            <div class="advanced-grid">
+              <label class="field">
+                <span>Cadence / RPM</span>
+                <input class="input data" value="84-92" />
+              </label>
+              <label class="field">
+                <span>Holds</span>
+                <input class="input data" value="5" />
+              </label>
+              <label class="field">
+                <span>Downbeat</span>
+                <input class="input data" value="0:04" />
+              </label>
+              <label class="field">
+                <span>Trim note</span>
+                <input class="input data" value="Keep vocal break" />
+              </label>
+            </div>
+          </details>
 
           <section class="inspector-section stack gap-3">
             <div class="between gap-2">
@@ -490,35 +559,6 @@ Hold tension through the break. Release after the vocal drop.</textarea
               >A saved playback window — the track itself is never edited.</span
             >
             <button class="button button-action">▶ Preview 0:14–3:28</button>
-          </section>
-
-          <section class="inspector-section stack gap-2">
-            <div class="between">
-              <span class="field-label">Cues</span>
-              <button class="button button-action">+ Add cue</button>
-            </div>
-            <div class="cue-row">
-              <span class="timecode">0:24</span>
-              <span class="cue-kind">Cue</span>
-              <span>Build resistance</span>
-              <button
-                class="button button-square button-ghost"
-                aria-label="Delete cue"
-              >
-                ×
-              </button>
-            </div>
-            <div class="cue-row">
-              <span class="timecode">1:18</span>
-              <span class="cue-kind">Cue</span>
-              <span>Drive through the break</span>
-              <button
-                class="button button-square button-ghost"
-                aria-label="Delete cue"
-              >
-                ×
-              </button>
-            </div>
           </section>
 
           <section class="inspector-section stack gap-2">

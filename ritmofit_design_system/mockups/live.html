@@ -47,8 +47,47 @@
         </div>
       </header>
 
-      <div class="live-body">
-        <div class="live-hud">
+      <div class="live-body is-compare">
+        <div class="live-hud is-compare">
+          <section
+            class="current-cue is-ready"
+            aria-labelledby="ready-cue-title"
+          >
+            <div class="row gap-3 wrap">
+              <span class="eyebrow">At rest · ready</span>
+              <span class="status status-provisional">~128 auto BPM</span>
+            </div>
+            <h1 class="current-cue-copy" id="ready-cue-title">
+              Ready — press play.
+            </h1>
+            <div class="stack gap-4">
+              <section class="next-cue">
+                <span class="section-label">First cue</span>
+                <h2>Build resistance after the intro.</h2>
+              </section>
+              <div class="ready-map" aria-label="Class shape mini map">
+                <i style="height: 38%"></i>
+                <i style="height: 48%"></i>
+                <i style="height: 66%"></i>
+                <i style="height: 96%"></i>
+                <i style="height: 78%"></i>
+                <i style="height: 42%"></i>
+                <i style="height: 54%"></i>
+                <i style="height: 70%"></i>
+              </div>
+            </div>
+            <div class="current-cue-meta">
+              <div class="stack gap-1">
+                <strong>Saturday Rhythm Build</strong>
+                <span class="muted">6 tracks · shape ready · take it live</span>
+              </div>
+              <div class="live-bpm" aria-label="Provisional 128 beats per minute">
+                <strong>~128</strong>
+                <span>auto BPM</span>
+              </div>
+            </div>
+          </section>
+
           <section
             class="current-cue tempo-pulse-live is-all-out"
             aria-labelledby="current-cue-title"
@@ -74,31 +113,6 @@
               </div>
             </div>
           </section>
-
-          <aside class="live-side stack gap-6" aria-label="Live class context">
-            <section class="stack gap-1">
-              <span class="section-label">Now playing</span>
-              <span class="title-lg">Drop In</span>
-              <span class="track-meta">Studio 84 · SoundCloud</span>
-            </section>
-
-            <section class="next-cue">
-              <span class="section-label">Next cue in</span>
-              <strong class="countdown">0:18</strong>
-              <h2>Release. Find control.</h2>
-            </section>
-
-            <section class="stack gap-2">
-              <div class="between">
-                <span class="section-label">Track ends</span>
-                <strong class="timecode">0:41</strong>
-              </div>
-              <div class="between">
-                <span class="section-label">Class ends</span>
-                <strong class="timecode">13:49</strong>
-              </div>
-            </section>
-          </aside>
         </div>
       </div>
 

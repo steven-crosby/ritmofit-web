@@ -1,6 +1,6 @@
 # 01 — Design Principles
 
-Seven principles. If a design choice doesn't serve one of these, cut it.
+Eight principles. If a design choice doesn't serve one of these, cut it.
 
 ## 1. Built for creating, not consuming
 
@@ -23,6 +23,10 @@ Color is attitude and reinforcement, never the sole carrier of meaning. Informat
 numbers, icons, position, and weight**; color makes it feel confident on top of that. This survives
 colorblindness, low light, sweat, and glances. (Red/green avoidance is a personality guideline;
 redundant encoding is the durable rule.)
+
+State language follows the same discipline. Lead with the affirmative whenever the surface is ready to
+act: "Ready — press play" beats "No cue set"; "Class shape ready" beats a quiet checklist. If something
+is missing, name the next action without making absence the focal point.
 
 ## 4. One identity, one interactive language, one drop
 
@@ -53,6 +57,10 @@ moving. The same tokens produce both; the _mode_ selects how hard to push them.
 Marketing and share artifacts may use copper/ember warmth, while plasma appears only at a real class
 peak or the Live drop. Swagger comes from class shape, scale, copy, and composition—not generic glow.
 
+Live at rest is still a performance surface. It should project readiness first: next cue, current or
+provisional BPM, and class shape stay visible before playback starts. The instructor should feel the
+room is set, not that the system is waiting to become useful.
+
 ## 7. Earn every element
 
 Eliminate UI noise. Album art is small because it tells the instructor little about how to _use_ a
@@ -60,6 +68,21 @@ track — a creative trigger, not a focal point. Default to fewer chrome element
 breathing room around the things that carry information. Boldness is spent in one place per surface
 (usually the primary action, the live readout, or the energy peak); everything around it stays
 disciplined.
+
+## 8. Alive at rest — derive, then refine
+
+No signature surface ships empty, flat, or asleep by default. When the ideal state depends on data the
+instructor has not hand-authored yet, show a **derived provisional** from data already in the system, then
+make it easy to refine.
+
+- The class shape starts from existing track intensity, order, duration, and sections; placed-move
+  intensity refines it.
+- Tempo can be provisional from a manual or approved tempo-provider path, never from Spotify metadata.
+- Auto-banded structure comes from current tracks and `class_sections`, then remains editable.
+- Provisional state is first-class: caution channel + icon + explicit label, never color alone.
+
+Derive, never invent. Do not add visual certainty where the data does not exist; do not add schema by
+implication. A provisional should feel useful, honest, and ready to be claimed by the instructor.
 
 ---
 
@@ -76,4 +99,4 @@ When choices conflict, use this order:
 5. Reference-brand resemblance.
 
 The desired result is not "Spotify for fitness" or "Material with glass." It is a RitmoFit
-instrument: warm, precise, movement-first, and unmistakably built for instructors who create.
+instrument: warm, precise, movement-first, and unmistakably for instructors who build the class.
