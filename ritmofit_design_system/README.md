@@ -33,6 +33,7 @@ The visual target is **Club Athletic + Creator Swagger + Nike restraint**:
 9. Pulse is allowed only in the Live HUD and the currently playing planning indicator.
 10. Reduced motion removes affect without removing meaning.
 11. Foundation language is modality-neutral. Stored enum keys retain schema-honest fallback labels; discipline templates and instructor-authored names may provide scoped display language.
+12. Signature surfaces are alive at rest: derived-provisional, never empty or flat by default.
 
 ## Package map
 
