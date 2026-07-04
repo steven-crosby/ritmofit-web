@@ -168,6 +168,25 @@ try {
   // The title now appears in the track row AND as readiness fix-chips (a manual
   // track has no BPM/provider yet), so match the first occurrence, not exactly one.
   await page.getByText('Smoke Anthem').first().waitFor({ timeout: 10000 });
+
+  // 4a. Add a second manual track so the class has ≥2 tracks at the same default
+  // intensity ('mod') — the alive-at-rest "unshaped" case. The energy ribbon should
+  // draw a derived provisional arc marked with the "auto shape" badge, not a flat
+  // slab (design system principle 8 / IntensityRibbon.computeRibbonShape). The
+  // "Add manually" <details> collapses after an add, so re-open it and keep the
+  // default 'mod' intensity + 3:00 duration.
+  await page.getByText('Add manually').click();
+  await page.getByLabel('Track title').waitFor({ state: 'visible', timeout: 10000 });
+  await page.getByLabel('Track title').fill('Smoke Reprise');
+  await page.getByLabel('Track artist').fill('The Testers');
+  await page.getByRole('button', { name: 'Add track' }).click();
+  await page.getByText('Smoke Reprise').first().waitFor({ timeout: 10000 });
+  const autoBadge = page.getByText('auto shape', { exact: true });
+  if (await autoBadge.isVisible().catch(() => false)) pass('provisional-shape:auto-badge');
+  else
+    fail('provisional-shape:auto-badge', 'auto-shape badge missing on an unshaped 2-track class');
+  await page.screenshot({ path: join(shotsDir, 'provisional-shape-390.png'), fullPage: true });
+
   await checkNoOverflow(page, 'dashboard-with-track');
   if (process.env.SMOKE_DIAG) {
     const offenders = await page.evaluate(() => {
@@ -188,7 +207,10 @@ try {
   // re-check overflow — the inspector was previously untested at 390px, where its
   // "Add cue"/"Add move" rows overflowed. Row buttons include the artist in their
   // accessible name (readiness chips carry only the title), so match on that.
-  await page.getByRole('button', { name: /The Testers/ }).first().click();
+  await page
+    .getByRole('button', { name: /The Testers/ })
+    .first()
+    .click();
   await page.getByRole('button', { name: 'Add cue' }).waitFor({ timeout: 10000 });
   await checkNoOverflow(page, 'dashboard-inspector-open');
   await page.screenshot({ path: join(shotsDir, 'dashboard-inspector-open.png'), fullPage: true });
