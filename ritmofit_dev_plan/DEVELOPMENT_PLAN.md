@@ -21,10 +21,13 @@ A choreography and class-running tool for **rhythm spin cycle instructors**.
   unchanged. **The backend is the single source of truth; neither client is.**
 - The parity principle is locked as decision **D18**; the hard gate + current parity backlog live in
   [`web-ios-parity.md`](./web-ios-parity.md).
-- **Current operating focus (2026-07-02):** the web launch gate is green and deployed. The active web
+- **Current operating focus (2026-07-04):** the web launch gate is green and deployed. The active web
   track is the **provider-authorized playback initiative**
   ([`provider-playback-implementation.md`](./provider-playback-implementation.md)) alongside continuing
-  owner-approved design/polish slices. The iOS handoff / parity wrap is queued behind it; its backlog
+  owner-approved design/polish slices — most recently the **"alive at rest" redesign** (derive a
+  provisional shape/BPM-readiness/structure from existing data rather than shipping blank or flat
+  defaults), shipped 2026-07-04 as the design-system doctrine plus five presentation-only web slices
+  (see `HISTORY.md`, Worker `190bc83e`). The iOS handoff / parity wrap is queued behind it; its backlog
   stays tracked in [`web-ios-parity.md`](./web-ios-parity.md), and the parity gate still applies to
   every web feature merge.
 
