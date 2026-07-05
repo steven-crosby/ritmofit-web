@@ -3,6 +3,7 @@
 <!-- note (Codex, 2026-07-02): Created from the Ritmo Studio player planning session. -->
 <!-- note (Claude, 2026-07-02): Doc audit pass — added the prod connect-exchange prerequisite and design-system playback states. -->
 <!-- note (Claude, 2026-07-03): Connect prerequisite marked completed (Worker 94126954); marked the built playback-layer modules in Architecture; recorded Live Mode wiring status. -->
+<!-- note (Claude, 2026-07-05): Apple Music (MusicKit JS v3) playback adapter built + registered; updated Architecture build marker and the Live Mode adapter-registry status. -->
 
 ## Goal
 
@@ -90,7 +91,11 @@ Add the web playback layer under `apps/web/src/lib/playback/`:
   recoverable-error surfacing. Host-clock driven: Live Mode's rAF loop calls `tick(elapsedMs)`; the
   coordinator never runs its own timer, and the class timeline stays master. **(built)**
 - `soundcloud-adapter.ts`: official SoundCloud Widget API. **(built — needs live verification)**
-- `apple-music-adapter.ts`: MusicKit JS playback, building on `apps/web/src/lib/musickit.ts`.
+- `apple-music-adapter.ts`: MusicKit JS (v3) playback on the shared page instance, building on
+  `apps/web/src/lib/musickit.ts` (now extended from connect-only into the queue/transport surface).
+  Cues the clip start via `setQueue.startTime` (seconds) and converts the ms playback contract at the
+  boundary; a pre-play mid-track seek re-cues rather than calling `seekToTime` (no now-playing item
+  until playback starts). **(built — needs live verification)**
 - `spotify-adapter.ts`: Spotify Web Playback SDK / Connect playback.
 - focused tests for provider selection, clip-window math, preflight results, auto-advance decisions, and
   unrecoverable/recoverable error mapping.
@@ -205,10 +210,26 @@ plus component guidance for the player rail and preflight screen.
 **Live Mode wiring status (2026-07-03):** built — preflight screen (`LivePreflight.tsx`) gating class
 start, `RuntimePlaybackCoordinator` driven from the existing rAF clock, player rail in the transport,
 recoverable playback-failure alert (retry / continue-without-music / handoff links moved there as the
-recovery-only surface), wake lock preserved. "Run without music" keeps the prompter-only path. Only
-SoundCloud is registered in the adapter registry so far; preflight filters connections to registered
-adapters, so Apple-Music/Spotify-only tracks read as unplayable until their adapters land. Builder
-preview is not wired yet.
+recovery-only surface), wake lock preserved. "Run without music" keeps the prompter-only path.
+
+**Adapter registry (updated 2026-07-05):** SoundCloud and **Apple Music** adapters are now registered
+in `LiveMode.tsx`; preflight filters connections to registered adapters, so only Spotify-only tracks
+still read as unplayable until the Spotify adapter lands (it needs the playback-scope expansion first).
+Builder preview is not wired yet.
+
+**Apple Music shared-transport follow-ups (open, 2026-07-05):** MusicKit is a page-level singleton, so
+the adapter guards teardown with a per-instance ownership token (only the adapter that started the
+transport may `stop()` it — prevents a superseded adapter silencing the live track under rapid seeks).
+Two narrower shared-singleton tails remain, both requiring a stuck-SDK condition and acceptable for
+private beta but worth closing before broad Apple Music rollout:
+
+1. **Un-timed `authorize()`** — a blocked/abandoned Apple consent sheet leaves `prepare()` pending and
+   the coordinator frozen in `preparing` with no recovery. `authorize()` is intentionally not wrapped in
+   the queue-load timeout (it waits on human consent). Fix: surface a "waiting for Apple authorization"
+   state and/or a generous consent-timeout that fails to the recoverable-error path.
+2. **Orphaned `setQueue` after a timeout** — a `setQueue` that loses the `prepare` timeout race is not
+   cancellable and can resolve late, clobbering the queue of a later playing track. Fix: version/guard
+   queue writes so a stale one is ignored, or gate them on current ownership.
 
 ## Verification
 
