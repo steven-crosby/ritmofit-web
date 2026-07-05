@@ -109,6 +109,10 @@ key. Provider-agnosticism is still modeled now (`track_provider_ids`); only *de-
 **Why:** Instructors freelance across studios. Cheap to model now, expensive to retrofit. **Schema in
 M1; team/membership routes built later in the milestone** (routes-lean — see D9).
 
+**Current product status (2026-07-05):** D20 keeps this scaffolding but makes Teams dormant. Do not
+surface, polish, or expand team workflows unless the owner explicitly reopens community/collaboration
+work.
+
 ---
 
 ## D6 — Classes belong to one user; sharing is layered (Google Drive model)
@@ -121,6 +125,10 @@ without touching ownership — like sharing a Drive file. Cleaner than "classes 
 
 **Tradeoff:** "List my classes" becomes a union (owned ∪ shared-directly ∪ shared-via-team). Fine at
 our scale; a deliberate query shape in [`authorization.md`](./authorization.md).
+
+**Current product status (2026-07-05):** D20 keeps this access scaffolding but removes sharing from the
+current user-facing product. The solo library should feel owned and personal; old share rows may remain
+reachable through backend scaffolding, but agents should not build new sharing UX now.
 
 ---
 
@@ -312,7 +320,11 @@ rhythm/intensity doc to name the zones canonically.
 
 ---
 
-## D18 — "Spotify for instructors": full surface parity (web ↔ iOS)  **[Resolved 2026-06-24]**
+## D18 — "Spotify for instructors": full surface parity (web ↔ iOS)  **[Resolved 2026-06-24; superseded for current planning by D20, 2026-07-05]**
+
+> **Current status:** D20 pauses this as a hard product gate. Keep the contract/design sync lessons, but
+> current web work is no longer blocked by landing the same capability on iOS or by tracking parity debt.
+> D20 also removes Explore, sharing, and teams from the active core capability set.
 
 **Decision:** Web and iOS are **two complete, co-equal surfaces of one product** — not a "planning
 surface" and a "live surface." Every core instructor capability — **build & choreograph** a class,
@@ -328,7 +340,7 @@ not byte-identical); Ritmo Studio holds the same bar. Concretely, **the iOS app 
 today the *only* good large-screen / tablet / Android live surface — a presenter-only web would leave
 every non-iPhone live scenario half-served.
 
-**Enforcement (hard gate, effective now):** No feature merges on one surface without the same capability
+**Former enforcement (paused by D20):** No feature merges on one surface without the same capability
 landing on the other **or** a tracked, linked parity item on the other surface. **Existing asymmetries
 are treated as defects**, worked down ahead of most net-new feature work. Mechanics, sync points, the
 current parity backlog, and the documented exceptions live in
@@ -377,10 +389,50 @@ exception is short-lived, provider-scoped **browser playback credentials** an of
 minted per session, never logged or persisted client-side, never used for catalog/BPM shortcuts.
 
 **Tradeoff:** entitlement-gated UX (Premium/subscriber checks, per-provider availability states),
-expanded Spotify OAuth scopes with a reconnection path, and a parity obligation — iOS needs equivalent
-native provider-authorized playback (tracked in [`web-ios-parity.md`](./web-ios-parity.md); a
-provider-approved SoundCloud path on native iOS is an open question and may become a documented
-exception).
+expanded Spotify OAuth scopes with a reconnection path, and later iOS follow-up when native refinement
+resumes. The current web slice should optimize rehearsal and Live Mode first; iOS parity is not a
+present gate under D20.
+
+---
+
+## D20 — Solo-first creator reset: web first, community later  **[Resolved 2026-07-05]**
+
+**Decision:** Ritmo Studio's current product is solo-first and web-first. It helps **individual rhythm
+fitness instructors** build, choreograph, organize, rehearse, and run their own classes in one
+continuous creative flow. The current core disciplines are rhythm cycle, Pilates, and HIIT. Web is the
+product-definition surface now; the iOS app should follow later from the proven backend contract,
+creative loop, and UX decisions.
+
+**Doctrine:** Perfect the individual creator experience until instructors naturally want to share,
+publish, and collaborate. Community features come later because the solo workflow has earned them, not
+because the app assumes them.
+
+**Creative-flow rule:** Do not force a single workflow. An instructor may start from "I have a standard
+45-minute class Monday," "I need a Burn 30-minute ride," a specific song, a movement idea, an energy arc,
+or a rehearsal need. The app should support finding the right songs, choreographing, organizing,
+rehearsing, and running Live Mode without imposing one canonical order.
+
+**Deferred surfaces:** Teams, invites, collaborators, public class pages, publishing flows, social
+discovery, marketplace/community browsing, Explore, sharing UX, and share links are deferred until the
+owner explicitly reopens them.
+
+**Scaffolding retained:** The database schema, migrations, shared contracts, API routes, authorization
+helpers, and some web components for teams/shares/public visibility/Explore may remain for now. Preserve
+them as dormant scaffolding; do not delete or expand them in this reset. The current web app should hide
+those user-facing surfaces and bias toward the caller's own personal library.
+
+**Supersedes:** The active planning parts of D18 that made Explore/sharing/teams core capabilities and
+made iOS parity a hard gate for current web work. D18 remains useful historical context for contract and
+design sync, but it is not the current product gate.
+
+**Why:** The app will be more valuable if the solo instructor loop is excellent before it becomes social.
+The owner wants the web app dialed in near-perfectly first; that should make later iOS development and
+refinement straightforward because the core loop and contract will already be proven.
+
+**Tradeoff:** Previously shipped social/community scaffolding stays in the repo and backend. That can
+create confusing affordance drift if future agents polish or expose it accidentally, so docs and UI must
+label it dormant/deferred. Direct API access may still exist until a later hard-removal or migration
+slice; that is accepted for this hybrid reset.
 
 ---
 

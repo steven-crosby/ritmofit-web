@@ -17,37 +17,49 @@ label the change with the authoring agent and date (e.g. `<!-- note (Claude, 202
 <!-- note (Codex, 2026-06-29): Synced the CI-equivalent gate with the live workflow: design-system verify and iOS contract parity are always part of the gate. -->
 <!-- note (Codex, 2026-07-02): Updated music constraints for official provider-authorized in-app playback (D19). -->
 <!-- note (Claude, 2026-07-02): Doc audit — current operating sequence now names the provider-playback initiative; cadence source of truth is agent-prompts/SCHEDULE.md. -->
+<!-- note (Codex, 2026-07-05): Reset current product focus to the solo-first individual creator loop; community surfaces are dormant/deferred. -->
 
 ## Product & Architecture
 
-Ritmo Studio is a choreography and class-running tool for rhythm spin instructors, delivered as **two
-complete, co-equal surfaces of one product** ("Spotify for instructors"): this **web app** and the
-separate **iOS app**. Each carries the _full_ instructor loop — build & choreograph, library, search,
-explore, sharing, **and** run a class live — in its platform's native idiom; neither is
-capability-limited. This repository contains the web surface and the shared backend the iOS app also
-consumes. The backend is the source of truth for classes, choreography, tracks, moves, teams, and
-shares. Music providers own playback and provider-specific availability. The frontend owns presentation
-and temporary form state.
+Ritmo Studio helps **individual rhythm fitness instructors** build, choreograph, organize, rehearse, and
+run their own classes in one continuous creative flow. The current core disciplines are rhythm cycle,
+Pilates, and HIIT. The product is solo-first: perfect the individual creator experience until instructors
+naturally want to share, publish, and collaborate. Community features come later because the solo workflow
+has earned them, not because the app assumes them.
+
+The web app is the product-definition surface for now. The separate iOS app remains a future/native
+client of the same backend, but current web product decisions are not gated on iOS parity. Dialing in the
+web app near-perfectly should make later iOS refinement straightforward because the core creative loop,
+contracts, and UX decisions will already be proven. The backend is the source of truth for accounts,
+classes, choreography, tracks, moves, provider references, and live/run payloads. Music providers own
+playback and provider-specific availability. The frontend owns presentation and temporary form state.
 
 The stack is a pnpm TypeScript monorepo: React/Vite/Tailwind on the web, Hono/Cloudflare Workers and D1
 on the API, Drizzle for persistence, Zod for contracts, and Better Auth for identity. Production serves
 the SPA and API from the same Worker and origin.
 
-## Surface Parity (Web ↔ iOS) — hard gate
+## Current Product Focus
 
-The parity principle is locked as `ritmofit_dev_plan/decisions.md` **D18**; mechanics, sync points, the
-current parity backlog, and the documented exceptions live in
-`ritmofit_dev_plan/web-ios-parity.md`. **The gate is binding:** no feature merges on one surface without
-the same capability landing on the other **or** a tracked, linked parity item on the other surface.
-Existing asymmetries are defects, not the steady state. Allowed divergence is limited to the documented
-exceptions (iPhone-only haptics/lock-screen/motion; web-leaning second-screen presentation) and
-platform-idiomatic UX expression. When planning any feature, state its parity impact in the plan and PR.
+The solo-first reset is locked as `ritmofit_dev_plan/decisions.md` **D20** and supersedes the active
+product-planning parts of the earlier web/iOS parity decision (**D18**). The current product loop is:
+choose or shape a class idea, find the right songs, choreograph the class, organize it in the personal
+library, rehearse, and run Live Mode. Do not make that flow rigid. Instructors may start from a class
+format, duration, song, movement idea, energy arc, or rehearsal need; the UI should keep creative paths
+open rather than forcing a single sequence.
 
-**Current operating sequence (2026-07-02):** the web launch gate is green and deployed. The active web
-track is the **provider-authorized playback initiative**
-(`ritmofit_dev_plan/provider-playback-implementation.md`) alongside owner-approved design/polish
-slices; the iOS handoff and parity wrap are queued behind it. The parity gate still applies: any web
-change that increases iOS debt records a linked item in `web-ios-parity.md` before merge.
+**Current operating sequence (2026-07-05):** the web launch gate is green and deployed. The active track
+is solo creator refinement plus the **provider-authorized playback initiative**
+(`ritmofit_dev_plan/provider-playback-implementation.md`) where it improves rehearsal and Live Mode.
+iOS wrap-up is deferred behind the web product-definition pass.
+
+## Deferred Community Surfaces
+
+Teams, invites, collaborators, public class pages, publishing flows, social discovery, marketplace or
+community browsing, Explore, and share links are **deferred**. Do not build, polish, promote, or expand
+them unless the owner explicitly reopens that work. The repository still contains backend/API/schema
+scaffolding for teams, shares, public visibility, and Explore; preserve it for now, but keep those
+surfaces hidden from the current web product. If a request appears to depend on community/social
+behavior, stop and confirm scope before implementing.
 
 ## Before Implementing
 

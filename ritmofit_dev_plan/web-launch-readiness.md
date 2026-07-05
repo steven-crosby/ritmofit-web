@@ -1,8 +1,12 @@
 # Web Launch Readiness
 
 This is the completed launch-readiness record for `ritmofit-web`: the web app is launch-ready on
-production. For the current operating focus see `DEVELOPMENT_PLAN.md`. It does not weaken the D18
-parity principle; it defines the sequence that was in force at launch.
+production. For the current operating focus see `DEVELOPMENT_PLAN.md`. This file preserves the sequence
+that was in force at launch; it is not the current product gate.
+
+> **D20 update (2026-07-05):** Teams, Sharing, Publish, and Explore were part of the launch-era shipped
+> surface, but they are now hidden/dormant while the product focuses on the solo creator loop. The D18
+> parity gate is also paused; web-first product definition is the current operating model.
 
 The session-by-session execution log for this (now-complete) milestone is archived at
 `archive/web-launch-session-plan.md`; the per-deploy chronology lives in `HISTORY.md`.

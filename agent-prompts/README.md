@@ -83,6 +83,8 @@ read-only pass). No prompt ever merges, deploys, migrates the remote D1, or chan
       `content-consistency`, `observability`.
   - `remote-prompts/planning/` — productivity / dev-planning:
     - `pr-triage`, `next-slice-planner`, `roadmap-sync`, `release-readiness`, `doc-drift`.
+    - `solo-first-reset-implementation` — resume the confirmed D20 docs/code reset that hides
+      community surfaces while preserving backend scaffolding.
 
 ## After-action reports
 
@@ -157,6 +159,7 @@ Think of the prompts as a small set of specialist teams, each with a clear owner
 | Security & supply chain | `remote-prompts/technical/security`, `remote-prompts/technical/dependency-freshness` | Secrets, auth/session risk, CVEs, or dependency upgrade posture needs review. |
 | Observability | `remote-prompts/technical/observability` | Logs, health checks, smoke coverage, or deploy evidence may be too thin to diagnose production issues. |
 | Product planning | `remote-prompts/planning/roadmap-sync`, `remote-prompts/planning/next-slice-planner` | You need to decide what to build next or turn a priority into a bounded slice. |
+| Product reset handoff | `remote-prompts/planning/solo-first-reset-implementation` | You need to resume the confirmed solo-first reset that hides Teams/Sharing/Publish/Explore. |
 | Release management | `remote-prompts/planning/release-readiness`, `remote-prompts/planning/pr-triage`, `daily/close-session` | You are preparing to ship, clear maintenance PRs, or wrap up a human-led session. |
 | Documentation ops | `remote-prompts/planning/doc-drift` | Docs, plans, or setup instructions may no longer match the repo. |
 

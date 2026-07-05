@@ -60,7 +60,6 @@ describe('ClassHeaderCard Live readiness', () => {
         onError={() => {}}
         onRun={onRun}
         onSelectTrack={onSelectTrack}
-        onShare={() => {}}
         onClassUpdated={() => {}}
         onDeleted={() => {}}
       />,
@@ -89,7 +88,6 @@ const baseProps = {
   onError: () => {},
   onRun: () => {},
   onSelectTrack: () => {},
-  onShare: () => {},
   onClassUpdated: () => {},
   onDeleted: () => {},
 };

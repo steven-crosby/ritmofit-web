@@ -1,35 +1,35 @@
-# Web ↔ iOS Surface Parity
+# Web ↔ iOS Surface Parity (Paused)
 
-> **Canonical process doc for the "Spotify for instructors" parity principle** (decision
-> [`decisions.md`](./decisions.md) **D18**). Both repos link here. The web repo remains the source of
-> truth for the API contract and the design language; this doc defines how the two *clients* stay in
-> lockstep on **capabilities**, not just data and tokens.
+> **Current status (2026-07-05):** decision [`decisions.md`](./decisions.md) **D20** supersedes D18 as
+> the active product gate. Web is the product-definition surface now; iOS follows later after the solo
+> creator loop is proven. Keep this doc for contract/design sync context and historical backlog, but do
+> not use it to block current web work or to reopen Explore/sharing/teams.
 
-## The principle (one line)
+## The current principle
 
-Web and iOS are **two complete, co-equal surfaces of one product**. Every core instructor capability
-exists on **both**, in each platform's native idiom. A surface may *lean* toward a context (web at a
-desk, iOS in the room) but is **never capability-limited**. Full rationale + tradeoffs: D18.
+Ritmo Studio is solo-first and web-first for the current product-definition pass. The web app is where
+the individual instructor loop is being dialed in: class idea, music selection, choreography,
+organization, rehearsal, and Live Mode. The iOS app remains a future/native client of the same backend,
+but parity is not a current merge gate.
 
-## The hard gate (effective now)
+## The former hard gate is paused
 
-**No feature merges on one surface without the same capability landing on the other, or a tracked,
-linked parity item on the other surface.** Existing asymmetries are **defects**, worked down ahead of
-most net-new feature work.
+The old D18 rule said: no feature merges on one surface without the same capability landing on the other
+or a tracked parity item. That rule is paused by D20. Current web work should document contract or design
+implications when relevant, but it does **not** need an iOS parity item before merge.
 
-**Current sequence (2026-07-02):** the web launch gate is green and deployed; the active web track is
-the provider-authorized playback initiative (`provider-playback-implementation.md`), with the iOS
-wrap-up queued behind it. iOS gaps remain tracked here, and web work that increases iOS debt —
-including the playback initiative — must add or update a linked backlog item before merge.
+**Current sequence (2026-07-05):** the web launch gate is green and deployed. The active track is solo
+creator refinement plus the provider-authorized playback initiative
+(`provider-playback-implementation.md`) where it improves rehearsal and Live Mode. iOS wrap-up is
+deferred behind this web product-definition work.
 
-In practice, for any feature PR (web *or* iOS):
+In practice, for current web PRs:
 
-1. State the parity impact in the PR description: does this ship on both surfaces, or does it open a
-   linked parity item on the other?
-2. If it can't land on both at once, the parity item is created **before merge** and linked, and the
-   gap is added to the **Parity backlog** below.
-3. A genuinely platform-bound difference is allowed **only** if it's added to **Documented exceptions**
-   below (not just asserted in the PR).
+1. State contract, schema, migration, provider, and design-system impact when relevant.
+2. Do not add iOS parity bookkeeping unless the owner explicitly asks for an iOS handoff/refinement
+   slice.
+3. Do not build or expand deferred community surfaces: Teams, Sharing, Publish, Explore, invites,
+   collaborators, public class pages, social discovery, marketplace/community browse, or share links.
 
 ## Sync points (what keeps the two honest)
 
@@ -37,7 +37,7 @@ In practice, for any feature PR (web *or* iOS):
 |---|---|---|
 | **Data** | Versioned **`GET /classes/:id/run-payload`** + the rest of the REST surface; shared Zod types in `packages/shared`; `apps/api/openapi/openapi.json` is generated and **drift-gated** in web CI. A vendored iOS run-payload snapshot is also checked for additive field drift. | ✅ within web; iOS type/nullability/enum review remains manual |
 | **Design** | `ritmofit_design_system/tokens.json` is the platform-agnostic source of truth. Web token CSS and the in-repo generated `ritmofit_design_system/ios/RFTokens.swift` are drift-gated by the web "Design system verify" CI step. The separate iOS repo's vendored token copy is not yet cross-repo gated. | ⚠️ partial |
-| **Capability** | This doc + the D18 hard gate. | ⚠️ **manual** — no automated cross-repo capability check |
+| **Capability** | D20 solo-first/web-first direction now controls current product planning; this doc is historical context. | Paused as a gate |
 
 ### Known seam gaps (process debt to close)
 
@@ -62,11 +62,10 @@ In practice, for any feature PR (web *or* iOS):
   run-payload surface. Re-verify the iOS DTO against the current contract before integration work; refresh
   `ios-snapshot/` so the gate compares against current iOS.
 
-## Post-Web-Launch Parity Backlog
+## Historical / Paused Parity Backlog
 
-Capability-level, both directions. During web launch readiness, this ledger is a controlled deferral
-list; after the launch gate is green, it becomes the next implementation queue. Track concrete slices in
-`milestones.md` (web) and `BUILD_ORDER.md` (iOS).
+Capability-level, both directions. This ledger is **not** the current implementation queue under D20.
+Keep it as historical context for later iOS refinement and contract/design sync.
 
 **Web has, iOS needs:**
 
@@ -146,14 +145,14 @@ list; after the launch gate is green, it becomes the next implementation queue. 
   - Songs-by-Move "Start a class" (web Session 4): a Songs-by-Move result can seed a new class from a
     choreographed song via the existing copy-class-track route. iOS should add the same class-starting
     action when Songs-by-Move lands. No contract change.
-- **Explore** feed
+- **Explore** feed **(deferred community surface under D20)**
   - Dialog loading/empty-state polish (web — Studio redesign slice 4, see
     `agent-reports/studio-redesign-prescription.md` #4): Explore, Connections, Teams, and
     Songs-by-Move now use compact state headers, surface-specific copy, and static structured
     placeholders (class cards, provider rows, team/member rows, move rows) instead of generic
     "Loading…" text. iOS should mirror this state-language pattern when these supporting dialogs land.
     Presentation only — no schema/API/provider/deploy impact and no contract change.
-- **Sharing / teams** UI
+- **Sharing / teams** UI **(deferred community surface under D20)**
 - **Account/profile settings** (web Session 5 follow-up): web now has an Account dialog backed by
   `GET /auth/me` + additive `PATCH /auth/me` for `displayName` and `imageUrl`, with sign-out still
   available. iOS should add the same profile-view/edit surface when its account/settings surface lands.
@@ -188,10 +187,10 @@ list; after the launch gate is green, it becomes the next implementation queue. 
   provider handoff from `run-payload`. Future web live work should be framed as enhancement
   (for example, second-screen presentation), not as closing the core parity gap.
 
-## Documented exceptions (allowed divergence)
+## Documented exceptions (historical)
 
-Only genuinely platform-bound affordances. Anything not listed here that differs meaningfully between
-surfaces is a **bug**, not a nuance (cf. `08-ios-web-alignment.md` › "Consistency contract").
+These were allowed divergences under D18. Under D20, web-first product definition is already allowed;
+keep this list only for later iOS refinement context.
 
 - **iOS-only:** haptics; lock-screen / Now-Playing integration; motion/ambient sensing.
 - **Web-leaning enhancement:** second-screen "presentation/cast" view (laptop → external display / TV),

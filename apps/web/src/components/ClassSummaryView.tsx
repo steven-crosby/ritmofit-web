@@ -11,9 +11,10 @@ import { INTENSITY_LABEL } from './IntensityReadout.js';
  * Read-only class detail — the full class shape (songs, plus each track's placed
  * moves and cues, plus the section/energy bands) without entering the builder. Used
  * two ways:
- *  - Explore public preview: pass `onCopied`; the CTA saves a copy into the library.
  *  - Owned-class preview (from a Library card): pass `onOpenInBuilder`; the CTA opens
  *    the class in the editor.
+ *  - Dormant public-copy scaffolding: pass `onCopied`; the CTA saves a copy into
+ *    the library. Not mounted in the current solo-first web product.
  * All data comes from the existing run-payload — no new API.
  */
 export function ClassSummaryView({
@@ -24,7 +25,7 @@ export function ClassSummaryView({
 }: {
   classId: string;
   onClose: () => void;
-  /** Explore preview — save a copy of this (public) class into the library. */
+  /** Dormant public-copy mode — save a copy of this class into the library. */
   onCopied?: (cls: ClassWithAccess) => void;
   /** Owned preview — open this class in the builder to edit it. */
   onOpenInBuilder?: () => void;

@@ -1,4 +1,8 @@
 /**
+ * Dormant D20 scaffolding: Explore is no longer mounted in the solo-first web
+ * product. Keep this component for now; do not expand it unless community
+ * surfaces are explicitly reopened.
+ *
  * Explore (M4 slice 3a/3b) — browse public classes other instructors have
  * published. Read-only discovery: preview a class's live run-payload, or "save a
  * copy" into your own library as an editable, owned class. Featured curation is

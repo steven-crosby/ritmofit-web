@@ -1,4 +1,8 @@
 /**
+ * Dormant D20 scaffolding: sharing is no longer mounted in the solo-first web
+ * product. Keep this component for now; do not expand it unless community
+ * surfaces are explicitly reopened.
+ *
  * Share a class with another user by email (M4 sharing UX). Owner-only — the
  * dashboard only mounts this for classes the caller owns, and every route is
  * owner-gated server-side regardless. Lists current shares with a permission

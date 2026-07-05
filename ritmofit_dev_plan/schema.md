@@ -25,6 +25,10 @@ match it; if they diverge, reconcile here first.
 
 ## Identity & teams
 
+> **D20 solo-first note:** teams and team memberships remain in the schema as dormant scaffolding. Do not
+> surface or expand team workflows in the current product unless the owner explicitly reopens community
+> work.
+
 ### `users`
 The canonical user record (Better Auth's user table, extended). Our source of truth.
 
@@ -94,6 +98,10 @@ Owned by exactly one user. No `team_id` — ownership is always a user; others g
 
 Indexes include `(owner_user_id, updated_at, id)` for the owned arm of the ordered private-library
 query.
+
+> **D20 solo-first note:** `visibility='public'` and `featured_category` are retained for the dormant
+> Publish/Explore scaffolding. The current web product should keep classes private by default and should
+> not expose publishing or public discovery.
 
 > **Segments:** no `segment_type` on `classes`. Section bands live in `class_sections` so a class can
 > carry multiple time-anchored segments without overloading the class record.
@@ -302,6 +310,10 @@ A *placement* of a movement on the timeline. References a library move or carrie
 ---
 
 ## Sharing (Google Drive model) — decision D6
+
+> **D20 solo-first note:** shares remain in the schema for now, but sharing is dormant/deferred in the
+> current product. Preserve the table and constraints; do not add new sharing UX or collaboration
+> behavior unless the owner explicitly reopens the work.
 
 ### `shares`
 Generic sharing record. Ownership is untouched; access is additive and revocable.
