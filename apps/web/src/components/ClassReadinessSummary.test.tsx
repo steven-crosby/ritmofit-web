@@ -38,7 +38,7 @@ describe('ClassReadinessSummary', () => {
       ),
     );
     render(<ClassReadinessSummary readiness={readiness} canEdit onSelectTrack={() => {}} />);
-    expect(screen.getByText(/ready to run live/i)).toBeTruthy();
+    expect(screen.getByText(/class shape ready · take it live/i)).toBeTruthy();
     expect(screen.getByText(/durations set/i)).toBeTruthy();
     // No fix chips when nothing needs attention.
     expect(screen.queryByRole('button')).toBeNull();
