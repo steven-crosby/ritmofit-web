@@ -6,9 +6,9 @@
 > commit/stash/discard, merge/close PRs, deploy, remote migrations, or production data cleanup.
 
 Context for whoever runs this: deploys are **manual** and production-facing; pushing or
-merging to `main` does **not** deploy. Branch protection is on, so direct
-`git push origin main` is rejected. All changes, including docs, go through PRs with the
-CI-equivalent gate green before merge. Run everything from `ritmofit-web/`.
+merging to `main` does **not** deploy. Prefer PRs for all changes, including docs, and
+keep the CI-equivalent gate green before merge. Do not rely on direct pushes to `main`
+unless the owner explicitly chooses that path. Run everything from `ritmofit-web/`.
 
 ## 1. Working tree and branch
 
@@ -48,7 +48,7 @@ deployment behavior changed, run the full CI-equivalent gate:
 - [ ] Determine whether production appears aligned with `main`. Deploys are manual, so code
   merged to `main` this session is not live until deployed.
 - [ ] Default to **not** deploying just because code merged this session. Ritmo Studio ships in
-  deliberate batches, not once per merge (see AGENTS.md "Deploy cadence — merging is not deploying").
+  deliberate batches, not once per merge (see `AGENTS.md` "Security And Deployment").
   Deploy now only for a batch the owner wants live, an urgent fix (prod bug / regression / security /
   live-verification finding), or a risky change (schema/migration, auth, provider, infra) that should
   ship on its own.
@@ -80,9 +80,11 @@ deployment behavior changed, run the full CI-equivalent gate:
 
 - [ ] Drain `INBOX.md`: capture any breadcrumbs that surfaced this session, then route each
   open `- [ ]` item to its real home using the routing table in `INBOX.md`
-  (decision → `decisions.md`, scope → `DEVELOPMENT_PLAN.md`/`milestones.md`, parity →
-  `web-ios-parity.md`, durable fact → memory, reusable prompt → `agent-prompts/`, concrete
-  bug → draft PR / focused follow-up). **Delete each line once routed**, and delete stale ones.
+  (decision → `decisions.md`, scope → `DEVELOPMENT_PLAN.md`/`milestones.md`,
+  cross-surface contract/design impact → `web-ios-parity.md` only when the owner asks for
+  iOS handoff/refinement, durable fact → the most specific doc, reusable prompt →
+  `agent-prompts/`, concrete bug → draft PR / focused follow-up). **Delete each line once routed**,
+  and delete stale ones.
   Leave only genuinely unshaped ideas for next session.
 - [ ] Keep `AGENTS.md` limited to durable contributor rules; update it only when workflows,
   architecture boundaries, or canonical commands change.
@@ -90,7 +92,9 @@ deployment behavior changed, run the full CI-equivalent gate:
   shipped, deployed, or materially changed operational state. Use absolute dates.
 - [ ] Refresh the current-state summary in `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`, and
   `ritmofit_dev_plan/milestones.md` if a milestone changed.
-- [ ] Track forward work in `ritmofit_dev_plan/web-ios-parity.md`; do not create parallel backlog lists.
+- [ ] Track forward work in the most specific current-status doc. Use
+  `ritmofit_dev_plan/web-ios-parity.md` only for owner-requested iOS handoff/refinement or explicit
+  cross-surface contract/design notes; do not create parallel backlog lists.
 - [ ] Update focused docs such as `conventions.md`, `authorization.md`, or
   `deployment-runbook.md` when their subject changes.
 - [ ] Do not revive archived launch trackers in `ritmofit_dev_plan/archive/`.
