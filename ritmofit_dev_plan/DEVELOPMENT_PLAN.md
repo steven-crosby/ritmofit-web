@@ -11,25 +11,23 @@
 
 ## What Ritmo Studio is
 
-A choreography and class-running tool for **rhythm spin cycle instructors**.
+Ritmo Studio helps **individual rhythm fitness instructors** build, choreograph, organize, rehearse, and
+run their own classes in one continuous creative flow. The current core disciplines are rhythm cycle,
+Pilates, and HIIT.
 
-- **Two complete, co-equal surfaces of one product** ("Spotify for instructors"): the **web app** and
-  the **iOS app** (separate repo) each carry the *full* instructor loop — build & choreograph, library,
-  search, explore, sharing, **and** run a class live — expressed in each platform's native idiom. A
-  surface may *lean* toward a context (web at a desk, iOS in the room) but is **never capability-limited**.
-- Both are clients of **one shared backend** built in this repo. A class built on web opens on iOS
-  unchanged. **The backend is the single source of truth; neither client is.**
-- The parity principle is locked as decision **D18**; the hard gate + current parity backlog live in
-  [`web-ios-parity.md`](./web-ios-parity.md).
-- **Current operating focus (2026-07-04):** the web launch gate is green and deployed. The active web
-  track is the **provider-authorized playback initiative**
-  ([`provider-playback-implementation.md`](./provider-playback-implementation.md)) alongside continuing
-  owner-approved design/polish slices — most recently the **"alive at rest" redesign** (derive a
-  provisional shape/BPM-readiness/structure from existing data rather than shipping blank or flat
-  defaults), shipped 2026-07-04 as the design-system doctrine plus five presentation-only web slices
-  (see `HISTORY.md`, Worker `190bc83e`). The iOS handoff / parity wrap is queued behind it; its backlog
-  stays tracked in [`web-ios-parity.md`](./web-ios-parity.md), and the parity gate still applies to
-  every web feature merge.
+- **Solo-first product:** perfect the individual creator experience until instructors naturally want to
+  share, publish, and collaborate. Community features come later because the solo workflow has earned
+  them, not because the app assumes them.
+- **Web-first product definition:** the web app is the surface where the core creative loop, information
+  architecture, and interaction model are being dialed in now. The iOS app remains a future/native client
+  of the same backend, but current web work is not blocked by parity bookkeeping.
+- **One shared backend:** the backend in this repo remains the source of truth for accounts, classes,
+  choreography, tracks, moves, provider references, and run payloads. A later iOS app should inherit the
+  proven web decisions through the same API and design canon.
+- **Current operating focus (2026-07-05):** the web launch gate is green and deployed. The active track
+  is solo creator refinement plus the **provider-authorized playback initiative**
+  ([`provider-playback-implementation.md`](./provider-playback-implementation.md)) where it improves
+  rehearsal and Live Mode. Teams, Sharing, Publish, and Explore are hidden/dormant.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
@@ -43,9 +41,10 @@ StructClub remains the clearest product reference for rhythm-instructor expectat
 rich class/library presentation, movement-oriented creation paths, and a confident live-running surface.
 Ritmo Studio intentionally diverges where provider constraints require it: playback may be controlled inside
 Ritmo Studio only through official provider SDKs/widgets, while providers still own the audio stream and
-availability. Ritmo Studio competes by making web-based planning, choreography, sharing, live prompting, and
-provider-authorized playback feel like one instructor workflow. The old point-in-time StructClub audit
-is archived for provenance; active launch checks and deferrals now live in
+availability. StructClub includes community/sharing concepts, but Ritmo Studio's current improvement target
+is the solo creator loop: planning, music selection, choreography, organization, rehearsal, live prompting,
+and provider-authorized playback as one instructor workflow. The old point-in-time StructClub audit is
+archived for provenance; active launch checks and deferrals now live in
 [`web-launch-readiness.md`](./web-launch-readiness.md).
 
 ---
@@ -72,7 +71,7 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 
 | Area | Decision |
 |---|---|
-| Surface model | **Full parity** — web and iOS are co-equal surfaces; every core capability on both, platform-idiomatic (D18, [`web-ios-parity.md`](./web-ios-parity.md)) |
+| Surface model | **Solo-first, web-first** — web defines the individual creator loop now; iOS follows later from the proven contract and UX decisions (D20; D18 parity gate paused) |
 | Platform | **Cloudflare-native** — Workers (API) + D1 (database) + the SPA served as Workers static assets from the **same Worker/origin** as the API (no separate Pages site, single origin) |
 | Account system | We own the `users` table; auth providers only verify identity |
 | Auth | **Better Auth** on Workers + D1 (email, Apple, Google). Sessions in our D1. |
@@ -83,8 +82,8 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 | iOS | Native Swift, separate repo; consumes the same backend via the OpenAPI contract |
 | Repo shape | **Monorepo**: `packages/shared`, `apps/api`, `apps/web` (add packages only when earned) |
 | Track identity | **Provider-agnostic** `track` + many `track_provider_ids` |
-| Teams | **Many-to-many** (`team_memberships`); schema in M1, routes later |
-| Class ownership | A class belongs to **one user**; sharing is layered on (Google Drive model) |
+| Teams | **Dormant scaffolding** (`team_memberships`); preserve schema/routes, but do not surface or expand team workflows now |
+| Class ownership | A class belongs to **one user**; sharing scaffolding exists but is deferred from the current product |
 | Cues vs Moves | **Separate concepts**, both anchored to a `class_track` by `anchor_ms` |
 | Moves library | Global `moves` seed + `user_moves` custom language; placements reference them |
 | Time encoding | **Milliseconds everywhere** (`anchor_ms`, `start_offset_ms`, `duration_ms`) |
@@ -116,19 +115,20 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 > **Where current status lives** (to avoid drift, this map carries no dated status):
 > - **Milestone state** (M1–M4 and Web Launch Readiness done; provider-playback initiative active,
->   iOS parity wrap queued) → [`milestones.md`](./milestones.md).
+>   solo creator refinement active) → [`milestones.md`](./milestones.md).
 > - **Launch gate** (go/no-go checklist, verification plan, deferrals) →
 >   [`web-launch-readiness.md`](./web-launch-readiness.md).
 > - **Chronological deploy/build log** (every PR, Worker version id, migration step, the live Worker
 >   version, and remote D1 migration level) → [`HISTORY.md`](./HISTORY.md), newest entry first.
-> - **Post-web-launch parity work** → [`web-ios-parity.md`](./web-ios-parity.md) (the web↔iOS parity
->   backlog).
+> - **Paused iOS parity record** → [`web-ios-parity.md`](./web-ios-parity.md) (kept for contract/design
+>   sync context, not a current product gate).
 > - **Contributor + deployment instructions** → [`../AGENTS.md`](../AGENTS.md) and
 >   [`deployment-runbook.md`](./deployment-runbook.md).
 >
 > The headline: backend **M1–M4 complete and deployed**, the web launch gate is green, and the app is
-> live at `https://ritmofit.studio` (one Worker, single origin). The active track is the
-> provider-authorized playback initiative; the iOS parity wrap is queued behind it.
+> live at `https://ritmofit.studio` (one Worker, single origin). The active track is solo creator
+> refinement plus provider-authorized playback for rehearsal and Live Mode. Community surfaces are
+> preserved as dormant scaffolding, not active product.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
   expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);
@@ -139,10 +139,10 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
   when production credentials are present; unsupported account-specific capabilities stay hidden by the
   shared provider-capability matrix.
 - **M3 ✅ done: Live mode + iOS parity polish.** Cue prompter, interval timers; run-payload hardened.
-- **M4 ✅ done: Explore / sharing UX** on the M1 `shares` model — share-by-email, team-sharing, and the
-  Explore feed (publish via `classes.visibility`, public VIEW floor, `GET /explore`, save-a-copy). The
-  two open decisions were settled: publish/visibility = a `visibility` enum; **featured = deferred** (no
-  admin concept yet — it remains a future slice). All deployed.
+- **M4 ✅ done historically, now dormant: Explore / sharing UX** on the M1 `shares` model —
+  share-by-email, team-sharing, and the Explore feed (publish via `classes.visibility`, public VIEW
+  floor, `GET /explore`, save-a-copy). These routes/schema pieces remain in place, but the current web
+  product hides Teams, Sharing, Publish, and Explore while solo creator refinement is active.
 - **Web Launch Readiness ✅ done:** full production web loop verified, launch-blocking polish and
   operational gaps closed, Apple Sign In/provider credentials deployed, and deferrals documented.
   Checklist:
@@ -170,16 +170,17 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
 | [`../agent-prompts/daily/close-session.md`](../agent-prompts/daily/close-session.md) | End-of-session runbook — say "run close-session" |
 | [`HISTORY.md`](./HISTORY.md) | Archived dated build/deploy log (PRs, Worker versions, migration steps) |
-| [`web-ios-parity.md`](./web-ios-parity.md) | Web ↔ iOS surface-parity principle (D18): the hard gate, sync points, and the cross-surface parity backlog |
+| [`web-ios-parity.md`](./web-ios-parity.md) | Paused web ↔ iOS parity record: useful sync points and historical backlog, superseded as a current product gate by D20 |
 | [`archive/structclub-parity-audit.md`](./archive/structclub-parity-audit.md) | Archived point-in-time StructClub competitive audit; active takeaways are consolidated into `web-launch-readiness.md` |
 
 ---
 
 ## Backlog / Open Items
 
-Forward work has two homes during launch sequencing: web launch blockers and deferrals live in
-[`web-launch-readiness.md`](./web-launch-readiness.md); post-web-launch cross-surface parity work lives
-in [`web-ios-parity.md`](./web-ios-parity.md). Don't keep parallel lists here.
+Forward work lives in the solo creator loop and the provider-authorized playback initiative. Historical
+web launch deferrals remain in [`web-launch-readiness.md`](./web-launch-readiness.md); the old
+cross-surface parity record remains in [`web-ios-parity.md`](./web-ios-parity.md), but it is not the
+current planning queue.
 
 **Open production issues:**
 
@@ -198,6 +199,6 @@ Recently closed (kept as pointers so the trail isn't lost):
   `class_tracks.notes` channel already existed end-to-end but was write-only, and Live mode now renders
   it. If *anchored, per-moment* notes ever prove needed, add a `kind: 'cue' | 'note'` discriminator to
   `cues` (additive) rather than a new table. Full decision (archived): [`archive/cues-vs-notes-decision.md`](./archive/cues-vs-notes-decision.md).
-- **Explore feature expansion** (rich categorized curation, featured/admin curation, themed collection
-  merchandising) remains explicitly deferred from web launch scope in
-  [`web-launch-readiness.md`](./web-launch-readiness.md).
+- **Community surfaces** (Teams, Sharing, Publish, Explore, invites, collaborators, public class pages,
+  social discovery, marketplace/community browsing, share links, and rich Explore merchandising) are
+  explicitly deferred until the owner reopens them.

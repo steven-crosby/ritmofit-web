@@ -29,12 +29,16 @@ function deferred<T>() {
 }
 
 let classSeq = 0;
-function makeClass(title: string, accessLevel: ClassWithAccess['accessLevel'] = 'owner') {
+function makeClass(
+  title: string,
+  accessLevel: ClassWithAccess['accessLevel'] = 'owner',
+  ownerUserId = 'me',
+) {
   classSeq += 1;
   const id = `00000000-0000-4000-8000-${String(classSeq).padStart(12, '0')}`;
   return {
     id,
-    ownerUserId: 'owner',
+    ownerUserId,
     title,
     description: null,
     template: 'cycle',
@@ -133,6 +137,22 @@ describe('Dashboard class library states', () => {
     renderDashboard();
 
     expect(await screen.findByText(/No classes yet/)).toBeTruthy();
+  });
+
+  it('keeps the top bar solo-first and hides classes owned by other users', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(
+      page([
+        makeClass('My Monday class'),
+        makeClass('Shared studio class', 'view', 'someone-else'),
+      ]),
+    );
+
+    renderDashboard();
+
+    expect(await screen.findByText('My Monday class')).toBeTruthy();
+    expect(screen.queryByText('Shared studio class')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Explore' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Teams' })).toBeNull();
   });
 });
 

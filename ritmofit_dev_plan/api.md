@@ -23,6 +23,10 @@ schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 > **Contract source:** `apps/api/openapi/openapi.json` is the generated contract of record. Keep this
 > narrative route map in sync when route groups ship or change behavior.
 
+> **D20 solo-first note:** Teams, Shares, public visibility, and Explore remain documented because the
+> backend/API scaffolding exists. They are dormant/deferred product surfaces and should not be expanded or
+> promoted in the current web app unless the owner explicitly reopens community work.
+
 ---
 
 ## Auth
@@ -41,10 +45,10 @@ schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/classes` | List classes the user can see: owned ∪ shared-directly ∪ shared-via-team. Indicates each class's highest effective access level. Web callers use `?limit=&cursor=` keyset pagination ordered by `updatedAt DESC, id DESC`; the opaque next cursor is returned in `X-RitmoFit-Next-Cursor`. An unparameterized request retains the legacy full-array response for the current iOS client. |
+| GET | `/classes` | List classes the user can see: owned ∪ shared-directly ∪ shared-via-team. Indicates each class's highest effective access level. Web callers use `?limit=&cursor=` keyset pagination ordered by `updatedAt DESC, id DESC`; the opaque next cursor is returned in `X-RitmoFit-Next-Cursor`. Under D20, the current web UI filters this to the caller's own personal library. |
 | POST | `/classes` | Create a class (owner = caller). |
 | GET | `/classes/:id` | Fetch one class (owner or any share). |
-| PATCH | `/classes/:id` | Update class fields (edit access). Setting `visibility` (`private`/`public`) is how an owner publishes to / unpublishes from Explore (M4). |
+| PATCH | `/classes/:id` | Update class fields (edit access). Setting `visibility` (`private`/`public`) is the dormant M4 publish/Explore mechanism; do not surface it in the current solo-first web product. |
 | DELETE | `/classes/:id` | Delete (owner only). |
 | GET | `/classes/:id/run-payload` | **Versioned single-fetch payload to run the class live** (see below). |
 | POST | `/classes/:id/cover` | Upload/replace a class cover image (owner/edit access; stored in R2 when configured). |
@@ -132,6 +136,9 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 
 ## Explore
 
+> **Dormant under D20:** keep these endpoints and contracts, but do not build or polish user-facing
+> Explore/publishing flows now.
+
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/explore` | List `public` classes, newest first, each with its owner's display label + track count (`ExploreClass`). Authed, but **not** `requireAccess`-gated — it's a public catalog (the `visibility` column is the gate). A public class is then openable via the normal `GET /classes/:id` / `/run-payload` thanks to the public VIEW floor (`authorization.md`). Featured curation is deferred. |
@@ -140,6 +147,9 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 ---
 
 ## Teams
+
+> **Dormant under D20:** keep these endpoints and contracts, but do not build or polish team/member
+> workflows now.
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -151,6 +161,8 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 | DELETE | `/teams/:id/members/:userId` | Remove a member (owner/admin, or self-leave). |
 
 ## Shares
+
+> **Dormant under D20:** keep these endpoints and contracts, but do not build or polish sharing UX now.
 
 | Method | Path | Purpose |
 |---|---|---|

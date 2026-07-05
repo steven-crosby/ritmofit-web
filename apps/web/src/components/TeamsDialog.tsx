@@ -1,4 +1,8 @@
 /**
+ * Dormant D20 scaffolding: teams are no longer mounted in the solo-first web
+ * product. Keep this component for now; do not expand it unless community
+ * surfaces are explicitly reopened.
+ *
  * Manage teams (M4 team-sharing UX): create a team, view its members, add a
  * member by email, and remove/leave. Member-management affordances are gated by
  * the caller's role (`owner`/`admin` from `GET /teams`); the backend enforces the

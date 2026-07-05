@@ -5,7 +5,7 @@ Domain terms used throughout the codebase and docs. Keep these meanings consiste
 **Class** — A single planned/run session ("Mon POWER 6/8"). Owned by one user. *Is* the ordered set of
 tracks plus the choreography on them — not a playlist imported from elsewhere.
 
-**Class template** — The kind of class: cycle, HIIT, sculpt, tread. An enum on `classes`.
+**Class template** — The kind of class: cycle, HIIT, sculpt/Pilates, tread. An enum on `classes`.
 
 **Track** — The provider-agnostic, abstract song (title, artist, art, optional manual BPM). Not tied to
 any one provider.
@@ -49,11 +49,13 @@ table (migration `0006`) with a fixed `segmentType` enum
 (`warm_up`/`climb`/`sprint`/`recovery`/`cool_down`); the run-payload carries an additive `sections[]`.
 See `decisions.md` and `milestones.md` slice 16.
 
-**Team** — A studio/group. Many-to-many with users via `team_memberships`. Team roles
-(owner/admin/member) govern *membership management*, not class access.
+**Team** — Dormant D20 scaffolding for a future studio/group workflow. Many-to-many with users via
+`team_memberships`. Team roles (owner/admin/member) govern *membership management*, not class access.
+Do not surface team workflows in the current solo-first product.
 
-**Share** — A grant of access to a class, to a single user OR a whole team, at view or edit permission.
-Additive and revocable; never changes ownership (Google Drive model).
+**Share** — Dormant D20 scaffolding for a future collaboration workflow. A grant of access to a class,
+to a single user OR a whole team, at view or edit permission. Additive and revocable; never changes
+ownership (Google Drive model). Do not surface sharing UX in the current solo-first product.
 
 **Owner** — The single user who owns a class. Always exactly one. Full control including delete and
 share management.
@@ -66,8 +68,9 @@ the edit surface.
 live). Playback is provider-authorized: official provider SDK/widget playback in-app, or handoff to
 the provider's own app.
 
-**Live mode** — Running a class in front of a room (a co-equal capability on web and iOS — D18): cue
-prompter, interval timers, intensity readouts, provider-authorized playback.
+**Live mode** — Running a class in front of a room: cue prompter, interval timers, intensity readouts,
+provider-authorized playback. Web defines this experience for the current product pass; iOS refinement
+follows later from the proven loop.
 
 **Provider** — A music service: Spotify, Apple Music, or SoundCloud. Ritmo Studio plays through these via
 official SDKs/widgets or hands off to their apps; it never streams, proxies, or mixes audio itself.

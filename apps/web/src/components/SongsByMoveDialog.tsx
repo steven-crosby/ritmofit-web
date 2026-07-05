@@ -5,8 +5,8 @@
  * results to the caller's own classes, so this is a personal "what have I used
  * this move on?" history (no other user's choreography is ever returned).
  *
- * Opened from the top bar like Explore/Connections; selecting a class calls
- * `onOpenClass` so the Dashboard can load that class workspace and close this.
+ * Opened from the top bar; selecting a class calls `onOpenClass` so the
+ * Dashboard can load that class workspace and close this.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Move, UserMove, SongByMove } from '@ritmofit/shared';

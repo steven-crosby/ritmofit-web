@@ -2,36 +2,37 @@
 
 ## What we're building
 
-Ritmo Studio is a choreography and class-running tool for rhythm spin cycle instructors. **Two complete,
-co-equal surfaces of one product** ("Spotify for instructors"), one backend:
+Ritmo Studio helps **individual rhythm fitness instructors** build, choreograph, organize, rehearse, and
+run their own classes in one continuous creative flow. The current core disciplines are rhythm cycle,
+Pilates, and HIIT.
 
-- **Web app** — every instructor capability on a browser: audition tracks across providers, assemble
-  and choreograph a class (cues, moves, intensity, timeline), *and* run it live (a laptop or tablet at
-  the front of the room — including the iPad/Android tablets the iPhone-only iOS app can't serve).
-- **iOS app** (separate repo) — the same complete loop in a native iPhone idiom: build/choreograph and
-  run a class live (cue prompter in time with the music, interval countdowns, intensity readouts).
+The current product is **solo-first**. We perfect the individual creator experience until instructors
+naturally want to share, publish, and collaborate. Community comes later because the solo workflow has
+earned it, not because the app assumes it.
 
-Both surfaces do **everything**, each in its platform's native idiom; a surface may *lean* toward a
-context (web at a desk, iOS in the room) but is never capability-limited. Both read and write the same
-data through the backend in this repo — a class built on web opens on iOS unchanged, and vice versa.
-The parity principle is locked as **D18**; the gate + current parity backlog live in
-[`web-ios-parity.md`](./web-ios-parity.md).
+- **Web app** — the product-definition surface for the individual instructor loop: choose or shape a
+  class idea, audition tracks across providers, assemble and choreograph the class, keep a personal
+  library, rehearse, and run Live Mode from a browser.
+- **Backend** — the source of truth for accounts, classes, choreography, tracks, moves, provider
+  references, and run payloads. The later iOS refinement should consume the same backend after the web
+  loop is proven.
 
-Current sequence (2026-07-02): the web app's launch gate is green and deployed (everything in this
-folder was launch-required except Explore feature expansion and Teams feature expansion). The active
-web track is the provider-authorized playback initiative
-([`provider-playback-implementation.md`](./provider-playback-implementation.md)); wrapping the iOS app
-against the same backend contract and parity backlog is queued behind it.
+Current sequence (2026-07-05): the web app's launch gate is green and deployed. The active track is solo
+creator refinement plus the provider-authorized playback initiative
+([`provider-playback-implementation.md`](./provider-playback-implementation.md)) where it improves
+rehearsal and Live Mode. Teams, Sharing, Publish, and Explore are dormant/deferred.
 
 ## Who the user is
 
-A rhythm spin instructor who:
+A rhythm fitness instructor who:
 
 - Programs classes around music — track order, energy arc, and the moves/cues that ride on top of
   specific moments in each song ("tag a cue to the beat-drop").
-- May freelance across multiple studios (hence many-to-many teams).
-- Wants to share a class with a colleague or a whole studio — the way you share a Google Drive folder —
-  without giving up ownership.
+- Teaches formats such as cycle, Pilates, and HIIT, each with its own class formats, durations, energy
+  arcs, and movement language.
+- Needs a personal, synced class workspace that feels as direct as using Apple Notes on a phone or
+  desktop: accounts and cloud sync matter, but multi-user collaboration does not define the current
+  product.
 - Uses Spotify, Apple Music, or SoundCloud for actual playback, possibly different services at
   different studios.
 
@@ -45,8 +46,13 @@ The status-quo workflow is disjointed:
 4. Switch to a "live" mode to lead the class.
 
 Each handoff interrupts creative flow. Ritmo Studio's goal is to **synthesize playlist-building,
-choreography, and live performance into one continuous creative process** — not three apps stapled
-together.
+choreography, rehearsal, and live performance into one continuous creative process** — not three apps
+stapled together.
+
+Do not make that creative process too stringent. One instructor may begin with "I have a standard
+45-minute class on Monday"; another may begin with "I need a Burn 30-minute ride"; another may start
+from a song, a move, a climb, or a target energy arc. The product should help them find the right songs,
+choreograph, rehearse, and run the class without forcing one canonical order.
 
 The design consequence: we do **not** model "an imported playlist" as a separate thing from "a class."
 The class *is* the ordered set of tracks plus the choreography layered on them. A track inside a class
@@ -95,6 +101,8 @@ The competitor whose capabilities we match and improve on. Observed features:
 - Reorder playlists; add tracks to existing classes.
 - Explore feed where classes can be featured.
 
-**Where we improve on it:** the sharing model. Ownership stays with one user; sharing is layered on top
-(Google Drive style) rather than classes living inside team libraries. And the *energy-arc* view of a
-class (see the design system) makes the shape of a class legible in a way a flat track list isn't.
+**Where we improve on it now:** solo creative continuity. Ritmo Studio's current job is to make class
+planning, song choice, choreography, rehearsal, and live prompting feel like one personal workspace. The
+*energy-arc* view of a class (see the design system) makes the shape of a class legible in a way a flat
+track list isn't. Sharing, teams, publishing, and Explore remain observed competitor capabilities and
+retained scaffolding, but they are not current product surfaces.

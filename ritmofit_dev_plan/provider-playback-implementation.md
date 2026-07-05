@@ -272,10 +272,11 @@ Live verification must use real provider accounts:
 - Failure drills: disconnected provider, expired provider authorization, missing provider ref, SDK load
   failure, and browser refresh/session recovery.
 
-## Parity
+## Later iOS Refinement
 
-This is a parity-gated capability. If web lands first, iOS must have a linked parity item before merge.
-iOS can use native/provider-specific APIs, but must provide the same instructor capability:
+Under D20, this is no longer parity-gated before web merge. Build the web playback experience because it
+improves the solo creator's rehearsal and Live Mode loop. When iOS refinement resumes, native/provider-
+specific APIs should provide the same instructor capability where provider terms allow:
 
 - provider-authorized playback;
 - mixed-provider classes;

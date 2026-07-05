@@ -74,7 +74,7 @@ export function AccountDialog({
         <div className="min-w-0">
           <h2 className="font-display text-lg font-semibold text-text-primary">Account</h2>
           <p className="font-ui text-xs text-text-tertiary">
-            Profile details used across teams and sharing.
+            Profile details for your personal Ritmo Studio workspace.
           </p>
         </div>
         <button

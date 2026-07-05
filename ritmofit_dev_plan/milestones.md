@@ -4,19 +4,20 @@ Each step follows the working agreement: **plan → confirm → code → summari
 `../AGENTS.md` → "Before Implementing").
 
 > **Status: M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ · Web Launch Readiness ✅ — all done, merged to `main`, and
-> deployed** (API + web at `https://ritmofit.studio`). The active focus (2026-07-02) is the
-> **provider-authorized playback initiative**
-> ([`provider-playback-implementation.md`](./provider-playback-implementation.md)); the **iOS handoff /
-> parity wrap** is queued behind it. For the live Worker version and the current remote D1 migration
+> deployed** (API + web at `https://ritmofit.studio`). The active focus (2026-07-05) is solo creator
+> refinement and web-first product definition, alongside the **provider-authorized playback initiative**
+> ([`provider-playback-implementation.md`](./provider-playback-implementation.md)) where it improves
+> rehearsal and Live Mode.
+> Teams, Sharing, Publish, and Explore shipped historically in M4 but are now hidden/dormant. For the
+> live Worker version and the current remote D1 migration
 > level (well past these milestones — `HISTORY.md` is the source of truth, not this block), see
 > [`HISTORY.md`](./HISTORY.md). The launch gate lives in
-> [`web-launch-readiness.md`](./web-launch-readiness.md); post-web-launch parity work lives in
-> [`web-ios-parity.md`](./web-ios-parity.md).
+> [`web-launch-readiness.md`](./web-launch-readiness.md); the old parity record lives in
+> [`web-ios-parity.md`](./web-ios-parity.md) but is paused by D20.
 >
-> **Surface scope:** per the parity principle (`decisions.md` D18, [`web-ios-parity.md`](./web-ios-parity.md)),
-> web and iOS are co-equal surfaces. Any web work that expands iOS debt — including the playback
-> initiative — still needs an immediate `web-ios-parity.md` follow-up before merge. (The prior
-> `REVIEW.md` launch-readiness log is archived in `archive/`.)
+> **Surface scope:** per the solo-first reset (`decisions.md` D20), the web app is the current
+> product-definition surface. iOS parity is not a merge gate. (The prior `REVIEW.md`
+> launch-readiness log is archived in `archive/`.)
 
 ## M1 — Auth + class/cue data model ✅ done
 
@@ -25,9 +26,8 @@ API calls.** BPM and provider IDs are hand-entered.
 
 **Definition of done:** a logged-in user can create a class, add track references (typed in or via the
 mock-track seam), tag them with cues/moves/intensity, place them on a timeline, and fetch the whole
-thing as a versioned **run-payload** — all persisted through the backend so the same data would open on
-iOS. Teams/sharing exist in the schema and have working routes by end of M1, built *after* the core
-builder.
+thing as a versioned **run-payload**. Teams/sharing exist in the schema and had working routes by end of
+M1, built *after* the core builder; under D20 they are preserved as dormant scaffolding.
 
 ### Build order
 
@@ -159,7 +159,12 @@ Core builder first (these validate the product), teams/sharing last.
 > **M3 complete for the web repo.** The native **iOS** live surface (Phase 2 / `ritmofit-ios`) will
 > reimplement the prompter against the same run-payload, plus a Landscape view and device-specific polish.
 
-## M4 — Explore / sharing UX ✅ done (featured deferred)
+## M4 — Explore / sharing UX ✅ done historically, now dormant
+
+> **Current status (2026-07-05):** these backend/schema/API pieces remain in place, but Teams, Sharing,
+> Publish, and Explore are deferred community surfaces under D20. Preserve the scaffolding; do not expose
+> or expand it in the current web product unless the owner explicitly reopens the work.
+
 - ✅ **Slice 1 — sharing UX (share-by-email):** the web Dashboard now has a `ShareDialog` (owner-only)
   to share a class with another user by email at view/edit, list current shares with their target's
   display name/email, change a permission, and revoke. Backend gains `targetEmail` resolution on
@@ -248,10 +253,10 @@ green, launch-candidate production deploy complete, Apple Sign In/provider crede
 smoke passing, auth/email/provider/core workflow paths verified, launch-blocking
 accessibility/responsive issues closed, and non-blocking deferrals recorded.
 
-**Next focus (updated 2026-07-02):** the provider-authorized playback initiative
-([`provider-playback-implementation.md`](./provider-playback-implementation.md)) is the active web
-track; the iOS parity wrap in the separate `ritmofit-ios` repo follows, starting from the tracked
-backlog in [`web-ios-parity.md`](./web-ios-parity.md).
+**Next focus (updated 2026-07-05):** solo creator refinement is the active web product track, alongside
+the provider-authorized playback initiative
+([`provider-playback-implementation.md`](./provider-playback-implementation.md)) where it improves
+rehearsal and Live Mode. iOS parity wrap is deferred behind web product-definition work.
 
 ## Cross-cutting reminders
 - Plan before code on every feature; wait for confirmation.

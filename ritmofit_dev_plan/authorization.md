@@ -12,6 +12,11 @@ access bugs creep in.
 A class has exactly one **owner**; everyone else gets access only through a **share**, which may be
 granted directly to a user or to a whole team (Google Drive model).
 
+> **D20 solo-first note:** this access model still exists in backend scaffolding, but sharing, teams,
+> public visibility, and Explore are dormant/deferred product surfaces. Preserve the centralized helper;
+> do not build new user-facing collaboration or publishing workflows unless the owner explicitly reopens
+> that work. The current web product should present the caller's own personal library.
+
 ## Access levels
 
 For any (user, class) pair, effective access is the **highest** of:
@@ -43,6 +48,9 @@ parallel code path. It deliberately does **not** feed `listVisibleClasses`: a pu
 class you don't own/aren't shared on stays out of your `GET /classes` ("my classes")
 list — discovery is the separate, public `GET /explore` feed. Default is `private`,
 so nothing is public until explicitly published.
+
+Under D20, this floor is retained as dormant scaffolding. Do not expose Publish/Make private or Explore
+entry points in the current solo-first web product.
 
 Where "a share grants user X":
 - `target_user_id == X.id`, OR
@@ -113,6 +121,9 @@ the existing array and carries the next opaque cursor in `X-RitmoFit-Next-Cursor
 requests retain the legacy full list for the current iOS cache sync. Supporting indexes select owned,
 direct-share, and team-share candidates before the final sort. This remains plain SQLite; do not
 denormalize ownership onto classes.
+
+Under D20, the current web UI filters the returned list to owned classes so old share rows do not
+reintroduce the community model. The backend union remains for now.
 
 ## Implementation notes
 

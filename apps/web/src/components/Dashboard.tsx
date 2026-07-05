@@ -78,15 +78,6 @@ import { OnboardingVideoDialog } from './OnboardingVideoDialog.js';
 const LiveMode = lazyWithReload(() =>
   import('./LiveMode.js').then((m) => ({ default: m.LiveMode })),
 );
-const ShareDialog = lazyWithReload(() =>
-  import('./ShareDialog.js').then((m) => ({ default: m.ShareDialog })),
-);
-const TeamsDialog = lazyWithReload(() =>
-  import('./TeamsDialog.js').then((m) => ({ default: m.TeamsDialog })),
-);
-const ExploreDialog = lazyWithReload(() =>
-  import('./ExploreDialog.js').then((m) => ({ default: m.ExploreDialog })),
-);
 const ConnectionsDialog = lazyWithReload(() =>
   import('./ConnectionsDialog.js').then((m) => ({ default: m.ConnectionsDialog })),
 );
@@ -132,11 +123,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [detail, dispatchDetail] = useReducer(classDetailReducer, initialClassDetailState);
   const detailRequestId = useRef(0);
   const [live, setLive] = useState<RunPayload | null>(null);
-  const [teamsOpen, setTeamsOpen] = useState(false);
-  const [exploreOpen, setExploreOpen] = useState(false);
-  const [previewClassId, setPreviewClassId] = useState<string | null>(null);
-  // Read-only preview of one of the caller's OWN classes (from a Library card),
-  // distinct from the Explore public preview above.
+  // Read-only preview of one of the caller's own classes from a Library card.
   const [cardPreview, setCardPreview] = useState<ClassListItem | null>(null);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -160,16 +147,17 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const refreshClasses = useCallback(async () => {
     try {
       const page = await listClasses(undefined, undefined, activeTagRef.current ?? undefined);
-      setClasses(page.items);
+      const ownedItems = page.items.filter((cls) => cls.ownerUserId === userId);
+      setClasses(ownedItems);
       setNextClassCursor(page.nextCursor);
-      mergeKnownTags(page.items);
+      mergeKnownTags(ownedItems);
       setListStatus('ready');
       setError(null);
     } catch (e) {
       setListStatus('error');
       setError((e as Error).message);
     }
-  }, [mergeKnownTags]);
+  }, [mergeKnownTags, userId]);
 
   // Switch the server-side tag filter (null clears it) and reload from page 1.
   const applyTagFilter = useCallback(
@@ -188,18 +176,19 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     setError(null);
     try {
       const page = await listClasses(undefined, nextClassCursor, activeTagRef.current ?? undefined);
+      const ownedItems = page.items.filter((cls) => cls.ownerUserId === userId);
       setClasses((current) => {
         const seen = new Set(current.map((cls) => cls.id));
-        return [...current, ...page.items.filter((cls) => !seen.has(cls.id))];
+        return [...current, ...ownedItems.filter((cls) => !seen.has(cls.id))];
       });
       setNextClassCursor(page.nextCursor);
-      mergeKnownTags(page.items);
+      mergeKnownTags(ownedItems);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoadingMoreClasses(false);
     }
-  }, [loadingMoreClasses, nextClassCursor, mergeKnownTags]);
+  }, [loadingMoreClasses, nextClassCursor, mergeKnownTags, userId]);
 
   useEffect(() => {
     void refreshClasses();
@@ -377,26 +366,12 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         <nav className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:flex-1 sm:flex-wrap sm:justify-end sm:overflow-visible sm:pb-0">
           <p className="hidden font-ui text-sm text-text-secondary sm:block">{profileName}</p>
           <button
-            aria-label="Explore"
-            className="min-h-11 shrink-0 rounded-control border border-interactive/40 bg-bg-raised/70 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 sm:min-h-0 sm:rounded-pill sm:bg-transparent sm:px-4 sm:py-1.5 sm:text-sm"
-            onClick={() => setExploreOpen(true)}
-          >
-            Explore
-          </button>
-          <button
             aria-label="Songs by move"
             className="min-h-11 shrink-0 rounded-control border border-interactive/40 bg-bg-raised/70 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 sm:min-h-0 sm:rounded-pill sm:bg-transparent sm:px-4 sm:py-1.5 sm:text-sm"
             onClick={() => setSongsByMoveOpen(true)}
           >
             <span className="sm:hidden">Moves</span>
             <span className="hidden sm:inline">Songs by move</span>
-          </button>
-          <button
-            aria-label="Teams"
-            className="min-h-11 shrink-0 rounded-control border border-interactive/40 bg-bg-raised/70 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 sm:min-h-0 sm:rounded-pill sm:bg-transparent sm:px-4 sm:py-1.5 sm:text-sm"
-            onClick={() => setTeamsOpen(true)}
-          >
-            Teams
           </button>
           <button
             aria-label="Connections"
@@ -420,7 +395,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       {/* Lazy modal chunks — fallback null so the trigger feels instant; the modal
           paints once its chunk resolves (near-instant on a warm cache). */}
       <Suspense fallback={null}>
-        {teamsOpen && <TeamsDialog userId={userId} onClose={() => setTeamsOpen(false)} />}
         {connectionsOpen && (
           <ConnectionsDialog
             oauthResult={oauthResult}
@@ -448,31 +422,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             onClose={() => {
               markOnboardingVideoDismissed();
               setOnboardingVideoOpen(false);
-            }}
-          />
-        )}
-        {exploreOpen && (
-          <ExploreDialog
-            onClose={() => setExploreOpen(false)}
-            onPreview={(classId) => {
-              setExploreOpen(false);
-              setPreviewClassId(classId);
-            }}
-            onCopied={async (cls) => {
-              setExploreOpen(false);
-              await refreshClasses();
-              await openClass({ ...cls, accessLevel: 'owner' });
-            }}
-          />
-        )}
-        {previewClassId && (
-          <ClassSummaryView
-            classId={previewClassId}
-            onClose={() => setPreviewClassId(null)}
-            onCopied={async (cls) => {
-              setPreviewClassId(null);
-              await refreshClasses();
-              await openClass({ ...cls, accessLevel: 'owner' });
             }}
           />
         )}
@@ -1010,7 +959,6 @@ function ClassWorkspace({
   /** Open the Songs-by-Move dialog (the top-bar dialog, reused in the builder). */
   onOpenSongsByMove: () => void;
 }) {
-  const [sharing, setSharing] = useState(false);
   // The selected track (by class_track id) drives the inspector.
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   // A cue/move marker click also asks the inspector to focus that row. The `nonce`
@@ -1060,12 +1008,6 @@ function ClassWorkspace({
 
   return (
     <>
-      <Suspense fallback={null}>
-        {sharing && (
-          <ShareDialog classId={cls.id} classTitle={cls.title} onClose={() => setSharing(false)} />
-        )}
-      </Suspense>
-
       {/* ── Center column: header summary · energy ribbon · track list ── */}
       <section className="flex min-w-0 flex-col gap-4">
         <ClassHeaderCard
@@ -1078,7 +1020,6 @@ function ClassWorkspace({
           onError={onError}
           onRun={onRun}
           onSelectTrack={setSelectedTrackId}
-          onShare={() => setSharing(true)}
           onClassUpdated={onClassUpdated}
           onDeleted={() => onClassDeleted(cls.id)}
         />
@@ -1223,10 +1164,10 @@ function ClassWorkspace({
 }
 
 /**
- * The class header card (design system 09): title + visibility, the derived
+ * The class header card (design system 09): title, the derived
  * summary stats (track count · assembled total · average BPM, all from the
- * run-payload — no new data), and the owner/run actions. Visibility and stats
- * use label + number, never color alone.
+ * run-payload — no new data), and the owner/run actions. Stats use label +
+ * number, never color alone.
  */
 export function ClassHeaderCard({
   cls,
@@ -1238,7 +1179,6 @@ export function ClassHeaderCard({
   onError,
   onRun,
   onSelectTrack,
-  onShare,
   onClassUpdated,
   onDeleted,
 }: {
@@ -1251,11 +1191,10 @@ export function ClassHeaderCard({
   onError: (msg: string | null) => void;
   onRun: () => void;
   onSelectTrack: (classTrackId: string) => void;
-  onShare: () => void;
   onClassUpdated: (cls: Class) => void;
   onDeleted: () => void;
 }) {
-  const { busy: publishing, run } = useAsyncAction(onError);
+  const { run } = useAsyncAction(onError);
   const { busy: deleting, run: runDelete } = useAsyncAction(onError);
   const { busy: renaming, run: runRename } = useAsyncAction(onError);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -1263,16 +1202,10 @@ export function ClassHeaderCard({
   const [titleDraft, setTitleDraft] = useState(cls.title);
   const [tagInput, setTagInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isPublic = cls.visibility === 'public';
   const averageBpm = payload ? avgBpm(payload) : null;
   // Readiness is derived from the run-payload (no new data): duration/tempo/
   // cues-moves/music, surfaced before Live instead of on stage (P0 #2).
   const readiness = payload ? classReadiness(payload) : null;
-
-  const togglePublish = () =>
-    void run(async () => {
-      onClassUpdated(await updateClass(cls.id, { visibility: isPublic ? 'private' : 'public' }));
-    });
 
   const startRename = () => {
     setTitleDraft(cls.title);
@@ -1409,8 +1342,7 @@ export function ClassHeaderCard({
               </form>
             ) : (
               // min-w-0 lets the h2's `truncate` engage so a long title shortens
-              // instead of overflowing the title block and colliding with the
-              // actions row (Publish/Share/…) to its right.
+              // instead of overflowing the title block and colliding with actions.
               <div className="flex items-center gap-2 min-w-0">
                 <h2 className="truncate font-display text-xl font-semibold text-text-primary">
                   {cls.title}
@@ -1426,10 +1358,6 @@ export function ClassHeaderCard({
                 )}
               </div>
             )}
-            {/* Visibility: icon + label, never color alone (accessibility). */}
-            <p className="font-ui text-xs text-text-tertiary">
-              {isPublic ? '🌐 Public — listed in Explore' : '🔒 Private'}
-            </p>
 
             {/* Tags */}
             <div className="mt-3 flex flex-wrap gap-2 items-center">
@@ -1469,23 +1397,6 @@ export function ClassHeaderCard({
         {/* Actions wrap below the title on narrow viewports instead of forcing
             horizontal overflow; single row to the right of the title on sm+. */}
         <div className="grid w-full grid-cols-2 items-center gap-2 sm:w-auto sm:flex sm:flex-wrap sm:shrink-0">
-          {isOwner && (
-            <button
-              className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm text-interactive disabled:opacity-40 sm:min-h-0 sm:rounded-pill sm:px-4 sm:py-1.5"
-              onClick={togglePublish}
-              disabled={publishing}
-            >
-              {isPublic ? 'Make private' : 'Publish'}
-            </button>
-          )}
-          {isOwner && (
-            <button
-              className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm text-interactive sm:min-h-0 sm:rounded-pill sm:px-4 sm:py-1.5"
-              onClick={onShare}
-            >
-              Share
-            </button>
-          )}
           {/* Owner-only delete with inline confirm (no native confirm() dialog). */}
           {isOwner &&
             (confirmingDelete ? (
