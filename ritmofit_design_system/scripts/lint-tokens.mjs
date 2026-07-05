@@ -62,7 +62,7 @@ for (const f of htmlFiles) {
   const text = src.replace(/<[^>]+>/g, " ");
   for (const re of BANNED) {
     const hit = text.match(re);
-    if (hit) fail(`mockups/${f}`, `banned copy term "${hit[0]}" — use RitmoFit voice`);
+    if (hit) fail(`mockups/${f}`, `banned copy term "${hit[0]}" — use Ritmo Studio voice`);
   }
 }
 

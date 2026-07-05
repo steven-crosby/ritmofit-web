@@ -1,4 +1,4 @@
-# RitmoFit app icon
+# Ritmo Studio app icon
 
 The "R" brand mark: a heavy geometric **R** with Polynesian tribal infill (niho teeth,
 down-chevrons, koru spirals, sun rays) weighted to the left stem and dissolving to a clean

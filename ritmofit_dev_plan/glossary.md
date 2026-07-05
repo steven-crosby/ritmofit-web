@@ -69,13 +69,13 @@ the provider's own app.
 **Live mode** — Running a class in front of a room (a co-equal capability on web and iOS — D18): cue
 prompter, interval timers, intensity readouts, provider-authorized playback.
 
-**Provider** — A music service: Spotify, Apple Music, or SoundCloud. RitmoFit plays through these via
+**Provider** — A music service: Spotify, Apple Music, or SoundCloud. Ritmo Studio plays through these via
 official SDKs/widgets or hands off to their apps; it never streams, proxies, or mixes audio itself.
 
 **Provider-authorized playback** — In-app playback controlled exclusively through a provider's
 official mechanism (Spotify Web Playback SDK/Connect, Apple Music MusicKit on the Web, SoundCloud
 Widget API), under the provider's own authorization, subscription, and availability rules. The
-provider owns the audio stream; RitmoFit owns the class timeline. See
+provider owns the audio stream; Ritmo Studio owns the class timeline. See
 `provider-playback-implementation.md`.
 
 **Playback window** — The saved per-class cue range a track plays within: start at `clip_start_ms`,

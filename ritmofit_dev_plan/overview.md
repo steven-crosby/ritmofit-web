@@ -2,7 +2,7 @@
 
 ## What we're building
 
-RitmoFit is a choreography and class-running tool for rhythm spin cycle instructors. **Two complete,
+Ritmo Studio is a choreography and class-running tool for rhythm spin cycle instructors. **Two complete,
 co-equal surfaces of one product** ("Spotify for instructors"), one backend:
 
 - **Web app** — every instructor capability on a browser: audition tracks across providers, assemble
@@ -44,7 +44,7 @@ The status-quo workflow is disjointed:
 3. Choreograph cues and moves there.
 4. Switch to a "live" mode to lead the class.
 
-Each handoff interrupts creative flow. RitmoFit's goal is to **synthesize playlist-building,
+Each handoff interrupts creative flow. Ritmo Studio's goal is to **synthesize playlist-building,
 choreography, and live performance into one continuous creative process** — not three apps stapled
 together.
 
@@ -55,13 +55,13 @@ provider track, but it isn't merely "a row imported from Spotify."
 
 ## What we're explicitly NOT building
 
-RitmoFit is a **planning + choreography + provider-authorized playback surface**, not an audio host or
+Ritmo Studio is a **planning + choreography + provider-authorized playback surface**, not an audio host or
 audio editor. These are **permanent non-goals** (locked as decision **D13** in
 [`decisions.md`](./decisions.md), rooted in the provider terms in
 [`music-providers.md`](./music-providers.md)) — decline or redesign requests that need them rather than
 scheduling them:
 
-- **No RitmoFit-owned audio playback / streaming** — in-app playback may only use official provider
+- **No Ritmo Studio-owned audio playback / streaming** — in-app playback may only use official provider
   SDKs/widgets; providers own the audio stream, authorization, subscription checks, and availability.
 - **No audio mixing / crossfade** — a class is one timeline (this is why free placement rejects overlaps).
 - **No destructive audio editing** — "trimming" is a per-class playback *window*, not a file edit; this

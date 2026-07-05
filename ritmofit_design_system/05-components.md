@@ -212,7 +212,7 @@ offering retry / reconnect / provider handoff / continue-without-music. Provider
 
 ### Player rail
 
-Live Mode has a single RitmoFit control surface (transport: play/pause, reset, scrubber) plus a compact
+Live Mode has a single Ritmo Studio control surface (transport: play/pause, reset, scrubber) plus a compact
 playback rail chip that always states what the music is doing: `♪ {provider}` while playing,
 `♪ Preparing {provider}…`, `♪ Silence` (intentional gaps), `♪ Paused`, `♪ Playback ended`,
 `⚠ Playback error`, and `♪ Music off` in prompter-only mode. Silence must read as a choice, not a
@@ -229,7 +229,7 @@ to provider handoff.
 ## Icons
 
 Use a consistent rounded icon family on web and SF Symbols on iOS. **Filled = active, outline =
-inactive.** Custom RitmoFit movement icons are a later addition; until then use the closest standard
+inactive.** Custom Ritmo Studio movement icons are a later addition; until then use the closest standard
 symbol.
 
 ## Implementation expectations (web MVP)

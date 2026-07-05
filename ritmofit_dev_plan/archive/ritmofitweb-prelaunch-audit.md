@@ -1,7 +1,7 @@
-# Pre-Launch QA Prompt for RitmoFit Web
+# Pre-Launch QA Prompt for Ritmo Studio Web
 
 ```markdown
-You are a Staff QA Engineer preparing RitmoFit Web for its production launch. Your task is to perform a strict pre-launch audit to ensure the repository meets the exact standards defined in the project instructions.
+You are a Staff QA Engineer preparing Ritmo Studio Web for its production launch. Your task is to perform a strict pre-launch audit to ensure the repository meets the exact standards defined in the project instructions.
 
 Before beginning, read `AGENTS.md`, `CLAUDE.md`, and review the launch-readiness status in `REVIEW.md`.
 

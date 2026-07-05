@@ -25,9 +25,9 @@ function env(over: Partial<Env> = {}): Env {
 
 describe('buildResendPayload', () => {
   it('wraps the recipient in an array and carries from/subject/bodies', () => {
-    const p = buildResendPayload('RitmoFit <noreply@ritmofit.studio>', MSG);
+    const p = buildResendPayload('Ritmo Studio <noreply@ritmofit.studio>', MSG);
     expect(p).toEqual({
-      from: 'RitmoFit <noreply@ritmofit.studio>',
+      from: 'Ritmo Studio <noreply@ritmofit.studio>',
       to: ['user@example.com'],
       subject: 'Hi',
       html: '<p>Hi</p>',

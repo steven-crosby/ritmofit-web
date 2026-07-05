@@ -6,7 +6,7 @@
  * silence gaps, mid-track entry after a seek, and error surfacing.
  *
  * The host (Live Mode) owns the clock and calls `tick(elapsedMs)` from its
- * existing rAF loop; the coordinator never runs its own timer. RitmoFit's class
+ * existing rAF loop; the coordinator never runs its own timer. Ritmo Studio's class
  * timeline is the master: adapters are told to play/stop when segments change,
  * and an early provider `finish` just means silence until the next scheduled
  * start. Runtime playback failures surface as serious recoverable errors

@@ -64,7 +64,7 @@ exploreRoutes.get('/explore', async (c) => {
       ...serializeClass({ ...r.cls, tags: r.tagsCsv ? String(r.tagsCsv).split(',') : [] }),
       // Never fall back to the owner's email (PII) — email is private everywhere else
       // in the app. Use a neutral label when an owner hasn't set a display name.
-      ownerName: r.ownerName ?? 'RitmoFit instructor',
+      ownerName: r.ownerName ?? 'Ritmo Studio instructor',
       trackCount: Number(r.trackCount),
     }),
   );

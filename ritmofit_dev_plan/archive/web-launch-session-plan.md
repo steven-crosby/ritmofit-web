@@ -89,7 +89,7 @@ prompter now renders a compact current-section energy-arc band from the run-payl
 previously dropped in Live). Web-only, no contract/schema change; iOS parity tracked in
 `web-ios-parity.md`. Continue with Session 7.
 
-Goal: pass the core competitor comparison without compromising RitmoFit's constraints.
+Goal: pass the core competitor comparison without compromising Ritmo Studio's constraints.
 
 - ~~Verify cue prompter, timer, intensity, notes, sections, trim, and beat behavior.~~ Done — all
   verified; the missing live **sections** indicator was added (compact current-section band).

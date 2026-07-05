@@ -1,6 +1,6 @@
 /**
  * Accessible modal dialog primitive. Centralizes the focus and keyboard behavior
- * every RitmoFit dialog needs (design-system `09` accessibility rules + the
+ * every Ritmo Studio dialog needs (design-system `09` accessibility rules + the
  * pre-launch review's "complete modal focus management" finding):
  *
  * - Renders into a portal on `document.body` so the rest of the app (`#root`) can

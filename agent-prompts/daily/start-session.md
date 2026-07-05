@@ -1,4 +1,4 @@
-# Start-session — orient before a RitmoFit work session
+# Start-session — orient before a Ritmo Studio work session
 
 > **INTERACTIVE.** Use this whenever Steven is starting a personal work session in
 > `ritmofit-web`, even if it is the second or third session of the day. This is a
@@ -51,7 +51,7 @@ files or begin implementation during orientation.
   and say whether they appear related to the requested work.
 - Do not run the full test suite merely to start a session. Run gates after scope is confirmed,
   or run targeted checks only when needed to understand the baseline.
-- Preserve RitmoFit's music constraints: no provider audio caching, no Spotify BPM, no audio
+- Preserve Ritmo Studio's music constraints: no provider audio caching, no Spotify BPM, no audio
   mixing/crossfade, and in-app playback only through official provider-authorized SDKs/widgets
   (see `ritmofit_dev_plan/music-providers.md`).
 - Shared contracts originate in `packages/shared`; class-scoped access requires centralized

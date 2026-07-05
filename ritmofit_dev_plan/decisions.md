@@ -187,7 +187,7 @@ beat-grid alignment only when the live iOS player needs it.
 
 See [`music-providers.md`](./music-providers.md). Summary: Spotify BPM is unavailable to new apps
 (deprecated Nov 2024), so BPM is hand-entered in M1 (`tracks.display_bpm`, optional
-`class_tracks.display_bpm_override`); an optional third-party provider may come in M2. RitmoFit may
+`class_tracks.display_bpm_override`); an optional third-party provider may come in M2. Ritmo Studio may
 control playback inside the web app only through official provider-authorized SDKs/widgets. We never
 cache audio, derive provider analysis, or treat provider playback as audio we own.
 
@@ -207,7 +207,7 @@ endpoints still exist for editing; run-payload is the read-optimized live contra
 
 ## D13 — Permanent non-goals: provider playback control, not audio ownership or a DAW  **[Amended by D19, 2026-07-02]**
 
-> Original D13 item 1 read "no in-app audio playback / streaming — RitmoFit never plays tracks
+> Original D13 item 1 read "no in-app audio playback / streaming — Ritmo Studio never plays tracks
 > itself; it deep-links / hands off to the provider app." **D19** supersedes that half: official
 > provider-authorized in-app playback is now allowed. Items 2–4 and the no-audio-ownership boundary
 > are unchanged.
@@ -218,16 +218,16 @@ product's purpose (synthesize *planning + choreography* with provider-authorized
 or become a production tool). A feature request that requires one of these should be **declined or
 redesigned**, not scheduled.
 
-1. **No RitmoFit-owned audio playback / streaming.** RitmoFit may control playback through official
+1. **No Ritmo Studio-owned audio playback / streaming.** Ritmo Studio may control playback through official
    Spotify / Apple Music / SoundCloud SDKs/widgets, but the provider owns the audio stream,
-   authorization, subscription checks, and availability. RitmoFit never downloads, proxies, caches,
+   authorization, subscription checks, and availability. Ritmo Studio never downloads, proxies, caches,
    re-hosts, or serves provider audio. *(music-providers.md #2/#3.)*
 2. **No audio mixing / crossfade between tracks.** We do not mix, beatmatch, or crossfade audio.
    Free-placement deliberately **rejects overlaps** for this reason: a class is a single playback
    timeline, and any provider-native gapless behavior remains provider-owned. *(music-providers.md #2.)*
 3. **No destructive audio editing.** "Trimming" sets a per-class **playback window**
    (`clip_start_ms` / `clip_end_ms`), never an edit to the source file; there is no waveform/DSP layer.
-   RitmoFit is not a DAW — the editing-granularity work (trim / beat-snap / free placement) raises
+   Ritmo Studio is not a DAW — the editing-granularity work (trim / beat-snap / free placement) raises
    *choreography* control, and stops short of audio production on purpose
    (see [`editing-granularity-scoping.md`](./editing-granularity-scoping.md)).
 4. **No in-app audio analysis / decoding pipeline.** We do not decode or analyze audio to derive
@@ -238,7 +238,7 @@ redesigned**, not scheduled.
 **Why:** These aren't backlog items waiting for capacity — they're platform/legal realities
 (provider terms) and a scope boundary (provider playback control vs. audio ownership/production).
 Listing them as locked decisions stops each one from being re-proposed as "just one more feature" and
-keeps the build honest about what RitmoFit is.
+keeps the build honest about what Ritmo Studio is.
 
 **Revisit only if** the underlying provider terms materially change (e.g. a license that permits
 first-party hosting, mixing, or derived audio), in which case treat it as a new, deliberately-scoped
@@ -324,7 +324,7 @@ but is **never capability-limited**. This **supersedes** the earlier asymmetric-
 
 **Why:** The product promise — "Spotify for instructors" — is that you pick up either device and do
 *everything*, intuitively. Spotify mirrors its core loop across mobile/desktop/web (platform-idiomatic,
-not byte-identical); RitmoFit holds the same bar. Concretely, **the iOS app is iPhone-only**, so web is
+not byte-identical); Ritmo Studio holds the same bar. Concretely, **the iOS app is iPhone-only**, so web is
 today the *only* good large-screen / tablet / Android live surface — a presenter-only web would leave
 every non-iPhone live scenario half-served.
 
@@ -351,11 +351,11 @@ to cover iPad.
 
 ## D19 — Provider-authorized in-app playback  **[Resolved 2026-07-02]**
 
-**Decision:** RitmoFit may control music playback **inside the app**, exclusively through **official
+**Decision:** Ritmo Studio may control music playback **inside the app**, exclusively through **official
 provider-authorized mechanisms**: the Spotify Web Playback SDK / Connect playback (Premium required),
 Apple Music MusicKit on the Web (subscriber authorization required), and the official SoundCloud
-Widget API. One RitmoFit player surface, provider-specific adapters underneath; the provider owns the
-audio stream, authorization, subscription checks, and availability — RitmoFit owns the class timeline,
+Widget API. One Ritmo Studio player surface, provider-specific adapters underneath; the provider owns the
+audio stream, authorization, subscription checks, and availability — Ritmo Studio owns the class timeline,
 playback windows, and provider choice. Implementation plan:
 [`provider-playback-implementation.md`](./provider-playback-implementation.md).
 

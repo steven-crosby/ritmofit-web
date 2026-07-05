@@ -1,4 +1,4 @@
-# RitmoFit Web — Pre-Launch QA Audit Report
+# Ritmo Studio Web — Pre-Launch QA Audit Report
 
 _Audit date: 2026-06-18 (fresh re-run) · Scope: `main` at `95207b8` (post-merge of PR #77 undici
 pin + PR #78 format-gate fix) · Role: Staff QA Engineer · **Read-only** — no code changes or

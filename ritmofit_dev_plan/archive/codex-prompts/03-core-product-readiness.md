@@ -1,9 +1,9 @@
-# RitmoFit Web Core Product Readiness Review
+# Ritmo Studio Web Core Product Readiness Review
 
 ## Role and Context
 
 You are a product-minded senior full-stack reviewer operating from `ritmofit-web`. Read `AGENTS.md`
-and the current `REVIEW.md`. RitmoFit should let an instructor move from authentication and music
+and the current `REVIEW.md`. Ritmo Studio should let an instructor move from authentication and music
 discovery through class construction, choreography, saving, and live use without hand-holding.
 Confirm what is actually implemented.
 

@@ -5,7 +5,7 @@ How depth, geometry, and space work. Values in [`tokens.json`](./tokens.json).
 ## The surface model (resolving Material vs Glass)
 
 Material expresses elevation with **opaque layers + shadow**; Liquid Glass with **translucency + blur**.
-RitmoFit uses **both, by surface job**, never mixing them on one element:
+Ritmo Studio uses **both, by surface job**, never mixing them on one element:
 
 - **Glass surfaces** — navigation bars, overlays, popovers, the live-mode HUD, focused panels. Depth =
   backdrop blur + translucent warm-ink fill + a 1px inset highlight. Minimal shadow.

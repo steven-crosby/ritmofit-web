@@ -1,9 +1,9 @@
-# RitmoFit Web Should-Fix Quality Pass
+# Ritmo Studio Web Should-Fix Quality Pass
 
 ## Role and Context
 
 You are a senior web quality engineer operating from `ritmofit-web`. Read `AGENTS.md` and
-`REVIEW.md`. Launch blockers and core workflow failures should already be resolved. RitmoFit must feel
+`REVIEW.md`. Launch blockers and core workflow failures should already be resolved. Ritmo Studio must feel
 fast, legible, resilient, accessible, and trustworthy to instructors working under time pressure.
 
 ## Goal

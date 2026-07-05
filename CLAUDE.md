@@ -1,4 +1,4 @@
-# RitmoFit Agent Instructions
+# Ritmo Studio Agent Instructions
 
 The canonical contributor and agent instructions for this repository are in [`AGENTS.md`](AGENTS.md).
 Read and follow that file before making changes.

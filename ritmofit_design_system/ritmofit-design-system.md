@@ -1,24 +1,24 @@
-# RitmoFit Design System — Implementation Brief
+# Ritmo Studio Design System — Implementation Brief
 
 Version: 4.1.0 (2026-06-23)  
-Audience: implementation agents and contributors working inside the RitmoFit web and iOS repositories  
+Audience: implementation agents and contributors working inside the Ritmo Studio web and iOS repositories
 Scope: Web app, marketing pages, class builder, live mode, iOS alignment, reusable tokens, and future-ready movement-first language
 
 ---
 
 ## 0. Implementation mission
 
-You are implementing or refining the RitmoFit design system across the web app and iOS app/page.
+You are implementing or refining the Ritmo Studio design system across the web app and iOS app/page.
 
-RitmoFit is not a generic fitness planner, music app, SaaS dashboard, or playlist manager.
+Ritmo Studio is not a generic fitness planner, music app, SaaS dashboard, or playlist manager.
 
-**RitmoFit is for instructors who are creators.**
+**Ritmo Studio is for instructors who are creators.**
 
-The instructor is a producer, choreographer, coach, performer, and movement artist. RitmoFit helps them discover, shape, and perform the class hidden inside the music.
+The instructor is a producer, choreographer, coach, performer, and movement artist. Ritmo Studio helps them discover, shape, and perform the class hidden inside the music.
 
 Internal north star:
 
-> RitmoFit is a movement-first creative tool for rhythm fitness instructors. It helps instructors discover, shape, and perform the class hidden inside the music — with the clarity of Nike, the pulse of the club, and the restraint of a premium studio instrument.
+> Ritmo Studio is a movement-first creative tool for rhythm fitness instructors. It helps instructors discover, shape, and perform the class hidden inside the music — with the clarity of Nike, the pulse of the club, and the restraint of a premium studio instrument.
 
 Short brand truth:
 
@@ -37,7 +37,7 @@ The target is:
 > If Fatboy Slim and Daddy Yankee became Pilates instructors and opened their own studio, then hired the Nike marketing team to build the brand.
 
 The operative target is **Club Athletic + Creator Swagger + Nike restraint**. The metaphor sets creative
-energy, not a discipline boundary: RitmoFit must feel native to salsa, samba, barre, yoga, conditioning,
+energy, not a discipline boundary: Ritmo Studio must feel native to salsa, samba, barre, yoga, conditioning,
 cycle, Pilates, and movement practices that do not yet have a product template.
 
 Implementation translation:
@@ -48,7 +48,7 @@ Implementation translation:
 - **Pilates instructor** = control, breath, flow, precision, form, tension and release.
 - **Rhythm spin instructor** = cadence, resistance, climb, sprint, all-out effort, room control.
 
-RitmoFit must synthesize these without becoming cheesy, tropical, ravey, or visually derivative.
+Ritmo Studio must synthesize these without becoming cheesy, tropical, ravey, or visually derivative.
 
 ### 1.2 Brand territory
 
@@ -78,7 +78,7 @@ Voice ceiling:
 
 Taste boundary:
 
-> If it sounds or feels like LMFAO or Pitbull, it does not match RitmoFit.
+> If it sounds or feels like LMFAO or Pitbull, it does not match Ritmo Studio.
 
 Avoid:
 
@@ -106,7 +106,7 @@ Allow:
 
 ## 2. Core product philosophy
 
-RitmoFit is a creative instrument. It should feel less like filling out a workout spreadsheet and more like discovering sculpture inside marble or finding a jazz phrase inside a progression.
+Ritmo Studio is a creative instrument. It should feel less like filling out a workout spreadsheet and more like discovering sculpture inside marble or finding a jazz phrase inside a progression.
 
 The class is not merely assembled. It is discovered.
 
@@ -138,7 +138,7 @@ Implementation should prefer choices that make the workflow feel like creative d
 
 ### 3.1 Built for creating, not consuming
 
-Spotify makes listening effortless. RitmoFit makes authoring rhythm-driven classes effortless.
+Spotify makes listening effortless. Ritmo Studio makes authoring rhythm-driven classes effortless.
 
 Do not overweight passive browse/feed patterns. Editing, structure, BPM, cues, movement, intensity, and timeline should have more visual importance than large album art.
 
@@ -258,7 +258,7 @@ state, and do not use color alone to distinguish provisional from confirmed.
 
 ## 4. Movement-first vocabulary
 
-RitmoFit supports rhythm-led movement without a default discipline. A salsa, samba, Pilates, barre, yoga, HIIT, or cycle instructor should encounter the same authoring primitives and bring practice-specific language through templates or instructor-authored content.
+Ritmo Studio supports rhythm-led movement without a default discipline. A salsa, samba, Pilates, barre, yoga, HIIT, or cycle instructor should encounter the same authoring primitives and bring practice-specific language through templates or instructor-authored content.
 
 > **Schema honesty:** the current `moves.template` enum (`cycle` / `hiit` / `sculpt` / `tread`) is an implementation constraint, not the product's definition of movement. A placed move may reference library data or use `name_override`. The UI calls these values current source tags, keeps moves icon + label led and color-neutral, and documents a schema TODO before adding new persisted disciplines.
 
@@ -355,7 +355,7 @@ Do not hardcode cycling-only labels globally.
 
 ### 5.1 Voice traits
 
-RitmoFit copy should be:
+Ritmo Studio copy should be:
 
 - Rhythmic
 - Physical
@@ -484,7 +484,7 @@ Share/export:
 
 Onboarding headline:
 
-> RitmoFit is for instructors who are creators.
+> Ritmo Studio is for instructors who are creators.
 
 Canonical eyebrow/tagline:
 
@@ -898,7 +898,7 @@ Required share-card ingredients:
 - duration
 - track count
 - peak count or All-Out markers if available
-- RitmoFit mark/wordmark
+- Ritmo Studio mark/wordmark
 
 Tone:
 
@@ -993,7 +993,7 @@ Accessibility is non-negotiable and central to brand trust.
 
 ### 11.1 Colorblind-safe requirements
 
-RitmoFit must not use red/green meaning conventions.
+Ritmo Studio must not use red/green meaning conventions.
 
 Every meaning-bearing color requires non-color redundancy:
 
@@ -1126,7 +1126,7 @@ Suggested CSS utility names:
 
 Homepage should explicitly communicate:
 
-- RitmoFit is for instructors who are creators.
+- Ritmo Studio is for instructors who are creators.
 - Find the class inside the music.
 - Movement-first, not spin-only.
 - Music provider connection is central.
@@ -1140,7 +1140,7 @@ Headline:
 
 Subhead:
 
-> RitmoFit helps rhythm fitness instructors build, cue, and perform movement-first classes from the music up.
+> Ritmo Studio helps rhythm fitness instructors build, cue, and perform movement-first classes from the music up.
 
 CTA:
 
@@ -1390,7 +1390,7 @@ An implementation change is successful when:
 
 ### Brand/product
 
-- The product explicitly says or implies: RitmoFit is for instructors who are creators.
+- The product explicitly says or implies: Ritmo Studio is for instructors who are creators.
 - The homepage/marketing page uses creator-first, movement-first language.
 - The product feels like a creative rhythm tool, not generic SaaS.
 - The language avoids party-fitness clichés.
@@ -1439,11 +1439,11 @@ An implementation change is successful when:
 Use this prompt at the repo root or workspace root.
 
 ```text
-You are working in the RitmoFit repository. Implement and/or refine the RitmoFit design system using the attached/available design-system brief.
+You are working in the Ritmo Studio repository. Implement and/or refine the Ritmo Studio design system using the attached/available design-system brief.
 
-Core brand truth: RitmoFit is for instructors who are creators. It is a movement-first creative tool that helps rhythm fitness instructors discover, shape, and perform the class hidden inside the music.
+Core brand truth: Ritmo Studio is for instructors who are creators. It is a movement-first creative tool that helps rhythm fitness instructors discover, shape, and perform the class hidden inside the music.
 
-Brand target: Club Athletic + Creator Swagger + Nike restraint. Latin-rooted warmth, rhythm, percussion, confidence, and movement should be present lightly and intentionally, never as costume or cliché. If copy or visuals feel like LMFAO or Pitbull, they do not match RitmoFit.
+Brand target: Club Athletic + Creator Swagger + Nike restraint. Latin-rooted warmth, rhythm, percussion, confidence, and movement should be present lightly and intentionally, never as costume or cliché. If copy or visuals feel like LMFAO or Pitbull, they do not match Ritmo Studio.
 
 Product behavior: Builder mode is calm and precise. Live mode earns the heat. Marketing/share artifacts carry more swagger. The app serves instructors/producers first, not consumers.
 
@@ -1454,7 +1454,7 @@ Implementation priorities:
 4. Ensure BPM/timecode/zone/duration data use the data typography role, preferably Azeret Mono or approved fallback.
 5. Implement or preserve the rhythm system: BPM-derived beat token, rationed tempo pulse, reduced-motion fallback, and energy ribbon/class shape.
 6. Refine web and iOS UI so Builder is calm, Live is high-contrast and glanceable, and marketing copy is creator-first.
-7. Replace generic SaaS or party-fitness copy with RitmoFit voice: rhythmic, physical, confident, clear, creator-first.
+7. Replace generic SaaS or party-fitness copy with Ritmo Studio voice: rhythmic, physical, confident, clear, creator-first.
 8. Preserve accessibility: color is never sole meaning carrier, focus is visible, reduced motion removes affect not information, touch targets are at least 44x44, Live mode targets high contrast.
 9. Do not invent schema fields silently. If a desired visual needs unavailable data, derive from current data or leave a documented TODO.
 10. Provide a concise implementation summary and list of changed files.
@@ -1469,7 +1469,7 @@ Before editing, inspect the repository structure and identify the relevant token
 Use when you want an implementation agent to evaluate before editing.
 
 ```text
-Audit the RitmoFit repo against the RitmoFit design-system brief.
+Audit the Ritmo Studio repo against the Ritmo Studio design-system brief.
 
 Do not make code changes yet.
 
@@ -1484,7 +1484,7 @@ Return:
 8. Recommended implementation plan in small commits.
 9. Risks or schema assumptions to verify.
 
-Use the core truth: RitmoFit is for instructors who are creators. Builder mode is calm, Live mode earns the heat, marketing/share artifacts carry the swagger.
+Use the core truth: Ritmo Studio is for instructors who are creators. Builder mode is calm, Live mode earns the heat, marketing/share artifacts carry the swagger.
 ```
 
 ---
@@ -1494,7 +1494,7 @@ Use the core truth: RitmoFit is for instructors who are creators. Builder mode i
 Use after the audit.
 
 ```text
-Using the completed audit and the RitmoFit design-system brief, implement the highest-impact design-system changes in small, reviewable commits.
+Using the completed audit and the Ritmo Studio design-system brief, implement the highest-impact design-system changes in small, reviewable commits.
 
 Prioritize:
 1. Token centralization.

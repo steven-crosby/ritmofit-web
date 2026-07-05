@@ -2,7 +2,7 @@
 
 ## Summary
 
-Production live test passed for the deployed RitmoFit web app at `https://ritmofit.studio/`.
+Production live test passed for the deployed Ritmo Studio web app at `https://ritmofit.studio/`.
 No blocking web launch issues were found during the browser walkthrough, API smoke checks,
 responsive checks, or post-test cleanup verification.
 
@@ -211,11 +211,11 @@ all disposable data was removed from production D1 afterward.
   announcements; the class reached 0:00-remaining at 1:00 and announced "Class complete." The Full
   List view rendered both tracks with their readouts, cue, move, and jump-to-track controls.
 - **Password-reset email delivery — passed.** Triggered "Send reset link"; the UI confirmed the
-  request; a "Reset your RitmoFit password" email from `noreply@ritmofit.studio` arrived in the
+  request; a "Reset your Ritmo Studio password" email from `noreply@ritmofit.studio` arrived in the
   inbox with a valid, branded reset link to the canonical origin
   (`https://ritmofit.studio/api/auth/reset-password/<token>?callbackURL=…/reset-password`,
   1-hour expiry).
-- **Email-verification delivery — passed (bonus).** A "Confirm your RitmoFit email" verification
+- **Email-verification delivery — passed (bonus).** A "Confirm your Ritmo Studio email" verification
   email from `noreply@ritmofit.studio` was also delivered to the inbox at signup. (Signup itself
   does not gate on verification — the account was usable immediately.)
 

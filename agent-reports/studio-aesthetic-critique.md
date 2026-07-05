@@ -2,7 +2,7 @@
 
 ## The Verdict
 
-RitmoFit Studio is no longer a generic dark SaaS shell, but the shipped product still feels like a
+Ritmo Studio is no longer a generic dark SaaS shell, but the shipped product still feels like a
 careful dashboard trying to become a creator workstation. The design system knows what it wants:
 warm espresso surfaces, copper identity, cyan interaction, scarce plasma, and the class energy arc as
 the signature. The live app partially realizes that language in marketing and the builder, but loses
@@ -11,7 +11,7 @@ small, centered, and polite to feel stage-ready. Grade: **B-**.
 
 ## Central Identity Problem
 
-RitmoFit's shipped UI has the vocabulary of a rhythm-first creator workstation, but not always the
+Ritmo Studio's shipped UI has the vocabulary of a rhythm-first creator workstation, but not always the
 sentence structure. The palette, typefaces, and artifacts are specific; the composition too often falls
 back to "surface, card, controls" instead of letting class shape and live state organize the screen.
 
@@ -23,7 +23,7 @@ composition. In shipped builder screenshots (`apps/web/smoke/shots/s4-start-from
 forms, card chrome, and action clusters. In the intended builder mockup
 (`/tmp/ritmofit-critique-shots/mockup-builder.png`), the class shape anchors the center, track rows
 inherit its rhythm, and the inspector feels like part of a workstation. This matters because the
-energy ribbon is the one RitmoFit artifact no generic music or fitness app owns.
+energy ribbon is the one Ritmo Studio artifact no generic music or fitness app owns.
 
 ## North-Star Scorecard
 
@@ -37,7 +37,7 @@ energy ribbon is the one RitmoFit artifact no generic music or fitness app owns.
 | Live Mode           | 2 - static and sparse                                                 | 3 - clear information model                             | 2 - too small and centered for stage trust | 2       |
 | Mobile / Narrow     | 2 - usable but oversized top actions crowd the hierarchy              | 2 - density becomes bulk, not precision                 | 2 - live readability not proven            | 2       |
 
-Summary: RitmoFit currently lands most like a thoughtfully branded operations app; it fails most like
+Summary: Ritmo Studio currently lands most like a thoughtfully branded operations app; it fails most like
 MainStage because the performance state is not visually dominant enough.
 
 ## Surface-by-Surface Critique
@@ -62,7 +62,7 @@ but the big empty field around the form drains momentum after the stronger marke
 better than over-decorated auth, but it does not yet feel like the door into a creator studio.
 
 The form should stay calm. The fix is not more spectacle; it is a small class-shape or studio-context
-cue so sign-in belongs to RitmoFit rather than any dark app with a copper logo.
+cue so sign-in belongs to Ritmo Studio rather than any dark app with a copper logo.
 
 ### Dashboard / Builder
 
@@ -93,7 +93,7 @@ clearer bridge from saved music to builder.
 ### Dialogs
 
 First five seconds: dialogs are serviceable but generic. `apps/web/smoke/shots/dialog-explore.png`
-shows a correct dimmed backdrop and a warm panel, but the loading state has no RitmoFit-specific
+shows a correct dimmed backdrop and a warm panel, but the loading state has no Ritmo Studio-specific
 structure. It could be any product's modal. Dialogs should inherit more of the music/choreography
 language: empty/loading states that reference tracks, providers, class shape, or team/studio context,
 without adding decorative animation.
@@ -136,7 +136,7 @@ model is likewise correct in principle, but Builder needs fewer independent card
 | Rank | Gap                                                                      | Damage                                                                                    |
 | ---- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
 | 1    | Live mode undershoots the intended MainStage composition                 | Highest; the product's performance promise feels least confident where stakes are highest |
-| 2    | Builder treats class shape as a card section, not the central instrument | High; weakens the unique RitmoFit signature                                               |
+| 2    | Builder treats class shape as a card section, not the central instrument | High; weakens the unique Ritmo Studio signature                                           |
 | 3    | Library currently reads as class management more than music browsing     | High; Spotify lens is least satisfied                                                     |
 | 4    | Dialog loading/empty states are generic                                  | Medium; polish gap across supporting surfaces                                             |
 | 5    | Narrow navigation/action density crowds the first viewport               | Medium; mobile feels functional before it feels crafted                                   |

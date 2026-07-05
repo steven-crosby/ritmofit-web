@@ -8,7 +8,7 @@
  *
  * A single virtual clock (`elapsedMs`) drives everything: which track is live,
  * the current/next cue, the countdowns, the intensity readout, AND provider
- * playback — the rAF loop ticks the RuntimePlaybackCoordinator, so RitmoFit's
+ * playback — the rAF loop ticks the RuntimePlaybackCoordinator, so Ritmo Studio's
  * class timeline stays the master and provider SDKs follow. Playback failure is
  * a serious recoverable alert (retry / handoff / continue without music), never
  * a silent skip; handoff links live only inside that recovery surface. Two

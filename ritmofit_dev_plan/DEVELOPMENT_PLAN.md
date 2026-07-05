@@ -1,4 +1,4 @@
-# RitmoFit — Development Plan
+# Ritmo Studio — Development Plan
 
 > **Read this first.** Entry point for any AI assistant (or human) working in this repo. It explains
 > what we're building, the decisions locked in, the platform realities that constrain every music
@@ -9,7 +9,7 @@
 
 ---
 
-## What RitmoFit is
+## What Ritmo Studio is
 
 A choreography and class-running tool for **rhythm spin cycle instructors**.
 
@@ -33,7 +33,7 @@ A choreography and class-running tool for **rhythm spin cycle instructors**.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
-That context-switching breaks creative flow. RitmoFit's bet: *building a playlist* and *choreographing
+That context-switching breaks creative flow. Ritmo Studio's bet: *building a playlist* and *choreographing
 a class* are one creative act split by tooling — so **the class IS the playlist plus choreography**,
 modeled as a single object from day one.
 
@@ -41,9 +41,9 @@ modeled as a single object from day one.
 
 StructClub remains the clearest product reference for rhythm-instructor expectations: fast discovery,
 rich class/library presentation, movement-oriented creation paths, and a confident live-running surface.
-RitmoFit intentionally diverges where provider constraints require it: playback may be controlled inside
-RitmoFit only through official provider SDKs/widgets, while providers still own the audio stream and
-availability. RitmoFit competes by making web-based planning, choreography, sharing, live prompting, and
+Ritmo Studio intentionally diverges where provider constraints require it: playback may be controlled inside
+Ritmo Studio only through official provider SDKs/widgets, while providers still own the audio stream and
+availability. Ritmo Studio competes by making web-based planning, choreography, sharing, live prompting, and
 provider-authorized playback feel like one instructor workflow. The old point-in-time StructClub audit
 is archived for provenance; active launch checks and deferrals now live in
 [`web-launch-readiness.md`](./web-launch-readiness.md).
@@ -58,7 +58,7 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 1. **No BPM from Spotify.** Spotify deprecated the audio-features (tempo) endpoint for new apps in
    **November 2024**. BPM is **manual entry** in M1 (`tracks.display_bpm`, optional per-class override);
    an optional third-party BPM provider may come later. Never build against Spotify BPM.
-2. **Official provider playback only; no mixing / crossfade.** RitmoFit may control playback through
+2. **Official provider playback only; no mixing / crossfade.** Ritmo Studio may control playback through
    official Spotify, Apple Music, and SoundCloud SDKs/widgets. It never downloads, proxies, re-hosts,
    mixes, beatmatches, or crossfades provider audio.
 3. **No caching of audio or platform-derived data.** We store **references** (provider IDs/URIs) and
@@ -79,7 +79,7 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 | Backend framework | **Hono** (TypeScript) on a Worker; REST surface documented with OpenAPI |
 | Database | **Cloudflare D1** (SQLite); **Drizzle** ORM + migrations |
 | Validation / contract | **Zod** schemas + inferred types in `packages/shared`, consumed by API and web |
-| Web frontend | **React + Vite + TypeScript** (SPA, no SSR) + Tailwind w/ RitmoFit design tokens |
+| Web frontend | **React + Vite + TypeScript** (SPA, no SSR) + Tailwind w/ Ritmo Studio design tokens |
 | iOS | Native Swift, separate repo; consumes the same backend via the OpenAPI contract |
 | Repo shape | **Monorepo**: `packages/shared`, `apps/api`, `apps/web` (add packages only when earned) |
 | Track identity | **Provider-agnostic** `track` + many `track_provider_ids` |
@@ -89,7 +89,7 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 | Moves library | Global `moves` seed + `user_moves` custom language; placements reference them |
 | Time encoding | **Milliseconds everywhere** (`anchor_ms`, `start_offset_ms`, `duration_ms`) |
 | iOS live contract | A versioned **`GET /classes/:id/run-payload`** — one request runs a class |
-| Playback | **Provider-authorized only** (D19) — official SDKs/widgets (Spotify Web Playback SDK, MusicKit on the Web, SoundCloud Widget API); providers own the audio stream, RitmoFit owns the class timeline and playback windows |
+| Playback | **Provider-authorized only** (D19) — official SDKs/widgets (Spotify Web Playback SDK, MusicKit on the Web, SoundCloud Widget API); providers own the audio stream, Ritmo Studio owns the class timeline and playback windows |
 
 Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
@@ -161,7 +161,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`api.md`](./api.md) | REST surface, run-payload, auth, error conventions |
 | [`authorization.md`](./authorization.md) | The ownership + sharing access model (app-level gate) |
 | [`music-providers.md`](./music-providers.md) | The three hard constraints; BPM/playback strategy |
-| [`provider-playback-implementation.md`](./provider-playback-implementation.md) | Planned RitmoFit player architecture: provider adapters, Live Mode preflight/auto-advance, mixed-provider classes |
+| [`provider-playback-implementation.md`](./provider-playback-implementation.md) | Planned Ritmo Studio player architecture: provider adapters, Live Mode preflight/auto-advance, mixed-provider classes |
 | [`editing-granularity-scoping.md`](./editing-granularity-scoping.md) | As-built record of trim / beat-snap / free-placement; the granularity boundary (D13) and open follow-ups |
 | [`milestones.md`](./milestones.md) | Milestone breakdown, M1 build order, acceptance criteria |
 | [`web-launch-readiness.md`](./web-launch-readiness.md) | Completed web launch gate, verification plan, and live deferrals |

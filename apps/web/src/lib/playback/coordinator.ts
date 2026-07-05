@@ -1,5 +1,5 @@
 /**
- * Playback coordination — the pure decision core of the RitmoFit player
+ * Playback coordination — the pure decision core of the Ritmo Studio player
  * (provider-playback-implementation.md). This slice is provider selection,
  * clip-window math, and static class preflight; the runtime coordinator that
  * drives adapters (auto-advance, gap handling, clock sync) builds on these in

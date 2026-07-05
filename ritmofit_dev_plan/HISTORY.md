@@ -1,4 +1,4 @@
-# RitmoFit Web — Status / Deploy History
+# Ritmo Studio Web — Status / Deploy History
 
 Archived dated build & deploy log. The live docs ([`DEVELOPMENT_PLAN.md`](./DEVELOPMENT_PLAN.md),
 [`milestones.md`](./milestones.md)) keep current state + milestone definitions; this file is the
@@ -91,7 +91,7 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 > Rollback anchor: prior live `57b20736-3f15-40fd-8877-f35f9ac3eb7d`. Remote D1: **No migrations to
 > apply** (no schema change in any of the three). Pre-deploy gate green (246 web tests / `tsc --noEmit` /
 > eslint / `format:check` / web build; functional smoke 16/16, narrow 19/19). Post-deploy smoke on live
-> `https://ritmofit.studio`: SPA `/` → `200` (serves `<title>RitmoFit</title>`), `/api/v1/health` →
+> `https://ritmofit.studio`: SPA `/` → `200` (serves `<title>Ritmo Studio</title>`), `/api/v1/health` →
 > `200`, protected `/api/v1/classes` → `401`, SPA fallback `/app` → `200`. iOS parity items recorded in
 > `web-ios-parity.md` for the Live re-stage and the energy-arc workbench (both presentation-only).
 

@@ -1,8 +1,8 @@
-# RitmoFit Web Start Session
+# Ritmo Studio Web Start Session
 
 ## Role and Context
 
-You are beginning a new engineering session from the root of the `ritmofit-web` repository. RitmoFit
+You are beginning a new engineering session from the root of the `ritmofit-web` repository. Ritmo Studio
 is a choreography and class-management tool for rhythm spin instructors. This repository contains the
 React planning surface and the authoritative Cloudflare Worker/D1 backend shared with the iOS app.
 
@@ -51,7 +51,7 @@ orientation.
 - Do not run the full test suite merely to start a session. Run gates after scope is confirmed or when
   a targeted check is needed to understand the baseline.
 - Do not expose credentials, tokens, cookies, authorization headers, private keys, or secret values.
-- Preserve RitmoFit's provider constraints: no provider audio caching, no Spotify BPM, and no in-app
+- Preserve Ritmo Studio's provider constraints: no provider audio caching, no Spotify BPM, and no in-app
   playback mixing or embedding.
 - Shared contracts originate in `packages/shared`; class-scoped routes require centralized
   authorization; D1 migrations are generated and never rewritten after application.

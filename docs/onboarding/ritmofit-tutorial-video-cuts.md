@@ -1,4 +1,4 @@
-# RitmoFit Tutorial Video Cuts
+# Ritmo Studio Tutorial Video Cuts
 
 ## Scope
 

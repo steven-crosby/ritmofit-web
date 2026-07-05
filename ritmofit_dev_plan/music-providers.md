@@ -21,7 +21,7 @@ BPM were likely grandfathered in or source it elsewhere — we cannot replicate 
 > Always verify the current state of provider APIs before building against them — these terms change.
 
 ### 2. Provider-authorized playback only; no audio mixing or crossfade
-RitmoFit may play music inside the web app only by controlling official provider SDKs/widgets:
+Ritmo Studio may play music inside the web app only by controlling official provider SDKs/widgets:
 
 - Spotify Web Playback SDK / Connect playback for an authorized Premium user.
 - Apple Music MusicKit on the Web for an authorized subscriber.
@@ -35,9 +35,9 @@ crossfade or DJ-style playback. We can't do that:
 - "Crossfade" in other products most likely defers to provider-owned behavior rather than mixing audio
   itself.
 
-**Our approach:** RitmoFit is a choreography + live-class surface with a single player UI. The player
+**Our approach:** Ritmo Studio is a choreography + live-class surface with a single player UI. The player
 adapts to provider-specific playback underneath, while provider SDKs/widgets own the audio stream,
-authorization, subscription checks, and availability. RitmoFit never downloads, proxies, caches,
+authorization, subscription checks, and availability. Ritmo Studio never downloads, proxies, caches,
 re-hosts, mixes, crossfades, beatmatches, decodes, or analyzes provider audio.
 
 ### 3. No caching of audio or platform-derived data
@@ -53,15 +53,15 @@ We never store the audio or platform-derived analysis.
 
 These follow directly from the three constraints and are **locked as decision D13**
 ([`decisions.md`](./decisions.md)) so they aren't re-proposed feature by feature:
-**no RitmoFit-owned audio playback/streaming**, **no audio mixing/crossfade** (why free-placement
+**no Ritmo Studio-owned audio playback/streaming**, **no audio mixing/crossfade** (why free-placement
 rejects overlaps), **no destructive audio editing** (trimming is a playback *window*, not a file edit —
 not a DAW), and **no in-app audio analysis/decoding** (BPM is manual or third-party; the downbeat is
 hand-marked). Decline or redesign requests that need one of these rather than scheduling them.
 
 ## What this means architecturally
 
-- The "play" controls in the UI drive a RitmoFit class timeline and provider-specific playback adapters;
-  they do not make RitmoFit a media engine or audio host.
+- The "play" controls in the UI drive a Ritmo Studio class timeline and provider-specific playback adapters;
+  they do not make Ritmo Studio a media engine or audio host.
 - BPM is our own data (manual or third-party-sourced), never scraped from Spotify.
 - The provider-agnostic track model (`tracks` + `track_provider_ids`) exists so a class can choose the
   best playable provider per track. Mixed-provider classes are allowed.
@@ -100,10 +100,10 @@ Don't mix the Apple sign-in client/service IDs with the Apple Music developer to
 ## Workflow we're replacing
 
 Today: build playlist in a provider app → import into a separate choreography app → choreograph →
-switch to live mode. RitmoFit collapses the **planning and choreography** into one creative surface —
+switch to live mode. Ritmo Studio collapses the **planning and choreography** into one creative surface —
 and now aims to collapse live playback control into that same surface through official provider
 playback. "Collapse the workflow" never means "violate the provider terms": providers still own the
-audio, and RitmoFit owns the class timeline.
+audio, and Ritmo Studio owns the class timeline.
 
 ## Current playback implementation plan
 

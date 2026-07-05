@@ -159,7 +159,7 @@ export class SoundCloudAdapter implements PlaybackAdapter {
     iframe.src = `${WIDGET_PLAYER_ORIGIN}?${params.toString()}`;
     iframe.setAttribute('allow', 'autoplay');
     iframe.title = `SoundCloud player: ${entry.track.title}`;
-    // Visually hidden, alive, and out of the a11y/tab order — the RitmoFit
+    // Visually hidden, alive, and out of the a11y/tab order — the Ritmo Studio
     // player rail is the UI; this iframe exists for the audio stream.
     iframe.setAttribute('aria-hidden', 'true');
     iframe.tabIndex = -1;

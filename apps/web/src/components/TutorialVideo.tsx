@@ -136,7 +136,7 @@ const CUTS: Record<TutorialVideoVariant, TutorialCut> = {
         focus: 'save',
         eyebrow: 'Ready',
         headline: 'Build the first class, then keep refining.',
-        caption: 'RitmoFit keeps the class plan reusable without touching provider audio.',
+        caption: 'Ritmo Studio keeps the class plan reusable without touching provider audio.',
       },
     ],
   },

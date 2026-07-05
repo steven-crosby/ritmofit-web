@@ -1,6 +1,6 @@
 # 10 — The Rhythm System (signature)
 
-This is the document that makes RitmoFit _RitmoFit_. Everything else is a well-built dark workstation;
+This is the document that makes Ritmo Studio _Ritmo Studio_. Everything else is a well-built dark workstation;
 this is the soul. The thesis from [`01-design-principles.md`](./01-design-principles.md): **the interface
 keeps time.** Tempo is not a theme or a decoration — it is a design material with its own token, used
 deliberately and rationed hard.
@@ -71,7 +71,7 @@ graph pinned along the top of the timeline.
 
 - **Height encodes zone** (`none`→`all_out`); color rides on top from the ribbon gradient (copper → ember
   → a plasma kiss at peaks). Read it in grayscale and the shape still reads — the height carries it.
-- It is the single most _shareable_ and most _RitmoFit_ view in the product. An instructor can see — and
+- It is the single most _shareable_ and most _Ritmo Studio_ view in the product. An instructor can see — and
   screenshot — the shape of their class at a glance.
 - It is **derived from data you already have** — no new schema to ship a first version. (Segment
   _banding_ under the ribbon builds on the `class_sections` model.) See the blend rule below.

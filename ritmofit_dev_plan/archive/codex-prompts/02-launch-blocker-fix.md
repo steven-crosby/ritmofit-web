@@ -1,9 +1,9 @@
-# RitmoFit Web Launch Blocker Fix
+# Ritmo Studio Web Launch Blocker Fix
 
 ## Role and Context
 
 You are a senior full-stack engineer operating from the root of `ritmofit-web`. Read `AGENTS.md` and
-`REVIEW.md`. RitmoFit's web product must safely support the instructor's planning workflow and its
+`REVIEW.md`. Ritmo Studio's web product must safely support the instructor's planning workflow and its
 authoritative backend. Verify the actual stack and implementation before acting.
 
 ## Goal

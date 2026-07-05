@@ -1,6 +1,6 @@
 # Mockups
 
-Open `index.html` to browse the standalone RitmoFit reference screens.
+Open `index.html` to browse the standalone Ritmo Studio reference screens.
 
 All pages consume:
 

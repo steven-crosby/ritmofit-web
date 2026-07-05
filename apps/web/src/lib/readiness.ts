@@ -33,7 +33,7 @@ export type ReadinessKey = 'duration' | 'tempo' | 'choreography' | 'music';
 export type ReadinessDimension = {
   key: ReadinessKey;
   level: ReadinessLevel;
-  /** Short state label in RitmoFit voice (prescription §9). */
+  /** Short state label in Ritmo Studio voice (prescription §9). */
   label: string;
   /** One-line impact/fix hint. */
   detail: string;

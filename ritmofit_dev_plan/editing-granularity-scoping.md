@@ -6,7 +6,7 @@
 > "✅ shipped" markers and `HISTORY.md`). Originally drafted as scoping.
 > Context: the planning surface today is strong on *ordering* and *annotation* but caps out
 > below a DAW on fine-grained control. These three deferred features are the realistic levers
-> to raise that ceiling **without** turning RitmoFit into an audio editor (the three music
+> to raise that ceiling **without** turning Ritmo Studio into an audio editor (the three music
 > constraints in `music-providers.md` stay inviolable — official provider-authorized playback only,
 > no mixing, no trimming of the *audio file itself*; "trimming" here means clipping the *playback
 > window*, not the file).
@@ -202,7 +202,7 @@ Together they move the class-builder's editing granularity from ~3/10 toward ~5�
 (still, by design, not a DAW — provider audio stays provider-owned per `music-providers.md`).
 
 The boundary this work stops at is locked as **decision D13** ([`decisions.md`](./decisions.md)): no
-RitmoFit-owned playback, mixing/crossfade, destructive audio editing, or audio analysis — RitmoFit
+Ritmo Studio-owned playback, mixing/crossfade, destructive audio editing, or audio analysis — Ritmo Studio
 controls choreography and provider-authorized playback windows, not audio production.
 
 Possible follow-ups (not built, and *not* ruled out by D13): snapping a dragged track start to the beat

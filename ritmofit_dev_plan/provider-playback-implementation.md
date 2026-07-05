@@ -1,14 +1,14 @@
 # Provider-Authorized Playback Implementation Plan
 
-<!-- note (Codex, 2026-07-02): Created from the RitmoFit player planning session. -->
+<!-- note (Codex, 2026-07-02): Created from the Ritmo Studio player planning session. -->
 <!-- note (Claude, 2026-07-02): Doc audit pass — added the prod connect-exchange prerequisite and design-system playback states. -->
 <!-- note (Claude, 2026-07-03): Connect prerequisite marked completed (Worker 94126954); marked the built playback-layer modules in Architecture; recorded Live Mode wiring status. -->
 
 ## Goal
 
-Build one RitmoFit player experience for web Live Mode and Builder preview while keeping provider audio
+Build one Ritmo Studio player experience for web Live Mode and Builder preview while keeping provider audio
 provider-owned. Instructors should not be sent to SoundCloud, Apple Music, or Spotify as the normal
-class-running path. RitmoFit controls the class timeline, playback windows, choreography prompts, and
+class-running path. Ritmo Studio controls the class timeline, playback windows, choreography prompts, and
 provider choice; provider SDKs/widgets control the actual audio stream and authorization.
 
 This is a product-direction update to the older "handoff-only" docs. The boundary is now:
@@ -44,7 +44,7 @@ playback metadata, add it deliberately to shared contracts and OpenAPI; do not o
 ### Mixed-provider classes are allowed
 
 A class may contain tracks from SoundCloud, Apple Music, and Spotify. Live Mode must not assume one
-provider queue for the whole class. Instead, RitmoFit is the master timeline and each track is a
+provider queue for the whole class. Instead, Ritmo Studio is the master timeline and each track is a
 provider-specific playback job.
 
 Provider selection for each track:
@@ -58,7 +58,7 @@ current provider order unless design/product changes it.
 
 ### Live Mode is hands-free after start
 
-Once class starts, the instructor should not have to touch RitmoFit. Live Mode must:
+Once class starts, the instructor should not have to touch Ritmo Studio. Live Mode must:
 
 - preflight every track before class start;
 - start the first track at its playback-window start;
@@ -181,7 +181,7 @@ provider priority becomes persisted user preference rather than local/session pr
 Live Mode:
 
 - replace `ProviderHandoffLinks` as the primary action in `LiveMode.tsx`;
-- add a single RitmoFit player rail/control surface;
+- add a single Ritmo Studio player rail/control surface;
 - add a preflight screen before class start;
 - add provider/account/subscription/unavailable states;
 - keep play/pause/reset/seek keyboard accessible and visibly focused;

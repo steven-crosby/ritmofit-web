@@ -2,11 +2,11 @@
 
 ## The North-Star Vision
 
-RitmoFit Studio should feel like a class-shaped instrument: the instructor starts with music, sees the
+Ritmo Studio should feel like a class-shaped instrument: the instructor starts with music, sees the
 room's energy take form, edits with calm workstation precision, then enters a live surface that can be
 trusted across a dark room. Spotify contributes browse pleasure and cultural polish; Logic contributes
 alignment, density, and poise; MainStage contributes huge state, glanceability, and confidence under
-pressure. RitmoFit's own signature is the energy arc: every major surface should make the class shape
+pressure. Ritmo Studio's own signature is the energy arc: every major surface should make the class shape
 more visible, not bury it behind generic card chrome.
 
 ## The Redesign Thesis
@@ -53,10 +53,10 @@ LiveMode component test for the same current/next/timer semantics after layout c
 
 ### 2. Make the Builder's energy arc the central instrument
 
-**Why now / rank rationale:** This is the signature move that makes RitmoFit identifiable. It also
+**Why now / rank rationale:** This is the signature move that makes Ritmo Studio identifiable. It also
 sets up every later builder polish pass.
 
-**North star served:** Logic for workstation hierarchy; RitmoFit synthesis for rhythm identity.
+**North star served:** Logic for workstation hierarchy; Ritmo Studio synthesis for rhythm identity.
 
 **Critique link:** Stage 1 biggest aesthetic failure and shipped-vs-intended gap #2.
 
@@ -115,7 +115,7 @@ than artwork.
 
 **Suggested validation:** Library desktop/mobile screenshots and `LibraryRail` tests for actions.
 
-### 4. Give modal loading/empty states RitmoFit-specific structure
+### 4. Give modal loading/empty states Ritmo Studio-specific structure
 
 **Why now / rank rationale:** Dialogs are repeated touchpoints. Small polish here makes the app feel
 less generic without changing flows.
@@ -178,7 +178,7 @@ as the first real content.
 | 1    | Re-stage Live mode as the performance instrument                   | Tier 0 | 5      | M      | High       |
 | 2    | Make the Builder's energy arc the central instrument               | Tier 0 | 5      | M      | High       |
 | 3    | Tighten the class/library rail into a music-forward creation queue | Tier 1 | 4      | M      | Medium     |
-| 4    | Give modal loading/empty states RitmoFit-specific structure        | Tier 1 | 3      | S      | High       |
+| 4    | Give modal loading/empty states Ritmo Studio-specific structure    | Tier 1 | 3      | S      | High       |
 | 5    | Rebalance narrow viewport navigation and action density            | Tier 2 | 3      | M      | Medium     |
 
 ## Design-System Changes
@@ -215,7 +215,7 @@ rhythm system allows.
 ## The One-Weekend Cut
 
 Do #1, #2, and #4. Live mode creates the biggest perceived-quality jump; the builder energy-arc pass
-makes the product uniquely RitmoFit; dialog state polish is small, visible, and lowers generic SaaS
+makes the product uniquely Ritmo Studio; dialog state polish is small, visible, and lowers generic SaaS
 odor across the app. Defer the rail rewrite until after those keystones unless the implementation is
 already touching `Dashboard.tsx` heavily.
 
@@ -248,7 +248,7 @@ already touching `Dashboard.tsx` heavily.
 
 ## Implementer's Brief
 
-Make RitmoFit feel like a class-shaped instrument, not a dashboard. First, re-stage Live mode so the
+Make Ritmo Studio feel like a class-shaped instrument, not a dashboard. First, re-stage Live mode so the
 current cue, BPM/intensity, next cue, and timers dominate the room while preserving the existing clock,
 provider handoff, reduced-motion, and accessibility logic. Second, make the Builder's energy arc and
 timeline read as the central workbench rather than a card section. Third, replace generic dialog

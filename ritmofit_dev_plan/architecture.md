@@ -11,7 +11,7 @@
 | ORM / migrations | Drizzle |
 | API style | REST, documented with OpenAPI |
 | Validation / types | Zod schemas in `packages/shared`, types inferred from them |
-| Web client | React + Vite + TypeScript (SPA) + Tailwind (RitmoFit tokens) |
+| Web client | React + Vite + TypeScript (SPA) + Tailwind (Ritmo Studio tokens) |
 | Web hosting | Workers static assets — the SPA is served by the **same Worker** as the API (single origin); no separate Pages site |
 | iOS client | Native Swift (separate repo), consumes the OpenAPI contract |
 

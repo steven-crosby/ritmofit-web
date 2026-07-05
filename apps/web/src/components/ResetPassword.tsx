@@ -47,7 +47,7 @@ export function ResetPassword() {
               R
             </span>
             <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-text-primary">
-              RitmoFit
+              Ritmo Studio
             </h1>
           </div>
           <p className="font-ui text-text-secondary">Choose a new password</p>

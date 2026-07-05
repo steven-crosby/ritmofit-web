@@ -20,7 +20,9 @@ describe('App path routing', () => {
     render(<App />);
     expect(screen.getByText('404')).toBeTruthy();
     expect(screen.getByText(/doesn’t exist/i)).toBeTruthy();
-    expect(screen.getByRole('link', { name: /back to ritmofit/i }).getAttribute('href')).toBe('/');
+    expect(screen.getByRole('link', { name: /back to ritmo studio/i }).getAttribute('href')).toBe(
+      '/',
+    );
   });
 
   it('renders the app (MarketingPage when signed out) at the root path', () => {

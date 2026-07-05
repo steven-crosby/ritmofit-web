@@ -7,7 +7,7 @@
 //
 //   node scripts/build-tokens-ios.mjs
 //
-// The Swift file expects a `Color(hex:)` initializer in the host app (the RitmoFit
+// The Swift file expects a `Color(hex:)` initializer in the host app (the Ritmo Studio
 // iOS repo already provides one); this emitter intentionally does not redefine it.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";

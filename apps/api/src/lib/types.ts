@@ -91,7 +91,7 @@ export interface Env {
    */
   RESEND_API_KEY?: string;
   /**
-   * The `From` address for transactional email, e.g. `RitmoFit
+   * The `From` address for transactional email, e.g. `Ritmo Studio
    * <noreply@ritmofit.studio>`. Must be on a Resend-verified domain. Defaults to
    * `noreply@ritmofit.studio` when unset.
    */

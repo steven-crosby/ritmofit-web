@@ -1,7 +1,7 @@
 /**
  * Provider-authorized playback contracts (provider-playback-implementation.md).
  *
- * RitmoFit owns the class timeline, playback windows, and provider choice;
+ * Ritmo Studio owns the class timeline, playback windows, and provider choice;
  * official provider SDKs/widgets own the actual audio stream, authorization,
  * subscription checks, and availability (music-providers.md, D13/D19). Nothing
  * in this layer may download, proxy, cache, re-host, remix, mix, crossfade,

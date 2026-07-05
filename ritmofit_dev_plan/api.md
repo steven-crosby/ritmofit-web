@@ -1,6 +1,6 @@
 # API
 
-REST surface for the current RitmoFit backend, documented with OpenAPI so web and iOS share one
+REST surface for the current Ritmo Studio backend, documented with OpenAPI so web and iOS share one
 contract. This lists the shape and intent of endpoints; exact request/response bodies are the Zod
 schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 
