@@ -175,7 +175,7 @@ describe('LibraryRail card summary', () => {
         }),
       ],
     });
-    // Shape leads: HIIT before count/duration. (Access is de-emphasized at end.)
+    // Shape leads: HIIT before count/duration. (No ownership chip — owner-only library.)
     // Use textContent contains to be robust across whitespace/nodes in meta.
     expect(document.body.textContent || '').toContain('HIIT');
     expect(screen.getByText('4 tracks')).toBeTruthy();

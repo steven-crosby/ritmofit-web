@@ -113,7 +113,8 @@ describe('Dashboard class library states', () => {
 
     expect(await screen.findByText('Morning ride')).toBeTruthy();
     expect(screen.queryByText('Loading your classes…')).toBeNull();
-    expect(screen.getByText('Select or create a class to start building.')).toBeTruthy();
+    // With classes present but none selected, the workspace is a quiet selection prompt.
+    expect(screen.getByText('Select a class to keep building.')).toBeTruthy();
   });
 
   it('shows a distinct error state when the class list fails to load, and retries', async () => {
@@ -137,6 +138,26 @@ describe('Dashboard class library states', () => {
     renderDashboard();
 
     expect(await screen.findByText(/No classes yet/)).toBeTruthy();
+  });
+
+  it('guides a brand-new instructor with a first-run workspace when the library is empty', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+
+    renderDashboard();
+
+    // A true first run has no class to derive from, so it orients to the loop
+    // rather than the generic "select a class" prompt.
+    expect(await screen.findByRole('heading', { name: 'Build your first class' })).toBeTruthy();
+    expect(screen.queryByText('Select a class to keep building.')).toBeNull();
+  });
+
+  it('omits the redundant ownership chip on library cards (solo-first library is owner-only)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([makeClass('My ride')]));
+
+    renderDashboard();
+
+    expect(await screen.findByText('My ride')).toBeTruthy();
+    expect(screen.queryByText('owner')).toBeNull();
   });
 
   it('keeps the top bar solo-first and hides classes owned by other users', async () => {

@@ -508,11 +508,22 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             <section className="rounded-card bg-bg-raised p-8 shadow-card" aria-busy="true">
               <p className="font-ui text-text-tertiary">Loading class…</p>
             </section>
+          ) : listStatus === 'ready' && classes.length === 0 && activeTag == null ? (
+            // True first run — there are no classes to derive from, so orient the new
+            // instructor to the creative loop rather than fabricating a provisional
+            // (design principle 8: alive at rest, but "derive, never invent").
+            <section className="rounded-card bg-bg-raised p-8 shadow-card">
+              <h2 className="font-display text-xl font-semibold text-text-primary">
+                Build your first class
+              </h2>
+              <p className="mt-2 max-w-prose font-ui text-sm text-text-secondary">
+                Name a class to begin — then pick the music, shape the intensity, and take it live.
+                In Ritmo Studio a class is your playlist and your choreography in one place.
+              </p>
+            </section>
           ) : (
             <section className="rounded-card bg-bg-raised p-8 shadow-card">
-              <p className="font-ui text-text-tertiary">
-                Select or create a class to start building.
-              </p>
+              <p className="font-ui text-text-tertiary">Select a class to keep building.</p>
             </section>
           )}
         </div>
@@ -640,8 +651,8 @@ export function LibraryRail({
  * bounded album-art collage, title, shape-first meta (template · track count · runtime),
  * quiet last-opened. Primary action is opening the card (main area). Copy/View are
  * deliberately quieter secondary actions in a compact footer (no dominating vertical
- * divider). Access level is de-emphasized. Independently focusable controls; ring for
- * selection (never color alone).
+ * divider). The solo-first library is owner-only (D20), so no ownership chip is shown.
+ * Independently focusable controls; ring for selection (never color alone).
  */
 function ClassCard({
   cls,
@@ -692,9 +703,6 @@ function ClassCard({
                   <span>{formatDuration(cls.totalDurationMs)}</span>
                 </>
               )}
-              <span className="ml-1 text-[10px] uppercase tracking-[0.5px] text-text-tertiary/70">
-                {cls.accessLevel}
-              </span>
             </span>
             {lastOpened && (
               <span className="mt-0.5 block font-ui text-xs text-text-tertiary">{lastOpened}</span>
