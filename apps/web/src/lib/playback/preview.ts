@@ -50,8 +50,16 @@ export type PreviewStatus =
   | { kind: 'ended'; classTrackId: string }
   | { kind: 'error'; error: PreviewError };
 
-export interface PreviewControllerOptions extends SelectionOptions {
+export interface PreviewControllerOptions extends Omit<SelectionOptions, 'now'> {
   adapters: AdapterRegistry;
+  /**
+   * Clock accessor for provider-expiry checks. A function, not a frozen number,
+   * because the controller is long-lived (built once when connections load and
+   * reused across previews): a token can expire between load and the instructor
+   * clicking Preview, so selection must read the time at each `play()`, not at
+   * construction. Defaults to `Date.now`; injectable for deterministic tests.
+   */
+  now?: () => number;
   onStatus?: (status: PreviewStatus) => void;
   onError?: (error: PreviewError) => void;
 }
@@ -97,6 +105,14 @@ export class PreviewPlaybackController {
     return this.status;
   }
 
+  /** Selection inputs with the time read *now* (see `options.now`). */
+  private selectionOptions(): SelectionOptions {
+    return {
+      preferredProvider: this.options.preferredProvider,
+      now: (this.options.now ?? Date.now)(),
+    };
+  }
+
   /**
    * Prepare and play `entry`'s clip window from its start (a user gesture, so
    * browser autoplay policies and MusicKit authorization are satisfied). Any
@@ -110,7 +126,7 @@ export class PreviewPlaybackController {
       await this.releaseActive();
       if (epoch !== this.epoch) return;
 
-      const selection = selectProvider(entry, this.connections, this.options);
+      const selection = selectProvider(entry, this.connections, this.selectionOptions());
       if (selection.status !== 'playable') {
         this.fail({
           phase: 'select',
@@ -216,25 +232,30 @@ export class PreviewPlaybackController {
   /** Pause provider audio; the host pauses its preview clock in the same gesture. */
   async pause(): Promise<void> {
     if (this.status.kind !== 'playing' || !this.active) return;
-    this.epoch++;
+    const epoch = ++this.epoch;
     const { classTrackId, provider } = this.active;
     try {
       await this.active.adapter.pause();
     } catch {
       // Pausing a dying adapter is best-effort; the paused state stands.
     }
+    // A stop/destroy/new-play that interleaved this await already moved us on;
+    // don't overwrite its status with a stale `paused` (see runtime.enter's guard).
+    if (epoch !== this.epoch) return;
     this.setStatus({ kind: 'paused', classTrackId, provider });
   }
 
   /** Resume the paused track from where the host clock left off (a user gesture). */
   async resume(): Promise<void> {
     if (this.status.kind !== 'paused' || !this.active) return;
-    this.epoch++;
+    const epoch = ++this.epoch;
     const { classTrackId, provider } = this.active;
     try {
       await this.active.adapter.play();
+      if (epoch !== this.epoch) return;
       this.setStatus({ kind: 'playing', classTrackId, provider });
     } catch (cause) {
+      if (epoch !== this.epoch) return;
       this.fail({
         phase: 'adapter',
         provider,
@@ -246,8 +267,9 @@ export class PreviewPlaybackController {
 
   /** Stop preview and release the adapter — back to idle. Safe to call repeatedly. */
   async stop(): Promise<void> {
-    this.epoch++;
+    const epoch = ++this.epoch;
     await this.releaseActive();
+    if (epoch !== this.epoch) return;
     this.setStatus({ kind: 'idle' });
   }
 
@@ -269,8 +291,12 @@ export class PreviewPlaybackController {
   private async endActive(): Promise<void> {
     const job = this.active;
     if (!job) return;
-    this.epoch++;
+    const epoch = ++this.epoch;
     await this.releaseActive();
+    // If a new play() superseded us during the release await, it now owns the
+    // status — writing `ended` here would clobber a live preview and, because
+    // `tick` only fires while status is `playing`, leave it unable to stop.
+    if (epoch !== this.epoch) return;
     this.setStatus({ kind: 'ended', classTrackId: job.classTrackId });
   }
 

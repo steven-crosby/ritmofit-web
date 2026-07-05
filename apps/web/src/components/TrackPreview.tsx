@@ -40,8 +40,14 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
   const [connectionsError, setConnectionsError] = useState<string | null>(null);
   const [status, setStatus] = useState<PreviewStatus>({ kind: 'idle' });
-  const [playing, setPlaying] = useState(false);
   const controllerRef = useRef<PreviewPlaybackController | null>(null);
+  // The host rAF clock runs exactly while the controller reports `playing`.
+  // Deriving this from status (rather than a separate `playing` flag the
+  // handlers and a reconciling effect kept in sync) is what makes the clock
+  // survive the `preparing → playing` transition: a hand-synced flag would get
+  // cleared on the transient `preparing` commit and never restart, so `tick()`
+  // never ran and the clip-window end was never enforced.
+  const playing = status.kind === 'playing';
 
   useEffect(() => {
     let cancelled = false;
@@ -68,7 +74,9 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
   useEffect(() => {
     if (!connections) return;
     const controller = new PreviewPlaybackController(playableConnections, {
-      now: Date.now(),
+      // Clock accessor, not a frozen `Date.now()`: the controller outlives this
+      // effect, so provider-expiry must be read at each play(), not at build.
+      now: () => Date.now(),
       adapters: PLAYBACK_ADAPTERS,
       onStatus: setStatus,
     });
@@ -76,16 +84,16 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
     return () => {
       controller.destroy();
       controllerRef.current = null;
+      // destroy() doesn't push status; reset it here so `playing` derives false.
       setStatus({ kind: 'idle' });
-      setPlaying(false);
     };
   }, [connections, playableConnections]);
 
-  // Switching the selected track stops any in-flight preview (single-track model).
+  // Switching the selected track stops any in-flight preview (single-track
+  // model). stop() pushes `idle` via onStatus, which clears `playing`.
   useEffect(() => {
     return () => {
       void controllerRef.current?.stop();
-      setPlaying(false);
     };
   }, [entry.classTrackId]);
 
@@ -109,34 +117,23 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
     };
   }, [playing]);
 
-  // The controller settling into a non-playing state stops the host clock too.
-  useEffect(() => {
-    if (status.kind !== 'playing') {
-      setPlaying(false);
-      if (status.kind === 'idle' || status.kind === 'ended' || status.kind === 'error') {
-        baseRef.current = 0;
-      }
-    }
-  }, [status]);
-
+  // A fresh preview starts its clip clock from zero; the controller drives every
+  // stop (window end, pause, error, track switch) by pushing status, so there is
+  // no `playing` flag to reconcile here — it's derived above.
   const onPreview = useCallback(() => {
     baseRef.current = 0;
-    setPlaying(true);
     void controllerRef.current?.play(entry);
   }, [entry]);
 
   const onPause = useCallback(() => {
-    setPlaying(false);
     void controllerRef.current?.pause();
   }, []);
 
   const onResume = useCallback(() => {
-    setPlaying(true);
     void controllerRef.current?.resume();
   }, []);
 
   const onStop = useCallback(() => {
-    setPlaying(false);
     void controllerRef.current?.stop();
   }, []);
 

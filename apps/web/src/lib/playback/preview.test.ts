@@ -41,22 +41,33 @@ class FakeAdapter implements PlaybackAdapter {
   readonly provider = 'soundcloud' as const;
   calls: string[] = [];
   events: AdapterEvents;
-  /** When set, prepare() awaits this so a test can resolve it mid-transition. */
+  /** When set, prepare()/stop() awaits this so a test can resolve it mid-transition. */
   private prepareGate: Promise<void> | null;
   private releasePrepare: (() => void) | null = null;
+  private stopGate: Promise<void> | null;
+  private releaseStop: (() => void) | null = null;
   failPrepare = false;
 
-  constructor(events: AdapterEvents, opts?: { gatePrepare?: boolean }) {
+  constructor(events: AdapterEvents, opts?: { gatePrepare?: boolean; gateStop?: boolean }) {
     this.events = events;
     this.prepareGate = opts?.gatePrepare
       ? new Promise<void>((resolve) => {
           this.releasePrepare = resolve;
         })
       : null;
+    this.stopGate = opts?.gateStop
+      ? new Promise<void>((resolve) => {
+          this.releaseStop = resolve;
+        })
+      : null;
   }
 
   openGate(): void {
     this.releasePrepare?.();
+  }
+
+  openStopGate(): void {
+    this.releaseStop?.();
   }
 
   async prepare(): Promise<{ provider: 'soundcloud'; classTrackId: string }> {
@@ -76,6 +87,7 @@ class FakeAdapter implements PlaybackAdapter {
   }
   async stop(): Promise<void> {
     this.calls.push('stop');
+    if (this.stopGate) await this.stopGate;
   }
   destroy(): void {
     this.calls.push('destroy');
@@ -98,7 +110,7 @@ function harness(opts?: {
   const controller = new PreviewPlaybackController(
     opts?.connections ?? [{ provider: 'soundcloud', expiresAt: null }],
     {
-      now: NOW,
+      now: () => NOW,
       adapters: opts?.adapters ?? { soundcloud: factory },
       onStatus: (s) => statuses.push(s),
     },
@@ -153,7 +165,7 @@ describe('PreviewPlaybackController', () => {
     const controller = new PreviewPlaybackController(
       [{ provider: 'soundcloud', expiresAt: null }],
       {
-        now: NOW,
+        now: () => NOW,
         adapters: {
           soundcloud: (e) => {
             const a = new FakeAdapter(e);
@@ -218,6 +230,48 @@ describe('PreviewPlaybackController', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(controller.getStatus()).toEqual({ kind: 'ended', classTrackId: 'ct-1' });
+  });
+
+  it('does not clobber a superseding preview when a prior track ends mid-release', async () => {
+    const flush = () => new Promise((r) => setTimeout(r, 0));
+    const built: FakeAdapter[] = [];
+    // Only the first track's adapter gates its stop, so track A's end-of-window
+    // release is still in flight when track B takes over.
+    const factory: AdapterFactory = (events) => {
+      const a = new FakeAdapter(events, { gateStop: built.length === 0 });
+      built.push(a);
+      return a;
+    };
+    const controller = new PreviewPlaybackController(
+      [{ provider: 'soundcloud', expiresAt: null }],
+      {
+        now: () => NOW,
+        adapters: { soundcloud: factory },
+      },
+    );
+
+    await controller.play(makeEntry({ classTrackId: 'ct-A' }));
+    // A hits its window end → endActive begins, awaiting A's (gated) stop.
+    const ending = controller.tick(120_000);
+    await flush();
+    expect(controller.getStatus().kind).toBe('playing'); // release not done yet
+
+    // B supersedes A while A's release is still awaiting.
+    await controller.play(makeEntry({ classTrackId: 'ct-B' }));
+    expect(controller.getStatus()).toEqual({
+      kind: 'playing',
+      classTrackId: 'ct-B',
+      provider: 'soundcloud',
+    });
+
+    // A's stop finally resolves — endActive must NOT overwrite B with `ended`.
+    built[0]!.openStopGate();
+    await ending;
+    expect(controller.getStatus()).toEqual({
+      kind: 'playing',
+      classTrackId: 'ct-B',
+      provider: 'soundcloud',
+    });
   });
 
   it('releases the previous track when a different one is previewed', async () => {
