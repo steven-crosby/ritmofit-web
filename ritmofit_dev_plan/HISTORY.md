@@ -10,6 +10,19 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-05 (checkpoint deploy: run-live gate accessibility) — deployed (Worker
+> `d4954a2e-6b33-4fc3-87f8-b792411f4906`).** Shipped `main` (`a3ea61a`) taking **#207** (run-live gate
+> explains itself at the button, accessibly) live — presentation/a11y only, **no schema / migration /
+> API / provider change** (#208 deploy-log docs also on this `main`). Brings production back level with
+> `main`. Rollback anchor: prior live `a08f6b59-0207-4535-8bcf-8acf657974e0`. Remote D1: **no migrations
+> to apply** (none since `4c4aa35`). Pre-deploy gate green on `main` (format / typecheck ×4 workspaces /
+> lint / design-system verify / **373 web + 271 api** unit / **76** integration / web build / openapi
+> no-drift `44 schemas · 46 paths` / contract-parity no untracked drift / audit:ci exit 0). Post-deploy
+> smoke on live `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` → `200`, protected
+> `/api/v1/classes` → `401`, SPA fallback `/app` → `200`, served bundle hash `index-4ISGEun_.js` matches
+> the build. (Deployed from the `ritmo-studio-agent1` worktree after the local `ritmo-studio-claude`
+> checkout was reorganized away.)
+
 > **Session 2026-07-05 (checkpoint deploy: Builder preview + front-door polish) — deployed (Worker
 > `a08f6b59-0207-4535-8bcf-8acf657974e0`).** Shipped `main` (`4c4aa35`) batching everything merged since
 > the solo-first reset deploy — all presentation-only, **no schema / migration / API / provider
