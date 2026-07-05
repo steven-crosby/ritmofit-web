@@ -187,6 +187,16 @@ try {
     fail('provisional-shape:auto-badge', 'auto-shape badge missing on an unshaped 2-track class');
   await page.screenshot({ path: join(shotsDir, 'provisional-shape-390.png'), fullPage: true });
 
+  // Phase 2 (alive at rest): a missing BPM is named in place, never silent. Both
+  // manual tracks have no BPM, so each row shows a "BPM needed" chip and the header
+  // summary names it instead of dropping the avg-BPM stat (design system 10 §1a).
+  const bpmNeededCount = await page.getByText('BPM needed', { exact: true }).count();
+  if (bpmNeededCount >= 2) pass('missing-bpm:row-chips', `${bpmNeededCount} chips`);
+  else fail('missing-bpm:row-chips', `expected ≥2 "BPM needed" chips, saw ${bpmNeededCount}`);
+  const bpmSummary = page.getByText('add BPM · pulse off', { exact: true });
+  if (await bpmSummary.isVisible().catch(() => false)) pass('missing-bpm:summary-hint');
+  else fail('missing-bpm:summary-hint', 'header summary did not name the missing BPM');
+
   await checkNoOverflow(page, 'dashboard-with-track');
   if (process.env.SMOKE_DIAG) {
     const offenders = await page.evaluate(() => {
