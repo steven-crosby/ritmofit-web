@@ -17,12 +17,12 @@ import type { AppleMusicClientConfig } from '@ritmofit/shared';
 const MUSICKIT_SRC = 'https://js-cdn.music.apple.com/musickit/v3/musickit.js';
 
 /**
- * The slice of the MusicKit on the Web (v3) surface RitmoFit drives. Two callers
+ * The slice of the MusicKit on the Web (v3) surface Ritmo Studio drives. Two callers
  * share it: the connect flow (`authorizeAppleMusic`) needs only `configure` +
  * `authorize`; the playback adapter (`playback/apple-music-adapter.ts`) also
  * drives the queue and transport. MusicKit is a page-level singleton
  * (`getInstance`), so every track's adapter remote-controls the same instance —
- * RitmoFit owns the class timeline, Apple owns the audio stream (D19). Times in
+ * Ritmo Studio owns the class timeline, Apple owns the audio stream (D19). Times in
  * this surface are SECONDS (MusicKit's unit); the adapter converts at the
  * millisecond playback-contract boundary.
  */
@@ -42,7 +42,7 @@ export interface MusicKitInstance {
   removeEventListener(name: string, handler: (event: MusicKitPlaybackEvent) => void): void;
 }
 
-/** The `setQueue` options RitmoFit uses — one catalog song cued at `startTime`. */
+/** The `setQueue` options Ritmo Studio uses — one catalog song cued at `startTime`. */
 export interface MusicKitSetQueueOptions {
   song?: string;
   songs?: string[];

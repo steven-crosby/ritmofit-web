@@ -39,7 +39,7 @@ import type {
 } from './types.js';
 
 const DEFAULT_PREPARE_TIMEOUT_MS = 20_000;
-const APP_META = { name: 'RitmoFit', build: '1.0.0' };
+const APP_META = { name: 'Ritmo Studio', build: '1.0.0' };
 
 const msToSeconds = (ms: number): number => ms / 1000;
 
