@@ -27,6 +27,7 @@ import type {
 import { listConnections } from '../lib/api.js';
 import { preflightPayload } from '../lib/playback/coordinator.js';
 import { RuntimePlaybackCoordinator, type CoordinatorStatus } from '../lib/playback/runtime.js';
+import { appleMusicAdapterFactory } from '../lib/playback/apple-music-adapter.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
 import type { AdapterRegistry } from '../lib/playback/types.js';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
@@ -39,12 +40,15 @@ import { SEGMENT_META, SegmentIcon } from './SegmentBand.js';
 
 /**
  * The providers the web player can drive today; grows as adapter slices land
- * (Apple Music, then Spotify after its scope expansion). Preflight filters
+ * (Spotify is next, after its playback-scope expansion). Preflight filters
  * connections to this registry, so a connected-but-not-yet-playable provider
  * reads honestly as "no connected provider can play this" instead of passing
  * preflight and failing at prepare.
  */
-const PLAYBACK_ADAPTERS: AdapterRegistry = { soundcloud: soundcloudAdapterFactory };
+const PLAYBACK_ADAPTERS: AdapterRegistry = {
+  soundcloud: soundcloudAdapterFactory,
+  apple_music: appleMusicAdapterFactory,
+};
 
 type View = 'cue' | 'list';
 

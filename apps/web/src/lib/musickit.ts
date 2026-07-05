@@ -16,16 +16,63 @@ import type { AppleMusicClientConfig } from '@ritmofit/shared';
 
 const MUSICKIT_SRC = 'https://js-cdn.music.apple.com/musickit/v3/musickit.js';
 
-/** The slice of the MusicKit v3 surface we use. */
-interface MusicKitInstance {
+/**
+ * The slice of the MusicKit on the Web (v3) surface RitmoFit drives. Two callers
+ * share it: the connect flow (`authorizeAppleMusic`) needs only `configure` +
+ * `authorize`; the playback adapter (`playback/apple-music-adapter.ts`) also
+ * drives the queue and transport. MusicKit is a page-level singleton
+ * (`getInstance`), so every track's adapter remote-controls the same instance —
+ * RitmoFit owns the class timeline, Apple owns the audio stream (D19). Times in
+ * this surface are SECONDS (MusicKit's unit); the adapter converts at the
+ * millisecond playback-contract boundary.
+ */
+export interface MusicKitInstance {
+  /** True once the user has authorized this browser for their Apple Music account. */
+  readonly isAuthorized: boolean;
+  /** Prompt Apple's consent surface; resolves with the Music-User-Token. */
   authorize(): Promise<string>;
+  /** Load a queue; `song`/`songs` are catalog ids, `startTime` is seconds. */
+  setQueue(options: MusicKitSetQueueOptions): Promise<unknown>;
+  play(): Promise<void>;
+  pause(): Promise<void>;
+  stop(): Promise<void>;
+  /** Seek the now-playing item — SECONDS, and only valid once playback started. */
+  seekToTime(seconds: number): Promise<void>;
+  addEventListener(name: string, handler: (event: MusicKitPlaybackEvent) => void): void;
+  removeEventListener(name: string, handler: (event: MusicKitPlaybackEvent) => void): void;
 }
-interface MusicKitGlobal {
+
+/** The `setQueue` options RitmoFit uses — one catalog song cued at `startTime`. */
+export interface MusicKitSetQueueOptions {
+  song?: string;
+  songs?: string[];
+  /** Initial playhead in SECONDS: cues a clip start without an audible seek. */
+  startTime?: number;
+}
+
+/** Payload of the events the adapter binds; `state` indexes `PlaybackStates`. */
+export interface MusicKitPlaybackEvent {
+  state?: number;
+}
+
+export interface MusicKitGlobal {
   configure(opts: {
     developerToken: string;
     app: { name: string; build: string };
     storefrontId?: string;
   }): Promise<MusicKitInstance>;
+  /** The configured page singleton, or null before the first `configure`. */
+  getInstance(): MusicKitInstance | null;
+  /** Event-name constants — the two playback events the adapter binds. */
+  readonly Events: {
+    playbackStateDidChange: string;
+    mediaPlaybackError: string;
+  };
+  /** Playback-state name → numeric code — the two the adapter treats as finish. */
+  readonly PlaybackStates: {
+    completed: number;
+    ended: number;
+  };
 }
 
 declare global {
@@ -37,7 +84,7 @@ declare global {
 let loadPromise: Promise<MusicKitGlobal> | null = null;
 
 /** Inject the MusicKit JS script once; resolve when its global is ready. */
-function loadMusicKit(): Promise<MusicKitGlobal> {
+export function loadMusicKit(): Promise<MusicKitGlobal> {
   if (window.MusicKit) return Promise.resolve(window.MusicKit);
   if (loadPromise) return loadPromise;
 
