@@ -197,6 +197,23 @@ try {
   if (await bpmSummary.isVisible().catch(() => false)) pass('missing-bpm:summary-hint');
   else fail('missing-bpm:summary-hint', 'header summary did not name the missing BPM');
 
+  // Phase 5 (alive at rest): a class with tracks but no authored sections shows a
+  // provisional warm-up → cool-down banding marked "auto", not "No segments yet."
+  // (design system 09 §Segments / 10 §4). The "auto" pill (exact) is distinct from
+  // the ribbon's "auto shape" badge.
+  const noSegments = await page
+    .getByText('No segments yet.', { exact: true })
+    .isVisible()
+    .catch(() => false);
+  if (!noSegments) pass('auto-bands:no-empty-state');
+  else fail('auto-bands:no-empty-state', '"No segments yet." shown instead of provisional bands');
+  const autoBandsPill = await page
+    .getByText('auto', { exact: true })
+    .isVisible()
+    .catch(() => false);
+  if (autoBandsPill) pass('auto-bands:auto-pill');
+  else fail('auto-bands:auto-pill', 'provisional segment "auto" pill not shown');
+
   await checkNoOverflow(page, 'dashboard-with-track');
   if (process.env.SMOKE_DIAG) {
     const offenders = await page.evaluate(() => {

@@ -5,6 +5,7 @@ import {
   boundaryMsFromPointer,
   clampSectionStart,
   computeSegmentBands,
+  deriveProvisionalSections,
   snapToTrackStart,
   trackBoundaries,
 } from './SegmentBand.js';
@@ -50,6 +51,39 @@ describe('computeSegmentBands', () => {
     const beyond = computeSegmentBands([sec('warm_up', 0), sec('sprint', 5000)], 1000);
     // sprint starts at/after the total → clamped to 1000, zero width, dropped.
     expect(beyond).toEqual([{ type: 'warm_up', leftPct: 0, widthPct: 100 }]);
+  });
+});
+
+describe('deriveProvisionalSections (alive at rest)', () => {
+  it('derives a warm-up → climb → sprint → recovery → cool-down arc from the class length', () => {
+    const secs = deriveProvisionalSections(100000);
+    expect(secs.map((s) => s.type)).toEqual([
+      'warm_up',
+      'climb',
+      'sprint',
+      'recovery',
+      'cool_down',
+    ]);
+    // Fixed fractions of the total (peak in the sprint third), strictly increasing.
+    expect(secs.map((s) => s.startOffsetMs)).toEqual([0, 20000, 45000, 70000, 85000]);
+  });
+
+  it('feeds computeSegmentBands to five non-empty bands spanning the class', () => {
+    const bands = computeSegmentBands(deriveProvisionalSections(100000), 100000);
+    expect(bands.map((b) => b.type)).toEqual([
+      'warm_up',
+      'climb',
+      'sprint',
+      'recovery',
+      'cool_down',
+    ]);
+    const last = bands.at(-1)!;
+    expect(last.leftPct + last.widthPct).toBe(100);
+  });
+
+  it('returns nothing when there is no duration to band', () => {
+    expect(deriveProvisionalSections(0)).toEqual([]);
+    expect(deriveProvisionalSections(-5)).toEqual([]);
   });
 });
 

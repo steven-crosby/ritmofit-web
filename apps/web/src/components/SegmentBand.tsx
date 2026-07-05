@@ -175,6 +175,28 @@ export function computeSegmentBands(
   return bands;
 }
 
+/**
+ * A provisional warm-up → climb → sprint → recovery → cool-down banding derived
+ * purely from the class length, for a class with tracks but no authored sections
+ * (alive at rest, design system 09 §Segments / 10 §4). The fractions align with the
+ * ribbon's provisional arc (peak in the sprint third) so the two read together; they
+ * are a documented assumption, not stored data. The instructor authors real sections
+ * to refine — the first one replaces this draft. Derived, never persisted.
+ */
+export function deriveProvisionalSections(
+  totalDurationMs: number,
+): Array<{ type: SegmentType; startOffsetMs: number }> {
+  if (totalDurationMs <= 0) return [];
+  const at = (fraction: number) => Math.round(fraction * totalDurationMs);
+  return [
+    { type: 'warm_up', startOffsetMs: 0 },
+    { type: 'climb', startOffsetMs: at(0.2) },
+    { type: 'sprint', startOffsetMs: at(0.45) },
+    { type: 'recovery', startOffsetMs: at(0.7) },
+    { type: 'cool_down', startOffsetMs: at(0.85) },
+  ];
+}
+
 /** ms → whole-seconds string and back, for the start-time field. */
 const msToSec = (ms: number) => String(Math.round(ms / 1000));
 const secToMs = (sec: string) => {
@@ -232,7 +254,16 @@ export function SegmentBand({
     [afterChange],
   );
 
-  const bands = computeSegmentBands(sections ?? [], totalDurationMs);
+  const authoredBands = computeSegmentBands(sections ?? [], totalDurationMs);
+  // Alive at rest (design system 09 §Segments, 10 §4): a class with tracks but no
+  // authored sections isn't left blank — derive a provisional warm-up → climb →
+  // sprint → recovery → cool-down banding from the class length, marked `auto`, until
+  // the instructor authors a section (the first one wins). Editor-only, so a view-only
+  // class stays clean; derived at render, never persisted (mirrors the ribbon's shape).
+  const provisional = canEdit && (sections?.length ?? 0) === 0 && totalDurationMs > 0;
+  const bands = provisional
+    ? computeSegmentBands(deriveProvisionalSections(totalDurationMs), totalDurationMs)
+    : authoredBands;
   const hasBand = bands.length > 0;
   const sorted = [...(sections ?? [])].sort((a, b) => a.startOffsetMs - b.startOffsetMs);
   const boundaries = trackBoundaries(trackStartsMs, totalDurationMs);
@@ -249,8 +280,28 @@ export function SegmentBand({
   return (
     <figure className="mt-2 flex flex-col gap-1">
       <figcaption className="flex items-center justify-between font-ui text-xs uppercase tracking-wide text-text-tertiary">
-        <span>Segments</span>
-        {canEdit && canSnap && (
+        <span className="flex items-center gap-1.5">
+          Segments
+          {provisional && (
+            // Provisional-state contract (design system 05 §Provisional): caution
+            // channel + glyph + `auto` label; the bands themselves are the value.
+            <span
+              className="inline-flex items-center gap-1 rounded-pill bg-state-caution/15 px-1.5 py-0.5 normal-case tracking-normal"
+              title="Auto-banded from the class length. Add a segment to author your own."
+            >
+              <svg
+                aria-hidden
+                viewBox="0 0 12 12"
+                className="h-2.5 w-2.5"
+                style={{ fill: 'var(--rf-color-semantic-state-caution)' }}
+              >
+                <path d="M6 0 L7.1 4.9 L12 6 L7.1 7.1 L6 12 L4.9 7.1 L0 6 L4.9 4.9 Z" />
+              </svg>
+              <span className="font-data text-[10px] text-state-caution">auto</span>
+            </span>
+          )}
+        </span>
+        {canEdit && canSnap && !provisional && (
           <label className="flex items-center gap-1.5 normal-case tracking-normal text-text-secondary">
             <input
               type="checkbox"
@@ -265,8 +316,8 @@ export function SegmentBand({
         <div
           ref={bandRef}
           className="relative h-6 w-full overflow-hidden rounded-card bg-bg-base"
-          role={canEdit ? 'group' : 'img'}
-          aria-label={`Segments: ${arc}`}
+          role={canEdit && !provisional ? 'group' : 'img'}
+          aria-label={`${provisional ? 'Auto-banded segments' : 'Segments'}: ${arc}`}
         >
           {bands.map((b, i) => (
             <div
@@ -284,8 +335,10 @@ export function SegmentBand({
               </span>
             </div>
           ))}
-          {/* Edit-access drag handles, one per boundary (re-time startOffsetMs). */}
+          {/* Edit-access drag handles, one per authored boundary (re-time startOffsetMs).
+              Provisional bands have no real sections, so they show no handles. */}
           {canEdit &&
+            !provisional &&
             sorted.map((s, i) => (
               <SegmentHandle
                 key={s.id}

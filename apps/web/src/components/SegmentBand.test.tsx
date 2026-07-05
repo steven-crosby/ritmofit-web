@@ -150,3 +150,28 @@ describe('SegmentBand track-range snapping', () => {
     );
   });
 });
+
+describe('SegmentBand provisional auto-banding (alive at rest)', () => {
+  it('shows a provisional auto-banded arc (not "No segments yet.") with edit access and no sections', async () => {
+    vi.mocked(api.listSections).mockResolvedValue([]);
+    render(<SegmentBand classId={CLASS_ID} totalDurationMs={TOTAL} canEdit />);
+    // The empty state is replaced by a derived, auto-marked warm-up → cool-down arc.
+    const strip = await screen.findByRole('img', { name: /Auto-banded segments:/ });
+    expect(strip.getAttribute('aria-label')).toContain('Warm-up');
+    expect(strip.getAttribute('aria-label')).toContain('Cool-down');
+    expect(screen.queryByText('No segments yet.')).toBeNull();
+    // Provisional bands are not real sections, so they carry no draggable handles.
+    expect(screen.queryAllByRole('slider')).toHaveLength(0);
+    // The editor stays available so the instructor can author real sections.
+    expect(screen.getByRole('button', { name: 'Add segment' })).toBeTruthy();
+  });
+
+  it('stays clean for a view-only class with no sections (no auto bands leaked to viewers)', async () => {
+    vi.mocked(api.listSections).mockResolvedValue([]);
+    const { container } = render(
+      <SegmentBand classId={CLASS_ID} totalDurationMs={TOTAL} canEdit={false} />,
+    );
+    await waitFor(() => expect(vi.mocked(api.listSections)).toHaveBeenCalled());
+    expect(container.querySelector('figure')).toBeNull();
+  });
+});
