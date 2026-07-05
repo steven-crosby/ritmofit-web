@@ -27,7 +27,12 @@ Pilates, and HIIT.
 - **Current operating focus (2026-07-05):** the web launch gate is green and deployed. The active track
   is solo creator refinement plus the **provider-authorized playback initiative**
   ([`provider-playback-implementation.md`](./provider-playback-implementation.md)) where it improves
-  rehearsal and Live Mode. Teams, Sharing, Publish, and Explore are hidden/dormant.
+  rehearsal and Live Mode. Playback progress: the SoundCloud + **Apple Music** Live Mode adapters and the
+  **Builder clip-window preview** (`TrackPreview.tsx`, manual/single-track/no-auto-advance) are built; the
+  Spotify adapter (gated on its OAuth playback-scope expansion) is the remaining web gap, and
+  real-provider audio for all adapters still needs live subscriber verification. Teams, Sharing, Publish,
+  and Explore are hidden/dormant (D20). Last production deploy 2026-07-05 (Worker `fa385d71`, the D20
+  solo-first reset; the Apple Music adapter + **Ritmo Studio** rename shipped just before on `c6829c8e`).
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
