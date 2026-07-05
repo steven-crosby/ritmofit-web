@@ -10,6 +10,40 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-05 (checkpoint deploy: solo-first reset · D20) — deployed (Worker
+> `fa385d71-d9fd-4e86-bfc5-f390475f1692`).** Shipped `main` (`23f5481`) taking the **solo-first reset**
+> (PR #203, decision **D20**) live — presentation only, **no schema / migration / API / provider
+> change**: the web product now hides the deferred community surfaces (top-bar Explore + Teams, the
+> class-header Share + Publish/visibility controls, the Explore public-preview branch) and filters the
+> library to the current user's own classes. Backend/API/schema scaffolding for teams, shares,
+> visibility, and Explore is **preserved but dormant** (hide-not-delete) — verified live: `/api/v1/explore`
+> still answers `401` (auth-gated), not `404`. D18's hard parity gate is paused under D20; web is the
+> product-definition surface.
+>
+> Rollback anchor: prior live `c6829c8e-583b-475d-81fa-d3fcf34bbd2e` (the 2026-07-05 Apple Music +
+> rename checkpoint, below). Remote D1: **no migrations to apply**. Pre-deploy gate green on `main`
+> (format / typecheck ×4 workspaces / lint / design-system verify / **353 web + 271 api** unit / **76**
+> integration / web build / openapi no-drift `44 schemas · 46 paths` / contract-parity no untracked
+> drift / audit:ci exit 0). Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`,
+> `/api/v1/health` → `200`, protected `/api/v1/classes` → `401`, SPA fallback `/app` → `200`, served
+> bundle hash `index-CHIz1kGn.js` matches the build, `<title>Ritmo Studio</title>`.
+
+> **Session 2026-07-05 (checkpoint deploy: Apple Music playback adapter + Ritmo Studio rename) —
+> deployed (Worker `c6829c8e-583b-475d-81fa-d3fcf34bbd2e`).** Shipped `main` (`33455ea`) batching
+> everything merged since the 2026-07-04 "alive at rest" deploy — **no schema / migration / token
+> change**: **#201** (Apple Music playback adapter for Live Mode, D19 — `apps/web/src/lib/playback/
+> apple-music-adapter.ts` + MusicKit-on-the-Web helper extension, registered in the Live Mode adapter
+> registry alongside SoundCloud; 15 focused adapter tests), the **Ritmo Studio product rename**
+> (`cd1cd3b` — human-facing brand renamed from RitmoFit across app copy, generated OpenAPI docs,
+> design-system references, prompts, and tests; internal package/worker names stay `@ritmofit/*` /
+> `ritmofit-api`), and docs/prompt cleanup **#199**/**#200**. Rollback anchor: prior live
+> `190bc83e-c6c7-4ed4-a441-465a8d72981f`. Remote D1: **no migrations to apply**. Post-deploy smoke on
+> live `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` → `200`, protected
+> `/api/v1/classes` → `401`, `<title>Ritmo Studio</title>` confirmed the rename live, CSP allow-lists
+> `js-cdn.music.apple.com` + Apple Music frame/connect origins. Real-account playback verification
+> (Apple Music subscriber audio, mixed-provider auto-advance, clipped windows, failure drills) remains
+> a pending manual pass.
+
 > **Session 2026-07-04 ("alive at rest" implementation — DS doctrine + 5 web slices) — deployed
 > (Worker `190bc83e-c6c7-4ed4-a441-465a8d72981f`).** Shipped `main` (`2bb08be`) bringing the full
 > "alive at rest" set live together — all presentation-only, **no schema / token / API / provider

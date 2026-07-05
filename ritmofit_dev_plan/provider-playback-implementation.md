@@ -96,8 +96,17 @@ Add the web playback layer under `apps/web/src/lib/playback/`:
   Cues the clip start via `setQueue.startTime` (seconds) and converts the ms playback contract at the
   boundary; a pre-play mid-track seek re-cues rather than calling `seekToTime` (no now-playing item
   until playback starts). **(built — needs live verification)**
+- `registry.ts`: `PLAYBACK_ADAPTERS` — the single source of truth for which providers the web player can
+  drive (SoundCloud + Apple Music today), shared by Live Mode and Builder preview so the two surfaces
+  never drift on playability. **(built)**
+- `preview.ts`: the Builder preview controller (`PreviewPlaybackController`) — drives ONE adapter for the
+  selected track, manual only. Deliberately not the runtime coordinator: single-track, no whole-class
+  preflight, and no auto-advance (structurally — there is no next track). Same host-clock model as Live
+  Mode (`tick(previewElapsedMs)`), stopping at the clip-window end so preview honors the saved range.
+  **(built)**
 - `spotify-adapter.ts`: Spotify Web Playback SDK / Connect playback.
-- focused tests for provider selection, clip-window math, preflight results, auto-advance decisions, and
+- focused tests for provider selection, clip-window math, preflight results, auto-advance decisions,
+  preview lifecycle (prepare/play/stop, window-end stop, superseded-prepare teardown), and
   unrecoverable/recoverable error mapping.
 
 Suggested adapter shape:
@@ -193,11 +202,13 @@ Live Mode:
 - preserve wake lock behavior while the class is running;
 - treat playback failure as a serious recoverable state with retry/reconnect/switch-provider options.
 
-Builder:
+Builder **(built 2026-07-05)**:
 
-- add range/track preview controls using the same coordinator;
-- keep preview manual and local to the selected track/range;
-- do not introduce auto-advance in Builder.
+- range/track preview controls using the same adapter stack (`TrackPreview.tsx` in the builder
+  inspector, driven by `PreviewPlaybackController`);
+- preview is manual and local to the selected track's clip window;
+- no auto-advance in Builder — structurally, not by a flag (the preview controller drives one adapter
+  and has no notion of a next track).
 
 Use `ritmofit_design_system` tokens and existing Live Mode layout patterns. Do not add a marketing-style
 player surface; this is a performance tool for an instructor on stage.
@@ -212,10 +223,19 @@ start, `RuntimePlaybackCoordinator` driven from the existing rAF clock, player r
 recoverable playback-failure alert (retry / continue-without-music / handoff links moved there as the
 recovery-only surface), wake lock preserved. "Run without music" keeps the prompter-only path.
 
-**Adapter registry (updated 2026-07-05):** SoundCloud and **Apple Music** adapters are now registered
-in `LiveMode.tsx`; preflight filters connections to registered adapters, so only Spotify-only tracks
-still read as unplayable until the Spotify adapter lands (it needs the playback-scope expansion first).
-Builder preview is not wired yet.
+**Adapter registry (updated 2026-07-05):** SoundCloud and **Apple Music** adapters are registered in the
+shared `playback/registry.ts` (`PLAYBACK_ADAPTERS`), consumed by both Live Mode and Builder preview;
+each surface filters connections to registered adapters, so only Spotify-only tracks still read as
+unplayable until the Spotify adapter lands (it needs the playback-scope expansion first).
+
+**Builder preview wiring status (2026-07-05):** built — `TrackPreview.tsx` in the builder inspector
+(`Dashboard.tsx`, gated on the selected track's run-payload entry), driven by `PreviewPlaybackController`
+over one adapter. Manual transport (preview / pause / resume / stop), a status chip mirroring the Live
+Mode player-rail vocabulary, an unplayable verdict that names the fix (no ref / connect a provider), and
+a recoverable `role="alert"` on a runtime failure (retry / dismiss — no handoff link). Host-clock driven
+like Live Mode; stops at the clip-window end. Real-provider audio still needs live verification with a
+subscriber account. Not yet wired: an inline reconnect action from the preview error (the connect flow
+lives in the top-level Connections dialog).
 
 **Apple Music shared-transport follow-ups (open, 2026-07-05):** MusicKit is a page-level singleton, so
 the adapter guards teardown with a per-instance ownership token (only the adapter that started the
