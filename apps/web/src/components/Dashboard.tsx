@@ -1537,14 +1537,20 @@ export function ClassHeaderCard({
             <span>{formatDuration(payload.class.totalDurationMs)} total</span>
           </>
         )}
-        {averageBpm != null && (
+        {payload && trackCount > 0 && (
           <>
             <span aria-hidden className="text-text-tertiary">
               ·
             </span>
-            <span>
-              avg <span className="text-text-primary">{averageBpm}</span> BPM
-            </span>
+            {averageBpm != null ? (
+              <span>
+                avg <span className="text-text-primary">{averageBpm}</span> BPM
+              </span>
+            ) : (
+              // No track carries a BPM yet — name the gap instead of silently dropping
+              // the stat (design system 10 §1a). Caution channel; BPM never blocks a run.
+              <span className="font-semibold text-state-caution">add BPM · pulse off</span>
+            )}
           </>
         )}
       </div>
@@ -1741,10 +1747,18 @@ function SongRow({
         </div>
         <span className="flex min-w-0 flex-[1_1_100%] flex-wrap items-center gap-x-2 gap-y-1 sm:flex-[0_0_auto] sm:flex-nowrap">
           <IntensityReadout intensity={entry.intensity} />
-          {entry.displayBpm != null && (
+          {entry.displayBpm != null ? (
             <span className="shrink-0 font-data text-sm text-text-secondary">
               {entry.displayBpm}
               <span className="ml-1 text-xs text-text-tertiary">BPM</span>
+            </span>
+          ) : (
+            // Missing BPM is a next-action, not silent metadata (design system 10 §1a):
+            // name it in place, on the caution channel, parallel to "Duration needed".
+            // BPM is not a hard gate (only duration blocks Live), so it warns amber
+            // rather than intensity-hard, and never claims a fabricated "~auto" value.
+            <span className="shrink-0 font-ui text-xs font-semibold text-state-caution">
+              BPM needed
             </span>
           )}
           {entry.displayRpm != null && (
