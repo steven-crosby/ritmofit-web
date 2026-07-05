@@ -43,6 +43,17 @@ const APP_META = { name: 'RitmoFit', build: '1.0.0' };
 
 const msToSeconds = (ms: number): number => ms / 1000;
 
+/**
+ * Which adapter currently owns each shared MusicKit instance's transport. Every
+ * track's adapter remote-controls the same singleton, so a superseded adapter
+ * (its epoch abandoned mid-prepare/-play by a rapid seek) must NOT stop audio a
+ * newer adapter has since claimed and started. Ownership is claimed in play() and
+ * only the owner may stop on teardown. Keyed by instance via a WeakMap — never a
+ * module global — so it stays correct if a page ever holds more than one instance
+ * and never leaks across teardown.
+ */
+const transportOwners = new WeakMap<MusicKitInstance, AppleMusicAdapter>();
+
 /** Test seams: MusicKit loading, developer-token fetch, and the queue timeout. */
 export interface AppleMusicAdapterHost {
   loadMusicKit?: () => Promise<MusicKitGlobal>;
@@ -66,9 +77,13 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   // One bound handler pair for this adapter's life, so removeEventListener in
   // destroy() matches the addEventListener in prepare().
   private readonly onStateChange = (event: MusicKitPlaybackEvent): void => {
+    // Only a genuine end-of-track while we are the playing owner is a finish. A
+    // single-song queue also reports `completed`/`ended` when WE stop or tear
+    // down (started is cleared first), which must not misfire onFinish.
+    if (!this.started) return;
     const states = this.music?.PlaybackStates;
-    // A single-song queue ending reads as `completed`; treat `ended` the same so
-    // a stale/region-shortened stream still yields the one advisory finish.
+    // Treat `ended` like `completed` so a stale/region-shortened stream still
+    // yields the one advisory finish.
     if (states && (event.state === states.completed || event.state === states.ended)) {
       this.events.onFinish?.();
     }
@@ -147,12 +162,19 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   async play(): Promise<void> {
     const instance = this.requireInstance();
     // A pre-play seek (mid-track entry) re-cues here, since seekToTime has no
-    // now-playing item to seek until playback has started.
+    // now-playing item to seek until playback has started. Bounded like the
+    // prepare-time cue so a hung queue-load can't wedge the transition.
     if (this.cueDirty && this.songId) {
-      await instance.setQueue({ songs: [this.songId], startTime: this.cueSeconds });
+      await this.withTimeout(
+        instance.setQueue({ songs: [this.songId], startTime: this.cueSeconds }),
+        this.trackTitle,
+      );
       this.cueDirty = false;
     }
     await instance.play();
+    // Claim the shared transport: from here until stop/teardown, only this
+    // adapter may stop the singleton (see transportOwners).
+    transportOwners.set(instance, this);
     this.started = true;
   }
 
@@ -175,23 +197,34 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   /** Halt audio and re-cue the window start (stop ≠ destroy: re-playable). */
   async stop(): Promise<void> {
     const instance = this.requireInstance();
-    await instance.stop();
+    // Clear started (so a stop-induced completed/ended is not read as a finish)
+    // and release transport ownership before halting.
     this.started = false;
+    if (transportOwners.get(instance) === this) transportOwners.delete(instance);
+    await instance.stop();
     this.cueSeconds = this.windowStartSeconds;
     this.cueDirty = true;
   }
 
   destroy(): void {
     this.destroyed = true;
+    this.started = false;
     const instance = this.instance;
     const music = this.music;
     if (instance && music) {
       try {
         instance.removeEventListener(music.Events.playbackStateDidChange, this.onStateChange);
         instance.removeEventListener(music.Events.mediaPlaybackError, this.onPlaybackError);
-        // Halt this adapter's audio without tearing down the shared singleton;
-        // the next track's adapter re-cues and plays on the same instance.
-        void instance.stop();
+        // Only halt audio if this adapter still owns the shared transport. A
+        // superseded adapter (abandoned mid-prepare/-play by a rapid seek) must
+        // never stop the newer adapter that has since claimed and started the
+        // singleton — but an owner abandoned into a silence gap must stop, so
+        // the ownership check keeps both cases correct without tearing the
+        // singleton down.
+        if (transportOwners.get(instance) === this) {
+          transportOwners.delete(instance);
+          void instance.stop();
+        }
       } catch {
         // Best-effort teardown — the next setQueue/play supersedes any audio.
       }

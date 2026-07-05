@@ -190,7 +190,7 @@ describe('AppleMusicAdapter', () => {
     expect(instance.calls.some((c) => c.startsWith('seekToTime'))).toBe(false);
   });
 
-  it('routes completed and ended playback states to onFinish', async () => {
+  it('routes completed and ended playback states to onFinish while playing', async () => {
     const instance = new FakeInstance(true);
     let finished = 0;
     const { adapter } = makeAdapter(instance, {
@@ -198,12 +198,32 @@ describe('AppleMusicAdapter', () => {
       events: { onFinish: () => finished++ },
     });
     await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    await adapter.play();
 
     instance.emit(EVENTS.playbackStateDidChange, { state: STATES.playing });
     expect(finished).toBe(0); // playing is not a finish
     instance.emit(EVENTS.playbackStateDidChange, { state: STATES.completed });
     instance.emit(EVENTS.playbackStateDidChange, { state: STATES.ended });
     expect(finished).toBe(2);
+  });
+
+  it('does not misfire onFinish for the completed/ended state emitted on stop', async () => {
+    const instance = new FakeInstance(true);
+    let finished = 0;
+    // A single-song queue reports completed/ended when we stop it; started is
+    // cleared first, so onFinish must stay silent.
+    instance.stop = () => {
+      instance.emit(EVENTS.playbackStateDidChange, { state: STATES.completed });
+      return Promise.resolve();
+    };
+    const { adapter } = makeAdapter(instance, {
+      preconfigured: true,
+      events: { onFinish: () => finished++ },
+    });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    await adapter.play();
+    await adapter.stop();
+    expect(finished).toBe(0);
   });
 
   it('routes post-ready playback errors to onError', async () => {
@@ -251,7 +271,7 @@ describe('AppleMusicAdapter', () => {
     await expect(adapter.play()).rejects.toThrow(/not prepared/i);
   });
 
-  it('destroy removes listeners and stops without tearing down the singleton', async () => {
+  it('destroy detaches listeners and leaves the shared singleton intact', async () => {
     const instance = new FakeInstance(true);
     let finished = 0;
     const { adapter, music } = makeAdapter(instance, {
@@ -259,13 +279,50 @@ describe('AppleMusicAdapter', () => {
       events: { onFinish: () => finished++ },
     });
     await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    await adapter.play();
 
     adapter.destroy();
+    // Owner at teardown → halts its own audio.
     expect(instance.calls).toContain('stop');
     // Listener detached: a later finish must not fire.
     instance.emit(EVENTS.playbackStateDidChange, { state: STATES.completed });
     expect(finished).toBe(0);
     // The shared instance survives for the next track's adapter.
     expect(music.getInstance()).toBe(instance);
+  });
+
+  it('destroy of a never-played adapter does not stop the shared transport', async () => {
+    const instance = new FakeInstance(true);
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO); // prepared, never played → not owner
+    adapter.destroy();
+    expect(instance.calls).not.toContain('stop');
+  });
+
+  it('a superseded adapter destroy never stops the owner that already started', async () => {
+    // Two adapters share ONE MusicKit instance (the page singleton), so a
+    // stale destroy() must not silence the track a newer adapter is playing.
+    const instance = new FakeInstance(true);
+    const { music } = makeMusicKit(instance, { preconfigured: true });
+    const build = () =>
+      new AppleMusicAdapter(
+        {},
+        {
+          loadMusicKit: () => Promise.resolve(music),
+          loadConfig: () => Promise.resolve({ developerToken: 'dev-token', storefront: null }),
+        },
+      );
+    const owner = build();
+    const superseded = build();
+
+    await owner.prepare(makeEntry(), WINDOW_ZERO);
+    await owner.play(); // owner claims + starts the shared transport
+    await superseded.prepare(makeEntry(), WINDOW_ZERO); // prepared, never played
+
+    superseded.destroy(); // must NOT stop the owner
+    expect(instance.calls.filter((c) => c === 'stop')).toEqual([]);
+    // The owner is still in control and can stop its own audio.
+    await owner.stop();
+    expect(instance.calls.filter((c) => c === 'stop')).toEqual(['stop']);
   });
 });

@@ -217,6 +217,20 @@ in `LiveMode.tsx`; preflight filters connections to registered adapters, so only
 still read as unplayable until the Spotify adapter lands (it needs the playback-scope expansion first).
 Builder preview is not wired yet.
 
+**Apple Music shared-transport follow-ups (open, 2026-07-05):** MusicKit is a page-level singleton, so
+the adapter guards teardown with a per-instance ownership token (only the adapter that started the
+transport may `stop()` it — prevents a superseded adapter silencing the live track under rapid seeks).
+Two narrower shared-singleton tails remain, both requiring a stuck-SDK condition and acceptable for
+private beta but worth closing before broad Apple Music rollout:
+
+1. **Un-timed `authorize()`** — a blocked/abandoned Apple consent sheet leaves `prepare()` pending and
+   the coordinator frozen in `preparing` with no recovery. `authorize()` is intentionally not wrapped in
+   the queue-load timeout (it waits on human consent). Fix: surface a "waiting for Apple authorization"
+   state and/or a generous consent-timeout that fails to the recoverable-error path.
+2. **Orphaned `setQueue` after a timeout** — a `setQueue` that loses the `prepare` timeout race is not
+   cancellable and can resolve late, clobbering the queue of a later playing track. Fix: version/guard
+   queue writes so a stale one is ignored, or gate them on current ownership.
+
 ## Verification
 
 Fast automated coverage:
