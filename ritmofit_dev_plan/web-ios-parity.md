@@ -113,7 +113,7 @@ list; after the launch gate is green, it becomes the next implementation queue. 
     CI.
 - **Provider-authorized playback in Live Mode and Builder preview** (in progress on web; see
   `provider-playback-implementation.md`): web replaces provider handoff as the primary path with a
-  single RitmoFit player UI backed by provider-specific adapters for SoundCloud, Spotify, and Apple
+  single Ritmo Studio player UI backed by provider-specific adapters for SoundCloud, Spotify, and Apple
   Music. Live Mode owns the class timeline, supports mixed-provider classes, preflights every track
   before class start, auto-advances without instructor action, and uses `clipStartMs` + effective
   `track.durationMs` as each provider playback window. **Web status (2026-07-03):** the playback core

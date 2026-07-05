@@ -4,14 +4,14 @@ Eight principles. If a design choice doesn't serve one of these, cut it.
 
 ## 1. Built for creating, not consuming
 
-Spotify's design makes _listening_ effortless; RitmoFit inverts the job — the instructor is _authoring_.
+Spotify's design makes _listening_ effortless; Ritmo Studio inverts the job — the instructor is _authoring_.
 Editing affordances, precise data (BPM, timecodes, zones), and reorderable structure get the visual
 weight, not oversized artwork or a passive browse-feed. Ask of any screen: does this help them _build_
 faster?
 
 ## 2. The interface keeps time
 
-This is the principle that separates RitmoFit from every other dark workstation. It is a **rhythm**
+This is the principle that separates Ritmo Studio from every other dark workstation. It is a **rhythm**
 product, so rhythm is a design material, not a theme. Tempo is a real token (`--rf-bpm` → `--rf-beat`);
 the Live HUD and the playing track _breathe on the actual beat_. The class is shown as an **energy arc**,
 not just a list. Expressiveness is _spent here_ — and rationed everywhere else. (Where and how: see
@@ -38,7 +38,7 @@ Three reserved channels, never swapped:
   Zone 4 ribbon kiss, and peak-derived marketing/share artwork. It is affect, never a control and never
   meaning-bearing on its own.
 
-Keeping these separate is what lets the interface stay quiet while still feeling distinctly RitmoFit and
+Keeping these separate is what lets the interface stay quiet while still feeling distinctly Ritmo Studio and
 still landing a punch when the class peaks.
 
 ## 5. Surfaces match their job
@@ -86,7 +86,7 @@ implication. A provisional should feel useful, honest, and ready to be claimed b
 
 ---
 
-## RitmoFit decision filter
+## Ritmo Studio decision filter
 
 External references are useful only as shorthand. They do not decide the system.
 
@@ -94,9 +94,9 @@ When choices conflict, use this order:
 
 1. Creator workflow and product truth.
 2. Accessibility and studio readability.
-3. RitmoFit color, typography, and rhythm rules.
+3. Ritmo Studio color, typography, and rhythm rules.
 4. Platform-native behavior.
 5. Reference-brand resemblance.
 
-The desired result is not "Spotify for fitness" or "Material with glass." It is a RitmoFit
+The desired result is not "Spotify for fitness" or "Material with glass." It is a Ritmo Studio
 instrument: warm, precise, movement-first, and unmistakably for instructors who build the class.

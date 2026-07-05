@@ -18,7 +18,7 @@ pre-launch and M1-era materials are superseded.
 | `ai-working-rules.md` | M1-era plan→confirm working agreement | `../../AGENTS.md` → "Before Implementing" |
 | `brand-mockup-review.md` | One-off frontend ↔ design-system conformance review (2026-06-13) | — |
 | `structclub-parity-audit.md` | Point-in-time competitive audit vs. StructClub (2026-06-24) | `../web-launch-readiness.md`, `../DEVELOPMENT_PLAN.md` |
-| `security.md` | Pasted generic "Web Security" platform guide (not RitmoFit-specific) | — |
+| `security.md` | Pasted generic "Web Security" platform guide (not Ritmo Studio-specific) | — |
 | `web-launch-session-plan.md` | Session-by-session execution log for the (completed) Web Launch Readiness milestone — every session 0–9 done | `../web-launch-readiness.md` (gate), `../HISTORY.md` (deploy log) |
 | `web-live-test-report-2026-06-29.md` | Point-in-time production live-test report (2026-06-29, 0 blockers) | `../HISTORY.md` |
 | `cues-vs-notes-decision.md` | Resolved + shipped decision record: do **not** split cues/notes; Live now renders `class_tracks.notes` | `../DEVELOPMENT_PLAN.md` backlog pointer |

@@ -4,7 +4,7 @@
 
 <!-- note (Codex, 2026-06-26): Moved session prompts into agent-prompts/daily for the daily personal-workflow loop. -->
 
-This file is the canonical contributor and agent guide for RitmoFit. If another instruction file
+This file is the canonical contributor and agent guide for Ritmo Studio. If another instruction file
 conflicts with it, follow `AGENTS.md`. This guide may exceed 400 words when needed to preserve
 architecture, workflow, safety, or verification requirements.
 
@@ -20,7 +20,7 @@ label the change with the authoring agent and date (e.g. `<!-- note (Claude, 202
 
 ## Product & Architecture
 
-RitmoFit is a choreography and class-running tool for rhythm spin instructors, delivered as **two
+Ritmo Studio is a choreography and class-running tool for rhythm spin instructors, delivered as **two
 complete, co-equal surfaces of one product** ("Spotify for instructors"): this **web app** and the
 separate **iOS app**. Each carries the _full_ instructor loop — build & choreograph, library, search,
 explore, sharing, **and** run a class live — in its platform's native idiom; neither is
@@ -126,7 +126,7 @@ These music rules are non-negotiable:
   and permitted metadata, and preserve required disconnect-purge behavior.
 - Never obtain BPM from Spotify; use manual BPM or the dedicated tempo-provider path.
 - Never download, proxy, remix, mix, crossfade, decode, analyze, or create derivative provider audio.
-- In-app playback is allowed only through official provider-authorized SDKs/widgets. RitmoFit controls
+- In-app playback is allowed only through official provider-authorized SDKs/widgets. Ritmo Studio controls
   playback windows and class timing; providers own the audio stream and provider-specific availability.
 
 If a request appears to require breaking one of these rules, stop and flag it. Re-verify current

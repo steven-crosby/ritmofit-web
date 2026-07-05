@@ -1,5 +1,5 @@
 /**
- * The energy-arc ribbon — RitmoFit's signature planning view
+ * The energy-arc ribbon — Ritmo Studio's signature planning view
  * (design system `10-rhythm-system.md` §4, `09-class-builder-guidelines.md`).
  *
  * Renders a class's intensity over time as a slim staircase area graph: each

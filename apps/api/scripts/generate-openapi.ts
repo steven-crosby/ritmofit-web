@@ -134,10 +134,10 @@ const idParam = { name: 'id', in: 'path', required: true, schema: { type: 'strin
 const doc = {
   openapi: '3.1.0',
   info: {
-    title: 'RitmoFit API',
+    title: 'Ritmo Studio API',
     version: API_VERSION,
     description:
-      'RitmoFit M1 REST surface. Generated from the @ritmofit/shared Zod schemas — the single source of truth. All endpoints except the auth bootstrap require a Better Auth session.',
+      'Ritmo Studio M1 REST surface. Generated from the @ritmofit/shared Zod schemas — the single source of truth. All endpoints except the auth bootstrap require a Better Auth session.',
   },
   servers: [{ url: `/api/${API_VERSION}` }],
   paths: {

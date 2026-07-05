@@ -1,4 +1,4 @@
-# RitmoFit Web — Pre-Launch Remediation Log (archived)
+# Ritmo Studio Web — Pre-Launch Remediation Log (archived)
 
 Archived dated remediation entries from the pre-launch review. The live
 [`REVIEW.md`](./REVIEW.md) keeps the current status + the findings/backlog; this file is the

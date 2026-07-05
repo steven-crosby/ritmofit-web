@@ -1,14 +1,14 @@
-# RitmoFit Design System
+# Ritmo Studio Design System
 
-This folder is the **canonical** design-system reference for RitmoFit, adopted by the web app here and
+This folder is the **canonical** design-system reference for Ritmo Studio, adopted by the web app here and
 bridged into iOS via `tokens.json`. Historical design snapshots may be referenced from
 `ritmofit_dev_plan/HISTORY.md`, but this repo does not vendor from a sibling design-system folder.
 
 ## Product truth
 
-> RitmoFit is for instructors who are creators.
+> Ritmo Studio is for instructors who are creators.
 
-RitmoFit helps rhythm fitness instructors find, shape, and perform the class inside the music. It is
+Ritmo Studio helps rhythm fitness instructors find, shape, and perform the class inside the music. It is
 a creator workstation and studio instrument, not a generic fitness dashboard, playlist manager, or
 passive music app.
 

@@ -16,7 +16,7 @@ export function NotFound() {
         href="/"
         className="rounded-pill border border-interactive bg-interactive/15 px-4 py-1.5 font-ui text-sm text-text-primary hover:bg-interactive/25"
       >
-        Back to RitmoFit
+        Back to Ritmo Studio
       </a>
     </main>
   );

@@ -1,6 +1,6 @@
 # Schema
 
-The current RitmoFit data model, resolved into one table set for **Cloudflare D1 (SQLite)**.
+The current Ritmo Studio data model, resolved into one table set for **Cloudflare D1 (SQLite)**.
 
 **D1 conventions (because SQLite has no native UUID/timestamp/enum types):**
 - **`id`** = `TEXT` holding a UUIDv4, primary key.

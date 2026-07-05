@@ -91,7 +91,7 @@ the project is still pre-deployment and the owner approves a reset.
 
 ## Frontend rules
 
-- Use the RitmoFit design system (`ritmofit_design_system/`) — tokens, components, accessibility rules.
+- Use the Ritmo Studio design system (`ritmofit_design_system/`) — tokens, components, accessibility rules.
 - Accessible controls, visible focus, labeled icon buttons, colorblind-safe patterns (never color
   alone). Include loading, empty, and error states. Keep UI responsive on laptop screens.
 - Avoid a global state library unless clearly needed; TanStack Query for server state, local state for

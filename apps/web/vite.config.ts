@@ -18,8 +18,8 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
       },
       manifest: {
-        name: 'RitmoFit',
-        short_name: 'RitmoFit',
+        name: 'Ritmo Studio',
+        short_name: 'Ritmo Studio',
         description: 'Premium choreography and class-management tool for rhythm spin instructors.',
         theme_color: '#1a110d',
         icons: [

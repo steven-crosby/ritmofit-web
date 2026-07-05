@@ -1,6 +1,6 @@
 # Codex Review Prompts
 
-These prompts provide a repeatable session, review, and hardening sequence for the RitmoFit web
+These prompts provide a repeatable session, review, and hardening sequence for the Ritmo Studio web
 application and backend. They use the repository trackers, including `REVIEW.md`, as persistent state.
 
 ## Recommended Order

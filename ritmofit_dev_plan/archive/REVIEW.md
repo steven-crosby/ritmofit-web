@@ -1,4 +1,4 @@
-# RitmoFit Web Pre-Launch Review
+# Ritmo Studio Web Pre-Launch Review
 
 _Audit date: 2026-06-14 (scope: `main` worktree; review-only — no fixes or deploys performed during the
 audit itself)._
@@ -15,10 +15,10 @@ audit itself)._
 
 ## Repo Map
 
-RitmoFit Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
+Ritmo Studio Web is a pnpm 11 TypeScript monorepo requiring Node 22.13 or newer.
 
 - `apps/web` — React 18 + Vite 5 single-page application styled with Tailwind and
-  generated RitmoFit design tokens. The browser entry point is `apps/web/src/main.tsx`;
+  generated Ritmo Studio design tokens. The browser entry point is `apps/web/src/main.tsx`;
   `apps/web/src/App.tsx` gates the UI on a Better Auth session and handles the
   `/reset-password` path without a routing library. `apps/web/src/components/Dashboard.tsx`
   is the main planning surface. Server state and temporary form state are held in
@@ -288,7 +288,7 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       `http://localhost:5173`, and the deployed Worker has no `WEB_ORIGIN` binding.
       A read-only production callback request returned that localhost Location header.
       Why it matters: both successful and failed SoundCloud consent callbacks send beta
-      users away from RitmoFit to an unreachable local address. Recommended fix: commit
+      users away from Ritmo Studio to an unreachable local address. Recommended fix: commit
       `WEB_ORIGIN = "https://ritmofit.studio"` or derive the same-origin return URL from the
       canonical auth origin/request, then test success, denial, missing state, and token
       exchange failure in a deployed smoke environment. Evidence: verified. Confidence:
@@ -357,7 +357,7 @@ https://ritmofit.studio/api/v1/providers/soundcloud/callback` — **FAIL
       sourced from the disconnected provider can survive. Separately, a duty is deleted
       after five failed sweeps, permanently abandoning the documented purge requirement.
       Why it matters: derived provider metadata can remain indefinitely after disconnect,
-      violating RitmoFit's explicit provider-data rules. Recommended fix: track artwork
+      violating Ritmo Studio's explicit provider-data rules. Recommended fix: track artwork
       provenance or conservatively clear provider artwork, move exhausted work to an
       observable dead-letter state instead of deleting it, alert on overdue duties, and
       add D1 integration tests for multi-provider tracks and repeated failures. Evidence:
@@ -568,7 +568,7 @@ DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'
       needs a maintenance window). Evidence: code change + the verified-available rollback/recovery
       runbook. Confidence: high.
 
-## RitmoFit Core Instructor Workflow
+## Ritmo Studio Core Instructor Workflow
 
 - [x] **[SHOULD-FIX - DEPLOYED] Block Live mode until every track has a usable duration** —
       `packages/shared/src/entities/tracks.ts:12-19`,
@@ -593,7 +593,7 @@ DENY`, `Referrer-Policy`, `Permissions-Policy`, and a locked `default-src 'none'
       `apps/web/src/components/LiveMode.tsx:250-289`,
       `apps/web/src/components/LiveMode.tsx:294-365` — The run payload carries
       `providerUri`, but neither Cue-by-Cue nor Full List exposes it. Why it matters:
-      RitmoFit correctly avoids embedded playback, but the web live surface gives the
+      Ritmo Studio correctly avoids embedded playback, but the web live surface gives the
       instructor no supported way to open the current song in its provider app. Recommended
       fix: render explicit "Open in SoundCloud/Spotify/Apple Music" actions for available
       refs with safe URI handling and no autoplay/mixing behavior. Remediation: both Live

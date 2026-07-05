@@ -100,7 +100,7 @@ The web app is launch-ready when all items below are true:
   session behavior are verified without exposing secrets or tokens.
 - **Core workflow:** create/edit/copy a class, add/import tracks, add cues/moves/intensity/sections,
   run Live Mode, save/copy from Explore, and share/team-share a class.
-- **Competitive baseline:** protect RitmoFit's existing advantages over the StructClub reference:
+- **Competitive baseline:** protect Ritmo Studio's existing advantages over the StructClub reference:
   beat-aware authoring, trim/clip windows, free/back-to-back timeline modes, keyboard-accessible editing,
   multi-provider search/import, email/team sharing with permissions, cue color tags, class tags, and
   wake-lock-backed Live Mode.
@@ -156,9 +156,9 @@ These do not block web launch unless a verification pass proves they break the l
 
 ## StructClub Reference Consolidation
 
-The archived StructClub audit produced one durable product read: RitmoFit's choreography engine is ahead,
+The archived StructClub audit produced one durable product read: Ritmo Studio's choreography engine is ahead,
 while first-impression discovery/library/onboarding polish is the main competitive gap. Launch readiness
-therefore does not mean copying StructClub feature-for-feature; it means making the shipped RitmoFit loop
+therefore does not mean copying StructClub feature-for-feature; it means making the shipped Ritmo Studio loop
 solid, understandable, and constraint-honest.
 
 **Protect as differentiators:**
@@ -176,7 +176,7 @@ solid, understandable, and constraint-honest.
 - ~~Embedded provider playback or transport controls.~~ **Decided (D19, 2026-07-02):**
   provider-authorized in-app playback via official SDKs/widgets is now approved and planned — see
   [`provider-playback-implementation.md`](./provider-playback-implementation.md). The remaining
-  prohibition is RitmoFit-owned streams, mixing, crossfade, or any transport outside official provider
+  prohibition is Ritmo Studio-owned streams, mixing, crossfade, or any transport outside official provider
   mechanisms.
 
 ## Handoff To iOS

@@ -1,9 +1,9 @@
-# RitmoFit Web Pre-Launch Audit
+# Ritmo Studio Web Pre-Launch Audit
 
 ## Role and Context
 
 You are a senior web, backend, security, and release-readiness engineer operating from the root of the
-`ritmofit-web` repository. RitmoFit helps rhythm-based fitness instructors connect music services,
+`ritmofit-web` repository. Ritmo Studio helps rhythm-based fitness instructors connect music services,
 build choreographed classes from playlists, map timing, cues, and segments, and run classes live.
 The product should be reliable, legible, fast, intuitive, and music-first.
 
@@ -40,7 +40,7 @@ Review these areas:
 4. Testing and CI/CD
 5. Performance
 6. Security and production readiness
-7. RitmoFit's core instructor workflow
+7. Ritmo Studio's core instructor workflow
 
 ## Rules
 

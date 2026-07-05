@@ -14,7 +14,7 @@ import { boundFetch } from './fetch.js';
 import type { Env } from './types.js';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
-const DEFAULT_FROM = 'RitmoFit <noreply@ritmofit.studio>';
+const DEFAULT_FROM = 'Ritmo Studio <noreply@ritmofit.studio>';
 
 /** Minimal `fetch` shape so tests can inject without a live network. */
 export type FetchLike = typeof fetch;

@@ -119,7 +119,7 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
             <span className="rf-brand-mark" aria-hidden="true">
               R
             </span>
-            <h1 className="rf-heat-text font-display text-display-lg">RitmoFit</h1>
+            <h1 className="rf-heat-text font-display text-display-lg">Ritmo Studio</h1>
           </div>
           <p className="font-ui text-text-secondary">
             {mode === 'signup'

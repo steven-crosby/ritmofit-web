@@ -28,12 +28,12 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
         <a
           href="/"
           className="flex items-center gap-2 no-underline sm:gap-2.5"
-          aria-label="RitmoFit home"
+          aria-label="Ritmo Studio home"
         >
           <span className="rf-brand-mark" aria-hidden="true">
             R
           </span>
-          <span className="font-display text-lg font-bold text-text-primary">RitmoFit</span>
+          <span className="font-display text-lg font-bold text-text-primary">Ritmo Studio</span>
         </a>
 
         {/* Anchor nav */}
@@ -180,7 +180,7 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
       {/* ── Footer ────────────────────────────────────────────────────── */}
       <footer className="border-t border-border-subtle px-6 py-8 text-center">
         <span className="font-ui text-sm text-text-tertiary">
-          © {new Date().getFullYear()} RitmoFit · Built for instructors who create
+          © {new Date().getFullYear()} Ritmo Studio · Built for instructors who create
         </span>
       </footer>
     </>

@@ -1,4 +1,4 @@
-# Close-session — wrap up a RitmoFit work session
+# Close-session — wrap up a Ritmo Studio work session
 
 > **INTERACTIVE.** Use this whenever Steven is ending a personal work session in
 > `ritmofit-web`, even if multiple sessions happen in one day. Work through the checklist
@@ -47,7 +47,7 @@ deployment behavior changed, run the full CI-equivalent gate:
 
 - [ ] Determine whether production appears aligned with `main`. Deploys are manual, so code
   merged to `main` this session is not live until deployed.
-- [ ] Default to **not** deploying just because code merged this session. RitmoFit ships in
+- [ ] Default to **not** deploying just because code merged this session. Ritmo Studio ships in
   deliberate batches, not once per merge (see AGENTS.md "Deploy cadence — merging is not deploying").
   Deploy now only for a batch the owner wants live, an urgent fix (prod bug / regression / security /
   live-verification finding), or a risky change (schema/migration, auth, provider, infra) that should

@@ -224,9 +224,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 
   useEffect(() => {
     if (selected) {
-      document.title = `${selected.title} - RitmoFit`;
+      document.title = `${selected.title} - Ritmo Studio`;
     } else {
-      document.title = 'RitmoFit';
+      document.title = 'Ritmo Studio';
     }
   }, [selected]);
 
@@ -368,7 +368,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             R
           </span>
           <h1 className="font-display text-xl font-bold tracking-[-0.01em] text-text-primary">
-            RitmoFit
+            Ritmo Studio
           </h1>
         </div>
         {/* Destinations cluster — on narrow viewports this becomes a compact

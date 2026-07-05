@@ -54,7 +54,7 @@ export function ClassSummaryView({
 
   useEffect(() => {
     if (payload?.class?.title) {
-      document.title = `Preview: ${payload.class.title} - RitmoFit`;
+      document.title = `Preview: ${payload.class.title} - Ritmo Studio`;
     }
   }, [payload]);
 

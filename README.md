@@ -1,6 +1,6 @@
 # ritmofit-web
 
-RitmoFit is a choreography and class-running tool for rhythm spin cycle instructors, delivered as two
+Ritmo Studio is a choreography and class-running tool for rhythm spin cycle instructors, delivered as two
 complete surfaces of one product: this web app and the companion iOS app. Both surfaces carry the full
 instructor loop — build and choreograph, manage the library, search and import music, explore, share,
 and run class live — in platform-native form.

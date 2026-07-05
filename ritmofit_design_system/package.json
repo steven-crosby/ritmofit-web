@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "RitmoFit design system — tokens.json single source of truth, web + iOS emitters, and guard scripts.",
+  "description": "Ritmo Studio design system — tokens.json single source of truth, web + iOS emitters, and guard scripts.",
   "scripts": {
     "build": "node scripts/build-tokens.mjs",
     "build:ios": "node scripts/build-tokens-ios.mjs",

@@ -1,10 +1,10 @@
-# RitmoFit Web Final Beta and Launch Verification
+# Ritmo Studio Web Final Beta and Launch Verification
 
 ## Role and Context
 
 You are the final release-readiness reviewer operating from `ritmofit-web`. Read `AGENTS.md` and the
 entire current `REVIEW.md`. Verify the repository's actual stack, deployment model, implemented
-providers, and release process. RitmoFit must reliably support its core instructor workflow.
+providers, and release process. Ritmo Studio must reliably support its core instructor workflow.
 
 ## Goal
 

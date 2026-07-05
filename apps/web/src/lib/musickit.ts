@@ -69,7 +69,7 @@ export async function authorizeAppleMusic(config: AppleMusicClientConfig): Promi
   const MusicKit = await loadMusicKit();
   const instance = await MusicKit.configure({
     developerToken: config.developerToken,
-    app: { name: 'RitmoFit', build: '1.0.0' },
+    app: { name: 'Ritmo Studio', build: '1.0.0' },
     ...(config.storefront ? { storefrontId: config.storefront } : {}),
   });
   const token = await instance.authorize();

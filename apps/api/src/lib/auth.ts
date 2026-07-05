@@ -85,7 +85,7 @@ export function createAuth(env: Env) {
       // handler, then redirects to the SPA's /reset-password with the token).
       sendResetPassword: async ({ user, url }) => {
         const { html, text } = actionEmail({
-          heading: 'Reset your RitmoFit password',
+          heading: 'Reset your Ritmo Studio password',
           intro: `Someone (hopefully you) asked to reset the password for ${user.email}. This link expires in 1 hour.`,
           buttonLabel: 'Reset password',
           url,
@@ -93,7 +93,7 @@ export function createAuth(env: Env) {
         });
         await sendEmail(env, {
           to: user.email,
-          subject: 'Reset your RitmoFit password',
+          subject: 'Reset your Ritmo Studio password',
           html,
           text,
         });
@@ -106,14 +106,14 @@ export function createAuth(env: Env) {
       sendVerificationEmail: async ({ user, url }) => {
         const { html, text } = actionEmail({
           heading: 'Confirm your email',
-          intro: `Welcome to RitmoFit! Confirm ${user.email} to secure your account.`,
+          intro: `Welcome to Ritmo Studio! Confirm ${user.email} to secure your account.`,
           buttonLabel: 'Verify email',
           url,
-          footer: 'You can keep using RitmoFit while this is pending.',
+          footer: 'You can keep using Ritmo Studio while this is pending.',
         });
         await sendEmail(env, {
           to: user.email,
-          subject: 'Confirm your RitmoFit email',
+          subject: 'Confirm your Ritmo Studio email',
           html,
           text,
         });

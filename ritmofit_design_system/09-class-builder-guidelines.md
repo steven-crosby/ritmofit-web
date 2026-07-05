@@ -42,7 +42,7 @@ a **P0 acceptance gate**, verified by `apps/web/smoke/narrow-width.smoke.mjs`; t
 ## The energy ribbon (the signature planning view)
 
 Pinned above the timeline: the class's **intensity over time** as a continuous area graph. This is the
-view that makes RitmoFit feel like a rhythm tool instead of a track list.
+view that makes Ritmo Studio feel like a rhythm tool instead of a track list.
 
 - **Height encodes zone**; gradient color (copper → ember → plasma at peaks) reinforces. Reads in
   grayscale (see [`07-accessibility.md`](./07-accessibility.md)).
