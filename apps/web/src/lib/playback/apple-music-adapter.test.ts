@@ -98,6 +98,24 @@ class FakeInstance implements MusicKitInstance {
   }
 }
 
+function deferred<T = unknown>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+async function waitForSetQueueCalls(instance: FakeInstance, count: number): Promise<void> {
+  for (let i = 0; i < 20; i++) {
+    if (instance.calls.filter((call) => call.startsWith('setQueue:')).length >= count) return;
+    await Promise.resolve();
+  }
+  expect(instance.calls.filter((call) => call.startsWith('setQueue:'))).toHaveLength(count);
+}
+
 function makeMusicKit(instance: FakeInstance, opts?: { preconfigured?: boolean }) {
   let configured = opts?.preconfigured ?? false;
   const calls: string[] = [];
@@ -251,6 +269,35 @@ describe('AppleMusicAdapter', () => {
     instance.setQueueBehavior = () => new Promise<never>(() => {}); // never resolves
     const { adapter } = makeAdapter(instance, { preconfigured: true, prepareTimeoutMs: 5 });
     await expect(adapter.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow(/timed out/i);
+  });
+
+  it('rejects an overlapping queue request while an older one is still pending', async () => {
+    const instance = new FakeInstance(true);
+    const { music } = makeMusicKit(instance, { preconfigured: true });
+    const firstQueue = deferred();
+    instance.setQueueBehavior = () => firstQueue.promise;
+    const build = () =>
+      new AppleMusicAdapter(
+        {},
+        {
+          loadMusicKit: () => Promise.resolve(music),
+          loadConfig: () => Promise.resolve({ developerToken: 'dev-token', storefront: null }),
+        },
+      );
+    const first = build();
+    const second = build();
+
+    const firstPrepare = first.prepare(makeEntry({ providerTrackId: 'am-first' }), WINDOW_ZERO);
+    await waitForSetQueueCalls(instance, 1);
+
+    await expect(
+      second.prepare(makeEntry({ providerTrackId: 'am-second' }), WINDOW_CLIPPED),
+    ).rejects.toThrow(/still finishing a previous queue request/i);
+    expect(instance.calls.filter((call) => call.startsWith('setQueue:'))).toEqual(['setQueue:0']);
+
+    first.destroy();
+    firstQueue.resolve(undefined);
+    await expect(firstPrepare).rejects.toThrow(/superseded/i);
   });
 
   it('rejects prepare for a track without an Apple Music ref', async () => {
