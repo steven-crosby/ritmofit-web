@@ -13,7 +13,7 @@ allowBuilds:
 # never the deployed Worker (workerd provides fetch) or the browser bundle. Unlike the
 # esbuild/vite advisories below, undici IS fixable: 7.28.0 satisfies jsdom's ^7.25.0 and
 # is a within-v7 bump over miniflare's pinned 7.24.8 (validated by the Worker/D1
-# integration suite). Prefer the upgrade over an audit ignore (AGENTS.md §Coding rules).
+# integration suite). Prefer the upgrade over an audit ignore (AGENTS.md §Engineering Rules).
 overrides:
   undici: '^7.28.0'
 # Dependency-audit exceptions (gate: `pnpm audit:ci`). All are dev/build-server
@@ -31,7 +31,7 @@ overrides:
 #     esbuild 0.28.1, not yet propagated through those tools. Forcing it via `overrides`
 #     would also push esbuild into wrangler's production bundler.
 # Revisit when pool-workers restores per-test isolation (#12889) and/or esbuild 0.28.1
-# propagates. Rationale tracked in REVIEW.md. Any NEW advisory still fails the audit gate.
+# propagates. Any NEW advisory still fails the audit gate.
 auditConfig:
   ignoreGhsas:
     - GHSA-67mh-4wv8-2f99 # esbuild moderate — dev server accepts any-origin requests (<=0.24.2)

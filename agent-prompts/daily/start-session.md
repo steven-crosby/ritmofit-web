@@ -30,8 +30,8 @@ files or begin implementation during orientation.
    - `ritmofit_dev_plan/web-launch-readiness.md` for the launch gate, live deferrals, and
      post-launch follow-up (the completed session-by-session log is archived alongside it)
    - `ritmofit_dev_plan/HISTORY.md` when deployment state, recent work, or blockers matter
-   - `agent-prompts/remote-prompts/daily/command-brief.md` output or recent agent reports when the owner
-     points to them
+   - `agent-prompts/remote-prompts/daily/command-brief.md` output or recent agent reports when the
+     owner points to them
 6. For UI work, read `ritmofit_design_system/README.md` plus the specific token/component
    guidance that applies.
 7. For API, schema, shared-contract, auth, music-provider, or iOS-impacting work, inspect the
@@ -56,8 +56,8 @@ files or begin implementation during orientation.
   (see `ritmofit_dev_plan/music-providers.md`).
 - Shared contracts originate in `packages/shared`; class-scoped access requires centralized
   authorization; D1 migrations are generated and never rewritten after application.
-- Surface parity is a hard gate: web and iOS are co-equal product surfaces. State parity impact
-  in the plan and link any tracked follow-up when same-session parity is not landing.
+- D20 pauses iOS parity as a hard merge gate. State web/iOS contract or design impact when relevant,
+  but do not create parity bookkeeping unless the owner asks for iOS handoff/refinement work.
 - For substantial work, follow the repository's plan-and-confirm requirement before editing.
 - Use absolute dates when reporting status, deployments, or tracker conflicts.
 
@@ -72,7 +72,7 @@ Report a concise session baseline:
 - **Trackers:** current milestone/slice, unresolved blockers, and strongest candidate for
   next work.
 - **Breadcrumbs:** open items in `INBOX.md`, each with its likely home, or "inbox empty."
-- **Parity:** expected web/iOS impact or no parity impact.
+- **Cross-surface:** expected web/iOS contract or design impact, or no cross-surface impact.
 - **Risks:** existing changes, migration/deployment concerns, missing evidence, or open
   questions.
 - **Plan:** goal, likely files, schema/API/frontend impact, verification steps, and the
