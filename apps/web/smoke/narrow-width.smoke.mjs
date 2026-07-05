@@ -225,6 +225,28 @@ try {
   await checkNoOverflow(page, 'dashboard-inspector-open');
   await page.screenshot({ path: join(shotsDir, 'dashboard-inspector-open.png'), fullPage: true });
 
+  // Phase 3 (alive at rest): the inspector opens on Essentials (intensity/BPM/duration/
+  // notes + cues/moves); the long tail (RPM, holds, trim, downbeat) sits under an
+  // "Advanced" disclosure that is collapsed by default (design system 09 §Inspector).
+  const advanced = page.getByText('Advanced', { exact: true });
+  const downbeat = page.getByText('Downbeat', { exact: true });
+  const advancedShown = await advanced.isVisible().catch(() => false);
+  const downbeatCollapsed = !(await downbeat.isVisible().catch(() => false));
+  if (advancedShown && downbeatCollapsed) pass('inspector:advanced-collapsed');
+  else
+    fail(
+      'inspector:advanced-collapsed',
+      `advanced summary visible=${advancedShown}, long-tail collapsed=${downbeatCollapsed}`,
+    );
+  await advanced.click();
+  await downbeat.waitFor({ state: 'visible', timeout: 5000 });
+  pass('inspector:advanced-expands');
+  await checkNoOverflow(page, 'dashboard-inspector-advanced');
+  await page.screenshot({
+    path: join(shotsDir, 'dashboard-inspector-advanced.png'),
+    fullPage: true,
+  });
+
   // 5. Exercise the nav dialogs (the adopted Dialog primitive).
   await checkDialog(page, 'Explore', 'Explore public classes');
   await checkDialog(page, 'Teams', 'Manage teams');
