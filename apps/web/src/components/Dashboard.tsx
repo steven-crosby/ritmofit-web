@@ -1229,6 +1229,17 @@ export function ClassHeaderCard({
   // Readiness is derived from the run-payload (no new data): duration/tempo/
   // cues-moves/music, surfaced before Live instead of on stage (P0 #2).
   const readiness = payload ? classReadiness(payload) : null;
+  // Why Run live is disabled, said at the button itself (not only a hover title)
+  // and associated for assistive tech via aria-describedby. Duration is the sole
+  // run gate (mirrors canRunPayload), so the reason is either "no tracks yet" or
+  // "a track without a length". Especially matters for an empty class, where the
+  // readiness panel isn't shown and the greyed button is the only signal.
+  const runBlockedId = `run-blocked-${cls.id}`;
+  const runBlockedReason = canRun
+    ? null
+    : trackCount === 0
+      ? 'Add a track to run this class.'
+      : 'Give every track a length to run.';
 
   const startRename = () => {
     setTitleDraft(cls.title);
@@ -1452,12 +1463,26 @@ export function ClassHeaderCard({
             className="order-first col-span-2 min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:order-none sm:col-span-auto sm:min-h-0 sm:rounded-pill sm:px-4 sm:py-1.5"
             onClick={onRun}
             disabled={!canRun}
-            title={canRun ? 'Run this class live' : 'Every track needs a duration'}
+            aria-describedby={runBlockedReason ? runBlockedId : undefined}
+            title={canRun ? 'Run this class live' : undefined}
           >
             ▶ Run live
           </button>
         </div>
       </div>
+      {/* Why Run live is unavailable — the caution channel (glyph + words, never
+          color alone), tied to the button via aria-describedby above. */}
+      {runBlockedReason && (
+        <p
+          id={runBlockedId}
+          className="flex items-center gap-1.5 font-ui text-xs text-state-caution"
+        >
+          <span aria-hidden className="font-data leading-none">
+            !
+          </span>
+          {runBlockedReason}
+        </p>
+      )}
       {/* Summary stats — BPM/time weighted in the Azeret Mono data face. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-data text-xs text-text-secondary">
         <span>
