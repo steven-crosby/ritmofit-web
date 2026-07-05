@@ -10,6 +10,25 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-05 (checkpoint deploy: Builder preview + front-door polish) — deployed (Worker
+> `a08f6b59-0207-4535-8bcf-8acf657974e0`).** Shipped `main` (`4c4aa35`) batching everything merged since
+> the solo-first reset deploy — all presentation-only, **no schema / migration / API / provider
+> change**: **#206** (solo-first front-door polish — first-run workspace, owner-chip removed) and
+> **#204** (manual **Builder clip-window preview** — `TrackPreview.tsx` + `PreviewPlaybackController`
+> over the shared adapter registry; single-track, manual, no auto-advance; four review-found
+> correctness fixes applied pre-merge — the rAF-clock/`preparing` bug, the `endActive`/`pause`/`resume`/
+> `stop` epoch-recheck races, and the frozen-`now` clock). **#205** (deploy-log docs) also rode along.
+>
+> Rollback anchor: prior live `fa385d71-d9fd-4e86-bfc5-f390475f1692` (the solo-first reset deploy).
+> Remote D1: **no migrations to apply** (verified `git diff` shows none since `23f5481`). Pre-deploy
+> gate green on `main` (format / typecheck ×4 workspaces / lint / design-system verify / **370 web +
+> 271 api** unit / **76** integration / web build / openapi no-drift `44 schemas · 46 paths` /
+> contract-parity no untracked drift / audit:ci exit 0). Post-deploy smoke on live
+> `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` → `200` (`{"status":"ok"}`), protected
+> `/api/v1/classes` → `401`, SPA fallback `/app` → `200`, served bundle hash `index-BiKiO4wT.js` matches
+> the build. Real-provider **audio** verification of the Builder preview and the SoundCloud/Apple Music
+> Live Mode adapters remains a pending manual pass with a live subscriber account.
+
 > **Session 2026-07-05 (checkpoint deploy: solo-first reset · D20) — deployed (Worker
 > `fa385d71-d9fd-4e86-bfc5-f390475f1692`).** Shipped `main` (`23f5481`) taking the **solo-first reset**
 > (PR #203, decision **D20**) live — presentation only, **no schema / migration / API / provider
