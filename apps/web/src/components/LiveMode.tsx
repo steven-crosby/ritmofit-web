@@ -32,6 +32,7 @@ import type { AdapterRegistry } from '../lib/playback/types.js';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { useWakeLock } from '../lib/use-wake-lock.js';
 import { IntensityReadout } from './IntensityReadout.js';
+import { IntensityRibbon } from './IntensityRibbon.js';
 import { LivePreflight } from './LivePreflight.js';
 import { LiveTimeline } from './LiveTimeline.js';
 import { SEGMENT_META, SegmentIcon } from './SegmentBand.js';
@@ -488,6 +489,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
       <div className="min-h-0 flex-1 overflow-auto">
         {view === 'cue' ? (
           <CueByCue
+            payload={payload}
             live={live}
             currentEvent={currentEvent}
             nextEvent={nextEvent}
@@ -631,6 +633,7 @@ function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void 
 }
 
 function CueByCue({
+  payload,
   live,
   currentEvent,
   nextEvent,
@@ -641,6 +644,7 @@ function CueByCue({
   playing,
   gap,
 }: {
+  payload: RunPayload;
   live: { entry: RunPayloadTrackEntry; index: number } | null;
   currentEvent: TimelineEvent | null;
   nextEvent: TimelineEvent | null;
@@ -704,6 +708,11 @@ function CueByCue({
   // tracks. On each cue advance there, a plasma glow blooms behind the focal cue and
   // the cue text cross-fades in. Reduced motion degrades both to an instant swap (CSS).
   const isAllOut = entry.intensity === 'all_out';
+  // At rest before playback begins (a paused mid-class has elapsed > 0) with no cue
+  // at this instant: lead with the affirmative ready state + a class-shape mini-map
+  // instead of "No cue set" (alive at rest, design system 05 §Live). Once playing —
+  // or paused mid-class — the normal cue / no-cue prompter takes over.
+  const showReadyHero = !playing && elapsedMs === 0 && currentEvent == null;
   return (
     <div className="flex min-h-full flex-col gap-4 p-4 sm:p-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:p-8">
       {/* LEFT — the focal cue: the one thing the instructor reads across the room.
@@ -718,7 +727,7 @@ function CueByCue({
           />
         )}
         <p className="relative font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
-          Now
+          {showReadyHero ? 'Ready' : 'Now'}
         </p>
         {currentEvent ? (
           <>
@@ -736,6 +745,28 @@ function CueByCue({
                 <IntensityReadout intensity={currentEvent.intensity} />
               </div>
             )}
+          </>
+        ) : showReadyHero ? (
+          // Live at rest leads with the affirmative ready state, never absence
+          // (design system 01 §3, 05 §Live: "'Ready — press play' beats 'No cue set'").
+          // The next cue + BPM sit in the rail; the class-shape mini-map shows the arc.
+          <>
+            <p className="relative mt-3 font-display text-[clamp(2.25rem,5.5vw,4rem)] font-semibold leading-[0.95] text-text-primary">
+              Press play to start
+            </p>
+            <p className="relative mt-4 flex min-w-0 items-baseline gap-2">
+              <span aria-hidden className="shrink-0 font-data text-base text-text-tertiary">
+                ♫
+              </span>
+              <span className="truncate font-display text-[clamp(1.5rem,3.5vw,2.5rem)] font-semibold text-text-primary">
+                {entry.track.title}
+              </span>
+            </p>
+            {/* Class-shape mini-map: the whole arc, visible before the first beat.
+                Reuses the builder ribbon (and its provisional "auto shape" when unshaped). */}
+            <div className="relative mt-6">
+              <IntensityRibbon payload={payload} />
+            </div>
           </>
         ) : (
           // No cue at this moment: never a bare dash. Name the state, then what's

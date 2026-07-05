@@ -232,9 +232,9 @@ describe('LiveMode track notes', () => {
     await renderLive(notedPayload);
 
     expect(screen.getByText('Watch the new rider in row 2')).toBeTruthy();
-    // The notes are a subordinate block, not the focal cue: the "Now" card and its
-    // "Notes" label both render, distinctly.
-    expect(screen.getByText('Now')).toBeTruthy();
+    // The notes are a subordinate block, not the focal cue: at rest the focal card
+    // leads with the "Ready" eyebrow, and the "Notes" label renders distinctly.
+    expect(screen.getByText('Ready')).toBeTruthy();
     expect(screen.getByText('Notes')).toBeTruthy();
   });
 
@@ -254,12 +254,13 @@ describe('LiveMode track notes', () => {
 });
 
 describe('LiveMode sparse-data fallbacks', () => {
-  it('shows a meaningful current state instead of a bare dash when no cue is set', async () => {
-    // activeTrack has no cues, so at 0:00 there is no current cue.
+  it('leads with the affirmative ready state (never a bare dash) at rest before playback', async () => {
+    // activeTrack has no cues and the clock is frozen at 0:00 (not playing), so Live
+    // is at rest → the focal hero leads with "Press play to start", not "No cue set".
     await renderLive();
-    expect(screen.getByText('No cue set')).toBeTruthy();
-    // The focal card names what's playing (also shown in the Track rail → 2+ matches),
-    // and never a naked "—".
+    expect(screen.getByText('Press play to start')).toBeTruthy();
+    // The focal card still names what's playing (also shown in the Track rail → 2+
+    // matches), and never a naked "—".
     expect(screen.getAllByText('Active Track').length).toBeGreaterThanOrEqual(2);
     expect(screen.queryByText('—')).toBeNull();
   });

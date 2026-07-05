@@ -33,7 +33,8 @@ const DIMENSION_NOUN: Record<ReadinessKey, string> = {
 
 function headline(readiness: ClassReadiness): { text: string; tone: string } {
   if (!readiness.runnable) return { text: 'Not ready for Live', tone: 'text-state-caution' };
-  if (readiness.fullyReady) return { text: 'Ready to run live', tone: 'text-state-positive' };
+  if (readiness.fullyReady)
+    return { text: 'Class shape ready · take it live', tone: 'text-state-positive' };
   const n = readiness.attentionCount;
   return { text: `Runnable · ${n} to finish`, tone: 'text-text-secondary' };
 }

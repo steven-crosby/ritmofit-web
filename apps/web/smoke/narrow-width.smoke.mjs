@@ -251,6 +251,32 @@ try {
   await checkDialog(page, 'Explore', 'Explore public classes');
   await checkDialog(page, 'Teams', 'Manage teams');
   await checkDialog(page, 'Connections', 'Music connections');
+
+  // 6. Live at rest (alive at rest · phase 4): entering Live and passing preflight
+  // without music lands on the at-rest prompter, which must LEAD with the affirmative
+  // "Press play to start" hero + class-shape mini-map — never "No cue set". Both tracks
+  // have a duration, so Run live is enabled.
+  await page
+    .getByRole('button', { name: /Run live/ })
+    .first()
+    .click();
+  const runWithoutMusic = page.getByRole('button', { name: 'Run without music' });
+  await runWithoutMusic.waitFor({ timeout: 10000 });
+  await runWithoutMusic.click();
+  await page.getByText('Press play to start', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 10000,
+  });
+  pass('live-at-rest:ready-lead');
+  const absenceLeads = await page
+    .getByText('No cue set', { exact: true })
+    .isVisible()
+    .catch(() => false);
+  if (!absenceLeads) pass('live-at-rest:no-absence-lead');
+  else fail('live-at-rest:no-absence-lead', 'Live at rest still leads with "No cue set"');
+  await checkNoOverflow(page, 'live-at-rest');
+  await page.screenshot({ path: join(shotsDir, 'live-at-rest-390.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Exit' }).click();
 } catch (err) {
   fail('harness', err.message);
   await page.screenshot({ path: join(shotsDir, 'failure.png') }).catch(() => {});
