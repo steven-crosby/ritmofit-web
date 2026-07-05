@@ -10,6 +10,30 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-04 ("alive at rest" implementation — DS doctrine + 5 web slices) — deployed
+> (Worker `190bc83e-c6c7-4ed4-a441-465a8d72981f`).** Shipped `main` (`2bb08be`) bringing the full
+> "alive at rest" set live together — all presentation-only, **no schema / token / API / provider
+> change**: **#193** (design-system doctrine — 8th principle "alive at rest" + the provisional-state
+> contract *caution channel + glyph + `auto` label + underlying value, never plasma, no new token*;
+> canonical docs + reference mockups), **#194** (derived provisional class-shape ribbon: a warm-up →
+> peak → release arc for an unshaped class, marked `auto shape`, capped below plasma), **#195** (missing
+> BPM named in place — "BPM needed" chip + "add BPM · pulse off" header; **no fabricated `~132 · auto`**
+> — the data model has no BPM provenance, so a real provisional BPM would need a schema feature),
+> **#196** (Essentials-first inspector — intensity/BPM/duration/notes lead, the long tail under an
+> "Advanced" `<details>`), **#197** (affirmative Live-at-rest "Press play to start" hero + class-shape
+> mini-map, and the builder all-clear "Class shape ready · take it live"), **#198** (auto-banded
+> provisional segment structure — warm-up → cool-down bands derived from the class length, marked
+> `auto`, builder-only).
+>
+> Rollback anchor: prior live `1fcdee96-e1a9-4535-9870-2219d0c68e9a` (the 2026-07-03 v1-redesign deploy,
+> PRs #187–#192). Remote D1: **No migrations to apply** (verified `--remote`). Pre-deploy gate green
+> (format / typecheck / lint / design-system verify / **337 web + 271 api** unit tests / **76**
+> integration / web build / openapi no-drift / contract-parity / audit). Post-deploy smoke on live
+> `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` → `200`, protected `/api/v1/classes` →
+> `401`. Each of the five web slices was driven end-to-end pre-merge by the 390px narrow-width browser
+> smoke (grown to **31 checks** covering every phase). Presentation-only; iOS parity notes are recorded
+> on the merged PRs (no new parity debt).
+
 > **Session 2026-07-03 (out-of-band deploy: provider connect fixes) — deployed (Worker
 > `94126954-0e61-408e-b404-bb380c338141`).** Provider-change deploy shipped on its own per the deploy
 > cadence: SoundCloud OAuth token-exchange request-shape fix and Spotify connect verification
