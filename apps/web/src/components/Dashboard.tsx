@@ -2067,46 +2067,6 @@ function TrackInspector({
             </div>
           </label>
 
-          <div className="flex gap-3">
-            <label className="flex flex-col gap-1">
-              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                RPM
-              </span>
-              <input
-                type="number"
-                min={1}
-                inputMode="numeric"
-                placeholder="—"
-                aria-describedby={`rpm-help-${track.id}`}
-                className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
-                value={rpm}
-                onChange={(e) => setRpm(e.target.value)}
-              />
-              <span id={`rpm-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-                Cadence — not derived from BPM
-              </span>
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                Holds
-              </span>
-              <input
-                type="number"
-                min={0}
-                inputMode="numeric"
-                placeholder="—"
-                aria-describedby={`holds-help-${track.id}`}
-                className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
-                value={holdCountVal}
-                onChange={(e) => setHoldCountVal(e.target.value)}
-              />
-              <span id={`holds-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-                Hold count for this track
-              </span>
-            </label>
-          </div>
-
           <label className="flex flex-col gap-1">
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
               Duration
@@ -2125,80 +2085,6 @@ function TrackInspector({
             </span>
           </label>
 
-          <fieldset className="flex flex-col gap-1">
-            <legend className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Trim
-            </legend>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="start"
-                aria-label="Clip start (minutes:seconds)"
-                aria-describedby={`clip-help-${track.id}`}
-                className="w-24 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
-                value={clipStart}
-                onChange={(e) => setClipStart(e.target.value)}
-              />
-              <span aria-hidden className="font-ui text-sm text-text-tertiary">
-                –
-              </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="end"
-                aria-label="Clip end (minutes:seconds)"
-                aria-describedby={`clip-help-${track.id}`}
-                className="w-24 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
-                value={clipEnd}
-                onChange={(e) => setClipEnd(e.target.value)}
-              />
-            </div>
-            <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-              Play only part of the track. Blank start = from the beginning; blank end = to the end.
-            </span>
-          </fieldset>
-
-          <label className="flex flex-col gap-1">
-            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Downbeat
-            </span>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="m:ss"
-              aria-describedby={`downbeat-help-${track.id}`}
-              className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
-              value={downbeat}
-              onChange={(e) => setDownbeat(e.target.value)}
-            />
-            <span id={`downbeat-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-              {displayBpm
-                ? `Where beat 1 lands. Sets the ${displayBpm} BPM grid for snapping (4/4).`
-                : 'Set a BPM above to enable beat-snapping.'}
-            </span>
-          </label>
-
-          {canPlaceFreely && (
-            <label className="flex flex-col gap-1">
-              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                Start at
-              </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="m:ss"
-                aria-describedby={`startat-help-${track.id}`}
-                className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
-                value={startAt}
-                onChange={(e) => setStartAt(e.target.value)}
-              />
-              <span id={`startat-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-                Where this track starts on the class timeline. Gaps are allowed; overlaps are not.
-              </span>
-            </label>
-          )}
-
           <label className="flex flex-col gap-1">
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
               Notes
@@ -2210,6 +2096,143 @@ function TrackInspector({
               onChange={(e) => setNotes(e.target.value)}
             />
           </label>
+
+          {/* Advanced — the long tail (cadence, holds, trim, downbeat, placement),
+              collapsed by default so the common act reads as scoring the class, not
+              filling every field before the shape is visible (design system 09
+              §Inspector "score, don't fill"). Native <details>: the inputs stay
+              mounted, so the single Save below still commits them while collapsed. */}
+          <details>
+            <summary className="cursor-pointer font-ui text-xs uppercase tracking-wide text-text-tertiary hover:text-text-secondary">
+              Advanced
+            </summary>
+            <div className="mt-3 flex flex-col gap-3">
+              <div className="flex gap-3">
+                <label className="flex flex-col gap-1">
+                  <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                    RPM
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    inputMode="numeric"
+                    placeholder="—"
+                    aria-describedby={`rpm-help-${track.id}`}
+                    className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                    value={rpm}
+                    onChange={(e) => setRpm(e.target.value)}
+                  />
+                  <span id={`rpm-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+                    Cadence — not derived from BPM
+                  </span>
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                    Holds
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    placeholder="—"
+                    aria-describedby={`holds-help-${track.id}`}
+                    className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                    value={holdCountVal}
+                    onChange={(e) => setHoldCountVal(e.target.value)}
+                  />
+                  <span
+                    id={`holds-help-${track.id}`}
+                    className="font-ui text-xs text-text-tertiary"
+                  >
+                    Hold count for this track
+                  </span>
+                </label>
+              </div>
+
+              <fieldset className="flex flex-col gap-1">
+                <legend className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                  Trim
+                </legend>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="start"
+                    aria-label="Clip start (minutes:seconds)"
+                    aria-describedby={`clip-help-${track.id}`}
+                    className="w-24 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                    value={clipStart}
+                    onChange={(e) => setClipStart(e.target.value)}
+                  />
+                  <span aria-hidden className="font-ui text-sm text-text-tertiary">
+                    –
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="end"
+                    aria-label="Clip end (minutes:seconds)"
+                    aria-describedby={`clip-help-${track.id}`}
+                    className="w-24 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                    value={clipEnd}
+                    onChange={(e) => setClipEnd(e.target.value)}
+                  />
+                </div>
+                <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+                  Play only part of the track. Blank start = from the beginning; blank end = to the
+                  end.
+                </span>
+              </fieldset>
+
+              <label className="flex flex-col gap-1">
+                <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                  Downbeat
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="m:ss"
+                  aria-describedby={`downbeat-help-${track.id}`}
+                  className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                  value={downbeat}
+                  onChange={(e) => setDownbeat(e.target.value)}
+                />
+                <span
+                  id={`downbeat-help-${track.id}`}
+                  className="font-ui text-xs text-text-tertiary"
+                >
+                  {displayBpm
+                    ? `Where beat 1 lands. Sets the ${displayBpm} BPM grid for snapping (4/4).`
+                    : 'Set a BPM above to enable beat-snapping.'}
+                </span>
+              </label>
+
+              {canPlaceFreely && (
+                <label className="flex flex-col gap-1">
+                  <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                    Start at
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="m:ss"
+                    aria-describedby={`startat-help-${track.id}`}
+                    className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                    value={startAt}
+                    onChange={(e) => setStartAt(e.target.value)}
+                  />
+                  <span
+                    id={`startat-help-${track.id}`}
+                    className="font-ui text-xs text-text-tertiary"
+                  >
+                    Where this track starts on the class timeline. Gaps are allowed; overlaps are
+                    not.
+                  </span>
+                </label>
+              )}
+            </div>
+          </details>
 
           {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
 
