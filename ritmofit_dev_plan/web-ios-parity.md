@@ -116,11 +116,13 @@ Keep it as historical context for later iOS refinement and contract/design sync.
   Music. Live Mode owns the class timeline, supports mixed-provider classes, preflights every track
   before class start, auto-advances without instructor action, and uses `clipStartMs` + effective
   `track.durationMs` as each provider playback window. **Web status (2026-07-05):** the playback core
-  (`apps/web/src/lib/playback/` — selection/preflight, runtime coordinator) plus the SoundCloud Widget
-  and **Apple Music (MusicKit JS) adapters** are built and registered, and the Live Mode wiring
-  (preflight screen, player rail, recoverable-failure alert with recovery-only handoff links) is live;
-  the Spotify adapter (needs the playback-scope expansion first) and Builder preview are still pending,
-  so the iOS follow-up below covers the full capability either way. **iOS parity follow-up:** iOS needs equivalent
+  (`apps/web/src/lib/playback/` — selection/preflight, runtime coordinator, shared adapter registry)
+  plus the SoundCloud Widget and **Apple Music (MusicKit JS) adapters** are built and registered; the
+  Live Mode wiring (preflight screen, player rail, recoverable-failure alert with recovery-only handoff
+  links) is live; and **Builder preview is now wired** (`TrackPreview.tsx` — manual, single-track,
+  clip-window, no auto-advance). The Spotify adapter (needs the playback-scope expansion first) is the
+  remaining web gap. Real-provider audio for all adapters still needs live subscriber verification.
+  **iOS parity follow-up:** iOS needs equivalent
   native/provider-authorized playback control, preflight, mixed-provider track selection, auto-advance,
   and Builder range preview. Platform APIs may differ, but capability cannot be omitted without a
   tracked documented exception. Potential native paths: MusicKit for Apple Music, Spotify SDK/App Remote

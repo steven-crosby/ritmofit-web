@@ -96,6 +96,12 @@ const CuesSection = lazyWithReload(() =>
 const MovesSection = lazyWithReload(() =>
   import('./ChoreographyEditor.js').then((m) => ({ default: m.MovesSection })),
 );
+// Manual clip-window preview for the selected track — shares the playback adapter
+// stack with Live Mode, so it code-splits alongside those chunks (not the initial
+// builder paint) and loads when a track is selected.
+const TrackPreview = lazyWithReload(() =>
+  import('./TrackPreview.js').then((m) => ({ default: m.TrackPreview })),
+);
 
 /** Full-screen Suspense fallback while a lazy chunk (e.g. Live mode) loads. */
 function LoadingScreen() {
@@ -1143,22 +1149,31 @@ function ClassWorkspace({
       {/* ── Right column: the sticky inspector for the selected track ── */}
       <aside className="xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
         {selectedTrack ? (
-          <TrackInspector
-            key={selectedTrack.id}
-            track={selectedTrack}
-            title={selectedEntry?.track.title ?? 'Track'}
-            durationMs={selectedEntry?.track.durationMs ?? null}
-            displayBpm={selectedEntry?.displayBpm ?? null}
-            canEdit={canEdit}
-            canPlaceFreely={isFree}
-            focus={inspectorFocus}
-            onSaved={onTrackChanged}
-            onRemoved={() => {
-              setSelectedTrackId(null);
-              onTrackChanged();
-            }}
-            onOpenSongsByMove={onOpenSongsByMove}
-          />
+          <div className="flex flex-col gap-3">
+            {/* Manual clip-window preview of the selected track (no auto-advance);
+                only once the run-payload entry (provider refs + window) resolved. */}
+            {selectedEntry && (
+              <Suspense fallback={null}>
+                <TrackPreview entry={selectedEntry} />
+              </Suspense>
+            )}
+            <TrackInspector
+              key={selectedTrack.id}
+              track={selectedTrack}
+              title={selectedEntry?.track.title ?? 'Track'}
+              durationMs={selectedEntry?.track.durationMs ?? null}
+              displayBpm={selectedEntry?.displayBpm ?? null}
+              canEdit={canEdit}
+              canPlaceFreely={isFree}
+              focus={inspectorFocus}
+              onSaved={onTrackChanged}
+              onRemoved={() => {
+                setSelectedTrackId(null);
+                onTrackChanged();
+              }}
+              onOpenSongsByMove={onOpenSongsByMove}
+            />
+          </div>
         ) : (
           <div className="rounded-card border border-interactive/20 bg-bg-base p-5">
             <p className="font-ui text-sm text-text-tertiary">
