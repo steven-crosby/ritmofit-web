@@ -79,6 +79,68 @@ describe('ClassHeaderCard Live readiness', () => {
     expect(screen.getByText(/duration needed/i)).toBeTruthy();
     expect(screen.getByText(/blocks live/i)).toBeTruthy();
   });
+
+  it('explains the disabled Run-live gate at the button itself, accessibly', () => {
+    render(
+      <ClassHeaderCard
+        cls={cls}
+        payload={payload}
+        trackCount={1}
+        isOwner
+        canEdit
+        canRun={false}
+        onError={() => {}}
+        onRun={() => {}}
+        onSelectTrack={() => {}}
+        onClassUpdated={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
+
+    const runButton = screen.getByRole('button', { name: /run live/i });
+    // The reason is programmatically associated, not hover-title only.
+    const describedBy = runButton.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    // …and visible: a track without a length is named as the run gate.
+    expect(document.getElementById(describedBy!)?.textContent).toMatch(/length to run/i);
+  });
+
+  it('guards the empty class where the readiness panel is not shown', () => {
+    // payload null + zero tracks → no readiness panel, so the greyed button is
+    // the only signal; it must still say why, at the button.
+    render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit />);
+
+    const runButton = screen.getByRole('button', { name: /run live/i });
+    const describedBy = runButton.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy!)?.textContent).toMatch(/add a track to run/i);
+  });
+
+  it('drops the blocked-reason association once the class can run', () => {
+    const runnable = {
+      class: { totalDurationMs: 300_000 },
+      tracks: [{ ...missingEntry, track: { title: 'Ready', durationMs: 300_000 } }],
+    } as RunPayload;
+    render(
+      <ClassHeaderCard
+        cls={cls}
+        payload={runnable}
+        trackCount={1}
+        isOwner
+        canEdit
+        canRun
+        onError={() => {}}
+        onRun={() => {}}
+        onSelectTrack={() => {}}
+        onClassUpdated={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
+
+    const runButton = screen.getByRole('button', { name: /run live/i });
+    expect(runButton).toHaveProperty('disabled', false);
+    expect(runButton.getAttribute('aria-describedby')).toBeNull();
+  });
 });
 
 const baseProps = {
