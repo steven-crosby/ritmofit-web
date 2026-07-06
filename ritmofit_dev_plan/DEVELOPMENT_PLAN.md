@@ -33,12 +33,16 @@ Pilates, and HIIT.
   track is the **D21 creator-workstation-shell slice** — the first slice (Cycle/Pilates/HIIT templates,
   readiness + discovery resting state, provider shelves) is deployed; **saved-playlist browsing** is the
   next sub-slice (needs new provider read endpoints; see `decisions.md` D21) — alongside the
-  **provider-authorized playback initiative** (SoundCloud + Apple Music adapters, Builder preview, and
-  cross-provider resolution built; the Spotify playback adapter and live subscriber verification are the
-  remaining gaps — status of record in
-  [`provider-playback-implementation.md`](./provider-playback-implementation.md)). Teams, Sharing,
-  Publish, and Explore stay hidden/dormant (D20). For per-deploy detail and the live Worker version, see
-  [`HISTORY.md`](./HISTORY.md), newest first.
+  **provider-authorized playback initiative**. SoundCloud, Apple Music, and Spotify Web Playback SDK
+  adapters are now registered and live-verified for Builder clip-window preview (`TrackPreview.tsx`,
+  manual/single-track/no-auto-advance) and Live Mode. The **2026-07-06 batch made the player usable
+  across all three providers**: SoundCloud plays via the public Widget without a live connection, Apple
+  Music `authorize()` recovers instead of freezing, Spotify plays in-app for Premium users via the
+  official Web Playback SDK, older Spotify connections missing playback scopes surface a reconnect action,
+  and Spotify-only tracks can still be **resolved cross-provider** to a playable equivalent. Teams,
+  Sharing, Publish, and Explore stay hidden/dormant (D20). Last production deploy **2026-07-06 (Worker
+  `b99ac98d`)** — Spotify Web Playback SDK launch, no schema/migration. For per-deploy detail and the
+  live Worker version, see [`HISTORY.md`](./HISTORY.md), newest first.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
