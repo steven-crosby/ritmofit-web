@@ -88,3 +88,23 @@ export function providerConnectionState(
   if (connection.expiresAt != null && connection.expiresAt <= now) return 'expired';
   return 'connected';
 }
+
+/**
+ * Spotify connections created before playback launched only granted
+ * `user-library-read`. Playback needs `streaming`, so the web selector can
+ * distinguish "reconnect Spotify for playback" from "connect Spotify".
+ */
+export function spotifyScopeHasPlayback(scope: string | null | undefined): boolean {
+  if (!scope) return false;
+  const scopes = scope.split(/\s+/).filter(Boolean);
+  return scopes.includes('streaming') || scopes.includes('mock');
+}
+
+/** Whether this live connection is authorized for in-app playback. */
+export function connectionHasPlaybackScope(
+  provider: Provider,
+  connection: { scope: string | null } | undefined,
+): boolean {
+  if (provider !== 'spotify') return true;
+  return spotifyScopeHasPlayback(connection?.scope);
+}

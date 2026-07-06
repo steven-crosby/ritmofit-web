@@ -14,7 +14,11 @@ import {
   type RunPayload,
   type RunPayloadTrackEntry,
 } from '@ritmofit/shared';
-import { PROVIDER_ORDER, providerConnectionState } from '../providers.js';
+import {
+  PROVIDER_ORDER,
+  connectionHasPlaybackScope,
+  providerConnectionState,
+} from '../providers.js';
 import type {
   PlaybackWindow,
   PreflightResult,
@@ -23,7 +27,7 @@ import type {
 } from './types.js';
 
 /** The connection fields selection needs — a subset of `MusicConnectionView`. */
-export type ConnectionLike = Pick<MusicConnectionView, 'provider' | 'expiresAt'>;
+export type ConnectionLike = Pick<MusicConnectionView, 'provider' | 'expiresAt' | 'scope'>;
 
 /** Inputs shared by selection and preflight. */
 export interface SelectionOptions {
@@ -44,12 +48,15 @@ export interface SelectionOptions {
   availableProviders?: readonly Provider[];
 }
 
-/** The providers with a live (present, unexpired) connection right now. */
-function connectedProviders(connections: ConnectionLike[], now: number): Set<Provider> {
-  const connected = new Set<Provider>();
+/** The live (present, unexpired) connections keyed by provider. */
+function liveConnections(
+  connections: ConnectionLike[],
+  now: number,
+): Map<Provider, ConnectionLike> {
+  const connected = new Map<Provider, ConnectionLike>();
   for (const connection of connections) {
     if (providerConnectionState(connection.provider, connection, now) === 'connected') {
-      connected.add(connection.provider);
+      connected.set(connection.provider, connection);
     }
   }
   return connected;
@@ -81,13 +88,17 @@ export function selectProvider(
   if (entry.providerRefs.length === 0) {
     return { status: 'unplayable', reason: 'no_provider_ref' };
   }
-  const connected = connectedProviders(connections, options.now);
+  const connected = liveConnections(connections, options.now);
   const available = new Set<Provider>(options.availableProviders ?? providerValues);
 
   const refFor = (provider: Provider) =>
     entry.providerRefs.find((ref) => ref.provider === provider);
+  const hasPlaybackScope = (provider: Provider): boolean =>
+    connectionHasPlaybackScope(provider, connected.get(provider));
   const usable = (provider: Provider): boolean =>
-    available.has(provider) && (!playbackRequiresConnection(provider) || connected.has(provider));
+    available.has(provider) &&
+    (!playbackRequiresConnection(provider) ||
+      (connected.has(provider) && hasPlaybackScope(provider)));
 
   const preferred = options.preferredProvider ?? null;
   if (preferred && usable(preferred)) {
@@ -106,9 +117,20 @@ export function selectProvider(
   // in-app adapter yet — a Spotify-only track (provider_not_playable), fixable
   // by cross-provider resolution rather than connecting.
   const hasAvailableRef = entry.providerRefs.some((ref) => available.has(ref.provider));
+  const needsPlaybackReauth = entry.providerRefs.some(
+    (ref) =>
+      available.has(ref.provider) &&
+      playbackRequiresConnection(ref.provider) &&
+      connected.has(ref.provider) &&
+      !hasPlaybackScope(ref.provider),
+  );
   return {
     status: 'unplayable',
-    reason: hasAvailableRef ? 'no_connected_provider' : 'provider_not_playable',
+    reason: needsPlaybackReauth
+      ? 'playback_reauth_required'
+      : hasAvailableRef
+        ? 'no_connected_provider'
+        : 'provider_not_playable',
   };
 }
 

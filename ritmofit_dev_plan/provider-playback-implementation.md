@@ -8,6 +8,7 @@
 <!-- note (Claude, 2026-07-06): Reframed under D21 — the player is one part of a broader music-service shell; added the shell-direction section and the discovery read-surface contract impact. -->
 <!-- note (Claude, 2026-07-06): Real-provider audio live-verified on prod for the two shipped adapters — SoundCloud (Worker 5072dd3b) and Apple Music (Worker cbea9f69), each after a CSP hotfix; Apple audible playback owner-confirmed. Retired the "needs live verification" markers. Spotify audio still pending its adapter. -->
 <!-- note (Claude, 2026-07-06): Finalized the Spotify playback plan after owner decisions — Premium account available; expand the single connect scope to be playback-capable; no feature flag (ship after live-verify). Starting the backend slice (scope expansion + playback-token endpoint). -->
+<!-- note (Codex, 2026-07-06): Spotify Web Playback SDK adapter registered and live-verified on prod, Worker b99ac98d; owner confirmed audible Premium playback in Builder preview and Live Mode. -->
 
 ## Goal
 
@@ -126,14 +127,16 @@ Add the web playback layer under `apps/web/src/lib/playback/`:
   until playback starts). **(built — live-verified 2026-07-06: Builder preview plays audible subscriber
   audio on prod after the `*.itunes.apple.com` + `media-src 'self' blob:` CSP fix, Worker `cbea9f69`)**
 - `registry.ts`: `PLAYBACK_ADAPTERS` — the single source of truth for which providers the web player can
-  drive (SoundCloud + Apple Music today), shared by Live Mode and Builder preview so the two surfaces
-  never drift on playability. **(built)**
+  drive (SoundCloud + Apple Music + Spotify), shared by Live Mode and Builder preview so the two surfaces
+  never drift on playability. **(built + Spotify registered 2026-07-06 after prod live verification)**
 - `preview.ts`: the Builder preview controller (`PreviewPlaybackController`) — drives ONE adapter for the
   selected track, manual only. Deliberately not the runtime coordinator: single-track, no whole-class
   preflight, and no auto-advance (structurally — there is no next track). Same host-clock model as Live
   Mode (`tick(previewElapsedMs)`), stopping at the clip-window end so preview honors the saved range.
   **(built)**
-- `spotify-adapter.ts`: Spotify Web Playback SDK / Connect playback.
+- `spotify-adapter.ts`: Spotify Web Playback SDK / Connect playback. **(built + registered —
+  live-verified 2026-07-06: Builder preview play/pause/resume/stop and Live Mode preflight/start on prod
+  with owner-confirmed audible Premium audio, Worker `b99ac98d-ea10-4efb-b42f-b068e479c550`)**
 - focused tests for provider selection, clip-window math, preflight results, auto-advance decisions,
   preview lifecycle (prepare/play/stop, window-end stop, superseded-prepare teardown), and
   unrecoverable/recoverable error mapping.
@@ -236,11 +239,13 @@ verified working on Worker `94126954-0e61-408e-b404-bb380c338141`. Existing Spot
   the same empirical live pass used for Apple Music** (drive a real browser, watch `securitypolicyviolation`
   + SDK error events, add hosts until it plays).
 
-**Verification & compliance:** live-verify with the Premium account through a real browser (audible
-playback + CSP/Permissions-Policy tuning). Official SDK only; no cache/proxy/decode/BPM. Document a
-public-launch Spotify compliance checkpoint. Because there is **no feature flag**, the adapter is
-registered only after live verification passes, so Spotify-only tracks keep reporting
-`provider_not_playable` until then.
+**Verification & compliance:** live-verified 2026-07-06 with the owner's Premium account through Chrome
+on production. Builder preview for "Uptown Funk" entered `Preview: Spotify`; pause/resume/stop worked;
+Live Mode preflight reported `Plays on Spotify`; Live Mode start advanced the class clock and showed
+`Playback: Spotify`; the owner confirmed audible audio. Chrome captured no Spotify SDK, CSP,
+Permissions-Policy, authentication, account, or playback errors, so the initial `_headers` host set
+needed no hotfix. Official SDK only; no cache/proxy/decode/BPM. Document a public-launch Spotify
+compliance checkpoint.
 
 ## API And Contract Impact
 
@@ -330,18 +335,17 @@ over one adapter. Manual transport (preview / pause / resume / stop), a status c
 Mode player-rail vocabulary, an unplayable verdict that names the fix (no ref / connect a provider), and
 a recoverable `role="alert"` on a runtime failure (retry / dismiss — no handoff link). Host-clock driven
 like Live Mode; stops at the clip-window end. Real-provider audio is **live-verified on prod (2026-07-06)**
-for the two shipped adapters — audible subscriber Apple Music preview and SoundCloud Live Mode playback,
-each after its CSP hotfix (Workers `cbea9f69` / `5072dd3b`); Spotify audio remains unverified until its
-adapter lands. Not yet wired: an inline reconnect action from the preview error (the connect flow
-lives in the top-level Connections dialog).
+for all three shipped adapters: SoundCloud Live Mode playback (Worker `5072dd3b`), Apple Music Builder
+preview with audible subscriber audio (Worker `cbea9f69`), and Spotify Builder preview + Live Mode with
+audible Premium audio (Worker `b99ac98d`). Not yet wired: an inline reconnect action from the preview
+error (the connect flow lives in the top-level Connections dialog).
 
 **Apple Music shared-transport follow-ups (updated 2026-07-05):** MusicKit is a page-level singleton, so
 the adapter guards teardown with a per-instance ownership token (only the adapter that started the
 transport may `stop()` it — prevents a superseded adapter silencing the live track under rapid seeks).
 Both narrower shared-singleton tails are now closed (each needed a stuck-SDK / abandoned-consent
 condition — acceptable for private beta, worth closing before broad Apple Music rollout). Real-provider
-audio is **live-verified on prod (2026-07-06)** for both shipped adapters (audible Apple Music preview +
-SoundCloud Live Mode, each after its CSP hotfix); only Spotify audio remains unverified pending its adapter.
+audio is **live-verified on prod (2026-07-06)** for SoundCloud, Apple Music, and Spotify.
 
 Closed:
 

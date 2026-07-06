@@ -71,7 +71,11 @@ function makePayload(tracks: RunPayloadTrackEntry[], totalDurationMs?: number): 
 }
 
 function connections(...providers: Provider[]): ConnectionLike[] {
-  return providers.map((provider) => ({ provider, expiresAt: NOW + 3_600_000 }));
+  return providers.map((provider) => ({
+    provider,
+    expiresAt: NOW + 3_600_000,
+    scope: provider === 'spotify' ? 'user-library-read streaming' : null,
+  }));
 }
 
 /**

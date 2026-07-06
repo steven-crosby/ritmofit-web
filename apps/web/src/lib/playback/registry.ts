@@ -11,11 +11,13 @@
 import type { Provider } from '@ritmofit/shared';
 import { appleMusicAdapterFactory } from './apple-music-adapter.js';
 import { soundcloudAdapterFactory } from './soundcloud-adapter.js';
+import { spotifyAdapterFactory } from './spotify-adapter.js';
 import type { AdapterRegistry } from './types.js';
 
 export const PLAYBACK_ADAPTERS: AdapterRegistry = {
   soundcloud: soundcloudAdapterFactory,
   apple_music: appleMusicAdapterFactory,
+  spotify: spotifyAdapterFactory,
 };
 
 /**
