@@ -12,8 +12,18 @@
 #   font-src    'self' — the three OFL faces are self-hosted under /fonts (no CDN).
 #   img-src     https: + data: for provider album artwork from arbitrary CDNs.
 #   connect-src 'self' (same-origin /api) + the insights beacon endpoint + Apple
-#               Music API hosts (api.music.apple.com / *.mzstatic.com) that MusicKit
-#               JS calls once a user connects their Apple Music account.
+#               Music API hosts (*.music.apple.com / *.mzstatic.com) that MusicKit
+#               JS calls once a user connects their Apple Music account, plus
+#               *.itunes.apple.com — MusicKit web playback fetches the streaming
+#               handshake + license from play.itunes.apple.com/WebObjects/MZPlay.woa
+#               and the HLS audio manifest/segments from aod-ssl.itunes.apple.com
+#               (Apple serves audio from several *.itunes.apple.com hosts; without
+#               them playback fails with "Failed to fetch" / "Could not fetch
+#               manifest" — both blocks observed live during verification).
+#   media-src   'self' blob: — MusicKit plays via Media Source Extensions, so the
+#               <audio> element's source is a blob: MediaSource URL (segment bytes
+#               themselves are fetched over connect-src). Without this, default-src
+#               'self' governs media and blocks the blob source.
 #   script-src  also allows js-cdn.music.apple.com (the MusicKit JS library, loaded
 #               on demand only when a user starts the Apple Music connect flow)
 #               and w.soundcloud.com (the official SoundCloud Widget API, loaded
@@ -26,7 +36,7 @@
 #   not inject a CSP-blocked inline challenge script into the SPA HTML.
 /*
   Cache-Control: public, max-age=0, must-revalidate, no-transform
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://js-cdn.music.apple.com https://w.soundcloud.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self' https://static.cloudflareinsights.com https://*.music.apple.com https://*.mzstatic.com; frame-src https://authorize.music.apple.com https://idmsa.apple.com https://w.soundcloud.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://js-cdn.music.apple.com https://w.soundcloud.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; media-src 'self' blob:; connect-src 'self' https://static.cloudflareinsights.com https://*.music.apple.com https://*.mzstatic.com https://*.itunes.apple.com; frame-src https://authorize.music.apple.com https://idmsa.apple.com https://w.soundcloud.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
