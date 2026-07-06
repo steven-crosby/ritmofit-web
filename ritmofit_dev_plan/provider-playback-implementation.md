@@ -6,6 +6,7 @@
 <!-- note (Claude, 2026-07-05): Apple Music (MusicKit JS v3) playback adapter built + registered; updated Architecture build marker and the Live Mode adapter-registry status. -->
 <!-- note (Codex, 2026-07-05): Marked the Apple Music setQueue singleton guard closed after PR #211; authorize waiting-state remains open as a UI slice. -->
 <!-- note (Claude, 2026-07-06): Reframed under D21 — the player is one part of a broader music-service shell; added the shell-direction section and the discovery read-surface contract impact. -->
+<!-- note (Claude, 2026-07-06): Real-provider audio live-verified on prod for the two shipped adapters — SoundCloud (Worker 5072dd3b) and Apple Music (Worker cbea9f69), each after a CSP hotfix; Apple audible playback owner-confirmed. Retired the "needs live verification" markers. Spotify audio still pending its adapter. -->
 
 ## Goal
 
@@ -115,12 +116,14 @@ Add the web playback layer under `apps/web/src/lib/playback/`:
   class timeline, auto-advance, gap handling, mid-track entry after seek, pause/resume, and
   recoverable-error surfacing. Host-clock driven: Live Mode's rAF loop calls `tick(elapsedMs)`; the
   coordinator never runs its own timer, and the class timeline stays master. **(built)**
-- `soundcloud-adapter.ts`: official SoundCloud Widget API. **(built — needs live verification)**
+- `soundcloud-adapter.ts`: official SoundCloud Widget API. **(built — live-verified 2026-07-06:
+  Live Mode playback + pause/resume on prod after the `w.soundcloud.com` CSP hotfix, Worker `5072dd3b`)**
 - `apple-music-adapter.ts`: MusicKit JS (v3) playback on the shared page instance, building on
   `apps/web/src/lib/musickit.ts` (now extended from connect-only into the queue/transport surface).
   Cues the clip start via `setQueue.startTime` (seconds) and converts the ms playback contract at the
   boundary; a pre-play mid-track seek re-cues rather than calling `seekToTime` (no now-playing item
-  until playback starts). **(built — needs live verification)**
+  until playback starts). **(built — live-verified 2026-07-06: Builder preview plays audible subscriber
+  audio on prod after the `*.itunes.apple.com` + `media-src 'self' blob:` CSP fix, Worker `cbea9f69`)**
 - `registry.ts`: `PLAYBACK_ADAPTERS` — the single source of truth for which providers the web player can
   drive (SoundCloud + Apple Music today), shared by Live Mode and Builder preview so the two surfaces
   never drift on playability. **(built)**
@@ -289,8 +292,10 @@ existing `track_provider_ids`; catalog search spends the app-level token, never 
 over one adapter. Manual transport (preview / pause / resume / stop), a status chip mirroring the Live
 Mode player-rail vocabulary, an unplayable verdict that names the fix (no ref / connect a provider), and
 a recoverable `role="alert"` on a runtime failure (retry / dismiss — no handoff link). Host-clock driven
-like Live Mode; stops at the clip-window end. Real-provider audio still needs live verification with a
-subscriber account. Not yet wired: an inline reconnect action from the preview error (the connect flow
+like Live Mode; stops at the clip-window end. Real-provider audio is **live-verified on prod (2026-07-06)**
+for the two shipped adapters — audible subscriber Apple Music preview and SoundCloud Live Mode playback,
+each after its CSP hotfix (Workers `cbea9f69` / `5072dd3b`); Spotify audio remains unverified until its
+adapter lands. Not yet wired: an inline reconnect action from the preview error (the connect flow
 lives in the top-level Connections dialog).
 
 **Apple Music shared-transport follow-ups (updated 2026-07-05):** MusicKit is a page-level singleton, so
@@ -298,7 +303,8 @@ the adapter guards teardown with a per-instance ownership token (only the adapte
 transport may `stop()` it — prevents a superseded adapter silencing the live track under rapid seeks).
 Both narrower shared-singleton tails are now closed (each needed a stuck-SDK / abandoned-consent
 condition — acceptable for private beta, worth closing before broad Apple Music rollout). Real-provider
-audio for all adapters still needs live subscriber verification.
+audio is **live-verified on prod (2026-07-06)** for both shipped adapters (audible Apple Music preview +
+SoundCloud Live Mode, each after its CSP hotfix); only Spotify audio remains unverified pending its adapter.
 
 Closed:
 
