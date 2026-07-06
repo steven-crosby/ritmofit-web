@@ -14,10 +14,15 @@
  * recovery-only affordance).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { MusicConnectionView, RunPayloadTrackEntry } from '@ritmofit/shared';
-import { listConnections } from '../lib/api.js';
+import type {
+  MusicConnectionView,
+  RunPayloadTrackEntry,
+  TrackSearchResult,
+} from '@ritmofit/shared';
+import { attachTrackProviderId, listConnections, resolveTrackProvider } from '../lib/api.js';
 import { playbackWindowFor, selectProvider } from '../lib/playback/coordinator.js';
 import { PreviewPlaybackController, type PreviewStatus } from '../lib/playback/preview.js';
+import type { RunPayloadProviderRef, UnplayableReason } from '../lib/playback/types.js';
 import { PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
 import { providerLabel } from '../lib/providers.js';
 
@@ -40,6 +45,10 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
   const [connectionsError, setConnectionsError] = useState<string | null>(null);
   const [status, setStatus] = useState<PreviewStatus>({ kind: 'idle' });
+  // A cross-provider resolution attached a playable ref this session — overlay it
+  // on the entry so the verdict/preview update immediately (it's persisted
+  // server-side, and a full class reload carries it too). Reset per selected track.
+  const [overrideRefs, setOverrideRefs] = useState<RunPayloadProviderRef[] | null>(null);
   const controllerRef = useRef<PreviewPlaybackController | null>(null);
   // The host rAF clock runs exactly while the controller reports `playing`.
   // Deriving this from status (rather than a separate `playing` flag the
@@ -92,6 +101,9 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
     };
   }, [entry.classTrackId]);
 
+  // Switching the selected track drops any resolution overlay from the previous one.
+  useEffect(() => setOverrideRefs(null), [entry.classTrackId]);
+
   // Host clock: accumulate preview-relative time only while playing, and let the
   // controller stop at the clip-window end. Same rAF shape as Live Mode.
   const baseRef = useRef(0);
@@ -115,10 +127,13 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
   // A fresh preview starts its clip clock from zero; the controller drives every
   // stop (window end, pause, error, track switch) by pushing status, so there is
   // no `playing` flag to reconcile here — it's derived above.
+  // The entry with any freshly-resolved provider ref overlaid (see overrideRefs).
+  const effectiveEntry = overrideRefs ? { ...entry, providerRefs: overrideRefs } : entry;
+
   const onPreview = useCallback(() => {
     baseRef.current = 0;
-    void controllerRef.current?.play(entry);
-  }, [entry]);
+    void controllerRef.current?.play(effectiveEntry);
+  }, [effectiveEntry]);
 
   const onPause = useCallback(() => {
     void controllerRef.current?.pause();
@@ -134,7 +149,7 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
 
   // Static eligibility for the idle verdict (before the instructor hits preview).
   const selection = connections
-    ? selectProvider(entry, connections, {
+    ? selectProvider(effectiveEntry, connections, {
         now: Date.now(),
         availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
       })
@@ -156,7 +171,11 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
       )}
 
       {connections && selection?.status === 'unplayable' ? (
-        <UnplayableVerdict entry={entry} reason={selection.reason} />
+        <UnplayableVerdict
+          entry={effectiveEntry}
+          reason={selection.reason}
+          onResolved={setOverrideRefs}
+        />
       ) : (
         <PreviewControls
           status={status}
@@ -215,10 +234,17 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
 function UnplayableVerdict({
   entry,
   reason,
+  onResolved,
 }: {
   entry: RunPayloadTrackEntry;
-  reason: 'no_provider_ref' | 'no_connected_provider' | 'missing_duration';
+  reason: UnplayableReason;
+  onResolved: (refs: RunPayloadProviderRef[]) => void;
 }) {
+  // Refs exist but only for a provider Ritmo can't play (e.g. Spotify) — offer
+  // cross-provider resolution instead of a dead-end "connect a provider" hint.
+  if (reason === 'provider_not_playable') {
+    return <ResolveProviderAction entry={entry} onResolved={onResolved} />;
+  }
   let text: string;
   if (reason === 'no_provider_ref') {
     text = 'No provider link yet — add this track from search or import to preview it.';
@@ -240,6 +266,117 @@ function UnplayableVerdict({
         {text}
       </span>
     </p>
+  );
+}
+
+/**
+ * "Find on a supported provider" — cross-provider resolution for a
+ * `provider_not_playable` track (e.g. a Spotify-only track, no adapter). Searches
+ * the playable providers for the same song: a strong same-song match is attached
+ * automatically; otherwise the candidates are listed to confirm. The attach is
+ * persisted server-side; `onResolved` overlays the new ref so the verdict flips
+ * to playable at once, no class reload needed.
+ */
+function ResolveProviderAction({
+  entry,
+  onResolved,
+}: {
+  entry: RunPayloadTrackEntry;
+  onResolved: (refs: RunPayloadProviderRef[]) => void;
+}) {
+  type ResolveState =
+    | { kind: 'idle' }
+    | { kind: 'searching' }
+    | { kind: 'candidates'; candidates: TrackSearchResult[] }
+    | { kind: 'none' }
+    | { kind: 'error'; message: string };
+  const [state, setState] = useState<ResolveState>({ kind: 'idle' });
+
+  const btn =
+    'inline-flex min-h-9 items-center gap-1.5 rounded-pill border border-interactive px-3 py-1.5 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive disabled:opacity-50';
+  const targets = orJoin(PLAYBACK_ADAPTER_PROVIDERS.map((p) => providerLabel(p)));
+
+  const find = () => {
+    setState({ kind: 'searching' });
+    resolveTrackProvider(entry.track.id, PLAYBACK_ADAPTER_PROVIDERS)
+      .then((result) => {
+        if (result.resolved) {
+          onResolved(
+            result.track.providerIds.map((p) => ({
+              provider: p.provider,
+              providerTrackId: p.providerTrackId,
+              providerUri: p.providerUri,
+            })),
+          );
+        } else if (result.candidates.length > 0) {
+          setState({ kind: 'candidates', candidates: result.candidates });
+        } else {
+          setState({ kind: 'none' });
+        }
+      })
+      .catch((e: unknown) =>
+        setState({ kind: 'error', message: e instanceof Error ? e.message : 'Search failed.' }),
+      );
+  };
+
+  const pick = (c: TrackSearchResult) => {
+    setState({ kind: 'searching' });
+    attachTrackProviderId(entry.track.id, {
+      provider: c.provider,
+      providerTrackId: c.providerTrackId,
+      providerUri: c.providerUri,
+    })
+      .then(() =>
+        onResolved([
+          ...entry.providerRefs,
+          { provider: c.provider, providerTrackId: c.providerTrackId, providerUri: c.providerUri },
+        ]),
+      )
+      .catch((e: unknown) =>
+        setState({ kind: 'error', message: e instanceof Error ? e.message : 'Could not attach.' }),
+      );
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="flex items-start gap-1.5 font-ui text-xs text-state-caution">
+        <span aria-hidden>⊘</span>
+        <span>
+          <span className="sr-only">Preview unavailable: </span>
+          Not on a provider Ritmo can play yet — find this song on {targets}.
+        </span>
+      </p>
+      {state.kind === 'candidates' ? (
+        <ul className="flex flex-col gap-1" aria-label="Matches to confirm">
+          {state.candidates.map((c) => (
+            <li key={`${c.provider}:${c.providerTrackId}`}>
+              <button
+                type="button"
+                className={`${btn} w-full justify-start`}
+                onClick={() => pick(c)}
+              >
+                <span aria-hidden>＋</span>
+                <span className="truncate">
+                  {c.title} — {c.artist} · {providerLabel(c.provider)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <button type="button" className={btn} onClick={find} disabled={state.kind === 'searching'}>
+          {state.kind === 'searching' ? 'Searching…' : `Find on ${targets}`}
+        </button>
+      )}
+      {state.kind === 'none' && (
+        <p className="font-ui text-xs text-text-tertiary">No match found on {targets}.</p>
+      )}
+      {state.kind === 'error' && (
+        <p className="font-ui text-xs text-state-danger" role="alert">
+          {state.message}
+        </p>
+      )}
+    </div>
   );
 }
 

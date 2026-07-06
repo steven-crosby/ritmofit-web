@@ -158,14 +158,32 @@ describe('selectProvider', () => {
     });
   });
 
-  it('treats a provider with no registered adapter as unplayable, even if connected', () => {
+  it('treats a provider with no registered adapter as unplayable (provider_not_playable), even if connected', () => {
     const entry = makeEntry({ providers: ['soundcloud'] });
-    // availableProviders excludes soundcloud → it cannot play on this surface.
+    // availableProviders excludes soundcloud → its only ref has no adapter here,
+    // so connecting can't help — it's provider_not_playable, not no_connected_provider.
     const selection = selectProvider(entry, connections('soundcloud'), {
       now: NOW,
       availableProviders: ['apple_music'],
     });
-    expect(selection).toEqual({ status: 'unplayable', reason: 'no_connected_provider' });
+    expect(selection).toEqual({ status: 'unplayable', reason: 'provider_not_playable' });
+  });
+
+  it('distinguishes needs-connection from no-adapter for the two dead ends', () => {
+    // Apple Music has an adapter but needs a connection → no_connected_provider.
+    expect(
+      selectProvider(makeEntry({ providers: ['apple_music'] }), [], {
+        now: NOW,
+        availableProviders: ['soundcloud', 'apple_music'],
+      }),
+    ).toEqual({ status: 'unplayable', reason: 'no_connected_provider' });
+    // Spotify has no adapter → provider_not_playable (connecting won't help).
+    expect(
+      selectProvider(makeEntry({ providers: ['spotify'] }), connections('spotify'), {
+        now: NOW,
+        availableProviders: ['soundcloud', 'apple_music'],
+      }),
+    ).toEqual({ status: 'unplayable', reason: 'provider_not_playable' });
   });
 
   it('skips a ref whose provider is unavailable and falls back to an available one', () => {
@@ -306,7 +324,7 @@ describe('preflightPayload', () => {
     expect(result.ok).toBe(false);
     expect(result.unplayable[0]!.selection).toEqual({
       status: 'unplayable',
-      reason: 'no_connected_provider',
+      reason: 'provider_not_playable',
     });
   });
 });

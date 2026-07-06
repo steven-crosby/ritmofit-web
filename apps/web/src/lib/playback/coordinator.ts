@@ -101,7 +101,15 @@ export function selectProvider(
     if (ref) return { status: 'playable', provider, ref };
   }
 
-  return { status: 'unplayable', reason: 'no_connected_provider' };
+  // Two distinct dead ends: a ref for a playable provider that merely needs
+  // connecting (no_connected_provider), vs. refs ONLY for providers with no
+  // in-app adapter yet — a Spotify-only track (provider_not_playable), fixable
+  // by cross-provider resolution rather than connecting.
+  const hasAvailableRef = entry.providerRefs.some((ref) => available.has(ref.provider));
+  return {
+    status: 'unplayable',
+    reason: hasAvailableRef ? 'no_connected_provider' : 'provider_not_playable',
+  };
 }
 
 /**

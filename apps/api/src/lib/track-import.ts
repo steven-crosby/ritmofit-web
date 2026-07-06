@@ -45,7 +45,7 @@ async function loadTrackWithProviders(db: Db, trackId: string): Promise<TrackWit
  * or `null` if that track no longer exists (it was deleted between the same-song
  * match and this insert), so the caller can fall back to creating a fresh track.
  */
-async function attachProviderId(
+export async function attachProviderId(
   db: Db,
   ownerUserId: string,
   trackId: string,

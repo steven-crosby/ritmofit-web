@@ -89,8 +89,13 @@ export type AdapterRegistry = Partial<Record<Provider, AdapterFactory>>;
 export type UnplayableReason =
   /** The track has no provider refs at all — nothing could ever play it. */
   | 'no_provider_ref'
-  /** Refs exist, but no ref'd provider has a live (unexpired) connection. */
+  /** An in-app-playable provider is ref'd, but it needs a live connection and
+   *  has none (e.g. Apple Music without an authorized user). Fixable by connecting. */
   | 'no_connected_provider'
+  /** Refs exist, but ONLY for providers Ritmo can't play in-app yet (e.g. a
+   *  Spotify-only track — no adapter). Fixable by cross-provider resolution
+   *  (find the same song on a playable provider), not by connecting. */
+  | 'provider_not_playable'
   /** No effective duration, so the playback window is empty and auto-advance
    *  has no end to stop at. Live Mode tolerates these as zero-width timeline
    *  entries; hands-free playback cannot. */

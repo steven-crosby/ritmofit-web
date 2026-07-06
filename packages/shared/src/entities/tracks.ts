@@ -93,3 +93,32 @@ export const importProviderTrackSchema = z.object({
   providerTrackId: z.string().min(1),
 });
 export type ImportProviderTrack = z.infer<typeof importProviderTrackSchema>;
+
+/**
+ * Resolve a track to an in-app-*playable* provider it lacks (cross-provider
+ * resolution): the server searches each requested provider's catalog for the
+ * same song. `providers` is the ordered set to try — the caller's playable
+ * providers; the server skips any the track already carries.
+ */
+export const resolveProviderRequestSchema = z.object({
+  providers: z.array(providerSchema).min(1),
+});
+export type ResolveProviderRequest = z.infer<typeof resolveProviderRequestSchema>;
+
+/**
+ * Result of a resolve attempt: either a strong same-song match was attached (the
+ * updated track is returned, now carrying the new provider), or no confident
+ * match was found and the caller is handed the candidates to choose from.
+ */
+export const resolveProviderResultSchema = z.discriminatedUnion('resolved', [
+  z.object({
+    resolved: z.literal(true),
+    provider: providerSchema,
+    track: trackWithProviderIdsSchema,
+  }),
+  z.object({
+    resolved: z.literal(false),
+    candidates: z.array(trackSearchResultSchema),
+  }),
+]);
+export type ResolveProviderResult = z.infer<typeof resolveProviderResultSchema>;

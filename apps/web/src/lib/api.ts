@@ -14,6 +14,9 @@ import type {
   UpdateClassTrack,
   Track,
   TrackSearchResult,
+  TrackProviderId,
+  CreateTrackProviderId,
+  ResolveProviderResult,
   Provider,
   MusicConnectionView,
   ConnectProviderResponse,
@@ -213,6 +216,24 @@ export const connectAppleMusic = (musicUserToken: string) =>
 /** Owner-only: fill the track's display BPM from the tempo service (or mock). */
 export const lookupBpm = (trackId: string) =>
   api<Track & { bpmApplied: boolean }>(`/tracks/${trackId}/bpm-lookup`, { method: 'POST' });
+
+// ── Cross-provider resolution ─────────────────────────────────────────────────
+/**
+ * Owner-only: find this track's song on a playable provider it lacks. A strong
+ * same-song match is attached (`resolved: true`); otherwise candidates come back
+ * to confirm. `providers` is the ordered set of playable providers to try.
+ */
+export const resolveTrackProvider = (trackId: string, providers: Provider[]) =>
+  api<ResolveProviderResult>(`/tracks/${trackId}/resolve-provider`, {
+    method: 'POST',
+    body: JSON.stringify({ providers }),
+  });
+/** Owner-only: attach a chosen provider ref onto a track (the confirm path). */
+export const attachTrackProviderId = (trackId: string, ref: CreateTrackProviderId) =>
+  api<TrackProviderId>(`/tracks/${trackId}/provider-ids`, {
+    method: 'POST',
+    body: JSON.stringify(ref),
+  });
 
 // ── Choreography: cues + placed moves anchored to a class_track ───────────────
 export const listCues = (classTrackId: string) => api<Cue[]>(`/class-tracks/${classTrackId}/cues`);
