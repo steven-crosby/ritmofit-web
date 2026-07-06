@@ -10,6 +10,29 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-06 (batch deploy: playback usability — provider-selection fixes + cross-provider
+> resolution) — deployed (Worker `4cb1e13e-9c19-4a6b-b06c-89f0f6f6d935`).** Shipped `main` (`359db07`)
+> batching everything merged since the run-live-gate deploy — the "web player not usable for instructors"
+> arc: **#213** (Apple Music `authorize()` recovery — cancellable `awaiting_authorization` state + 60s
+> consent timeout), the earlier **Apple Music `setQueue` generation guard** (`b1fe198`, PR #211),
+> **#214** (**fix**: play SoundCloud without a live connection — the public Widget needs no token, so an
+> expired likes-only OAuth token no longer takes SoundCloud tracks dark), and **#216** (cross-provider
+> resolution — `provider_not_playable` reason + `POST /tracks/:id/resolve-provider` + Builder "Find on a
+> supported provider"). **First API change in this batch:** the additive, auth-gated `resolve-provider`
+> route — **no schema / migration** (refs use the existing `track_provider_ids`; catalog search spends
+> the app-level token, never provider audio). #215 (D21 shell-frame docs) also rode along.
+>
+> Rollback anchor: prior live `d4954a2e-6b33-4fc3-87f8-b792411f4906` (the run-live-gate deploy). Remote
+> D1: **no migrations to apply** (`wrangler d1 migrations list ritmofit --remote` → none). Pre-deploy
+> gate green on `main` (format / typecheck ×4 workspaces / lint / design-system verify / **392 web + 278
+> api** unit / **76** integration / web build / openapi no-drift `46 schemas · 47 paths` / contract-parity
+> no untracked drift / audit:ci exit 0). Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` →
+> `200`, `/api/v1/health` → `200`, protected `/api/v1/classes` + `/api/v1/explore` → `401`, SPA fallback
+> `/app` → `200`, the **new** `POST /api/v1/tracks/:id/resolve-provider` (unauth) → `401` (mounted, not
+> `404`), served bundle hash `index-n3saxiPG.js` matches the build, security headers present (HSTS/CSP/
+> X-Frame/X-Content-Type/Referrer/Permissions). **Still pending:** real-provider **audio** verification
+> (SoundCloud Widget + Apple Music) with a live subscriber account — the last un-verified step.
+
 > **Session 2026-07-05 (checkpoint deploy: run-live gate accessibility) — deployed (Worker
 > `d4954a2e-6b33-4fc3-87f8-b792411f4906`).** Shipped `main` (`a3ea61a`) taking **#207** (run-live gate
 > explains itself at the button, accessibly) live — presentation/a11y only, **no schema / migration /
