@@ -127,6 +127,9 @@ importers:
       vitest:
         specifier: ^3.2.6
         version: 3.2.6(jsdom@29.1.1(@noble/hashes@2.2.0))(terser@5.48.0)
+      workbox-window:
+        specifier: ^7.4.1
+        version: 7.4.1
 
   packages/music:
     dependencies:

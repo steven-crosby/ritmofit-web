@@ -6,7 +6,12 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' (not 'autoUpdate'): a new deploy must not silently reload an
+      // instructor mid-edit or mid-Live-Mode. The generated SW waits; the app
+      // surfaces a "New version available — Refresh" toast (`UpdatePrompt`) and
+      // only calls `updateServiceWorker()` — which skips-waiting + reloads — when
+      // the instructor chooses to. See `components/UpdatePrompt.tsx`.
+      registerType: 'prompt',
       workbox: {
         // The SPA navigation fallback serves index.html for client-side routes,
         // but it must NOT swallow top-level navigations to the same-origin API —
