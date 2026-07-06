@@ -22,7 +22,7 @@ Fix rot, smallest-diff-first:
 - Dead code, unused exports / files, commented-out blocks, unreachable branches.
 - Duplication worth a shared helper (extract ONLY if it genuinely cuts complexity).
 - Over-long / deeply-nested functions or components; naming that drifts from its neighbors;
-  structure that drifts from AGENTS.md.
+  structure that drifts from CLAUDE.md.
 - **Architecture/state smell** (report, don't auto-refactor unless the fix is a trivial,
   behavior-preserving localization): global state — a new Context — introduced where local
   form state (`useState`) would suffice; blurred separation between presentation, the

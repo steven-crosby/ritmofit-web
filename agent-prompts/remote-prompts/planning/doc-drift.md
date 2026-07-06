@@ -17,7 +17,7 @@ You have full autonomy within this scope to find drift, make small docs-only cor
 
 Find where the written record and the code / reality have diverged:
 
-- AGENTS.md / CLAUDE.md instructions that no longer match the code (paths, commands,
+- CLAUDE.md (canonical) / AGENTS.md (pointer stub) instructions that no longer match the code (paths, commands,
   structure, conventions that moved).
 - `ritmofit_dev_plan/DEVELOPMENT_PLAN.md` status that's stale — slices marked pending that
   actually merged, or "next" items already done.

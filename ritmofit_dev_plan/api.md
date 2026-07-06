@@ -75,6 +75,15 @@ schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 | PATCH | `/cues/:id` | Update a cue. |
 | DELETE | `/cues/:id` | Delete a cue. |
 
+## Sections (segment bands)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/classes/:id/sections` | List a class's segment bands (VIEW). |
+| POST | `/classes/:id/sections` | Add a section (`type` from the fixed segment enum + `startOffsetMs`; edit access). |
+| PATCH | `/sections/:id` | Update a section (edit access via the section → class chain). |
+| DELETE | `/sections/:id` | Delete a section (edit access). |
+
 ## Moves on the timeline
 
 | Method | Path | Purpose |
@@ -109,6 +118,7 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 | PATCH | `/tracks/:id` | Update track fields, e.g. set/correct manual BPM (owner only). |
 | POST | `/tracks/:id/provider-ids` | Attach a provider ID — provider + providerTrackId + optional uri (owner only). |
 | POST | `/tracks/:id/bpm-lookup` | Optional third-party tempo lookup; never uses Spotify audio features. |
+| POST | `/tracks/:id/resolve-provider` | Resolve the track to a **playable** provider (cross-provider same-song search; owner only). Auto-attaches a strong match, else returns candidates to confirm via `POST /tracks/:id/provider-ids`. See `provider-playback-implementation.md`. |
 | DELETE | `/track-provider-ids/:id` | Remove a provider ID (owner of the parent track only). |
 
 > `POST /classes/:id/tracks` may inline-create a track (per its body); the inline-create sets

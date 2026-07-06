@@ -185,6 +185,8 @@ solid, understandable, and constraint-honest.
 
 ## Handoff To iOS
 
-After the web launch gate is green and the production deploy is smoke-tested, the next milestone is the
-iOS wrap-up: refresh the iOS contract/design snapshots, close run-payload DTO lag, then work through the
-capability backlog in `web-ios-parity.md` and the iOS repo's `BUILD_ORDER.md`.
+This section recorded the launch-era sequence. **Superseded by D20 (2026-07-05):** iOS wrap-up is
+deferred behind web product-definition work (solo creator refinement + the D21 workstation-shell
+slice). When iOS refinement resumes: refresh the iOS contract/design snapshots, close run-payload DTO
+lag, then work through the capability backlog in `web-ios-parity.md` and the iOS repo's
+`BUILD_ORDER.md`.
