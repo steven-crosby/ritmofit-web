@@ -241,19 +241,24 @@ lives in the top-level Connections dialog).
 **Apple Music shared-transport follow-ups (updated 2026-07-05):** MusicKit is a page-level singleton, so
 the adapter guards teardown with a per-instance ownership token (only the adapter that started the
 transport may `stop()` it — prevents a superseded adapter silencing the live track under rapid seeks).
-One narrower shared-singleton tail remains, requiring a stuck-SDK condition and acceptable for private
-beta but worth closing before broad Apple Music rollout:
+Both narrower shared-singleton tails are now closed (each needed a stuck-SDK / abandoned-consent
+condition — acceptable for private beta, worth closing before broad Apple Music rollout). Real-provider
+audio for all adapters still needs live subscriber verification.
 
-1. **Un-timed `authorize()`** — a blocked/abandoned Apple consent sheet leaves `prepare()` pending and
-   the coordinator frozen in `preparing` with no recovery. `authorize()` is intentionally not wrapped in
-   the queue-load timeout (it waits on human consent). Fix: surface a "waiting for Apple authorization"
-   state and/or a generous consent-timeout that fails to the recoverable-error path.
+Closed:
 
-Closed in PR #211:
-
-- **Orphaned `setQueue` after a timeout** — the adapter now keeps per-MusicKit-instance queue generation
-  state, blocks overlapping non-cancellable `setQueue()` requests while an older one is pending, and
-  rejects superseded queue completions before they can proceed as valid cues.
+- **Un-timed `authorize()`** (waiting-for-authorization slice, 2026-07-05) — a blocked/abandoned Apple
+  consent sheet used to leave `prepare()` pending and the coordinator frozen in `preparing` with no
+  recovery, and (because `prepare()` never settled) the orphaned adapter was never torn down. The adapter
+  now emits an `onAwaitingAuthorization` lifecycle signal — surfaced as a cancellable
+  `awaiting_authorization` state in both Live Mode and Builder preview, with a new `ritmofit_design_system`
+  playback-state (⏳, distinct from the "subscriber authorization required" reconnect verdict) — and
+  bounds consent with a generous, separate `authorizeTimeoutMs` (default 60s) that fails to the
+  recoverable-error path and lets the coordinator destroy the orphan. `authorize()` still stays out of the
+  tight queue-load timeout, which continues to bound only `setQueue`.
+- **Orphaned `setQueue` after a timeout** (PR #211) — the adapter keeps per-MusicKit-instance queue
+  generation state, blocks overlapping non-cancellable `setQueue()` requests while an older one is
+  pending, and rejects superseded queue completions before they can proceed as valid cues.
 
 ## Verification
 
