@@ -52,8 +52,8 @@ Pilates, and HIIT.
   *playback* adapter (gated on its OAuth playback-scope expansion) is the remaining web gap, and
   **real-provider audio still needs live subscriber verification** — the last un-verified step.
   Saved-playlist browsing needs new read endpoints (its own sub-slice). Teams, Sharing, Publish, and
-  Explore are hidden/dormant (D20). Last production deploy **2026-07-06 (Worker `fc7f8cfe`)** — the D21
-  workstation resting shell; no schema/migration (rollback anchor `4cb1e13e`).
+  Explore are hidden/dormant (D20). Last production deploy **2026-07-06 (Worker `be7c9425`)** — the PWA
+  refresh-on-deploy prompt fixing SW update lag; no schema/migration (rollback anchor `fc7f8cfe`).
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.

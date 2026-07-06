@@ -10,6 +10,29 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-06 (PWA refresh-on-deploy prompt — fixes update lag) — deployed (Worker
+> `be7c9425-5733-4783-89af-93ab3f823ae0`).** Shipped `main` (`8d98c7e`, PR
+> [#222](https://github.com/steven-crosby/ritmofit-web/pull/222)). Verifying the D21 shell on live
+> surfaced update lag: already-open clients kept serving the old precached bundle until a manual reload.
+> Root cause — `registerType: 'autoUpdate'` with only the bare inline `registerSW.js` (no
+> update-and-reload wiring), so a new deploy's service worker silently took over the precache while open
+> tabs stayed stale. Fix: switch to `registerType: 'prompt'` and wire the app via `useRegisterSW`
+> (`virtual:pwa-register/react`) in a new `UpdatePrompt` component — a non-intrusive "New version
+> available — Refresh" toast (`role="status"`/`aria-live="polite"`); **Refresh** calls
+> `updateServiceWorker()` (skip-waiting + reload), **Later** dismisses. Nothing reloads on its own, so
+> **Live Mode and in-progress edits are never interrupted**; the worker is re-checked hourly and on tab
+> focus. Adds `workbox-window` as a direct dep (the react register hook imports it). **Frontend-only, no
+> schema / migration.** Rollback anchor: prior live `fc7f8cfe-ab31-44d9-bbc6-82ecac97d6d5`. Remote D1:
+> **no migrations to apply**. Pre-deploy gate green on `main` (format / typecheck ×3 / lint / design
+> verify / unit **web 398 · api 278** / integration **76** / web build / openapi no-drift `46 schemas ·
+> 47 paths` / contract-parity clean / audit:ci). Post-deploy smoke on live: SPA `/` → `200`,
+> `/api/v1/health` → `200`, protected `classes`/`explore` → `401`, `/app` → `200`, served bundle
+> `index-B79dxbYI.js` matches the build, the separate auto-register script is gone (prompt-mode
+> registration is bundled), security headers present; a clean isolated-context browser load rendered the
+> marketing page with **zero console errors/warnings**. **Caveat:** clients still on the previous
+> `autoUpdate` bundle get no prompt for *this* deploy (they have no prompt code) — they pick it up one
+> last time via the old silent path; the prompt governs every deploy *after* this one.
+
 > **Session 2026-07-06 (D21 workstation resting shell) — deployed (Worker
 > `fc7f8cfe-ab31-44d9-bbc6-82ecac97d6d5`).** Squash-merged to `main` as
 > [#219](https://github.com/steven-crosby/ritmofit-web/pull/219) (`01fd955`), then shipped.
