@@ -10,8 +10,9 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
-> **Session 2026-07-05 (D21 workstation resting shell) — squash-merged to `main` as
-> [#219](https://github.com/steven-crosby/ritmofit-web/pull/219) (`01fd955`); not yet deployed.**
+> **Session 2026-07-06 (D21 workstation resting shell) — deployed (Worker
+> `fc7f8cfe-ab31-44d9-bbc6-82ecac97d6d5`).** Squash-merged to `main` as
+> [#219](https://github.com/steven-crosby/ritmofit-web/pull/219) (`01fd955`), then shipped.
 > Frontend-only D21 slice. `CreateClassForm` now **requires a template** before
 > creating a new blank class, with create options narrowed to **Cycle / Pilates / HIIT** (Pilates maps
 > to the stored `sculpt` enum — **no schema / API migration**; `formatTemplateLabel('sculpt')` now
@@ -23,7 +24,15 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 > `git diff --check` all green; browser QA (Playwright + intercepted auth/API on system Chrome) covered
 > desktop-empty, desktop-populated, and mobile-empty states — the mobile "Template first" tile value was
 > changed to "Required" to fix an overflow. Saved-playlist browsing still needs new read endpoints (its
-> own sub-slice). **Merged to `main`; production deploy pending (frontend-only, no schema/migration).**
+> own sub-slice). Rollback anchor: prior live `4cb1e13e-9c19-4a6b-b06c-89f0f6f6d935`. **No schema /
+> migration** (`wrangler d1 migrations list ritmofit --remote` → none to apply). Pre-deploy gate green on
+> `main` (format / typecheck ×3 workspaces / lint / design-system verify / unit **api 278** / integration
+> **76** / web build / openapi no-drift `46 schemas · 47 paths` / contract-parity no untracked drift /
+> audit:ci). Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` →
+> `200`, protected `/api/v1/classes` + `/api/v1/explore` + `/api/v1/teams` → `401`, SPA fallback `/app` →
+> `200`, served bundle hash `index-Dg36zIiQ.js` matches the build (the bare-`/` first read was a stale CF
+> edge HIT; cache-busted fetch and the new asset both serve the new hash), security headers present
+> (HSTS/CSP/X-Frame/X-Content-Type/Referrer/Permissions).
 
 > **Session 2026-07-06 (batch deploy: playback usability — provider-selection fixes + cross-provider
 > resolution) — deployed (Worker `4cb1e13e-9c19-4a6b-b06c-89f0f6f6d935`).** Shipped `main` (`359db07`)
