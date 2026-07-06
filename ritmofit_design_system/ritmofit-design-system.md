@@ -68,6 +68,11 @@ Product posture:
 
 > The app serves instructors first. Instructors are producers, not consumers.
 
+Producer, not consumer, includes **sourcing**: instructors browse and audition provider libraries (Spotify,
+Apple Music, SoundCloud) the way they already do in a music app, then convert that raw material into a
+class. Ritmo is a **creator workstation shell over trusted services** — familiar before specialized — so
+discovery is a first-class on-ramp, never a passive feed (D21; `../ritmofit_dev_plan/decisions.md`).
+
 Design behavior:
 
 > Builder mode is mostly calm. Live mode earns the heat. Marketing and share artifacts carry the swagger.

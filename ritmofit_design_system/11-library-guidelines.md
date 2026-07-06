@@ -4,17 +4,25 @@ The Library is the bridge between saved music and authored classes. It should fe
 creating a playlist from a music library, but the destination is a movement score rather than a
 listening queue.
 
+It is the **discovery shell** of the creator workstation (D21): provider libraries are browsable raw
+material, and it is the workspace's resting state when no class is open (readiness + discovery), never an
+empty panel.
+
 ## Product job
 
 The Library helps an instructor:
 
-1. See music available through supported provider catalogs and connected accounts.
+1. See music available through supported provider catalogs and connected accounts — surfaced as **provider
+   shelves** (Spotify, Apple Music, SoundCloud), each with that service's **liked/saved tracks card**.
 2. Search, filter, and select tracks without leaving the planning flow.
-3. Start a new class from one or more selected tracks.
-4. Add selected tracks to an existing class.
-5. Understand provider capability and reconnect only where user connection is supported.
+3. Open a **playlist detail / track list** from a playlist card — browsing a playlist, not importing it.
+4. **Browse and listen/preview** candidates (provider-authorized playback) before committing them.
+5. Start a new class from one or more selected tracks (`Start class`).
+6. Add selected tracks to an existing class (`Add selected`).
+7. Understand provider capability and reconnect only where user connection is supported.
 
-It is not a social feed or recommendation firehose.
+It is the browse-first on-ramp of the creator loop — _familiar before specialized_ (D21) — not a social
+feed or recommendation firehose. Every path points at a create action.
 
 ## Information hierarchy
 
@@ -33,19 +41,29 @@ source material; intensity belongs to the authored class context.
 
 Desktop uses a persistent source rail, a searchable track table/list, and a selection tray:
 
-- Source rail: Liked tracks, saved playlists, recent imports, provider filters.
-- Main list: low-noise rows with checkbox, artwork, title, artist, BPM, duration, provider.
-- Selection tray: count, total duration, `Build class`, and `Add to class`.
+- Source rail: **provider shelves** (Spotify, Apple Music, SoundCloud), each surfacing that service's
+  **liked/saved tracks card**, plus saved playlists, recent imports, search, and provider filters.
+- Main list: low-noise rows with checkbox, artwork, title, artist, BPM, duration, provider, and a quiet
+  per-row **preview/listen** control (provider-authorized playback).
+- Playlist cards open a **playlist detail / track list** (browse, don't import) — the same row shape and
+  the same `Start class` / `Add selected` actions as the rest of the list.
+- Selection tray: count, total duration, `Start class` (create), and `Add selected` (add to open class).
 
 Tablet collapses the source rail above the list. Mobile uses a single list and a sticky bottom
 selection tray. Rows wrap metadata rather than forcing horizontal scrolling.
 
 ## Primary workflow
 
-`Build class` is the single copper primary action once tracks are selected. It creates a draft class
-and carries the selected tracks into Builder in their current order.
+`Start class` is the single **copper primary** action once tracks are selected (it supersedes the earlier
+`Build class` label). It creates a draft class and carries the selected tracks into Builder in their
+current order. A new class still needs a **template** — the create step offers Cycle / Pilates / HIIT and
+requires a pick (D21) before the draft opens.
 
-`Add to class` is a cyan secondary action. Reordering and intensity assignment happen in Builder.
+`Add selected` is a **cyan secondary** action (it supersedes the earlier `Add to class` label): it adds the
+selected tracks to the currently open class. Reordering and intensity assignment happen in Builder.
+
+Both actions are reachable from the main list **and** from a playlist detail view, so an instructor can
+browse/listen first and act without a separate import step.
 
 Empty selection copy:
 
@@ -62,6 +80,14 @@ Provider capability is explicit. Current implementation truth:
 - Spotify: catalog search/import plus user connection and saved-track library access.
 - Apple Music: catalog search/import plus user connection and library-song access.
 - SoundCloud: catalog search/import plus user connection and likes.
+
+Discovery surfaces sit on that capability matrix and must not offer a dead end. Built today: catalog
+**search**, per-user **likes** (all three providers), single-track **import**, and **Spotify playlist-URL
+import**. Not yet built (its own sub-slice, D21): **listing a user's saved playlists** and **browsing a
+playlist's tracks without importing** — Spotify has the adapter path, SoundCloud needs permalink
+`/resolve`, Apple Music has none yet. Until those land, a provider's playlist shelf shows only what its
+capability supports (e.g. paste-a-URL import), never a broken browse. See
+`../ritmofit_dev_plan/decisions.md` D21 and `../ritmofit_dev_plan/provider-playback-implementation.md`.
 
 The connection-state matrix below applies to providers that support user accounts:
 

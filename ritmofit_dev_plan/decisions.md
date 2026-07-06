@@ -436,6 +436,82 @@ slice; that is accepted for this hybrid reset.
 
 ---
 
+## D21 — Creator workstation shell over trusted music services  **[Resolved 2026-07-06]**
+
+**Decision:** Ritmo Studio is a **creator workstation shell over trusted music services**. Spotify, Apple
+Music, and SoundCloud are the reliable music **substrate**; Ritmo adds the instructor-specific layer —
+class structure, choreography, rehearsal, playback windows, readiness, and Live Mode. Provider libraries
+are the **raw material**; class-building is the **creative layer on top**. Ritmo started as a choreography
+app with music references; it is becoming a familiar music workstation where provider libraries are the
+raw material and class-building is the creative act on top.
+
+**Creative principle — familiar before specialized:** The app should feel *familiar before it feels
+specialized*. An instructor can browse, listen, inspect playlists, and follow curiosity **without being
+forced into one creation flow** — then convert that curiosity into a class. This extends D20's
+creative-flow rule (no single canonical order) to the *entry* of the loop: discovery is a first-class
+on-ramp, not a detour.
+
+**Player evolution (the shift that motivates this).** The original model was **handoff-oriented**: Ritmo
+owned the choreography/timeline and sent users to a provider app or link for audio; Live Mode was mostly a
+prompter and class clock. That changed in two steps:
+
+1. **D19** allowed **provider-authorized in-app playback** through official SDKs/widgets only. Ritmo still
+   never owns, caches, analyzes, mixes, or crossfades provider audio, but it can control playback windows
+   through MusicKit on the Web, the SoundCloud Widget API, and (later) the Spotify Web Playback SDK.
+2. The player becomes part of a broader **music-service shell**. It is no longer just "play this class
+   live." The direction is: browse provider libraries inside Ritmo; open liked tracks and playlists like a
+   music app; preview/listen while building; convert musical curiosity into class creation; and run Live
+   Mode with provider playback, preflight, auto-advance, and recovery states.
+
+**Current web-desktop slice (first implementation of the doctrine).** The next web slice makes the shell
+concrete. These are locked product decisions for that slice:
+
+- **Templates narrow to three.** Show only **Cycle**, **Pilates**, and **HIIT** as class templates.
+  **Pilates maps to the existing `sculpt` enum value** for now — display-layer only, no migration (the
+  same label-only pattern as D17); the stored enum (`cycle`/`hiit`/`sculpt`/`tread`) and the move-library
+  grouping are unchanged, and legacy `tread`/`sculpt` classes still render their labels.
+- **Require a template before a new class is created** — but only at the **create-class entry point**.
+  Copy-class and Songs-by-Move deliberately create untemplated classes because they derive from an
+  existing source; the requirement is on the "new blank class" path, not the whole API.
+- **Replace unclear/empty workspace states with class readiness plus music discovery.** When no class is
+  open, the workspace's resting state is the readiness/next-step surface and the discovery shell — not an
+  empty panel (design principle 8: alive at rest).
+- **Add provider shelves** for Spotify, Apple Music, and SoundCloud, and include **each service's
+  liked/saved tracks card**.
+- **Playlist cards open a playlist detail / track list, not an immediate import.**
+- From a playlist/detail view, users can **browse/listen first, then `Start class` or `Add selected`.**
+
+**Relationship to existing decisions.** D21 **builds on** and does not supersede D19 (provider-authorized
+playback) or D20 (solo-first, web-first); it names the product frame those decisions serve. The
+design-system Library guidelines (`ritmofit_design_system/11-library-guidelines.md`) already specify this
+surface (a source rail of liked tracks / saved playlists / recent imports / provider filters, a low-noise
+track list, and a selection tray); D21 makes that surface the near-term web target and the workspace's
+resting state. The **hard music constraints are unchanged** (`music-providers.md`; D11/D13 as amended by
+D19): browsing and previewing happen **only** through provider-authorized SDKs/widgets, and Ritmo never
+downloads, caches, proxies, mixes, or derives provider audio, and never takes BPM from Spotify.
+
+**Contract / scope note for implementers.** Today's backend already supports catalog **search**, per-user
+**likes** (all three providers), single-track **import**, and **Spotify playlist-URL import** (straight
+into a class). Two pieces of the slice need **new read surfaces** and should be sequenced as their own
+sub-slice: (a) **listing a user's saved playlists** per provider, and (b) **browsing a playlist's tracks
+without importing** (the adapter's `getPlaylist` exists for Spotify; SoundCloud needs permalink
+`/resolve`, Apple Music has no path yet) — each needs shared contracts + API routes + adapter methods +
+tests + OpenAPI regen. **In-list preview** reuses the D19 playback stack
+(`apps/web/src/lib/playback/*`, `TrackPreview.tsx`) extended to a not-yet-imported candidate. See
+`provider-playback-implementation.md` → "Music-service shell direction (D21)."
+
+**Why:** The solo loop is more valuable when it starts from *familiar music behavior* — the browsing and
+listening instructors already do on Spotify/Apple/SoundCloud — and converts it into classes, instead of
+demanding a cold "name a class, then fill it" start. The providers are the dependable substrate; Ritmo's
+durable value is the instructor layer on top.
+
+**Tradeoff:** Entitlement-gated discovery UX (connect/subscriber states per provider), new provider
+read-surfaces with their upstream-quota and no-caching handling, and a browse-first on-ramp layered onto
+the existing "a class *is* playlist + choreography" model (D6/overview) without weakening it — the
+discovery surface always points at a create action, never a passive feed (design principle 1).
+
+---
+
 ## Deferred from M1
 
 - **Segments / class sections.** *(Deferred from M1; **shipped later**.)* In M1 segments were a design

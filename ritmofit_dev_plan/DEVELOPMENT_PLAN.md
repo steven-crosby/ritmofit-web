@@ -24,15 +24,27 @@ Pilates, and HIIT.
 - **One shared backend:** the backend in this repo remains the source of truth for accounts, classes,
   choreography, tracks, moves, provider references, and run payloads. A later iOS app should inherit the
   proven web decisions through the same API and design canon.
-- **Current operating focus (2026-07-05):** the web launch gate is green and deployed. The active track
-  is solo creator refinement plus the **provider-authorized playback initiative**
-  ([`provider-playback-implementation.md`](./provider-playback-implementation.md)) where it improves
-  rehearsal and Live Mode. Playback progress: the SoundCloud + **Apple Music** Live Mode adapters and the
-  **Builder clip-window preview** (`TrackPreview.tsx`, manual/single-track/no-auto-advance) are built; the
-  Spotify adapter (gated on its OAuth playback-scope expansion) is the remaining web gap, and
-  real-provider audio for all adapters still needs live subscriber verification. Teams, Sharing, Publish,
-  and Explore are hidden/dormant (D20). Last production deploy 2026-07-05 (Worker `fa385d71`, the D20
-  solo-first reset; the Apple Music adapter + **Ritmo Studio** rename shipped just before on `c6829c8e`).
+- **Creator workstation shell over trusted services (D21):** Spotify, Apple Music, and SoundCloud are the
+  reliable music substrate; Ritmo adds the instructor layer — class structure, choreography, rehearsal,
+  playback windows, readiness, and Live Mode. Provider libraries are the raw material and class-building
+  is the creative layer on top. The app should feel *familiar before it feels specialized*: browse, listen,
+  and inspect playlists, then convert curiosity into a class — no single forced creation flow.
+- **Current operating focus (2026-07-06):** the web launch gate is green and deployed. The product frame
+  is now the **creator workstation shell over trusted music services (D21)** — provider libraries as raw
+  material, class-building as the layer on top, familiar before specialized. The active web-desktop slice
+  makes that concrete: narrow class templates to **Cycle / Pilates / HIIT** (Pilates↔`sculpt`, require a
+  template on the create path), replace empty workspace states with **class readiness + music discovery**,
+  and add **provider shelves** (Spotify/Apple/SoundCloud) with each service's **liked/saved tracks card**
+  and **playlist cards that open a detail/track list** (browse/listen, then Start class / Add selected).
+  This rides on the **provider-authorized playback initiative**
+  ([`provider-playback-implementation.md`](./provider-playback-implementation.md)); playback progress: the
+  SoundCloud + **Apple Music** Live Mode adapters and the **Builder clip-window preview**
+  (`TrackPreview.tsx`, manual/single-track/no-auto-advance) are built; the Spotify adapter (gated on its
+  OAuth playback-scope expansion) is the remaining web gap, and real-provider audio for all adapters still
+  needs live subscriber verification. Saved-playlist browsing needs new read endpoints (its own sub-slice).
+  Teams, Sharing, Publish, and Explore are hidden/dormant (D20). Last production deploy 2026-07-05 (Worker
+  `fa385d71`, the D20 solo-first reset; the Apple Music adapter + **Ritmo Studio** rename shipped just
+  before on `c6829c8e`).
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
@@ -77,6 +89,7 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 | Area | Decision |
 |---|---|
 | Surface model | **Solo-first, web-first** — web defines the individual creator loop now; iOS follows later from the proven contract and UX decisions (D20; D18 parity gate paused) |
+| Product frame | **Creator workstation shell over trusted music services** — providers (Spotify/Apple/SoundCloud) are the substrate; Ritmo adds the instructor layer; provider libraries are raw material and class-building is the layer on top; familiar before specialized (D21) |
 | Platform | **Cloudflare-native** — Workers (API) + D1 (database) + the SPA served as Workers static assets from the **same Worker/origin** as the API (no separate Pages site, single origin) |
 | Account system | We own the `users` table; auth providers only verify identity |
 | Auth | **Better Auth** on Workers + D1 (email, Apple, Google). Sessions in our D1. |
@@ -182,7 +195,9 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 ## Backlog / Open Items
 
-Forward work lives in the solo creator loop and the provider-authorized playback initiative. Historical
+Forward work lives in the solo creator loop, the **creator-workstation-shell slice (D21)** — discovery
+shelves, liked/saved cards, playlist detail, and the Cycle/Pilates/HIIT template narrowing — and the
+provider-authorized playback initiative. Historical
 web launch deferrals remain in [`web-launch-readiness.md`](./web-launch-readiness.md); the old
 cross-surface parity record remains in [`web-ios-parity.md`](./web-ios-parity.md), but it is not the
 current planning queue.

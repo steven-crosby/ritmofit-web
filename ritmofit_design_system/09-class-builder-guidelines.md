@@ -39,6 +39,15 @@ column (header → readiness → class-shape workbench → track list → inspec
 three-pane squeezed sideways. No horizontal overflow and no overlapping controls at 390px (and 320px) is
 a **P0 acceptance gate**, verified by `apps/web/smoke/narrow-width.smoke.mjs`; touch targets stay ≥44px.
 
+## Class creation — pick a template first (D21)
+
+A new class starts from a **template**, not a blank. The create-class entry point offers exactly **Cycle,
+Pilates, and HIIT** and **requires a pick** before the class is created (Pilates maps to the stored
+`sculpt` enum for now — display-only, no migration). Copy-class and Songs-by-Move are exempt: they derive
+from an existing source, so they may create an untemplated class. The template names the discipline the
+builder and move library speak in; it is scoped display language over the schema-honest enum (principle
+11, [`README.md`](./README.md)).
+
 ## The energy ribbon (the signature planning view)
 
 Pinned above the timeline: the class's **intensity over time** as a continuous area graph. This is the
@@ -175,6 +184,10 @@ Rules:
 
 ## States that matter here
 
+- **No class open (resting workspace):** not an empty panel. Show the readiness/next-step surface and the
+  **music-discovery shell** (provider shelves, liked/saved cards, playlists, search) so the instructor can
+  browse and convert curiosity into a class (D21; [`11-library-guidelines.md`](./11-library-guidelines.md)).
+  Alive at rest (principle 8).
 - **Empty class:** "Start with a track. Shape the room from there." — an invitation with a clear path
   to Library, search, or import.
 - **Tracks added, no hand shaping:** derived class shape + auto-banded sections + an Auto-shape refine

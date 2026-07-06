@@ -12,6 +12,13 @@ Ritmo Studio helps rhythm fitness instructors find, shape, and perform the class
 a creator workstation and studio instrument, not a generic fitness dashboard, playlist manager, or
 passive music app.
 
+It is also a **creator workstation shell over trusted music services** (Spotify, Apple Music, SoundCloud):
+those services are the reliable audio substrate and their libraries are the **raw material** a class is
+built from, while Ritmo adds the instructor layer on top. The surface should feel **familiar before it
+feels specialized** — instructors browse, listen, and inspect playlists like a music app, then convert
+curiosity into a class. Browsing here is *sourcing*, not passive consumption: every discovery path points
+at a create action (design principle 1). Product decision: `../ritmofit_dev_plan/decisions.md` D21.
+
 The visual target is **Club Athletic + Creator Swagger + Nike restraint**:
 
 - Builder is calm, structured, timeline-first, and mostly still.
@@ -32,8 +39,9 @@ The visual target is **Club Athletic + Creator Swagger + Nike restraint**:
 8. Album art is bounded. BPM, duration, sequence, cues, movement, and energy shape carry more weight.
 9. Pulse is allowed only in the Live HUD and the currently playing planning indicator.
 10. Reduced motion removes affect without removing meaning.
-11. Foundation language is modality-neutral. Stored enum keys retain schema-honest fallback labels; discipline templates and instructor-authored names may provide scoped display language.
+11. Foundation language is modality-neutral. Stored enum keys retain schema-honest fallback labels; discipline templates and instructor-authored names may provide scoped display language. The current create surface shows **Cycle / Pilates / HIIT** (Pilates↔`sculpt`) and requires a template (D21).
 12. Signature surfaces are alive at rest: derived-provisional, never empty or flat by default.
+13. The Library is a **creator on-ramp**: provider shelves (Spotify/Apple/SoundCloud), liked/saved cards, and playlist detail views are browsable raw material; class-building is the layer on top. Familiar before specialized; discovery is the workspace's resting state, never an empty panel (D21).
 
 ## Package map
 

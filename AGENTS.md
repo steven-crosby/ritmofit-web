@@ -1,6 +1,7 @@
 # Repository Guidelines
 
 <!-- note (Codex, 2026-07-05): Consolidated stale historical notes and source-of-truth routing after the D20 solo-first reset. -->
+<!-- note (Claude, 2026-07-06): Recorded the D21 creator-workstation-shell frame in Product Boundaries. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -26,6 +27,15 @@ classes in one creative loop. The current product model is **solo-first and web-
 the product-definition surface, and iOS follows later from proven contracts and UX decisions. D20 pauses
 the old D18 parity gate; current web work is not blocked by iOS parity bookkeeping. Still call out
 contract or design implications when a web change affects future iOS work.
+
+The product frame is a **creator workstation shell over trusted music services (D21)**: Spotify, Apple
+Music, and SoundCloud are the reliable music substrate, and Ritmo adds the instructor layer — class
+structure, choreography, rehearsal, playback windows, readiness, and Live Mode. Provider libraries are the
+raw material; class-building is the creative layer on top. Design for **familiar before specialized** —
+instructors browse, listen, and inspect playlists and convert curiosity into a class, with no single
+forced creation flow. The current core disciplines/templates are **Cycle, Pilates, and HIIT** (Pilates
+maps to the stored `sculpt` enum for now). This extends D20's solo-first, web-first model; it does not
+reopen the deferred community surfaces below.
 
 Teams, sharing, publishing, Explore, public class pages, collaborators, invites, and social/community
 discovery are deferred community surfaces. Preserve existing backend/API/schema scaffolding, but do not
