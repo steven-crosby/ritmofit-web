@@ -32,8 +32,8 @@ Pilates, and HIIT.
 - **Current operating focus (2026-07-06):** the web launch gate is green and deployed. The product frame
   is now the **creator workstation shell over trusted music services (D21)** — provider libraries as raw
   material, class-building as the layer on top, familiar before specialized. The first web-desktop slice
-  makes that concrete and is **open for review as PR [#219](https://github.com/steven-crosby/ritmofit-web/pull/219)**
-  (branch `codex/d21-workstation-shell`, commit `2b08cfc`; frontend-only, not yet merged/deployed): narrow
+  is **merged to `main`** (PR [#219](https://github.com/steven-crosby/ritmofit-web/pull/219), `01fd955`;
+  frontend-only, **production deploy pending**): narrow
   class templates to **Cycle / Pilates / HIIT** (Pilates↔`sculpt`, require a template on the create path),
   replace empty workspace states with **class readiness + music discovery**, and add **provider shelves**
   (Spotify/Apple/SoundCloud) with each service's **liked/saved tracks card** and **playlist cards that open

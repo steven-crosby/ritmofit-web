@@ -10,9 +10,9 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
-> **Session 2026-07-05 (D21 workstation resting shell) — branch `codex/d21-workstation-shell`, draft
-> PR [#219](https://github.com/steven-crosby/ritmofit-web/pull/219); not yet merged or deployed.**
-> Frontend-only D21 slice on commit `d4c04e6`. `CreateClassForm` now **requires a template** before
+> **Session 2026-07-05 (D21 workstation resting shell) — squash-merged to `main` as
+> [#219](https://github.com/steven-crosby/ritmofit-web/pull/219) (`01fd955`); not yet deployed.**
+> Frontend-only D21 slice. `CreateClassForm` now **requires a template** before
 > creating a new blank class, with create options narrowed to **Cycle / Pilates / HIIT** (Pilates maps
 > to the stored `sculpt` enum — **no schema / API migration**; `formatTemplateLabel('sculpt')` now
 > renders "Pilates"). The Dashboard no-class-open state renders an **alive-at-rest workstation shell**
@@ -23,7 +23,7 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 > `git diff --check` all green; browser QA (Playwright + intercepted auth/API on system Chrome) covered
 > desktop-empty, desktop-populated, and mobile-empty states — the mobile "Template first" tile value was
 > changed to "Required" to fix an overflow. Saved-playlist browsing still needs new read endpoints (its
-> own sub-slice). **Deploy pending PR merge.**
+> own sub-slice). **Merged to `main`; production deploy pending (frontend-only, no schema/migration).**
 
 > **Session 2026-07-06 (batch deploy: playback usability — provider-selection fixes + cross-provider
 > resolution) — deployed (Worker `4cb1e13e-9c19-4a6b-b06c-89f0f6f6d935`).** Shipped `main` (`359db07`)
