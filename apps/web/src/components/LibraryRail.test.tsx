@@ -248,16 +248,22 @@ describe('LibraryRail card summary', () => {
 });
 
 describe('LibraryRail create-class chooser', () => {
-  it('offers template options, defaults to Blank, and toggles the selection', () => {
+  it('offers only the D21 templates and requires a selection', () => {
     renderRail();
-    const blank = screen.getByRole('button', { name: 'Blank' });
+    expect(screen.queryByRole('button', { name: 'Blank' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Sculpt' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Tread' })).toBeNull();
+
+    const cycle = screen.getByRole('button', { name: 'Cycle' });
+    const pilates = screen.getByRole('button', { name: 'Pilates' });
     const hiit = screen.getByRole('button', { name: 'HIIT' });
-    // Blank (no discipline) is the default selection.
-    expect(blank.getAttribute('aria-pressed')).toBe('true');
+    expect(cycle.getAttribute('aria-pressed')).toBe('false');
+    expect(pilates.getAttribute('aria-pressed')).toBe('false');
     expect(hiit.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('button', { name: 'Add' })).toHaveProperty('disabled', true);
 
     fireEvent.click(hiit);
     expect(hiit.getAttribute('aria-pressed')).toBe('true');
-    expect(blank.getAttribute('aria-pressed')).toBe('false');
+    expect(cycle.getAttribute('aria-pressed')).toBe('false');
   });
 });

@@ -57,6 +57,7 @@ import { classReadiness } from '../lib/readiness.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
 import { libraryView, type ListStatus } from '../lib/library-state.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
+import { PROVIDER_ORDER, providerLabel } from '../lib/providers.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { TimelineStrip } from './TimelineStrip.js';
@@ -514,23 +515,13 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             <section className="rounded-card bg-bg-raised p-8 shadow-card" aria-busy="true">
               <p className="font-ui text-text-tertiary">Loading class…</p>
             </section>
-          ) : listStatus === 'ready' && classes.length === 0 && activeTag == null ? (
-            // True first run — there are no classes to derive from, so orient the new
-            // instructor to the creative loop rather than fabricating a provisional
-            // (design principle 8: alive at rest, but "derive, never invent").
-            <section className="rounded-card bg-bg-raised p-8 shadow-card">
-              <h2 className="font-display text-xl font-semibold text-text-primary">
-                Build your first class
-              </h2>
-              <p className="mt-2 max-w-prose font-ui text-sm text-text-secondary">
-                Name a class to begin — then pick the music, shape the intensity, and take it live.
-                In Ritmo Studio a class is your playlist and your choreography in one place.
-              </p>
-            </section>
           ) : (
-            <section className="rounded-card bg-bg-raised p-8 shadow-card">
-              <p className="font-ui text-text-tertiary">Select a class to keep building.</p>
-            </section>
+            <WorkstationRestingState
+              classes={classes}
+              activeTag={activeTag}
+              listReady={listStatus === 'ready'}
+              onOpenConnections={() => setConnectionsOpen(true)}
+            />
           )}
         </div>
       </div>
@@ -864,16 +855,13 @@ function TagFilter({
 }
 
 /**
- * The create-class chooser's template options. `null` is the default "Blank" class
- * (no discipline); the rest map to the shared `classTemplate` enum so the picked
- * template is carried into `POST /classes`. Labels are presentation-only.
+ * The create-class chooser's D21 templates. Pilates maps to the shared `sculpt`
+ * enum until the contract earns a rename; labels are presentation-only.
  */
 const CREATE_TEMPLATE_OPTIONS: ReadonlyArray<{ value: ClassTemplate | null; label: string }> = [
-  { value: null, label: 'Blank' },
   { value: 'cycle', label: 'Cycle' },
+  { value: 'sculpt', label: 'Pilates' },
   { value: 'hiit', label: 'HIIT' },
-  { value: 'sculpt', label: 'Sculpt' },
-  { value: 'tread', label: 'Tread' },
 ];
 
 function CreateClassForm({
@@ -886,12 +874,13 @@ function CreateClassForm({
   const [title, setTitle] = useState('');
   const [template, setTemplate] = useState<ClassTemplate | null>(null);
   const { busy, run } = useAsyncAction(onError);
+  const canCreate = title.trim().length > 0 && template != null && !busy;
   return (
     <form
       className="flex flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!title.trim()) return;
+        if (!title.trim() || template == null) return;
         void run(async () => {
           const cls = await createClass({ title: title.trim(), template });
           setTitle('');
@@ -909,16 +898,16 @@ function CreateClassForm({
           onChange={(e) => setTitle(e.target.value)}
         />
         <button
-          disabled={busy}
+          disabled={!canCreate}
           className="min-h-11 shrink-0 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50 sm:rounded-pill sm:px-4 sm:text-base"
         >
           {busy ? '…' : 'Add'}
         </button>
       </div>
-      {/* Template chooser — optional discipline for the new class (default Blank). */}
+      {/* D21 create path: a new blank class must pick Cycle, Pilates, or HIIT. */}
       <div
         role="group"
-        aria-label="Class template"
+        aria-label="Class template required"
         className="flex gap-1.5 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
       >
         {CREATE_TEMPLATE_OPTIONS.map(({ value, label }) => {
@@ -940,7 +929,131 @@ function CreateClassForm({
           );
         })}
       </div>
+      <p className="font-ui text-[11px] leading-4 text-text-tertiary">
+        Choose a template to start; Pilates stores as the current Sculpt contract.
+      </p>
     </form>
+  );
+}
+
+/**
+ * Resting workspace (D21): when no class is open, the center no longer goes blank.
+ * It names the next class-building move and shows provider shelves as source
+ * material, while playlist browsing stays honest until the read APIs land.
+ */
+function WorkstationRestingState({
+  classes,
+  activeTag,
+  listReady,
+  onOpenConnections,
+}: {
+  classes: ClassListItem[];
+  activeTag: string | null;
+  listReady: boolean;
+  onOpenConnections: () => void;
+}) {
+  const classCount = classes.length;
+  const trackCount = classes.reduce((sum, cls) => sum + cls.trackCount, 0);
+  const hasClasses = classCount > 0;
+  const heading = hasClasses ? 'Choose what to shape next' : 'Start with a class template';
+  const body = hasClasses
+    ? 'Open a class to keep shaping the room, or source music first and let that curiosity become the next class.'
+    : 'Pick Cycle, Pilates, or HIIT in the library rail, then bring in music and choreography as one creative object.';
+
+  return (
+    <section className="xl:col-span-2">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.7fr)]">
+        <div className="rounded-card bg-bg-raised p-5 shadow-card sm:p-6">
+          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+            Workstation ready
+          </p>
+          <h2 className="mt-2 font-display text-2xl font-semibold leading-tight text-text-primary">
+            {activeTag ? `No class selected for #${activeTag}` : heading}
+          </h2>
+          <p className="mt-2 max-w-prose font-ui text-sm leading-6 text-text-secondary">{body}</p>
+          <div className="mt-5 grid gap-2 sm:grid-cols-3">
+            <ReadinessTile label="Classes" value={listReady ? String(classCount) : '...'} />
+            <ReadinessTile label="Tracks placed" value={listReady ? String(trackCount) : '...'} />
+            <ReadinessTile label="Create path" value="Required" />
+          </div>
+          <div className="mt-5 rounded-card border border-interactive/15 bg-bg-base p-4">
+            <p className="font-ui text-sm font-semibold text-text-primary">Next useful move</p>
+            <p className="mt-1 font-ui text-sm leading-6 text-text-secondary">
+              {hasClasses
+                ? 'Select a class card for readiness, preview, and Live prep.'
+                : 'Name the class, choose Cycle, Pilates, or HIIT, then search or open likes from a provider.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-card bg-bg-raised p-5 shadow-card sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                Music sources
+              </p>
+              <h3 className="mt-2 font-display text-xl font-semibold text-text-primary">
+                Provider shelves
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenConnections}
+              aria-label="Open music connections from provider shelves"
+              className="rounded-pill border border-interactive/40 px-3 py-1.5 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10"
+            >
+              Connections
+            </button>
+          </div>
+          <div className="mt-4 grid gap-2">
+            {PROVIDER_ORDER.map((provider) => (
+              <ProviderShelfCard key={provider} provider={provider} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ReadinessTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-card border border-interactive/10 bg-bg-base p-3">
+      <p className="font-ui text-[11px] uppercase tracking-wide text-text-tertiary">{label}</p>
+      <p className="mt-1 font-data text-lg font-semibold text-text-primary">{value}</p>
+    </div>
+  );
+}
+
+function ProviderShelfCard({ provider }: { provider: (typeof PROVIDER_ORDER)[number] }) {
+  const label = providerLabel(provider);
+  const playlistNote =
+    provider === 'spotify'
+      ? 'Playlist URL import is available after a class opens.'
+      : 'Playlist browsing waits for the provider read surface.';
+
+  return (
+    <article className="rounded-card border border-interactive/10 bg-bg-base p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h4 className="font-ui text-sm font-semibold text-text-primary">{label}</h4>
+          <p className="mt-1 font-ui text-xs leading-5 text-text-tertiary">
+            Liked tracks are searchable from Builder once the provider is connected.
+          </p>
+        </div>
+        <span className="rounded-pill border border-interactive/25 px-2 py-0.5 font-data text-[10px] uppercase tracking-wide text-text-secondary">
+          Source
+        </span>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+        <span className="rounded-control border border-interactive/10 bg-bg-raised px-3 py-2 font-ui text-xs text-text-secondary">
+          Liked / saved tracks
+        </span>
+        <span className="rounded-control border border-interactive/10 bg-bg-raised px-3 py-2 font-ui text-xs text-text-tertiary">
+          {playlistNote}
+        </span>
+      </div>
+    </article>
   );
 }
 

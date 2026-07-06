@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
-import { avgBpm, cardSummaryFromPayload, formatDuration } from './class-summary.js';
+import {
+  avgBpm,
+  cardSummaryFromPayload,
+  formatDuration,
+  formatTemplateLabel,
+} from './class-summary.js';
 
 /** Minimal track entry; only the fields the summary helpers read need to be real. */
 function entry(displayBpm: number | null): RunPayloadTrackEntry {
@@ -82,5 +87,13 @@ describe('formatDuration', () => {
 
   it('clamps negative input to 0', () => {
     expect(formatDuration(-5000)).toBe('0:00');
+  });
+});
+
+describe('formatTemplateLabel', () => {
+  it('shows the current D21 Pilates label over the stored sculpt enum', () => {
+    expect(formatTemplateLabel('cycle')).toBe('Cycle');
+    expect(formatTemplateLabel('sculpt')).toBe('Pilates');
+    expect(formatTemplateLabel('hiit')).toBe('HIIT');
   });
 });
