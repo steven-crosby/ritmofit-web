@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { providerValues, providerCapabilities, supportsUserAccount } from '@ritmofit/shared';
+import {
+  providerValues,
+  providerCapabilities,
+  supportsUserAccount,
+  playbackRequiresConnection,
+} from '@ritmofit/shared';
 import {
   PROVIDER_LABELS,
   PROVIDER_ORDER,
@@ -85,6 +90,19 @@ describe('provider capability matrix', () => {
   it('supportsUserAccount tracks the userConnect capability', () => {
     for (const p of providerValues) {
       expect(supportsUserAccount(p)).toBe(providerCapabilities[p].userConnect);
+    }
+  });
+
+  it('requires a connection to play only the account-authorized providers', () => {
+    // SoundCloud plays via the public Widget (no token); MusicKit / the Spotify
+    // Web Playback SDK authorize the user, so those need a live connection.
+    expect(playbackRequiresConnection('soundcloud')).toBe(false);
+    expect(playbackRequiresConnection('apple_music')).toBe(true);
+    expect(playbackRequiresConnection('spotify')).toBe(true);
+    for (const p of providerValues) {
+      expect(playbackRequiresConnection(p)).toBe(
+        providerCapabilities[p].playbackRequiresConnection,
+      );
     }
   });
 });

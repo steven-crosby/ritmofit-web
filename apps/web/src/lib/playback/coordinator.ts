@@ -6,11 +6,13 @@
  * the adapter slices. Everything here is pure and injected (`now`, connections)
  * so it is unit-testable without any provider SDK.
  */
-import type {
-  MusicConnectionView,
-  Provider,
-  RunPayload,
-  RunPayloadTrackEntry,
+import {
+  playbackRequiresConnection,
+  providerValues,
+  type MusicConnectionView,
+  type Provider,
+  type RunPayload,
+  type RunPayloadTrackEntry,
 } from '@ritmofit/shared';
 import { PROVIDER_ORDER, providerConnectionState } from '../providers.js';
 import type {
@@ -33,6 +35,13 @@ export interface SelectionOptions {
   preferredProvider?: Provider | null;
   /** Injected clock so expiry checks are pure and testable. */
   now: number;
+  /**
+   * Providers this surface can actually drive (adapter-registered). A provider
+   * absent here can never play, even with a ref + live connection — its adapter
+   * isn't wired yet (e.g. Spotify today). Omitted = all providers, for pure
+   * selection tests; real surfaces pass their playback-registry keys.
+   */
+  availableProviders?: readonly Provider[];
 }
 
 /** The providers with a live (present, unexpired) connection right now. */
@@ -49,10 +58,17 @@ function connectedProviders(connections: ConnectionLike[], now: number): Set<Pro
 /**
  * Pick the provider that plays this track (plan §"Mixed-provider classes"):
  *
- * 1. the preferred provider, when it is connected and the track has its ref;
- * 2. otherwise the first connected provider with a ref, in `PROVIDER_ORDER`
+ * 1. the preferred provider, when it is usable and the track has its ref;
+ * 2. otherwise the first usable provider with a ref, in `PROVIDER_ORDER`
  *    (the product's deterministic order — SoundCloud first);
  * 3. otherwise unplayable, with the reason preflight copy needs.
+ *
+ * A provider is *usable* when its adapter is registered on this surface AND
+ * either its playback needs no user connection (SoundCloud's public Widget) or
+ * it has a live one (MusicKit / Spotify authorize the user). This is why a
+ * SoundCloud track plays with no connection — the Widget needs no token, and
+ * gating on the likes-only OAuth token (which expires ~hourly) would wrongly
+ * take the track dark.
  *
  * Selection is per track, never per class: a mixed-provider class resolves each
  * entry independently against the same connections.
@@ -66,18 +82,21 @@ export function selectProvider(
     return { status: 'unplayable', reason: 'no_provider_ref' };
   }
   const connected = connectedProviders(connections, options.now);
+  const available = new Set<Provider>(options.availableProviders ?? providerValues);
 
   const refFor = (provider: Provider) =>
     entry.providerRefs.find((ref) => ref.provider === provider);
+  const usable = (provider: Provider): boolean =>
+    available.has(provider) && (!playbackRequiresConnection(provider) || connected.has(provider));
 
   const preferred = options.preferredProvider ?? null;
-  if (preferred && connected.has(preferred)) {
+  if (preferred && usable(preferred)) {
     const ref = refFor(preferred);
     if (ref) return { status: 'playable', provider: preferred, ref };
   }
 
   for (const provider of PROVIDER_ORDER) {
-    if (!connected.has(provider)) continue;
+    if (!usable(provider)) continue;
     const ref = refFor(provider);
     if (ref) return { status: 'playable', provider, ref };
   }
