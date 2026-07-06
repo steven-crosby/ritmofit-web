@@ -40,6 +40,13 @@ import type {
 } from './types.js';
 
 const DEFAULT_PREPARE_TIMEOUT_MS = 20_000;
+/**
+ * Consent waits on a human, so it gets a far more generous budget than the
+ * queue-load timeout — but a blocked/abandoned Apple sheet must not wedge
+ * `prepare()` forever, so it is still bounded and fails to the recoverable-
+ * error path (which also lets the coordinator tear the orphaned adapter down).
+ */
+const DEFAULT_AUTHORIZE_TIMEOUT_MS = 60_000;
 const APP_META = { name: 'Ritmo Studio', build: '1.0.0' };
 
 const msToSeconds = (ms: number): number => ms / 1000;
@@ -79,6 +86,7 @@ export interface AppleMusicAdapterHost {
   loadMusicKit?: () => Promise<MusicKitGlobal>;
   loadConfig?: () => Promise<AppleMusicClientConfig>;
   prepareTimeoutMs?: number;
+  authorizeTimeoutMs?: number;
 }
 
 export class AppleMusicAdapter implements PlaybackAdapter {
@@ -154,7 +162,18 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     // gesture also covers Apple's consent surface, and an already-authorized
     // browser resolves immediately. The stored Music-User-Token is server-only
     // and never returned to the client, so the SDK re-establishes it here.
-    if (!instance.isAuthorized) await instance.authorize();
+    if (!instance.isAuthorized) {
+      // Signal the waiting state so the coordinator surfaces a cancellable
+      // "waiting for authorization" instead of a frozen `preparing`, and bound
+      // the un-cancellable consent with a generous timeout: a blocked/abandoned
+      // sheet then rejects to the recoverable-error path rather than hanging.
+      this.events.onAwaitingAuthorization?.();
+      await this.withTimeout(
+        instance.authorize(),
+        this.host.authorizeTimeoutMs ?? DEFAULT_AUTHORIZE_TIMEOUT_MS,
+        `Apple Music authorization didn't complete for "${this.trackTitle}". Try again or reconnect Apple Music.`,
+      );
+    }
     if (this.destroyed) return;
 
     await this.setQueue(instance, { songs: [songId], startTime: this.cueSeconds }, this.trackTitle);
@@ -269,7 +288,8 @@ export class AppleMusicAdapter implements PlaybackAdapter {
 
   /**
    * Bound the queue-load step so a hung SDK rejects instead of wedging class
-   * start. Wraps only setQueue — never authorize(), which waits on human consent.
+   * start, under the tight `prepareTimeoutMs`. Human consent (`authorize()`) is
+   * bounded separately by the far more generous `authorizeTimeoutMs`.
    */
   private async setQueue(
     instance: MusicKitInstance,
@@ -299,17 +319,17 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         }
       });
 
-    await this.withTimeout(queued, title);
+    await this.withTimeout(
+      queued,
+      this.host.prepareTimeoutMs ?? DEFAULT_PREPARE_TIMEOUT_MS,
+      `The Apple Music player timed out loading "${title}".`,
+    );
   }
 
-  private async withTimeout<T>(work: Promise<T>, title: string): Promise<T> {
-    const timeoutMs = this.host.prepareTimeoutMs ?? DEFAULT_PREPARE_TIMEOUT_MS;
+  private async withTimeout<T>(work: Promise<T>, timeoutMs: number, message: string): Promise<T> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeout = new Promise<never>((_resolve, reject) => {
-      timer = setTimeout(
-        () => reject(new Error(`The Apple Music player timed out loading "${title}".`)),
-        timeoutMs,
-      );
+      timer = setTimeout(() => reject(new Error(message)), timeoutMs);
     });
     try {
       return await Promise.race([work, timeout]);

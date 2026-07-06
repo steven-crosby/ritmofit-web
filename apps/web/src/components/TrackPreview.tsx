@@ -275,6 +275,20 @@ function PreviewControls({
       </button>
     );
   }
+  if (status.kind === 'awaiting_authorization') {
+    // Consent sheet is open: state it, and offer a way out (Cancel) so a
+    // stuck/abandoned authorization is recoverable without waiting on the timeout.
+    return (
+      <div className="flex items-center gap-2">
+        <button type="button" disabled className={primary}>
+          <span aria-hidden>⏳</span> Waiting for {providerLabel(status.provider)}…
+        </button>
+        <button type="button" onClick={onStop} className={secondary}>
+          <span aria-hidden>✕</span> Cancel
+        </button>
+      </div>
+    );
+  }
   if (status.kind === 'playing') {
     return (
       <div className="flex items-center gap-2">
@@ -314,6 +328,9 @@ function PreviewChip({ status }: { status: PreviewStatus }) {
     case 'preparing':
       text = `Preparing ${providerLabel(status.provider)}…`;
       break;
+    case 'awaiting_authorization':
+      text = `Waiting for ${providerLabel(status.provider)} authorization…`;
+      break;
     case 'playing':
       text = providerLabel(status.provider);
       break;
@@ -330,6 +347,7 @@ function PreviewChip({ status }: { status: PreviewStatus }) {
       text = 'Idle';
   }
   const isError = status.kind === 'error';
+  const isWaiting = status.kind === 'awaiting_authorization';
   if (status.kind === 'idle') return null;
   return (
     <span
@@ -337,7 +355,7 @@ function PreviewChip({ status }: { status: PreviewStatus }) {
         isError ? 'font-semibold text-state-danger' : 'text-text-tertiary'
       }`}
     >
-      <span aria-hidden>{isError ? '⚠' : '♪'}</span>
+      <span aria-hidden>{isError ? '⚠' : isWaiting ? '⏳' : '♪'}</span>
       <span className="sr-only">Preview: </span>
       {text}
     </span>

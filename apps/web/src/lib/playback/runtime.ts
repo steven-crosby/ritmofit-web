@@ -79,6 +79,9 @@ export interface PlaybackRuntimeError {
 export type CoordinatorStatus =
   | { kind: 'idle' }
   | { kind: 'preparing'; index: number; provider: Provider }
+  /** Blocked on the provider's human consent sheet — a cancellable pause, not a
+   *  frozen `preparing`; resolves to `playing` or a recoverable `error`. */
+  | { kind: 'awaiting_authorization'; index: number; provider: Provider }
   | { kind: 'playing'; index: number; provider: Provider }
   | { kind: 'silence'; nextIndex: number | null; untilMs: number }
   | { kind: 'paused' }
@@ -299,6 +302,14 @@ export class RuntimePlaybackCoordinator {
       // Early provider finish = silence until the next scheduled start; the
       // class clock is master, so there is nothing to advance here.
       onFinish: () => {},
+      onAwaitingAuthorization: () => {
+        // The adapter is blocked on the provider's consent sheet. Surface a
+        // distinct, cancellable state instead of a frozen `preparing`. Epoch-
+        // guarded so a superseded transition's late signal can't clobber a
+        // newer status.
+        if (epoch !== this.epoch) return;
+        this.setStatus({ kind: 'awaiting_authorization', index, provider: selection.provider });
+      },
       onError: ({ message }) => {
         // Ignore a dead adapter's late errors (already superseded).
         if (this.active?.adapter !== adapter) return;

@@ -325,6 +325,42 @@ describe('PreviewPlaybackController', () => {
     });
   });
 
+  it('surfaces awaiting_authorization while prepare blocks on consent, then plays', async () => {
+    const flush = () => new Promise((r) => setTimeout(r, 0));
+    const { controller, built, statuses } = harness({ gatePrepare: true });
+    const playing = controller.play(makeEntry({ classTrackId: 'ct-1' }));
+    await flush();
+    expect(built).toHaveLength(1);
+    // The adapter is blocked on the consent sheet and reports it.
+    built[0]!.events.onAwaitingAuthorization?.();
+    expect(controller.getStatus()).toEqual({
+      kind: 'awaiting_authorization',
+      classTrackId: 'ct-1',
+      provider: 'soundcloud',
+    });
+    built[0]!.openGate();
+    await playing;
+    expect(controller.getStatus()).toEqual({
+      kind: 'playing',
+      classTrackId: 'ct-1',
+      provider: 'soundcloud',
+    });
+    expect(statuses.map((s) => s.kind)).toEqual(['preparing', 'awaiting_authorization', 'playing']);
+  });
+
+  it('ignores a superseded adapter awaiting_authorization signal', async () => {
+    const { controller, built } = harness();
+    await controller.play(makeEntry({ classTrackId: 'ct-1' }));
+    await controller.play(makeEntry({ classTrackId: 'ct-2' }));
+    // The released first adapter signals consent-pending — must not clobber ct-2.
+    built[0]!.events.onAwaitingAuthorization?.();
+    expect(controller.getStatus()).toEqual({
+      kind: 'playing',
+      classTrackId: 'ct-2',
+      provider: 'soundcloud',
+    });
+  });
+
   it('stop() releases the adapter and returns to idle', async () => {
     const { controller, built } = harness();
     await controller.play(makeEntry());

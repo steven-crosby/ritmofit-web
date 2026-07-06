@@ -565,6 +565,9 @@ function PlaybackRail({ status }: { status: CoordinatorStatus | null }) {
       case 'preparing':
         text = `Preparing ${providerLabel(status.provider)}…`;
         break;
+      case 'awaiting_authorization':
+        text = `Waiting for ${providerLabel(status.provider)} authorization…`;
+        break;
       case 'playing':
         text = providerLabel(status.provider);
         break;
@@ -585,13 +588,14 @@ function PlaybackRail({ status }: { status: CoordinatorStatus | null }) {
     }
   }
   const isError = status?.kind === 'error';
+  const isWaiting = status?.kind === 'awaiting_authorization';
   return (
     <p
       className={`flex shrink-0 items-center gap-1.5 font-data text-xs ${
         isError ? 'font-semibold text-state-danger' : 'text-text-tertiary'
       }`}
     >
-      <span aria-hidden>{isError ? '⚠' : '♪'}</span>
+      <span aria-hidden>{isError ? '⚠' : isWaiting ? '⏳' : '♪'}</span>
       <span className="sr-only">Playback: </span>
       {text}
     </p>
