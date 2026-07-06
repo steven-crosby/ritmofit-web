@@ -29,6 +29,7 @@ import {
   type MusicKitGlobal,
   type MusicKitInstance,
   type MusicKitPlaybackEvent,
+  type MusicKitSetQueueOptions,
 } from '../musickit.js';
 import type {
   AdapterEvents,
@@ -54,6 +55,25 @@ const msToSeconds = (ms: number): number => ms / 1000;
  */
 const transportOwners = new WeakMap<MusicKitInstance, AppleMusicAdapter>();
 
+/**
+ * Generation guard for the shared MusicKit queue. `setQueue()` is not
+ * cancellable: if one adapter is abandoned while MusicKit is still loading, its
+ * promise can resolve after a newer adapter has cued the singleton. The newest
+ * generation is the only one allowed to finish as a valid cue.
+ */
+const queueGenerations = new WeakMap<MusicKitInstance, number>();
+const pendingQueueGenerations = new WeakMap<MusicKitInstance, number>();
+
+function claimQueueGeneration(instance: MusicKitInstance): number {
+  const generation = (queueGenerations.get(instance) ?? 0) + 1;
+  queueGenerations.set(instance, generation);
+  return generation;
+}
+
+function currentQueueGeneration(instance: MusicKitInstance): number {
+  return queueGenerations.get(instance) ?? 0;
+}
+
 /** Test seams: MusicKit loading, developer-token fetch, and the queue timeout. */
 export interface AppleMusicAdapterHost {
   loadMusicKit?: () => Promise<MusicKitGlobal>;
@@ -73,6 +93,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   private started = false;
   private destroyed = false;
   private trackTitle = '';
+  private queueGeneration: number | null = null;
 
   // One bound handler pair for this adapter's life, so removeEventListener in
   // destroy() matches the addEventListener in prepare().
@@ -136,10 +157,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     if (!instance.isAuthorized) await instance.authorize();
     if (this.destroyed) return;
 
-    await this.withTimeout(
-      instance.setQueue({ songs: [songId], startTime: this.cueSeconds }),
-      this.trackTitle,
-    );
+    await this.setQueue(instance, { songs: [songId], startTime: this.cueSeconds }, this.trackTitle);
     if (this.destroyed) return;
 
     // Bind runtime listeners only once cued: a load failure surfaces as the
@@ -165,8 +183,9 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     // now-playing item to seek until playback has started. Bounded like the
     // prepare-time cue so a hung queue-load can't wedge the transition.
     if (this.cueDirty && this.songId) {
-      await this.withTimeout(
-        instance.setQueue({ songs: [this.songId], startTime: this.cueSeconds }),
+      await this.setQueue(
+        instance,
+        { songs: [this.songId], startTime: this.cueSeconds },
         this.trackTitle,
       );
       this.cueDirty = false;
@@ -229,6 +248,14 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         // Best-effort teardown — the next setQueue/play supersedes any audio.
       }
     }
+    if (
+      instance &&
+      this.queueGeneration !== null &&
+      currentQueueGeneration(instance) === this.queueGeneration
+    ) {
+      claimQueueGeneration(instance);
+    }
+    this.queueGeneration = null;
     this.instance = null;
     this.music = null;
   }
@@ -244,6 +271,37 @@ export class AppleMusicAdapter implements PlaybackAdapter {
    * Bound the queue-load step so a hung SDK rejects instead of wedging class
    * start. Wraps only setQueue — never authorize(), which waits on human consent.
    */
+  private async setQueue(
+    instance: MusicKitInstance,
+    options: MusicKitSetQueueOptions,
+    title: string,
+  ): Promise<void> {
+    if (pendingQueueGenerations.has(instance)) {
+      throw new Error(
+        `The Apple Music player is still finishing a previous queue request for "${title}".`,
+      );
+    }
+
+    const generation = claimQueueGeneration(instance);
+    this.queueGeneration = generation;
+    pendingQueueGenerations.set(instance, generation);
+    const queued = instance
+      .setQueue(options)
+      .then((result) => {
+        if (this.destroyed || currentQueueGeneration(instance) !== generation) {
+          throw new Error(`The Apple Music queue request for "${title}" was superseded.`);
+        }
+        return result;
+      })
+      .finally(() => {
+        if (pendingQueueGenerations.get(instance) === generation) {
+          pendingQueueGenerations.delete(instance);
+        }
+      });
+
+    await this.withTimeout(queued, title);
+  }
+
   private async withTimeout<T>(work: Promise<T>, title: string): Promise<T> {
     const timeoutMs = this.host.prepareTimeoutMs ?? DEFAULT_PREPARE_TIMEOUT_MS;
     let timer: ReturnType<typeof setTimeout> | undefined;
