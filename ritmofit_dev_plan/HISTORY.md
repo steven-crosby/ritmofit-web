@@ -10,6 +10,37 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-06 (SoundCloud Widget CSP hotfix — unblocks real-provider playback) — deployed
+> (Worker `5072dd3b-ff09-412b-bcad-9cef7086719b`).** Landed via PR
+> [#225](https://github.com/steven-crosby/ritmofit-web/pull/225) (`0429d34`). This was **deployed from
+> the working tree during the first real-provider playback verification pass**, then committed to `main`
+> afterward, so the entry records a live-verification hotfix rather than a merge-then-deploy. Root cause —
+> the production SPA CSP `script-src`/`frame-src` did not allow the official SoundCloud Widget origin
+> `https://w.soundcloud.com`, so Live Mode SoundCloud playback failed with a CSP violation
+> (`w.soundcloud.com/player/api.js` blocked by `script-src`) and correctly fell into the playback-error
+> recovery state ("The SoundCloud player failed to load"). Fix: add `https://w.soundcloud.com` to
+> `script-src` (Widget API JS) and `frame-src` (the hidden player iframe) in `apps/web/public/_headers`
+> plus its CSP comment block. **Two deploys were needed:** the first (Worker
+> `cde2cb9e-b8a2-42fb-9e0d-f8d69da7206f`) uploaded no static-asset files, so Wrangler left the old header
+> metadata attached and the live CSP was unchanged; forcing a byte change (a no-op comment in
+> `apps/web/index.html`) + rebuild produced the second deploy (`5072dd3b`) which actually carried the new
+> header. **Frontend/static-header only — no schema / migration / API.** Rollback anchor: prior live
+> `be7c9425-5733-4783-89af-93ab3f823ae0`. Remote D1: **no migrations to apply**. Full pre-deploy gate ran
+> green on these exact bytes before deploy (format / typecheck ×3 / lint / design-system verify / unit /
+> integration / web build / openapi no-drift / contract-parity / audit:ci). Post-deploy smoke on live
+> `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` → `200`, protected
+> `classes`/`explore`/`teams` → `401`, served bundle `index-B79dxbYI.js`, and the CSP response header now
+> includes `w.soundcloud.com` in `script-src` and `frame-src`. **Provider-playback verification (partial):
+> SoundCloud is now verified on live** — in a clean isolated-context browser on the current bundle, Live
+> Mode (Burn Ride 🔥) preflight resolves both tracks as "Plays on SoundCloud", the Widget loads from
+> `w.soundcloud.com`, the player rail shows `Playback: SoundCloud`, the timer advances, and pause/resume is
+> stable (the Widget emits its own noisy third-party `encrypted-media` / CORS console warnings, which are
+> cosmetic and do not affect our playback state). **Apple Music playback is still unverified** — the
+> Builder preview loads MusicKit and reaches "Waiting for Apple Music authorization…" (opens a real Apple
+> sign-in tab); full clip playback was not confirmed and remains the open follow-up. Watch for a possible
+> second CSP gap there: the current CSP has no `media-src`, so `default-src 'self'` governs media and may
+> block Apple CDN audio — tune `_headers` against violation reports during the Apple pass.
+
 > **Session 2026-07-06 (PWA refresh-on-deploy prompt — fixes update lag) — deployed (Worker
 > `be7c9425-5733-4783-89af-93ab3f823ae0`).** Shipped `main` (`8d98c7e`, PR
 > [#222](https://github.com/steven-crosby/ritmofit-web/pull/222)). Verifying the D21 shell on live
