@@ -10,6 +10,41 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-06 (Apple Music web playback CSP — connect-src + media-src) — deployed (Worker
+> `cbea9f69-98fd-441f-915f-7820be24c58b`).** Continuation of the SoundCloud CSP pass, on branch
+> `fix/apple-music-csp-playback-hosts` (stacked on the SoundCloud branch so the deploy keeps
+> `w.soundcloud.com`). Live Apple Music preview verification (Pilates One → track 2 *A'oga O Samoana*,
+> Builder "Preview on Apple Music") surfaced **two enforced `connect-src` blocks**, each halting playback
+> before any audio (each captured via a `securitypolicyviolation` listener; MusicKit `playbackState`
+> stayed `none`): (1) **"Failed to fetch"** — the web-playback handshake to
+> `https://play.itunes.apple.com/WebObjects/MZPlay.woa/wa/webPlayback`; (2) **"Could not fetch manifest"**
+> — the HLS audio manifest at `https://aod-ssl.itunes.apple.com/.../mzaf_*.aac.wa.m3u8`. Root cause — CSP
+> `connect-src` allowed `*.music.apple.com` / `*.mzstatic.com` but **not** the `itunes.apple.com` audio
+> hosts. Fix in `apps/web/public/_headers`: `connect-src` **+ `https://*.itunes.apple.com`** (covers the
+> handshake/license host and the `aod-ssl` audio manifest/segment hosts, matching the file's existing
+> wildcard style) and **`media-src 'self' blob:`** (MusicKit plays via Media Source Extensions, so the
+> `<audio>` source is a `blob:` MediaSource URL — confirmed live). **Two deploys this session:**
+> `10c1bfde-1894-4985-868f-c4ad779904bf` first added `play.itunes.apple.com` + `media-src` (cleared block
+> #1, which then surfaced #2), then `cbea9f69` broadened to `*.itunes.apple.com` (cleared #2).
+> **Frontend/static-header only — no schema / migration / API.** Rollback anchor: prior live
+> `5072dd3b-ff09-412b-bcad-9cef7086719b` (the SoundCloud deploy). Remote D1: **no migrations to apply.**
+> Full pre-deploy gate green on the `play.itunes` commit (format / typecheck ×3 / lint / design verify /
+> unit / integration / web build / openapi no-drift `46 schemas · 47 paths` / contract-parity 7-allowlisted
+> clean / audit:ci); the wildcard-broaden delta is a single host in a static header, re-checked via
+> `format:check` + web build (the heavy gate is unaffected by a header string change). Post-deploy smoke on
+> live `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` → `200`, protected `classes` → `401`,
+> and the CSP response header now includes `https://*.itunes.apple.com` in `connect-src` plus `media-src
+> 'self' blob:`. **Provider-playback verification (Apple Music, partial-but-strong):** on a fresh document
+> carrying the new CSP (the browser's stale-precache service worker had to be unregistered first — see
+> caveat), the Apple preview now **authorizes, loads the track (`nowPlayingItem` set, full `246s`
+> duration), fetches the HLS manifest, and builds the MSE `blob:` `<audio>` element with ZERO CSP
+> violations and no errors** — the exact pipeline that failed twice before. The final byte-level audible
+> playback was **not** machine-confirmed because the automation tab runs hidden
+> (`document.visibilityState === 'hidden'` → Chrome background-media throttling stalls the buffer at
+> `readyState 0`); it needs a foreground click to confirm sound comes out. **Stale-SW caveat (again):** an
+> already-open PWA client keeps serving the OLD precached CSP until the "New version — Refresh" prompt is
+> taken (or the SW re-fetches); a hard header change like this only reaches such clients after that refresh.
+
 > **Session 2026-07-06 (SoundCloud Widget CSP hotfix — unblocks real-provider playback) — deployed
 > (Worker `5072dd3b-ff09-412b-bcad-9cef7086719b`).** Landed via PR
 > [#225](https://github.com/steven-crosby/ritmofit-web/pull/225) (`0429d34`). This was **deployed from
