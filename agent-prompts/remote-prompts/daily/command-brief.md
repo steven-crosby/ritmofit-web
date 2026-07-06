@@ -12,7 +12,7 @@
 > survives the sandbox (chat output does not).
 > **TIMEBOX:** 10 minutes.
 
-Read **ritmofit-web**, its canonical `AGENTS.md`, the live planning sources
+Read **ritmofit-web**, its canonical `CLAUDE.md`, the live planning sources
 (`ritmofit_dev_plan/DEVELOPMENT_PLAN.md`), the newest agent reports under this repo's
 `agent-reports/` (repo-root-relative), recent commits, open PRs, and CI/check
 status. You may glance at the vendored `ios-snapshot/` (read-only iOS client source) only to

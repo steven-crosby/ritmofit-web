@@ -267,10 +267,10 @@ derived from `display_bpm` (cf. D11).
 **Why:** Cadence is core spin-instructor language; the audit found prod models only BPM. The owner
 chose to add it.
 
-**Tradeoff / open sub-question:** New schema field(s) + builder/Live UI + a run-payload addition.
-**Holds** is unsettled: either a **derived** count of hold-type placed moves (no new field) or a
-**manual** per-track count — settle in design before building. Keep RPM and BPM visually distinct so
-they're never conflated.
+**Tradeoff:** New schema field(s) + builder/Live UI + a run-payload addition. The **Holds**
+sub-question (derived count vs. manual field) was **settled as Option B — a manual per-track
+`hold_count`** (null = unset, `0` = "no holds"), shipped end-to-end (schema, shared contract,
+run-payload; PR #110). Keep RPM and BPM visually distinct so they're never conflated.
 
 ---
 
@@ -279,8 +279,9 @@ they're never conflated.
 **Decision:** Build a public **marketing landing** at `/` (mockup `marketing.html`); sign-in becomes
 secondary. Signed-out users see the landing, not the Login form directly.
 
-**Why:** The owner wants a public front door for traction. Today the signed-out gate in `App.tsx`
-renders `<Login>` straight away.
+**Why:** The owner wants a public front door for traction. (At decision time the signed-out gate in
+`App.tsx` rendered `<Login>` straight away; the landing has since **shipped** —
+`apps/web/src/components/MarketingPage.tsx`, the signed-out front door at `/`.)
 
 **Tradeoff / note:** A marketing page wants SEO/pre-render, which lightly tensions with **D3** ("Vite
 SPA, no SSR — the tool sits behind a login"). Resolve by **pre-rendering / serving the landing route as

@@ -133,5 +133,5 @@ reintroduce the community model. The backend union remains for now.
 - A team's `owner`/`admin` roles govern **team membership management**, not class access. Class access
   always derives from ownership + shares, even when a class is shared *to* a team.
 - Because there's no RLS, **every** new class-scoped route must call `requireAccess` (see the
-  authorization rules in `../AGENTS.md` → "Coding & Domain Rules"). A missing call is a security bug,
+  authorization rules in `../CLAUDE.md` → "Engineering Rules"). A missing call is a security bug,
   not a style nit.

@@ -20,7 +20,7 @@
  * this adapter's listeners and halts audio — it never tears the singleton down.
  * The developer token comes from the same `GET /providers/apple_music/config`
  * endpoint the connect flow uses; tokens live in memory only, never logged or
- * persisted (AGENTS.md), and are never used for catalog/BPM shortcuts.
+ * persisted (CLAUDE.md), and are never used for catalog/BPM shortcuts.
  */
 import type { AppleMusicClientConfig, RunPayloadTrackEntry } from '@ritmofit/shared';
 import { getAppleMusicConfig } from '../api.js';

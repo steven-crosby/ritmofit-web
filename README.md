@@ -1,13 +1,15 @@
 # ritmofit-web
 
-Ritmo Studio is a choreography and class-running tool for rhythm spin cycle instructors, delivered as two
-complete surfaces of one product: this web app and the companion iOS app. Both surfaces carry the full
-instructor loop — build and choreograph, manage the library, search and import music, explore, share,
-and run class live — in platform-native form.
+Ritmo Studio helps individual rhythm fitness instructors (Cycle, Pilates, HIIT) build, choreograph,
+organize, rehearse, and run their own classes in one continuous creative flow. The current product is
+**solo-first and web-first** (D20): this web app is the product-definition surface, framed as a
+**creator workstation shell over trusted music services** (D21) — Spotify, Apple Music, and SoundCloud
+are the music substrate, and Ritmo adds the instructor layer. A native iOS app follows later from the
+proven backend contract; community surfaces (teams, sharing, publish, explore) are deferred.
 
 This repository is a pnpm TypeScript monorepo: a React/Vite/Tailwind SPA (`apps/web`) and the
-authoritative Hono/Cloudflare Workers + D1 backend (`apps/api`) it shares with the iOS client, plus
-shared contracts (`packages/shared`) and music-provider adapters (`packages/music`). In production a
+authoritative Hono/Cloudflare Workers + D1 backend (`apps/api`), plus shared contracts
+(`packages/shared`) and music-provider adapters (`packages/music`). In production a
 single Worker serves both the SPA and the API from one origin.
 
 ## Prerequisites
@@ -53,7 +55,7 @@ pnpm --filter @ritmofit/api db:seed:local
 
 ## Test and quality gates
 
-The CI-equivalent gates (also documented in [`AGENTS.md`](AGENTS.md)):
+The CI-equivalent gates (also documented in [`CLAUDE.md`](CLAUDE.md)):
 
 ```bash
 pnpm format:check
@@ -98,16 +100,18 @@ The UI is driven by design tokens, not ad-hoc colors. The flow is single-source:
 
 Deployments are **manual and production-facing** — see the deploy, rollback, and D1 recovery procedures
 in [`ritmofit_dev_plan/deployment-runbook.md`](ritmofit_dev_plan/deployment-runbook.md) and the
-"Security, Deployment & Session Close" section of [`AGENTS.md`](AGENTS.md). Apply any required remote D1
+"Security And Deployment" section of [`CLAUDE.md`](CLAUDE.md). Apply any required remote D1
 migrations **before** the code that depends on them.
 
 ## Where to read more
 
-- [`AGENTS.md`](AGENTS.md) — canonical contributor and agent guide (architecture, rules, workflow,
+- [`CLAUDE.md`](CLAUDE.md) — canonical contributor and agent guide (architecture, rules, workflow,
   verification). It takes precedence if any other doc conflicts.
 - [`ritmofit_dev_plan/`](ritmofit_dev_plan/) — architecture, authorization, schema, milestones, and
   operational runbooks.
 - [`ritmofit_design_system/README.md`](ritmofit_design_system/README.md) — tokens, components,
   accessibility, motion, and layout guidance for UI work.
+- [`docs/onboarding/ritmofit-tutorial-video-cuts.md`](docs/onboarding/ritmofit-tutorial-video-cuts.md) —
+  caption/cut specs for the landing-hero and onboarding tutorial videos.
 - [`ritmofit_dev_plan/archive/`](ritmofit_dev_plan/archive/) — archived launch-readiness review
   (`REVIEW.md`/`REVIEW_HISTORY.md`), pre-launch audit reports, and superseded AI session prompts.

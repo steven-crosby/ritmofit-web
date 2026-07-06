@@ -406,7 +406,7 @@ Define these in the Drizzle schema (step 3); D1/SQLite enforces FKs when `PRAGMA
 
 | Parent deleted | Child behavior |
 |---|---|
-| `classes` | **CASCADE** → `class_tracks` → their `cues` and `class_track_moves`; and the class's `shares`, `class_tags`, and `class_sections` |
+| `classes` | **CASCADE** → `class_tracks` → their `cues` and `class_track_moves`; and the class's `shares`, `class_tags`, and `class_sections`. The `shares` arm is **app-enforced** (the class-delete route deletes matching rows) — `shares.resource_id` is polymorphic and carries no FK |
 | `class_tracks` | **CASCADE** → its `cues` and `class_track_moves` |
 | `tracks` | **RESTRICT** while referenced by any `class_track` (a track in use can't vanish from under a class); also cascades its `track_provider_ids` |
 | `teams` | **CASCADE** → `team_memberships` and any `shares` targeting the team |

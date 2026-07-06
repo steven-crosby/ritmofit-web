@@ -72,8 +72,8 @@ ritmofit/
 │  │  └─ wrangler.toml          # Worker + D1 binding config
 │  └─ web/                      # React + Vite SPA
 │     ├─ src/
-│     │  ├─ lib/api-client.ts   # typed client built on packages/shared
-│     │  ├─ lib/auth.ts         # Better Auth client wiring (email/Apple/Google)
+│     │  ├─ lib/api.ts          # typed client built on packages/shared
+│     │  ├─ lib/auth-client.ts  # Better Auth client wiring (email/Apple/Google)
 │     │  └─ ...
 │     └─ index.html
 ├─ package.json                 # workspace root (pnpm)

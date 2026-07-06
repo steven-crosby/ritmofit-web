@@ -1,7 +1,7 @@
 # Milestones
 
 Each step follows the working agreement: **plan → confirm → code → summarize** (see
-`../AGENTS.md` → "Before Implementing").
+`../CLAUDE.md` → "Working Agreement").
 
 > **Status: M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ · Web Launch Readiness ✅ — all done, merged to `main`, and
 > deployed** (API + web at `https://ritmofit.studio`). The active focus (2026-07-05) is solo creator

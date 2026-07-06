@@ -29,31 +29,16 @@ Pilates, and HIIT.
   playback windows, readiness, and Live Mode. Provider libraries are the raw material and class-building
   is the creative layer on top. The app should feel *familiar before it feels specialized*: browse, listen,
   and inspect playlists, then convert curiosity into a class — no single forced creation flow.
-- **Current operating focus (2026-07-06):** the web launch gate is green and deployed. The product frame
-  is now the **creator workstation shell over trusted music services (D21)** — provider libraries as raw
-  material, class-building as the layer on top, familiar before specialized. The first web-desktop slice
-  is **deployed** (PR [#219](https://github.com/steven-crosby/ritmofit-web/pull/219), `01fd955`;
-  frontend-only, Worker `fc7f8cfe`): narrow
-  class templates to **Cycle / Pilates / HIIT** (Pilates↔`sculpt`, require a template on the create path),
-  replace empty workspace states with **class readiness + music discovery**, and add **provider shelves**
-  (Spotify/Apple/SoundCloud) with each service's **liked/saved tracks card** and **playlist cards that open
-  a detail/track list** (browse/listen, then Start class / Add selected) — the alive-at-rest workstation
-  shell and provider shelves land in this PR; the playlist detail/track-list cards remain a follow-up
-  sub-slice (needs new saved-playlist read endpoints).
-  This rides on the **provider-authorized playback initiative**
-  ([`provider-playback-implementation.md`](./provider-playback-implementation.md)); playback progress: the
-  SoundCloud + **Apple Music** Live Mode adapters and the **Builder clip-window preview**
-  (`TrackPreview.tsx`, manual/single-track/no-auto-advance) are built, and a **2026-07-06 batch made the
-  player usable**: SoundCloud plays via the public Widget without a live connection (an expired likes-only
-  OAuth token no longer gates it — the `playbackRequiresConnection` capability), Apple Music `authorize()`
-  recovers instead of freezing (cancellable `awaiting_authorization` + consent timeout), and a
-  Spotify-only track can be **resolved cross-provider** to a playable equivalent
-  (`POST /tracks/:id/resolve-provider` + the Builder "Find on a supported provider" action). The Spotify
-  *playback* adapter (gated on its OAuth playback-scope expansion) is the remaining web gap, and
-  **real-provider audio still needs live subscriber verification** — the last un-verified step.
-  Saved-playlist browsing needs new read endpoints (its own sub-slice). Teams, Sharing, Publish, and
-  Explore are hidden/dormant (D20). Last production deploy **2026-07-06 (Worker `be7c9425`)** — the PWA
-  refresh-on-deploy prompt fixing SW update lag; no schema/migration (rollback anchor `fc7f8cfe`).
+- **Current operating focus (2026-07-06):** the launch gate is green and the app is live. The active
+  track is the **D21 creator-workstation-shell slice** — the first slice (Cycle/Pilates/HIIT templates,
+  readiness + discovery resting state, provider shelves) is deployed; **saved-playlist browsing** is the
+  next sub-slice (needs new provider read endpoints; see `decisions.md` D21) — alongside the
+  **provider-authorized playback initiative** (SoundCloud + Apple Music adapters, Builder preview, and
+  cross-provider resolution built; the Spotify playback adapter and live subscriber verification are the
+  remaining gaps — status of record in
+  [`provider-playback-implementation.md`](./provider-playback-implementation.md)). Teams, Sharing,
+  Publish, and Explore stay hidden/dormant (D20). For per-deploy detail and the live Worker version, see
+  [`HISTORY.md`](./HISTORY.md), newest first.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
@@ -125,7 +110,7 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
 1. **Plan before code.** For any feature, propose files, schema impact, API surface, frontend impact,
    risks, and verification — then wait for confirmation. Use the plan→confirm template in
-   [`../AGENTS.md`](../AGENTS.md) → "Before Implementing".
+   [`../CLAUDE.md`](../CLAUDE.md) → "Working Agreement".
 2. **Respect the hard constraints above.** Never cache audio, pull Spotify BPM, or mix audio in-app.
 3. **The shared package is the contract.** Entity shapes live once in `packages/shared`; don't
    redefine them in `apps/api` or `apps/web`.
@@ -149,7 +134,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 >   version, and remote D1 migration level) → [`HISTORY.md`](./HISTORY.md), newest entry first.
 > - **Paused iOS parity record** → [`web-ios-parity.md`](./web-ios-parity.md) (kept for contract/design
 >   sync context, not a current product gate).
-> - **Contributor + deployment instructions** → [`../AGENTS.md`](../AGENTS.md) and
+> - **Contributor + deployment instructions** → [`../CLAUDE.md`](../CLAUDE.md) and
 >   [`deployment-runbook.md`](./deployment-runbook.md).
 >
 > The headline: backend **M1–M4 complete and deployed**, the web launch gate is green, and the app is
