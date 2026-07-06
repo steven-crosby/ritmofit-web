@@ -272,6 +272,18 @@ unplayable once the *likes-only* OAuth token expired (~hourly), even though the 
 preflight/selection had gated all providers uniformly on a live connection. See `selectProvider` /
 `SelectionOptions.availableProviders` in `playback/coordinator.ts`.
 
+**Cross-provider resolution (built 2026-07-06):** a track added only from a provider Ritmo can't play
+in-app (Spotify today — no adapter) now reports the distinct `provider_not_playable` selection reason
+(vs. `no_connected_provider`), and can be *resolved* to a playable provider instead of being a dead end.
+`POST /tracks/:id/resolve-provider` searches the requested playable providers' catalogs for the same
+song and **auto-attaches a strong same-song match** (the conservative `findSameSongMatch` bar:
+normalized title+artist + duration tolerance — a wrong auto-attach would rewrite the library), else
+returns candidates to confirm; the confirm path reuses `POST /tracks/:id/provider-ids`. The algorithm is
+the pure `lib/resolve-provider.ts` (injected search, unit-tested); the Builder preview surfaces it as a
+"Find on {SoundCloud/Apple Music}" action on the unplayable verdict (`TrackPreview.tsx`), overlaying the
+resolved ref locally so the verdict flips to playable at once. No schema change — refs live in the
+existing `track_provider_ids`; catalog search spends the app-level token, never provider audio.
+
 **Builder preview wiring status (2026-07-05):** built — `TrackPreview.tsx` in the builder inspector
 (`Dashboard.tsx`, gated on the selected track's run-payload entry), driven by `PreviewPlaybackController`
 over one adapter. Manual transport (preview / pause / resume / stop), a status chip mirroring the Live
