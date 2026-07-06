@@ -32,8 +32,8 @@ Pilates, and HIIT.
 - **Current operating focus (2026-07-06):** the web launch gate is green and deployed. The product frame
   is now the **creator workstation shell over trusted music services (D21)** — provider libraries as raw
   material, class-building as the layer on top, familiar before specialized. The first web-desktop slice
-  is **merged to `main`** (PR [#219](https://github.com/steven-crosby/ritmofit-web/pull/219), `01fd955`;
-  frontend-only, **production deploy pending**): narrow
+  is **deployed** (PR [#219](https://github.com/steven-crosby/ritmofit-web/pull/219), `01fd955`;
+  frontend-only, Worker `fc7f8cfe`): narrow
   class templates to **Cycle / Pilates / HIIT** (Pilates↔`sculpt`, require a template on the create path),
   replace empty workspace states with **class readiness + music discovery**, and add **provider shelves**
   (Spotify/Apple/SoundCloud) with each service's **liked/saved tracks card** and **playlist cards that open
@@ -52,8 +52,8 @@ Pilates, and HIIT.
   *playback* adapter (gated on its OAuth playback-scope expansion) is the remaining web gap, and
   **real-provider audio still needs live subscriber verification** — the last un-verified step.
   Saved-playlist browsing needs new read endpoints (its own sub-slice). Teams, Sharing, Publish, and
-  Explore are hidden/dormant (D20). Last production deploy **2026-07-06 (Worker `4cb1e13e`)** — the
-  playback-usability batch; no schema/migration (rollback anchor `d4954a2e`).
+  Explore are hidden/dormant (D20). Last production deploy **2026-07-06 (Worker `fc7f8cfe`)** — the D21
+  workstation resting shell; no schema/migration (rollback anchor `4cb1e13e`).
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
