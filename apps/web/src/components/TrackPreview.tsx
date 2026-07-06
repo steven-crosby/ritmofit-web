@@ -13,12 +13,12 @@
  * recoverable `role="alert"` — no provider handoff link (that stays a Live Mode
  * recovery-only affordance).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MusicConnectionView, RunPayloadTrackEntry } from '@ritmofit/shared';
 import { listConnections } from '../lib/api.js';
 import { playbackWindowFor, selectProvider } from '../lib/playback/coordinator.js';
 import { PreviewPlaybackController, type PreviewStatus } from '../lib/playback/preview.js';
-import { PLAYBACK_ADAPTERS } from '../lib/playback/registry.js';
+import { PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
 import { providerLabel } from '../lib/providers.js';
 
 /** Providers the track has a ref for AND the web player can actually drive. */
@@ -63,21 +63,16 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
     };
   }, []);
 
-  // Only the providers the web player can drive count toward "playable".
-  const playableConnections = useMemo(
-    () => (connections ?? []).filter((c) => c.provider in PLAYBACK_ADAPTERS),
-    [connections],
-  );
-
   // (Re)build the controller when the resolved connections change; tear down the
   // previous one so its adapter/SDK is released.
   useEffect(() => {
     if (!connections) return;
-    const controller = new PreviewPlaybackController(playableConnections, {
+    const controller = new PreviewPlaybackController(connections, {
       // Clock accessor, not a frozen `Date.now()`: the controller outlives this
       // effect, so provider-expiry must be read at each play(), not at build.
       now: () => Date.now(),
       adapters: PLAYBACK_ADAPTERS,
+      availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
       onStatus: setStatus,
     });
     controllerRef.current = controller;
@@ -87,7 +82,7 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
       // destroy() doesn't push status; reset it here so `playing` derives false.
       setStatus({ kind: 'idle' });
     };
-  }, [connections, playableConnections]);
+  }, [connections]);
 
   // Switching the selected track stops any in-flight preview (single-track
   // model). stop() pushes `idle` via onStatus, which clears `playing`.
@@ -139,7 +134,10 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
 
   // Static eligibility for the idle verdict (before the instructor hits preview).
   const selection = connections
-    ? selectProvider(entry, playableConnections, { now: Date.now() })
+    ? selectProvider(entry, connections, {
+        now: Date.now(),
+        availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
+      })
     : null;
   const window = playbackWindowFor(entry);
   const isClipped = entry.clipStartMs > 0 || entry.track.durationMs != null;

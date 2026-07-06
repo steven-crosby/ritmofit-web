@@ -122,16 +122,44 @@ async function renderLive(p: RunPayload = payload) {
 
 describe('LiveMode preflight', () => {
   it('lists per-track verdicts and blocks hands-free start when a track cannot play', async () => {
-    render(<LiveMode payload={payload} onExit={() => {}} />);
+    // Apple Music needs an authorized user; with no connection this track can't
+    // play (unlike SoundCloud, whose public Widget needs no connection).
+    const appleOnly = {
+      ...activeTrack,
+      providerRefs: [
+        {
+          provider: 'apple_music',
+          providerTrackId: 'apple-id',
+          providerUri: 'https://music.apple.com/us/song/active-track/123',
+        },
+      ],
+    } satisfies RunPayloadTrackEntry;
+    render(<LiveMode payload={{ ...payload, tracks: [appleOnly] }} onExit={() => {}} />);
     const list = await screen.findByRole('list', { name: 'Track playback check' });
     expect(within(list).getByText('Active Track')).toBeTruthy();
-    // No connections → the soundcloud ref has no connected playable provider.
+    // No Apple Music connection → nothing can play it.
     expect(within(list).getByText('No connected provider can play this')).toBeTruthy();
     expect(screen.getByText('1 track can’t play yet.')).toBeTruthy();
     const start = screen.getByRole('button', { name: 'Start class' });
     expect((start as HTMLButtonElement).disabled).toBe(true);
     // The prompter path stays available.
     expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
+  });
+
+  it('starts a SoundCloud track with no connection (public Widget needs no auth)', async () => {
+    // The exact production bug: an all-SoundCloud class with no live connection
+    // used to read as unplayable. The Widget needs no token, so it must play.
+    const soundcloudOnly = {
+      ...activeTrack,
+      providerRefs: [
+        { provider: 'soundcloud', providerTrackId: 'soundcloud-id', providerUri: null },
+      ],
+    } satisfies RunPayloadTrackEntry;
+    render(<LiveMode payload={{ ...payload, tracks: [soundcloudOnly] }} onExit={() => {}} />);
+    const list = await screen.findByRole('list', { name: 'Track playback check' });
+    expect(within(list).getByText('Plays on SoundCloud')).toBeTruthy();
+    const start = screen.getByRole('button', { name: 'Start class' });
+    expect((start as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('passes preflight with a connected provider and starts hands-free playback', async () => {

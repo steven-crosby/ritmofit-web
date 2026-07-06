@@ -27,6 +27,11 @@ export type Provider = z.infer<typeof providerSchema>;
  * - `userConnect`: per-user OAuth account link (`POST /providers/:provider/connect`).
  * - `userLikes`: read the connected user's likes (spends their token).
  * - `playlistImport`: import a public playlist URL (`POST /classes/:id/import-playlist`).
+ * - `playbackRequiresConnection`: does in-app *playback* need a live per-user
+ *   connection? Spotify (Web Playback SDK, Premium) and Apple Music (MusicKit)
+ *   authorize the user, so yes. SoundCloud plays public tracks through the
+ *   embedded Widget with no user token, so no — gating its playback on a
+ *   connection would wrongly kill tracks when the likes-only OAuth token expires.
  *
  * All three providers have a per-user connect + likes path. SoundCloud and Spotify
  * use redirect OAuth (Authorization Code + PKCE); Apple Music uses MusicKit JS in
@@ -41,22 +46,46 @@ export interface ProviderCapabilities {
   userConnect: boolean;
   userLikes: boolean;
   playlistImport: boolean;
+  playbackRequiresConnection: boolean;
 }
 
 export const providerCapabilities: Record<Provider, ProviderCapabilities> = {
-  soundcloud: { catalogSearch: true, userConnect: true, userLikes: true, playlistImport: false },
-  spotify: { catalogSearch: true, userConnect: true, userLikes: true, playlistImport: true },
+  soundcloud: {
+    catalogSearch: true,
+    userConnect: true,
+    userLikes: true,
+    playlistImport: false,
+    playbackRequiresConnection: false,
+  },
+  spotify: {
+    catalogSearch: true,
+    userConnect: true,
+    userLikes: true,
+    playlistImport: true,
+    playbackRequiresConnection: true,
+  },
   apple_music: {
     catalogSearch: true,
     userConnect: true,
     userLikes: true,
     playlistImport: false,
+    playbackRequiresConnection: true,
   },
 };
 
 /** Does this provider support linking a per-user account (OAuth connect)? */
 export function supportsUserAccount(provider: Provider): boolean {
   return providerCapabilities[provider].userConnect;
+}
+
+/**
+ * Does in-app playback require a live per-user connection for this provider?
+ * SoundCloud's public Widget plays without one; MusicKit / the Spotify Web
+ * Playback SDK need an authorized user. Playback preflight reads this so a
+ * SoundCloud track never goes dark when its likes-only OAuth token expires.
+ */
+export function playbackRequiresConnection(provider: Provider): boolean {
+  return providerCapabilities[provider].playbackRequiresConnection;
 }
 
 /** Role within a team — governs membership management, not class access. */

@@ -27,7 +27,7 @@ import type {
 import { listConnections } from '../lib/api.js';
 import { preflightPayload } from '../lib/playback/coordinator.js';
 import { RuntimePlaybackCoordinator, type CoordinatorStatus } from '../lib/playback/runtime.js';
-import { PLAYBACK_ADAPTERS } from '../lib/playback/registry.js';
+import { PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { useWakeLock } from '../lib/use-wake-lock.js';
 import { IntensityReadout } from './IntensityReadout.js';
@@ -250,14 +250,15 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   );
 
   // Static preflight against the providers the player can actually drive.
-  const playableConnections = useMemo(
-    () => (connections ?? []).filter((c) => c.provider in PLAYBACK_ADAPTERS),
-    [connections],
-  );
   const preflight = useMemo(
     () =>
-      connections ? preflightPayload(payload, playableConnections, { now: Date.now() }) : null,
-    [connections, playableConnections, payload],
+      connections
+        ? preflightPayload(payload, connections, {
+            now: Date.now(),
+            availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
+          })
+        : null,
+    [connections, payload],
   );
 
   // Virtual clock: accumulate real time only while playing, via rAF.
@@ -306,9 +307,10 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
 
   /** Start hands-free: build the coordinator and begin playback at 0 (a user gesture). */
   const startClass = () => {
-    const coordinator = new RuntimePlaybackCoordinator(payload, playableConnections, {
+    const coordinator = new RuntimePlaybackCoordinator(payload, connections ?? [], {
       now: Date.now(),
       adapters: PLAYBACK_ADAPTERS,
+      availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
       onStatus: setPlayback,
     });
     coordinatorRef.current = coordinator;

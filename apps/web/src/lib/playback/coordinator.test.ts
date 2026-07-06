@@ -129,6 +129,54 @@ describe('selectProvider', () => {
     const selection = selectProvider(entry, connections('soundcloud'), { now: NOW });
     expect(selection).toEqual({ status: 'unplayable', reason: 'no_connected_provider' });
   });
+
+  it('plays SoundCloud with no connection at all (public Widget needs no token)', () => {
+    const entry = makeEntry({ providers: ['soundcloud'] });
+    expect(selectProvider(entry, [], { now: NOW })).toMatchObject({
+      status: 'playable',
+      provider: 'soundcloud',
+    });
+  });
+
+  it('plays SoundCloud even when its connection has expired', () => {
+    const entry = makeEntry({ providers: ['soundcloud'] });
+    const selection = selectProvider(entry, [{ provider: 'soundcloud', expiresAt: NOW - 1 }], {
+      now: NOW,
+    });
+    expect(selection).toMatchObject({ status: 'playable', provider: 'soundcloud' });
+  });
+
+  it('still requires a live connection for Apple Music (MusicKit authorizes the user)', () => {
+    const entry = makeEntry({ providers: ['apple_music'] });
+    expect(selectProvider(entry, [], { now: NOW })).toEqual({
+      status: 'unplayable',
+      reason: 'no_connected_provider',
+    });
+    expect(selectProvider(entry, connections('apple_music'), { now: NOW })).toMatchObject({
+      status: 'playable',
+      provider: 'apple_music',
+    });
+  });
+
+  it('treats a provider with no registered adapter as unplayable, even if connected', () => {
+    const entry = makeEntry({ providers: ['soundcloud'] });
+    // availableProviders excludes soundcloud → it cannot play on this surface.
+    const selection = selectProvider(entry, connections('soundcloud'), {
+      now: NOW,
+      availableProviders: ['apple_music'],
+    });
+    expect(selection).toEqual({ status: 'unplayable', reason: 'no_connected_provider' });
+  });
+
+  it('skips a ref whose provider is unavailable and falls back to an available one', () => {
+    const entry = makeEntry({ providers: ['spotify', 'soundcloud'] });
+    // Spotify has no adapter yet; SoundCloud does and needs no connection.
+    const selection = selectProvider(entry, [], {
+      now: NOW,
+      availableProviders: ['soundcloud', 'apple_music'],
+    });
+    expect(selection).toMatchObject({ status: 'playable', provider: 'soundcloud' });
+  });
 });
 
 describe('playbackWindowFor', () => {
@@ -232,5 +280,33 @@ describe('preflightPayload', () => {
   it('passes an empty class (nothing to play, nothing unplayable)', () => {
     const result = preflightPayload(makePayload([]), connections('soundcloud'), { now: NOW });
     expect(result).toEqual({ ok: true, tracks: [], unplayable: [] });
+  });
+
+  it('passes an all-SoundCloud class with no provider connections at all', () => {
+    const payload = makePayload([
+      makeEntry({ classTrackId: 'ct-1', position: 0, providers: ['soundcloud'] }),
+      makeEntry({ classTrackId: 'ct-2', position: 1, providers: ['soundcloud'] }),
+    ]);
+    const result = preflightPayload(payload, [], {
+      now: NOW,
+      availableProviders: ['soundcloud', 'apple_music'],
+    });
+    expect(result.ok).toBe(true);
+    expect(result.unplayable).toEqual([]);
+  });
+
+  it('marks a Spotify-only track unplayable when Spotify has no adapter yet', () => {
+    const payload = makePayload([
+      makeEntry({ classTrackId: 'ct-1', position: 0, providers: ['spotify'] }),
+    ]);
+    const result = preflightPayload(payload, connections('spotify'), {
+      now: NOW,
+      availableProviders: ['soundcloud', 'apple_music'],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.unplayable[0]!.selection).toEqual({
+      status: 'unplayable',
+      reason: 'no_connected_provider',
+    });
   });
 });

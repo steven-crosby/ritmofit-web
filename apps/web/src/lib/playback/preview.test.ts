@@ -133,12 +133,29 @@ describe('PreviewPlaybackController', () => {
   });
 
   it('errors (select phase) when no connected provider can play the track', async () => {
+    // Apple Music needs an authorized user, so with no connection it can't play
+    // (SoundCloud, by contrast, plays via the public Widget with no connection).
     const { controller, built } = harness({ connections: [] });
-    await controller.play(makeEntry());
+    await controller.play(
+      makeEntry({
+        providerRefs: [{ provider: 'apple_music', providerTrackId: 'am1', providerUri: null }],
+      }),
+    );
     expect(built).toHaveLength(0);
     const status = controller.getStatus();
     expect(status.kind).toBe('error');
     if (status.kind === 'error') expect(status.error.phase).toBe('select');
+  });
+
+  it('previews a SoundCloud track with no connection (public Widget needs no auth)', async () => {
+    const { controller, built } = harness({ connections: [] });
+    await controller.play(makeEntry({ classTrackId: 'ct-1' }));
+    expect(built).toHaveLength(1);
+    expect(controller.getStatus()).toEqual({
+      kind: 'playing',
+      classTrackId: 'ct-1',
+      provider: 'soundcloud',
+    });
   });
 
   it('errors (prepare phase) when the selected provider has no adapter in this build', async () => {

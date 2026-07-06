@@ -113,6 +113,7 @@ export class PreviewPlaybackController {
     return {
       preferredProvider: this.options.preferredProvider,
       now: (this.options.now ?? Date.now)(),
+      availableProviders: this.options.availableProviders,
     };
   }
 
