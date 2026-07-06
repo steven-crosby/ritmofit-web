@@ -21,6 +21,7 @@ import type {
   MusicConnectionView,
   ConnectProviderResponse,
   AppleMusicClientConfig,
+  SpotifyPlaybackToken,
   Cue,
   CreateCue,
   UpdateCue,
@@ -211,6 +212,49 @@ export const connectAppleMusic = (musicUserToken: string) =>
     method: 'POST',
     body: JSON.stringify({ musicUserToken }),
   });
+
+/**
+ * An error from the Spotify playback-token endpoint that preserves the server
+ * `error.code` — the Spotify adapter branches on `PLAYBACK_REAUTH_REQUIRED` (grant
+ * the playback scope) vs `NOT_CONNECTED` / `REAUTH_REQUIRED` (reconnect) to surface
+ * the right reconnect prompt, which the generic `api()` wrapper would flatten away.
+ */
+export class SpotifyPlaybackTokenError extends Error {
+  constructor(
+    message: string,
+    readonly code: string | undefined,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = 'SpotifyPlaybackTokenError';
+  }
+}
+
+/**
+ * A short-lived Spotify access token for the Web Playback SDK's `getOAuthToken`
+ * callback + the Connect Web API transport. Never persisted. Preserves the error
+ * code on failure so the adapter can tell "reconnect for playback" from "reconnect".
+ */
+export const getSpotifyPlaybackToken = async (): Promise<SpotifyPlaybackToken> => {
+  const res = await fetch(`${API_BASE_URL}/api/v1/providers/spotify/playback-token`, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (res.status === 401) void authClient.signOut();
+  if (!res.ok) {
+    let code: string | undefined;
+    let message = `Request failed (${res.status})`;
+    try {
+      const body = (await res.json()) as { error?: { code?: string; message?: string } };
+      code = body.error?.code;
+      if (body.error?.message) message = body.error.message;
+    } catch {
+      /* non-JSON error */
+    }
+    throw new SpotifyPlaybackTokenError(message, code, res.status);
+  }
+  return (await res.json()) as SpotifyPlaybackToken;
+};
 
 // ── BPM lookup (third-party tempo provider — never Spotify) ───────────────────
 /** Owner-only: fill the track's display BPM from the tempo service (or mock). */

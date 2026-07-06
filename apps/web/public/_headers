@@ -25,23 +25,32 @@
 #               themselves are fetched over connect-src). Without this, default-src
 #               'self' governs media and blocks the blob source.
 #   script-src  also allows js-cdn.music.apple.com (the MusicKit JS library, loaded
-#               on demand only when a user starts the Apple Music connect flow)
-#               and w.soundcloud.com (the official SoundCloud Widget API, loaded
-#               only when SoundCloud playback starts).
+#               on demand only when a user starts the Apple Music connect flow),
+#               w.soundcloud.com (the official SoundCloud Widget API, loaded only
+#               when SoundCloud playback starts), and sdk.scdn.co (the Spotify Web
+#               Playback SDK, loaded only when Spotify playback starts).
+#   connect-src also allows api.spotify.com / *.spotify.com (+ wss for the SDK's
+#               realtime player connection) and *.scdn.co that the Web Playback SDK
+#               and the Connect Web API (start/seek/pause) call once playback starts.
 #   frame-src   allows the Apple Music / Apple ID authorization surfaces MusicKit
-#               opens for consent plus the SoundCloud Widget player iframe.
-#               NOTE: tune against CSP violation reports during the first real
-#               provider playback/connect pass.
+#               opens for consent, the SoundCloud Widget player iframe, and the
+#               Spotify Web Playback SDK's hidden player iframe (sdk.scdn.co).
+#   Permissions-Policy delegates encrypted-media to sdk.scdn.co — the Spotify SDK
+#               plays DRM (Widevine) in its cross-origin iframe.
+#               NOTE: the Spotify host/permission set (wss, *.scdn.co,
+#               encrypted-media) still needs the same live-tuning pass Apple/
+#               SoundCloud got — confirm against securitypolicyviolation + the SDK
+#               error events during the first real Spotify playback pass.
 #   Cache-Control includes `no-transform` so Cloudflare JavaScript Detections do
 #   not inject a CSP-blocked inline challenge script into the SPA HTML.
 /*
   Cache-Control: public, max-age=0, must-revalidate, no-transform
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://js-cdn.music.apple.com https://w.soundcloud.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; media-src 'self' blob:; connect-src 'self' https://static.cloudflareinsights.com https://*.music.apple.com https://*.mzstatic.com https://*.itunes.apple.com; frame-src https://authorize.music.apple.com https://idmsa.apple.com https://w.soundcloud.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://js-cdn.music.apple.com https://w.soundcloud.com https://sdk.scdn.co; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; media-src 'self' blob:; connect-src 'self' https://static.cloudflareinsights.com https://*.music.apple.com https://*.mzstatic.com https://*.itunes.apple.com https://api.spotify.com https://*.spotify.com wss://*.spotify.com https://*.scdn.co; frame-src https://authorize.music.apple.com https://idmsa.apple.com https://w.soundcloud.com https://sdk.scdn.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=(), encrypted-media=(self "https://sdk.scdn.co")
 
 # Self-hosted fonts change rarely and are safe to cache hard. (Filenames are not
 # content-hashed; bump by renaming the file + fonts.css if a face is ever updated.)
