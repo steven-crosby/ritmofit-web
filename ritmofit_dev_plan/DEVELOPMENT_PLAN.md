@@ -39,12 +39,17 @@ Pilates, and HIIT.
   This rides on the **provider-authorized playback initiative**
   ([`provider-playback-implementation.md`](./provider-playback-implementation.md)); playback progress: the
   SoundCloud + **Apple Music** Live Mode adapters and the **Builder clip-window preview**
-  (`TrackPreview.tsx`, manual/single-track/no-auto-advance) are built; the Spotify adapter (gated on its
-  OAuth playback-scope expansion) is the remaining web gap, and real-provider audio for all adapters still
-  needs live subscriber verification. Saved-playlist browsing needs new read endpoints (its own sub-slice).
-  Teams, Sharing, Publish, and Explore are hidden/dormant (D20). Last production deploy 2026-07-05 (Worker
-  `fa385d71`, the D20 solo-first reset; the Apple Music adapter + **Ritmo Studio** rename shipped just
-  before on `c6829c8e`).
+  (`TrackPreview.tsx`, manual/single-track/no-auto-advance) are built, and a **2026-07-06 batch made the
+  player usable**: SoundCloud plays via the public Widget without a live connection (an expired likes-only
+  OAuth token no longer gates it — the `playbackRequiresConnection` capability), Apple Music `authorize()`
+  recovers instead of freezing (cancellable `awaiting_authorization` + consent timeout), and a
+  Spotify-only track can be **resolved cross-provider** to a playable equivalent
+  (`POST /tracks/:id/resolve-provider` + the Builder "Find on a supported provider" action). The Spotify
+  *playback* adapter (gated on its OAuth playback-scope expansion) is the remaining web gap, and
+  **real-provider audio still needs live subscriber verification** — the last un-verified step.
+  Saved-playlist browsing needs new read endpoints (its own sub-slice). Teams, Sharing, Publish, and
+  Explore are hidden/dormant (D20). Last production deploy **2026-07-06 (Worker `4cb1e13e`)** — the
+  playback-usability batch; no schema/migration (rollback anchor `d4954a2e`).
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
