@@ -113,8 +113,9 @@ describe('Dashboard class library states', () => {
 
     expect(await screen.findByText('Morning ride')).toBeTruthy();
     expect(screen.queryByText('Loading your classes…')).toBeNull();
-    // With classes present but none selected, the workspace is a quiet selection prompt.
-    expect(screen.getByText('Select a class to keep building.')).toBeTruthy();
+    // With classes present but none selected, the workspace stays alive with readiness/source shelves.
+    expect(screen.getByRole('heading', { name: 'Choose what to shape next' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Provider shelves' })).toBeTruthy();
   });
 
   it('shows a distinct error state when the class list fails to load, and retries', async () => {
@@ -145,10 +146,27 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
 
-    // A true first run has no class to derive from, so it orients to the loop
-    // rather than the generic "select a class" prompt.
-    expect(await screen.findByRole('heading', { name: 'Build your first class' })).toBeTruthy();
+    // A true first run has no class to derive from, so it orients to templates
+    // and music sources rather than the old blank/select prompt.
+    expect(
+      await screen.findByRole('heading', { name: 'Start with a class template' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Provider shelves' })).toBeTruthy();
     expect(screen.queryByText('Select a class to keep building.')).toBeNull();
+  });
+
+  it('opens connections from the resting provider shelves', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+
+    expect(await screen.findByRole('heading', { name: 'Provider shelves' })).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open music connections from provider shelves' }),
+    );
+
+    expect(await screen.findByRole('dialog', { name: 'Music connections' })).toBeTruthy();
   });
 
   it('omits the redundant ownership chip on library cards (solo-first library is owner-only)', async () => {

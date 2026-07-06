@@ -31,11 +31,15 @@ Pilates, and HIIT.
   and inspect playlists, then convert curiosity into a class — no single forced creation flow.
 - **Current operating focus (2026-07-06):** the web launch gate is green and deployed. The product frame
   is now the **creator workstation shell over trusted music services (D21)** — provider libraries as raw
-  material, class-building as the layer on top, familiar before specialized. The active web-desktop slice
-  makes that concrete: narrow class templates to **Cycle / Pilates / HIIT** (Pilates↔`sculpt`, require a
-  template on the create path), replace empty workspace states with **class readiness + music discovery**,
-  and add **provider shelves** (Spotify/Apple/SoundCloud) with each service's **liked/saved tracks card**
-  and **playlist cards that open a detail/track list** (browse/listen, then Start class / Add selected).
+  material, class-building as the layer on top, familiar before specialized. The first web-desktop slice
+  makes that concrete and is **open for review as PR [#219](https://github.com/steven-crosby/ritmofit-web/pull/219)**
+  (branch `codex/d21-workstation-shell`, commit `2b08cfc`; frontend-only, not yet merged/deployed): narrow
+  class templates to **Cycle / Pilates / HIIT** (Pilates↔`sculpt`, require a template on the create path),
+  replace empty workspace states with **class readiness + music discovery**, and add **provider shelves**
+  (Spotify/Apple/SoundCloud) with each service's **liked/saved tracks card** and **playlist cards that open
+  a detail/track list** (browse/listen, then Start class / Add selected) — the alive-at-rest workstation
+  shell and provider shelves land in this PR; the playlist detail/track-list cards remain a follow-up
+  sub-slice (needs new saved-playlist read endpoints).
   This rides on the **provider-authorized playback initiative**
   ([`provider-playback-implementation.md`](./provider-playback-implementation.md)); playback progress: the
   SoundCloud + **Apple Music** Live Mode adapters and the **Builder clip-window preview**

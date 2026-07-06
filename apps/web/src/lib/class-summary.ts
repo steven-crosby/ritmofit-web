@@ -74,7 +74,7 @@ export function formatTemplateLabel(template: ClassTemplate | null | undefined):
   const labels: Record<ClassTemplate, string> = {
     cycle: 'Cycle',
     hiit: 'HIIT',
-    sculpt: 'Sculpt',
+    sculpt: 'Pilates',
     tread: 'Tread',
   };
   return labels[template] ?? null;
