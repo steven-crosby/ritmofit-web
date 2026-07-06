@@ -4,6 +4,7 @@
 <!-- note (Claude, 2026-07-02): Doc audit pass — added the prod connect-exchange prerequisite and design-system playback states. -->
 <!-- note (Claude, 2026-07-03): Connect prerequisite marked completed (Worker 94126954); marked the built playback-layer modules in Architecture; recorded Live Mode wiring status. -->
 <!-- note (Claude, 2026-07-05): Apple Music (MusicKit JS v3) playback adapter built + registered; updated Architecture build marker and the Live Mode adapter-registry status. -->
+<!-- note (Codex, 2026-07-05): Marked the Apple Music setQueue singleton guard closed after PR #211; authorize waiting-state remains open as a UI slice. -->
 
 ## Goal
 
@@ -237,19 +238,22 @@ like Live Mode; stops at the clip-window end. Real-provider audio still needs li
 subscriber account. Not yet wired: an inline reconnect action from the preview error (the connect flow
 lives in the top-level Connections dialog).
 
-**Apple Music shared-transport follow-ups (open, 2026-07-05):** MusicKit is a page-level singleton, so
+**Apple Music shared-transport follow-ups (updated 2026-07-05):** MusicKit is a page-level singleton, so
 the adapter guards teardown with a per-instance ownership token (only the adapter that started the
 transport may `stop()` it — prevents a superseded adapter silencing the live track under rapid seeks).
-Two narrower shared-singleton tails remain, both requiring a stuck-SDK condition and acceptable for
-private beta but worth closing before broad Apple Music rollout:
+One narrower shared-singleton tail remains, requiring a stuck-SDK condition and acceptable for private
+beta but worth closing before broad Apple Music rollout:
 
 1. **Un-timed `authorize()`** — a blocked/abandoned Apple consent sheet leaves `prepare()` pending and
    the coordinator frozen in `preparing` with no recovery. `authorize()` is intentionally not wrapped in
    the queue-load timeout (it waits on human consent). Fix: surface a "waiting for Apple authorization"
    state and/or a generous consent-timeout that fails to the recoverable-error path.
-2. **Orphaned `setQueue` after a timeout** — a `setQueue` that loses the `prepare` timeout race is not
-   cancellable and can resolve late, clobbering the queue of a later playing track. Fix: version/guard
-   queue writes so a stale one is ignored, or gate them on current ownership.
+
+Closed in PR #211:
+
+- **Orphaned `setQueue` after a timeout** — the adapter now keeps per-MusicKit-instance queue generation
+  state, blocks overlapping non-cancellable `setQueue()` requests while an older one is pending, and
+  rejects superseded queue completions before they can proceed as valid cues.
 
 ## Verification
 
