@@ -58,6 +58,28 @@ Confirmed values render as plain data. Provisional values render with a leading 
 explicit `auto` label on the caution channel; color only reinforces. Do not add a new token for this
 state.
 
+## Library & discovery (D21)
+
+The discovery shell's components (full layout + states in
+[`11-library-guidelines.md`](./11-library-guidelines.md)):
+
+- **Provider shelf** — a labeled row/section per provider (Spotify / Apple Music / SoundCloud) surfacing
+  that service's entry points. Provider label + connection state (icon + label, never color alone); it
+  offers only what the capability matrix supports, never a dead-end action.
+- **Liked/saved tracks card** — a shelf card that opens the connected account's liked/saved tracks. Shows a
+  connect/reconnect affordance when the account is disconnected/expired (same connection-state matrix as the
+  provider-states table).
+- **Playlist card → playlist detail** — a card that opens a **track list**, not an import. The detail view
+  reuses the main list's row shape and the `Start class` / `Add selected` actions.
+- **Discovery track row** — low-noise row: checkbox, 44pt art, title, artist, BPM, duration, provider, and
+  a quiet **preview/listen** control (provider-authorized playback; reuses the Live/preview state
+  vocabulary). Selection via checkbox + neutral surface, not a cyan enclosure.
+- **Selection tray** — sticky status region: count, total duration, `Start class` (copper primary),
+  `Add selected` (cyan secondary). Announced as a status region; keyboard-operable.
+
+State rules are the shared ones above (focus ring, disabled 40%, loading, ≥44pt) plus the provider
+connection-state and playback-state matrices already documented — no new color channels.
+
 ## Provisional / derived state
 
 Use when the system has derived a useful draft from existing class data and the instructor can refine it:

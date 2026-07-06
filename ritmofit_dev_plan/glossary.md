@@ -5,7 +5,9 @@ Domain terms used throughout the codebase and docs. Keep these meanings consiste
 **Class** — A single planned/run session ("Mon POWER 6/8"). Owned by one user. *Is* the ordered set of
 tracks plus the choreography on them — not a playlist imported from elsewhere.
 
-**Class template** — The kind of class: cycle, HIIT, sculpt/Pilates, tread. An enum on `classes`.
+**Class template** — The kind of class: cycle, HIIT, sculpt/Pilates, tread. An enum on `classes`. The
+current create surface offers **Cycle, Pilates, and HIIT** (Pilates↔`sculpt`) and requires a pick; the
+stored enum is unchanged (D21).
 
 **Track** — The provider-agnostic, abstract song (title, artist, art, optional manual BPM). Not tied to
 any one provider.
@@ -87,3 +89,25 @@ never an edited audio file.
 
 **Mock-track seam** — A dev-only path that creates tracks without any provider API, so local builder
 flows remain exercisable with zero credentials.
+
+**Creator workstation shell** — The product frame (D21): Ritmo is a shell over trusted music services
+(Spotify, Apple Music, SoundCloud). Providers are the reliable audio substrate and their libraries are the
+raw material; Ritmo adds the instructor layer (class structure, choreography, rehearsal, playback windows,
+readiness, Live Mode). See `decisions.md` D21.
+
+**Familiar before specialized** — Creative principle (D21): the app should feel like a music app the
+instructor already knows before it asks them to specialize into class-building. Browse, listen, and inspect
+playlists freely; convert curiosity into a class; never force one creation flow.
+
+**Provider shelf** — A row/section in the discovery surface for one provider (Spotify / Apple Music /
+SoundCloud), surfacing that service's entry points — notably its **liked/saved tracks card** — as
+browsable raw material. Presentation over the provider capability matrix, not a new contract.
+
+**Discovery (music-discovery) shell** — The browse-first surface where provider libraries are explored
+inside Ritmo (provider shelves, liked/saved cards, playlists, search). It is the workspace's resting state
+when no class is open (readiness + discovery), and the on-ramp that converts curiosity into a class. Design
+spec: `../ritmofit_design_system/11-library-guidelines.md`.
+
+**Playlist detail** — The track list a playlist card opens into. Browsing a playlist does **not** import
+it: from the detail view the instructor listens/inspects, then `Start class` (create a class from it) or
+`Add selected` (add chosen tracks to the open class). Distinct from the older paste-a-URL import path.

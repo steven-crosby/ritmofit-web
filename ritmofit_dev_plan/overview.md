@@ -17,8 +17,17 @@ earned it, not because the app assumes it.
   references, and run payloads. The later iOS refinement should consume the same backend after the web
   loop is proven.
 
-Current sequence (2026-07-05): the web app's launch gate is green and deployed. The active track is solo
-creator refinement plus the provider-authorized playback initiative
+The web app is a **creator workstation shell over trusted music services (D21)**: Spotify, Apple Music,
+and SoundCloud are the reliable substrate, and provider libraries are the raw material a class is built
+from. The instructor should be able to **browse provider libraries, open liked tracks and playlists like a
+music app, and preview/listen while building**, then convert that curiosity into a class — *familiar before
+specialized*, with no single forced creation flow. Ritmo's durable value is the instructor layer on top:
+class structure, choreography, rehearsal, playback windows, readiness, and Live Mode.
+
+Current sequence (2026-07-06): the web app's launch gate is green and deployed. The active track is solo
+creator refinement — currently the **creator-workstation-shell slice (D21)**: Cycle/Pilates/HIIT
+templates, a music-discovery resting state, provider shelves with liked/saved cards, and playlist detail
+views — plus the provider-authorized playback initiative
 ([`provider-playback-implementation.md`](./provider-playback-implementation.md)) where it improves
 rehearsal and Live Mode. Teams, Sharing, Publish, and Explore are dormant/deferred.
 

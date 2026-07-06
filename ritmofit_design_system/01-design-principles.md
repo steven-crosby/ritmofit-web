@@ -9,6 +9,12 @@ Editing affordances, precise data (BPM, timecodes, zones), and reorderable struc
 weight, not oversized artwork or a passive browse-feed. Ask of any screen: does this help them _build_
 faster?
 
+Familiar before specialized (D21): the instructor still _browses and auditions_ provider libraries — liked
+tracks, saved playlists, catalog search — the way they already do in a music app. That is not the passive
+browse-feed this principle warns against; it is **sourcing raw material**, and every discovery path points
+at a create action (`Start class`, `Add selected`). Weight still goes to authoring; discovery earns its
+place by feeding it, never by becoming a recommendation firehose.
+
 ## 2. The interface keeps time
 
 This is the principle that separates Ritmo Studio from every other dark workstation. It is a **rhythm**

@@ -5,6 +5,7 @@
 <!-- note (Claude, 2026-07-03): Connect prerequisite marked completed (Worker 94126954); marked the built playback-layer modules in Architecture; recorded Live Mode wiring status. -->
 <!-- note (Claude, 2026-07-05): Apple Music (MusicKit JS v3) playback adapter built + registered; updated Architecture build marker and the Live Mode adapter-registry status. -->
 <!-- note (Codex, 2026-07-05): Marked the Apple Music setQueue singleton guard closed after PR #211; authorize waiting-state remains open as a UI slice. -->
+<!-- note (Claude, 2026-07-06): Reframed under D21 — the player is one part of a broader music-service shell; added the shell-direction section and the discovery read-surface contract impact. -->
 
 ## Goal
 
@@ -20,6 +21,29 @@ This is a product-direction update to the older "handoff-only" docs. The boundar
   beatmatching, decoding, analyzing, or creating derivative provider audio.
 - Still forbidden: BPM from Spotify. BPM remains manual or from a dedicated permitted tempo provider.
 - Still forbidden: destructive song edits. Shortening a song means a saved playback window/cue range.
+
+## Music-service shell direction (D21)
+
+The player is no longer just "play this class live." Under **D21** it is one part of a broader
+**music-service shell**: Ritmo is a creator workstation *shell over trusted services*, and the same
+provider-authorized playback stack that runs Live Mode and Builder preview also powers **browsing and
+auditioning provider libraries while building**. The arc:
+
+- **Handoff-oriented (original):** Ritmo owned the timeline/choreography; audio meant a link out to a
+  provider app. Live Mode was a prompter + class clock.
+- **D19 — provider-authorized in-app playback:** official SDKs/widgets control playback windows in-app
+  (MusicKit on the Web, SoundCloud Widget API, later the Spotify Web Playback SDK). The provider still owns
+  the stream/authorization/availability; Ritmo owns the timeline and windows.
+- **D21 — music-service shell:** browse provider libraries inside Ritmo; open liked tracks and playlists
+  like a music app; **preview/listen while building**; convert curiosity into class creation; run Live
+  Mode with provider playback, preflight, auto-advance, and recovery states.
+
+Playback boundaries are unchanged (the forbidden list above still holds). What changes is *where* the
+playback stack is used: the D19 preview controller (`preview.ts` / `TrackPreview.tsx`) extends from
+"preview a track already in the class" to "preview a **candidate** the instructor is auditioning in the
+discovery shell" — one adapter, manual, honoring the same host-clock and clip-window rules. The discovery
+surface itself is specified in `../ritmofit_design_system/11-library-guidelines.md`; the product decision
+is `decisions.md` D21.
 
 ## Existing Foundation
 
@@ -187,6 +211,15 @@ Expected backend changes:
 - Spotify OAuth scope expansion and reconnection handling;
 - an authenticated playback-token/config route where an official SDK requires browser credentials;
 - OpenAPI regeneration after route/schema additions.
+
+Discovery read-surfaces (D21), sequenced as their own sub-slice — distinct from playback tokens/scopes:
+
+- list a connected user's **saved playlists** per provider (new adapter method + route + shared contract);
+- **browse a playlist's tracks without importing** (reuse the adapter `getPlaylist`; Spotify works today,
+  SoundCloud needs permalink `/resolve`, Apple Music has no path yet);
+- keep the provider **capability matrix** honest for both (a provider that can't list playlists or can't
+  browse must not offer a dead-end action);
+- OpenAPI regeneration after the route/schema additions.
 
 No expected D1 migration for playback windows. A migration may be needed only if preferred provider or
 provider priority becomes persisted user preference rather than local/session preference.
