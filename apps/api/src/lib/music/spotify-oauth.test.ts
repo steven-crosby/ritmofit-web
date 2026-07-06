@@ -3,6 +3,7 @@ import {
   buildSpotifyAuthorizeUrl,
   exchangeSpotifyCode,
   refreshSpotifyToken,
+  spotifyScopeHasPlayback,
   SPOTIFY_CONNECT_SCOPE,
   type FetchLike,
 } from '@ritmofit/music';
@@ -38,9 +39,48 @@ describe('buildSpotifyAuthorizeUrl', () => {
     expect(url).not.toContain('code_challenge=');
     expect(url).not.toContain('code_challenge_method=');
     expect(url).toContain('state=st');
-    // The only scope we ever request: read the user's saved tracks. Never playback/BPM.
-    expect(SPOTIFY_CONNECT_SCOPE).toBe('user-library-read');
+    // We request the likes-read scope plus the Web Playback SDK playback scopes.
     expect(url).toContain(`scope=${encodeURIComponent(SPOTIFY_CONNECT_SCOPE)}`);
+    expect(SPOTIFY_CONNECT_SCOPE.split(/\s+/)).toContain('streaming');
+  });
+});
+
+describe('SPOTIFY_CONNECT_SCOPE composition', () => {
+  const scopes = SPOTIFY_CONNECT_SCOPE.split(/\s+/);
+
+  it('keeps likes-read and adds the Web Playback SDK scopes', () => {
+    expect(scopes).toContain('user-library-read');
+    expect(scopes).toContain('streaming');
+    expect(scopes).toContain('user-read-email');
+    expect(scopes).toContain('user-read-private');
+    expect(scopes).toContain('user-modify-playback-state');
+    expect(scopes).toContain('user-read-playback-state');
+  });
+
+  it('never requests an audio-features / analysis scope (BPM from Spotify is forbidden)', () => {
+    for (const scope of scopes) {
+      expect(scope).not.toMatch(/audio|feature|analysis/i);
+    }
+  });
+});
+
+describe('spotifyScopeHasPlayback', () => {
+  it('is true only when the stored scope granted `streaming`', () => {
+    expect(spotifyScopeHasPlayback(SPOTIFY_CONNECT_SCOPE)).toBe(true);
+    expect(spotifyScopeHasPlayback('user-library-read streaming')).toBe(true);
+    expect(spotifyScopeHasPlayback('streaming')).toBe(true);
+  });
+
+  it('is false for a pre-expansion (library-only) connection', () => {
+    expect(spotifyScopeHasPlayback('user-library-read')).toBe(false);
+  });
+
+  it('is false for a missing scope and does not match a `streaming` substring', () => {
+    expect(spotifyScopeHasPlayback(null)).toBe(false);
+    expect(spotifyScopeHasPlayback(undefined)).toBe(false);
+    expect(spotifyScopeHasPlayback('')).toBe(false);
+    // Guards against a naive `.includes('streaming')` false-positive.
+    expect(spotifyScopeHasPlayback('user-streaming-analytics-read')).toBe(false);
   });
 });
 

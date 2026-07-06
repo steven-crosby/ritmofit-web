@@ -66,3 +66,18 @@ export const appleMusicClientConfigSchema = z.object({
   storefront: z.string().nullable(),
 });
 export type AppleMusicClientConfig = z.infer<typeof appleMusicClientConfigSchema>;
+
+/**
+ * A short-lived Spotify access token minted for the browser Web Playback SDK's
+ * `getOAuthToken` callback, served by `GET /providers/spotify/playback-token`. This
+ * is the deliberate, narrow exception to "provider tokens are never returned to the
+ * client": ONLY a short-lived access token (never the refresh token), only to the
+ * authenticated owner, and only when the connection granted the `streaming` scope.
+ * The SPA must not persist it (no localStorage) or use it for catalog/BPM shortcuts.
+ * `expiresInMs` lets the SDK refresh via the same endpoint before it expires.
+ */
+export const spotifyPlaybackTokenSchema = z.object({
+  accessToken: z.string().min(1),
+  expiresInMs: z.number().int().nonnegative(),
+});
+export type SpotifyPlaybackToken = z.infer<typeof spotifyPlaybackTokenSchema>;

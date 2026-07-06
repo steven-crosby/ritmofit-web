@@ -29,6 +29,7 @@ export {
   buildSpotifyAuthorizeUrl,
   exchangeSpotifyCode,
   refreshSpotifyToken,
+  spotifyScopeHasPlayback,
   SPOTIFY_CONNECT_SCOPE,
 } from './spotify-oauth.js';
 export {

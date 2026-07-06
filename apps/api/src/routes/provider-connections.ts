@@ -66,6 +66,7 @@ import {
 } from '../lib/music/provider-config.js';
 import { generateCodeVerifier, challengeFromVerifier, randomToken } from '../lib/pkce.js';
 import { enqueueProviderPurge } from '../lib/music/purge.js';
+import { mintSpotifyPlaybackToken } from '../lib/music/spotify-playback-token.js';
 import { musicConnections } from '../db/schema.js';
 
 const STATE_COOKIE = 'rf_oauth_state';
@@ -194,6 +195,16 @@ const connectLimiter = rateLimit({
   keyPrefix: 'provider-connect',
   windowMs: 60_000,
   max: 10,
+  key: (c) => c.get('userId'),
+});
+
+// The Web Playback SDK fetches a token on init and again near each ~1h expiry, so
+// steady-state calls are rare; cap per user so a stuck client can't hammer the
+// refresh path (each expired call spends a Spotify token-endpoint request).
+const playbackTokenLimiter = rateLimit({
+  keyPrefix: 'spotify-playback-token',
+  windowMs: 60_000,
+  max: 30,
   key: (c) => c.get('userId'),
 });
 
@@ -335,6 +346,24 @@ providerConnectionRoutes.get('/providers/apple_music/config', requireSession, as
   const body: AppleMusicClientConfig = { developerToken, storefront: storefront ?? null };
   return c.json(body);
 });
+
+/**
+ * GET /providers/spotify/playback-token — a short-lived access token for the
+ * browser Web Playback SDK's `getOAuthToken` callback. The deliberate exception to
+ * "provider tokens are never returned to the client": short-lived, owner-only, and
+ * only for a connection that granted the `streaming` scope. Never logged. See
+ * `mintSpotifyPlaybackToken` for the failure taxonomy (not-connected / reconnect-
+ * for-playback / dead-grant / not-configured).
+ */
+providerConnectionRoutes.get(
+  '/providers/spotify/playback-token',
+  requireSession,
+  playbackTokenLimiter,
+  async (c) => {
+    const token = await mintSpotifyPlaybackToken(createDb(c.env), c.env, c.get('userId'));
+    return c.json(token);
+  },
+);
 
 /**
  * POST /providers/apple_music/connection — store the Music-User-Token MusicKit
