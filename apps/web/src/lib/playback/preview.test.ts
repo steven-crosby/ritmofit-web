@@ -108,7 +108,7 @@ function harness(opts?: {
     return a;
   };
   const controller = new PreviewPlaybackController(
-    opts?.connections ?? [{ provider: 'soundcloud', expiresAt: null }],
+    opts?.connections ?? [{ provider: 'soundcloud', expiresAt: null, scope: null }],
     {
       now: () => NOW,
       adapters: opts?.adapters ?? { soundcloud: factory },
@@ -161,7 +161,7 @@ describe('PreviewPlaybackController', () => {
   it('errors (prepare phase) when the selected provider has no adapter in this build', async () => {
     // Connected to apple_music, but only a soundcloud adapter is registered.
     const { controller } = harness({
-      connections: [{ provider: 'apple_music', expiresAt: null }],
+      connections: [{ provider: 'apple_music', expiresAt: null, scope: null }],
       adapters: { soundcloud: (e) => new FakeAdapter(e) },
     });
     await controller.play(
@@ -180,7 +180,7 @@ describe('PreviewPlaybackController', () => {
   it('surfaces a prepare failure as a recoverable error and destroys the adapter', async () => {
     const built: FakeAdapter[] = [];
     const controller = new PreviewPlaybackController(
-      [{ provider: 'soundcloud', expiresAt: null }],
+      [{ provider: 'soundcloud', expiresAt: null, scope: null }],
       {
         now: () => NOW,
         adapters: {
@@ -260,7 +260,7 @@ describe('PreviewPlaybackController', () => {
       return a;
     };
     const controller = new PreviewPlaybackController(
-      [{ provider: 'soundcloud', expiresAt: null }],
+      [{ provider: 'soundcloud', expiresAt: null, scope: null }],
       {
         now: () => NOW,
         adapters: { soundcloud: factory },

@@ -66,7 +66,11 @@ function makePayload(tracks: RunPayloadTrackEntry[]): RunPayload {
 
 /** A live (unexpired) connection for each provider. */
 function connections(...providers: Provider[]): ConnectionLike[] {
-  return providers.map((provider) => ({ provider, expiresAt: NOW + 3_600_000 }));
+  return providers.map((provider) => ({
+    provider,
+    expiresAt: NOW + 3_600_000,
+    scope: provider === 'spotify' ? 'user-library-read streaming' : null,
+  }));
 }
 
 describe('selectProvider', () => {
@@ -112,9 +116,13 @@ describe('selectProvider', () => {
 
   it('treats an expired connection as not connected', () => {
     const entry = makeEntry({ providers: ['spotify'] });
-    const selection = selectProvider(entry, [{ provider: 'spotify', expiresAt: NOW - 1 }], {
-      now: NOW,
-    });
+    const selection = selectProvider(
+      entry,
+      [{ provider: 'spotify', expiresAt: NOW - 1, scope: 'user-library-read streaming' }],
+      {
+        now: NOW,
+      },
+    );
     expect(selection).toEqual({ status: 'unplayable', reason: 'no_connected_provider' });
   });
 
@@ -140,10 +148,43 @@ describe('selectProvider', () => {
 
   it('plays SoundCloud even when its connection has expired', () => {
     const entry = makeEntry({ providers: ['soundcloud'] });
-    const selection = selectProvider(entry, [{ provider: 'soundcloud', expiresAt: NOW - 1 }], {
-      now: NOW,
-    });
+    const selection = selectProvider(
+      entry,
+      [{ provider: 'soundcloud', expiresAt: NOW - 1, scope: null }],
+      {
+        now: NOW,
+      },
+    );
     expect(selection).toMatchObject({ status: 'playable', provider: 'soundcloud' });
+  });
+
+  it('distinguishes a connected Spotify grant missing playback scope from no connection', () => {
+    const entry = makeEntry({ providers: ['spotify'] });
+    const selection = selectProvider(
+      entry,
+      [{ provider: 'spotify', expiresAt: NOW + 3_600_000, scope: 'user-library-read' }],
+      {
+        now: NOW,
+        availableProviders: ['spotify'],
+      },
+    );
+    expect(selection).toEqual({
+      status: 'unplayable',
+      reason: 'playback_reauth_required',
+    });
+  });
+
+  it('accepts the mock Spotify connection scope as playback-capable for local dev', () => {
+    const entry = makeEntry({ providers: ['spotify'] });
+    const selection = selectProvider(
+      entry,
+      [{ provider: 'spotify', expiresAt: NOW + 3_600_000, scope: 'mock' }],
+      {
+        now: NOW,
+        availableProviders: ['spotify'],
+      },
+    );
+    expect(selection).toMatchObject({ status: 'playable', provider: 'spotify' });
   });
 
   it('still requires a live connection for Apple Music (MusicKit authorizes the user)', () => {

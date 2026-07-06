@@ -27,6 +27,10 @@ const REASON_META: Record<UnplayableReason, { label: string; hint: string }> = {
     label: 'No connected provider can play this',
     hint: 'Connect a music provider that has this track.',
   },
+  playback_reauth_required: {
+    label: 'Spotify needs reconnecting',
+    hint: 'Reconnect Spotify for playback so it can grant the streaming scope.',
+  },
   provider_not_playable: {
     label: 'Not on a provider Ritmo can play yet',
     hint: 'Open the track in the builder and find it on SoundCloud or Apple Music.',

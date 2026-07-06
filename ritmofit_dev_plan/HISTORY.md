@@ -10,6 +10,31 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-06 (Spotify Web Playback SDK launch — registered + live-verified) — deployed
+> (Worker `b99ac98d-ea10-4efb-b42f-b068e479c550`).** Deployed the stacked Spotify playback branch
+> (`feat/spotify-playback-web`, on the backend playback-token/scope branch and the SoundCloud/Apple CSP
+> hotfix stack) after the final registry switch (`spotifyAdapterFactory` added to the shared playback
+> registry) and an `index.html` comment byte change to force static-asset/header metadata upload. This
+> makes Spotify in-app playback live for all users. Scope/contract/API changes from the stack: expanded
+> Spotify OAuth connect scope for the Web Playback SDK, `GET /providers/spotify/playback-token` for
+> short-lived memory-only access tokens, shared `SpotifyPlaybackToken`, reconnect UX for legacy
+> library-only Spotify grants, and the web SDK/Connect playback adapter. **No schema / migration.**
+> Rollback anchor: prior live `cbea9f69-98fd-441f-915f-7820be24c58b` (Apple Music CSP playback hosts).
+> Remote D1: **no migrations to apply.** Full CI-equivalent gate passed twice: once after reconnect UX,
+> then again after the registry launch switch (format / typecheck ×4 workspaces / lint / design-system
+> verify / web **413** + api **283** unit / api integration **82** / web build / OpenAPI no drift
+> `47 schemas · 48 paths` / contract-parity clean with the 7 tracked iOS lag items / audit:ci exit 0
+> with the existing ignored advisory set). Post-deploy smoke on live `https://ritmofit.studio`: SPA `/`
+> → `200`, `/api/v1/health` → `200`, protected `classes`/`explore`/`teams` → `401`, served bundle
+> `index-CKR7uylR.js`, deployment status 100% on `b99ac98d`, and remote D1 still no pending migrations.
+> **Spotify live verification:** in Chrome with the owner's Premium account, Connections showed Spotify
+> connected; Builder preview for `Gemini Test Class` / *Uptown Funk (feat. Bruno Mars)* showed
+> `Preview on Spotify`, entered `Preview: Spotify`, and play/pause/resume/stop all worked. Live Mode
+> preflight reported `Plays on Spotify`; starting Live Mode advanced the class clock and showed
+> `Playback: Spotify`. The owner confirmed audible Spotify audio. Chrome captured no relevant Spotify
+> SDK, CSP, Permissions-Policy, authentication, account, or playback errors, so the initial Spotify CSP /
+> Permissions-Policy host set needed no hotfix.
+
 > **Session 2026-07-06 (Apple Music web playback CSP — connect-src + media-src) — deployed (Worker
 > `cbea9f69-98fd-441f-915f-7820be24c58b`).** Continuation of the SoundCloud CSP pass, on branch
 > `fix/apple-music-csp-playback-hosts` (stacked on the SoundCloud branch so the deploy keeps

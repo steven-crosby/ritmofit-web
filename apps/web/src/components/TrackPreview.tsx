@@ -16,10 +16,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   MusicConnectionView,
+  Provider,
   RunPayloadTrackEntry,
   TrackSearchResult,
 } from '@ritmofit/shared';
-import { attachTrackProviderId, listConnections, resolveTrackProvider } from '../lib/api.js';
+import {
+  attachTrackProviderId,
+  connectProvider,
+  listConnections,
+  resolveTrackProvider,
+} from '../lib/api.js';
 import { playbackWindowFor, selectProvider } from '../lib/playback/coordinator.js';
 import { PreviewPlaybackController, type PreviewStatus } from '../lib/playback/preview.js';
 import type { RunPayloadProviderRef, UnplayableReason } from '../lib/playback/types.js';
@@ -147,6 +153,15 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
     void controllerRef.current?.stop();
   }, []);
 
+  const reconnectProvider = useCallback(async (provider: Provider) => {
+    const result = await connectProvider(provider);
+    if (result.authorizeUrl) {
+      window.location.href = result.authorizeUrl;
+      return;
+    }
+    setConnections(await listConnections());
+  }, []);
+
   // Static eligibility for the idle verdict (before the instructor hits preview).
   const selection = connections
     ? selectProvider(effectiveEntry, connections, {
@@ -154,7 +169,7 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
         availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
       })
     : null;
-  const window = playbackWindowFor(entry);
+  const playbackWindow = playbackWindowFor(entry);
   const isClipped = entry.clipStartMs > 0 || entry.track.durationMs != null;
 
   return (
@@ -174,6 +189,7 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
         <UnplayableVerdict
           entry={effectiveEntry}
           reason={selection.reason}
+          onReconnect={reconnectProvider}
           onResolved={setOverrideRefs}
         />
       ) : (
@@ -222,7 +238,7 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
         <p className="font-data text-[0.7rem] text-text-tertiary">
           Plays the class clip{' '}
           {entry.track.durationMs != null
-            ? `(${formatWindow(window.startMs, window.endMs)})`
+            ? `(${formatWindow(playbackWindow.startMs, playbackWindow.endMs)})`
             : '(from the clip start)'}
         </p>
       )}
@@ -234,16 +250,21 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
 function UnplayableVerdict({
   entry,
   reason,
+  onReconnect,
   onResolved,
 }: {
   entry: RunPayloadTrackEntry;
   reason: UnplayableReason;
+  onReconnect: (provider: Provider) => Promise<void>;
   onResolved: (refs: RunPayloadProviderRef[]) => void;
 }) {
   // Refs exist but only for a provider Ritmo can't play (e.g. Spotify) — offer
   // cross-provider resolution instead of a dead-end "connect a provider" hint.
   if (reason === 'provider_not_playable') {
     return <ResolveProviderAction entry={entry} onResolved={onResolved} />;
+  }
+  if (reason === 'playback_reauth_required') {
+    return <ReconnectSpotifyAction onReconnect={onReconnect} />;
   }
   let text: string;
   if (reason === 'no_provider_ref') {
@@ -266,6 +287,45 @@ function UnplayableVerdict({
         {text}
       </span>
     </p>
+  );
+}
+
+/** Legacy Spotify grants need one more OAuth trip to approve playback scopes. */
+function ReconnectSpotifyAction({
+  onReconnect,
+}: {
+  onReconnect: (provider: Provider) => Promise<void>;
+}) {
+  const [state, setState] = useState<'idle' | 'reconnecting' | 'error'>('idle');
+  const reconnect = () => {
+    setState('reconnecting');
+    onReconnect('spotify').catch(() => setState('error'));
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="flex items-start gap-1.5 font-ui text-xs text-state-caution">
+        <span aria-hidden>⊘</span>
+        <span>
+          <span className="sr-only">Preview unavailable: </span>
+          Spotify is connected for library access. Reconnect Spotify for playback.
+        </span>
+      </p>
+      <button
+        type="button"
+        onClick={reconnect}
+        disabled={state === 'reconnecting'}
+        className="inline-flex min-h-9 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 py-1.5 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive disabled:opacity-50"
+      >
+        <span aria-hidden>↻</span>
+        {state === 'reconnecting' ? 'Reconnecting…' : 'Reconnect Spotify for playback'}
+      </button>
+      {state === 'error' && (
+        <p className="font-ui text-xs text-state-danger" role="alert">
+          Could not start Spotify reconnect. Try again from Connections.
+        </p>
+      )}
+    </div>
   );
 }
 

@@ -92,6 +92,9 @@ export type UnplayableReason =
   /** An in-app-playable provider is ref'd, but it needs a live connection and
    *  has none (e.g. Apple Music without an authorized user). Fixable by connecting. */
   | 'no_connected_provider'
+  /** Spotify is connected, but the grant predates playback scopes. Fixable by
+   *  reconnecting Spotify so the Web Playback SDK can receive `streaming`. */
+  | 'playback_reauth_required'
   /** Refs exist, but ONLY for providers Ritmo can't play in-app yet (e.g. a
    *  Spotify-only track — no adapter). Fixable by cross-provider resolution
    *  (find the same song on a playable provider), not by connecting. */
