@@ -7,6 +7,7 @@
 <!-- note (Codex, 2026-07-05): Marked the Apple Music setQueue singleton guard closed after PR #211; authorize waiting-state remains open as a UI slice. -->
 <!-- note (Claude, 2026-07-06): Reframed under D21 — the player is one part of a broader music-service shell; added the shell-direction section and the discovery read-surface contract impact. -->
 <!-- note (Claude, 2026-07-06): Real-provider audio live-verified on prod for the two shipped adapters — SoundCloud (Worker 5072dd3b) and Apple Music (Worker cbea9f69), each after a CSP hotfix; Apple audible playback owner-confirmed. Retired the "needs live verification" markers. Spotify audio still pending its adapter. -->
+<!-- note (Claude, 2026-07-06): Finalized the Spotify playback plan after owner decisions — Premium account available; expand the single connect scope to be playback-capable; no feature flag (ship after live-verify). Starting the backend slice (scope expansion + playback-token endpoint). -->
 
 ## Goal
 
@@ -181,29 +182,65 @@ track playback-state errors.
 
 ### Spotify
 
-Spotify playback requires a connected Premium user and playback-capable OAuth scopes. The current
-Spotify connect scope is intentionally only `user-library-read`; adding playback requires a deliberate
-scope update and reconnection path.
+Spotify playback requires a connected **Premium** user and playback-capable OAuth scopes, played only
+through the official **Web Playback SDK** (`https://sdk.scdn.co/spotify-player.js`; re-verified against
+Spotify docs 2026-07-06 — SDK still requires Premium). Slots into the existing `PlaybackAdapter`
+interface; registering `spotify` in `PLAYBACK_ADAPTERS` is what flips Spotify-only tracks from
+`provider_not_playable` to playable in both Live Mode and Builder preview. Owner decisions (2026-07-06):
+a Premium account is available for live verification; **expand the single connect scope** to be
+playback-capable (every Spotify connect grants playback — no separate opt-in); **no feature flag** — ship
+to all users once live-verified.
 
 **Prerequisite (completed 2026-07-03):** Apple Music, SoundCloud, and Spotify production connect are
-verified working on Worker `94126954-0e61-408e-b404-bb380c338141` (see `deployment-runbook.md` and the
-recently closed item in `DEVELOPMENT_PLAN.md`). The next Spotify-specific prerequisite is the playback
-scope expansion and reconnection path; sequence that deliberately because existing Spotify connections
-only have `user-library-read`.
+verified working on Worker `94126954-0e61-408e-b404-bb380c338141`. Existing Spotify connections hold only
+`user-library-read`, so the scope expansion needs a reconnection path.
 
-Likely scopes to review against current Spotify docs before implementation:
+**Scopes** — expand `SPOTIFY_CONNECT_SCOPE` (currently `user-library-read`) to add:
 
-- `streaming`
-- `user-read-playback-state`
-- `user-modify-playback-state`
+- `streaming` — required for the Web Playback SDK to stream.
+- `user-read-email`, `user-read-private` — the SDK verifies Premium at init via these (it raises
+  `authentication_error` / `account_error` without them).
+- `user-modify-playback-state` — start a specific `spotify:track:…` URI on our SDK device and seek/pause
+  via the Connect Web API (`PUT /me/player/play|seek|pause`).
+- `user-read-playback-state` — read device/player state.
+- keep `user-library-read` (existing likes search). **Never** an audio-features/BPM scope (forbidden).
 
-The backend currently treats provider tokens as never returned to the client. Preserve that rule for
-stored tokens generally, but add a narrowly documented endpoint for short-lived browser playback
-credentials when required by the official SDK. Playback tokens must never be logged, stored in local
-storage, or used for catalog/BPM shortcuts.
+**Backend slice (deploy on its own — auth/provider change):**
 
-Document a public-launch Spotify compliance checkpoint before broad rollout. Private beta can proceed
-with the feature flagged if product accepts the risk.
+- Expand the connect scope + a `spotifyScopeHasPlayback(scope)` helper (stored `scope` includes
+  `streaming`).
+- `GET /providers/spotify/playback-token` (authed, rate-limited) — mirrors `GET
+  /providers/apple_music/config`. Loads the connection, verifies playback scope, refreshes the access
+  token server-side if near expiry (`refreshSpotifyToken`), returns `{ accessToken, expiresInMs }`.
+  Distinct failures: no connection → 401; connected-but-missing-playback-scope → a specific
+  reconnect-for-playback code; not configured → 503. This is the documented exception to "never return
+  provider tokens": short-lived, scope-limited, **never logged, never in localStorage, never for
+  catalog/BPM**.
+- Shared Zod schema for the token response; OpenAPI regen + contract-parity.
+
+**Web slice (feature-flag-free):**
+
+- `lib/spotify-playback.ts` — loads the SDK, constructs `Spotify.Player` with `getOAuthToken` →
+  `GET /providers/spotify/playback-token`, connects, tracks `device_id`, maps SDK events
+  (`ready`/`not_ready`/`player_state_changed`/`authentication_error`/`account_error`/`initialization_error`).
+  Analogous to `musickit.ts`.
+- `playback/spotify-adapter.ts` implementing `PlaybackAdapter` — `prepare` (SDK ready + device, cue the
+  track), `play` (Connect API `PUT /me/player/play` with `uris` + `position_ms` + `device_id`),
+  `pause`/`seek`/`stop`/`destroy`, events → `onFinish`/`onError`/`onAwaitingAuthorization`.
+- register `spotify` in `registry.ts`; reconnect UX for connections lacking `streaming` (mirror the
+  SoundCloud "session expired — reconnect" chip / unplayable-verdict copy in `TrackPreview.tsx`).
+- CSP/`Permissions-Policy` in `apps/web/public/_headers`: `script-src` + `frame-src` += `sdk.scdn.co`;
+  `connect-src` += `api.spotify.com` / `*.spotify.com` (and likely `wss://*.spotify.com`); `media-src
+  'self' blob:` already present; the SDK's cross-origin DRM (Widevine) iframe needs `encrypted-media`, so
+  expect a `Permissions-Policy: encrypted-media=(self "https://sdk.scdn.co")` addition. **Tune this with
+  the same empirical live pass used for Apple Music** (drive a real browser, watch `securitypolicyviolation`
+  + SDK error events, add hosts until it plays).
+
+**Verification & compliance:** live-verify with the Premium account through a real browser (audible
+playback + CSP/Permissions-Policy tuning). Official SDK only; no cache/proxy/decode/BPM. Document a
+public-launch Spotify compliance checkpoint. Because there is **no feature flag**, the adapter is
+registered only after live verification passes, so Spotify-only tracks keep reporting
+`provider_not_playable` until then.
 
 ## API And Contract Impact
 
