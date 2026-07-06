@@ -38,10 +38,10 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 > carrying the new CSP (the browser's stale-precache service worker had to be unregistered first — see
 > caveat), the Apple preview now **authorizes, loads the track (`nowPlayingItem` set, full `246s`
 > duration), fetches the HLS manifest, and builds the MSE `blob:` `<audio>` element with ZERO CSP
-> violations and no errors** — the exact pipeline that failed twice before. The final byte-level audible
-> playback was **not** machine-confirmed because the automation tab runs hidden
-> (`document.visibilityState === 'hidden'` → Chrome background-media throttling stalls the buffer at
-> `readyState 0`); it needs a foreground click to confirm sound comes out. **Stale-SW caveat (again):** an
+> violations and no errors** — the exact pipeline that failed twice before. In the hidden automation tab
+> the buffer stalled at `readyState 0` (`document.visibilityState === 'hidden'` → Chrome background-media
+> throttling), so **the owner confirmed audible playback in a foreground tab** — Apple Music real-provider
+> audio is now **verified** (alongside SoundCloud). **Stale-SW caveat (again):** an
 > already-open PWA client keeps serving the OLD precached CSP until the "New version — Refresh" prompt is
 > taken (or the SW re-fetches); a hard header change like this only reaches such clients after that refresh.
 
