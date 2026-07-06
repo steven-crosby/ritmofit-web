@@ -47,6 +47,8 @@ import {
   trackWithProviderIdsSchema,
   trackSearchResultSchema,
   importProviderTrackSchema,
+  resolveProviderRequestSchema,
+  resolveProviderResultSchema,
   musicConnectionViewSchema,
   connectProviderResponseSchema,
   appleMusicClientConfigSchema,
@@ -94,6 +96,8 @@ const named: Record<string, z.ZodType> = {
   TrackWithProviderIds: trackWithProviderIdsSchema,
   TrackSearchResult: trackSearchResultSchema,
   ImportProviderTrack: importProviderTrackSchema,
+  ResolveProviderRequest: resolveProviderRequestSchema,
+  ResolveProviderResult: resolveProviderResultSchema,
   MusicConnectionView: musicConnectionViewSchema,
   ConnectProviderResponse: connectProviderResponseSchema,
   AppleMusicClientConfig: appleMusicClientConfigSchema,
@@ -508,6 +512,20 @@ const doc = {
         responses: {
           '201': jsonResp('TrackProviderId', 'Attached'),
           '409': { description: 'Duplicate provider id' },
+        },
+      },
+    },
+    '/tracks/{id}/resolve-provider': {
+      parameters: [idParam],
+      post: {
+        summary: 'Resolve a track to a playable provider by same-song catalog search',
+        requestBody: jsonBody('ResolveProviderRequest'),
+        responses: {
+          '200': jsonResp(
+            'ResolveProviderResult',
+            'A strong match was attached, or candidates to confirm',
+          ),
+          '404': { description: 'Not found' },
         },
       },
     },

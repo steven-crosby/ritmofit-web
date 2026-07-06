@@ -12,7 +12,10 @@ import {
   createTrackSchema,
   updateTrackSchema,
   createTrackProviderIdSchema,
+  resolveProviderRequestSchema,
   type TrackWithProviderIds,
+  type ResolveProviderResult,
+  type Provider,
 } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
@@ -21,7 +24,10 @@ import { HttpError, isUniqueViolation } from '../lib/errors.js';
 import { serializeTrack, serializeTrackProviderId } from '../lib/serialize.js';
 import { buildPatch } from '../lib/patch.js';
 import { lookupAndApplyBpm } from '../lib/music/bpm-lookup.js';
-import { makeMatchKey } from '../lib/same-song.js';
+import { getMusicProvider } from '../lib/music/registry.js';
+import { makeMatchKey, type MatchableTrack } from '../lib/same-song.js';
+import { resolveTrackProvider } from '../lib/resolve-provider.js';
+import { attachProviderId } from '../lib/track-import.js';
 import { tracks, trackProviderIds } from '../db/schema.js';
 import type { Db } from '../lib/db.js';
 
@@ -138,6 +144,54 @@ trackRoutes.post('/tracks/:id/provider-ids', async (c) => {
     throw err;
   }
   return c.json(serializeTrackProviderId(row), 201);
+});
+
+/**
+ * POST /tracks/:id/resolve-provider — cross-provider resolution. Search each
+ * requested playable provider the track lacks for the same song; attach a strong
+ * same-song match (normalized title+artist + duration tolerance) automatically,
+ * else return the candidates so the caller can confirm one. Owner only. Lets a
+ * track added from a provider Ritmo can't play in-app (e.g. Spotify) gain a
+ * playable provider ref instead of reading as a dead end.
+ */
+trackRoutes.post('/tracks/:id/resolve-provider', async (c) => {
+  const db = createDb(c.env);
+  const trackId = c.req.param('id');
+  const me = c.get('userId');
+  const track = await requireOwnedTrack(db, me, trackId);
+  const { providers } = resolveProviderRequestSchema.parse(await c.req.json());
+
+  const existing = await db
+    .select({ provider: trackProviderIds.provider })
+    .from(trackProviderIds)
+    .where(eq(trackProviderIds.trackId, trackId))
+    .all();
+  const have = new Set(existing.map((r) => r.provider as Provider));
+  const matchable: MatchableTrack = {
+    id: track.id,
+    title: track.title,
+    artist: track.artist,
+    durationMs: track.durationMs,
+    providers: [...have],
+  };
+
+  const outcome = await resolveTrackProvider(matchable, providers, (provider, query) =>
+    getMusicProvider(provider, c.env).then((adapter) => adapter.search(query)),
+  );
+  if (outcome.kind === 'match') {
+    const attached = await attachProviderId(db, me, track.id, outcome.candidate);
+    if (attached) {
+      return c.json({
+        resolved: true,
+        provider: outcome.provider,
+        track: attached,
+      } satisfies ResolveProviderResult);
+    }
+    // The track vanished mid-flight (deleted between match and attach) — fall
+    // through to an empty confirm list rather than a 500.
+  }
+  const candidates = outcome.kind === 'candidates' ? outcome.candidates : [];
+  return c.json({ resolved: false, candidates } satisfies ResolveProviderResult);
 });
 
 /** DELETE /track-provider-ids/:id — remove a provider id (owner of the parent track only). */
