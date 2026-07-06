@@ -8,9 +8,10 @@
  * confidential client). The token response carries access_token, refresh_token,
  * expires_in, scope.
  *
- * We request only `user-library-read` — the connection's single purpose is the
- * "search my Spotify" likes read (`GET /me/tracks`). Never request playback or
- * audio-features scopes: BPM from Spotify is forbidden (music-providers.md).
+ * We request `user-library-read` (the "search my Spotify" likes read,
+ * `GET /me/tracks`) plus the playback scopes the official Web Playback SDK needs
+ * (see `SPOTIFY_CONNECT_SCOPE`). Never request audio-features/analysis scopes:
+ * BPM from Spotify is forbidden (music-providers.md).
  *
  * Pure functions: no storage, no secrets at rest — the app holds the secret and
  * persists the (encrypted) result. Network is injected for tests. Re-verify the
@@ -27,8 +28,29 @@ declare const btoa: (data: string) => string;
 
 const AUTHORIZE_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
-/** Minimum scope to read the connected user's saved tracks. Never playback/BPM. */
-export const SPOTIFY_CONNECT_SCOPE = 'user-library-read';
+/**
+ * The connect scope set. `user-library-read` powers the "search my Spotify" likes
+ * read; the rest power in-app playback via the official Web Playback SDK:
+ * `streaming` (the SDK stream), `user-read-email` / `user-read-private` (the SDK
+ * verifies Premium at init via these), and `user-modify-playback-state` /
+ * `user-read-playback-state` (start / seek / pause a `spotify:track:…` on our SDK
+ * device through the Connect Web API). Never an audio-features/analysis scope —
+ * BPM from Spotify is forbidden (music-providers.md). Existing connections predate
+ * the playback scopes, so callers must treat a stored scope without `streaming` as
+ * "reconnect for playback" (see `spotifyScopeHasPlayback`).
+ */
+export const SPOTIFY_CONNECT_SCOPE =
+  'user-library-read streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state';
+
+/**
+ * Whether a stored connection scope string is playback-capable — i.e. the user
+ * granted the Web Playback SDK's `streaming` scope. Connections made before the
+ * scope expansion return `false` and need a reconnect before they can play.
+ */
+export function spotifyScopeHasPlayback(scope: string | null | undefined): boolean {
+  if (!scope) return false;
+  return scope.split(/\s+/).includes('streaming');
+}
 
 const tokenResponseSchema = z.object({
   access_token: z.string().min(1),

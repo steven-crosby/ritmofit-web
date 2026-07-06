@@ -1553,6 +1553,32 @@
         }
       }
     },
+    "/providers/spotify/playback-token": {
+      "get": {
+        "summary": "Short-lived Spotify access token for the Web Playback SDK",
+        "responses": {
+          "200": {
+            "description": "Short-lived access token + TTL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpotifyPlaybackToken"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "409": {
+            "description": "Not connected, or reconnect required for playback scope"
+          },
+          "503": {
+            "description": "Spotify not configured"
+          }
+        }
+      }
+    },
     "/providers/apple_music/connection": {
       "post": {
         "summary": "Store the Music-User-Token MusicKit returned (encrypted; no refresh)",
@@ -5029,6 +5055,26 @@
         "required": [
           "developerToken",
           "storefront"
+        ],
+        "additionalProperties": false
+      },
+      "SpotifyPlaybackToken": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expiresInMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "accessToken",
+          "expiresInMs"
         ],
         "additionalProperties": false
       },

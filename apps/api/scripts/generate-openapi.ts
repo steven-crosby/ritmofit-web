@@ -52,6 +52,7 @@ import {
   musicConnectionViewSchema,
   connectProviderResponseSchema,
   appleMusicClientConfigSchema,
+  spotifyPlaybackTokenSchema,
   connectAppleMusicSchema,
   teamSchema,
   teamWithRoleSchema,
@@ -101,6 +102,7 @@ const named: Record<string, z.ZodType> = {
   MusicConnectionView: musicConnectionViewSchema,
   ConnectProviderResponse: connectProviderResponseSchema,
   AppleMusicClientConfig: appleMusicClientConfigSchema,
+  SpotifyPlaybackToken: spotifyPlaybackTokenSchema,
   ConnectAppleMusic: connectAppleMusicSchema,
   Team: teamSchema,
   TeamWithRole: teamWithRoleSchema,
@@ -665,6 +667,19 @@ const doc = {
           '200': jsonResp('AppleMusicClientConfig', 'Developer token + storefront'),
           '401': { description: 'Authentication required' },
           '503': { description: 'Apple Music not configured' },
+        },
+      },
+    },
+    // Spotify Web Playback SDK needs a live access token in the browser; this serves
+    // a short-lived one (never the refresh token) for a playback-scoped connection.
+    '/providers/spotify/playback-token': {
+      get: {
+        summary: 'Short-lived Spotify access token for the Web Playback SDK',
+        responses: {
+          '200': jsonResp('SpotifyPlaybackToken', 'Short-lived access token + TTL'),
+          '401': { description: 'Authentication required' },
+          '409': { description: 'Not connected, or reconnect required for playback scope' },
+          '503': { description: 'Spotify not configured' },
         },
       },
     },
