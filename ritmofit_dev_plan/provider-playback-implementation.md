@@ -226,8 +226,18 @@ recovery-only surface), wake lock preserved. "Run without music" keeps the promp
 
 **Adapter registry (updated 2026-07-05):** SoundCloud and **Apple Music** adapters are registered in the
 shared `playback/registry.ts` (`PLAYBACK_ADAPTERS`), consumed by both Live Mode and Builder preview;
-each surface filters connections to registered adapters, so only Spotify-only tracks still read as
-unplayable until the Spotify adapter lands (it needs the playback-scope expansion first).
+each surface passes the registry keys (`PLAYBACK_ADAPTER_PROVIDERS`) as selection's `availableProviders`,
+so only Spotify-only tracks still read as unplayable until the Spotify adapter lands (it needs the
+playback-scope expansion first).
+
+**Playback selection is per-provider on connection (fixed 2026-07-06):** a track is playable when its
+provider's adapter is registered **and** either playback needs no user connection **or** a live one
+exists. The shared capability `playbackRequiresConnection` encodes this: **SoundCloud is `false`** (the
+public Widget plays with no token), Apple Music / Spotify are `true` (MusicKit / the Web Playback SDK
+authorize the user). This fixes a production bug where SoundCloud tracks — the default provider — went
+unplayable once the *likes-only* OAuth token expired (~hourly), even though the Widget never uses it;
+preflight/selection had gated all providers uniformly on a live connection. See `selectProvider` /
+`SelectionOptions.availableProviders` in `playback/coordinator.ts`.
 
 **Builder preview wiring status (2026-07-05):** built — `TrackPreview.tsx` in the builder inspector
 (`Dashboard.tsx`, gated on the selected track's run-payload entry), driven by `PreviewPlaybackController`
