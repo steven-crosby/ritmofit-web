@@ -44,6 +44,9 @@ export interface PreviewError {
 export type PreviewStatus =
   | { kind: 'idle' }
   | { kind: 'preparing'; classTrackId: string; provider: Provider }
+  /** Blocked on the provider's human consent sheet — cancellable, resolves to
+   *  `playing` or a recoverable `error`. */
+  | { kind: 'awaiting_authorization'; classTrackId: string; provider: Provider }
   | { kind: 'playing'; classTrackId: string; provider: Provider }
   | { kind: 'paused'; classTrackId: string; provider: Provider }
   /** Reached the clip-window end (or the provider stream finished first). */
@@ -159,6 +162,16 @@ export class PreviewPlaybackController {
         onFinish: () => {
           if (this.active?.adapter !== adapter) return;
           void this.endActive();
+        },
+        onAwaitingAuthorization: () => {
+          // Blocked on the provider's consent sheet: a distinct, cancellable
+          // state, epoch-guarded against a superseded transition's late signal.
+          if (epoch !== this.epoch) return;
+          this.setStatus({
+            kind: 'awaiting_authorization',
+            classTrackId: entry.classTrackId,
+            provider: selection.provider,
+          });
         },
         onError: ({ message }) => {
           // Ignore a superseded adapter's late errors.

@@ -54,6 +54,7 @@ class FakeInstance implements MusicKitInstance {
   calls: string[] = [];
   isAuthorized: boolean;
   setQueueBehavior: () => Promise<unknown> = () => Promise.resolve();
+  authorizeBehavior: () => Promise<string> = () => Promise.resolve('music-user-token');
   private listeners = new Map<string, Array<(event: MusicKitPlaybackEvent) => void>>();
 
   constructor(isAuthorized = true) {
@@ -62,7 +63,7 @@ class FakeInstance implements MusicKitInstance {
   authorize(): Promise<string> {
     this.calls.push('authorize');
     this.isAuthorized = true;
-    return Promise.resolve('music-user-token');
+    return this.authorizeBehavior();
   }
   setQueue(options: MusicKitSetQueueOptions): Promise<unknown> {
     this.calls.push(`setQueue:${options.startTime}`);
@@ -136,7 +137,12 @@ function makeMusicKit(instance: FakeInstance, opts?: { preconfigured?: boolean }
 
 function makeAdapter(
   instance: FakeInstance,
-  overrides?: { events?: AdapterEvents; preconfigured?: boolean; prepareTimeoutMs?: number },
+  overrides?: {
+    events?: AdapterEvents;
+    preconfigured?: boolean;
+    prepareTimeoutMs?: number;
+    authorizeTimeoutMs?: number;
+  },
 ) {
   const { music, calls } = makeMusicKit(instance, { preconfigured: overrides?.preconfigured });
   const configCalls: string[] = [];
@@ -147,6 +153,7 @@ function makeAdapter(
       return Promise.resolve({ developerToken: 'dev-token', storefront: null });
     },
     prepareTimeoutMs: overrides?.prepareTimeoutMs,
+    authorizeTimeoutMs: overrides?.authorizeTimeoutMs,
   });
   return { adapter, music, musicCalls: calls, configCalls };
 }
@@ -174,6 +181,28 @@ describe('AppleMusicAdapter', () => {
     const { adapter } = makeAdapter(instance);
     await adapter.prepare(makeEntry(), WINDOW_ZERO);
     expect(instance.calls).toEqual(['setQueue:0']);
+  });
+
+  it('signals onAwaitingAuthorization before prompting an unauthorized browser', async () => {
+    const instance = new FakeInstance(false);
+    const events: string[] = [];
+    const { adapter } = makeAdapter(instance, {
+      events: { onAwaitingAuthorization: () => events.push('awaiting') },
+    });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    expect(events).toEqual(['awaiting']);
+    // Signalled around the consent prompt, then the cue proceeds normally.
+    expect(instance.calls).toEqual(['authorize', 'setQueue:0']);
+  });
+
+  it('does not signal onAwaitingAuthorization when already authorized', async () => {
+    const instance = new FakeInstance(true);
+    const events: string[] = [];
+    const { adapter } = makeAdapter(instance, {
+      events: { onAwaitingAuthorization: () => events.push('awaiting') },
+    });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    expect(events).toEqual([]);
   });
 
   it('reuses the page singleton without re-configuring or re-fetching the token', async () => {
@@ -269,6 +298,17 @@ describe('AppleMusicAdapter', () => {
     instance.setQueueBehavior = () => new Promise<never>(() => {}); // never resolves
     const { adapter } = makeAdapter(instance, { preconfigured: true, prepareTimeoutMs: 5 });
     await expect(adapter.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow(/timed out/i);
+  });
+
+  it('rejects prepare after the authorization (consent) timeout', async () => {
+    const instance = new FakeInstance(false);
+    instance.authorizeBehavior = () => new Promise<never>(() => {}); // consent never returns
+    const { adapter } = makeAdapter(instance, { preconfigured: true, authorizeTimeoutMs: 5 });
+    // Never cues: it fails at the consent step, before setQueue.
+    await expect(adapter.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow(
+      /authorization didn.t complete/i,
+    );
+    expect(instance.calls.filter((call) => call.startsWith('setQueue:'))).toEqual([]);
   });
 
   it('rejects an overlapping queue request while an older one is still pending', async () => {

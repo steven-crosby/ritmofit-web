@@ -202,6 +202,7 @@ recovery action.
 | Playback eligible                    |   ✓   | cyan          | "Plays on {provider}"                         |
 | Premium required                     |   ⊘   | caution/amber | Spotify: connected ≠ playable                 |
 | Subscriber authorization required    |   ⊘   | caution/amber | Apple Music: MusicKit re-authorize            |
+| Waiting for authorization (pending)  |   ⏳   | caution/amber | Apple Music: consent sheet is open right now — cancellable; transient, distinct from the reconnect verdict above |
 | Playback unavailable                 |   ⊘   | caution/amber | no provider link / no connected provider / no duration — named, with the fix |
 | Playback failure (runtime)           |   ⚠   | danger/ember  | mid-class stream/SDK failure — recoverable alert |
 
@@ -214,9 +215,10 @@ offering retry / reconnect / provider handoff / continue-without-music. Provider
 
 Live Mode has a single Ritmo Studio control surface (transport: play/pause, reset, scrubber) plus a compact
 playback rail chip that always states what the music is doing: `♪ {provider}` while playing,
-`♪ Preparing {provider}…`, `♪ Silence` (intentional gaps), `♪ Paused`, `♪ Playback ended`,
-`⚠ Playback error`, and `♪ Music off` in prompter-only mode. Silence must read as a choice, not a
-mystery. No provider branding walls, no marketing player: this is a performance tool for an instructor
+`♪ Preparing {provider}…`, `⏳ Waiting for {provider} authorization…` (consent sheet open — its own
+glyph, since the instructor must act in the provider's sheet), `♪ Silence` (intentional gaps),
+`♪ Paused`, `♪ Playback ended`, `⚠ Playback error`, and `♪ Music off` in prompter-only mode. Silence
+must read as a choice, not a mystery. No provider branding walls, no marketing player: this is a performance tool for an instructor
 on stage. All transport controls stay keyboard accessible and visibly focused.
 
 ### Preflight screen

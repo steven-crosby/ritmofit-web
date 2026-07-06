@@ -408,6 +408,84 @@ describe('RuntimePlaybackCoordinator', () => {
     expect(coordinator.getStatus()).toMatchObject({ kind: 'playing', index: 1 });
   });
 
+  it('surfaces awaiting_authorization while the adapter blocks on consent, then plays', async () => {
+    const payload = makePayload([
+      makeEntry({ classTrackId: 'ct-1', durationMs: 180_000, providers: ['apple_music'] }),
+    ]);
+    const created: FakeAdapter[] = [];
+    const statuses: CoordinatorStatus[] = [];
+    const coordinator = new RuntimePlaybackCoordinator(payload, connections('apple_music'), {
+      now: NOW,
+      adapters: {
+        apple_music: (events) => {
+          const adapter = new FakeAdapter('apple_music', events);
+          adapter.deferPrepare = true; // hold prepare open like a pending consent sheet
+          created.push(adapter);
+          return adapter;
+        },
+      },
+      onStatus: (s) => statuses.push(s),
+    });
+
+    const startPromise = coordinator.start(0);
+    // Mid-prepare, the adapter reports it is blocked on Apple's consent sheet.
+    created[0]!.events.onAwaitingAuthorization?.();
+    expect(coordinator.getStatus()).toEqual({
+      kind: 'awaiting_authorization',
+      index: 0,
+      provider: 'apple_music',
+    });
+
+    created[0]!.finishPrepare();
+    await startPromise;
+    expect(coordinator.getStatus()).toEqual({ kind: 'playing', index: 0, provider: 'apple_music' });
+    expect(statuses.map((s) => s.kind)).toEqual(['preparing', 'awaiting_authorization', 'playing']);
+  });
+
+  it('ignores a superseded adapter’s late awaiting_authorization signal', async () => {
+    const payload = makePayload([
+      makeEntry({
+        classTrackId: 'ct-1',
+        startOffsetMs: 0,
+        durationMs: 60_000,
+        providers: ['apple_music'],
+      }),
+      makeEntry({ classTrackId: 'ct-2', startOffsetMs: 60_000, durationMs: 60_000 }),
+    ]);
+    const created: FakeAdapter[] = [];
+    let defer = true;
+    const coordinator = new RuntimePlaybackCoordinator(
+      payload,
+      connections('soundcloud', 'apple_music'),
+      {
+        now: NOW,
+        adapters: {
+          apple_music: (events) => {
+            const adapter = new FakeAdapter('apple_music', events);
+            adapter.deferPrepare = defer;
+            defer = false;
+            created.push(adapter);
+            return adapter;
+          },
+          soundcloud: (events) => {
+            const adapter = new FakeAdapter('soundcloud', events);
+            created.push(adapter);
+            return adapter;
+          },
+        },
+      },
+    );
+
+    const startPromise = coordinator.start(0); // ct-1 (apple_music) prepare hangs
+    await coordinator.seek(60_000); // supersede → ct-2 (soundcloud) plays
+    expect(coordinator.getStatus()).toMatchObject({ kind: 'playing', index: 1 });
+    // The stale apple_music adapter now signals consent-pending — must be ignored.
+    created[0]!.events.onAwaitingAuthorization?.();
+    expect(coordinator.getStatus()).toMatchObject({ kind: 'playing', index: 1 });
+    created[0]!.finishPrepare();
+    await startPromise;
+  });
+
   it('stop() releases the active adapter and returns to idle', async () => {
     const payload = makePayload([makeEntry({ classTrackId: 'ct-1' })]);
     const { coordinator, created } = makeHarness(payload, connections('soundcloud'));

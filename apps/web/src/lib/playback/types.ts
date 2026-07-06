@@ -55,6 +55,15 @@ export interface PlaybackAdapter {
 export interface AdapterEvents {
   onFinish?(): void;
   onError?(error: { message: string }): void;
+  /**
+   * Provider authorization is pending on human consent — Apple Music's consent
+   * sheet is open and `prepare()` is blocked on it. Advisory and provider-
+   * agnostic: it lets the coordinator surface a distinct, cancellable
+   * "waiting for authorization" state instead of a frozen `preparing`. Not an
+   * error — the terminal outcome is still the adapter reaching `play()`
+   * (→ playing) or rejecting (→ recoverable error, incl. the consent timeout).
+   */
+  onAwaitingAuthorization?(): void;
 }
 
 /**
