@@ -33,6 +33,7 @@ const DEFAULT_API_BASE = 'https://api.soundcloud.com';
 const DEFAULT_TOKEN_URL = 'https://secure.soundcloud.com/oauth/token';
 const SEARCH_LIMIT = 25;
 const LIKES_LIMIT = 50;
+const SOUNDCLOUD_PAGE_LIMIT = 50;
 
 export interface SoundCloudConfig {
   clientId: string;
@@ -78,7 +79,12 @@ const scPlaylistSchema = z.object({
 
 const scPlaylistListSchema = z.union([
   z.array(z.unknown()),
-  z.object({ collection: z.array(z.unknown()) }),
+  z.object({ collection: z.array(z.unknown()), next_href: z.string().nullable().optional() }),
+]);
+
+const scPagedTracksSchema = z.union([
+  z.array(z.unknown()),
+  z.object({ collection: z.array(z.unknown()), next_href: z.string().nullable().optional() }),
 ]);
 
 export function createSoundCloudProvider(config: SoundCloudConfig): MusicProvider {
@@ -203,35 +209,30 @@ export async function fetchSoundCloudPlaylists(cfg: {
   accessToken: string;
   fetchImpl: FetchLike;
   apiBase?: string;
+  /** Stop after this many playlists so browse reads stay bounded. */
+  maxPlaylists?: number;
+  /** Page size override for tests; SoundCloud pages are bounded to 50. */
   limit?: number;
 }): Promise<ProviderPlaylistSummary[]> {
   const base = cfg.apiBase ?? DEFAULT_API_BASE;
-  const limit = cfg.limit ?? 50;
-  const params = `limit=${limit}&linked_partitioning=true`;
-  const res = await cfg.fetchImpl(`${base}/me/playlists?${params}`, {
-    headers: { Authorization: `OAuth ${cfg.accessToken}`, Accept: 'application/json' },
+  const cap = cfg.maxPlaylists ?? 100;
+  const pageLimit = Math.min(cfg.limit ?? SOUNDCLOUD_PAGE_LIMIT, SOUNDCLOUD_PAGE_LIMIT, cap);
+  const rows = await fetchSoundCloudPagedCollection({
+    firstUrl: `${base}/me/playlists?limit=${pageLimit}&linked_partitioning=true`,
+    accessToken: cfg.accessToken,
+    fetchImpl: cfg.fetchImpl,
+    parsePage: (json) => {
+      const parsed = scPlaylistListSchema.safeParse(json);
+      if (!parsed.success) return null;
+      if (Array.isArray(parsed.data)) return { rows: parsed.data, nextUrl: null };
+      return { rows: parsed.data.collection, nextUrl: parsed.data.next_href ?? null };
+    },
+    errorPath: '/me/playlists',
+    cap,
   });
-  if (res.status === 401) throw new SoundCloudUnauthorizedError();
-  if (!res.ok)
-    throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for /me/playlists`);
 
-  const parsed = scPlaylistListSchema.safeParse(await readJson(res, 'soundcloud'));
-  if (!parsed.success) return [];
-  const rows = Array.isArray(parsed.data) ? parsed.data : parsed.data.collection;
   return rows
-    .map((row) => {
-      const pl = scPlaylistSchema.safeParse(row);
-      if (!pl.success) return null;
-      const item = providerPlaylistSummarySchema.safeParse({
-        provider: 'soundcloud',
-        playlistId: String(pl.data.id),
-        name: pl.data.title ?? 'Untitled playlist',
-        ownerName: pl.data.user?.username ?? null,
-        trackCount: pl.data.track_count ?? 0,
-        coverImageUrl: pl.data.artwork_url ?? null,
-      });
-      return item.success ? item.data : null;
-    })
+    .map((row) => toPlaylistSummary(row))
     .filter((row): row is ProviderPlaylistSummary => row !== null);
 }
 
@@ -241,21 +242,84 @@ export async function fetchSoundCloudPlaylistTracks(cfg: {
   playlistId: string;
   fetchImpl: FetchLike;
   apiBase?: string;
+  /** Stop after this many tracks so detail reads stay bounded. */
+  maxTracks?: number;
+  /** Page size override for tests; SoundCloud pages are bounded to 50. */
+  limit?: number;
 }): Promise<TrackSearchResult[]> {
   const base = cfg.apiBase ?? DEFAULT_API_BASE;
   const id = encodeURIComponent(cfg.playlistId);
-  const res = await cfg.fetchImpl(`${base}/playlists/${id}`, {
-    headers: { Authorization: `OAuth ${cfg.accessToken}`, Accept: 'application/json' },
+  const cap = cfg.maxTracks ?? 200;
+  const pageLimit = Math.min(cfg.limit ?? SOUNDCLOUD_PAGE_LIMIT, SOUNDCLOUD_PAGE_LIMIT, cap);
+  // SoundCloud can truncate embedded playlist `tracks`; read the playlist-track
+  // collection endpoint with linked partitioning so large playlists stay complete.
+  const rows = await fetchSoundCloudPagedCollection({
+    firstUrl: `${base}/playlists/${id}/tracks?limit=${pageLimit}&linked_partitioning=true`,
+    accessToken: cfg.accessToken,
+    fetchImpl: cfg.fetchImpl,
+    parsePage: (json) => {
+      const parsed = scPagedTracksSchema.safeParse(json);
+      if (!parsed.success) return null;
+      if (Array.isArray(parsed.data)) return { rows: parsed.data, nextUrl: null };
+      return { rows: parsed.data.collection, nextUrl: parsed.data.next_href ?? null };
+    },
+    errorPath: '/playlists/:id/tracks',
+    cap,
+    allow404: true,
   });
-  if (res.status === 401) throw new SoundCloudUnauthorizedError();
-  if (res.status === 404) return [];
-  if (!res.ok)
-    throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for /playlists/:id`);
-  const parsed = scPlaylistSchema.safeParse(await readJson(res, 'soundcloud'));
-  if (!parsed.success) return [];
-  return (parsed.data.tracks ?? [])
+
+  return rows
     .map((item) => toCandidate(item))
     .filter((row): row is TrackSearchResult => row !== null);
+}
+
+async function fetchSoundCloudPagedCollection(cfg: {
+  firstUrl: string;
+  accessToken: string;
+  fetchImpl: FetchLike;
+  parsePage: (json: unknown) => { rows: unknown[]; nextUrl: string | null } | null;
+  errorPath: string;
+  cap: number;
+  allow404?: boolean;
+}): Promise<unknown[]> {
+  const out: unknown[] = [];
+  let nextUrl: string | null = cfg.firstUrl;
+
+  while (nextUrl && out.length < cfg.cap) {
+    const res = await cfg.fetchImpl(nextUrl, {
+      headers: { Authorization: `OAuth ${cfg.accessToken}`, Accept: 'application/json' },
+    });
+    if (res.status === 401) throw new SoundCloudUnauthorizedError();
+    if (cfg.allow404 && res.status === 404) return [];
+    if (!res.ok)
+      throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for ${cfg.errorPath}`);
+
+    const page = cfg.parsePage(await readJson(res, 'soundcloud'));
+    if (!page) break;
+
+    for (const row of page.rows) {
+      out.push(row);
+      if (out.length >= cfg.cap) break;
+    }
+    if (page.rows.length === 0) break;
+    nextUrl = page.nextUrl;
+  }
+
+  return out;
+}
+
+function toPlaylistSummary(raw: unknown): ProviderPlaylistSummary | null {
+  const pl = scPlaylistSchema.safeParse(raw);
+  if (!pl.success) return null;
+  const item = providerPlaylistSummarySchema.safeParse({
+    provider: 'soundcloud',
+    playlistId: String(pl.data.id),
+    name: pl.data.title ?? 'Untitled playlist',
+    ownerName: pl.data.user?.username ?? null,
+    trackCount: pl.data.track_count ?? 0,
+    coverImageUrl: pl.data.artwork_url ?? null,
+  });
+  return item.success ? item.data : null;
 }
 
 /** Map a raw SoundCloud track to a contract candidate, or null if it can't be one. */
