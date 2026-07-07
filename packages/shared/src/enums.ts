@@ -26,6 +26,10 @@ export type Provider = z.infer<typeof providerSchema>;
  * - `catalogSearch`: public catalog search + import via the app-level token.
  * - `userConnect`: per-user OAuth account link (`POST /providers/:provider/connect`).
  * - `userLikes`: read the connected user's likes (spends their token).
+ * - `savedPlaylists`: list the connected user's saved playlists and drill into a
+ *   playlist's tracks (`GET /providers/:provider/playlists[/:playlistId/tracks]`,
+ *   spends their token). All three providers integrated; Spotify/SoundCloud refresh
+ *   their OAuth token on demand, Apple Music re-mints via MusicKit on reconnect.
  * - `playlistImport`: import a public playlist URL (`POST /classes/:id/import-playlist`).
  * - `playbackRequiresConnection`: does in-app *playback* need a live per-user
  *   connection? Spotify (Web Playback SDK, Premium) and Apple Music (MusicKit)

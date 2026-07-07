@@ -54,6 +54,7 @@ import {
   appleMusicClientConfigSchema,
   spotifyPlaybackTokenSchema,
   connectAppleMusicSchema,
+  providerPlaylistSummarySchema,
   teamSchema,
   teamWithRoleSchema,
   createTeamSchema,
@@ -104,6 +105,7 @@ const named: Record<string, z.ZodType> = {
   AppleMusicClientConfig: appleMusicClientConfigSchema,
   SpotifyPlaybackToken: spotifyPlaybackTokenSchema,
   ConnectAppleMusic: connectAppleMusicSchema,
+  ProviderPlaylistSummary: providerPlaylistSummarySchema,
   Team: teamSchema,
   TeamWithRole: teamWithRoleSchema,
   CreateTeam: createTeamSchema,
@@ -583,6 +585,46 @@ const doc = {
           '200': arrayResp('TrackSearchResult', 'Liked tracks'),
           '409': { description: 'Not connected / reconnect required' },
           '501': { description: 'Provider not yet integrated' },
+          '503': { description: 'Provider not configured' },
+        },
+      },
+    },
+    '/providers/{provider}/playlists': {
+      parameters: [
+        {
+          name: 'provider',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', enum: ['spotify', 'apple_music', 'soundcloud'] },
+        },
+      ],
+      get: {
+        summary: "List the caller's saved playlists (D21; spends their per-user OAuth token)",
+        responses: {
+          '200': arrayResp('ProviderPlaylistSummary', 'Saved playlists'),
+          '409': { description: 'Not connected / reconnect required' },
+          '501': { description: 'Provider saved playlists not integrated' },
+          '503': { description: 'Provider not configured' },
+        },
+      },
+    },
+    '/providers/{provider}/playlists/{playlistId}/tracks': {
+      parameters: [
+        {
+          name: 'provider',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', enum: ['spotify', 'apple_music', 'soundcloud'] },
+        },
+        { name: 'playlistId', in: 'path', required: true, schema: { type: 'string' } },
+      ],
+      get: {
+        summary:
+          'List tracks in one saved playlist for browse/drill-in (D21; spends their per-user OAuth token)',
+        responses: {
+          '200': arrayResp('TrackSearchResult', 'Playlist tracks'),
+          '409': { description: 'Not connected / reconnect required' },
+          '501': { description: 'Provider saved playlists not integrated' },
           '503': { description: 'Provider not configured' },
         },
       },
