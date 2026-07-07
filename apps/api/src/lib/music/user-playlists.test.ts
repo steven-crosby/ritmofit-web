@@ -132,6 +132,26 @@ describe('user playlist token helper', () => {
     });
   });
 
+  it('keeps the stored refresh token when the provider omits a rotated one', async () => {
+    // Spotify frequently returns no new refresh_token on refresh; the old one must
+    // survive so the next refresh still works (else the user is silently logged out).
+    vi.mocked(refreshSpotifyToken).mockResolvedValueOnce({
+      accessToken: 'access-fresh',
+      refreshToken: null,
+      expiresInSec: 3600,
+      scope: 'playlist-read-private',
+    });
+    const { db, updates } = makeDb(makeConnection({ expiresAt: Date.now() - 1 }));
+
+    await fetchUserPlaylists(db, env, 'user-1', 'spotify');
+
+    expect(updates[0]).toMatchObject({
+      accessTokenEncrypted: 'enc:access-fresh',
+      // Unchanged: the previously-stored (encrypted) refresh token is retained.
+      refreshTokenEncrypted: 'enc:refresh-old',
+    });
+  });
+
   it('reactively refreshes once when playlist tracks reject the stored token', async () => {
     const { db } = makeDb(makeConnection());
     vi.mocked(fetchSpotifyPlaylistTracks)
