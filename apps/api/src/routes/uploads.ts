@@ -2,6 +2,14 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../lib/types.js';
 import { HttpError } from '../lib/errors.js';
 
+// Intentionally PUBLIC — no `requireSession` by design. Class covers are served at
+// unguessable UUIDv4 capability URLs (`covers/<uuid>.<ext>`, minted in classes.ts);
+// the URL itself is the access token, matching how object storage / CDNs serve user
+// images. The guarded surface is the WRITE path (POST cover in classes.ts:
+// requireSession + requireAccess). A session gate here would protect nothing an
+// unguessable key doesn't already and would break <img>/prefetch loading. Revisit only
+// if class covers become private-per-viewer (not the current solo-first,
+// sharing-deferred model).
 export const uploadsRoutes = new Hono<AppEnv>();
 
 /** GET /uploads/covers/:filename — serve R2 images */
