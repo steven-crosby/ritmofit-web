@@ -69,6 +69,20 @@ not just an ordered list — it's an _energy curve_ with a beginning, build, pea
 Those words describe the arc, not persisted segment enums. We render the curve as a slim continuous area
 graph pinned along the top of the timeline.
 
+**Zone vocabulary (D17, canonical names).** The five intensity levels use spin-zone language in all
+instructor-facing surfaces. The stored enum values are unchanged (no migration):
+
+| Zone | Stored enum | Display label |
+|---|---|---|
+| Z0 | `none` | None |
+| Z1 | `easy` | Build |
+| Z2 | `mod` | Push |
+| Z3 | `hard` | Attack |
+| Z4 | `all_out` | All Out |
+
+Never surface the raw enum values (`easy`, `mod`, `hard`) in the UI; always show the zone label.
+The `Z0–Z4` number is optional but helps instructors refer to zones verbally.
+
 - **Height encodes zone** (`none`→`all_out`); color rides on top from the ribbon gradient (copper → ember
   → a plasma kiss at peaks). Read it in grayscale and the shape still reads — the height carries it.
 - It is the single most _shareable_ and most _Ritmo Studio_ view in the product. An instructor can see — and

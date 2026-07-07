@@ -131,12 +131,22 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 |---|---|---|
 | GET | `/providers/:provider/search` | Search a connected/supported provider catalog for import candidates. |
 | GET | `/providers/:provider/likes` | Fetch liked/saved tracks when the provider supports it. |
-| POST | `/providers/track-import` | Import a provider result into the caller's per-user track library with provider refs. |
+| GET | `/providers/:provider/playlists` | List the caller's saved playlists for a connected provider (Spotify OAuth, SoundCloud OAuth, Apple Music Music-User-Token). Returns `ProviderPlaylistSummary[]`. Shipped 2026-07-06. |
+| GET | `/providers/:provider/playlists/:playlistId/tracks` | Drill into one saved playlist and return its tracks as `TrackSearchResult[]`. Shipped 2026-07-06. |
+| POST | `/providers/track-import` | Import a provider result into the caller's per-user track library with provider refs. Also used for bulk playlist import (the web client calls this in concurrency-4 batches for "Import all N"). |
 | GET | `/providers/:provider/connect` | Start provider OAuth. |
 | GET | `/providers/:provider/callback` | Complete provider OAuth and store encrypted tokens. |
 | GET | `/providers/connections` | List the caller's connected providers. |
 | DELETE | `/providers/:provider/connection` | Disconnect a provider and enqueue required provider-metadata purge work. |
-| POST | `/classes/:id/import-playlist` | Import provider playlist items into a class as `class_tracks`. |
+| POST | `/classes/:id/import-playlist` | Import a Spotify playlist by URL directly into a class as `class_tracks` (Spotify only, gated by `providerCapabilities.playlistImport`). Separate from the saved-playlist browsing flow above. |
+
+## Provider playback tokens
+
+> **Spotify Web Playback SDK only.** Short-lived, memory-only tokens. Never persisted or logged.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/providers/spotify/playback-token` | Mint a short-lived Spotify access token scoped for the Web Playback SDK. The token is returned to the client for the SDK session only — never stored server-side after the response. Requires a connected Spotify account with playback-capable scopes. Shipped 2026-07-06. |
 
 ## Uploads
 
