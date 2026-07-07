@@ -3,11 +3,11 @@
 Each step follows the working agreement: **plan → confirm → code → summarize** (see
 `../CLAUDE.md` → "Working Agreement").
 
-> **Status: M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ · Web Launch Readiness ✅ — all done, merged to `main`, and
-> deployed** (API + web at `https://ritmofit.studio`). The active focus (2026-07-05) is solo creator
-> refinement and web-first product definition, alongside the **provider-authorized playback initiative**
-> ([`provider-playback-implementation.md`](./provider-playback-implementation.md)) where it improves
-> rehearsal and Live Mode.
+> **Status: M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ · Web Launch Readiness ✅ · Provider-authorized playback ✅ — all done, merged to `main`, and
+> deployed** (API + web at `https://ritmofit.studio`). The active focus (2026-07-07) is solo creator
+> refinement and web-first product definition. The **provider-authorized playback initiative is
+> complete** — all three adapters (SoundCloud Widget API, Apple Music MusicKit JS, Spotify Web Playback
+> SDK) are built and live-verified on prod as of 2026-07-06 (see `provider-playback-implementation.md`).
 > Teams, Sharing, Publish, and Explore shipped historically in M4 but are now hidden/dormant. For the
 > live Worker version and the current remote D1 migration
 > level (well past these milestones — `HISTORY.md` is the source of truth, not this block), see

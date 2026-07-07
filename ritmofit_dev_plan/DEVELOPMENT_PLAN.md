@@ -142,7 +142,7 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 > **Where current status lives** (to avoid drift, this map carries no dated status):
-> - **Milestone state** (M1–M4 and Web Launch Readiness done; provider-playback initiative active,
+> - **Milestone state** (M1–M4 and Web Launch Readiness done; provider-authorized playback complete;
 >   solo creator refinement active) → [`milestones.md`](./milestones.md).
 > - **Launch gate** (go/no-go checklist, verification plan, deferrals) →
 >   [`web-launch-readiness.md`](./web-launch-readiness.md).
@@ -155,7 +155,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 >
 > The headline: backend **M1–M4 complete and deployed**, the web launch gate is green, and the app is
 > live at `https://ritmofit.studio` (one Worker, single origin). The active track is solo creator
-> refinement plus provider-authorized playback for rehearsal and Live Mode. Community surfaces are
+> refinement. Provider-authorized playback is complete (all three adapters live as of 2026-07-06). Community surfaces are
 > preserved as dormant scaffolding, not active product.
 
 - **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
@@ -189,7 +189,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`api.md`](./api.md) | REST surface, run-payload, auth, error conventions |
 | [`authorization.md`](./authorization.md) | The ownership + sharing access model (app-level gate) |
 | [`music-providers.md`](./music-providers.md) | The three hard constraints; BPM/playback strategy |
-| [`provider-playback-implementation.md`](./provider-playback-implementation.md) | Planned Ritmo Studio player architecture: provider adapters, Live Mode preflight/auto-advance, mixed-provider classes |
+| [`provider-playback-implementation.md`](./provider-playback-implementation.md) | As-built player architecture: all three provider adapters (SoundCloud, Apple Music, Spotify) live-verified; Live Mode preflight/auto-advance and Builder preview wired |
 | [`editing-granularity-scoping.md`](./editing-granularity-scoping.md) | As-built record of trim / beat-snap / free-placement; the granularity boundary (D13) and open follow-ups |
 | [`milestones.md`](./milestones.md) | Milestone breakdown, M1 build order, acceptance criteria |
 | [`web-launch-readiness.md`](./web-launch-readiness.md) | Completed web launch gate, verification plan, and live deferrals |
@@ -205,9 +205,10 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 ## Backlog / Open Items
 
-Forward work lives in the solo creator loop, the **creator-workstation-shell slice (D21)** — discovery
-shelves, liked/saved cards, playlist detail, and the Cycle/Pilates/HIIT template narrowing — and the
-provider-authorized playback initiative. Historical
+Forward work lives in the solo creator loop. The **creator-workstation-shell slice (D21)** — discovery
+shelves, liked/saved cards, playlist browsing, Cycle/Pilates/HIIT template narrowing, and the unified
+Classes / Music / Live / Account navigation — **shipped 2026-07-07 (Worker `9d0a5710`)**. Provider-authorized
+playback for all three providers shipped 2026-07-06. Historical
 web launch deferrals remain in [`web-launch-readiness.md`](./web-launch-readiness.md); the old
 cross-surface parity record remains in [`web-ios-parity.md`](./web-ios-parity.md), but it is not the
 current planning queue.
@@ -215,6 +216,12 @@ current planning queue.
 **Open production issues:**
 
 - _None currently tracked here._
+
+**Known deferred post-launch features (not blocking, owner decision):**
+
+- **Google sign-in** — `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are unprovisioned; Google is excluded from the Login UI. See `deployment-runbook.md` for activation steps (owner deferral, 2026-06-28).
+- **Automatic BPM lookup (GetSongBPM)** — the adapter is built; `GETSONGBPM_API_KEY` is not provisioned in prod, so `POST /tracks/:id/bpm-lookup` returns `503`. Activate via `wrangler secret put GETSONGBPM_API_KEY`. (Owner deferral, 2026-06-28.)
+- **`sections[]` id in run-payload** — `class_sections` rows have a DB `id` but the run-payload omits it. Additive contract follow-up: decide and document whether to expose it (two-line code change + OpenAPI regen) or keep sections positional-only by design.
 
 Recently closed (kept as pointers so the trail isn't lost):
 
