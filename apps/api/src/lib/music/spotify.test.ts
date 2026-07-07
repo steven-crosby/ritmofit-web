@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   createSpotifyProvider,
+  fetchSpotifyPlaylistTracks,
   fetchSpotifySavedPlaylists,
   fetchSpotifySavedTracks,
   SpotifyUnauthorizedError,
@@ -303,6 +304,114 @@ describe('fetchSpotifySavedPlaylists', () => {
 
     await expect(
       fetchSpotifySavedPlaylists({ accessToken: 'stale', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toBeInstanceOf(SpotifyUnauthorizedError);
+  });
+});
+
+describe('fetchSpotifyPlaylistTracks', () => {
+  const tracksUrl = (id: string) => `${API_BASE}/playlists/${id}/tracks`;
+
+  it('maps the `{ track }`-wrapped playlist items with a per-user Bearer token', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${tracksUrl('pl-1')}?limit=50&offset=0`]: { items: [{ track: SP_TRACK }], total: 1 },
+    });
+
+    const results = await fetchSpotifyPlaylistTracks({
+      accessToken: 'user-tok',
+      playlistId: 'pl-1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+
+    expect(results).toEqual([
+      {
+        provider: 'spotify',
+        providerTrackId: '4cOdK2wGLETKBW3PvgPWqT',
+        providerUri: 'spotify:track:4cOdK2wGLETKBW3PvgPWqT',
+        title: 'Never Gonna Give You Up',
+        artist: 'Rick Astley, PWL',
+        albumArtUrl: 'https://i.scdn.co/image/big.jpg',
+        durationMs: 213000,
+      },
+    ]);
+    // Spends the user's playlist token directly — no client-credentials app token.
+    expect(calls[0]?.init?.headers?.Authorization).toBe('Bearer user-tok');
+  });
+
+  it('paginates the total-counted feed in 50-track pages', async () => {
+    const firstPage = Array.from({ length: 50 }, (_, index) => ({
+      track: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
+    }));
+    const { fetchImpl, calls } = fakeFetch({
+      [`${tracksUrl('pl-1')}?limit=50&offset=0`]: { items: firstPage, total: 51 },
+      [`${tracksUrl('pl-1')}?limit=50&offset=50`]: { items: [{ track: SP_TRACK }], total: 51 },
+    });
+
+    const results = await fetchSpotifyPlaylistTracks({
+      accessToken: 't',
+      playlistId: 'pl-1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+
+    expect(results).toHaveLength(51);
+    expect(calls.filter((c) => c.url.startsWith(tracksUrl('pl-1'))).map((c) => c.url)).toEqual([
+      `${tracksUrl('pl-1')}?limit=50&offset=0`,
+      `${tracksUrl('pl-1')}?limit=50&offset=50`,
+    ]);
+  });
+
+  it('stops at the maxTracks cap so detail reads stay bounded', async () => {
+    const fullPage = Array.from({ length: 50 }, (_, index) => ({
+      track: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
+    }));
+    const { fetchImpl, calls } = fakeFetch({
+      [`${tracksUrl('pl-1')}?limit=50&offset=0`]: { items: fullPage, total: 500 },
+    });
+
+    const results = await fetchSpotifyPlaylistTracks({
+      accessToken: 't',
+      playlistId: 'pl-1',
+      fetchImpl,
+      apiBase: API_BASE,
+      maxTracks: 10,
+    });
+
+    expect(results).toHaveLength(10);
+    // The cap halts pagination after the first page even though total claims 500.
+    expect(calls.filter((c) => c.url.startsWith(tracksUrl('pl-1')))).toHaveLength(1);
+  });
+
+  it('URL-encodes the playlist id in the request path', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${API_BASE}/playlists/pl%2F1/tracks?limit=50&offset=0`]: { items: [], total: 0 },
+    });
+
+    await fetchSpotifyPlaylistTracks({
+      accessToken: 't',
+      playlistId: 'pl/1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+
+    expect(calls[0]?.url).toContain('/playlists/pl%2F1/tracks');
+  });
+
+  it('throws SpotifyUnauthorizedError on a 401 so callers can refresh + retry', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({}),
+      text: async () => 'expired',
+    });
+
+    await expect(
+      fetchSpotifyPlaylistTracks({
+        accessToken: 'stale',
+        playlistId: 'pl-1',
+        fetchImpl,
+        apiBase: API_BASE,
+      }),
     ).rejects.toBeInstanceOf(SpotifyUnauthorizedError);
   });
 });

@@ -88,6 +88,14 @@ open route. Keep them out of `requireAccess` so its contract stays "class access
 > a team role never, by itself, grants access to a class — class access always derives from ownership +
 > shares, even when a class is shared *to* a team.
 
+### Intentionally public asset routes
+
+`GET /uploads/covers/:filename` is intentionally unauthenticated. Class covers are written
+behind `requireSession` + `requireAccess` (`POST` cover in `classes.ts`) but **served** at
+unguessable UUIDv4 capability URLs, so the read path needs no session — the key is the
+capability. This is a deliberate design choice, not a `requireSession` gap; revisit only if
+covers become private-per-viewer.
+
 ## The `GET /classes` union
 
 Listing visible classes is one D1 query:

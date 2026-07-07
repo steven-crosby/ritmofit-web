@@ -82,4 +82,50 @@ describe('clip-window guard (integration)', () => {
     const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe('VALIDATION_ERROR');
   });
+
+  it('rejects cue/move anchors outside a trimmed clip window and accepts one inside', async () => {
+    const user = await signUpUser();
+    const api = authed(user.cookie);
+    const { classTrackId } = await createClassWithTrack(user.cookie);
+
+    // Trim to [30_000, 120_000): anchors outside this window would be silently
+    // re-based (before start → 0) or land past the clipped end in the run-payload.
+    const trim = await api(`/api/v1/class-tracks/${classTrackId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipStartMs: 30_000, clipEndMs: 120_000 }),
+    });
+    expect(trim.status).toBe(200);
+
+    const postCue = (anchorMs: number) =>
+      api(`/api/v1/class-tracks/${classTrackId}/cues`, {
+        method: 'POST',
+        body: JSON.stringify({ anchorMs, text: 'Sprint' }),
+      });
+    const postMove = (anchorMs: number) =>
+      api(`/api/v1/class-tracks/${classTrackId}/moves`, {
+        method: 'POST',
+        body: JSON.stringify({ anchorMs, nameOverride: 'Jump' }),
+      });
+
+    // Before the clip start.
+    const cueBefore = await postCue(10_000);
+    expect(cueBefore.status).toBe(422);
+    expect(((await cueBefore.json()) as { error: { message: string } }).error.message).toMatch(
+      /before the clip start/,
+    );
+
+    // Past the clip end.
+    const cueAfter = await postCue(150_000);
+    expect(cueAfter.status).toBe(422);
+    expect(((await cueAfter.json()) as { error: { message: string } }).error.message).toMatch(
+      /past the clip end/,
+    );
+
+    const moveAfter = await postMove(150_000);
+    expect(moveAfter.status).toBe(422);
+
+    // Inside the window is accepted.
+    expect((await postCue(60_000)).status).toBe(201);
+    expect((await postMove(90_000)).status).toBe(201);
+  });
 });
