@@ -134,6 +134,93 @@ describe('LibraryRail tag search', () => {
   });
 });
 
+describe('LibraryRail organize (client search + sort)', () => {
+  const items: ClassListItem[] = [
+    makeItem({
+      id: '00000000-0000-4000-8000-0000000000b1',
+      title: 'Morning Cycle',
+      template: 'cycle',
+      totalDurationMs: 1_800_000,
+      trackCount: 8,
+      lastOpenedAt: 100,
+      updatedAt: 3,
+    }),
+    makeItem({
+      id: '00000000-0000-4000-8000-0000000000b2',
+      title: 'Core Pilates',
+      template: 'sculpt',
+      totalDurationMs: 3_000_000,
+      trackCount: 2,
+      lastOpenedAt: 300,
+      updatedAt: 1,
+    }),
+    makeItem({
+      id: '00000000-0000-4000-8000-0000000000b3',
+      title: 'Sprint HIIT',
+      template: 'hiit',
+      totalDurationMs: 600_000,
+      trackCount: 5,
+      lastOpenedAt: null,
+      updatedAt: 2,
+    }),
+  ];
+
+  const renderedTitles = () =>
+    Array.from(document.querySelectorAll('ul li .truncate')).map((n) => n.textContent);
+
+  it('hides the organize controls until there is a loaded list', () => {
+    renderRail({ items: [], status: 'ready' });
+    expect(screen.queryByLabelText('Search loaded classes by title or type')).toBeNull();
+  });
+
+  it('narrows the list by a case-insensitive title search and honestly counts it', () => {
+    renderRail({ items });
+    fireEvent.change(screen.getByLabelText('Search loaded classes by title or type'), {
+      target: { value: 'morning' },
+    });
+    expect(renderedTitles()).toEqual(['Morning Cycle']);
+    expect(screen.getByText('1 of 3 loaded')).toBeTruthy();
+  });
+
+  it('finds a class by its Pilates label even though it is stored as sculpt', () => {
+    renderRail({ items });
+    fireEvent.change(screen.getByLabelText('Search loaded classes by title or type'), {
+      target: { value: 'pilates' },
+    });
+    expect(renderedTitles()).toEqual(['Core Pilates']);
+  });
+
+  it('offers a recoverable no-match state distinct from an empty library', () => {
+    renderRail({ items });
+    fireEvent.change(screen.getByLabelText('Search loaded classes by title or type'), {
+      target: { value: 'zumba' },
+    });
+    expect(screen.getByText(/No loaded classes match/i)).toBeTruthy();
+    // Recover without a reload.
+    fireEvent.click(screen.getByRole('button', { name: 'Show all classes' }));
+    // Back to the default recently-updated order (updatedAt desc: 3, 2, 1).
+    expect(renderedTitles()).toEqual(['Morning Cycle', 'Sprint HIIT', 'Core Pilates']);
+  });
+
+  it('re-sorts the loaded set by the chosen key without refetching', () => {
+    renderRail({ items });
+    const sort = screen.getByLabelText('Sort') as HTMLSelectElement;
+
+    fireEvent.change(sort, { target: { value: 'title' } });
+    expect(renderedTitles()).toEqual(['Core Pilates', 'Morning Cycle', 'Sprint HIIT']);
+
+    fireEvent.change(sort, { target: { value: 'longest' } });
+    expect(renderedTitles()).toEqual(['Core Pilates', 'Morning Cycle', 'Sprint HIIT']);
+
+    fireEvent.change(sort, { target: { value: 'most_tracks' } });
+    expect(renderedTitles()).toEqual(['Morning Cycle', 'Sprint HIIT', 'Core Pilates']);
+
+    // Never-opened classes sink to the bottom under recently-opened.
+    fireEvent.change(sort, { target: { value: 'recently_opened' } });
+    expect(renderedTitles()).toEqual(['Core Pilates', 'Morning Cycle', 'Sprint HIIT']);
+  });
+});
+
 describe('LibraryRail load failure', () => {
   it('announces a failed load and offers a working retry', () => {
     const onRetry = vi.fn();
