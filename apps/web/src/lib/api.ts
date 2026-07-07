@@ -19,6 +19,7 @@ import type {
   ResolveProviderResult,
   Provider,
   MusicConnectionView,
+  ProviderPlaylistSummary,
   ConnectProviderResponse,
   AppleMusicClientConfig,
   SpotifyPlaybackToken,
@@ -187,6 +188,14 @@ export const searchProvider = (provider: Provider, q: string) =>
 /** The caller's liked tracks at a provider — spends their stored OAuth token. */
 export const listLikes = (provider: Provider) =>
   api<TrackSearchResult[]>(`/providers/${provider}/likes`);
+/** The caller's saved playlists at a provider (where integrated). */
+export const listPlaylists = (provider: Provider) =>
+  api<ProviderPlaylistSummary[]>(`/providers/${provider}/playlists`);
+/** Tracks inside one saved playlist for playlist drill-in preview/import. */
+export const listPlaylistTracks = (provider: Provider, playlistId: string) =>
+  api<TrackSearchResult[]>(
+    `/providers/${provider}/playlists/${encodeURIComponent(playlistId)}/tracks`,
+  );
 /** Import a candidate by provider reference → the owned track (created or matched). */
 export const importTrack = (provider: Provider, providerTrackId: string) =>
   api<Track>('/providers/track-import', {

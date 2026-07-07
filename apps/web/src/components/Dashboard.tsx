@@ -9,12 +9,16 @@ import {
   type FormEvent,
 } from 'react';
 import {
+  providerCapabilities,
   type Class,
   type ClassWithAccess,
   type ClassListItem,
   type ClassTemplate,
   type ClassTrack,
   type Intensity,
+  type MusicConnectionView,
+  type Provider,
+  type ProviderPlaylistSummary,
   type RunPayload,
   type RunPayloadTrackEntry,
 } from '@ritmofit/shared';
@@ -38,6 +42,10 @@ import {
   removeClassTag,
   uploadClassCover,
   getClass,
+  listConnections,
+  listPlaylists,
+  listPlaylistTracks,
+  importTrack,
 } from '../lib/api.js';
 import { moveItem } from '../lib/reorder.js';
 import {
@@ -57,7 +65,8 @@ import { classReadiness } from '../lib/readiness.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
 import { libraryView, type ListStatus } from '../lib/library-state.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
-import { PROVIDER_ORDER, providerLabel } from '../lib/providers.js';
+import { PROVIDER_ORDER, providerConnectionState, providerLabel } from '../lib/providers.js';
+import { Dialog } from './Dialog.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { TimelineStrip } from './TimelineStrip.js';
@@ -135,6 +144,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [connectionsOpen, setConnectionsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [songsByMoveOpen, setSongsByMoveOpen] = useState(false);
+  const [playlistBrowse, setPlaylistBrowse] = useState<{
+    provider: Provider;
+    playlists: ProviderPlaylistSummary[];
+  } | null>(null);
   const [onboardingVideoOpen, setOnboardingVideoOpen] = useState(false);
   const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
     null,
@@ -345,6 +358,42 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     [refreshClasses],
   );
 
+  /**
+   * Create a new class from a saved playlist: create → import all tracks →
+   * open in builder. Best-effort per track so a single failing song doesn't
+   * abort the whole import.
+   */
+  const handleCreateClassFromPlaylist = useCallback(
+    async (
+      provider: Provider,
+      playlistId: string,
+      playlistName: string,
+      template: ClassTemplate,
+    ) => {
+      const cls = await createClass({ title: playlistName, template });
+      await applyTagFilter(null);
+      const tracks = await listPlaylistTracks(provider, playlistId);
+      const CONCURRENCY = 4;
+      const pending = [...tracks];
+      while (pending.length > 0) {
+        const batch = pending.splice(0, CONCURRENCY);
+        await Promise.all(
+          batch.map(async (candidate) => {
+            try {
+              const track = await importTrack(candidate.provider, candidate.providerTrackId);
+              await addTrack(cls.id, { trackId: track.id, intensity: 'mod' });
+            } catch {
+              // Best-effort: a single failing track doesn't abort the import.
+            }
+          }),
+        );
+      }
+      setPlaylistBrowse(null);
+      await openClass({ ...cls, accessLevel: 'owner' });
+    },
+    [applyTagFilter, openClass],
+  );
+
   if (live)
     return (
       <ErrorBoundary resetLabel="Exit live mode" onReset={() => setLive(null)}>
@@ -430,6 +479,14 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               markOnboardingVideoDismissed();
               setOnboardingVideoOpen(false);
             }}
+          />
+        )}
+        {playlistBrowse && (
+          <PlaylistBrowserDialog
+            provider={playlistBrowse.provider}
+            playlists={playlistBrowse.playlists}
+            onClose={() => setPlaylistBrowse(null)}
+            onCreateClass={handleCreateClassFromPlaylist}
           />
         )}
         {cardPreview && (
@@ -521,6 +578,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               activeTag={activeTag}
               listReady={listStatus === 'ready'}
               onOpenConnections={() => setConnectionsOpen(true)}
+              onBrowsePlaylists={(provider, playlists) =>
+                setPlaylistBrowse({ provider, playlists })
+              }
             />
           )}
         </div>
@@ -946,12 +1006,67 @@ function WorkstationRestingState({
   activeTag,
   listReady,
   onOpenConnections,
+  onBrowsePlaylists,
 }: {
   classes: ClassListItem[];
   activeTag: string | null;
   listReady: boolean;
   onOpenConnections: () => void;
+  onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
 }) {
+  const [connections, setConnections] = useState<MusicConnectionView[]>([]);
+  const [playlists, setPlaylists] = useState<Partial<Record<Provider, ProviderPlaylistSummary[]>>>(
+    {},
+  );
+  const [playlistsLoading, setPlaylistsLoading] = useState<Partial<Record<Provider, boolean>>>({});
+  const [playlistsError, setPlaylistsError] = useState<Partial<Record<Provider, string>>>({});
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const rows = await listConnections();
+        if (!alive || !Array.isArray(rows)) return;
+        setConnections(rows);
+      } catch {
+        if (alive) setConnections([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    for (const provider of PROVIDER_ORDER) {
+      if (!providerCapabilities[provider].savedPlaylists) continue;
+      const state = providerConnectionState(
+        provider,
+        connections.find((row) => row.provider === provider),
+        Date.now(),
+      );
+      if (state !== 'connected') continue;
+      setPlaylistsLoading((prev) => ({ ...prev, [provider]: true }));
+      void (async () => {
+        try {
+          const rows = await listPlaylists(provider);
+          if (!alive) return;
+          setPlaylists((prev) => ({ ...prev, [provider]: Array.isArray(rows) ? rows : [] }));
+          setPlaylistsError((prev) => ({ ...prev, [provider]: undefined }));
+        } catch (e) {
+          if (!alive) return;
+          setPlaylistsError((prev) => ({ ...prev, [provider]: (e as Error).message }));
+        } finally {
+          if (alive) setPlaylistsLoading((prev) => ({ ...prev, [provider]: false }));
+        }
+      })();
+    }
+    return () => {
+      alive = false;
+    };
+  }, [connections]);
+
   const classCount = classes.length;
   const trackCount = classes.reduce((sum, cls) => sum + cls.trackCount, 0);
   const hasClasses = classCount > 0;
@@ -1007,7 +1122,19 @@ function WorkstationRestingState({
           </div>
           <div className="mt-4 grid gap-2">
             {PROVIDER_ORDER.map((provider) => (
-              <ProviderShelfCard key={provider} provider={provider} />
+              <ProviderShelfCard
+                key={provider}
+                provider={provider}
+                connection={connections.find((row) => row.provider === provider)}
+                playlists={playlists[provider] ?? null}
+                loadingPlaylists={playlistsLoading[provider] ?? false}
+                playlistError={playlistsError[provider] ?? null}
+                onBrowse={
+                  playlists[provider]?.length
+                    ? () => onBrowsePlaylists(provider, playlists[provider]!)
+                    : undefined
+                }
+              />
             ))}
           </div>
         </div>
@@ -1025,12 +1152,44 @@ function ReadinessTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ProviderShelfCard({ provider }: { provider: (typeof PROVIDER_ORDER)[number] }) {
+function ProviderShelfCard({
+  provider,
+  connection,
+  playlists,
+  loadingPlaylists,
+  playlistError,
+  onBrowse,
+}: {
+  provider: (typeof PROVIDER_ORDER)[number];
+  connection: MusicConnectionView | undefined;
+  playlists: ProviderPlaylistSummary[] | null;
+  loadingPlaylists: boolean;
+  playlistError: string | null;
+  onBrowse?: () => void;
+}) {
   const label = providerLabel(provider);
-  const playlistNote =
-    provider === 'spotify'
-      ? 'Playlist URL import is available after a class opens.'
-      : 'Playlist browsing waits for the provider read surface.';
+  const canBrowseSavedPlaylists = providerCapabilities[provider].savedPlaylists;
+  const connectionState = providerConnectionState(provider, connection, Date.now());
+
+  let playlistSummary = 'Saved-playlist browsing is coming soon for this provider.';
+  if (canBrowseSavedPlaylists && connectionState === 'connected') {
+    if (loadingPlaylists) {
+      playlistSummary = 'Loading your saved playlists…';
+    } else if (playlistError) {
+      playlistSummary = `Couldn’t load playlists right now: ${playlistError}`;
+    } else if (playlists && playlists.length > 0) {
+      const names = playlists
+        .slice(0, 2)
+        .map((row) => row.name)
+        .join(' • ');
+      const extra = playlists.length > 2 ? ` (+${playlists.length - 2} more)` : '';
+      playlistSummary = `${playlists.length} saved playlists: ${names}${extra}`;
+    } else {
+      playlistSummary = 'No saved playlists yet on this account.';
+    }
+  } else if (canBrowseSavedPlaylists && connectionState !== 'connected') {
+    playlistSummary = 'Connect this provider to browse saved playlists.';
+  }
 
   return (
     <article className="rounded-card border border-interactive/10 bg-bg-base p-3">
@@ -1049,11 +1208,165 @@ function ProviderShelfCard({ provider }: { provider: (typeof PROVIDER_ORDER)[num
         <span className="rounded-control border border-interactive/10 bg-bg-raised px-3 py-2 font-ui text-xs text-text-secondary">
           Liked / saved tracks
         </span>
-        <span className="rounded-control border border-interactive/10 bg-bg-raised px-3 py-2 font-ui text-xs text-text-tertiary">
-          {playlistNote}
-        </span>
+        {onBrowse ? (
+          <button
+            type="button"
+            onClick={onBrowse}
+            className="rounded-control border border-interactive/25 bg-bg-raised px-3 py-2 text-left font-ui text-xs text-interactive hover:bg-interactive/10"
+          >
+            {playlistSummary}
+          </button>
+        ) : (
+          <span className="rounded-control border border-interactive/10 bg-bg-raised px-3 py-2 font-ui text-xs text-text-tertiary">
+            {playlistSummary}
+          </span>
+        )}
       </div>
     </article>
+  );
+}
+
+/**
+ * Browse a provider's saved playlists and create a new class from any one of
+ * them. The user picks a discipline template first (shared across all rows so
+ * they don't have to choose per playlist); then each row has a "Create class"
+ * button that imports the whole playlist and opens it in the builder.
+ */
+function PlaylistBrowserDialog({
+  provider,
+  playlists,
+  onClose,
+  onCreateClass,
+}: {
+  provider: Provider;
+  playlists: ProviderPlaylistSummary[];
+  onClose: () => void;
+  onCreateClass: (
+    provider: Provider,
+    playlistId: string,
+    playlistName: string,
+    template: ClassTemplate,
+  ) => Promise<void>;
+}) {
+  const [template, setTemplate] = useState<ClassTemplate>('cycle');
+  const [creatingId, setCreatingId] = useState<string | null>(null);
+  const [rowError, setRowError] = useState<string | null>(null);
+  const label = providerLabel(provider);
+
+  const handleCreate = async (playlist: ProviderPlaylistSummary) => {
+    setCreatingId(playlist.playlistId);
+    setRowError(null);
+    try {
+      await onCreateClass(provider, playlist.playlistId, playlist.name, template);
+    } catch (e) {
+      setRowError((e as Error).message);
+      setCreatingId(null);
+    }
+  };
+
+  return (
+    <Dialog
+      label={`Browse ${label} playlists`}
+      onClose={onClose}
+      panelClassName="w-full max-w-lg rounded-card bg-bg-raised p-6 shadow-overlay"
+    >
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+            Music sources
+          </p>
+          <h2 className="mt-1 font-display text-xl font-semibold text-text-primary">
+            {label} playlists
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close playlist browser"
+          className="shrink-0 rounded-pill border border-interactive/30 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+        >
+          Close
+        </button>
+      </div>
+
+      {/* Template picker — applies to every "Create class" action in this dialog. */}
+      <div className="mb-4">
+        <p className="mb-2 font-ui text-xs font-semibold text-text-secondary">New class template</p>
+        <div role="group" aria-label="Class template" className="flex gap-1.5">
+          {CREATE_TEMPLATE_OPTIONS.map(({ value, label: tLabel }) => {
+            if (!value) return null;
+            const selected = template === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setTemplate(value)}
+                className={`rounded-pill border px-3 py-1 font-ui text-xs ${
+                  selected
+                    ? 'border-interactive bg-interactive/15 text-text-primary'
+                    : 'border-interactive/30 text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {tLabel}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {rowError && (
+        <p role="alert" className="mb-3 font-ui text-sm text-state-danger">
+          {rowError}
+        </p>
+      )}
+
+      <ul className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto">
+        {playlists.map((playlist) => {
+          const busy = creatingId === playlist.playlistId;
+          return (
+            <li
+              key={playlist.playlistId}
+              className="flex items-center gap-3 rounded-card border border-interactive/10 bg-bg-base p-3"
+            >
+              {playlist.coverImageUrl ? (
+                <img
+                  src={playlist.coverImageUrl}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-11 w-11 shrink-0 rounded-card object-cover"
+                />
+              ) : (
+                <span
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised font-ui text-lg text-text-tertiary"
+                  aria-hidden
+                >
+                  ▤
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-ui text-sm font-semibold text-text-primary">
+                  {playlist.name}
+                </p>
+                <p className="truncate font-ui text-xs text-text-secondary">
+                  {playlist.ownerName ?? label} · {playlist.trackCount} tracks
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleCreate(playlist)}
+                disabled={!!creatingId}
+                aria-label={`Create class from ${playlist.name}`}
+                className="shrink-0 rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+              >
+                {busy ? 'Creating…' : 'Create class'}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </Dialog>
   );
 }
 

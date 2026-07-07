@@ -13,7 +13,12 @@
  * Network is injectable (`fetchImpl`) so the mapping is unit-tested with no live
  * calls; re-verify endpoints/shapes against live docs when a real token lands.
  */
-import { trackSearchResultSchema, type TrackSearchResult } from '@ritmofit/shared';
+import {
+  providerPlaylistSummarySchema,
+  trackSearchResultSchema,
+  type ProviderPlaylistSummary,
+  type TrackSearchResult,
+} from '@ritmofit/shared';
 import { z } from 'zod';
 import type { FetchLike, MusicProvider } from './provider.js';
 import { readJson, ProviderError } from './errors.js';
@@ -163,6 +168,22 @@ const amLibraryPageSchema = z.object({
   next: z.string().optional(),
 });
 
+const amLibraryPlaylistSchema = z.object({
+  id: z.string(),
+  attributes: z
+    .object({
+      name: z.string().optional(),
+      curatorName: z.string().optional(),
+      trackCount: z.number().int().nonnegative().optional(),
+      artwork: z
+        .object({ url: z.string(), width: z.number().optional(), height: z.number().optional() })
+        .optional(),
+    })
+    .optional(),
+});
+
+const LIBRARY_PLAYLIST_PAGE_LIMIT = 100;
+
 /**
  * Thrown when Apple Music rejects the **Music-User-Token** with 401/403 — the
  * signal `apps/api` uses to ask the user to reconnect. Unlike OAuth there is no
@@ -245,5 +266,109 @@ export async function fetchAppleMusicLibrarySongs(cfg: {
     if (page.length === 0) break;
     path = parsed.data.next ?? null;
   }
+  return out;
+}
+
+/** Fetch the connected user's Apple Music library playlists. */
+export async function fetchAppleMusicLibraryPlaylists(cfg: {
+  developerToken: string;
+  musicUserToken: string;
+  fetchImpl: FetchLike;
+  apiBase?: string;
+  maxPlaylists?: number;
+}): Promise<ProviderPlaylistSummary[]> {
+  const base = cfg.apiBase ?? DEFAULT_API_BASE;
+  const cap = cfg.maxPlaylists ?? 100;
+  const out: ProviderPlaylistSummary[] = [];
+  const origin = base.replace(/\/v1$/, '');
+  let path: string | null = `/v1/me/library/playlists?limit=${LIBRARY_PLAYLIST_PAGE_LIMIT}`;
+
+  while (path && out.length < cap) {
+    const res = await cfg.fetchImpl(`${origin}${path}`, {
+      headers: {
+        Authorization: `Bearer ${cfg.developerToken}`,
+        'Music-User-Token': cfg.musicUserToken,
+      },
+    });
+    if (res.status === 401 || res.status === 403) throw new AppleMusicUnauthorizedError();
+    if (!res.ok) {
+      throw new ProviderError(
+        'apple_music',
+        `Apple Music API ${res.status} for /me/library/playlists`,
+      );
+    }
+
+    const parsed = amLibraryPageSchema.safeParse(await readJson(res, 'apple_music'));
+    if (!parsed.success) break;
+    const page = parsed.data.data ?? [];
+    for (const raw of page) {
+      const playlist = amLibraryPlaylistSchema.safeParse(raw);
+      if (!playlist.success) continue;
+      const a = playlist.data.attributes;
+      const item = providerPlaylistSummarySchema.safeParse({
+        provider: 'apple_music',
+        playlistId: playlist.data.id,
+        name: a?.name ?? 'Untitled playlist',
+        ownerName: a?.curatorName ?? null,
+        trackCount: a?.trackCount ?? 0,
+        coverImageUrl: a?.artwork ? renderArtwork(a.artwork) : null,
+      });
+      if (item.success) out.push(item.data);
+      if (out.length >= cap) break;
+    }
+
+    if (page.length === 0) break;
+    path = parsed.data.next ?? null;
+  }
+
+  return out;
+}
+
+/** Fetch tracks for one Apple Music library playlist id. */
+export async function fetchAppleMusicLibraryPlaylistTracks(cfg: {
+  developerToken: string;
+  musicUserToken: string;
+  playlistId: string;
+  fetchImpl: FetchLike;
+  apiBase?: string;
+  maxTracks?: number;
+}): Promise<TrackSearchResult[]> {
+  const base = cfg.apiBase ?? DEFAULT_API_BASE;
+  const cap = cfg.maxTracks ?? 200;
+  const out: TrackSearchResult[] = [];
+  const origin = base.replace(/\/v1$/, '');
+  const encodedId = encodeURIComponent(cfg.playlistId);
+  let path: string | null =
+    `/v1/me/library/playlists/${encodedId}/tracks?limit=${LIBRARY_PAGE_LIMIT}`;
+
+  while (path && out.length < cap) {
+    const res = await cfg.fetchImpl(`${origin}${path}`, {
+      headers: {
+        Authorization: `Bearer ${cfg.developerToken}`,
+        'Music-User-Token': cfg.musicUserToken,
+      },
+    });
+    if (res.status === 401 || res.status === 403) throw new AppleMusicUnauthorizedError();
+    if (res.status === 404) return [];
+    if (!res.ok) {
+      throw new ProviderError(
+        'apple_music',
+        `Apple Music API ${res.status} for /me/library/playlists/:id/tracks`,
+      );
+    }
+
+    const parsed = amLibraryPageSchema.safeParse(await readJson(res, 'apple_music'));
+    if (!parsed.success) break;
+    const page = parsed.data.data ?? [];
+    for (const raw of page) {
+      const candidate = toLibraryCandidate(raw);
+      if (candidate) out.push(candidate);
+      if (out.length >= cap) break;
+    }
+
+    if (page.length === 0) break;
+    path = parsed.data.next ?? null;
+  }
+
   return out;
 }

@@ -15,6 +15,7 @@ import { Hono } from 'hono';
 import {
   providerSchema,
   importProviderTrackSchema,
+  type ProviderPlaylistSummary,
   type TrackSearchResult,
 } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
@@ -24,6 +25,7 @@ import { createDb } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { getMusicProvider } from '../lib/music/registry.js';
 import { fetchUserLikes } from '../lib/music/user-likes.js';
+import { fetchUserPlaylistTracks, fetchUserPlaylists } from '../lib/music/user-playlists.js';
 import { importTrackFromCandidate } from '../lib/track-import.js';
 
 export const providerRoutes = new Hono<AppEnv>();
@@ -55,6 +57,12 @@ const likesLimiter = rateLimit({
   max: 20,
   key: (c) => c.get('userId'),
 });
+const playlistsLimiter = rateLimit({
+  keyPrefix: 'provider-playlists',
+  windowMs: 60_000,
+  max: 20,
+  key: (c) => c.get('userId'),
+});
 const importLimiter = rateLimit({
   keyPrefix: 'provider-track-import',
   windowMs: 60_000,
@@ -78,6 +86,38 @@ providerRoutes.get('/providers/:provider/likes', likesLimiter, async (c) => {
   const results: TrackSearchResult[] = await fetchUserLikes(db, c.env, c.get('userId'), provider);
   return c.json(results);
 });
+
+/** GET /providers/:provider/playlists — caller's saved playlists (if integrated). */
+providerRoutes.get('/providers/:provider/playlists', playlistsLimiter, async (c) => {
+  const provider = parseProvider(c.req.param('provider'));
+  const db = createDb(c.env);
+  const results: ProviderPlaylistSummary[] = await fetchUserPlaylists(
+    db,
+    c.env,
+    c.get('userId'),
+    provider,
+  );
+  return c.json(results);
+});
+
+/** GET /providers/:provider/playlists/:playlistId/tracks — drill into one playlist. */
+providerRoutes.get(
+  '/providers/:provider/playlists/:playlistId/tracks',
+  playlistsLimiter,
+  async (c) => {
+    const provider = parseProvider(c.req.param('provider'));
+    const playlistId = c.req.param('playlistId');
+    const db = createDb(c.env);
+    const results: TrackSearchResult[] = await fetchUserPlaylistTracks(
+      db,
+      c.env,
+      c.get('userId'),
+      provider,
+      playlistId,
+    );
+    return c.json(results);
+  },
+);
 
 /**
  * POST /providers/track-import — import a candidate by provider reference. 201 when

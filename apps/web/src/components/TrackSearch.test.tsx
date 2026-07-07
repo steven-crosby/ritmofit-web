@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { beforeEach, describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import type { MusicConnectionView, TrackSearchResult } from '@ritmofit/shared';
 import { TrackSearch } from './TrackSearch.js';
@@ -81,19 +81,19 @@ describe('TrackSearch stale-result guard', () => {
 });
 
 describe('TrackSearch playlist-import provider gating', () => {
-  it('hides "Import Playlist" for the default provider (SoundCloud) and shows it only for Spotify', () => {
+  it('hides "Import Playlist URL" for the default provider (SoundCloud) and shows it only for Spotify', () => {
     render(<TrackSearch classId="c1" onAdded={() => {}} />);
 
     // Default provider is SoundCloud, which cannot import playlists (501).
-    expect(screen.queryByRole('button', { name: 'Import Playlist' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Import Playlist URL' })).toBeNull();
 
     // Spotify is the only provider with a wired playlist-import path.
     fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
-    expect(screen.getByRole('button', { name: 'Import Playlist' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Import Playlist URL' })).toBeTruthy();
 
     // Apple Music has no playlist-import path either.
     fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
-    expect(screen.queryByRole('button', { name: 'Import Playlist' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Import Playlist URL' })).toBeNull();
   });
 
   it('falls back to search when leaving playlist mode for a provider that cannot import', async () => {
@@ -101,7 +101,7 @@ describe('TrackSearch playlist-import provider gating', () => {
 
     // Enter playlist mode under Spotify.
     fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
     expect(screen.getByLabelText('Playlist URL')).toBeTruthy();
 
     // Switching to SoundCloud (no playlist import) must drop back to search so we
@@ -109,6 +109,111 @@ describe('TrackSearch playlist-import provider gating', () => {
     fireEvent.click(screen.getByRole('button', { name: 'SoundCloud' }));
     await waitFor(() => expect(screen.queryByLabelText('Playlist URL')).toBeNull());
     expect(screen.getByRole('searchbox')).toBeTruthy();
+  });
+});
+
+const PLAYLIST_TRACKS: TrackSearchResult[] = [
+  {
+    provider: 'spotify',
+    providerTrackId: 'track-1',
+    providerUri: null,
+    title: 'Song One',
+    artist: 'Artist One',
+    albumArtUrl: null,
+    durationMs: 120000,
+  },
+  {
+    provider: 'spotify',
+    providerTrackId: 'track-2',
+    providerUri: null,
+    title: 'Song Two',
+    artist: 'Artist Two',
+    albumArtUrl: null,
+    durationMs: 180000,
+  },
+];
+
+describe('TrackSearch saved-playlists drill-in', () => {
+  beforeEach(() => {
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-1',
+        name: 'Warmup Ride',
+        ownerName: 'Coach',
+        trackCount: 2,
+        coverImageUrl: null,
+      },
+    ]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue(PLAYLIST_TRACKS);
+  });
+
+  async function openPlaylistDrillIn() {
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+    expect(await screen.findByText('Warmup Ride')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    expect(await screen.findByText('Song One')).toBeTruthy();
+  }
+
+  it('opens a saved playlist and loads its track preview list', async () => {
+    await openPlaylistDrillIn();
+    expect(api.listPlaylistTracks).toHaveBeenCalledWith('spotify', 'pl-1');
+  });
+
+  it('shows "Import all N" button once tracks are loaded', async () => {
+    await openPlaylistDrillIn();
+    expect(
+      screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }),
+    ).toBeTruthy();
+  });
+
+  it('import-all calls importTrack + addTrack for every track and calls onAdded', async () => {
+    const onAdded = vi.fn();
+    render(<TrackSearch classId="c1" onAdded={onAdded} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+    expect(await screen.findByText('Warmup Ride')).toBeTruthy();
+    vi.mocked(api.importTrack).mockResolvedValue({
+      id: 't-id',
+      title: '',
+      artist: '',
+      albumArtUrl: null,
+      durationMs: null,
+      displayBpm: null,
+      ownerId: 'me',
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    vi.mocked(api.addTrack).mockResolvedValue({
+      id: 'ct-id',
+      classId: 'c1',
+      trackId: 't-id',
+      position: 0,
+      intensity: 'mod',
+      displayBpmOverride: null,
+      durationMsOverride: null,
+      startOffsetMs: 0,
+      notes: null,
+      createdAt: 1,
+      updatedAt: 1,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    expect(await screen.findByText('Song One')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }));
+    await waitFor(() => expect(api.importTrack).toHaveBeenCalledTimes(2));
+    expect(api.addTrack).toHaveBeenCalledTimes(2);
+    expect(onAdded).toHaveBeenCalledTimes(1);
+  });
+
+  it('navigating back clears the drill-in track list', async () => {
+    await openPlaylistDrillIn();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to playlists' }));
+    await waitFor(() => expect(screen.queryByText('Song One')).toBeNull());
+    expect(screen.getByText('Warmup Ride')).toBeTruthy();
   });
 });
 

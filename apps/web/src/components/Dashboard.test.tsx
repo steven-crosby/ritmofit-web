@@ -63,6 +63,19 @@ function page(items: ClassListItem[]): ClassListPage {
   return { items, nextCursor: null };
 }
 
+function spotifyConnection(scope = 'user-library-read streaming') {
+  return {
+    id: 'conn-spotify',
+    userId: 'me',
+    provider: 'spotify',
+    providerUserId: 'spotify-user',
+    scope,
+    expiresAt: null,
+    createdAt: 1,
+    updatedAt: 1,
+  } as const;
+}
+
 function renderDashboard() {
   return render(<Dashboard userId="me" userName="Tester" />);
 }
@@ -167,6 +180,44 @@ describe('Dashboard class library states', () => {
     );
 
     expect(await screen.findByRole('dialog', { name: 'Music connections' })).toBeTruthy();
+  });
+
+  it('shows connected Spotify saved playlists in the resting shelf and opens the browser dialog', async () => {
+    const playlist = {
+      provider: 'spotify' as const,
+      playlistId: 'pl-1',
+      name: 'Warmup Ride',
+      ownerName: 'Steven',
+      trackCount: 24,
+      coverImageUrl: 'https://i.scdn.co/image/pl-1.jpg',
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      playlist,
+      {
+        provider: 'spotify',
+        playlistId: 'pl-2',
+        name: 'Cooldown Flow',
+        ownerName: 'Steven',
+        trackCount: 18,
+        coverImageUrl: null,
+      },
+    ]);
+
+    renderDashboard();
+
+    // Shelf summary text appears once playlists load.
+    const browseBtn = await screen.findByRole('button', {
+      name: /2 saved playlists: Warmup Ride/i,
+    });
+    expect(browseBtn).toBeTruthy();
+
+    // Clicking opens the browse dialog.
+    fireEvent.click(browseBtn);
+    expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
+    expect(screen.getByText('Warmup Ride')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Create class from Warmup Ride' })).toBeTruthy();
   });
 
   it('omits the redundant ownership chip on library cards (solo-first library is owner-only)', async () => {

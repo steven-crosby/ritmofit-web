@@ -81,3 +81,14 @@ export const spotifyPlaybackTokenSchema = z.object({
   expiresInMs: z.number().int().nonnegative(),
 });
 export type SpotifyPlaybackToken = z.infer<typeof spotifyPlaybackTokenSchema>;
+
+/** One saved-playlist card in a provider's library browse surface. */
+export const providerPlaylistSummarySchema = z.object({
+  provider: providerSchema,
+  playlistId: z.string().min(1),
+  name: z.string().min(1),
+  ownerName: z.string().nullable(),
+  trackCount: z.number().int().nonnegative(),
+  coverImageUrl: z.string().url().nullable(),
+});
+export type ProviderPlaylistSummary = z.infer<typeof providerPlaylistSummarySchema>;

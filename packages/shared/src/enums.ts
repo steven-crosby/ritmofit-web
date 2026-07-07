@@ -45,6 +45,7 @@ export interface ProviderCapabilities {
   catalogSearch: boolean;
   userConnect: boolean;
   userLikes: boolean;
+  savedPlaylists: boolean;
   playlistImport: boolean;
   playbackRequiresConnection: boolean;
 }
@@ -54,6 +55,7 @@ export const providerCapabilities: Record<Provider, ProviderCapabilities> = {
     catalogSearch: true,
     userConnect: true,
     userLikes: true,
+    savedPlaylists: true,
     playlistImport: false,
     playbackRequiresConnection: false,
   },
@@ -61,6 +63,7 @@ export const providerCapabilities: Record<Provider, ProviderCapabilities> = {
     catalogSearch: true,
     userConnect: true,
     userLikes: true,
+    savedPlaylists: true,
     playlistImport: true,
     playbackRequiresConnection: true,
   },
@@ -68,6 +71,7 @@ export const providerCapabilities: Record<Provider, ProviderCapabilities> = {
     catalogSearch: true,
     userConnect: true,
     userLikes: true,
+    savedPlaylists: true,
     playlistImport: false,
     playbackRequiresConnection: true,
   },
