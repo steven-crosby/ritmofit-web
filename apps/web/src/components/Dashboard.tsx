@@ -2,6 +2,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useReducer,
   useRef,
   useState,
@@ -69,7 +70,14 @@ import {
 } from '../lib/duration.js';
 import { classReadiness } from '../lib/readiness.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
-import { libraryView, type ListStatus } from '../lib/library-state.js';
+import {
+  libraryView,
+  organizeClasses,
+  CLASS_SORT_OPTIONS,
+  DEFAULT_CLASS_SORT,
+  type ClassSortKey,
+  type ListStatus,
+} from '../lib/library-state.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import { PROVIDER_ORDER, providerConnectionState, providerLabel } from '../lib/providers.js';
 import { Dialog } from './Dialog.js';
@@ -710,17 +718,45 @@ export function LibraryRail({
   // tag is "no matches", not "no classes at all".
   const view = libraryView(status, classes.length);
   const showTagFilter = knownTags.length > 0 || activeTag != null;
+
+  // Client-side organize over the *loaded* page set (search + sort). Server tag
+  // filtering still happens upstream via `onSelectTag`; this narrows and re-orders
+  // what's already in hand without another request.
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<ClassSortKey>(DEFAULT_CLASS_SORT);
+  const organized = useMemo(
+    () => organizeClasses(classes, { query, sort }),
+    [classes, query, sort],
+  );
+  const trimmedQuery = query.trim();
+  // Only meaningful once there's a loaded list to organize.
+  const showOrganize = view === 'list';
+  // Narrowed by a client search: honest "X of N loaded" framing.
+  const narrowed = trimmedQuery.length > 0 && organized.length !== classes.length;
+
   return (
     <aside className="flex flex-col gap-3 xl:sticky xl:top-6">
       <div className="flex items-center justify-between">
         <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
           Your classes
         </span>
-        <span className="font-data text-xs text-text-tertiary">{classes.length} loaded</span>
+        <span className="font-data text-xs text-text-tertiary">
+          {narrowed
+            ? `${organized.length} of ${classes.length} loaded`
+            : `${classes.length} loaded`}
+        </span>
       </div>
       <CreateClassForm onCreated={onCreate} onError={onError} />
       {showTagFilter && (
         <TagFilter knownTags={knownTags} activeTag={activeTag} onSelectTag={onSelectTag} />
+      )}
+      {showOrganize && (
+        <LibraryOrganizeControls
+          query={query}
+          sort={sort}
+          onQueryChange={setQuery}
+          onSortChange={setSort}
+        />
       )}
       {view === 'loading' ? (
         <p className="font-ui text-sm text-text-tertiary">Loading your classes…</p>
@@ -745,9 +781,24 @@ export function LibraryRail({
             No classes yet — create your first above.
           </p>
         )
+      ) : organized.length === 0 ? (
+        // Loaded classes exist, but the client search matched none of them. Distinct
+        // from a genuinely empty library, and recoverable without a reload.
+        <div className="flex flex-col items-start gap-2">
+          <p className="font-ui text-sm text-text-tertiary">
+            No loaded classes match “<span className="text-text-secondary">{trimmedQuery}</span>”.
+          </p>
+          <button
+            type="button"
+            className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+            onClick={() => setQuery('')}
+          >
+            Show all classes
+          </button>
+        </div>
       ) : (
         <ul className="flex flex-col gap-2">
-          {classes.map((cls) => (
+          {organized.map((cls) => (
             <ClassCard
               key={cls.id}
               cls={cls}
@@ -773,6 +824,73 @@ export function LibraryRail({
         </ul>
       )}
     </aside>
+  );
+}
+
+/**
+ * Search + sort controls for the loaded class library. Both are labeled and
+ * keyboard-reachable; the search clears with an inline button (shown only when
+ * there's text) and the sort is a native `<select>` so it stays fully accessible.
+ * These organize the already-loaded page set only — they don't refetch.
+ */
+function LibraryOrganizeControls({
+  query,
+  sort,
+  onQueryChange,
+  onSortChange,
+}: {
+  query: string;
+  sort: ClassSortKey;
+  onQueryChange: (value: string) => void;
+  onSortChange: (value: ClassSortKey) => void;
+}) {
+  const sortId = 'library-sort';
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="relative">
+        {/* type="text" (not "search") so we own the single clear affordance below
+            rather than doubling it with WebKit's native search-field clear button. */}
+        <input
+          type="text"
+          role="searchbox"
+          className="w-full rounded-pill border border-interactive/30 bg-bg-base py-1 pl-3 pr-8 font-ui text-xs text-text-primary"
+          placeholder="Search loaded classes…"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          aria-label="Search loaded classes by title or type"
+        />
+        {query.trim() && (
+          <button
+            type="button"
+            onClick={() => onQueryChange('')}
+            aria-label="Clear search"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full px-1.5 font-ui text-xs text-text-tertiary hover:text-text-primary"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <label
+          htmlFor={sortId}
+          className="font-ui text-[10px] uppercase tracking-wide text-text-tertiary"
+        >
+          Sort
+        </label>
+        <select
+          id={sortId}
+          className="min-w-0 flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1 font-ui text-xs text-text-primary"
+          value={sort}
+          onChange={(e) => onSortChange(e.target.value as ClassSortKey)}
+        >
+          {CLASS_SORT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
   );
 }
 
