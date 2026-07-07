@@ -10,6 +10,29 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-07 (web polish + hardening round — parallel lane-agents) — deployed (Worker
+> `7763f79c-662d-4aa4-a52c-8d12e78be411`).** Main HEAD `f0b84cd` (merge of PR #246). Code-only —
+> **no schema / migration** (remote D1: "No migrations to apply"). Deployed the two runtime-surface
+> slices from a mixed 1-feature/2-harden round: **PR #242** (Classes library **search + sort**
+> organization — client-side, diacritic-insensitive token-AND search over title + template with five
+> stable sorts, over the loaded page set; honest "X of N loaded" framing + recoverable no-match state)
+> and **PR #246** (**announce + harden keyboard track-reorder** for assistive tech — polite aria-live
+> announcements for keyboard moves and already-first/last boundaries, assertive on a failed persist;
+> the pre-existing ↑/↓ reorder mechanism gained a `silent` reload path in `loadDetail` that skips the
+> loading mask so the workspace never unmounts, preserving grip focus + the announcement). Also merged
+> this round but **test-only / no runtime change** (not a deploy trigger, listed for the trail):
+> **PR #241** (lock run-payload clip-rebase × beat/bar for trimmed tracks), **PR #244** (lock class-list
+> keyset pagination across a same-timestamp boundary — mutation-proven), **PR #243** (provider
+> token-machinery + refresh-token rotation-omit coverage), **PR #245** (PROVIDER_UNAVAILABLE 503
+> config-guard coverage incl. playback-token). Rollback anchor: prior live
+> `9d0a5710-d140-4100-ad26-84aaf13ef3d9`. Remote D1: **no migrations to apply.** Pre-deploy gate (on
+> `main`): format:check ✓ · typecheck ×4 ✓ · lint ✓ · design-system verify ✓ · unit web 444 / api 351 /
+> music 5 ✓ · integration 85 ✓ · web build ✓ · OpenAPI no drift (48 schemas · 50 paths) ✓ ·
+> contract-parity (7 tracked lag) ✓ · audit:ci ✓. Post-deploy smoke on live `https://ritmofit.studio`:
+> SPA `/` → `200` (served hash `index-B_v5epWC.js` matches the build), `/api/v1/health` → `200`,
+> `/api/v1/classes` · `/api/v1/explore` · `/api/v1/teams` → `401`, security headers present (HSTS · CSP ·
+> Permissions-Policy · Referrer-Policy · X-Content-Type-Options · X-Frame-Options).
+
 > **Session 2026-07-07 (D21 workstation-shell consolidation + accumulated batch) — deployed (Worker
 > `9d0a5710-d140-4100-ad26-84aaf13ef3d9`).** Merge commit `494aef6`. Code-only batch — **no
 > schema / migration** (remote D1: "No migrations to apply"). Shipped the previously-merged-but-
