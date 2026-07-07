@@ -3,6 +3,8 @@ import { mintSpotifyPlaybackToken } from './spotify-playback-token.js';
 import { HttpError } from '../errors.js';
 import * as musicPkg from '@ritmofit/music';
 import * as cryptoLib from '../crypto.js';
+import type { Db } from '../db.js';
+import type { Env } from '../types.js';
 
 // Setup mock DB
 const mockGet = vi.fn();
@@ -10,7 +12,7 @@ const mockUpdateSet = vi.fn();
 const mockUpdateWhere = vi.fn(() => ({ run: vi.fn() }));
 mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
 
-const mockDb: any = {
+const mockDb = {
   select: vi.fn(() => ({
     from: vi.fn(() => ({
       where: vi.fn(() => ({
@@ -21,7 +23,7 @@ const mockDb: any = {
   update: vi.fn(() => ({
     set: mockUpdateSet,
   })),
-};
+} as unknown as Db;
 
 vi.mock('@ritmofit/music', async (importOriginal) => {
   const mod = await importOriginal<typeof import('@ritmofit/music')>();
@@ -37,7 +39,7 @@ vi.mock('../crypto.js', () => ({
 }));
 
 describe('mintSpotifyPlaybackToken', () => {
-  let mockEnv: any;
+  let mockEnv: Env;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -46,7 +48,7 @@ describe('mintSpotifyPlaybackToken', () => {
       SPOTIFY_CLIENT_ID: 'id',
       SPOTIFY_CLIENT_SECRET: 'secret',
       ENCRYPTION_KEY: 'test-key'.padStart(32, '0'),
-    };
+    } as unknown as Env;
   });
 
   it('returns mock token when MOCK_PROVIDERS=true', async () => {
@@ -58,7 +60,7 @@ describe('mintSpotifyPlaybackToken', () => {
   it('throws 409 NOT_CONNECTED when no connection', async () => {
     mockGet.mockResolvedValueOnce(undefined);
     await expect(mintSpotifyPlaybackToken(mockDb, mockEnv, 'user1')).rejects.toThrowError(
-      new HttpError(409, 'NOT_CONNECTED', 'Connect your Spotify account first.')
+      new HttpError(409, 'NOT_CONNECTED', 'Connect your Spotify account first.'),
     );
   });
 
@@ -70,7 +72,11 @@ describe('mintSpotifyPlaybackToken', () => {
       scope: 'user-library-read',
     });
     await expect(mintSpotifyPlaybackToken(mockDb, mockEnv, 'user1')).rejects.toThrowError(
-      new HttpError(409, 'PLAYBACK_REAUTH_REQUIRED', 'Reconnect Spotify to enable in-app playback.')
+      new HttpError(
+        409,
+        'PLAYBACK_REAUTH_REQUIRED',
+        'Reconnect Spotify to enable in-app playback.',
+      ),
     );
   });
 
@@ -99,7 +105,7 @@ describe('mintSpotifyPlaybackToken', () => {
       expiresAt: Date.now() - 1000,
     });
     await expect(mintSpotifyPlaybackToken(mockDb, mockEnv, 'user1')).rejects.toThrowError(
-      new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your Spotify account.')
+      new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your Spotify account.'),
     );
   });
 
@@ -129,14 +135,14 @@ describe('mintSpotifyPlaybackToken', () => {
         clientId: 'id',
         clientSecret: 'secret',
         refreshToken: 'refresh1',
-      })
+      }),
     );
 
     expect(mockUpdateSet).toHaveBeenCalledWith(
       expect.objectContaining({
         accessTokenEncrypted: 'enc:token2',
         refreshTokenEncrypted: 'enc:refresh2',
-      })
+      }),
     );
   });
 
@@ -154,7 +160,7 @@ describe('mintSpotifyPlaybackToken', () => {
     vi.mocked(musicPkg.refreshSpotifyToken).mockRejectedValueOnce(new Error('fail'));
 
     await expect(mintSpotifyPlaybackToken(mockDb, mockEnv, 'user1')).rejects.toThrowError(
-      new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your Spotify account.')
+      new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your Spotify account.'),
     );
   });
 });

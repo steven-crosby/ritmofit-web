@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AppTokenCache } from './app-token.js';
 import { ProviderError } from './errors.js';
+import type { FetchLike } from './provider.js';
 
 declare const btoa: (data: string) => string;
 
@@ -19,7 +20,7 @@ describe('AppTokenCache', () => {
       clientId: 'id',
       clientSecret: 'secret',
       tokenUrl: 'https://test/token',
-      fetchImpl: mockFetch as any,
+      fetchImpl: mockFetch as unknown as FetchLike,
       now: mockNow,
     });
 
@@ -34,7 +35,10 @@ describe('AppTokenCache', () => {
 
     expect(token).toBe('token1');
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    const callArgs = mockFetch.mock.calls[0] as any[];
+    const callArgs = mockFetch.mock.calls[0] as unknown as [
+      string,
+      { method: string; headers: Record<string, string>; body: string },
+    ];
     const init = callArgs[1];
     expect(init.method).toBe('POST');
     expect(init.headers.Authorization).toBe(`Basic ${btoa('id:secret')}`);
@@ -102,7 +106,9 @@ describe('AppTokenCache', () => {
   });
 
   it('throws ProviderError on non-ok status', async () => {
-    mockFetch.mockResolvedValueOnce({
+    // Persistent (not `...Once`): failures are never cached, so each `get()`
+    // re-fetches — both assertions below trigger a fresh request.
+    mockFetch.mockResolvedValue({
       ok: false,
       status: 401,
     });
