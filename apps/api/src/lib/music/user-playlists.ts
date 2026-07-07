@@ -61,6 +61,15 @@ interface PlaylistAdapter {
   isUnauthorized(err: unknown): boolean;
 }
 
+interface ConnectedPlaylistRead<T> {
+  db: Db;
+  env: Env;
+  userId: string;
+  provider: Provider;
+  adapter: PlaylistAdapter;
+  read(accessToken: string): Promise<T>;
+}
+
 const PLAYLIST_ADAPTERS: Partial<Record<Provider, PlaylistAdapter>> = {
   spotify: {
     label: 'Spotify',
@@ -107,35 +116,14 @@ export async function fetchUserPlaylists(
       `Provider '${provider}' saved playlists are not integrated.`,
     );
 
-  const key = requireEncryptionKey(env);
-  const creds = adapter.creds(env);
-  const conn = await db
-    .select()
-    .from(musicConnections)
-    .where(and(eq(musicConnections.userId, userId), eq(musicConnections.provider, provider)))
-    .get();
-
-  if (!conn) {
-    throw new HttpError(409, 'NOT_CONNECTED', `Connect your ${adapter.label} account first.`);
-  }
-
-  const expired = conn.expiresAt !== null && Date.now() > conn.expiresAt - EXPIRY_SKEW_MS;
-  let refreshed = expired;
-  let accessToken = expired
-    ? await refreshAndPersist(db, key, adapter, creds, conn)
-    : await decryptSecret(conn.accessTokenEncrypted, key);
-
-  try {
-    return await adapter.fetchPlaylists({ accessToken, fetchImpl: boundFetch });
-  } catch (err) {
-    if (!adapter.isUnauthorized(err)) throw err;
-    if (refreshed || !conn.refreshTokenEncrypted) {
-      throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
-    }
-    refreshed = true;
-    accessToken = await refreshAndPersist(db, key, adapter, creds, conn);
-    return await adapter.fetchPlaylists({ accessToken, fetchImpl: boundFetch });
-  }
+  return readWithConnectedPlaylistToken({
+    db,
+    env,
+    userId,
+    provider,
+    adapter,
+    read: (accessToken) => adapter.fetchPlaylists({ accessToken, fetchImpl: boundFetch }),
+  });
 }
 
 export async function fetchUserPlaylistTracks(
@@ -165,33 +153,48 @@ export async function fetchUserPlaylistTracks(
       `Provider '${provider}' saved playlists are not integrated.`,
     );
 
-  const key = requireEncryptionKey(env);
-  const creds = adapter.creds(env);
-  const conn = await db
+  return readWithConnectedPlaylistToken({
+    db,
+    env,
+    userId,
+    provider,
+    adapter,
+    read: (accessToken) =>
+      adapter.fetchPlaylistTracks({ accessToken, playlistId, fetchImpl: boundFetch }),
+  });
+}
+
+async function readWithConnectedPlaylistToken<T>(cfg: ConnectedPlaylistRead<T>): Promise<T> {
+  const key = requireEncryptionKey(cfg.env);
+  const creds = cfg.adapter.creds(cfg.env);
+  const conn = await cfg.db
     .select()
     .from(musicConnections)
-    .where(and(eq(musicConnections.userId, userId), eq(musicConnections.provider, provider)))
+    .where(
+      and(eq(musicConnections.userId, cfg.userId), eq(musicConnections.provider, cfg.provider)),
+    )
     .get();
 
-  if (!conn)
-    throw new HttpError(409, 'NOT_CONNECTED', `Connect your ${adapter.label} account first.`);
+  if (!conn) {
+    throw new HttpError(409, 'NOT_CONNECTED', `Connect your ${cfg.adapter.label} account first.`);
+  }
 
   const expired = conn.expiresAt !== null && Date.now() > conn.expiresAt - EXPIRY_SKEW_MS;
   let refreshed = expired;
   let accessToken = expired
-    ? await refreshAndPersist(db, key, adapter, creds, conn)
+    ? await refreshAndPersist(cfg.db, key, cfg.adapter, creds, conn)
     : await decryptSecret(conn.accessTokenEncrypted, key);
 
   try {
-    return await adapter.fetchPlaylistTracks({ accessToken, playlistId, fetchImpl: boundFetch });
+    return await cfg.read(accessToken);
   } catch (err) {
-    if (!adapter.isUnauthorized(err)) throw err;
+    if (!cfg.adapter.isUnauthorized(err)) throw err;
     if (refreshed || !conn.refreshTokenEncrypted) {
-      throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
+      throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${cfg.adapter.label} account.`);
     }
     refreshed = true;
-    accessToken = await refreshAndPersist(db, key, adapter, creds, conn);
-    return await adapter.fetchPlaylistTracks({ accessToken, playlistId, fetchImpl: boundFetch });
+    accessToken = await refreshAndPersist(cfg.db, key, cfg.adapter, creds, conn);
+    return cfg.read(accessToken);
   }
 }
 
