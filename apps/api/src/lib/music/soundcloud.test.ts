@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   createSoundCloudProvider,
   fetchSoundCloudLikes,
+  fetchSoundCloudPlaylistTracks,
+  fetchSoundCloudPlaylists,
   SoundCloudUnauthorizedError,
   type FetchLike,
 } from '@ritmofit/music';
@@ -161,6 +163,196 @@ describe('fetchSoundCloudLikes', () => {
     await expect(
       fetchSoundCloudLikes({ accessToken: 't', fetchImpl, apiBase: API_BASE }),
     ).rejects.toThrow(/500/);
+  });
+});
+
+describe('fetchSoundCloudPlaylists', () => {
+  function pagedFetch(handlers: Record<string, unknown>) {
+    const calls: { url: string; init?: Parameters<FetchLike>[1] }[] = [];
+    const fetchImpl: FetchLike = async (url, init) => {
+      calls.push({ url, init });
+      if (!(url in handlers)) {
+        return { ok: false, status: 404, json: async () => ({}), text: async () => '' };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => handlers[url],
+        text: async () => JSON.stringify(handlers[url]),
+      };
+    };
+    return { fetchImpl, calls };
+  }
+
+  it('follows linked_partitioning pages and maps playlist summaries', async () => {
+    const firstUrl = `${API_BASE}/me/playlists?limit=1&linked_partitioning=true`;
+    const nextUrl = `${API_BASE}/me/playlists?limit=1&linked_partitioning=true&page=2`;
+    const { fetchImpl, calls } = pagedFetch({
+      [firstUrl]: {
+        collection: [
+          {
+            id: 1,
+            title: 'Climb Shelf',
+            artwork_url: 'https://i1.sndcdn.com/pl-1.jpg',
+            track_count: 12,
+            user: { username: 'Coach One' },
+          },
+        ],
+        next_href: nextUrl,
+      },
+      [nextUrl]: {
+        collection: [
+          {
+            id: 2,
+            title: 'Sprint Shelf',
+            artwork_url: null,
+            track_count: 8,
+            user: { username: 'Coach Two' },
+          },
+        ],
+      },
+    });
+
+    const out = await fetchSoundCloudPlaylists({
+      accessToken: 'user-tok',
+      fetchImpl,
+      apiBase: API_BASE,
+      limit: 1,
+      maxPlaylists: 10,
+    });
+
+    expect(out.map((playlist) => playlist.playlistId)).toEqual(['1', '2']);
+    expect(out[0]).toMatchObject({
+      provider: 'soundcloud',
+      name: 'Climb Shelf',
+      ownerName: 'Coach One',
+      trackCount: 12,
+      coverImageUrl: 'https://i1.sndcdn.com/pl-1.jpg',
+    });
+    expect(calls.map((call) => call.url)).toEqual([firstUrl, nextUrl]);
+    expect(calls[0]?.init?.headers?.Authorization).toBe('OAuth user-tok');
+  });
+
+  it('stops playlist pagination at the bounded cap', async () => {
+    const firstUrl = `${API_BASE}/me/playlists?limit=1&linked_partitioning=true`;
+    const nextUrl = `${API_BASE}/me/playlists?limit=1&linked_partitioning=true&page=2`;
+    const { fetchImpl, calls } = pagedFetch({
+      [firstUrl]: {
+        collection: [{ id: 1, title: 'Keep', track_count: 1, user: { username: 'Coach' } }],
+        next_href: nextUrl,
+      },
+      [nextUrl]: {
+        collection: [{ id: 2, title: 'Skip', track_count: 1, user: { username: 'Coach' } }],
+      },
+    });
+
+    const out = await fetchSoundCloudPlaylists({
+      accessToken: 'user-tok',
+      fetchImpl,
+      apiBase: API_BASE,
+      limit: 1,
+      maxPlaylists: 1,
+    });
+
+    expect(out.map((playlist) => playlist.playlistId)).toEqual(['1']);
+    expect(calls.map((call) => call.url)).toEqual([firstUrl]);
+  });
+
+  it('throws SoundCloudUnauthorizedError on playlist 401 so callers can refresh + retry', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({}),
+      text: async () => 'expired',
+    });
+
+    await expect(
+      fetchSoundCloudPlaylists({ accessToken: 'stale', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toBeInstanceOf(SoundCloudUnauthorizedError);
+  });
+});
+
+describe('fetchSoundCloudPlaylistTracks', () => {
+  function track(id: number) {
+    return { ...SC_TRACK, id, title: `Track ${id}` };
+  }
+
+  function pagedFetch(handlers: Record<string, { status?: number; body: unknown }>) {
+    const calls: { url: string; init?: Parameters<FetchLike>[1] }[] = [];
+    const fetchImpl: FetchLike = async (url, init) => {
+      calls.push({ url, init });
+      const handler = handlers[url];
+      if (!handler) return { ok: false, status: 404, json: async () => ({}), text: async () => '' };
+      const status = handler.status ?? 200;
+      return {
+        ok: status >= 200 && status < 300,
+        status,
+        json: async () => handler.body,
+        text: async () => JSON.stringify(handler.body),
+      };
+    };
+    return { fetchImpl, calls };
+  }
+
+  it('follows playlist track pages instead of trusting embedded playlist tracks', async () => {
+    const firstUrl = `${API_BASE}/playlists/pl-1/tracks?limit=1&linked_partitioning=true`;
+    const nextUrl = `${API_BASE}/playlists/pl-1/tracks?limit=1&linked_partitioning=true&page=2`;
+    const { fetchImpl, calls } = pagedFetch({
+      [firstUrl]: { body: { collection: [track(1)], next_href: nextUrl } },
+      [nextUrl]: { body: { collection: [track(2)] } },
+    });
+
+    const out = await fetchSoundCloudPlaylistTracks({
+      accessToken: 'user-tok',
+      playlistId: 'pl-1',
+      fetchImpl,
+      apiBase: API_BASE,
+      limit: 1,
+      maxTracks: 10,
+    });
+
+    expect(out.map((candidate) => candidate.providerTrackId)).toEqual(['1', '2']);
+    expect(calls.map((call) => call.url)).toEqual([firstUrl, nextUrl]);
+    expect(calls[0]?.init?.headers?.Authorization).toBe('OAuth user-tok');
+  });
+
+  it('stops playlist track pagination at the bounded cap', async () => {
+    const firstUrl = `${API_BASE}/playlists/pl-1/tracks?limit=1&linked_partitioning=true`;
+    const nextUrl = `${API_BASE}/playlists/pl-1/tracks?limit=1&linked_partitioning=true&page=2`;
+    const { fetchImpl, calls } = pagedFetch({
+      [firstUrl]: { body: { collection: [track(1)], next_href: nextUrl } },
+      [nextUrl]: { body: { collection: [track(2)] } },
+    });
+
+    const out = await fetchSoundCloudPlaylistTracks({
+      accessToken: 'user-tok',
+      playlistId: 'pl-1',
+      fetchImpl,
+      apiBase: API_BASE,
+      limit: 1,
+      maxTracks: 1,
+    });
+
+    expect(out.map((candidate) => candidate.providerTrackId)).toEqual(['1']);
+    expect(calls.map((call) => call.url)).toEqual([firstUrl]);
+  });
+
+  it('returns [] when a SoundCloud playlist does not exist', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 404,
+      json: async () => ({}),
+      text: async () => 'missing',
+    });
+
+    await expect(
+      fetchSoundCloudPlaylistTracks({
+        accessToken: 'user-tok',
+        playlistId: 'missing',
+        fetchImpl,
+        apiBase: API_BASE,
+      }),
+    ).resolves.toEqual([]);
   });
 });
 
