@@ -10,6 +10,29 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-07 (D21 workstation-shell consolidation + accumulated batch) — deployed (Worker
+> `9d0a5710-d140-4100-ad26-84aaf13ef3d9`).** Merge commit `494aef6`. Code-only batch — **no
+> schema / migration** (remote D1: "No migrations to apply"). Shipped the previously-merged-but-
+> unshipped backlog in one deliberate batch: **PR #232** (D21 workstation-shell consolidation — primary
+> nav unified to **Classes / Music / Live / Account**; Music is a first-class provider/source workspace
+> with saved-playlist *and* liked-tracks browsing on its shelves; Live is a runnable-class queue with
+> preflight readiness; Account is an in-page settings workspace), the **liked-tracks discovery shelf**
+> (`9ade653` — browse likes → create class from likes, now surfaced in both the Classes resting state
+> and the Music workspace via a shared `useProviderBrowseState` hook), and **PR #230** (SoundCloud
+> saved-playlist read pagination fix). Also merged this session but no runtime change: **PR #233**
+> (documented the two D21 saved-playlist endpoints + `ProviderPlaylistSummary` in OpenAPI — now 48
+> schemas / 50 paths — and added Apple Music adapter tests) and **PR #234** (provider connection
+> token-lifecycle tests; also wired a missing `test` script on `packages/music` so its first test
+> actually runs, and fixed a latent mock bug it exposed). Rollback anchor: prior live
+> `ded27a07-b006-411c-aa5f-ce923d3d440f` (saved-playlist browsing). Remote D1: **no migrations to
+> apply.** Pre-deploy gate (on `main`): format:check ✓ · typecheck ×4 ✓ · lint ✓ · design-system verify
+> ✓ · unit web 423 / api 308 / music 5 ✓ · integration 82 ✓ · web build ✓ · OpenAPI no drift (48
+> schemas · 50 paths) ✓ · contract-parity ✓ · audit:ci ✓. Post-deploy smoke on live
+> `https://ritmofit.studio`: SPA `/` → `200` (served hash `index-DkO1a4Yp.js` matches the build),
+> `/api/v1/health` → `200`, `/api/v1/providers/spotify/playlists` (unauthenticated) → `401` (mounted,
+> not `404`), `/api/v1/classes` · `/api/v1/explore` · `/api/v1/teams` → `401`, security headers present
+> (HSTS · CSP · Permissions-Policy · Referrer-Policy · X-Content-Type-Options · X-Frame-Options).
+
 > **Session 2026-07-06 (saved-playlist browsing — D21 sub-slice) — deployed (Worker
 > `ded27a07-b006-411c-aa5f-ce923d3d440f`).** Commit `eb229d5`. Additive API slice + frontend
 > feature — **no schema / migration.** New endpoints: `GET /providers/:provider/playlists` (list

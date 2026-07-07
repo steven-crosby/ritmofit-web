@@ -29,7 +29,7 @@ Pilates, and HIIT.
   playback windows, readiness, and Live Mode. Provider libraries are the raw material and class-building
   is the creative layer on top. The app should feel *familiar before it feels specialized*: browse, listen,
   and inspect playlists, then convert curiosity into a class — no single forced creation flow.
-- **Current operating focus (2026-07-06):** the launch gate is green and the app is live. The active
+- **Current operating focus (2026-07-07):** the launch gate is green and the app is live. The active
   track is the **D21 creator-workstation-shell slice** — the first slice (Cycle/Pilates/HIIT templates,
   readiness + discovery resting state, provider shelves) is deployed; the **saved-playlist browsing
   sub-slice is now **implemented and deployed (Worker `ded27a07`)** (new `GET
@@ -45,9 +45,16 @@ Pilates, and HIIT.
   Apple Music `authorize()` recovers instead of freezing, Spotify plays in-app for Premium users via
   the official Web Playback SDK, older Spotify connections missing playback scopes surface a reconnect
   action, and Spotify-only tracks can still be **resolved cross-provider** to a playable equivalent.
-  Teams, Sharing, Publish, and Explore stay hidden/dormant (D20). Last production deploy
-  **2026-07-06 (Worker `ded27a07`)** — saved-playlist browsing, no schema/migration. For per-deploy
-  detail and the live Worker version, see [`HISTORY.md`](./HISTORY.md), newest first.
+  Teams, Sharing, Publish, and Explore stay hidden/dormant (D20). The **2026-07-07 workstation-shell
+  consolidation** then unified primary navigation to the four locked destinations — **Classes, Music,
+  Live, Account**: Music is a first-class provider/source workspace (saved-playlist *and* liked-tracks
+  browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
+  in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
+  (browse likes → create a class from likes) now appears in both the Classes resting state and the
+  Music workspace via a shared provider-browse hook. Last production deploy
+  **2026-07-07 (Worker `9d0a5710`)** — workstation-shell consolidation + liked-tracks shelf + SoundCloud
+  saved-playlist pagination fix, **no schema/migration** (supersedes `ded27a07`). For per-deploy detail
+  and the live Worker version, see [`HISTORY.md`](./HISTORY.md), newest first.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
