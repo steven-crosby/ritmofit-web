@@ -628,6 +628,70 @@ function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void 
   );
 }
 
+/**
+ * The focal card's vitals footer: current effort + the tempo rendered as the
+ * `data-hero` numeral (design system 03 §data-hero — 88px Azeret Mono, the
+ * "screenshot" of the instrument). Pairing it with the cue makes the class's
+ * energy state a single glanceable object rather than a card buried in a side
+ * rail. The BPM readout carries the one on-beat pulse the rhythm system allows
+ * (10 §1–2) — a single focal heartbeat while playing, needing a BPM to time the
+ * beat and removed under reduced motion by CSS, so the giant cue stays steady.
+ * A missing tempo is a readiness state stated on the caution channel, never
+ * quiet metadata (audit P0 #3; rhythm-system §1a).
+ */
+function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing: boolean }) {
+  const pulse = playing && entry.displayBpm != null;
+  return (
+    <div className="relative mt-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-t border-interactive/10 pt-4">
+      <div className="flex flex-col gap-1.5">
+        <span className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+          Effort
+        </span>
+        <IntensityReadout intensity={entry.intensity} />
+      </div>
+      {entry.displayBpm != null ? (
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
+          {/* data-hero tempo: 88px (5.5rem) Azeret Mono, tracking -0.04em, weight 700. */}
+          <p
+            className={`flex items-baseline ${pulse ? 'rf-beat-pulse' : ''}`}
+            style={pulse ? ({ '--rf-bpm': entry.displayBpm } as CSSProperties) : undefined}
+          >
+            <span className="font-data text-[clamp(3rem,8vw,5.5rem)] font-bold leading-[0.9] tracking-[-0.04em] text-text-primary">
+              {entry.displayBpm}
+            </span>
+            <span className="ml-2 font-data text-sm uppercase tracking-wide text-text-tertiary">
+              BPM
+            </span>
+          </p>
+          {entry.displayRpm != null && (
+            <p className="flex items-baseline gap-1.5">
+              <span className="font-data text-2xl font-semibold text-text-secondary">
+                {entry.displayRpm}
+              </span>
+              <span className="font-data text-xs uppercase text-text-tertiary">RPM</span>
+            </p>
+          )}
+          {entry.holdCount != null && (
+            <p className="flex items-baseline gap-1.5">
+              <span className="font-data text-2xl font-semibold text-text-secondary">
+                {entry.holdCount}
+              </span>
+              <span className="font-data text-xs uppercase text-text-tertiary">
+                {entry.holdCount === 1 ? 'Hold' : 'Holds'}
+              </span>
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="flex flex-col gap-0.5 text-right">
+          <span className="font-data text-2xl font-semibold text-state-caution">Tempo missing</span>
+          <span className="font-ui text-xs text-text-tertiary">Pulse off</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
 function CueByCue({
   payload,
   live,
@@ -695,11 +759,6 @@ function CueByCue({
     );
   }
   const { entry } = live;
-  // The on-beat pulse (design system 10 §1–2): a single focal element breathes one
-  // cycle per beat while playing. It lives on the BPM readout — the literal heartbeat
-  // of the instrument — so the giant cue can stay rock-steady to read across a dim
-  // room. Needs a BPM to time the beat; removed under reduced motion by CSS. One only.
-  const pulse = playing && entry.displayBpm != null;
   // "The drop" (design system 10 §5): the one big motion spend, rationed to All-Out
   // tracks. On each cue advance there, a plasma glow blooms behind the focal cue and
   // the cue text cross-fades in. Reduced motion degrades both to an instant swap (CSS).
@@ -713,7 +772,7 @@ function CueByCue({
     <div className="flex min-h-full flex-col gap-4 p-4 sm:p-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:p-8">
       {/* LEFT — the focal cue: the one thing the instructor reads across the room.
           Carries the All-Out drop; otherwise it holds still so it's always legible. */}
-      <div className="relative flex min-h-[42vh] flex-col justify-center overflow-hidden rounded-card bg-bg-raised p-6 shadow-card sm:p-8 lg:col-span-3 lg:min-h-0">
+      <div className="relative flex min-h-[42vh] flex-col overflow-hidden rounded-card bg-bg-raised p-6 shadow-card sm:p-8 lg:col-span-3 lg:min-h-0">
         {/* The drop's plasma bloom — keyed on the cue so it replays per advance. */}
         {isAllOut && currentEvent && (
           <span
@@ -722,70 +781,77 @@ function CueByCue({
             className="rf-drop-bloom pointer-events-none absolute inset-0 rounded-card"
           />
         )}
-        <p className="relative font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
-          {showReadyHero ? 'Ready' : 'Now'}
-        </p>
-        {currentEvent ? (
-          <>
-            <p
-              key={currentEvent.text}
-              className={`relative mt-3 break-words font-display text-[clamp(2.75rem,7vw,6rem)] font-semibold leading-[0.95] text-text-primary ${
-                isAllOut ? 'rf-drop-in' : ''
-              }`}
-              style={currentEvent.color ? { color: currentEvent.color } : undefined}
-            >
-              {currentEvent.text}
-            </p>
-            {currentEvent.kind === 'move' && currentEvent.intensity && (
-              <div className="relative mt-5">
-                <IntensityReadout intensity={currentEvent.intensity} />
-              </div>
-            )}
-          </>
-        ) : showReadyHero ? (
-          // Live at rest leads with the affirmative ready state, never absence
-          // (design system 01 §3, 05 §Live: "'Ready — press play' beats 'No cue set'").
-          // The next cue + BPM sit in the rail; the class-shape mini-map shows the arc.
-          <>
-            <p className="relative mt-3 font-display text-[clamp(2.25rem,5.5vw,4rem)] font-semibold leading-[0.95] text-text-primary">
-              Press play to start
-            </p>
-            <p className="relative mt-4 flex min-w-0 items-baseline gap-2">
-              <span aria-hidden className="shrink-0 font-data text-base text-text-tertiary">
-                ♫
-              </span>
-              <span className="truncate font-display text-[clamp(1.5rem,3.5vw,2.5rem)] font-semibold text-text-primary">
-                {entry.track.title}
-              </span>
-            </p>
-            {/* Class-shape mini-map: the whole arc, visible before the first beat.
+        {/* The cue itself holds the center; the vitals footer pins to the bottom so
+            the tempo numeral and the cue read as one state-object. */}
+        <div className="relative flex flex-1 flex-col justify-center">
+          <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
+            {showReadyHero ? 'Ready' : 'Now'}
+          </p>
+          {currentEvent ? (
+            <>
+              <p
+                key={currentEvent.text}
+                className={`relative mt-3 break-words font-display text-[clamp(2.75rem,7vw,6rem)] font-semibold leading-[0.95] text-text-primary ${
+                  isAllOut ? 'rf-drop-in' : ''
+                }`}
+                style={currentEvent.color ? { color: currentEvent.color } : undefined}
+              >
+                {currentEvent.text}
+              </p>
+              {currentEvent.kind === 'move' && currentEvent.intensity && (
+                <div className="relative mt-5">
+                  <IntensityReadout intensity={currentEvent.intensity} />
+                </div>
+              )}
+            </>
+          ) : showReadyHero ? (
+            // Live at rest leads with the affirmative ready state, never absence
+            // (design system 01 §3, 05 §Live: "'Ready — press play' beats 'No cue set'").
+            // The next cue + BPM sit in the rail; the class-shape mini-map shows the arc.
+            <>
+              <p className="relative mt-3 font-display text-[clamp(2.25rem,5.5vw,4rem)] font-semibold leading-[0.95] text-text-primary">
+                Press play to start
+              </p>
+              <p className="relative mt-4 flex min-w-0 items-baseline gap-2">
+                <span aria-hidden className="shrink-0 font-data text-base text-text-tertiary">
+                  ♫
+                </span>
+                <span className="truncate font-display text-[clamp(1.5rem,3.5vw,2.5rem)] font-semibold text-text-primary">
+                  {entry.track.title}
+                </span>
+              </p>
+              {/* Class-shape mini-map: the whole arc, visible before the first beat.
                 Reuses the builder ribbon (and its provisional "auto shape" when unshaped). */}
-            <div className="relative mt-6">
-              <IntensityRibbon payload={payload} />
-            </div>
-          </>
-        ) : (
-          // No cue at this moment: never a bare dash. Name the state, then what's
-          // playing, so the focal card stays meaningful across a dim room (audit P0
-          // #3; prescription §8 "No cue set + current track"). Mirrors the assertive
-          // screen-reader announcement, which already falls back to the track.
-          <>
-            <p className="relative mt-3 font-display text-[clamp(2.25rem,5.5vw,4rem)] font-semibold leading-[0.95] text-text-secondary">
-              No cue set
-            </p>
-            <p className="relative mt-4 flex min-w-0 items-baseline gap-2">
-              <span aria-hidden className="shrink-0 font-data text-base text-text-tertiary">
-                ♫
-              </span>
-              <span className="truncate font-display text-[clamp(1.5rem,3.5vw,2.5rem)] font-semibold text-text-primary">
-                {entry.track.title}
-              </span>
-            </p>
-          </>
-        )}
+              <div className="relative mt-6">
+                <IntensityRibbon payload={payload} />
+              </div>
+            </>
+          ) : (
+            // No cue at this moment: never a bare dash. Name the state, then what's
+            // playing, so the focal card stays meaningful across a dim room (audit P0
+            // #3; prescription §8 "No cue set + current track"). Mirrors the assertive
+            // screen-reader announcement, which already falls back to the track.
+            <>
+              <p className="relative mt-3 font-display text-[clamp(2.25rem,5.5vw,4rem)] font-semibold leading-[0.95] text-text-secondary">
+                No cue set
+              </p>
+              <p className="relative mt-4 flex min-w-0 items-baseline gap-2">
+                <span aria-hidden className="shrink-0 font-data text-base text-text-tertiary">
+                  ♫
+                </span>
+                <span className="truncate font-display text-[clamp(1.5rem,3.5vw,2.5rem)] font-semibold text-text-primary">
+                  {entry.track.title}
+                </span>
+              </p>
+            </>
+          )}
+        </div>
+        {/* Vitals footer — current effort + the tempo as the data-hero screenshot
+            numeral, paired with the cue instead of buried in a side rail. */}
+        <FocalVitals entry={entry} playing={playing} />
       </div>
 
-      {/* RIGHT — the instrument rail: what's next, the vitals, the timers, the track. */}
+      {/* RIGHT — the instrument rail: what's next, the timers, the track. */}
       <div className="flex min-w-0 flex-col gap-3 lg:col-span-2 lg:gap-4">
         {/* Next cue + countdown. */}
         <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
@@ -803,59 +869,6 @@ function CueByCue({
               >
                 {fmt(nextEvent.atMs - elapsedMs)}
               </span>
-            )}
-          </div>
-        </div>
-
-        {/* Vitals — the BPM heartbeat (the one pulsing element) + current effort. */}
-        <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-              Effort
-            </p>
-            <IntensityReadout intensity={entry.intensity} />
-          </div>
-          <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">
-            {entry.displayBpm != null ? (
-              <p
-                className={`flex items-baseline gap-2 ${pulse ? 'rf-beat-pulse' : ''}`}
-                style={pulse ? ({ '--rf-bpm': entry.displayBpm } as CSSProperties) : undefined}
-              >
-                <span className="font-data text-[clamp(2.75rem,6vw,4.75rem)] font-bold leading-none text-text-primary">
-                  {entry.displayBpm}
-                </span>
-                <span className="font-data text-sm uppercase tracking-wide text-text-tertiary">
-                  BPM
-                </span>
-              </p>
-            ) : (
-              // Missing tempo is a readiness state, not quiet metadata (audit P0 #3;
-              // rhythm-system §1a): the pulse is off, said plainly on the caution
-              // channel — never a faint "No BPM set". Not alarming, just honest.
-              <p className="flex flex-col gap-0.5">
-                <span className="font-data text-xl font-semibold text-state-caution">
-                  Tempo missing
-                </span>
-                <span className="font-ui text-xs text-text-tertiary">Pulse off</span>
-              </p>
-            )}
-            {entry.displayRpm != null && (
-              <p className="flex items-baseline gap-1.5">
-                <span className="font-data text-2xl font-semibold text-text-secondary">
-                  {entry.displayRpm}
-                </span>
-                <span className="font-data text-xs uppercase text-text-tertiary">RPM</span>
-              </p>
-            )}
-            {entry.holdCount != null && (
-              <p className="flex items-baseline gap-1.5">
-                <span className="font-data text-2xl font-semibold text-text-secondary">
-                  {entry.holdCount}
-                </span>
-                <span className="font-data text-xs uppercase text-text-tertiary">
-                  {entry.holdCount === 1 ? 'Hold' : 'Holds'}
-                </span>
-              </p>
             )}
           </div>
         </div>

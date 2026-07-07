@@ -305,6 +305,19 @@ describe('LiveMode sparse-data fallbacks', () => {
   });
 });
 
+describe('LiveMode tempo-forward HUD', () => {
+  it('pairs the tempo with the cue as one focal object (no duplicate side-rail vitals)', async () => {
+    await renderLive();
+    // The tempo is the data-hero screenshot numeral, paired with the cue — and the
+    // effort reads alongside it. getByText enforces a single occurrence, so it also
+    // locks the old standalone rail "Vitals" card as removed (folded into the focal
+    // footer), not rendered twice.
+    expect(screen.getByText('124')).toBeTruthy();
+    expect(screen.getByText('BPM')).toBeTruthy();
+    expect(screen.getByText('Effort')).toBeTruthy();
+  });
+});
+
 describe('LiveMode screen-reader announcements', () => {
   it('announces the live track when no cue is active', async () => {
     await renderLive();
