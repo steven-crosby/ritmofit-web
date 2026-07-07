@@ -204,6 +204,17 @@ describe('Dashboard class library states', () => {
         coverImageUrl: null,
       },
     ]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'track-1',
+        title: 'Climb Track',
+        artist: 'DJ Test',
+        durationMs: 180000,
+        albumArtUrl: null,
+        providerUri: 'spotify:track:track-1',
+      },
+    ]);
 
     renderDashboard();
 
@@ -213,11 +224,14 @@ describe('Dashboard class library states', () => {
     });
     expect(browseBtn).toBeTruthy();
 
-    // Clicking opens the browse dialog.
+    // Clicking opens the browse dialog, then a playlist detail before class creation.
     fireEvent.click(browseBtn);
     expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
     expect(screen.getByText('Warmup Ride')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Create class from Warmup Ride' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Open Warmup Ride' }));
+    expect(await screen.findByRole('heading', { name: 'Warmup Ride' })).toBeTruthy();
+    expect(screen.getByText('Climb Track')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start class from Warmup Ride' })).toBeTruthy();
   });
 
   it('shows connected Spotify liked tracks in the resting shelf and opens the likes browser', async () => {
@@ -340,6 +354,119 @@ describe('Dashboard class library states', () => {
     expect(screen.queryByText('Shared studio class')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Explore' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Teams' })).toBeNull();
+  });
+
+  it('uses Classes, Music, Live, and Account as the primary destinations', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.getMe).mockResolvedValue({
+      id: 'me',
+      email: 'tester@example.com',
+      displayName: 'Tester',
+      imageUrl: null,
+      createdAt: 1,
+      updatedAt: 1,
+    });
+
+    renderDashboard();
+
+    expect(
+      (await screen.findByRole('button', { name: 'Classes' })).getAttribute('aria-current'),
+    ).toBe('page');
+    expect(screen.getByRole('button', { name: 'Music' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Live' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Account' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Songs by move' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Connections' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Music' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Browse music, then shape it into class.' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+    expect(await screen.findByRole('heading', { name: 'Pick a class to run.' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(await screen.findByRole('heading', { name: 'Personal workspace' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Provider accounts' })).toBeTruthy();
+  });
+
+  it('surfaces runnable classes from the Live destination', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(
+      page([
+        {
+          ...makeClass('Ready ride', 'owner', 'me'),
+          trackCount: 3,
+          totalDurationMs: 1800000,
+        },
+        { ...makeClass('Draft shell', 'owner', 'me'), trackCount: 0, totalDurationMs: 0 },
+      ]),
+    );
+    vi.mocked(api.getRunPayload).mockResolvedValue({
+      version: 1,
+      class: {
+        id: '00000000-0000-4000-8000-000000000101',
+        title: 'Ready ride',
+        template: 'cycle',
+        totalDurationMs: 1800000,
+        timelineMode: 'sequential',
+        sections: [],
+      },
+      tracks: [
+        {
+          classTrackId: 'ct-1',
+          startOffsetMs: 0,
+          displayBpm: 128,
+          intensity: 'mod',
+          notes: null,
+          clipStartMs: 0,
+          providerRefs: [],
+          track: {
+            id: 'track-1',
+            title: 'Ready Track',
+            artist: 'Artist',
+            durationMs: 1800000,
+            albumArtUrl: null,
+            displayBpm: null,
+          },
+          cues: [],
+          moves: [],
+        },
+      ],
+    });
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    expect(await screen.findByText('Ready ride')).toBeTruthy();
+    expect(screen.queryByText('Draft shell')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Run live' }));
+    await waitFor(() => expect(api.getRunPayload).toHaveBeenCalledTimes(1));
+  });
+
+  it('browses a connected source from the Music workspace sidebar', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-1',
+        name: 'Warmup Ride',
+        ownerName: 'Steven',
+        trackCount: 24,
+        coverImageUrl: null,
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    // The Sources sidebar entry browses the provider once its playlists load.
+    const sourceBtn = await screen.findByRole('button', { name: 'Browse Spotify playlists' });
+    fireEvent.click(sourceBtn);
+    expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
   });
 });
 
