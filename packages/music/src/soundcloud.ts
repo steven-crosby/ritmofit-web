@@ -17,7 +17,12 @@
  * live calls. Defaults are documented; re-verify the auth header scheme against
  * live docs when real credentials land.
  */
-import { trackSearchResultSchema, type TrackSearchResult } from '@ritmofit/shared';
+import {
+  providerPlaylistSummarySchema,
+  trackSearchResultSchema,
+  type ProviderPlaylistSummary,
+  type TrackSearchResult,
+} from '@ritmofit/shared';
 import { z } from 'zod';
 import type { FetchLike, MusicProvider } from './provider.js';
 import { readJson, ProviderError } from './errors.js';
@@ -57,6 +62,21 @@ type ScTrack = z.infer<typeof scTrackSchema>;
 
 /** Search may be a bare array or a `linked_partitioning` envelope. */
 const scSearchSchema = z.union([
+  z.array(z.unknown()),
+  z.object({ collection: z.array(z.unknown()) }),
+]);
+
+const scPlaylistSchema = z.object({
+  id: z.number(),
+  title: z.string().optional(),
+  permalink_url: z.string().optional(),
+  artwork_url: z.string().nullable().optional(),
+  track_count: z.number().int().nonnegative().optional(),
+  user: z.object({ username: z.string().optional() }).optional(),
+  tracks: z.array(z.unknown()).optional(),
+});
+
+const scPlaylistListSchema = z.union([
   z.array(z.unknown()),
   z.object({ collection: z.array(z.unknown()) }),
 ]);
@@ -176,6 +196,66 @@ export async function fetchSoundCloudLikes(cfg: {
   if (!parsed.success) return [];
   const raw = Array.isArray(parsed.data) ? parsed.data : parsed.data.collection;
   return raw.map((item) => toCandidate(item)).filter((r): r is TrackSearchResult => r !== null);
+}
+
+/** Read a connected user's SoundCloud playlists for browse shelves. */
+export async function fetchSoundCloudPlaylists(cfg: {
+  accessToken: string;
+  fetchImpl: FetchLike;
+  apiBase?: string;
+  limit?: number;
+}): Promise<ProviderPlaylistSummary[]> {
+  const base = cfg.apiBase ?? DEFAULT_API_BASE;
+  const limit = cfg.limit ?? 50;
+  const params = `limit=${limit}&linked_partitioning=true`;
+  const res = await cfg.fetchImpl(`${base}/me/playlists?${params}`, {
+    headers: { Authorization: `OAuth ${cfg.accessToken}`, Accept: 'application/json' },
+  });
+  if (res.status === 401) throw new SoundCloudUnauthorizedError();
+  if (!res.ok)
+    throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for /me/playlists`);
+
+  const parsed = scPlaylistListSchema.safeParse(await readJson(res, 'soundcloud'));
+  if (!parsed.success) return [];
+  const rows = Array.isArray(parsed.data) ? parsed.data : parsed.data.collection;
+  return rows
+    .map((row) => {
+      const pl = scPlaylistSchema.safeParse(row);
+      if (!pl.success) return null;
+      const item = providerPlaylistSummarySchema.safeParse({
+        provider: 'soundcloud',
+        playlistId: String(pl.data.id),
+        name: pl.data.title ?? 'Untitled playlist',
+        ownerName: pl.data.user?.username ?? null,
+        trackCount: pl.data.track_count ?? 0,
+        coverImageUrl: pl.data.artwork_url ?? null,
+      });
+      return item.success ? item.data : null;
+    })
+    .filter((row): row is ProviderPlaylistSummary => row !== null);
+}
+
+/** Read tracks in one SoundCloud playlist id with a per-user token. */
+export async function fetchSoundCloudPlaylistTracks(cfg: {
+  accessToken: string;
+  playlistId: string;
+  fetchImpl: FetchLike;
+  apiBase?: string;
+}): Promise<TrackSearchResult[]> {
+  const base = cfg.apiBase ?? DEFAULT_API_BASE;
+  const id = encodeURIComponent(cfg.playlistId);
+  const res = await cfg.fetchImpl(`${base}/playlists/${id}`, {
+    headers: { Authorization: `OAuth ${cfg.accessToken}`, Accept: 'application/json' },
+  });
+  if (res.status === 401) throw new SoundCloudUnauthorizedError();
+  if (res.status === 404) return [];
+  if (!res.ok)
+    throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for /playlists/:id`);
+  const parsed = scPlaylistSchema.safeParse(await readJson(res, 'soundcloud'));
+  if (!parsed.success) return [];
+  return (parsed.data.tracks ?? [])
+    .map((item) => toCandidate(item))
+    .filter((row): row is TrackSearchResult => row !== null);
 }
 
 /** Map a raw SoundCloud track to a contract candidate, or null if it can't be one. */

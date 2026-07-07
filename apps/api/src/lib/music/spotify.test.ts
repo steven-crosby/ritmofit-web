@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   createSpotifyProvider,
+  fetchSpotifySavedPlaylists,
   fetchSpotifySavedTracks,
   SpotifyUnauthorizedError,
   type FetchLike,
@@ -250,6 +251,58 @@ describe('fetchSpotifySavedTracks', () => {
     });
     await expect(
       fetchSpotifySavedTracks({ accessToken: 'stale', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toBeInstanceOf(SpotifyUnauthorizedError);
+  });
+});
+
+describe('fetchSpotifySavedPlaylists', () => {
+  const PLAYLISTS_URL = `${API_BASE}/me/playlists`;
+
+  it('maps saved playlists into compact provider playlist cards', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${PLAYLISTS_URL}?limit=50&offset=0`]: {
+        items: [
+          {
+            id: 'pl-1',
+            name: 'Warmup Ride',
+            owner: { display_name: 'Steven' },
+            tracks: { total: 24 },
+            images: [{ url: 'https://i.scdn.co/image/pl-1.jpg' }],
+          },
+        ],
+        total: 1,
+      },
+    });
+
+    const results = await fetchSpotifySavedPlaylists({
+      accessToken: 'user-playlist-token',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+
+    expect(results).toEqual([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-1',
+        name: 'Warmup Ride',
+        ownerName: 'Steven',
+        trackCount: 24,
+        coverImageUrl: 'https://i.scdn.co/image/pl-1.jpg',
+      },
+    ]);
+    expect(calls[0]?.init?.headers?.Authorization).toBe('Bearer user-playlist-token');
+  });
+
+  it('throws SpotifyUnauthorizedError on a 401 so callers can refresh + retry', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({}),
+      text: async () => 'expired',
+    });
+
+    await expect(
+      fetchSpotifySavedPlaylists({ accessToken: 'stale', fetchImpl, apiBase: API_BASE }),
     ).rejects.toBeInstanceOf(SpotifyUnauthorizedError);
   });
 });

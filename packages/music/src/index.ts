@@ -10,6 +10,8 @@ export { ProviderError } from './errors.js';
 export {
   createSoundCloudProvider,
   fetchSoundCloudLikes,
+  fetchSoundCloudPlaylists,
+  fetchSoundCloudPlaylistTracks,
   SoundCloudUnauthorizedError,
   type SoundCloudConfig,
 } from './soundcloud.js';
@@ -22,6 +24,8 @@ export {
 export {
   createSpotifyProvider,
   fetchSpotifySavedTracks,
+  fetchSpotifySavedPlaylists,
+  fetchSpotifyPlaylistTracks,
   SpotifyUnauthorizedError,
   type SpotifyConfig,
 } from './spotify.js';
@@ -35,6 +39,8 @@ export {
 export {
   createAppleMusicProvider,
   fetchAppleMusicLibrarySongs,
+  fetchAppleMusicLibraryPlaylists,
+  fetchAppleMusicLibraryPlaylistTracks,
   AppleMusicUnauthorizedError,
   type AppleMusicConfig,
 } from './apple-music.js';

@@ -13,12 +13,15 @@ import { useEffect, useRef, useState } from 'react';
 import {
   providerCapabilities,
   type MusicConnectionView,
+  type ProviderPlaylistSummary,
   type Provider,
   type TrackSearchResult,
 } from '@ritmofit/shared';
 import {
   addTrack,
   importPlaylist,
+  listPlaylistTracks,
+  listPlaylists,
   importTrack,
   listConnections,
   listLikes,
@@ -35,7 +38,7 @@ import {
 /** A stable key for a candidate (provider + provider track id). */
 const candidateKey = (r: TrackSearchResult) => `${r.provider}:${r.providerTrackId}`;
 
-type Mode = 'search' | 'likes' | 'playlist';
+type Mode = 'search' | 'likes' | 'saved_playlists' | 'playlist';
 
 export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: () => void }) {
   const [provider, setProvider] = useState<Provider>(DEFAULT_PROVIDER);
@@ -49,6 +52,10 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
   const [addedKeys, setAddedKeys] = useState<Set<string>>(new Set());
   const [playlistUrl, setPlaylistUrl] = useState('');
   const [importingPlaylist, setImportingPlaylist] = useState(false);
+  const [savedPlaylists, setSavedPlaylists] = useState<ProviderPlaylistSummary[] | null>(null);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<ProviderPlaylistSummary | null>(null);
+  const [loadingSavedPlaylists, setLoadingSavedPlaylists] = useState(false);
+  const [importingAllFromPlaylist, setImportingAllFromPlaylist] = useState(false);
   // Guards against a stale async fetch overwriting a newer one's results.
   const reqId = useRef(0);
   // Provider connection readiness — surfaced proactively so "search my Spotify"
@@ -80,16 +87,17 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
   // "My likes" reads the caller's connected account; only providers with a
   // per-user integration support it. Catalog search stays available for all.
   const canUseLikes = providerCapabilities[provider].userLikes;
-  // Playlist import is Spotify-only today (SoundCloud 501s, Apple Music has no
-  // path); gate the mode so the UI never offers an import that always fails.
+  // URL playlist import is Spotify-only today.
   const canImportPlaylist = providerCapabilities[provider].playlistImport;
+  const canBrowseSavedPlaylists = providerCapabilities[provider].savedPlaylists;
 
   // If the selected provider can't serve the current mode, fall back to catalog
   // search so we never fire a request that would 501.
   useEffect(() => {
     if (mode === 'likes' && !canUseLikes) setMode('search');
     if (mode === 'playlist' && !canImportPlaylist) setMode('search');
-  }, [mode, canUseLikes, canImportPlaylist]);
+    if (mode === 'saved_playlists' && !canBrowseSavedPlaylists) setMode('search');
+  }, [mode, canUseLikes, canImportPlaylist, canBrowseSavedPlaylists]);
 
   // Fetch results on (mode, provider, query). Search debounces and clears on an
   // empty query; "My likes" fetches the caller's liked tracks (spends their token).
@@ -105,9 +113,10 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
       setError(null);
       return;
     }
-    // Don't fire a likes request for a provider that can't serve them; the reset
-    // effect switches us back to search.
+    // Don't fire modes the provider cannot serve; reset effect switches to search.
     if (mode === 'likes' && !canUseLikes) return;
+    if (mode === 'saved_playlists' && !canBrowseSavedPlaylists) return;
+    if (mode === 'saved_playlists') return;
     const id = ++reqId.current;
     setSearching(true);
     const run = async () => {
@@ -140,7 +149,82 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
       const t = setTimeout(run, 300);
       return () => clearTimeout(t);
     }
-  }, [mode, query, provider, canUseLikes]);
+  }, [mode, query, provider, canUseLikes, canBrowseSavedPlaylists]);
+
+  useEffect(() => {
+    if (mode !== 'saved_playlists') return;
+    if (!canBrowseSavedPlaylists) return;
+    setSelectedPlaylist(null);
+    setResults(null);
+    setLoadingSavedPlaylists(true);
+    setError(null);
+    let alive = true;
+    void (async () => {
+      try {
+        const rows = await listPlaylists(provider);
+        if (!alive) return;
+        setSavedPlaylists(rows);
+      } catch {
+        if (!alive) return;
+        setSavedPlaylists(null);
+        setError(`Couldn’t load your ${providerLabel(provider)} playlists — reconnect if needed.`);
+      } finally {
+        if (alive) setLoadingSavedPlaylists(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [mode, provider, canBrowseSavedPlaylists]);
+
+  const openSavedPlaylist = async (playlist: ProviderPlaylistSummary) => {
+    setSelectedPlaylist(playlist);
+    setSearching(true);
+    setError(null);
+    setResults(null);
+    setAddedKeys(new Set());
+    try {
+      setResults(await listPlaylistTracks(provider, playlist.playlistId));
+    } catch (e) {
+      setError((e as Error).message);
+      setResults(null);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const importAll = async () => {
+    if (!results || results.length === 0) return;
+    setImportingAllFromPlaylist(true);
+    setError(null);
+    const CONCURRENCY = 4;
+    const pending = [...results];
+    const newAdded = new Set(addedKeys);
+    try {
+      while (pending.length > 0) {
+        const batch = pending.splice(0, CONCURRENCY);
+        await Promise.all(
+          batch.map(async (candidate) => {
+            const key = candidateKey(candidate);
+            if (newAdded.has(key)) return;
+            try {
+              const track = await importTrack(candidate.provider, candidate.providerTrackId);
+              await addTrack(classId, { trackId: track.id, intensity: 'mod' });
+              newAdded.add(key);
+            } catch {
+              // Best-effort: a single failing track doesn't abort the batch.
+            }
+          }),
+        );
+      }
+      setAddedKeys(newAdded);
+      onAdded();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setImportingAllFromPlaylist(false);
+    }
+  };
 
   const add = async (candidate: TrackSearchResult) => {
     const key = candidateKey(candidate);
@@ -239,9 +323,14 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
 
       {/* Mode toggle — search the catalog, or browse the caller's own likes (S3).
           "My likes" only appears for providers with a per-user integration. */}
-      <div role="group" aria-label="Source" className="flex gap-1.5">
-        {(['search', 'likes', 'playlist'] as Mode[])
-          .filter((m) => (m !== 'likes' || canUseLikes) && (m !== 'playlist' || canImportPlaylist))
+      <div role="group" aria-label="Source" className="flex flex-wrap gap-1.5">
+        {(['search', 'likes', 'saved_playlists', 'playlist'] as Mode[])
+          .filter(
+            (m) =>
+              (m !== 'likes' || canUseLikes) &&
+              (m !== 'playlist' || canImportPlaylist) &&
+              (m !== 'saved_playlists' || canBrowseSavedPlaylists),
+          )
           .map((m) => {
             const selected = m === mode;
             return (
@@ -256,11 +345,46 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
                     : 'text-text-tertiary hover:text-text-secondary'
                 }`}
               >
-                {m === 'search' ? 'Search' : m === 'playlist' ? 'Import Playlist' : 'My likes'}
+                {m === 'search'
+                  ? 'Search'
+                  : m === 'playlist'
+                    ? 'Import Playlist URL'
+                    : m === 'saved_playlists'
+                      ? 'Saved playlists'
+                      : 'My likes'}
               </button>
             );
           })}
       </div>
+
+      {mode === 'saved_playlists' && selectedPlaylist && (
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedPlaylist(null);
+              setResults(null);
+            }}
+            className="rounded-pill border border-interactive/30 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+          >
+            Back to playlists
+          </button>
+          <p className="min-w-0 flex-1 truncate font-ui text-xs text-text-secondary">
+            {selectedPlaylist.name}
+          </p>
+          {results && results.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void importAll()}
+              disabled={importingAllFromPlaylist}
+              aria-label={`Import all ${results.length} tracks from ${selectedPlaylist.name}`}
+              className="shrink-0 rounded-pill rf-btn-primary px-3 py-1 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+            >
+              {importingAllFromPlaylist ? 'Importing…' : `Import all ${results.length}`}
+            </button>
+          )}
+        </div>
+      )}
 
       {mode === 'search' && (
         <>
@@ -313,6 +437,57 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
         <p className="font-ui text-xs text-text-tertiary">
           Paste the URL of a public playlist to import all its tracks at once.
         </p>
+      ) : mode === 'saved_playlists' && !selectedPlaylist ? (
+        loadingSavedPlaylists ? (
+          <p className="font-ui text-xs text-text-tertiary">
+            Loading your {providerLabel(provider)} playlists…
+          </p>
+        ) : savedPlaylists && savedPlaylists.length > 0 ? (
+          <ul className="flex flex-col gap-1.5">
+            {savedPlaylists.map((playlist) => (
+              <li
+                key={`${playlist.provider}:${playlist.playlistId}`}
+                className="flex items-center gap-3 rounded-card bg-bg-base px-2 py-1.5"
+              >
+                {playlist.coverImageUrl ? (
+                  <img
+                    src={playlist.coverImageUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="h-11 w-11 shrink-0 rounded-card object-cover"
+                  />
+                ) : (
+                  <span
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised text-text-tertiary"
+                    aria-hidden
+                  >
+                    ▤
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-ui text-sm font-semibold text-text-primary">
+                    {playlist.name}
+                  </p>
+                  <p className="truncate font-ui text-xs text-text-secondary">
+                    {playlist.ownerName ?? providerLabel(provider)} · {playlist.trackCount} tracks
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void openSavedPlaylist(playlist)}
+                  className="shrink-0 rounded-pill border border-interactive/35 px-3 py-1 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
+                >
+                  Open
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="font-ui text-xs text-text-tertiary">
+            No saved playlists found on {providerLabel(provider)}.
+          </p>
+        )
       ) : mode === 'search' && query.trim() === '' ? (
         <p className="font-ui text-xs text-text-tertiary">
           Find a track to add — building the playlist is building the class.
@@ -327,7 +502,9 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
         <p className="font-ui text-xs text-text-tertiary">
           {mode === 'likes'
             ? `No liked tracks on ${providerLabel(provider)}.`
-            : `No results for “${query.trim()}” on ${providerLabel(provider)}.`}
+            : mode === 'saved_playlists'
+              ? `No tracks found in this playlist.`
+              : `No results for "${query.trim()}" on ${providerLabel(provider)}.`}
         </p>
       ) : (
         results && (

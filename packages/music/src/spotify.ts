@@ -14,7 +14,12 @@
  * so the mapping is unit-tested with no live calls; re-verify endpoints/shapes
  * against live docs when real credentials land.
  */
-import { trackSearchResultSchema, type TrackSearchResult } from '@ritmofit/shared';
+import {
+  providerPlaylistSummarySchema,
+  trackSearchResultSchema,
+  type ProviderPlaylistSummary,
+  type TrackSearchResult,
+} from '@ritmofit/shared';
 import { z } from 'zod';
 import type { FetchLike, MusicProvider } from './provider.js';
 import { readJson, ProviderError } from './errors.js';
@@ -70,7 +75,21 @@ const spSavedPageSchema = z.object({
   total: z.number().int().nonnegative(),
 });
 
+const spLibraryPlaylistsPageSchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string().optional(),
+      owner: z.object({ display_name: z.string().nullable().optional() }).optional(),
+      tracks: z.object({ total: z.number().int().nonnegative().optional() }).optional(),
+      images: z.array(z.object({ url: z.string() })).optional(),
+    }),
+  ),
+  total: z.number().int().nonnegative(),
+});
+
 const SAVED_TRACKS_PAGE_LIMIT = 50;
+const SAVED_PLAYLISTS_PAGE_LIMIT = 50;
 
 export function createSpotifyProvider(config: SpotifyConfig): MusicProvider {
   return new SpotifyProvider(config);
@@ -255,5 +274,98 @@ export async function fetchSpotifySavedTracks(cfg: {
     if (pageItems.length === 0) break;
     offset += pageItems.length;
   }
+  return out;
+}
+
+/**
+ * Fetch the connected user's saved playlists (`/me/playlists`) with a per-user
+ * token, mapped into compact shelf cards for browse surfaces.
+ */
+export async function fetchSpotifySavedPlaylists(cfg: {
+  accessToken: string;
+  fetchImpl: FetchLike;
+  apiBase?: string;
+  /** Stop after this many playlists so browse reads stay bounded. */
+  maxPlaylists?: number;
+}): Promise<ProviderPlaylistSummary[]> {
+  const base = cfg.apiBase ?? DEFAULT_API_BASE;
+  const cap = cfg.maxPlaylists ?? 100;
+  const out: ProviderPlaylistSummary[] = [];
+  let offset = 0;
+  let total = Number.POSITIVE_INFINITY;
+
+  while (offset < total && out.length < cap) {
+    const res = await cfg.fetchImpl(
+      `${base}/me/playlists?limit=${SAVED_PLAYLISTS_PAGE_LIMIT}&offset=${offset}`,
+      { headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' } },
+    );
+    if (res.status === 401) throw new SpotifyUnauthorizedError();
+    if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for /me/playlists`);
+
+    const parsed = spLibraryPlaylistsPageSchema.safeParse(await readJson(res, 'spotify'));
+    if (!parsed.success) break;
+
+    for (const raw of parsed.data.items) {
+      const candidate = providerPlaylistSummarySchema.safeParse({
+        provider: 'spotify',
+        playlistId: raw.id,
+        name: raw.name ?? 'Untitled playlist',
+        ownerName: raw.owner?.display_name ?? null,
+        trackCount: raw.tracks?.total ?? 0,
+        coverImageUrl: raw.images?.[0]?.url ?? null,
+      });
+      if (candidate.success) out.push(candidate.data);
+      if (out.length >= cap) break;
+    }
+
+    total = parsed.data.total;
+    if (parsed.data.items.length === 0) break;
+    offset += parsed.data.items.length;
+  }
+
+  return out;
+}
+
+/**
+ * Fetch tracks for one Spotify playlist with a per-user token. This powers saved
+ * playlist drill-in so the UI can preview tracks before adding/importing.
+ */
+export async function fetchSpotifyPlaylistTracks(cfg: {
+  accessToken: string;
+  playlistId: string;
+  fetchImpl: FetchLike;
+  apiBase?: string;
+  /** Stop after this many tracks so detail reads stay bounded. */
+  maxTracks?: number;
+}): Promise<TrackSearchResult[]> {
+  const base = cfg.apiBase ?? DEFAULT_API_BASE;
+  const cap = cfg.maxTracks ?? 200;
+  const out: TrackSearchResult[] = [];
+  let offset = 0;
+  let total = Number.POSITIVE_INFINITY;
+  const encodedPlaylistId = encodeURIComponent(cfg.playlistId);
+
+  while (offset < total && out.length < cap) {
+    const res = await cfg.fetchImpl(
+      `${base}/playlists/${encodedPlaylistId}/tracks?limit=${PLAYLIST_PAGE_LIMIT}&offset=${offset}`,
+      { headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' } },
+    );
+    if (res.status === 401) throw new SpotifyUnauthorizedError();
+    if (!res.ok)
+      throw new ProviderError('spotify', `Spotify API ${res.status} for playlist tracks`);
+    const parsed = spPlaylistPageSchema.safeParse(await readJson(res, 'spotify'));
+    if (!parsed.success) break;
+
+    for (const item of parsed.data.items) {
+      const candidate = toSpotifyCandidate(item.track);
+      if (candidate) out.push(candidate);
+      if (out.length >= cap) break;
+    }
+
+    total = parsed.data.total;
+    if (parsed.data.items.length === 0) break;
+    offset += parsed.data.items.length;
+  }
+
   return out;
 }
