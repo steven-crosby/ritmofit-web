@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   createAppleMusicProvider,
   fetchAppleMusicLibrarySongs,
+  fetchAppleMusicLibraryPlaylists,
+  fetchAppleMusicLibraryPlaylistTracks,
   AppleMusicUnauthorizedError,
   type FetchLike,
 } from '@ritmofit/music';
@@ -204,6 +206,186 @@ describe('fetchAppleMusicLibrarySongs', () => {
         fetchAppleMusicLibrarySongs({
           developerToken: 'devtok',
           musicUserToken: 'stale',
+          fetchImpl,
+          apiBase: API_BASE,
+        }),
+      ).rejects.toBeInstanceOf(AppleMusicUnauthorizedError);
+    }
+  });
+});
+
+describe('fetchAppleMusicLibraryPlaylists', () => {
+  const ORIGIN = 'https://am.test';
+  const PLAYLISTS_URL = `${ORIGIN}/v1/me/library/playlists`;
+
+  const AM_LIBRARY_PLAYLIST = {
+    id: 'p.abc123',
+    type: 'library-playlists',
+    attributes: {
+      name: 'Cycle Bangers',
+      curatorName: 'DJ Ritmo',
+      trackCount: 12,
+      artwork: { url: 'https://is1.mzstatic.com/image/{w}x{h}.jpg', width: 3000, height: 3000 },
+    },
+  };
+
+  it('maps a library playlist → ProviderPlaylistSummary and sends both tokens', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${PLAYLISTS_URL}?limit=100`]: { data: [AM_LIBRARY_PLAYLIST] },
+    });
+    const results = await fetchAppleMusicLibraryPlaylists({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results).toEqual([
+      {
+        provider: 'apple_music',
+        playlistId: 'p.abc123',
+        name: 'Cycle Bangers',
+        ownerName: 'DJ Ritmo',
+        trackCount: 12,
+        coverImageUrl: 'https://is1.mzstatic.com/image/512x512.jpg',
+      },
+    ]);
+    expect(calls[0]?.init?.headers?.Authorization).toBe('Bearer devtok');
+    expect(calls[0]?.init?.headers?.['Music-User-Token']).toBe('mut-1');
+  });
+
+  it('defaults name/owner/trackCount/cover when attributes are absent', async () => {
+    const bare = { id: 'p.bare', type: 'library-playlists' };
+    const { fetchImpl } = fakeFetch({ [`${PLAYLISTS_URL}?limit=100`]: { data: [bare] } });
+    const results = await fetchAppleMusicLibraryPlaylists({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results).toEqual([
+      {
+        provider: 'apple_music',
+        playlistId: 'p.bare',
+        name: 'Untitled playlist',
+        ownerName: null,
+        trackCount: 0,
+        coverImageUrl: null,
+      },
+    ]);
+  });
+
+  it('follows Apple’s relative `next` cursor across pages', async () => {
+    const second = { ...AM_LIBRARY_PLAYLIST, id: 'p.def456' };
+    const { fetchImpl, calls } = fakeFetch({
+      [`${PLAYLISTS_URL}?limit=100`]: {
+        data: [AM_LIBRARY_PLAYLIST],
+        next: '/v1/me/library/playlists?offset=100',
+      },
+      [`${PLAYLISTS_URL}?offset=100`]: { data: [second] },
+    });
+    const results = await fetchAppleMusicLibraryPlaylists({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results.map((p) => p.playlistId)).toEqual(['p.abc123', 'p.def456']);
+    expect(calls.map((c) => c.url)).toEqual([
+      `${PLAYLISTS_URL}?limit=100`,
+      `${PLAYLISTS_URL}?offset=100`,
+    ]);
+  });
+
+  it('throws AppleMusicUnauthorizedError on 401/403 (reconnect signal)', async () => {
+    for (const status of [401, 403]) {
+      const fetchImpl: FetchLike = async () => ({
+        ok: false,
+        status,
+        json: async () => ({}),
+        text: async () => 'unauthorized',
+      });
+      await expect(
+        fetchAppleMusicLibraryPlaylists({
+          developerToken: 'devtok',
+          musicUserToken: 'stale',
+          fetchImpl,
+          apiBase: API_BASE,
+        }),
+      ).rejects.toBeInstanceOf(AppleMusicUnauthorizedError);
+    }
+  });
+});
+
+describe('fetchAppleMusicLibraryPlaylistTracks', () => {
+  const ORIGIN = 'https://am.test';
+  const PLAYLISTS_URL = `${ORIGIN}/v1/me/library/playlists`;
+
+  const AM_LIBRARY_SONG = {
+    id: 'i.libraryId123',
+    type: 'library-songs',
+    attributes: {
+      name: 'Bohemian Rhapsody',
+      artistName: 'Queen',
+      durationInMillis: 354947,
+      url: 'https://music.apple.com/us/album/bohemian-rhapsody/1440857781',
+      playParams: { id: 'i.libraryId123', catalogId: '1440857781' },
+      artwork: { url: 'https://is1.mzstatic.com/image/{w}x{h}.jpg', width: 3000, height: 3000 },
+    },
+  };
+
+  it('maps playlist tracks, prefers the catalog id, and targets the playlist URL', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${PLAYLISTS_URL}/p.abc123/tracks?limit=100`]: { data: [AM_LIBRARY_SONG] },
+    });
+    const results = await fetchAppleMusicLibraryPlaylistTracks({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      playlistId: 'p.abc123',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results).toEqual([
+      {
+        provider: 'apple_music',
+        providerTrackId: '1440857781', // catalogId, not the library id
+        providerUri: 'https://music.apple.com/us/album/bohemian-rhapsody/1440857781',
+        title: 'Bohemian Rhapsody',
+        artist: 'Queen',
+        albumArtUrl: 'https://is1.mzstatic.com/image/512x512.jpg',
+        durationMs: 354947,
+      },
+    ]);
+    expect(calls[0]?.url).toBe(`${PLAYLISTS_URL}/p.abc123/tracks?limit=100`);
+    expect(calls[0]?.init?.headers?.['Music-User-Token']).toBe('mut-1');
+  });
+
+  it('returns [] when the playlist is missing (404)', async () => {
+    // No handler matches → fakeFetch yields 404 → the adapter treats it as empty.
+    const { fetchImpl, calls } = fakeFetch({});
+    const results = await fetchAppleMusicLibraryPlaylistTracks({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      playlistId: 'p.gone',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(results).toEqual([]);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('throws AppleMusicUnauthorizedError on 401/403 (reconnect signal)', async () => {
+    for (const status of [401, 403]) {
+      const fetchImpl: FetchLike = async () => ({
+        ok: false,
+        status,
+        json: async () => ({}),
+        text: async () => 'unauthorized',
+      });
+      await expect(
+        fetchAppleMusicLibraryPlaylistTracks({
+          developerToken: 'devtok',
+          musicUserToken: 'stale',
+          playlistId: 'p.abc123',
           fetchImpl,
           apiBase: API_BASE,
         }),

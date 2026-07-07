@@ -234,6 +234,103 @@ describe('Dashboard class library states', () => {
     expect(screen.getByRole('button', { name: 'Start class from Warmup Ride' })).toBeTruthy();
   });
 
+  it('shows connected Spotify liked tracks in the resting shelf and opens the likes browser', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listLikes).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'tr-1',
+        providerUri: 'spotify:track:tr-1',
+        title: 'Levels',
+        artist: 'Avicii',
+        albumArtUrl: 'https://i.scdn.co/image/tr-1.jpg',
+        durationMs: 200000,
+      },
+      {
+        provider: 'spotify',
+        providerTrackId: 'tr-2',
+        providerUri: null,
+        title: 'Wake Me Up',
+        artist: 'Avicii',
+        albumArtUrl: null,
+        durationMs: 240000,
+      },
+    ]);
+
+    renderDashboard();
+
+    // Shelf summary text appears once likes load.
+    const browseBtn = await screen.findByRole('button', {
+      name: /2 liked tracks: Levels/i,
+    });
+    expect(browseBtn).toBeTruthy();
+
+    // Clicking opens the likes browser with a track preview + create action.
+    fireEvent.click(browseBtn);
+    expect(await screen.findByRole('dialog', { name: 'Browse Spotify likes' })).toBeTruthy();
+    expect(screen.getByText('Levels')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Create class from 2 liked tracks' })).toBeTruthy();
+  });
+
+  it('creates a class from liked tracks (imports each, opens the builder)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listLikes).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'tr-1',
+        providerUri: null,
+        title: 'Levels',
+        artist: 'Avicii',
+        albumArtUrl: null,
+        durationMs: 200000,
+      },
+      {
+        provider: 'spotify',
+        providerTrackId: 'tr-2',
+        providerUri: null,
+        title: 'Wake Me Up',
+        artist: 'Avicii',
+        albumArtUrl: null,
+        durationMs: 240000,
+      },
+    ]);
+    vi.mocked(api.createClass).mockResolvedValue(
+      makeClass('Spotify likes') as Awaited<ReturnType<typeof api.createClass>>,
+    );
+    vi.mocked(api.importTrack).mockResolvedValue({ id: 'imported' } as Awaited<
+      ReturnType<typeof api.importTrack>
+    >);
+    vi.mocked(api.addTrack).mockResolvedValue({} as ClassTrack);
+    vi.mocked(api.listClassTracks).mockResolvedValue([] as ClassTrack[]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+
+    renderDashboard();
+
+    const browseBtn = await screen.findByRole('button', { name: /2 liked tracks: Levels/i });
+    fireEvent.click(browseBtn);
+    const createBtn = await screen.findByRole('button', {
+      name: 'Create class from 2 liked tracks',
+    });
+
+    await act(async () => {
+      fireEvent.click(createBtn);
+    });
+
+    // Creates the class with the dialog title + default template, then imports
+    // every liked track before opening the builder.
+    await waitFor(() => {
+      expect(vi.mocked(api.createClass)).toHaveBeenCalledWith({
+        title: 'Spotify likes',
+        template: 'cycle',
+      });
+    });
+    expect(vi.mocked(api.importTrack)).toHaveBeenCalledWith('spotify', 'tr-1');
+    expect(vi.mocked(api.importTrack)).toHaveBeenCalledWith('spotify', 'tr-2');
+    expect(vi.mocked(api.addTrack)).toHaveBeenCalledTimes(2);
+  });
+
   it('omits the redundant ownership chip on library cards (solo-first library is owner-only)', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([makeClass('My ride')]));
 

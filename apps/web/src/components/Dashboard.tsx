@@ -45,6 +45,7 @@ import {
   uploadClassCover,
   getClass,
   listConnections,
+  listLikes,
   listPlaylists,
   listPlaylistTracks,
   importTrack,
@@ -151,6 +152,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [playlistBrowse, setPlaylistBrowse] = useState<{
     provider: Provider;
     playlists: ProviderPlaylistSummary[];
+  } | null>(null);
+  const [likesBrowse, setLikesBrowse] = useState<{
+    provider: Provider;
+    tracks: TrackSearchResult[];
   } | null>(null);
   const [onboardingVideoOpen, setOnboardingVideoOpen] = useState(false);
   const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
@@ -404,6 +409,37 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     [applyTagFilter, openClass],
   );
 
+  /**
+   * Create a new class from a provider's liked tracks. Likes are one collection
+   * (not many named playlists), so the caller supplies the class title; the
+   * tracks were already loaded for the resting shelf, so import them directly.
+   * Best-effort per track so a single failing song doesn't abort the import.
+   */
+  const handleCreateClassFromLikes = useCallback(
+    async (tracks: TrackSearchResult[], title: string, template: ClassTemplate) => {
+      const cls = await createClass({ title, template });
+      await applyTagFilter(null);
+      const CONCURRENCY = 4;
+      const pending = [...tracks];
+      while (pending.length > 0) {
+        const batch = pending.splice(0, CONCURRENCY);
+        await Promise.all(
+          batch.map(async (candidate) => {
+            try {
+              const track = await importTrack(candidate.provider, candidate.providerTrackId);
+              await addTrack(cls.id, { trackId: track.id, intensity: 'mod' });
+            } catch {
+              // Best-effort: a single failing track doesn't abort the import.
+            }
+          }),
+        );
+      }
+      setLikesBrowse(null);
+      await openClass({ ...cls, accessLevel: 'owner' });
+    },
+    [applyTagFilter, openClass],
+  );
+
   if (live)
     return (
       <ErrorBoundary resetLabel="Exit live mode" onReset={() => setLive(null)}>
@@ -491,6 +527,14 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             playlists={playlistBrowse.playlists}
             onClose={() => setPlaylistBrowse(null)}
             onCreateClass={handleCreateClassFromPlaylist}
+          />
+        )}
+        {likesBrowse && (
+          <LikesBrowserDialog
+            provider={likesBrowse.provider}
+            tracks={likesBrowse.tracks}
+            onClose={() => setLikesBrowse(null)}
+            onCreateClass={handleCreateClassFromLikes}
           />
         )}
         {cardPreview && (
@@ -586,6 +630,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 onBrowsePlaylists={(provider, playlists) =>
                   setPlaylistBrowse({ provider, playlists })
                 }
+                onBrowseLikes={(provider, tracks) => setLikesBrowse({ provider, tracks })}
               />
             )}
           </div>
@@ -593,6 +638,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           <MusicWorkspace
             onOpenConnections={() => setConnectionsOpen(true)}
             onBrowsePlaylists={(provider, playlists) => setPlaylistBrowse({ provider, playlists })}
+            onBrowseLikes={(provider, tracks) => setLikesBrowse({ provider, tracks })}
           />
         ) : destination === 'live' ? (
           <LiveWorkspace
@@ -1030,6 +1076,9 @@ function useProviderBrowseState() {
   );
   const [playlistsLoading, setPlaylistsLoading] = useState<Partial<Record<Provider, boolean>>>({});
   const [playlistsError, setPlaylistsError] = useState<Partial<Record<Provider, string>>>({});
+  const [likes, setLikes] = useState<Partial<Record<Provider, TrackSearchResult[]>>>({});
+  const [likesLoading, setLikesLoading] = useState<Partial<Record<Provider, boolean>>>({});
+  const [likesError, setLikesError] = useState<Partial<Record<Provider, string>>>({});
 
   useEffect(() => {
     let alive = true;
@@ -1077,7 +1126,47 @@ function useProviderBrowseState() {
     };
   }, [connections]);
 
-  return { connections, playlists, playlistsLoading, playlistsError };
+  // Liked tracks per connected provider — mirrors the playlist load above so the
+  // shelf can show a live count and open the likes browser from the resting state.
+  useEffect(() => {
+    let alive = true;
+    for (const provider of PROVIDER_ORDER) {
+      if (!providerCapabilities[provider].userLikes) continue;
+      const state = providerConnectionState(
+        provider,
+        connections.find((row) => row.provider === provider),
+        Date.now(),
+      );
+      if (state !== 'connected') continue;
+      setLikesLoading((prev) => ({ ...prev, [provider]: true }));
+      void (async () => {
+        try {
+          const rows = await listLikes(provider);
+          if (!alive) return;
+          setLikes((prev) => ({ ...prev, [provider]: Array.isArray(rows) ? rows : [] }));
+          setLikesError((prev) => ({ ...prev, [provider]: undefined }));
+        } catch (e) {
+          if (!alive) return;
+          setLikesError((prev) => ({ ...prev, [provider]: (e as Error).message }));
+        } finally {
+          if (alive) setLikesLoading((prev) => ({ ...prev, [provider]: false }));
+        }
+      })();
+    }
+    return () => {
+      alive = false;
+    };
+  }, [connections]);
+
+  return {
+    connections,
+    playlists,
+    playlistsLoading,
+    playlistsError,
+    likes,
+    likesLoading,
+    likesError,
+  };
 }
 
 /**
@@ -1091,14 +1180,24 @@ function WorkstationRestingState({
   listReady,
   onOpenConnections,
   onBrowsePlaylists,
+  onBrowseLikes,
 }: {
   classes: ClassListItem[];
   activeTag: string | null;
   listReady: boolean;
   onOpenConnections: () => void;
   onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
+  onBrowseLikes: (provider: Provider, tracks: TrackSearchResult[]) => void;
 }) {
-  const { connections, playlists, playlistsLoading, playlistsError } = useProviderBrowseState();
+  const {
+    connections,
+    playlists,
+    playlistsLoading,
+    playlistsError,
+    likes,
+    likesLoading,
+    likesError,
+  } = useProviderBrowseState();
 
   const classCount = classes.length;
   const trackCount = classes.reduce((sum, cls) => sum + cls.trackCount, 0);
@@ -1167,6 +1266,14 @@ function WorkstationRestingState({
                     ? () => onBrowsePlaylists(provider, playlists[provider]!)
                     : undefined
                 }
+                likes={likes[provider] ?? null}
+                loadingLikes={likesLoading[provider] ?? false}
+                likesError={likesError[provider] ?? null}
+                onBrowseLikes={
+                  likes[provider]?.length
+                    ? () => onBrowseLikes(provider, likes[provider]!)
+                    : undefined
+                }
               />
             ))}
           </div>
@@ -1179,11 +1286,21 @@ function WorkstationRestingState({
 function MusicWorkspace({
   onOpenConnections,
   onBrowsePlaylists,
+  onBrowseLikes,
 }: {
   onOpenConnections: () => void;
   onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
+  onBrowseLikes: (provider: Provider, tracks: TrackSearchResult[]) => void;
 }) {
-  const { connections, playlists, playlistsLoading, playlistsError } = useProviderBrowseState();
+  const {
+    connections,
+    playlists,
+    playlistsLoading,
+    playlistsError,
+    likes,
+    likesLoading,
+    likesError,
+  } = useProviderBrowseState();
   return (
     <section className="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)] xl:items-start">
       <aside className="rounded-card border border-interactive/10 bg-bg-raised p-4 shadow-card xl:sticky xl:top-6">
@@ -1263,6 +1380,14 @@ function MusicWorkspace({
               onBrowse={
                 playlists[provider]?.length
                   ? () => onBrowsePlaylists(provider, playlists[provider]!)
+                  : undefined
+              }
+              likes={likes[provider] ?? null}
+              loadingLikes={likesLoading[provider] ?? false}
+              likesError={likesError[provider] ?? null}
+              onBrowseLikes={
+                likes[provider]?.length
+                  ? () => onBrowseLikes(provider, likes[provider]!)
                   : undefined
               }
             />
@@ -1636,6 +1761,10 @@ function ProviderShelfCard({
   loadingPlaylists,
   playlistError,
   onBrowse,
+  likes,
+  loadingLikes,
+  likesError,
+  onBrowseLikes,
 }: {
   provider: (typeof PROVIDER_ORDER)[number];
   connection: MusicConnectionView | undefined;
@@ -1643,10 +1772,35 @@ function ProviderShelfCard({
   loadingPlaylists: boolean;
   playlistError: string | null;
   onBrowse?: () => void;
+  likes: TrackSearchResult[] | null;
+  loadingLikes: boolean;
+  likesError: string | null;
+  onBrowseLikes?: () => void;
 }) {
   const label = providerLabel(provider);
   const canBrowseSavedPlaylists = providerCapabilities[provider].savedPlaylists;
+  const canUseLikes = providerCapabilities[provider].userLikes;
   const connectionState = providerConnectionState(provider, connection, Date.now());
+
+  let likesSummary = 'Liked-track browsing is coming soon for this provider.';
+  if (canUseLikes && connectionState === 'connected') {
+    if (loadingLikes) {
+      likesSummary = 'Loading your liked tracks…';
+    } else if (likesError) {
+      likesSummary = `Couldn’t load likes right now: ${likesError}`;
+    } else if (likes && likes.length > 0) {
+      const names = likes
+        .slice(0, 2)
+        .map((row) => row.title)
+        .join(' • ');
+      const extra = likes.length > 2 ? ` (+${likes.length - 2} more)` : '';
+      likesSummary = `${likes.length} liked tracks: ${names}${extra}`;
+    } else {
+      likesSummary = 'No liked tracks yet on this account.';
+    }
+  } else if (canUseLikes && connectionState !== 'connected') {
+    likesSummary = 'Connect this provider to browse liked tracks.';
+  }
 
   let playlistSummary = 'Saved-playlist browsing is coming soon for this provider.';
   if (canBrowseSavedPlaylists && connectionState === 'connected') {
@@ -1674,7 +1828,7 @@ function ProviderShelfCard({
         <div>
           <h4 className="font-ui text-sm font-semibold text-text-primary">{label}</h4>
           <p className="mt-1 font-ui text-xs leading-5 text-text-tertiary">
-            Liked tracks are searchable from Builder once the provider is connected.
+            Browse liked tracks or saved playlists as class source material.
           </p>
         </div>
         <span className="rounded-pill border border-interactive/25 px-2 py-0.5 font-data text-[10px] uppercase tracking-wide text-text-secondary">
@@ -1682,9 +1836,19 @@ function ProviderShelfCard({
         </span>
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
-        <span className="rounded-control border border-interactive/10 bg-bg-raised px-3 py-2 font-ui text-xs text-text-secondary">
-          Liked / saved tracks
-        </span>
+        {onBrowseLikes ? (
+          <button
+            type="button"
+            onClick={onBrowseLikes}
+            className="rounded-control border border-interactive/25 bg-bg-raised px-3 py-2 text-left font-ui text-xs text-interactive hover:bg-interactive/10"
+          >
+            {likesSummary}
+          </button>
+        ) : (
+          <span className="rounded-control border border-interactive/10 bg-bg-raised px-3 py-2 font-ui text-xs text-text-tertiary">
+            {likesSummary}
+          </span>
+        )}
         {onBrowse ? (
           <button
             type="button"
@@ -1937,6 +2101,169 @@ function PlaylistBrowserDialog({
           ))}
         </ul>
       )}
+    </Dialog>
+  );
+}
+
+/**
+ * Browse a provider's liked tracks and spin up a class from them. Unlike saved
+ * playlists (many named lists), likes are one collection — so this dialog previews
+ * the tracks, takes an editable class name + discipline template, and creates a
+ * single class that imports all of them (best-effort, concurrency-bounded).
+ */
+function LikesBrowserDialog({
+  provider,
+  tracks,
+  onClose,
+  onCreateClass,
+}: {
+  provider: Provider;
+  tracks: TrackSearchResult[];
+  onClose: () => void;
+  onCreateClass: (
+    tracks: TrackSearchResult[],
+    title: string,
+    template: ClassTemplate,
+  ) => Promise<void>;
+}) {
+  const label = providerLabel(provider);
+  const [template, setTemplate] = useState<ClassTemplate>('cycle');
+  const [title, setTitle] = useState(`${label} likes`);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleCreate = async () => {
+    if (!title.trim() || creating) return;
+    setCreating(true);
+    setError(null);
+    try {
+      await onCreateClass(tracks, title.trim(), template);
+    } catch (e) {
+      setError((e as Error).message);
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Dialog
+      label={`Browse ${label} likes`}
+      onClose={onClose}
+      panelClassName="w-full max-w-lg rounded-card bg-bg-raised p-6 shadow-overlay"
+    >
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+            Music sources
+          </p>
+          <h2 className="mt-1 font-display text-xl font-semibold text-text-primary">
+            {label} likes
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close likes browser"
+          className="shrink-0 rounded-pill border border-interactive/30 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+        >
+          Close
+        </button>
+      </div>
+
+      {/* Likes have no source title to borrow, so the instructor names the class. */}
+      <div className="mb-4">
+        <label
+          htmlFor="likes-class-title"
+          className="mb-2 block font-ui text-xs font-semibold text-text-secondary"
+        >
+          New class name
+        </label>
+        <input
+          id="likes-class-title"
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full rounded-control border border-interactive/20 bg-bg-base px-3 py-2 font-ui text-sm text-text-primary"
+        />
+      </div>
+
+      {/* Template picker — applies to the created class. */}
+      <div className="mb-4">
+        <p className="mb-2 font-ui text-xs font-semibold text-text-secondary">New class template</p>
+        <div role="group" aria-label="Class template" className="flex gap-1.5">
+          {CREATE_TEMPLATE_OPTIONS.map(({ value, label: tLabel }) => {
+            if (!value) return null;
+            const selected = template === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setTemplate(value)}
+                className={`rounded-pill border px-3 py-1 font-ui text-xs ${
+                  selected
+                    ? 'border-interactive bg-interactive/15 text-text-primary'
+                    : 'border-interactive/30 text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {tLabel}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {error && (
+        <p role="alert" className="mb-3 font-ui text-sm text-state-danger">
+          {error}
+        </p>
+      )}
+
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="font-ui text-xs text-text-secondary">
+          {tracks.length} liked {tracks.length === 1 ? 'track' : 'tracks'} will be imported
+        </p>
+        <button
+          type="button"
+          onClick={() => void handleCreate()}
+          disabled={creating || !title.trim() || tracks.length === 0}
+          aria-label={`Create class from ${tracks.length} liked tracks`}
+          className="shrink-0 rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+        >
+          {creating ? 'Creating…' : `Create class from ${tracks.length} liked tracks`}
+        </button>
+      </div>
+
+      <ul className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">
+        {tracks.map((track) => (
+          <li
+            key={`${track.provider}:${track.providerTrackId}`}
+            className="flex items-center gap-3 rounded-card border border-interactive/10 bg-bg-base p-3"
+          >
+            {track.albumArtUrl ? (
+              <img
+                src={track.albumArtUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="h-11 w-11 shrink-0 rounded-card object-cover"
+              />
+            ) : (
+              <span
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised font-ui text-lg text-text-tertiary"
+                aria-hidden
+              >
+                ♪
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-ui text-sm font-semibold text-text-primary">
+                {track.title}
+              </p>
+              <p className="truncate font-ui text-xs text-text-secondary">{track.artist}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
     </Dialog>
   );
 }
