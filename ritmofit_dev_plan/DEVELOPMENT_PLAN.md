@@ -52,8 +52,9 @@ Pilates, and HIIT.
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
   Music workspace via a shared provider-browse hook. Last production deploy
-  **2026-07-07 (Worker `9d0a5710`)** — workstation-shell consolidation + liked-tracks shelf + SoundCloud
-  saved-playlist pagination fix, **no schema/migration** (supersedes `ded27a07`). For per-deploy detail
+  **2026-07-07 (Worker `7763f79c`)** — web polish + hardening round: Classes library search + sort
+  (#242) and keyboard track-reorder assistive-tech announcements (#246), **no schema/migration**
+  (supersedes `9d0a5710`; the four other PRs in the round were test-only). For per-deploy detail
   and the live Worker version, see [`HISTORY.md`](./HISTORY.md), newest first.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
