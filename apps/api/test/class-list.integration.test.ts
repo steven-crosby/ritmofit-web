@@ -109,6 +109,51 @@ describe('class library pagination (integration)', () => {
     expect(second.headers.get(CLASS_LIST_NEXT_CURSOR_HEADER)).toBeNull();
   });
 
+  it('pages a same-updatedAt group across a boundary without skip or duplicate', async () => {
+    // Three classes owned by a fresh user, all sharing one updated_at, so the keyset
+    // cursor boundary falls INSIDE the timestamp group. Ids are ordered so id-desc is
+    // deterministic (903 > 902 > 901). This exercises the tiebreak branch of the
+    // cursor filter (updated_at = X and id < Y): a bare `updated_at < X` would skip
+    // the third class entirely, returning an empty page 2.
+    const user = await signUpUser();
+    const SAME_MS = 700;
+    const same = {
+      hi: '00000000-0000-4000-8000-000000000903',
+      mid: '00000000-0000-4000-8000-000000000902',
+      lo: '00000000-0000-4000-8000-000000000901',
+    };
+    const insert = env.DB.prepare(`
+      insert into classes (
+        id, owner_user_id, title, description, template, status, visibility,
+        target_duration_ms, created_at, updated_at, last_opened_at
+      ) values (?, ?, ?, null, 'cycle', 'draft', 'private', null, ?, ?, null)
+    `);
+    await env.DB.batch([
+      insert.bind(same.hi, user.userId, 'Same A', SAME_MS, SAME_MS),
+      insert.bind(same.mid, user.userId, 'Same B', SAME_MS, SAME_MS),
+      insert.bind(same.lo, user.userId, 'Same C', SAME_MS, SAME_MS),
+    ]);
+
+    // Page 1: the two highest ids at the shared timestamp; boundary lands at `mid`.
+    const first = await authed(user.cookie)('/api/v1/classes?limit=2');
+    expect(first.status).toBe(200);
+    const firstRows = (await first.json()) as ClassWithAccess[];
+    expect(firstRows.map((row) => row.id)).toEqual([same.hi, same.mid]);
+    const cursor = first.headers.get(CLASS_LIST_NEXT_CURSOR_HEADER);
+    expect(cursor).toBeTruthy();
+
+    // Page 2: exactly the third class (same timestamp, id < mid) — no skip, no dup.
+    const second = await authed(user.cookie)(
+      `/api/v1/classes?limit=2&cursor=${encodeURIComponent(cursor!)}`,
+    );
+    expect(second.status).toBe(200);
+    const secondRows = (await second.json()) as ClassWithAccess[];
+    expect(secondRows.map((row) => row.id)).toEqual([same.lo]);
+    expect(secondRows.map((row) => row.id)).not.toContain(same.hi);
+    expect(secondRows.map((row) => row.id)).not.toContain(same.mid);
+    expect(second.headers.get(CLASS_LIST_NEXT_CURSOR_HEADER)).toBeNull();
+  });
+
   it('rejects a malformed cursor with the standard validation envelope', async () => {
     const res = await authed(viewer.cookie)('/api/v1/classes?cursor=not-a-cursor');
     expect(res.status).toBe(422);
