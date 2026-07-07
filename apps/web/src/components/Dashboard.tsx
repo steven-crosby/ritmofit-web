@@ -264,9 +264,14 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 
   // Load (or reload) one class detail under a monotonic request generation. The
   // reducer ignores late responses, and begin immediately masks the prior class.
-  const loadDetail = useCallback(async (classId: string) => {
+  //
+  // `silent` skips the loading mask: the current 'ready' detail stays on screen
+  // until 'success' replaces it, so an in-place refresh (e.g. after a keyboard
+  // reorder) never unmounts the workspace — preserving grip focus and the reorder
+  // announcement. Only use it to refresh the class already open, never to switch.
+  const loadDetail = useCallback(async (classId: string, opts?: { silent?: boolean }) => {
     const requestId = ++detailRequestId.current;
-    dispatchDetail({ type: 'begin', classId, requestId });
+    if (!opts?.silent) dispatchDetail({ type: 'begin', classId, requestId });
     const [tracksResult, payloadResult] = await Promise.allSettled([
       listClassTracks(classId),
       getRunPayload(classId),
@@ -607,6 +612,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 payload={detail.payload}
                 onError={setError}
                 onTrackChanged={() => void loadDetail(selected.id)}
+                onReordered={() => void loadDetail(selected.id, { silent: true })}
                 onRun={() => runClass(selected.id)}
                 onClassUpdated={applyClassUpdate}
                 onClassDeleted={handleClassDeleted}
@@ -2399,6 +2405,7 @@ function ClassWorkspace({
   payload,
   onError,
   onTrackChanged,
+  onReordered,
   onRun,
   onClassUpdated,
   onClassDeleted,
@@ -2409,6 +2416,9 @@ function ClassWorkspace({
   payload: RunPayload | null;
   onError: (msg: string | null) => void;
   onTrackChanged: () => void;
+  /** Refresh after a reorder without the loading mask, so the track list stays
+   *  mounted (grip focus + the reorder announcement survive). */
+  onReordered: () => void;
   onRun: () => void;
   onClassUpdated: (cls: Class) => void;
   onClassDeleted: (classId: string) => void;
@@ -2567,7 +2577,7 @@ function ClassWorkspace({
                 canReorder={canEdit && !isFree}
                 selectedTrackId={selectedTrackId}
                 onSelect={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
-                onReordered={onTrackChanged}
+                onReordered={onReordered}
               />
             ) : (
               <ol className="flex flex-col gap-2">
@@ -2979,7 +2989,7 @@ export function ClassHeaderCard({
  * ribbon + per-track offsets recompute. A failed POST rolls the order back. Only the
  * owner/editor sees the grip (the route enforces edit access regardless).
  */
-function ReorderableTrackList({
+export function ReorderableTrackList({
   classId,
   entries,
   canReorder,
@@ -3002,12 +3012,22 @@ function ReorderableTrackList({
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Assistive-tech narration for KEYBOARD reorder only — a sighted drag user already
+  // sees the result, so drag stays silent to avoid chatty announcements. `polite`
+  // carries successful moves and already-first/last boundaries; `assertive` carries a
+  // failed persist so it interrupts (the visible red row below stays too).
+  const [politeMessage, setPoliteMessage] = useState('');
+  const [assertiveMessage, setAssertiveMessage] = useState('');
 
-  const commit = async (next: RunPayloadTrackEntry[]) => {
+  const commit = async (
+    next: RunPayloadTrackEntry[],
+    announce?: { title: string; fromPosition: number },
+  ) => {
     const prev = order;
     setOrder(next); // optimistic
     setBusy(true);
     setError(null);
+    setAssertiveMessage('');
     try {
       await reorderTracks(
         classId,
@@ -3016,15 +3036,35 @@ function ReorderableTrackList({
       onReordered(); // reload so the ribbon + offsets reflect the new order
     } catch (e) {
       setOrder(prev); // roll back
-      setError((e as Error).message);
+      const message = (e as Error).message;
+      setError(message);
+      if (announce) {
+        setAssertiveMessage(
+          `Couldn’t reorder — “${announce.title}” moved back to position ${announce.fromPosition} of ${prev.length}.`,
+        );
+      }
     } finally {
       setBusy(false);
     }
   };
 
+  // Drag path: silent for assistive tech (no announce argument).
   const move = (from: number, to: number) => {
     if (busy || to < 0 || to >= order.length || from === to) return;
     void commit(moveItem(order, from, to));
+  };
+
+  // Keyboard path: announce the move, the boundary no-op, and any failed persist.
+  const keyboardMove = (from: number, direction: 1 | -1) => {
+    if (busy) return;
+    const title = order[from]?.track.title ?? 'Track';
+    const to = from + direction;
+    if (to < 0 || to >= order.length) {
+      setPoliteMessage(`“${title}” is already ${direction < 0 ? 'first' : 'last'}.`);
+      return;
+    }
+    setPoliteMessage(`Moved “${title}” to position ${to + 1} of ${order.length}.`);
+    void commit(moveItem(order, from, to), { title, fromPosition: from + 1 });
   };
 
   const endDrag = () => {
@@ -3033,30 +3073,41 @@ function ReorderableTrackList({
   };
 
   return (
-    <ol className="flex flex-col gap-2">
-      {order.map((t, i) => (
-        <SongRow
-          key={t.classTrackId}
-          entry={t}
-          position={i}
-          count={order.length}
-          canReorder={canReorder}
-          selected={t.classTrackId === selectedTrackId}
-          dragging={dragIndex === i}
-          dropTarget={overIndex === i && dragIndex !== null && dragIndex !== i}
-          onSelect={() => onSelect(t.classTrackId)}
-          onDragStart={() => setDragIndex(i)}
-          onDragEnter={() => dragIndex !== null && setOverIndex(i)}
-          onDragEnd={endDrag}
-          onDrop={() => {
-            if (dragIndex !== null) move(dragIndex, i);
-            endDrag();
-          }}
-          onKeyMove={(dir) => move(i, i + dir)}
-        />
-      ))}
-      {error && <li className="font-ui text-xs text-state-danger">{error}</li>}
-    </ol>
+    <>
+      <ol className="flex flex-col gap-2">
+        {order.map((t, i) => (
+          <SongRow
+            key={t.classTrackId}
+            entry={t}
+            position={i}
+            count={order.length}
+            canReorder={canReorder}
+            selected={t.classTrackId === selectedTrackId}
+            dragging={dragIndex === i}
+            dropTarget={overIndex === i && dragIndex !== null && dragIndex !== i}
+            onSelect={() => onSelect(t.classTrackId)}
+            onDragStart={() => setDragIndex(i)}
+            onDragEnter={() => dragIndex !== null && setOverIndex(i)}
+            onDragEnd={endDrag}
+            onDrop={() => {
+              if (dragIndex !== null) move(dragIndex, i);
+              endDrag();
+            }}
+            onKeyMove={(dir) => keyboardMove(i, dir)}
+          />
+        ))}
+        {error && <li className="font-ui text-xs text-state-danger">{error}</li>}
+      </ol>
+      {/* Keyboard-reorder narration. Separate polite/assertive regions because a node
+          can't reliably switch politeness after mount. Always present so a text change
+          is announced as a mutation. */}
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {politeMessage}
+      </p>
+      <p className="sr-only" aria-live="assertive" aria-atomic="true">
+        {assertiveMessage}
+      </p>
+    </>
   );
 }
 
