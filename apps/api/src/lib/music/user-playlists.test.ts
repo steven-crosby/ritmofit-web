@@ -334,3 +334,56 @@ describe('Apple Music saved playlists (developer-token path)', () => {
     } satisfies Partial<HttpError>);
   });
 });
+
+describe('fetchUserPlaylists — PROVIDER_UNAVAILABLE config guards', () => {
+  // Guards fire before the connection lookup (shared by the tracks path via
+  // readWithConnectedPlaylistToken), so an unconfigured provider is a 503, not a 409.
+  it('surfaces 503 before any DB read when the encryption key is unconfigured', async () => {
+    const { db } = makeDb(null);
+    const noKeyEnv = {
+      SPOTIFY_CLIENT_ID: 'spotify-client',
+      SPOTIFY_CLIENT_SECRET: 'spotify-secret',
+    } as Env;
+
+    await expect(fetchUserPlaylists(db, noKeyEnv, 'user-1', 'spotify')).rejects.toMatchObject({
+      status: 503,
+      code: 'PROVIDER_UNAVAILABLE',
+      message: 'Provider connections are not configured.',
+    } satisfies Partial<HttpError>);
+  });
+
+  it('surfaces 503 when Spotify app credentials are unconfigured', async () => {
+    const { db } = makeDb(null);
+    const noCredsEnv = { ENCRYPTION_KEY: 'test-key' } as Env;
+
+    await expect(fetchUserPlaylists(db, noCredsEnv, 'user-1', 'spotify')).rejects.toMatchObject({
+      status: 503,
+      code: 'PROVIDER_UNAVAILABLE',
+      message: 'Spotify is not configured.',
+    } satisfies Partial<HttpError>);
+  });
+
+  it('surfaces 503 when SoundCloud app credentials are unconfigured', async () => {
+    const { db } = makeDb(null);
+    const noCredsEnv = { ENCRYPTION_KEY: 'test-key' } as Env;
+
+    await expect(fetchUserPlaylists(db, noCredsEnv, 'user-1', 'soundcloud')).rejects.toMatchObject({
+      status: 503,
+      code: 'PROVIDER_UNAVAILABLE',
+      message: 'SoundCloud is not configured.',
+    } satisfies Partial<HttpError>);
+  });
+
+  it('surfaces 503 when Apple Music is unconfigured', async () => {
+    const { db } = makeDb(null);
+    const noCredsEnv = { ENCRYPTION_KEY: 'test-key' } as Env;
+
+    await expect(fetchUserPlaylists(db, noCredsEnv, 'user-1', 'apple_music')).rejects.toMatchObject(
+      {
+        status: 503,
+        code: 'PROVIDER_UNAVAILABLE',
+        message: 'Apple Music is not configured.',
+      } satisfies Partial<HttpError>,
+    );
+  });
+});
