@@ -128,4 +128,58 @@ describe('clip-window guard (integration)', () => {
     expect((await postCue(60_000)).status).toBe(201);
     expect((await postMove(90_000)).status).toBe(201);
   });
+
+  it('run-payload re-bases anchors to the clip start but keeps beat/bar track-relative', async () => {
+    const user = await signUpUser();
+    const api = authed(user.cookie);
+    const { classId, classTrackId } = await createClassWithTrack(user.cookie);
+
+    // Trim to [30_000, 120_000) and pin a beat grid: 120 BPM (500ms/beat), downbeat
+    // at the track start (beatAnchorMs stays track-relative, i.e. 0), 4/4.
+    const set = await api(`/api/v1/class-tracks/${classTrackId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        clipStartMs: 30_000,
+        clipEndMs: 120_000,
+        displayBpmOverride: 120,
+        beatAnchorMs: 0,
+      }),
+    });
+    expect(set.status).toBe(200);
+
+    // Place choreography at track-relative anchors inside the window.
+    const cue = await api(`/api/v1/class-tracks/${classTrackId}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({ anchorMs: 32_000, text: 'Sprint' }),
+    });
+    expect(cue.status).toBe(201);
+    const move = await api(`/api/v1/class-tracks/${classTrackId}/moves`, {
+      method: 'POST',
+      body: JSON.stringify({ anchorMs: 90_000, nameOverride: 'Jump' }),
+    });
+    expect(move.status).toBe(201);
+
+    const payload = (await (await api(`/api/v1/classes/${classId}/run-payload`)).json()) as {
+      tracks: Array<{
+        clipStartMs: number;
+        beatAnchorMs: number;
+        track: { durationMs: number };
+        cues: Array<{ anchorMs: number; beat: number | null; bar: number | null }>;
+        moves: Array<{ anchorMs: number; beat: number | null; bar: number | null }>;
+      }>;
+    };
+    const entry = payload.tracks[0]!;
+    expect(entry.clipStartMs).toBe(30_000);
+    expect(entry.beatAnchorMs).toBe(0);
+    // Effective duration is the clipped window length (120_000 − 30_000).
+    expect(entry.track.durationMs).toBe(90_000);
+
+    // anchorMs is emitted clip-relative (track-relative − clipStartMs), but beat/bar
+    // are derived from the pre-rebase track-relative anchor + downbeat, so the two
+    // stay consistent (a client re-deriving in clip-relative space lands on the same
+    // beat index). Cue at 32_000ms → rebased 2_000; index 64 → bar 17, beat 1.
+    expect(entry.cues[0]).toMatchObject({ anchorMs: 2_000, beat: 1, bar: 17 });
+    // Move at 90_000ms → rebased 60_000; index 180 → bar 46, beat 1.
+    expect(entry.moves[0]).toMatchObject({ anchorMs: 60_000, beat: 1, bar: 46 });
+  });
 });
