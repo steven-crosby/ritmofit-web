@@ -32,22 +32,22 @@ Pilates, and HIIT.
 - **Current operating focus (2026-07-06):** the launch gate is green and the app is live. The active
   track is the **D21 creator-workstation-shell slice** — the first slice (Cycle/Pilates/HIIT templates,
   readiness + discovery resting state, provider shelves) is deployed; the **saved-playlist browsing
-  sub-slice is now implemented** (new `GET /providers/:provider/playlists` + `GET
-  /providers/:provider/playlists/:playlistId/tracks` endpoints; TrackSearch "Saved playlists" mode with
-  per-playlist drill-in, individual track preview/add, and "Import all N" bulk-import; resting shelf
-  cards show live playlist counts for connected providers; all three providers integrated — Spotify via
-  OAuth, SoundCloud via OAuth, Apple Music via Music-User-Token; not yet deployed, pending deploy
-  decision). Alongside the **provider-authorized playback initiative**. SoundCloud, Apple Music, and
-  Spotify Web Playback SDK adapters are now registered and live-verified for Builder clip-window preview
-  (`TrackPreview.tsx`, manual/single-track/no-auto-advance) and Live Mode. The **2026-07-06 batch made
-  the player usable across all three providers**: SoundCloud plays via the public Widget without a live
-  connection, Apple Music `authorize()` recovers instead of freezing, Spotify plays in-app for Premium
-  users via the official Web Playback SDK, older Spotify connections missing playback scopes surface a
-  reconnect action, and Spotify-only tracks can still be **resolved cross-provider** to a playable
-  equivalent. Teams, Sharing, Publish, and Explore stay hidden/dormant (D20). Last production deploy
-  **2026-07-06 (Worker `b99ac98d`)** — Spotify Web Playback SDK launch, no schema/migration. For
-  per-deploy detail and the
-  live Worker version, see [`HISTORY.md`](./HISTORY.md), newest first.
+  sub-slice is now **implemented and deployed (Worker `ded27a07`)** (new `GET
+  /providers/:provider/playlists` + `GET /providers/:provider/playlists/:playlistId/tracks`
+  endpoints; TrackSearch "Saved playlists" mode with per-playlist drill-in, individual track
+  preview/add, and "Import all N" bulk-import; resting shelf cards show live playlist counts and open
+  `PlaylistBrowserDialog` to create a class from any playlist; all three providers integrated —
+  Spotify OAuth, SoundCloud OAuth, Apple Music Music-User-Token). Alongside the
+  **provider-authorized playback initiative**. SoundCloud, Apple Music, and Spotify Web Playback SDK
+  adapters are now registered and live-verified for Builder clip-window preview (`TrackPreview.tsx`,
+  manual/single-track/no-auto-advance) and Live Mode. The **2026-07-06 batch made the player usable
+  across all three providers**: SoundCloud plays via the public Widget without a live connection,
+  Apple Music `authorize()` recovers instead of freezing, Spotify plays in-app for Premium users via
+  the official Web Playback SDK, older Spotify connections missing playback scopes surface a reconnect
+  action, and Spotify-only tracks can still be **resolved cross-provider** to a playable equivalent.
+  Teams, Sharing, Publish, and Explore stay hidden/dormant (D20). Last production deploy
+  **2026-07-06 (Worker `ded27a07`)** — saved-playlist browsing, no schema/migration. For per-deploy
+  detail and the live Worker version, see [`HISTORY.md`](./HISTORY.md), newest first.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
