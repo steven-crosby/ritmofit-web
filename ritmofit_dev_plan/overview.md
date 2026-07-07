@@ -24,12 +24,7 @@ music app, and preview/listen while building**, then convert that curiosity into
 specialized*, with no single forced creation flow. Ritmo's durable value is the instructor layer on top:
 class structure, choreography, rehearsal, playback windows, readiness, and Live Mode.
 
-Current sequence (2026-07-06): the web app's launch gate is green and deployed. The active track is solo
-creator refinement — currently the **creator-workstation-shell slice (D21)**: Cycle/Pilates/HIIT
-templates, a music-discovery resting state, provider shelves with liked/saved cards, and playlist detail
-views — plus the provider-authorized playback initiative
-([`provider-playback-implementation.md`](./provider-playback-implementation.md)) where it improves
-rehearsal and Live Mode. Teams, Sharing, Publish, and Explore are dormant/deferred.
+Current sequence (2026-07-07): the web app's launch gate is green and deployed. The **D21 workstation-shell consolidation is live** (Worker `9d0a5710`, 2026-07-07) — primary nav unified to Classes / Music / Live / Account, Music is a first-class provider/source workspace, and provider-authorized playback for all three providers (SoundCloud, Apple Music, Spotify) shipped 2026-07-06. The active track is ongoing solo creator refinement. Teams, Sharing, Publish, and Explore are dormant/deferred.
 
 ## Who the user is
 

@@ -213,7 +213,7 @@ endpoints still exist for editing; run-payload is the read-optimized live contra
 
 ---
 
-## D13 — Permanent non-goals: provider playback control, not audio ownership or a DAW  **[Amended by D19, 2026-07-02]**
+## D13 — Permanent non-goals: no audio ownership, no DAW (provider playback control is explicitly allowed by D19)  **[Amended by D19, 2026-07-02]**
 
 > Original D13 item 1 read "no in-app audio playback / streaming — Ritmo Studio never plays tracks
 > itself; it deep-links / hands off to the provider app." **D19** supersedes that half: official
@@ -464,8 +464,7 @@ prompter and class clock. That changed in two steps:
    music app; preview/listen while building; convert musical curiosity into class creation; and run Live
    Mode with provider playback, preflight, auto-advance, and recovery states.
 
-**Current web-desktop slice (first implementation of the doctrine).** The next web slice makes the shell
-concrete. These are locked product decisions for that slice:
+**Deployed web-desktop slice (first implementation of the doctrine) — ✅ shipped 2026-07-07 (Worker `9d0a5710`, PR #232).** The workstation-shell consolidation is live: primary nav unified to Classes / Music / Live / Account; Music is a first-class provider/source workspace with saved-playlist and liked-tracks browsing on its shelves; Live is a runnable-class queue with preflight readiness; Account is an in-page settings workspace. The product decisions that drove that slice:
 
 - **Templates narrow to three.** Show only **Cycle**, **Pilates**, and **HIIT** as class templates.
   **Pilates maps to the existing `sculpt` enum value** for now — display-layer only, no migration (the
@@ -491,15 +490,7 @@ resting state. The **hard music constraints are unchanged** (`music-providers.md
 D19): browsing and previewing happen **only** through provider-authorized SDKs/widgets, and Ritmo never
 downloads, caches, proxies, mixes, or derives provider audio, and never takes BPM from Spotify.
 
-**Contract / scope note for implementers.** Today's backend already supports catalog **search**, per-user
-**likes** (all three providers), single-track **import**, and **Spotify playlist-URL import** (straight
-into a class). Two pieces of the slice need **new read surfaces** and should be sequenced as their own
-sub-slice: (a) **listing a user's saved playlists** per provider, and (b) **browsing a playlist's tracks
-without importing** (the adapter's `getPlaylist` exists for Spotify; SoundCloud needs permalink
-`/resolve`, Apple Music has no path yet) — each needs shared contracts + API routes + adapter methods +
-tests + OpenAPI regen. **In-list preview** reuses the D19 playback stack
-(`apps/web/src/lib/playback/*`, `TrackPreview.tsx`) extended to a not-yet-imported candidate. See
-`provider-playback-implementation.md` → "Music-service shell direction (D21)."
+**As-built contract / scope.** The two new read surfaces (saved-playlist listing + playlist track drill-in) shipped as `GET /providers/:provider/playlists` and `GET /providers/:provider/playlists/:playlistId/tracks` (see `api.md` and `HISTORY.md` 2026-07-06). In-list preview extended the D19 playback stack (`apps/web/src/lib/playback/*`, `TrackPreview.tsx`) to cover not-yet-imported candidates as planned. See `provider-playback-implementation.md` → "Music-service shell direction (D21)."
 
 **Why:** The solo loop is more valuable when it starts from *familiar music behavior* — the browsing and
 listening instructors already do on Spotify/Apple/SoundCloud — and converts it into classes, instead of
@@ -521,6 +512,6 @@ discovery surface always points at a create action, never a passive feed (design
   (`warm_up`/`climb`/`sprint`/`recovery`/`cool_down`) plus an additive run-payload `sections[]`
   (`schemaVersion` stayed 1). See `milestones.md` slice 16. *(So this is no longer "don't invent the
   table" — the table exists; build against it.)*
-- **`class_snapshots`** (history/restore/iOS cache) — revisit when versioning is a real requirement.
+- **`class_snapshots`** (history/restore/iOS cache) — revisit when versioning is a real requirement. *(No active plan; revisit explicitly if undo/history becomes a product requirement.)*
 - **`color_role` on class_tracks** — color belongs to the design layer, not the data model. (`color`
-  on a *cue* stays — the design system uses it for visual cue tagging.)
+  on a *cue* stays — the design system uses it for visual cue tagging.) *(Abandoned — cue color covers the use case; a `color_role` field on `class_track` is not planned.)*
