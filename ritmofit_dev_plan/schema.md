@@ -86,7 +86,7 @@ Owned by exactly one user. No `team_id` — ownership is always a user; others g
 | owner_user_id | text (FK → users.id) | |
 | title | text | e.g. "Mon POWER 6/8" |
 | description | text | Nullable |
-| template | text enum(`cycle`,`hiit`,`sculpt`,`tread`) | Nullable; class template type |
+| template | text enum(`cycle`,`hiit`,`sculpt`,`tread`) | Nullable; class template type. **D21 display note:** only `cycle`, `hiit`, and `sculpt` (shown as "Pilates") are offered in the create-class UI; `tread` and bare `sculpt` are valid stored values but are not presented in the template picker. |
 | status | text enum(`draft`,`ready`,`archived`) | Default `draft` |
 | visibility | text enum(`private`,`public`) | Default `private` |
 | timeline_mode | text enum(`sequential`,`free`) | Default `sequential`. `sequential` = back-to-back, server-derived offsets; `free` = author offsets with gaps (overlaps rejected), positions derived from offset order |
@@ -210,8 +210,10 @@ Time-anchored segment bands for the class overview and Live Mode.
 | start_offset_ms | int | Segment start on the class timeline |
 | created_at / updated_at | int (ms) | |
 
-Sections are class-level markers, not track children. The current run-payload emits sections without a
-section `id`; adding that id remains an additive contract follow-up if iOS wants perfect DTO symmetry.
+Sections are class-level markers, not track children. The current run-payload emits sections **without** a
+section `id`; the DB row has an `id` but it is not included in the payload shape. **Open decision:** expose
+`id` in the run-payload (additive, two-line code change + OpenAPI regen) or keep sections positional-only
+by design. Tracked in `DEVELOPMENT_PLAN.md` → "Known deferred post-launch features."
 
 ---
 
@@ -284,8 +286,8 @@ prompter.
 | id | text (PK) | UUID |
 | class_track_id | text (FK → class_tracks.id) | |
 | anchor_ms | int | Timestamp into the track, in milliseconds |
-| beat | int | Nullable; optional stored beat anchor. Beat-snapping now derives beat/bar at read from `anchor_ms` + the track's BPM + `beat_anchor_ms` (the run-payload populates them); these columns remain reserved and are not written by the snapping flow. |
-| bar | int | Nullable; optional stored bar anchor. Same status as `beat`. |
+| beat | int | Nullable; optional stored beat anchor. Beat-snapping derives beat/bar at read time from `anchor_ms` + the track's BPM + `beat_anchor_ms` (the run-payload populates them); these columns are **never written by the snapping flow** and are always null at rest. Reserved for a future explicit beat-anchor authoring path; do not write in new features. |
+| bar | int | Nullable; optional stored bar anchor. Same status as `beat` — always null at rest; derived at read time. |
 | text | text | The cue text shown in the prompter |
 | color | text | Nullable; free hex for visual tagging. The design system's cue-color picker **excludes the plasma range** (rationing is enforced in the UI, not the column) |
 | created_at / updated_at | int (ms) | |
@@ -426,4 +428,4 @@ Define these in the Drizzle schema (step 3); D1/SQLite enforces FKs when `PRAGMA
 - **Copy with cues:** "copy a track across classes with its tags" duplicates the `class_track` plus its
   `cues` and `class_track_moves` — an explicit operation (`POST /class-tracks/:id/copy`), because
   choreography lives on `class_track`, not `track` (D7).
-- **Still not modeled:** `class_snapshots` and `color_role`. See decisions for the rationale.
+- **Still not modeled:** `class_snapshots` (no active plan; revisit if undo/versioning becomes a product requirement). `color_role` on class_tracks is abandoned — cue color covers the use case.

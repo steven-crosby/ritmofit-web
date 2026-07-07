@@ -1,8 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  AppleMusicUnauthorizedError,
+  fetchAppleMusicLibraryPlaylistTracks,
+  fetchAppleMusicLibraryPlaylists,
+  fetchSoundCloudPlaylistTracks,
+  fetchSoundCloudPlaylists,
   fetchSpotifyPlaylistTracks,
   fetchSpotifySavedPlaylists,
+  refreshSoundCloudToken,
   refreshSpotifyToken,
+  SoundCloudUnauthorizedError,
   SpotifyUnauthorizedError,
 } from '@ritmofit/music';
 import { fetchUserPlaylistTracks, fetchUserPlaylists } from './user-playlists.js';
@@ -14,6 +21,11 @@ const musicMocks = vi.hoisted(() => ({
   fetchSpotifySavedPlaylists: vi.fn(),
   fetchSpotifyPlaylistTracks: vi.fn(),
   refreshSpotifyToken: vi.fn(),
+  fetchSoundCloudPlaylists: vi.fn(),
+  fetchSoundCloudPlaylistTracks: vi.fn(),
+  refreshSoundCloudToken: vi.fn(),
+  fetchAppleMusicLibraryPlaylists: vi.fn(),
+  fetchAppleMusicLibraryPlaylistTracks: vi.fn(),
 }));
 
 vi.mock('@ritmofit/music', async (importOriginal) => {
@@ -23,6 +35,11 @@ vi.mock('@ritmofit/music', async (importOriginal) => {
     fetchSpotifySavedPlaylists: musicMocks.fetchSpotifySavedPlaylists,
     fetchSpotifyPlaylistTracks: musicMocks.fetchSpotifyPlaylistTracks,
     refreshSpotifyToken: musicMocks.refreshSpotifyToken,
+    fetchSoundCloudPlaylists: musicMocks.fetchSoundCloudPlaylists,
+    fetchSoundCloudPlaylistTracks: musicMocks.fetchSoundCloudPlaylistTracks,
+    refreshSoundCloudToken: musicMocks.refreshSoundCloudToken,
+    fetchAppleMusicLibraryPlaylists: musicMocks.fetchAppleMusicLibraryPlaylists,
+    fetchAppleMusicLibraryPlaylistTracks: musicMocks.fetchAppleMusicLibraryPlaylistTracks,
   };
 });
 
@@ -36,6 +53,14 @@ const env = {
   SPOTIFY_CLIENT_ID: 'spotify-client',
   SPOTIFY_CLIENT_SECRET: 'spotify-secret',
 } as Env;
+
+const soundcloudEnv = {
+  ...env,
+  SOUNDCLOUD_CLIENT_ID: 'soundcloud-client',
+  SOUNDCLOUD_CLIENT_SECRET: 'soundcloud-secret',
+} as Env;
+
+const appleMusicEnv = { ...env, APPLE_MUSIC_DEVELOPER_TOKEN: 'apple-developer-token' } as Env;
 
 function makeConnection(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -148,5 +173,144 @@ describe('user playlist token helper', () => {
     } satisfies Partial<HttpError>);
     expect(refreshSpotifyToken).not.toHaveBeenCalled();
     expect(fetchSpotifySavedPlaylists).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SoundCloud saved playlists (shared connected-token path)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(refreshSoundCloudToken).mockResolvedValue({
+      accessToken: 'sc-access-fresh',
+      refreshToken: 'sc-refresh-fresh',
+      expiresInSec: 3600,
+      scope: null,
+    });
+    vi.mocked(fetchSoundCloudPlaylists).mockResolvedValue([]);
+    vi.mocked(fetchSoundCloudPlaylistTracks).mockResolvedValue([]);
+  });
+
+  it('reads saved playlists with the stored SoundCloud token', async () => {
+    const summary = {
+      provider: 'soundcloud' as const,
+      playlistId: 'set-1',
+      name: 'Climb',
+      ownerName: 'DJ',
+      trackCount: 12,
+      coverImageUrl: null,
+    };
+    vi.mocked(fetchSoundCloudPlaylists).mockResolvedValueOnce([summary]);
+    const { db } = makeDb(makeConnection({ provider: 'soundcloud' }));
+
+    const out = await fetchUserPlaylists(db, soundcloudEnv, 'user-1', 'soundcloud');
+
+    expect(out).toEqual([summary]);
+    expect(fetchSoundCloudPlaylists).toHaveBeenCalledWith(
+      expect.objectContaining({ accessToken: 'access-old' }),
+    );
+  });
+
+  it('reactively refreshes once when a SoundCloud tracks read rejects the stored token', async () => {
+    vi.mocked(fetchSoundCloudPlaylistTracks)
+      .mockRejectedValueOnce(new SoundCloudUnauthorizedError())
+      .mockResolvedValueOnce([]);
+    const { db } = makeDb(makeConnection({ provider: 'soundcloud' }));
+
+    await fetchUserPlaylistTracks(db, soundcloudEnv, 'user-1', 'soundcloud', 'set-1');
+
+    expect(fetchSoundCloudPlaylistTracks).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ accessToken: 'access-old', playlistId: 'set-1' }),
+    );
+    expect(fetchSoundCloudPlaylistTracks).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ accessToken: 'sc-access-fresh', playlistId: 'set-1' }),
+    );
+    expect(refreshSoundCloudToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps a SoundCloud auth failure with no refresh token to REAUTH_REQUIRED', async () => {
+    vi.mocked(fetchSoundCloudPlaylists).mockRejectedValueOnce(new SoundCloudUnauthorizedError());
+    const { db } = makeDb(makeConnection({ provider: 'soundcloud', refreshTokenEncrypted: null }));
+
+    await expect(
+      fetchUserPlaylists(db, soundcloudEnv, 'user-1', 'soundcloud'),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'REAUTH_REQUIRED',
+      message: 'Reconnect your SoundCloud account.',
+    } satisfies Partial<HttpError>);
+    expect(refreshSoundCloudToken).not.toHaveBeenCalled();
+  });
+});
+
+describe('Apple Music saved playlists (developer-token path)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(fetchAppleMusicLibraryPlaylists).mockResolvedValue([]);
+    vi.mocked(fetchAppleMusicLibraryPlaylistTracks).mockResolvedValue([]);
+  });
+
+  it('reads library playlists with the developer token and decrypted Music-User-Token', async () => {
+    const summary = {
+      provider: 'apple_music' as const,
+      playlistId: 'p.library-1',
+      name: 'Ride',
+      ownerName: null,
+      trackCount: 8,
+      coverImageUrl: null,
+    };
+    vi.mocked(fetchAppleMusicLibraryPlaylists).mockResolvedValueOnce([summary]);
+    const { db } = makeDb(makeConnection({ provider: 'apple_music', refreshTokenEncrypted: null }));
+
+    const out = await fetchUserPlaylists(db, appleMusicEnv, 'user-1', 'apple_music');
+
+    expect(out).toEqual([summary]);
+    // Apple has no server-side refresh: the stored access token IS the Music-User-Token.
+    expect(fetchAppleMusicLibraryPlaylists).toHaveBeenCalledWith(
+      expect.objectContaining({
+        developerToken: 'apple-developer-token',
+        musicUserToken: 'access-old',
+      }),
+    );
+  });
+
+  it('passes the playlist id through to the library tracks read', async () => {
+    const { db } = makeDb(makeConnection({ provider: 'apple_music', refreshTokenEncrypted: null }));
+
+    await fetchUserPlaylistTracks(db, appleMusicEnv, 'user-1', 'apple_music', 'p.library-1');
+
+    expect(fetchAppleMusicLibraryPlaylistTracks).toHaveBeenCalledWith(
+      expect.objectContaining({
+        developerToken: 'apple-developer-token',
+        musicUserToken: 'access-old',
+        playlistId: 'p.library-1',
+      }),
+    );
+  });
+
+  it('maps an Apple Music auth failure to REAUTH_REQUIRED (no server refresh)', async () => {
+    vi.mocked(fetchAppleMusicLibraryPlaylists).mockRejectedValueOnce(
+      new AppleMusicUnauthorizedError(),
+    );
+    const { db } = makeDb(makeConnection({ provider: 'apple_music', refreshTokenEncrypted: null }));
+
+    await expect(
+      fetchUserPlaylists(db, appleMusicEnv, 'user-1', 'apple_music'),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'REAUTH_REQUIRED',
+      message: 'Reconnect your Apple Music account.',
+    } satisfies Partial<HttpError>);
+  });
+
+  it('throws NOT_CONNECTED when there is no Apple Music connection', async () => {
+    const { db } = makeDb(null);
+
+    await expect(
+      fetchUserPlaylists(db, appleMusicEnv, 'user-1', 'apple_music'),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'NOT_CONNECTED',
+    } satisfies Partial<HttpError>);
   });
 });

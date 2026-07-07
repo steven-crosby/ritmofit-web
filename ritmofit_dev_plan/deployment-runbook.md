@@ -59,9 +59,7 @@ Music-User-Token and `POST`s it to `/providers/apple_music/connection`, stored e
 **Optional automatic BPM lookup** (GetSongBPM) is likewise unprovisioned: `GETSONGBPM_API_KEY` is not
 set in prod, so `POST /tracks/:id/bpm-lookup` returns a `503` with an instructor-facing fallback
 message and manual BPM entry covers the loop. Set the key via `wrangler secret put GETSONGBPM_API_KEY`
-post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). BPM and Google sign-in remain
-tracked as deferrals in `web-launch-readiness.md`; Apple sign-in is enabled when the Apple secrets above
-are present and the current slice is deployed.
+post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). **BPM lookup is built but unprovisioned** (`GETSONGBPM_API_KEY` not set — activate at will); **Google sign-in is unprovisioned** (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` not set — activate when credentials are provisioned). Both tracked in `DEVELOPMENT_PLAN.md` → "Known deferred post-launch features."
 
 ## Pre-deploy
 

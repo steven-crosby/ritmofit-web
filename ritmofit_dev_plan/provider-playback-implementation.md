@@ -10,6 +10,11 @@
 <!-- note (Claude, 2026-07-06): Finalized the Spotify playback plan after owner decisions — Premium account available; expand the single connect scope to be playback-capable; no feature flag (ship after live-verify). Starting the backend slice (scope expansion + playback-token endpoint). -->
 <!-- note (Codex, 2026-07-06): Spotify Web Playback SDK adapter registered and live-verified on prod, Worker b99ac98d; owner confirmed audible Premium playback in Builder preview and Live Mode. -->
 
+> **Status: ✅ initiative complete as of 2026-07-06.** All three adapters (SoundCloud Widget API, Apple
+> Music MusicKit JS, Spotify Web Playback SDK) are built, registered in the shared `PLAYBACK_ADAPTERS`
+> registry (`apps/web/src/lib/playback/registry.ts`), and live-verified on prod. Live Mode and Builder
+> preview are wired. This document is now an as-built reference. For the per-deploy log see `HISTORY.md`.
+
 ## Goal
 
 Build one Ritmo Studio player experience for web Live Mode and Builder preview while keeping provider audio

@@ -56,9 +56,10 @@ ritmofit/
 │  └─ DEVELOPMENT_PLAN.md       # entry point / map (this plan)
 ├─ ritmofit_design_system/      # the design system (tokens, principles, components)
 ├─ packages/
-│  └─ shared/                   # the contract: Zod schemas + inferred TS types
-│     ├─ src/entities/          # class, track, class_track, cue, move, team, share, user
-│     └─ src/index.ts
+│  ├─ shared/                   # the contract: Zod schemas + inferred TS types
+│  │  ├─ src/entities/          # class, track, class_track, cue, move, team, share, user
+│  │  └─ src/index.ts
+│  └─ music/                    # provider adapters (SoundCloud, Spotify, Apple Music) + music-domain helpers
 ├─ apps/
 │  ├─ api/                      # Hono backend (Cloudflare Worker)
 │  │  ├─ src/
