@@ -21,6 +21,8 @@ import {
   type ProviderPlaylistSummary,
   type RunPayload,
   type RunPayloadTrackEntry,
+  type TrackSearchResult,
+  type User,
 } from '@ritmofit/shared';
 import {
   listClasses,
@@ -46,7 +48,10 @@ import {
   listPlaylists,
   listPlaylistTracks,
   importTrack,
+  getMe,
+  updateMe,
 } from '../lib/api.js';
+import { authClient } from '../lib/auth-client.js';
 import { moveItem } from '../lib/reorder.js';
 import {
   avgBpm,
@@ -91,9 +96,6 @@ const LiveMode = lazyWithReload(() =>
 const ConnectionsDialog = lazyWithReload(() =>
   import('./ConnectionsDialog.js').then((m) => ({ default: m.ConnectionsDialog })),
 );
-const AccountDialog = lazyWithReload(() =>
-  import('./AccountDialog.js').then((m) => ({ default: m.AccountDialog })),
-);
 const SongsByMoveDialog = lazyWithReload(() =>
   import('./SongsByMoveDialog.js').then((m) => ({ default: m.SongsByMoveDialog })),
 );
@@ -113,6 +115,8 @@ const TrackPreview = lazyWithReload(() =>
   import('./TrackPreview.js').then((m) => ({ default: m.TrackPreview })),
 );
 
+type DashboardDestination = 'classes' | 'music' | 'live' | 'account';
+
 /** Full-screen Suspense fallback while a lazy chunk (e.g. Live mode) loads. */
 function LoadingScreen() {
   return (
@@ -124,6 +128,7 @@ function LoadingScreen() {
 
 export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
   const [profileName, setProfileName] = useState(userName);
+  const [destination, setDestination] = useState<DashboardDestination>('classes');
   const [classes, setClasses] = useState<ClassListItem[]>([]);
   const [listStatus, setListStatus] = useState<ListStatus>('loading');
   const [nextClassCursor, setNextClassCursor] = useState<string | null>(null);
@@ -142,7 +147,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   // Read-only preview of one of the caller's own classes from a Library card.
   const [cardPreview, setCardPreview] = useState<ClassListItem | null>(null);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
   const [songsByMoveOpen, setSongsByMoveOpen] = useState(false);
   const [playlistBrowse, setPlaylistBrowse] = useState<{
     provider: Provider;
@@ -232,12 +236,18 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   }, []);
 
   useEffect(() => {
-    if (selected) {
+    if (destination === 'classes' && selected) {
       document.title = `${selected.title} - Ritmo Studio`;
+    } else if (destination === 'music') {
+      document.title = 'Music - Ritmo Studio';
+    } else if (destination === 'live') {
+      document.title = 'Live - Ritmo Studio';
+    } else if (destination === 'account') {
+      document.title = 'Account - Ritmo Studio';
     } else {
       document.title = 'Ritmo Studio';
     }
-  }, [selected]);
+  }, [destination, selected]);
 
   // Load (or reload) one class detail under a monotonic request generation. The
   // reducer ignores late responses, and begin immediately masks the prior class.
@@ -416,35 +426,35 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             Ritmo Studio
           </h1>
         </div>
-        {/* Destinations cluster — on narrow viewports this becomes a compact
-            horizontal command rail, so the first screen stays about the class
-            queue/workbench rather than a wall of navigation pills. */}
+        {/* Primary destinations — the same map on every viewport. Mobile compresses
+            the rail horizontally; desktop breathes it into the top shell. */}
         <nav className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:flex-1 sm:flex-wrap sm:justify-end sm:overflow-visible sm:pb-0">
           <p className="hidden font-ui text-sm text-text-secondary sm:block">{profileName}</p>
-          <button
-            aria-label="Songs by move"
-            className="min-h-11 shrink-0 rounded-control border border-interactive/40 bg-bg-raised/70 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 sm:min-h-0 sm:rounded-pill sm:bg-transparent sm:px-4 sm:py-1.5 sm:text-sm"
-            onClick={() => setSongsByMoveOpen(true)}
-          >
-            <span className="sm:hidden">Moves</span>
-            <span className="hidden sm:inline">Songs by move</span>
-          </button>
-          <button
-            aria-label="Connections"
-            className="min-h-11 shrink-0 rounded-control border border-interactive/40 bg-bg-raised/70 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 sm:min-h-0 sm:rounded-pill sm:bg-transparent sm:px-4 sm:py-1.5 sm:text-sm"
-            onClick={() => setConnectionsOpen(true)}
-          >
-            <span className="sm:hidden">Music</span>
-            <span className="hidden sm:inline">Connections</span>
-          </button>
-          <button
-            aria-label="Account"
-            className="min-h-11 shrink-0 rounded-control border border-interactive/40 bg-bg-raised/70 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 sm:min-h-0 sm:rounded-pill sm:bg-transparent sm:px-4 sm:py-1.5 sm:text-sm"
-            onClick={() => setAccountOpen(true)}
-          >
-            <span className="sm:hidden">Me</span>
-            <span className="hidden sm:inline">Account</span>
-          </button>
+          {(
+            [
+              ['classes', 'Classes'],
+              ['music', 'Music'],
+              ['live', 'Live'],
+              ['account', 'Account'],
+            ] as const
+          ).map(([value, label]) => {
+            const active = destination === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-current={active ? 'page' : undefined}
+                className={`min-h-11 shrink-0 rounded-control border px-3 font-ui text-xs font-semibold transition-colors sm:min-h-0 sm:rounded-pill sm:px-4 sm:py-1.5 sm:text-sm ${
+                  active
+                    ? 'border-interactive bg-interactive/15 text-text-primary'
+                    : 'border-interactive/30 bg-bg-raised/70 text-text-secondary hover:bg-interactive/10 hover:text-text-primary sm:bg-transparent'
+                }`}
+                onClick={() => setDestination(value)}
+              >
+                {label}
+              </button>
+            );
+          })}
         </nav>
       </header>
 
@@ -458,12 +468,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               setConnectionsOpen(false);
               setOauthResult(null);
             }}
-          />
-        )}
-        {accountOpen && (
-          <AccountDialog
-            onClose={() => setAccountOpen(false)}
-            onProfileUpdated={(user) => setProfileName(user.displayName ?? user.email)}
           />
         )}
         {songsByMoveOpen && (
@@ -505,85 +509,108 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       <div className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6">
         {error && <p className="mb-4 font-ui text-sm text-state-danger">{error}</p>}
 
-        {/* The 3-pane workstation (design system 09): library · class · inspector.
-            Collapses to a single stacked column below xl so it stays usable on
-            smaller laptops. The class workspace contributes the center + inspector
-            columns; the library is the first column. */}
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start">
-          <LibraryRail
+        {destination === 'classes' ? (
+          /* The 3-pane workstation (design system 09): library · class · inspector.
+              Collapses to a single stacked column below xl so it stays usable on
+              smaller laptops. The class workspace contributes the center + inspector
+              columns; the library is the first column. */
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start">
+            <LibraryRail
+              classes={classes}
+              status={listStatus}
+              hasMore={nextClassCursor !== null}
+              loadingMore={loadingMoreClasses}
+              selectedId={selected?.id ?? null}
+              knownTags={knownTags}
+              activeTag={activeTag}
+              onSelectTag={applyTagFilter}
+              onError={setError}
+              onCreate={async (cls) => {
+                // A new class is untagged — clear any active filter so it's visible.
+                await applyTagFilter(null);
+                await openClass({ ...cls, accessLevel: 'owner' });
+              }}
+              onDuplicate={async (cls) => {
+                // "Save a copy" of an own/shared class into the caller's library, then
+                // refresh so the copy appears and open it for immediate editing.
+                const copy = await copyClass(cls.id);
+                await applyTagFilter(null);
+                await refreshClasses();
+                await openClass({ ...copy, accessLevel: 'owner' });
+              }}
+              onOpen={openClass}
+              onPreview={(cls) => setCardPreview(cls)}
+              onLoadMore={loadMoreClasses}
+              onRetry={() => {
+                setListStatus('loading');
+                void refreshClasses();
+              }}
+            />
+
+            {selected && detail.classId === selected.id && detail.status === 'ready' ? (
+              <ClassWorkspace
+                key={selected.id}
+                cls={selected}
+                tracks={detail.tracks}
+                payload={detail.payload}
+                onError={setError}
+                onTrackChanged={() => void loadDetail(selected.id)}
+                onRun={() => runClass(selected.id)}
+                onClassUpdated={applyClassUpdate}
+                onClassDeleted={handleClassDeleted}
+                onOpenSongsByMove={() => setSongsByMoveOpen(true)}
+              />
+            ) : selected && detail.classId === selected.id && detail.status === 'error' ? (
+              <section className="rounded-card bg-bg-raised p-8 shadow-card">
+                <p className="font-ui text-sm text-state-danger" role="alert">
+                  {detail.error}
+                </p>
+                <button
+                  type="button"
+                  className="mt-4 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
+                  onClick={() => void loadDetail(selected.id)}
+                >
+                  Retry class
+                </button>
+              </section>
+            ) : selected ? (
+              <section className="rounded-card bg-bg-raised p-8 shadow-card" aria-busy="true">
+                <p className="font-ui text-text-tertiary">Loading class…</p>
+              </section>
+            ) : (
+              <WorkstationRestingState
+                classes={classes}
+                activeTag={activeTag}
+                listReady={listStatus === 'ready'}
+                onOpenConnections={() => setConnectionsOpen(true)}
+                onBrowsePlaylists={(provider, playlists) =>
+                  setPlaylistBrowse({ provider, playlists })
+                }
+              />
+            )}
+          </div>
+        ) : destination === 'music' ? (
+          <MusicWorkspace
+            onOpenConnections={() => setConnectionsOpen(true)}
+            onBrowsePlaylists={(provider, playlists) => setPlaylistBrowse({ provider, playlists })}
+          />
+        ) : destination === 'live' ? (
+          <LiveWorkspace
             classes={classes}
             status={listStatus}
-            hasMore={nextClassCursor !== null}
-            loadingMore={loadingMoreClasses}
-            selectedId={selected?.id ?? null}
-            knownTags={knownTags}
-            activeTag={activeTag}
-            onSelectTag={applyTagFilter}
-            onError={setError}
-            onCreate={async (cls) => {
-              // A new class is untagged — clear any active filter so it's visible.
-              await applyTagFilter(null);
-              await openClass({ ...cls, accessLevel: 'owner' });
-            }}
-            onDuplicate={async (cls) => {
-              // "Save a copy" of an own/shared class into the caller's library, then
-              // refresh so the copy appears and open it for immediate editing.
-              const copy = await copyClass(cls.id);
-              await applyTagFilter(null);
-              await refreshClasses();
-              await openClass({ ...copy, accessLevel: 'owner' });
-            }}
-            onOpen={openClass}
-            onPreview={(cls) => setCardPreview(cls)}
-            onLoadMore={loadMoreClasses}
-            onRetry={() => {
-              setListStatus('loading');
-              void refreshClasses();
+            onRunClass={runClass}
+            onOpenClass={async (cls) => {
+              setDestination('classes');
+              await openClass(cls);
             }}
           />
-
-          {selected && detail.classId === selected.id && detail.status === 'ready' ? (
-            <ClassWorkspace
-              key={selected.id}
-              cls={selected}
-              tracks={detail.tracks}
-              payload={detail.payload}
-              onError={setError}
-              onTrackChanged={() => void loadDetail(selected.id)}
-              onRun={() => runClass(selected.id)}
-              onClassUpdated={applyClassUpdate}
-              onClassDeleted={handleClassDeleted}
-              onOpenSongsByMove={() => setSongsByMoveOpen(true)}
-            />
-          ) : selected && detail.classId === selected.id && detail.status === 'error' ? (
-            <section className="rounded-card bg-bg-raised p-8 shadow-card">
-              <p className="font-ui text-sm text-state-danger" role="alert">
-                {detail.error}
-              </p>
-              <button
-                type="button"
-                className="mt-4 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
-                onClick={() => void loadDetail(selected.id)}
-              >
-                Retry class
-              </button>
-            </section>
-          ) : selected ? (
-            <section className="rounded-card bg-bg-raised p-8 shadow-card" aria-busy="true">
-              <p className="font-ui text-text-tertiary">Loading class…</p>
-            </section>
-          ) : (
-            <WorkstationRestingState
-              classes={classes}
-              activeTag={activeTag}
-              listReady={listStatus === 'ready'}
-              onOpenConnections={() => setConnectionsOpen(true)}
-              onBrowsePlaylists={(provider, playlists) =>
-                setPlaylistBrowse({ provider, playlists })
-              }
-            />
-          )}
-        </div>
+        ) : (
+          <AccountWorkspace
+            profileName={profileName}
+            onProfileUpdated={(user) => setProfileName(user.displayName ?? user.email)}
+            onOpenConnections={() => setConnectionsOpen(true)}
+          />
+        )}
       </div>
     </main>
   );
@@ -996,24 +1023,7 @@ function CreateClassForm({
   );
 }
 
-/**
- * Resting workspace (D21): when no class is open, the center no longer goes blank.
- * It names the next class-building move and shows provider shelves as source
- * material, while playlist browsing stays honest until the read APIs land.
- */
-function WorkstationRestingState({
-  classes,
-  activeTag,
-  listReady,
-  onOpenConnections,
-  onBrowsePlaylists,
-}: {
-  classes: ClassListItem[];
-  activeTag: string | null;
-  listReady: boolean;
-  onOpenConnections: () => void;
-  onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
-}) {
+function useProviderBrowseState() {
   const [connections, setConnections] = useState<MusicConnectionView[]>([]);
   const [playlists, setPlaylists] = useState<Partial<Record<Provider, ProviderPlaylistSummary[]>>>(
     {},
@@ -1066,6 +1076,29 @@ function WorkstationRestingState({
       alive = false;
     };
   }, [connections]);
+
+  return { connections, playlists, playlistsLoading, playlistsError };
+}
+
+/**
+ * Resting workspace (D21): when no class is open, the center no longer goes blank.
+ * It names the next class-building move and shows provider shelves as source
+ * material, while playlist browsing stays honest until the read APIs land.
+ */
+function WorkstationRestingState({
+  classes,
+  activeTag,
+  listReady,
+  onOpenConnections,
+  onBrowsePlaylists,
+}: {
+  classes: ClassListItem[];
+  activeTag: string | null;
+  listReady: boolean;
+  onOpenConnections: () => void;
+  onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
+}) {
+  const { connections, playlists, playlistsLoading, playlistsError } = useProviderBrowseState();
 
   const classCount = classes.length;
   const trackCount = classes.reduce((sum, cls) => sum + cls.trackCount, 0);
@@ -1138,6 +1171,450 @@ function WorkstationRestingState({
             ))}
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function MusicWorkspace({
+  onOpenConnections,
+  onBrowsePlaylists,
+}: {
+  onOpenConnections: () => void;
+  onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
+}) {
+  const { connections, playlists, playlistsLoading, playlistsError } = useProviderBrowseState();
+  return (
+    <section className="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)] xl:items-start">
+      <aside className="rounded-card border border-interactive/10 bg-bg-raised p-4 shadow-card xl:sticky xl:top-6">
+        <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Sources</p>
+        <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
+          {PROVIDER_ORDER.map((provider) => {
+            const connectionState = providerConnectionState(
+              provider,
+              connections.find((row) => row.provider === provider),
+              Date.now(),
+            );
+            const rows = playlists[provider];
+            const canBrowse = !!rows?.length;
+            return (
+              <button
+                key={provider}
+                type="button"
+                aria-label={
+                  canBrowse
+                    ? `Browse ${providerLabel(provider)} playlists`
+                    : `Manage ${providerLabel(provider)} connection`
+                }
+                onClick={() =>
+                  canBrowse ? onBrowsePlaylists(provider, rows!) : onOpenConnections()
+                }
+                className="flex min-h-11 shrink-0 items-center justify-between gap-3 rounded-control border border-interactive/10 bg-bg-base px-3 py-2 text-left font-ui text-sm text-text-primary transition-colors hover:border-interactive/40 hover:bg-interactive/5"
+              >
+                <span>{providerLabel(provider)}</span>
+                <span className="font-data text-[10px] uppercase text-text-tertiary">
+                  {connectionState === 'connected' ? 'Linked' : 'Source'}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+        <button
+          type="button"
+          onClick={onOpenConnections}
+          className="mt-4 min-h-10 w-full rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10"
+        >
+          Manage connections
+        </button>
+      </aside>
+
+      <div className="flex min-w-0 flex-col gap-5">
+        <section className="rounded-card bg-bg-raised p-5 shadow-card sm:p-6">
+          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Music home</p>
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="font-display text-2xl font-semibold leading-tight text-text-primary">
+                Browse music, then shape it into class.
+              </h2>
+              <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
+                Saved playlists, liked tracks, and provider libraries are the raw material for
+                building.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenConnections}
+              className="min-h-10 shrink-0 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
+            >
+              Connect music
+            </button>
+          </div>
+        </section>
+
+        <section className="grid gap-3 lg:grid-cols-3">
+          {PROVIDER_ORDER.map((provider) => (
+            <ProviderShelfCard
+              key={provider}
+              provider={provider}
+              connection={connections.find((row) => row.provider === provider)}
+              playlists={playlists[provider] ?? null}
+              loadingPlaylists={playlistsLoading[provider] ?? false}
+              playlistError={playlistsError[provider] ?? null}
+              onBrowse={
+                playlists[provider]?.length
+                  ? () => onBrowsePlaylists(provider, playlists[provider]!)
+                  : undefined
+              }
+            />
+          ))}
+        </section>
+
+        <section className="rounded-card border border-interactive/10 bg-bg-base p-4">
+          <p className="font-ui text-sm font-semibold text-text-primary">Browse-first actions</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <span className="rounded-control bg-bg-raised px-3 py-2 font-ui text-xs text-text-secondary">
+              Open saved playlists
+            </span>
+            <span className="rounded-control bg-bg-raised px-3 py-2 font-ui text-xs text-text-secondary">
+              Inspect tracks before import
+            </span>
+            <span className="rounded-control bg-bg-raised px-3 py-2 font-ui text-xs text-text-secondary">
+              Start with Cycle, Pilates, or HIIT
+            </span>
+          </div>
+        </section>
+      </div>
+    </section>
+  );
+}
+
+function LiveWorkspace({
+  classes,
+  status,
+  onRunClass,
+  onOpenClass,
+}: {
+  classes: ClassListItem[];
+  status: ListStatus;
+  onRunClass: (classId: string) => void;
+  onOpenClass: (cls: ClassListItem) => Promise<void>;
+}) {
+  const runnable = classes.filter((cls) => cls.trackCount > 0 && cls.totalDurationMs > 0);
+  return (
+    <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+      <div className="rounded-card bg-bg-raised p-5 shadow-card sm:p-6">
+        <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Live</p>
+        <h2 className="mt-2 font-display text-2xl font-semibold leading-tight text-text-primary">
+          Pick a class to run.
+        </h2>
+        <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
+          Live stays in the same workspace map: choose the class, preflight music, then run the
+          room.
+        </p>
+
+        <div className="mt-5 flex flex-col gap-2">
+          {status === 'loading' ? (
+            <p className="font-ui text-sm text-text-tertiary">Loading runnable classes…</p>
+          ) : runnable.length === 0 ? (
+            <p className="font-ui text-sm text-text-tertiary">
+              No runnable classes yet. Add tracks and durations in Classes, then come back here.
+            </p>
+          ) : (
+            runnable.map((cls) => (
+              <article
+                key={cls.id}
+                className="flex flex-col gap-3 rounded-card border border-interactive/10 bg-bg-base p-3 sm:flex-row sm:items-center"
+              >
+                <ArtCollage urls={cls.albumArtUrls} />
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-ui text-sm font-semibold text-text-primary">
+                    {cls.title}
+                  </h3>
+                  <p className="font-data text-xs text-text-tertiary">
+                    {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount} tracks ·{' '}
+                    {formatDuration(cls.totalDurationMs)}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void onOpenClass(cls)}
+                    className="min-h-10 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary sm:rounded-pill"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onRunClass(cls.id)}
+                    className="min-h-10 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
+                  >
+                    Run live
+                  </button>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+      </div>
+
+      <aside className="rounded-card border border-interactive/15 bg-bg-base p-5 xl:sticky xl:top-6">
+        <p className="font-ui text-sm font-semibold text-text-primary">Preflight checks</p>
+        <div className="mt-3 grid gap-2">
+          <ReadinessTile
+            label="Runnable"
+            value={status === 'ready' ? String(runnable.length) : '...'}
+          />
+          <ReadinessTile label="Music" value="Checked in Live" />
+          <ReadinessTile label="Mode" value="Provider SDKs" />
+        </div>
+      </aside>
+    </section>
+  );
+}
+
+function normalizeOptional(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function AccountWorkspace({
+  profileName,
+  onProfileUpdated,
+  onOpenConnections,
+}: {
+  profileName: string;
+  onProfileUpdated: (user: User) => void;
+  onOpenConnections: () => void;
+}) {
+  const [profile, setProfile] = useState<User | null>(null);
+  const [displayName, setDisplayName] = useState(profileName);
+  const [imageUrl, setImageUrl] = useState('');
+  const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const [user, rows] = await Promise.all([getMe(), listConnections()]);
+        if (!alive) return;
+        setProfile(user);
+        setDisplayName(user.displayName ?? '');
+        setImageUrl(user.imageUrl ?? '');
+        setConnections(rows);
+        setLoadingError(null);
+      } catch (e) {
+        if (alive) setLoadingError((e as Error).message);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setSaveError(null);
+    setNotice(null);
+    try {
+      const updated = await updateMe({
+        displayName: normalizeOptional(displayName),
+        imageUrl: normalizeOptional(imageUrl),
+      });
+      setProfile(updated);
+      setDisplayName(updated.displayName ?? '');
+      setImageUrl(updated.imageUrl ?? '');
+      setNotice('Profile updated.');
+      onProfileUpdated(updated);
+    } catch (err) {
+      setSaveError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="grid gap-5 xl:grid-cols-[260px_minmax(0,1fr)] xl:items-start">
+      <aside className="rounded-card border border-interactive/10 bg-bg-raised p-4 shadow-card xl:sticky xl:top-6">
+        <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Account</p>
+        <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
+          {['Profile', 'Preferences', 'Music connections', 'Security'].map((item) => (
+            <a
+              key={item}
+              href={`#account-${item.toLowerCase().replace(/\s+/g, '-')}`}
+              className="min-h-11 shrink-0 rounded-control border border-interactive/10 bg-bg-base px-3 py-2 font-ui text-sm text-text-primary"
+            >
+              {item}
+            </a>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="flex min-w-0 flex-col gap-5">
+        <section id="account-profile" className="rounded-card bg-bg-raised p-5 shadow-card sm:p-6">
+          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Profile</p>
+          <h2 className="mt-2 font-display text-2xl font-semibold text-text-primary">
+            Personal workspace
+          </h2>
+          {loadingError && (
+            <p className="mt-3 font-ui text-sm text-state-danger" role="alert">
+              {loadingError}
+            </p>
+          )}
+          {notice && (
+            <p className="mt-3 font-ui text-sm text-state-positive" role="status">
+              {notice}
+            </p>
+          )}
+          {saveError && (
+            <p className="mt-3 font-ui text-sm text-state-danger" role="alert">
+              {saveError}
+            </p>
+          )}
+
+          {!profile ? (
+            <p className="mt-4 font-ui text-sm text-text-tertiary">Loading account…</p>
+          ) : (
+            <form className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]" onSubmit={submit}>
+              <div className="flex flex-col gap-4">
+                <label className="flex flex-col gap-1.5 font-ui text-sm text-text-secondary">
+                  Display name
+                  <input
+                    className="min-h-11 rounded-control border border-border-subtle bg-bg-base px-3 text-text-primary outline-none focus:border-interactive"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Instructor name"
+                    maxLength={200}
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5 font-ui text-sm text-text-secondary">
+                  Profile image URL
+                  <input
+                    className="min-h-11 rounded-control border border-border-subtle bg-bg-base px-3 text-text-primary outline-none focus:border-interactive"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="https://..."
+                    inputMode="url"
+                  />
+                </label>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle pt-4">
+                  <button
+                    type="button"
+                    className="min-h-10 rounded-control border border-border-subtle px-4 font-ui text-sm text-text-secondary transition-colors hover:text-text-primary sm:rounded-pill"
+                    onClick={() => authClient.signOut()}
+                  >
+                    Sign out
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="min-h-10 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50 sm:rounded-pill"
+                  >
+                    {saving ? 'Saving...' : 'Save profile'}
+                  </button>
+                </div>
+              </div>
+              <div className="rounded-card border border-border-subtle bg-bg-base p-4">
+                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-border-subtle bg-bg-raised font-display text-xl font-semibold text-text-primary">
+                  {profile.imageUrl ? (
+                    <img
+                      src={profile.imageUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    (profile.displayName ?? profile.email).slice(0, 1).toUpperCase()
+                  )}
+                </div>
+                <p className="mt-3 truncate font-ui text-sm font-semibold text-text-primary">
+                  {profile.displayName ?? 'Unnamed instructor'}
+                </p>
+                <p className="break-all font-ui text-xs text-text-tertiary">{profile.email}</p>
+              </div>
+            </form>
+          )}
+        </section>
+
+        <section
+          id="account-preferences"
+          className="rounded-card border border-interactive/10 bg-bg-base p-5"
+        >
+          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Preferences</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <ReadinessTile label="Default templates" value="Cycle / Pilates / HIIT" />
+            <ReadinessTile label="Playback" value="Manual preview" />
+            <ReadinessTile label="Workspace" value="Solo-first" />
+          </div>
+        </section>
+
+        <section
+          id="account-music-connections"
+          className="rounded-card bg-bg-raised p-5 shadow-card sm:p-6"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                Music connections
+              </p>
+              <h2 className="mt-2 font-display text-xl font-semibold text-text-primary">
+                Provider accounts
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenConnections}
+              className="min-h-10 rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 sm:rounded-pill"
+            >
+              Manage
+            </button>
+          </div>
+          <div className="mt-4 grid gap-2">
+            {PROVIDER_ORDER.map((provider) => {
+              const state = providerConnectionState(
+                provider,
+                connections?.find((row) => row.provider === provider),
+                Date.now(),
+              );
+              return (
+                <div
+                  key={provider}
+                  className="flex items-center justify-between gap-3 rounded-card bg-bg-base px-3 py-2.5"
+                >
+                  <div>
+                    <p className="font-ui text-sm font-semibold text-text-primary">
+                      {providerLabel(provider)}
+                    </p>
+                    <p className="font-ui text-xs text-text-tertiary">
+                      {state === 'connected'
+                        ? 'Connected for library browsing and playback where available.'
+                        : state === 'expired'
+                          ? 'Session expired.'
+                          : 'Not connected.'}
+                    </p>
+                  </div>
+                  <span className="rounded-pill border border-interactive/20 px-2 py-0.5 font-data text-[10px] uppercase text-text-secondary">
+                    {connections === null ? '...' : state}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section
+          id="account-security"
+          className="rounded-card border border-interactive/10 bg-bg-base p-5"
+        >
+          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Security</p>
+          <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
+            Email, password, and social sign-in settings remain with the active sign-in provider.
+          </p>
+        </section>
       </div>
     </section>
   );
@@ -1227,10 +1704,10 @@ function ProviderShelfCard({
 }
 
 /**
- * Browse a provider's saved playlists and create a new class from any one of
- * them. The user picks a discipline template first (shared across all rows so
- * they don't have to choose per playlist); then each row has a "Create class"
- * button that imports the whole playlist and opens it in the builder.
+ * Browse a provider's saved playlists and create a new class from one. Browse-first:
+ * open a playlist to inspect its tracks, then "Start class" imports the whole
+ * playlist and opens it in the builder. The discipline template picker is shared
+ * across the dialog so the choice carries into whichever playlist is started.
  */
 function PlaylistBrowserDialog({
   provider,
@@ -1249,9 +1726,26 @@ function PlaylistBrowserDialog({
   ) => Promise<void>;
 }) {
   const [template, setTemplate] = useState<ClassTemplate>('cycle');
+  const [selectedPlaylist, setSelectedPlaylist] = useState<ProviderPlaylistSummary | null>(null);
+  const [tracks, setTracks] = useState<TrackSearchResult[] | null>(null);
+  const [loadingTracks, setLoadingTracks] = useState(false);
   const [creatingId, setCreatingId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<string | null>(null);
   const label = providerLabel(provider);
+
+  const openPlaylist = async (playlist: ProviderPlaylistSummary) => {
+    setSelectedPlaylist(playlist);
+    setTracks(null);
+    setLoadingTracks(true);
+    setRowError(null);
+    try {
+      setTracks(await listPlaylistTracks(provider, playlist.playlistId));
+    } catch (e) {
+      setRowError((e as Error).message);
+    } finally {
+      setLoadingTracks(false);
+    }
+  };
 
   const handleCreate = async (playlist: ProviderPlaylistSummary) => {
     setCreatingId(playlist.playlistId);
@@ -1276,8 +1770,13 @@ function PlaylistBrowserDialog({
             Music sources
           </p>
           <h2 className="mt-1 font-display text-xl font-semibold text-text-primary">
-            {label} playlists
+            {selectedPlaylist ? selectedPlaylist.name : `${label} playlists`}
           </h2>
+          {selectedPlaylist && (
+            <p className="mt-1 font-ui text-xs text-text-tertiary">
+              {selectedPlaylist.ownerName ?? label} · {selectedPlaylist.trackCount} tracks
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -1321,10 +1820,83 @@ function PlaylistBrowserDialog({
         </p>
       )}
 
-      <ul className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto">
-        {playlists.map((playlist) => {
-          const busy = creatingId === playlist.playlistId;
-          return (
+      {selectedPlaylist ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedPlaylist(null);
+                setTracks(null);
+                setRowError(null);
+              }}
+              className="rounded-pill border border-interactive/30 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+            >
+              Back to playlists
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleCreate(selectedPlaylist)}
+              disabled={!!creatingId || loadingTracks}
+              aria-label={`Start class from ${selectedPlaylist.name}`}
+              className="rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+            >
+              {creatingId === selectedPlaylist.playlistId ? 'Creating...' : 'Start class'}
+            </button>
+          </div>
+          <div className="max-h-[58vh] overflow-y-auto rounded-card border border-interactive/10 bg-bg-base p-2">
+            {loadingTracks ? (
+              <p className="p-3 font-ui text-sm text-text-tertiary">Loading playlist tracks...</p>
+            ) : tracks && tracks.length > 0 ? (
+              <ol className="flex flex-col gap-1.5">
+                {tracks.map((track, index) => (
+                  <li
+                    key={`${track.provider}:${track.providerTrackId}`}
+                    className="flex items-center gap-3 rounded-card bg-bg-raised px-2 py-1.5"
+                  >
+                    <span className="w-5 shrink-0 text-right font-data text-xs text-text-tertiary">
+                      {index + 1}
+                    </span>
+                    {track.albumArtUrl ? (
+                      <img
+                        src={track.albumArtUrl}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="h-10 w-10 shrink-0 rounded-card object-cover"
+                      />
+                    ) : (
+                      <span
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-bg-base text-text-tertiary"
+                        aria-hidden
+                      >
+                        ♪
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-ui text-sm font-semibold text-text-primary">
+                        {track.title}
+                      </p>
+                      <p className="truncate font-ui text-xs text-text-secondary">{track.artist}</p>
+                    </div>
+                    {track.durationMs != null && (
+                      <span className="shrink-0 font-data text-xs text-text-tertiary">
+                        {formatDuration(track.durationMs)}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="p-3 font-ui text-sm text-text-tertiary">
+                No tracks found in this playlist.
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <ul className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto">
+          {playlists.map((playlist) => (
             <li
               key={playlist.playlistId}
               className="flex items-center gap-3 rounded-card border border-interactive/10 bg-bg-base p-3"
@@ -1355,17 +1927,16 @@ function PlaylistBrowserDialog({
               </div>
               <button
                 type="button"
-                onClick={() => void handleCreate(playlist)}
-                disabled={!!creatingId}
-                aria-label={`Create class from ${playlist.name}`}
-                className="shrink-0 rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+                onClick={() => void openPlaylist(playlist)}
+                aria-label={`Open ${playlist.name}`}
+                className="shrink-0 rounded-pill border border-interactive/35 px-3 py-1.5 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
               >
-                {busy ? 'Creating…' : 'Create class'}
+                Open
               </button>
             </li>
-          );
-        })}
-      </ul>
+          ))}
+        </ul>
+      )}
     </Dialog>
   );
 }
