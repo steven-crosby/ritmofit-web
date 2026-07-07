@@ -1361,6 +1361,102 @@
         }
       }
     },
+    "/providers/{provider}/playlists": {
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "spotify",
+              "apple_music",
+              "soundcloud"
+            ]
+          }
+        }
+      ],
+      "get": {
+        "summary": "List the caller's saved playlists (D21; spends their per-user OAuth token)",
+        "responses": {
+          "200": {
+            "description": "Saved playlists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderPlaylistSummary"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not connected / reconnect required"
+          },
+          "501": {
+            "description": "Provider saved playlists not integrated"
+          },
+          "503": {
+            "description": "Provider not configured"
+          }
+        }
+      }
+    },
+    "/providers/{provider}/playlists/{playlistId}/tracks": {
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "spotify",
+              "apple_music",
+              "soundcloud"
+            ]
+          }
+        },
+        {
+          "name": "playlistId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "summary": "List tracks in one saved playlist for browse/drill-in (D21; spends their per-user OAuth token)",
+        "responses": {
+          "200": {
+            "description": "Playlist tracks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrackSearchResult"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not connected / reconnect required"
+          },
+          "501": {
+            "description": "Provider saved playlists not integrated"
+          },
+          "503": {
+            "description": "Provider not configured"
+          }
+        }
+      }
+    },
     "/providers/track-import": {
       "post": {
         "summary": "Import a provider candidate into the library",
@@ -5090,6 +5186,63 @@
         },
         "required": [
           "musicUserToken"
+        ],
+        "additionalProperties": false
+      },
+      "ProviderPlaylistSummary": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "spotify",
+              "apple_music",
+              "soundcloud"
+            ]
+          },
+          "playlistId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ownerName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trackCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "coverImageUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "provider",
+          "playlistId",
+          "name",
+          "ownerName",
+          "trackCount",
+          "coverImageUrl"
         ],
         "additionalProperties": false
       },
