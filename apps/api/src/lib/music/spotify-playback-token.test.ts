@@ -57,6 +57,19 @@ describe('mintSpotifyPlaybackToken', () => {
     expect(res.accessToken).toBe('mock-spotify-playback-token');
   });
 
+  it('throws 503 PROVIDER_UNAVAILABLE before any DB read when Spotify creds are unconfigured', async () => {
+    // `spotifyCreds` guards before the connection lookup, so an unconfigured app is a
+    // 503, not a 409 — and the DB is never touched.
+    const unconfiguredEnv = {
+      MOCK_PROVIDERS: 'false',
+      ENCRYPTION_KEY: 'test-key'.padStart(32, '0'),
+    } as unknown as Env;
+    await expect(mintSpotifyPlaybackToken(mockDb, unconfiguredEnv, 'user1')).rejects.toThrowError(
+      new HttpError(503, 'PROVIDER_UNAVAILABLE', 'Spotify is not configured.'),
+    );
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
   it('throws 409 NOT_CONNECTED when no connection', async () => {
     mockGet.mockResolvedValueOnce(undefined);
     await expect(mintSpotifyPlaybackToken(mockDb, mockEnv, 'user1')).rejects.toThrowError(
