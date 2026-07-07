@@ -10,6 +10,27 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-06 (saved-playlist browsing — D21 sub-slice) — deployed (Worker
+> `ded27a07-b006-411c-aa5f-ce923d3d440f`).** Commit `eb229d5`. Additive API slice + frontend
+> feature — **no schema / migration.** New endpoints: `GET /providers/:provider/playlists` (list
+> connected user's saved playlists — Spotify OAuth, SoundCloud OAuth, Apple Music Music-User-Token)
+> and `GET /providers/:provider/playlists/:playlistId/tracks` (drill-in track read for a single
+> playlist). Shared `ProviderPlaylistSummary` DTO + `savedPlaylists` capability flag enabled for all
+> three providers. Web: `TrackSearch` gains a **Saved playlists** mode (playlist list → per-playlist
+> drill-in → per-track Add + **Import all N** bulk-import with concurrency-4 batching; `addedKeys`
+> resets per playlist; empty-state copy scoped); resting provider shelf cards now load live playlist
+> counts for connected providers and their summary text becomes a clickable **Browse** button;
+> `PlaylistBrowserDialog` lets an instructor browse saved playlists from the resting state (no class
+> open), pick a discipline template (Cycle / Pilates / HIIT), and create a new class from any playlist
+> in one action (imports all tracks, then opens the class in the builder). Rollback anchor: prior live
+> `b99ac98d-ea10-4efb-b42f-b068e479c550` (Spotify Web Playback SDK launch). Remote D1: **no migrations
+> to apply.** Pre-deploy gate: format:check ✓ · typecheck ×4 ✓ · lint ✓ · design-system verify ✓ ·
+> unit web 418 / api 285 ✓ · integration 82 ✓ · web build ✓ · OpenAPI no drift (47 schemas · 48 paths)
+> ✓ · contract-parity 7 tracked lag items ✓ · audit:ci ✓. Post-deploy smoke on live
+> `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` → `200` `{"status":"ok"}`,
+> `/api/v1/providers/spotify/playlists` (unauthenticated) → `401` (mounted, not `404`),
+> `/api/v1/classes` → `401`.
+
 > **Session 2026-07-06 (Spotify Web Playback SDK launch — registered + live-verified) — deployed
 > (Worker `b99ac98d-ea10-4efb-b42f-b068e479c550`).** Deployed the stacked Spotify playback branch
 > (`feat/spotify-playback-web`, on the backend playback-token/scope branch and the SoundCloud/Apple CSP
