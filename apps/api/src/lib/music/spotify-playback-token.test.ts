@@ -146,6 +146,38 @@ describe('mintSpotifyPlaybackToken', () => {
     );
   });
 
+  it('keeps the stored refresh token when the provider omits a rotated one', async () => {
+    // Spotify frequently returns no new refresh_token on refresh; the old one must
+    // survive so the next refresh still works (else the user is silently logged out).
+    mockGet.mockResolvedValueOnce({
+      id: 'conn1',
+      userId: 'user1',
+      provider: 'spotify',
+      scope: 'user-library-read streaming',
+      accessTokenEncrypted: 'enc:token1',
+      refreshTokenEncrypted: 'enc:refresh1',
+      expiresAt: Date.now() - 1000,
+    });
+
+    vi.mocked(musicPkg.refreshSpotifyToken).mockResolvedValueOnce({
+      accessToken: 'token2',
+      refreshToken: null, // provider did not rotate it
+      expiresInSec: 3600,
+      scope: 'user-library-read streaming',
+    });
+
+    const res = await mintSpotifyPlaybackToken(mockDb, mockEnv, 'user1');
+    expect(res.accessToken).toBe('token2');
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessTokenEncrypted: 'enc:token2',
+        // Unchanged: the previously-stored (encrypted) refresh token is retained.
+        refreshTokenEncrypted: 'enc:refresh1',
+      }),
+    );
+  });
+
   it('throws 409 REAUTH_REQUIRED if refresh fails', async () => {
     mockGet.mockResolvedValueOnce({
       id: 'conn1',
