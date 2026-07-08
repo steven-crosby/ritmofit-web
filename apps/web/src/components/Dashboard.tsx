@@ -153,6 +153,21 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [detail, dispatchDetail] = useReducer(classDetailReducer, initialClassDetailState);
   const detailRequestId = useRef(0);
   const [live, setLive] = useState<RunPayload | null>(null);
+  // Live Mode is a full-tree swap (see the `if (live)` early return below), so the
+  // control that opened it never survives to be refocused on exit — the dashboard
+  // remounts fresh. Restore focus to the primary heading instead, the same
+  // deterministic-landmark discipline as #250's preflight entry-focus fix.
+  const dashboardHeadingRef = useRef<HTMLHeadingElement>(null);
+  const restoreFocusOnExitRef = useRef(false);
+  const exitLive = useCallback(() => {
+    restoreFocusOnExitRef.current = true;
+    setLive(null);
+  }, []);
+  useEffect(() => {
+    if (live || !restoreFocusOnExitRef.current) return;
+    restoreFocusOnExitRef.current = false;
+    dashboardHeadingRef.current?.focus();
+  }, [live]);
   // Read-only preview of one of the caller's own classes from a Library card.
   const [cardPreview, setCardPreview] = useState<ClassListItem | null>(null);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
@@ -455,9 +470,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 
   if (live)
     return (
-      <ErrorBoundary resetLabel="Exit live mode" onReset={() => setLive(null)}>
+      <ErrorBoundary resetLabel="Exit live mode" onReset={exitLive}>
         <Suspense fallback={<LoadingScreen />}>
-          <LiveMode payload={live} onExit={() => setLive(null)} />
+          <LiveMode payload={live} onExit={exitLive} />
         </Suspense>
       </ErrorBoundary>
     );
@@ -471,7 +486,11 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           <span className="rf-brand-mark" aria-hidden="true">
             R
           </span>
-          <h1 className="font-display text-xl font-bold tracking-[-0.01em] text-text-primary">
+          <h1
+            ref={dashboardHeadingRef}
+            tabIndex={-1}
+            className="font-display text-xl font-bold tracking-[-0.01em] text-text-primary focus:outline-none"
+          >
             Ritmo Studio
           </h1>
         </div>

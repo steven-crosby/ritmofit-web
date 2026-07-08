@@ -446,6 +446,64 @@ describe('Dashboard class library states', () => {
     await waitFor(() => expect(api.getRunPayload).toHaveBeenCalledTimes(1));
   });
 
+  it('restores focus to the dashboard heading when Live Mode is exited', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(
+      page([
+        {
+          ...makeClass('Ready ride', 'owner', 'me'),
+          trackCount: 3,
+          totalDurationMs: 1800000,
+        },
+      ]),
+    );
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockResolvedValue({
+      schemaVersion: 1,
+      class: {
+        id: '00000000-0000-4000-8000-000000000101',
+        title: 'Ready ride',
+        template: 'cycle',
+        targetDurationMs: null,
+        totalDurationMs: 1800000,
+        timelineMode: 'sequential',
+      },
+      tracks: [
+        {
+          classTrackId: 'ct-1',
+          position: 0,
+          startOffsetMs: 0,
+          displayBpm: 128,
+          displayRpm: null,
+          holdCount: null,
+          intensity: 'mod',
+          notes: null,
+          clipStartMs: 0,
+          beatAnchorMs: 0,
+          providerRefs: [],
+          track: {
+            id: 'track-1',
+            title: 'Ready Track',
+            artist: 'Artist',
+            durationMs: 1800000,
+            albumArtUrl: null,
+          },
+          cues: [],
+          moves: [],
+        },
+      ],
+      sections: [],
+    } satisfies RunPayload);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Run live' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Exit' }));
+
+    const heading = await screen.findByRole('heading', { name: 'Ritmo Studio' });
+    expect(document.activeElement).toBe(heading);
+  });
+
   it('browses a connected source from the Music workspace sidebar', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
