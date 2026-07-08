@@ -30,6 +30,7 @@ import {
   PROVIDER_ORDER,
   providerLabel,
   providerConnectionState,
+  connectionHasSavedPlaylistScope,
   type ProviderConnectionState,
 } from '../lib/providers.js';
 import { Dialog } from './Dialog.js';
@@ -197,84 +198,109 @@ export function ConnectionsDialog({
         <ul className="flex flex-col gap-2">
           {PROVIDER_ORDER.map((provider) => {
             const busy = busyProvider === provider;
-            const dataState = providerConnectionState(
-              provider,
-              connectionByProvider.get(provider),
-              Date.now(),
-            );
+            const connection = connectionByProvider.get(provider);
+            const dataState = providerConnectionState(provider, connection, Date.now());
             // The only busy action from a disconnected/expired row is a (re)connect,
             // so surface that as the transient reconnecting state; a busy connected
             // row is mid-disconnect and keeps its Connected status (button says so).
             const showReconnecting =
               busy && (dataState === 'disconnected' || dataState === 'expired');
             const meta = STATE_META[showReconnecting ? 'reconnecting' : dataState];
+            // Connections made before playlist browse launched only granted the
+            // pre-expansion scope set — surface a reconnect prompt instead of a
+            // dead "Browse playlists" button (Dashboard hides it entirely when the
+            // browse read has never succeeded).
+            const needsPlaylistReconnect =
+              dataState === 'connected' && !connectionHasSavedPlaylistScope(provider, connection);
             return (
               <li
                 key={provider}
-                className="flex items-center gap-3 rounded-card bg-bg-base px-3 py-2.5"
+                className="flex flex-col gap-2 rounded-card bg-bg-base px-3 py-2.5"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="font-ui text-sm font-semibold text-text-primary">
-                    {providerLabel(provider)}
-                  </p>
-                  <p className={`flex items-center gap-1.5 font-ui text-xs ${meta.tone}`}>
-                    <span aria-hidden>{meta.glyph}</span>
-                    <span>{meta.label}</span>
-                  </p>
-                </div>
+                <div className="flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-ui text-sm font-semibold text-text-primary">
+                      {providerLabel(provider)}
+                    </p>
+                    <p className={`flex items-center gap-1.5 font-ui text-xs ${meta.tone}`}>
+                      <span aria-hidden>{meta.glyph}</span>
+                      <span>{meta.label}</span>
+                    </p>
+                  </div>
 
-                {dataState === 'catalog-only' ? (
-                  <span className="shrink-0 font-ui text-xs text-text-tertiary">
-                    Sign-in not yet supported
-                  </span>
-                ) : dataState === 'connected' ? (
-                  confirming === provider ? (
-                    <span className="flex items-center gap-2">
-                      <span className="font-ui text-xs text-text-tertiary">Disconnect?</span>
-                      <button
-                        type="button"
-                        onClick={() => disconnect(provider)}
-                        disabled={busy}
-                        className="rounded-pill border border-state-danger/50 px-3 py-1 font-ui text-xs text-state-danger disabled:opacity-50"
-                      >
-                        {busy ? 'Removing…' : 'Confirm'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirming(null)}
-                        className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-text-primary"
-                      >
-                        Cancel
-                      </button>
+                  {dataState === 'catalog-only' ? (
+                    <span className="shrink-0 font-ui text-xs text-text-tertiary">
+                      Sign-in not yet supported
                     </span>
+                  ) : dataState === 'connected' ? (
+                    confirming === provider ? (
+                      <span className="flex items-center gap-2">
+                        <span className="font-ui text-xs text-text-tertiary">Disconnect?</span>
+                        <button
+                          type="button"
+                          onClick={() => disconnect(provider)}
+                          disabled={busy}
+                          className="rounded-pill border border-state-danger/50 px-3 py-1 font-ui text-xs text-state-danger disabled:opacity-50"
+                        >
+                          {busy ? 'Removing…' : 'Confirm'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirming(null)}
+                          className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-text-primary"
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirming(provider)}
+                        className="shrink-0 rounded-pill border border-interactive/40 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+                      >
+                        Disconnect
+                      </button>
+                    )
+                  ) : dataState === 'expired' ? (
+                    // Recovery action for an expired link — re-auth via the connect flow.
+                    <button
+                      type="button"
+                      onClick={() => connect(provider)}
+                      disabled={busy}
+                      className="shrink-0 rounded-pill border border-interactive px-3 py-1 font-ui text-xs font-semibold text-interactive disabled:opacity-50"
+                    >
+                      {busy ? 'Reconnecting…' : 'Reconnect'}
+                    </button>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => setConfirming(provider)}
-                      className="shrink-0 rounded-pill border border-interactive/40 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+                      onClick={() => connect(provider)}
+                      disabled={busy}
+                      className="shrink-0 rounded-pill rf-btn-primary px-3 py-1 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
                     >
-                      Disconnect
+                      {busy ? 'Connecting…' : 'Connect'}
                     </button>
-                  )
-                ) : dataState === 'expired' ? (
-                  // Recovery action for an expired link — re-auth via the connect flow.
-                  <button
-                    type="button"
-                    onClick={() => connect(provider)}
-                    disabled={busy}
-                    className="shrink-0 rounded-pill border border-interactive px-3 py-1 font-ui text-xs font-semibold text-interactive disabled:opacity-50"
-                  >
-                    {busy ? 'Reconnecting…' : 'Reconnect'}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => connect(provider)}
-                    disabled={busy}
-                    className="shrink-0 rounded-pill rf-btn-primary px-3 py-1 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
-                  >
-                    {busy ? 'Connecting…' : 'Connect'}
-                  </button>
+                  )}
+                </div>
+
+                {needsPlaylistReconnect && (
+                  <div className="flex flex-col gap-1.5 border-t border-interactive/10 pt-2">
+                    <p className="flex items-start gap-1.5 font-ui text-xs text-state-caution">
+                      <span aria-hidden>⊘</span>
+                      <span>
+                        Connected for library access. Reconnect to browse saved playlists.
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => connect(provider)}
+                      disabled={busy}
+                      className="inline-flex min-h-8 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 py-1 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50"
+                    >
+                      <span aria-hidden>↻</span>
+                      {busy ? 'Reconnecting…' : 'Reconnect to browse playlists'}
+                    </button>
+                  </div>
                 )}
               </li>
             );

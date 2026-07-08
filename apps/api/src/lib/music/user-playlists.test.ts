@@ -11,6 +11,7 @@ import {
   refreshSpotifyToken,
   SoundCloudUnauthorizedError,
   SpotifyUnauthorizedError,
+  SpotifyForbiddenError,
 } from '@ritmofit/music';
 import { fetchUserPlaylistTracks, fetchUserPlaylists } from './user-playlists.js';
 import { HttpError } from '../errors.js';
@@ -185,6 +186,22 @@ describe('user playlist token helper', () => {
   it('keeps REAUTH_REQUIRED behavior when a reactive retry cannot refresh', async () => {
     const { db } = makeDb(makeConnection({ refreshTokenEncrypted: null }));
     vi.mocked(fetchSpotifySavedPlaylists).mockRejectedValueOnce(new SpotifyUnauthorizedError());
+
+    await expect(fetchUserPlaylists(db, env, 'user-1', 'spotify')).rejects.toMatchObject({
+      status: 409,
+      code: 'REAUTH_REQUIRED',
+      message: 'Reconnect your Spotify account.',
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).not.toHaveBeenCalled();
+    expect(fetchSpotifySavedPlaylists).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps a stale-scope 403 straight to REAUTH_REQUIRED without attempting a refresh', async () => {
+    // A pre-expansion token is valid (not expired, not 401) but lacks
+    // playlist-read-private — Spotify returns 403, and no refresh can grant a
+    // scope, so this must not retry via refreshAndPersist.
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifySavedPlaylists).mockRejectedValueOnce(new SpotifyForbiddenError());
 
     await expect(fetchUserPlaylists(db, env, 'user-1', 'spotify')).rejects.toMatchObject({
       status: 409,

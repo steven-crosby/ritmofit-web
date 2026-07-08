@@ -237,6 +237,21 @@ export class SpotifyUnauthorizedError extends Error {
 }
 
 /**
+ * Thrown when Spotify rejects a **saved-playlist** read with 403 — a valid token
+ * that predates the `playlist-read-private` / `playlist-read-collaborative`
+ * scopes. Unlike `SpotifyUnauthorizedError`, a token refresh cannot fix this: only
+ * re-consent grants the missing scope, so the caller must prompt a reconnect
+ * rather than retry.
+ */
+export class SpotifyForbiddenError extends Error {
+  readonly status = 403 as const;
+  constructor() {
+    super('Spotify rejected the request (403) — the token is missing a required scope.');
+    this.name = 'SpotifyForbiddenError';
+  }
+}
+
+/**
  * Fetch the connected user's saved tracks with a **per-user** access token
  * (`music_connections`), mapped to the shared contract — the "search my Spotify"
  * surface. Stays a pure adapter: the caller owns the token's decryption, refresh,
@@ -300,6 +315,7 @@ export async function fetchSpotifySavedPlaylists(cfg: {
       { headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' } },
     );
     if (res.status === 401) throw new SpotifyUnauthorizedError();
+    if (res.status === 403) throw new SpotifyForbiddenError();
     if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for /me/playlists`);
 
     const parsed = spLibraryPlaylistsPageSchema.safeParse(await readJson(res, 'spotify'));
@@ -351,6 +367,7 @@ export async function fetchSpotifyPlaylistTracks(cfg: {
       { headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' } },
     );
     if (res.status === 401) throw new SpotifyUnauthorizedError();
+    if (res.status === 403) throw new SpotifyForbiddenError();
     if (!res.ok)
       throw new ProviderError('spotify', `Spotify API ${res.status} for playlist tracks`);
     const parsed = spPlaylistPageSchema.safeParse(await readJson(res, 'spotify'));

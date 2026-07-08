@@ -10,6 +10,8 @@
  *
  * We request `user-library-read` (the "search my Spotify" likes read,
  * `GET /me/tracks`) plus the playback scopes the official Web Playback SDK needs
+ * plus the read-only saved-playlist scopes (`playlist-read-private`,
+ * `playlist-read-collaborative`) that power playlist browse/drill-in
  * (see `SPOTIFY_CONNECT_SCOPE`). Never request audio-features/analysis scopes:
  * BPM from Spotify is forbidden (music-providers.md).
  *
@@ -30,17 +32,21 @@ const AUTHORIZE_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
 /**
  * The connect scope set. `user-library-read` powers the "search my Spotify" likes
- * read; the rest power in-app playback via the official Web Playback SDK:
- * `streaming` (the SDK stream), `user-read-email` / `user-read-private` (the SDK
- * verifies Premium at init via these), and `user-modify-playback-state` /
- * `user-read-playback-state` (start / seek / pause a `spotify:track:…` on our SDK
- * device through the Connect Web API). Never an audio-features/analysis scope —
- * BPM from Spotify is forbidden (music-providers.md). Existing connections predate
- * the playback scopes, so callers must treat a stored scope without `streaming` as
- * "reconnect for playback" (see `spotifyScopeHasPlayback`).
+ * read; `streaming` / `user-read-email` / `user-read-private` /
+ * `user-modify-playback-state` / `user-read-playback-state` power in-app playback
+ * via the official Web Playback SDK (the SDK verifies Premium at init via the
+ * `user-read-*` scopes, then starts/seeks/pauses a `spotify:track:…` on our SDK
+ * device through the Connect Web API). `playlist-read-private` /
+ * `playlist-read-collaborative` are read-only saved-playlist metadata/track-list
+ * scopes that power playlist browse/drill-in — never an audio-features/analysis
+ * scope, BPM from Spotify is forbidden (music-providers.md). Existing connections
+ * predate the playback and playlist scopes, so callers must treat a stored scope
+ * missing `streaming` as "reconnect for playback" (`spotifyScopeHasPlayback`) and
+ * one missing `playlist-read-private` as "reconnect to browse saved playlists"
+ * (`spotifyScopeHasSavedPlaylists`).
  */
 export const SPOTIFY_CONNECT_SCOPE =
-  'user-library-read streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state';
+  'user-library-read streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state playlist-read-private playlist-read-collaborative';
 
 /**
  * Whether a stored connection scope string is playback-capable — i.e. the user
@@ -50,6 +56,17 @@ export const SPOTIFY_CONNECT_SCOPE =
 export function spotifyScopeHasPlayback(scope: string | null | undefined): boolean {
   if (!scope) return false;
   return scope.split(/\s+/).includes('streaming');
+}
+
+/**
+ * Whether a stored connection scope string can browse saved playlists — i.e. the
+ * user granted `playlist-read-private`. Connections made before the playlist
+ * scope expansion return `false` and need a reconnect before `/me/playlists` (or
+ * a playlist's track list) will succeed.
+ */
+export function spotifyScopeHasSavedPlaylists(scope: string | null | undefined): boolean {
+  if (!scope) return false;
+  return scope.split(/\s+/).includes('playlist-read-private');
 }
 
 const tokenResponseSchema = z.object({
