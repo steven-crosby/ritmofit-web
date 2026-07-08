@@ -5,6 +5,7 @@ import {
   fetchSpotifySavedPlaylists,
   fetchSpotifySavedTracks,
   SpotifyUnauthorizedError,
+  SpotifyForbiddenError,
   type FetchLike,
 } from '@ritmofit/music';
 
@@ -306,6 +307,19 @@ describe('fetchSpotifySavedPlaylists', () => {
       fetchSpotifySavedPlaylists({ accessToken: 'stale', fetchImpl, apiBase: API_BASE }),
     ).rejects.toBeInstanceOf(SpotifyUnauthorizedError);
   });
+
+  it('throws SpotifyForbiddenError on a 403 — a valid token missing the playlist scope', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({}),
+      text: async () => 'insufficient scope',
+    });
+
+    await expect(
+      fetchSpotifySavedPlaylists({ accessToken: 'pre-expansion', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toBeInstanceOf(SpotifyForbiddenError);
+  });
 });
 
 describe('fetchSpotifyPlaylistTracks', () => {
@@ -413,6 +427,24 @@ describe('fetchSpotifyPlaylistTracks', () => {
         apiBase: API_BASE,
       }),
     ).rejects.toBeInstanceOf(SpotifyUnauthorizedError);
+  });
+
+  it('throws SpotifyForbiddenError on a 403 — a valid token missing the playlist scope', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({}),
+      text: async () => 'insufficient scope',
+    });
+
+    await expect(
+      fetchSpotifyPlaylistTracks({
+        accessToken: 'pre-expansion',
+        playlistId: 'pl-1',
+        fetchImpl,
+        apiBase: API_BASE,
+      }),
+    ).rejects.toBeInstanceOf(SpotifyForbiddenError);
   });
 });
 

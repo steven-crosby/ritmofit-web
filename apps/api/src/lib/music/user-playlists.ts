@@ -14,6 +14,7 @@ import {
   refreshSpotifyToken,
   SoundCloudUnauthorizedError,
   SpotifyUnauthorizedError,
+  SpotifyForbiddenError,
   AppleMusicUnauthorizedError,
   type OAuthTokens,
 } from '@ritmofit/music';
@@ -59,6 +60,13 @@ interface PlaylistAdapter {
     fetchImpl: typeof boundFetch;
   }): Promise<OAuthTokens>;
   isUnauthorized(err: unknown): boolean;
+  /**
+   * A 403 that a token refresh cannot fix — the stored token is valid but missing
+   * a scope only re-consent can grant. Only Spotify's playlist reads need this
+   * (a scope added after the connection was made); SoundCloud/Apple leave it
+   * unset, so the `?.` call below is a no-op for them.
+   */
+  isForbidden?(err: unknown): boolean;
 }
 
 interface ConnectedPlaylistRead<T> {
@@ -78,6 +86,7 @@ const PLAYLIST_ADAPTERS: Partial<Record<Provider, PlaylistAdapter>> = {
     fetchPlaylistTracks: fetchSpotifyPlaylistTracks,
     refreshToken: refreshSpotifyToken,
     isUnauthorized: (err) => err instanceof SpotifyUnauthorizedError,
+    isForbidden: (err) => err instanceof SpotifyForbiddenError,
   },
   soundcloud: {
     label: 'SoundCloud',
@@ -188,6 +197,11 @@ async function readWithConnectedPlaylistToken<T>(cfg: ConnectedPlaylistRead<T>):
   try {
     return await cfg.read(accessToken);
   } catch (err) {
+    // A missing scope: no refresh can grant it, so retrying would just repeat the
+    // same 403. Prompt reconnect immediately instead of burning a refresh cycle.
+    if (cfg.adapter.isForbidden?.(err)) {
+      throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${cfg.adapter.label} account.`);
+    }
     if (!cfg.adapter.isUnauthorized(err)) throw err;
     if (refreshed || !conn.refreshTokenEncrypted) {
       throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${cfg.adapter.label} account.`);

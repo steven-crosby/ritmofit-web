@@ -74,3 +74,41 @@ describe('ConnectionsDialog capability gating', () => {
     expect(await screen.findByText('Connection failed: state expired.')).toBeTruthy();
   });
 });
+
+describe('ConnectionsDialog saved-playlist reconnect affordance', () => {
+  it('prompts a reconnect when Spotify is connected but lacks the playlist scope', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...connection('spotify'), scope: 'user-library-read streaming' },
+    ]);
+
+    render(<ConnectionsDialog onClose={() => {}} />);
+
+    expect(
+      await screen.findByText('Connected for library access. Reconnect to browse saved playlists.'),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Reconnect to browse playlists/i })).toBeTruthy();
+  });
+
+  it('hides the affordance once the connection carries the playlist scope', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...connection('spotify'), scope: 'user-library-read streaming playlist-read-private' },
+    ]);
+
+    render(<ConnectionsDialog onClose={() => {}} />);
+
+    await screen.findByText('Connected');
+    expect(screen.queryByText(/Reconnect to browse saved playlists/i)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Reconnect to browse playlists/i })).toBeNull();
+  });
+
+  it('never gates SoundCloud or Apple Music on the Spotify playlist scope', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...connection('soundcloud'), scope: null },
+    ]);
+
+    render(<ConnectionsDialog onClose={() => {}} />);
+
+    await screen.findByText('Connected');
+    expect(screen.queryByText(/Reconnect to browse saved playlists/i)).toBeNull();
+  });
+});

@@ -108,3 +108,23 @@ export function connectionHasPlaybackScope(
   if (provider !== 'spotify') return true;
   return spotifyScopeHasPlayback(connection?.scope);
 }
+
+/**
+ * Spotify connections created before saved-playlist browse launched only granted
+ * the pre-expansion scope set, without `playlist-read-private`. The dev mock seam
+ * stores `scope: 'mock'`, which is always browse-capable.
+ */
+export function spotifyScopeHasSavedPlaylists(scope: string | null | undefined): boolean {
+  if (!scope) return false;
+  const scopes = scope.split(/\s+/).filter(Boolean);
+  return scopes.includes('playlist-read-private') || scopes.includes('mock');
+}
+
+/** Whether this live connection is authorized to browse saved playlists. */
+export function connectionHasSavedPlaylistScope(
+  provider: Provider,
+  connection: { scope: string | null } | undefined,
+): boolean {
+  if (provider !== 'spotify') return true;
+  return spotifyScopeHasSavedPlaylists(connection?.scope);
+}

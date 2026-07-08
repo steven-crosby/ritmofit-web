@@ -13,6 +13,8 @@ import {
   providerHandoffHref,
   providerConnectionState,
   ALL_PROVIDERS_LABELLED,
+  spotifyScopeHasSavedPlaylists,
+  connectionHasSavedPlaylistScope,
 } from './providers.js';
 
 describe('provider presentation', () => {
@@ -130,5 +132,42 @@ describe('providerConnectionState', () => {
   it('reports expired once expiresAt has passed', () => {
     expect(providerConnectionState('soundcloud', { expiresAt: NOW }, NOW)).toBe('expired');
     expect(providerConnectionState('soundcloud', { expiresAt: NOW - 1 }, NOW)).toBe('expired');
+  });
+});
+
+describe('spotifyScopeHasSavedPlaylists', () => {
+  it('is true only when the stored scope granted `playlist-read-private`', () => {
+    expect(spotifyScopeHasSavedPlaylists('user-library-read playlist-read-private')).toBe(true);
+    expect(spotifyScopeHasSavedPlaylists('playlist-read-private')).toBe(true);
+  });
+
+  it('is true for the dev mock seam scope', () => {
+    expect(spotifyScopeHasSavedPlaylists('mock')).toBe(true);
+  });
+
+  it('is false for a pre-expansion (playback-only) connection', () => {
+    expect(spotifyScopeHasSavedPlaylists('user-library-read streaming')).toBe(false);
+  });
+
+  it('is false for a missing scope and does not match a substring', () => {
+    expect(spotifyScopeHasSavedPlaylists(null)).toBe(false);
+    expect(spotifyScopeHasSavedPlaylists(undefined)).toBe(false);
+    expect(spotifyScopeHasSavedPlaylists('')).toBe(false);
+    expect(spotifyScopeHasSavedPlaylists('playlist-read-private-analytics')).toBe(false);
+  });
+});
+
+describe('connectionHasSavedPlaylistScope', () => {
+  it('is always true for non-Spotify providers (no scope gate)', () => {
+    expect(connectionHasSavedPlaylistScope('soundcloud', undefined)).toBe(true);
+    expect(connectionHasSavedPlaylistScope('apple_music', { scope: null })).toBe(true);
+  });
+
+  it('delegates to the Spotify scope detector', () => {
+    expect(connectionHasSavedPlaylistScope('spotify', { scope: 'playlist-read-private' })).toBe(
+      true,
+    );
+    expect(connectionHasSavedPlaylistScope('spotify', { scope: 'streaming' })).toBe(false);
+    expect(connectionHasSavedPlaylistScope('spotify', undefined)).toBe(false);
   });
 });

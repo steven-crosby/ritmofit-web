@@ -27,6 +27,7 @@ export {
   fetchSpotifySavedPlaylists,
   fetchSpotifyPlaylistTracks,
   SpotifyUnauthorizedError,
+  SpotifyForbiddenError,
   type SpotifyConfig,
 } from './spotify.js';
 export {
@@ -34,6 +35,7 @@ export {
   exchangeSpotifyCode,
   refreshSpotifyToken,
   spotifyScopeHasPlayback,
+  spotifyScopeHasSavedPlaylists,
   SPOTIFY_CONNECT_SCOPE,
 } from './spotify-oauth.js';
 export {

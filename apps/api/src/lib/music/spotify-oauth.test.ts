@@ -4,6 +4,7 @@ import {
   exchangeSpotifyCode,
   refreshSpotifyToken,
   spotifyScopeHasPlayback,
+  spotifyScopeHasSavedPlaylists,
   SPOTIFY_CONNECT_SCOPE,
   type FetchLike,
 } from '@ritmofit/music';
@@ -56,6 +57,11 @@ describe('SPOTIFY_CONNECT_SCOPE composition', () => {
     expect(scopes).toContain('user-read-playback-state');
   });
 
+  it('adds the read-only saved-playlist scopes', () => {
+    expect(scopes).toContain('playlist-read-private');
+    expect(scopes).toContain('playlist-read-collaborative');
+  });
+
   it('never requests an audio-features / analysis scope (BPM from Spotify is forbidden)', () => {
     for (const scope of scopes) {
       expect(scope).not.toMatch(/audio|feature|analysis/i);
@@ -80,6 +86,26 @@ describe('spotifyScopeHasPlayback', () => {
     expect(spotifyScopeHasPlayback('')).toBe(false);
     // Guards against a naive `.includes('streaming')` false-positive.
     expect(spotifyScopeHasPlayback('user-streaming-analytics-read')).toBe(false);
+  });
+});
+
+describe('spotifyScopeHasSavedPlaylists', () => {
+  it('is true only when the stored scope granted `playlist-read-private`', () => {
+    expect(spotifyScopeHasSavedPlaylists(SPOTIFY_CONNECT_SCOPE)).toBe(true);
+    expect(spotifyScopeHasSavedPlaylists('user-library-read playlist-read-private')).toBe(true);
+    expect(spotifyScopeHasSavedPlaylists('playlist-read-private')).toBe(true);
+  });
+
+  it('is false for a pre-expansion (playback-only) connection', () => {
+    expect(spotifyScopeHasSavedPlaylists('user-library-read streaming')).toBe(false);
+  });
+
+  it('is false for a missing scope and does not match a substring', () => {
+    expect(spotifyScopeHasSavedPlaylists(null)).toBe(false);
+    expect(spotifyScopeHasSavedPlaylists(undefined)).toBe(false);
+    expect(spotifyScopeHasSavedPlaylists('')).toBe(false);
+    // Guards against a naive `.includes('playlist-read-private')` false-positive.
+    expect(spotifyScopeHasSavedPlaylists('playlist-read-private-analytics')).toBe(false);
   });
 });
 
