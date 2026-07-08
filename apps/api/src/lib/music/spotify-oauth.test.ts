@@ -29,7 +29,6 @@ describe('buildSpotifyAuthorizeUrl', () => {
     const url = buildSpotifyAuthorizeUrl({
       clientId: 'cid',
       redirectUri: 'https://api.test/cb',
-      codeChallenge: 'chal',
       state: 'st',
     });
     expect(url.startsWith('https://accounts.spotify.com/authorize?')).toBe(true);
@@ -92,7 +91,6 @@ describe('exchangeSpotifyCode', () => {
       clientSecret: 'sec',
       redirectUri: 'https://api.test/cb',
       code: 'the-code',
-      codeVerifier: 'the-verifier',
       fetchImpl,
       tokenUrl: 'https://token.test/api/token',
     });
@@ -112,6 +110,38 @@ describe('exchangeSpotifyCode', () => {
     expect(call?.init?.body).toContain('code=the-code');
   });
 
+  // Confidential-client contract: Spotify authenticates with the client secret via
+  // HTTP Basic auth, so PKCE is not part of its API shape. The exchange takes no
+  // `codeVerifier` and neither the authorize URL nor the token body carry any PKCE
+  // param. This pins the intent behind the dead-param removal so a future refactor
+  // can't silently re-introduce a `code_verifier`/`code_challenge` on the wire.
+  it('is a confidential client: no PKCE param on authorize or exchange', async () => {
+    const url = buildSpotifyAuthorizeUrl({
+      clientId: 'cid',
+      redirectUri: 'https://api.test/cb',
+      state: 'st',
+    });
+    expect(url).not.toContain('code_challenge=');
+    expect(url).not.toContain('code_challenge_method=');
+    expect(url).not.toContain('code_verifier=');
+
+    const { fetchImpl, calls } = captureFetch(TOKEN_RESP);
+    // No `codeVerifier` field is accepted — the confidential client proves identity
+    // with Basic auth alone.
+    await exchangeSpotifyCode({
+      clientId: 'cid',
+      clientSecret: 'sec',
+      redirectUri: 'https://api.test/cb',
+      code: 'the-code',
+      fetchImpl,
+      tokenUrl: 'https://token.test/api/token',
+    });
+    const body = calls[0]?.init?.body ?? '';
+    expect(body).not.toContain('code_verifier=');
+    expect(body).not.toContain('code_challenge=');
+    expect(calls[0]?.init?.headers?.Authorization).toBe(`Basic ${btoa('cid:sec')}`);
+  });
+
   it('throws on a non-ok token response', async () => {
     const { fetchImpl } = captureFetch({}, false);
     await expect(
@@ -120,7 +150,6 @@ describe('exchangeSpotifyCode', () => {
         clientSecret: 's',
         redirectUri: 'r',
         code: 'x',
-        codeVerifier: 'v',
         fetchImpl,
       }),
     ).rejects.toThrow();

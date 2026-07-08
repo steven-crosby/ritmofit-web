@@ -59,11 +59,18 @@ const tokenResponseSchema = z.object({
   scope: z.string().optional(),
 });
 
-/** Build the URL to send the user to so they can authorize the connection. */
+/**
+ * Build the URL to send the user to so they can authorize the connection.
+ *
+ * No PKCE: Spotify per-user connect is a confidential client (secret via Basic
+ * auth at the token endpoint), so `code_challenge`/`code_challenge_method` are
+ * deliberately absent — this helper takes no `codeChallenge`. The shared OAuth
+ * registry (`provider-connections.ts`) still mints a PKCE pair for its
+ * provider-agnostic flow; Spotify structurally ignores it (see `exchangeSpotifyCode`).
+ */
 export function buildSpotifyAuthorizeUrl(p: {
   clientId: string;
   redirectUri: string;
-  codeChallenge: string;
   state: string;
 }): string {
   const q =
@@ -104,13 +111,18 @@ async function postToken(
   };
 }
 
-/** Exchange an authorization code for tokens. */
+/**
+ * Exchange an authorization code for tokens.
+ *
+ * No PKCE `code_verifier` in the body: as a confidential client, Spotify proves
+ * identity with the client secret via HTTP Basic auth (`postToken`), so the
+ * verifier is neither needed nor sent. This helper takes no `codeVerifier`.
+ */
 export function exchangeSpotifyCode(cfg: {
   clientId: string;
   clientSecret: string;
   redirectUri: string;
   code: string;
-  codeVerifier: string;
   fetchImpl: FetchLike;
   tokenUrl?: string;
 }): Promise<OAuthTokens> {
