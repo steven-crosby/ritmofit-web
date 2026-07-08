@@ -10,6 +10,34 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-08 (third parallel lane-agent round — mixed 1-polish/2-harden) — deployed (Worker
+> `67f00f2b-8dd2-4bb5-be4a-cd5a868f4dd7`).** Main HEAD `645cf59` (merge of PR #250). Code-only — **no
+> schema / migration** (remote D1: "No migrations to apply"). Runtime-surface slice: **PR #250** (Live
+> Mode **start-focus placement** — the full-screen takeover was stranding keyboard/SR focus on `<body>`
+> on entry and on the preflight→live transition, exactly as the class goes hands-free; now focuses the
+> class-title heading on preflight entry and the transport's primary Play/Pause control when the class
+> goes live, with the empty-class direct-to-live path made deterministic via a preflight-gated mount
+> effect; FE-only `LiveMode.tsx` + 4 `document.activeElement` tests, driven live in Chrome). Production-
+> code path change, **behavior-preserving but requires manual re-verification**: **PR #248** (drop dead
+> PKCE `codeChallenge`/`codeVerifier` params from the Spotify **confidential-client** OAuth helpers —
+> they never reached the wire, Basic-auth is the identity; SoundCloud PKCE untouched; the `ProviderOAuth`
+> interface + connect route are unchanged so the registry still passes the full object and Spotify's
+> slimmed functions stay structurally assignable; added a confidential-client contract test). **Manual
+> Spotify connect round-trip re-verification pending** (authorize → `?connected=spotify` → "Connected to
+> Spotify"; Worker log `GET /api/v1/providers/spotify/callback?... - Ok`). Also merged this round but
+> **test-only / no runtime change** (not a deploy trigger, listed for the trail): **PR #249** (lock the
+> run-payload **pre-downbeat beat/bar clamp** — a cue anchored before the track's first downbeat emits
+> `{ beat: null, bar: null }`, not a garbage `bar: 0`; mutation-proven — neuter the `p.bar >= 1` guard
+> and only the new test fails). Rollback anchor: prior live `7763f79c-662d-4aa4-a52c-8d12e78be411`.
+> Remote D1: **no migrations to apply.** Pre-deploy gate (on `main`): format:check ✓ · typecheck ×4 ✓ ·
+> lint ✓ · design-system verify ✓ · unit web 448 / api 352 ✓ · integration 86 ✓ · web build ✓ · OpenAPI
+> no drift (48 schemas · 50 paths) ✓ · contract-parity (no untracked drift) ✓ · audit:ci ✓. Post-deploy
+> smoke on live `https://ritmofit.studio`: SPA `/` → `200` (served hash `index-CCiP32t2.js` matches the
+> build), `/api/v1/health` → `200`, `/api/v1/classes` · `/api/v1/explore` · `/api/v1/teams` → `401`,
+> security headers present (HSTS · CSP · Permissions-Policy · Referrer-Policy · X-Content-Type-Options ·
+> X-Frame-Options), Spotify callback route mounted (`302`, not `404`), providers-connect · class-shares ·
+> provider-search → `401`.
+
 > **Session 2026-07-07 (web polish + hardening round — parallel lane-agents) — deployed (Worker
 > `7763f79c-662d-4aa4-a52c-8d12e78be411`).** Main HEAD `f0b84cd` (merge of PR #246). Code-only —
 > **no schema / migration** (remote D1: "No migrations to apply"). Deployed the two runtime-surface

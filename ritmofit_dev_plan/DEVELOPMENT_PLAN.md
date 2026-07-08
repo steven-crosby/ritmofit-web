@@ -52,10 +52,11 @@ Pilates, and HIIT.
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
   Music workspace via a shared provider-browse hook. Last production deploy
-  **2026-07-07 (Worker `7763f79c`)** — web polish + hardening round: Classes library search + sort
-  (#242) and keyboard track-reorder assistive-tech announcements (#246), **no schema/migration**
-  (supersedes `9d0a5710`; the four other PRs in the round were test-only). For per-deploy detail
-  and the live Worker version, see [`HISTORY.md`](./HISTORY.md), newest first.
+  **2026-07-08 (Worker `67f00f2b`)** — third parallel lane-agent round (mixed 1-polish/2-harden):
+  Live Mode start-focus placement (#250) and the behavior-preserving Spotify PKCE dead-param cleanup
+  (#248, manual connect re-verification pending), **no schema/migration** (supersedes `7763f79c`; #249
+  was test-only — run-payload pre-downbeat clamp). For per-deploy detail and the live Worker version,
+  see [`HISTORY.md`](./HISTORY.md), newest first.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
