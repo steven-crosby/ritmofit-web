@@ -53,5 +53,3 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 
 - [ ] (2026-07-07) provider read helpers: PROVIDER_UNAVAILABLE branch has no unit coverage
       in user-playlists.ts / user-likes.ts — add cases. #test
-- [ ] (2026-07-07) Spotify confidential-client OAuth path carries dead codeVerifier/
-      codeChallenge (PKCE) params — confidential clients don't use PKCE; remove or document intent. #cleanup
