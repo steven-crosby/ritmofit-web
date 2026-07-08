@@ -16,7 +16,15 @@
  * whole timeline). Intensity is redundantly encoded (color + label + filled
  * bars) per the accessibility rules — never color alone.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from 'react';
 import type {
   MusicConnectionView,
   RunPayload,
@@ -229,6 +237,10 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   // playback failure). The coordinator is imperative on purpose: the rAF clock
   // drives it, and React state only mirrors its status for display.
   const coordinatorRef = useRef<RuntimePlaybackCoordinator | null>(null);
+  // Focus targets for the full-screen takeover (see the focus effects below): the
+  // preflight class-title heading, and the transport's primary Play/Pause control.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const primaryButtonRef = useRef<HTMLButtonElement>(null);
 
   const refreshConnections = useCallback(async () => {
     setConnectionsError(null);
@@ -248,6 +260,32 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     },
     [],
   );
+
+  // Focus management for the full-screen takeover. LiveMode replaces the dashboard
+  // (Dashboard unmounts behind it), so the control that opened it — and the preflight
+  // Start/Run button the instructor activates — are gone, and focus would otherwise
+  // fall to <body>. Nothing renders behind, so this is focus *placement*, not a trap:
+  // land the instructor somewhere named on entry, then on their next control the
+  // moment the class goes live. Follow-up, intentionally out of scope here (parent's
+  // job): Dashboard's onExit/setLive(null) should restore focus to the control that
+  // opened Live Mode.
+
+  // On entry, focus the class-title heading so keyboard/SR users land on a named
+  // element rather than <body>. Gated on the mount-time phase so the empty-class path
+  // (which starts in 'live') never fires this and races the transport effect below.
+  // Mount-only: the initial phase is read once at entry; the 'live' transition is
+  // owned by the effect below, keyed on phase.
+  useEffect(() => {
+    if (phase === 'preflight') headingRef.current?.focus();
+  }, []);
+
+  // When the class goes live — Start class, Run without music, or an empty class that
+  // skips preflight straight to 'live' — move focus to the transport's primary control
+  // (Play/Pause), the instructor's next action, instead of stranding it on <body>
+  // after the preflight button unmounts.
+  useEffect(() => {
+    if (phase === 'live') primaryButtonRef.current?.focus();
+  }, [phase]);
 
   // Static preflight against the providers the player can actually drive.
   const preflight = useMemo(
@@ -421,7 +459,13 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-live">
         <header className="flex items-center justify-between border-b border-interactive/20 px-6 py-3">
-          <h1 className="font-display text-lg font-semibold text-text-primary">
+          {/* Scripted focus target on entry (tabIndex -1, not keyboard-reachable);
+              outline suppressed so a mouse entry never shows a stray ring. */}
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="font-display text-lg font-semibold text-text-primary focus:outline-none"
+          >
             {payload.class.title}
           </h1>
           <button
@@ -547,6 +591,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
         elapsedMs={elapsedMs}
         onSeek={seek}
         playback={coordinatorRef.current ? playback : null}
+        primaryButtonRef={primaryButtonRef}
       />
     </div>
   );
@@ -1031,6 +1076,7 @@ function Transport({
   elapsedMs,
   onSeek,
   playback,
+  primaryButtonRef,
 }: {
   playing: boolean;
   onToggle: () => void;
@@ -1040,10 +1086,13 @@ function Transport({
   onSeek: (ms: number) => void;
   /** Coordinator status while music runs; null in prompter-only mode. */
   playback: CoordinatorStatus | null;
+  /** Focused when the class goes live so start never strands focus on <body>. */
+  primaryButtonRef: RefObject<HTMLButtonElement>;
 }) {
   return (
     <div className="flex items-center gap-4 border-t border-interactive/20 px-6 py-4">
       <button
+        ref={primaryButtonRef}
         className="rounded-pill rf-btn-primary px-6 py-2 font-ui font-semibold text-text-on-accent"
         onClick={onToggle}
       >
