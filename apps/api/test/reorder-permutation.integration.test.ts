@@ -108,13 +108,17 @@ describe('sequential reorder permutation guard (integration)', () => {
     expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
-  it('rejects a foreign id not belonging to this class', async () => {
+  it('rejects a foreign id swapped in for one of the class tracks (same cardinality)', async () => {
     const api = authed(owner.cookie);
-    const [a, b, c] = trackIds;
+    const [a, b] = trackIds;
 
+    // Same length as the class's 3 tracks, so this isolates the membership check
+    // (classTrackIds.every(id => currentIds.has(id))) from the size-equality clause
+    // the subset test already covers — swaps out C for a foreign id instead of
+    // just appending one.
     const res = await api(`/api/v1/classes/${classId}/tracks/reorder`, {
       method: 'POST',
-      body: JSON.stringify({ classTrackIds: [a, b, c, crypto.randomUUID()] }),
+      body: JSON.stringify({ classTrackIds: [a, b, crypto.randomUUID()] }),
     });
     expect(res.status).toBe(422);
     const body = (await res.json()) as { error: { code: string } };
