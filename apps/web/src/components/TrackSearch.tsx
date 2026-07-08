@@ -40,6 +40,77 @@ const candidateKey = (r: TrackSearchResult) => `${r.provider}:${r.providerTrackI
 
 type Mode = 'search' | 'likes' | 'saved_playlists' | 'playlist';
 
+/**
+ * A concise, screen-reader-only summary of the current browse outcome — mirrored
+ * from the visible micro-labels plus the result *count* that sighted users read
+ * straight off the list. Rendered in an always-mounted `role="status"` region so
+ * `aria-live` announces each idle → searching → results / empty transition; the
+ * visible labels live outside any live region, so without this the whole
+ * searching→results handoff (and how many results arrived) is silent to AT.
+ *
+ * "No results" keys on a *settled empty array* only (never `results === null`), and
+ * a new query resets `results` to null first, so a user mid-typing can't hear a
+ * stale count or a premature "No results" before their fetch settles.
+ */
+export function browseAnnouncement(input: {
+  mode: Mode;
+  providerName: string;
+  query: string;
+  searching: boolean;
+  results: TrackSearchResult[] | null;
+  loadingSavedPlaylists: boolean;
+  savedPlaylists: ProviderPlaylistSummary[] | null;
+  selectedPlaylist: ProviderPlaylistSummary | null;
+}): string {
+  const {
+    mode,
+    providerName,
+    query,
+    searching,
+    results,
+    loadingSavedPlaylists,
+    savedPlaylists,
+    selectedPlaylist,
+  } = input;
+  const plural = (n: number) => (n === 1 ? '' : 's');
+
+  // Playlist-URL import has no fetched result list to summarize.
+  if (mode === 'playlist') return '';
+
+  // Saved-playlists index (before a playlist is opened).
+  if (mode === 'saved_playlists' && !selectedPlaylist) {
+    if (loadingSavedPlaylists) return `Loading your ${providerName} playlists…`;
+    if (savedPlaylists === null) return ''; // unloaded / error (error → role="alert")
+    if (savedPlaylists.length === 0) return `No saved playlists found on ${providerName}.`;
+    return `${savedPlaylists.length} saved playlist${plural(savedPlaylists.length)} on ${providerName}.`;
+  }
+
+  // Idle search: nothing typed, nothing fetched.
+  if (mode === 'search' && query === '') return '';
+
+  // In-flight — announced before any settled empty/count (a re-fetch nulls results).
+  if (searching && results === null) {
+    return mode === 'likes' ? `Loading your ${providerName} likes…` : `Searching ${providerName}…`;
+  }
+
+  // Settled empty *array* only — never results === null.
+  if (results && results.length === 0) {
+    if (mode === 'likes') return `No liked tracks on ${providerName}.`;
+    if (mode === 'saved_playlists') return `No tracks found in this playlist.`;
+    return `No results for "${query}" on ${providerName}.`;
+  }
+
+  // Settled with results — surface the count sighted users read from the list.
+  if (results && results.length > 0) {
+    const n = results.length;
+    if (mode === 'likes') return `${n} liked track${plural(n)} on ${providerName}.`;
+    if (mode === 'saved_playlists') return `${n} track${plural(n)} in this playlist.`;
+    return `${n} result${plural(n)} for "${query}" on ${providerName}.`;
+  }
+
+  return '';
+}
+
 export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: () => void }) {
   const [provider, setProvider] = useState<Provider>(DEFAULT_PROVIDER);
   const [mode, setMode] = useState<Mode>('search');
@@ -257,6 +328,18 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
     }
   };
 
+  // Screen-reader summary of the browse outcome — see browseAnnouncement.
+  const announcement = browseAnnouncement({
+    mode,
+    providerName: providerLabel(provider),
+    query: query.trim(),
+    searching,
+    results,
+    loadingSavedPlaylists,
+    savedPlaylists,
+    selectedPlaylist,
+  });
+
   return (
     <div className="flex flex-col gap-2 border-t border-interactive/20 pt-4">
       <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Add a track</p>
@@ -397,7 +480,13 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
             className="rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
             placeholder={`Search ${providerLabel(provider)}…`}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              // Reset to null (not []) before the next fetch so the live region
+              // announces "Searching…" during the re-fetch — never a stale count or
+              // a premature "No results" for a query that hasn't settled yet.
+              setResults(null);
+            }}
           />
         </>
       )}
@@ -431,6 +520,12 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
           {error}
         </p>
       )}
+
+      {/* Always-mounted live region: mirrors the browse outcome (incl. result
+          count) to assistive tech, since the visible labels below aren't live. */}
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
 
       {/* States. Idle (search, no query) invites; the rest reflect the fetch. */}
       {mode === 'playlist' ? (
