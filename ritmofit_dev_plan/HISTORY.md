@@ -10,6 +10,38 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-08 (fourth parallel lane-agent round — 2 polish + 1 harden) — deployed (Worker
+> `a7ec9c81-3ba1-40ba-95c0-97ccb918b162`).** Main HEAD `e152057` (merge of PR #254). Code-only — **no
+> schema / migration** (remote D1: "No migrations to apply"). Two runtime-surface **screen-reader a11y**
+> slices shipped: **PR #253** (Live Mode **re-announces a verbatim-repeated cue** — a single assertive
+> region only re-announces when its text *changes*, so "Push!" → "Push!" was silent; fixed with the
+> react-aria LiveAnnouncer **dual-region ping-pong** keyed on cue identity `cue:idx:kind:atMs` so an
+> identical-text cue still drives an `'' → text` mutation, while `elapsedMs` never enters the key so the
+> on-change-only discipline holds) and **PR #252** (Music browse **announces the search outcome + result
+> count** — an always-mounted `role="status"` region fed by a pure `browseAnnouncement()`; "No results"
+> keys on a *settled empty array* only and a new query nulls `results` first, so no stale count /
+> premature empty leaks mid-typing). Also merged this round but **test-only / no runtime change** (not a
+> deploy trigger, listed for the trail): **PR #254** (lock **by-id nested-resource cross-tenant authz** —
+> `PATCH`/`DELETE /sections/:id` and `/class-track-moves/:id`: no-access caller → **404 NOT_FOUND**
+> (existence hidden), view-only caller → **403 FORBIDDEN**; envelope-code asserted, owner-200 positive
+> control, mutation-proven against the parent-chain gate — the highest-value remaining authz gap under
+> D1's no-RLS model). Rollback anchor: prior live `67f00f2b-8dd2-4bb5-be4a-cd5a868f4dd7`. Remote D1: **no
+> migrations to apply.** Pre-deploy gate (on `main`): format:check ✓ · typecheck ×4 ✓ · lint ✓ ·
+> design-system verify ✓ · unit web 454 / api 352 ✓ · integration 91 ✓ · web build ✓ · OpenAPI no drift
+> (48 schemas · 50 paths) ✓ · contract-parity (no untracked drift) ✓ · audit:ci ✓. Post-deploy smoke on
+> live `https://ritmofit.studio`: SPA `/` → `200` (served hash `index-C9XtDowQ.js` matches the build),
+> `/api/v1/health` → `200`, `/api/v1/classes` · `/api/v1/explore` · `/api/v1/teams` → `401`, security
+> headers present (HSTS · CSP · Permissions-Policy · Referrer-Policy · X-Content-Type-Options ·
+> X-Frame-Options), Spotify callback mounted (`302`, not `404`), providers-connect · class-shares ·
+> provider-search · `PATCH /sections/:id` → `401`. **Round-3 #248 Spotify re-verification CLOSED ✅** —
+> live authenticated connect round-trip re-smoked on this Worker: `POST …/spotify/connect - Ok` →
+> `GET …/spotify/callback?code=…&state=… - Ok` → dialog "Connected to Spotify." → `…/spotify/likes - Ok`;
+> the confidential-client exchange #248 touched is confirmed behavior-preserving in prod. **Observed
+> (pre-existing, unrelated to this deploy):** `GET /me/playlists` returns Spotify `403` — the connect
+> scope `user-library-read` covers likes but not saved playlists (needs `playlist-read-private`); Spotify
+> saved-playlist browse is a wanted feature, filed as an INBOX breadcrumb (deliberate scope-expansion +
+> re-consent, its own slice).
+
 > **Session 2026-07-08 (third parallel lane-agent round — mixed 1-polish/2-harden) — deployed (Worker
 > `67f00f2b-8dd2-4bb5-be4a-cd5a868f4dd7`).** Main HEAD `645cf59` (merge of PR #250). Code-only — **no
 > schema / migration** (remote D1: "No migrations to apply"). Runtime-surface slice: **PR #250** (Live
