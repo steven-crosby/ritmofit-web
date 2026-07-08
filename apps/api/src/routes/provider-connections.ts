@@ -89,6 +89,12 @@ function parseProvider(raw: string): Provider {
  * provider-specific URL/credential/exchange details to one of these entries. Keep
  * this map's keys in lockstep with `supportsUserAccount` — a provider that reports
  * `userConnect: true` without an entry here would 501 mid-flow.
+ *
+ * `codeChallenge`/`codeVerifier` are consumed only by PKCE providers (SoundCloud).
+ * The flow mints a PKCE pair for every provider so it can stay provider-agnostic;
+ * confidential clients (Spotify, secret via Basic auth) accept the full object but
+ * structurally ignore those fields — their helpers don't declare them. Passing them
+ * here is inert, not a bug.
  */
 interface ProviderOAuth {
   creds(env: Env): { clientId: string; clientSecret: string };
