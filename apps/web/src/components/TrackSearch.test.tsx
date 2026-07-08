@@ -2,7 +2,7 @@
 import { beforeEach, describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import type { MusicConnectionView, TrackSearchResult } from '@ritmofit/shared';
-import { TrackSearch } from './TrackSearch.js';
+import { TrackSearch, browseAnnouncement } from './TrackSearch.js';
 import * as api from '../lib/api.js';
 
 vi.mock('../lib/api.js');
@@ -76,7 +76,107 @@ describe('TrackSearch stale-result guard', () => {
     await waitFor(() => expect(api.searchProvider).toHaveBeenCalledTimes(2));
 
     expect(screen.queryByText('Stale Track')).toBeNull();
-    expect(screen.getByText(/searching/i)).toBeTruthy();
+    // "Searching…" now appears twice — the visible label and the sr-only live
+    // region — so assert on presence rather than a single unique node.
+    expect(screen.getAllByText(/searching/i).length).toBeGreaterThan(0);
+  });
+});
+
+describe('TrackSearch browse announcement (aria-live)', () => {
+  const houseResults: TrackSearchResult[] = [
+    {
+      provider: 'soundcloud',
+      providerTrackId: 'h1',
+      providerUri: null,
+      title: 'House One',
+      artist: 'DJ A',
+      albumArtUrl: null,
+      durationMs: 200000,
+    },
+    {
+      provider: 'soundcloud',
+      providerTrackId: 'h2',
+      providerUri: null,
+      title: 'House Two',
+      artist: 'DJ B',
+      albumArtUrl: null,
+      durationMs: 210000,
+    },
+  ];
+
+  it('announces the settled result count in the live region', async () => {
+    vi.mocked(api.searchProvider).mockResolvedValue(houseResults);
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+
+    // No provider connection is mocked, so the only role="status" is the browse
+    // summary. Idle → nothing announced.
+    expect(screen.getByRole('status').textContent).toBe('');
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'house' } });
+
+    // During the debounced fetch the region announces the in-flight state…
+    await waitFor(() => expect(screen.getByRole('status').textContent).toMatch(/searching/i));
+    // …and once it settles, the *count* — the information a sighted user reads
+    // from the list but AT otherwise never hears.
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('2 results for "house" on SoundCloud.'),
+    );
+  });
+
+  it('announces a settled empty result set, not a premature "No results"', async () => {
+    vi.mocked(api.searchProvider).mockResolvedValue([]);
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'zzz' } });
+
+    // Mid-fetch it must NOT read "No results" — that keys on a settled empty array.
+    await waitFor(() => expect(screen.getByRole('status').textContent).toMatch(/searching/i));
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('No results for "zzz" on SoundCloud.'),
+    );
+  });
+});
+
+describe('browseAnnouncement (unit)', () => {
+  const base = {
+    mode: 'search' as const,
+    providerName: 'Spotify',
+    query: '',
+    searching: false,
+    results: null,
+    loadingSavedPlaylists: false,
+    savedPlaylists: null,
+    selectedPlaylist: null,
+  };
+  const oneResult: TrackSearchResult[] = [
+    {
+      provider: 'spotify',
+      providerTrackId: 'x',
+      providerUri: null,
+      title: 'T',
+      artist: 'A',
+      albumArtUrl: null,
+      durationMs: 1000,
+    },
+  ];
+
+  it('stays silent while idle or mid-fetch with no settled results', () => {
+    expect(browseAnnouncement(base)).toBe('');
+    // results === null while searching → "Searching…", never "No results".
+    expect(browseAnnouncement({ ...base, query: 'x', searching: true })).toBe('Searching Spotify…');
+  });
+
+  it('distinguishes a settled empty array from a pending null', () => {
+    expect(browseAnnouncement({ ...base, query: 'x', results: [] })).toBe(
+      'No results for "x" on Spotify.',
+    );
+    expect(browseAnnouncement({ ...base, query: 'x', results: null })).toBe('');
+  });
+
+  it('singularizes the result count', () => {
+    expect(browseAnnouncement({ ...base, query: 'x', results: oneResult })).toBe(
+      '1 result for "x" on Spotify.',
+    );
   });
 });
 
