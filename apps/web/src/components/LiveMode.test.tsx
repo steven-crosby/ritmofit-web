@@ -203,6 +203,44 @@ describe('LiveMode preflight', () => {
   });
 });
 
+describe('LiveMode focus management', () => {
+  // LiveMode is a full-screen takeover (Dashboard unmounts behind it), so the control
+  // that opened it — and the preflight Start/Run button — are gone on transition. Without
+  // explicit placement, focus falls to <body>: a keyboard/SR instructor is stranded at
+  // the top of the document exactly as the class goes hands-free. These pin the fix; the
+  // real behavior is also driven live (jsdom focus is fragile).
+
+  it('focuses the class-title heading on entry (preflight)', async () => {
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    const heading = screen.getByRole('heading', { name: 'Handoff Ride' });
+    expect(document.activeElement).toBe(heading);
+  });
+
+  it('moves focus to the Play control after Run without music', async () => {
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Run without music' }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Play' }));
+  });
+
+  it('moves focus to the Pause control after Start class', async () => {
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    const pause = await screen.findByRole('button', { name: 'Pause' });
+    expect(document.activeElement).toBe(pause);
+  });
+
+  it('focuses the transport for an empty class that skips preflight straight to live', () => {
+    // phase starts 'live' when tracks.length === 0; the heading-on-mount effect is gated
+    // on the preflight phase, so it never races the transport-focus effect here.
+    render(<LiveMode payload={{ ...payload, tracks: [] }} onExit={() => {}} />);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Play' }));
+  });
+});
+
 describe('LiveMode playback failure', () => {
   it('halts into a recoverable alert with retry, handoff, and prompter-only options', async () => {
     vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
