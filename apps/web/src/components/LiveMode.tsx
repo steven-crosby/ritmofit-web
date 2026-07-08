@@ -453,6 +453,47 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   // no per-frame churn. (The visible LiveSectionBar is not itself a live region.)
   const sectionAnnouncement = section ? `${SEGMENT_META[section.type].label} section.` : '';
 
+  // Identity of the focal announcement — advances once per cue/track/gap/end change,
+  // never per frame. It mirrors the `announcement` branches above but discriminates a
+  // cue by its class-absolute time (`atMs`), not its text: two consecutive cues that
+  // read verbatim the same ("Push!" → "Push!") share the same string yet have distinct
+  // atMs, so the key still advances. That's what drives the ping-pong below to
+  // re-announce a repeated cue. Per-frame elapsedMs never enters the key, so the
+  // on-change-only discipline holds — no announcing on unrelated re-renders.
+  const announcementKey =
+    payload.tracks.length === 0
+      ? ''
+      : ended
+        ? 'ended'
+        : gap
+          ? `gap:${gap.nextTitle ?? ''}`
+          : currentEvent
+            ? `cue:${liveIndex}:${currentEvent.kind}:${currentEvent.atMs}`
+            : live
+              ? `track:${live.index}`
+              : '';
+
+  // Assertive live-region ping-pong. An aria-live region only re-announces when its
+  // text content *changes*, so a single region stays silent when a cue repeats
+  // verbatim. Instead we keep two persistent assertive regions and, on each identity
+  // change, write the cue into the toggled slot while clearing the other: the target
+  // goes '' → text, a real mutation the screen reader always speaks, even when the
+  // words are identical. (This is the react-aria LiveAnnouncer technique; it relies on
+  // the cleared region being silent, which mainstream SRs are for empty content.)
+  const [announced, setAnnounced] = useState<{ text: string; slot: 0 | 1 }>({
+    text: '',
+    slot: 0,
+  });
+  useEffect(() => {
+    // At-rest / empty class: nothing to say. Early-return keeps both slots empty and
+    // silent rather than announcing a blank string.
+    if (!announcement) return;
+    setAnnounced((prev) => ({ text: announcement, slot: prev.slot === 0 ? 1 : 0 }));
+    // Keyed on identity, not text: the effect fires once per focal change (including a
+    // repeated-text cue), never per animation frame. `announcement` is read fresh here —
+    // it changes in lockstep with the key, so the closure is never stale.
+  }, [announcementKey]);
+
   // Live runs on bg-live (ink-950, darker than bg-base) for maximum AAA contrast
   // in a dim studio — and stays dark in both themes (02/04-layout).
   if (phase === 'preflight') {
@@ -491,9 +532,16 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-live">
       {/* The advancing cue, spoken for screen readers — the prompter's core function.
-          Visually hidden; the Cue-by-Cue card carries the same content on screen. */}
+          Visually hidden; the Cue-by-Cue card carries the same content on screen. Two
+          assertive regions ping-pong (see `announced` above): the cue is written to one
+          and the other cleared, so a verbatim-repeated cue still re-announces (a single
+          region would stay unchanged and stay silent). Only one slot holds text at a
+          time; the empty one is silent. */}
       <p className="sr-only" aria-live="assertive" aria-atomic="true">
-        {announcement}
+        {announced.slot === 0 ? announced.text : ''}
+      </p>
+      <p className="sr-only" aria-live="assertive" aria-atomic="true">
+        {announced.slot === 1 ? announced.text : ''}
       </p>
       {/* Section/energy-arc transitions, announced politely so they don't cut off
           the cue above. The visible band (LiveSectionBar) carries this on screen. */}

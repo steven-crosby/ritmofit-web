@@ -385,6 +385,62 @@ describe('LiveMode screen-reader announcements', () => {
     expect(screen.getByText('Cue: Stand and sprint.')).toBeTruthy();
   });
 
+  it('re-announces a verbatim-repeated cue by ping-ponging the assertive regions', async () => {
+    // Two cues with identical text at different times. The string never changes, so a
+    // single assertive region would never mutate and a screen reader would stay silent
+    // on the second "Push". The fix writes the cue to the alternate assertive region on
+    // each advance (an '' → text mutation), which is what re-announces it.
+    const repeatedCue: RunPayload = {
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            {
+              id: '00000000-0000-4000-8000-0000000000c1',
+              anchorMs: 0,
+              beat: null,
+              bar: null,
+              text: 'Push',
+              color: null,
+            },
+            {
+              id: '00000000-0000-4000-8000-0000000000c2',
+              anchorMs: 90000,
+              beat: null,
+              bar: null,
+              text: 'Push',
+              color: null,
+            },
+          ],
+        },
+      ],
+    };
+    await renderLive(repeatedCue);
+
+    // The <p> currently holding the (identical) cue text. With ping-pong this node
+    // changes on each advance; with a single region it would be the same node both times.
+    const cueRegion = () =>
+      Array.from(document.querySelectorAll('p[aria-live="assertive"]')).find(
+        (el) => el.textContent === 'Cue: Push.',
+      );
+
+    const first = cueRegion();
+    expect(first).toBeTruthy();
+
+    // Seek across the second cue at 90s (PageUp jumps +30s), reaching the identical cue.
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    fireEvent.keyDown(slider, { key: 'PageUp' }); // 30s — still the first "Push"
+    fireEvent.keyDown(slider, { key: 'PageUp' }); // 60s — still the first "Push"
+    fireEvent.keyDown(slider, { key: 'PageUp' }); // 90s — the second, identical "Push"
+
+    const second = cueRegion();
+    expect(second).toBeTruthy();
+    // The text moved to the *other* assertive region — the empty → text transition that
+    // makes a screen reader re-announce an identical cue. A single region fails here.
+    expect(second).not.toBe(first);
+  });
+
   it('announces the current section in a polite region, apart from the assertive cue', async () => {
     const sectioned = {
       ...payload,
