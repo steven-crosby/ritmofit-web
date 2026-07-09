@@ -229,6 +229,42 @@ describe('user playlist token helper', () => {
     expect(refreshSpotifyToken).not.toHaveBeenCalled();
     expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(1);
   });
+
+  it('maps REAUTH_REQUIRED when a proactive refresh is followed by a 401 (no second refresh)', async () => {
+    // Expired token → proactive refresh succeeds → the read still 401s. Because we
+    // already refreshed this request, the `refreshed` guard short-circuits to REAUTH
+    // instead of burning a second (replayed) refresh.
+    const { db } = makeDb(makeConnection({ expiresAt: Date.now() - 1 }));
+    vi.mocked(fetchSpotifySavedPlaylists).mockRejectedValueOnce(new SpotifyUnauthorizedError());
+
+    await expect(fetchUserPlaylists(db, env, 'user-1', 'spotify')).rejects.toMatchObject({
+      status: 409,
+      code: 'REAUTH_REQUIRED',
+      message: 'Reconnect your Spotify account.',
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
+    expect(fetchSpotifySavedPlaylists).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps REAUTH_REQUIRED when the reactive-refresh retry 401s again', async () => {
+    // 401 on the stored token → refresh succeeds → the retried read 401s again.
+    // The freshly-refreshed grant is dead, so this surfaces REAUTH rather than
+    // leaking the raw provider 401 as a 5xx (the retry is awaited so the catch fires).
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifyPlaylistTracks)
+      .mockRejectedValueOnce(new SpotifyUnauthorizedError())
+      .mockRejectedValueOnce(new SpotifyUnauthorizedError());
+
+    await expect(
+      fetchUserPlaylistTracks(db, env, 'user-1', 'spotify', 'playlist-1'),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'REAUTH_REQUIRED',
+      message: 'Reconnect your Spotify account.',
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
+    expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('SoundCloud saved playlists (shared connected-token path)', () => {
