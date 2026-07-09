@@ -28,6 +28,7 @@ export {
   fetchSpotifyPlaylistTracks,
   SpotifyUnauthorizedError,
   SpotifyForbiddenError,
+  SpotifyPlaylistAccessDeniedError,
   type SpotifyConfig,
 } from './spotify.js';
 export {
