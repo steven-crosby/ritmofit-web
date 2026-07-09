@@ -3,6 +3,7 @@
 <!-- note (Codex, 2026-07-05): Consolidated stale historical notes and source-of-truth routing after the D20 solo-first reset. -->
 <!-- note (Claude, 2026-07-06): Recorded the D21 creator-workstation-shell frame in Product Boundaries. -->
 <!-- note (Claude, 2026-07-06): Folded AGENTS.md into this file; CLAUDE.md is now the canonical agent doc and AGENTS.md is a pointer stub. -->
+<!-- note (Claude, 2026-07-08): Added New Machine And Portability section, project slash-command pointers, and owner working-style notes for cross-machine onboarding. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `CLAUDE.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -17,9 +18,27 @@ to it, identify the agent and date in a short HTML comment.
 - `agent-prompts/SCHEDULE.md`: prompt cadence; use `agent-prompts/daily/start-session.md` and
   `agent-prompts/daily/close-session.md` for interactive work blocks.
 - `README.md`: setup, local dev, and broad repo orientation.
+- `.claude/commands/`: project slash commands (`/sweep`, `/triage`, `/standup`) — repo-relative and
+  version-controlled, so they clone down and work on any machine. Each file names the prompt it drives.
 
 Keep `CLAUDE.md` limited to durable operating rules and canonical command surfaces. Do not use it as a
 dated status log; update the planning docs for status changes and `HISTORY.md` for deploy/build history.
+
+## New Machine And Portability
+
+Setting up a fresh clone: follow `README.md` in order — Prerequisites (Node `>=22.13`, pnpm `>=11.4`
+via `corepack enable`) → Install → **Configure local secrets** (`apps/api/.dev.vars` copied from
+`apps/api/.dev.vars.example`; never committed) → Run locally → first-run local D1
+`db:migrate:local && db:seed:local`. Then run the full gate in "Verification, PRs, And Commits" once
+as a health check — green means the box is set up correctly. Secrets are the only thing a clone
+cannot reproduce for you; everything else is in the repo.
+
+This guide is self-contained and **repo-relative**. Never hardcode an absolute machine path or a home
+directory in anything committed (docs, scripts, `.claude/commands/`); resolve from the repo root. On
+some machines this repo is one of several side-by-side checkouts under a non-git workspace container —
+the directory above the repo is not part of it, so do not assume that layout or reach outside the
+repo root. Per-machine Claude config (`~/.claude/`, `.claude/settings.local.json`) is not tracked and
+does not travel with the repo; anything meant to be portable belongs in a tracked file here.
 
 ## Product Boundaries
 
@@ -53,6 +72,16 @@ Use `start-session` for orientation and `close-session` for wrap-up when the own
 overwrite, stash, or silently include existing worktree changes. Prefer small vertical slices: shared
 contract, API/authz, UI states, then tests. Do not add infrastructure or revive deferred surfaces unless
 the request clearly calls for it.
+
+Work verified, not assumed. Before acting on a path, command, file, or instruction that comes from
+notes, memory, or a handoff, confirm it still exists in this repo rather than trusting it. Flag
+judgment calls and substitutions explicitly instead of choosing silently, and surface anything that
+contradicts what you were told.
+
+Owner working style: the owner (Steven) values directness, decisiveness once scope is clear, explicit
+flagging of assumptions and trade-offs, and tight written summaries (tables welcome) over long prose.
+Ask focused clarifying questions before non-trivial changes rather than guessing, then act. Report
+outcomes plainly — including what was skipped, substituted, or failed.
 
 ## Project Structure
 
