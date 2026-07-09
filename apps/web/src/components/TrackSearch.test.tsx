@@ -2,7 +2,7 @@
 import { beforeEach, describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import type { MusicConnectionView, TrackSearchResult } from '@ritmofit/shared';
-import { TrackSearch, browseAnnouncement } from './TrackSearch.js';
+import { TrackSearch, browseAnnouncement, classifyPlaylistDrillInError } from './TrackSearch.js';
 import * as api from '../lib/api.js';
 
 vi.mock('../lib/api.js');
@@ -314,6 +314,95 @@ describe('TrackSearch saved-playlists drill-in', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back to playlists' }));
     await waitFor(() => expect(screen.queryByText('Song One')).toBeNull());
     expect(screen.getByText('Warmup Ride')).toBeTruthy();
+  });
+
+  async function openFirstPlaylist() {
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+    expect(await screen.findByText('Warmup Ride')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+  }
+
+  it('surfaces a 403 forbidden drill-in as calm guidance, not a retryable error', async () => {
+    // Backend PROVIDER_FORBIDDEN message (see user-playlists.ts) — an expected
+    // limitation: reconnecting/retrying can't grant access to someone else's playlist.
+    vi.mocked(api.listPlaylistTracks).mockRejectedValue(
+      new Error('Spotify only allows opening playlists you own or collaborate on.'),
+    );
+    await openFirstPlaylist();
+
+    expect(
+      await screen.findByText(/only allows opening playlists you own or collaborate on/i),
+    ).toBeTruthy();
+    // Points to the URL-import escape hatch…
+    expect(screen.getByText(/add it under Import Playlist URL instead/i)).toBeTruthy();
+    // …and offers no retry, since a retry would just repeat the 403.
+    expect(screen.queryByRole('button', { name: /try again/i })).toBeNull();
+    // Still announced (kept as role="alert").
+    expect(screen.getByRole('alert').textContent).toMatch(/own or collaborate on/i);
+  });
+
+  it('surfaces a generic drill-in failure as a retryable error and re-fetches on retry', async () => {
+    // First open fails (503 PROVIDER_UNAVAILABLE); retry falls back to the base
+    // resolved mock (PLAYLIST_TRACKS) from beforeEach.
+    vi.mocked(api.listPlaylistTracks).mockRejectedValueOnce(
+      new Error('Spotify is not configured.'),
+    );
+    await openFirstPlaylist();
+
+    expect(await screen.findByText('Spotify is not configured.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+
+    expect(await screen.findByText('Song One')).toBeTruthy();
+    expect(api.listPlaylistTracks).toHaveBeenCalledTimes(2);
+  });
+
+  it('reads a truly empty opened playlist distinctly from a failed load', async () => {
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([]);
+    await openFirstPlaylist();
+
+    // Appears twice — the visible label and the sr-only live region that mirrors it.
+    expect((await screen.findAllByText('This playlist has no tracks.')).length).toBeGreaterThan(0);
+    // Empty is a calm success state, not an error — nothing is announced as an alert.
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('distinguishes a failed playlist-index load from an empty library, with a retry', async () => {
+    // First index load rejects; the retry falls back to the base resolved mock.
+    vi.mocked(api.listPlaylists).mockRejectedValueOnce(new Error('boom'));
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+
+    expect(await screen.findByText(/load your Spotify playlists/i)).toBeTruthy();
+    // A failed load must NOT masquerade as an empty library.
+    expect(screen.queryByText(/No saved playlists found/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+    expect(await screen.findByText('Warmup Ride')).toBeTruthy();
+  });
+});
+
+describe('classifyPlaylistDrillInError (unit)', () => {
+  it('classifies the 403 ownership limitation as forbidden', () => {
+    expect(
+      classifyPlaylistDrillInError(
+        'Spotify only allows opening playlists you own or collaborate on.',
+      ),
+    ).toBe('forbidden');
+  });
+
+  it('classifies REAUTH_REQUIRED and the capitalized NOT_CONNECTED string as reauth', () => {
+    expect(classifyPlaylistDrillInError('Reconnect your Spotify account.')).toBe('reauth');
+    // NOT_CONNECTED starts with a capital C — the case-insensitive match must still
+    // land it on reauth rather than falling through to generic.
+    expect(classifyPlaylistDrillInError('Connect your Spotify account first.')).toBe('reauth');
+  });
+
+  it('falls back to generic for any other message', () => {
+    expect(classifyPlaylistDrillInError('Spotify is not configured.')).toBe('generic');
+    expect(classifyPlaylistDrillInError('Request failed (500)')).toBe('generic');
   });
 });
 

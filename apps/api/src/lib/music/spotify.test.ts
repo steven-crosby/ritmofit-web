@@ -196,6 +196,33 @@ describe('SpotifyProvider.getPlaylist', () => {
         .map((call) => call.authorization),
     ).toEqual(['Bearer tok-1', 'Bearer tok-2']);
   });
+
+  it('requests the /items endpoint (not the retired /tracks) and maps the item entry', async () => {
+    const playlistUrl = `${API_BASE}/playlists/pl-1/items`;
+    const { provider, calls } = makeProvider({
+      [`${playlistUrl}?limit=50&offset=0`]: { items: [{ item: SP_TRACK }], total: 1 },
+    });
+
+    const results = await provider.getPlaylist('pl-1');
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.providerTrackId).toBe('4cOdK2wGLETKBW3PvgPWqT');
+    // Lock the 2026 migration: the import path must hit /items and read the `item`
+    // entry, never the retired /playlists/{id}/tracks endpoint or its `track` field.
+    const playlistCall = calls.find((call) => call.url.startsWith(`${API_BASE}/playlists`))!;
+    expect(playlistCall.url).toContain('/playlists/pl-1/items');
+    expect(playlistCall.url).not.toContain('/tracks');
+  });
+
+  it('degrades a page of item-less entries to empty without throwing', async () => {
+    const playlistUrl = `${API_BASE}/playlists/pl-1/items`;
+    const { provider } = makeProvider({
+      [`${playlistUrl}?limit=50&offset=0`]: { items: [{}, { item: null }], total: 2 },
+    });
+
+    // A nullable/absent `item` must map to nothing, not crash the whole page.
+    await expect(provider.getPlaylist('pl-1')).resolves.toEqual([]);
+  });
 });
 
 describe('fetchSpotifySavedTracks', () => {
@@ -320,6 +347,34 @@ describe('fetchSpotifySavedPlaylists', () => {
     await expect(
       fetchSpotifySavedPlaylists({ accessToken: 'pre-expansion', fetchImpl, apiBase: API_BASE }),
     ).rejects.toBeInstanceOf(SpotifyForbiddenError);
+  });
+
+  it('reads trackCount from items.total, not the legacy tracks.total', async () => {
+    const { fetchImpl } = fakeFetch({
+      [`${PLAYLISTS_URL}?limit=50&offset=0`]: {
+        items: [
+          {
+            id: 'pl-1',
+            name: 'Warmup Ride',
+            owner: { display_name: 'Steven' },
+            // A legacy `tracks.total` alongside the current `items.total`: reading the
+            // wrong one is exactly the 2026 bug that yielded 0-count cards, so lock it.
+            tracks: { total: 999 },
+            items: { total: 24 },
+            images: [{ url: 'https://i.scdn.co/image/pl-1.jpg' }],
+          },
+        ],
+        total: 1,
+      },
+    });
+
+    const results = await fetchSpotifySavedPlaylists({
+      accessToken: 'user-playlist-token',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+
+    expect(results[0]?.trackCount).toBe(24);
   });
 });
 
@@ -446,6 +501,37 @@ describe('fetchSpotifyPlaylistTracks', () => {
         apiBase: API_BASE,
       }),
     ).rejects.toBeInstanceOf(SpotifyPlaylistAccessDeniedError);
+  });
+
+  it('requests the /items endpoint, not the retired /tracks', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${itemsUrl('pl-1')}?limit=50&offset=0`]: { items: [{ item: SP_TRACK }], total: 1 },
+    });
+
+    await fetchSpotifyPlaylistTracks({
+      accessToken: 'user-tok',
+      playlistId: 'pl-1',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+
+    expect(calls[0]?.url).toContain('/playlists/pl-1/items');
+    expect(calls[0]?.url).not.toContain('/tracks');
+  });
+
+  it('degrades item-less entries to empty without throwing', async () => {
+    const { fetchImpl } = fakeFetch({
+      [`${itemsUrl('pl-1')}?limit=50&offset=0`]: { items: [{}, { item: null }], total: 2 },
+    });
+
+    await expect(
+      fetchSpotifyPlaylistTracks({
+        accessToken: 'user-tok',
+        playlistId: 'pl-1',
+        fetchImpl,
+        apiBase: API_BASE,
+      }),
+    ).resolves.toEqual([]);
   });
 });
 
