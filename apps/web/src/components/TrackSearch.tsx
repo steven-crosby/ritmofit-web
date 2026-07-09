@@ -85,6 +85,11 @@ export function browseAnnouncement(input: {
     return `${savedPlaylists.length} saved playlist${plural(savedPlaylists.length)} on ${providerName}.`;
   }
 
+  // Opened playlist still loading its tracks — named, so AT hears which one.
+  if (mode === 'saved_playlists' && selectedPlaylist && searching && results === null) {
+    return `Loading tracks from ${selectedPlaylist.name}…`;
+  }
+
   // Idle search: nothing typed, nothing fetched.
   if (mode === 'search' && query === '') return '';
 
@@ -96,7 +101,7 @@ export function browseAnnouncement(input: {
   // Settled empty *array* only — never results === null.
   if (results && results.length === 0) {
     if (mode === 'likes') return `No liked tracks on ${providerName}.`;
-    if (mode === 'saved_playlists') return `No tracks found in this playlist.`;
+    if (mode === 'saved_playlists') return `This playlist has no tracks.`;
     return `No results for "${query}" on ${providerName}.`;
   }
 
@@ -109,6 +114,27 @@ export function browseAnnouncement(input: {
   }
 
   return '';
+}
+
+/**
+ * Classify a saved-playlist drill-in failure so an *expected limitation* reads
+ * differently from a *broken load*. The API client (`../lib/api.ts`) surfaces only
+ * `error.message` — it drops `error.code` — so we branch on the message text. These
+ * strings are the source of truth in the backend; see
+ * `apps/api/src/lib/music/user-playlists.ts`:
+ *   - 403 PROVIDER_FORBIDDEN → "<Provider> only allows opening playlists you own or
+ *     collaborate on."                                    → 'forbidden' (retry can't help)
+ *   - 409 REAUTH_REQUIRED    → "Reconnect your <Provider> account."    ┐
+ *   - 409 NOT_CONNECTED      → "Connect your <Provider> account first." ┘ → 'reauth'
+ *   - anything else (e.g. 503 "<Provider> is not configured.")         → 'generic'
+ *
+ * The reauth match is case-insensitive so the capitalized NOT_CONNECTED string
+ * ("Connect your …") classifies as reauth rather than falling through to generic.
+ */
+export function classifyPlaylistDrillInError(message: string): 'forbidden' | 'reauth' | 'generic' {
+  if (/own or collaborate on/i.test(message)) return 'forbidden';
+  if (/^(re)?connect your /i.test(message)) return 'reauth';
+  return 'generic';
 }
 
 export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: () => void }) {
@@ -127,6 +153,8 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
   const [selectedPlaylist, setSelectedPlaylist] = useState<ProviderPlaylistSummary | null>(null);
   const [loadingSavedPlaylists, setLoadingSavedPlaylists] = useState(false);
   const [importingAllFromPlaylist, setImportingAllFromPlaylist] = useState(false);
+  // Bumped by the playlist-index "Try again" affordance to re-run the list fetch.
+  const [reloadKey, setReloadKey] = useState(0);
   // Guards against a stale async fetch overwriting a newer one's results.
   const reqId = useRef(0);
   // Provider connection readiness — surfaced proactively so "search my Spotify"
@@ -246,7 +274,7 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
     return () => {
       alive = false;
     };
-  }, [mode, provider, canBrowseSavedPlaylists]);
+  }, [mode, provider, canBrowseSavedPlaylists, reloadKey]);
 
   const openSavedPlaylist = async (playlist: ProviderPlaylistSummary) => {
     setSelectedPlaylist(playlist);
@@ -339,6 +367,96 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
     savedPlaylists,
     selectedPlaylist,
   });
+
+  // The importable candidate list — shared by catalog/likes search and the opened
+  // saved-playlist drill-in so both render an identical row treatment.
+  const renderTrackList = (list: TrackSearchResult[]) => (
+    <ul className="flex flex-col gap-1.5">
+      {list.map((r) => {
+        const key = candidateKey(r);
+        const added = addedKeys.has(key);
+        const busy = importingKey === key;
+        return (
+          <li key={key} className="flex items-center gap-3 rounded-card bg-bg-base px-2 py-1.5">
+            {/* 44px art — a small creative trigger, not a focal point (09). */}
+            {r.albumArtUrl ? (
+              <img
+                src={r.albumArtUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="h-11 w-11 shrink-0 rounded-card object-cover"
+              />
+            ) : (
+              <span
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised text-text-tertiary"
+                aria-hidden
+              >
+                ♪
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-ui text-sm font-semibold text-text-primary">{r.title}</p>
+              <p className="truncate font-ui text-xs text-text-secondary">{r.artist}</p>
+            </div>
+            {r.durationMs != null && (
+              <span className="shrink-0 font-data text-xs text-text-tertiary">
+                {formatDuration(r.durationMs)}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => add(r)}
+              disabled={busy || added}
+              aria-label={added ? `${r.title} added` : `Add ${r.title} by ${r.artist}`}
+              className={`shrink-0 rounded-pill px-3 py-1 font-ui text-xs font-semibold disabled:opacity-60 ${
+                added ? 'bg-bg-raised text-text-tertiary' : 'rf-btn-primary text-text-on-accent'
+              }`}
+            >
+              {added ? 'Added ✓' : busy ? 'Adding…' : 'Add'}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  // Drill-in failure, classified so an expected limitation (you don't own this
+  // playlist / must reconnect) reads as calm caution with no retry, while a genuine
+  // load failure reads as danger with a retry. All keep role="alert" (announced on
+  // the user's Open click). See classifyPlaylistDrillInError.
+  const renderDrillInError = (selected: ProviderPlaylistSummary, message: string) => {
+    const kind = classifyPlaylistDrillInError(message);
+    if (kind === 'generic') {
+      return (
+        <p role="alert" className="flex flex-col gap-1 font-ui text-sm text-state-danger">
+          <span>{message}</span>
+          <button
+            type="button"
+            onClick={() => void openSavedPlaylist(selected)}
+            className="self-start rounded-pill border border-interactive/35 px-3 py-1 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
+          >
+            Try again
+          </button>
+        </p>
+      );
+    }
+    return (
+      <p role="alert" className="flex items-start gap-1.5 font-ui text-sm text-state-caution">
+        <span aria-hidden className="pt-0.5">
+          ⊘
+        </span>
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span>{message}</span>
+          {kind === 'forbidden' && (
+            <span className="text-text-tertiary">
+              Open one of your own playlists, or add it under Import Playlist URL instead.
+            </span>
+          )}
+        </span>
+      </p>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-2 border-t border-interactive/20 pt-4">
@@ -515,7 +633,9 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
         </div>
       )}
 
-      {error && (
+      {/* Saved-playlists renders its own contextual error (index load vs drill-in),
+          so suppress the generic alert there to avoid a duplicate announcement. */}
+      {error && mode !== 'saved_playlists' && (
         <p role="alert" className="font-ui text-sm text-state-danger">
           {error}
         </p>
@@ -533,11 +653,25 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
           Paste the URL of a public playlist to import all its tracks at once.
         </p>
       ) : mode === 'saved_playlists' && !selectedPlaylist ? (
-        loadingSavedPlaylists ? (
+        // Playlist index: loading · load-failed (retryable) · list · truly-empty.
+        // `savedPlaylists === null` without an error is the pre-fetch tick, not a
+        // failure — treat it as loading so a failed load never flashes prematurely.
+        loadingSavedPlaylists || (savedPlaylists === null && !error) ? (
           <p className="font-ui text-xs text-text-tertiary">
             Loading your {providerLabel(provider)} playlists…
           </p>
-        ) : savedPlaylists && savedPlaylists.length > 0 ? (
+        ) : savedPlaylists === null ? (
+          <p role="alert" className="flex flex-col gap-1 font-ui text-sm text-state-danger">
+            <span>{error ?? `Couldn’t load your ${providerLabel(provider)} playlists.`}</span>
+            <button
+              type="button"
+              onClick={() => setReloadKey((k) => k + 1)}
+              className="self-start rounded-pill border border-interactive/35 px-3 py-1 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
+            >
+              Try again
+            </button>
+          </p>
+        ) : savedPlaylists.length > 0 ? (
           <ul className="flex flex-col gap-1.5">
             {savedPlaylists.map((playlist) => (
               <li
@@ -583,6 +717,19 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
             No saved playlists found on {providerLabel(provider)}.
           </p>
         )
+      ) : mode === 'saved_playlists' && selectedPlaylist ? (
+        // Opened playlist: loading · error (forbidden/reauth/generic) · empty · tracks.
+        searching && results === null ? (
+          <p className="font-ui text-xs text-text-tertiary">
+            Loading tracks from {selectedPlaylist.name}…
+          </p>
+        ) : error ? (
+          renderDrillInError(selectedPlaylist, error)
+        ) : results && results.length === 0 ? (
+          <p className="font-ui text-xs text-text-tertiary">This playlist has no tracks.</p>
+        ) : results ? (
+          renderTrackList(results)
+        ) : null
       ) : mode === 'search' && query.trim() === '' ? (
         <p className="font-ui text-xs text-text-tertiary">
           Find a track to add — building the playlist is building the class.
@@ -597,68 +744,10 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
         <p className="font-ui text-xs text-text-tertiary">
           {mode === 'likes'
             ? `No liked tracks on ${providerLabel(provider)}.`
-            : mode === 'saved_playlists'
-              ? `No tracks found in this playlist.`
-              : `No results for "${query.trim()}" on ${providerLabel(provider)}.`}
+            : `No results for "${query.trim()}" on ${providerLabel(provider)}.`}
         </p>
       ) : (
-        results && (
-          <ul className="flex flex-col gap-1.5">
-            {results.map((r) => {
-              const key = candidateKey(r);
-              const added = addedKeys.has(key);
-              const busy = importingKey === key;
-              return (
-                <li
-                  key={key}
-                  className="flex items-center gap-3 rounded-card bg-bg-base px-2 py-1.5"
-                >
-                  {/* 44px art — a small creative trigger, not a focal point (09). */}
-                  {r.albumArtUrl ? (
-                    <img
-                      src={r.albumArtUrl}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      className="h-11 w-11 shrink-0 rounded-card object-cover"
-                    />
-                  ) : (
-                    <span
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised text-text-tertiary"
-                      aria-hidden
-                    >
-                      ♪
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-ui text-sm font-semibold text-text-primary">
-                      {r.title}
-                    </p>
-                    <p className="truncate font-ui text-xs text-text-secondary">{r.artist}</p>
-                  </div>
-                  {r.durationMs != null && (
-                    <span className="shrink-0 font-data text-xs text-text-tertiary">
-                      {formatDuration(r.durationMs)}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => add(r)}
-                    disabled={busy || added}
-                    aria-label={added ? `${r.title} added` : `Add ${r.title} by ${r.artist}`}
-                    className={`shrink-0 rounded-pill px-3 py-1 font-ui text-xs font-semibold disabled:opacity-60 ${
-                      added
-                        ? 'bg-bg-raised text-text-tertiary'
-                        : 'rf-btn-primary text-text-on-accent'
-                    }`}
-                  >
-                    {added ? 'Added ✓' : busy ? 'Adding…' : 'Add'}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )
+        results && renderTrackList(results)
       )}
     </div>
   );
