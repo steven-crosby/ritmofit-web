@@ -50,4 +50,3 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 ## Breadcrumbs
 
 <!-- newest at top; one per line -->
-
