@@ -6,6 +6,7 @@ import {
   fetchSpotifySavedTracks,
   SpotifyUnauthorizedError,
   SpotifyForbiddenError,
+  SpotifyPlaylistAccessDeniedError,
   type FetchLike,
 } from '@ritmofit/music';
 
@@ -119,16 +120,16 @@ describe('SpotifyProvider.lookup', () => {
 describe('SpotifyProvider.getPlaylist', () => {
   it('paginates every playlist item in 50-track pages', async () => {
     const firstPage = Array.from({ length: 50 }, (_, index) => ({
-      track: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
+      item: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
     }));
     const secondTrack = {
       ...SP_TRACK,
       id: 'track-50',
       uri: 'spotify:track:track-50',
     };
-    const playlistUrl = `${API_BASE}/playlists/playlist-id/tracks`;
+    const playlistUrl = `${API_BASE}/playlists/playlist-id/items`;
     const { provider, calls } = makeProvider({
-      [`${playlistUrl}?limit=50&offset=50`]: { items: [{ track: secondTrack }], total: 51 },
+      [`${playlistUrl}?limit=50&offset=50`]: { items: [{ item: secondTrack }], total: 51 },
       [`${playlistUrl}?limit=50&offset=0`]: { items: firstPage, total: 51 },
     });
 
@@ -143,10 +144,10 @@ describe('SpotifyProvider.getPlaylist', () => {
   });
 
   it('rejects a malformed later page instead of returning a partial playlist', async () => {
-    const playlistUrl = `${API_BASE}/playlists/playlist-id/tracks`;
+    const playlistUrl = `${API_BASE}/playlists/playlist-id/items`;
     const { provider } = makeProvider({
       [`${playlistUrl}?limit=50&offset=1`]: { items: 'invalid', total: 2 },
-      [`${playlistUrl}?limit=50&offset=0`]: { items: [{ track: SP_TRACK }], total: 2 },
+      [`${playlistUrl}?limit=50&offset=0`]: { items: [{ item: SP_TRACK }], total: 2 },
     });
 
     await expect(provider.getPlaylist('playlist-id')).rejects.toThrow(
@@ -175,7 +176,7 @@ describe('SpotifyProvider.getPlaylist', () => {
       return {
         ok,
         status: ok ? 200 : 401,
-        json: async () => ({ items: [{ track: SP_TRACK }], total: 1 }),
+        json: async () => ({ items: [{ item: SP_TRACK }], total: 1 }),
         text: async () => (ok ? '' : 'expired'),
       };
     };
@@ -268,7 +269,7 @@ describe('fetchSpotifySavedPlaylists', () => {
             id: 'pl-1',
             name: 'Warmup Ride',
             owner: { display_name: 'Steven' },
-            tracks: { total: 24 },
+            items: { total: 24 },
             images: [{ url: 'https://i.scdn.co/image/pl-1.jpg' }],
           },
         ],
@@ -323,11 +324,11 @@ describe('fetchSpotifySavedPlaylists', () => {
 });
 
 describe('fetchSpotifyPlaylistTracks', () => {
-  const tracksUrl = (id: string) => `${API_BASE}/playlists/${id}/tracks`;
+  const itemsUrl = (id: string) => `${API_BASE}/playlists/${id}/items`;
 
-  it('maps the `{ track }`-wrapped playlist items with a per-user Bearer token', async () => {
+  it('maps the `{ item }`-wrapped playlist items with a per-user Bearer token', async () => {
     const { fetchImpl, calls } = fakeFetch({
-      [`${tracksUrl('pl-1')}?limit=50&offset=0`]: { items: [{ track: SP_TRACK }], total: 1 },
+      [`${itemsUrl('pl-1')}?limit=50&offset=0`]: { items: [{ item: SP_TRACK }], total: 1 },
     });
 
     const results = await fetchSpotifyPlaylistTracks({
@@ -354,11 +355,11 @@ describe('fetchSpotifyPlaylistTracks', () => {
 
   it('paginates the total-counted feed in 50-track pages', async () => {
     const firstPage = Array.from({ length: 50 }, (_, index) => ({
-      track: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
+      item: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
     }));
     const { fetchImpl, calls } = fakeFetch({
-      [`${tracksUrl('pl-1')}?limit=50&offset=0`]: { items: firstPage, total: 51 },
-      [`${tracksUrl('pl-1')}?limit=50&offset=50`]: { items: [{ track: SP_TRACK }], total: 51 },
+      [`${itemsUrl('pl-1')}?limit=50&offset=0`]: { items: firstPage, total: 51 },
+      [`${itemsUrl('pl-1')}?limit=50&offset=50`]: { items: [{ item: SP_TRACK }], total: 51 },
     });
 
     const results = await fetchSpotifyPlaylistTracks({
@@ -369,18 +370,18 @@ describe('fetchSpotifyPlaylistTracks', () => {
     });
 
     expect(results).toHaveLength(51);
-    expect(calls.filter((c) => c.url.startsWith(tracksUrl('pl-1'))).map((c) => c.url)).toEqual([
-      `${tracksUrl('pl-1')}?limit=50&offset=0`,
-      `${tracksUrl('pl-1')}?limit=50&offset=50`,
+    expect(calls.filter((c) => c.url.startsWith(itemsUrl('pl-1'))).map((c) => c.url)).toEqual([
+      `${itemsUrl('pl-1')}?limit=50&offset=0`,
+      `${itemsUrl('pl-1')}?limit=50&offset=50`,
     ]);
   });
 
   it('stops at the maxTracks cap so detail reads stay bounded', async () => {
     const fullPage = Array.from({ length: 50 }, (_, index) => ({
-      track: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
+      item: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
     }));
     const { fetchImpl, calls } = fakeFetch({
-      [`${tracksUrl('pl-1')}?limit=50&offset=0`]: { items: fullPage, total: 500 },
+      [`${itemsUrl('pl-1')}?limit=50&offset=0`]: { items: fullPage, total: 500 },
     });
 
     const results = await fetchSpotifyPlaylistTracks({
@@ -393,12 +394,12 @@ describe('fetchSpotifyPlaylistTracks', () => {
 
     expect(results).toHaveLength(10);
     // The cap halts pagination after the first page even though total claims 500.
-    expect(calls.filter((c) => c.url.startsWith(tracksUrl('pl-1')))).toHaveLength(1);
+    expect(calls.filter((c) => c.url.startsWith(itemsUrl('pl-1')))).toHaveLength(1);
   });
 
   it('URL-encodes the playlist id in the request path', async () => {
     const { fetchImpl, calls } = fakeFetch({
-      [`${API_BASE}/playlists/pl%2F1/tracks?limit=50&offset=0`]: { items: [], total: 0 },
+      [`${API_BASE}/playlists/pl%2F1/items?limit=50&offset=0`]: { items: [], total: 0 },
     });
 
     await fetchSpotifyPlaylistTracks({
@@ -408,7 +409,7 @@ describe('fetchSpotifyPlaylistTracks', () => {
       apiBase: API_BASE,
     });
 
-    expect(calls[0]?.url).toContain('/playlists/pl%2F1/tracks');
+    expect(calls[0]?.url).toContain('/playlists/pl%2F1/items');
   });
 
   it('throws SpotifyUnauthorizedError on a 401 so callers can refresh + retry', async () => {
@@ -429,7 +430,7 @@ describe('fetchSpotifyPlaylistTracks', () => {
     ).rejects.toBeInstanceOf(SpotifyUnauthorizedError);
   });
 
-  it('throws SpotifyForbiddenError on a 403 — a valid token missing the playlist scope', async () => {
+  it('throws SpotifyPlaylistAccessDeniedError on a 403 — a playlist the user cannot open', async () => {
     const fetchImpl: FetchLike = async () => ({
       ok: false,
       status: 403,
@@ -444,7 +445,7 @@ describe('fetchSpotifyPlaylistTracks', () => {
         fetchImpl,
         apiBase: API_BASE,
       }),
-    ).rejects.toBeInstanceOf(SpotifyForbiddenError);
+    ).rejects.toBeInstanceOf(SpotifyPlaylistAccessDeniedError);
   });
 });
 

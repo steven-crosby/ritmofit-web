@@ -15,6 +15,7 @@ import {
   SoundCloudUnauthorizedError,
   SpotifyUnauthorizedError,
   SpotifyForbiddenError,
+  SpotifyPlaylistAccessDeniedError,
   AppleMusicUnauthorizedError,
   type OAuthTokens,
 } from '@ritmofit/music';
@@ -67,6 +68,11 @@ interface PlaylistAdapter {
    * unset, so the `?.` call below is a no-op for them.
    */
   isForbidden?(err: unknown): boolean;
+  /**
+   * A provider can deny one specific playlist even when the user's connection is
+   * valid. Reconnecting will not help; tell the user why that playlist cannot open.
+   */
+  isPlaylistAccessDenied?(err: unknown): boolean;
 }
 
 interface ConnectedPlaylistRead<T> {
@@ -87,6 +93,7 @@ const PLAYLIST_ADAPTERS: Partial<Record<Provider, PlaylistAdapter>> = {
     refreshToken: refreshSpotifyToken,
     isUnauthorized: (err) => err instanceof SpotifyUnauthorizedError,
     isForbidden: (err) => err instanceof SpotifyForbiddenError,
+    isPlaylistAccessDenied: (err) => err instanceof SpotifyPlaylistAccessDeniedError,
   },
   soundcloud: {
     label: 'SoundCloud',
@@ -201,6 +208,13 @@ async function readWithConnectedPlaylistToken<T>(cfg: ConnectedPlaylistRead<T>):
     // same 403. Prompt reconnect immediately instead of burning a refresh cycle.
     if (cfg.adapter.isForbidden?.(err)) {
       throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${cfg.adapter.label} account.`);
+    }
+    if (cfg.adapter.isPlaylistAccessDenied?.(err)) {
+      throw new HttpError(
+        403,
+        'PROVIDER_FORBIDDEN',
+        `${cfg.adapter.label} only allows opening playlists you own or collaborate on.`,
+      );
     }
     if (!cfg.adapter.isUnauthorized(err)) throw err;
     if (refreshed || !conn.refreshTokenEncrypted) {

@@ -64,7 +64,7 @@ const spSearchSchema = z.object({
 });
 
 const spPlaylistPageSchema = z.object({
-  items: z.array(z.object({ track: z.unknown() })),
+  items: z.array(z.object({ item: z.unknown().nullable().optional() })),
   total: z.number().int().nonnegative(),
 });
 
@@ -81,7 +81,7 @@ const spLibraryPlaylistsPageSchema = z.object({
       id: z.string(),
       name: z.string().optional(),
       owner: z.object({ display_name: z.string().nullable().optional() }).optional(),
-      tracks: z.object({ total: z.number().int().nonnegative().optional() }).optional(),
+      items: z.object({ total: z.number().int().nonnegative().optional() }).optional(),
       images: z.array(z.object({ url: z.string() })).optional(),
     }),
   ),
@@ -144,7 +144,7 @@ class SpotifyProvider implements MusicProvider {
 
     while (offset < total) {
       const json = await this.authedGet(
-        `${this.apiBase}/playlists/${encodedPlaylistId}/tracks?limit=${PLAYLIST_PAGE_LIMIT}&offset=${offset}`,
+        `${this.apiBase}/playlists/${encodedPlaylistId}/items?limit=${PLAYLIST_PAGE_LIMIT}&offset=${offset}`,
       );
       const parsed = spPlaylistPageSchema.safeParse(json);
       if (!parsed.success) {
@@ -154,7 +154,7 @@ class SpotifyProvider implements MusicProvider {
       const pageItems = parsed.data.items;
       candidates.push(
         ...pageItems
-          .map((item) => this.toCandidate(item.track))
+          .map((item) => this.toCandidate(item.item))
           .filter((candidate): candidate is TrackSearchResult => candidate !== null),
       );
       total = parsed.data.total;
@@ -252,6 +252,19 @@ export class SpotifyForbiddenError extends Error {
 }
 
 /**
+ * Thrown when Spotify denies a **playlist item** read for a valid user token.
+ * The 2026 playlist-items endpoint only exposes contents for playlists the user
+ * owns or collaborates on, so reconnecting cannot grant access to that playlist.
+ */
+export class SpotifyPlaylistAccessDeniedError extends Error {
+  readonly status = 403 as const;
+  constructor() {
+    super('Spotify denied access to this playlist (403).');
+    this.name = 'SpotifyPlaylistAccessDeniedError';
+  }
+}
+
+/**
  * Fetch the connected user's saved tracks with a **per-user** access token
  * (`music_connections`), mapped to the shared contract — the "search my Spotify"
  * surface. Stays a pure adapter: the caller owns the token's decryption, refresh,
@@ -327,7 +340,7 @@ export async function fetchSpotifySavedPlaylists(cfg: {
         playlistId: raw.id,
         name: raw.name ?? 'Untitled playlist',
         ownerName: raw.owner?.display_name ?? null,
-        trackCount: raw.tracks?.total ?? 0,
+        trackCount: raw.items?.total ?? 0,
         coverImageUrl: raw.images?.[0]?.url ?? null,
       });
       if (candidate.success) out.push(candidate.data);
@@ -363,18 +376,17 @@ export async function fetchSpotifyPlaylistTracks(cfg: {
 
   while (offset < total && out.length < cap) {
     const res = await cfg.fetchImpl(
-      `${base}/playlists/${encodedPlaylistId}/tracks?limit=${PLAYLIST_PAGE_LIMIT}&offset=${offset}`,
+      `${base}/playlists/${encodedPlaylistId}/items?limit=${PLAYLIST_PAGE_LIMIT}&offset=${offset}`,
       { headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' } },
     );
     if (res.status === 401) throw new SpotifyUnauthorizedError();
-    if (res.status === 403) throw new SpotifyForbiddenError();
-    if (!res.ok)
-      throw new ProviderError('spotify', `Spotify API ${res.status} for playlist tracks`);
+    if (res.status === 403) throw new SpotifyPlaylistAccessDeniedError();
+    if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for playlist items`);
     const parsed = spPlaylistPageSchema.safeParse(await readJson(res, 'spotify'));
     if (!parsed.success) break;
 
     for (const item of parsed.data.items) {
-      const candidate = toSpotifyCandidate(item.track);
+      const candidate = toSpotifyCandidate(item.item);
       if (candidate) out.push(candidate);
       if (out.length >= cap) break;
     }

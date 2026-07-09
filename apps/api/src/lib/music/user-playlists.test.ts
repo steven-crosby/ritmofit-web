@@ -12,6 +12,7 @@ import {
   SoundCloudUnauthorizedError,
   SpotifyUnauthorizedError,
   SpotifyForbiddenError,
+  SpotifyPlaylistAccessDeniedError,
 } from '@ritmofit/music';
 import { fetchUserPlaylistTracks, fetchUserPlaylists } from './user-playlists.js';
 import { HttpError } from '../errors.js';
@@ -210,6 +211,23 @@ describe('user playlist token helper', () => {
     } satisfies Partial<HttpError>);
     expect(refreshSpotifyToken).not.toHaveBeenCalled();
     expect(fetchSpotifySavedPlaylists).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps playlist-item 403 to an access message instead of reconnect', async () => {
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifyPlaylistTracks).mockRejectedValueOnce(
+      new SpotifyPlaylistAccessDeniedError(),
+    );
+
+    await expect(
+      fetchUserPlaylistTracks(db, env, 'user-1', 'spotify', 'followed-playlist'),
+    ).rejects.toMatchObject({
+      status: 403,
+      code: 'PROVIDER_FORBIDDEN',
+      message: 'Spotify only allows opening playlists you own or collaborate on.',
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).not.toHaveBeenCalled();
+    expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(1);
   });
 });
 
