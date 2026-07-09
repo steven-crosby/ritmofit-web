@@ -135,7 +135,14 @@ export async function fetchUserLikes(
     }
     refreshed = true;
     accessToken = await refreshAndPersist(db, key, adapter, creds, conn);
-    return await adapter.fetchLikes({ accessToken, fetchImpl: boundFetch });
+    try {
+      return await adapter.fetchLikes({ accessToken, fetchImpl: boundFetch });
+    } catch (retryErr) {
+      // A 401 on the freshly-refreshed token means the grant is dead — reconnect,
+      // don't leak the raw provider error as a 500/502. Anything else propagates.
+      if (!adapter.isUnauthorized(retryErr)) throw retryErr;
+      throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
+    }
   }
 }
 

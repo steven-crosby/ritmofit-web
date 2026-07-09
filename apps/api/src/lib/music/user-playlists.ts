@@ -222,7 +222,14 @@ async function readWithConnectedPlaylistToken<T>(cfg: ConnectedPlaylistRead<T>):
     }
     refreshed = true;
     accessToken = await refreshAndPersist(cfg.db, key, cfg.adapter, creds, conn);
-    return cfg.read(accessToken);
+    try {
+      // Note the `await`: without it the retry's rejection escapes this try/catch
+      // and the second 401 would leak as a raw provider error instead of REAUTH.
+      return await cfg.read(accessToken);
+    } catch (retryErr) {
+      if (!cfg.adapter.isUnauthorized(retryErr)) throw retryErr;
+      throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${cfg.adapter.label} account.`);
+    }
   }
 }
 

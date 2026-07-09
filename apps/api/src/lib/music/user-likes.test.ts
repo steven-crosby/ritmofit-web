@@ -234,6 +234,40 @@ describe('fetchUserLikes — Spotify (shared connected-token path)', () => {
     // The provider was hit once (401), then the refresh failed → no second read.
     expect(fetchSpotifySavedTracks).toHaveBeenCalledTimes(1);
   });
+
+  it('maps REAUTH_REQUIRED when a proactive refresh is followed by a 401 (no second refresh)', async () => {
+    // Expired token → proactive refresh succeeds → the read still 401s. Because we
+    // already refreshed this request, the `refreshed` guard short-circuits to REAUTH
+    // instead of burning a second (replayed) refresh.
+    const { db } = makeDb(makeConnection({ expiresAt: Date.now() - 1 }));
+    vi.mocked(fetchSpotifySavedTracks).mockRejectedValueOnce(new SpotifyUnauthorizedError());
+
+    await expect(fetchUserLikes(db, env, 'user-1', 'spotify')).rejects.toMatchObject({
+      status: 409,
+      code: 'REAUTH_REQUIRED',
+      message: 'Reconnect your Spotify account.',
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
+    expect(fetchSpotifySavedTracks).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps REAUTH_REQUIRED when the reactive-refresh retry 401s again', async () => {
+    // 401 on the stored token → refresh succeeds → the retried read 401s again.
+    // The freshly-refreshed grant is dead, so this surfaces REAUTH rather than
+    // leaking the raw provider 401 as a 5xx.
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifySavedTracks)
+      .mockRejectedValueOnce(new SpotifyUnauthorizedError())
+      .mockRejectedValueOnce(new SpotifyUnauthorizedError());
+
+    await expect(fetchUserLikes(db, env, 'user-1', 'spotify')).rejects.toMatchObject({
+      status: 409,
+      code: 'REAUTH_REQUIRED',
+      message: 'Reconnect your Spotify account.',
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
+    expect(fetchSpotifySavedTracks).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('fetchUserLikes — SoundCloud (shared connected-token path)', () => {
