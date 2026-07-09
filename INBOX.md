@@ -50,10 +50,3 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 ## Breadcrumbs
 
 <!-- newest at top; one per line -->
-
-- [ ] (2026-07-08) Spotify saved-playlist browse returns `403` on `/me/playlists` — connect scope
-      `user-library-read` covers likes but not playlists. Wanted feature: expand the Spotify connect
-      scope to add `playlist-read-private` (deliberate provider-scope change + user re-consent; its own
-      slice, re-verify connect after). Observed live during the 2026-07-08 Worker `a7ec9c81` re-smoke. #idea
-- [ ] (2026-07-07) provider read helpers: PROVIDER_UNAVAILABLE branch has no unit coverage
-      in user-playlists.ts / user-likes.ts — add cases. #test

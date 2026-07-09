@@ -10,6 +10,58 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-09 (Spotify browse polish + harden round — sixth parallel lane-agent round) —
+> deployed (Worker `7deb2d20-d0c2-40a9-8a4a-966968d0c552`).** Main HEAD `f9aef8e` (merge of PR #263).
+> Code-only — **no schema / migration** (remote D1: "No migrations to apply"). Three disjoint-lane PRs,
+> merged via the standard train (each trailing branch update-branched against the new `main` and
+> re-passed the combined CI check before merge; zero conflicts): **PR #261** — *sharpen Spotify
+> saved-playlist browse empty/error states* (de-conflates a **failed load** from a **truly empty
+> library** — they used to render together; opened-playlist gets distinct loading / empty / error copy;
+> drill-in failures classified via `classifyPlaylistDrillInError` on the backend error message —
+> `403` "own or collaborate on" → calm caution + Import-URL helper, no retry; `REAUTH_REQUIRED` /
+> `NOT_CONNECTED` → caution reconnect via a **case-insensitive** match so the capitalized "Connect
+> your…" string lands on reauth; everything else → danger + retry; single `role="alert"` per error,
+> top-level alert suppressed in `saved_playlists` mode to avoid a double announcement). Message-based
+> classification is a deliberate constraint: `api()` (`apps/web/src/lib/api.ts`) drops `error.code`, so
+> the classifier keys on the envelope message with `user-playlists.ts` cited as the source of truth —
+> follow-up filed to propagate `error.code` as a typed error. **PR #262** — *lock the Spotify `/items`
+> migration against regression* (test-only, +5: `getPlaylist` (URL-import) and `fetchSpotifyPlaylistTracks`
+> both assert `/items` **and `.not.toContain('/tracks')`**; item-less pages degrade to `[]`;
+> `fetchSpotifySavedPlaylists` reads `items.total` even past a decoy legacy `tracks.total: 999`). **PR
+> #263** — *map double-401 provider reads to `REAUTH_REQUIRED`* (real latent bugfix + 4 tests: the
+> reactive-retry path in `readWithConnectedPlaylistToken` / `fetchUserLikes` only wrapped the first
+> read, and `user-playlists.ts` returned the retry **without `await`**, so a second 401 escaped as a
+> raw provider error → 5xx instead of a `409` reconnect prompt; wrapped the awaited retry and map a
+> second `isUnauthorized` → `REAUTH_REQUIRED`, rethrowing anything else). Rollback anchor: prior live
+> `7b9c9baa-ddd6-4479-ab66-a0dd92bad9f8`. Remote D1: **no migrations to apply.** Pre-deploy: SPA build
+> ✓ (each PR already merged green through the combined CI check). Post-deploy smoke on live
+> `https://ritmofit.studio`: SPA `/` → `200` (served hash `index-iDB-1Wfk.js` matches the build),
+> `/api/v1/health` → `200`, `/api/v1/classes` · `/api/v1/explore` → `401`, security headers present
+> (HSTS · CSP · Permissions-Policy · Referrer-Policy · X-Content-Type-Options · X-Frame-Options).
+> **Open:** owner (Alex, the playlist owner) still to live-verify the `/items` browse renders real
+> tracks + counts; if empty, a one-line `spotify.ts` entry-field correction (`item` vs `track`) redeploys.
+
+> **Session 2026-07-09 (Spotify playlist `/items` migration hotfix) — deployed (Worker
+> `7b9c9baa-ddd6-4479-ab66-a0dd92bad9f8`).** Main HEAD `a4910be` (merge of PR #260). Code-only — **no
+> schema / migration.** **Incident:** Spotify saved-playlist browse was broken in prod — every playlist
+> showed `0` tracks and opening one returned a misleading "reconnect" error. **Not our regression:** a
+> Spotify **Web API migration (Feb–Mar 2026)** retired `GET /playlists/{id}/tracks` (→ bare `403
+> "Forbidden"` for all callers) and renamed the playlist object field `tracks` → `items`. The fifth
+> round earlier the same cycle (Worker `a75663cf`, PRs #256/#257/#258, 2026-07-08) shipped the
+> `playlist-read-private` connect scope that unblocked `GET /me/playlists` (→ `200`) and thereby
+> **exposed** that the surrounding read code still targeted the retired endpoint/shape. **PR #260**
+> migrated all three read paths to `/playlists/{id}/items` (entry `track` → `item`;
+> `fetchSpotifyPlaylistTracks` browse + `SpotifyProvider.getPlaylist` URL-import), moved the
+> `/me/playlists` count to `items.total`, and added `SpotifyPlaylistAccessDeniedError` → `403
+> PROVIDER_FORBIDDEN` with an honest "only playlists you own or collaborate on" message (a genuine
+> per-playlist 403 is not a reauth). Root cause confirmed live via a safe metadata-only diagnostic on
+> the **ephemeral Worker `e2d55661`** (now superseded — the diag was never committed). Fixed **forward**
+> (browse was already 100% broken pre-fix, so no rollback); rollback anchor `a75663cf`. Pre-deploy gate:
+> typecheck ×all ✓ · `@ritmofit/api` unit 360 ✓ · SPA build ✓. Post-deploy smoke: SPA `/` → `200` (hash
+> `index-3SwqPrUs.js`), `/api/v1/health` → `200`, unauth `/classes` · `/explore` · `/teams` → `401`, all
+> six security headers present. Changelog:
+> `developer.spotify.com/documentation/web-api/references/changes/february-2026`.
+
 > **Session 2026-07-08 (fourth parallel lane-agent round — 2 polish + 1 harden) — deployed (Worker
 > `a7ec9c81-3ba1-40ba-95c0-97ccb918b162`).** Main HEAD `e152057` (merge of PR #254). Code-only — **no
 > schema / migration** (remote D1: "No migrations to apply"). Two runtime-surface **screen-reader a11y**
