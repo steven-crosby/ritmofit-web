@@ -68,7 +68,9 @@ import {
   parseDurationInput,
   runBlockedMessage,
 } from '../lib/duration.js';
-import { classReadiness } from '../lib/readiness.js';
+import { classReadiness, type ClassReadiness } from '../lib/readiness.js';
+import { summarizeQueue } from '../lib/live-readiness.js';
+import { errMessage } from '../lib/errors.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
 import {
   libraryView,
@@ -1556,6 +1558,20 @@ function MusicWorkspace({
   );
 }
 
+/**
+ * Per-class run-payload fetch state for the Live queue. A class is only ever
+ * treated as runnable once its payload has actually loaded and `classReadiness`
+ * confirms the duration gate — loading/errored classes stay non-runnable so the
+ * queue never shows a false "Run live" that Live Mode would then block.
+ */
+type LivePayloadState =
+  | { status: 'loading' }
+  | { status: 'ready'; payload: RunPayload; readiness: ClassReadiness }
+  | { status: 'error'; error: string };
+
+/** Stable no-op for readiness chips that are disabled in the Live queue. */
+const noop = (): void => {};
+
 function LiveWorkspace({
   classes,
   status,
@@ -1567,7 +1583,116 @@ function LiveWorkspace({
   onRunClass: (classId: string) => void;
   onOpenClass: (cls: ClassListItem) => Promise<void>;
 }) {
-  const runnable = classes.filter((cls) => cls.trackCount > 0 && cls.totalDurationMs > 0);
+  // Any class with tracks belongs in the Live queue — even a duration-blocked one,
+  // so the instructor sees exactly what's incomplete instead of it vanishing.
+  // Empty classes have nothing to preflight and stay in Classes.
+  const candidates = useMemo(() => classes.filter((cls) => cls.trackCount > 0), [classes]);
+  const [payloads, setPayloads] = useState<Record<string, LivePayloadState>>({});
+  // Latest payload map, readable inside the fetch effect without making it a
+  // dependency (which would re-run the effect as each card resolves).
+  const payloadsRef = useRef(payloads);
+  payloadsRef.current = payloads;
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const fetchOne = useCallback((classId: string) => {
+    setPayloads((prev) => ({ ...prev, [classId]: { status: 'loading' } }));
+    void getRunPayload(classId)
+      .then((payload) => {
+        if (!mountedRef.current) return;
+        setPayloads((prev) => ({
+          ...prev,
+          [classId]: { status: 'ready', payload, readiness: classReadiness(payload) },
+        }));
+      })
+      .catch((err: unknown) => {
+        if (!mountedRef.current) return;
+        setPayloads((prev) => ({
+          ...prev,
+          [classId]: { status: 'error', error: errMessage(err) },
+        }));
+      });
+  }, []);
+
+  // Fetch a run-payload per candidate whenever the candidate set changes. Concurrent
+  // (N is small for a solo creator); each card resolves independently. Ready results
+  // are preserved across re-runs so a list refresh doesn't re-flash loaded cards.
+  const candidateKey = candidates.map((cls) => cls.id).join(',');
+  useEffect(() => {
+    let alive = true;
+    setPayloads((prev) => {
+      const next: Record<string, LivePayloadState> = {};
+      for (const cls of candidates) {
+        const existing = prev[cls.id];
+        next[cls.id] = existing?.status === 'ready' ? existing : { status: 'loading' };
+      }
+      return next;
+    });
+    void Promise.allSettled(
+      candidates
+        .filter((cls) => payloadsRef.current[cls.id]?.status !== 'ready')
+        .map(async (cls) => {
+          try {
+            const payload = await getRunPayload(cls.id);
+            if (!alive || !mountedRef.current) return;
+            setPayloads((prev) => ({
+              ...prev,
+              [cls.id]: { status: 'ready', payload, readiness: classReadiness(payload) },
+            }));
+          } catch (err) {
+            if (!alive || !mountedRef.current) return;
+            setPayloads((prev) => ({
+              ...prev,
+              [cls.id]: { status: 'error', error: errMessage(err) },
+            }));
+          }
+        }),
+    );
+    return () => {
+      alive = false;
+    };
+    // Keyed on candidateKey — the candidate id set — so the fetch re-runs only when
+    // classes are added/removed, not as each in-flight payload resolves.
+  }, [candidateKey]);
+
+  const readyReadinesses = candidates
+    .map((cls) => payloads[cls.id])
+    .filter((s): s is Extract<LivePayloadState, { status: 'ready' }> => s?.status === 'ready')
+    .map((s) => s.readiness);
+  const allResolved =
+    candidates.length > 0 &&
+    candidates.every((cls) => {
+      const s = payloads[cls.id]?.status;
+      return s === 'ready' || s === 'error';
+    });
+  const summary = summarizeQueue(readyReadinesses);
+  const tilesReady = status === 'ready' && allResolved;
+
+  // Runnable-first, stable within rank so cards settle calmly once payloads land.
+  const rank = (cls: ClassListItem): number => {
+    const s = payloads[cls.id];
+    if (s?.status === 'ready') return s.readiness.runnable ? 0 : 1;
+    return 2; // loading / errored / unknown — keep below decided cards
+  };
+  const ordered = candidates
+    .map((cls, index) => ({ cls, index }))
+    .sort((a, b) => rank(a.cls) - rank(b.cls) || a.index - b.index)
+    .map((entry) => entry.cls);
+
+  const liveStatus =
+    status !== 'ready'
+      ? ''
+      : candidates.length === 0
+        ? 'No classes with tracks yet.'
+        : !allResolved
+          ? `Checking readiness for ${candidates.length} ${candidates.length === 1 ? 'class' : 'classes'}…`
+          : `${summary.runnable} of ${candidates.length} ${candidates.length === 1 ? 'class' : 'classes'} ready for Live.`;
+
   return (
     <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
       <div className="rounded-card bg-bg-raised p-5 shadow-card sm:p-6">
@@ -1579,47 +1704,27 @@ function LiveWorkspace({
           Live stays in the same workspace map: choose the class, preflight music, then run the
           room.
         </p>
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          {liveStatus}
+        </p>
 
         <div className="mt-5 flex flex-col gap-2">
           {status === 'loading' ? (
-            <p className="font-ui text-sm text-text-tertiary">Loading runnable classes…</p>
-          ) : runnable.length === 0 ? (
+            <p className="font-ui text-sm text-text-tertiary">Loading classes…</p>
+          ) : candidates.length === 0 ? (
             <p className="font-ui text-sm text-text-tertiary">
-              No runnable classes yet. Add tracks and durations in Classes, then come back here.
+              No classes with tracks yet. Add tracks in Classes, then come back here.
             </p>
           ) : (
-            runnable.map((cls) => (
-              <article
+            ordered.map((cls) => (
+              <LiveQueueCard
                 key={cls.id}
-                className="flex flex-col gap-3 rounded-card border border-interactive/10 bg-bg-base p-3 sm:flex-row sm:items-center"
-              >
-                <ArtCollage urls={cls.albumArtUrls} />
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-ui text-sm font-semibold text-text-primary">
-                    {cls.title}
-                  </h3>
-                  <p className="font-data text-xs text-text-tertiary">
-                    {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount} tracks ·{' '}
-                    {formatDuration(cls.totalDurationMs)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void onOpenClass(cls)}
-                    className="min-h-10 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary sm:rounded-pill"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onRunClass(cls.id)}
-                    className="min-h-10 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
-                  >
-                    Run live
-                  </button>
-                </div>
-              </article>
+                cls={cls}
+                state={payloads[cls.id]}
+                onRun={() => onRunClass(cls.id)}
+                onEdit={() => void onOpenClass(cls)}
+                onRetry={() => fetchOne(cls.id)}
+              />
             ))
           )}
         </div>
@@ -1630,13 +1735,131 @@ function LiveWorkspace({
         <div className="mt-3 grid gap-2">
           <ReadinessTile
             label="Runnable"
-            value={status === 'ready' ? String(runnable.length) : '...'}
+            value={tilesReady ? `${summary.runnable} of ${candidates.length}` : '...'}
           />
-          <ReadinessTile label="Music" value="Checked in Live" />
-          <ReadinessTile label="Mode" value="Provider SDKs" />
+          <ReadinessTile
+            label="Needs a duration"
+            value={tilesReady ? String(summary.blocked) : '...'}
+          />
+          <ReadinessTile
+            label="Music"
+            value={
+              tilesReady
+                ? summary.musicIncomplete === 0
+                  ? 'All linked'
+                  : `${summary.musicIncomplete} need a link`
+                : '...'
+            }
+          />
         </div>
       </aside>
     </section>
+  );
+}
+
+/**
+ * One class in the Live queue. Shows the real four-dimension readiness once the
+ * run-payload loads (reusing `ClassReadinessSummary`), and gates "Run live" on the
+ * same duration check Live Mode enforces — a blocked class shows the exact
+ * `runBlockedMessage` the instructor would hit on click, tied to the disabled
+ * button via `aria-describedby`.
+ */
+function LiveQueueCard({
+  cls,
+  state,
+  onRun,
+  onEdit,
+  onRetry,
+}: {
+  cls: ClassListItem;
+  state: LivePayloadState | undefined;
+  onRun: () => void;
+  onEdit: () => void;
+  onRetry: () => void;
+}) {
+  const canRun = state?.status === 'ready' && state.readiness.runnable;
+  const reasonId = `live-blocked-${cls.id}`;
+  const blockReason =
+    state?.status === 'error'
+      ? 'Couldn’t check readiness — retry before running this class.'
+      : state?.status === 'ready' && !state.readiness.runnable
+        ? (runBlockedMessage(state.payload) ?? undefined)
+        : undefined;
+
+  return (
+    <article
+      className="flex flex-col gap-3 rounded-card border border-interactive/10 bg-bg-base p-3"
+      aria-busy={state === undefined || state.status === 'loading'}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <ArtCollage urls={cls.albumArtUrls} />
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-ui text-sm font-semibold text-text-primary">{cls.title}</h3>
+          <p className="font-data text-xs text-text-tertiary">
+            {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount} tracks ·{' '}
+            {formatDuration(cls.totalDurationMs)}
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="min-h-10 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary sm:rounded-pill"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={onRun}
+            disabled={!canRun}
+            aria-describedby={blockReason ? reasonId : undefined}
+            title={canRun ? 'Run this class live' : undefined}
+            className="min-h-10 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50 sm:rounded-pill"
+          >
+            Run live
+          </button>
+        </div>
+      </div>
+
+      {state === undefined || state.status === 'loading' ? (
+        <p className="font-ui text-xs text-text-tertiary">Checking readiness…</p>
+      ) : state.status === 'error' ? (
+        <p
+          id={reasonId}
+          role="alert"
+          className="flex items-center gap-2 font-ui text-xs text-state-caution"
+        >
+          <span aria-hidden className="font-data leading-none">
+            !
+          </span>
+          <span className="min-w-0">{blockReason}</span>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="ml-auto shrink-0 rounded-pill border border-interactive/50 px-2.5 py-0.5 font-ui text-interactive hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive"
+          >
+            Retry
+          </button>
+        </p>
+      ) : (
+        <>
+          {/* Reuse the builder's readiness readout; the queue can't jump the inspector,
+              so fix-chips stay off (canEdit=false) — fixing happens via Edit. */}
+          <ClassReadinessSummary readiness={state.readiness} canEdit={false} onSelectTrack={noop} />
+          {blockReason && (
+            <p
+              id={reasonId}
+              className="flex items-center gap-1.5 font-ui text-xs text-state-caution"
+            >
+              <span aria-hidden className="font-data leading-none">
+                !
+              </span>
+              {blockReason}
+            </p>
+          )}
+        </>
+      )}
+    </article>
   );
 }
 
