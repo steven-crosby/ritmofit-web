@@ -63,6 +63,56 @@ function page(items: ClassListItem[]): ClassListPage {
   return { items, nextCursor: null };
 }
 
+/**
+ * Build a run-payload for the Live queue's per-class readiness fetch. Override
+ * `durationMs` (null = missing → blocks Live) and `providerRefs` per track to drive
+ * the four readiness dimensions.
+ */
+function liveRunPayload(
+  tracks: Array<{
+    classTrackId: string;
+    durationMs: number | null;
+    title?: string;
+    providerRefs?: unknown[];
+    displayBpm?: number | null;
+  }>,
+): RunPayload {
+  return {
+    schemaVersion: 1,
+    class: {
+      id: '00000000-0000-4000-8000-000000000101',
+      title: 'Class',
+      template: 'cycle',
+      targetDurationMs: null,
+      totalDurationMs: 1800000,
+      timelineMode: 'sequential',
+    },
+    tracks: tracks.map((t, index) => ({
+      classTrackId: t.classTrackId,
+      position: index,
+      startOffsetMs: 0,
+      displayBpm: t.displayBpm ?? 128,
+      displayRpm: null,
+      holdCount: null,
+      intensity: 'mod',
+      notes: null,
+      clipStartMs: 0,
+      beatAnchorMs: 0,
+      providerRefs: t.providerRefs ?? [],
+      track: {
+        id: `track-${index}`,
+        title: t.title ?? `Track ${index}`,
+        artist: 'Artist',
+        durationMs: t.durationMs,
+        albumArtUrl: null,
+        displayBpm: null,
+      },
+      cues: [],
+      moves: [],
+    })),
+  } as unknown as RunPayload;
+}
+
 function spotifyConnection(scope = 'user-library-read streaming') {
   return {
     id: 'conn-spotify',
@@ -393,57 +443,97 @@ describe('Dashboard class library states', () => {
     expect(screen.getByRole('heading', { name: 'Provider accounts' })).toBeTruthy();
   });
 
-  it('surfaces runnable classes from the Live destination', async () => {
+  it('surfaces classes with tracks from the Live destination and runs a ready one', async () => {
+    const ready = {
+      ...makeClass('Ready ride', 'owner', 'me'),
+      trackCount: 3,
+      totalDurationMs: 1800000,
+    };
     vi.mocked(api.listClasses).mockResolvedValue(
       page([
-        {
-          ...makeClass('Ready ride', 'owner', 'me'),
-          trackCount: 3,
-          totalDurationMs: 1800000,
-        },
+        ready,
         { ...makeClass('Draft shell', 'owner', 'me'), trackCount: 0, totalDurationMs: 0 },
       ]),
     );
-    vi.mocked(api.getRunPayload).mockResolvedValue({
-      version: 1,
-      class: {
-        id: '00000000-0000-4000-8000-000000000101',
-        title: 'Ready ride',
-        template: 'cycle',
-        totalDurationMs: 1800000,
-        timelineMode: 'sequential',
-        sections: [],
-      },
-      tracks: [
-        {
-          classTrackId: 'ct-1',
-          startOffsetMs: 0,
-          displayBpm: 128,
-          intensity: 'mod',
-          notes: null,
-          clipStartMs: 0,
-          providerRefs: [],
-          track: {
-            id: 'track-1',
-            title: 'Ready Track',
-            artist: 'Artist',
-            durationMs: 1800000,
-            albumArtUrl: null,
-            displayBpm: null,
-          },
-          cues: [],
-          moves: [],
-        },
-      ],
-    });
+    // Every track has a length → the class is genuinely runnable.
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([{ classTrackId: 'ct-1', durationMs: 1800000 }]),
+    );
 
     renderDashboard();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
     expect(await screen.findByText('Ready ride')).toBeTruthy();
+    // Empty classes have nothing to preflight and never enter the queue.
     expect(screen.queryByText('Draft shell')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Run live' }));
-    await waitFor(() => expect(api.getRunPayload).toHaveBeenCalledTimes(1));
+
+    const runBtn = (await screen.findByRole('button', { name: 'Run live' })) as HTMLButtonElement;
+    await waitFor(() => expect(runBtn.disabled).toBe(false));
+    // The mount already fetched the payload for readiness; isolate the run request.
+    vi.mocked(api.getRunPayload).mockClear();
+    fireEvent.click(runBtn);
+    await waitFor(() => expect(api.getRunPayload).toHaveBeenCalledWith(ready.id));
+  });
+
+  it('blocks a class that looks runnable by aggregate but has a track missing its duration', async () => {
+    // Naive heuristic (trackCount > 0 && totalDurationMs > 0) would call this
+    // runnable — one track carries a length. The real run-payload shows a second
+    // track with no length, which is exactly what Live Mode blocks on.
+    const falseRunnable = {
+      ...makeClass('Half-timed ride', 'owner', 'me'),
+      trackCount: 2,
+      totalDurationMs: 1800000,
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([falseRunnable]));
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([
+        { classTrackId: 'ct-1', durationMs: 1800000, title: 'Timed Track' },
+        { classTrackId: 'ct-2', durationMs: null, title: 'Untimed Track' },
+      ]),
+    );
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+
+    // The card appears, but Run live is disabled with the real block message —
+    // no false "runnable" that dies on click.
+    expect(await screen.findByText('Half-timed ride')).toBeTruthy();
+    const runBtn = (await screen.findByRole('button', { name: 'Run live' })) as HTMLButtonElement;
+    await waitFor(() => expect(runBtn.disabled).toBe(true));
+    expect(
+      screen.getByText('Set a duration for Untimed Track before starting Live mode.'),
+    ).toBeTruthy();
+    // The button points assistive tech at that reason.
+    expect(runBtn.getAttribute('aria-describedby')).toBe(`live-blocked-${falseRunnable.id}`);
+    // Preflight rail counts it as blocked, not runnable.
+    const rail = screen.getByText('Preflight checks').closest('aside') as HTMLElement;
+    expect(within(rail).getByText('Needs a duration').nextSibling?.textContent).toBe('1');
+    expect(within(rail).getByText('Runnable').nextSibling?.textContent).toBe('0 of 1');
+  });
+
+  it('surfaces a retry when a class run-payload fails to load, and keeps Run live disabled', async () => {
+    const cls = {
+      ...makeClass('Flaky ride', 'owner', 'me'),
+      trackCount: 2,
+      totalDurationMs: 1800000,
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([cls]));
+    vi.mocked(api.getRunPayload)
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValue(liveRunPayload([{ classTrackId: 'ct-1', durationMs: 1800000 }]));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+
+    // The failed readiness check must never masquerade as runnable.
+    expect(await screen.findByRole('button', { name: 'Retry' })).toBeTruthy();
+    const runBtn = screen.getByRole('button', { name: 'Run live' }) as HTMLButtonElement;
+    expect(runBtn.disabled).toBe(true);
+
+    // Retrying re-fetches just this class; the second attempt succeeds and unblocks it.
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(runBtn.disabled).toBe(false));
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 
   it('restores focus to the dashboard heading when Live Mode is exited', async () => {
