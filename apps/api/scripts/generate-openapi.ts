@@ -55,6 +55,7 @@ import {
   spotifyPlaybackTokenSchema,
   connectAppleMusicSchema,
   providerPlaylistSummarySchema,
+  providerPlaylistImportResultSchema,
   teamSchema,
   teamWithRoleSchema,
   createTeamSchema,
@@ -106,6 +107,7 @@ const named: Record<string, z.ZodType> = {
   SpotifyPlaybackToken: spotifyPlaybackTokenSchema,
   ConnectAppleMusic: connectAppleMusicSchema,
   ProviderPlaylistSummary: providerPlaylistSummarySchema,
+  ProviderPlaylistImportResult: providerPlaylistImportResultSchema,
   Team: teamSchema,
   TeamWithRole: teamWithRoleSchema,
   CreateTeam: createTeamSchema,
@@ -624,6 +626,35 @@ const doc = {
         responses: {
           '200': arrayResp('TrackSearchResult', 'Playlist tracks'),
           '409': { description: 'Not connected / reconnect required' },
+          '501': { description: 'Provider saved playlists not integrated' },
+          '503': { description: 'Provider not configured' },
+        },
+      },
+    },
+    '/providers/{provider}/playlists/{playlistId}/import': {
+      parameters: [
+        {
+          name: 'provider',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', enum: ['spotify', 'apple_music', 'soundcloud'] },
+        },
+        { name: 'playlistId', in: 'path', required: true, schema: { type: 'string' } },
+      ],
+      post: {
+        summary:
+          'Bulk-import a saved playlist as track references (D21; deduped, one bulk op, references only)',
+        responses: {
+          '201': jsonResp(
+            'ProviderPlaylistImportResult',
+            'Imported; at least one new track created',
+          ),
+          '200': jsonResp(
+            'ProviderPlaylistImportResult',
+            'Imported; every song already existed in the library',
+          ),
+          '409': { description: 'Not connected / reconnect required' },
+          '422': { description: 'Playlist has too many distinct tracks to import at once' },
           '501': { description: 'Provider saved playlists not integrated' },
           '503': { description: 'Provider not configured' },
         },
