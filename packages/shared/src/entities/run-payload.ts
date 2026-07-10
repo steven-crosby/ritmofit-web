@@ -118,6 +118,9 @@ const runPayloadTrackEntrySchema = z.object({
  * `startOffsetMs` to the next section's start (or the class end).
  */
 const runPayloadSectionSchema = z.object({
+  /** Stable section id (matches the granular `class_sections` row). Additive to v1 —
+   *  lets Live/editor correlate or deep-link a specific band even when two share a `type`. */
+  id: uuidSchema,
   type: segmentTypeSchema,
   startOffsetMs: offsetMsSchema,
 });

@@ -240,14 +240,16 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
     }
   ],
   "sections": [
-    { "type": "climb", "startOffsetMs": 300000 }
+    { "id": "…", "type": "climb", "startOffsetMs": 300000 }
   ]
 }
 ```
 
 > **Additive growth since v1 froze (`schemaVersion` stays 1):** top-level **`sections[]`** (segment
 > bands — builder slice 16, migration `0006`) and a stable **`id`** on every cue and placed move
-> (slice 17, so two cues/moves at the same `anchorMs` disambiguate). `sections[]` carries no `id` yet.
+> (slice 17, so two cues/moves at the same `anchorMs` disambiguate). Each **`sections[]`** band now
+> carries that same stable **`id`** (D21), so two bands sharing a `type` are individually
+> addressable / deep-linkable.
 > Per-track **`clipStartMs`** + **`beatAnchorMs`** (trimming + beat-snapping) and derived **`beat`/`bar`**
 > on cues *and* moves; per-track **`displayRpm`** and **`holdCount`**. With trimming, cue/move `anchorMs` are **re-based to the clip start** (so the live
 > timeline lines up); `beat`/`bar` are derived from the original track-relative anchor + BPM + downbeat

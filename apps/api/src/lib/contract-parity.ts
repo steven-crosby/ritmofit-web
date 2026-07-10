@@ -256,6 +256,12 @@ export const CONTRACT_PARITY_ALLOWLIST: AllowlistEntry[] = [
     field: 'bar',
     reason: 'Additive v1 derived bar (mirrors Cue). iOS Move omits it. iOS parity follow-up.',
   },
+  {
+    struct: 'Section',
+    field: 'id',
+    reason:
+      'Additive v1 stable section id (matches the class_sections row, mirrors cue/move id). iOS Section uses a computed `id` derived from startOffsetMs, not the wire id, so it does not decode this field — decode follow-up so Live can deep-link a band. iOS parity follow-up.',
+  },
 ];
 
 /**
