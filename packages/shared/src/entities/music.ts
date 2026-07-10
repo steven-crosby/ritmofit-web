@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { uuidSchema, timestampMsSchema, timestampsShape } from '../common.js';
 import { providerSchema } from '../enums.js';
+import { trackWithProviderIdsSchema } from './tracks.js';
 
 /** Per-user provider OAuth connection. Unique on (userId, provider). */
 export const musicConnectionSchema = z.object({
@@ -92,3 +93,23 @@ export const providerPlaylistSummarySchema = z.object({
   coverImageUrl: z.string().url().nullable(),
 });
 export type ProviderPlaylistSummary = z.infer<typeof providerPlaylistSummarySchema>;
+
+/**
+ * Summary of a server-side bulk playlist import (D21). One authed call fetches a
+ * saved playlist's tracks and imports them as **references** (`track_provider_ids`
+ * only — never provider audio or Spotify BPM), deduped by same-song match key.
+ *
+ * - `created` — new library tracks forged for songs not already present.
+ * - `existing` — songs that resolved to a track already in the caller's library
+ *   (idempotent re-import or same-song attach); nothing new was created.
+ * - `skipped` — candidates whose per-track import failed and were dropped
+ *   best-effort, so one bad track never aborts the batch.
+ * - `tracks` — the imported/resolved tracks; invariant `tracks.length === created + existing`.
+ */
+export const providerPlaylistImportResultSchema = z.object({
+  created: z.number().int().nonnegative(),
+  existing: z.number().int().nonnegative(),
+  skipped: z.number().int().nonnegative(),
+  tracks: z.array(trackWithProviderIdsSchema),
+});
+export type ProviderPlaylistImportResult = z.infer<typeof providerPlaylistImportResultSchema>;
