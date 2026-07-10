@@ -10,6 +10,41 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-10 (all-feature round — D21 creator loop — seventh parallel lane-agent round) —
+> deployed (Worker `6b8e1a48-6881-491f-8c3d-292b518919d9`).** Main HEAD `4cc03c1` (merge of PR #267).
+> Code-only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior
+> live `7deb2d20-d0c2-40a9-8a4a-966968d0c552`. First **all-feature** parallel round (owner-chosen):
+> three disjoint-lane D21 feature slices, merged via the standard train (zero cross-lane conflicts;
+> the one coordinate — two back-end lanes both regenerating `openapi.json` — resolved on the second BE
+> PR by re-running `openapi` after `update-branch`, diff clean). **PR #265** (FE) — *honest readiness in
+> the Live workspace queue*: replaced the naive `trackCount > 0 && totalDurationMs > 0` runnable
+> heuristic with the real gate (`classReadiness(payload).runnable`, provably `≡ canRunPayload` — both
+> bottom out on `tracksMissingDuration`), so a class can no longer look runnable in the queue then get
+> blocked on click; every class with tracks now shows in the queue runnable-first, blocked ones with
+> "Run live" disabled + the exact `runBlockedMessage` (wired via `aria-describedby`); per-card
+> four-dimension readout reuses `ClassReadinessSummary` (`canEdit={false}`); the three hard-coded
+> preflight tiles became real counts from a pure `summarizeQueue`; per-card loading/error/partial states
+> with a fail-safe (unknown readiness never reads as runnable). FE-only, no contract change. **PR #266**
+> (BE, provider/music) — *server-side bulk playlist import*: new `POST
+> /providers/:provider/playlists/:playlistId/import` collapses the client's N-round-trip "Import all N"
+> into one authed call over the caller's provider token across all three providers (no class required);
+> reuses `fetchUserPlaylistTracks` + `importTrackFromCandidate` (references only — `displayBpm: null`, no
+> provider/Spotify BPM, no audio cached/decoded), pure `dedupeByMatchKey`, 100-cap → `422`, bounded
+> concurrency 5 with per-track best-effort (`skipped` tallied), returns `{ created, existing, skipped,
+> tracks }` (invariant `tracks.length === created + existing`), `201`/`200`; new `provider-playlist-import`
+> limiter (60s / max 5, per user — parity with the class-scoped importer). Additive; OpenAPI regen; no
+> migration. **PR #267** (BE, class core) — *`sections[].id` in the run-payload*: the section projection
+> now emits the `class_sections` row `id` (required field, mirroring cues/moves), with the required
+> `Section.id` contract-parity allowlist entry (iOS `Section` uses a computed `var id` from
+> `startOffsetMs`, not a decoded wire field) and an `api.md` doc update; the required-field addition's one
+> web constructor break (`LiveMode.test.tsx` fixtures) was fixed atomically in the same PR. Additive;
+> OpenAPI regen; no migration. Pre-deploy: full gate green (incl. `openapi` no-drift — 49 schemas, 51
+> paths — and contract-parity). Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`
+> (served hash `index-BRM6EhdN.js` matches the build), `/api/v1/health` → `200`, `/api/v1/classes` ·
+> `/api/v1/explore` · `/api/v1/teams` → `401`, the new `POST …/playlists/:id/import` → `401` (mounted, not
+> `404`), security headers present (HSTS · CSP · Permissions-Policy · Referrer-Policy ·
+> X-Content-Type-Options · X-Frame-Options).
+
 > **Session 2026-07-09 (Spotify browse polish + harden round — sixth parallel lane-agent round) —
 > deployed (Worker `7deb2d20-d0c2-40a9-8a4a-966968d0c552`).** Main HEAD `f9aef8e` (merge of PR #263).
 > Code-only — **no schema / migration** (remote D1: "No migrations to apply"). Three disjoint-lane PRs,
