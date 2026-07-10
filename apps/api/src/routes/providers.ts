@@ -26,6 +26,7 @@ import { HttpError } from '../lib/errors.js';
 import { getMusicProvider } from '../lib/music/registry.js';
 import { fetchUserLikes } from '../lib/music/user-likes.js';
 import { fetchUserPlaylistTracks, fetchUserPlaylists } from '../lib/music/user-playlists.js';
+import { importUserPlaylist } from '../lib/music/import-playlist.js';
 import { importTrackFromCandidate } from '../lib/track-import.js';
 
 export const providerRoutes = new Hono<AppEnv>();
@@ -67,6 +68,15 @@ const importLimiter = rateLimit({
   keyPrefix: 'provider-track-import',
   windowMs: 60_000,
   max: 30,
+  key: (c) => c.get('userId'),
+});
+// Bulk playlist import fans out one upstream lookup + import per distinct track, so
+// it's one expensive bulk op — cap it tightly per user (parity with the class-scoped
+// `playlist-import` limiter), not per-track like `provider-track-import`.
+const playlistImportLimiter = rateLimit({
+  keyPrefix: 'provider-playlist-import',
+  windowMs: 60_000,
+  max: 5,
   key: (c) => c.get('userId'),
 });
 
@@ -116,6 +126,26 @@ providerRoutes.get(
       playlistId,
     );
     return c.json(results);
+  },
+);
+
+/**
+ * POST /providers/:provider/playlists/:playlistId/import — bulk-import a saved
+ * playlist's tracks as references in one call (D21). Deduped by same-song match key,
+ * best-effort per track, capped as one bulk op. Works for all three providers from
+ * the browse surface with no class required — unlike the class-scoped, Spotify-URL
+ * `/classes/:id/import-playlist`. 201 when any new track was created; 200 when every
+ * song already existed. Imports store references only — no audio/derived data.
+ */
+providerRoutes.post(
+  '/providers/:provider/playlists/:playlistId/import',
+  playlistImportLimiter,
+  async (c) => {
+    const provider = parseProvider(c.req.param('provider'));
+    const playlistId = c.req.param('playlistId');
+    const db = createDb(c.env);
+    const summary = await importUserPlaylist(db, c.env, c.get('userId'), provider, playlistId);
+    return c.json(summary, summary.created > 0 ? 201 : 200);
   },
 );
 
