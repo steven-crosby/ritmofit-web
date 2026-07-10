@@ -445,8 +445,8 @@ describe('LiveMode screen-reader announcements', () => {
     const sectioned = {
       ...payload,
       sections: [
-        { type: 'warm_up', startOffsetMs: 0 },
-        { type: 'sprint', startOffsetMs: 60000 },
+        { id: '11111111-1111-4111-8111-111111111111', type: 'warm_up', startOffsetMs: 0 },
+        { id: '22222222-2222-4222-8222-222222222222', type: 'sprint', startOffsetMs: 60000 },
       ],
     } satisfies RunPayload;
     await renderLive(sectioned);
@@ -460,8 +460,8 @@ describe('LiveMode screen-reader announcements', () => {
     const sectioned = {
       ...payload,
       sections: [
-        { type: 'warm_up', startOffsetMs: 0 },
-        { type: 'sprint', startOffsetMs: 60000 },
+        { id: '11111111-1111-4111-8111-111111111111', type: 'warm_up', startOffsetMs: 0 },
+        { id: '22222222-2222-4222-8222-222222222222', type: 'sprint', startOffsetMs: 60000 },
       ],
     } satisfies RunPayload;
     await renderLive(sectioned);
@@ -519,9 +519,9 @@ describe('trackIndexAt', () => {
 
 describe('liveSectionAt', () => {
   const sections = [
-    { type: 'warm_up', startOffsetMs: 0 },
-    { type: 'sprint', startOffsetMs: 60000 },
-    { type: 'cool_down', startOffsetMs: 150000 },
+    { id: '11111111-1111-4111-8111-111111111111', type: 'warm_up', startOffsetMs: 0 },
+    { id: '22222222-2222-4222-8222-222222222222', type: 'sprint', startOffsetMs: 60000 },
+    { id: '33333333-3333-4333-8333-333333333333', type: 'cool_down', startOffsetMs: 150000 },
   ] satisfies RunPayload['sections'];
 
   it('returns null when the class has no sections', () => {
@@ -529,7 +529,9 @@ describe('liveSectionAt', () => {
   });
 
   it('returns null before the first section starts', () => {
-    const delayed = [{ type: 'sprint', startOffsetMs: 5000 }] satisfies RunPayload['sections'];
+    const delayed = [
+      { id: '44444444-4444-4444-8444-444444444444', type: 'sprint', startOffsetMs: 5000 },
+    ] satisfies RunPayload['sections'];
     expect(liveSectionAt(delayed, 0)).toBeNull();
   });
 
@@ -554,8 +556,8 @@ describe('liveSectionAt', () => {
 
   it('resolves correctly even when sections arrive unsorted', () => {
     const unsorted = [
-      { type: 'sprint', startOffsetMs: 60000 },
-      { type: 'warm_up', startOffsetMs: 0 },
+      { id: '22222222-2222-4222-8222-222222222222', type: 'sprint', startOffsetMs: 60000 },
+      { id: '11111111-1111-4111-8111-111111111111', type: 'warm_up', startOffsetMs: 0 },
     ] satisfies RunPayload['sections'];
     expect(liveSectionAt(unsorted, 30000)).toEqual({
       type: 'warm_up',
@@ -568,8 +570,8 @@ describe('LiveMode section indicator', () => {
   const sectionedPayload = {
     ...payload,
     sections: [
-      { type: 'warm_up', startOffsetMs: 0 },
-      { type: 'sprint', startOffsetMs: 60000 },
+      { id: '11111111-1111-4111-8111-111111111111', type: 'warm_up', startOffsetMs: 0 },
+      { id: '22222222-2222-4222-8222-222222222222', type: 'sprint', startOffsetMs: 60000 },
     ],
   } satisfies RunPayload;
 

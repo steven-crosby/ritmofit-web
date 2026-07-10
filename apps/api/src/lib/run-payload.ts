@@ -258,7 +258,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
       };
     }),
     // Segment bands, already ordered by start (additive v1 field; may be empty).
-    sections: sectionRows.map((s) => ({ type: s.type, startOffsetMs: s.startOffsetMs })),
+    sections: sectionRows.map((s) => ({ id: s.id, type: s.type, startOffsetMs: s.startOffsetMs })),
   };
 
   // Validate the projection against the contract before it leaves the server.
