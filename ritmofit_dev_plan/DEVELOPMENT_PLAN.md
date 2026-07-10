@@ -52,10 +52,11 @@ Pilates, and HIIT.
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
   Music workspace via a shared provider-browse hook. Last production deploy
-  **2026-07-08 (Worker `a7ec9c81`)** — fourth parallel lane-agent round (2 polish + 1 harden): two
-  screen-reader a11y slices — Live Mode verbatim-cue re-announce (#253) and Music browse search-outcome
-  announcement (#252) — plus test-only by-id nested-resource cross-tenant authz coverage (#254),
-  **no schema/migration** (supersedes `67f00f2b`). Round-3 #248 Spotify connect **re-verified ✅** live.
+  **2026-07-10 (Worker `6b8e1a48`)** — seventh parallel lane-agent round (all-feature, D21 loop): three
+  disjoint-lane feature slices — honest Live-queue readiness (#265: real run gate + per-card
+  four-dimension readout + real preflight tiles), server-side bulk playlist import `POST
+  /providers/:provider/playlists/:playlistId/import` across all three providers (#266), and
+  `sections[].id` in the run-payload (#267) — **no schema/migration** (supersedes `7deb2d20`).
   For per-deploy detail and the live Worker version, see [`HISTORY.md`](./HISTORY.md), newest first.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
@@ -223,9 +224,14 @@ current planning queue.
 
 - **Google sign-in** — `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are unprovisioned; Google is excluded from the Login UI. See `deployment-runbook.md` for activation steps (owner deferral, 2026-06-28).
 - **Automatic BPM lookup (GetSongBPM)** — the adapter is built; `GETSONGBPM_API_KEY` is not provisioned in prod, so `POST /tracks/:id/bpm-lookup` returns `503`. Activate via `wrangler secret put GETSONGBPM_API_KEY`. (Owner deferral, 2026-06-28.)
-- **`sections[]` id in run-payload** — `class_sections` rows have a DB `id` but the run-payload omits it. Additive contract follow-up: decide and document whether to expose it (two-line code change + OpenAPI regen) or keep sections positional-only by design.
 
 Recently closed (kept as pointers so the trail isn't lost):
+
+- **`sections[]` id in run-payload — ✅ shipped** (2026-07-10, PR #267, Worker `6b8e1a48`): the
+  run-payload section projection now carries the `class_sections` row `id` (additive, OpenAPI regen,
+  no migration), completing the id-everywhere pattern already applied to cues and moves so Live/editor
+  can correlate or deep-link a band even when two share a `type`. Server-derived `endOffsetMs` was
+  evaluated and deferred (no consumer needs it; iOS derives the band window client-side).
 
 - **Provider connect prerequisite for playback — ✅ verified** (2026-07-03, Worker
   `94126954-0e61-408e-b404-bb380c338141`): Apple Music, SoundCloud, and Spotify production connect are
