@@ -36,23 +36,7 @@ import { IntensityReadout, INTENSITY_LABEL } from './IntensityReadout.js';
 import { CUE_COLOR_TAGS, tagLabel } from '../lib/cue-colors.js';
 import { CUSTOM, NEW, parseMovePick, pickForPlacement } from '../lib/move-pick.js';
 import { CustomMovesDialog } from './CustomMovesDialog.js';
-
-/** ms → m:ss for an in-track anchor. */
-function clock(ms: number): string {
-  const total = Math.max(0, Math.round(ms / 1000));
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
-}
-
-/** Seconds string → nonnegative integer ms (offsetMsSchema). '' → 0. */
-function secToMs(sec: string): number {
-  const n = Number(sec.trim());
-  return Number.isFinite(n) && n > 0 ? Math.round(n * 1000) : 0;
-}
-
-/** ms → whole-seconds string, for seeding an edit field from a persisted anchor. */
-function msToSec(ms: number): string {
-  return String(Math.round(ms / 1000));
-}
+import { anchorFieldState, formatClockFromMs } from '../lib/duration.js';
 
 /** "bar.beat" label for a track-relative anchor (e.g. "12.1"), or null without a tempo. */
 function beatLabel(anchorMs: number, bpm: number | null, beatAnchorMs: number): string | null {
@@ -111,13 +95,11 @@ function loadMovesLibrary(): Promise<Move[]> {
 
 const fieldClass =
   'rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-ui text-sm text-text-primary';
-// TODO(anchor-range): this is only a hint — the anchor-seconds inputs below don't
-// enforce it. An anchor past the track length returns a generic 422 ("Request body
-// failed validation") in the section's error line (the server bounds anchorMs to the
-// track duration and rejects rather than clamps). Add a client-side max + a friendlier
-// message in a later polish slice. (Found during the 2026-06-12 verification pass.)
-const anchorHint = (durationMs: number | null) =>
-  durationMs ? ` (0–${Math.round(durationMs / 1000)}s)` : '';
+// Anchor inputs take `m:ss` (parsed + bounded to the track length via
+// `anchorFieldState`), matching the Duration/Trim fields and the row display; an
+// out-of-range or malformed value is caught client-side rather than as a 422.
+const anchorInputClass = (invalid: boolean) =>
+  `w-20 ${fieldClass} font-data ${invalid ? 'border-state-danger' : ''}`;
 
 /** A request to focus a cue/move row (from a timeline marker click). */
 export type RowFocus = { id: string; anchorMs: number; nonce: number } | null;
@@ -256,15 +238,18 @@ export function CuesSection({
   const [cues, setCues] = useState<Cue[] | null>(null);
   const { refRowId, flashRowId, rowRef } = useFlashFocus(focus, cues);
   const [text, setText] = useState('');
-  const [anchorSec, setAnchorSec] = useState('0');
+  const [anchorClock, setAnchorClock] = useState('0:00');
   const [color, setColor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Inline edit: at most one cue editable at a time, seeded from the persisted row.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
-  const [editAnchorSec, setEditAnchorSec] = useState('0');
+  const [editAnchorClock, setEditAnchorClock] = useState('0:00');
   const [editColor, setEditColor] = useState<string | null>(null);
+
+  const addAnchor = anchorFieldState(anchorClock, durationMs);
+  const editAnchor = anchorFieldState(editAnchorClock, durationMs);
 
   const load = useCallback(async () => {
     try {
@@ -280,20 +265,21 @@ export function CuesSection({
   const startEdit = (cue: Cue) => {
     setEditingId(cue.id);
     setEditText(cue.text);
-    setEditAnchorSec(msToSec(cue.anchorMs));
+    setEditAnchorClock(formatClockFromMs(cue.anchorMs));
     setEditColor(cue.color);
     setError(null);
   };
 
   const saveEdit = async () => {
-    if (!editingId || !editText.trim()) return;
+    const anchorMs = editAnchor.ms;
+    if (!editingId || !editText.trim() || anchorMs == null) return;
     setBusy(true);
     setError(null);
     try {
       // Always send `color` (hex or null) so a cleared tag persists (buildPatch
       // sets explicit null; an omitted field would leave the old color).
       await updateCue(editingId, {
-        anchorMs: maybeSnap(secToMs(editAnchorSec)),
+        anchorMs: maybeSnap(anchorMs),
         text: editText.trim(),
         color: editColor,
       });
@@ -307,17 +293,18 @@ export function CuesSection({
   };
 
   const add = async () => {
-    if (!text.trim()) return;
+    const anchorMs = addAnchor.ms;
+    if (!text.trim() || anchorMs == null) return;
     setBusy(true);
     setError(null);
     try {
       await createCue(classTrackId, {
-        anchorMs: maybeSnap(secToMs(anchorSec)),
+        anchorMs: maybeSnap(anchorMs),
         text: text.trim(),
         color,
       });
       setText('');
-      setAnchorSec('0');
+      setAnchorClock('0:00');
       setColor(null);
       await load();
     } catch (e) {
@@ -352,14 +339,15 @@ export function CuesSection({
               className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2"
             >
               <input
-                className={`w-16 ${fieldClass} font-data`}
-                type="number"
-                min={0}
+                className={anchorInputClass(editAnchor.invalid)}
+                type="text"
                 inputMode="numeric"
-                value={editAnchorSec}
-                onChange={(e) => setEditAnchorSec(e.target.value)}
-                aria-label={`Cue time in seconds${anchorHint(durationMs)}`}
-                title={`Time in seconds${anchorHint(durationMs)}`}
+                placeholder="m:ss"
+                value={editAnchorClock}
+                onChange={(e) => setEditAnchorClock(e.target.value)}
+                aria-label="Cue time (m:ss)"
+                aria-invalid={editAnchor.invalid || undefined}
+                title="Cue time (m:ss)"
               />
               <input
                 className={`min-w-0 flex-1 ${fieldClass}`}
@@ -372,7 +360,7 @@ export function CuesSection({
               <button
                 className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={saveEdit}
-                disabled={busy || !editText.trim()}
+                disabled={busy || !editText.trim() || editAnchor.ms == null}
               >
                 Save
               </button>
@@ -402,7 +390,7 @@ export function CuesSection({
                 />
               )}
               <span className="shrink-0 font-data text-xs text-text-tertiary">
-                {clock(cue.anchorMs)}
+                {formatClockFromMs(cue.anchorMs)}
               </span>
               {beatLabel(cue.anchorMs, bpm, beatAnchorMs) && (
                 <span
@@ -438,14 +426,15 @@ export function CuesSection({
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <input
-            className={`w-20 ${fieldClass} font-data`}
-            type="number"
-            min={0}
+            className={anchorInputClass(addAnchor.invalid)}
+            type="text"
             inputMode="numeric"
-            value={anchorSec}
-            onChange={(e) => setAnchorSec(e.target.value)}
-            aria-label={`Cue time in seconds${anchorHint(durationMs)}`}
-            title={`Time in seconds${anchorHint(durationMs)}`}
+            placeholder="m:ss"
+            value={anchorClock}
+            onChange={(e) => setAnchorClock(e.target.value)}
+            aria-label="Cue time (m:ss)"
+            aria-invalid={addAnchor.invalid || undefined}
+            title="Cue time (m:ss)"
           />
           <input
             className={`min-w-0 flex-1 ${fieldClass}`}
@@ -456,11 +445,14 @@ export function CuesSection({
           <button
             className="shrink-0 rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
             onClick={add}
-            disabled={busy || !text.trim()}
+            disabled={busy || !text.trim() || addAnchor.ms == null}
           >
             Add cue
           </button>
         </div>
+        {addAnchor.message && (
+          <p className="font-ui text-xs text-state-danger">{addAnchor.message}</p>
+        )}
         <div className="flex items-center justify-between gap-2">
           <CueColorPicker value={color} onChange={setColor} />
           <SnapToggle canSnap={canSnap} snap={snap} onChange={setSnap} />
@@ -504,7 +496,7 @@ export function MovesSection({
   const [userMoves, setUserMoves] = useState<UserMove[]>([]);
   const [pick, setPick] = useState<string>(CUSTOM); // CUSTOM | NEW | m:<id> | u:<id>
   const [customName, setCustomName] = useState(''); // freeform name (CUSTOM) or new-move name (NEW)
-  const [anchorSec, setAnchorSec] = useState('0');
+  const [anchorClock, setAnchorClock] = useState('0:00');
   const [intensity, setIntensity] = useState<Intensity | ''>('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -512,8 +504,11 @@ export function MovesSection({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPick, setEditPick] = useState<string>(CUSTOM); // CUSTOM | m:<id> | u:<id>
   const [editCustom, setEditCustom] = useState('');
-  const [editAnchorSec, setEditAnchorSec] = useState('0');
+  const [editAnchorClock, setEditAnchorClock] = useState('0:00');
   const [editIntensity, setEditIntensity] = useState<Intensity | ''>('');
+
+  const addAnchor = anchorFieldState(anchorClock, durationMs);
+  const editAnchor = anchorFieldState(editAnchorClock, durationMs);
 
   const load = useCallback(async () => {
     try {
@@ -591,7 +586,8 @@ export function MovesSection({
   const add = async () => {
     const sel = parseMovePick(pick);
     const needsName = sel.kind === 'custom' || sel.kind === 'new';
-    if (needsName && !customName.trim()) return;
+    const anchorMs = addAnchor.ms;
+    if ((needsName && !customName.trim()) || anchorMs == null) return;
     setBusy(true);
     setError(null);
     try {
@@ -607,13 +603,13 @@ export function MovesSection({
         ref = refFields(pick, customName);
       }
       const body: PlaceClassTrackMove = {
-        anchorMs: maybeSnap(secToMs(anchorSec)),
+        anchorMs: maybeSnap(anchorMs),
         intensity: intensity === '' ? null : intensity,
         ...ref,
       };
       await placeMove(classTrackId, body);
       setCustomName('');
-      setAnchorSec('0');
+      setAnchorClock('0:00');
       setIntensity('');
       await load();
     } catch (e) {
@@ -625,7 +621,7 @@ export function MovesSection({
 
   const startEdit = (m: ClassTrackMove) => {
     setEditingId(m.id);
-    setEditAnchorSec(msToSec(m.anchorMs));
+    setEditAnchorClock(formatClockFromMs(m.anchorMs));
     setEditIntensity(m.intensity ?? '');
     // Seed the selector from the placement's reference (library / user move / one-off).
     setEditPick(pickForPlacement(m.moveId, m.userMoveId));
@@ -636,14 +632,15 @@ export function MovesSection({
   const saveEdit = async () => {
     if (!editingId) return;
     const sel = parseMovePick(editPick);
-    if (sel.kind === 'custom' && !editCustom.trim()) return;
+    const anchorMs = editAnchor.ms;
+    if ((sel.kind === 'custom' && !editCustom.trim()) || anchorMs == null) return;
     setBusy(true);
     setError(null);
     try {
       // Switching the reference nulls the others to hold the at-most-one invariant
       // (the server re-checks the merged result).
       await updatePlacedMove(editingId, {
-        anchorMs: maybeSnap(secToMs(editAnchorSec)),
+        anchorMs: maybeSnap(anchorMs),
         intensity: editIntensity === '' ? null : editIntensity,
         ...refFields(editPick, editCustom),
       });
@@ -729,14 +726,15 @@ export function MovesSection({
               className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2"
             >
               <input
-                className={`w-16 ${fieldClass} font-data`}
-                type="number"
-                min={0}
+                className={anchorInputClass(editAnchor.invalid)}
+                type="text"
                 inputMode="numeric"
-                value={editAnchorSec}
-                onChange={(e) => setEditAnchorSec(e.target.value)}
-                aria-label={`Move time in seconds${anchorHint(durationMs)}`}
-                title={`Time in seconds${anchorHint(durationMs)}`}
+                placeholder="m:ss"
+                value={editAnchorClock}
+                onChange={(e) => setEditAnchorClock(e.target.value)}
+                aria-label="Move time (m:ss)"
+                aria-invalid={editAnchor.invalid || undefined}
+                title="Move time (m:ss)"
               />
               <select
                 className={fieldClass}
@@ -773,7 +771,9 @@ export function MovesSection({
               <button
                 className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={saveEdit}
-                disabled={busy || (editSel.kind === 'custom' && !editCustom.trim())}
+                disabled={
+                  busy || (editSel.kind === 'custom' && !editCustom.trim()) || editAnchor.ms == null
+                }
               >
                 Save
               </button>
@@ -794,7 +794,7 @@ export function MovesSection({
               }`}
             >
               <span className="shrink-0 font-data text-xs text-text-tertiary">
-                {clock(m.anchorMs)}
+                {formatClockFromMs(m.anchorMs)}
               </span>
               {beatLabel(m.anchorMs, bpm, beatAnchorMs) && (
                 <span
@@ -830,14 +830,15 @@ export function MovesSection({
       </ul>
       <div className="flex flex-wrap items-center gap-2">
         <input
-          className={`w-20 ${fieldClass} font-data`}
-          type="number"
-          min={0}
+          className={anchorInputClass(addAnchor.invalid)}
+          type="text"
           inputMode="numeric"
-          value={anchorSec}
-          onChange={(e) => setAnchorSec(e.target.value)}
-          aria-label={`Move time in seconds${anchorHint(durationMs)}`}
-          title={`Time in seconds${anchorHint(durationMs)}`}
+          placeholder="m:ss"
+          value={anchorClock}
+          onChange={(e) => setAnchorClock(e.target.value)}
+          aria-label="Move time (m:ss)"
+          aria-invalid={addAnchor.invalid || undefined}
+          title="Move time (m:ss)"
         />
         <select
           className={fieldClass}
@@ -874,12 +875,15 @@ export function MovesSection({
         <button
           className="shrink-0 rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
           onClick={add}
-          disabled={busy || (addNeedsName && !customName.trim())}
+          disabled={busy || (addNeedsName && !customName.trim()) || addAnchor.ms == null}
         >
           Add move
         </button>
         <SnapToggle canSnap={canSnap} snap={snap} onChange={setSnap} />
       </div>
+      {addAnchor.message && (
+        <p className="font-ui text-xs text-state-danger">{addAnchor.message}</p>
+      )}
       {error && <p className="font-ui text-xs text-state-danger">{error}</p>}
     </div>
   );
