@@ -258,18 +258,27 @@ function UnplayableVerdict({
   onReconnect: (provider: Provider) => Promise<void>;
   onResolved: (refs: RunPayloadProviderRef[]) => void;
 }) {
-  // Refs exist but only for a provider Ritmo can't play (e.g. Spotify) — offer
-  // cross-provider resolution instead of a dead-end "connect a provider" hint.
-  if (reason === 'provider_not_playable') {
-    return <ResolveProviderAction entry={entry} onResolved={onResolved} />;
+  // No refs at all (manual add) or refs only for a provider Ritmo can't play
+  // (e.g. Spotify-only) — same cross-provider resolve loop, different lead-in.
+  if (reason === 'no_provider_ref' || reason === 'provider_not_playable') {
+    return (
+      <ResolveProviderAction
+        entry={entry}
+        onResolved={onResolved}
+        leadIn={
+          reason === 'no_provider_ref'
+            ? 'No provider link yet'
+            : 'Not on a provider Ritmo can play yet'
+        }
+      />
+    );
   }
   if (reason === 'playback_reauth_required') {
     return <ReconnectSpotifyAction onReconnect={onReconnect} />;
   }
+  // missing_duration or no_connected_provider — name the fix; no resolve CTA.
   let text: string;
-  if (reason === 'no_provider_ref') {
-    text = 'No provider link yet — add this track from search or import to preview it.';
-  } else if (reason === 'missing_duration') {
+  if (reason === 'missing_duration') {
     // Preview tolerates a missing duration (open-ended), so this only reaches here
     // if selection reported it; name the fix anyway.
     text = 'No duration yet — add one so the preview knows the clip length.';
@@ -330,19 +339,25 @@ function ReconnectSpotifyAction({
 }
 
 /**
- * "Find on a supported provider" — cross-provider resolution for a
- * `provider_not_playable` track (e.g. a Spotify-only track, no adapter). Searches
- * the playable providers for the same song: a strong same-song match is attached
- * automatically; otherwise the candidates are listed to confirm. The attach is
- * persisted server-side; `onResolved` overlays the new ref so the verdict flips
- * to playable at once, no class reload needed.
+ * "Find on a supported provider" — cross-provider resolution for tracks that
+ * either have no provider link yet (`no_provider_ref`, e.g. manual-add) or only
+ * refs for a provider Ritmo can't play (`provider_not_playable`, e.g. Spotify).
+ * Searches the playable providers for the same song: a strong same-song match is
+ * attached automatically; otherwise the candidates are listed to confirm. The
+ * attach is persisted server-side; `onResolved` overlays the new ref so the
+ * verdict flips to playable at once, no class reload needed.
+ *
+ * `leadIn` differentiates the two cases without forking the action UI.
  */
 function ResolveProviderAction({
   entry,
   onResolved,
+  leadIn,
 }: {
   entry: RunPayloadTrackEntry;
   onResolved: (refs: RunPayloadProviderRef[]) => void;
+  /** Case-specific prefix before "— find this song on {targets}." */
+  leadIn: string;
 }) {
   type ResolveState =
     | { kind: 'idle' }
@@ -403,7 +418,7 @@ function ResolveProviderAction({
         <span aria-hidden>⊘</span>
         <span>
           <span className="sr-only">Preview unavailable: </span>
-          Not on a provider Ritmo can play yet — find this song on {targets}.
+          {leadIn} — find this song on {targets}.
         </span>
       </p>
       {state.kind === 'candidates' ? (
