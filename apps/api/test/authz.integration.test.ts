@@ -365,4 +365,115 @@ describe('run-payload + copy (integration)', () => {
     expect(payload.class.totalDurationMs).toBe(195000);
     expect(payload.tracks[0].track.durationMs).toBe(195000);
   });
+
+  /**
+   * Author a free layout with a 20s gap on the source class: A (180000ms) at 0,
+   * B (120000ms) moved from its seeded 180000 out to 200000. Returns nothing —
+   * asserts along the way; callers then exercise the copy path.
+   */
+  async function buildFreeLayoutWithGap() {
+    const addB = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({ track: { title: 'Track B', artist: 'Artist', durationMs: 120000 } }),
+    });
+    expect(addB.status).toBe(201);
+
+    const toFree = await authed(owner.cookie)(`/api/v1/classes/${classId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ timelineMode: 'free' }),
+    });
+    expect(toFree.status).toBe(200);
+
+    const tracks = (await (
+      await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`)
+    ).json()) as Array<{ id: string; startOffsetMs: number }>;
+    const trackB = tracks.find((t) => t.startOffsetMs === 180000)!;
+    expect(trackB).toBeTruthy();
+    const gap = await authed(owner.cookie)(`/api/v1/class-tracks/${trackB.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ startOffsetMs: 200000 }),
+    });
+    expect(gap.status).toBe(200);
+  }
+
+  it('duplicating a free-mode class carries timelineMode and the authored offsets', async () => {
+    await buildFreeLayoutWithGap();
+
+    const copy = await authed(owner.cookie)(`/api/v1/classes/${classId}/copy`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    expect(copy.status).toBe(201);
+    const copied = (await copy.json()) as { id: string; timelineMode: string };
+    expect(copied.timelineMode).toBe('free');
+
+    // The authored layout survives: same offsets, gap intact, positions ranked.
+    const copiedTracks = (await (
+      await authed(owner.cookie)(`/api/v1/classes/${copied.id}/tracks`)
+    ).json()) as Array<{ position: number; startOffsetMs: number }>;
+    expect(copiedTracks.map((t) => [t.position, t.startOffsetMs])).toEqual([
+      [0, 0],
+      [1, 200000],
+    ]);
+  });
+
+  it('duplicating a sequential class still lands sequential with derived offsets', async () => {
+    const addB = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({ track: { title: 'Track B', artist: 'Artist', durationMs: 120000 } }),
+    });
+    expect(addB.status).toBe(201);
+
+    const copy = await authed(owner.cookie)(`/api/v1/classes/${classId}/copy`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    expect(copy.status).toBe(201);
+    const copied = (await copy.json()) as { id: string; timelineMode: string };
+    expect(copied.timelineMode).toBe('sequential');
+
+    // Offsets are server-derived back-to-back, exactly as before the carry change.
+    const copiedTracks = (await (
+      await authed(owner.cookie)(`/api/v1/classes/${copied.id}/tracks`)
+    ).json()) as Array<{ position: number; startOffsetMs: number }>;
+    expect(copiedTracks.map((t) => [t.position, t.startOffsetMs])).toEqual([
+      [0, 0],
+      [1, 180000],
+    ]);
+  });
+
+  it('cross-user save-a-copy of a public free-mode class keeps the authored layout', async () => {
+    await buildFreeLayoutWithGap();
+
+    const publish = await authed(owner.cookie)(`/api/v1/classes/${classId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ visibility: 'public' }),
+    });
+    expect(publish.status).toBe(200);
+
+    const copy = await authed(other.cookie)(`/api/v1/classes/${classId}/copy`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    expect(copy.status).toBe(201);
+    const copied = (await copy.json()) as { id: string; timelineMode: string };
+    expect(copied.timelineMode).toBe('free');
+
+    // Foreign tracks are cloned into the copier's library, but the layout — the
+    // choreography being saved — carries verbatim, gap included.
+    const copiedTracks = (await (
+      await authed(other.cookie)(`/api/v1/classes/${copied.id}/tracks`)
+    ).json()) as Array<{ position: number; startOffsetMs: number }>;
+    expect(copiedTracks.map((t) => [t.position, t.startOffsetMs])).toEqual([
+      [0, 0],
+      [1, 200000],
+    ]);
+
+    // The copy's run-payload reflects the gap: total = 200000 + 120000.
+    const payload = await (
+      await authed(other.cookie)(`/api/v1/classes/${copied.id}/run-payload`)
+    ).json();
+    expect(payload.class.timelineMode).toBe('free');
+    expect(payload.class.totalDurationMs).toBe(320000);
+  });
 });
