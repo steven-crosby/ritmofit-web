@@ -52,12 +52,12 @@ Pilates, and HIIT.
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
   Music workspace via a shared provider-browse hook. Last production deploy
-  **2026-07-10 (Worker `6b8e1a48`)** — seventh parallel lane-agent round (all-feature, D21 loop): three
-  disjoint-lane feature slices — honest Live-queue readiness (#265: real run gate + per-card
-  four-dimension readout + real preflight tiles), server-side bulk playlist import `POST
-  /providers/:provider/playlists/:playlistId/import` across all three providers (#266), and
-  `sections[].id` in the run-payload (#267) — **no schema/migration** (supersedes `7deb2d20`).
-  For per-deploy detail and the live Worker version, see [`HISTORY.md`](./HISTORY.md), newest first.
+  **2026-07-11 (Worker `b883cae9`)** — eighth parallel lane-agent round (all-harden, D21 loop): three
+  disjoint-lane correctness slices — Builder preview resolve for `no_provider_ref` manual-add tracks
+  (#269), by-id cue nested-authz regression lock completing the #254 triad (#270), and post-refresh
+  playlist Forbidden/AccessDenied → stable `REAUTH_REQUIRED` / `PROVIDER_FORBIDDEN` mapping (#271) —
+  **no schema/migration** (supersedes `6b8e1a48`). For per-deploy detail and the live Worker version,
+  see [`HISTORY.md`](./HISTORY.md), newest first.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
