@@ -24,16 +24,27 @@ import {
   type TrackSearchResult,
 } from '@ritmofit/shared';
 import { z } from 'zod';
-import type { FetchLike, MusicProvider } from './provider.js';
+import type { FetchLike, MusicProvider, PlaylistImportRef } from './provider.js';
 import { readJson, ProviderError } from './errors.js';
 import { AppTokenCache } from './app-token.js';
 import { fetchWithRetry, type RetryOptions } from './retry.js';
+
+// `URL` is available in the Workers runtime and Node ≥18 (vitest). Declared here
+// so the package needs no DOM/Workers ambient lib (same pattern as `btoa` in
+// app-token.ts). Only the members this module reads are declared.
+declare const URL: new (input: string, base?: string) => { pathname: string };
 
 const DEFAULT_API_BASE = 'https://api.soundcloud.com';
 const DEFAULT_TOKEN_URL = 'https://secure.soundcloud.com/oauth/token';
 const SEARCH_LIMIT = 25;
 const LIKES_LIMIT = 50;
 const SOUNDCLOUD_PAGE_LIMIT = 50;
+// URL import reads with the app token: the docs allow up to 200 per page for the
+// playlist-track collection. The raw cap sits far above the 100-distinct-song
+// import limit, so a playlist truncated here always exceeds that limit after
+// dedup and is rejected as too large — never silently imported as if complete.
+const IMPORT_PAGE_LIMIT = 200;
+const IMPORT_TRACK_CAP = 500;
 
 export interface SoundCloudConfig {
   clientId: string;
@@ -49,9 +60,11 @@ export interface SoundCloudConfig {
   retry?: RetryOptions;
 }
 
-/** One SoundCloud track (permissive — unknown fields are ignored). */
+/** One SoundCloud track (permissive — unknown fields are ignored). Since the
+ *  2025 URN migration SoundCloud is replacing numeric `id`s with URN strings
+ *  (`soundcloud:tracks:123`); tolerate both and normalize to string. */
 const scTrackSchema = z.object({
-  id: z.number(),
+  id: z.union([z.number(), z.string()]),
   urn: z.string().optional(),
   title: z.string().optional(),
   permalink_url: z.string().optional(),
@@ -86,6 +99,40 @@ const scPagedTracksSchema = z.union([
   z.array(z.unknown()),
   z.object({ collection: z.array(z.unknown()), next_href: z.string().nullable().optional() }),
 ]);
+
+/** The resource body `/resolve` yields when a fetch stack auto-follows its 302. */
+const scResolvedResourceSchema = z.object({
+  kind: z.string().optional(),
+  urn: z.string().optional(),
+  id: z.union([z.number(), z.string()]).optional(),
+});
+
+/**
+ * Extract the playlist URN/id from a `/resolve` Location — an API resource URL
+ * like `https://api.soundcloud.com/playlists/soundcloud%3Aplaylists%3A123`.
+ * Null when the URL resolved to some other resource kind (track, user).
+ */
+function playlistUrnFromResourceUrl(location: string, apiBase: string): string | null {
+  let resolved: InstanceType<typeof URL>;
+  try {
+    resolved = new URL(location, apiBase);
+  } catch {
+    return null;
+  }
+  const segments = movePastVersionPrefix(resolved.pathname.split('/').filter((s) => s !== ''));
+  if (segments[0] !== 'playlists' || !segments[1]) return null;
+  try {
+    return decodeURIComponent(segments[1]);
+  } catch {
+    return segments[1];
+  }
+}
+
+/** Tolerate an API-version path prefix (e.g. `/v2/playlists/…`) in the Location. */
+function movePastVersionPrefix(segments: string[]): string[] {
+  const first = segments[0];
+  return first && /^v\d+$/.test(first) ? segments.slice(1) : segments;
+}
 
 export function createSoundCloudProvider(config: SoundCloudConfig): MusicProvider {
   return new SoundCloudProvider(config);
@@ -135,15 +182,90 @@ class SoundCloudProvider implements MusicProvider {
     return toCandidate(body);
   }
 
-  async getPlaylist(playlistId: string): Promise<TrackSearchResult[]> {
-    const id = encodeURIComponent(playlistId);
-    const body = await this.apiGet(`/playlists/${id}`, { allow404: true });
-    if (body === null) return [];
-    const parsed = z.object({ tracks: z.array(z.unknown()) }).safeParse(body);
-    if (!parsed.success) return [];
-    return parsed.data.tracks
-      .map((item) => toCandidate(item))
-      .filter((r): r is TrackSearchResult => r !== null);
+  /**
+   * Import a public playlist permalink: `/resolve` the URL to a playlist URN,
+   * then page the playlist-track collection (the embedded `tracks` on
+   * `/playlists/{urn}` can be truncated). [] when the URL doesn't resolve or
+   * resolves to something that isn't a playlist (e.g. an on.soundcloud.com
+   * short link to a track).
+   */
+  async getPlaylist(ref: Extract<PlaylistImportRef, { provider: 'soundcloud' }>) {
+    try {
+      return await this.getPlaylistOnce(ref.permalinkUrl);
+    } catch (err) {
+      if (!(err instanceof SoundCloudUnauthorizedError)) throw err;
+      // The cached app token went stale server-side; re-mint once and retry.
+      this.tokens.invalidate();
+      try {
+        return await this.getPlaylistOnce(ref.permalinkUrl);
+      } catch (retryErr) {
+        if (retryErr instanceof SoundCloudUnauthorizedError) {
+          throw new ProviderError('soundcloud', 'SoundCloud rejected a fresh app token (401).');
+        }
+        throw retryErr;
+      }
+    }
+  }
+
+  private async getPlaylistOnce(permalinkUrl: string): Promise<TrackSearchResult[]> {
+    const urn = await this.resolvePlaylistUrn(permalinkUrl);
+    if (urn === null) return [];
+    const rows = await fetchSoundCloudPagedCollection({
+      firstUrl:
+        `${this.apiBase}/playlists/${encodeURIComponent(urn)}/tracks` +
+        `?limit=${IMPORT_PAGE_LIMIT}&linked_partitioning=true`,
+      accessToken: await this.tokens.get(),
+      fetchImpl: this.fetchImpl,
+      parsePage: (json) => {
+        const parsed = scPagedTracksSchema.safeParse(json);
+        if (!parsed.success) return null;
+        if (Array.isArray(parsed.data)) return { rows: parsed.data, nextUrl: null };
+        return { rows: parsed.data.collection, nextUrl: parsed.data.next_href ?? null };
+      },
+      errorPath: '/playlists/:urn/tracks',
+      cap: IMPORT_TRACK_CAP,
+      allow404: true,
+    });
+    return rows.map((item) => toCandidate(item)).filter((r): r is TrackSearchResult => r !== null);
+  }
+
+  /**
+   * `/resolve` a soundcloud.com / on.soundcloud.com URL to a playlist URN, or
+   * null when it doesn't exist or isn't a playlist. The endpoint replies 302
+   * with an api.soundcloud.com resource URL; requested with `redirect: manual`
+   * because auto-following can strip the Authorization header — the URN is read
+   * straight off the Location, no second request needed. A stack that followed
+   * anyway hands us the resource body, so 200 JSON is accepted too.
+   */
+  private async resolvePlaylistUrn(permalinkUrl: string): Promise<string | null> {
+    const token = await this.tokens.get();
+    const res = await fetchWithRetry(
+      this.fetchImpl,
+      `${this.apiBase}/resolve?url=${encodeURIComponent(permalinkUrl)}`,
+      {
+        headers: { Authorization: `OAuth ${token}`, Accept: 'application/json' },
+        redirect: 'manual',
+      },
+      this.retry,
+    );
+    if (res.status === 401) throw new SoundCloudUnauthorizedError();
+    if (res.status === 404) return null;
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers?.get('location');
+      if (!location) {
+        throw new ProviderError('soundcloud', 'SoundCloud /resolve redirected without a Location.');
+      }
+      return playlistUrnFromResourceUrl(location, this.apiBase);
+    }
+    if (res.ok) {
+      const parsed = scResolvedResourceSchema.safeParse(await readJson(res, 'soundcloud'));
+      if (!parsed.success) {
+        throw new ProviderError('soundcloud', 'SoundCloud /resolve returned an unexpected shape.');
+      }
+      if (parsed.data.kind !== 'playlist') return null;
+      return parsed.data.urn ?? (parsed.data.id !== undefined ? String(parsed.data.id) : null);
+    }
+    throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for /resolve`);
   }
 
   /** GET against the API with a valid app token; throws on non-ok (except opt-in 404). */

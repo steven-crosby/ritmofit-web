@@ -133,7 +133,7 @@ describe('SpotifyProvider.getPlaylist', () => {
       [`${playlistUrl}?limit=50&offset=0`]: { items: firstPage, total: 51 },
     });
 
-    const results = await provider.getPlaylist('playlist-id');
+    const results = await provider.getPlaylist({ provider: 'spotify', playlistId: 'playlist-id' });
 
     expect(results).toHaveLength(51);
     expect(results[0]?.providerTrackId).toBe('track-0');
@@ -150,9 +150,9 @@ describe('SpotifyProvider.getPlaylist', () => {
       [`${playlistUrl}?limit=50&offset=0`]: { items: [{ item: SP_TRACK }], total: 2 },
     });
 
-    await expect(provider.getPlaylist('playlist-id')).rejects.toThrow(
-      'Spotify returned an invalid playlist page.',
-    );
+    await expect(
+      provider.getPlaylist({ provider: 'spotify', playlistId: 'playlist-id' }),
+    ).rejects.toThrow('Spotify returned an invalid playlist page.');
   });
 
   it('refreshes an expired app token while fetching a playlist page', async () => {
@@ -188,7 +188,9 @@ describe('SpotifyProvider.getPlaylist', () => {
       tokenUrl: TOKEN_URL,
     });
 
-    await expect(provider.getPlaylist('playlist-id')).resolves.toHaveLength(1);
+    await expect(
+      provider.getPlaylist({ provider: 'spotify', playlistId: 'playlist-id' }),
+    ).resolves.toHaveLength(1);
     expect(tokenCalls).toBe(2);
     expect(
       calls
@@ -203,7 +205,7 @@ describe('SpotifyProvider.getPlaylist', () => {
       [`${playlistUrl}?limit=50&offset=0`]: { items: [{ item: SP_TRACK }], total: 1 },
     });
 
-    const results = await provider.getPlaylist('pl-1');
+    const results = await provider.getPlaylist({ provider: 'spotify', playlistId: 'pl-1' });
 
     expect(results).toHaveLength(1);
     expect(results[0]?.providerTrackId).toBe('4cOdK2wGLETKBW3PvgPWqT');
@@ -221,7 +223,9 @@ describe('SpotifyProvider.getPlaylist', () => {
     });
 
     // A nullable/absent `item` must map to nothing, not crash the whole page.
-    await expect(provider.getPlaylist('pl-1')).resolves.toEqual([]);
+    await expect(
+      provider.getPlaylist({ provider: 'spotify', playlistId: 'pl-1' }),
+    ).resolves.toEqual([]);
   });
 });
 

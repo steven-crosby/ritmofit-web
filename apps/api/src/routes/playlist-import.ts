@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { importPlaylistSchema, MAX_PLAYLIST_IMPORT_TRACKS } from '@ritmofit/shared';
+import { parsePlaylistUrl } from '@ritmofit/music';
 import { requireSession } from '../middleware/auth.js';
 import { requireAccess } from '../lib/authz.js';
 import { rateLimit } from '../lib/rate-limit.js';
@@ -32,44 +33,27 @@ playlistImportRoutes.post('/classes/:id/import-playlist', importLimiter, async (
   await requireAccess(db, me, classId, 'edit');
 
   const { url } = importPlaylistSchema.parse(await c.req.json());
-  let provider: 'spotify' | null = null;
-  let playlistId: string | null = null;
-
-  try {
-    const parsedUrl = new URL(url);
-    if (parsedUrl.hostname.includes('spotify.com')) {
-      provider = 'spotify';
-      // URL format: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
-      const parts = parsedUrl.pathname.split('/');
-      const idx = parts.indexOf('playlist');
-      if (idx !== -1 && parts[idx + 1]) {
-        playlistId = parts[idx + 1] ?? null;
-      }
-    } else if (parsedUrl.hostname.includes('soundcloud.com')) {
-      // SoundCloud playlists require resolving the permalink URL to a numeric
-      // id via /resolve before /playlists/{id} works. Not implemented yet —
-      // reject explicitly rather than issue a request that always 404s.
-      throw new HttpError(
-        501,
-        'NOT_IMPLEMENTED',
-        'SoundCloud playlist import is not supported yet.',
-      );
-    }
-  } catch (e) {
-    if (e instanceof HttpError) throw e;
-    throw new HttpError(400, 'BAD_REQUEST', 'Invalid URL.');
-  }
-
-  if (!provider || !playlistId) {
+  const parsed = parsePlaylistUrl(url);
+  if (parsed.kind === 'apple_library') {
+    // Library playlists need the owner's Music-User-Token, which a pasted link
+    // can never carry — that case is served by saved-playlist browsing instead.
     throw new HttpError(
       400,
       'BAD_REQUEST',
-      'Unsupported playlist URL. Must be a Spotify playlist.',
+      'Apple Music library playlist links can’t be imported by URL. ' +
+        'Paste a public catalog playlist link, or use saved-playlist browsing.',
+    );
+  }
+  if (parsed.kind !== 'importable') {
+    throw new HttpError(
+      400,
+      'BAD_REQUEST',
+      'Unsupported playlist URL. Paste a public Spotify, SoundCloud, or Apple Music playlist link.',
     );
   }
 
-  const adapter = await getMusicProvider(provider, c.env);
-  const candidates = await adapter.getPlaylist(playlistId);
+  const adapter = await getMusicProvider(parsed.ref.provider, c.env);
+  const candidates = await adapter.getPlaylist(parsed.ref);
 
   if (!candidates.length) {
     throw new HttpError(400, 'BAD_REQUEST', 'Playlist not found or is empty.');

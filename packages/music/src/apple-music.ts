@@ -20,13 +20,19 @@ import {
   type TrackSearchResult,
 } from '@ritmofit/shared';
 import { z } from 'zod';
-import type { FetchLike, MusicProvider } from './provider.js';
+import type { FetchLike, MusicProvider, PlaylistImportRef } from './provider.js';
 import { readJson, ProviderError } from './errors.js';
 import { fetchWithRetry, type RetryOptions } from './retry.js';
 
 const DEFAULT_API_BASE = 'https://api.music.apple.com/v1';
 const DEFAULT_STOREFRONT = 'us';
 const SEARCH_LIMIT = 25;
+// Catalog playlist-track pages allow up to 300 items. The raw cap sits far above
+// the 100-distinct-song import limit, so a playlist truncated here always exceeds
+// that limit after dedup and is rejected as too large — never silently imported
+// as if complete.
+const CATALOG_PLAYLIST_PAGE_LIMIT = 300;
+const IMPORT_TRACK_CAP = 500;
 
 export interface AppleMusicConfig {
   /** ES256 developer-token JWT (signed out of band from the `.p8` key). */
@@ -102,8 +108,52 @@ class AppleMusicProvider implements MusicProvider {
     return first ? this.toCandidate(first) : null;
   }
 
-  async getPlaylist(): Promise<TrackSearchResult[]> {
-    return []; // Not implemented for Apple Music
+  /**
+   * Import a public **catalog** playlist (curated `pl.…` or shared-user
+   * `pl.u-…` ids) with the developer token alone — no Music-User-Token. The
+   * storefront comes from the pasted URL, since availability varies by country.
+   * Pages the tracks relationship endpoint (`?include=tracks` truncates at 100)
+   * following Apple's relative `next` cursor. [] on 404 — unknown id, or a
+   * shared playlist its owner has since unshared. Library playlists never reach
+   * here (the route rejects them; they're served by saved-playlist browsing).
+   */
+  async getPlaylist(ref: Extract<PlaylistImportRef, { provider: 'apple_music' }>) {
+    const out: TrackSearchResult[] = [];
+    // Apple returns a relative `next` subpath (e.g. `/v1/catalog/us/…?offset=100`,
+    // without the custom limit — re-appended so page size stays consistent).
+    const origin = this.apiBase.replace(/\/v1$/, '');
+    let path: string | null =
+      `/v1/catalog/${encodeURIComponent(ref.storefront)}/playlists/` +
+      `${encodeURIComponent(ref.playlistId)}/tracks?limit=${CATALOG_PLAYLIST_PAGE_LIMIT}`;
+
+    while (path && out.length < IMPORT_TRACK_CAP) {
+      const res = await fetchWithRetry(
+        this.fetchImpl,
+        `${origin}${path}`,
+        { headers: { Authorization: `Bearer ${this.developerToken}` } },
+        this.retry,
+      );
+      if (res.status === 404) return [];
+      if (!res.ok) {
+        throw new ProviderError(
+          'apple_music',
+          `Apple Music API ${res.status} for /catalog/:storefront/playlists/:id/tracks`,
+        );
+      }
+      const parsed = amLibraryPageSchema.safeParse(await readJson(res, 'apple_music'));
+      if (!parsed.success) break;
+      const page = parsed.data.data ?? [];
+      for (const raw of page) {
+        // The tracks relationship can hold music videos too — import songs only.
+        if (!isCatalogSong(raw)) continue;
+        const candidate = this.toCandidate(raw);
+        if (candidate) out.push(candidate);
+        if (out.length >= IMPORT_TRACK_CAP) break;
+      }
+      if (page.length === 0) break;
+      path = parsed.data.next ? `${parsed.data.next}&limit=${CATALOG_PLAYLIST_PAGE_LIMIT}` : null;
+    }
+    return out;
   }
 
   /** Map an Apple Music song → contract candidate, or null if it can't satisfy the schema. */
@@ -136,6 +186,12 @@ class AppleMusicProvider implements MusicProvider {
       throw new ProviderError('apple_music', `Apple Music request failed: ${res.status}`);
     return readJson(res, 'apple_music');
   }
+}
+
+/** A catalog track resource is a song unless its `type` says otherwise. */
+function isCatalogSong(raw: unknown): boolean {
+  const parsed = z.object({ type: z.string().optional() }).safeParse(raw);
+  return parsed.success && (parsed.data.type === undefined || parsed.data.type === 'songs');
 }
 
 /** Apple artwork URLs are templates with `{w}`/`{h}` placeholders — bind a concrete size. */

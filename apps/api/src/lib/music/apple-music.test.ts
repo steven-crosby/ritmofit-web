@@ -393,3 +393,73 @@ describe('fetchAppleMusicLibraryPlaylistTracks', () => {
     }
   });
 });
+
+describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
+  const REF = { provider: 'apple_music', storefront: 'gb', playlistId: 'pl.abc123' } as const;
+  const TRACKS_URL = `${API_BASE}/catalog/gb/playlists/pl.abc123/tracks`;
+
+  it('fetches the catalog tracks relationship for the URL storefront with the developer token', async () => {
+    const { provider, calls } = makeProvider({
+      [TRACKS_URL]: { data: [AM_SONG] },
+    });
+
+    const results = await provider.getPlaylist(REF);
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.providerTrackId).toBe('1440857781');
+    const call = calls.find((c) => c.url.startsWith(TRACKS_URL))!;
+    expect(call.url).toContain('/catalog/gb/');
+    expect(call.url).toContain('limit=300');
+    expect(call.init?.headers?.Authorization).toBe('Bearer devtok');
+    expect(call.init?.headers?.['Music-User-Token']).toBeUndefined();
+  });
+
+  it('follows the relative next cursor, re-appending the page limit', async () => {
+    const secondSong = { ...AM_SONG, id: '2' };
+    const { provider, calls } = makeProvider({
+      [`${TRACKS_URL}?offset=300`]: { data: [secondSong] },
+      [`${TRACKS_URL}?limit=300`]: {
+        data: [AM_SONG],
+        next: '/v1/catalog/gb/playlists/pl.abc123/tracks?offset=300',
+      },
+    });
+
+    const results = await provider.getPlaylist(REF);
+
+    expect(results.map((r) => r.providerTrackId)).toEqual(['1440857781', '2']);
+    const pageCalls = calls.filter((c) => c.url.startsWith(TRACKS_URL)).map((c) => c.url);
+    expect(pageCalls).toEqual([`${TRACKS_URL}?limit=300`, `${TRACKS_URL}?offset=300&limit=300`]);
+  });
+
+  it('returns [] on 404 (unknown id, or a shared playlist since unshared)', async () => {
+    const { provider } = makeProvider({}); // no handler → 404
+    await expect(provider.getPlaylist(REF)).resolves.toEqual([]);
+  });
+
+  it('imports songs only, skipping music-videos in the tracks relationship', async () => {
+    const video = {
+      ...AM_SONG,
+      id: 'mv-1',
+      type: 'music-videos',
+    };
+    const { provider } = makeProvider({ [TRACKS_URL]: { data: [video, AM_SONG] } });
+    const results = await provider.getPlaylist(REF);
+    expect(results.map((r) => r.providerTrackId)).toEqual(['1440857781']);
+  });
+
+  it('surfaces a non-ok status as a ProviderError (bad developer token)', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({}),
+      text: async () => 'unauthorized',
+    });
+    const provider = createAppleMusicProvider({
+      developerToken: 'devtok',
+      fetchImpl,
+      apiBase: API_BASE,
+      storefront: 'us',
+    });
+    await expect(provider.getPlaylist(REF)).rejects.toThrow('Apple Music API 401');
+  });
+});

@@ -10,6 +10,17 @@
  */
 import type { Provider, TrackSearchResult } from '@ritmofit/shared';
 
+/**
+ * Provider-specific reference to a **public** playlist, parsed from a pasted URL
+ * (`parsePlaylistUrl`). Each provider needs different data to fetch it: Spotify a
+ * playlist id, SoundCloud the permalink URL (resolved to a URN via `/resolve`),
+ * Apple Music a catalog playlist id plus the storefront from the URL path.
+ */
+export type PlaylistImportRef =
+  | { provider: 'spotify'; playlistId: string }
+  | { provider: 'soundcloud'; permalinkUrl: string }
+  | { provider: 'apple_music'; storefront: string; playlistId: string };
+
 export interface MusicProvider {
   /** Which provider this adapter speaks for. */
   readonly provider: Provider;
@@ -23,8 +34,12 @@ export interface MusicProvider {
    */
   lookup(providerTrackId: string): Promise<TrackSearchResult | null>;
 
-  /** Fetch tracks from a playlist. */
-  getPlaylist(playlistId: string): Promise<TrackSearchResult[]>;
+  /**
+   * Fetch a public playlist's tracks with app-level credentials, from a parsed
+   * playlist-URL reference. Returns [] when the playlist doesn't exist (or the
+   * reference isn't a playlist) — the route maps that to a 400.
+   */
+  getPlaylist(ref: PlaylistImportRef): Promise<TrackSearchResult[]>;
 }
 
 /**
@@ -37,6 +52,10 @@ export type FetchLike = (
     method?: string;
     headers?: Record<string, string>;
     body?: string;
+    /** SoundCloud `/resolve` replies 302; `manual` lets the adapter read the
+     *  `Location` and re-request it with auth (some fetch stacks strip the
+     *  `Authorization` header when auto-following a redirect). */
+    redirect?: 'follow' | 'manual';
   },
 ) => Promise<{
   ok: boolean;
