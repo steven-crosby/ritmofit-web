@@ -180,6 +180,38 @@ export async function fetchUserPlaylistTracks(
   });
 }
 
+/**
+ * Map known provider playlist-read failures to stable HttpErrors so they never
+ * leak as raw 5xx. Shared by the first read and the post-refresh retry.
+ *
+ * - Forbidden (valid token, missing scope) → 409 REAUTH_REQUIRED
+ * - Per-playlist access denied → 403 PROVIDER_FORBIDDEN
+ * - Unauthorized → 409 REAUTH_REQUIRED when `unauthorizedAsReauth` (dead grant /
+ *   already refreshed); otherwise the caller handles a single reactive refresh
+ * - Anything else → rethrow as-is
+ */
+function mapConnectedPlaylistReadError(
+  adapter: PlaylistAdapter,
+  err: unknown,
+  opts: { unauthorizedAsReauth?: boolean } = {},
+): never {
+  // A missing scope: no refresh can grant it — prompt reconnect, don't burn a cycle.
+  if (adapter.isForbidden?.(err)) {
+    throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
+  }
+  if (adapter.isPlaylistAccessDenied?.(err)) {
+    throw new HttpError(
+      403,
+      'PROVIDER_FORBIDDEN',
+      `${adapter.label} only allows opening playlists you own or collaborate on.`,
+    );
+  }
+  if (opts.unauthorizedAsReauth && adapter.isUnauthorized(err)) {
+    throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
+  }
+  throw err;
+}
+
 async function readWithConnectedPlaylistToken<T>(cfg: ConnectedPlaylistRead<T>): Promise<T> {
   const key = requireEncryptionKey(cfg.env);
   const creds = cfg.adapter.creds(cfg.env);
@@ -204,21 +236,13 @@ async function readWithConnectedPlaylistToken<T>(cfg: ConnectedPlaylistRead<T>):
   try {
     return await cfg.read(accessToken);
   } catch (err) {
-    // A missing scope: no refresh can grant it, so retrying would just repeat the
-    // same 403. Prompt reconnect immediately instead of burning a refresh cycle.
-    if (cfg.adapter.isForbidden?.(err)) {
-      throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${cfg.adapter.label} account.`);
+    // Forbidden / access-denied map immediately. Other non-401 errors rethrow.
+    // Unauthorized falls through for one reactive refresh when possible.
+    if (!cfg.adapter.isUnauthorized(err)) {
+      mapConnectedPlaylistReadError(cfg.adapter, err);
     }
-    if (cfg.adapter.isPlaylistAccessDenied?.(err)) {
-      throw new HttpError(
-        403,
-        'PROVIDER_FORBIDDEN',
-        `${cfg.adapter.label} only allows opening playlists you own or collaborate on.`,
-      );
-    }
-    if (!cfg.adapter.isUnauthorized(err)) throw err;
     if (refreshed || !conn.refreshTokenEncrypted) {
-      throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${cfg.adapter.label} account.`);
+      mapConnectedPlaylistReadError(cfg.adapter, err, { unauthorizedAsReauth: true });
     }
     refreshed = true;
     accessToken = await refreshAndPersist(cfg.db, key, cfg.adapter, creds, conn);
@@ -227,8 +251,9 @@ async function readWithConnectedPlaylistToken<T>(cfg: ConnectedPlaylistRead<T>):
       // and the second 401 would leak as a raw provider error instead of REAUTH.
       return await cfg.read(accessToken);
     } catch (retryErr) {
-      if (!cfg.adapter.isUnauthorized(retryErr)) throw retryErr;
-      throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${cfg.adapter.label} account.`);
+      // Post-refresh: same Forbidden/AccessDenied mapping as the first path, plus
+      // a second 401 → REAUTH (grant is dead; do not refresh again).
+      mapConnectedPlaylistReadError(cfg.adapter, retryErr, { unauthorizedAsReauth: true });
     }
   }
 }

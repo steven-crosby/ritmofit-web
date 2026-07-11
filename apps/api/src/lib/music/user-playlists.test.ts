@@ -265,6 +265,42 @@ describe('user playlist token helper', () => {
     expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
     expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(2);
   });
+
+  it('maps REAUTH_REQUIRED when the reactive-refresh retry returns a stale-scope 403', async () => {
+    // 401 → refresh succeeds → retry hits Forbidden (missing scope on the new
+    // token). Must map to REAUTH, not leak SpotifyForbiddenError as a 5xx.
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifySavedPlaylists)
+      .mockRejectedValueOnce(new SpotifyUnauthorizedError())
+      .mockRejectedValueOnce(new SpotifyForbiddenError());
+
+    await expect(fetchUserPlaylists(db, env, 'user-1', 'spotify')).rejects.toMatchObject({
+      status: 409,
+      code: 'REAUTH_REQUIRED',
+      message: 'Reconnect your Spotify account.',
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
+    expect(fetchSpotifySavedPlaylists).toHaveBeenCalledTimes(2);
+  });
+
+  it('maps PROVIDER_FORBIDDEN when the reactive-refresh retry denies a playlist', async () => {
+    // 401 → refresh succeeds → retry hits per-playlist 403. Must map to
+    // PROVIDER_FORBIDDEN, not leak SpotifyPlaylistAccessDeniedError as a 5xx.
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifyPlaylistTracks)
+      .mockRejectedValueOnce(new SpotifyUnauthorizedError())
+      .mockRejectedValueOnce(new SpotifyPlaylistAccessDeniedError());
+
+    await expect(
+      fetchUserPlaylistTracks(db, env, 'user-1', 'spotify', 'followed-playlist'),
+    ).rejects.toMatchObject({
+      status: 403,
+      code: 'PROVIDER_FORBIDDEN',
+      message: 'Spotify only allows opening playlists you own or collaborate on.',
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
+    expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('SoundCloud saved playlists (shared connected-token path)', () => {
