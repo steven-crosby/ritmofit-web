@@ -85,4 +85,15 @@ describe('computeFreeTimeline', () => {
     ]);
     expect(totalDurationMs).toBe(90000);
   });
+
+  it('totals to the latest end even when an earlier track ends last (long opener, short closer)', () => {
+    // A long opener (ends 300000) followed by a later track that ends first (250000).
+    // The total is the opener's end, not the last track's — a `last.start +
+    // last.duration` shortcut would report 250000 and truncate the opener in Live Mode.
+    const { totalDurationMs } = computeFreeTimeline([
+      { id: 'a', startOffsetMs: 0, durationMs: 300000 }, // ends at 300000
+      { id: 'b', startOffsetMs: 200000, durationMs: 50000 }, // ends at 250000
+    ]);
+    expect(totalDurationMs).toBe(300000);
+  });
 });

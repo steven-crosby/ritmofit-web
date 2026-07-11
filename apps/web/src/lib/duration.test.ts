@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
 import {
+  anchorFieldState,
   canRunPayload,
+  formatClockFromMs,
   formatDurationInput,
+  parseClockToMs,
   parseDurationInput,
   runBlockedMessage,
   tracksMissingDuration,
@@ -29,6 +32,70 @@ describe('duration input', () => {
     expect(parseDurationInput('3:5')).toBeNull();
     expect(parseDurationInput('3:60')).toBeNull();
     expect(parseDurationInput('0:00')).toBeNull();
+  });
+});
+
+describe('anchor clock (cue/move/segment m:ss)', () => {
+  it('formats an in-track anchor as m:ss, with 0 → 0:00', () => {
+    // Unlike a duration field, the start of the track is a valid, non-empty anchor.
+    expect(formatClockFromMs(0)).toBe('0:00');
+    expect(formatClockFromMs(150000)).toBe('2:30');
+    expect(formatClockFromMs(3900000)).toBe('65:00');
+    expect(formatClockFromMs(-500)).toBe('0:00'); // clamps negatives
+    expect(formatClockFromMs(1499)).toBe('0:01'); // rounds to the nearest second
+  });
+
+  it('parses m:ss to ms and accepts 0:00 (the very start)', () => {
+    expect(parseClockToMs('0:00')).toBe(0);
+    expect(parseClockToMs('2:30')).toBe(150000);
+    expect(parseClockToMs(' 65:00 ')).toBe(3900000);
+  });
+
+  it('rejects malformed anchor timecodes', () => {
+    expect(parseClockToMs('150')).toBeNull();
+    expect(parseClockToMs('2:3')).toBeNull();
+    expect(parseClockToMs('2:60')).toBeNull();
+    expect(parseClockToMs('')).toBeNull();
+  });
+
+  it('round-trips a persisted anchor through format → parse', () => {
+    expect(parseClockToMs(formatClockFromMs(0))).toBe(0);
+    expect(parseClockToMs(formatClockFromMs(150000))).toBe(150000);
+  });
+});
+
+describe('anchorFieldState', () => {
+  it('accepts 0:00 as a submittable anchor at the start', () => {
+    expect(anchorFieldState('0:00', 240000)).toEqual({ ms: 0, invalid: false, message: null });
+  });
+
+  it('accepts an in-range anchor', () => {
+    expect(anchorFieldState('2:30', 240000)).toEqual({ ms: 150000, invalid: false, message: null });
+  });
+
+  it('flags a malformed value as invalid with a hint (non-empty only)', () => {
+    expect(anchorFieldState('150', 240000)).toEqual({
+      ms: null,
+      invalid: true,
+      message: 'Use m:ss (e.g. 1:30).',
+    });
+    // An empty/untouched field is non-submittable but shows no message.
+    expect(anchorFieldState('', 240000)).toEqual({ ms: null, invalid: true, message: null });
+  });
+
+  it('flags an anchor past the track/class length (closing the generic-422 edge)', () => {
+    expect(anchorFieldState('5:00', 240000)).toEqual({
+      ms: null,
+      invalid: true,
+      message: 'Past the end (max 4:00).',
+    });
+    // Exactly at the end is allowed.
+    expect(anchorFieldState('4:00', 240000).ms).toBe(240000);
+  });
+
+  it('skips the bound when no max is known', () => {
+    expect(anchorFieldState('9:30', null).ms).toBe(570000);
+    expect(anchorFieldState('99:00', null).invalid).toBe(false);
   });
 });
 
