@@ -24,6 +24,14 @@ function spotifyConnection(scope: string): MusicConnectionView {
   };
 }
 
+const baseTrack = {
+  id: '00000000-0000-4000-8000-000000000102',
+  title: 'Legacy Grant',
+  artist: 'The Scopes',
+  durationMs: 180_000,
+  albumArtUrl: null,
+};
+
 const spotifyEntry: RunPayloadTrackEntry = {
   classTrackId: '00000000-0000-4000-8000-000000000101',
   position: 0,
@@ -35,13 +43,7 @@ const spotifyEntry: RunPayloadTrackEntry = {
   clipStartMs: 0,
   beatAnchorMs: 0,
   notes: null,
-  track: {
-    id: '00000000-0000-4000-8000-000000000102',
-    title: 'Legacy Grant',
-    artist: 'The Scopes',
-    durationMs: 180_000,
-    albumArtUrl: null,
-  },
+  track: baseTrack,
   providerRefs: [
     {
       provider: 'spotify',
@@ -51,6 +53,29 @@ const spotifyEntry: RunPayloadTrackEntry = {
   ],
   cues: [],
   moves: [],
+};
+
+/** Manual-add / no-link track — selectProvider returns no_provider_ref. */
+const noRefEntry: RunPayloadTrackEntry = {
+  ...spotifyEntry,
+  track: { ...baseTrack, title: 'Manual Climb', artist: 'Studio Notes' },
+  providerRefs: [],
+};
+
+/** Spotify-only ref with no other playable adapter — provider_not_playable when
+ * Spotify is the only registered adapter… wait: if Spotify is registered and
+ * connected, it's playable. For provider_not_playable we need a ref whose
+ * provider is NOT in PLAYBACK_ADAPTER_PROVIDERS. */
+const unplayableProviderEntry: RunPayloadTrackEntry = {
+  ...spotifyEntry,
+  track: { ...baseTrack, title: 'Apple Only', artist: 'Catalog' },
+  providerRefs: [
+    {
+      provider: 'apple_music',
+      providerTrackId: 'apple-id',
+      providerUri: null,
+    },
+  ],
 };
 
 afterEach(() => {
@@ -73,5 +98,90 @@ describe('TrackPreview Spotify reconnect', () => {
 
     await waitFor(() => expect(api.connectProvider).toHaveBeenCalledWith('spotify'));
     expect(await screen.findByRole('button', { name: 'Preview on Spotify' })).toBeTruthy();
+  });
+});
+
+describe('TrackPreview no_provider_ref resolve', () => {
+  it('offers a Find CTA with no-link lead-in (not the provider_not_playable copy)', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      spotifyConnection('user-library-read streaming'),
+    ]);
+
+    render(<TrackPreview entry={noRefEntry} />);
+
+    expect(await screen.findByText(/No provider link yet/i)).toBeTruthy();
+    expect(screen.queryByText(/Not on a provider Ritmo can play yet/i)).toBeNull();
+    expect(screen.getByRole('button', { name: /Find on Spotify/i })).toBeTruthy();
+  });
+
+  it('flips to playable preview controls after a strong resolve match', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      spotifyConnection('user-library-read streaming'),
+    ]);
+    vi.mocked(api.resolveTrackProvider).mockResolvedValue({
+      resolved: true,
+      provider: 'spotify',
+      track: {
+        ...baseTrack,
+        title: 'Manual Climb',
+        artist: 'Studio Notes',
+        createdAt: 1,
+        updatedAt: 1,
+        displayBpm: null,
+        providerIds: [
+          {
+            id: '00000000-0000-4000-8000-000000000201',
+            trackId: baseTrack.id,
+            provider: 'spotify',
+            providerTrackId: 'resolved-spotify-id',
+            providerUri: 'spotify:track:resolved',
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
+      },
+    });
+
+    render(<TrackPreview entry={noRefEntry} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Find on Spotify/i }));
+
+    await waitFor(() =>
+      expect(api.resolveTrackProvider).toHaveBeenCalledWith(noRefEntry.track.id, ['spotify']),
+    );
+    expect(await screen.findByRole('button', { name: 'Preview on Spotify' })).toBeTruthy();
+    // Resolve CTA gone once the overlay makes the track playable.
+    expect(screen.queryByRole('button', { name: /Find on Spotify/i })).toBeNull();
+    expect(screen.queryByText(/No provider link yet/i)).toBeNull();
+  });
+
+  it('surfaces a resolve error without dead-ending the retry', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      spotifyConnection('user-library-read streaming'),
+    ]);
+    vi.mocked(api.resolveTrackProvider).mockRejectedValue(new Error('catalog unreachable'));
+
+    render(<TrackPreview entry={noRefEntry} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Find on Spotify/i }));
+
+    expect((await screen.findByRole('alert')).textContent).toContain('catalog unreachable');
+    // CTA remains so the instructor can try again.
+    expect(screen.getByRole('button', { name: /Find on Spotify/i })).toBeTruthy();
+    expect(screen.getByText(/No provider link yet/i)).toBeTruthy();
+  });
+});
+
+describe('TrackPreview provider_not_playable resolve (unchanged lead-in)', () => {
+  it('keeps the not-playable lead-in and Find CTA for non-adapter refs', async () => {
+    // No live Spotify connection needed — apple_music is not in the mocked
+    // PLAYBACK_ADAPTER_PROVIDERS, so selection is provider_not_playable.
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    render(<TrackPreview entry={unplayableProviderEntry} />);
+
+    expect(await screen.findByText(/Not on a provider Ritmo can play yet/i)).toBeTruthy();
+    expect(screen.queryByText(/No provider link yet/i)).toBeNull();
+    expect(screen.getByRole('button', { name: /Find on Spotify/i })).toBeTruthy();
   });
 });
