@@ -7,6 +7,7 @@ import { rateLimit } from '../lib/rate-limit.js';
 import { createDb } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { getMusicProvider } from '../lib/music/registry.js';
+import { partitionSettledImports } from '../lib/music/import-playlist.js';
 import { importTrackFromCandidate } from '../lib/track-import.js';
 import { makeMatchKey } from '../lib/same-song.js';
 import { classTracks } from '../db/schema.js';
@@ -89,13 +90,18 @@ playlistImportRoutes.post('/classes/:id/import-playlist', importLimiter, async (
   }
 
   // Resolve with bounded concurrency rather than one sequential round-trip per track.
+  // Best-effort per track: a single racing failure (e.g. a 409 from a concurrent
+  // import of the same provider ref) must not abort the whole class import. Settle,
+  // then keep the tracks that landed — mirrors the saved-playlist path
+  // (`importUserPlaylist`), which counts a failed track as skipped, not fatal.
   const CONCURRENCY = 5;
   const resolved: Awaited<ReturnType<typeof importTrackFromCandidate>>[] = [];
   for (let i = 0; i < uniqueCandidates.length; i += CONCURRENCY) {
     const batch = uniqueCandidates.slice(i, i + CONCURRENCY);
-    resolved.push(
-      ...(await Promise.all(batch.map((cand) => importTrackFromCandidate(db, me, cand)))),
+    const { fulfilled } = partitionSettledImports(
+      await Promise.allSettled(batch.map((cand) => importTrackFromCandidate(db, me, cand))),
     );
+    resolved.push(...fulfilled);
   }
 
   const now = Date.now();

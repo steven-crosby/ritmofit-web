@@ -10,6 +10,9 @@
  * and URL classification by `packages/music/src/playlist-url.test.ts`; here we
  * lock wiring + the authz/validation/limiter error contract, including that a
  * URL for each shipped provider dispatches through the registry to an adapter.
+ * The best-effort tally (a single racing per-track failure must not abort the
+ * whole import) is likewise DB-free and locked in `import-playlist.test.ts`
+ * (`partitionSettledImports`), since the happy path can't be reached here.
  */
 import { describe, expect, it } from 'vitest';
 import { authed, signUpUser, verifyUserEmail, call, type TestUser } from './helpers.js';
