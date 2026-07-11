@@ -56,8 +56,13 @@ Pilates, and HIIT.
   disjoint-lane correctness slices — Builder preview resolve for `no_provider_ref` manual-add tracks
   (#269), by-id cue nested-authz regression lock completing the #254 triad (#270), and post-refresh
   playlist Forbidden/AccessDenied → stable `REAUTH_REQUIRED` / `PROVIDER_FORBIDDEN` mapping (#271) —
-  **no schema/migration** (supersedes `6b8e1a48`). For per-deploy detail and the live Worker version,
-  see [`HISTORY.md`](./HISTORY.md), newest first.
+  **no schema/migration** (supersedes `6b8e1a48`). The **ninth parallel round (2026-07-11,
+  all-feature, D21 loop) is merged and awaiting its deploy batch** (live Worker remains `b883cae9`):
+  dragged track starts snap to the preceding track's beat grid in free mode (#274), whole-class copy
+  carries `timelineMode` + authored free-mode offsets (#273), and playlist import-by-URL reaches
+  parity — SoundCloud and Apple Music catalog playlists join Spotify, with
+  `providerCapabilities.playlistImport` now true for all three (#275) — **no schema/migration**. For
+  per-deploy detail and the live Worker version, see [`HISTORY.md`](./HISTORY.md), newest first.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.

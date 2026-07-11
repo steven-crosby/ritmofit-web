@@ -342,8 +342,12 @@ a recoverable `role="alert"` on a runtime failure (retry / dismiss — no handof
 like Live Mode; stops at the clip-window end. Real-provider audio is **live-verified on prod (2026-07-06)**
 for all three shipped adapters: SoundCloud Live Mode playback (Worker `5072dd3b`), Apple Music Builder
 preview with audible subscriber audio (Worker `cbea9f69`), and Spotify Builder preview + Live Mode with
-audible Premium audio (Worker `b99ac98d`). Not yet wired: an inline reconnect action from the preview
-error (the connect flow lives in the top-level Connections dialog).
+audible Premium audio (Worker `b99ac98d`). Inline recovery status (corrected 2026-07-11, round-9
+audit): Spotify scope-reauth and cross-provider resolve are already inline in the preview; the
+remaining gap is the `no_connected_provider` verdict and the runtime-error alert, which still route
+through the top-level Connections dialog. Closing it is non-trivial — Apple Music needs the MusicKit
+popup flow (the existing inline helper would 501 for it), the OAuth redirect loses editor state, and
+multi-provider refs make the button routing ambiguous — a candidate slice for its own future round.
 
 **Apple Music shared-transport follow-ups (updated 2026-07-05):** MusicKit is a page-level singleton, so
 the adapter guards teardown with a per-instance ownership token (only the adapter that started the
