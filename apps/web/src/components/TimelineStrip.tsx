@@ -8,8 +8,10 @@
  *
  * With edit access it also shows a faint **beat/bar grid** per track (from the
  * resolved BPM + downbeat) and lets markers be **dragged to re-time** their cue/move,
- * snapping to the grid when enabled. Without an `onMoveMarker` handler it stays
- * read-only (it reflects edits made in the inspector after a reload).
+ * snapping to the grid when enabled. In free mode the track blocks drag the same
+ * way, snapping their start to the preceding track's grid (see `trackStartGrid`).
+ * Without an `onMoveMarker` handler it stays read-only (it reflects edits made in
+ * the inspector after a reload).
  */
 import {
   useEffect,
@@ -19,7 +21,13 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from 'react';
-import { beatGridLayout, msPerBeat, snapToBeat, type RunPayload } from '@ritmofit/shared';
+import {
+  DEFAULT_BEATS_PER_BAR,
+  beatGridLayout,
+  msPerBeat,
+  snapToBeat,
+  type RunPayload,
+} from '@ritmofit/shared';
 import { formatDuration } from '../lib/class-summary.js';
 
 export type TimelineBlock = {
@@ -190,6 +198,8 @@ export function TimelineStrip({
   const total = payload.class.totalDurationMs;
   const editable = !!onMoveMarker;
   const gridAvailable = blocks.some((b) => b.bpm != null);
+  // Snapping applies to marker drags and (free mode) track-start drags alike.
+  const snapApplies = (editable || !!onMoveTrack) && gridAvailable;
   const [snap, setSnap] = useState(true);
 
   if (blocks.length === 0) return null;
@@ -205,7 +215,7 @@ export function TimelineStrip({
     // shape surface (same time axis). The arc is the labeled hero; this is its
     // base. The Snap control stays here, right-aligned, only when it applies.
     <figure className="flex flex-col gap-1">
-      {editable && gridAvailable && (
+      {snapApplies && (
         <figcaption className="flex items-center justify-end font-ui text-xs text-text-tertiary">
           <label className="flex items-center gap-1.5 text-text-secondary">
             <input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)} />
@@ -258,7 +268,9 @@ export function TimelineStrip({
               <TrackBlockHandle
                 key={b.position}
                 block={b}
+                blocks={blocks}
                 totalMs={total}
+                snap={snap}
                 selected={selected}
                 getRect={() => stripRef.current?.getBoundingClientRect()}
                 onSelect={() => onSelectTrack?.(b.classTrackId)}
@@ -338,25 +350,77 @@ export function TimelineStrip({
   );
 }
 
-/** Snap a dragged track start to the nearest whole second (free placement is coarse). */
-const snapStart = (ms: number) => Math.max(0, Math.round(ms / 1000) * 1000);
+/**
+ * The class-axis beat grid a dragged track start snaps to: the grid of the nearest
+ * preceding *other* block with a known tempo, extended through any gap after it —
+ * so the next song starts on a beat of the previous one. Null when no such block
+ * precedes the candidate position; callers fall back to whole seconds.
+ */
+export type TrackStartGrid = {
+  /** Class-timeline ms of the reference grid's downbeat (beat index 0). */
+  originMs: number;
+  /** Beat length of the reference grid (ms). */
+  beatLenMs: number;
+};
+
+export function trackStartGrid(
+  candidateMs: number,
+  draggedTrackId: string,
+  blocks: TimelineBlock[],
+): TrackStartGrid | null {
+  let ref: TimelineBlock | null = null;
+  for (const b of blocks) {
+    if (b.classTrackId === draggedTrackId || b.bpm == null || b.startMs > candidateMs) continue;
+    if (!ref || b.startMs > ref.startMs) ref = b;
+  }
+  const beatLenMs = msPerBeat(ref?.bpm);
+  if (ref == null || beatLenMs == null) return null;
+  // The block's downbeat sits beatAnchorMs into the *track*, but the block window
+  // begins clipStartMs into the track — shift both into class time.
+  return { originMs: ref.startMs + ref.beatAnchorMs - ref.clipStartMs, beatLenMs };
+}
+
+/** A dragged track start snapped to the reference beat grid (`trackStartGrid`), or
+ *  to the nearest whole second when snapping is off or no reference grid exists. */
+export function snapTrackStart(
+  candidateMs: number,
+  draggedTrackId: string,
+  blocks: TimelineBlock[],
+  snap: boolean,
+): number {
+  if (snap) {
+    const grid = trackStartGrid(candidateMs, draggedTrackId, blocks);
+    if (grid) {
+      const n = Math.round((candidateMs - grid.originMs) / grid.beatLenMs);
+      return Math.max(0, Math.round(grid.originMs + n * grid.beatLenMs));
+    }
+  }
+  return Math.max(0, Math.round(candidateMs / 1000) * 1000);
+}
 
 /**
  * A draggable track block (free mode): drag horizontally to set the track's
  * class-timeline `startOffsetMs`; a click with no movement selects the track. The
  * draft re-syncs to the server value after a reload, and reverts if the commit
- * fails (e.g. the server rejects an overlap). Arrow keys nudge by 1s (5s with Shift).
+ * fails (e.g. the server rejects an overlap). The start snaps to the preceding
+ * track's beat grid when snapping is on (`snapTrackStart`), else to whole seconds.
+ * Arrow keys step a beat on that grid (a bar with Shift); without a grid they
+ * nudge by 1s (5s with Shift).
  */
 function TrackBlockHandle({
   block,
+  blocks,
   totalMs,
+  snap,
   selected,
   getRect,
   onSelect,
   onCommit,
 }: {
   block: TimelineBlock;
+  blocks: TimelineBlock[];
   totalMs: number;
+  snap: boolean;
   selected: boolean;
   getRect: () => DOMRect | undefined;
   onSelect: () => void;
@@ -381,7 +445,7 @@ function TrackBlockHandle({
     const rect = getRect();
     if (!rect) return block.startMs;
     const abs = clamp((clientX - rect.left) / rect.width, 0, 1) * totalMs;
-    return snapStart(abs);
+    return snapTrackStart(abs, block.classTrackId, blocks, snap);
   };
 
   const commit = async (next: number) => {
@@ -416,22 +480,25 @@ function TrackBlockHandle({
     void commit(final);
   };
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
-    const step = e.shiftKey ? 5000 : 1000;
     const set = (raw: number) => {
       e.preventDefault();
-      setDraftStart(Math.max(0, raw));
+      setDraftStart(Math.max(0, Math.round(raw)));
     };
-    switch (e.key) {
-      case 'ArrowRight':
-        return set(draftStart + step);
-      case 'ArrowLeft':
-        return set(draftStart - step);
-      case 'Enter':
-        e.preventDefault();
-        return void commit(draftStart);
-      default:
-        return undefined;
+    const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (dir !== 0) {
+      const grid = snap ? trackStartGrid(draftStart, block.classTrackId, blocks) : null;
+      if (grid) {
+        const beats = e.shiftKey ? DEFAULT_BEATS_PER_BAR : 1;
+        const n = Math.round((draftStart - grid.originMs) / grid.beatLenMs) + dir * beats;
+        return set(grid.originMs + n * grid.beatLenMs);
+      }
+      return set(draftStart + dir * (e.shiftKey ? 5000 : 1000));
     }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      return void commit(draftStart);
+    }
+    return undefined;
   };
 
   return (

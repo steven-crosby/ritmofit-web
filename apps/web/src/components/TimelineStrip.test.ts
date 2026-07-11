@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import type { Intensity, RunPayload } from '@ritmofit/shared';
-import { computeTimeline } from './TimelineStrip.js';
+import {
+  computeTimeline,
+  snapTrackStart,
+  trackStartGrid,
+  type TimelineBlock,
+} from './TimelineStrip.js';
 
 type Entry = RunPayload['tracks'][number];
 type Cue = Entry['cues'][number];
@@ -155,5 +160,85 @@ describe('computeTimeline — markers', () => {
     expect(markers.map((m) => m.id)).toEqual(['cue-A', 'cue-B']);
     // Same anchor/position, but distinct ids — the disambiguator.
     expect(markers[0]!.anchorMs).toBe(markers[1]!.anchorMs);
+  });
+});
+
+/** Minimal timeline block — only the fields the start-snap math reads matter. */
+function blk(
+  over: Partial<TimelineBlock> & Pick<TimelineBlock, 'classTrackId' | 'startMs'>,
+): TimelineBlock {
+  return {
+    leftPct: 0,
+    widthPct: 0,
+    position: 0,
+    durMs: 10_000,
+    clipStartMs: 0,
+    beatAnchorMs: 0,
+    bpm: null,
+    ...over,
+  };
+}
+
+describe('trackStartGrid — the reference grid for a dragged track start', () => {
+  it('uses the nearest preceding other block with a tempo, ignoring later blocks', () => {
+    const blocks = [
+      blk({ classTrackId: 'a', startMs: 0, bpm: 120 }),
+      blk({ classTrackId: 'b', startMs: 20_000, bpm: 100 }),
+      blk({ classTrackId: 'c', startMs: 40_000, bpm: 90 }),
+    ];
+    // Candidate between b and c → b's grid (600 ms beats), not a's or c's.
+    expect(trackStartGrid(22_900, 'x', blocks)).toEqual({ originMs: 20_000, beatLenMs: 600 });
+  });
+
+  it('shifts the grid origin by the downbeat and the clip window (beatAnchor − clipStart)', () => {
+    const blocks = [
+      blk({ classTrackId: 'a', startMs: 1000, bpm: 120, beatAnchorMs: 250, clipStartMs: 400 }),
+    ];
+    expect(trackStartGrid(3000, 'x', blocks)).toEqual({ originMs: 850, beatLenMs: 500 });
+  });
+
+  it('never uses the dragged block itself as its own reference', () => {
+    const blocks = [blk({ classTrackId: 'a', startMs: 0, bpm: 120 })];
+    expect(trackStartGrid(5000, 'a', blocks)).toBeNull();
+  });
+
+  it('is null when no preceding block has a tempo', () => {
+    const noBpm = [blk({ classTrackId: 'a', startMs: 0 })];
+    expect(trackStartGrid(5000, 'x', noBpm)).toBeNull();
+    // A tempo'd block that starts after the candidate does not count.
+    const later = [blk({ classTrackId: 'a', startMs: 20_000, bpm: 120 })];
+    expect(trackStartGrid(500, 'x', later)).toBeNull();
+  });
+});
+
+describe('snapTrackStart — dragged track starts snap to the preceding grid', () => {
+  const blocks = [blk({ classTrackId: 'a', startMs: 0, bpm: 120, durMs: 10_000 })];
+
+  it('snaps to the nearest beat of the preceding grid, extended past its end', () => {
+    // 120 bpm → 500 ms beats; 10 740 sits in the gap after a (ends 10 000) → beat 21.
+    expect(snapTrackStart(10_740, 'x', blocks, true)).toBe(10_500);
+  });
+
+  it('honors the grid phase (downbeat + clip window)', () => {
+    const phased = [
+      blk({ classTrackId: 'a', startMs: 1000, bpm: 120, beatAnchorMs: 250, clipStartMs: 400 }),
+    ];
+    // Origin 850, beats of 500 → 3020 snaps to 850 + 4×500.
+    expect(snapTrackStart(3020, 'x', phased, true)).toBe(2850);
+  });
+
+  it('falls back to whole seconds when snap is off', () => {
+    expect(snapTrackStart(10_740, 'x', blocks, false)).toBe(11_000);
+  });
+
+  it('falls back to whole seconds when no reference grid exists', () => {
+    expect(snapTrackStart(10_740, 'a', blocks, true)).toBe(11_000); // own grid excluded
+    expect(snapTrackStart(3720, 'x', [blk({ classTrackId: 'a', startMs: 0 })], true)).toBe(4000);
+  });
+
+  it('clamps a snapped start below zero to zero', () => {
+    // Origin −300 (clip starts after the downbeat), 1000 ms beats → beat 0 sits at −300.
+    const neg = [blk({ classTrackId: 'a', startMs: 0, bpm: 60, clipStartMs: 300 })];
+    expect(snapTrackStart(0, 'x', neg, true)).toBe(0);
   });
 });
