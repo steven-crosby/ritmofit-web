@@ -596,6 +596,42 @@ describe('LiveMode section indicator', () => {
   });
 });
 
+describe('LiveMode wake-lock status chip', () => {
+  function setWakeLock(value: unknown) {
+    Object.defineProperty(navigator, 'wakeLock', { value, configurable: true });
+  }
+  /** A wake lock whose request resolves a sentinel — enough for the held state. */
+  function fakeWakeLock() {
+    const sentinel = { release: vi.fn(async () => {}), addEventListener: () => {} };
+    return { request: vi.fn(async () => sentinel) };
+  }
+  afterEach(() => setWakeLock(undefined));
+
+  it('hides the chip at rest — the wake lock is only promised while running', async () => {
+    setWakeLock(fakeWakeLock());
+    // renderLive enters prompter-only (not yet playing), so nothing is held.
+    await renderLive();
+    expect(screen.queryByText('Screen awake')).toBeNull();
+    expect(screen.queryByText('Screen may dim')).toBeNull();
+  });
+
+  it('states the screen is awake while playing when the lock is held', async () => {
+    setWakeLock(fakeWakeLock());
+    await renderLive();
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    expect(await screen.findByText('Screen awake')).toBeTruthy();
+  });
+
+  it('warns the screen may dim while playing when wake lock is unavailable', async () => {
+    // No wake-lock API (older Safari) or a denied request both land here — the
+    // instructor-facing consequence is the same, so the chip states it plainly.
+    setWakeLock(undefined);
+    await renderLive();
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    expect(await screen.findByText('Screen may dim')).toBeTruthy();
+  });
+});
+
 describe('lastAtOrBefore', () => {
   const ev = (atMs: number): TimelineEvent => ({
     atMs,

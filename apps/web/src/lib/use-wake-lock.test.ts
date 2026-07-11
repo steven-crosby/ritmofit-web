@@ -80,4 +80,59 @@ describe('useWakeLock', () => {
     setVisibility('visible');
     await waitFor(() => expect(fake.request).toHaveBeenCalledTimes(2));
   });
+
+  describe('status reporting', () => {
+    it('is idle while inactive', () => {
+      const fake = fakeWakeLock();
+      setWakeLock(fake.wakeLock);
+      const { result } = renderHook(() => useWakeLock(false));
+      expect(result.current).toBe('idle');
+    });
+
+    it('reports awake once the lock is held', async () => {
+      const fake = fakeWakeLock();
+      setWakeLock(fake.wakeLock);
+      const { result } = renderHook(() => useWakeLock(true));
+      await waitFor(() => expect(result.current).toBe('awake'));
+    });
+
+    it('reports unavailable when the API is unsupported', () => {
+      setWakeLock(undefined);
+      const { result } = renderHook(() => useWakeLock(true));
+      expect(result.current).toBe('unavailable');
+    });
+
+    it('reports unavailable when the request is denied', async () => {
+      const request = vi.fn(async () => {
+        throw new Error('denied');
+      });
+      setWakeLock({ request });
+      const { result } = renderHook(() => useWakeLock(true));
+      await waitFor(() => expect(result.current).toBe('unavailable'));
+    });
+
+    it('returns to idle when it flips from active to inactive', async () => {
+      const fake = fakeWakeLock();
+      setWakeLock(fake.wakeLock);
+      const { result, rerender } = renderHook(({ active }) => useWakeLock(active), {
+        initialProps: { active: true },
+      });
+      await waitFor(() => expect(result.current).toBe('awake'));
+      rerender({ active: false });
+      await waitFor(() => expect(result.current).toBe('idle'));
+    });
+
+    it('stays awake across a hide/return auto-release (no flicker to caution)', async () => {
+      const fake = fakeWakeLock();
+      setWakeLock(fake.wakeLock);
+      const { result } = renderHook(() => useWakeLock(true));
+      await waitFor(() => expect(result.current).toBe('awake'));
+      // Platform auto-releases behind a hidden tab; the capability still holds.
+      fake.emitRelease();
+      setVisibility('hidden');
+      expect(result.current).toBe('awake');
+      setVisibility('visible');
+      await waitFor(() => expect(result.current).toBe('awake'));
+    });
+  });
 });

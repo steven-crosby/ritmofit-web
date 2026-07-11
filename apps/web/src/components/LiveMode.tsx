@@ -37,7 +37,7 @@ import { preflightPayload } from '../lib/playback/coordinator.js';
 import { RuntimePlaybackCoordinator, type CoordinatorStatus } from '../lib/playback/runtime.js';
 import { PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
-import { useWakeLock } from '../lib/use-wake-lock.js';
+import { useWakeLock, type WakeLockStatus } from '../lib/use-wake-lock.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { LivePreflight } from './LivePreflight.js';
@@ -328,8 +328,9 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     };
   }, [playing, payload.class.totalDurationMs]);
 
-  // Keep the studio screen awake while the class is running.
-  useWakeLock(playing);
+  // Keep the studio screen awake while the class is running, and surface whether
+  // it's actually holding so the instructor isn't guessing (the transport chip).
+  const wakeStatus = useWakeLock(playing);
 
   const seek = (ms: number) => {
     const clamped = Math.max(0, Math.min(ms, payload.class.totalDurationMs));
@@ -639,6 +640,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
         elapsedMs={elapsedMs}
         onSeek={seek}
         playback={coordinatorRef.current ? playback : null}
+        wakeStatus={wakeStatus}
         primaryButtonRef={primaryButtonRef}
       />
     </div>
@@ -693,6 +695,31 @@ function PlaybackRail({ status }: { status: CoordinatorStatus | null }) {
       <span aria-hidden>{isError ? '⚠' : isWaiting ? '⏳' : '♪'}</span>
       <span className="sr-only">Playback: </span>
       {text}
+    </p>
+  );
+}
+
+/**
+ * Whether the screen is being kept awake — a glyph + label chip (never color
+ * alone, 05/07) beside the player rail, so the instructor knows the studio
+ * display won't dim mid-class. A polite live region announces the state, and a
+ * transition to caution, once per change. Hidden at rest (`idle`): the wake lock
+ * is only promised while the class runs, so there's nothing to state when
+ * paused. Static — no motion to gate under reduced-motion.
+ */
+function WakeRail({ status }: { status: WakeLockStatus }) {
+  if (status === 'idle') return null;
+  const awake = status === 'awake';
+  return (
+    <p
+      role="status"
+      className={`flex shrink-0 items-center gap-1.5 font-data text-xs ${
+        awake ? 'text-text-tertiary' : 'text-state-caution'
+      }`}
+    >
+      <span aria-hidden>{awake ? '◉' : '⊘'}</span>
+      <span className="sr-only">Display: </span>
+      {awake ? 'Screen awake' : 'Screen may dim'}
     </p>
   );
 }
@@ -1124,6 +1151,7 @@ function Transport({
   elapsedMs,
   onSeek,
   playback,
+  wakeStatus,
   primaryButtonRef,
 }: {
   playing: boolean;
@@ -1134,6 +1162,8 @@ function Transport({
   onSeek: (ms: number) => void;
   /** Coordinator status while music runs; null in prompter-only mode. */
   playback: CoordinatorStatus | null;
+  /** Whether the screen wake lock is holding — surfaced beside the player rail. */
+  wakeStatus: WakeLockStatus;
   /** Focused when the class goes live so start never strands focus on <body>. */
   primaryButtonRef: RefObject<HTMLButtonElement>;
 }) {
@@ -1153,6 +1183,7 @@ function Transport({
         Reset
       </button>
       <PlaybackRail status={playback} />
+      <WakeRail status={wakeStatus} />
       <LiveTimeline payload={payload} elapsedMs={elapsedMs} onSeek={onSeek} />
     </div>
   );
