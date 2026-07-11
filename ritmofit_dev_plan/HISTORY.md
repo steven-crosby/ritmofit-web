@@ -10,6 +10,37 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-11 (all-harden round — D21 creator loop — eighth parallel lane-agent round) —
+> deployed (Worker `b883cae9-7067-49ed-9d0e-9f6d96eba9d3`).** Main HEAD `a0be14b` (merge of PR #271).
+> Code-only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior
+> live `6b8e1a48-6881-491f-8c3d-292b518919d9`. **All-harden** parallel round (owner-chosen) after the
+> 2026-07-10 all-feature round: three disjoint-lane correctness/coverage slices, merged via the
+> standard train (zero cross-lane conflicts; no OpenAPI coordinate this round — neither BE lane
+> regenerated the spec). **PR #269** (FE) — *offer cross-provider resolve for `no_provider_ref`
+> previews*: Builder `TrackPreview` no longer dead-ends manual-add / zero-ref tracks with text only;
+> `UnplayableVerdict` reuses `ResolveProviderAction` for both `no_provider_ref` and
+> `provider_not_playable`, differentiated by a `leadIn` prop ("No provider link yet" vs "Not on a
+> provider Ritmo can play yet"); Spotify reauth path unchanged; FE-only; +4 `TrackPreview` tests
+> (idle CTA, resolve success → playable overlay, error+retry, preserved not-playable copy). **PR
+> #270** (BE, class-core) — *pin cross-user authz on by-id cue routes*: extends
+> `nested-resource-access.integration.test.ts` to complete the #254 triad (sections · placed-moves ·
+> **cues**): on a real cue under another user's class, stranger PATCH/DELETE → `404 NOT_FOUND`,
+> view-share → `403 FORBIDDEN`, owner-200 positive control so the 404 is authz-hiding; test-only
+> (no `authz.ts` / route / DTO change). **PR #271** (BE, provider/music) — *map post-refresh playlist
+> Forbidden/AccessDenied to stable codes*: `readWithConnectedPlaylistToken` shared a first-path mapper
+> for Forbidden → `409 REAUTH_REQUIRED` and AccessDenied → `403 PROVIDER_FORBIDDEN` but the
+> reactive-refresh retry only mapped a second Unauthorized; post-refresh `SpotifyForbiddenError` /
+> `SpotifyPlaylistAccessDeniedError` leaked as raw 5xx — fixed with shared
+> `mapConnectedPlaylistReadError` on both catch sites + unit locks for 401→refresh→Forbidden and
+> 401→refresh→AccessDenied; double-401 and first-path cases stay green. Pre-deploy: each PR merged
+> green through the combined CI check; web build before deploy (`index-DnnH73Eb.js`). Post-deploy
+> smoke on live `https://ritmofit.studio`: SPA `/` → `200` (served hash `index-DnnH73Eb.js` matches
+> the build), `/api/v1/health` → `200`, `/api/v1/classes` · `/api/v1/explore` · `/api/v1/teams` →
+> `401`, `/api/v1/providers/spotify/playlists` · `POST …/playlists/:id/import` → `401` (mounted, not
+> `404`), security headers present (HSTS · CSP · Permissions-Policy · Referrer-Policy ·
+> X-Content-Type-Options · X-Frame-Options). **Still open (unchanged):** owner live-verify of Spotify
+> `/items` browse rendering real tracks + counts (filed after #260/#262).
+
 > **Session 2026-07-10 (all-feature round — D21 creator loop — seventh parallel lane-agent round) —
 > deployed (Worker `6b8e1a48-6881-491f-8c3d-292b518919d9`).** Main HEAD `4cc03c1` (merge of PR #267).
 > Code-only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior
