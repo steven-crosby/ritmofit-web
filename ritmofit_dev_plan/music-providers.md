@@ -49,6 +49,12 @@ Both platforms prohibit caching track audio and most derived data.
 
 We never store the audio or platform-derived analysis.
 
+Terms note (last re-verified 2026-07-11, playlist import-by-URL round): SoundCloud's current API
+terms additionally scope *metadata* caching to session-scoped use. Our reference-only storage
+(provider IDs + permalink backlinks, no cached metadata blobs) matches the posture of every shipped
+import surface, but each new SoundCloud-consuming surface rides the same line — re-verify the terms
+whenever one is added.
+
 ## Permanent non-goals (consequences of the above)
 
 These follow directly from the three constraints and are **locked as decision D13**

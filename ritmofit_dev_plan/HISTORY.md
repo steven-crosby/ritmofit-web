@@ -10,6 +10,36 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-11 (all-feature round — D21 creator loop — ninth parallel lane-agent round) —
+> merged, not yet deployed** (live Worker remains `b883cae9-7067-49ed-9d0e-9f6d96eba9d3`). Main HEAD
+> `76befee` (merge of PR #275). Code-only — **no schema / migration**. **All-feature** parallel round
+> (owner-chosen) after the same-day all-harden round: three disjoint-lane feature slices merged via
+> the standard train (sequential `update-branch` → combined CI → merge; zero cross-lane conflicts;
+> one owner-authorized carve-out: lane 3 updated `TrackSearch.test.tsx` so the capability-gating
+> tests derive from `providerCapabilities` instead of hard-coding the old matrix). **PR #274** (FE,
+> web) — *snap dragged track starts to the preceding track's beat grid*: in free timeline mode,
+> `TimelineStrip` gains exported pure helpers `trackStartGrid` / `snapTrackStart` (nearest preceding
+> block with a known BPM; grid origin `startMs + beatAnchorMs − clipStartMs`, extended through the
+> gap); pointer drags snap live under the existing "Snap to beat" toggle, ←/→ step one beat (Shift =
+> one bar), whole-second fallback when snap is off or no grid precedes; FE-only, +14 tests. **PR
+> #273** (BE, class-core) — *class copy carries free-timeline layout*: `POST /classes/:id/copy` now
+> carries `timelineMode` on the class insert and, for free-mode sources, every authored
+> `startOffsetMs` (owned duplicate and cross-user save-a-copy alike); sequential copies byte-for-byte
+> unchanged; the trailing `resequence` needed no change (free mode only re-ranks positions); +3
+> integration tests incl. the gap surviving into the copy's run-payload `totalDurationMs`. **PR
+> #275** (BE, provider/music) — *playlist import-by-URL parity*: SoundCloud (app-token `/resolve`
+> with manual-redirect handling → paged `/playlists/{urn}/tracks`; URN string-id tolerance added) and
+> Apple Music catalog (developer token, storefront from the URL, cursor paging; `pl.u-…` accepted
+> with a 404 fallback; library `p.…` links → clear 400 pointing at saved-playlist browsing) join
+> Spotify behind `POST /classes/:id/import-playlist`; shared URL parser extracted to
+> `packages/music/src/playlist-url.ts`; `providerCapabilities.playlistImport` flipped true for all
+> three providers, lighting up the already-gated UI with zero component edits; OpenAPI summary
+> updated (description-only regen); +40 unit / +7 integration tests. Round-close cleanup (this PR):
+> stale-doc corrections (inline-reconnect note in `provider-playback-implementation.md`;
+> editing-granularity follow-ups marked shipped), stale `TrackSearch.tsx` "Spotify-only" comment
+> removed, unreachable import-playlist `501` dropped from the hand-maintained OpenAPI manifest, and
+> a SoundCloud session-scoped metadata-caching terms note added to `music-providers.md`.
+
 > **Session 2026-07-11 (all-harden round — D21 creator loop — eighth parallel lane-agent round) —
 > deployed (Worker `b883cae9-7067-49ed-9d0e-9f6d96eba9d3`).** Main HEAD `a0be14b` (merge of PR #271).
 > Code-only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior

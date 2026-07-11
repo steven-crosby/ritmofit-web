@@ -205,6 +205,8 @@ The boundary this work stops at is locked as **decision D13** ([`decisions.md`](
 Ritmo Studio-owned playback, mixing/crossfade, destructive audio editing, or audio analysis — Ritmo Studio
 controls choreography and provider-authorized playback windows, not audio production.
 
-Possible follow-ups (not built, and *not* ruled out by D13): snapping a dragged track start to the beat
-grid (track starts currently snap to whole seconds); carrying `timeline_mode` + authored offsets through
-whole-class copy (a copy currently lands sequential); and a per-track time signature beyond 4/4.
+Follow-up status (round 9, 2026-07-11): **track-start beat-snapping shipped** (PR #274 — a dragged
+track start snaps to the beat grid of the nearest preceding track with a known BPM, extended through
+the gap; whole-second fallback preserved) and **whole-class copy now carries `timeline_mode` +
+authored offsets** (PR #273 — a free-mode copy keeps its layout; sequential copies unchanged).
+Remaining (not built, and *not* ruled out by D13): a per-track time signature beyond 4/4.

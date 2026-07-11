@@ -352,7 +352,6 @@ const doc = {
             },
           },
           '400': { description: 'Invalid or unsupported playlist URL, or empty playlist' },
-          '501': { description: 'SoundCloud import not yet supported' },
         },
       },
     },
