@@ -133,7 +133,7 @@ providerRoutes.get(
  * POST /providers/:provider/playlists/:playlistId/import — bulk-import a saved
  * playlist's tracks as references in one call (D21). Deduped by same-song match key,
  * best-effort per track, capped as one bulk op. Works for all three providers from
- * the browse surface with no class required — unlike the class-scoped, Spotify-URL
+ * the browse surface with no class required — unlike the class-scoped, paste-a-URL
  * `/classes/:id/import-playlist`. 201 when any new track was created; 200 when every
  * song already existed. Imports store references only — no audio/derived data.
  */

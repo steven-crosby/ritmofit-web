@@ -23,6 +23,7 @@ import {
 import { segmentTypeValues, type ClassSection, type SegmentType } from '@ritmofit/shared';
 import { listSections, createSection, updateSection, deleteSection } from '../lib/api.js';
 import { formatDuration } from '../lib/class-summary.js';
+import { anchorFieldState, formatClockFromMs } from '../lib/duration.js';
 
 /** Presentation for each fixed segment type: label + a reinforcing tint (02-color-system). */
 export const SEGMENT_META: Record<SegmentType, { label: string; tint: string }> = {
@@ -197,13 +198,6 @@ export function deriveProvisionalSections(
   ];
 }
 
-/** ms → whole-seconds string and back, for the start-time field. */
-const msToSec = (ms: number) => String(Math.round(ms / 1000));
-const secToMs = (sec: string) => {
-  const n = Number(sec.trim());
-  return Number.isFinite(n) && n > 0 ? Math.round(n * 1000) : 0;
-};
-
 export function SegmentBand({
   classId,
   totalDurationMs,
@@ -362,6 +356,7 @@ export function SegmentBand({
         <SegmentEditor
           classId={classId}
           sections={sections ?? []}
+          totalDurationMs={totalDurationMs}
           onChanged={afterChange}
           onError={setError}
         />
@@ -500,26 +495,35 @@ function SegmentHandle({
 function SegmentEditor({
   classId,
   sections,
+  totalDurationMs,
   onChanged,
   onError,
 }: {
   classId: string;
   sections: ClassSection[];
+  /** Class length (ms) — the upper bound for a start-time field (`m:ss`). */
+  totalDurationMs: number;
   onChanged: () => Promise<void>;
   onError: (msg: string) => void;
 }) {
   const [type, setType] = useState<SegmentType>('warm_up');
-  const [startSec, setStartSec] = useState('0');
+  const [startClock, setStartClock] = useState('0:00');
   const [busy, setBusy] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editType, setEditType] = useState<SegmentType>('warm_up');
-  const [editStartSec, setEditStartSec] = useState('0');
+  const [editStartClock, setEditStartClock] = useState('0:00');
+
+  const maxMs = totalDurationMs > 0 ? totalDurationMs : null;
+  const addStart = anchorFieldState(startClock, maxMs);
+  const editStart = anchorFieldState(editStartClock, maxMs);
 
   const add = async () => {
+    const startOffsetMs = addStart.ms;
+    if (startOffsetMs == null) return;
     setBusy(true);
     try {
-      await createSection(classId, { type, startOffsetMs: secToMs(startSec) });
-      setStartSec('0');
+      await createSection(classId, { type, startOffsetMs });
+      setStartClock('0:00');
       await onChanged();
     } catch (e) {
       onError((e as Error).message);
@@ -531,14 +535,15 @@ function SegmentEditor({
   const startEdit = (s: ClassSection) => {
     setEditingId(s.id);
     setEditType(s.type);
-    setEditStartSec(msToSec(s.startOffsetMs));
+    setEditStartClock(formatClockFromMs(s.startOffsetMs));
   };
 
   const saveEdit = async () => {
-    if (!editingId) return;
+    const startOffsetMs = editStart.ms;
+    if (!editingId || startOffsetMs == null) return;
     setBusy(true);
     try {
-      await updateSection(editingId, { type: editType, startOffsetMs: secToMs(editStartSec) });
+      await updateSection(editingId, { type: editType, startOffsetMs });
       setEditingId(null);
       await onChanged();
     } catch (e) {
@@ -567,6 +572,10 @@ function SegmentEditor({
   ));
   const fieldClass =
     'rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-ui text-sm text-text-primary';
+  // Start-time takes `m:ss` (parsed + bounded to the class length), matching the
+  // cue/move editors and the row display; an out-of-range value is caught here.
+  const startInputClass = (invalid: boolean) =>
+    `w-20 ${fieldClass} font-data ${invalid ? 'border-state-danger' : ''}`;
 
   return (
     <div className="flex flex-col gap-2">
@@ -581,13 +590,15 @@ function SegmentEditor({
                   className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2"
                 >
                   <input
-                    className={`w-20 ${fieldClass} font-data`}
-                    type="number"
-                    min={0}
+                    className={startInputClass(editStart.invalid)}
+                    type="text"
                     inputMode="numeric"
-                    value={editStartSec}
-                    onChange={(e) => setEditStartSec(e.target.value)}
-                    aria-label="Segment start in seconds"
+                    placeholder="m:ss"
+                    value={editStartClock}
+                    onChange={(e) => setEditStartClock(e.target.value)}
+                    aria-label="Segment start (m:ss)"
+                    aria-invalid={editStart.invalid || undefined}
+                    title="Segment start (m:ss)"
                   />
                   <select
                     className={fieldClass}
@@ -600,7 +611,7 @@ function SegmentEditor({
                   <button
                     className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
                     onClick={saveEdit}
-                    disabled={busy}
+                    disabled={busy || editStart.ms == null}
                   >
                     Save
                   </button>
@@ -621,7 +632,7 @@ function SegmentEditor({
                     <SegmentIcon type={s.type} />
                   </span>
                   <span className="shrink-0 font-data text-xs text-text-tertiary">
-                    {msToSec(s.startOffsetMs)}s
+                    {formatClockFromMs(s.startOffsetMs)}
                   </span>
                   <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">
                     {SEGMENT_META[s.type].label}
@@ -649,13 +660,15 @@ function SegmentEditor({
       )}
       <div className="flex flex-wrap items-center gap-2">
         <input
-          className={`w-20 ${fieldClass} font-data`}
-          type="number"
-          min={0}
+          className={startInputClass(addStart.invalid)}
+          type="text"
           inputMode="numeric"
-          value={startSec}
-          onChange={(e) => setStartSec(e.target.value)}
-          aria-label="New segment start in seconds"
+          placeholder="m:ss"
+          value={startClock}
+          onChange={(e) => setStartClock(e.target.value)}
+          aria-label="New segment start (m:ss)"
+          aria-invalid={addStart.invalid || undefined}
+          title="New segment start (m:ss)"
         />
         <select
           className={fieldClass}
@@ -668,11 +681,12 @@ function SegmentEditor({
         <button
           className="shrink-0 rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
           onClick={add}
-          disabled={busy}
+          disabled={busy || addStart.ms == null}
         >
           Add segment
         </button>
       </div>
+      {addStart.message && <p className="font-ui text-xs text-state-danger">{addStart.message}</p>}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { TrackSearchResult } from '@ritmofit/shared';
-import { dedupeByMatchKey } from './import-playlist.js';
+import { dedupeByMatchKey, partitionSettledImports } from './import-playlist.js';
 
 function candidate(overrides: Partial<TrackSearchResult> = {}): TrackSearchResult {
   return {
@@ -48,5 +48,31 @@ describe('dedupeByMatchKey', () => {
     const b = candidate({ providerTrackId: 'b', title: 'Two', artist: 'X' });
     const c = candidate({ providerTrackId: 'c', title: 'Three', artist: 'X' });
     expect(dedupeByMatchKey([a, b, c]).map((t) => t.providerTrackId)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('partitionSettledImports', () => {
+  const ok = <T>(value: T): PromiseSettledResult<T> => ({ status: 'fulfilled', value });
+  const fail = <T>(reason: unknown): PromiseSettledResult<T> => ({ status: 'rejected', reason });
+
+  it('keeps every fulfilled value, in order, when nothing fails', () => {
+    const settled = [ok('a'), ok('b'), ok('c')];
+    expect(partitionSettledImports(settled)).toEqual({ fulfilled: ['a', 'b', 'c'], skipped: 0 });
+  });
+
+  it('drops a single racing failure instead of aborting the batch', () => {
+    // The exact regression the URL-import + saved-playlist paths must survive: one
+    // track throws (e.g. a raced 409 from track-import.ts) and the rest still land.
+    const settled = [ok('a'), fail(new Error('CONFLICT')), ok('c')];
+    expect(partitionSettledImports(settled)).toEqual({ fulfilled: ['a', 'c'], skipped: 1 });
+  });
+
+  it('tallies every failure and reports zero fulfilled when all reject', () => {
+    const settled = [fail('x'), fail('y')];
+    expect(partitionSettledImports(settled)).toEqual({ fulfilled: [], skipped: 2 });
+  });
+
+  it('returns an empty partition for empty input', () => {
+    expect(partitionSettledImports([])).toEqual({ fulfilled: [], skipped: 0 });
   });
 });

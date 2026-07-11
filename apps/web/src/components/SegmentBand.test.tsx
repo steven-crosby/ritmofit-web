@@ -175,3 +175,46 @@ describe('SegmentBand provisional auto-banding (alive at rest)', () => {
     expect(container.querySelector('figure')).toBeNull();
   });
 });
+
+describe('SegmentBand m:ss start-time entry', () => {
+  it('parses the m:ss field to startOffsetMs when adding a segment', async () => {
+    vi.mocked(api.listSections).mockResolvedValue([]);
+    vi.mocked(api.createSection).mockResolvedValue(section(WARM_ID, 'warm_up', 60000));
+    render(<SegmentBand classId={CLASS_ID} totalDurationMs={TOTAL} canEdit />);
+
+    const start = await screen.findByRole('textbox', { name: 'New segment start (m:ss)' });
+    fireEvent.change(start, { target: { value: '1:00' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add segment' }));
+
+    await waitFor(() =>
+      expect(vi.mocked(api.createSection)).toHaveBeenCalledWith(
+        CLASS_ID,
+        expect.objectContaining({ startOffsetMs: 60000 }),
+      ),
+    );
+  });
+
+  it('disables Add segment on a malformed or out-of-range start', async () => {
+    vi.mocked(api.listSections).mockResolvedValue([]);
+    render(<SegmentBand classId={CLASS_ID} totalDurationMs={TOTAL} canEdit />);
+
+    const start = await screen.findByRole('textbox', { name: 'New segment start (m:ss)' });
+
+    fireEvent.change(start, { target: { value: '60' } }); // raw seconds — no longer accepted
+    expect(
+      (screen.getByRole('button', { name: 'Add segment' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(screen.getByText('Use m:ss (e.g. 1:30).')).toBeTruthy();
+
+    fireEvent.change(start, { target: { value: '5:00' } }); // past the 4:00 class
+    expect(
+      (screen.getByRole('button', { name: 'Add segment' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(screen.getByText('Past the end (max 4:00).')).toBeTruthy();
+
+    fireEvent.change(start, { target: { value: '0:00' } }); // the start is valid
+    expect(
+      (screen.getByRole('button', { name: 'Add segment' }) as HTMLButtonElement).disabled,
+    ).toBe(false);
+  });
+});
