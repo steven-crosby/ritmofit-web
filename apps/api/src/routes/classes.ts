@@ -125,6 +125,9 @@ classRoutes.get('/:id/run-payload', async (c) => {
  * (and their not-already-owned provider ids) are cloned into the caller's library,
  * and private `user_move` references are snapshotted to `name_override`. A foreign
  * track shared by several tracks is cloned **once** (`resolveTrackForClassCopy`).
+ * The copy carries the source's `timeline_mode`, and for a free-mode source the
+ * authored `start_offset_ms` layout (gaps intact) — valid by construction since
+ * the source's no-overlap invariant transfers with the durations.
  */
 classRoutes.post('/:id/copy', async (c) => {
   const db = createDb(c.env);
@@ -220,6 +223,7 @@ classRoutes.post('/:id/copy', async (c) => {
       template: sourceClass.template,
       status: 'draft',
       visibility: 'private',
+      timelineMode: sourceClass.timelineMode,
       targetDurationMs: sourceClass.targetDurationMs,
       featuredCategory: null,
       coverImageUrl: null,
@@ -272,7 +276,10 @@ classRoutes.post('/:id/copy', async (c) => {
         classId: newClassId,
         trackId: resolvedTrackId,
         position: index,
-        startOffsetMs: null,
+        // Free mode: offsets are the instructor's authored layout — carry them so the
+        // copy keeps its gaps (the trailing resequence never rewrites free offsets).
+        // Sequential: leave null; resequence derives them, as before.
+        startOffsetMs: sourceClass.timelineMode === 'free' ? ct.startOffsetMs : null,
         createdAt: now,
         updatedAt: now,
       }),
