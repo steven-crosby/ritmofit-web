@@ -52,17 +52,21 @@ Pilates, and HIIT.
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
   Music workspace via a shared provider-browse hook. Last production deploy
-  **2026-07-11 (Worker `b883cae9`)** — eighth parallel lane-agent round (all-harden, D21 loop): three
-  disjoint-lane correctness slices — Builder preview resolve for `no_provider_ref` manual-add tracks
-  (#269), by-id cue nested-authz regression lock completing the #254 triad (#270), and post-refresh
-  playlist Forbidden/AccessDenied → stable `REAUTH_REQUIRED` / `PROVIDER_FORBIDDEN` mapping (#271) —
-  **no schema/migration** (supersedes `6b8e1a48`). The **ninth parallel round (2026-07-11,
-  all-feature, D21 loop) is merged and awaiting its deploy batch** (live Worker remains `b883cae9`):
-  dragged track starts snap to the preceding track's beat grid in free mode (#274), whole-class copy
-  carries `timelineMode` + authored free-mode offsets (#273), and playlist import-by-URL reaches
-  parity — SoundCloud and Apple Music catalog playlists join Spotify, with
-  `providerCapabilities.playlistImport` now true for all three (#275) — **no schema/migration**. For
-  per-deploy detail and the live Worker version, see [`HISTORY.md`](./HISTORY.md), newest first.
+  **2026-07-11 (Worker `b0d0fe54`)** — tenth parallel lane-agent round (mixed 2-feature/2-harden,
+  first FOUR-lane round, D21 loop): four disjoint-lane slices — m:ss time entry for cue/move/segment
+  placement replacing raw-seconds inputs, with the `TODO(anchor-range)` clamp folded in (#280, FE);
+  wake-lock status chip surfacing "Screen awake / may dim" in the Live transport (#281, FE);
+  best-effort playlist-URL import (`Promise.allSettled`) so a raced 409 no longer aborts the whole
+  class import, matching the saved-playlist path (#279, BE); and a free-mode run-payload max-end
+  duration regression lock (#278, BE, test-only) — **no schema/migration** (supersedes `209a2a13`).
+  The **ninth parallel round (2026-07-11, all-feature, D21 loop) deployed earlier the same session
+  (Worker `209a2a13`, superseding `b883cae9`)**: dragged track starts snap to the preceding track's
+  beat grid in free mode (#274), whole-class copy carries `timelineMode` + authored free-mode offsets
+  (#273), and playlist import-by-URL reaches parity — SoundCloud and Apple Music catalog playlists
+  join Spotify, with `providerCapabilities.playlistImport` now true for all three (#275) — **no
+  schema/migration**. Round-9 live provider checks (real SoundCloud/Apple catalog playlist-URL
+  imports, Apple library-link 400) remain owner-pending. For per-deploy detail and the live Worker
+  version, see [`HISTORY.md`](./HISTORY.md), newest first.
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.

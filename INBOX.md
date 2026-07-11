@@ -51,15 +51,13 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 
 <!-- newest at top; one per line -->
 
-- [ ] (2026-07-11) **Round 9 awaits its production deploy batch** (PRs #273 #274 #275 + docs #276,
-      `main` @ `ad0a80c`; code-only, **no migrations**; live Worker still `b883cae9`). Deploy per
-      `ritmofit_dev_plan/deployment-runbook.md`, then extend the standard smoke with the round-9
-      live checks that mocks can't cover: (a) import a **real public SoundCloud playlist URL** and a
-      **real Apple Music catalog playlist URL** (`music.apple.com/…/playlist/…/pl.…`) via
-      Import Playlist URL — first live exercise of SoundCloud `/resolve` + Apple catalog paging;
-      (b) an Apple **library** `p.…` link → friendly 400 pointing at saved-playlist browsing;
-      (c) confirm Import Playlist URL now shows for **all three providers**; (d) drag a track start
-      in a **free-mode** class with "Snap to beat" on (snaps to the preceding track's grid);
-      (e) duplicate a free-mode class → copy keeps `timelineMode`, offsets, and gaps. Then log the
-      deploy (Worker version) in `HISTORY.md` + `DEVELOPMENT_PLAN.md` (flip "awaiting deploy") and
-      delete this line. — #plan
+- [ ] (2026-07-11) **Round 9+10 owner-pending live checks** (deployed: R9 Worker `209a2a13`, R10
+      Worker `b0d0fe54`; both logged in `HISTORY.md`). Manual browser checks mocks can't cover, on
+      the live site: (a) import a **real public SoundCloud playlist URL** and a **real Apple Music
+      catalog playlist URL** (`music.apple.com/…/playlist/…/pl.…`) via Import Playlist URL — first
+      live exercise of SoundCloud `/resolve` + Apple catalog paging; (b) an Apple **library** `p.…`
+      link → friendly 400 pointing at saved-playlist browsing; (c) Import Playlist URL shows for
+      **all three providers**; (d) drag a track start in a **free-mode** class with "Snap to beat" on
+      (snaps to the preceding track's grid) and confirm the new **m:ss** cue/move/segment entry
+      (#280) round-trips; (e) duplicate a free-mode class → copy keeps `timelineMode`, offsets, gaps;
+      (f) Live Mode shows the **wake-lock status chip** (#281). Delete this line once verified. — #plan

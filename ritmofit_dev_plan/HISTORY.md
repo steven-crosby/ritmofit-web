@@ -10,9 +10,45 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-11 (mixed feature/harden round — D21 creator loop — tenth parallel lane-agent
+> round) — deployed (Worker `b0d0fe54-b2e8-486e-9cb7-ebb80f360a42`).** Main HEAD `f03c51a` (merge of
+> PR #281). Code-only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback
+> anchor: prior live `209a2a13-37d1-4edd-abc5-f7bdca0858dd`. **First FOUR-lane round** and first with
+> two front-end feature lanes running beside two back-end harden lanes; the SPA was split at the
+> component level with `Dashboard.tsx` given a single owner (lane 1) as the collision magnet. Four
+> disjoint-lane slices merged via the standard train (sequential `update-branch` → combined CI →
+> merge; zero cross-lane conflicts; neither BE lane regenerated the OpenAPI spec, so no coordinate).
+> **PR #280** (FE, Builder/Music) — *m:ss time entry for cue/move/segment placement*: all six anchor
+> inputs (add/edit cue, move, segment) now take `m:ss` instead of raw whole-seconds, matching the
+> Duration/Trim fields and the row display; new anchor-safe `parseClockToMs` / `formatClockFromMs`
+> (0:00 allowed, unlike duration parse); `aria-invalid` + non-color-only inline error with Add/Save
+> disabled on malformed/past-the-end; folded in the `TODO(anchor-range)` clamp (out-of-range caught
+> client-side, not as a generic 422); FE-only, +tests incl. explicit 0:00 case. **PR #281** (FE,
+> Live/Account) — *surface wake-lock status in the Live transport*: `useWakeLock` now returns
+> `'idle' | 'awake' | 'unavailable'` via `useState` (lock/re-acquire/cleanup logic untouched); a
+> glyph+label `role="status"` chip shows "Screen awake" / "Screen may dim" (unsupported + denied
+> collapse to one caution state), holding `awake` across a hidden-tab auto-release so it doesn't
+> flicker; FE-only, +9 tests driving the real component. **PR #279** (BE, provider/music) — *make
+> playlist-URL import best-effort*: the URL route's `Promise.all` (all-or-nothing) → `Promise.allSettled`
+> so a raced 409 / transient D1 error on one track no longer aborts the whole class import and inserts
+> zero `class_tracks`; a pure DB-free `partitionSettledImports` helper now backs both bulk importers
+> (URL route + `importUserPlaylist`); response shape `{ imported }` unchanged (no OpenAPI touch); one
+> stale doc-comment fix; +4 helper cases. **PR #278** (BE, class-core, test-only) — *lock the
+> free-mode run-payload max-end duration invariant*: `computeFreeTimeline`'s total is `max(start +
+> duration)` over all tracks, but every prior test had the last array item ending latest; a
+> refactor to `last.start + last.duration` would have passed silently and truncated a long-opener /
+> short-closer free-mode class in Live. Unit + integration lock (falsifier-verified by mutation); no
+> product code.
+
 > **Session 2026-07-11 (all-feature round — D21 creator loop — ninth parallel lane-agent round) —
-> merged, not yet deployed** (live Worker remains `b883cae9-7067-49ed-9d0e-9f6d96eba9d3`). Main HEAD
-> `76befee` (merge of PR #275). Code-only — **no schema / migration**. **All-feature** parallel round
+> deployed (Worker `209a2a13-37d1-4edd-abc5-f7bdca0858dd`).** Code HEAD `76befee` (merge of PR #275);
+> deployed from `main` @ `9ec2b12` (after docs merges #276/#277). Code-only — **no schema /
+> migration** (remote D1: "No migrations to apply"). Rollback anchor: prior live
+> `b883cae9-7067-49ed-9d0e-9f6d96eba9d3`. A second machine's session had merged an INBOX breadcrumb
+> (#277) noting "the deploy will happen from another machine"; this session (the round-10
+> orchestrator) is that machine and ran the deploy. The round-9 live provider checks (real
+> SoundCloud/Apple catalog playlist-URL imports, Apple library-link 400) remain owner-pending.
+> **All-feature** parallel round
 > (owner-chosen) after the same-day all-harden round: three disjoint-lane feature slices merged via
 > the standard train (sequential `update-branch` → combined CI → merge; zero cross-lane conflicts;
 > one owner-authorized carve-out: lane 3 updated `TrackSearch.test.tsx` so the capability-gating
