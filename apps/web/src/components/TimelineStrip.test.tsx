@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { RunPayload } from '@ritmofit/shared';
 import { TimelineStrip } from './TimelineStrip.js';
 
@@ -91,5 +91,38 @@ describe('TimelineStrip — planning tempo pulse', () => {
     expect(screen.getByRole('button', { name: 'Select track 1' }).className).not.toContain(
       'rf-beat-pulse-subtle',
     );
+  });
+});
+
+describe('TimelineStrip — track-start beat snapping (free mode)', () => {
+  // Track 1: 120 bpm from 0 (500 ms beats, the reference grid). Track 2: no tempo
+  // of its own, dragged from its authored start at 1000.
+  const freePayload = () => payload([entry(0, 120), entry(1, null)]);
+  const track2 = () => screen.getByRole('slider', { name: /Track 2 start/ });
+
+  it('shows the Snap toggle for track dragging even without marker editing', () => {
+    render(<TimelineStrip payload={freePayload()} onMoveTrack={() => {}} />);
+    expect(screen.getByRole('checkbox', { name: 'Snap to beat' })).toBeTruthy();
+  });
+
+  it('steps a dragged start by one beat of the preceding grid (arrow keys)', () => {
+    render(<TimelineStrip payload={freePayload()} onMoveTrack={vi.fn()} />);
+    fireEvent.keyDown(track2(), { key: 'ArrowRight' });
+    expect(track2().getAttribute('aria-valuenow')).toBe('1500'); // 1000 → beat 3 of 500 ms
+    fireEvent.keyDown(track2(), { key: 'ArrowLeft' });
+    expect(track2().getAttribute('aria-valuenow')).toBe('1000');
+  });
+
+  it('steps by a whole bar with Shift', () => {
+    render(<TimelineStrip payload={freePayload()} onMoveTrack={vi.fn()} />);
+    fireEvent.keyDown(track2(), { key: 'ArrowRight', shiftKey: true });
+    expect(track2().getAttribute('aria-valuenow')).toBe('3000'); // +4 beats × 500 ms
+  });
+
+  it('falls back to 1s nudges when Snap to beat is off', () => {
+    render(<TimelineStrip payload={freePayload()} onMoveTrack={vi.fn()} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Snap to beat' }));
+    fireEvent.keyDown(track2(), { key: 'ArrowRight' });
+    expect(track2().getAttribute('aria-valuenow')).toBe('2000');
   });
 });
