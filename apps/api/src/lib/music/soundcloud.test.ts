@@ -367,3 +367,187 @@ describe('SoundCloudProvider.lookup', () => {
     expect(await provider.lookup('nope')).toBeNull();
   });
 });
+
+describe('SoundCloudProvider.getPlaylist (URL import via /resolve)', () => {
+  type Scripted = { status: number; body?: unknown; headers?: Record<string, string> };
+  /** Like `fakeFetch`, but scriptable per call: status, headers (for 302), body. */
+  function scriptedFetch(route: (url: string, init?: Parameters<FetchLike>[1]) => Scripted) {
+    const calls: { url: string; init?: Parameters<FetchLike>[1] }[] = [];
+    const fetchImpl: FetchLike = async (url, init) => {
+      calls.push({ url, init });
+      const r = route(url, init);
+      return {
+        ok: r.status >= 200 && r.status < 300,
+        status: r.status,
+        json: async () => r.body ?? null,
+        text: async () => JSON.stringify(r.body ?? null),
+        headers: { get: (name: string) => r.headers?.[name.toLowerCase()] ?? null },
+      };
+    };
+    return { fetchImpl, calls };
+  }
+
+  const URN = 'soundcloud:playlists:987';
+  const ENCODED_URN = encodeURIComponent(URN);
+  const TRACKS_URL = `${API_BASE}/playlists/${ENCODED_URN}/tracks`;
+  const PERMALINK = 'https://soundcloud.com/artist/sets/summer-mix';
+  const REF = { provider: 'soundcloud', permalinkUrl: PERMALINK } as const;
+
+  function makeUrlProvider(route: (url: string, init?: Parameters<FetchLike>[1]) => Scripted) {
+    const { fetchImpl, calls } = scriptedFetch((url, init) => {
+      if (url.startsWith(TOKEN_URL)) {
+        return { status: 200, body: { access_token: 'tok-1', expires_in: 3600 } };
+      }
+      return route(url, init);
+    });
+    const provider = createSoundCloudProvider({
+      clientId: 'cid',
+      clientSecret: 'secret',
+      fetchImpl,
+      apiBase: API_BASE,
+      tokenUrl: TOKEN_URL,
+    });
+    return { provider, calls };
+  }
+
+  it('resolves the permalink to a URN and pages the track collection', async () => {
+    const { provider, calls } = makeUrlProvider((url) => {
+      if (url.startsWith(`${API_BASE}/resolve`)) {
+        return {
+          status: 302,
+          headers: { location: `${API_BASE}/playlists/${ENCODED_URN}` },
+        };
+      }
+      if (url.startsWith(TRACKS_URL)) {
+        return url.includes('page2')
+          ? { status: 200, body: { collection: [{ ...SC_TRACK, id: 777 }], next_href: null } }
+          : {
+              status: 200,
+              body: { collection: [SC_TRACK], next_href: `${TRACKS_URL}?page2=true` },
+            };
+      }
+      return { status: 500 };
+    });
+
+    const results = await provider.getPlaylist(REF);
+
+    expect(results.map((r) => r.providerTrackId)).toEqual(['12345', '777']);
+    const resolveCall = calls.find((c) => c.url.startsWith(`${API_BASE}/resolve`))!;
+    expect(resolveCall.url).toContain(`url=${encodeURIComponent(PERMALINK)}`);
+    expect(resolveCall.init?.redirect).toBe('manual');
+    expect(resolveCall.init?.headers?.Authorization).toBe('OAuth tok-1');
+    const firstTracksCall = calls.find((c) => c.url.startsWith(TRACKS_URL))!;
+    expect(firstTracksCall.url).toContain('limit=200');
+    expect(firstTracksCall.url).toContain('linked_partitioning=true');
+  });
+
+  it('returns [] when /resolve 404s (no such playlist)', async () => {
+    const { provider } = makeUrlProvider((url) =>
+      url.startsWith(`${API_BASE}/resolve`) ? { status: 404 } : { status: 500 },
+    );
+    await expect(provider.getPlaylist(REF)).resolves.toEqual([]);
+  });
+
+  it('returns [] when the URL resolves to a non-playlist resource (e.g. a track)', async () => {
+    const { provider } = makeUrlProvider((url) =>
+      url.startsWith(`${API_BASE}/resolve`)
+        ? { status: 302, headers: { location: `${API_BASE}/tracks/12345` } }
+        : { status: 500 },
+    );
+    await expect(provider.getPlaylist(REF)).resolves.toEqual([]);
+  });
+
+  it('accepts a resolved playlist body when a fetch stack auto-followed the 302', async () => {
+    const { provider } = makeUrlProvider((url) => {
+      if (url.startsWith(`${API_BASE}/resolve`)) {
+        return { status: 200, body: { kind: 'playlist', urn: URN, id: 987 } };
+      }
+      if (url.startsWith(TRACKS_URL)) {
+        return { status: 200, body: { collection: [SC_TRACK], next_href: null } };
+      }
+      return { status: 500 };
+    });
+    await expect(provider.getPlaylist(REF)).resolves.toHaveLength(1);
+  });
+
+  it('returns [] when an auto-followed resolve body is not a playlist', async () => {
+    const { provider } = makeUrlProvider((url) =>
+      url.startsWith(`${API_BASE}/resolve`)
+        ? { status: 200, body: { kind: 'track', urn: 'soundcloud:tracks:1' } }
+        : { status: 500 },
+    );
+    await expect(provider.getPlaylist(REF)).resolves.toEqual([]);
+  });
+
+  it('re-mints the app token once when SoundCloud rejects it with 401', async () => {
+    let tokenCalls = 0;
+    const { fetchImpl, calls } = (() => {
+      const record: { url: string; init?: Parameters<FetchLike>[1] }[] = [];
+      const impl: FetchLike = async (url, init) => {
+        record.push({ url, init });
+        if (url.startsWith(TOKEN_URL)) {
+          tokenCalls += 1;
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ access_token: `tok-${tokenCalls}`, expires_in: 3600 }),
+            text: async () => '',
+          };
+        }
+        if (url.startsWith(`${API_BASE}/resolve`)) {
+          const auth = init?.headers?.Authorization;
+          if (auth === 'OAuth tok-1') {
+            return { ok: false, status: 401, json: async () => null, text: async () => '' };
+          }
+          return {
+            ok: false,
+            status: 302,
+            json: async () => null,
+            text: async () => '',
+            headers: {
+              get: (n: string) =>
+                n.toLowerCase() === 'location' ? `${API_BASE}/playlists/${ENCODED_URN}` : null,
+            },
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ collection: [SC_TRACK], next_href: null }),
+          text: async () => '',
+        };
+      };
+      return { fetchImpl: impl, calls: record };
+    })();
+    const provider = createSoundCloudProvider({
+      clientId: 'cid',
+      clientSecret: 'secret',
+      fetchImpl,
+      apiBase: API_BASE,
+      tokenUrl: TOKEN_URL,
+    });
+
+    await expect(provider.getPlaylist(REF)).resolves.toHaveLength(1);
+    expect(tokenCalls).toBe(2);
+    expect(
+      calls
+        .filter((c) => c.url.startsWith(`${API_BASE}/resolve`))
+        .map((c) => c.init?.headers?.Authorization),
+    ).toEqual(['OAuth tok-1', 'OAuth tok-2']);
+  });
+
+  it('normalizes a string URN track id (2025 id→urn migration tolerance)', async () => {
+    const urnTrack = { ...SC_TRACK, id: 'soundcloud:tracks:999' };
+    const { provider } = makeUrlProvider((url) => {
+      if (url.startsWith(`${API_BASE}/resolve`)) {
+        return { status: 302, headers: { location: `${API_BASE}/playlists/${ENCODED_URN}` } };
+      }
+      if (url.startsWith(TRACKS_URL)) {
+        return { status: 200, body: { collection: [urnTrack], next_href: null } };
+      }
+      return { status: 500 };
+    });
+    const [track] = await provider.getPlaylist(REF);
+    expect(track?.providerTrackId).toBe('soundcloud:tracks:999');
+  });
+});

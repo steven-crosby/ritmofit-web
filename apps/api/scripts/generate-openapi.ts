@@ -325,7 +325,7 @@ const doc = {
       parameters: [idParam],
       post: {
         summary:
-          'Import a Spotify playlist URL as class tracks (edit). SoundCloud not yet supported.',
+          'Import a public Spotify, SoundCloud, or Apple Music catalog playlist URL as class tracks (edit).',
         requestBody: {
           required: true,
           content: {

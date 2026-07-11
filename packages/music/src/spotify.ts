@@ -21,7 +21,7 @@ import {
   type TrackSearchResult,
 } from '@ritmofit/shared';
 import { z } from 'zod';
-import type { FetchLike, MusicProvider } from './provider.js';
+import type { FetchLike, MusicProvider, PlaylistImportRef } from './provider.js';
 import { readJson, ProviderError } from './errors.js';
 import { AppTokenCache } from './app-token.js';
 import { fetchWithRetry, type RetryOptions } from './retry.js';
@@ -136,8 +136,10 @@ class SpotifyProvider implements MusicProvider {
     return this.toCandidate(json);
   }
 
-  async getPlaylist(playlistId: string): Promise<TrackSearchResult[]> {
-    const encodedPlaylistId = encodeURIComponent(playlistId);
+  async getPlaylist(
+    ref: Extract<PlaylistImportRef, { provider: 'spotify' }>,
+  ): Promise<TrackSearchResult[]> {
+    const encodedPlaylistId = encodeURIComponent(ref.playlistId);
     const candidates: TrackSearchResult[] = [];
     let offset = 0;
     let total = Number.POSITIVE_INFINITY;

@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
-import type { MusicConnectionView, TrackSearchResult } from '@ritmofit/shared';
+import {
+  providerCapabilities,
+  providerValues,
+  type MusicConnectionView,
+  type Provider,
+  type TrackSearchResult,
+} from '@ritmofit/shared';
 import { TrackSearch, browseAnnouncement, classifyPlaylistDrillInError } from './TrackSearch.js';
 import * as api from '../lib/api.js';
 
@@ -181,34 +187,50 @@ describe('browseAnnouncement (unit)', () => {
 });
 
 describe('TrackSearch playlist-import provider gating', () => {
-  it('hides "Import Playlist URL" for the default provider (SoundCloud) and shows it only for Spotify', () => {
+  const PROVIDER_LABELS: Record<Provider, string> = {
+    soundcloud: 'SoundCloud',
+    spotify: 'Spotify',
+    apple_music: 'Apple Music',
+  };
+
+  it('shows "Import Playlist URL" exactly for providers whose capability flag is on', () => {
+    // Derived from the shared matrix, not a hardcoded provider list: the UI must
+    // track `playlistImport` so a capability change lights up (or hides) the
+    // control with zero web edits.
     render(<TrackSearch classId="c1" onAdded={() => {}} />);
 
-    // Default provider is SoundCloud, which cannot import playlists (501).
-    expect(screen.queryByRole('button', { name: 'Import Playlist URL' })).toBeNull();
-
-    // Spotify is the only provider with a wired playlist-import path.
-    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
-    expect(screen.getByRole('button', { name: 'Import Playlist URL' })).toBeTruthy();
-
-    // Apple Music has no playlist-import path either.
-    fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
-    expect(screen.queryByRole('button', { name: 'Import Playlist URL' })).toBeNull();
+    for (const provider of providerValues) {
+      fireEvent.click(screen.getByRole('button', { name: PROVIDER_LABELS[provider] }));
+      const importButton = screen.queryByRole('button', { name: 'Import Playlist URL' });
+      if (providerCapabilities[provider].playlistImport) {
+        expect(importButton, `${provider} should offer playlist import`).toBeTruthy();
+      } else {
+        expect(importButton, `${provider} should not offer playlist import`).toBeNull();
+      }
+    }
   });
 
   it('falls back to search when leaving playlist mode for a provider that cannot import', async () => {
-    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    // Every real provider imports today, so stub the matrix (restored below) to
+    // keep this defensive fallback covered: never present an import form that
+    // always fails.
+    const original = providerCapabilities.soundcloud.playlistImport;
+    providerCapabilities.soundcloud.playlistImport = false;
+    try {
+      render(<TrackSearch classId="c1" onAdded={() => {}} />);
 
-    // Enter playlist mode under Spotify.
-    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
-    expect(screen.getByLabelText('Playlist URL')).toBeTruthy();
+      // Enter playlist mode under Spotify.
+      fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+      expect(screen.getByLabelText('Playlist URL')).toBeTruthy();
 
-    // Switching to SoundCloud (no playlist import) must drop back to search so we
-    // never present an import form that always fails.
-    fireEvent.click(screen.getByRole('button', { name: 'SoundCloud' }));
-    await waitFor(() => expect(screen.queryByLabelText('Playlist URL')).toBeNull());
-    expect(screen.getByRole('searchbox')).toBeTruthy();
+      // Switching to the import-incapable provider must drop back to search.
+      fireEvent.click(screen.getByRole('button', { name: 'SoundCloud' }));
+      await waitFor(() => expect(screen.queryByLabelText('Playlist URL')).toBeNull());
+      expect(screen.getByRole('searchbox')).toBeTruthy();
+    } finally {
+      providerCapabilities.soundcloud.playlistImport = original;
+    }
   });
 });
 
