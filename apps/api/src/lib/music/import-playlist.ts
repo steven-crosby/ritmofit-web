@@ -45,6 +45,32 @@ export function dedupeByMatchKey(candidates: TrackSearchResult[]): TrackSearchRe
   });
 }
 
+/** A best-effort fan-out split: the values that imported, and how many failed. */
+export interface SettledImportPartition<T> {
+  fulfilled: T[];
+  skipped: number;
+}
+
+/**
+ * Split `Promise.allSettled` outcomes into the fulfilled values and a count of the
+ * rejected ones. Keeps a single racing failure (e.g. a 409 from a concurrent import
+ * of the same provider ref, `track-import.ts`) from aborting a whole bulk import —
+ * the failed track is counted as skipped, never fatal. Pure so both bulk-import
+ * callers (saved-playlist here and the URL route) can settle-then-tally identically
+ * and unit-test the tally without a DB.
+ */
+export function partitionSettledImports<T>(
+  settled: PromiseSettledResult<T>[],
+): SettledImportPartition<T> {
+  const fulfilled: T[] = [];
+  let skipped = 0;
+  for (const outcome of settled) {
+    if (outcome.status === 'fulfilled') fulfilled.push(outcome.value);
+    else skipped += 1;
+  }
+  return { fulfilled, skipped };
+}
+
 /** Bound the per-request fan-out (upstream lookups + D1 writes). */
 const CONCURRENCY = 5;
 
@@ -82,17 +108,14 @@ export async function importUserPlaylist(
   // `allSettled` keeps a single failing track (e.g. a raced 409) from aborting the batch.
   for (let i = 0; i < unique.length; i += CONCURRENCY) {
     const batch = unique.slice(i, i + CONCURRENCY);
-    const settled = await Promise.allSettled(
-      batch.map((cand) => importTrackFromCandidate(db, userId, cand)),
+    const { fulfilled, skipped: batchSkipped } = partitionSettledImports(
+      await Promise.allSettled(batch.map((cand) => importTrackFromCandidate(db, userId, cand))),
     );
-    for (const outcome of settled) {
-      if (outcome.status === 'fulfilled') {
-        if (outcome.value.created) created += 1;
-        else existing += 1;
-        tracks.push(outcome.value.track);
-      } else {
-        skipped += 1;
-      }
+    skipped += batchSkipped;
+    for (const outcome of fulfilled) {
+      if (outcome.created) created += 1;
+      else existing += 1;
+      tracks.push(outcome.track);
     }
   }
 
