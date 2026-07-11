@@ -186,7 +186,6 @@ export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: ()
   // "My likes" reads the caller's connected account; only providers with a
   // per-user integration support it. Catalog search stays available for all.
   const canUseLikes = providerCapabilities[provider].userLikes;
-  // URL playlist import is Spotify-only today.
   const canImportPlaylist = providerCapabilities[provider].playlistImport;
   const canBrowseSavedPlaylists = providerCapabilities[provider].savedPlaylists;
 
