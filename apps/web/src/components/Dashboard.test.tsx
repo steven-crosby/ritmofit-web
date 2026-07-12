@@ -113,6 +113,30 @@ function liveRunPayload(
   } as unknown as RunPayload;
 }
 
+/** A persisted class-track whose id matches the run-payload `classTrackId`, so the
+ *  inspector's selection/removal resolves against it. Only the fields the inspector
+ *  reads need to be real; the rest are cast through `unknown`. */
+function makeClassTrack(id: string, position: number): ClassTrack {
+  return {
+    id,
+    classId: 'class-1',
+    trackId: `track-${position}`,
+    position,
+    intensity: 'mod',
+    displayBpmOverride: null,
+    displayRpm: null,
+    holdCount: null,
+    durationMsOverride: null,
+    clipStartMs: null,
+    clipEndMs: null,
+    beatAnchorMs: null,
+    startOffsetMs: null,
+    notes: null,
+    createdAt: position,
+    updatedAt: position,
+  } as unknown as ClassTrack;
+}
+
 function spotifyConnection(scope = 'user-library-read streaming') {
   return {
     id: 'conn-spotify',
@@ -769,5 +793,84 @@ describe('Dashboard class detail', () => {
         intensity: 'mod',
       }),
     );
+  });
+});
+
+describe('Dashboard track removal focus return', () => {
+  type TrackSpec = { classTrackId: string; durationMs: number; title: string };
+
+  /** Wire the class-list + detail mocks around a mutable spec so a removal (which
+   *  triggers a silent detail reload) resolves against the reduced track set. */
+  function installClassWithTracks(title: string, initial: TrackSpec[]) {
+    const ride = makeClass(title);
+    let spec = [...initial];
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockImplementation(async () =>
+      spec.map((s, i) => makeClassTrack(s.classTrackId, i)),
+    );
+    vi.mocked(api.getRunPayload).mockImplementation(async () =>
+      liveRunPayload(spec.map((s) => ({ ...s, displayBpm: 120 }))),
+    );
+    vi.mocked(api.deleteClassTrack).mockImplementation(async (trackId: string) => {
+      spec = spec.filter((s) => s.classTrackId !== trackId);
+    });
+    // The inspector lazily mounts the choreography editor, which loads cues/moves for
+    // the selected track; keep those empty so the panel renders without noise.
+    vi.mocked(api.listCues).mockResolvedValue([] as never);
+    vi.mocked(api.listPlacedMoves).mockResolvedValue([] as never);
+    vi.mocked(api.listMoves).mockResolvedValue([] as never);
+    vi.mocked(api.listUserMoves).mockResolvedValue([] as never);
+    return ride;
+  }
+
+  const rowSelectButton = (classTrackId: string) =>
+    document.querySelector<HTMLElement>(`[data-track-select-id="${classTrackId}"]`);
+
+  it('returns focus to the nearest remaining track after removing one', async () => {
+    installClassWithTracks('Focus ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+      { classTrackId: 'ct-2', durationMs: 180000, title: 'Second Song' },
+    ]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Focus ride/ }));
+    await screen.findByRole('heading', { name: 'Focus ride' });
+
+    // Open the inspector for the first track via its row control (the same button
+    // that carries the data-track-select-id focus anchor).
+    const firstRow = rowSelectButton('ct-1');
+    expect(firstRow).not.toBeNull();
+    fireEvent.click(firstRow as HTMLElement);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove track' }));
+
+    // Removing the first track lands focus on the track that slides into its slot
+    // (the second), not on <body>.
+    await waitFor(() => {
+      expect(document.activeElement).toBe(rowSelectButton('ct-2'));
+    });
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
+  it('returns focus to the inspector placeholder after removing the last track', async () => {
+    installClassWithTracks('Solo ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'Only Song' },
+    ]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Solo ride/ }));
+    await screen.findByRole('heading', { name: 'Solo ride' });
+
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove track' }));
+
+    // With no tracks left, focus moves to the (now focusable) inspector placeholder
+    // rather than falling to <body>.
+    const placeholderText = await screen.findByText(/Select a track to edit its intensity/);
+    const placeholder = placeholderText.parentElement as HTMLElement;
+    await waitFor(() => {
+      expect(document.activeElement).toBe(placeholder);
+    });
+    expect(document.activeElement).not.toBe(document.body);
   });
 });
