@@ -52,13 +52,14 @@ Pilates, and HIIT.
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
   Music workspace via a shared provider-browse hook. Last production deploy
-  **2026-07-11 (Worker `b0d0fe54`)** — tenth parallel lane-agent round (mixed 2-feature/2-harden,
-  first FOUR-lane round, D21 loop): four disjoint-lane slices — m:ss time entry for cue/move/segment
-  placement replacing raw-seconds inputs, with the `TODO(anchor-range)` clamp folded in (#280, FE);
-  wake-lock status chip surfacing "Screen awake / may dim" in the Live transport (#281, FE);
-  best-effort playlist-URL import (`Promise.allSettled`) so a raced 409 no longer aborts the whole
-  class import, matching the saved-playlist path (#279, BE); and a free-mode run-payload max-end
-  duration regression lock (#278, BE, test-only) — **no schema/migration** (supersedes `209a2a13`).
+  **2026-07-12 (Worker `a83a71d2`)** — twelfth parallel lane-agent round (mixed polish/harden,
+  THREE-lane round, D21 loop): three disjoint-lane slices — bound Spotify catalog `getPlaylist` paging
+  to 500 tracks (#288, BE); bound `offsetMsSchema` to `MAX_DURATION_MS` (#289, BE); and focus
+  management for adding tracks and inspector (#290, FE) — **no schema/migration** (supersedes `1a6c1d5a`).
+  The **eleventh parallel round (2026-07-11, polish-led mixed, D21 loop) deployed prior
+  (Worker `1a6c1d5a`, superseding `b0d0fe54`)**: return focus after removing a track (#286), surface
+  playback-reconnect state in Connections (#285), cancel pending provider purge on reconnect (#284),
+  and return 422 for an inverted clip window (#283) — **no schema/migration**.
   The **ninth parallel round (2026-07-11, all-feature, D21 loop) deployed earlier the same session
   (Worker `209a2a13`, superseding `b883cae9`)**: dragged track starts snap to the preceding track's
   beat grid in free mode (#274), whole-class copy carries `timelineMode` + authored free-mode offsets

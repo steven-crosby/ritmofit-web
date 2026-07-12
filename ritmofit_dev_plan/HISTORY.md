@@ -10,6 +10,20 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-12 (polish + harden mixed round — twelfth parallel lane-agent round) — deployed
+> (Worker `a83a71d2-9a24-4ba3-af8e-8c01b595e0fb`).** Main HEAD `696c915` (merge of PR #290). Code-only
+> — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior live
+> `1a6c1d5a-bd69-4385-84b9-c93c9fcd97dd`. **THREE-lane round** (walked back from 4; lane 4 idle): one
+> front-end polish lane (1) beside two back-end harden lanes (2, 3). Three disjoint-lane PRs merged
+> via the standard train (sequential `update-branch` → combined CI → merge; zero cross-lane conflicts).
+> **PR #288** (BE, provider/music) — *bound Spotify catalog getPlaylist paging to 500 tracks*: caps
+> unbounded iteration for pasted public playlists. **PR #289** (BE, class-core) — *bound offsetMsSchema
+> to MAX_DURATION_MS*: caps section/cue/move anchors (+ user-move delete cascade test-only lock).
+> **PR #290** (FE, Builder) — *focus management for adding tracks and inspector*: structural focus
+> returns when tracks are added or inspected. Pre-deploy full CI gate green. Post-deploy smoke green
+> on live `https://ritmofit.studio`: SPA `/` → `200` (served hash `index-CtVDbqcN.js` matches build),
+> `/api/v1/health` → `200`, unauth `/api/v1/classes` → `401`, security headers present.
+
 > **Session 2026-07-11 (polish-led mixed round — eleventh parallel lane-agent round) — deployed
 > (Worker `1a6c1d5a-bd69-4385-84b9-c93c9fcd97dd`).** Main HEAD `7b82282` (merge of PR #286). Code-only
 > — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior live
