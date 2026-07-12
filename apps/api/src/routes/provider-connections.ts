@@ -65,7 +65,7 @@ import {
   hasAppleMusicConfig,
 } from '../lib/music/provider-config.js';
 import { generateCodeVerifier, challengeFromVerifier, randomToken } from '../lib/pkce.js';
-import { enqueueProviderPurge } from '../lib/music/purge.js';
+import { cancelProviderPurge, enqueueProviderPurge } from '../lib/music/purge.js';
 import { mintSpotifyPlaybackToken } from '../lib/music/spotify-playback-token.js';
 import { musicConnections } from '../db/schema.js';
 
@@ -191,6 +191,11 @@ async function upsertConnection(
         updatedAt: now,
       },
     });
+
+  // Reconnecting re-grants the provider metadata a pending disconnect-purge would
+  // strip, so cancel that deferred forget. Otherwise a reconnect + re-import inside
+  // the daily drain window loses the re-imported refs + art when the Cron fires.
+  await cancelProviderPurge(db, fields.userId, fields.provider);
 }
 
 // ── routes ──────────────────────────────────────────────────────────────────

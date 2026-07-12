@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { clipStartBeyondTrack, effectiveDurationMs, resolveClipWindow } from './duration.js';
+import {
+  clipStartBeyondTrack,
+  clipWindowInverted,
+  effectiveDurationMs,
+  resolveClipWindow,
+} from './duration.js';
 
 describe('effectiveDurationMs', () => {
   it('uses the class-specific override when present', () => {
@@ -83,5 +88,30 @@ describe('clipStartBeyondTrack', () => {
 
   it('permits any start when the base length is unknown', () => {
     expect(clipStartBeyondTrack(null, null, 30000)).toBeNull();
+  });
+});
+
+describe('clipWindowInverted', () => {
+  it('permits a null clip end (runs to the effective end)', () => {
+    expect(clipWindowInverted(30000, null)).toBeNull();
+    expect(clipWindowInverted(0, null)).toBeNull();
+  });
+
+  it('permits an end strictly after the start', () => {
+    expect(clipWindowInverted(30000, 120000)).toBeNull();
+    expect(clipWindowInverted(0, 1)).toBeNull();
+  });
+
+  it('rejects an end before the start (inverted window)', () => {
+    expect(clipWindowInverted(90000, 30000)).toMatch(/clip end/i);
+  });
+
+  it('rejects a zero-width window (end === start)', () => {
+    expect(clipWindowInverted(45000, 45000)).toMatch(/clip end/i);
+  });
+
+  it('treats a null/omitted start as 0', () => {
+    expect(clipWindowInverted(null, 0)).toMatch(/clip end/i);
+    expect(clipWindowInverted(undefined, 5000)).toBeNull();
   });
 });

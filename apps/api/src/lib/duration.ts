@@ -68,3 +68,24 @@ export function clipStartBeyondTrack(
   }
   return null;
 }
+
+/**
+ * Guard the clip window's cross-field invariant: an explicit `clipEndMs` must be
+ * strictly greater than `clipStartMs` (a null end runs to the effective end and is
+ * always fine). This mirrors the DB CHECK `clip_end_ms > clip_start_ms`, which the
+ * flat request schema can't express (the two fields are validated independently), so
+ * without this guard an inverted or zero-width window slips past validation and the
+ * CHECK rejects the write as an unhandled 500 instead of a clean 422. Returns a
+ * user-facing message when invalid, or null when the window is fine.
+ */
+export function clipWindowInverted(
+  clipStartMs: number | null = 0,
+  clipEndMs: number | null = null,
+): string | null {
+  if (clipEndMs == null) return null;
+  const startMs = clipStartMs ?? 0;
+  if (clipEndMs <= startMs) {
+    return `Clip end (${clipEndMs}ms) must be after the clip start (${startMs}ms).`;
+  }
+  return null;
+}

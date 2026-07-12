@@ -198,3 +198,29 @@ export async function enqueueProviderPurge(
     failedAt: null,
   });
 }
+
+/**
+ * Cancel an active (not-yet-run) purge owed for (user, provider) — reconnecting a
+ * provider re-grants the metadata the pending purge would strip, so the deferred
+ * forget is moot. Without this a reconnect + re-import inside the daily drain window
+ * loses the freshly re-imported provider refs and album art when the Cron runs.
+ *
+ * Only clears rows still eligible for the drain (`failedAt IS NULL`, the same filter
+ * `listQueue` applies). Exhausted duties already in the failed state are left intact
+ * for operator recovery — they never run, so they can't cause the data loss.
+ */
+export async function cancelProviderPurge(
+  db: Db,
+  userId: string,
+  provider: Provider,
+): Promise<void> {
+  await db
+    .delete(providerPurgeQueue)
+    .where(
+      and(
+        eq(providerPurgeQueue.userId, userId),
+        eq(providerPurgeQueue.provider, provider),
+        isNull(providerPurgeQueue.failedAt),
+      ),
+    );
+}
