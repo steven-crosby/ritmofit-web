@@ -137,7 +137,13 @@ export function classifyPlaylistDrillInError(message: string): 'forbidden' | 're
   return 'generic';
 }
 
-export function TrackSearch({ classId, onAdded }: { classId: string; onAdded: (classTrackId?: string) => void }) {
+export function TrackSearch({
+  classId,
+  onAdded,
+}: {
+  classId: string;
+  onAdded: (classTrackId?: string) => void;
+}) {
   const [provider, setProvider] = useState<Provider>(DEFAULT_PROVIDER);
   const [mode, setMode] = useState<Mode>('search');
   const [query, setQuery] = useState('');
