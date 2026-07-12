@@ -796,7 +796,7 @@ describe('Dashboard class detail', () => {
   });
 });
 
-describe('Dashboard track removal focus return', () => {
+describe('Dashboard track focus management', () => {
   type TrackSpec = { classTrackId: string; durationMs: number; title: string };
 
   /** Wire the class-list + detail mocks around a mutable spec so a removal (which
@@ -814,6 +814,14 @@ describe('Dashboard track removal focus return', () => {
     vi.mocked(api.deleteClassTrack).mockImplementation(async (trackId: string) => {
       spec = spec.filter((s) => s.classTrackId !== trackId);
     });
+    vi.mocked(api.addTrack).mockImplementation(
+      async (_classId: string, args: Parameters<typeof api.addTrack>[1]) => {
+        const newId = 'ct-added';
+        const title = 'track' in args && args.track ? args.track.title : 'Added Track';
+        spec.push({ classTrackId: newId, durationMs: 180000, title });
+        return makeClassTrack(newId, spec.length - 1);
+      },
+    );
     // The inspector lazily mounts the choreography editor, which loads cues/moves for
     // the selected track; keep those empty so the panel renders without noise.
     vi.mocked(api.listCues).mockResolvedValue([] as never);
@@ -870,6 +878,32 @@ describe('Dashboard track removal focus return', () => {
     const placeholder = placeholderText.parentElement as HTMLElement;
     await waitFor(() => {
       expect(document.activeElement).toBe(placeholder);
+    });
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
+  it('focuses the newly added track row after adding a track manually', async () => {
+    installClassWithTracks('Addition ride', []);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Addition ride/ }));
+    await screen.findByRole('heading', { name: 'Addition ride' });
+
+    // Open the "Add manually" disclosure
+    fireEvent.click(screen.getByText('Add manually'));
+
+    // Fill the manual track form
+    fireEvent.change(screen.getByRole('textbox', { name: 'Track title' }), {
+      target: { value: 'New Banger' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Track artist' }), {
+      target: { value: 'The Artist' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add track' }));
+
+    // Wait for the new row to appear and take focus
+    await waitFor(() => {
+      expect(document.activeElement).toBe(rowSelectButton('ct-added'));
     });
     expect(document.activeElement).not.toBe(document.body);
   });

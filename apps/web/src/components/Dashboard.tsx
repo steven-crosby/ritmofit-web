@@ -2650,6 +2650,7 @@ function ClassWorkspace({
   payload,
   onError,
   onTrackChanged,
+  onTrackAdded,
   onReordered,
   onTrackRemoved,
   onRun,
@@ -2699,9 +2700,7 @@ function ClassWorkspace({
   // in the DOM at that point (the reload hasn't landed), so the anchor query resolves.
   const trackListRef = useRef<HTMLDivElement | null>(null);
   const inspectorPlaceholderRef = useRef<HTMLDivElement | null>(null);
-  const [pendingRowFocus, setPendingRowFocus] = useState<
-    string | 'placeholder' | null
-  >(null);
+  const [pendingRowFocus, setPendingRowFocus] = useState<string | 'placeholder' | null>(null);
   useLayoutEffect(() => {
     if (pendingRowFocus === null) return;
     if (pendingRowFocus !== 'placeholder') {
@@ -2887,22 +2886,9 @@ function ClassWorkspace({
                 ))}
               </ol>
             ))}
-          <TrackSearch classId={cls.id} onAdded={(id) => {
-            if (id) {
-              setSelectedTrackId(id);
-              setPendingRowFocus(id);
-              onTrackAdded(id);
-            } else {
-              onTrackChanged();
-            }
-          }} />
-          {/* Manual entry stays available but de-emphasized (search/import is the
-              primary path; 09). For a track a provider can't return, or no creds. */}
-          <details className="mt-1">
-            <summary className="cursor-pointer font-ui text-xs text-text-tertiary hover:text-text-secondary">
-              Add manually
-            </summary>
-            <AddTrackForm classId={cls.id} onAdded={(id) => {
+          <TrackSearch
+            classId={cls.id}
+            onAdded={(id) => {
               if (id) {
                 setSelectedTrackId(id);
                 setPendingRowFocus(id);
@@ -2910,7 +2896,27 @@ function ClassWorkspace({
               } else {
                 onTrackChanged();
               }
-            }} onError={onError} />
+            }}
+          />
+          {/* Manual entry stays available but de-emphasized (search/import is the
+              primary path; 09). For a track a provider can't return, or no creds. */}
+          <details className="mt-1">
+            <summary className="cursor-pointer font-ui text-xs text-text-tertiary hover:text-text-secondary">
+              Add manually
+            </summary>
+            <AddTrackForm
+              classId={cls.id}
+              onAdded={(id) => {
+                if (id) {
+                  setSelectedTrackId(id);
+                  setPendingRowFocus(id);
+                  onTrackAdded(id);
+                } else {
+                  onTrackChanged();
+                }
+              }}
+              onError={onError}
+            />
           </details>
         </div>
       </section>
@@ -3779,7 +3785,7 @@ function TrackInspector({
   };
 
   return (
-    <section 
+    <section
       ref={containerRef}
       tabIndex={-1}
       className="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none focus-visible:ring-2 focus-visible:ring-interactive"
