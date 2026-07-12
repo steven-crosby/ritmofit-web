@@ -61,6 +61,74 @@ describe('clip-window guard (integration)', () => {
     expect((await api(`/api/v1/classes/${classId}/run-payload`)).status).toBe(200);
   });
 
+  it('rejects an inverted/equal clip window (clipEndMs <= clipStartMs) with a clean 422, not a 500', async () => {
+    const user = await signUpUser();
+    const api = authed(user.cookie);
+    const { classId, classTrackId } = await createClassWithTrack(user.cookie);
+
+    // clipEndMs before clipStartMs — a start-vs-length guard passes (both inside the
+    // track), so without the cross-field guard this reaches the DB CHECK
+    // (clip_end_ms > clip_start_ms) and surfaces as an unhandled 500.
+    const inverted = await api(`/api/v1/class-tracks/${classTrackId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipStartMs: 90_000, clipEndMs: 30_000 }),
+    });
+    expect(inverted.status).toBe(422);
+    const invertedBody = (await inverted.json()) as { error: { code: string; message: string } };
+    expect(invertedBody.error.code).toBe('VALIDATION_ERROR');
+    expect(invertedBody.error.message).toMatch(/clip end/i);
+
+    // A zero-width window (end === start) is equally invalid (CHECK requires strictly >).
+    const equal = await api(`/api/v1/class-tracks/${classTrackId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipStartMs: 45_000, clipEndMs: 45_000 }),
+    });
+    expect(equal.status).toBe(422);
+    expect(((await equal.json()) as { error: { code: string } }).error.code).toBe(
+      'VALIDATION_ERROR',
+    );
+
+    // A partial patch that lowers only clipEndMs below the persisted clipStartMs must
+    // also be caught (the guard runs on the merged window, not the patch alone).
+    const trimmed = await api(`/api/v1/class-tracks/${classTrackId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipStartMs: 60_000, clipEndMs: 150_000 }),
+    });
+    expect(trimmed.status).toBe(200);
+    const partial = await api(`/api/v1/class-tracks/${classTrackId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipEndMs: 30_000 }),
+    });
+    expect(partial.status).toBe(422);
+
+    // None of the rejected patches persisted, so the run-payload still loads.
+    expect((await api(`/api/v1/classes/${classId}/run-payload`)).status).toBe(200);
+  });
+
+  it('rejects an add-track with an inverted clip window (clipEndMs <= clipStartMs) with a 422', async () => {
+    const user = await signUpUser();
+    const api = authed(user.cookie);
+    const classRes = await api('/api/v1/classes', {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Clip invert add test' }),
+    });
+    const classId = ((await classRes.json()) as { id: string }).id;
+
+    const res = await api(`/api/v1/classes/${classId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        track: { title: 'Song', artist: 'Artist', durationMs: TRACK_MS },
+        intensity: 'mod',
+        clipStartMs: 90_000,
+        clipEndMs: 30_000,
+      }),
+    });
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(body.error.message).toMatch(/clip end/i);
+  });
+
   it('rejects an add-track clip start at/past the track length', async () => {
     const user = await signUpUser();
     const api = authed(user.cookie);
