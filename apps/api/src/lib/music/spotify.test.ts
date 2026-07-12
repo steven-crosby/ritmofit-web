@@ -143,6 +143,29 @@ describe('SpotifyProvider.getPlaylist', () => {
     ).toEqual([`${playlistUrl}?limit=50&offset=0`, `${playlistUrl}?limit=50&offset=50`]);
   });
 
+  it('caps at IMPORT_TRACK_CAP (500) and halts pagination for huge playlists', async () => {
+    const fullPage = Array.from({ length: 50 }, (_, index) => ({
+      item: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
+    }));
+    const playlistUrl = `${API_BASE}/playlists/playlist-id/items`;
+
+    // Provide responses for the first 10 pages (500 tracks). The total is 1000,
+    // but it should stop fetching after hitting the 500 track cap.
+    const handlers: Record<string, unknown> = {};
+    for (let i = 0; i < 10; i++) {
+      handlers[`${playlistUrl}?limit=50&offset=${i * 50}`] = { items: fullPage, total: 1000 };
+    }
+
+    const { provider, calls } = makeProvider(handlers);
+
+    const results = await provider.getPlaylist({ provider: 'spotify', playlistId: 'playlist-id' });
+
+    expect(results).toHaveLength(500);
+    // 500 / 50 = 10 calls. Should stop there instead of fetching all 20 pages.
+    const playlistCalls = calls.filter((call) => call.url.startsWith(playlistUrl));
+    expect(playlistCalls).toHaveLength(10);
+  });
+
   it('rejects a malformed later page instead of returning a partial playlist', async () => {
     const playlistUrl = `${API_BASE}/playlists/playlist-id/items`;
     const { provider } = makeProvider({

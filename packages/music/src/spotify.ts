@@ -35,6 +35,7 @@ const SEARCH_LIMIT = 10;
 // Spotify's playlist-items endpoint currently caps pages at 50. Construct each
 // request from our API base + offset rather than following provider-supplied URLs.
 const PLAYLIST_PAGE_LIMIT = 50;
+const IMPORT_TRACK_CAP = 500;
 
 export interface SpotifyConfig {
   clientId: string;
@@ -144,7 +145,7 @@ class SpotifyProvider implements MusicProvider {
     let offset = 0;
     let total = Number.POSITIVE_INFINITY;
 
-    while (offset < total) {
+    while (offset < total && candidates.length < IMPORT_TRACK_CAP) {
       const json = await this.authedGet(
         `${this.apiBase}/playlists/${encodedPlaylistId}/items?limit=${PLAYLIST_PAGE_LIMIT}&offset=${offset}`,
       );
