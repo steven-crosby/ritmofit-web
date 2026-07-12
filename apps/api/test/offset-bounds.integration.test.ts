@@ -18,7 +18,9 @@ describe('offsetMsSchema bounds (unit)', () => {
   });
 });
 
-async function createClassWithTrack(cookie: string): Promise<{ classId: string; classTrackId: string }> {
+async function createClassWithTrack(
+  cookie: string,
+): Promise<{ classId: string; classTrackId: string }> {
   const api = authed(cookie);
   const classRes = await api('/api/v1/classes', {
     method: 'POST',
@@ -84,4 +86,3 @@ describe('offsetMsSchema integration limits', () => {
     expect(res.status).toBe(422);
   });
 });
-
