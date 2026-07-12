@@ -3434,7 +3434,7 @@
           "anchorMs": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 86400000
           },
           "beat": {
             "anyOf": [
@@ -3507,7 +3507,7 @@
           "anchorMs": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 86400000
           },
           "beat": {
             "anyOf": [
@@ -3563,7 +3563,7 @@
           "anchorMs": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 86400000
           },
           "beat": {
             "anyOf": [
@@ -3625,7 +3625,7 @@
           "anchorMs": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 86400000
           },
           "moveId": {
             "anyOf": [
@@ -3711,7 +3711,7 @@
           "anchorMs": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 86400000
           },
           "moveId": {
             "anyOf": [
@@ -3779,7 +3779,7 @@
           "anchorMs": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 86400000
           },
           "moveId": {
             "anyOf": [
@@ -4095,7 +4095,7 @@
                 "anchorMs": {
                   "type": "integer",
                   "minimum": 0,
-                  "maximum": 9007199254740991
+                  "maximum": 86400000
                 },
                 "intensity": {
                   "anyOf": [
@@ -6096,7 +6096,7 @@
                       "anchorMs": {
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 9007199254740991
+                        "maximum": 86400000
                       },
                       "beat": {
                         "anyOf": [
@@ -6161,7 +6161,7 @@
                       "anchorMs": {
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 9007199254740991
+                        "maximum": 86400000
                       },
                       "beat": {
                         "anyOf": [
@@ -6263,7 +6263,7 @@
                 "startOffsetMs": {
                   "type": "integer",
                   "minimum": 0,
-                  "maximum": 9007199254740991
+                  "maximum": 86400000
                 }
               },
               "required": [

@@ -14,9 +14,6 @@ export const uuidSchema = z.uuid();
 /** Epoch milliseconds — a non-negative integer (decision D10). */
 export const timestampMsSchema = z.int().nonnegative();
 
-/** A relative offset/anchor in milliseconds into a track (decision D10). */
-export const offsetMsSchema = z.int().nonnegative();
-
 /**
  * Upper bound (ms) for any track-relative duration/anchor or class-timeline offset
  * a client may submit — 24 hours. Generous enough never to reject a real track or
@@ -25,6 +22,9 @@ export const offsetMsSchema = z.int().nonnegative();
  * Does NOT apply to epoch-ms timestamps, which are far larger.
  */
 export const MAX_DURATION_MS = 24 * 60 * 60 * 1000;
+
+/** A relative offset/anchor in milliseconds into a track (decision D10). */
+export const offsetMsSchema = z.int().nonnegative().max(MAX_DURATION_MS);
 
 /**
  * `created_at` / `updated_at` present on every entity. Spread into an entity's
