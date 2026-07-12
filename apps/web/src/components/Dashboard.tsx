@@ -634,6 +634,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 payload={detail.payload}
                 onError={setError}
                 onTrackChanged={() => void loadDetail(selected.id)}
+                onTrackAdded={() => void loadDetail(selected.id, { silent: true })}
                 onReordered={() => void loadDetail(selected.id, { silent: true })}
                 onTrackRemoved={() => void loadDetail(selected.id, { silent: true })}
                 onRun={() => runClass(selected.id)}
@@ -2661,6 +2662,7 @@ function ClassWorkspace({
   payload: RunPayload | null;
   onError: (msg: string | null) => void;
   onTrackChanged: () => void;
+  onTrackAdded: (classTrackId: string) => void;
   /** Refresh after a reorder without the loading mask, so the track list stays
    *  mounted (grip focus + the reorder announcement survive). */
   onReordered: () => void;
@@ -2697,29 +2699,32 @@ function ClassWorkspace({
   // in the DOM at that point (the reload hasn't landed), so the anchor query resolves.
   const trackListRef = useRef<HTMLDivElement | null>(null);
   const inspectorPlaceholderRef = useRef<HTMLDivElement | null>(null);
-  const [pendingFocusAfterRemove, setPendingFocusAfterRemove] = useState<
+  const [pendingRowFocus, setPendingRowFocus] = useState<
     string | 'placeholder' | null
   >(null);
   useLayoutEffect(() => {
-    if (pendingFocusAfterRemove === null) return;
-    if (pendingFocusAfterRemove !== 'placeholder') {
+    if (pendingRowFocus === null) return;
+    if (pendingRowFocus !== 'placeholder') {
       // Match on dataset rather than a dynamic attribute selector — avoids CSS.escape
       // (absent in jsdom) and any need to escape the id.
       const rows = trackListRef.current?.querySelectorAll<HTMLElement>('[data-track-select-id]');
       const anchor = rows
-        ? Array.from(rows).find((el) => el.dataset.trackSelectId === pendingFocusAfterRemove)
+        ? Array.from(rows).find((el) => el.dataset.trackSelectId === pendingRowFocus)
         : undefined;
       if (anchor) {
         anchor.focus();
-        setPendingFocusAfterRemove(null);
+        setPendingRowFocus(null);
         return;
       }
+      // If we are focusing a specific row and it isn't in the DOM yet, we wait.
+      // (e.g., adding a track that hasn't loaded in the payload yet).
+      return;
     }
     // No anchor (class now empty, or the degraded lean list has no row control):
     // fall back to the placeholder so focus never lands on <body>.
     inspectorPlaceholderRef.current?.focus();
-    setPendingFocusAfterRemove(null);
-  }, [pendingFocusAfterRemove]);
+    setPendingRowFocus(null);
+  }, [pendingRowFocus, tracks, payload]);
 
   /** Compute the focus anchor for a removal, in the order the user sees the list. */
   const focusAnchorAfterRemoving = (classTrackId: string): string | 'placeholder' => {
@@ -2882,14 +2887,30 @@ function ClassWorkspace({
                 ))}
               </ol>
             ))}
-          <TrackSearch classId={cls.id} onAdded={onTrackChanged} />
+          <TrackSearch classId={cls.id} onAdded={(id) => {
+            if (id) {
+              setSelectedTrackId(id);
+              setPendingRowFocus(id);
+              onTrackAdded(id);
+            } else {
+              onTrackChanged();
+            }
+          }} />
           {/* Manual entry stays available but de-emphasized (search/import is the
               primary path; 09). For a track a provider can't return, or no creds. */}
           <details className="mt-1">
             <summary className="cursor-pointer font-ui text-xs text-text-tertiary hover:text-text-secondary">
               Add manually
             </summary>
-            <AddTrackForm classId={cls.id} onAdded={onTrackChanged} onError={onError} />
+            <AddTrackForm classId={cls.id} onAdded={(id) => {
+              if (id) {
+                setSelectedTrackId(id);
+                setPendingRowFocus(id);
+                onTrackAdded(id);
+              } else {
+                onTrackChanged();
+              }
+            }} onError={onError} />
           </details>
         </div>
       </section>
@@ -2917,7 +2938,7 @@ function ClassWorkspace({
               onSaved={onTrackChanged}
               onRemoved={() => {
                 if (selectedTrackId) {
-                  setPendingFocusAfterRemove(focusAnchorAfterRemoving(selectedTrackId));
+                  setPendingRowFocus(focusAnchorAfterRemoving(selectedTrackId));
                 }
                 setSelectedTrackId(null);
                 // Silent refresh (not onTrackChanged) so the workspace stays mounted
@@ -3630,6 +3651,10 @@ function TrackInspector({
   /** Open the Songs-by-Move dialog from the Moves section. */
   onOpenSongsByMove: () => void;
 }) {
+  const containerRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    containerRef.current?.focus();
+  }, []);
   const [intensity, setIntensity] = useState<Intensity>(track.intensity);
   const [bpm, setBpm] = useState(track.displayBpmOverride?.toString() ?? '');
   const [rpm, setRpm] = useState(track.displayRpm?.toString() ?? '');
@@ -3754,7 +3779,11 @@ function TrackInspector({
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4">
+    <section 
+      ref={containerRef}
+      tabIndex={-1}
+      className="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+    >
       <div className="flex items-center justify-between gap-2">
         <h3 className="truncate font-display text-sm font-semibold text-text-primary">{title}</h3>
         <span className="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary">
@@ -4055,7 +4084,7 @@ function AddTrackForm({
   onError,
 }: {
   classId: string;
-  onAdded: () => void;
+  onAdded: (classTrackId?: string) => void;
   onError: (msg: string | null) => void;
 }) {
   const [title, setTitle] = useState('');
@@ -4077,7 +4106,7 @@ function AddTrackForm({
         }
         onError(null);
         void run(async () => {
-          await addTrack(classId, {
+          const classTrack = await addTrack(classId, {
             track: {
               title: title.trim(),
               artist: artist.trim(),
@@ -4087,7 +4116,7 @@ function AddTrackForm({
           });
           setTitle('');
           setArtist('');
-          onAdded();
+          onAdded(classTrack.id);
         });
       }}
     >
