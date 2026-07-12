@@ -34,7 +34,12 @@ import {
   cues,
   classTrackMoves,
 } from '../db/schema.js';
-import { resolveClipWindow, effectiveDurationMs, clipStartBeyondTrack } from '../lib/duration.js';
+import {
+  resolveClipWindow,
+  effectiveDurationMs,
+  clipStartBeyondTrack,
+  clipWindowInverted,
+} from '../lib/duration.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
 classTrackRoutes.use('*', requireSession);
@@ -99,6 +104,12 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
   );
   if (clipError) {
     throw new HttpError(422, 'VALIDATION_ERROR', clipError);
+  }
+  // Reject an inverted/zero-width window (clipEndMs <= clipStartMs) up front — the DB
+  // CHECK enforces it too, but as an unhandled 500 rather than this clean 422.
+  const invertedError = clipWindowInverted(body.clipStartMs ?? 0, body.clipEndMs ?? null);
+  if (invertedError) {
+    throw new HttpError(422, 'VALIDATION_ERROR', invertedError);
   }
 
   const existing = await db
@@ -266,6 +277,12 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
     );
     if (clipError) {
       throw new HttpError(422, 'VALIDATION_ERROR', clipError);
+    }
+    // Check the cross-field invariant on the *merged* window, so a partial patch that
+    // moves only one edge past the other is caught (DB CHECK would 500 otherwise).
+    const invertedError = clipWindowInverted(clipStartMs, clipEndMs);
+    if (invertedError) {
+      throw new HttpError(422, 'VALIDATION_ERROR', invertedError);
     }
     if (touchesWindow && anchors) {
       if (anchors.minMs < startMs) {
