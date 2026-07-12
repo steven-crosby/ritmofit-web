@@ -10,6 +10,48 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-11 (polish-led mixed round — eleventh parallel lane-agent round) — deployed
+> (Worker `1a6c1d5a-bd69-4385-84b9-c93c9fcd97dd`).** Main HEAD `7b82282` (merge of PR #286). Code-only
+> — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior live
+> `b0d0fe54-b2e8-486e-9cb7-ebb80f360a42`. **Second FOUR-lane round**, first *polish-led* one: two
+> front-end polish/craft lanes (1, 4) beside two back-end audit-first harden lanes (2, 3); SPA split
+> at the component level with `Dashboard.tsx` single-owned by lane 1. Four disjoint-lane slices merged
+> via the standard train (sequential `update-branch` → combined CI → merge; zero cross-lane conflicts;
+> neither BE lane regenerated the OpenAPI spec, so no coordinate). Every plan-gate finding was
+> verified against the actual code before approval. **PR #286** (FE, Builder) — *return focus after
+> removing a track*: removing a track unmounted the inspector holding the focused "Remove track"
+> button, dropping focus to `<body>` (keyboard/AT users lost their place); focus now returns to the
+> nearest remaining track's row (the one sliding into the removed slot, else the previous), or the
+> placeholder when the class empties. Load-bearing change: the post-remove refresh became *silent*
+> (mirroring the existing `onReordered` path) so `ClassWorkspace` stays mounted and a `useLayoutEffect`
+> restores focus before paint — side benefit, the "Loading class…" flash on every removal is gone.
+> Browser-verified; FE-only, +2 tests. **PR #285** (FE, Live/Account) — *surface the playback-reconnect
+> state in Connections*: the playback coordinator computes `playback_reauth_required` via
+> `connectionHasPlaybackScope` and Live preflight tells the instructor "Reconnect Spotify for
+> playback", but `ConnectionsDialog` never called that helper — a live-token-but-no-`streaming`
+> Spotify connection rendered as a plain "✓ Connected" dead-end; now it shows a caution
+> "Reconnect for playback" affordance mirroring the shipped saved-playlist block, with the playlist
+> block gated on playback-scope-present so a both-scopes-missing connection shows a single reconnect
+> button. FE-only, +tests. **PR #284** (BE, provider/music) — *cancel a pending provider purge on
+> reconnect*: disconnect enqueues a deferred metadata purge drained by the daily Cron, which strips
+> all `track_provider_ids` + album art for `(user, provider)` with no active-connection check — so a
+> disconnect → reconnect → re-import inside the drain window silently wiped the freshly re-imported
+> refs and turned playable class tracks unplayable; new `cancelProviderPurge` (deletes only
+> drain-eligible `failedAt IS NULL` rows) called in `upsertConnection`, the single choke point for
+> mock/OAuth-callback/Apple connects. Contract-neutral; +2 tests incl. a consequence-level survival
+> lock (seed ref → reconnect → run real drain → assert ref + art survive). **PR #283** (BE, class-core)
+> — *return 422 for an inverted clip window instead of 500*: `clipEndMs <= clipStartMs` passed the flat
+> schema + the start-vs-length guard, hit the `class_tracks_clip_window_check` DB CHECK, and surfaced
+> as an unhandled 500 rather than the documented 422 envelope; new route-level `clipWindowInverted`
+> guard (mirrors `clipStartBeyondTrack`) in POST add + PATCH (PATCH on the merged window, so partial
+> patches are caught); falsifier-verified (returned 500 before / 422 after); no shared-contract touch.
+> Post-deploy smoke green (SPA 200 + served asset hash `index-MskxBG7r` matches build after an initial
+> stale-edge-cache HIT cleared on cache-bust; `/api/v1/health` 200; unauth `/api/v1/classes` 401; HSTS
+> · CSP · nosniff · frame-DENY · referrer-policy present). Parked follow-ups (see `INBOX.md`): bound
+> `offsetMsSchema` (finding B, needs a coordinated `packages/shared` change); cap Spotify catalog
+> `getPlaylist` paging (asymmetric with SoundCloud/Apple's 500 cap); Apple `getPlaylist` duplicate
+> `limit` param (cosmetic); in-Live "Manage connections" overlay (composes on #285).
+
 > **Session 2026-07-11 (mixed feature/harden round — D21 creator loop — tenth parallel lane-agent
 > round) — deployed (Worker `b0d0fe54-b2e8-486e-9cb7-ebb80f360a42`).** Main HEAD `f03c51a` (merge of
 > PR #281). Code-only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback
