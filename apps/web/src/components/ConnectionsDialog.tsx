@@ -31,6 +31,7 @@ import {
   providerLabel,
   providerConnectionState,
   connectionHasSavedPlaylistScope,
+  connectionHasPlaybackScope,
   type ProviderConnectionState,
 } from '../lib/providers.js';
 import { Dialog } from './Dialog.js';
@@ -206,12 +207,25 @@ export function ConnectionsDialog({
             const showReconnecting =
               busy && (dataState === 'disconnected' || dataState === 'expired');
             const meta = STATE_META[showReconnecting ? 'reconnecting' : dataState];
+            // A Spotify connection made before playback launched (or that never
+            // granted `streaming`) is a live token that still can't drive in-app
+            // playback — Live preflight reports `playback_reauth_required` and tells
+            // the instructor to "Reconnect Spotify for playback", but this row would
+            // otherwise show only "✓ Connected" with a Disconnect. Surface the fix
+            // the hint points at.
+            const hasPlaybackScope = connectionHasPlaybackScope(provider, connection);
+            const needsPlaybackReconnect = dataState === 'connected' && !hasPlaybackScope;
             // Connections made before playlist browse launched only granted the
             // pre-expansion scope set — surface a reconnect prompt instead of a
             // dead "Browse playlists" button (Dashboard hides it entirely when the
-            // browse read has never succeeded).
+            // browse read has never succeeded). Gated on playback scope being
+            // present: one reconnect grants the full current scope set, so when
+            // both are missing the playback block above subsumes this — never stack
+            // two identical reconnect buttons.
             const needsPlaylistReconnect =
-              dataState === 'connected' && !connectionHasSavedPlaylistScope(provider, connection);
+              dataState === 'connected' &&
+              hasPlaybackScope &&
+              !connectionHasSavedPlaylistScope(provider, connection);
             return (
               <li
                 key={provider}
@@ -282,6 +296,27 @@ export function ConnectionsDialog({
                     </button>
                   )}
                 </div>
+
+                {needsPlaybackReconnect && (
+                  <div className="flex flex-col gap-1.5 border-t border-interactive/10 pt-2">
+                    <p className="flex items-start gap-1.5 font-ui text-xs text-state-caution">
+                      <span aria-hidden>⊘</span>
+                      <span>
+                        Connected for library access. Reconnect to enable in-app playback in Live
+                        mode.
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => connect(provider)}
+                      disabled={busy}
+                      className="inline-flex min-h-8 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 py-1 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50"
+                    >
+                      <span aria-hidden>↻</span>
+                      {busy ? 'Reconnecting…' : 'Reconnect for playback'}
+                    </button>
+                  </div>
+                )}
 
                 {needsPlaylistReconnect && (
                   <div className="flex flex-col gap-1.5 border-t border-interactive/10 pt-2">

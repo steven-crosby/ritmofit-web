@@ -112,3 +112,58 @@ describe('ConnectionsDialog saved-playlist reconnect affordance', () => {
     expect(screen.queryByText(/Reconnect to browse saved playlists/i)).toBeNull();
   });
 });
+
+describe('ConnectionsDialog playback reconnect affordance', () => {
+  it('prompts a playback reconnect when Spotify is connected but lacks the streaming scope', async () => {
+    // A live token that never granted `streaming` — Live preflight reports
+    // `playback_reauth_required` and points the instructor here.
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...connection('spotify'), scope: 'user-library-read' },
+    ]);
+
+    render(<ConnectionsDialog onClose={() => {}} />);
+
+    expect(
+      await screen.findByText(
+        'Connected for library access. Reconnect to enable in-app playback in Live mode.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Reconnect for playback/i })).toBeTruthy();
+  });
+
+  it('hides the affordance once the connection carries the streaming scope', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...connection('spotify'), scope: 'user-library-read streaming playlist-read-private' },
+    ]);
+
+    render(<ConnectionsDialog onClose={() => {}} />);
+
+    await screen.findByText('Connected');
+    expect(screen.queryByText(/Reconnect to enable in-app playback/i)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Reconnect for playback/i })).toBeNull();
+  });
+
+  it('never gates SoundCloud or Apple Music on the Spotify playback scope', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...connection('soundcloud'), scope: null },
+    ]);
+
+    render(<ConnectionsDialog onClose={() => {}} />);
+
+    await screen.findByText('Connected');
+    expect(screen.queryByRole('button', { name: /Reconnect for playback/i })).toBeNull();
+  });
+
+  it('shows only the playback prompt when both playback and playlist scopes are missing', async () => {
+    // One reconnect grants the full current scope set, so the playback block
+    // subsumes the playlist prompt — never two stacked reconnect buttons.
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...connection('spotify'), scope: 'user-library-read' },
+    ]);
+
+    render(<ConnectionsDialog onClose={() => {}} />);
+
+    expect(await screen.findByRole('button', { name: /Reconnect for playback/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Reconnect to browse playlists/i })).toBeNull();
+  });
+});
