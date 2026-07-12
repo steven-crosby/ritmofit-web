@@ -2,6 +2,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
@@ -634,6 +635,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 onError={setError}
                 onTrackChanged={() => void loadDetail(selected.id)}
                 onReordered={() => void loadDetail(selected.id, { silent: true })}
+                onTrackRemoved={() => void loadDetail(selected.id, { silent: true })}
                 onRun={() => runClass(selected.id)}
                 onClassUpdated={applyClassUpdate}
                 onClassDeleted={handleClassDeleted}
@@ -2648,6 +2650,7 @@ function ClassWorkspace({
   onError,
   onTrackChanged,
   onReordered,
+  onTrackRemoved,
   onRun,
   onClassUpdated,
   onClassDeleted,
@@ -2661,6 +2664,10 @@ function ClassWorkspace({
   /** Refresh after a reorder without the loading mask, so the track list stays
    *  mounted (grip focus + the reorder announcement survive). */
   onReordered: () => void;
+  /** Refresh after a track removal without the loading mask — same reason as
+   *  `onReordered`: the workspace must stay mounted so focus can return to the
+   *  nearest remaining track's row instead of falling to <body>. */
+  onTrackRemoved: () => void;
   onRun: () => void;
   onClassUpdated: (cls: Class) => void;
   onClassDeleted: (classId: string) => void;
@@ -2681,6 +2688,50 @@ function ClassWorkspace({
   const isOwner = cls.accessLevel === 'owner';
   const canEdit = cls.accessLevel === 'owner' || cls.accessLevel === 'edit';
   const isFree = cls.timelineMode === 'free';
+
+  // Focus return after removing a track: the inspector (holding the focused "Remove
+  // track" button) unmounts on removal, so focus would fall to <body> and a keyboard
+  // user would lose their place. We move it to the nearest remaining track's row
+  // control, or the inspector placeholder when the class is now empty. A layout
+  // effect applies it before paint (no flash of lost focus); the removed row is still
+  // in the DOM at that point (the reload hasn't landed), so the anchor query resolves.
+  const trackListRef = useRef<HTMLDivElement | null>(null);
+  const inspectorPlaceholderRef = useRef<HTMLDivElement | null>(null);
+  const [pendingFocusAfterRemove, setPendingFocusAfterRemove] = useState<
+    string | 'placeholder' | null
+  >(null);
+  useLayoutEffect(() => {
+    if (pendingFocusAfterRemove === null) return;
+    if (pendingFocusAfterRemove !== 'placeholder') {
+      // Match on dataset rather than a dynamic attribute selector — avoids CSS.escape
+      // (absent in jsdom) and any need to escape the id.
+      const rows = trackListRef.current?.querySelectorAll<HTMLElement>('[data-track-select-id]');
+      const anchor = rows
+        ? Array.from(rows).find((el) => el.dataset.trackSelectId === pendingFocusAfterRemove)
+        : undefined;
+      if (anchor) {
+        anchor.focus();
+        setPendingFocusAfterRemove(null);
+        return;
+      }
+    }
+    // No anchor (class now empty, or the degraded lean list has no row control):
+    // fall back to the placeholder so focus never lands on <body>.
+    inspectorPlaceholderRef.current?.focus();
+    setPendingFocusAfterRemove(null);
+  }, [pendingFocusAfterRemove]);
+
+  /** Compute the focus anchor for a removal, in the order the user sees the list. */
+  const focusAnchorAfterRemoving = (classTrackId: string): string | 'placeholder' => {
+    const order = payload?.tracks ?? [];
+    const removedIndex = order.findIndex((e) => e.classTrackId === classTrackId);
+    const remaining = order.filter((e) => e.classTrackId !== classTrackId);
+    if (remaining.length === 0) return 'placeholder';
+    // Nearest convention: the track that slides into the removed slot, else the new
+    // last (the previous track) when the last row was removed.
+    const nearest = remaining[removedIndex] ?? remaining[remaining.length - 1];
+    return nearest ? nearest.classTrackId : 'placeholder';
+  };
 
   // Toggle the class between back-to-back (sequential) and free placement. The
   // server seeds/repacks offsets; refresh both the class and the run-payload.
@@ -2799,7 +2850,10 @@ function ClassWorkspace({
           </div>
         )}
 
-        <div className="flex flex-col gap-2 rounded-card bg-bg-raised p-4 shadow-card">
+        <div
+          ref={trackListRef}
+          className="flex flex-col gap-2 rounded-card bg-bg-raised p-4 shadow-card"
+        >
           <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
             Track list
           </span>
@@ -2862,14 +2916,24 @@ function ClassWorkspace({
               focus={inspectorFocus}
               onSaved={onTrackChanged}
               onRemoved={() => {
+                if (selectedTrackId) {
+                  setPendingFocusAfterRemove(focusAnchorAfterRemoving(selectedTrackId));
+                }
                 setSelectedTrackId(null);
-                onTrackChanged();
+                // Silent refresh (not onTrackChanged) so the workspace stays mounted
+                // and the focus-restoration effect above can run — a non-silent reload
+                // would swap in the "Loading class…" mask and drop focus to <body>.
+                onTrackRemoved();
               }}
               onOpenSongsByMove={onOpenSongsByMove}
             />
           </div>
         ) : (
-          <div className="rounded-card border border-interactive/20 bg-bg-base p-5">
+          <div
+            ref={inspectorPlaceholderRef}
+            tabIndex={-1}
+            className="rounded-card border border-interactive/20 bg-bg-base p-5 outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+          >
             <p className="font-ui text-sm text-text-tertiary">
               Select a track to edit its intensity, BPM, notes, cues, and moves.
             </p>
@@ -3411,6 +3475,7 @@ function SongRow({
         type="button"
         onClick={onSelect}
         aria-pressed={selected}
+        data-track-select-id={entry.classTrackId}
         className={`flex min-w-0 flex-[1_1_16rem] flex-wrap items-center gap-2 rounded-card bg-bg-base px-3 py-2 text-left sm:flex-nowrap sm:gap-3 ${
           selected ? 'ring-2 ring-interactive' : ''
         }`}
