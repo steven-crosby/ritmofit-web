@@ -61,3 +61,19 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
       (snaps to the preceding track's grid) and confirm the new **m:ss** cue/move/segment entry
       (#280) round-trips; (e) duplicate a free-mode class → copy keeps `timelineMode`, offsets, gaps;
       (f) Live Mode shows the **wake-lock status chip** (#281). Delete this line once verified. — #plan
+- [ ] (2026-07-12) **Bound `offsetMsSchema`** (`packages/shared/src/entities/common.ts` ~L18) — it's
+      `z.int().nonnegative()` with no `.max(MAX_DURATION_MS)`, unlike sibling clip/offset fields, so
+      section `startOffsetMs` + cue/move anchors accept arbitrarily large ints (Round 11 finding B,
+      left untouched — it's the frozen `packages/shared` zone; needs a coordinated shared-contract
+      change). — #bug
+- [ ] (2026-07-12) **Cap Spotify catalog `getPlaylist` paging** (`packages/music/src/spotify.ts`
+      ~L147, `while (offset < total)`) — unbounded, so a huge pasted public playlist pages up to
+      total/50 sequential Spotify calls before the route's 100-track cap rejects it; SoundCloud and
+      Apple already cap the raw fan-out at 500 (Round 11 Lane-3 runner-up). — #bug
+- [ ] (2026-07-12) **Apple `getPlaylist` may emit a duplicate `limit` query param**
+      (`packages/music/src/apple-music.ts` ~L154) if Apple's `next` cursor already carries one —
+      provider-tolerant, cosmetic (Round 11 Lane-3 minor). — #bug
+- [ ] (2026-07-12) **In-Live "Manage connections" overlay** — open `ConnectionsDialog` from Live
+      preflight so fixing a failing track's provider doesn't require exiting Live; composes on
+      #285's now-honest playback-reconnect state. Note: Spotify/SoundCloud connect is a full-page
+      redirect that ejects Live, so solve that UX wrinkle deliberately (Round 11 Lane-4 runner-up). — #idea
