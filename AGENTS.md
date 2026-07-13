@@ -3,6 +3,7 @@
 <!-- note (Codex, 2026-07-05): Consolidated stale historical notes and source-of-truth routing after the D20 solo-first reset. -->
 <!-- note (Claude, 2026-07-06): Recorded the D21 creator-workstation-shell frame in Product Boundaries. -->
 <!-- note (Codex, 2026-07-12): Consolidated canonical instructions into AGENTS.md and removed Claude-only wrappers. -->
+<!-- note (Codex, 2026-07-13): Promoted verified OpenAPI, migration, PWA, provider, and deployment lessons from historical agent memory. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -107,6 +108,9 @@ Use Node `>=22.13` and pnpm `>=11.4`.
 - `pnpm --filter @ritmofit/api contract-parity`: compare backend/OpenAPI run-payload DTOs with the
   vendored iOS snapshot allowlist.
 
+The root `pnpm test` uses `--if-present`. When a workspace package gains its first tests, add an
+explicit `test` script to that package so a green root command cannot silently mean zero tests ran.
+
 For local API setup after schema changes:
 
 ```bash
@@ -125,12 +129,21 @@ those schemas. Class-scoped access must go through `requireAccess` or the matchi
 helper. D1 has no row-level security, so missing app-level authz is a security bug. Return the standard
 JSON error envelope and preserve documented 404 behavior for hidden resources.
 
+The OpenAPI generator in `apps/api/scripts/generate-openapi.ts` manually registers component schemas
+and paths. When adding or changing a route or DTO, inspect both registries directly; regeneration with
+no diff does not prove the surface was registered.
+
 Generate and commit new Drizzle migrations. Never rewrite an applied migration without explicit approval.
-Keep queries SQLite-compatible and reconcile `schema.md` with Drizzle before dependent code.
+Keep queries SQLite-compatible and reconcile `schema.md` with Drizzle before dependent code. Review the
+generated SQL before applying it, especially table-rebuild `INSERT ... SELECT` column/value alignment,
+because a syntactically valid rebuild can silently move the wrong data.
 
 For UI work, use `ritmofit_design_system` tokens and established components. Include loading, empty,
 error, and permission states. Controls must be keyboard accessible, visibly focused, and labeled; never
-encode meaning by color alone. Respect `prefers-reduced-motion`.
+encode meaning by color alone. Respect `prefers-reduced-motion`. Use browser viewport emulation for
+narrow responsive QA; shrinking a headless window can capture a cropped wider layout. Preserve the PWA
+prompted-update path, and keep service-worker navigation fallback denied for `/api/` routes so OAuth and
+auth callbacks reach the Worker rather than a cached SPA shell.
 
 ## Music Constraints
 
@@ -144,7 +157,9 @@ These rules are non-negotiable:
 
 Re-verify provider API and authentication behavior before changing integrations. Keep Sign in with Apple
 separate from Apple Music. Never log tokens, cookies, authorization headers, private keys, or provider
-secrets.
+secrets. Diagnose provider API-shape drift separately from authorization/scope failures. Verify connect,
+browse/import, readiness, playback, seeking, pause/resume, and reconnect as distinct capabilities; success
+in one does not prove the others.
 
 ## Verification, PRs, And Commits
 
@@ -181,8 +196,10 @@ Worker secrets belong in ignored `apps/api/.dev.vars`; production secrets are ma
 Deployments are manual and production-facing. Merging is not deploying: keep `main` deployable, but ship
 in deliberate batches. Deploy immediately only for a production bug, regression, security fix, or
 live-verification finding. Deploy schema/migration, auth, provider, and infrastructure changes on their
-own; apply required remote D1 migrations before code.
+own; apply required remote D1 migrations before code. The Worker deploy command does not build the SPA;
+build `apps/web/dist` before deploying the Worker that serves it.
 
 For deploys and rollback, follow `ritmofit_dev_plan/deployment-runbook.md`. After deployment, smoke-test
 the SPA, health endpoint, a protected endpoint, relevant assets/headers, and report the Worker version
-plus remote migration state.
+plus remote migration state. If an asset-hash check disagrees with a confirmed deploy, cache-bust the
+request before diagnosing a rollback or broken release.
