@@ -29,7 +29,7 @@ history and inspect from the merge base without silently advancing the checkpoin
 
 First establish a clean baseline:
 
-1. Read `CLAUDE.md` and the live plan/build-order material it names.
+1. Read `AGENTS.md` and the live plan/build-order material it names.
 2. Fetch the remote default branch and inspect recent commits, merged PRs, open PRs, and
    CI status.
 3. Run the cheapest relevant checks before changing anything. If the baseline is red,
@@ -37,7 +37,7 @@ First establish a clean baseline:
    recent, isolated, and within this prompt's scope.
 
 Before opening a PR, run this repo's complete submission gate: the full CI-equivalent
-command list in `ritmofit-web/CLAUDE.md` (typecheck, lint, test, build for the SPA + the
+command list in `ritmofit-web/AGENTS.md` (typecheck, lint, test, build for the SPA + the
 Worker/API).
 
 If the full required gate cannot complete inside the timebox, do not open the PR. Preserve

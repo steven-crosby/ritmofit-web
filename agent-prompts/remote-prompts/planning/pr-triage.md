@@ -9,7 +9,7 @@
 
 > **TRIAGE + SAFE REBASE.** Review and recommend, and **push rebased branches** to keep the
 > queue mergeable — but never merge. The technical prompts OPEN draft PRs; this one helps me
-> CLEAR them fast. Read this repo's `CLAUDE.md` and fetch first.
+> CLEAR them fast. Read this repo's `AGENTS.md` and fetch first.
 
 You have full autonomy within this scope to triage, rebase trivially-stale green auto branches (with --force-with-lease), and produce the report without further input.
 

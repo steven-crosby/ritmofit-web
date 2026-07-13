@@ -55,7 +55,7 @@ pnpm --filter @ritmofit/api db:seed:local
 
 ## Test and quality gates
 
-The CI-equivalent gates (also documented in [`CLAUDE.md`](CLAUDE.md)):
+The CI-equivalent gates (also documented in [`AGENTS.md`](AGENTS.md)):
 
 ```bash
 pnpm format:check
@@ -100,12 +100,12 @@ The UI is driven by design tokens, not ad-hoc colors. The flow is single-source:
 
 Deployments are **manual and production-facing** — see the deploy, rollback, and D1 recovery procedures
 in [`ritmofit_dev_plan/deployment-runbook.md`](ritmofit_dev_plan/deployment-runbook.md) and the
-"Security And Deployment" section of [`CLAUDE.md`](CLAUDE.md). Apply any required remote D1
+"Security And Deployment" section of [`AGENTS.md`](AGENTS.md). Apply any required remote D1
 migrations **before** the code that depends on them.
 
 ## Where to read more
 
-- [`CLAUDE.md`](CLAUDE.md) — canonical contributor and agent guide (architecture, rules, workflow,
+- [`AGENTS.md`](AGENTS.md) — canonical contributor and agent guide (architecture, rules, workflow,
   verification). It takes precedence if any other doc conflicts.
 - [`ritmofit_dev_plan/`](ritmofit_dev_plan/) — architecture, authorization, schema, milestones, and
   operational runbooks.

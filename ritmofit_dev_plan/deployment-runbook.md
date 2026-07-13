@@ -2,7 +2,7 @@
 
 Canonical operational procedure for the single Cloudflare Worker that serves `https://ritmofit.studio`
 (API at `/api/*` + the built SPA from `apps/web/dist`). Deployments are **manual and production-facing** —
-get owner confirmation before deploying (`CLAUDE.md`). All commands run from the repo root unless noted;
+get owner confirmation before deploying (`AGENTS.md`). All commands run from the repo root unless noted;
 API-scoped Wrangler commands use `pnpm --filter @ritmofit/api exec wrangler …`.
 
 Owner / deployer: `steven.crosby09@gmail.com` (Cloudflare account holder).
@@ -158,7 +158,7 @@ does **not** un-apply a migration. If a bad deploy included a migration:
 
 ## References
 
-- Manual deploy + migration ordering: `CLAUDE.md` › "Security And Deployment".
+- Manual deploy + migration ordering: `AGENTS.md` › "Security And Deployment".
 - Deploy history of record: `ritmofit_dev_plan/HISTORY.md` (the archived `ritmofit_dev_plan/archive/REVIEW_HISTORY.md`
   holds the pre-launch remediation log) — one dated entry per production deploy.
 - Session close hygiene: `agent-prompts/daily/close-session.md`.

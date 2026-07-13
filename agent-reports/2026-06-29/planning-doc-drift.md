@@ -14,7 +14,7 @@ prs: # PR URLs opened this run; leave empty if none
 
 ## Summary
 
-Swept the written record (AGENTS.md, CLAUDE.md, `README.md`, the `agent-prompts/` library, and
+Swept the written record (AGENTS.md, AGENTS.md, `README.md`, the `agent-prompts/` library, and
 the `ritmofit_dev_plan/` tree) against the actual repo at `main` head `d2b7b4f`. **No new
 docs-only PR was opened, by design.** The one clear, in-scope drift I found — a dead relative
 link to `ios-snapshot/` in `agent-prompts/remote-prompts/technical/api-contract-parity.md` — is

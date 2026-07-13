@@ -139,7 +139,7 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
 1. **Plan before code.** For any feature, propose files, schema impact, API surface, frontend impact,
    risks, and verification — then wait for confirmation. Use the plan→confirm template in
-   [`../CLAUDE.md`](../CLAUDE.md) → "Working Agreement".
+   [`../AGENTS.md`](../AGENTS.md) → "Working Agreement".
 2. **Respect the hard constraints above.** Never cache audio, pull Spotify BPM, or mix audio in-app.
 3. **The shared package is the contract.** Entity shapes live once in `packages/shared`; don't
    redefine them in `apps/api` or `apps/web`.
@@ -163,7 +163,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 >   version, and remote D1 migration level) → [`HISTORY.md`](./HISTORY.md), newest entry first.
 > - **Paused iOS parity record** → [`web-ios-parity.md`](./web-ios-parity.md) (kept for contract/design
 >   sync context, not a current product gate).
-> - **Contributor + deployment instructions** → [`../CLAUDE.md`](../CLAUDE.md) and
+> - **Contributor + deployment instructions** → [`../AGENTS.md`](../AGENTS.md) and
 >   [`deployment-runbook.md`](./deployment-runbook.md).
 >
 > The headline: backend **M1–M4 complete and deployed**, the web launch gate is green, and the app is

@@ -11,7 +11,7 @@ the noise first.
 
 ## How to capture
 
-- **From Claude Code (in the repo):** "add a breadcrumb: …" → a line gets appended below.
+- **From a coding agent (in the repo):** "add a breadcrumb: …" → a line gets appended below.
 - **From Claude.ai Projects (no repo):** ask for a paste-ready line in the format below,
   then drop it in here next time you're in the repo. Keep the Project's custom
   instructions pointed at this format so what comes back is already shaped to land.

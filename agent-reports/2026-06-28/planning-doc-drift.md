@@ -14,7 +14,7 @@ prs: # PR URLs opened this run; leave empty if none
 
 ## Summary
 
-Swept the written record (AGENTS.md, CLAUDE.md, `agent-prompts/`, and the
+Swept the written record (AGENTS.md, AGENTS.md, `agent-prompts/`, and the
 `ritmofit_dev_plan/` tree) against the actual repo. The live docs are in good shape:
 every Development Command, CI-gate reference, and Project Structure path in AGENTS.md
 resolves correctly, and milestone/status markers are consistent across
