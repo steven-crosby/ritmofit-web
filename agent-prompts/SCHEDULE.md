@@ -46,7 +46,7 @@ signal for a specialist, skip the specialist run.
 
 | Prompt | Purpose |
 |---|---|
-| `remote-prompts/planning/doc-drift.md` | Keep `CLAUDE.md`, README files, setup docs, and planning docs aligned with the repo. |
+| `remote-prompts/planning/doc-drift.md` | Keep `AGENTS.md`, README files, setup docs, and planning docs aligned with the repo. |
 | `remote-prompts/technical/api-contract-parity.md` | Compare backend/OpenAPI/shared schemas against the iOS client read-only. |
 | `remote-prompts/technical/content-consistency.md` | Check cross-surface terminology, labels, state copy, and formatting. |
 | `remote-prompts/technical/observability.md` | Check logs, health endpoints, smoke coverage, error envelopes, and deploy evidence. |

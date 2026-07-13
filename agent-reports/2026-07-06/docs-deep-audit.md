@@ -13,7 +13,7 @@ prs: []
 
 ## Summary
 
-Owner-requested deep audit of every live doc surface — root docs (`CLAUDE.md`, `AGENTS.md`,
+Owner-requested deep audit of every live doc surface — root docs (`AGENTS.md`, `AGENTS.md`,
 `README.md`, `INBOX.md`), `ritmofit_dev_plan/` (16 live files), `ritmofit_design_system/`,
 and `agent-prompts/` — across four dimensions: accuracy vs. code (static verification),
 cross-doc consistency, structure/redundancy, and content gaps. Historical records
@@ -22,13 +22,13 @@ is in unusually good health** — schema.md matches Drizzle on every table, all 
 commands exist, the design system is fully D17/D21-consistent and its verify gate passes,
 and the prompt library's references all resolve. Seven clear-cut drift fixes were applied in
 this session (P1–P3 below, all docs-only); four structural judgment calls need an owner
-decision. Ran in the same session that made `CLAUDE.md` canonical (AGENTS.md → pointer stub).
+decision. Ran in the same session that made `AGENTS.md` canonical (AGENTS.md → pointer stub).
 
 ## Commands run + results
 
 - `pnpm format:check` → pass (after fixes; all matched files use Prettier style)
 - `(cd ritmofit_design_system && npm run verify)` → pass (token drift, lint, contrast AA all clear)
-- Static cross-checks (read, not executed): all 13 commands documented in `CLAUDE.md`/README
+- Static cross-checks (read, not executed): all 13 commands documented in `AGENTS.md`/README
   exist in root/workspace `package.json` scripts; the documented CI-equivalent gate exactly
   matches `.github/workflows/ci.yml` (11 steps incl. design-system verify + contract-parity);
   `schema.md` vs `apps/api/src/db/schema.ts` — all 17 tables, enums, CHECKs, partial uniques,
@@ -58,7 +58,7 @@ decision. Ran in the same session that made `CLAUDE.md` canonical (AGENTS.md →
 8. **[P3] web-launch-readiness.md "Handoff To iOS" still framed iOS wrap-up as "the next
    milestone"** — superseded by D20. Marked and reworded.
 
-(Also this session, pre-audit: `CLAUDE.md` made canonical, `AGENTS.md` → pointer stub, ~25 live
+(Also this session, pre-audit: `AGENTS.md` made canonical, `AGENTS.md` → pointer stub, ~25 live
 references updated, and four stale section-name references repaired.)
 
 ## Judgment calls — owner approved same session (2026-07-06); all four executed

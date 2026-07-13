@@ -48,7 +48,7 @@ deployment behavior changed, run the full CI-equivalent gate:
 - [ ] Determine whether production appears aligned with `main`. Deploys are manual, so code
   merged to `main` this session is not live until deployed.
 - [ ] Default to **not** deploying just because code merged this session. Ritmo Studio ships in
-  deliberate batches, not once per merge (see `CLAUDE.md` "Security And Deployment").
+  deliberate batches, not once per merge (see `AGENTS.md` "Security And Deployment").
   Deploy now only for a batch the owner wants live, an urgent fix (prod bug / regression / security /
   live-verification finding), or a risky change (schema/migration, auth, provider, infra) that should
   ship on its own.
@@ -86,7 +86,7 @@ deployment behavior changed, run the full CI-equivalent gate:
   `agent-prompts/`, concrete bug → draft PR / focused follow-up). **Delete each line once routed**,
   and delete stale ones.
   Leave only genuinely unshaped ideas for next session.
-- [ ] Keep `CLAUDE.md` limited to durable contributor rules; update it only when workflows,
+- [ ] Keep `AGENTS.md` limited to durable contributor rules; update it only when workflows,
   architecture boundaries, or canonical commands change.
 - [ ] Append dated deploy/build entries to `ritmofit_dev_plan/HISTORY.md` when something
   shipped, deployed, or materially changed operational state. Use absolute dates.

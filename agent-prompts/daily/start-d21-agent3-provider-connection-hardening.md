@@ -107,7 +107,7 @@ Themes worth checking: 401→reauth mapping and single-retry semantics; expiry-s
 refresh-token rotation persistence; playback-token scope gating and TTL; disconnect
 purge completeness; rate-limit windows/keys per route; and **secret hygiene** — never
 log tokens, refresh tokens, `Authorization`/`Music-User-Token` headers, or provider
-secrets (CLAUDE.md → Music Constraints).
+secrets (AGENTS.md → Music Constraints).
 
 ## Explicitly Out Of Scope
 
@@ -126,7 +126,7 @@ secrets (CLAUDE.md → Music Constraints).
 
 Read, in order:
 
-- `CLAUDE.md`
+- `AGENTS.md`
 - `agent-prompts/daily/start-session.md`
 - `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`
 - `ritmofit_dev_plan/decisions.md` sections D19, D20, D21

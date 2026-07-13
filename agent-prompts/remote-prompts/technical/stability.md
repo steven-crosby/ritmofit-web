@@ -9,7 +9,7 @@
 
 > **Follow the house rules first:**
 > `agent-prompts/remote-prompts/00-house-rules.md`
-> Even if unavailable: read the repo's CLAUDE.md, branch per concern, DRAFT PRs only,
+> Even if unavailable: read the repo's AGENTS.md, branch per concern, DRAFT PRs only,
 > never merge, run build+tests before every PR, cap at 1 PR + a validated agent report.
 
 **REPO:** `ritmofit-web`

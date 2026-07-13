@@ -1,7 +1,7 @@
 # Archive
 
 Obsolete AI session prompts and dated launch/audit artifacts, kept for provenance but no longer
-maintained. Their internal links may be stale. Live guidance is in `../../CLAUDE.md`, the active
+maintained. Their internal links may be stale. Live guidance is in `../../AGENTS.md`, the active
 `ritmofit_dev_plan/` docs, and `HISTORY.md`.
 
 Archived 2026-06-19 (Claude) — the web app is launched and deployed (0 launch blockers), so these
@@ -13,9 +13,9 @@ pre-launch and M1-era materials are superseded.
 | `REVIEW_HISTORY.md` | Dated pre-launch remediation log | `HISTORY.md` |
 | `pre_launch_audit_report.md` | Staff-QA audit output (2026-06-18, verdict PASS) | — |
 | `ritmofitweb-prelaunch-audit.md` | The Staff-QA audit *prompt* that emitted the report above | — |
-| `codex-prompts/` | OpenAI Codex session/audit/hardening prompt sequence | `../../CLAUDE.md` + `../../agent-prompts/daily/close-session.md` |
+| `codex-prompts/` | OpenAI Codex session/audit/hardening prompt sequence | `../../AGENTS.md` + `../../agent-prompts/daily/close-session.md` |
 | `session-prompts.md` | M1 build-order copy-paste implementation prompts | M1–M4 shipped |
-| `ai-working-rules.md` | M1-era plan→confirm working agreement | `../../CLAUDE.md` → "Working Agreement" |
+| `ai-working-rules.md` | M1-era plan→confirm working agreement | `../../AGENTS.md` → "Working Agreement" |
 | `brand-mockup-review.md` | One-off frontend ↔ design-system conformance review (2026-06-13) | — |
 | `structclub-parity-audit.md` | Point-in-time competitive audit vs. StructClub (2026-06-24) | `../web-launch-readiness.md`, `../DEVELOPMENT_PLAN.md` |
 | `security.md` | Pasted generic "Web Security" platform guide (not Ritmo Studio-specific) | — |

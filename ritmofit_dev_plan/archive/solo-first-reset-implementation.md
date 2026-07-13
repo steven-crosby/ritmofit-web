@@ -74,7 +74,7 @@ confirmation again unless local repo state has changed in a way that materially 
 
 Update canon docs so future agents build the solo-first product:
 
-- `CLAUDE.md`
+- `AGENTS.md`
   - Update Product & Architecture from spin-only / two co-equal surfaces / explore-sharing-teams core
     to rhythm fitness instructors and solo creator loop first.
   - Add or update dated Codex note near the top.

@@ -13,7 +13,7 @@ files or begin implementation during orientation.
 
 ## Workflow
 
-1. Read `CLAUDE.md` first. On conflict, `CLAUDE.md` wins.
+1. Read `AGENTS.md` first. On conflict, `AGENTS.md` wins.
 2. Inspect the current repository state:
    - `git status -sb`
    - `git status --short`

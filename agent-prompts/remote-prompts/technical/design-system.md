@@ -68,7 +68,7 @@ Every finding must cite all three of:
 
 - **Canon**: the rule being violated, as `doc-or-file § section` (e.g.
   `02-color-system.md § plasma allowlist`, `tokens.json → color.semantic.success`,
-  `CLAUDE.md § Music Constraints`). If you cannot point to canon, it is not a
+  `AGENTS.md § Music Constraints`). If you cannot point to canon, it is not a
   violation — it goes in the **Canon gaps** appendix as an owner decision.
 - **Evidence**: `path/to/file.ts:line` for code, a committed screenshot filename for
   visual findings, or a measured value (computed style, contrast ratio, px size) for
@@ -85,7 +85,7 @@ plainly — a clean bill with proof of coverage is a valid, valuable outcome.
 
 ## Phase 0 — Build the canon (~20 min)
 
-1. Read `CLAUDE.md` (it overrides this prompt on conflict), then the **entire** design
+1. Read `AGENTS.md` (it overrides this prompt on conflict), then the **entire** design
    package: `ritmofit_design_system/README.md`, `ritmofit-design-system.md` (brand
    authority), docs `01`–`11`, and `tokens.json`.
 2. Read the machinery, not just its output: `scripts/build-tokens.mjs`,
@@ -110,7 +110,7 @@ plainly — a clean bill with proof of coverage is a valid, valuable outcome.
    | Reduced motion removes affect without removing meaning | `06-motion.md`, `README.md` § canon 10 |
    | Live mode stays dark in both themes | `README.md` § Tokens (light theme) |
    | Album art is bounded; BPM/duration/sequence/cues/energy carry the weight | `README.md` § canon 8 |
-   | Every data-bearing surface has loading / empty / error / offline / permission states | `CLAUDE.md` § Engineering Rules, `05-components.md` |
+   | Every data-bearing surface has loading / empty / error / offline / permission states | `AGENTS.md` § Engineering Rules, `05-components.md` |
    | Contrast: AA — text 4.5:1, graphics 3.0:1, **both** themes | `07-accessibility.md`, `check-contrast.mjs` |
    | Light-theme glass legibility is NOT machine-gated — must be browser-verified | `README.md` § Tokens (light theme) |
    | Foundation language is modality-neutral (flag only; copy depth → content-consistency) | `README.md` § canon 11 |

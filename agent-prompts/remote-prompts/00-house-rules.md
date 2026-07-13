@@ -23,9 +23,9 @@ You are running unattended in this sandbox for at most **45 minutes**. Spend the
 end, push branches and commit reports before you stop, or the work is lost. Broad
 investigation is allowed; autonomous changes must stay narrow.
 
-1. **Read this repo's `CLAUDE.md` first** (plus any `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`
+1. **Read this repo's `AGENTS.md` first** (plus any `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`
    it points to). Those conventions OVERRIDE your instincts and this prompt. On conflict,
-   CLAUDE.md wins — note it in your output.
+   AGENTS.md wins — note it in your output.
 2. Fetch the remote and inspect the working tree before acting. The sandbox starts from a
    fresh clone, so there should be no uncommitted user work to disturb; if the tree is
    unexpectedly dirty, stop and report rather than moving or stashing whatever is there.
@@ -66,13 +66,13 @@ without further input.
 
 12. Stop when evidence is insufficient, verification cannot run, a decision belongs to
     the product owner, or the remaining work cannot be safely completed in the timebox.
-13. `CLAUDE.md` may require confirmation before substantial work. In an unattended run,
+13. `AGENTS.md` may require confirmation before substantial work. In an unattended run,
     treat all confirmation-required work as **report-only**. Do not pause waiting for the
     owner and do not infer pre-approval from this prompt.
 
 **This repo:** `ritmofit-web` — React/Vite SPA plus a Cloudflare Worker and D1; the Worker
 serves both the SPA and the API. The CI-equivalent gate (typecheck/lint/test/build) is
-defined in `CLAUDE.md` — run the full required list before any PR. The iOS client
+defined in `AGENTS.md` — run the full required list before any PR. The iOS client
 (SwiftUI / SwiftData) is read-only context: its contract surface is vendored in
 `ios-snapshot/` for `api-contract-parity` (see `ios-snapshot/README.md`), while
 `content-consistency` compares copy against a live `ritmofit-ios` checkout only when present.
