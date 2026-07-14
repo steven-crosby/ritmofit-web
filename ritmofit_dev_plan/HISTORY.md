@@ -10,6 +10,31 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Production realignment verification 2026-07-13 — round-13 Worker and SPA deployed; no migration
+> change.** Cloudflare reports Worker version `812b97ce-e04d-40b6-b709-316445fa8b9a` at 100%, created
+> 2026-07-14 03:10:48 UTC after round-13 `main` reached `34ef84e`. Live HTML independently served
+> `assets/index-CV-cI48s.js`, the round-13 SPA asset recorded in the preceding verification. Remote D1
+> reported "No migrations to apply." This newer deployment supersedes the split-state operational
+> conclusion below: production is realigned on the round-13 release. Continue to verify Worker version
+> and SPA asset independently after every deployment; neither signal proves the other.
+
+> **Production alignment verification 2026-07-13 — live SPA and Worker API are not from the same
+> source state; no mutation performed.** Live HTML served `assets/index-CV-cI48s.js`; its public bundle
+> SHA-256 (`accbecf9f40c735cc97da7fe5f629c79e90387adee00373eeae9b5dd7213273c`) exactly matched a
+> clean web build of `origin/main` at `34ef84e` (round 13). Cloudflare deployment status, however,
+> remained on Worker version `832547d5-a7ea-4683-8507-1e647c1268eb` (version 133, uploaded
+> 2026-07-12 20:50:20 UTC). `wrangler versions view` showed that version and the recorded round-12
+> version `a83a71d2-9a24-4ba3-af8e-8c01b595e0fb` have the identical Worker script etag
+> `61ff731b...e8b72f2d`, bindings, compatibility settings, and asset-header configuration. A clean
+> build of round-12 HEAD `696c915` produced the earlier recorded SPA entry `index-CtVDbqcN.js`, not
+> the currently served entry. Version 133 was uploaded 39 seconds after docs-only PR #291 merged, but
+> Cloudflare's version metadata does not prove when or from which checkout the later static assets were
+> uploaded. Remote D1 reported "No migrations to apply." **Operational conclusion:** production must
+> be treated as split and not aligned with `main`; the round-13 API fixes are not proven live. A full,
+> owner-approved build + Worker deploy is required to re-establish one-source alignment. Query live
+> Worker status and the served SPA hash independently; this chronological entry is not a substitute for
+> a current check.
+
 > **Session 2026-07-12 (polish + harden mixed round — twelfth parallel lane-agent round) — deployed
 > (Worker `a83a71d2-9a24-4ba3-af8e-8c01b595e0fb`).** Main HEAD `696c915` (merge of PR #290). Code-only
 > — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior live
