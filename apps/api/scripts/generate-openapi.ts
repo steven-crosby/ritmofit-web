@@ -137,8 +137,8 @@ for (const [name, schema] of Object.entries(named)) {
 }
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
-const jsonBody = (name: string) => ({
-  required: true,
+const jsonBody = (name: string, required = true) => ({
+  required,
   content: { 'application/json': { schema: ref(name) } },
 });
 const jsonResp = (name: string, desc: string) => ({
@@ -268,7 +268,7 @@ const doc = {
       parameters: [idParam],
       post: {
         summary: "Save a copy of a visible class into the caller's library",
-        requestBody: jsonBody('CopyClass'),
+        requestBody: jsonBody('CopyClass', false),
         responses: {
           '201': jsonResp('Class', 'Fresh private draft owned by the caller'),
           '404': { description: 'Source class not found / hidden' },

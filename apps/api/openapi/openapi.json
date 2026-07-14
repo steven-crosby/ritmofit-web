@@ -275,7 +275,7 @@
       "post": {
         "summary": "Save a copy of a visible class into the caller's library",
         "requestBody": {
-          "required": true,
+          "required": false,
           "content": {
             "application/json": {
               "schema": {

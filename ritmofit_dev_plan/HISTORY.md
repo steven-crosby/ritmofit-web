@@ -10,6 +10,14 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Production realignment verification 2026-07-13 — round-13 Worker and SPA deployed; no migration
+> change.** Cloudflare reports Worker version `812b97ce-e04d-40b6-b709-316445fa8b9a` at 100%, created
+> 2026-07-14 03:10:48 UTC after round-13 `main` reached `34ef84e`. Live HTML independently served
+> `assets/index-CV-cI48s.js`, the round-13 SPA asset recorded in the preceding verification. Remote D1
+> reported "No migrations to apply." This newer deployment supersedes the split-state operational
+> conclusion below: production is realigned on the round-13 release. Continue to verify Worker version
+> and SPA asset independently after every deployment; neither signal proves the other.
+
 > **Production alignment verification 2026-07-13 — live SPA and Worker API are not from the same
 > source state; no mutation performed.** Live HTML served `assets/index-CV-cI48s.js`; its public bundle
 > SHA-256 (`accbecf9f40c735cc97da7fe5f629c79e90387adee00373eeae9b5dd7213273c`) exactly matched a
