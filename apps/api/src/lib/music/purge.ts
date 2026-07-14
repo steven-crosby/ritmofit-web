@@ -15,7 +15,7 @@
  * testable without a database, mirroring how slice 3 split adapter from
  * orchestration.
  */
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, exists, inArray, isNull } from 'drizzle-orm';
 import type { Provider } from '@ritmofit/shared';
 import type { Db } from '../db.js';
 import { tracks, trackProviderIds, providerPurgeQueue } from '../../db/schema.js';
@@ -41,8 +41,8 @@ export interface PurgeCounts {
 export interface PurgeStore {
   /** Oldest-first queued requests, capped at `limit`. */
   listQueue(limit: number): Promise<PurgeRequest[]>;
-  /** Strip `provider`'s derived metadata from `userId`'s tracks. Idempotent. */
-  purgeProviderMetadata(userId: string, provider: Provider): Promise<PurgeCounts>;
+  /** Strip metadata, optionally only while this exact queued duty is active. Idempotent. */
+  purgeProviderMetadata(userId: string, provider: Provider, id?: string): Promise<PurgeCounts>;
   /** Drop a queue row once its purge has succeeded. */
   removeQueueItem(id: string): Promise<void>;
   /** Record a failed attempt so a transient error is retried on the next sweep. */
@@ -87,7 +87,7 @@ export async function drainPurgeQueue(
   for (const item of queue) {
     summary.processed += 1;
     try {
-      const counts = await store.purgeProviderMetadata(item.userId, item.provider);
+      const counts = await store.purgeProviderMetadata(item.userId, item.provider, item.id);
       await store.removeQueueItem(item.id);
       summary.purged += 1;
       summary.tracksCleared += counts.tracksCleared;
@@ -126,7 +126,7 @@ export function createD1PurgeStore(db: Db): PurgeStore {
       }));
     },
 
-    async purgeProviderMetadata(userId, provider) {
+    async purgeProviderMetadata(userId, provider, id) {
       // Resolve the affected tracks BEFORE deleting the provider rows.
       const affected = await db
         .select({ id: tracks.id })
@@ -137,6 +137,26 @@ export function createD1PurgeStore(db: Db): PurgeStore {
       const trackIds = [...new Set(affected.map((r) => r.id))];
       if (trackIds.length === 0) return { tracksCleared: 0, refsDeleted: 0 };
 
+      // `listQueue` returns an in-memory snapshot. A reconnect can cancel this duty
+      // after the Cron captures it but before these writes run, so bind both writes
+      // to the exact active row. D1 executes the batch atomically: cancellation
+      // either wins first (both writes become no-ops) or the purge wins first.
+      const activeDuty = id
+        ? exists(
+            db
+              .select({ id: providerPurgeQueue.id })
+              .from(providerPurgeQueue)
+              .where(
+                and(
+                  eq(providerPurgeQueue.id, id),
+                  eq(providerPurgeQueue.userId, userId),
+                  eq(providerPurgeQueue.provider, provider),
+                  isNull(providerPurgeQueue.failedAt),
+                ),
+              ),
+          )
+        : undefined;
+
       // Delete the provider refs AND clear album art on every affected track in one
       // atomic batch. The schema stores one image URL without provenance, so
       // retaining it when another provider ref remains could keep art supplied by
@@ -144,12 +164,16 @@ export function createD1PurgeStore(db: Db): PurgeStore {
       const deleteRefs = db
         .delete(trackProviderIds)
         .where(
-          and(eq(trackProviderIds.provider, provider), inArray(trackProviderIds.trackId, trackIds)),
+          and(
+            eq(trackProviderIds.provider, provider),
+            inArray(trackProviderIds.trackId, trackIds),
+            activeDuty,
+          ),
         );
       const clearArt = db
         .update(tracks)
         .set({ albumArtUrl: null, updatedAt: Date.now() })
-        .where(inArray(tracks.id, trackIds));
+        .where(and(inArray(tracks.id, trackIds), activeDuty));
 
       const [delRes, updRes] = await db.batch([deleteRefs, clearArt]);
       const changes = (r: unknown) =>
