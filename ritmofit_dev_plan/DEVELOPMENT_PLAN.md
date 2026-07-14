@@ -32,7 +32,7 @@ Pilates, and HIIT.
 - **Current operating focus (2026-07-07):** the launch gate is green and the app is live. The active
   track is the **D21 creator-workstation-shell slice** — the first slice (Cycle/Pilates/HIIT templates,
   readiness + discovery resting state, provider shelves) is deployed; the **saved-playlist browsing
-  sub-slice is now **implemented and deployed (Worker `ded27a07`)** (new `GET
+  sub-slice is now implemented and deployed (Worker `ded27a07`)** (new `GET
   /providers/:provider/playlists` + `GET /providers/:provider/playlists/:playlistId/tracks`
   endpoints; TrackSearch "Saved playlists" mode with per-playlist drill-in, individual track
   preview/add, and "Import all N" bulk-import; resting shelf cards show live playlist counts and open
@@ -51,7 +51,11 @@ Pilates, and HIIT.
   browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook. Last production deploy
+  Music workspace via a shared provider-browse hook. **Production is not currently aligned with
+  `main` (verified 2026-07-13):** the served SPA bundle matches round-13 `origin/main` at `34ef84e`,
+  while the active Worker API has the same script etag as the round-12 deployment. The round-13 API
+  fixes are therefore not proven live; restoring a single-source release requires a full build + Worker
+  deploy with explicit owner approval. The last recorded coherent code deployment was
   **2026-07-12 (Worker `a83a71d2`)** — twelfth parallel lane-agent round (mixed polish/harden,
   THREE-lane round, D21 loop): three disjoint-lane slices — bound Spotify catalog `getPlaylist` paging
   to 500 tracks (#288, BE); bound `offsetMsSchema` to `MAX_DURATION_MS` (#289, BE); and focus
@@ -66,8 +70,9 @@ Pilates, and HIIT.
   (#273), and playlist import-by-URL reaches parity — SoundCloud and Apple Music catalog playlists
   join Spotify, with `providerCapabilities.playlistImport` now true for all three (#275) — **no
   schema/migration**. Round-9 live provider checks (real SoundCloud/Apple catalog playlist-URL
-  imports, Apple library-link 400) remain owner-pending. For per-deploy detail and the live Worker
-  version, see [`HISTORY.md`](./HISTORY.md), newest first.
+  imports, Apple library-link 400) remain owner-pending. For deployment chronology see
+  [`HISTORY.md`](./HISTORY.md), newest first; determine current production state with the independent
+  Worker-version and SPA-hash checks in [`deployment-runbook.md`](./deployment-runbook.md).
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
@@ -159,8 +164,9 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 >   solo creator refinement active) → [`milestones.md`](./milestones.md).
 > - **Launch gate** (go/no-go checklist, verification plan, deferrals) →
 >   [`web-launch-readiness.md`](./web-launch-readiness.md).
-> - **Chronological deploy/build log** (every PR, Worker version id, migration step, the live Worker
->   version, and remote D1 migration level) → [`HISTORY.md`](./HISTORY.md), newest entry first.
+> - **Chronological deploy/build log** (PRs, Worker version ids, migration steps, and dated production
+>   findings) → [`HISTORY.md`](./HISTORY.md), newest entry first. It is not live-state authority; use the
+>   independent Worker-version, D1, and SPA-hash checks in [`deployment-runbook.md`](./deployment-runbook.md).
 > - **Paused iOS parity record** → [`web-ios-parity.md`](./web-ios-parity.md) (kept for contract/design
 >   sync context, not a current product gate).
 > - **Contributor + deployment instructions** → [`../AGENTS.md`](../AGENTS.md) and

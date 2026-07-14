@@ -7,21 +7,27 @@ schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 ## Conventions
 
 - **Base:** `/api/v1`
-- **Auth:** every endpoint except the auth bootstrap requires a valid Better Auth session. Middleware
-  validates it and resolves the canonical `users` row.
+- **Auth:** endpoints require a valid Better Auth session unless explicitly marked public. Middleware
+  validates the session and resolves the canonical `users` row. The cover-image delivery endpoint is
+  public so stored class artwork can render without an authenticated API request.
 - **IDs:** UUIDs (as `TEXT`) in paths.
 - **Validation:** request bodies validated against shared Zod schemas; `422` on failure.
 - **Errors:** consistent JSON `{ error: { code, message, details? } }`.
   - `401` not authenticated · `403` authenticated but not authorized · `404` not found (or hidden for
     resources the user can't see) · `409` conflict · `422` validation.
-  - Error codes: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `CONFLICT`,
-    `PROVIDER_ERROR`, `RATE_LIMITED`, `INTERNAL_ERROR`.
+  - Common error codes: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `CONFLICT`,
+    `RATE_LIMITED`, `INTERNAL_ERROR`. Provider routes also use stable domain codes including
+    `PROVIDER_UNAVAILABLE`, `PROVIDER_FORBIDDEN`, `NOT_CONNECTED`, `REAUTH_REQUIRED`, and
+    `PLAYBACK_REAUTH_REQUIRED`; see the generated operation responses for status semantics.
 - **Authorization:** all class-scoped reads/writes go through the central `requireAccess` helper in
   `lib/authz.ts` (see `authorization.md`). Never inline ad-hoc checks — D1 has no RLS back-stop.
 - **Casing:** responses map snake_case DB columns to camelCase via the shared schemas.
 
 > **Contract source:** `apps/api/openapi/openapi.json` is the generated contract of record. Keep this
 > narrative route map in sync when route groups ship or change behavior.
+
+> Dev-only `/mock/track-search` and `/mock/track-import` operations remain in OpenAPI for local tooling
+> but are intentionally omitted from this production route narrative.
 
 > **D20 solo-first note:** Teams, Shares, public visibility, and Explore remain documented because the
 > backend/API scaffolding exists. They are dormant/deferred product surfaces and should not be expanded or
@@ -133,12 +139,15 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 | GET | `/providers/:provider/likes` | Fetch liked/saved tracks when the provider supports it. |
 | GET | `/providers/:provider/playlists` | List the caller's saved playlists for a connected provider (Spotify OAuth, SoundCloud OAuth, Apple Music Music-User-Token). Returns `ProviderPlaylistSummary[]`. Shipped 2026-07-06. |
 | GET | `/providers/:provider/playlists/:playlistId/tracks` | Drill into one saved playlist and return its tracks as `TrackSearchResult[]`. Shipped 2026-07-06. |
+| POST | `/providers/:provider/playlists/:playlistId/import` | Bulk-import a saved playlist into the caller's track library. Returns created/existing/failure counts; bounded and deduplicated server-side. |
 | POST | `/providers/track-import` | Import a provider result into the caller's per-user track library with provider refs. Also used for bulk playlist import (the web client calls this in concurrency-4 batches for "Import all N"). |
-| GET | `/providers/:provider/connect` | Start provider OAuth. |
+| POST | `/providers/:provider/connect` | Start provider OAuth and return the provider authorization URL. Apple Music uses the concrete MusicKit routes below instead. |
 | GET | `/providers/:provider/callback` | Complete provider OAuth and store encrypted tokens. |
 | GET | `/providers/connections` | List the caller's connected providers. |
 | DELETE | `/providers/:provider/connection` | Disconnect a provider and enqueue required provider-metadata purge work. |
-| POST | `/classes/:id/import-playlist` | Import a Spotify playlist by URL directly into a class as `class_tracks` (Spotify only, gated by `providerCapabilities.playlistImport`). Separate from the saved-playlist browsing flow above. |
+| GET | `/providers/apple_music/config` | Return the developer token and storefront used to configure MusicKit JS. |
+| POST | `/providers/apple_music/connection` | Store the Music-User-Token returned by MusicKit JS, encrypted at rest. |
+| POST | `/classes/:id/import-playlist` | Import a public Spotify, SoundCloud, or Apple Music catalog playlist URL directly into a class as `class_tracks`, gated by `providerCapabilities.playlistImport`. Separate from the saved-playlist browsing flow above. |
 
 ## Provider playback tokens
 
@@ -149,6 +158,9 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 | GET | `/providers/spotify/playback-token` | Mint a short-lived Spotify access token scoped for the Web Playback SDK. The token is returned to the client for the SDK session only — never stored server-side after the response. Requires a connected Spotify account with playback-capable scopes. Shipped 2026-07-06. |
 
 ## Uploads
+
+This delivery route is public. Uploading or changing a class cover remains authenticated and
+class-authorized through `POST /classes/:id/cover`.
 
 | Method | Path | Purpose |
 |---|---|---|

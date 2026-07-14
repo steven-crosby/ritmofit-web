@@ -141,7 +141,9 @@ class AppleMusicProvider implements MusicProvider {
         );
       }
       const parsed = amLibraryPageSchema.safeParse(await readJson(res, 'apple_music'));
-      if (!parsed.success) break;
+      if (!parsed.success) {
+        throw new ProviderError('apple_music', 'Apple Music returned an invalid playlist page.');
+      }
       const page = parsed.data.data ?? [];
       for (const raw of page) {
         // The tracks relationship can hold music videos too — import songs only.

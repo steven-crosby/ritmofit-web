@@ -21,8 +21,10 @@ import {
   classSchema,
   classWithAccessSchema,
   classListItemSchema,
+  exploreClassSchema,
   createClassSchema,
   updateClassSchema,
+  copyClassSchema,
   classTrackSchema,
   addClassTrackSchema,
   updateClassTrackSchema,
@@ -31,6 +33,9 @@ import {
   cueSchema,
   createCueSchema,
   updateCueSchema,
+  classSectionSchema,
+  createClassSectionSchema,
+  updateClassSectionSchema,
   classTrackMoveSchema,
   placeClassTrackMoveSchema,
   updateClassTrackMoveSchema,
@@ -73,8 +78,10 @@ const named: Record<string, z.ZodType> = {
   Class: classSchema,
   ClassWithAccess: classWithAccessSchema,
   ClassListItem: classListItemSchema,
+  ExploreClass: exploreClassSchema,
   CreateClass: createClassSchema,
   UpdateClass: updateClassSchema,
+  CopyClass: copyClassSchema,
   ClassTrack: classTrackSchema,
   AddClassTrack: addClassTrackSchema,
   UpdateClassTrack: updateClassTrackSchema,
@@ -83,6 +90,9 @@ const named: Record<string, z.ZodType> = {
   Cue: cueSchema,
   CreateCue: createCueSchema,
   UpdateCue: updateCueSchema,
+  ClassSection: classSectionSchema,
+  CreateClassSection: createClassSectionSchema,
+  UpdateClassSection: updateClassSectionSchema,
   ClassTrackMove: classTrackMoveSchema,
   PlaceClassTrackMove: placeClassTrackMoveSchema,
   UpdateClassTrackMove: updateClassTrackMoveSchema,
@@ -127,8 +137,8 @@ for (const [name, schema] of Object.entries(named)) {
 }
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
-const jsonBody = (name: string) => ({
-  required: true,
+const jsonBody = (name: string, required = true) => ({
+  required,
   content: { 'application/json': { schema: ref(name) } },
 });
 const jsonResp = (name: string, desc: string) => ({
@@ -147,7 +157,7 @@ const doc = {
     title: 'Ritmo Studio API',
     version: API_VERSION,
     description:
-      'Ritmo Studio M1 REST surface. Generated from the @ritmofit/shared Zod schemas — the single source of truth. All endpoints except the auth bootstrap require a Better Auth session.',
+      'Ritmo Studio REST surface. Generated from the @ritmofit/shared Zod schemas — the single source of truth. Most endpoints require a Better Auth session; public exceptions explicitly override the global security requirement.',
   },
   servers: [{ url: `/api/${API_VERSION}` }],
   paths: {
@@ -254,6 +264,17 @@ const doc = {
         responses: { '200': jsonResp('RunPayload', 'Run payload') },
       },
     },
+    '/classes/{id}/copy': {
+      parameters: [idParam],
+      post: {
+        summary: "Save a copy of a visible class into the caller's library",
+        requestBody: jsonBody('CopyClass', false),
+        responses: {
+          '201': jsonResp('Class', 'Fresh private draft owned by the caller'),
+          '404': { description: 'Source class not found / hidden' },
+        },
+      },
+    },
     '/classes/{id}/cover': {
       parameters: [idParam],
       post: {
@@ -321,6 +342,30 @@ const doc = {
         responses: { '204': { description: 'Removed' } },
       },
     },
+    '/classes/{id}/sections': {
+      parameters: [idParam],
+      get: {
+        summary: 'List segment bands in timeline order (view)',
+        responses: { '200': arrayResp('ClassSection', 'Class sections') },
+      },
+      post: {
+        summary: 'Add a segment band (edit)',
+        requestBody: jsonBody('CreateClassSection'),
+        responses: { '201': jsonResp('ClassSection', 'Created') },
+      },
+    },
+    '/sections/{id}': {
+      parameters: [idParam],
+      patch: {
+        summary: 'Update a segment band (edit)',
+        requestBody: jsonBody('UpdateClassSection'),
+        responses: { '200': jsonResp('ClassSection', 'Updated') },
+      },
+      delete: {
+        summary: 'Delete a segment band (edit)',
+        responses: { '204': { description: 'Deleted' } },
+      },
+    },
     '/classes/{id}/import-playlist': {
       parameters: [idParam],
       post: {
@@ -359,6 +404,7 @@ const doc = {
       parameters: [{ name: 'filename', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Serve a stored cover image from R2',
+        security: [],
         responses: {
           '200': {
             description: 'Image bytes',
@@ -782,6 +828,26 @@ const doc = {
           '201': jsonResp('TrackWithProviderIds', 'Created a new track'),
           '200': jsonResp('TrackWithProviderIds', 'Resolved to an existing track'),
         },
+      },
+    },
+    '/explore': {
+      get: {
+        summary: 'List public classes in recency order (dormant D20 surface)',
+        parameters: [
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', minimum: 1, maximum: 50, default: 30 },
+          },
+          {
+            name: 'offset',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', minimum: 0, default: 0 },
+          },
+        ],
+        responses: { '200': arrayResp('ExploreClass', 'Public classes') },
       },
     },
     '/teams': {
