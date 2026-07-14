@@ -159,6 +159,10 @@ export function TrackSearch({
   const [selectedPlaylist, setSelectedPlaylist] = useState<ProviderPlaylistSummary | null>(null);
   const [loadingSavedPlaylists, setLoadingSavedPlaylists] = useState(false);
   const [importingAllFromPlaylist, setImportingAllFromPlaylist] = useState(false);
+  // Once a bulk add has run, keep its outcome beside the playlist instead of
+  // silently treating a partial batch as success. The counts themselves derive
+  // from `addedKeys`, so a per-row retry also advances the same honest ledger.
+  const [bulkImportAttempted, setBulkImportAttempted] = useState(false);
   // Bumped by the playlist-index "Try again" affordance to re-run the list fetch.
   const [reloadKey, setReloadKey] = useState(0);
   // Guards against a stale async fetch overwriting a newer one's results.
@@ -260,6 +264,7 @@ export function TrackSearch({
     if (!canBrowseSavedPlaylists) return;
     setSelectedPlaylist(null);
     setResults(null);
+    setBulkImportAttempted(false);
     setLoadingSavedPlaylists(true);
     setError(null);
     let alive = true;
@@ -287,6 +292,7 @@ export function TrackSearch({
     setError(null);
     setResults(null);
     setAddedKeys(new Set());
+    setBulkImportAttempted(false);
     try {
       setResults(await listPlaylistTracks(provider, playlist.playlistId));
     } catch (e) {
@@ -299,11 +305,15 @@ export function TrackSearch({
 
   const importAll = async () => {
     if (!results || results.length === 0) return;
+    const remaining = results.filter((candidate) => !addedKeys.has(candidateKey(candidate)));
+    if (remaining.length === 0) return;
     setImportingAllFromPlaylist(true);
+    setBulkImportAttempted(true);
     setError(null);
     const CONCURRENCY = 4;
-    const pending = [...results];
+    const pending = [...remaining];
     const newAdded = new Set(addedKeys);
+    let addedThisRun = 0;
     try {
       while (pending.length > 0) {
         const batch = pending.splice(0, CONCURRENCY);
@@ -315,6 +325,7 @@ export function TrackSearch({
               const track = await importTrack(candidate.provider, candidate.providerTrackId);
               await addTrack(classId, { trackId: track.id, intensity: 'mod' });
               newAdded.add(key);
+              addedThisRun += 1;
             } catch {
               // Best-effort: a single failing track doesn't abort the batch.
             }
@@ -322,7 +333,7 @@ export function TrackSearch({
         );
       }
       setAddedKeys(newAdded);
-      onAdded();
+      if (addedThisRun > 0) onAdded();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -372,6 +383,17 @@ export function TrackSearch({
     savedPlaylists,
     selectedPlaylist,
   });
+  const playlistTrackCount = results?.length ?? 0;
+  const addedPlaylistTrackCount =
+    results?.filter((candidate) => addedKeys.has(candidateKey(candidate))).length ?? 0;
+  const remainingPlaylistTrackCount = playlistTrackCount - addedPlaylistTrackCount;
+
+  const bulkImportOutcome =
+    bulkImportAttempted && playlistTrackCount > 0
+      ? remainingPlaylistTrackCount === 0
+        ? `Added all ${playlistTrackCount} ${playlistTrackCount === 1 ? 'track' : 'tracks'}.`
+        : `Added ${addedPlaylistTrackCount} of ${playlistTrackCount} tracks. ${remainingPlaylistTrackCount} couldn’t be added — retry the remaining ${remainingPlaylistTrackCount === 1 ? 'track' : 'tracks'}.`
+      : null;
 
   // The importable candidate list — shared by catalog/likes search and the opened
   // saved-playlist drill-in so both render an identical row treatment.
@@ -570,6 +592,7 @@ export function TrackSearch({
             onClick={() => {
               setSelectedPlaylist(null);
               setResults(null);
+              setBulkImportAttempted(false);
             }}
             className="rounded-pill border border-interactive/30 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
           >
@@ -582,14 +605,39 @@ export function TrackSearch({
             <button
               type="button"
               onClick={() => void importAll()}
-              disabled={importingAllFromPlaylist}
-              aria-label={`Import all ${results.length} tracks from ${selectedPlaylist.name}`}
+              disabled={importingAllFromPlaylist || remainingPlaylistTrackCount === 0}
+              aria-label={
+                remainingPlaylistTrackCount === 0
+                  ? `All ${results.length} tracks from ${selectedPlaylist.name} added`
+                  : addedPlaylistTrackCount > 0
+                    ? `Retry ${remainingPlaylistTrackCount} remaining ${remainingPlaylistTrackCount === 1 ? 'track' : 'tracks'} from ${selectedPlaylist.name}`
+                    : `Import all ${results.length} tracks from ${selectedPlaylist.name}`
+              }
               className="shrink-0 rounded-pill rf-btn-primary px-3 py-1 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
             >
-              {importingAllFromPlaylist ? 'Importing…' : `Import all ${results.length}`}
+              {importingAllFromPlaylist
+                ? 'Importing…'
+                : remainingPlaylistTrackCount === 0
+                  ? `All ${results.length} added`
+                  : addedPlaylistTrackCount > 0
+                    ? `Retry ${remainingPlaylistTrackCount} remaining`
+                    : `Import all ${results.length}`}
             </button>
           )}
         </div>
+      )}
+
+      {mode === 'saved_playlists' && selectedPlaylist && bulkImportOutcome && (
+        <p
+          role="status"
+          aria-live="polite"
+          className={`flex items-start gap-1.5 font-ui text-xs ${
+            remainingPlaylistTrackCount === 0 ? 'text-state-positive' : 'text-state-caution'
+          }`}
+        >
+          <span aria-hidden>{remainingPlaylistTrackCount === 0 ? '✓' : '!'}</span>
+          <span>{bulkImportOutcome}</span>
+        </p>
       )}
 
       {mode === 'search' && (

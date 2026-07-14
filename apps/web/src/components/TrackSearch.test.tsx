@@ -329,6 +329,90 @@ describe('TrackSearch saved-playlists drill-in', () => {
     await waitFor(() => expect(api.importTrack).toHaveBeenCalledTimes(2));
     expect(api.addTrack).toHaveBeenCalledTimes(2);
     expect(onAdded).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Added all 2 tracks.')).toBeTruthy();
+    const complete = screen.getByRole('button', {
+      name: 'All 2 tracks from Warmup Ride added',
+    }) as HTMLButtonElement;
+    expect(complete.disabled).toBe(true);
+    expect(complete.textContent).toBe('All 2 added');
+  });
+
+  it('reports a partial import and retries only the remaining track', async () => {
+    const onAdded = vi.fn();
+    vi.mocked(api.importTrack).mockImplementation(
+      async (_provider: Provider, providerTrackId: string) => {
+        if (providerTrackId === 'track-2') throw new Error('provider import failed');
+        return {
+          id: `imported-${providerTrackId}`,
+          title: '',
+          artist: '',
+          albumArtUrl: null,
+          durationMs: null,
+          displayBpm: null,
+          ownerId: 'me',
+          createdAt: 1,
+          updatedAt: 1,
+        };
+      },
+    );
+    vi.mocked(api.addTrack).mockResolvedValue({
+      id: 'ct-id',
+      classId: 'c1',
+      trackId: 't-id',
+      position: 0,
+      intensity: 'mod',
+      displayBpmOverride: null,
+      durationMsOverride: null,
+      startOffsetMs: 0,
+      notes: null,
+      createdAt: 1,
+      updatedAt: 1,
+    });
+
+    render(<TrackSearch classId="c1" onAdded={onAdded} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+    expect(await screen.findByText('Warmup Ride')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    expect(await screen.findByText('Song One')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }));
+
+    const partial = await screen.findByText(
+      'Added 1 of 2 tracks. 1 couldn’t be added — retry the remaining track.',
+    );
+    expect(partial.closest('[role="status"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Song One added' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add Song Two by Artist Two' })).toBeTruthy();
+    expect(onAdded).toHaveBeenCalledTimes(1);
+
+    // The retry must spend work only on the failed row, not re-add Song One.
+    vi.mocked(api.importTrack).mockResolvedValue({
+      id: 'imported-track-2',
+      title: '',
+      artist: '',
+      albumArtUrl: null,
+      durationMs: null,
+      displayBpm: null,
+      ownerId: 'me',
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Retry 1 remaining track from Warmup Ride' }),
+    );
+
+    expect(await screen.findByText('Added all 2 tracks.')).toBeTruthy();
+    expect(api.importTrack).toHaveBeenCalledTimes(3);
+    expect(api.importTrack).toHaveBeenLastCalledWith('spotify', 'track-2');
+    expect(onAdded).toHaveBeenCalledTimes(2);
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'All 2 tracks from Warmup Ride added',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
   });
 
   it('navigating back clears the drill-in track list', async () => {
