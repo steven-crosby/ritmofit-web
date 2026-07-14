@@ -145,4 +145,61 @@ describe('provider disconnect purge enqueue (integration)', () => {
     expect(track?.albumArtUrl).toBe('https://example.com/provider-art.jpg');
     expect(refs.map((ref) => ref.provider)).toEqual(['soundcloud']);
   });
+
+  it('invalidates a purge item already captured by the drain when the user reconnects', async () => {
+    const user = await signUpUser();
+    const api = authed(user.cookie);
+    const db = createDb(env);
+    const store = createD1PurgeStore(db);
+    const now = Date.now();
+    const trackId = crypto.randomUUID();
+
+    await db.batch([
+      db.insert(tracks).values({
+        id: trackId,
+        ownerUserId: user.userId,
+        title: 'Stale snapshot song',
+        artist: 'Artist',
+        albumArtUrl: 'https://example.com/stale-snapshot-art.jpg',
+        durationMs: 180000,
+        displayBpm: null,
+        isrc: null,
+        matchKey: 'stale snapshot song::artist',
+        createdAt: now,
+        updatedAt: now,
+      }),
+      db.insert(trackProviderIds).values({
+        id: crypto.randomUUID(),
+        trackId,
+        ownerUserId: user.userId,
+        provider: 'soundcloud',
+        providerTrackId: 'soundcloud-stale-snapshot-1',
+        providerUri: 'https://soundcloud.com/example/stale-snapshot-song',
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ]);
+
+    await api('/api/v1/providers/soundcloud/connect', { method: 'POST' });
+    await api('/api/v1/providers/soundcloud/connection', { method: 'DELETE' });
+    const [captured] = await store.listQueue(1);
+    expect(captured).toBeDefined();
+
+    // The Cron has already captured the item in memory when reconnect cancels its
+    // persisted duty. A stale item must not retain authority to erase metadata.
+    await api('/api/v1/providers/soundcloud/connect', { method: 'POST' });
+    expect(await purgeCount(user.userId)).toBe(0);
+
+    const counts = await store.purgeProviderMetadata(user.userId, 'soundcloud', captured!.id);
+    expect(counts).toEqual({ tracksCleared: 0, refsDeleted: 0 });
+
+    const track = await db.select().from(tracks).where(eq(tracks.id, trackId)).get();
+    const refs = await db
+      .select()
+      .from(trackProviderIds)
+      .where(eq(trackProviderIds.trackId, trackId))
+      .all();
+    expect(track?.albumArtUrl).toBe('https://example.com/stale-snapshot-art.jpg');
+    expect(refs.map((ref) => ref.provider)).toEqual(['soundcloud']);
+  });
 });

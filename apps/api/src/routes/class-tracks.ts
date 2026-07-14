@@ -57,6 +57,7 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
   const body = addClassTrackSchema.parse(await c.req.json());
 
   let trackId: string;
+  let inlineTrack: typeof tracks.$inferInsert | null = null;
   // Base length used to validate the clip window below (the same bound the PATCH
   // route enforces): a clip start at/past it collapses the run-payload duration.
   let trackDurationMs: number | null = null;
@@ -76,7 +77,7 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
     // Inline-create a track owned by the caller (same shape as POST /tracks, step 8).
     const now = Date.now();
     trackId = crypto.randomUUID();
-    await db.insert(tracks).values({
+    inlineTrack = {
       id: trackId,
       ownerUserId: me,
       title: body.track.title,
@@ -91,7 +92,7 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
       matchKey: makeMatchKey(body.track.title, body.track.artist),
       createdAt: now,
       updatedAt: now,
-    });
+    };
     trackDurationMs = body.track.durationMs ?? null;
   }
 
@@ -111,6 +112,10 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
   if (invertedError) {
     throw new HttpError(422, 'VALIDATION_ERROR', invertedError);
   }
+
+  // Inline creation is part of the add-track operation, so do not persist its
+  // library row until every request-level guard above has accepted the placement.
+  if (inlineTrack) await db.insert(tracks).values(inlineTrack);
 
   const existing = await db
     .select({ id: classTracks.id })

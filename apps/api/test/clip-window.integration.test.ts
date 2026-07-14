@@ -6,6 +6,7 @@
  * run-payload loading.
  */
 import { describe, expect, it } from 'vitest';
+import { env } from 'cloudflare:test';
 import { authed, signUpUser } from './helpers.js';
 
 const TRACK_MS = 180_000;
@@ -127,6 +128,13 @@ describe('clip-window guard (integration)', () => {
     const body = (await res.json()) as { error: { code: string; message: string } };
     expect(body.error.code).toBe('VALIDATION_ERROR');
     expect(body.error.message).toMatch(/clip end/i);
+
+    const trackCount = await env.DB.prepare(
+      'SELECT count(*) AS count FROM tracks WHERE owner_user_id = ?',
+    )
+      .bind(user.userId)
+      .first<{ count: number }>();
+    expect(trackCount?.count).toBe(0);
   });
 
   it('rejects an add-track clip start at/past the track length', async () => {
@@ -149,6 +157,13 @@ describe('clip-window guard (integration)', () => {
     expect(res.status).toBe(422);
     const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe('VALIDATION_ERROR');
+
+    const trackCount = await env.DB.prepare(
+      'SELECT count(*) AS count FROM tracks WHERE owner_user_id = ?',
+    )
+      .bind(user.userId)
+      .first<{ count: number }>();
+    expect(trackCount?.count).toBe(0);
   });
 
   it('rejects cue/move anchors outside a trimmed clip window and accepts one inside', async () => {
