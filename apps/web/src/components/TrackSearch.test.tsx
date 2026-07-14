@@ -255,6 +255,33 @@ const PLAYLIST_TRACKS: TrackSearchResult[] = [
   },
 ];
 
+const IMPORTED_TRACK = {
+  id: 't-id',
+  title: '',
+  artist: '',
+  albumArtUrl: null,
+  durationMs: null,
+  displayBpm: null,
+  isrc: null,
+  ownerUserId: 'me',
+  createdAt: 1,
+  updatedAt: 1,
+};
+
+const ADDED_CLASS_TRACK = {
+  id: 'ct-id',
+  classId: 'c1',
+  trackId: 't-id',
+  position: 0,
+  intensity: 'mod' as const,
+  displayBpmOverride: null,
+  durationMsOverride: null,
+  startOffsetMs: 0,
+  notes: null,
+  createdAt: 1,
+  updatedAt: 1,
+};
+
 describe('TrackSearch saved-playlists drill-in', () => {
   beforeEach(() => {
     vi.mocked(api.listPlaylists).mockResolvedValue([
@@ -289,6 +316,52 @@ describe('TrackSearch saved-playlists drill-in', () => {
     expect(
       screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }),
     ).toBeTruthy();
+  });
+
+  it('locks individual adds while a bulk import is pending', async () => {
+    const pendingImport = deferred<Awaited<ReturnType<typeof api.importTrack>>>();
+    vi.mocked(api.importTrack).mockImplementation(() => pendingImport.promise);
+    vi.mocked(api.addTrack).mockResolvedValue(ADDED_CLASS_TRACK);
+    await openPlaylistDrillIn();
+
+    fireEvent.click(screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }));
+    await waitFor(() => expect(api.importTrack).toHaveBeenCalledTimes(2));
+
+    const individualAdd = screen.getByRole('button', {
+      name: 'Add Song One by Artist One',
+    }) as HTMLButtonElement;
+    expect(individualAdd.disabled).toBe(true);
+    fireEvent.click(individualAdd);
+    expect(api.importTrack).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      pendingImport.resolve(IMPORTED_TRACK);
+      await pendingImport.promise;
+    });
+    await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(2));
+  });
+
+  it('locks bulk import while an individual add is pending', async () => {
+    const pendingImport = deferred<Awaited<ReturnType<typeof api.importTrack>>>();
+    vi.mocked(api.importTrack).mockImplementation(() => pendingImport.promise);
+    vi.mocked(api.addTrack).mockResolvedValue(ADDED_CLASS_TRACK);
+    await openPlaylistDrillIn();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add Song One by Artist One' }));
+    await waitFor(() => expect(api.importTrack).toHaveBeenCalledTimes(1));
+
+    const importAll = screen.getByRole('button', {
+      name: /Import all 2 tracks from Warmup Ride/i,
+    }) as HTMLButtonElement;
+    expect(importAll.disabled).toBe(true);
+    fireEvent.click(importAll);
+    expect(api.importTrack).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      pendingImport.resolve(IMPORTED_TRACK);
+      await pendingImport.promise;
+    });
+    await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(1));
   });
 
   it('import-all calls importTrack + addTrack for every track and calls onAdded', async () => {
