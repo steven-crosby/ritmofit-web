@@ -124,6 +124,10 @@ api.get('/health', (c) =>
 );
 
 api.route('/auth', authRoutes);
+// Public capability-URL reads must be mounted before the root routers below:
+// their blanket `use('*', requireSession)` middleware otherwise intercepts this
+// route and turns an intentionally public cover request into a 401.
+api.route('/uploads', uploadsRoutes);
 api.route('/classes', classRoutes);
 // Mounted BEFORE the root routers below: those each register a blanket
 // `use('*', requireSession)` which, mounted at '/', becomes a global middleware.
@@ -143,7 +147,6 @@ api.route('/', mockRoutes);
 api.route('/', teamRoutes);
 api.route('/', shareRoutes);
 api.route('/', exploreRoutes);
-api.route('/uploads', uploadsRoutes);
 api.route('/', playlistImportRoutes);
 
 /**

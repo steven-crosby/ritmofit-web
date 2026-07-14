@@ -5,15 +5,13 @@ Canonical operational procedure for the single Cloudflare Worker that serves `ht
 get owner confirmation before deploying (`AGENTS.md`). All commands run from the repo root unless noted;
 API-scoped Wrangler commands use `pnpm --filter @ritmofit/api exec wrangler …`.
 
-Owner / deployer: `steven.crosby09@gmail.com` (Cloudflare account holder).
-
 ## Environment matrix
 
 | Where                             | Contents                                                                                                                                                               | Notes                                                                               |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `apps/api/wrangler.toml` `[vars]` | `BETTER_AUTH_URL`, `WEB_ORIGIN` (both `https://ritmofit.studio`)                                                                                                       | Committed, non-secret. The session cookie binds to `BETTER_AUTH_URL`.               |
 | Worker secrets (prod)             | `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `SOUNDCLOUD_CLIENT_ID`/`_SECRET`, `SPOTIFY_CLIENT_ID`/`_SECRET`, Apple sign-in (`APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` or static `APPLE_CLIENT_SECRET`), Apple Music (`APPLE_MUSIC_TEAM_ID`, `APPLE_MUSIC_KEY_ID`, `APPLE_MUSIC_PRIVATE_KEY` or static `APPLE_MUSIC_DEVELOPER_TOKEN`) | `wrangler secret list` shows names only. Never echo values in terminal logs or docs. |
-| D1                                | database `ritmofit`, bound as `DB`                                                                                                                                     | Forward-only Drizzle migrations under `apps/api/migrations`. For the live level, run `wrangler d1 migrations list ritmofit --remote` (don't trust a number hard-coded here). |
+| D1                                | database `ritmofit`, bound as `DB`                                                                                                                                     | Forward-only Drizzle migrations under `apps/api/migrations`. For the live level, run `pnpm --filter @ritmofit/api exec wrangler d1 migrations list ritmofit --remote` (don't trust a number hard-coded here). |
 | Local dev                         | `apps/api/.dev.vars` (gitignored), `MOCK_PROVIDERS=true`, no `RESEND_API_KEY` (email logs to console)                                                                  | Never commit secrets.                                                               |
 
 `MOCK_PROVIDERS` is unset in prod (live providers). **Auth target: email/password + Apple + Google
@@ -29,36 +27,27 @@ Apple Music is separate from Apple sign-in. Prefer `APPLE_MUSIC_TEAM_ID`, `APPLE
 as a static fallback. Optional `APPLE_MUSIC_STOREFRONT` defaults to `us`.
 
 SoundCloud OAuth connect uses `https://ritmofit.studio/api/v1/providers/soundcloud/callback` unless
-`SOUNDCLOUD_REDIRECT_URI` overrides it. Spotify now supports **both** server-side catalog/playlist
-search (the client-credentials pair) **and** a per-user OAuth connect ("search my Spotify" likes —
-confidential Authorization Code, scope `user-library-read`, callback
-`https://ritmofit.studio/api/v1/providers/spotify/callback` unless `SPOTIFY_REDIRECT_URI` overrides),
-reusing the same `SPOTIFY_CLIENT_ID`/`_SECRET`. To enable it in production, deploy the connect code and
-register that callback in the Spotify app dashboard. There is still **no Spotify BPM path** (permanent
-constraint — `music-providers.md`). Apple Music per-user connect uses **MusicKit JS** in the browser (no
+`SOUNDCLOUD_REDIRECT_URI` overrides it. Spotify supports **both** server-side catalog/playlist search
+(the client-credentials pair) **and** a per-user confidential Authorization Code connection. The
+canonical scope set lives in `packages/music/src/spotify-oauth.ts`; it covers saved-library reads,
+saved-playlist reads, and official Web Playback SDK/Connect playback. Do not duplicate the scope string
+in this runbook. The callback is
+`https://ritmofit.studio/api/v1/providers/spotify/callback` unless `SPOTIFY_REDIRECT_URI` overrides it,
+and the registered Spotify dashboard URI must match exactly. There is still **no Spotify BPM path**
+(permanent constraint — `music-providers.md`). Apple Music per-user connect uses **MusicKit JS** in the browser (no
 redirect or new secret beyond the existing Apple Music developer-token creds): the SPA mints a
 Music-User-Token and `POST`s it to `/providers/apple_music/connection`, stored encrypted.
 
-> **Connect-path state (verified 2026-07-03 on Worker
-> `94126954-0e61-408e-b404-bb380c338141`):** All three per-user connect paths are **deployed**.
-> **Apple Music** connect is **live and verified working** in prod (MusicKit JS → Music-User-Token →
-> `/providers/apple_music/connection`). **SoundCloud** connect is also **live and verified working** in
-> prod after the OAuth request-shape fix: authorization-code + PKCE exchanges send `client_id` and
-> `client_secret` in the form body. **Spotify** connect is now **live and verified working** in prod
-> after registering `https://ritmofit.studio/api/v1/providers/spotify/callback` in the Spotify app
-> dashboard; the Worker log showed `GET /api/v1/providers/spotify/callback?... - Ok`, and the
-> Connections dialog showed `Connected to Spotify.` Spotify uses confidential Authorization Code with
-> Basic auth and no PKCE verifier. No `SOUNDCLOUD_REDIRECT_URI` / `SPOTIFY_REDIRECT_URI` override is
-> set, so the registered dashboard redirect URI must exactly match
-> `https://ritmofit.studio/api/v1/providers/<provider>/callback`.
-> **Note:** redirect-OAuth callbacks are
-> top-level browser navigations, so the SPA's PWA service worker must keep `/api/` in its
-> `navigateFallbackDenylist` (PR #161) or the callback never reaches the Worker (it dead-ends on the
-> SPA 404). Apple Music is immune — MusicKit authorizes in-page, not via a navigation.
+Redirect-OAuth callbacks are top-level browser navigations, so the SPA's PWA service worker must keep
+`/api/` in its `navigateFallbackDenylist`; otherwise the callback is captured by the SPA fallback.
+Apple Music authorizes in-page and does not use this redirect path. Provider verification history belongs
+in `HISTORY.md`; re-run the relevant live connect/playback checks after provider or auth changes instead
+of treating an old verification note as current state.
 
 **Optional automatic BPM lookup** (GetSongBPM) is likewise unprovisioned: `GETSONGBPM_API_KEY` is not
 set in prod, so `POST /tracks/:id/bpm-lookup` returns a `503` with an instructor-facing fallback
-message and manual BPM entry covers the loop. Set the key via `wrangler secret put GETSONGBPM_API_KEY`
+message and manual BPM entry covers the loop. Set the key via
+`pnpm --filter @ritmofit/api exec wrangler secret put GETSONGBPM_API_KEY`
 post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). **BPM lookup is built but unprovisioned** (`GETSONGBPM_API_KEY` not set — activate at will); **Google sign-in is unprovisioned** (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` not set — activate when credentials are provisioned). Both tracked in `DEVELOPMENT_PLAN.md` → "Known deferred post-launch features."
 
 ## Pre-deploy
@@ -78,8 +67,10 @@ post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). **BPM loo
    pnpm --filter @ritmofit/api contract-parity
    pnpm audit:ci
    ```
-3. Record the current live version for rollback (see below): `wrangler deployments status`.
-4. Check remote D1 migration state: `wrangler d1 migrations list ritmofit --remote`.
+3. Record the current live Worker version for rollback:
+   `pnpm --filter @ritmofit/api exec wrangler deployments status`.
+4. Check remote D1 migration state:
+   `pnpm --filter @ritmofit/api exec wrangler d1 migrations list ritmofit --remote`.
 
 ## Deploy
 
@@ -97,7 +88,9 @@ pnpm --filter @ritmofit/web build
 pnpm --filter @ritmofit/api run deploy
 ```
 
-Note the printed **Current Version ID** — that is the new live version.
+Note the printed **Current Version ID** and the built SPA entry-asset hash. They prove different parts
+of the single-origin release: the version identifies Worker code/bindings, while the asset hash identifies
+the served SPA. Never infer that checking only one proves production matches the merged commit.
 
 ## Post-deploy smoke
 
@@ -109,7 +102,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://ritmofit.studio/api/v1/explore 
 curl -s -o /dev/null -w "%{http_code}\n" https://ritmofit.studio/api/v1/teams          # unauth → 401
 curl -s -D - -o /dev/null https://ritmofit.studio/api/v1/health | \
   grep -iE 'strict-transport|content-security|x-frame|x-content-type|referrer|permissions'  # headers present
-curl -s https://ritmofit.studio/ | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js'          # matches the built hash
+curl -s "https://ritmofit.studio/?release-check=$(date +%s)" | \
+  grep -oE 'assets/index-[A-Za-z0-9_-]+\.js'                                      # matches built hash
 ```
 
 Also smoke mounted launch routes so accidental route regressions show up as something other than
@@ -118,7 +112,10 @@ class cover/tag endpoints should reach their real handlers and fail as `401`/`40
 errors when unauthenticated or given invalid test data.
 
 For UI-affecting changes, also run the browser smokes against a local stack (see
-`apps/web/smoke/README.md`). Confirm the new Worker version: `wrangler deployments status`.
+`apps/web/smoke/README.md`). Confirm the new Worker version with
+`pnpm --filter @ritmofit/api exec wrangler deployments status`, and independently confirm the served
+SPA entry hash matches the build. A matching Worker version does not prove static-asset alignment, and a
+matching SPA hash does not prove the API Worker is current.
 
 ## Rollback / recovery
 
@@ -159,6 +156,8 @@ does **not** un-apply a migration. If a bad deploy included a migration:
 ## References
 
 - Manual deploy + migration ordering: `AGENTS.md` › "Security And Deployment".
-- Deploy history of record: `ritmofit_dev_plan/HISTORY.md` (the archived `ritmofit_dev_plan/archive/REVIEW_HISTORY.md`
-  holds the pre-launch remediation log) — one dated entry per production deploy.
+- Deploy chronology: `ritmofit_dev_plan/HISTORY.md` (the archived
+  `ritmofit_dev_plan/archive/REVIEW_HISTORY.md` holds the pre-launch remediation log) — one dated entry
+  per production deploy or material production-state finding. Determine current live state with the
+  commands in this runbook rather than a historical entry.
 - Session close hygiene: `agent-prompts/daily/close-session.md`.

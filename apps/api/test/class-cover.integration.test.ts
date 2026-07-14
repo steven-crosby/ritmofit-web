@@ -34,7 +34,7 @@ describe('class cover lifecycle', () => {
     }
   });
 
-  it('serves nosniff images and removes replaced and deleted cover objects', async () => {
+  it('serves public nosniff images and removes replaced and deleted cover objects', async () => {
     const user = await signUpUser();
     const classId = await createClass(user.cookie);
 
@@ -48,7 +48,9 @@ describe('class cover lifecycle', () => {
     const firstKey = objectKey(firstUrl);
     expect(await env.IMAGES_BUCKET.head(firstKey)).not.toBeNull();
 
-    const served = await call(new URL(firstUrl).pathname, { headers: { cookie: user.cookie } });
+    // Cover capability URLs are intentionally public; this request must not
+    // inherit the uploader's session cookie.
+    const served = await call(new URL(firstUrl).pathname);
     expect(served.status).toBe(200);
     expect(served.headers.get('x-content-type-options')).toBe('nosniff');
     await served.arrayBuffer();
