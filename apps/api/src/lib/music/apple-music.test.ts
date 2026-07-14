@@ -431,6 +431,20 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
     expect(pageCalls).toEqual([`${TRACKS_URL}?limit=300`, `${TRACKS_URL}?offset=300&limit=300`]);
   });
 
+  it('rejects a malformed later page instead of returning a partial playlist', async () => {
+    const { provider } = makeProvider({
+      [`${TRACKS_URL}?offset=300`]: { data: 'invalid' },
+      [`${TRACKS_URL}?limit=300`]: {
+        data: [AM_SONG],
+        next: '/v1/catalog/gb/playlists/pl.abc123/tracks?offset=300',
+      },
+    });
+
+    await expect(provider.getPlaylist(REF)).rejects.toThrow(
+      'Apple Music returned an invalid playlist page.',
+    );
+  });
+
   it('returns [] on 404 (unknown id, or a shared playlist since unshared)', async () => {
     const { provider } = makeProvider({}); // no handler → 404
     await expect(provider.getPlaylist(REF)).resolves.toEqual([]);
