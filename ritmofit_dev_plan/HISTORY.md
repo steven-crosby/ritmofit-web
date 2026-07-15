@@ -10,6 +10,22 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-14 (all-harden round — four-PR release) — deployed (Worker
+> `4e009966-6a4c-47ef-8994-c88aa6613680`).** Main HEAD `ad53541` (merge of PR #300). Code and
+> documentation only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback
+> anchor: prior live `812b97ce-e04d-40b6-b709-316445fa8b9a`. **PR #297** repaired the public-cover
+> route/auth contract, made the class-copy OpenAPI body optional to match runtime, and reconciled the
+> production-state documentation. **PR #298** rejects partial Apple Music playlist imports when a later
+> page is malformed instead of silently returning a truncated playlist. **PR #299** prevents bulk and
+> per-row saved-playlist adds from overlapping in the web UI. **PR #300** rejects library-track duration
+> reductions that would invalidate dependent clipped placements. The full pre-deploy gate passed:
+> formatting, typecheck, lint, design-system verification, 529 web tests, 400 API unit tests, 129
+> Worker/D1 integration tests, production build, OpenAPI no-drift, contract parity, and dependency audit
+> policy. Post-deploy smoke passed on `https://ritmofit.studio`: SPA and health `200`; protected launch
+> routes `401`; a missing public cover `404` without auth; security headers present; live SPA asset
+> `assets/index-BxRw-uUk.js` matches the local build. The custom-domain HTML briefly returned the prior
+> cached entry during edge propagation; cache-busted rechecks converged with the direct Worker endpoint.
+
 > **Production realignment verification 2026-07-13 — round-13 Worker and SPA deployed; no migration
 > change.** Cloudflare reports Worker version `812b97ce-e04d-40b6-b709-316445fa8b9a` at 100%, created
 > 2026-07-14 03:10:48 UTC after round-13 `main` reached `34ef84e`. Live HTML independently served
