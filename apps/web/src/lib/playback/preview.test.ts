@@ -41,18 +41,28 @@ class FakeAdapter implements PlaybackAdapter {
   readonly provider = 'soundcloud' as const;
   calls: string[] = [];
   events: AdapterEvents;
-  /** When set, prepare()/stop() awaits this so a test can resolve it mid-transition. */
+  /** When set, lifecycle calls await these so tests can resolve them mid-transition. */
   private prepareGate: Promise<void> | null;
   private releasePrepare: (() => void) | null = null;
+  private playGate: Promise<void> | null;
+  private releasePlay: (() => void) | null = null;
   private stopGate: Promise<void> | null;
   private releaseStop: (() => void) | null = null;
   failPrepare = false;
 
-  constructor(events: AdapterEvents, opts?: { gatePrepare?: boolean; gateStop?: boolean }) {
+  constructor(
+    events: AdapterEvents,
+    opts?: { gatePrepare?: boolean; gatePlay?: boolean; gateStop?: boolean },
+  ) {
     this.events = events;
     this.prepareGate = opts?.gatePrepare
       ? new Promise<void>((resolve) => {
           this.releasePrepare = resolve;
+        })
+      : null;
+    this.playGate = opts?.gatePlay
+      ? new Promise<void>((resolve) => {
+          this.releasePlay = resolve;
         })
       : null;
     this.stopGate = opts?.gateStop
@@ -70,6 +80,10 @@ class FakeAdapter implements PlaybackAdapter {
     this.releaseStop?.();
   }
 
+  openPlayGate(): void {
+    this.releasePlay?.();
+  }
+
   async prepare(): Promise<{ provider: 'soundcloud'; classTrackId: string }> {
     this.calls.push('prepare');
     if (this.prepareGate) await this.prepareGate;
@@ -78,6 +92,7 @@ class FakeAdapter implements PlaybackAdapter {
   }
   async play(): Promise<void> {
     this.calls.push('play');
+    if (this.playGate) await this.playGate;
   }
   async pause(): Promise<void> {
     this.calls.push('pause');
@@ -99,11 +114,15 @@ function harness(opts?: {
   connections?: ConnectionLike[];
   adapters?: PreviewControllerOptions['adapters'];
   gatePrepare?: boolean;
+  gatePlay?: boolean;
 }) {
   const built: FakeAdapter[] = [];
   const statuses: PreviewStatus[] = [];
   const factory: AdapterFactory = (events) => {
-    const a = new FakeAdapter(events, { gatePrepare: opts?.gatePrepare });
+    const a = new FakeAdapter(events, {
+      gatePrepare: opts?.gatePrepare,
+      gatePlay: opts?.gatePlay,
+    });
     built.push(a);
     return a;
   };
@@ -329,6 +348,51 @@ describe('PreviewPlaybackController', () => {
     });
   });
 
+  it('destroys a no-ack adapter immediately when preview is stopped', async () => {
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+    const { controller, built } = harness({ gatePlay: true });
+    const starting = controller.play(makeEntry());
+    await flush();
+    expect(built[0]!.calls).toEqual(['prepare', 'play']);
+
+    await controller.stop();
+    expect(built[0]!.calls).toEqual(['prepare', 'play', 'destroy']);
+    expect(controller.getStatus()).toEqual({ kind: 'idle' });
+
+    built[0]!.openPlayGate();
+    await starting;
+    expect(controller.getStatus()).toEqual({ kind: 'idle' });
+  });
+
+  it('does not let a superseded no-ack preview clear the newer adapter', async () => {
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+    const built: FakeAdapter[] = [];
+    const controller = new PreviewPlaybackController(
+      [{ provider: 'soundcloud', expiresAt: null, scope: null }],
+      {
+        now: () => NOW,
+        adapters: {
+          soundcloud: (events) => {
+            const adapter = new FakeAdapter(events, { gatePlay: built.length === 0 });
+            built.push(adapter);
+            return adapter;
+          },
+        },
+      },
+    );
+
+    const first = controller.play(makeEntry({ classTrackId: 'ct-1' }));
+    await flush();
+    await controller.play(makeEntry({ classTrackId: 'ct-2' }));
+    expect(built[0]!.calls).toEqual(['prepare', 'play', 'destroy']);
+    expect(controller.getStatus()).toMatchObject({ kind: 'playing', classTrackId: 'ct-2' });
+
+    built[0]!.openPlayGate();
+    await first;
+    expect(controller.getStatus()).toMatchObject({ kind: 'playing', classTrackId: 'ct-2' });
+    expect(built[1]!.calls).toEqual(['prepare', 'play']);
+  });
+
   it('ignores late errors from a superseded adapter', async () => {
     const { controller, built } = harness();
     await controller.play(makeEntry({ classTrackId: 'ct-1' }));
@@ -391,6 +455,21 @@ describe('PreviewPlaybackController', () => {
     await controller.play(makeEntry());
     controller.destroy();
     expect(built[0]!.calls).toContain('destroy');
+    expect(controller.getStatus()).toEqual({ kind: 'idle' });
+  });
+
+  it('destroy() tears down an adapter still awaiting play acknowledgement', async () => {
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+    const { controller, built } = harness({ gatePlay: true });
+    const starting = controller.play(makeEntry());
+    await flush();
+
+    controller.destroy();
+    expect(built[0]!.calls).toEqual(['prepare', 'play', 'destroy']);
+    expect(controller.getStatus()).toEqual({ kind: 'idle' });
+
+    built[0]!.openPlayGate();
+    await starting;
     expect(controller.getStatus()).toEqual({ kind: 'idle' });
   });
 });
