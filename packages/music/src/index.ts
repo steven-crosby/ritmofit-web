@@ -6,6 +6,7 @@
  * never touches the DB or app auth. SoundCloud is first (music-providers.md).
  */
 export type { MusicProvider, FetchLike, PlaylistImportRef } from './provider.js';
+export { providerTrackIdAliases } from './identity.js';
 export { parsePlaylistUrl, type ParsedPlaylistUrl } from './playlist-url.js';
 export { ProviderError } from './errors.js';
 export {

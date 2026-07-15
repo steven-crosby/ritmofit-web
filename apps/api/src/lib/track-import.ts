@@ -15,7 +15,8 @@
  *     provider-sourced BPM, per the music rules) plus its provider id.
  */
 import type { TrackSearchResult, TrackWithProviderIds, Provider } from '@ritmofit/shared';
-import { and, eq } from 'drizzle-orm';
+import { providerTrackIdAliases } from '@ritmofit/music';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from './db.js';
 import { HttpError, isUniqueViolation } from './errors.js';
 import { serializeTrack, serializeTrackProviderId } from './serialize.js';
@@ -167,21 +168,34 @@ export async function importTrackFromCandidate(
   ownerUserId: string,
   candidate: TrackSearchResult,
 ): Promise<ImportResult> {
-  // 1. Exact ref — the provider track is already in THIS user's library. Scoped to
-  //    the caller (tracks are a per-user library, D4): another user owning the same
-  //    provider ref is irrelevant — it lives on a different track row, and the
-  //    owner-scoped unique index lets the caller import it into their own library.
-  const existingRef = await db
-    .select({ trackId: trackProviderIds.trackId })
+  // 1. Exact/equivalent ref — the provider track is already in THIS user's library.
+  //    Scoped to the caller (tracks are a per-user library, D4): another user owning
+  //    the same provider ref is irrelevant. SoundCloud's legacy numeric IDs and
+  //    canonical URNs are queried together, but new imports still persist the
+  //    candidate's forward identifier unchanged.
+  const equivalentProviderTrackIds = providerTrackIdAliases(
+    candidate.provider,
+    candidate.providerTrackId,
+  );
+  const existingRefs = await db
+    .select({
+      trackId: trackProviderIds.trackId,
+      providerTrackId: trackProviderIds.providerTrackId,
+    })
     .from(trackProviderIds)
     .where(
       and(
         eq(trackProviderIds.ownerUserId, ownerUserId),
         eq(trackProviderIds.provider, candidate.provider),
-        eq(trackProviderIds.providerTrackId, candidate.providerTrackId),
+        inArray(trackProviderIds.providerTrackId, equivalentProviderTrackIds),
       ),
     )
-    .get();
+    .all();
+  // Prefer the literal incoming ref if historical data somehow contains both
+  // forms; the alias is compatibility for pre-URN rows, not a replacement.
+  const existingRef =
+    existingRefs.find((ref) => ref.providerTrackId === candidate.providerTrackId) ??
+    existingRefs[0];
   if (existingRef) {
     // Idempotent re-import — the track already exists, nothing created.
     return { track: await loadTrackWithProviders(db, existingRef.trackId), created: false };
