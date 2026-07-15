@@ -3,7 +3,7 @@
 > **INTERACTIVE.** Use this whenever Steven is ending a personal work session in
 > `ritmofit-web`, even if multiple sessions happen in one day. Work through the checklist
 > top-to-bottom, run the checks yourself, and pause only at owner-decision points:
-> commit/stash/discard, merge/close PRs, deploy, remote migrations, or production data cleanup.
+> commit scope, merge/close PRs, deploy, remote migrations, or production data cleanup.
 
 Context for whoever runs this: deploys are **manual** and production-facing; pushing or
 merging to `main` does **not** deploy. Prefer PRs for all changes, including docs, and
@@ -12,8 +12,10 @@ unless the owner explicitly chooses that path. Run everything from `ritmofit-web
 
 ## 1. Working tree and branch
 
-- [ ] `git status --short` — if there are uncommitted changes, surface them and ask whether
-  to commit, stash, or discard. Never silently commit unrelated work.
+- [ ] `git status --short` — if there are uncommitted changes, identify which session owns
+  them. Offer to commit only this session's finished, in-scope work; otherwise leave the files
+  untouched and report them. Do not stash, discard, reset, overwrite, or silently include
+  unrelated work. If ownership or recovery is unclear, stop and ask for an explicit plan.
 - [ ] `git status -sb` — note branch, upstream sync, ahead/behind state, and whether `main`
   is current with `origin/main`.
 - [ ] `git branch` — identify merged local feature branches that can be deleted. Leave

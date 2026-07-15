@@ -3,7 +3,7 @@
   "info": {
     "title": "Ritmo Studio API",
     "version": "v1",
-    "description": "Ritmo Studio M1 REST surface. Generated from the @ritmofit/shared Zod schemas — the single source of truth. All endpoints except the auth bootstrap require a Better Auth session."
+    "description": "Ritmo Studio REST surface. Generated from the @ritmofit/shared Zod schemas — the single source of truth. Most endpoints require a Better Auth session; public exceptions explicitly override the global security requirement."
   },
   "servers": [
     {
@@ -261,6 +261,46 @@
         }
       }
     },
+    "/classes/{id}/copy": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "summary": "Save a copy of a visible class into the caller's library",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyClass"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Fresh private draft owned by the caller",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Class"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source class not found / hidden"
+          }
+        }
+      }
+    },
     "/classes/{id}/cover": {
       "parameters": [
         {
@@ -403,6 +443,106 @@
         }
       }
     },
+    "/classes/{id}/sections": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "summary": "List segment bands in timeline order (view)",
+        "responses": {
+          "200": {
+            "description": "Class sections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClassSection"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add a segment band (edit)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClassSection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassSection"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sections/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "patch": {
+        "summary": "Update a segment band (edit)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClassSection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassSection"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a segment band (edit)",
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
     "/classes/{id}/import-playlist": {
       "parameters": [
         {
@@ -473,6 +613,7 @@
       ],
       "get": {
         "summary": "Serve a stored cover image from R2",
+        "security": [],
         "responses": {
           "200": {
             "description": "Image bytes",
@@ -1830,6 +1971,49 @@
         }
       }
     },
+    "/explore": {
+      "get": {
+        "summary": "List public classes in recency order (dormant D20 surface)",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 30
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public classes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExploreClass"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/teams": {
       "get": {
         "summary": "List my teams",
@@ -2603,6 +2787,171 @@
         ],
         "additionalProperties": false
       },
+      "ExploreClass": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "ownerUserId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "cycle",
+                  "hiit",
+                  "sculpt",
+                  "tread"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "ready",
+              "archived"
+            ]
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "private",
+              "public"
+            ]
+          },
+          "timelineMode": {
+            "type": "string",
+            "enum": [
+              "sequential",
+              "free"
+            ]
+          },
+          "targetDurationMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "featuredCategory": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverImageUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tags": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            }
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "lastOpenedAt": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ownerName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trackCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "ownerUserId",
+          "title",
+          "description",
+          "template",
+          "status",
+          "visibility",
+          "timelineMode",
+          "targetDurationMs",
+          "featuredCategory",
+          "coverImageUrl",
+          "tags",
+          "createdAt",
+          "updatedAt",
+          "lastOpenedAt",
+          "ownerName",
+          "trackCount"
+        ],
+        "additionalProperties": false
+      },
       "CreateClass": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -2770,6 +3119,18 @@
                 "type": "null"
               }
             ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "CopyClass": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
           }
         },
         "additionalProperties": false
@@ -3604,6 +3965,104 @@
                 "type": "null"
               }
             ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ClassSection": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "classId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "warm_up",
+              "climb",
+              "sprint",
+              "recovery",
+              "cool_down"
+            ]
+          },
+          "startOffsetMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "classId",
+          "type",
+          "startOffsetMs",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "CreateClassSection": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "warm_up",
+              "climb",
+              "sprint",
+              "recovery",
+              "cool_down"
+            ]
+          },
+          "startOffsetMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          }
+        },
+        "required": [
+          "type",
+          "startOffsetMs"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateClassSection": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "warm_up",
+              "climb",
+              "sprint",
+              "recovery",
+              "cool_down"
+            ]
+          },
+          "startOffsetMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
           }
         },
         "additionalProperties": false

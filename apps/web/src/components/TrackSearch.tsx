@@ -304,7 +304,8 @@ export function TrackSearch({
   };
 
   const importAll = async () => {
-    if (!results || results.length === 0) return;
+    if (!results || results.length === 0 || importingKey !== null || importingAllFromPlaylist)
+      return;
     const remaining = results.filter((candidate) => !addedKeys.has(candidateKey(candidate)));
     if (remaining.length === 0) return;
     setImportingAllFromPlaylist(true);
@@ -342,6 +343,7 @@ export function TrackSearch({
   };
 
   const add = async (candidate: TrackSearchResult) => {
+    if (importingAllFromPlaylist) return;
     const key = candidateKey(candidate);
     setImportingKey(key);
     setError(null);
@@ -403,6 +405,7 @@ export function TrackSearch({
         const key = candidateKey(r);
         const added = addedKeys.has(key);
         const busy = importingKey === key;
+        const bulkBusy = importingAllFromPlaylist && !added;
         return (
           <li key={key} className="flex items-center gap-3 rounded-card bg-bg-base px-2 py-1.5">
             {/* 44px art — a small creative trigger, not a focal point (09). */}
@@ -434,13 +437,14 @@ export function TrackSearch({
             <button
               type="button"
               onClick={() => add(r)}
-              disabled={busy || added}
+              disabled={busy || bulkBusy || added}
+              aria-busy={busy || bulkBusy}
               aria-label={added ? `${r.title} added` : `Add ${r.title} by ${r.artist}`}
               className={`shrink-0 rounded-pill px-3 py-1 font-ui text-xs font-semibold disabled:opacity-60 ${
                 added ? 'bg-bg-raised text-text-tertiary' : 'rf-btn-primary text-text-on-accent'
               }`}
             >
-              {added ? 'Added ✓' : busy ? 'Adding…' : 'Add'}
+              {added ? 'Added ✓' : busy || bulkBusy ? 'Adding…' : 'Add'}
             </button>
           </li>
         );
@@ -605,7 +609,12 @@ export function TrackSearch({
             <button
               type="button"
               onClick={() => void importAll()}
-              disabled={importingAllFromPlaylist || remainingPlaylistTrackCount === 0}
+              disabled={
+                importingAllFromPlaylist ||
+                importingKey !== null ||
+                remainingPlaylistTrackCount === 0
+              }
+              aria-busy={importingAllFromPlaylist || importingKey !== null}
               aria-label={
                 remainingPlaylistTrackCount === 0
                   ? `All ${results.length} tracks from ${selectedPlaylist.name} added`
@@ -617,11 +626,13 @@ export function TrackSearch({
             >
               {importingAllFromPlaylist
                 ? 'Importing…'
-                : remainingPlaylistTrackCount === 0
-                  ? `All ${results.length} added`
-                  : addedPlaylistTrackCount > 0
-                    ? `Retry ${remainingPlaylistTrackCount} remaining`
-                    : `Import all ${results.length}`}
+                : importingKey !== null
+                  ? 'Adding track…'
+                  : remainingPlaylistTrackCount === 0
+                    ? `All ${results.length} added`
+                    : addedPlaylistTrackCount > 0
+                      ? `Retry ${remainingPlaylistTrackCount} remaining`
+                      : `Import all ${results.length}`}
             </button>
           )}
         </div>
