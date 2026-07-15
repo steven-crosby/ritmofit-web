@@ -64,7 +64,7 @@ export interface SoundCloudConfig {
  *  2025 URN migration SoundCloud is replacing numeric `id`s with URN strings
  *  (`soundcloud:tracks:123`); tolerate both and normalize to string. */
 const scTrackSchema = z.object({
-  id: z.union([z.number(), z.string()]),
+  id: z.union([z.number(), z.string()]).optional(),
   urn: z.string().optional(),
   title: z.string().optional(),
   permalink_url: z.string().optional(),
@@ -81,7 +81,8 @@ const scSearchSchema = z.union([
 ]);
 
 const scPlaylistSchema = z.object({
-  id: z.number(),
+  id: z.union([z.number(), z.string()]).optional(),
+  urn: z.string().optional(),
   title: z.string().optional(),
   permalink_url: z.string().optional(),
   artwork_url: z.string().nullable().optional(),
@@ -433,9 +434,11 @@ async function fetchSoundCloudPagedCollection(cfg: {
 function toPlaylistSummary(raw: unknown): ProviderPlaylistSummary | null {
   const pl = scPlaylistSchema.safeParse(raw);
   if (!pl.success) return null;
+  const providerPlaylistId = pl.data.urn ?? pl.data.id;
+  if (providerPlaylistId === undefined) return null;
   const item = providerPlaylistSummarySchema.safeParse({
     provider: 'soundcloud',
-    playlistId: String(pl.data.id),
+    playlistId: String(providerPlaylistId),
     providerUri: pl.data.permalink_url ?? null,
     name: pl.data.title ?? 'Untitled playlist',
     ownerName: pl.data.user?.username ?? null,
@@ -450,9 +453,11 @@ function toCandidate(raw: unknown): TrackSearchResult | null {
   const parsed = scTrackSchema.safeParse(raw);
   if (!parsed.success) return null;
   const t: ScTrack = parsed.data;
+  const providerTrackId = t.urn ?? t.id;
+  if (providerTrackId === undefined) return null;
   const candidate = {
     provider: 'soundcloud' as const,
-    providerTrackId: String(t.id),
+    providerTrackId: String(providerTrackId),
     providerUri: t.permalink_url ?? null, // deep-link target for live hand-off
     title: t.title ?? '',
     artist: t.user?.username ?? '',

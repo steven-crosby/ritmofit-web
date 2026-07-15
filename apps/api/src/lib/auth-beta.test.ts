@@ -36,11 +36,21 @@ describe('private-beta account allowlist', () => {
     ).toBe(false);
   });
 
-  it('keeps isolated mock-provider environments open for generated test users', () => {
+  it('does not let mock-provider mode bypass the allowlist on a non-local origin', () => {
     expect(
       canCreateBetaAccount(
         {
           BETTER_AUTH_URL: 'https://test.ritmofit.studio',
+          MOCK_PROVIDERS: 'true',
+        },
+        'generated@example.com',
+      ),
+    ).toBe(false);
+    expect(
+      canCreateBetaAccount(
+        {
+          BETTER_AUTH_URL: 'https://test.ritmofit.studio',
+          BETA_ALLOWED_EMAILS: 'generated@example.com',
           MOCK_PROVIDERS: 'true',
         },
         'generated@example.com',
