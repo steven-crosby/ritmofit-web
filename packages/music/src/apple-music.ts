@@ -317,6 +317,7 @@ export async function fetchAppleMusicLibrarySongs(cfg: {
     for (const raw of page) {
       const candidate = toLibraryCandidate(raw);
       if (candidate) out.push(candidate);
+      if (out.length >= cap) break;
     }
     // Guard against a non-advancing `next` cursor (e.g. a page that returns no
     // rows but still hands back a `next`): without this the `out.length < cap`
