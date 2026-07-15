@@ -56,9 +56,10 @@ Pilates, and HIIT.
   browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook. **Production matches `main` at `115b003`
-  (2026-07-15):** private-beta hardening rounds 15–16 (#304–#309), their session record (#310), and
-  the full-track SoundCloud mock-fixture correction (#311) are deployed in Worker
+  Music workspace via a shared provider-browse hook. **Production application code matches `main`
+  (deployment source `115b003`, 2026-07-15; later release-record commits are docs-only):** private-beta
+  hardening rounds 15–16 (#304–#309), their session record (#310), and the full-track SoundCloud
+  mock-fixture correction (#311) are deployed in Worker
   `b4449c8d-5978-4298-9c6e-e222791a208f`, serving SPA asset `assets/index-Db7zXm3P.js`; there was no
   schema/migration change. The preceding invite-only private-beta deployment was Worker
   `2b390842-8f71-4086-a59a-6ea3050d4882` from main `3e21611`. The preceding deployed all-harden
