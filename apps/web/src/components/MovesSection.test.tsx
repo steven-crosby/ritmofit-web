@@ -46,7 +46,8 @@ describe('MovesSection — m:ss anchor entry', () => {
   it('parses the m:ss field to anchorMs when placing a move', async () => {
     mockEmptyLibrary();
     vi.mocked(api.placeMove).mockResolvedValue({} as never);
-    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+    const onChanged = vi.fn();
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} onChanged={onChanged} />);
 
     const time = await screen.findByRole('textbox', { name: 'Move time (m:ss)' });
     fireEvent.change(time, { target: { value: '1:30' } });
@@ -62,6 +63,7 @@ describe('MovesSection — m:ss anchor entry', () => {
         expect.objectContaining({ anchorMs: 90000 }),
       ),
     );
+    expect(onChanged).toHaveBeenCalledTimes(1);
   });
 
   it('disables Add move on a malformed or out-of-range time', async () => {

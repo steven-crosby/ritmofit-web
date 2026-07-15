@@ -20,12 +20,16 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
   const [busy, setBusy] = useState(false);
   const [socialBusy, setSocialBusy] = useState(false);
   const [appleSignInEnabled, setAppleSignInEnabled] = useState(false);
+  const [inviteOnly, setInviteOnly] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     getAuthCapabilities()
       .then((capabilities) => {
-        if (!cancelled) setAppleSignInEnabled(capabilities.socialProviders.apple);
+        if (!cancelled) {
+          setAppleSignInEnabled(capabilities.socialProviders.apple);
+          setInviteOnly(capabilities.access.mode === 'invite_only');
+        }
       })
       .catch(() => {
         if (!cancelled) setAppleSignInEnabled(false);
@@ -123,7 +127,9 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
           </div>
           <p className="font-ui text-text-secondary">
             {mode === 'signup'
-              ? 'Create your instructor account'
+              ? inviteOnly
+                ? 'Create an account with your invited email'
+                : 'Create your instructor account'
               : mode === 'forgot'
                 ? 'Reset your password'
                 : 'Sign in to plan your classes'}
@@ -232,6 +238,17 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
         >
           {mode === 'signin' ? 'Need an account? Sign up' : 'Have an account? Sign in'}
         </button>
+        {inviteOnly && (
+          <p className="text-center font-ui text-xs text-text-tertiary">
+            Private beta · New accounts require an invitation.
+          </p>
+        )}
+        <a
+          href="/privacy"
+          className="self-center rounded-control font-ui text-xs text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+        >
+          Privacy and data
+        </a>
       </div>
     </main>
   );

@@ -226,6 +226,7 @@ export function CuesSection({
   bpm = null,
   beatAnchorMs = 0,
   focus = null,
+  onChanged,
 }: {
   classTrackId: string;
   durationMs: number | null;
@@ -233,6 +234,8 @@ export function CuesSection({
   bpm?: number | null;
   beatAnchorMs?: number;
   focus?: RowFocus;
+  /** Refresh run-payload-derived readiness and timeline after cue mutations. */
+  onChanged?: () => void;
 }) {
   const { canSnap, snap, setSnap, maybeSnap } = useBeatSnap(bpm, beatAnchorMs);
   const [cues, setCues] = useState<Cue[] | null>(null);
@@ -285,6 +288,7 @@ export function CuesSection({
       });
       setEditingId(null);
       await load();
+      onChanged?.();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -307,6 +311,7 @@ export function CuesSection({
       setAnchorClock('0:00');
       setColor(null);
       await load();
+      onChanged?.();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -320,6 +325,7 @@ export function CuesSection({
     try {
       await deleteCue(id);
       await load();
+      onChanged?.();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -612,6 +618,7 @@ export function MovesSection({
       setAnchorClock('0:00');
       setIntensity('');
       await load();
+      onChanged?.();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -646,6 +653,7 @@ export function MovesSection({
       });
       setEditingId(null);
       await load();
+      onChanged?.();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -659,6 +667,7 @@ export function MovesSection({
     try {
       await deletePlacedMove(id);
       await load();
+      onChanged?.();
     } catch (e) {
       setError((e as Error).message);
     } finally {

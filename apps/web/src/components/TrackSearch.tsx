@@ -26,13 +26,16 @@ import {
   listConnections,
   listLikes,
   searchProvider,
+  ApiError,
 } from '../lib/api.js';
 import { formatDuration } from '../lib/class-summary.js';
 import {
   DEFAULT_PROVIDER,
   PROVIDER_ORDER,
   providerConnectionState,
+  providerHandoffHref,
   providerLabel,
+  providerPlaylistHref,
 } from '../lib/providers.js';
 
 /** A stable key for a candidate (provider + provider track id). */
@@ -131,7 +134,12 @@ export function browseAnnouncement(input: {
  * The reauth match is case-insensitive so the capitalized NOT_CONNECTED string
  * ("Connect your …") classifies as reauth rather than falling through to generic.
  */
-export function classifyPlaylistDrillInError(message: string): 'forbidden' | 'reauth' | 'generic' {
+export function classifyPlaylistDrillInError(
+  message: string,
+  code?: string,
+): 'forbidden' | 'reauth' | 'generic' {
+  if (code === 'PROVIDER_FORBIDDEN') return 'forbidden';
+  if (code === 'REAUTH_REQUIRED' || code === 'NOT_CONNECTED') return 'reauth';
   if (/own or collaborate on/i.test(message)) return 'forbidden';
   if (/^(re)?connect your /i.test(message)) return 'reauth';
   return 'generic';
@@ -150,6 +158,7 @@ export function TrackSearch({
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [playlistErrorCode, setPlaylistErrorCode] = useState<string | undefined>();
   // Per-candidate import state: which key is busy, and which keys were added.
   const [importingKey, setImportingKey] = useState<string | null>(null);
   const [addedKeys, setAddedKeys] = useState<Set<string>>(new Set());
@@ -290,6 +299,7 @@ export function TrackSearch({
     setSelectedPlaylist(playlist);
     setSearching(true);
     setError(null);
+    setPlaylistErrorCode(undefined);
     setResults(null);
     setAddedKeys(new Set());
     setBulkImportAttempted(false);
@@ -297,6 +307,7 @@ export function TrackSearch({
       setResults(await listPlaylistTracks(provider, playlist.playlistId));
     } catch (e) {
       setError((e as Error).message);
+      setPlaylistErrorCode(e instanceof ApiError ? e.code : undefined);
       setResults(null);
     } finally {
       setSearching(false);
@@ -403,6 +414,7 @@ export function TrackSearch({
     <ul className="flex flex-col gap-1.5">
       {list.map((r) => {
         const key = candidateKey(r);
+        const sourceHref = providerHandoffHref(r.provider, r.providerUri);
         const added = addedKeys.has(key);
         const busy = importingKey === key;
         const bulkBusy = importingAllFromPlaylist && !added;
@@ -428,6 +440,17 @@ export function TrackSearch({
             <div className="min-w-0 flex-1">
               <p className="truncate font-ui text-sm font-semibold text-text-primary">{r.title}</p>
               <p className="truncate font-ui text-xs text-text-secondary">{r.artist}</p>
+              {sourceHref && (
+                <a
+                  href={sourceHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-0.5 inline-flex rounded-control font-ui text-[11px] font-semibold text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                  aria-label={`Open ${r.title} on ${providerLabel(r.provider)}`}
+                >
+                  Source: {providerLabel(r.provider)} ↗
+                </a>
+              )}
             </div>
             {r.durationMs != null && (
               <span className="shrink-0 font-data text-xs text-text-tertiary">
@@ -457,7 +480,7 @@ export function TrackSearch({
   // load failure reads as danger with a retry. All keep role="alert" (announced on
   // the user's Open click). See classifyPlaylistDrillInError.
   const renderDrillInError = (selected: ProviderPlaylistSummary, message: string) => {
-    const kind = classifyPlaylistDrillInError(message);
+    const kind = classifyPlaylistDrillInError(message, playlistErrorCode);
     if (kind === 'generic') {
       return (
         <p role="alert" className="flex flex-col gap-1 font-ui text-sm text-state-danger">
@@ -765,6 +788,17 @@ export function TrackSearch({
                   <p className="truncate font-ui text-xs text-text-secondary">
                     {playlist.ownerName ?? providerLabel(provider)} · {playlist.trackCount} tracks
                   </p>
+                  {providerPlaylistHref(playlist.provider, playlist.providerUri) && (
+                    <a
+                      href={providerPlaylistHref(playlist.provider, playlist.providerUri)!}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-0.5 inline-flex rounded-control font-ui text-[11px] font-semibold text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                      aria-label={`Open ${playlist.name} on ${providerLabel(playlist.provider)}`}
+                    >
+                      Source: {providerLabel(playlist.provider)} ↗
+                    </a>
+                  )}
                 </div>
                 <button
                   type="button"

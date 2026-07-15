@@ -223,6 +223,7 @@ describe('fetchAppleMusicLibraryPlaylists', () => {
     type: 'library-playlists',
     attributes: {
       name: 'Cycle Bangers',
+      url: 'https://music.apple.com/us/playlist/cycle-bangers/pl.abc123',
       curatorName: 'DJ Ritmo',
       trackCount: 12,
       artwork: { url: 'https://is1.mzstatic.com/image/{w}x{h}.jpg', width: 3000, height: 3000 },
@@ -243,6 +244,7 @@ describe('fetchAppleMusicLibraryPlaylists', () => {
       {
         provider: 'apple_music',
         playlistId: 'p.abc123',
+        providerUri: 'https://music.apple.com/us/playlist/cycle-bangers/pl.abc123',
         name: 'Cycle Bangers',
         ownerName: 'DJ Ritmo',
         trackCount: 12,
@@ -266,6 +268,7 @@ describe('fetchAppleMusicLibraryPlaylists', () => {
       {
         provider: 'apple_music',
         playlistId: 'p.bare',
+        providerUri: null,
         name: 'Untitled playlist',
         ownerName: null,
         trackCount: 0,

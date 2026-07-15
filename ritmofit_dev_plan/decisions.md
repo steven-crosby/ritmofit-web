@@ -504,6 +504,35 @@ discovery surface always points at a create action, never a passive feed (design
 
 ---
 
+## D22 — Invite-only personal beta and provider-review trigger  **[Resolved 2026-07-14]**
+
+**Decision:** v1 is an **invite-only, non-monetized private beta** for the owner’s household and a
+small number of instructor friends who explicitly request access. Production account creation fails
+closed unless the exact email is present in the `BETA_ALLOWED_EMAILS` Worker secret. Existing accounts
+may continue to sign in.
+
+**Playback boundary:** Provider-authorized playback through official SDKs/widgets remains in the beta,
+with prompter-only Live Mode kept as a complete first-class path. Provider API credentials and an
+instructor’s paid subscription prove technical access and user entitlement; they do **not** constitute
+special written permission for Ritmo Studio’s commercial, public, or instructor-facing in-studio use.
+This beta knowingly accepts that provider-policy uncertainty at its deliberately small, private,
+non-monetized scale. Ritmo never caches, proxies, analyzes, mixes, or derives provider audio.
+
+**Mandatory review trigger:** Before any public launch, monetization, broad self-service signup,
+marketing-led acquisition, or other meaningful expansion, stop and re-review the then-current provider
+terms and obtain written permission or commercial licensing wherever required. Do not infer approval
+from issued API keys, SDK access, competitor behavior, or user subscriptions.
+
+**Privacy boundary:** The beta tells instructors what is retained, attributes provider-derived music,
+forgets provider tokens immediately on disconnect, and drains the existing seven-day provider-metadata
+purge duty. Account deletion may be handled manually by the owner during the small beta; self-service
+deletion becomes required before expansion.
+
+**Deferred:** Public signup, billing, teams, sharing, publishing, Explore/community, collaboration,
+native iOS parity, and growth infrastructure do not delay this beta.
+
+---
+
 ## Deferred from M1
 
 - **Segments / class sections.** *(Deferred from M1; **shipped later**.)* In M1 segments were a design

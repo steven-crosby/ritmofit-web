@@ -30,4 +30,11 @@ describe('App path routing', () => {
     render(<App />);
     expect(screen.queryByText('404')).toBeNull();
   });
+
+  it('renders the private-beta privacy notice without a session', () => {
+    window.history.pushState({}, '', '/privacy');
+    render(<App />);
+    expect(screen.getByRole('heading', { name: 'Privacy and data notice' })).toBeTruthy();
+    expect(screen.getByText(/invite-only, non-commercial beta/i)).toBeTruthy();
+  });
 });

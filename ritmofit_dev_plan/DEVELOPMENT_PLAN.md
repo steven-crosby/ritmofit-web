@@ -29,6 +29,11 @@ Pilates, and HIIT.
   playback windows, readiness, and Live Mode. Provider libraries are the raw material and class-building
   is the creative layer on top. The app should feel *familiar before it feels specialized*: browse, listen,
   and inspect playlists, then convert curiosity into a class — no single forced creation flow.
+- **Private-beta release boundary (D22):** v1 is invite-only and non-monetized for a small instructor
+  cohort. Official provider SDK/widget playback remains available alongside a first-class
+  prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
+  permission. Re-review provider terms and obtain any required written approval before public launch,
+  monetization, or meaningful scale.
 - **Current operating focus (2026-07-07):** the launch gate is green and the app is live. The active
   track is the **D21 creator-workstation-shell slice** — the first slice (Cycle/Pilates/HIIT templates,
   readiness + discovery resting state, provider shelves) is deployed; the **saved-playlist browsing

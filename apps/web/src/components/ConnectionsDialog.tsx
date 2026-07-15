@@ -56,8 +56,10 @@ const STATE_META: Record<
 export function ConnectionsDialog({
   onClose,
   oauthResult,
+  onConnectionsChanged,
 }: {
   onClose: () => void;
+  onConnectionsChanged?: () => void;
   /** The provider OAuth round-trip result, parsed from the return URL by the dashboard. */
   oauthResult?: { connected?: string; error?: string } | null;
 }) {
@@ -107,6 +109,7 @@ export function ConnectionsDialog({
         const token = await authorizeAppleMusic(config);
         await connectAppleMusic(token);
         await refresh();
+        onConnectionsChanged?.();
         setNotice(`Connected to ${providerLabel(provider)}.`);
         return;
       }
@@ -117,6 +120,7 @@ export function ConnectionsDialog({
         return;
       }
       await refresh(); // mock seam connected immediately
+      onConnectionsChanged?.();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -131,6 +135,7 @@ export function ConnectionsDialog({
       await disconnectProvider(provider);
       setConfirming(null);
       await refresh();
+      onConnectionsChanged?.();
     } catch (e) {
       setError((e as Error).message);
     } finally {

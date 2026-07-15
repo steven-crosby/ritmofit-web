@@ -193,6 +193,7 @@ describe('fetchSoundCloudPlaylists', () => {
           {
             id: 1,
             title: 'Climb Shelf',
+            permalink_url: 'https://soundcloud.com/coach-one/climb-shelf',
             artwork_url: 'https://i1.sndcdn.com/pl-1.jpg',
             track_count: 12,
             user: { username: 'Coach One' },
@@ -224,6 +225,7 @@ describe('fetchSoundCloudPlaylists', () => {
     expect(out.map((playlist) => playlist.playlistId)).toEqual(['1', '2']);
     expect(out[0]).toMatchObject({
       provider: 'soundcloud',
+      providerUri: 'https://soundcloud.com/coach-one/climb-shelf',
       name: 'Climb Shelf',
       ownerName: 'Coach One',
       trackCount: 12,

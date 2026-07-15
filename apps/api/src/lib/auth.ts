@@ -12,11 +12,39 @@
  */
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { APIError } from 'better-auth/api';
 import { createDb } from './db.js';
 import { users, sessions, accounts, verifications, rateLimits } from '../db/schema.js';
 import type { Env } from './types.js';
 import { sendEmail, actionEmail } from './email.js';
 import { signAppleJwt } from './apple-jwt.js';
+
+export function betaAllowedEmails(value: string | undefined): Set<string> {
+  return new Set(
+    (value ?? '')
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+/**
+ * Account creation is open only for local HTTP development or an explicitly
+ * allowlisted private-beta email. HTTPS environments fail closed when the secret is
+ * absent so a configuration mistake cannot silently turn the beta into public signup.
+ */
+export function canCreateBetaAccount(
+  env: Pick<Env, 'BETTER_AUTH_URL' | 'BETA_ALLOWED_EMAILS' | 'MOCK_PROVIDERS'>,
+  email: string,
+): boolean {
+  // Mock-provider environments are local/test-only by contract and need arbitrary
+  // generated users for integration and browser-smoke isolation.
+  if (env.MOCK_PROVIDERS === 'true') return true;
+  const authUrl = new URL(env.BETTER_AUTH_URL);
+  const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(authUrl.hostname);
+  if (isLocalhost && !env.BETA_ALLOWED_EMAILS) return true;
+  return betaAllowedEmails(env.BETA_ALLOWED_EMAILS).has(email.trim().toLowerCase());
+}
 
 export function hasAppleSignInConfig(env: Env): boolean {
   return Boolean(
@@ -77,6 +105,21 @@ export function createAuth(env: Env) {
         rateLimit: rateLimits,
       },
     }),
+    databaseHooks: {
+      user: {
+        create: {
+          before: async (user) => {
+            if (!canCreateBetaAccount(env, user.email)) {
+              throw APIError.from('FORBIDDEN', {
+                code: 'BETA_INVITE_REQUIRED',
+                message: 'Ritmo Studio is currently available by invitation only.',
+              });
+            }
+            return { data: user };
+          },
+        },
+      },
+    },
     // Map Better Auth's `name` / `image` fields onto our existing columns.
     user: { fields: { name: 'displayName', image: 'imageUrl' } },
     emailAndPassword: {

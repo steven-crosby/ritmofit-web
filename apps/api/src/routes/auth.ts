@@ -19,6 +19,7 @@ export const authRoutes = new Hono<AppEnv>();
 
 authRoutes.get('/capabilities', (c) =>
   c.json({
+    access: { mode: 'invite_only' as const },
     socialProviders: {
       apple: hasAppleSignInConfig(c.env),
     },

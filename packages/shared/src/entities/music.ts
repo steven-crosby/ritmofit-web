@@ -87,6 +87,8 @@ export type SpotifyPlaybackToken = z.infer<typeof spotifyPlaybackTokenSchema>;
 export const providerPlaylistSummarySchema = z.object({
   provider: providerSchema,
   playlistId: z.string().min(1),
+  /** Provider-owned permalink used for required source attribution when available. */
+  providerUri: z.url().nullable().optional(),
   name: z.string().min(1),
   ownerName: z.string().nullable(),
   trackCount: z.number().int().nonnegative(),

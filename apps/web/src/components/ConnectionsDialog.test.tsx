@@ -44,8 +44,9 @@ describe('ConnectionsDialog capability gating', () => {
       .mockResolvedValueOnce([connection('soundcloud')])
       .mockResolvedValue([]);
     vi.mocked(api.disconnectProvider).mockResolvedValue(undefined);
+    const onConnectionsChanged = vi.fn();
 
-    render(<ConnectionsDialog onClose={() => {}} />);
+    render(<ConnectionsDialog onClose={() => {}} onConnectionsChanged={onConnectionsChanged} />);
 
     expect(await screen.findByText('Connected')).toBeTruthy();
 
@@ -54,6 +55,7 @@ describe('ConnectionsDialog capability gating', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     await waitFor(() => expect(api.disconnectProvider).toHaveBeenCalledWith('soundcloud'));
+    expect(onConnectionsChanged).toHaveBeenCalledTimes(1);
     // After the refresh returns no connections, all three providers offer Connect.
     expect(await screen.findAllByRole('button', { name: 'Connect' })).toHaveLength(3);
   });

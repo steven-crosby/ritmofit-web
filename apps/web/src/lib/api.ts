@@ -57,6 +57,18 @@ import {
 } from '@ritmofit/shared';
 import { API_BASE_URL, authClient } from './auth-client.js';
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly code: string | undefined,
+    readonly status: number,
+    readonly details?: unknown,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 async function apiResponse(path: string, init?: RequestInit): Promise<Response> {
   const res = await fetch(`${API_BASE_URL}/api/v1${path}`, {
     credentials: 'include',
@@ -68,14 +80,20 @@ async function apiResponse(path: string, init?: RequestInit): Promise<Response> 
     // back to <Login> rather than dead-ending every action with a generic error.
     // signOut goes through Better Auth (not this wrapper), so there's no recursion.
     if (res.status === 401) void authClient.signOut();
+    let code: string | undefined;
+    let details: unknown;
     let message = `Request failed (${res.status})`;
     try {
-      const body = (await res.json()) as { error?: { message?: string } };
+      const body = (await res.json()) as {
+        error?: { code?: string; message?: string; details?: unknown };
+      };
+      code = body.error?.code;
+      details = body.error?.details;
       if (body.error?.message) message = body.error.message;
     } catch {
       /* non-JSON error */
     }
-    throw new Error(message);
+    throw new ApiError(message, code, res.status, details);
   }
   return res;
 }
@@ -92,6 +110,9 @@ export interface ClassListPage {
 }
 
 export interface AuthCapabilities {
+  access: {
+    mode: 'invite_only';
+  };
   socialProviders: {
     apple: boolean;
   };
@@ -228,13 +249,9 @@ export const connectAppleMusic = (musicUserToken: string) =>
  * the playback scope) vs `NOT_CONNECTED` / `REAUTH_REQUIRED` (reconnect) to surface
  * the right reconnect prompt, which the generic `api()` wrapper would flatten away.
  */
-export class SpotifyPlaybackTokenError extends Error {
-  constructor(
-    message: string,
-    readonly code: string | undefined,
-    readonly status: number,
-  ) {
-    super(message);
+export class SpotifyPlaybackTokenError extends ApiError {
+  constructor(message: string, code: string | undefined, status: number) {
+    super(message, code, status);
     this.name = 'SpotifyPlaybackTokenError';
   }
 }

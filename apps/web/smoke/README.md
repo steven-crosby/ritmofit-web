@@ -8,8 +8,8 @@ browser, so they're run on demand (e.g. before a UI-affecting deploy).
 
 ## narrow-width.smoke.mjs
 
-Signs up a throwaway user at **390×844**, creates a class, adds a track, and opens
-the nav dialogs. Asserts:
+Signs up a throwaway mock-seam user at **390×844**, creates a class, adds a track,
+and opens the private-beta nav dialogs. Asserts:
 
 - no horizontal overflow on login, the empty dashboard, the dashboard with a track,
   and with each dialog open;
@@ -23,7 +23,7 @@ Exits non-zero on any failure. Screenshots (gitignored) land in `./shots/`. Set
 
 ```bash
 # 1. Local stack (two terminals), mock providers, no email key (dev fallback):
-MOCK_PROVIDERS=true pnpm dev:api     # :8787
+MOCK_PROVIDERS=true pnpm dev:api     # :8787; mock mode permits throwaway sign-ups
 pnpm dev:web                          # :5173
 
 # 2. Playwright is intentionally NOT a repo dependency. Install it once anywhere,

@@ -322,6 +322,7 @@ describe('fetchSpotifySavedPlaylists', () => {
           {
             id: 'pl-1',
             name: 'Warmup Ride',
+            external_urls: { spotify: 'https://open.spotify.com/playlist/pl-1' },
             owner: { display_name: 'Steven' },
             items: { total: 24 },
             images: [{ url: 'https://i.scdn.co/image/pl-1.jpg' }],
@@ -341,6 +342,7 @@ describe('fetchSpotifySavedPlaylists', () => {
       {
         provider: 'spotify',
         playlistId: 'pl-1',
+        providerUri: 'https://open.spotify.com/playlist/pl-1',
         name: 'Warmup Ride',
         ownerName: 'Steven',
         trackCount: 24,
