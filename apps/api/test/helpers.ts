@@ -37,14 +37,20 @@ export async function signUpUser(): Promise<TestUser> {
   // invite path as production. MOCK_PROVIDERS is only a music seam and must not
   // make generated test accounts implicitly eligible for signup.
   const mutableEnv = env as typeof env & { BETA_ALLOWED_EMAILS?: string };
-  mutableEnv.BETA_ALLOWED_EMAILS = [mutableEnv.BETA_ALLOWED_EMAILS, email]
-    .filter(Boolean)
-    .join(',');
-  const res = await call('/api/auth/sign-up/email', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email, password: 'sup3r-secret-pw', name: 'Test User' }),
-  });
+  const previousAllowlist = mutableEnv.BETA_ALLOWED_EMAILS;
+  let res: Response;
+  try {
+    mutableEnv.BETA_ALLOWED_EMAILS = [previousAllowlist, email].filter(Boolean).join(',');
+    res = await call('/api/auth/sign-up/email', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password: 'sup3r-secret-pw', name: 'Test User' }),
+    });
+  } finally {
+    // Miniflare exposes one mutable binding object to this single-worker suite.
+    // Restore it so an invitation never leaks into a later isolated test.
+    mutableEnv.BETA_ALLOWED_EMAILS = previousAllowlist;
+  }
   if (!res.ok) throw new Error(`sign-up failed (${res.status}): ${await res.text()}`);
   const cookie = res.headers
     .getSetCookie()
