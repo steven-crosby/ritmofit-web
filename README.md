@@ -7,6 +7,12 @@ organize, rehearse, and run their own classes in one continuous creative flow. T
 are the music substrate, and Ritmo adds the instructor layer. A native iOS app follows later from the
 proven backend contract; community surfaces (teams, sharing, publish, explore) are deferred.
 
+The current release target is an **invite-only, non-monetized private beta** for a small group of
+instructors. Production must set the `BETA_ALLOWED_EMAILS` Worker secret; existing users may sign in,
+while new email or social accounts are created only for exact allowlisted addresses. Public launch,
+monetization, or meaningful expansion requires a fresh provider-policy review and written permission
+where the provider requires it (D22).
+
 This repository is a pnpm TypeScript monorepo: a React/Vite/Tailwind SPA (`apps/web`) and the
 authoritative Hono/Cloudflare Workers + D1 backend (`apps/api`), plus shared contracts
 (`packages/shared`) and music-provider adapters (`packages/music`). In production a

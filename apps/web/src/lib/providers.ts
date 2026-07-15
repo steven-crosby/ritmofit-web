@@ -59,6 +59,30 @@ export function providerHandoffHref(provider: Provider, providerUri: string | nu
     : null;
 }
 
+/** Validate provider-owned playlist permalinks before rendering attribution links. */
+export function providerPlaylistHref(
+  provider: Provider,
+  providerUri: string | null | undefined,
+): string | null {
+  if (!providerUri) return null;
+  let url: URL;
+  try {
+    url = new URL(providerUri.trim());
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'https:') return null;
+  if (provider === 'spotify') {
+    return url.hostname === 'open.spotify.com' && /^\/playlist\/[A-Za-z0-9]+\/?$/.test(url.pathname)
+      ? url.href
+      : null;
+  }
+  if (provider === 'apple_music') return url.hostname === 'music.apple.com' ? url.href : null;
+  return url.hostname === 'soundcloud.com' || url.hostname === 'www.soundcloud.com'
+    ? url.href
+    : null;
+}
+
 /** Defensive: every shared provider value has a label + a place in the order. */
 export const ALL_PROVIDERS_LABELLED = providerValues.every((p) => p in PROVIDER_LABELS);
 

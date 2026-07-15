@@ -15,7 +15,8 @@ describe('CuesSection — m:ss anchor entry', () => {
   it('parses the m:ss field to anchorMs when adding a cue', async () => {
     vi.mocked(api.listCues).mockResolvedValue([]);
     vi.mocked(api.createCue).mockResolvedValue({} as never);
-    render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+    const onChanged = vi.fn();
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} onChanged={onChanged} />);
 
     const time = await screen.findByRole('textbox', { name: 'Cue time (m:ss)' });
     fireEvent.change(time, { target: { value: '2:05' } });
@@ -30,6 +31,7 @@ describe('CuesSection — m:ss anchor entry', () => {
         expect.objectContaining({ anchorMs: 125000, text: 'Add resistance' }),
       ),
     );
+    expect(onChanged).toHaveBeenCalledTimes(1);
   });
 
   it('accepts 0:00 (a cue at the very start)', async () => {

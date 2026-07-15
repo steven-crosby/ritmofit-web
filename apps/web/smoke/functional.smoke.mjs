@@ -1,9 +1,9 @@
 /**
  * Functional browser smoke for the instructor workflow (desktop, 1280×800).
  *
- * Covers the REVIEW.md Follow-Up checklist flows jsdom can't: auth
- * (sign-up / sign-out / sign-in / session-clear), the class lifecycle
- * (create / add track / reopen / publish / share / copy / delete / live),
+ * Covers the private-beta instructor flows jsdom can't: auth
+ * (invited sign-up / sign-out / sign-in / session-clear), the class lifecycle
+ * (create / add track / reopen / duplicate / delete / live),
  * provider connect / search / import / disconnect (mock seam), rapid
  * class-switch, and network-failure handling.
  *
@@ -144,34 +144,12 @@ try {
     await page.getByText('Smoke Anthem').waitFor({ timeout: 10000 });
   });
 
-  // ── Publish (edit visibility) ───────────────────────────────────────────
-  await section('class:publish', async () => {
-    await page.getByRole('button', { name: 'Publish', exact: true }).click();
-    await page
-      .getByRole('button', { name: 'Make private', exact: true })
-      .waitFor({ timeout: 10000 });
-  });
-
-  // ── Share dialog opens and is usable ────────────────────────────────────
-  await section('class:share-dialog', async () => {
-    await page.getByRole('button', { name: 'Share', exact: true }).click();
-    const dlg = page.getByRole('dialog', { name: /Share Functional Smoke A/ });
-    await dlg.waitFor({ timeout: 10000 });
-    await page.getByLabel('Invite by email').fill('teammate@example.com');
-    await shot(page, 'share-dialog');
-    await page.keyboard.press('Escape');
-    await dlg.waitFor({ state: 'detached', timeout: 5000 });
-  });
-
-  // ── Copy via Explore (the class is now public) ──────────────────────────
+  // ── Duplicate from the private library ──────────────────────────────────
   await section('class:copy', async () => {
-    await page.getByRole('button', { name: 'Explore', exact: true }).click();
-    const dlg = page.getByRole('dialog', { name: 'Explore public classes' });
-    await dlg.waitFor({ timeout: 10000 });
-    const row = page.getByRole('listitem').filter({ hasText: 'Functional Smoke A' }).first();
-    await row.getByRole('button', { name: 'Save a copy' }).click();
-    // onCopied closes Explore and opens the copy; the copy lands in the library.
-    await dlg.waitFor({ state: 'detached', timeout: 10000 });
+    await page.getByRole('button', { name: 'Duplicate Functional Smoke A' }).click();
+    await page.getByRole('heading', { name: 'Copy of Functional Smoke A' }).waitFor({
+      timeout: 10000,
+    });
   });
 
   // ── Live mode: run + exit (track has a duration, so it's enabled) ────────

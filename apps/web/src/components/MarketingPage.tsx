@@ -54,7 +54,7 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
             href="#studios"
             className="font-ui text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:text-text-primary"
           >
-            For studios
+            Live mode
           </a>
         </nav>
 
@@ -116,7 +116,7 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
               </a>
             </div>
             <span className="font-ui text-sm text-text-tertiary">
-              Music providers connected by approved playback
+              Private beta · Playback uses your connected provider account
             </span>
           </div>
 
@@ -172,16 +172,22 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
             onClick={onSignIn}
             className="rounded-pill rf-btn-primary px-8 py-3 font-ui text-base font-semibold text-text-on-accent"
           >
-            Start building — it’s free
+            Enter the private beta
           </button>
         </section>
       </main>
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
       <footer className="border-t border-border-subtle px-6 py-8 text-center">
-        <span className="font-ui text-sm text-text-tertiary">
-          © {new Date().getFullYear()} Ritmo Studio · Built for instructors who create
-        </span>
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-ui text-sm text-text-tertiary">
+          <span>© {new Date().getFullYear()} Ritmo Studio · Built for instructors who create</span>
+          <a
+            href="/privacy"
+            className="rounded-control text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+          >
+            Privacy and data
+          </a>
+        </div>
       </footer>
     </>
   );

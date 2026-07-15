@@ -288,6 +288,7 @@ describe('TrackSearch saved-playlists drill-in', () => {
       {
         provider: 'spotify',
         playlistId: 'pl-1',
+        providerUri: 'https://open.spotify.com/playlist/abc123',
         name: 'Warmup Ride',
         ownerName: 'Coach',
         trackCount: 2,
@@ -309,6 +310,18 @@ describe('TrackSearch saved-playlists drill-in', () => {
   it('opens a saved playlist and loads its track preview list', async () => {
     await openPlaylistDrillIn();
     expect(api.listPlaylistTracks).toHaveBeenCalledWith('spotify', 'pl-1');
+  });
+
+  it('attributes the saved playlist to its provider', async () => {
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+
+    expect(
+      (await screen.findByRole('link', { name: 'Open Warmup Ride on Spotify' })).getAttribute(
+        'href',
+      ),
+    ).toBe('https://open.spotify.com/playlist/abc123');
   });
 
   it('shows "Import all N" button once tracks are loaded', async () => {
@@ -572,6 +585,16 @@ describe('classifyPlaylistDrillInError (unit)', () => {
     ).toBe('forbidden');
   });
 
+  it('prefers stable API codes over message wording', () => {
+    expect(
+      classifyPlaylistDrillInError('Provider denied this request.', 'PROVIDER_FORBIDDEN'),
+    ).toBe('forbidden');
+    expect(classifyPlaylistDrillInError('Authorization changed.', 'REAUTH_REQUIRED')).toBe(
+      'reauth',
+    );
+    expect(classifyPlaylistDrillInError('No account.', 'NOT_CONNECTED')).toBe('reauth');
+  });
+
   it('classifies REAUTH_REQUIRED and the capitalized NOT_CONNECTED string as reauth', () => {
     expect(classifyPlaylistDrillInError('Reconnect your Spotify account.')).toBe('reauth');
     // NOT_CONNECTED starts with a capital C — the case-insensitive match must still
@@ -590,7 +613,7 @@ describe('TrackSearch result artwork', () => {
     const result: TrackSearchResult = {
       provider: 'soundcloud',
       providerTrackId: 't2',
-      providerUri: null,
+      providerUri: 'https://soundcloud.com/painter/art-track',
       title: 'Art Track',
       artist: 'Painter',
       albumArtUrl: 'https://art.example/cover.jpg',
@@ -605,6 +628,9 @@ describe('TrackSearch result artwork', () => {
     expect(img.getAttribute('src')).toBe(result.albumArtUrl);
     expect(img.getAttribute('loading')).toBe('lazy');
     expect(img.getAttribute('decoding')).toBe('async');
+    expect(
+      screen.getByRole('link', { name: 'Open Art Track on SoundCloud' }).getAttribute('href'),
+    ).toBe(result.providerUri);
   });
 });
 

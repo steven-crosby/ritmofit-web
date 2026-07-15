@@ -436,6 +436,7 @@ function toPlaylistSummary(raw: unknown): ProviderPlaylistSummary | null {
   const item = providerPlaylistSummarySchema.safeParse({
     provider: 'soundcloud',
     playlistId: String(pl.data.id),
+    providerUri: pl.data.permalink_url ?? null,
     name: pl.data.title ?? 'Untitled playlist',
     ownerName: pl.data.user?.username ?? null,
     trackCount: pl.data.track_count ?? 0,

@@ -233,6 +233,7 @@ const amLibraryPlaylistSchema = z.object({
       name: z.string().optional(),
       curatorName: z.string().optional(),
       trackCount: z.number().int().nonnegative().optional(),
+      url: z.string().optional(),
       artwork: z
         .object({ url: z.string(), width: z.number().optional(), height: z.number().optional() })
         .optional(),
@@ -366,6 +367,7 @@ export async function fetchAppleMusicLibraryPlaylists(cfg: {
       const item = providerPlaylistSummarySchema.safeParse({
         provider: 'apple_music',
         playlistId: playlist.data.id,
+        providerUri: a?.url ?? null,
         name: a?.name ?? 'Untitled playlist',
         ownerName: a?.curatorName ?? null,
         trackCount: a?.trackCount ?? 0,

@@ -24,6 +24,7 @@ vi.mock('../lib/api.js');
 
 beforeEach(() => {
   vi.mocked(api.getAuthCapabilities).mockResolvedValue({
+    access: { mode: 'invite_only' },
     socialProviders: { apple: false },
   });
 });
@@ -65,12 +66,23 @@ describe('Login accessible labels', () => {
 
   it('shows Apple sign-in when the backend capability is enabled', async () => {
     vi.mocked(api.getAuthCapabilities).mockResolvedValue({
+      access: { mode: 'invite_only' },
       socialProviders: { apple: true },
     });
 
     render(<Login />);
 
     expect(await screen.findByRole('button', { name: 'Continue with Apple' })).toBeTruthy();
+  });
+
+  it('states the private-beta boundary and explains invited signup', async () => {
+    render(<Login />);
+
+    expect(
+      await screen.findByText('Private beta · New accounts require an invitation.'),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByText('Need an account? Sign up'));
+    expect(screen.getByText('Create an account with your invited email')).toBeTruthy();
   });
 
   it('notifies the app after a successful sign-up', async () => {

@@ -11,6 +11,7 @@ import {
   DEFAULT_PROVIDER,
   providerLabel,
   providerHandoffHref,
+  providerPlaylistHref,
   providerConnectionState,
   ALL_PROVIDERS_LABELLED,
   spotifyScopeHasSavedPlaylists,
@@ -70,6 +71,17 @@ describe('provider presentation', () => {
     expect(
       providerHandoffHref('soundcloud', 'https://evil.example/?next=soundcloud.com'),
     ).toBeNull();
+  });
+
+  it('accepts only provider-owned playlist attribution targets', () => {
+    expect(
+      providerPlaylistHref('spotify', 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'),
+    ).toBe('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
+    expect(providerPlaylistHref('soundcloud', 'https://soundcloud.com/coach/sets/warmup')).toBe(
+      'https://soundcloud.com/coach/sets/warmup',
+    );
+    expect(providerPlaylistHref('spotify', 'https://example.com/playlist/abc')).toBeNull();
+    expect(providerPlaylistHref('spotify', 'javascript:alert(1)')).toBeNull();
   });
 });
 

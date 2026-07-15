@@ -13,6 +13,13 @@ export interface Env {
   IMAGES_BUCKET: R2Bucket;
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
+  /**
+   * Comma-separated email allowlist for the private beta. Existing users can always
+   * sign in; this only gates creation of new accounts. Production fails closed when
+   * unset, while local HTTP development remains open for repeatable test setup.
+   * Store as a Worker secret because email addresses are personal data.
+   */
+  BETA_ALLOWED_EMAILS?: string;
   /** Canonical SPA origin. Production is same-origin with BETTER_AUTH_URL. */
   WEB_ORIGIN?: string;
   GOOGLE_CLIENT_ID?: string;

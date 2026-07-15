@@ -10,7 +10,7 @@ API-scoped Wrangler commands use `pnpm --filter @ritmofit/api exec wrangler …`
 | Where                             | Contents                                                                                                                                                               | Notes                                                                               |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `apps/api/wrangler.toml` `[vars]` | `BETTER_AUTH_URL`, `WEB_ORIGIN` (both `https://ritmofit.studio`)                                                                                                       | Committed, non-secret. The session cookie binds to `BETTER_AUTH_URL`.               |
-| Worker secrets (prod)             | `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `SOUNDCLOUD_CLIENT_ID`/`_SECRET`, `SPOTIFY_CLIENT_ID`/`_SECRET`, Apple sign-in (`APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` or static `APPLE_CLIENT_SECRET`), Apple Music (`APPLE_MUSIC_TEAM_ID`, `APPLE_MUSIC_KEY_ID`, `APPLE_MUSIC_PRIVATE_KEY` or static `APPLE_MUSIC_DEVELOPER_TOKEN`) | `wrangler secret list` shows names only. Never echo values in terminal logs or docs. |
+| Worker secrets (prod)             | `BETTER_AUTH_SECRET`, `BETA_ALLOWED_EMAILS`, `ENCRYPTION_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `SOUNDCLOUD_CLIENT_ID`/`_SECRET`, `SPOTIFY_CLIENT_ID`/`_SECRET`, Apple sign-in (`APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` or static `APPLE_CLIENT_SECRET`), Apple Music (`APPLE_MUSIC_TEAM_ID`, `APPLE_MUSIC_KEY_ID`, `APPLE_MUSIC_PRIVATE_KEY` or static `APPLE_MUSIC_DEVELOPER_TOKEN`) | `BETA_ALLOWED_EMAILS` is the private-beta account-creation allowlist. `wrangler secret list` shows names only. Never echo values in terminal logs or docs. |
 | D1                                | database `ritmofit`, bound as `DB`                                                                                                                                     | Forward-only Drizzle migrations under `apps/api/migrations`. For the live level, run `pnpm --filter @ritmofit/api exec wrangler d1 migrations list ritmofit --remote` (don't trust a number hard-coded here). |
 | Local dev                         | `apps/api/.dev.vars` (gitignored), `MOCK_PROVIDERS=true`, no `RESEND_API_KEY` (email logs to console)                                                                  | Never commit secrets.                                                               |
 
@@ -71,6 +71,8 @@ post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). **BPM loo
    `pnpm --filter @ritmofit/api exec wrangler deployments status`.
 4. Check remote D1 migration state:
    `pnpm --filter @ritmofit/api exec wrangler d1 migrations list ritmofit --remote`.
+5. Confirm `BETA_ALLOWED_EMAILS` appears in `wrangler secret list` (name only). Production HTTPS
+   intentionally rejects every new account when the secret is absent; never print the allowlist.
 
 ## Deploy
 

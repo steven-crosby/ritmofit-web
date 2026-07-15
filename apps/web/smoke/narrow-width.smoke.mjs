@@ -145,7 +145,7 @@ try {
   await dismissOnboarding(page);
 
   // 2. Land on the dashboard.
-  await page.getByRole('button', { name: 'Explore', exact: true }).waitFor({ timeout: 10000 });
+  await page.getByRole('button', { name: 'Account', exact: true }).waitFor({ timeout: 10000 });
   await checkNoOverflow(page, 'dashboard-empty');
   await page.screenshot({ path: join(shotsDir, 'dashboard-empty.png') });
 
@@ -264,9 +264,8 @@ try {
     fullPage: true,
   });
 
-  // 5. Exercise the nav dialogs (the adopted Dialog primitive).
-  await checkDialog(page, 'Explore', 'Explore public classes');
-  await checkDialog(page, 'Teams', 'Manage teams');
+  // 5. Exercise private-beta nav dialogs (the adopted Dialog primitive).
+  await checkDialog(page, 'Account', 'Account settings');
   await checkDialog(page, 'Connections', 'Music connections');
 
   // 6. Live at rest (alive at rest · phase 4): entering Live and passing preflight

@@ -13,11 +13,12 @@ import { Dashboard } from './components/Dashboard.js';
 import { MarketingPage } from './components/MarketingPage.js';
 import { ResetPassword } from './components/ResetPassword.js';
 import { NotFound } from './components/NotFound.js';
+import { PrivacyPage } from './components/PrivacyPage.js';
 import { markOnboardingVideoPending } from './lib/onboarding-video.js';
 
 // The app navigates in-component (no router); the real URL surface is '/' and
 // '/reset-password'. Everything else is an unknown path → NotFound.
-const KNOWN_PATHS = new Set(['/', '/reset-password']);
+const KNOWN_PATHS = new Set(['/', '/privacy', '/reset-password']);
 
 export function App() {
   const { data: session, isPending } = authClient.useSession();
@@ -36,6 +37,7 @@ export function App() {
   // Reset-password lands here from the email link; render before the session
   // gate so it works while signed out.
   if (window.location.pathname === '/reset-password') return <ResetPassword />;
+  if (window.location.pathname === '/privacy') return <PrivacyPage />;
 
   // Unknown path → 404 (Cloudflare SPA fallback serves index.html for all paths).
   if (!KNOWN_PATHS.has(window.location.pathname)) return <NotFound />;

@@ -742,11 +742,17 @@ describe('Dashboard class detail', () => {
     // run-payload with two tracks, and the rail card must reflect that immediately.
     const ride = makeClass('Stale card');
     vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
-    vi.mocked(api.listClassTracks).mockResolvedValue([{}, {}] as ClassTrack[]);
-    vi.mocked(api.getRunPayload).mockResolvedValue({
-      class: { totalDurationMs: 420_000 },
-      tracks: [{ track: { albumArtUrl: 'https://art/x.jpg' } }, { track: { albumArtUrl: null } }],
-    } as unknown as RunPayload);
+    vi.mocked(api.listClassTracks).mockResolvedValue([
+      makeClassTrack('ct-1', 0),
+      makeClassTrack('ct-2', 1),
+    ]);
+    const payload = liveRunPayload([
+      { classTrackId: 'ct-1', durationMs: 210_000 },
+      { classTrackId: 'ct-2', durationMs: 210_000 },
+    ]);
+    payload.class.totalDurationMs = 420_000;
+    payload.tracks[0]!.track.albumArtUrl = 'https://art/x.jpg';
+    vi.mocked(api.getRunPayload).mockResolvedValue(payload);
 
     renderDashboard();
     // Initially the card shows 0 tracks (the list response's aggregate).

@@ -174,6 +174,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   // Read-only preview of one of the caller's own classes from a Library card.
   const [cardPreview, setCardPreview] = useState<ClassListItem | null>(null);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
+  const [connectionRevision, setConnectionRevision] = useState(0);
   const [songsByMoveOpen, setSongsByMoveOpen] = useState(false);
   const [playlistBrowse, setPlaylistBrowse] = useState<{
     provider: Provider;
@@ -535,6 +536,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         {connectionsOpen && (
           <ConnectionsDialog
             oauthResult={oauthResult}
+            onConnectionsChanged={() => setConnectionRevision((revision) => revision + 1)}
             onClose={() => {
               setConnectionsOpen(false);
               setOauthResult(null);
@@ -635,6 +637,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 onError={setError}
                 onTrackChanged={() => void loadDetail(selected.id)}
                 onTrackAdded={() => void loadDetail(selected.id, { silent: true })}
+                onChoreographyChanged={() => void loadDetail(selected.id, { silent: true })}
                 onReordered={() => void loadDetail(selected.id, { silent: true })}
                 onTrackRemoved={() => void loadDetail(selected.id, { silent: true })}
                 onRun={() => runClass(selected.id)}
@@ -664,6 +667,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 classes={classes}
                 activeTag={activeTag}
                 listReady={listStatus === 'ready'}
+                connectionRevision={connectionRevision}
                 onOpenConnections={() => setConnectionsOpen(true)}
                 onBrowsePlaylists={(provider, playlists) =>
                   setPlaylistBrowse({ provider, playlists })
@@ -674,6 +678,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           </div>
         ) : destination === 'music' ? (
           <MusicWorkspace
+            connectionRevision={connectionRevision}
             onOpenConnections={() => setConnectionsOpen(true)}
             onBrowsePlaylists={(provider, playlists) => setPlaylistBrowse({ provider, playlists })}
             onBrowseLikes={(provider, tracks) => setLikesBrowse({ provider, tracks })}
@@ -1217,7 +1222,7 @@ function CreateClassForm({
   );
 }
 
-function useProviderBrowseState() {
+function useProviderBrowseState(connectionRevision = 0) {
   const [connections, setConnections] = useState<MusicConnectionView[]>([]);
   const [playlists, setPlaylists] = useState<Partial<Record<Provider, ProviderPlaylistSummary[]>>>(
     {},
@@ -1242,7 +1247,7 @@ function useProviderBrowseState() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [connectionRevision]);
 
   useEffect(() => {
     let alive = true;
@@ -1326,6 +1331,7 @@ function WorkstationRestingState({
   classes,
   activeTag,
   listReady,
+  connectionRevision,
   onOpenConnections,
   onBrowsePlaylists,
   onBrowseLikes,
@@ -1333,6 +1339,7 @@ function WorkstationRestingState({
   classes: ClassListItem[];
   activeTag: string | null;
   listReady: boolean;
+  connectionRevision: number;
   onOpenConnections: () => void;
   onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
   onBrowseLikes: (provider: Provider, tracks: TrackSearchResult[]) => void;
@@ -1345,7 +1352,7 @@ function WorkstationRestingState({
     likes,
     likesLoading,
     likesError,
-  } = useProviderBrowseState();
+  } = useProviderBrowseState(connectionRevision);
 
   const classCount = classes.length;
   const trackCount = classes.reduce((sum, cls) => sum + cls.trackCount, 0);
@@ -1432,10 +1439,12 @@ function WorkstationRestingState({
 }
 
 function MusicWorkspace({
+  connectionRevision,
   onOpenConnections,
   onBrowsePlaylists,
   onBrowseLikes,
 }: {
+  connectionRevision: number;
   onOpenConnections: () => void;
   onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
   onBrowseLikes: (provider: Provider, tracks: TrackSearchResult[]) => void;
@@ -1448,7 +1457,7 @@ function MusicWorkspace({
     likes,
     likesLoading,
     likesError,
-  } = useProviderBrowseState();
+  } = useProviderBrowseState(connectionRevision);
   return (
     <section className="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)] xl:items-start">
       <aside className="rounded-card border border-interactive/10 bg-bg-raised p-4 shadow-card xl:sticky xl:top-6">
@@ -2108,6 +2117,12 @@ function AccountWorkspace({
           <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
             Email, password, and social sign-in settings remain with the active sign-in provider.
           </p>
+          <a
+            href="/privacy"
+            className="mt-3 inline-flex min-h-10 items-center rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+          >
+            Privacy and data notice
+          </a>
         </section>
       </div>
     </section>
@@ -2651,6 +2666,7 @@ function ClassWorkspace({
   onError,
   onTrackChanged,
   onTrackAdded,
+  onChoreographyChanged,
   onReordered,
   onTrackRemoved,
   onRun,
@@ -2664,6 +2680,8 @@ function ClassWorkspace({
   onError: (msg: string | null) => void;
   onTrackChanged: () => void;
   onTrackAdded: (classTrackId: string) => void;
+  /** Silent refresh after cue/move mutations so inspector focus stays in place. */
+  onChoreographyChanged: () => void;
   /** Refresh after a reorder without the loading mask, so the track list stays
    *  mounted (grip focus + the reorder announcement survive). */
   onReordered: () => void;
@@ -2942,6 +2960,7 @@ function ClassWorkspace({
               canPlaceFreely={isFree}
               focus={inspectorFocus}
               onSaved={onTrackChanged}
+              onChoreographyChanged={onChoreographyChanged}
               onRemoved={() => {
                 if (selectedTrackId) {
                   setPendingRowFocus(focusAnchorAfterRemoving(selectedTrackId));
@@ -3639,6 +3658,7 @@ function TrackInspector({
   canPlaceFreely,
   focus,
   onSaved,
+  onChoreographyChanged,
   onRemoved,
   onOpenSongsByMove,
 }: {
@@ -3653,6 +3673,7 @@ function TrackInspector({
   /** A marker click asking to focus a cue/move row on this track (or null). */
   focus: { kind: 'cue' | 'move'; id: string; anchorMs: number; nonce: number } | null;
   onSaved: () => void;
+  onChoreographyChanged: () => void;
   onRemoved: () => void;
   /** Open the Songs-by-Move dialog from the Moves section. */
   onOpenSongsByMove: () => void;
@@ -4063,6 +4084,7 @@ function TrackInspector({
                   ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce }
                   : null
               }
+              onChanged={onChoreographyChanged}
             />
             <MovesSection
               classTrackId={track.id}
@@ -4074,7 +4096,7 @@ function TrackInspector({
                   ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce }
                   : null
               }
-              onChanged={onSaved}
+              onChanged={onChoreographyChanged}
               onOpenSongsByMove={onOpenSongsByMove}
             />
           </Suspense>

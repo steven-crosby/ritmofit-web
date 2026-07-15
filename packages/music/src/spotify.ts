@@ -84,6 +84,7 @@ const spLibraryPlaylistsPageSchema = z.object({
       owner: z.object({ display_name: z.string().nullable().optional() }).optional(),
       items: z.object({ total: z.number().int().nonnegative().optional() }).optional(),
       images: z.array(z.object({ url: z.string() })).optional(),
+      external_urls: z.object({ spotify: z.string().optional() }).optional(),
     }),
   ),
   total: z.number().int().nonnegative(),
@@ -341,6 +342,7 @@ export async function fetchSpotifySavedPlaylists(cfg: {
       const candidate = providerPlaylistSummarySchema.safeParse({
         provider: 'spotify',
         playlistId: raw.id,
+        providerUri: raw.external_urls?.spotify ?? null,
         name: raw.name ?? 'Untitled playlist',
         ownerName: raw.owner?.display_name ?? null,
         trackCount: raw.items?.total ?? 0,

@@ -4,6 +4,9 @@
 BETTER_AUTH_SECRET=
 # Public base URL of the API Worker, no trailing slash.
 BETTER_AUTH_URL=http://localhost:8787
+# Optional locally. Production HTTPS fails closed without this comma-separated
+# invite allowlist; store it with `wrangler secret put BETA_ALLOWED_EMAILS`.
+BETA_ALLOWED_EMAILS=
 # Web SPA origin allowed by CORS (defaults to http://localhost:5173 when unset).
 WEB_ORIGIN=http://localhost:5173
 
