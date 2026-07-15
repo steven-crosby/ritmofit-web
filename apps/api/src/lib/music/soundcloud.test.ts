@@ -30,7 +30,6 @@ const API_BASE = 'https://api.test';
 
 const SC_TRACK = {
   id: 12345,
-  urn: 'soundcloud:tracks:12345',
   title: 'Baianá',
   permalink_url: 'https://soundcloud.com/bakermat/baiana',
   duration: 180000,
@@ -56,7 +55,7 @@ function makeProvider(handlers: Record<string, unknown>) {
 }
 
 describe('SoundCloudProvider.search', () => {
-  it('maps a track to the contract DTO', async () => {
+  it('maps a legacy numeric-id track to the contract DTO', async () => {
     const { provider } = makeProvider({ [`${API_BASE}/tracks?`]: { collection: [SC_TRACK] } });
     const [r] = await provider.search('baiana');
     expect(r).toEqual({
@@ -80,6 +79,24 @@ describe('SoundCloudProvider.search', () => {
     const { provider } = makeProvider({ [`${API_BASE}/tracks?`]: { collection: [bad, SC_TRACK] } });
     const out = await provider.search('x');
     expect(out.map((t) => t.providerTrackId)).toEqual(['12345']);
+  });
+
+  it('uses the URN when SoundCloud omits the deprecated track id', async () => {
+    const urnOnlyTrack = { ...SC_TRACK, id: undefined, urn: 'soundcloud:tracks:12345' };
+    const { provider } = makeProvider({
+      [`${API_BASE}/tracks?`]: { collection: [urnOnlyTrack] },
+    });
+
+    expect((await provider.search('x'))[0]?.providerTrackId).toBe('soundcloud:tracks:12345');
+  });
+
+  it('drops a track with neither an id nor a URN', async () => {
+    const unidentifiedTrack = { ...SC_TRACK, id: undefined };
+    const { provider } = makeProvider({
+      [`${API_BASE}/tracks?`]: { collection: [unidentifiedTrack] },
+    });
+
+    expect(await provider.search('x')).toEqual([]);
   });
 
   it('returns [] for a blank query without hitting the network', async () => {
@@ -258,6 +275,43 @@ describe('fetchSoundCloudPlaylists', () => {
 
     expect(out.map((playlist) => playlist.playlistId)).toEqual(['1']);
     expect(calls.map((call) => call.url)).toEqual([firstUrl]);
+  });
+
+  it('uses the URN when SoundCloud omits the deprecated playlist id', async () => {
+    const firstUrl = `${API_BASE}/me/playlists?limit=50&linked_partitioning=true`;
+    const { fetchImpl } = pagedFetch({
+      [firstUrl]: {
+        collection: [
+          {
+            urn: 'soundcloud:playlists:123',
+            title: 'URN playlist',
+            track_count: 1,
+            user: { username: 'Coach' },
+          },
+        ],
+      },
+    });
+
+    const [playlist] = await fetchSoundCloudPlaylists({
+      accessToken: 'user-tok',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+
+    expect(playlist?.playlistId).toBe('soundcloud:playlists:123');
+  });
+
+  it('drops a playlist with neither an id nor a URN', async () => {
+    const firstUrl = `${API_BASE}/me/playlists?limit=50&linked_partitioning=true`;
+    const { fetchImpl } = pagedFetch({
+      [firstUrl]: {
+        collection: [{ title: 'Unidentified', track_count: 1, user: { username: 'Coach' } }],
+      },
+    });
+
+    await expect(
+      fetchSoundCloudPlaylists({ accessToken: 'user-tok', fetchImpl, apiBase: API_BASE }),
+    ).resolves.toEqual([]);
   });
 
   it('throws SoundCloudUnauthorizedError on playlist 401 so callers can refresh + retry', async () => {
@@ -538,8 +592,8 @@ describe('SoundCloudProvider.getPlaylist (URL import via /resolve)', () => {
     ).toEqual(['OAuth tok-1', 'OAuth tok-2']);
   });
 
-  it('normalizes a string URN track id (2025 id→urn migration tolerance)', async () => {
-    const urnTrack = { ...SC_TRACK, id: 'soundcloud:tracks:999' };
+  it('uses an URN-only track id from playlist reads (2025 id→urn migration)', async () => {
+    const urnTrack = { ...SC_TRACK, id: undefined, urn: 'soundcloud:tracks:999' };
     const { provider } = makeUrlProvider((url) => {
       if (url.startsWith(`${API_BASE}/resolve`)) {
         return { status: 302, headers: { location: `${API_BASE}/playlists/${ENCODED_URN}` } };
