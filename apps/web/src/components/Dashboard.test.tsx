@@ -640,6 +640,41 @@ describe('Dashboard class library states', () => {
     fireEvent.click(sourceBtn);
     expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
   });
+
+  it('shows an honest retryable state when music connections fail to load', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections)
+      .mockRejectedValueOnce(new Error('network down'))
+      // The Classes resting shelf owns the first hook instance; Music mounts a
+      // fresh one after navigation and must surface the same failed status check.
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-1',
+        name: 'Recovery Ride',
+        ownerName: 'Steven',
+        trackCount: 12,
+        coverImageUrl: null,
+      },
+    ]);
+    vi.mocked(api.listLikes).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Couldn’t load music connections.');
+    expect(alert.textContent).toContain('Source status is unavailable.');
+    expect(screen.queryByText('Connect this provider to browse liked tracks.')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Manage Spotify connection' })).toBeNull();
+
+    fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByRole('button', { name: 'Browse Spotify playlists' })).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
 });
 
 describe('Dashboard onboarding video', () => {
