@@ -10,6 +10,22 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-15 (private-beta hardening rounds 15–16 + SoundCloud playback follow-up) —
+> deployed (Worker `b4449c8d-5978-4298-9c6e-e222791a208f`).** Main HEAD `115b003` (merge of PR
+> #311). Code, tests, and documentation only — **no schema / migration** (remote D1: "No migrations
+> to apply"). Rollback anchor: prior live Worker `2b390842-8f71-4086-a59a-6ea3050d4882`. The release
+> ships the six round 15–16 hardening PRs (#304–#309), their session record (#310), and PR #311's
+> corrected full-track SoundCloud mock fixture. Owner testing heard the official SoundCloud widget in
+> both Preview and Live Mode; the follow-up replaced an obsolete permalink and then a 30-second
+> `SNIP` release with Bakermat's full public upload, with a regression test pinning that fixture. The
+> full pre-deploy gate passed: formatting, typecheck, lint, design-system verification, unit/component
+> tests, 133 Worker/D1 integration tests, production build, OpenAPI no-drift, contract parity, and
+> dependency-audit policy. Post-deploy smoke passed on `https://ritmofit.studio`: SPA and health `200`;
+> protected class, community, share, playlist-import, cover/tag, and provider routes `401`; missing
+> public cover `404`; invite-only capability and security headers present. Served SPA asset
+> `assets/index-Db7zXm3P.js` matches the production build. The custom domain briefly returned the prior
+> cached entry during edge propagation; cache-busted rechecks converged with the direct Worker endpoint.
+
 > **Session 2026-07-15 (private-beta hardening rounds 15–16) — merged, not deployed.** Main
 > reached `12663a4` (merge of PR #309) through six sequential PRs, all with green combined CI; code and
 > tests only — **no schema / migration**. **PR #304** kept invite-only signup fail-closed when provider
