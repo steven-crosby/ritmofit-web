@@ -7,7 +7,7 @@
  * Unknown / not-owned tracks return 404 so a user can't probe another's library.
  */
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { and, eq, gte, isNull } from 'drizzle-orm';
 import {
   createTrackSchema,
   updateTrackSchema,
@@ -28,7 +28,7 @@ import { getMusicProvider } from '../lib/music/registry.js';
 import { makeMatchKey, type MatchableTrack } from '../lib/same-song.js';
 import { resolveTrackProvider } from '../lib/resolve-provider.js';
 import { attachProviderId } from '../lib/track-import.js';
-import { tracks, trackProviderIds } from '../db/schema.js';
+import { classTracks, tracks, trackProviderIds } from '../db/schema.js';
 import type { Db } from '../lib/db.js';
 
 /** Load a track the caller owns, or throw 404 (existence hidden). */
@@ -86,6 +86,31 @@ trackRoutes.patch('/tracks/:id', async (c) => {
   const id = c.req.param('id');
   const existing = await requireOwnedTrack(db, c.get('userId'), id);
   const body = updateTrackSchema.parse(await c.req.json());
+
+  // Placements without a class-specific duration override inherit this library
+  // duration. Do not let a correction shrink their resolved base to/below an
+  // existing clip start: that collapses the effective duration to zero and makes
+  // the entire class run-payload fail response validation.
+  if ('durationMs' in body && body.durationMs != null) {
+    const collapsedPlacement = await db
+      .select({ id: classTracks.id })
+      .from(classTracks)
+      .where(
+        and(
+          eq(classTracks.trackId, id),
+          isNull(classTracks.durationMsOverride),
+          gte(classTracks.clipStartMs, body.durationMs),
+        ),
+      )
+      .get();
+    if (collapsedPlacement) {
+      throw new HttpError(
+        422,
+        'VALIDATION_ERROR',
+        'Track duration must stay after the clip start of every clipped class placement.',
+      );
+    }
+  }
 
   const patch = buildPatch(body) as ReturnType<typeof buildPatch<typeof body>> & {
     matchKey?: string;
