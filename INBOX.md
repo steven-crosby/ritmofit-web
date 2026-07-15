@@ -51,10 +51,10 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 
 <!-- newest at top; one per line -->
 
-- [ ] (2026-07-15) **Apple Music library-song `maxTracks` page overrun** —
-      `fetchAppleMusicLibrarySongs` checks the cap between pages but does not stop while appending a
-      page, so a response can exceed the requested cap by the remainder of its final page. Add an
-      in-page cap and regression without changing provider identity or caching behavior. — #bug
+- [ ] (2026-07-15) **Spotify saved-track `maxTracks` page overrun** —
+      `fetchSpotifySavedTracks` checks the cap between pages but can append the remainder of a full
+      page beyond the requested cap. Mirror the in-page break now used by the Apple library-song,
+      Spotify playlist-track, and SoundCloud readers; keep it a separate focused regression. — #bug
 - [ ] (2026-07-11) **Round 9+10 owner-pending live checks** (deployed: R9 Worker `209a2a13`, R10
       Worker `b0d0fe54`; both logged in `HISTORY.md`). Manual browser checks mocks can't cover, on
       the live site: (a) import a **real public SoundCloud playlist URL** and a **real Apple Music

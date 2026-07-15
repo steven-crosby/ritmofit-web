@@ -10,6 +10,22 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-15 (mixed polish/harden round 17) — deployed (Worker
+> `de9f5cc5-f697-4f40-89e3-a9ba5e48b37b`).** Main HEAD `31fbba1` (merge of PR #316). Code and tests
+> only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior live
+> Worker `b4449c8d-5978-4298-9c6e-e222791a208f`. Three disjoint-lane PRs shipped through the standard
+> sequential update-branch, CI, and merge train: **PR #314** caps Apple Music library-song paging at
+> the requested `maxTracks` within a page; **PR #315** refreshes parent class recency after successful
+> class-track mutations so recent ordering and keyset pagination stay truthful; **PR #316** replaces
+> false provider-disconnected guidance with an honest, retryable Music connection-load state. The full
+> pre-deploy gate passed: formatting, typecheck, lint, design-system verification, 547 web tests, 412
+> API unit tests, 30 music-package tests, 134 Worker/D1 integration tests, production build, OpenAPI
+> no-drift, contract parity, and dependency-audit policy. Post-deploy smoke passed on
+> `https://ritmofit.studio`: SPA and health `200`; protected class, community, share, playlist-import,
+> cover, and provider routes `401`; missing public cover `404`; security headers present. Served SPA
+> asset `assets/index-CTl7CDqh.js` matches the production build, and Cloudflare reports the new Worker
+> version at 100%.
+
 > **Session 2026-07-15 (private-beta hardening rounds 15–16 + SoundCloud playback follow-up) —
 > deployed (Worker `b4449c8d-5978-4298-9c6e-e222791a208f`).** Main HEAD `115b003` (merge of PR
 > #311). Code, tests, and documentation only — **no schema / migration** (remote D1: "No migrations
