@@ -117,6 +117,7 @@ interface ActiveJob {
 export class RuntimePlaybackCoordinator {
   private status: CoordinatorStatus = { kind: 'idle' };
   private active: ActiveJob | null = null;
+  private transitioningAdapter: PlaybackAdapter | null = null;
   private running = false;
   private epoch = 0;
   private transitions = 0;
@@ -177,6 +178,7 @@ export class RuntimePlaybackCoordinator {
   async pause(): Promise<void> {
     this.epoch++;
     this.running = false;
+    this.destroyTransitioningAdapter();
     if (this.active) {
       try {
         await this.active.adapter.pause();
@@ -211,6 +213,7 @@ export class RuntimePlaybackCoordinator {
   async stop(): Promise<void> {
     this.epoch++;
     this.running = false;
+    this.destroyTransitioningAdapter();
     if (this.active) {
       const job = this.active;
       this.active = null;
@@ -223,6 +226,7 @@ export class RuntimePlaybackCoordinator {
   destroy(): void {
     this.epoch++;
     this.running = false;
+    this.destroyTransitioningAdapter();
     if (this.active) {
       try {
         this.active.adapter.destroy();
@@ -241,6 +245,7 @@ export class RuntimePlaybackCoordinator {
    * abandons its result.
    */
   private async enter(elapsedMs: number, epoch: number): Promise<void> {
+    this.destroyTransitioningAdapter();
     this.transitions++;
     try {
       // Release whatever is playing first; a fresh prepare follows if needed.
@@ -321,12 +326,13 @@ export class RuntimePlaybackCoordinator {
         });
       },
     });
+    this.transitioningAdapter = adapter;
 
     try {
       const window = playbackWindowFor(entry);
       await adapter.prepare(entry, window);
       if (epoch !== this.epoch) {
-        adapter.destroy();
+        this.destroyTransitioningAdapter(adapter);
         return;
       }
       // Entering mid-track (seek/resume): cue the provider past the window start.
@@ -334,23 +340,21 @@ export class RuntimePlaybackCoordinator {
       if (providerMs > window.startMs) {
         await adapter.seek(providerMs);
         if (epoch !== this.epoch) {
-          adapter.destroy();
+          this.destroyTransitioningAdapter(adapter);
           return;
         }
       }
       await adapter.play();
       if (epoch !== this.epoch) {
-        adapter.destroy();
+        this.destroyTransitioningAdapter(adapter);
         return;
       }
+      if (this.transitioningAdapter !== adapter) return;
+      this.transitioningAdapter = null;
       this.active = { adapter, index, provider: selection.provider, entry };
       this.setStatus({ kind: 'playing', index, provider: selection.provider });
     } catch (cause) {
-      try {
-        adapter.destroy();
-      } catch {
-        // The prepare failure below is the state that matters.
-      }
+      this.destroyTransitioningAdapter(adapter);
       if (epoch !== this.epoch) return;
       this.fail({
         phase: 'prepare',
@@ -375,6 +379,21 @@ export class RuntimePlaybackCoordinator {
     }
   }
 
+  /**
+   * Tear down the adapter currently awaiting prepare/seek/play. Identity
+   * guarding prevents an old transition from clearing a newer track's adapter
+   * when its provider promise settles late.
+   */
+  private destroyTransitioningAdapter(adapter = this.transitioningAdapter): void {
+    if (!adapter || this.transitioningAdapter !== adapter) return;
+    this.transitioningAdapter = null;
+    try {
+      adapter.destroy();
+    } catch {
+      // Cancellation must still settle the coordinator if teardown fails.
+    }
+  }
+
   private setStatus(status: CoordinatorStatus): void {
     this.status = status;
     this.options.onStatus?.(status);
@@ -383,6 +402,7 @@ export class RuntimePlaybackCoordinator {
   /** Enter the error state: playback halts, the host offers recovery actions. */
   private fail(error: PlaybackRuntimeError): void {
     this.running = false;
+    this.destroyTransitioningAdapter();
     if (this.active) {
       try {
         this.active.adapter.destroy();

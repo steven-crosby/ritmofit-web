@@ -96,6 +96,7 @@ interface PreviewJob {
 export class PreviewPlaybackController {
   private status: PreviewStatus = { kind: 'idle' };
   private active: PreviewJob | null = null;
+  private transitioningAdapter: PlaybackAdapter | null = null;
   private epoch = 0;
   private transitions = 0;
 
@@ -127,6 +128,7 @@ export class PreviewPlaybackController {
     const epoch = ++this.epoch;
     this.transitions++;
     try {
+      this.destroyTransitioningAdapter();
       await this.releaseActive();
       if (epoch !== this.epoch) return;
 
@@ -185,19 +187,22 @@ export class PreviewPlaybackController {
           });
         },
       });
+      this.transitioningAdapter = adapter;
 
       try {
         const window = playbackWindowFor(entry);
         await adapter.prepare(entry, window);
         if (epoch !== this.epoch) {
-          adapter.destroy();
+          this.destroyTransitioningAdapter(adapter);
           return;
         }
         await adapter.play();
         if (epoch !== this.epoch) {
-          adapter.destroy();
+          this.destroyTransitioningAdapter(adapter);
           return;
         }
+        if (this.transitioningAdapter !== adapter) return;
+        this.transitioningAdapter = null;
         this.active = {
           adapter,
           classTrackId: entry.classTrackId,
@@ -213,11 +218,7 @@ export class PreviewPlaybackController {
           provider: selection.provider,
         });
       } catch (cause) {
-        try {
-          adapter.destroy();
-        } catch {
-          // The prepare failure below is the state that matters.
-        }
+        this.destroyTransitioningAdapter(adapter);
         if (epoch !== this.epoch) return;
         this.fail({
           phase: 'prepare',
@@ -282,6 +283,7 @@ export class PreviewPlaybackController {
   /** Stop preview and release the adapter — back to idle. Safe to call repeatedly. */
   async stop(): Promise<void> {
     const epoch = ++this.epoch;
+    this.destroyTransitioningAdapter();
     await this.releaseActive();
     if (epoch !== this.epoch) return;
     this.setStatus({ kind: 'idle' });
@@ -290,6 +292,7 @@ export class PreviewPlaybackController {
   /** Synchronous teardown for unmount. */
   destroy(): void {
     this.epoch++;
+    this.destroyTransitioningAdapter();
     if (this.active) {
       try {
         this.active.adapter.destroy();
@@ -331,6 +334,21 @@ export class PreviewPlaybackController {
     }
   }
 
+  /**
+   * Tear down an adapter that has been built but not yet promoted to `active`.
+   * The identity check is essential: a canceled transition may settle after a
+   * newer preview has already installed its own adapter.
+   */
+  private destroyTransitioningAdapter(adapter = this.transitioningAdapter): void {
+    if (!adapter || this.transitioningAdapter !== adapter) return;
+    this.transitioningAdapter = null;
+    try {
+      adapter.destroy();
+    } catch {
+      // Cancellation must still settle the controller even if teardown fails.
+    }
+  }
+
   private setStatus(status: PreviewStatus): void {
     this.status = status;
     this.options.onStatus?.(status);
@@ -338,6 +356,7 @@ export class PreviewPlaybackController {
 
   /** Enter the error state: preview halts, the host offers retry/reconnect. */
   private fail(error: PreviewError): void {
+    this.destroyTransitioningAdapter();
     if (this.active) {
       try {
         this.active.adapter.destroy();

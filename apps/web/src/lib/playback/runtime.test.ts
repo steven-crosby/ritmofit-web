@@ -86,9 +86,11 @@ class FakeAdapter implements PlaybackAdapter {
   calls: string[] = [];
   events: AdapterEvents;
   deferPrepare = false;
+  deferPlay = false;
   failPrepare = false;
   private resolvePrepare: ((ready: PlaybackReady) => void) | null = null;
   private pendingReady: PlaybackReady | null = null;
+  private resolvePlay: (() => void) | null = null;
 
   constructor(
     readonly provider: Provider,
@@ -113,8 +115,16 @@ class FakeAdapter implements PlaybackAdapter {
     this.resolvePrepare = null;
   }
 
-  async play(): Promise<void> {
+  play(): Promise<void> {
     this.calls.push('play');
+    if (!this.deferPlay) return Promise.resolve();
+    return new Promise((resolve) => {
+      this.resolvePlay = resolve;
+    });
+  }
+  finishPlay(): void {
+    this.resolvePlay?.();
+    this.resolvePlay = null;
   }
   async pause(): Promise<void> {
     this.calls.push('pause');
@@ -131,12 +141,18 @@ class FakeAdapter implements PlaybackAdapter {
 }
 
 /** A registry whose factories record every adapter they build, per provider. */
-function makeHarness(payload: RunPayload, conns: ConnectionLike[], preferred?: Provider | null) {
+function makeHarness(
+  payload: RunPayload,
+  conns: ConnectionLike[],
+  preferred?: Provider | null,
+  options?: { deferPlayAt?: number[] },
+) {
   const created: FakeAdapter[] = [];
   const statuses: CoordinatorStatus[] = [];
   const errors: PlaybackRuntimeError[] = [];
   const factoryFor = (provider: Provider) => (events: AdapterEvents) => {
     const adapter = new FakeAdapter(provider, events);
+    adapter.deferPlay = options?.deferPlayAt?.includes(created.length) ?? false;
     created.push(adapter);
     return adapter;
   };
@@ -505,6 +521,80 @@ describe('RuntimePlaybackCoordinator', () => {
     await coordinator.start(0);
     coordinator.destroy();
     expect(created[0]!.calls).toEqual(['prepare:ct-1:0-180000', 'play', 'destroy']);
+    expect(coordinator.getStatus()).toEqual({ kind: 'idle' });
+  });
+
+  it('pause destroys an adapter still awaiting play acknowledgement', async () => {
+    const payload = makePayload([makeEntry({ classTrackId: 'ct-1' })]);
+    const { coordinator, created } = makeHarness(payload, connections('soundcloud'), null, {
+      deferPlayAt: [0],
+    });
+    const starting = coordinator.start(0);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(created[0]!.calls).toEqual(['prepare:ct-1:0-180000', 'play']);
+
+    await coordinator.pause();
+    expect(created[0]!.calls).toEqual(['prepare:ct-1:0-180000', 'play', 'destroy']);
+    expect(coordinator.getStatus()).toEqual({ kind: 'paused' });
+
+    created[0]!.finishPlay();
+    await starting;
+    expect(coordinator.getStatus()).toEqual({ kind: 'paused' });
+  });
+
+  it('stop destroys an adapter still awaiting play acknowledgement', async () => {
+    const payload = makePayload([makeEntry({ classTrackId: 'ct-1' })]);
+    const { coordinator, created } = makeHarness(payload, connections('soundcloud'), null, {
+      deferPlayAt: [0],
+    });
+    const starting = coordinator.start(0);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    await coordinator.stop();
+    expect(created[0]!.calls).toEqual(['prepare:ct-1:0-180000', 'play', 'destroy']);
+    expect(coordinator.getStatus()).toEqual({ kind: 'idle' });
+
+    created[0]!.finishPlay();
+    await starting;
+    expect(coordinator.getStatus()).toEqual({ kind: 'idle' });
+  });
+
+  it('a seek supersedes no-ack playback without clearing the next track adapter', async () => {
+    const payload = makePayload([
+      makeEntry({ classTrackId: 'ct-1', durationMs: 60_000, startOffsetMs: 0 }),
+      makeEntry({ classTrackId: 'ct-2', durationMs: 60_000, startOffsetMs: 60_000 }),
+    ]);
+    const { coordinator, created } = makeHarness(payload, connections('soundcloud'), null, {
+      deferPlayAt: [0],
+    });
+    const starting = coordinator.start(0);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    await coordinator.seek(60_000);
+    expect(created[0]!.calls).toEqual(['prepare:ct-1:0-60000', 'play', 'destroy']);
+    expect(created[1]!.calls).toEqual(['prepare:ct-2:0-60000', 'play']);
+    expect(coordinator.getStatus()).toMatchObject({ kind: 'playing', index: 1 });
+
+    created[0]!.finishPlay();
+    await starting;
+    expect(coordinator.getStatus()).toMatchObject({ kind: 'playing', index: 1 });
+    expect(created[1]!.calls).toEqual(['prepare:ct-2:0-60000', 'play']);
+  });
+
+  it('destroy tears down an adapter still awaiting play acknowledgement', async () => {
+    const payload = makePayload([makeEntry({ classTrackId: 'ct-1' })]);
+    const { coordinator, created } = makeHarness(payload, connections('soundcloud'), null, {
+      deferPlayAt: [0],
+    });
+    const starting = coordinator.start(0);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    coordinator.destroy();
+    expect(created[0]!.calls).toEqual(['prepare:ct-1:0-180000', 'play', 'destroy']);
+    expect(coordinator.getStatus()).toEqual({ kind: 'idle' });
+
+    created[0]!.finishPlay();
+    await starting;
     expect(coordinator.getStatus()).toEqual({ kind: 'idle' });
   });
 });
