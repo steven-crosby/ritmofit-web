@@ -172,14 +172,23 @@ describe('SoundCloudAdapter', () => {
     expect(widgets[0]!.calls).toEqual(['seekTo:15000']);
   });
 
-  it('delegates play/pause/seek, and stop re-cues the window start', async () => {
+  it('waits for PLAY before resolving, then delegates pause/seek and re-cues on stop', async () => {
     const { api, widgets } = makeFakeApi();
     const adapter = new SoundCloudAdapter({}, { loadWidgetApi: () => Promise.resolve(api) });
     const prepare = adapter.prepare(makeEntry(), { startMs: 15_000, endMs: 195_000 });
     await readyUp(widgets);
     await prepare;
 
-    await adapter.play();
+    let started = false;
+    const play = adapter.play().then(() => {
+      started = true;
+    });
+    await Promise.resolve();
+    expect(started).toBe(false);
+    expect(widgets[0]!.calls).toEqual(['seekTo:15000', 'play']);
+    widgets[0]!.emit('play');
+    await play;
+    expect(started).toBe(true);
     await adapter.seek(40_000);
     await adapter.pause();
     await adapter.stop();
@@ -191,6 +200,84 @@ describe('SoundCloudAdapter', () => {
       'pause',
       'seekTo:15000',
     ]);
+  });
+
+  it('does not miss a PLAY acknowledgement emitted synchronously by widget.play()', async () => {
+    const { api, widgets } = makeFakeApi();
+    const adapter = new SoundCloudAdapter({}, { loadWidgetApi: () => Promise.resolve(api) });
+    const prepare = adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await readyUp(widgets);
+    await prepare;
+    const widget = widgets[0]!;
+    widget.play = () => {
+      widget.calls.push('play');
+      widget.emit('play');
+    };
+
+    await expect(adapter.play()).resolves.toBeUndefined();
+    expect(widget.calls).toEqual(['play']);
+  });
+
+  it('requires a fresh PLAY acknowledgement for a resumed play attempt', async () => {
+    const { api, widgets } = makeFakeApi();
+    const adapter = new SoundCloudAdapter({}, { loadWidgetApi: () => Promise.resolve(api) });
+    const prepare = adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await readyUp(widgets);
+    await prepare;
+    const widget = widgets[0]!;
+
+    const firstPlay = adapter.play();
+    widget.emit('play');
+    await firstPlay;
+    await adapter.pause();
+
+    let resumed = false;
+    const resume = adapter.play().then(() => {
+      resumed = true;
+    });
+    await Promise.resolve();
+    expect(resumed).toBe(false);
+    widget.emit('play');
+    await resume;
+    expect(resumed).toBe(true);
+    expect(widget.calls).toEqual(['play', 'pause', 'play']);
+  });
+
+  it('rejects play when the widget errors before PLAY acknowledgement', async () => {
+    const { api, widgets } = makeFakeApi();
+    const adapter = new SoundCloudAdapter({}, { loadWidgetApi: () => Promise.resolve(api) });
+    const prepare = adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await readyUp(widgets);
+    await prepare;
+
+    const play = adapter.play();
+    widgets[0]!.emit('error');
+    await expect(play).rejects.toThrow(/could not start playback/i);
+  });
+
+  it('rejects play after the acknowledgement timeout', async () => {
+    const { api, widgets } = makeFakeApi();
+    const adapter = new SoundCloudAdapter(
+      {},
+      { loadWidgetApi: () => Promise.resolve(api), playTimeoutMs: 5 },
+    );
+    const prepare = adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await readyUp(widgets);
+    await prepare;
+
+    await expect(adapter.play()).rejects.toThrow(/timed out starting playback/i);
+  });
+
+  it('rejects pending play when the adapter is destroyed', async () => {
+    const { api, widgets } = makeFakeApi();
+    const adapter = new SoundCloudAdapter({}, { loadWidgetApi: () => Promise.resolve(api) });
+    const prepare = adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await readyUp(widgets);
+    await prepare;
+
+    const play = adapter.play();
+    adapter.destroy();
+    await expect(play).rejects.toThrow(/torn down while starting playback/i);
   });
 
   it('rejects prepare when the widget errors while loading', async () => {
