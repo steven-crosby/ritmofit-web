@@ -27,6 +27,7 @@ import {
   remapPlacedMoveForCaller,
 } from '../lib/copy-class-track.js';
 import {
+  classes,
   userMoves,
   classTracks,
   tracks,
@@ -43,6 +44,15 @@ import {
 
 export const classTrackRoutes = new Hono<AppEnv>();
 classTrackRoutes.use('*', requireSession);
+
+/** Keep the class-library recency key aligned with mutations to its track list. */
+async function touchClassUpdatedAt(db: Db, classId: string): Promise<void> {
+  const now = Date.now();
+  await db
+    .update(classes)
+    .set({ updatedAt: sql`max(${classes.updatedAt} + 1, ${now})` })
+    .where(eq(classes.id, classId));
+}
 
 /**
  * POST /classes/:id/tracks — add a track to a class (edit access). Body either
@@ -149,6 +159,7 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
     updatedAt: now,
   });
   await resequence(db, classId);
+  await touchClassUpdatedAt(db, classId);
 
   const row = await db.select().from(classTracks).where(eq(classTracks.id, id)).get();
   return c.json(serializeClassTrack(row!), 201);
@@ -207,6 +218,7 @@ classTrackRoutes.post('/classes/:id/tracks/reorder', async (c) => {
   }
 
   await resequence(db, classId, classTrackIds);
+  await touchClassUpdatedAt(db, classId);
   const rows = await db
     .select()
     .from(classTracks)
@@ -339,6 +351,7 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
 
   await db.update(classTracks).set(patch).where(eq(classTracks.id, id));
   if (touchesWindow || touchesOffset) await resequence(db, classId);
+  await touchClassUpdatedAt(db, classId);
   const row = await db.select().from(classTracks).where(eq(classTracks.id, id)).get();
   return c.json(serializeClassTrack(row!));
 });
@@ -383,6 +396,7 @@ classTrackRoutes.delete('/class-tracks/:id', async (c) => {
   const { classId } = await requireClassTrackAccess(db, c.get('userId'), id, 'edit');
   await db.delete(classTracks).where(eq(classTracks.id, id));
   await resequence(db, classId);
+  await touchClassUpdatedAt(db, classId);
   return c.body(null, 204);
 });
 
@@ -520,6 +534,7 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
   ];
   await db.batch(statements as unknown as Parameters<typeof db.batch>[0]);
   await resequence(db, targetClassId);
+  await touchClassUpdatedAt(db, targetClassId);
 
   const row = await db.select().from(classTracks).where(eq(classTracks.id, newId)).get();
   return c.json(serializeClassTrack(row!), 201);

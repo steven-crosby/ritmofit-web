@@ -198,6 +198,52 @@ describe('class library pagination (integration)', () => {
     expect(card!.albumArtUrls).toEqual(['https://art.example/cover.jpg']);
   });
 
+  it('moves a class to the recent boundary when its track list changes', async () => {
+    const user = await signUpUser();
+    const api = authed(user.cookie);
+    const create = async (title: string) => {
+      const res = await api('/api/v1/classes', {
+        method: 'POST',
+        body: JSON.stringify({ title }),
+      });
+      expect(res.status).toBe(201);
+      return ((await res.json()) as { id: string }).id;
+    };
+    const olderId = await create('Older class');
+    const newerId = await create('Newer class');
+
+    await env.DB.batch([
+      env.DB.prepare('update classes set updated_at = 100 where id = ?').bind(olderId),
+      env.DB.prepare('update classes set updated_at = 200 where id = ?').bind(newerId),
+    ]);
+
+    const added = await api(`/api/v1/classes/${olderId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        track: { title: 'Fresh track', artist: 'Instructor', durationMs: 180_000 },
+      }),
+    });
+    expect(added.status).toBe(201);
+
+    const afterAdd = (await (await api('/api/v1/classes?limit=2')).json()) as ClassListItem[];
+    expect(afterAdd.map((row) => row.id)).toEqual([olderId, newerId]);
+    expect(afterAdd[0]!.updatedAt).toBeGreaterThan(200);
+
+    // Reset the ordering boundary and prove deletion touches the parent too. This
+    // prevents the helper from being wired only to the add path covered above.
+    await env.DB.batch([
+      env.DB.prepare('update classes set updated_at = 100 where id = ?').bind(olderId),
+      env.DB.prepare('update classes set updated_at = 200 where id = ?').bind(newerId),
+    ]);
+    const classTrackId = ((await added.json()) as { id: string }).id;
+    const deleted = await api(`/api/v1/class-tracks/${classTrackId}`, { method: 'DELETE' });
+    expect(deleted.status).toBe(204);
+
+    const afterDelete = (await (await api('/api/v1/classes?limit=2')).json()) as ClassListItem[];
+    expect(afterDelete.map((row) => row.id)).toEqual([olderId, newerId]);
+    expect(afterDelete[0]!.updatedAt).toBeGreaterThan(200);
+  });
+
   it('returns zeroed aggregates for a class with no tracks', async () => {
     const user = await signUpUser();
     const api = authed(user.cookie);
