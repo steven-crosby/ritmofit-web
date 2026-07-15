@@ -51,6 +51,40 @@ describe('caller profile (integration)', () => {
     }
   });
 
+  it('restores test invitations while existing accounts remain able to sign in', async () => {
+    const mutableEnv = env as typeof env & { BETA_ALLOWED_EMAILS?: string };
+    const previousAllowlist = mutableEnv.BETA_ALLOWED_EMAILS;
+    const standingInvite = 'standing-invite@example.com';
+    mutableEnv.BETA_ALLOWED_EMAILS = standingInvite;
+
+    try {
+      const existing = await signUpUser();
+      expect(mutableEnv.BETA_ALLOWED_EMAILS).toBe(standingInvite);
+      expect(mutableEnv.BETA_ALLOWED_EMAILS).not.toContain(existing.email);
+
+      const signIn = await call('/api/auth/sign-in/email', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: existing.email, password: 'sup3r-secret-pw' }),
+      });
+      expect(signIn.status).toBe(200);
+
+      const newAccount = await call('/api/auth/sign-up/email', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          email: `uninvited-${crypto.randomUUID()}@example.com`,
+          password: 'sup3r-secret-pw',
+          name: 'Still Not Invited',
+        }),
+      });
+      expect(newAccount.status).toBe(403);
+      expect(await newAccount.json()).toMatchObject({ code: 'BETA_INVITE_REQUIRED' });
+    } finally {
+      mutableEnv.BETA_ALLOWED_EMAILS = previousAllowlist;
+    }
+  });
+
   it('rejects anonymous reads and updates', async () => {
     expect((await call('/api/v1/auth/me')).status).toBe(401);
     const update = await call('/api/v1/auth/me', {
