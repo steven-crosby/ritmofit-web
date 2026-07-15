@@ -55,10 +55,6 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
       `fetchAppleMusicLibrarySongs` checks the cap between pages but does not stop while appending a
       page, so a response can exceed the requested cap by the remainder of its final page. Add an
       in-page cap and regression without changing provider identity or caching behavior. — #bug
-- [ ] (2026-07-15) **Post-deploy real SoundCloud audio verification** — after the Round 15–16 batch is
-      deployed and the PWA refresh is accepted, owner-verify that a real public SoundCloud track is
-      audibly heard in both Builder Preview and Live Mode, including pause/resume. The headed browser
-      harness proved official widget acknowledgements and state transitions, not heard audio. — #plan
 - [ ] (2026-07-11) **Round 9+10 owner-pending live checks** (deployed: R9 Worker `209a2a13`, R10
       Worker `b0d0fe54`; both logged in `HISTORY.md`). Manual browser checks mocks can't cover, on
       the live site: (a) import a **real public SoundCloud playlist URL** and a **real Apple Music

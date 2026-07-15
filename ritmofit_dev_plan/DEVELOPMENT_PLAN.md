@@ -56,11 +56,12 @@ Pilates, and HIIT.
   browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook. **Merged hardening `main` is ahead of production
-  at `12663a4` (2026-07-15):** private-beta hardening rounds 15–16 (#304–#309) are merged with green
-  sequential CI and no schema/migration, but were **not deployed**. Production remains the invite-only
-  private-beta Worker `2b390842-8f71-4086-a59a-6ea3050d4882` from main `3e21611`, serving SPA asset
-  `assets/index-DTHma_pV.js` (see the latest `HISTORY.md` entry). The preceding deployed all-harden
+  Music workspace via a shared provider-browse hook. **Production matches `main` at `115b003`
+  (2026-07-15):** private-beta hardening rounds 15–16 (#304–#309), their session record (#310), and
+  the full-track SoundCloud mock-fixture correction (#311) are deployed in Worker
+  `b4449c8d-5978-4298-9c6e-e222791a208f`, serving SPA asset `assets/index-Db7zXm3P.js`; there was no
+  schema/migration change. The preceding invite-only private-beta deployment was Worker
+  `2b390842-8f71-4086-a59a-6ea3050d4882` from main `3e21611`. The preceding deployed all-harden
   release was Worker `4e009966-6a4c-47ef-8994-c88aa6613680` at `ad53541`: public-cover auth-contract
   repair and class-copy OpenAPI correction (#297), strict Apple playlist pagination failure handling
   (#298), mutually exclusive saved-playlist add actions (#299), and the clipped-placement
@@ -244,6 +245,14 @@ current planning queue.
 **Open production issues:**
 
 - _None currently tracked here._
+
+**Non-blocking production verification:**
+
+- **Live-site SoundCloud audio confirmation** — the owner heard the exact deployed code path locally
+  in both Preview and Live Mode, including full-track playback after the fixture correction. On the
+  next convenient live-site session, accept the PWA refresh and repeat audible Preview + Live
+  pause/resume once against a real public SoundCloud track; automated checks prove widget events and
+  production asset alignment, not human-heard production audio.
 
 **Known deferred post-launch features (not blocking, owner decision):**
 
