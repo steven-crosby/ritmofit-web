@@ -56,12 +56,15 @@ Pilates, and HIIT.
   browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook. **Production is aligned with merged `main` at
-  `ad53541` (verified 2026-07-14):** Worker `4e009966-6a4c-47ef-8994-c88aa6613680` serves the matching
-  SPA asset `index-BxRw-uUk.js`, and remote D1 has no pending migrations. This all-harden release shipped
-  the public-cover auth-contract repair and class-copy OpenAPI correction (#297), strict Apple playlist
-  pagination failure handling (#298), mutually exclusive saved-playlist add actions (#299), and the
-  clipped-placement duration-shrink guard (#300). The prior coherent code deployment was
+  Music workspace via a shared provider-browse hook. **Merged hardening `main` is ahead of production
+  at `12663a4` (2026-07-15):** private-beta hardening rounds 15–16 (#304–#309) are merged with green
+  sequential CI and no schema/migration, but were **not deployed**. Production remains the invite-only
+  private-beta Worker `2b390842-8f71-4086-a59a-6ea3050d4882` from main `3e21611`, serving SPA asset
+  `assets/index-DTHma_pV.js` (see the latest `HISTORY.md` entry). The preceding deployed all-harden
+  release was Worker `4e009966-6a4c-47ef-8994-c88aa6613680` at `ad53541`: public-cover auth-contract
+  repair and class-copy OpenAPI correction (#297), strict Apple playlist pagination failure handling
+  (#298), mutually exclusive saved-playlist add actions (#299), and the clipped-placement
+  duration-shrink guard (#300). The prior coherent code deployment was
   **2026-07-12 (Worker `a83a71d2`)** — twelfth parallel lane-agent round (mixed polish/harden,
   THREE-lane round, D21 loop): three disjoint-lane slices — bound Spotify catalog `getPlaylist` paging
   to 500 tracks (#288, BE); bound `offsetMsSchema` to `MAX_DURATION_MS` (#289, BE); and focus

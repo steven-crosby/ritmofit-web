@@ -10,6 +10,22 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-15 (private-beta hardening rounds 15–16) — merged, not deployed.** Main
+> reached `12663a4` (merge of PR #309) through six sequential PRs, all with green combined CI; code and
+> tests only — **no schema / migration**. **PR #304** kept invite-only signup fail-closed when provider
+> mocks are enabled. **PR #305** accepted SoundCloud resources that expose the current URN identity
+> without the deprecated numeric id. **PR #306** waited for the official SoundCloud Widget `PLAY`
+> acknowledgement before reporting playback active. **PR #307** stopped generated beta invitations
+> from leaking across integration tests and proved existing users can still sign in after leaving the
+> allowlist. **PR #308** treated legacy numeric SoundCloud track ids and their decimal URNs as the same
+> library identity without rewriting stored rows. **PR #309** made pending playback transitions
+> cancellable so late acknowledgements cannot revive stopped or superseded audio. Headed Chromium
+> against the official SoundCloud widget observed ready, play, pause, resume, replacement, and teardown
+> acknowledgements; this verifies widget command/state transitions, **not independently machine-heard
+> audio**. Production was **not deployed** in these rounds and remains at the invite-only private-beta
+> Worker `2b390842-8f71-4086-a59a-6ea3050d4882` recorded in the previous entry (main `3e21611`, served
+> SPA asset `assets/index-DTHma_pV.js`).
+
 > **Session 2026-07-14 (invite-only personal beta v1) — deployed (Worker
 > `2b390842-8f71-4086-a59a-6ea3050d4882`).** Main HEAD `3e21611` (merge of PR #302).
 > Code, generated contract, and documentation only — **no schema / migration** (remote D1: "No
