@@ -25,6 +25,7 @@ import type {
 const WIDGET_API_SRC = 'https://w.soundcloud.com/player/api.js';
 const WIDGET_PLAYER_ORIGIN = 'https://w.soundcloud.com/player/';
 const DEFAULT_PREPARE_TIMEOUT_MS = 20_000;
+const DEFAULT_PLAY_TIMEOUT_MS = 10_000;
 
 /** The slice of the widget the adapter drives (the official Widget API shape). */
 export interface SoundCloudWidget {
@@ -112,6 +113,14 @@ export interface SoundCloudAdapterHost {
   loadWidgetApi?: () => Promise<SoundCloudWidgetApi>;
   container?: HTMLElement;
   prepareTimeoutMs?: number;
+  playTimeoutMs?: number;
+}
+
+interface PendingPlay {
+  promise: Promise<void>;
+  resolve: () => void;
+  reject: (error: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
 }
 
 export class SoundCloudAdapter implements PlaybackAdapter {
@@ -120,6 +129,8 @@ export class SoundCloudAdapter implements PlaybackAdapter {
   private widget: SoundCloudWidget | null = null;
   private eventNames: SoundCloudWidgetApi['Events'] | null = null;
   private windowStartMs = 0;
+  private trackTitle = '';
+  private pendingPlay: PendingPlay | null = null;
   private destroyed = false;
 
   constructor(
@@ -141,6 +152,7 @@ export class SoundCloudAdapter implements PlaybackAdapter {
     this.teardownWidget(); // re-prepare = a fresh widget, never a reused one
     this.destroyed = false;
     this.windowStartMs = window.startMs;
+    this.trackTitle = entry.track.title;
 
     const api = await (this.host.loadWidgetApi ?? loadSoundCloudWidgetApi)();
     if (this.destroyed) throw new Error('SoundCloud player was torn down while loading.');
@@ -192,13 +204,21 @@ export class SoundCloudAdapter implements PlaybackAdapter {
         clearTimeout(timeout);
         resolve();
       });
+      widget.bind(api.Events.PLAY, () => this.resolvePendingPlay());
       // One ERROR listener for the widget's whole life: a load-phase error
-      // rejects prepare; a playback-phase error flows to the coordinator.
+      // rejects prepare; an error while play() awaits acknowledgement rejects
+      // that command; a later playback-phase error flows to the coordinator.
       widget.bind(api.Events.ERROR, () => {
         if (!settled) {
           settled = true;
           clearTimeout(timeout);
           reject(new Error(`SoundCloud could not load "${entry.track.title}".`));
+          return;
+        }
+        if (this.pendingPlay) {
+          this.rejectPendingPlay(
+            new Error(`SoundCloud could not start playback for "${entry.track.title}".`),
+          );
           return;
         }
         this.events.onError?.({
@@ -215,7 +235,37 @@ export class SoundCloudAdapter implements PlaybackAdapter {
   }
 
   async play(): Promise<void> {
-    this.requireWidget().play();
+    const widget = this.requireWidget();
+    if (this.pendingPlay) return this.pendingPlay.promise;
+
+    let resolve!: () => void;
+    let reject!: (error: Error) => void;
+    const promise = new Promise<void>((resolvePromise, rejectPromise) => {
+      resolve = resolvePromise;
+      reject = rejectPromise;
+    });
+    const pending: PendingPlay = {
+      promise,
+      resolve,
+      reject,
+      timeout: setTimeout(() => {
+        if (this.pendingPlay !== pending) return;
+        this.rejectPendingPlay(
+          new Error(`SoundCloud timed out starting playback for "${this.trackTitle}".`),
+        );
+      }, this.host.playTimeoutMs ?? DEFAULT_PLAY_TIMEOUT_MS),
+    };
+    // Install the pending acknowledgement before issuing play(): the official
+    // widget may emit PLAY synchronously or immediately after the command.
+    this.pendingPlay = pending;
+    try {
+      widget.play();
+    } catch (cause) {
+      this.rejectPendingPlay(
+        cause instanceof Error ? cause : new Error('SoundCloud could not start playback.'),
+      );
+    }
+    return promise;
   }
 
   async pause(): Promise<void> {
@@ -245,10 +295,28 @@ export class SoundCloudAdapter implements PlaybackAdapter {
     return this.widget;
   }
 
+  private resolvePendingPlay(): void {
+    const pending = this.pendingPlay;
+    if (!pending) return;
+    this.pendingPlay = null;
+    clearTimeout(pending.timeout);
+    pending.resolve();
+  }
+
+  private rejectPendingPlay(error: Error): void {
+    const pending = this.pendingPlay;
+    if (!pending) return;
+    this.pendingPlay = null;
+    clearTimeout(pending.timeout);
+    pending.reject(error);
+  }
+
   private teardownWidget(): void {
+    this.rejectPendingPlay(new Error('SoundCloud player was torn down while starting playback.'));
     if (this.widget && this.eventNames) {
       try {
         this.widget.unbind(this.eventNames.READY);
+        this.widget.unbind(this.eventNames.PLAY);
         this.widget.unbind(this.eventNames.ERROR);
         this.widget.unbind(this.eventNames.FINISH);
       } catch {
