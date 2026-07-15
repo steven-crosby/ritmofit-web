@@ -10,6 +10,27 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-14 (invite-only personal beta v1) — deployed (Worker
+> `2b390842-8f71-4086-a59a-6ea3050d4882`).** Main HEAD `3e21611` (merge of PR #302).
+> Code, generated contract, and documentation only — **no schema / migration** (remote D1: "No
+> migrations to apply"). Rollback anchor before the release: Worker
+> `d09da7c1-3cbd-43b9-9951-c1cfa606cab8` (the preceding secret-change version); the prior code
+> deployment was `4e009966-6a4c-47ef-8994-c88aa6613680`. Production now has the
+> `BETA_ALLOWED_EMAILS` secret and advertises `access.mode = invite_only`; existing accounts may sign
+> in while new account creation fails closed outside the allowlist. The release keeps official
+> provider SDK/widget playback alongside music-off Live Mode, adds provider-source attribution,
+> structured provider errors, reactive readiness updates, private-beta/privacy copy, and removes
+> deferred community surfaces from the active UI. Full local and GitHub CI gates passed: formatting,
+> typecheck, lint, design-system verification, 534 web tests, 406 API unit tests, 131 Worker/D1
+> integration tests, production build, OpenAPI no-drift, contract parity, and dependency-audit policy.
+> A visible local browser demo covered signup, onboarding, SoundCloud mock connection, search/import,
+> BPM, cue/move authoring, readiness, preflight, and both Live views with no browser warnings/errors.
+> Post-deploy smoke passed on `https://ritmofit.studio`: `/`, `/privacy`, and health `200`; protected
+> class/community/provider routes `401`; missing public cover `404 NOT_FOUND`; security headers
+> present; invite-only capability live; served SPA asset `assets/index-DTHma_pV.js` exactly matched the
+> production build. HTTP smoke used Node's built-in `fetch` because `curl` was unavailable in this
+> shell.
+
 > **Session 2026-07-14 (all-harden round — four-PR release) — deployed (Worker
 > `4e009966-6a4c-47ef-8994-c88aa6613680`).** Main HEAD `ad53541` (merge of PR #300). Code and
 > documentation only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback
