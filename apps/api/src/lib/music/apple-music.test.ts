@@ -161,6 +161,34 @@ describe('fetchAppleMusicLibrarySongs', () => {
     ]);
   });
 
+  it('stops at the maxTracks cap while appending a library-song page', async () => {
+    const fullPage = Array.from({ length: 100 }, (_, index) => ({
+      ...AM_LIBRARY_SONG,
+      id: `i.libraryId${index}`,
+      attributes: {
+        ...AM_LIBRARY_SONG.attributes,
+        playParams: { id: `i.libraryId${index}`, catalogId: String(index) },
+      },
+    }));
+    const { fetchImpl, calls } = fakeFetch({
+      [`${LIBRARY_URL}?limit=100`]: {
+        data: fullPage,
+        next: '/v1/me/library/songs?offset=100',
+      },
+    });
+
+    const results = await fetchAppleMusicLibrarySongs({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      fetchImpl,
+      apiBase: API_BASE,
+      maxTracks: 10,
+    });
+
+    expect(results).toHaveLength(10);
+    expect(calls).toHaveLength(1);
+  });
+
   it('falls back to the library id when there is no catalog equivalent', async () => {
     const noCatalog = {
       ...AM_LIBRARY_SONG,
