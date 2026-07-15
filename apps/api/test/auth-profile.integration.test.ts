@@ -9,7 +9,7 @@ describe('caller profile (integration)', () => {
     expect(await res.json()).toMatchObject({ access: { mode: 'invite_only' } });
   });
 
-  it('blocks an uninvited production-style signup and permits the allowlisted address', async () => {
+  it('blocks an uninvited signup in provider-mock mode and permits the allowlisted address', async () => {
     const mutableEnv = env as typeof env & {
       MOCK_PROVIDERS?: string;
       BETA_ALLOWED_EMAILS?: string;
@@ -17,7 +17,9 @@ describe('caller profile (integration)', () => {
     const previousMock = mutableEnv.MOCK_PROVIDERS;
     const previousAllowlist = mutableEnv.BETA_ALLOWED_EMAILS;
     const invitedEmail = `invited-${crypto.randomUUID()}@example.com`;
-    mutableEnv.MOCK_PROVIDERS = 'false';
+    // Provider mocks must not weaken the invite-only account boundary on this
+    // non-local HTTPS origin.
+    mutableEnv.MOCK_PROVIDERS = 'true';
     mutableEnv.BETA_ALLOWED_EMAILS = invitedEmail;
 
     try {

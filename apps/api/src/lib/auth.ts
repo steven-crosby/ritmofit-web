@@ -37,11 +37,11 @@ export function canCreateBetaAccount(
   env: Pick<Env, 'BETTER_AUTH_URL' | 'BETA_ALLOWED_EMAILS' | 'MOCK_PROVIDERS'>,
   email: string,
 ): boolean {
-  // Mock-provider environments are local/test-only by contract and need arbitrary
-  // generated users for integration and browser-smoke isolation.
-  if (env.MOCK_PROVIDERS === 'true') return true;
   const authUrl = new URL(env.BETTER_AUTH_URL);
   const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(authUrl.hostname);
+  // Local browser smoke can create throwaway users without weakening the invite
+  // boundary on any remotely reachable origin. MOCK_PROVIDERS controls music seams;
+  // it must never act as an account-creation override.
   if (isLocalhost && !env.BETA_ALLOWED_EMAILS) return true;
   return betaAllowedEmails(env.BETA_ALLOWED_EMAILS).has(email.trim().toLowerCase());
 }
