@@ -1224,6 +1224,10 @@ function CreateClassForm({
 
 function useProviderBrowseState(connectionRevision = 0) {
   const [connections, setConnections] = useState<MusicConnectionView[]>([]);
+  const [connectionsStatus, setConnectionsStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  );
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
   const [playlists, setPlaylists] = useState<Partial<Record<Provider, ProviderPlaylistSummary[]>>>(
     {},
   );
@@ -1235,19 +1239,23 @@ function useProviderBrowseState(connectionRevision = 0) {
 
   useEffect(() => {
     let alive = true;
+    setConnectionsStatus('loading');
     void (async () => {
       try {
         const rows = await listConnections();
         if (!alive || !Array.isArray(rows)) return;
         setConnections(rows);
+        setConnectionsStatus('ready');
       } catch {
-        if (alive) setConnections([]);
+        // A failed status check is not evidence that the instructor disconnected.
+        // Keep any last-known connections/shelves visible and offer an explicit retry.
+        if (alive) setConnectionsStatus('error');
       }
     })();
     return () => {
       alive = false;
     };
-  }, [connectionRevision]);
+  }, [connectionAttempt, connectionRevision]);
 
   useEffect(() => {
     let alive = true;
@@ -1313,6 +1321,8 @@ function useProviderBrowseState(connectionRevision = 0) {
 
   return {
     connections,
+    connectionsStatus,
+    retryConnections: () => setConnectionAttempt((attempt) => attempt + 1),
     playlists,
     playlistsLoading,
     playlistsError,
@@ -1320,6 +1330,47 @@ function useProviderBrowseState(connectionRevision = 0) {
     likesLoading,
     likesError,
   };
+}
+
+function ProviderConnectionsLoadState({
+  status,
+  hasKnownConnections,
+  onRetry,
+}: {
+  status: 'loading' | 'ready' | 'error';
+  hasKnownConnections: boolean;
+  onRetry: () => void;
+}) {
+  if (status === 'ready') return null;
+
+  if (status === 'loading') {
+    return (
+      <p role="status" className="font-ui text-xs text-text-tertiary">
+        Checking music connections…
+      </p>
+    );
+  }
+
+  return (
+    <div
+      role="alert"
+      className="flex flex-col items-start gap-2 rounded-control border border-state-danger/30 bg-state-danger/5 p-3 font-ui text-xs text-state-danger"
+    >
+      <p>
+        Couldn’t load music connections.
+        {hasKnownConnections
+          ? ' Showing your last known sources.'
+          : ' Source status is unavailable.'}
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+      >
+        Try again
+      </button>
+    </div>
+  );
 }
 
 /**
@@ -1346,6 +1397,8 @@ function WorkstationRestingState({
 }) {
   const {
     connections,
+    connectionsStatus,
+    retryConnections,
     playlists,
     playlistsLoading,
     playlistsError,
@@ -1407,30 +1460,39 @@ function WorkstationRestingState({
               Connections
             </button>
           </div>
-          <div className="mt-4 grid gap-2">
-            {PROVIDER_ORDER.map((provider) => (
-              <ProviderShelfCard
-                key={provider}
-                provider={provider}
-                connection={connections.find((row) => row.provider === provider)}
-                playlists={playlists[provider] ?? null}
-                loadingPlaylists={playlistsLoading[provider] ?? false}
-                playlistError={playlistsError[provider] ?? null}
-                onBrowse={
-                  playlists[provider]?.length
-                    ? () => onBrowsePlaylists(provider, playlists[provider]!)
-                    : undefined
-                }
-                likes={likes[provider] ?? null}
-                loadingLikes={likesLoading[provider] ?? false}
-                likesError={likesError[provider] ?? null}
-                onBrowseLikes={
-                  likes[provider]?.length
-                    ? () => onBrowseLikes(provider, likes[provider]!)
-                    : undefined
-                }
-              />
-            ))}
+          <div className="mt-4">
+            <ProviderConnectionsLoadState
+              status={connectionsStatus}
+              hasKnownConnections={connections.length > 0}
+              onRetry={retryConnections}
+            />
+            {(connectionsStatus === 'ready' || connections.length > 0) && (
+              <div className="grid gap-2">
+                {PROVIDER_ORDER.map((provider) => (
+                  <ProviderShelfCard
+                    key={provider}
+                    provider={provider}
+                    connection={connections.find((row) => row.provider === provider)}
+                    playlists={playlists[provider] ?? null}
+                    loadingPlaylists={playlistsLoading[provider] ?? false}
+                    playlistError={playlistsError[provider] ?? null}
+                    onBrowse={
+                      playlists[provider]?.length
+                        ? () => onBrowsePlaylists(provider, playlists[provider]!)
+                        : undefined
+                    }
+                    likes={likes[provider] ?? null}
+                    loadingLikes={likesLoading[provider] ?? false}
+                    likesError={likesError[provider] ?? null}
+                    onBrowseLikes={
+                      likes[provider]?.length
+                        ? () => onBrowseLikes(provider, likes[provider]!)
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1451,6 +1513,8 @@ function MusicWorkspace({
 }) {
   const {
     connections,
+    connectionsStatus,
+    retryConnections,
     playlists,
     playlistsLoading,
     playlistsError,
@@ -1462,37 +1526,39 @@ function MusicWorkspace({
     <section className="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)] xl:items-start">
       <aside className="rounded-card border border-interactive/10 bg-bg-raised p-4 shadow-card xl:sticky xl:top-6">
         <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Sources</p>
-        <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
-          {PROVIDER_ORDER.map((provider) => {
-            const connectionState = providerConnectionState(
-              provider,
-              connections.find((row) => row.provider === provider),
-              Date.now(),
-            );
-            const rows = playlists[provider];
-            const canBrowse = !!rows?.length;
-            return (
-              <button
-                key={provider}
-                type="button"
-                aria-label={
-                  canBrowse
-                    ? `Browse ${providerLabel(provider)} playlists`
-                    : `Manage ${providerLabel(provider)} connection`
-                }
-                onClick={() =>
-                  canBrowse ? onBrowsePlaylists(provider, rows!) : onOpenConnections()
-                }
-                className="flex min-h-11 shrink-0 items-center justify-between gap-3 rounded-control border border-interactive/10 bg-bg-base px-3 py-2 text-left font-ui text-sm text-text-primary transition-colors hover:border-interactive/40 hover:bg-interactive/5"
-              >
-                <span>{providerLabel(provider)}</span>
-                <span className="font-data text-[10px] uppercase text-text-tertiary">
-                  {connectionState === 'connected' ? 'Linked' : 'Source'}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
+        {(connectionsStatus === 'ready' || connections.length > 0) && (
+          <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
+            {PROVIDER_ORDER.map((provider) => {
+              const connectionState = providerConnectionState(
+                provider,
+                connections.find((row) => row.provider === provider),
+                Date.now(),
+              );
+              const rows = playlists[provider];
+              const canBrowse = !!rows?.length;
+              return (
+                <button
+                  key={provider}
+                  type="button"
+                  aria-label={
+                    canBrowse
+                      ? `Browse ${providerLabel(provider)} playlists`
+                      : `Manage ${providerLabel(provider)} connection`
+                  }
+                  onClick={() =>
+                    canBrowse ? onBrowsePlaylists(provider, rows!) : onOpenConnections()
+                  }
+                  className="flex min-h-11 shrink-0 items-center justify-between gap-3 rounded-control border border-interactive/10 bg-bg-base px-3 py-2 text-left font-ui text-sm text-text-primary transition-colors hover:border-interactive/40 hover:bg-interactive/5"
+                >
+                  <span>{providerLabel(provider)}</span>
+                  <span className="font-data text-[10px] uppercase text-text-tertiary">
+                    {connectionState === 'connected' ? 'Linked' : 'Source'}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        )}
         <button
           type="button"
           onClick={onOpenConnections}
@@ -1525,31 +1591,39 @@ function MusicWorkspace({
           </div>
         </section>
 
-        <section className="grid gap-3 lg:grid-cols-3">
-          {PROVIDER_ORDER.map((provider) => (
-            <ProviderShelfCard
-              key={provider}
-              provider={provider}
-              connection={connections.find((row) => row.provider === provider)}
-              playlists={playlists[provider] ?? null}
-              loadingPlaylists={playlistsLoading[provider] ?? false}
-              playlistError={playlistsError[provider] ?? null}
-              onBrowse={
-                playlists[provider]?.length
-                  ? () => onBrowsePlaylists(provider, playlists[provider]!)
-                  : undefined
-              }
-              likes={likes[provider] ?? null}
-              loadingLikes={likesLoading[provider] ?? false}
-              likesError={likesError[provider] ?? null}
-              onBrowseLikes={
-                likes[provider]?.length
-                  ? () => onBrowseLikes(provider, likes[provider]!)
-                  : undefined
-              }
-            />
-          ))}
-        </section>
+        <ProviderConnectionsLoadState
+          status={connectionsStatus}
+          hasKnownConnections={connections.length > 0}
+          onRetry={retryConnections}
+        />
+
+        {(connectionsStatus === 'ready' || connections.length > 0) && (
+          <section className="grid gap-3 lg:grid-cols-3">
+            {PROVIDER_ORDER.map((provider) => (
+              <ProviderShelfCard
+                key={provider}
+                provider={provider}
+                connection={connections.find((row) => row.provider === provider)}
+                playlists={playlists[provider] ?? null}
+                loadingPlaylists={playlistsLoading[provider] ?? false}
+                playlistError={playlistsError[provider] ?? null}
+                onBrowse={
+                  playlists[provider]?.length
+                    ? () => onBrowsePlaylists(provider, playlists[provider]!)
+                    : undefined
+                }
+                likes={likes[provider] ?? null}
+                loadingLikes={likesLoading[provider] ?? false}
+                likesError={likesError[provider] ?? null}
+                onBrowseLikes={
+                  likes[provider]?.length
+                    ? () => onBrowseLikes(provider, likes[provider]!)
+                    : undefined
+                }
+              />
+            ))}
+          </section>
+        )}
 
         <section className="rounded-card border border-interactive/10 bg-bg-base p-4">
           <p className="font-ui text-sm font-semibold text-text-primary">Browse-first actions</p>
