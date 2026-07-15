@@ -33,6 +33,13 @@ export interface TestUser {
  */
 export async function signUpUser(): Promise<TestUser> {
   const email = `u-${crypto.randomUUID()}@example.com`;
+  // The integration Worker uses an HTTPS origin, so exercise the same explicit
+  // invite path as production. MOCK_PROVIDERS is only a music seam and must not
+  // make generated test accounts implicitly eligible for signup.
+  const mutableEnv = env as typeof env & { BETA_ALLOWED_EMAILS?: string };
+  mutableEnv.BETA_ALLOWED_EMAILS = [mutableEnv.BETA_ALLOWED_EMAILS, email]
+    .filter(Boolean)
+    .join(',');
   const res = await call('/api/auth/sign-up/email', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
