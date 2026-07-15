@@ -57,11 +57,13 @@ Pilates, and HIIT.
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
   Music workspace via a shared provider-browse hook. **Production application code matches `main`
-  (deployment source `115b003`, 2026-07-15; later release-record commits are docs-only):** private-beta
-  hardening rounds 15–16 (#304–#309), their session record (#310), and the full-track SoundCloud
-  mock-fixture correction (#311) are deployed in Worker
-  `b4449c8d-5978-4298-9c6e-e222791a208f`, serving SPA asset `assets/index-Db7zXm3P.js`; there was no
-  schema/migration change. The preceding invite-only private-beta deployment was Worker
+  (deployment source `31fbba1`, 2026-07-15; later release-record commits are docs-only):** mixed
+  polish/harden round 17 (#314–#316) is deployed in Worker
+  `de9f5cc5-f697-4f40-89e3-a9ba5e48b37b`, serving SPA asset `assets/index-CTl7CDqh.js`; there was no
+  schema/migration change. The release caps Apple Music library-song paging, keeps class recency
+  truthful after track mutations, and makes provider connection-load failures honest and retryable.
+  The preceding private-beta hardening deployment was Worker
+  `b4449c8d-5978-4298-9c6e-e222791a208f` from main `115b003`. The invite-only beta deployment was Worker
   `2b390842-8f71-4086-a59a-6ea3050d4882` from main `3e21611`. The preceding deployed all-harden
   release was Worker `4e009966-6a4c-47ef-8994-c88aa6613680` at `ad53541`: public-cover auth-contract
   repair and class-copy OpenAPI correction (#297), strict Apple playlist pagination failure handling
