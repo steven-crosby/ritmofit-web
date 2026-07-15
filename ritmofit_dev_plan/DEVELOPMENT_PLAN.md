@@ -51,11 +51,12 @@ Pilates, and HIIT.
   browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook. **Production is not currently aligned with
-  `main` (verified 2026-07-13):** the served SPA bundle matches round-13 `origin/main` at `34ef84e`,
-  while the active Worker API has the same script etag as the round-12 deployment. The round-13 API
-  fixes are therefore not proven live; restoring a single-source release requires a full build + Worker
-  deploy with explicit owner approval. The last recorded coherent code deployment was
+  Music workspace via a shared provider-browse hook. **Production is aligned with merged `main` at
+  `ad53541` (verified 2026-07-14):** Worker `4e009966-6a4c-47ef-8994-c88aa6613680` serves the matching
+  SPA asset `index-BxRw-uUk.js`, and remote D1 has no pending migrations. This all-harden release shipped
+  the public-cover auth-contract repair and class-copy OpenAPI correction (#297), strict Apple playlist
+  pagination failure handling (#298), mutually exclusive saved-playlist add actions (#299), and the
+  clipped-placement duration-shrink guard (#300). The prior coherent code deployment was
   **2026-07-12 (Worker `a83a71d2`)** — twelfth parallel lane-agent round (mixed polish/harden,
   THREE-lane round, D21 loop): three disjoint-lane slices — bound Spotify catalog `getPlaylist` paging
   to 500 tracks (#288, BE); bound `offsetMsSchema` to `MAX_DURATION_MS` (#289, BE); and focus
