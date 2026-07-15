@@ -10,7 +10,7 @@ const CATALOG: readonly TrackSearchResult[] = [
   {
     provider: 'soundcloud',
     providerTrackId: 'sc-baiana',
-    providerUri: 'https://soundcloud.com/bakermat/baiana',
+    providerUri: 'https://soundcloud.com/bakermatmusic/show-intro-summer-18',
     title: 'Baianá',
     artist: 'Bakermat',
     albumArtUrl: null,

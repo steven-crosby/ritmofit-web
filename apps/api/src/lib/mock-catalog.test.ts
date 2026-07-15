@@ -17,6 +17,11 @@ describe('searchMockCatalog', () => {
     expect(hits.every((t) => t.provider === 'soundcloud')).toBe(true);
   });
 
+  it('uses the full public Baianá upload instead of the preview-only release', () => {
+    const baiana = findMockCandidate('soundcloud', 'sc-baiana');
+    expect(baiana?.providerUri).toBe('https://soundcloud.com/bakermatmusic/show-intro-summer-18');
+  });
+
   it('never carries a BPM (manual in M1)', () => {
     expect(searchMockCatalog('').every((t) => !('displayBpm' in t))).toBe(true);
   });
