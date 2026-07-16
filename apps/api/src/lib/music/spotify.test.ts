@@ -299,6 +299,26 @@ describe('fetchSpotifySavedTracks', () => {
     ]);
   });
 
+  it('stops at the maxTracks cap while appending a saved-track page', async () => {
+    const fullPage = Array.from({ length: 50 }, (_, index) => ({
+      track: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
+    }));
+    const { fetchImpl, calls } = fakeFetch({
+      [`${SAVED_URL}?limit=50&offset=0`]: { items: fullPage, total: 500 },
+      [`${SAVED_URL}?limit=50&offset=50`]: { items: [{ track: SP_TRACK }], total: 500 },
+    });
+
+    const results = await fetchSpotifySavedTracks({
+      accessToken: 't',
+      fetchImpl,
+      apiBase: API_BASE,
+      maxTracks: 10,
+    });
+
+    expect(results).toHaveLength(10);
+    expect(calls.filter((call) => call.url.startsWith(SAVED_URL))).toHaveLength(1);
+  });
+
   it('throws SpotifyUnauthorizedError on a 401 so the caller can refresh + retry', async () => {
     const fetchImpl: FetchLike = async () => ({
       ok: false,
