@@ -234,6 +234,10 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
   const [connectionsError, setConnectionsError] = useState<string | null>(null);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
+  // Connection truth can change inside the recovery dialog. Re-enter the unknown
+  // state for every refresh so preflight fails closed, and accept only the newest
+  // completion so a late request cannot restore stale playback readiness.
+  const connectionsRequestId = useRef(0);
   const [playback, setPlayback] = useState<CoordinatorStatus>({ kind: 'idle' });
   // Null = prompter-only (no music started, or the instructor bailed out of a
   // playback failure). The coordinator is imperative on purpose: the rAF clock
@@ -245,15 +249,25 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   const primaryButtonRef = useRef<HTMLButtonElement>(null);
 
   const refreshConnections = useCallback(async () => {
+    const requestId = ++connectionsRequestId.current;
+    setConnections(null);
     setConnectionsError(null);
     try {
-      setConnections(await listConnections());
+      const rows = await listConnections();
+      if (requestId !== connectionsRequestId.current) return;
+      setConnections(rows);
     } catch (e) {
+      if (requestId !== connectionsRequestId.current) return;
       setConnectionsError((e as Error).message);
     }
   }, []);
   useEffect(() => {
     void refreshConnections();
+    return () => {
+      // Prevent both success and failure writes after unmount (and invalidate the
+      // first request during React Strict Mode's setup/cleanup replay).
+      connectionsRequestId.current += 1;
+    };
   }, [refreshConnections]);
   // Release the provider SDK/widget when the instructor exits Live Mode.
   useEffect(

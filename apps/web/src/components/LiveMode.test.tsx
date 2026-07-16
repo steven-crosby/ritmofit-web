@@ -1,8 +1,14 @@
 // @vitest-environment jsdom
+import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { MusicConnectionView, RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
-import { connectAppleMusic, getAppleMusicConfig, listConnections } from '../lib/api.js';
+import {
+  connectAppleMusic,
+  disconnectProvider,
+  getAppleMusicConfig,
+  listConnections,
+} from '../lib/api.js';
 import { authorizeAppleMusic } from '../lib/musickit.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
 import type { PlaybackAdapter } from '../lib/playback/types.js';
@@ -100,6 +106,16 @@ const appleMusicConnection: MusicConnectionView = {
   provider: 'apple_music',
 };
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
 /** A playback adapter whose prepare resolves immediately (widget stubbed out). */
 function workingAdapter(): PlaybackAdapter {
   return {
@@ -121,6 +137,7 @@ beforeEach(() => {
     .mockResolvedValue({ developerToken: 'developer-token', storefront: null });
   vi.mocked(authorizeAppleMusic).mockReset().mockResolvedValue('music-user-token');
   vi.mocked(connectAppleMusic).mockReset().mockResolvedValue(undefined);
+  vi.mocked(disconnectProvider).mockReset().mockResolvedValue(undefined);
   vi.mocked(soundcloudAdapterFactory)
     .mockReset()
     .mockImplementation(() => workingAdapter());
@@ -261,6 +278,100 @@ describe('LiveMode preflight', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
     expect(screen.queryByRole('dialog', { name: 'Music connections' })).toBeNull();
     expect(document.activeElement).toBe(manage);
+  });
+
+  it('fails closed while refreshing after an in-dialog disconnect', async () => {
+    const appleOnly = {
+      ...activeTrack,
+      providerRefs: [
+        {
+          provider: 'apple_music',
+          providerTrackId: 'apple-id',
+          providerUri: 'https://music.apple.com/us/song/active-track/123',
+        },
+      ],
+    } satisfies RunPayloadTrackEntry;
+    const parentDisconnectRefresh = deferred<MusicConnectionView[]>();
+    vi.mocked(listConnections)
+      .mockResolvedValueOnce([]) // Live entry
+      .mockResolvedValueOnce([]) // first dialog open
+      .mockResolvedValueOnce([appleMusicConnection]) // dialog refresh after connect
+      .mockResolvedValueOnce([appleMusicConnection]) // Live refresh after connect
+      .mockResolvedValueOnce([appleMusicConnection]) // second dialog open
+      .mockResolvedValueOnce([]) // dialog refresh after disconnect
+      .mockReturnValueOnce(parentDisconnectRefresh.promise); // Live refresh after disconnect
+    vi.mocked(disconnectProvider).mockResolvedValue(undefined);
+
+    render(<LiveMode payload={{ ...payload, tracks: [appleOnly] }} onExit={() => {}} />);
+    expect(await screen.findByText('No connected provider can play this')).toBeTruthy();
+
+    const manage = screen.getByRole('button', { name: 'Manage connections' });
+    fireEvent.click(manage);
+    let dialog = await screen.findByRole('dialog', { name: 'Music connections' });
+    let appleRow = within(dialog).getByText('Apple Music').closest('li');
+    fireEvent.click(within(appleRow!).getByRole('button', { name: 'Connect' }));
+    expect(await screen.findByText('Plays on Apple Music')).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
+
+    manage.focus();
+    fireEvent.click(manage);
+    dialog = await screen.findByRole('dialog', { name: 'Music connections' });
+    appleRow = within(dialog).getByText('Apple Music').closest('li');
+    fireEvent.click(within(appleRow!).getByRole('button', { name: 'Disconnect' }));
+    fireEvent.click(within(appleRow!).getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(disconnectProvider).toHaveBeenCalledWith('apple_music'));
+    await waitFor(() => expect(listConnections).toHaveBeenCalledTimes(7));
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
+    expect(await screen.findByText('Checking provider connections…')).toBeTruthy();
+    expect(
+      (screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
+    expect(document.activeElement).toBe(manage);
+
+    parentDisconnectRefresh.resolve([]);
+    expect(await screen.findByText('No connected provider can play this')).toBeTruthy();
+  });
+
+  it('ignores a late success from an invalidated connection request', async () => {
+    const stale = deferred<MusicConnectionView[]>();
+    const current = deferred<MusicConnectionView[]>();
+    vi.mocked(listConnections)
+      .mockReturnValueOnce(stale.promise)
+      .mockReturnValueOnce(current.promise);
+
+    render(
+      <StrictMode>
+        <LiveMode payload={payload} onExit={() => {}} />
+      </StrictMode>,
+    );
+    await waitFor(() => expect(listConnections).toHaveBeenCalledTimes(2));
+    current.resolve([]);
+    expect(await screen.findByRole('list', { name: 'Track playback check' })).toBeTruthy();
+
+    stale.resolve([appleMusicConnection]);
+    await waitFor(() => expect(screen.queryByText('Plays on Apple Music')).toBeNull());
+  });
+
+  it('ignores a late failure from an invalidated connection request', async () => {
+    const stale = deferred<MusicConnectionView[]>();
+    const current = deferred<MusicConnectionView[]>();
+    vi.mocked(listConnections)
+      .mockReturnValueOnce(stale.promise)
+      .mockReturnValueOnce(current.promise);
+
+    render(
+      <StrictMode>
+        <LiveMode payload={payload} onExit={() => {}} />
+      </StrictMode>,
+    );
+    await waitFor(() => expect(listConnections).toHaveBeenCalledTimes(2));
+    current.resolve([]);
+    expect(await screen.findByRole('list', { name: 'Track playback check' })).toBeTruthy();
+
+    stale.reject(new Error('stale failure'));
+    await waitFor(() => expect(screen.queryByText(/stale failure/)).toBeNull());
   });
 
   it('does not offer connection recovery for builder-only preflight failures', async () => {
