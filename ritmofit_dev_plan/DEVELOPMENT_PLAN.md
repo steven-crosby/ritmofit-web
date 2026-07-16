@@ -56,13 +56,16 @@ Pilates, and HIIT.
   browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook. **Production application code matches `main`
-  (deployment source `79be29c`, 2026-07-15; later release-record commits are docs-only):** mixed
-  feature/harden round 18 (#318–#320) is deployed in Worker
+  Music workspace via a shared provider-browse hook. **Production remains on deployment source
+  `79be29c` (2026-07-15), behind current `main`:** mixed feature/harden round 18 (#318–#320) is
+  deployed in Worker
   `85b139e3-981d-44a5-b3ff-29389d1e8ce4`, serving SPA asset `assets/index-D6vkg-2R.js`; there was no
   schema/migration change. The release rejects unreachable clip-end choreography, caps Spotify
   saved-track paging at the requested bound, and lets instructors manage music connections from Live
-  preflight with honest redirect behavior. The preceding mixed round 17 deployment was Worker
+  preflight with honest redirect behavior. **All-harden round 19 (#322–#324) is merged on `main` at
+  `68dfc27` but not deployed**; it fails closed on malformed later Apple saved-playlist pages, refreshes
+  class recency after non-empty playlist URL imports, and fails closed during racing Live connection
+  refreshes. The preceding mixed round 17 deployment was Worker
   `de9f5cc5-f697-4f40-89e3-a9ba5e48b37b` from main `31fbba1`. The preceding private-beta hardening deployment was Worker
   `b4449c8d-5978-4298-9c6e-e222791a208f` from main `115b003`. The invite-only beta deployment was Worker
   `2b390842-8f71-4086-a59a-6ea3050d4882` from main `3e21611`. The preceding deployed all-harden
