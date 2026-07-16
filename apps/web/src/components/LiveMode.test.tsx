@@ -2,7 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import type { MusicConnectionView, RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
-import { listConnections } from '../lib/api.js';
+import { connectAppleMusic, getAppleMusicConfig, listConnections } from '../lib/api.js';
+import { authorizeAppleMusic } from '../lib/musickit.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
 import type { PlaybackAdapter } from '../lib/playback/types.js';
 import {
@@ -15,6 +16,13 @@ import {
 
 vi.mock('../lib/api.js', () => ({
   listConnections: vi.fn(),
+  connectProvider: vi.fn(),
+  disconnectProvider: vi.fn(),
+  getAppleMusicConfig: vi.fn(),
+  connectAppleMusic: vi.fn(),
+}));
+vi.mock('../lib/musickit.js', () => ({
+  authorizeAppleMusic: vi.fn(),
 }));
 vi.mock('../lib/playback/soundcloud-adapter.js', () => ({
   soundcloudAdapterFactory: vi.fn(),
@@ -86,6 +94,12 @@ const soundcloudConnection: MusicConnectionView = {
   updatedAt: 1,
 };
 
+const appleMusicConnection: MusicConnectionView = {
+  ...soundcloudConnection,
+  id: '00000000-0000-4000-8000-00000000000d',
+  provider: 'apple_music',
+};
+
 /** A playback adapter whose prepare resolves immediately (widget stubbed out). */
 function workingAdapter(): PlaybackAdapter {
   return {
@@ -102,6 +116,11 @@ function workingAdapter(): PlaybackAdapter {
 
 beforeEach(() => {
   vi.mocked(listConnections).mockReset().mockResolvedValue([]);
+  vi.mocked(getAppleMusicConfig)
+    .mockReset()
+    .mockResolvedValue({ developerToken: 'developer-token', storefront: null });
+  vi.mocked(authorizeAppleMusic).mockReset().mockResolvedValue('music-user-token');
+  vi.mocked(connectAppleMusic).mockReset().mockResolvedValue(undefined);
   vi.mocked(soundcloudAdapterFactory)
     .mockReset()
     .mockImplementation(() => workingAdapter());
@@ -200,6 +219,56 @@ describe('LiveMode preflight', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     const list = await screen.findByRole('list', { name: 'Track playback check' });
     expect(within(list).getByText('Plays on SoundCloud')).toBeTruthy();
+  });
+
+  it('opens connection recovery in place and refreshes preflight after Apple Music connects', async () => {
+    const appleOnly = {
+      ...activeTrack,
+      providerRefs: [
+        {
+          provider: 'apple_music',
+          providerTrackId: 'apple-id',
+          providerUri: 'https://music.apple.com/us/song/active-track/123',
+        },
+      ],
+    } satisfies RunPayloadTrackEntry;
+    vi.mocked(listConnections)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([appleMusicConnection])
+      .mockResolvedValueOnce([appleMusicConnection]);
+
+    render(<LiveMode payload={{ ...payload, tracks: [appleOnly] }} onExit={() => {}} />);
+    expect(await screen.findByText('No connected provider can play this')).toBeTruthy();
+    expect(
+      screen.getByText(/Spotify and SoundCloud authorization open a provider page/),
+    ).toBeTruthy();
+
+    const manage = screen.getByRole('button', { name: 'Manage connections' });
+    manage.focus();
+    fireEvent.click(manage);
+    const dialog = await screen.findByRole('dialog', { name: 'Music connections' });
+    const appleRow = within(dialog).getByText('Apple Music').closest('li');
+    expect(appleRow).not.toBeNull();
+    fireEvent.click(within(appleRow!).getByRole('button', { name: 'Connect' }));
+
+    expect(await screen.findByText('Plays on Apple Music')).toBeTruthy();
+    expect(
+      (screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement).disabled,
+    ).toBe(false);
+    expect(listConnections).toHaveBeenCalledTimes(4);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
+    expect(screen.queryByRole('dialog', { name: 'Music connections' })).toBeNull();
+    expect(document.activeElement).toBe(manage);
+  });
+
+  it('does not offer connection recovery for builder-only preflight failures', async () => {
+    const noProvider = { ...activeTrack, providerRefs: [] } satisfies RunPayloadTrackEntry;
+    render(<LiveMode payload={{ ...payload, tracks: [noProvider] }} onExit={() => {}} />);
+
+    expect(await screen.findByText('No provider link')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Manage connections' })).toBeNull();
   });
 });
 

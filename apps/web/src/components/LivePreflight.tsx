@@ -11,6 +11,7 @@
  * the prompter without music stays available: it is the existing capability,
  * not a provider-handoff fallback.
  */
+import { useState } from 'react';
 import { providerLabel } from '../lib/providers.js';
 import type {
   PreflightResult,
@@ -68,6 +69,7 @@ export function LivePreflight({
   preflight,
   connectionsError,
   onRetryConnections,
+  onManageConnections,
   onStart,
   onRunWithoutMusic,
 }: {
@@ -76,12 +78,24 @@ export function LivePreflight({
   /** Connections fetch failure — playback can't be verified, prompter still can run. */
   connectionsError: string | null;
   onRetryConnections: () => void;
+  /** Open provider connections without leaving the Live preflight surface. */
+  onManageConnections: () => void;
   /** Start the class with in-app provider playback (requires a passing preflight). */
   onStart: () => void;
   /** Run the prompter/timer only — the pre-playback Live Mode behavior. */
   onRunWithoutMusic: () => void;
 }) {
   const unplayableCount = preflight?.unplayable.length ?? 0;
+  // Keep the trigger mounted after an in-dialog fix makes preflight pass so the
+  // dialog can return keyboard focus to the control that opened it.
+  const [connectionsVisited, setConnectionsVisited] = useState(false);
+  const hasConnectionFix = preflight?.unplayable.some(
+    (result) =>
+      result.selection.status === 'unplayable' &&
+      (result.selection.reason === 'no_connected_provider' ||
+        result.selection.reason === 'playback_reauth_required'),
+  );
+  const canManageConnections = connectionsVisited || hasConnectionFix;
   return (
     <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center gap-5 p-6">
       <div>
@@ -148,6 +162,17 @@ export function LivePreflight({
         >
           Run without music
         </button>
+        {canManageConnections && (
+          <button
+            className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive"
+            onClick={() => {
+              setConnectionsVisited(true);
+              onManageConnections();
+            }}
+          >
+            Manage connections
+          </button>
+        )}
         {preflight != null && !preflight.ok && (
           <p className="font-ui text-sm text-state-caution">
             {unplayableCount === 1
@@ -156,6 +181,12 @@ export function LivePreflight({
           </p>
         )}
       </div>
+      {canManageConnections && (
+        <p className="font-ui text-xs text-text-tertiary">
+          Apple Music connects here without leaving preflight. Spotify and SoundCloud authorization
+          open a provider page; when you return, reopen this class in Live.
+        </p>
+      )}
     </div>
   );
 }
