@@ -27,7 +27,6 @@ import {
   remapPlacedMoveForCaller,
 } from '../lib/copy-class-track.js';
 import {
-  classes,
   userMoves,
   classTracks,
   tracks,
@@ -41,18 +40,10 @@ import {
   clipStartBeyondTrack,
   clipWindowInverted,
 } from '../lib/duration.js';
+import { touchClassUpdatedAt } from '../lib/class-recency.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
 classTrackRoutes.use('*', requireSession);
-
-/** Keep the class-library recency key aligned with mutations to its track list. */
-async function touchClassUpdatedAt(db: Db, classId: string): Promise<void> {
-  const now = Date.now();
-  await db
-    .update(classes)
-    .set({ updatedAt: sql`max(${classes.updatedAt} + 1, ${now})` })
-    .where(eq(classes.id, classId));
-}
 
 /**
  * POST /classes/:id/tracks — add a track to a class (edit access). Body either
