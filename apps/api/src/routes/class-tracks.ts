@@ -309,11 +309,11 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
           `Clip start must be at or before the earliest cue or move at ${anchors.minMs}ms.`,
         );
       }
-      if (endMs != null && endMs < anchors.maxMs) {
+      if (endMs != null && endMs <= anchors.maxMs) {
         throw new HttpError(
           422,
           'VALIDATION_ERROR',
-          `Clip end must reach the latest cue or move at ${anchors.maxMs}ms.`,
+          `Clip end must be after the latest cue or move at ${anchors.maxMs}ms.`,
         );
       }
     }

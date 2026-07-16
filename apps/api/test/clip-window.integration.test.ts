@@ -197,19 +197,57 @@ describe('clip-window guard (integration)', () => {
       /before the clip start/,
     );
 
-    // Past the clip end.
+    // At or past the exclusive clip end.
+    const cueAtEnd = await postCue(120_000);
+    expect(cueAtEnd.status).toBe(422);
+    expect(((await cueAtEnd.json()) as { error: { message: string } }).error.message).toMatch(
+      /before the clip end/,
+    );
+
+    const moveAtEnd = await postMove(120_000);
+    expect(moveAtEnd.status).toBe(422);
+
     const cueAfter = await postCue(150_000);
     expect(cueAfter.status).toBe(422);
     expect(((await cueAfter.json()) as { error: { message: string } }).error.message).toMatch(
-      /past the clip end/,
+      /before the clip end/,
     );
 
     const moveAfter = await postMove(150_000);
     expect(moveAfter.status).toBe(422);
 
-    // Inside the window is accepted.
+    // The inclusive start, an interior anchor, and end - 1ms are accepted.
+    expect((await postCue(30_000)).status).toBe(201);
     expect((await postCue(60_000)).status).toBe(201);
     expect((await postMove(90_000)).status).toBe(201);
+    expect((await postMove(119_999)).status).toBe(201);
+  });
+
+  it('rejects shrinking a clip end onto an existing choreography anchor', async () => {
+    const user = await signUpUser();
+    const api = authed(user.cookie);
+    const { classTrackId } = await createClassWithTrack(user.cookie);
+
+    const cue = await api(`/api/v1/class-tracks/${classTrackId}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({ anchorMs: 120_000, text: 'Final push' }),
+    });
+    expect(cue.status).toBe(201);
+
+    const equalEnd = await api(`/api/v1/class-tracks/${classTrackId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipEndMs: 120_000 }),
+    });
+    expect(equalEnd.status).toBe(422);
+    expect(((await equalEnd.json()) as { error: { message: string } }).error.message).toMatch(
+      /after the latest cue or move/,
+    );
+
+    const afterAnchor = await api(`/api/v1/class-tracks/${classTrackId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipEndMs: 120_001 }),
+    });
+    expect(afterAnchor.status).toBe(200);
   });
 
   it('run-payload re-bases anchors to the clip start but keeps beat/bar track-relative', async () => {
