@@ -38,6 +38,7 @@ import { RuntimePlaybackCoordinator, type CoordinatorStatus } from '../lib/playb
 import { PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { useWakeLock, type WakeLockStatus } from '../lib/use-wake-lock.js';
+import { ConnectionsDialog } from './ConnectionsDialog.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
 import { LivePreflight } from './LivePreflight.js';
@@ -232,6 +233,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   );
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
   const [connectionsError, setConnectionsError] = useState<string | null>(null);
+  const [connectionsOpen, setConnectionsOpen] = useState(false);
   const [playback, setPlayback] = useState<CoordinatorStatus>({ kind: 'idle' });
   // Null = prompter-only (no music started, or the instructor bailed out of a
   // playback failure). The coordinator is imperative on purpose: the rAF clock
@@ -522,10 +524,17 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             preflight={preflight}
             connectionsError={connectionsError}
             onRetryConnections={() => void refreshConnections()}
+            onManageConnections={() => setConnectionsOpen(true)}
             onStart={startClass}
             onRunWithoutMusic={() => setPhase('live')}
           />
         </div>
+        {connectionsOpen && (
+          <ConnectionsDialog
+            onClose={() => setConnectionsOpen(false)}
+            onConnectionsChanged={() => void refreshConnections()}
+          />
+        )}
       </div>
     );
   }
