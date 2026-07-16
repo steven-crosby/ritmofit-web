@@ -301,6 +301,7 @@ export async function fetchSpotifySavedTracks(cfg: {
     for (const item of pageItems) {
       const candidate = toSpotifyCandidate(item.track);
       if (candidate) out.push(candidate);
+      if (out.length >= cap) break;
     }
     total = parsed.data.total;
     if (pageItems.length === 0) break;

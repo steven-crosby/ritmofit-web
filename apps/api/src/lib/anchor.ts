@@ -1,7 +1,7 @@
 /**
  * Anchor validation for choreography (cues + placed moves). A placement's
  * `anchorMs` (track-relative) must fall inside the class-track's effective **clip
- * window** `[clipStartMs, endMs]`, or the live prompter surfaces a cue/move that
+ * window** `[clipStartMs, endMs)`, or the live prompter surfaces a cue/move that
  * never reaches its moment: the run-payload re-bases anchors to the clip start
  * (`run-payload.ts`), so an anchor before the start silently collapses to 0 and an
  * anchor past the end lands beyond the (clipped) track's duration.
@@ -24,10 +24,10 @@ import { resolveClipWindow } from './duration.js';
 
 /**
  * Pure bounds check: is `anchorMs` outside the track-relative clip window
- * `[clipStartMs, endMs]`? Returns a user-facing message when it is, else null.
+ * `[clipStartMs, endMs)`? Returns a user-facing message when it is, else null.
  * `endMs === null` means the clip runs to an unknown end, so only the lower bound
- * applies. Both boundaries are inclusive (an anchor exactly at the start or end is
- * allowed), matching the clip-change guard's `minMs < startMs` / `endMs < maxMs`.
+ * applies. The start is inclusive; the end is exclusive because Live advances to
+ * the next track (or completes the class) at that exact instant.
  */
 export function anchorOutsideClipWindow(
   anchorMs: number,
@@ -37,8 +37,8 @@ export function anchorOutsideClipWindow(
   if (anchorMs < clipStartMs) {
     return `anchorMs (${anchorMs}) is before the clip start (${clipStartMs}ms).`;
   }
-  if (endMs != null && anchorMs > endMs) {
-    return `anchorMs (${anchorMs}) is past the clip end (${endMs}ms).`;
+  if (endMs != null && anchorMs >= endMs) {
+    return `anchorMs (${anchorMs}) must be before the clip end (${endMs}ms).`;
   }
   return null;
 }
