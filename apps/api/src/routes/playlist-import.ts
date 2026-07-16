@@ -4,7 +4,7 @@ import { parsePlaylistUrl } from '@ritmofit/music';
 import { requireSession } from '../middleware/auth.js';
 import { requireAccess } from '../lib/authz.js';
 import { rateLimit } from '../lib/rate-limit.js';
-import { createDb } from '../lib/db.js';
+import { createDb, type Db } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { getMusicProvider } from '../lib/music/registry.js';
 import { partitionSettledImports } from '../lib/music/import-playlist.js';
@@ -14,6 +14,7 @@ import { classTracks } from '../db/schema.js';
 import { resequence } from '../lib/sequencing.js';
 import { eq } from 'drizzle-orm';
 import type { AppEnv } from '../lib/types.js';
+import { touchClassUpdatedAt } from '../lib/class-recency.js';
 
 export const playlistImportRoutes = new Hono<AppEnv>();
 playlistImportRoutes.use('*', requireSession);
@@ -26,6 +27,45 @@ const importLimiter = rateLimit({
   max: 5,
   key: (c) => c.get('userId'),
 });
+
+type ResolvedTrack = Awaited<ReturnType<typeof importTrackFromCandidate>>;
+type ResolvedTrackPlacement = { track: Pick<ResolvedTrack['track'], 'id'> };
+
+/** Append resolved playlist tracks and advance recency only when class material changed. */
+export async function appendImportedClassTracks(
+  db: Db,
+  classId: string,
+  resolved: ResolvedTrackPlacement[],
+): Promise<number> {
+  if (resolved.length === 0) return 0;
+
+  const existing = await db
+    .select({ id: classTracks.id })
+    .from(classTracks)
+    .where(eq(classTracks.classId, classId))
+    .all();
+
+  const now = Date.now();
+  let position = existing.length;
+  const trackInserts = resolved.map(({ track }) => ({
+    id: crypto.randomUUID(),
+    classId,
+    trackId: track.id,
+    position: position++,
+    intensity: 'none' as const,
+    displayBpmOverride: null,
+    durationMsOverride: null,
+    startOffsetMs: null,
+    notes: null,
+    createdAt: now,
+    updatedAt: now,
+  }));
+
+  await db.insert(classTracks).values(trackInserts);
+  await resequence(db, classId);
+  await touchClassUpdatedAt(db, classId);
+  return trackInserts.length;
+}
 
 playlistImportRoutes.post('/classes/:id/import-playlist', importLimiter, async (c) => {
   const db = createDb(c.env);
@@ -59,12 +99,6 @@ playlistImportRoutes.post('/classes/:id/import-playlist', importLimiter, async (
   if (!candidates.length) {
     throw new HttpError(400, 'BAD_REQUEST', 'Playlist not found or is empty.');
   }
-
-  const existing = await db
-    .select({ id: classTracks.id })
-    .from(classTracks)
-    .where(eq(classTracks.classId, classId))
-    .all();
 
   // Collapse same-song candidates by match key. importTrackFromCandidate already
   // merges same-song imports in the library, so duplicates would only add work (or
@@ -104,26 +138,7 @@ playlistImportRoutes.post('/classes/:id/import-playlist', importLimiter, async (
     resolved.push(...fulfilled);
   }
 
-  const now = Date.now();
-  let position = existing.length;
-  const trackInserts = resolved.map(({ track }) => ({
-    id: crypto.randomUUID(),
-    classId,
-    trackId: track.id,
-    position: position++,
-    intensity: 'none' as const,
-    displayBpmOverride: null,
-    durationMsOverride: null,
-    startOffsetMs: null,
-    notes: null,
-    createdAt: now,
-    updatedAt: now,
-  }));
+  const imported = await appendImportedClassTracks(db, classId, resolved);
 
-  if (trackInserts.length > 0) {
-    await db.insert(classTracks).values(trackInserts);
-    await resequence(db, classId);
-  }
-
-  return c.json({ imported: trackInserts.length }, 201);
+  return c.json({ imported }, 201);
 });
