@@ -404,6 +404,26 @@ describe('fetchAppleMusicLibraryPlaylistTracks', () => {
     expect(calls).toHaveLength(1);
   });
 
+  it('rejects a malformed later page instead of returning a partial playlist', async () => {
+    const { fetchImpl } = fakeFetch({
+      [`${PLAYLISTS_URL}/p.abc123/tracks?limit=100`]: {
+        data: [AM_LIBRARY_SONG],
+        next: '/v1/me/library/playlists/p.abc123/tracks?offset=100',
+      },
+      [`${PLAYLISTS_URL}/p.abc123/tracks?offset=100`]: { data: 'invalid' },
+    });
+
+    await expect(
+      fetchAppleMusicLibraryPlaylistTracks({
+        developerToken: 'devtok',
+        musicUserToken: 'mut-1',
+        playlistId: 'p.abc123',
+        fetchImpl,
+        apiBase: API_BASE,
+      }),
+    ).rejects.toThrow('Apple Music returned an invalid library playlist track page.');
+  });
+
   it('throws AppleMusicUnauthorizedError on 401/403 (reconnect signal)', async () => {
     for (const status of [401, 403]) {
       const fetchImpl: FetchLike = async () => ({
