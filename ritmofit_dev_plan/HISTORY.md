@@ -10,19 +10,24 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
-> **Session 2026-07-16 (all-harden round 19) — merged, not deployed.** Main reached `68dfc27`
-> (merge of PR #324) through three sequential disjoint-lane PRs with green combined CI. Code and tests
-> only — **no schema / migration**. **PR #322** makes Apple saved-playlist pagination fail closed when
+> **Session 2026-07-16 (all-harden round 19) — deployed (Worker
+> `9d144446-bd89-4792-9fda-64220eb122b9`).** Deploying checkout HEAD `dc998dd` (application-code
+> source `68dfc27`, merge of PR #324) contains three sequential disjoint-lane PRs with green combined
+> CI. Code and tests only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback
+> anchor: prior live Worker `85b139e3-981d-44a5-b3ff-29389d1e8ce4`. **PR #322** makes Apple
+> saved-playlist pagination fail closed when
 > any later track page is malformed instead of returning a partial playlist that can appear to import
 > successfully. **PR #323** centralizes the monotonic class-recency touch and applies it after a
 > non-empty playlist URL import, with a real Miniflare D1 ordering regression and an empty-import no-op
 > lock. **PR #324** makes Live provider-connection refreshes fail closed, last-request-wins, and immune
-> to late post-unmount success/failure writes. Full local gates passed across the lanes, including 552
-> web tests, 415 API unit tests, 30 music-package tests, 136 Worker/D1 integration tests, production
-> build, OpenAPI no-drift, contract parity, and dependency-audit policy; desktop and 390×844 keyboard
-> browser QA passed for the Live change. **Production was not deployed** and remains on Round 18 Worker
-> `85b139e3-981d-44a5-b3ff-29389d1e8ce4`, deployment source `79be29c`, serving SPA asset
-> `assets/index-D6vkg-2R.js`.
+> to late post-unmount success/failure writes. The full final-main gate passed: formatting, typecheck,
+> lint, design-system verification, 552 web tests, 415 API unit tests, 30 music-package tests, 136
+> Worker/D1 integration tests, production build, OpenAPI no-drift, contract parity, and
+> dependency-audit policy; desktop and 390×844 keyboard browser QA passed for the Live change.
+> Post-deploy smoke passed on `https://ritmofit.studio`: SPA and health `200`; protected class,
+> community, share, playlist-import, cover/tag, and provider routes `401`; missing public cover `404`;
+> security headers present. Served SPA asset `assets/index-BoLBQItP.js` matches the production build,
+> and Cloudflare reports the new Worker version at 100%.
 
 > **Session 2026-07-15 (mixed feature/harden round 18) — deployed (Worker
 > `85b139e3-981d-44a5-b3ff-29389d1e8ce4`).** Main HEAD `79be29c` (merge of PR #320). Code and tests
