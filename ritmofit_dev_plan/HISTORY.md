@@ -10,6 +10,23 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-15 (mixed feature/harden round 18) — deployed (Worker
+> `85b139e3-981d-44a5-b3ff-29389d1e8ce4`).** Main HEAD `79be29c` (merge of PR #320). Code and tests
+> only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior live
+> Worker `de9f5cc5-f697-4f40-89e3-a9ba5e48b37b`. Three disjoint-lane PRs shipped through the standard
+> sequential update-branch, CI, and merge train: **PR #318** makes choreography honor the playback
+> clip's half-open interval by rejecting cues/moves at the unreachable exclusive end and preventing a
+> later clip shrink onto the latest anchor; **PR #319** caps Spotify saved-track paging inside a page
+> at the requested `maxTracks`; **PR #320** opens Music Connections from Live preflight, refreshes
+> readiness after in-place connection changes, and states honestly that Spotify/SoundCloud OAuth leaves
+> Live. The full merged-main gate passed: formatting, typecheck, lint, design-system verification, 549
+> web tests, 414 API unit tests, 30 music-package tests, 135 Worker/D1 integration tests, production
+> build, OpenAPI no-drift, contract parity, and dependency-audit policy. Post-deploy smoke passed on
+> `https://ritmofit.studio`: SPA and health `200`; protected class, community, share, playlist-import,
+> cover/tag, and provider routes `401`; missing public cover `404`; security headers present. Served
+> SPA asset `assets/index-D6vkg-2R.js` matches the production build, and Cloudflare reports the new
+> Worker version at 100%.
+
 > **Session 2026-07-15 (mixed polish/harden round 17) — deployed (Worker
 > `de9f5cc5-f697-4f40-89e3-a9ba5e48b37b`).** Main HEAD `31fbba1` (merge of PR #316). Code and tests
 > only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior live

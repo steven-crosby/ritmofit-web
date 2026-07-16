@@ -51,10 +51,11 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 
 <!-- newest at top; one per line -->
 
-- [ ] (2026-07-15) **Spotify saved-track `maxTracks` page overrun** —
-      `fetchSpotifySavedTracks` checks the cap between pages but can append the remainder of a full
-      page beyond the requested cap. Mirror the in-page break now used by the Apple library-song,
-      Spotify playlist-track, and SoundCloud readers; keep it a separate focused regression. — #bug
+- [ ] (2026-07-15) **Playlist URL import does not refresh class recency** —
+      successful `POST /classes/:id/import-playlist` writes and resequences `class_tracks` but does not
+      bump the parent class `updatedAt`, so the changed class can remain behind the recent-list keyset
+      boundary. Keep this a focused class/provider-boundary repair with a real DB success-path test seam.
+      — #bug
 - [ ] (2026-07-11) **Round 9+10 owner-pending live checks** (deployed: R9 Worker `209a2a13`, R10
       Worker `b0d0fe54`; both logged in `HISTORY.md`). Manual browser checks mocks can't cover, on
       the live site: (a) import a **real public SoundCloud playlist URL** and a **real Apple Music
@@ -68,7 +69,3 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 - [ ] (2026-07-12) **Apple `getPlaylist` may emit a duplicate `limit` query param**
       (`packages/music/src/apple-music.ts` ~L154) if Apple's `next` cursor already carries one —
       provider-tolerant, cosmetic (Round 11 Lane-3 minor). — #bug
-- [ ] (2026-07-12) **In-Live "Manage connections" overlay** — open `ConnectionsDialog` from Live
-      preflight so fixing a failing track's provider doesn't require exiting Live; composes on
-      #285's now-honest playback-reconnect state. Note: Spotify/SoundCloud connect is a full-page
-      redirect that ejects Live, so solve that UX wrinkle deliberately (Round 11 Lane-4 runner-up). — #idea
