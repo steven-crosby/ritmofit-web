@@ -51,11 +51,10 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 
 <!-- newest at top; one per line -->
 
-- [ ] (2026-07-15) **Playlist URL import does not refresh class recency** —
-      successful `POST /classes/:id/import-playlist` writes and resequences `class_tracks` but does not
-      bump the parent class `updatedAt`, so the changed class can remain behind the recent-list keyset
-      boundary. Keep this a focused class/provider-boundary repair with a real DB success-path test seam.
-      — #bug
+- [ ] (2026-07-16) **Provider shelves retain stale browse data after disconnect** —
+      when connection state reloads to disconnected, the Music/resting shelves keep cached playlist and
+      liked-track arrays and can still expose browse controls. Clear or gate those cached callbacks on
+      current connection truth; preserve this as a focused SPA regression. — #bug
 - [ ] (2026-07-11) **Round 9+10 owner-pending live checks** (deployed: R9 Worker `209a2a13`, R10
       Worker `b0d0fe54`; both logged in `HISTORY.md`). Manual browser checks mocks can't cover, on
       the live site: (a) import a **real public SoundCloud playlist URL** and a **real Apple Music
