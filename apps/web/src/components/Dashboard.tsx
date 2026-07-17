@@ -772,6 +772,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         ) : (
           <AccountWorkspace
             profileName={profileName}
+            connectionRevision={connectionRevision}
             onProfileUpdated={(user) => setProfileName(user.displayName ?? user.email)}
             onOpenConnections={() => setConnectionsOpen(true)}
           />
@@ -1997,16 +1998,20 @@ function normalizeOptional(value: string): string | null {
 
 function AccountWorkspace({
   profileName,
+  connectionRevision,
   onProfileUpdated,
   onOpenConnections,
 }: {
   profileName: string;
+  connectionRevision: number;
   onProfileUpdated: (user: User) => void;
   onOpenConnections: () => void;
 }) {
   const [profile, setProfile] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState(profileName);
   const [imageUrl, setImageUrl] = useState('');
+  // null only before the first successful connections load — refresh keeps last-known
+  // rows so Manage → Disconnect/Connect does not flash empty / "..." badges.
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -2031,7 +2036,7 @@ function AccountWorkspace({
     return () => {
       alive = false;
     };
-  }, []);
+  }, [connectionRevision]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
