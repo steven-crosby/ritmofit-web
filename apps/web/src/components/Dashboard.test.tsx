@@ -979,6 +979,58 @@ describe('Dashboard class library states', () => {
     ).toBeNull();
   });
 
+  it('refreshes Account Music connections after Manage disconnect without leaving Account', async () => {
+    let connected = true;
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockImplementation(async () =>
+      connected ? [spotifyConnection()] : [],
+    );
+    vi.mocked(api.getMe).mockResolvedValue({
+      id: 'me',
+      email: 'tester@example.com',
+      displayName: 'Tester',
+      imageUrl: null,
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    vi.mocked(api.disconnectProvider).mockImplementation(async () => {
+      connected = false;
+    });
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    expect(await screen.findByRole('heading', { name: 'Provider accounts' })).toBeTruthy();
+    expect(
+      await screen.findByText('Connected for library browsing and playback where available.'),
+    ).toBeTruthy();
+
+    // Account stays mounted while Manage dialog runs; connectionRevision must
+    // re-fetch listConnections so the Spotify row flips without a nav away/back.
+    fireEvent.click(screen.getByRole('button', { name: 'Manage' }));
+    expect(await screen.findByRole('dialog', { name: 'Music connections' })).toBeTruthy();
+    expect(await screen.findByText('Connected')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Connected for library browsing and playback where available.'),
+      ).toBeNull();
+    });
+    expect(screen.getByRole('heading', { name: 'Provider accounts' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Account' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
+    // Spotify badge text is the connection state enum; last-known rows mean we
+    // never flash "..." on this revision refresh path after the first load.
+    const musicSection = document.getElementById('account-music-connections');
+    expect(musicSection).toBeTruthy();
+    expect(within(musicSection!).queryByText('...')).toBeNull();
+    expect(within(musicSection!).getByText('Spotify')).toBeTruthy();
+    expect(within(musicSection!).getAllByText('disconnected').length).toBeGreaterThan(0);
+  });
+
   it('shows an honest retryable state when music connections fail to load', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections)
