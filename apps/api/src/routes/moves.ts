@@ -20,6 +20,7 @@ import { buildPatch } from '../lib/patch.js';
 import { serializeMove, serializeUserMove, serializeSongByMove } from '../lib/serialize.js';
 import { moves, userMoves, classTrackMoves, classTracks, classes, tracks } from '../db/schema.js';
 import type { Db } from '../lib/db.js';
+import { touchUserMoveParentClassesUpdatedAt } from '../lib/class-recency.js';
 
 /** A `baseMoveId` link must reference a known global move. */
 async function assertValidBaseMove(db: Db, baseMoveId: string | null): Promise<void> {
@@ -162,7 +163,7 @@ moveRoutes.patch('/user-moves/:id', async (c) => {
   const id = c.req.param('id');
   const me = c.get('userId');
   const owned = await db
-    .select({ id: userMoves.id })
+    .select({ id: userMoves.id, name: userMoves.name })
     .from(userMoves)
     .where(and(eq(userMoves.id, id), eq(userMoves.userId, me)))
     .get();
@@ -172,6 +173,9 @@ moveRoutes.patch('/user-moves/:id', async (c) => {
   if ('baseMoveId' in body) await assertValidBaseMove(db, body.baseMoveId ?? null);
 
   await db.update(userMoves).set(buildPatch(body)).where(eq(userMoves.id, id));
+  if (body.name !== undefined && body.name !== owned.name) {
+    await touchUserMoveParentClassesUpdatedAt(db, id);
+  }
   const row = await db.select().from(userMoves).where(eq(userMoves.id, id)).get();
   return c.json(serializeUserMove(row!));
 });
