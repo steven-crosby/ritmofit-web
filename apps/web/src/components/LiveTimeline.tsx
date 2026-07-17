@@ -107,7 +107,7 @@ export function LiveTimeline({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onKeyDown={onKeyDown}
-      className="relative h-10 flex-1 cursor-pointer touch-none rounded-card bg-bg-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+      className="relative h-11 w-full min-w-0 cursor-pointer touch-none rounded-card bg-bg-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
     >
       {/* Track blocks — the upper band, numbered, divided by quiet rules (decorative). */}
       {blocks.map((b) => (

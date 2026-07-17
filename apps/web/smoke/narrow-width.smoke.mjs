@@ -50,6 +50,22 @@ async function checkNoOverflow(page, label) {
   else fail(`no-overflow:${label}`, `${px}px horizontal overflow`);
 }
 
+/** Expand the manual-entry disclosure in the open Class workspace. */
+async function openManualEntry(page) {
+  const summary = page.locator('details > summary', { hasText: 'Add manually' }).filter({
+    hasText: /^Add manually$/,
+  });
+  await summary.waitFor({ state: 'visible', timeout: 10000 });
+  // This smoke's purpose is the resulting manual-entry layout, so open the
+  // native disclosure deterministically before exercising its form.
+  await summary.evaluate((node) => {
+    node.parentElement.open = true;
+  });
+  await page
+    .locator('details[open] input[aria-label="Track title"]')
+    .waitFor({ state: 'visible', timeout: 10000 });
+}
+
 /**
  * Signed-out "/" is the public MarketingPage now, not Login. Click its sign-in CTA
  * to reach the auth form and wait for the sign-up toggle so the form is interactive.
@@ -152,6 +168,9 @@ try {
   // 3. Create a class and open it.
   const titleInput = page.getByLabel('New class title');
   await titleInput.fill('Narrow Width Smoke');
+  // Class type is intentionally explicit; a smoke path must make the same
+  // deliberate choice an instructor makes before the create action unlocks.
+  await page.getByRole('button', { name: 'Cycle', exact: true }).click();
   await titleInput.press('Enter');
   // The class row exposes a toggle plus View/Copy actions whose aria-labels also
   // contain the title; .first() targets the row toggle (first in DOM order).
@@ -160,10 +179,15 @@ try {
   await classBtn.click();
 
   // 4. Add a manual track (the form lives in a collapsed "Add manually" details).
-  await page.getByText('Add manually').click();
-  await page.getByLabel('Track title').fill('Smoke Anthem');
-  await page.getByLabel('Track artist').fill('The Testers');
-  await page.getByLabel('Track duration in minutes and seconds').fill('3:00');
+  await openManualEntry(page);
+  const manualTrackTitle = page.locator('details[open] input[aria-label="Track title"]');
+  const manualTrackArtist = page.locator('details[open] input[aria-label="Track artist"]');
+  const manualTrackDuration = page.locator(
+    'details[open] input[aria-label="Track duration in minutes and seconds"]',
+  );
+  await manualTrackTitle.fill('Smoke Anthem');
+  await manualTrackArtist.fill('The Testers');
+  await manualTrackDuration.fill('3:00');
   await page.getByRole('button', { name: 'Add track' }).click();
   // The title now appears in the track row AND as readiness fix-chips (a manual
   // track has no BPM/provider yet), so match the first occurrence, not exactly one.
@@ -175,10 +199,9 @@ try {
   // slab (design system principle 8 / IntensityRibbon.computeRibbonShape). The
   // "Add manually" <details> collapses after an add, so re-open it and keep the
   // default 'mod' intensity + 3:00 duration.
-  await page.getByText('Add manually').click();
-  await page.getByLabel('Track title').waitFor({ state: 'visible', timeout: 10000 });
-  await page.getByLabel('Track title').fill('Smoke Reprise');
-  await page.getByLabel('Track artist').fill('The Testers');
+  await openManualEntry(page);
+  await manualTrackTitle.fill('Smoke Reprise');
+  await manualTrackArtist.fill('The Testers');
   await page.getByRole('button', { name: 'Add track' }).click();
   await page.getByText('Smoke Reprise').first().waitFor({ timeout: 10000 });
   const autoBadge = page.getByText('auto shape', { exact: true });
@@ -264,9 +287,17 @@ try {
     fullPage: true,
   });
 
-  // 5. Exercise private-beta nav dialogs (the adopted Dialog primitive).
-  await checkDialog(page, 'Account', 'Account settings');
-  await checkDialog(page, 'Connections', 'Music connections');
+  // 5. Account is a destination (not a modal): prove its compact layout, then
+  // exercise the shared music-connections dialog from its direct action.
+  await page.getByRole('button', { name: 'Account', exact: true }).click();
+  await page.getByRole('heading', { name: 'Personal workspace' }).waitFor({ timeout: 10000 });
+  await checkNoOverflow(page, 'account');
+  await page.screenshot({ path: join(shotsDir, 'account-390.png'), fullPage: true });
+  await checkDialog(page, 'Manage', 'Music connections');
+
+  // Return to the selected class before exercising its Live handoff.
+  await page.getByRole('button', { name: 'Classes', exact: true }).click();
+  await page.getByRole('button', { name: /Run live/ }).first().waitFor({ timeout: 10000 });
 
   // 6. Live at rest (alive at rest · phase 4): entering Live and passing preflight
   // without music lands on the at-rest prompter, which must LEAD with the affirmative

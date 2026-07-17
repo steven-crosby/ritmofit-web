@@ -200,9 +200,7 @@ describe('Dashboard class library states', () => {
 
     expect(await screen.findByText('Morning ride')).toBeTruthy();
     expect(screen.queryByText('Loading your classes…')).toBeNull();
-    // With classes present but none selected, the workspace stays alive with readiness/source shelves.
-    expect(screen.getByRole('heading', { name: 'Choose what to shape next' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Provider shelves' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Open a class to keep building.' })).toBeTruthy();
   });
 
   it('shows a distinct error state when the class list fails to load, and retries', async () => {
@@ -233,30 +231,22 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
 
-    // A true first run has no class to derive from, so it orients to templates
-    // and music sources rather than the old blank/select prompt.
-    expect(
-      await screen.findByRole('heading', { name: 'Start with a class template' }),
-    ).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Provider shelves' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Create your first class.' })).toBeTruthy();
     expect(screen.queryByText('Select a class to keep building.')).toBeNull();
   });
 
-  it('opens connections from the resting provider shelves', async () => {
+  it('opens connections from Music', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([]);
 
     renderDashboard();
-
-    expect(await screen.findByRole('heading', { name: 'Provider shelves' })).toBeTruthy();
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Open music connections from provider shelves' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
 
     expect(await screen.findByRole('dialog', { name: 'Music connections' })).toBeTruthy();
   });
 
-  it('shows connected Spotify saved playlists in the resting shelf and opens the browser dialog', async () => {
+  it('shows connected Spotify saved playlists in Music and opens the browser dialog', async () => {
     const playlist = {
       provider: 'spotify' as const,
       playlistId: 'pl-1',
@@ -291,11 +281,8 @@ describe('Dashboard class library states', () => {
     ]);
 
     renderDashboard();
-
-    // Shelf summary text appears once playlists load.
-    const browseBtn = await screen.findByRole('button', {
-      name: /2 saved playlists: Warmup Ride/i,
-    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const browseBtn = await screen.findByRole('button', { name: /Browse saved playlists/i });
     expect(browseBtn).toBeTruthy();
 
     // Clicking opens the browse dialog, then a playlist detail before class creation.
@@ -308,7 +295,7 @@ describe('Dashboard class library states', () => {
     expect(screen.getByRole('button', { name: 'Start class from Warmup Ride' })).toBeTruthy();
   });
 
-  it('shows connected Spotify liked tracks in the resting shelf and opens the likes browser', async () => {
+  it('shows connected Spotify liked tracks in Music and opens the likes browser', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
     vi.mocked(api.listLikes).mockResolvedValue([
@@ -333,11 +320,8 @@ describe('Dashboard class library states', () => {
     ]);
 
     renderDashboard();
-
-    // Shelf summary text appears once likes load.
-    const browseBtn = await screen.findByRole('button', {
-      name: /2 liked tracks: Levels/i,
-    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const browseBtn = await screen.findByRole('button', { name: /Browse liked tracks/i });
     expect(browseBtn).toBeTruthy();
 
     // Clicking opens the likes browser with a track preview + create action.
@@ -347,7 +331,91 @@ describe('Dashboard class library states', () => {
     expect(screen.getByRole('button', { name: 'Create class from 2 liked tracks' })).toBeTruthy();
   });
 
-  it('removes stale resting-shelf browse controls after a provider disconnects', async () => {
+  it('does not create a class when the provider collection fetch fails', async () => {
+    const playlist = {
+      provider: 'spotify' as const,
+      playlistId: 'pl-fetch-fail',
+      name: 'Fetch First',
+      ownerName: 'Steven',
+      trackCount: 1,
+      coverImageUrl: null,
+    };
+    const candidate = {
+      provider: 'spotify' as const,
+      providerTrackId: 'track-1',
+      providerUri: null,
+      title: 'Track One',
+      artist: 'Artist',
+      durationMs: 180000,
+      albumArtUrl: null,
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
+    vi.mocked(api.listPlaylistTracks)
+      .mockResolvedValueOnce([candidate])
+      .mockRejectedValueOnce(new Error('provider unavailable'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Fetch First' }));
+    await screen.findByText('Track One');
+    fireEvent.click(screen.getByRole('button', { name: 'Start class from Fetch First' }));
+
+    expect(await screen.findByText('provider unavailable')).toBeTruthy();
+    expect(api.createClass).not.toHaveBeenCalled();
+  });
+
+  it('reports partial imports and retries failures against the same class', async () => {
+    const tracks = [
+      {
+        provider: 'spotify' as const,
+        providerTrackId: 'tr-1',
+        providerUri: null,
+        title: 'One',
+        artist: 'Artist',
+        albumArtUrl: null,
+        durationMs: 180000,
+      },
+      {
+        provider: 'spotify' as const,
+        providerTrackId: 'tr-2',
+        providerUri: null,
+        title: 'Two',
+        artist: 'Artist',
+        albumArtUrl: null,
+        durationMs: 180000,
+      },
+    ];
+    const created = makeClass('Spotify likes') as Awaited<ReturnType<typeof api.createClass>>;
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listLikes).mockResolvedValue(tracks);
+    vi.mocked(api.createClass).mockResolvedValue(created);
+    vi.mocked(api.importTrack)
+      .mockResolvedValueOnce({ id: 'imported-1' } as Awaited<ReturnType<typeof api.importTrack>>)
+      .mockRejectedValueOnce(new Error('temporary failure'))
+      .mockResolvedValueOnce({ id: 'imported-2' } as Awaited<ReturnType<typeof api.importTrack>>);
+    vi.mocked(api.addTrack).mockResolvedValue({} as ClassTrack);
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Browse liked tracks/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create class from 2 liked tracks' }));
+
+    const retry = await screen.findByRole('button', { name: 'Retry 1 failed' });
+    expect(screen.getByText(/1 of 2 tracks imported/)).toBeTruthy();
+    expect(api.createClass).toHaveBeenCalledTimes(1);
+    fireEvent.click(retry);
+    expect(await screen.findByText(/All 2 tracks imported/)).toBeTruthy();
+    expect(api.createClass).toHaveBeenCalledTimes(1);
+    expect(api.addTrack).toHaveBeenCalledTimes(2);
+  });
+
+  it('removes stale Music browse controls after a provider disconnects', async () => {
     let connected = true;
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockImplementation(async () =>
@@ -379,15 +447,10 @@ describe('Dashboard class library states', () => {
     });
 
     renderDashboard();
-
-    expect(
-      await screen.findByRole('button', { name: /1 saved playlists: Warmup Ride/i }),
-    ).toBeTruthy();
-    expect(screen.getByRole('button', { name: /1 liked tracks: Levels/i })).toBeTruthy();
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Open music connections from provider shelves' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    expect(await screen.findByRole('button', { name: /Browse saved playlists/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Browse liked tracks/i })).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
     expect(await screen.findByText('Connected')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
@@ -402,8 +465,7 @@ describe('Dashboard class library states', () => {
         screen.queryByRole('button', { name: 'Connect this provider to browse liked tracks.' }),
       ).toBeNull();
     });
-    expect(screen.getAllByText('Connect this provider to browse saved playlists.')).toHaveLength(3);
-    expect(screen.getAllByText('Connect this provider to browse liked tracks.')).toHaveLength(3);
+    expect(screen.getByRole('button', { name: 'Connect Spotify' })).toBeTruthy();
   });
 
   it('keeps last-known shelves when a connection refresh fails without authoritative truth', async () => {
@@ -434,12 +496,9 @@ describe('Dashboard class library states', () => {
     });
 
     renderDashboard();
-    expect(
-      await screen.findByRole('button', { name: /1 saved playlists: Last Known Ride/i }),
-    ).toBeTruthy();
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Open music connections from provider shelves' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    expect(await screen.findByRole('button', { name: /Browse saved playlists/i })).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
     expect(await screen.findByText('Connected')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
@@ -447,9 +506,7 @@ describe('Dashboard class library states', () => {
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('Couldn’t load music connections.');
     expect(alert.textContent).toContain('Showing your last known sources.');
-    expect(
-      screen.getByRole('button', { name: /1 saved playlists: Last Known Ride/i }),
-    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Browse saved playlists/i })).toBeTruthy();
   });
 
   it('ignores late shelf responses after authoritative disconnect truth arrives', async () => {
@@ -467,18 +524,15 @@ describe('Dashboard class library states', () => {
     });
 
     renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
     await waitFor(() => expect(api.listPlaylists).toHaveBeenCalledWith('spotify'));
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Open music connections from provider shelves' }),
-    );
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
     expect(await screen.findByText('Connected')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     await waitFor(() =>
-      expect(screen.getAllByText('Connect this provider to browse saved playlists.')).toHaveLength(
-        3,
-      ),
+      expect(screen.getByRole('button', { name: 'Connect Spotify' })).toBeTruthy(),
     );
     await act(async () => {
       playlists.resolve([
@@ -545,8 +599,8 @@ describe('Dashboard class library states', () => {
     vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
 
     renderDashboard();
-
-    const browseBtn = await screen.findByRole('button', { name: /2 liked tracks: Levels/i });
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const browseBtn = await screen.findByRole('button', { name: /Browse liked tracks/i });
     fireEvent.click(browseBtn);
     const createBtn = await screen.findByRole('button', {
       name: 'Create class from 2 liked tracks',
@@ -839,9 +893,9 @@ describe('Dashboard class library states', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
     expect(await screen.findByRole('button', { name: 'Browse Spotify playlists' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /1 liked tracks: Levels/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Browse liked tracks/i })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
     expect(await screen.findByText('Connected')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
@@ -859,9 +913,6 @@ describe('Dashboard class library states', () => {
   it('shows an honest retryable state when music connections fail to load', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections)
-      .mockRejectedValueOnce(new Error('network down'))
-      // The Classes resting shelf owns the first hook instance; Music mounts a
-      // fresh one after navigation and must surface the same failed status check.
       .mockRejectedValueOnce(new Error('network down'))
       .mockResolvedValueOnce([spotifyConnection()]);
     vi.mocked(api.listPlaylists).mockResolvedValue([

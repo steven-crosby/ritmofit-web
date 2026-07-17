@@ -175,7 +175,12 @@ describe('LiveMode preflight', () => {
     expect(within(list).getByText('Active Track')).toBeTruthy();
     // No Apple Music connection → nothing can play it.
     expect(within(list).getByText('No connected provider can play this')).toBeTruthy();
-    expect(screen.getByText('1 track can’t play yet.')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Blocked' })).toBeTruthy();
+    expect(screen.getByText('1 track needs a fix before hands-free playback.')).toBeTruthy();
+    expect(screen.getByText('Runnable with warnings')).toBeTruthy();
+    const exceptionRow = within(list).getByText('Active Track').closest('li');
+    expect(exceptionRow?.className).toContain('p-4');
+    expect(exceptionRow?.className).not.toContain('shadow-card');
     const start = screen.getByRole('button', { name: 'Start class' });
     expect((start as HTMLButtonElement).disabled).toBe(true);
     // The prompter path stays available.
@@ -194,6 +199,11 @@ describe('LiveMode preflight', () => {
     render(<LiveMode payload={{ ...payload, tracks: [soundcloudOnly] }} onExit={() => {}} />);
     const list = await screen.findByRole('list', { name: 'Track playback check' });
     expect(within(list).getByText('Plays on SoundCloud')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Live ready' })).toBeTruthy();
+    expect(screen.getByText('All 1 track can play hands-free.')).toBeTruthy();
+    const passingRow = within(list).getByText('Active Track').closest('li');
+    expect(passingRow?.className).toContain('py-3');
+    expect(passingRow?.className).not.toContain('shadow-card');
     const start = screen.getByRole('button', { name: 'Start class' });
     expect((start as HTMLButtonElement).disabled).toBe(false);
   });
@@ -231,6 +241,7 @@ describe('LiveMode preflight', () => {
     expect(
       await screen.findByText(/Could not check your provider connections: network down/),
     ).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Runnable with warnings' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
@@ -666,6 +677,10 @@ describe('LiveMode timeline scrubber', () => {
     await renderLive();
     // The transport scrubber replaces the old plain range input.
     const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    const transport = screen.getByRole('region', { name: 'Live transport' });
+    expect(transport.className).toContain('grid-cols-[auto_auto_minmax(0,1fr)]');
+    expect(slider.parentElement?.className).toContain('col-span-full');
+    expect(slider.parentElement?.className).toContain('min-w-0');
     // Clock starts at 0:00 / 3:00; a right-arrow nudges +5s.
     expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
     fireEvent.keyDown(slider, { key: 'ArrowRight' });

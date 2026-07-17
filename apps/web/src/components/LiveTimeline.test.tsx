@@ -129,6 +129,9 @@ describe('LiveTimeline', () => {
     expect(slider.getAttribute('aria-valuemax')).toBe('240000');
     expect(slider.getAttribute('aria-valuenow')).toBe('60000');
     expect(slider.getAttribute('aria-valuetext')).toBe('1:00 of 4:00');
+    expect(slider.className).toContain('h-11');
+    expect(slider.className).toContain('w-full');
+    expect(slider.className).toContain('min-w-0');
   });
 
   it('renders a marker per cue and move', () => {

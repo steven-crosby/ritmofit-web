@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { App } from './App.js';
 
 // Signed-out session so the root path resolves to MarketingPage (D15), not Dashboard.
@@ -36,5 +36,33 @@ describe('App path routing', () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: 'Privacy and data notice' })).toBeTruthy();
     expect(screen.getByText(/invite-only, non-commercial beta/i)).toBeTruthy();
+  });
+});
+
+describe('App acquisition intent', () => {
+  it('opens returning instructors in sign-in mode and returns to marketing', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
+    expect(screen.queryByLabelText('Name')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to home' }));
+    expect(screen.getByRole('heading', { name: /find the class inside the music/i })).toBeTruthy();
+  });
+
+  it('opens prospective instructors in sign-up mode from Start building', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Start building' })[0]!);
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy();
+    expect(screen.getByLabelText('Name')).toBeTruthy();
+  });
+
+  it('opens prospective instructors in sign-up mode from Enter private beta', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enter the private beta' }));
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy();
   });
 });
