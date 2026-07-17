@@ -1222,6 +1222,19 @@ function CreateClassForm({
   );
 }
 
+function retainConnectedProviderState<T>(
+  state: Partial<Record<Provider, T>>,
+  connectedProviders: ReadonlySet<Provider>,
+): Partial<Record<Provider, T>> {
+  const next: Partial<Record<Provider, T>> = {};
+  for (const provider of PROVIDER_ORDER) {
+    if (connectedProviders.has(provider) && state[provider] !== undefined) {
+      next[provider] = state[provider];
+    }
+  }
+  return next;
+}
+
 function useProviderBrowseState(connectionRevision = 0) {
   const [connections, setConnections] = useState<MusicConnectionView[]>([]);
   const [connectionsStatus, setConnectionsStatus] = useState<'loading' | 'ready' | 'error'>(
@@ -1236,6 +1249,7 @@ function useProviderBrowseState(connectionRevision = 0) {
   const [likes, setLikes] = useState<Partial<Record<Provider, TrackSearchResult[]>>>({});
   const [likesLoading, setLikesLoading] = useState<Partial<Record<Provider, boolean>>>({});
   const [likesError, setLikesError] = useState<Partial<Record<Provider, string>>>({});
+  const connectedProvidersRef = useRef<ReadonlySet<Provider>>(new Set());
 
   useEffect(() => {
     let alive = true;
@@ -1244,6 +1258,26 @@ function useProviderBrowseState(connectionRevision = 0) {
       try {
         const rows = await listConnections();
         if (!alive || !Array.isArray(rows)) return;
+        const now = Date.now();
+        const connectedProviders = new Set(
+          PROVIDER_ORDER.filter(
+            (provider) =>
+              providerConnectionState(
+                provider,
+                rows.find((row) => row.provider === provider),
+                now,
+              ) === 'connected',
+          ),
+        );
+        // Publish authoritative connection truth before React runs the browse-effect
+        // cleanups so a racing shelf request cannot repopulate a disconnected source.
+        connectedProvidersRef.current = connectedProviders;
+        setPlaylists((prev) => retainConnectedProviderState(prev, connectedProviders));
+        setPlaylistsLoading((prev) => retainConnectedProviderState(prev, connectedProviders));
+        setPlaylistsError((prev) => retainConnectedProviderState(prev, connectedProviders));
+        setLikes((prev) => retainConnectedProviderState(prev, connectedProviders));
+        setLikesLoading((prev) => retainConnectedProviderState(prev, connectedProviders));
+        setLikesError((prev) => retainConnectedProviderState(prev, connectedProviders));
         setConnections(rows);
         setConnectionsStatus('ready');
       } catch {
@@ -1271,14 +1305,16 @@ function useProviderBrowseState(connectionRevision = 0) {
       void (async () => {
         try {
           const rows = await listPlaylists(provider);
-          if (!alive) return;
+          if (!alive || !connectedProvidersRef.current.has(provider)) return;
           setPlaylists((prev) => ({ ...prev, [provider]: Array.isArray(rows) ? rows : [] }));
           setPlaylistsError((prev) => ({ ...prev, [provider]: undefined }));
         } catch (e) {
-          if (!alive) return;
+          if (!alive || !connectedProvidersRef.current.has(provider)) return;
           setPlaylistsError((prev) => ({ ...prev, [provider]: (e as Error).message }));
         } finally {
-          if (alive) setPlaylistsLoading((prev) => ({ ...prev, [provider]: false }));
+          if (alive && connectedProvidersRef.current.has(provider)) {
+            setPlaylistsLoading((prev) => ({ ...prev, [provider]: false }));
+          }
         }
       })();
     }
@@ -1303,14 +1339,16 @@ function useProviderBrowseState(connectionRevision = 0) {
       void (async () => {
         try {
           const rows = await listLikes(provider);
-          if (!alive) return;
+          if (!alive || !connectedProvidersRef.current.has(provider)) return;
           setLikes((prev) => ({ ...prev, [provider]: Array.isArray(rows) ? rows : [] }));
           setLikesError((prev) => ({ ...prev, [provider]: undefined }));
         } catch (e) {
-          if (!alive) return;
+          if (!alive || !connectedProvidersRef.current.has(provider)) return;
           setLikesError((prev) => ({ ...prev, [provider]: (e as Error).message }));
         } finally {
-          if (alive) setLikesLoading((prev) => ({ ...prev, [provider]: false }));
+          if (alive && connectedProvidersRef.current.has(provider)) {
+            setLikesLoading((prev) => ({ ...prev, [provider]: false }));
+          }
         }
       })();
     }
@@ -1322,6 +1360,12 @@ function useProviderBrowseState(connectionRevision = 0) {
   return {
     connections,
     connectionsStatus,
+    isProviderConnected: (provider: Provider) =>
+      providerConnectionState(
+        provider,
+        connections.find((row) => row.provider === provider),
+        Date.now(),
+      ) === 'connected',
     retryConnections: () => setConnectionAttempt((attempt) => attempt + 1),
     playlists,
     playlistsLoading,
@@ -1398,6 +1442,7 @@ function WorkstationRestingState({
   const {
     connections,
     connectionsStatus,
+    isProviderConnected,
     retryConnections,
     playlists,
     playlistsLoading,
@@ -1468,29 +1513,32 @@ function WorkstationRestingState({
             />
             {(connectionsStatus === 'ready' || connections.length > 0) && (
               <div className="grid gap-2">
-                {PROVIDER_ORDER.map((provider) => (
-                  <ProviderShelfCard
-                    key={provider}
-                    provider={provider}
-                    connection={connections.find((row) => row.provider === provider)}
-                    playlists={playlists[provider] ?? null}
-                    loadingPlaylists={playlistsLoading[provider] ?? false}
-                    playlistError={playlistsError[provider] ?? null}
-                    onBrowse={
-                      playlists[provider]?.length
-                        ? () => onBrowsePlaylists(provider, playlists[provider]!)
-                        : undefined
-                    }
-                    likes={likes[provider] ?? null}
-                    loadingLikes={likesLoading[provider] ?? false}
-                    likesError={likesError[provider] ?? null}
-                    onBrowseLikes={
-                      likes[provider]?.length
-                        ? () => onBrowseLikes(provider, likes[provider]!)
-                        : undefined
-                    }
-                  />
-                ))}
+                {PROVIDER_ORDER.map((provider) => {
+                  const connected = isProviderConnected(provider);
+                  return (
+                    <ProviderShelfCard
+                      key={provider}
+                      provider={provider}
+                      connection={connections.find((row) => row.provider === provider)}
+                      playlists={playlists[provider] ?? null}
+                      loadingPlaylists={playlistsLoading[provider] ?? false}
+                      playlistError={playlistsError[provider] ?? null}
+                      onBrowse={
+                        connected && playlists[provider]?.length
+                          ? () => onBrowsePlaylists(provider, playlists[provider]!)
+                          : undefined
+                      }
+                      likes={likes[provider] ?? null}
+                      loadingLikes={likesLoading[provider] ?? false}
+                      likesError={likesError[provider] ?? null}
+                      onBrowseLikes={
+                        connected && likes[provider]?.length
+                          ? () => onBrowseLikes(provider, likes[provider]!)
+                          : undefined
+                      }
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1514,6 +1562,7 @@ function MusicWorkspace({
   const {
     connections,
     connectionsStatus,
+    isProviderConnected,
     retryConnections,
     playlists,
     playlistsLoading,
@@ -1535,7 +1584,7 @@ function MusicWorkspace({
                 Date.now(),
               );
               const rows = playlists[provider];
-              const canBrowse = !!rows?.length;
+              const canBrowse = connectionState === 'connected' && !!rows?.length;
               return (
                 <button
                   key={provider}
@@ -1599,29 +1648,32 @@ function MusicWorkspace({
 
         {(connectionsStatus === 'ready' || connections.length > 0) && (
           <section className="grid gap-3 lg:grid-cols-3">
-            {PROVIDER_ORDER.map((provider) => (
-              <ProviderShelfCard
-                key={provider}
-                provider={provider}
-                connection={connections.find((row) => row.provider === provider)}
-                playlists={playlists[provider] ?? null}
-                loadingPlaylists={playlistsLoading[provider] ?? false}
-                playlistError={playlistsError[provider] ?? null}
-                onBrowse={
-                  playlists[provider]?.length
-                    ? () => onBrowsePlaylists(provider, playlists[provider]!)
-                    : undefined
-                }
-                likes={likes[provider] ?? null}
-                loadingLikes={likesLoading[provider] ?? false}
-                likesError={likesError[provider] ?? null}
-                onBrowseLikes={
-                  likes[provider]?.length
-                    ? () => onBrowseLikes(provider, likes[provider]!)
-                    : undefined
-                }
-              />
-            ))}
+            {PROVIDER_ORDER.map((provider) => {
+              const connected = isProviderConnected(provider);
+              return (
+                <ProviderShelfCard
+                  key={provider}
+                  provider={provider}
+                  connection={connections.find((row) => row.provider === provider)}
+                  playlists={playlists[provider] ?? null}
+                  loadingPlaylists={playlistsLoading[provider] ?? false}
+                  playlistError={playlistsError[provider] ?? null}
+                  onBrowse={
+                    connected && playlists[provider]?.length
+                      ? () => onBrowsePlaylists(provider, playlists[provider]!)
+                      : undefined
+                  }
+                  likes={likes[provider] ?? null}
+                  loadingLikes={likesLoading[provider] ?? false}
+                  likesError={likesError[provider] ?? null}
+                  onBrowseLikes={
+                    connected && likes[provider]?.length
+                      ? () => onBrowseLikes(provider, likes[provider]!)
+                      : undefined
+                  }
+                />
+              );
+            })}
           </section>
         )}
 
