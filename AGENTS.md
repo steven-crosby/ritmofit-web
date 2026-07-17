@@ -4,6 +4,7 @@
 <!-- note (Claude, 2026-07-06): Recorded the D21 creator-workstation-shell frame in Product Boundaries. -->
 <!-- note (Codex, 2026-07-12): Consolidated canonical instructions into AGENTS.md and removed Claude-only wrappers. -->
 <!-- note (Codex, 2026-07-13): Promoted verified OpenAPI, migration, PWA, provider, and deployment lessons from historical agent memory. -->
+<!-- note (Codex, 2026-07-16): Restored stale-chunk recovery and real-browser playback verification guidance. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -143,7 +144,8 @@ error, and permission states. Controls must be keyboard accessible, visibly focu
 encode meaning by color alone. Respect `prefers-reduced-motion`. Use browser viewport emulation for
 narrow responsive QA; shrinking a headless window can capture a cropped wider layout. Preserve the PWA
 prompted-update path, and keep service-worker navigation fallback denied for `/api/` routes so OAuth and
-auth callbacks reach the Worker rather than a cached SPA shell.
+auth callbacks reach the Worker rather than a cached SPA shell. Preserve an update/reload recovery path
+for stale service-worker chunks after a deployment.
 
 ## Music Constraints
 
@@ -159,7 +161,8 @@ Re-verify provider API and authentication behavior before changing integrations.
 separate from Apple Music. Never log tokens, cookies, authorization headers, private keys, or provider
 secrets. Diagnose provider API-shape drift separately from authorization/scope failures. Verify connect,
 browse/import, readiness, playback, seeking, pause/resume, and reconnect as distinct capabilities; success
-in one does not prove the others.
+in one does not prove the others. For provider/audio playback changes, API probes and automated tests are
+not enough; verify actual playback behavior in a real browser.
 
 ## Verification, PRs, And Commits
 
