@@ -7,11 +7,13 @@
 import { TutorialVideo } from './TutorialVideo.js';
 
 interface MarketingPageProps {
-  /** Called when the user clicks "Sign in" or "Start building". */
+  /** Existing instructors return through sign-in. */
   onSignIn: () => void;
+  /** Prospective instructors continue directly into account creation. */
+  onStartBuilding: () => void;
 }
 
-export function MarketingPage({ onSignIn }: MarketingPageProps) {
+export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps) {
   return (
     <>
       {/* ── Skip link ─────────────────────────────────────────────────── */}
@@ -56,6 +58,12 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
           >
             Live mode
           </a>
+          <a
+            href="#class-shape"
+            className="font-ui text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:text-text-primary"
+          >
+            Learn the workflow
+          </a>
         </nav>
 
         {/* CTA row */}
@@ -72,7 +80,7 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
             id="marketing-start-building-btn"
             type="button"
             aria-label="Start building"
-            onClick={onSignIn}
+            onClick={onStartBuilding}
             className="rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-sm font-semibold text-text-on-accent sm:px-4"
           >
             <span className="sm:hidden">Start</span>
@@ -102,7 +110,7 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
               <button
                 id="marketing-hero-start-btn"
                 type="button"
-                onClick={onSignIn}
+                onClick={onStartBuilding}
                 className="rounded-pill rf-btn-primary px-6 py-2.5 font-ui font-semibold text-text-on-accent"
               >
                 Start building
@@ -112,7 +120,7 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
                 id="marketing-hero-shape-btn"
                 className="rounded-pill border border-interactive/30 px-6 py-2.5 font-ui font-semibold text-interactive transition-colors hover:border-interactive/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
               >
-                See class shape
+                Learn the workflow
               </a>
             </div>
             <span className="font-ui text-sm text-text-tertiary">
@@ -141,7 +149,7 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
             <FeatureCard
               eyebrow="01 / Find"
               heading="Start with your music."
-              body="Select saved tracks in Library and carry them directly into a new class. The music and the authoring workflow stay connected."
+              body="Select saved tracks in Music and carry them directly into a new class. The source material and the authoring workflow stay connected."
             />
             <FeatureCard
               eyebrow="02 / Shape"
@@ -169,7 +177,7 @@ export function MarketingPage({ onSignIn }: MarketingPageProps) {
           <button
             id="marketing-bottom-cta-btn"
             type="button"
-            onClick={onSignIn}
+            onClick={onStartBuilding}
             className="rounded-pill rf-btn-primary px-8 py-3 font-ui text-base font-semibold text-text-on-accent"
           >
             Enter the private beta
@@ -206,7 +214,7 @@ function FeatureCard({ eyebrow, heading, body, id }: FeatureCardProps) {
   return (
     <article
       id={id}
-      className="flex flex-col gap-3 rounded-card bg-bg-raised p-6 shadow-card scroll-mt-20"
+      className="flex flex-col gap-3 rounded-card border border-border-subtle bg-bg-raised p-6 scroll-mt-20"
     >
       <span className="rf-eyebrow">{eyebrow}</span>
       <h3 className="font-display text-xl font-bold text-text-primary">{heading}</h3>

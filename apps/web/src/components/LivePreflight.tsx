@@ -55,7 +55,7 @@ function Verdict({ result }: { result: PreflightTrackResult }) {
   }
   const meta = REASON_META[result.selection.reason];
   return (
-    <span className="flex flex-col items-end gap-0.5 text-right">
+    <span className="flex min-w-0 flex-col gap-1 text-left sm:items-end sm:text-right">
       <span className="flex items-center gap-1.5 font-ui text-sm font-semibold text-state-caution">
         <span aria-hidden>⊘</span>
         {meta.label}
@@ -96,22 +96,54 @@ export function LivePreflight({
         result.selection.reason === 'playback_reauth_required'),
   );
   const canManageConnections = connectionsVisited || hasConnectionFix;
+  const trackCount = preflight?.tracks.length ?? 0;
+  const passingCount = trackCount - unplayableCount;
+  const verdict = connectionsError
+    ? {
+        label: 'Runnable with warnings',
+        detail:
+          'Provider playback could not be verified. Retry, or run the prompter without music.',
+        tone: 'text-state-caution',
+      }
+    : preflight == null
+      ? {
+          label: 'Checking readiness',
+          detail: 'Verifying every track against its connected music provider.',
+          tone: 'text-text-secondary',
+        }
+      : preflight.ok
+        ? {
+            label: 'Live ready',
+            detail: `All ${trackCount} ${trackCount === 1 ? 'track can' : 'tracks can'} play hands-free.`,
+            tone: 'text-state-positive',
+          }
+        : {
+            label: 'Blocked',
+            detail: `${unplayableCount} ${unplayableCount === 1 ? 'track needs' : 'tracks need'} a fix before hands-free playback.`,
+            tone: 'text-state-caution',
+          };
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center gap-5 p-6">
-      <div>
+    <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center gap-5 p-4 sm:p-6">
+      <div className="rounded-card bg-bg-raised/70 p-5 sm:p-6">
         <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
           Preflight
         </p>
-        <h2 className="mt-1 font-display text-2xl font-semibold text-text-primary">
-          Ready to run?
+        <h2 className={`mt-1 font-display text-2xl font-semibold ${verdict.tone}`}>
+          {verdict.label}
         </h2>
-        <p className="mt-1 font-ui text-sm text-text-secondary">
-          Every track needs a connected provider so the class can run hands-free.
-        </p>
+        <p className="mt-1 max-w-xl font-ui text-sm text-text-secondary">{verdict.detail}</p>
+        {preflight != null && !preflight.ok && (
+          <p className="mt-3 font-ui text-sm font-semibold text-text-primary">
+            Runnable with warnings
+            <span className="ml-2 font-normal text-text-tertiary">
+              Prompter-only mode remains available.
+            </span>
+          </p>
+        )}
       </div>
 
       {connectionsError ? (
-        <div className="rounded-card border border-state-caution/40 bg-bg-raised p-4 shadow-card">
+        <div className="rounded-card bg-bg-raised p-4">
           <p className="font-ui text-sm text-text-primary">
             <span aria-hidden className="mr-1.5 text-state-caution">
               ⊘
@@ -126,26 +158,41 @@ export function LivePreflight({
           </button>
         </div>
       ) : preflight == null ? (
-        <p className="font-ui text-sm text-text-tertiary" role="status">
+        <p className="px-1 font-ui text-sm text-text-tertiary" role="status">
           Checking provider connections…
         </p>
       ) : (
         <ul className="flex flex-col gap-2" aria-label="Track playback check">
-          {preflight.tracks.map((result) => (
-            <li
-              key={result.classTrackId}
-              className="flex items-center justify-between gap-4 rounded-card bg-bg-raised p-4 shadow-card"
-            >
-              <span className="min-w-0">
-                <span className="font-data text-xs text-text-tertiary">#{result.position + 1}</span>
-                <p className="truncate font-display font-semibold text-text-primary">
-                  {result.title}
-                </p>
-              </span>
-              <Verdict result={result} />
-            </li>
-          ))}
+          {preflight.tracks.map((result) => {
+            const passing = result.selection.status === 'playable';
+            return (
+              <li
+                key={result.classTrackId}
+                className={`rounded-card bg-bg-raised ${
+                  passing
+                    ? 'flex items-center justify-between gap-3 px-4 py-3'
+                    : 'grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(16rem,1.25fr)] sm:items-start'
+                }`}
+              >
+                <span className="min-w-0">
+                  <span className="font-data text-xs text-text-tertiary">
+                    #{result.position + 1}
+                  </span>
+                  <p className="truncate font-display font-semibold text-text-primary">
+                    {result.title}
+                  </p>
+                </span>
+                <Verdict result={result} />
+              </li>
+            );
+          })}
         </ul>
+      )}
+
+      {preflight != null && passingCount > 0 && !preflight.ok && (
+        <p className="px-1 font-ui text-xs text-text-tertiary">
+          {passingCount} {passingCount === 1 ? 'track passes' : 'tracks pass'} playback checks.
+        </p>
       )}
 
       <div className="flex flex-wrap items-center gap-3">
@@ -172,13 +219,6 @@ export function LivePreflight({
           >
             Manage connections
           </button>
-        )}
-        {preflight != null && !preflight.ok && (
-          <p className="font-ui text-sm text-state-caution">
-            {unplayableCount === 1
-              ? '1 track can’t play yet.'
-              : `${unplayableCount} tracks can’t play yet.`}
-          </p>
         )}
       </div>
       {canManageConnections && (

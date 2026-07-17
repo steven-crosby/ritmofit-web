@@ -1,7 +1,7 @@
 /**
  * Root: gate on the Better Auth session.
  * - Signed out at "/" → MarketingPage (public front door, D15).
- *   "Sign in" / "Start building" CTAs flip showLogin → Login with onBack.
+ *   Marketing CTAs carry an explicit sign-in/sign-up intent into Login.
  * - Signed in → Dashboard.
  * - "/reset-password" → ResetPassword (works while signed out).
  * - Unknown path → NotFound.
@@ -22,8 +22,9 @@ const KNOWN_PATHS = new Set(['/', '/privacy', '/reset-password']);
 
 export function App() {
   const { data: session, isPending } = authClient.useSession();
-  // Controls the signed-out state-switch: false = MarketingPage, true = Login.
-  const [showLogin, setShowLogin] = useState(false);
+  // Preserve the acquisition promise across the signed-out state switch: a
+  // "Start building" click must land on account creation, never generic sign-in.
+  const [authIntent, setAuthIntent] = useState<'signin' | 'signup' | null>(null);
 
   const skipLink = (
     <a
@@ -61,15 +62,24 @@ export function App() {
   }
 
   // Signed out + user clicked a CTA → Login with a back link.
-  if (showLogin) {
+  if (authIntent) {
     return (
       <>
         {skipLink}
-        <Login onBack={() => setShowLogin(false)} onSignedUp={markOnboardingVideoPending} />
+        <Login
+          initialMode={authIntent}
+          onBack={() => setAuthIntent(null)}
+          onSignedUp={markOnboardingVideoPending}
+        />
       </>
     );
   }
 
   // Signed out, default → Marketing landing (D15).
-  return <MarketingPage onSignIn={() => setShowLogin(true)} />;
+  return (
+    <MarketingPage
+      onSignIn={() => setAuthIntent('signin')}
+      onStartBuilding={() => setAuthIntent('signup')}
+    />
+  );
 }

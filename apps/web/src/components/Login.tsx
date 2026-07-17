@@ -4,14 +4,16 @@ import { authClient } from '../lib/auth-client.js';
 import { getAuthCapabilities } from '../lib/api.js';
 
 interface LoginProps {
+  /** Acquisition intent selected on marketing. Defaults to returning-user sign-in. */
+  initialMode?: 'signin' | 'signup';
   /** Optional: return to the marketing landing page. */
   onBack?: () => void;
   /** Called after a successful email sign-up, before App flips to the dashboard. */
   onSignedUp?: () => void;
 }
 
-export function Login({ onBack, onSignedUp }: LoginProps = {}) {
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps = {}) {
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -104,14 +106,14 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
   }
 
   return (
-    <main className="rf-heat-bloom flex min-h-screen flex-col items-center justify-center p-8">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-bg-base p-8">
       <div className="flex w-full max-w-sm flex-col gap-6">
         {onBack && (
           <button
             type="button"
             id="login-back-btn"
             onClick={onBack}
-            className="-ml-1 flex items-center gap-1.5 self-start font-ui text-sm text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive rounded"
+            className="-ml-1 flex min-h-11 items-center gap-1.5 self-start rounded-control px-1 font-ui text-sm text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
             aria-label="Back to home"
           >
             <span aria-hidden="true">←</span> Back to home
@@ -123,7 +125,9 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
             <span className="rf-brand-mark" aria-hidden="true">
               R
             </span>
-            <h1 className="rf-heat-text font-display text-display-lg">Ritmo Studio</h1>
+            <h1 className="font-display text-3xl font-bold tracking-tight text-text-primary">
+              Ritmo Studio
+            </h1>
           </div>
           <p className="font-ui text-text-secondary">
             {mode === 'signup'
@@ -138,7 +142,7 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
 
         <form
           onSubmit={submit}
-          className="flex flex-col gap-3 rounded-card bg-bg-raised p-6 shadow-card"
+          className="flex flex-col gap-3 rounded-card border border-border-subtle bg-bg-raised p-6"
         >
           {mode === 'signup' && (
             <>
@@ -147,7 +151,7 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
               </label>
               <input
                 id="login-name"
-                className="rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
+                className="min-h-11 rounded-input border border-border-default bg-bg-sunken px-4 font-ui text-text-primary"
                 placeholder="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -160,7 +164,7 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
           </label>
           <input
             id="login-email"
-            className="rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
+            className="min-h-11 rounded-input border border-border-default bg-bg-sunken px-4 font-ui text-text-primary"
             type="email"
             autoComplete="email"
             placeholder="Email"
@@ -175,7 +179,7 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
               </label>
               <input
                 id="login-password"
-                className="rounded-pill border border-interactive/30 bg-bg-base px-4 py-2 font-ui text-text-primary"
+                className="min-h-11 rounded-input border border-border-default bg-bg-sunken px-4 font-ui text-text-primary"
                 type="password"
                 autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                 placeholder="Password"
@@ -200,7 +204,7 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
             type="submit"
             disabled={busy}
             aria-busy={busy}
-            className="rounded-pill rf-btn-primary px-5 py-2 font-ui font-semibold text-text-on-accent disabled:opacity-50"
+            className="min-h-11 rounded-input rf-btn-primary px-5 font-ui font-semibold text-text-on-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy
               ? '…'
@@ -216,7 +220,7 @@ export function Login({ onBack, onSignedUp }: LoginProps = {}) {
               disabled={socialBusy}
               aria-busy={socialBusy}
               onClick={signInWithApple}
-              className="rounded-pill border border-text-primary/30 bg-bg-base px-5 py-2 font-ui font-semibold text-text-primary disabled:opacity-50"
+              className="min-h-11 rounded-input border border-border-default bg-bg-sunken px-5 font-ui font-semibold text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
               {socialBusy ? '…' : 'Continue with Apple'}
             </button>

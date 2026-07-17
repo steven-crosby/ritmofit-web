@@ -516,7 +516,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   if (phase === 'preflight') {
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-live">
-        <header className="flex items-center justify-between border-b border-interactive/20 px-6 py-3">
+        <header className="flex items-center justify-between bg-bg-raised/40 px-4 py-3 sm:px-6">
           {/* Scripted focus target on entry (tabIndex -1, not keyboard-reachable);
               outline suppressed so a mouse entry never shows a stray ring. */}
           <h1
@@ -527,7 +527,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             {payload.class.title}
           </h1>
           <button
-            className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+            className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive focus-visible:ring-2 focus-visible:ring-interactive"
             onClick={onExit}
           >
             Exit
@@ -711,13 +711,13 @@ function PlaybackRail({ status }: { status: CoordinatorStatus | null }) {
   const isWaiting = status?.kind === 'awaiting_authorization';
   return (
     <p
-      className={`flex shrink-0 items-center gap-1.5 font-data text-xs ${
+      className={`flex min-w-0 items-center gap-1.5 font-data text-xs ${
         isError ? 'font-semibold text-state-danger' : 'text-text-tertiary'
       }`}
     >
       <span aria-hidden>{isError ? '⚠' : isWaiting ? '⏳' : '♪'}</span>
       <span className="sr-only">Playback: </span>
-      {text}
+      <span className="min-w-0 truncate">{text}</span>
     </p>
   );
 }
@@ -736,13 +736,13 @@ function WakeRail({ status }: { status: WakeLockStatus }) {
   return (
     <p
       role="status"
-      className={`flex shrink-0 items-center gap-1.5 font-data text-xs ${
+      className={`flex min-w-0 items-center gap-1.5 font-data text-xs ${
         awake ? 'text-text-tertiary' : 'text-state-caution'
       }`}
     >
       <span aria-hidden>{awake ? '◉' : '⊘'}</span>
       <span className="sr-only">Display: </span>
-      {awake ? 'Screen awake' : 'Screen may dim'}
+      <span className="min-w-0 truncate">{awake ? 'Screen awake' : 'Screen may dim'}</span>
     </p>
   );
 }
@@ -1191,23 +1191,31 @@ function Transport({
   primaryButtonRef: RefObject<HTMLButtonElement>;
 }) {
   return (
-    <div className="flex items-center gap-4 border-t border-interactive/20 px-6 py-4">
+    <div
+      className="grid grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-3 border-t border-interactive/15 bg-bg-raised/70 px-4 py-3 sm:grid-cols-[auto_auto_minmax(0,auto)_minmax(12rem,1fr)] sm:gap-x-4 sm:px-6 sm:py-4"
+      role="region"
+      aria-label="Live transport"
+    >
       <button
         ref={primaryButtonRef}
-        className="rounded-pill rf-btn-primary px-6 py-2 font-ui font-semibold text-text-on-accent"
+        className="min-h-11 rounded-pill rf-btn-primary px-5 py-2 font-ui font-semibold text-text-on-accent sm:px-6"
         onClick={onToggle}
       >
         {playing ? 'Pause' : 'Play'}
       </button>
       <button
-        className="rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive"
+        className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive focus-visible:ring-2 focus-visible:ring-interactive"
         onClick={onReset}
       >
         Reset
       </button>
-      <PlaybackRail status={playback} />
-      <WakeRail status={wakeStatus} />
-      <LiveTimeline payload={payload} elapsedMs={elapsedMs} onSeek={onSeek} />
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1 sm:flex-nowrap sm:justify-start">
+        <PlaybackRail status={playback} />
+        <WakeRail status={wakeStatus} />
+      </div>
+      <div className="col-span-full min-w-0 sm:col-span-1">
+        <LiveTimeline payload={payload} elapsedMs={elapsedMs} onSeek={onSeek} />
+      </div>
     </div>
   );
 }

@@ -35,6 +35,14 @@ afterEach(() => {
 });
 
 describe('Login accessible labels', () => {
+  it('honors an explicit sign-up acquisition intent', () => {
+    render(<Login initialMode="signup" />);
+
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy();
+    expect(screen.getByLabelText('Name')).toBeTruthy();
+    expect(screen.getByText('Create an account with your invited email')).toBeTruthy();
+  });
+
   it('associates a label with the email and password inputs in sign-in mode', () => {
     render(<Login />);
     expect(screen.getByLabelText('Email')).toHaveProperty('type', 'email');
