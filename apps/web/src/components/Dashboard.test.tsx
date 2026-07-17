@@ -347,6 +347,170 @@ describe('Dashboard class library states', () => {
     expect(screen.getByRole('button', { name: 'Create class from 2 liked tracks' })).toBeTruthy();
   });
 
+  it('removes stale resting-shelf browse controls after a provider disconnects', async () => {
+    let connected = true;
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockImplementation(async () =>
+      connected ? [spotifyConnection()] : [],
+    );
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-1',
+        name: 'Warmup Ride',
+        ownerName: 'Steven',
+        trackCount: 24,
+        coverImageUrl: null,
+      },
+    ]);
+    vi.mocked(api.listLikes).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'tr-1',
+        providerUri: 'spotify:track:tr-1',
+        title: 'Levels',
+        artist: 'Avicii',
+        albumArtUrl: null,
+        durationMs: 200000,
+      },
+    ]);
+    vi.mocked(api.disconnectProvider).mockImplementation(async () => {
+      connected = false;
+    });
+
+    renderDashboard();
+
+    expect(
+      await screen.findByRole('button', { name: /1 saved playlists: Warmup Ride/i }),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: /1 liked tracks: Levels/i })).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open music connections from provider shelves' }),
+    );
+    expect(await screen.findByText('Connected')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('button', {
+          name: 'Connect this provider to browse saved playlists.',
+        }),
+      ).toBeNull();
+      expect(
+        screen.queryByRole('button', { name: 'Connect this provider to browse liked tracks.' }),
+      ).toBeNull();
+    });
+    expect(screen.getAllByText('Connect this provider to browse saved playlists.')).toHaveLength(3);
+    expect(screen.getAllByText('Connect this provider to browse liked tracks.')).toHaveLength(3);
+  });
+
+  it('keeps last-known shelves when a connection refresh fails without authoritative truth', async () => {
+    let disconnectStarted = false;
+    let callsAfterDisconnect = 0;
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockImplementation(async () => {
+      if (!disconnectStarted) return [spotifyConnection()];
+      callsAfterDisconnect += 1;
+      // The dialog confirms its own disconnect first. The dashboard's separate
+      // revision refresh then fails, which is not authoritative shelf truth.
+      if (callsAfterDisconnect === 1) return [];
+      throw new Error('network down');
+    });
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-1',
+        name: 'Last Known Ride',
+        ownerName: 'Steven',
+        trackCount: 12,
+        coverImageUrl: null,
+      },
+    ]);
+    vi.mocked(api.listLikes).mockResolvedValue([]);
+    vi.mocked(api.disconnectProvider).mockImplementation(async () => {
+      disconnectStarted = true;
+    });
+
+    renderDashboard();
+    expect(
+      await screen.findByRole('button', { name: /1 saved playlists: Last Known Ride/i }),
+    ).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open music connections from provider shelves' }),
+    );
+    expect(await screen.findByText('Connected')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Couldn’t load music connections.');
+    expect(alert.textContent).toContain('Showing your last known sources.');
+    expect(
+      screen.getByRole('button', { name: /1 saved playlists: Last Known Ride/i }),
+    ).toBeTruthy();
+  });
+
+  it('ignores late shelf responses after authoritative disconnect truth arrives', async () => {
+    let connected = true;
+    const playlists = deferred<Awaited<ReturnType<typeof api.listPlaylists>>>();
+    const likes = deferred<Awaited<ReturnType<typeof api.listLikes>>>();
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockImplementation(async () =>
+      connected ? [spotifyConnection()] : [],
+    );
+    vi.mocked(api.listPlaylists).mockReturnValue(playlists.promise);
+    vi.mocked(api.listLikes).mockReturnValue(likes.promise);
+    vi.mocked(api.disconnectProvider).mockImplementation(async () => {
+      connected = false;
+    });
+
+    renderDashboard();
+    await waitFor(() => expect(api.listPlaylists).toHaveBeenCalledWith('spotify'));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open music connections from provider shelves' }),
+    );
+    expect(await screen.findByText('Connected')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() =>
+      expect(screen.getAllByText('Connect this provider to browse saved playlists.')).toHaveLength(
+        3,
+      ),
+    );
+    await act(async () => {
+      playlists.resolve([
+        {
+          provider: 'spotify',
+          playlistId: 'late-playlist',
+          name: 'Late Playlist',
+          ownerName: 'Steven',
+          trackCount: 5,
+          coverImageUrl: null,
+        },
+      ]);
+      likes.resolve([
+        {
+          provider: 'spotify',
+          providerTrackId: 'late-track',
+          providerUri: null,
+          title: 'Late Track',
+          artist: 'Artist',
+          albumArtUrl: null,
+          durationMs: 180000,
+        },
+      ]);
+      await Promise.all([playlists.promise, likes.promise]);
+    });
+
+    expect(screen.queryByText(/Late Playlist/)).toBeNull();
+    expect(screen.queryByText(/Late Track/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Late Playlist/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Late Track/ })).toBeNull();
+  });
+
   it('creates a class from liked tracks (imports each, opens the builder)', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
@@ -639,6 +803,57 @@ describe('Dashboard class library states', () => {
     const sourceBtn = await screen.findByRole('button', { name: 'Browse Spotify playlists' });
     fireEvent.click(sourceBtn);
     expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
+  });
+
+  it('turns stale Music workspace browse paths into connection management after disconnect', async () => {
+    let connected = true;
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockImplementation(async () =>
+      connected ? [spotifyConnection()] : [],
+    );
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-1',
+        name: 'Recovery Ride',
+        ownerName: 'Steven',
+        trackCount: 12,
+        coverImageUrl: null,
+      },
+    ]);
+    vi.mocked(api.listLikes).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'tr-1',
+        providerUri: null,
+        title: 'Levels',
+        artist: 'Avicii',
+        albumArtUrl: null,
+        durationMs: 200000,
+      },
+    ]);
+    vi.mocked(api.disconnectProvider).mockImplementation(async () => {
+      connected = false;
+    });
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    expect(await screen.findByRole('button', { name: 'Browse Spotify playlists' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /1 liked tracks: Levels/i })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
+    expect(await screen.findByText('Connected')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    expect(await screen.findByRole('button', { name: 'Manage Spotify connection' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Browse Spotify playlists' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Connect this provider to browse liked tracks.' }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Connect this provider to browse saved playlists.' }),
+    ).toBeNull();
   });
 
   it('shows an honest retryable state when music connections fail to load', async () => {
