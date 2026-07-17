@@ -77,7 +77,7 @@ type ScTrack = z.infer<typeof scTrackSchema>;
 /** Search may be a bare array or a `linked_partitioning` envelope. */
 const scSearchSchema = z.union([
   z.array(z.unknown()),
-  z.object({ collection: z.array(z.unknown()) }),
+  z.object({ collection: z.array(z.unknown()), next_href: z.string().nullable().optional() }),
 ]);
 
 const scPlaylistSchema = z.object({
@@ -310,21 +310,29 @@ export async function fetchSoundCloudLikes(cfg: {
   accessToken: string;
   fetchImpl: FetchLike;
   apiBase?: string;
+  /** Stop after this many raw rows so liked-track reads stay bounded. */
+  maxTracks?: number;
+  /** Page size override for tests; SoundCloud pages are bounded to 50. */
   limit?: number;
 }): Promise<TrackSearchResult[]> {
   const base = cfg.apiBase ?? DEFAULT_API_BASE;
-  const limit = cfg.limit ?? LIKES_LIMIT;
-  const params = `limit=${limit}&linked_partitioning=true&access=playable`;
-  const res = await cfg.fetchImpl(`${base}/me/likes/tracks?${params}`, {
-    headers: { Authorization: `OAuth ${cfg.accessToken}`, Accept: 'application/json' },
+  const cap = cfg.maxTracks ?? 200;
+  const pageLimit = Math.min(cfg.limit ?? LIKES_LIMIT, SOUNDCLOUD_PAGE_LIMIT, cap);
+  const rows = await fetchSoundCloudPagedCollection({
+    firstUrl:
+      `${base}/me/likes/tracks?limit=${pageLimit}` + '&linked_partitioning=true&access=playable',
+    accessToken: cfg.accessToken,
+    fetchImpl: cfg.fetchImpl,
+    parsePage: (json) => {
+      const parsed = scSearchSchema.safeParse(json);
+      if (!parsed.success) return null;
+      if (Array.isArray(parsed.data)) return { rows: parsed.data, nextUrl: null };
+      return { rows: parsed.data.collection, nextUrl: parsed.data.next_href ?? null };
+    },
+    errorPath: '/me/likes/tracks',
+    cap,
   });
-  if (res.status === 401) throw new SoundCloudUnauthorizedError();
-  if (!res.ok)
-    throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for /me/likes/tracks`);
-  const parsed = scSearchSchema.safeParse(await readJson(res, 'soundcloud'));
-  if (!parsed.success) return [];
-  const raw = Array.isArray(parsed.data) ? parsed.data : parsed.data.collection;
-  return raw.map((item) => toCandidate(item)).filter((r): r is TrackSearchResult => r !== null);
+  return rows.map((item) => toCandidate(item)).filter((r): r is TrackSearchResult => r !== null);
 }
 
 /** Read a connected user's SoundCloud playlists for browse shelves. */
