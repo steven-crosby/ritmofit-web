@@ -10,6 +10,40 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-17 (round 22 atomic choreography follow-up) — merged, not deployed.** Main
+> reached `9841f11` (merge of **PR #338**) after the round 22 production deployment. The follow-up
+> makes cue and placed-move creates and anchor-changing updates re-check the effective half-open track
+> window inside their authoritative `INSERT` / `UPDATE` statement, closing the documented race with a
+> concurrent library-duration shrink. Precise preflight validation remains; a zero-row write is
+> diagnosed as the current `422` or a retryable `409` if timing changed back. A deterministic
+> stale-preflight regression proved that the guarded production insert persists no invalid cue, and a
+> mutation check failed when its predicate was removed. The full local and GitHub CI gates passed:
+> formatting, typecheck, lint, design-system verification, 569 web tests, 423 API unit tests, 30
+> music-package tests, 146 Worker/D1 integration tests, production build, OpenAPI no-drift, contract
+> parity, and dependency-audit policy. Code and tests only — **no schema / migration**. Production
+> remains on the round 22 Worker and application source recorded immediately below; deploy requires a
+> fresh owner gate. A separate analogous race in `PATCH /class-tracks/:id` clip-window mutation was
+> discovered during review and is not changed by PR #338.
+
+> **Session 2026-07-17 (all-harden round 22) — deployed (Worker
+> `8182f11f-c0c7-4678-b93a-898d27a34695`).** Application-code source `249378a` (merge of **PR
+> #337**) contains three sequential disjoint-lane PRs with green combined CI. Code and tests only —
+> **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior live Worker
+> `70262215-3ee3-4ff4-b412-60e46eae1b8b`. **PR #335** makes Apple Music library-song and
+> library-playlist pagination fail closed when a later page has a malformed envelope instead of
+> returning misleading partial results. **PR #336** atomically rejects inherited library-duration
+> shrinks that would put a placement clip start, cue, or placed move at or beyond the new exclusive
+> end. **PR #337** keeps Songs by Move results aligned with the latest selection by ignoring stale
+> successes, failures, and completion writes. The full final-main gate passed: formatting, typecheck,
+> lint, design-system verification, 569 web tests, 423 API unit tests, 30 music-package tests, 140
+> Worker/D1 integration tests, production build, OpenAPI no-drift, contract parity, and
+> dependency-audit policy. Post-deploy smoke passed on `https://ritmofit.studio`: SPA and health
+> `200`; protected class, community, share, playlist-import, cover/tag, and provider routes `401`;
+> missing public cover `404`; security headers present. Served SPA asset
+> `assets/index-De9ebYam.js` matched the production build with SHA-256
+> `c884006736f4bae7ea0461a5030a83c59c9ee844ab04ce252684b625a788ec15`, and Cloudflare reported
+> the new Worker version at 100%.
+
 > **Session 2026-07-16 (all-harden round 19) — deployed (Worker
 > `9d144446-bd89-4792-9fda-64220eb122b9`).** Deploying checkout HEAD `dc998dd` (application-code
 > source `68dfc27`, merge of PR #324) contains three sequential disjoint-lane PRs with green combined
