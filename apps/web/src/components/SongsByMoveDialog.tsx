@@ -8,7 +8,7 @@
  * Opened from the top bar; selecting a class calls `onOpenClass` so the
  * Dashboard can load that class workspace and close this.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Move, UserMove, SongByMove } from '@ritmofit/shared';
 import { listMoves, listUserMoves, songsByMove } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
@@ -40,6 +40,7 @@ export function SongsByMoveDialog({
   const [songs, setSongs] = useState<SongByMove[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const searchRequestId = useRef(0);
 
   // Load both move namespaces once. Either failing leaves an empty group rather
   // than blocking the whole picker.
@@ -62,10 +63,12 @@ export function SongsByMoveDialog({
   }, [pick, library, userMoves]);
 
   const search = useCallback(async (value: string) => {
+    const requestId = ++searchRequestId.current;
     setPick(value);
     if (!value) {
       setSongs(null);
       setError(null);
+      setLoading(false);
       return;
     }
     const sel = parseMovePick(value);
@@ -73,12 +76,15 @@ export function SongsByMoveDialog({
     setLoading(true);
     setError(null);
     try {
-      setSongs(await songsByMove({ kind: sel.kind, id: sel.id }));
+      const nextSongs = await songsByMove({ kind: sel.kind, id: sel.id });
+      if (requestId === searchRequestId.current) setSongs(nextSongs);
     } catch (e) {
-      setError(errMessage(e));
-      setSongs(null);
+      if (requestId === searchRequestId.current) {
+        setError(errMessage(e));
+        setSongs(null);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === searchRequestId.current) setLoading(false);
     }
   }, []);
 
