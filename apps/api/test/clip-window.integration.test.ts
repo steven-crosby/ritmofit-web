@@ -4,10 +4,22 @@
  * run-payload's `track.durationMs` non-positive and 422 the whole class. The add
  * and patch routes must reject it up front, and a valid window must keep the
  * run-payload loading.
+ *
+ * Also covers the TOCTOU close on `PATCH /class-tracks/:id` when `touchesWindow`:
+ * a concurrent exterior cue/move after preflight must not let a shrinking window
+ * persist (symmetric to the cue insert race in track-duration-dependents).
  */
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
+import { eq } from 'drizzle-orm';
 import { authed, signUpUser } from './helpers.js';
+import { createDb } from '../src/lib/db.js';
+import { classTracks, cues } from '../src/db/schema.js';
+import {
+  throwClipWindowWriteConflict,
+  updateClassTrackWithinAnchorBounds,
+} from '../src/routes/class-tracks.js';
+import { HttpError } from '../src/lib/errors.js';
 
 const TRACK_MS = 180_000;
 
@@ -248,6 +260,142 @@ describe('clip-window guard (integration)', () => {
       body: JSON.stringify({ clipEndMs: 120_001 }),
     });
     expect(afterAnchor.status).toBe(200);
+  });
+
+  it('rejects a clip shrink when a concurrent exterior cue arrives after preflight', async () => {
+    const user = await signUpUser();
+    const api = authed(user.cookie);
+    const { classTrackId } = await createClassWithTrack(user.cookie);
+    const db = createDb(env);
+
+    // Preflight would pass: no choreography yet, proposed window [0, 60_000).
+    const proposedStartMs = 0;
+    const proposedEndMs = 60_000;
+    const before = await db
+      .select({ clipEndMs: classTracks.clipEndMs, clipStartMs: classTracks.clipStartMs })
+      .from(classTracks)
+      .where(eq(classTracks.id, classTrackId))
+      .get();
+    expect(before?.clipEndMs).toBeNull();
+    expect(before?.clipStartMs).toBe(0);
+
+    // Stale-preflight race: exterior cue lands after the read, before the write.
+    const now = Date.now();
+    await db.insert(cues).values({
+      id: crypto.randomUUID(),
+      classTrackId,
+      anchorMs: 90_000,
+      beat: null,
+      bar: null,
+      text: 'After preflight',
+      color: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const updated = await updateClassTrackWithinAnchorBounds(
+      db,
+      classTrackId,
+      { clipEndMs: proposedEndMs, updatedAt: now },
+      proposedStartMs,
+      proposedEndMs,
+    );
+    expect(updated).toEqual([]);
+
+    const after = await db
+      .select({ clipEndMs: classTracks.clipEndMs, clipStartMs: classTracks.clipStartMs })
+      .from(classTracks)
+      .where(eq(classTracks.id, classTrackId))
+      .get();
+    expect(after?.clipEndMs).toBeNull();
+    expect(after?.clipStartMs).toBe(0);
+
+    // Zero-row diagnosis preserves the same precise 422 as the HTTP preflight.
+    await expect(
+      throwClipWindowWriteConflict(db, classTrackId, proposedStartMs, proposedEndMs),
+    ).rejects.toMatchObject({
+      status: 422,
+      code: 'VALIDATION_ERROR',
+      message: expect.stringMatching(/after the latest cue or move at 90000ms/),
+    } satisfies Partial<HttpError>);
+
+    // HTTP happy path still shrinks when anchors stay inside the proposed window.
+    const ok = await api(`/api/v1/class-tracks/${classTrackId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipEndMs: 90_001 }),
+    });
+    expect(ok.status).toBe(200);
+    expect(((await ok.json()) as { clipEndMs: number }).clipEndMs).toBe(90_001);
+  });
+
+  it('rejects a clip start raise when a concurrent exterior cue arrives after preflight', async () => {
+    const user = await signUpUser();
+    const { classTrackId } = await createClassWithTrack(user.cookie);
+    const db = createDb(env);
+
+    // Proposed raise of clip start to 60_000 would orphan an anchor at 30_000.
+    const proposedStartMs = 60_000;
+    const proposedEndMs = TRACK_MS;
+    const now = Date.now();
+    await db.insert(cues).values({
+      id: crypto.randomUUID(),
+      classTrackId,
+      anchorMs: 30_000,
+      beat: null,
+      bar: null,
+      text: 'Before raised start',
+      color: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const updated = await updateClassTrackWithinAnchorBounds(
+      db,
+      classTrackId,
+      { clipStartMs: proposedStartMs, updatedAt: now },
+      proposedStartMs,
+      proposedEndMs,
+    );
+    expect(updated).toEqual([]);
+
+    const persisted = await db
+      .select({ clipStartMs: classTracks.clipStartMs })
+      .from(classTracks)
+      .where(eq(classTracks.id, classTrackId))
+      .get();
+    expect(persisted?.clipStartMs).toBe(0);
+
+    await expect(
+      throwClipWindowWriteConflict(db, classTrackId, proposedStartMs, proposedEndMs),
+    ).rejects.toMatchObject({
+      status: 422,
+      code: 'VALIDATION_ERROR',
+      message: expect.stringMatching(/at or before the earliest cue or move at 30000ms/),
+    });
+  });
+
+  it('applies a clip-window update when every anchor remains inside the proposed window', async () => {
+    const user = await signUpUser();
+    const api = authed(user.cookie);
+    const { classTrackId } = await createClassWithTrack(user.cookie);
+    const db = createDb(env);
+
+    const cue = await api(`/api/v1/class-tracks/${classTrackId}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({ anchorMs: 45_000, text: 'Interior' }),
+    });
+    expect(cue.status).toBe(201);
+
+    const now = Date.now();
+    const updated = await updateClassTrackWithinAnchorBounds(
+      db,
+      classTrackId,
+      { clipStartMs: 30_000, clipEndMs: 120_000, updatedAt: now },
+      30_000,
+      120_000,
+    );
+    expect(updated).toHaveLength(1);
+    expect(updated[0]).toMatchObject({ clipStartMs: 30_000, clipEndMs: 120_000 });
   });
 
   it('run-payload re-bases anchors to the clip start but keeps beat/bar track-relative', async () => {
