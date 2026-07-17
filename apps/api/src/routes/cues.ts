@@ -13,6 +13,7 @@ import { assertAnchorWithinTrack } from '../lib/anchor.js';
 import { buildPatch } from '../lib/patch.js';
 import { serializeCue } from '../lib/serialize.js';
 import { cues } from '../db/schema.js';
+import { touchClassTrackParentUpdatedAt } from '../lib/class-recency.js';
 
 export const cueRoutes = new Hono<AppEnv>();
 cueRoutes.use('*', requireSession);
@@ -52,6 +53,7 @@ cueRoutes.post('/class-tracks/:id/cues', async (c) => {
     updatedAt: now,
   };
   await db.insert(cues).values(row);
+  await touchClassTrackParentUpdatedAt(db, classTrackId);
   return c.json(serializeCue(row), 201);
 });
 
@@ -64,6 +66,7 @@ cueRoutes.patch('/cues/:id', async (c) => {
   if ('anchorMs' in body) await assertAnchorWithinTrack(db, classTrackId, body.anchorMs!);
 
   await db.update(cues).set(buildPatch(body)).where(eq(cues.id, id));
+  await touchClassTrackParentUpdatedAt(db, classTrackId);
   const row = await db.select().from(cues).where(eq(cues.id, id)).get();
   return c.json(serializeCue(row!));
 });
@@ -72,7 +75,8 @@ cueRoutes.patch('/cues/:id', async (c) => {
 cueRoutes.delete('/cues/:id', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
-  await requireCueAccess(db, c.get('userId'), id, 'edit');
+  const { classTrackId } = await requireCueAccess(db, c.get('userId'), id, 'edit');
   await db.delete(cues).where(eq(cues.id, id));
+  await touchClassTrackParentUpdatedAt(db, classTrackId);
   return c.body(null, 204);
 });
