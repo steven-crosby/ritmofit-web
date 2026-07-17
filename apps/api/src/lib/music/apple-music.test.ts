@@ -161,6 +161,25 @@ describe('fetchAppleMusicLibrarySongs', () => {
     ]);
   });
 
+  it('rejects a malformed later page instead of returning partial library songs', async () => {
+    const { fetchImpl } = fakeFetch({
+      [`${LIBRARY_URL}?limit=100`]: {
+        data: [AM_LIBRARY_SONG],
+        next: '/v1/me/library/songs?offset=100',
+      },
+      [`${LIBRARY_URL}?offset=100`]: { data: 'invalid' },
+    });
+
+    await expect(
+      fetchAppleMusicLibrarySongs({
+        developerToken: 'devtok',
+        musicUserToken: 'mut-1',
+        fetchImpl,
+        apiBase: API_BASE,
+      }),
+    ).rejects.toThrow('Apple Music returned an invalid library song page.');
+  });
+
   it('stops at the maxTracks cap while appending a library-song page', async () => {
     const fullPage = Array.from({ length: 100 }, (_, index) => ({
       ...AM_LIBRARY_SONG,
@@ -325,6 +344,25 @@ describe('fetchAppleMusicLibraryPlaylists', () => {
       `${PLAYLISTS_URL}?limit=100`,
       `${PLAYLISTS_URL}?offset=100`,
     ]);
+  });
+
+  it('rejects a malformed later page instead of returning partial library playlists', async () => {
+    const { fetchImpl } = fakeFetch({
+      [`${PLAYLISTS_URL}?limit=100`]: {
+        data: [AM_LIBRARY_PLAYLIST],
+        next: '/v1/me/library/playlists?offset=100',
+      },
+      [`${PLAYLISTS_URL}?offset=100`]: { data: 'invalid' },
+    });
+
+    await expect(
+      fetchAppleMusicLibraryPlaylists({
+        developerToken: 'devtok',
+        musicUserToken: 'mut-1',
+        fetchImpl,
+        apiBase: API_BASE,
+      }),
+    ).rejects.toThrow('Apple Music returned an invalid library playlist page.');
   });
 
   it('throws AppleMusicUnauthorizedError on 401/403 (reconnect signal)', async () => {

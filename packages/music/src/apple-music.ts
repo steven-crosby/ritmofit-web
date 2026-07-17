@@ -312,7 +312,9 @@ export async function fetchAppleMusicLibrarySongs(cfg: {
     if (!res.ok)
       throw new ProviderError('apple_music', `Apple Music API ${res.status} for /me/library/songs`);
     const parsed = amLibraryPageSchema.safeParse(await readJson(res, 'apple_music'));
-    if (!parsed.success) break;
+    if (!parsed.success) {
+      throw new ProviderError('apple_music', 'Apple Music returned an invalid library song page.');
+    }
     const page = parsed.data.data ?? [];
     for (const raw of page) {
       const candidate = toLibraryCandidate(raw);
@@ -359,7 +361,12 @@ export async function fetchAppleMusicLibraryPlaylists(cfg: {
     }
 
     const parsed = amLibraryPageSchema.safeParse(await readJson(res, 'apple_music'));
-    if (!parsed.success) break;
+    if (!parsed.success) {
+      throw new ProviderError(
+        'apple_music',
+        'Apple Music returned an invalid library playlist page.',
+      );
+    }
     const page = parsed.data.data ?? [];
     for (const raw of page) {
       const playlist = amLibraryPlaylistSchema.safeParse(raw);
