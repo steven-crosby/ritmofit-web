@@ -19,6 +19,7 @@ import { HttpError } from '../lib/errors.js';
 import { serializeClassTrackMove } from '../lib/serialize.js';
 import { classTrackMoves, moves, userMoves } from '../db/schema.js';
 import type { Db } from '../lib/db.js';
+import { touchClassTrackParentUpdatedAt } from '../lib/class-recency.js';
 
 /** A `moveId` must be a known global move; a `userMoveId` must be the caller's own. */
 async function assertValidMoveRefs(
@@ -90,6 +91,7 @@ placedMoveRoutes.post('/class-tracks/:id/moves', async (c) => {
     updatedAt: now,
   };
   await db.insert(classTrackMoves).values(row);
+  await touchClassTrackParentUpdatedAt(db, classTrackId);
   return c.json(serializeClassTrackMove(row), 201);
 });
 
@@ -116,6 +118,7 @@ placedMoveRoutes.patch('/class-track-moves/:id', async (c) => {
   await assertAnchorWithinTrack(db, classTrackId, merged.anchorMs);
 
   await db.update(classTrackMoves).set(buildPatch(merged)).where(eq(classTrackMoves.id, id));
+  await touchClassTrackParentUpdatedAt(db, classTrackId);
   const row = await db.select().from(classTrackMoves).where(eq(classTrackMoves.id, id)).get();
   return c.json(serializeClassTrackMove(row!));
 });
@@ -124,7 +127,8 @@ placedMoveRoutes.patch('/class-track-moves/:id', async (c) => {
 placedMoveRoutes.delete('/class-track-moves/:id', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
-  await requireClassTrackMoveAccess(db, c.get('userId'), id, 'edit');
+  const { classTrackId } = await requireClassTrackMoveAccess(db, c.get('userId'), id, 'edit');
   await db.delete(classTrackMoves).where(eq(classTrackMoves.id, id));
+  await touchClassTrackParentUpdatedAt(db, classTrackId);
   return c.body(null, 204);
 });

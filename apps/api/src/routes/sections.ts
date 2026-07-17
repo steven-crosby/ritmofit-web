@@ -15,6 +15,7 @@ import { requireAccess, requireSectionAccess } from '../lib/authz.js';
 import { buildPatch } from '../lib/patch.js';
 import { serializeClassSection } from '../lib/serialize.js';
 import { classSections } from '../db/schema.js';
+import { touchClassUpdatedAt } from '../lib/class-recency.js';
 
 export const sectionRoutes = new Hono<AppEnv>();
 sectionRoutes.use('*', requireSession);
@@ -50,6 +51,7 @@ sectionRoutes.post('/classes/:id/sections', async (c) => {
     updatedAt: now,
   };
   await db.insert(classSections).values(row);
+  await touchClassUpdatedAt(db, classId);
   return c.json(serializeClassSection(row), 201);
 });
 
@@ -57,10 +59,11 @@ sectionRoutes.post('/classes/:id/sections', async (c) => {
 sectionRoutes.patch('/sections/:id', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
-  await requireSectionAccess(db, c.get('userId'), id, 'edit');
+  const { classId } = await requireSectionAccess(db, c.get('userId'), id, 'edit');
   const body = updateClassSectionSchema.parse(await c.req.json());
 
   await db.update(classSections).set(buildPatch(body)).where(eq(classSections.id, id));
+  await touchClassUpdatedAt(db, classId);
   const row = await db.select().from(classSections).where(eq(classSections.id, id)).get();
   return c.json(serializeClassSection(row!));
 });
@@ -69,7 +72,8 @@ sectionRoutes.patch('/sections/:id', async (c) => {
 sectionRoutes.delete('/sections/:id', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
-  await requireSectionAccess(db, c.get('userId'), id, 'edit');
+  const { classId } = await requireSectionAccess(db, c.get('userId'), id, 'edit');
   await db.delete(classSections).where(eq(classSections.id, id));
+  await touchClassUpdatedAt(db, classId);
   return c.body(null, 204);
 });
