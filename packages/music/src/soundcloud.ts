@@ -418,7 +418,12 @@ async function fetchSoundCloudPagedCollection(cfg: {
       throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for ${cfg.errorPath}`);
 
     const page = cfg.parsePage(await readJson(res, 'soundcloud'));
-    if (!page) break;
+    if (!page) {
+      throw new ProviderError(
+        'soundcloud',
+        `SoundCloud returned an invalid page for ${cfg.errorPath}.`,
+      );
+    }
 
     for (const row of page.rows) {
       out.push(row);
