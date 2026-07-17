@@ -277,6 +277,28 @@ describe('fetchSoundCloudPlaylists', () => {
     expect(calls.map((call) => call.url)).toEqual([firstUrl]);
   });
 
+  it('rejects a malformed later playlist page instead of returning a partial shelf', async () => {
+    const firstUrl = `${API_BASE}/me/playlists?limit=1&linked_partitioning=true`;
+    const nextUrl = `${API_BASE}/me/playlists?limit=1&linked_partitioning=true&page=2`;
+    const { fetchImpl } = pagedFetch({
+      [firstUrl]: {
+        collection: [{ id: 1, title: 'Keep', track_count: 1, user: { username: 'Coach' } }],
+        next_href: nextUrl,
+      },
+      [nextUrl]: { collection: 'invalid' },
+    });
+
+    await expect(
+      fetchSoundCloudPlaylists({
+        accessToken: 'user-tok',
+        fetchImpl,
+        apiBase: API_BASE,
+        limit: 1,
+        maxPlaylists: 10,
+      }),
+    ).rejects.toThrow('SoundCloud returned an invalid page for /me/playlists.');
+  });
+
   it('uses the URN when SoundCloud omits the deprecated playlist id', async () => {
     const firstUrl = `${API_BASE}/me/playlists?limit=50&linked_partitioning=true`;
     const { fetchImpl } = pagedFetch({
@@ -393,6 +415,26 @@ describe('fetchSoundCloudPlaylistTracks', () => {
     expect(calls.map((call) => call.url)).toEqual([firstUrl]);
   });
 
+  it('rejects a malformed later track page instead of returning a partial playlist', async () => {
+    const firstUrl = `${API_BASE}/playlists/pl-1/tracks?limit=1&linked_partitioning=true`;
+    const nextUrl = `${API_BASE}/playlists/pl-1/tracks?limit=1&linked_partitioning=true&page=2`;
+    const { fetchImpl } = pagedFetch({
+      [firstUrl]: { body: { collection: [track(1)], next_href: nextUrl } },
+      [nextUrl]: { body: { collection: 'invalid' } },
+    });
+
+    await expect(
+      fetchSoundCloudPlaylistTracks({
+        accessToken: 'user-tok',
+        playlistId: 'pl-1',
+        fetchImpl,
+        apiBase: API_BASE,
+        limit: 1,
+        maxTracks: 10,
+      }),
+    ).rejects.toThrow('SoundCloud returned an invalid page for /playlists/:id/tracks.');
+  });
+
   it('returns [] when a SoundCloud playlist does not exist', async () => {
     const fetchImpl: FetchLike = async () => ({
       ok: false,
@@ -495,6 +537,32 @@ describe('SoundCloudProvider.getPlaylist (URL import via /resolve)', () => {
     const firstTracksCall = calls.find((c) => c.url.startsWith(TRACKS_URL))!;
     expect(firstTracksCall.url).toContain('limit=200');
     expect(firstTracksCall.url).toContain('linked_partitioning=true');
+  });
+
+  it('rejects a malformed later page instead of returning a partial URL import', async () => {
+    let tracksPage = 0;
+    const { provider } = makeUrlProvider((url) => {
+      if (url.startsWith(`${API_BASE}/resolve`)) {
+        return {
+          status: 302,
+          headers: { location: `${API_BASE}/playlists/${ENCODED_URN}` },
+        };
+      }
+      if (url.startsWith(TRACKS_URL)) {
+        tracksPage += 1;
+        return tracksPage === 1
+          ? {
+              status: 200,
+              body: { collection: [SC_TRACK], next_href: `${TRACKS_URL}?page2=true` },
+            }
+          : { status: 200, body: { collection: 'invalid' } };
+      }
+      return { status: 500 };
+    });
+
+    await expect(provider.getPlaylist(REF)).rejects.toThrow(
+      'SoundCloud returned an invalid page for /playlists/:urn/tracks.',
+    );
   });
 
   it('returns [] when /resolve 404s (no such playlist)', async () => {
