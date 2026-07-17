@@ -447,6 +447,11 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       template: ClassTemplate,
     ) => {
       const tracks = await listPlaylistTracks(provider, playlistId);
+      if (tracks.length === 0) {
+        throw new Error(
+          'No tracks found in this playlist. Choose another playlist to start a class.',
+        );
+      }
       const cls = await createClass({ title: playlistName, template });
       await applyTagFilter(null);
       const failed = await importCollectionTracks(cls.id, tracks);
@@ -2516,7 +2521,7 @@ function PlaylistBrowserDialog({
             <button
               type="button"
               onClick={() => void handleCreate(selectedPlaylist)}
-              disabled={!!creatingId || loadingTracks}
+              disabled={!!creatingId || loadingTracks || !tracks?.length}
               aria-label={`Start class from ${selectedPlaylist.name}`}
               className="rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
             >
