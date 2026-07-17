@@ -4,7 +4,7 @@
  * Every handler resolves the parent class and gates via `requireAccess`.
  */
 import { Hono } from 'hono';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, lt, notExists, or, sql } from 'drizzle-orm';
 import {
   addClassTrackSchema,
   updateClassTrackSchema,
@@ -44,6 +44,84 @@ import { touchClassUpdatedAt } from '../lib/class-recency.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
 classTrackRoutes.use('*', requireSession);
+
+/**
+ * Persist a class-track window patch only while every cue/move still falls inside
+ * the proposed half-open window `[proposedStartMs, proposedEndMs)`. Keeping the
+ * production statement callable lets the race regression simulate a preflight
+ * that became stale before write (symmetric to `insertCueWithinCurrentTrack`).
+ */
+export async function updateClassTrackWithinAnchorBounds(
+  db: Db,
+  classTrackId: string,
+  patch: Partial<typeof classTracks.$inferInsert>,
+  proposedStartMs: number,
+  proposedEndMs: number | null,
+): Promise<(typeof classTracks.$inferSelect)[]> {
+  // Exterior placement: anchor before the inclusive start, or at/after the exclusive end.
+  const cueOutside =
+    proposedEndMs == null
+      ? lt(cues.anchorMs, proposedStartMs)
+      : or(lt(cues.anchorMs, proposedStartMs), gte(cues.anchorMs, proposedEndMs));
+  const moveOutside =
+    proposedEndMs == null
+      ? lt(classTrackMoves.anchorMs, proposedStartMs)
+      : or(
+          lt(classTrackMoves.anchorMs, proposedStartMs),
+          gte(classTrackMoves.anchorMs, proposedEndMs),
+        );
+
+  const exteriorCue = db
+    .select({ id: cues.id })
+    .from(cues)
+    .where(and(eq(cues.classTrackId, classTrackId), cueOutside));
+  const exteriorMove = db
+    .select({ id: classTrackMoves.id })
+    .from(classTrackMoves)
+    .where(and(eq(classTrackMoves.classTrackId, classTrackId), moveOutside));
+
+  return db
+    .update(classTracks)
+    .set(patch)
+    .where(and(eq(classTracks.id, classTrackId), notExists(exteriorCue), notExists(exteriorMove)))
+    .returning();
+}
+
+/**
+ * A conditional clip-window update returned no row. Re-read anchors only to
+ * preserve the route's precise 422 messages; the UPDATE itself remains the
+ * authoritative guard. If choreography moved back inside the proposed window
+ * before this diagnostic, surface a retryable conflict rather than misreporting.
+ */
+export async function throwClipWindowWriteConflict(
+  db: Db,
+  classTrackId: string,
+  proposedStartMs: number,
+  proposedEndMs: number | null,
+): Promise<never> {
+  const anchors = await anchorBounds(db, classTrackId);
+  if (anchors) {
+    if (anchors.minMs < proposedStartMs) {
+      throw new HttpError(
+        422,
+        'VALIDATION_ERROR',
+        `Clip start must be at or before the earliest cue or move at ${anchors.minMs}ms.`,
+      );
+    }
+    if (proposedEndMs != null && proposedEndMs <= anchors.maxMs) {
+      throw new HttpError(
+        422,
+        'VALIDATION_ERROR',
+        `Clip end must be after the latest cue or move at ${anchors.maxMs}ms.`,
+      );
+    }
+  }
+  throw new HttpError(
+    409,
+    'CONFLICT',
+    'Choreography changed while updating the clip window. Retry your change.',
+  );
+}
 
 /**
  * POST /classes/:id/tracks — add a track to a class (edit access). Body either
@@ -241,6 +319,10 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
     );
   }
 
+  // When the patch mutates the effective window, keep the resolved half-open bounds
+  // for the authoritative guarded UPDATE (same startMs/endMs as preflight).
+  let proposedWindow: { startMs: number; endMs: number | null } | undefined;
+
   if (touchesWindow || touchesOffset) {
     const [existing, anchors] = await Promise.all([
       db
@@ -275,6 +357,7 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
       clipStartMs,
       clipEndMs,
     );
+    if (touchesWindow) proposedWindow = { startMs, endMs };
     // A clip start at/past the track length collapses the window to zero, which
     // later fails the run-payload's positive-duration contract and 422s the whole
     // class. Reject it here (the DB CHECK can't express the base bound).
@@ -310,6 +393,7 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
     }
 
     // Free mode: the resulting window must not overlap a sibling (gaps are fine).
+    // Not made atomic with the write (wouldOverlap TOCTOU is an accepted residual).
     if (mode === 'free') {
       const mergedOffset = touchesOffset
         ? (body.startOffsetMs ?? 0)
@@ -340,7 +424,22 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
     ...(touchesOffset ? { startOffsetMs: startOffsetMs ?? 0 } : {}),
   };
 
-  await db.update(classTracks).set(patch).where(eq(classTracks.id, id));
+  // Window mutations re-check choreography anchors inside the UPDATE so a cue/move
+  // inserted after preflight cannot land outside the persisted half-open window.
+  if (proposedWindow) {
+    const updated = await updateClassTrackWithinAnchorBounds(
+      db,
+      id,
+      patch,
+      proposedWindow.startMs,
+      proposedWindow.endMs,
+    );
+    if (updated.length === 0) {
+      await throwClipWindowWriteConflict(db, id, proposedWindow.startMs, proposedWindow.endMs);
+    }
+  } else {
+    await db.update(classTracks).set(patch).where(eq(classTracks.id, id));
+  }
   if (touchesWindow || touchesOffset) await resequence(db, classId);
   await touchClassUpdatedAt(db, classId);
   const row = await db.select().from(classTracks).where(eq(classTracks.id, id)).get();
