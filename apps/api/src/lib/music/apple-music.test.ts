@@ -520,6 +520,67 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
     expect(pageCalls).toEqual([`${TRACKS_URL}?limit=300`, `${TRACKS_URL}?offset=300&limit=300`]);
   });
 
+  it('normalizes next that already includes limit to a single limit=300', async () => {
+    const secondSong = { ...AM_SONG, id: '2' };
+    const { provider, calls } = makeProvider({
+      [`${TRACKS_URL}?offset=300`]: { data: [secondSong] },
+      [`${TRACKS_URL}?limit=300`]: {
+        data: [AM_SONG],
+        // Apple sometimes echoes limit on `next` (same or different value).
+        next: '/v1/catalog/gb/playlists/pl.abc123/tracks?offset=300&limit=100',
+      },
+    });
+
+    const results = await provider.getPlaylist(REF);
+
+    expect(results.map((r) => r.providerTrackId)).toEqual(['1440857781', '2']);
+    const pageCalls = calls.filter((c) => c.url.startsWith(TRACKS_URL)).map((c) => c.url);
+    expect(pageCalls).toEqual([`${TRACKS_URL}?limit=300`, `${TRACKS_URL}?offset=300&limit=300`]);
+    expect(pageCalls[1]?.match(/limit=/g)).toHaveLength(1);
+    expect(pageCalls[1]).not.toContain('limit=100');
+  });
+
+  it('adds limit when next is a path with no query string', async () => {
+    const secondSong = { ...AM_SONG, id: '2' };
+    // Both pages share the same URL after normalization; key by hit count so the
+    // second request can return the second song instead of replaying page 1.
+    const calls: { url: string }[] = [];
+    let hits = 0;
+    const fetchImpl: FetchLike = async (url) => {
+      calls.push({ url });
+      hits += 1;
+      if (hits === 1) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            data: [AM_SONG],
+            next: '/v1/catalog/gb/playlists/pl.abc123/tracks',
+          }),
+          text: async () => '',
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: [secondSong] }),
+        text: async () => '',
+      };
+    };
+    const provider = createAppleMusicProvider({
+      developerToken: 'devtok',
+      fetchImpl,
+      apiBase: API_BASE,
+      storefront: 'us',
+    });
+
+    const results = await provider.getPlaylist(REF);
+
+    expect(results.map((r) => r.providerTrackId)).toEqual(['1440857781', '2']);
+    expect(calls.map((c) => c.url)).toEqual([`${TRACKS_URL}?limit=300`, `${TRACKS_URL}?limit=300`]);
+    expect(calls[1]?.url.match(/limit=/g)).toHaveLength(1);
+  });
+
   it('rejects a malformed later page instead of returning a partial playlist', async () => {
     const { provider } = makeProvider({
       [`${TRACKS_URL}?offset=300`]: { data: 'invalid' },
