@@ -119,8 +119,8 @@ class AppleMusicProvider implements MusicProvider {
    */
   async getPlaylist(ref: Extract<PlaylistImportRef, { provider: 'apple_music' }>) {
     const out: TrackSearchResult[] = [];
-    // Apple returns a relative `next` subpath (e.g. `/v1/catalog/us/…?offset=100`,
-    // without the custom limit — re-appended so page size stays consistent).
+    // Apple returns a relative `next` subpath (e.g. `/v1/catalog/us/…?offset=100`).
+    // Some responses already include `limit`; always normalize to one page-size pair.
     const origin = this.apiBase.replace(/\/v1$/, '');
     let path: string | null =
       `/v1/catalog/${encodeURIComponent(ref.storefront)}/playlists/` +
@@ -153,7 +153,9 @@ class AppleMusicProvider implements MusicProvider {
         if (out.length >= IMPORT_TRACK_CAP) break;
       }
       if (page.length === 0) break;
-      path = parsed.data.next ? `${parsed.data.next}&limit=${CATALOG_PLAYLIST_PAGE_LIMIT}` : null;
+      path = parsed.data.next
+        ? withCatalogPlaylistPageLimit(parsed.data.next, CATALOG_PLAYLIST_PAGE_LIMIT)
+        : null;
     }
     return out;
   }
@@ -188,6 +190,20 @@ class AppleMusicProvider implements MusicProvider {
       throw new ProviderError('apple_music', `Apple Music request failed: ${res.status}`);
     return readJson(res, 'apple_music');
   }
+}
+
+/**
+ * Ensure a relative Apple catalog `next` path carries exactly one `limit=<n>`.
+ * Strips any existing `limit` pairs (Apple sometimes includes its own default)
+ * then sets the page size we want. Hand-rolled query join — no URL/URLSearchParams.
+ */
+function withCatalogPlaylistPageLimit(nextPath: string, limit: number): string {
+  const qIdx = nextPath.indexOf('?');
+  const pathname = qIdx === -1 ? nextPath : nextPath.slice(0, qIdx);
+  const query = qIdx === -1 ? '' : nextPath.slice(qIdx + 1);
+  const kept = query.split('&').filter((pair) => pair.length > 0 && !/^limit=/i.test(pair));
+  kept.push(`limit=${limit}`);
+  return `${pathname}?${kept.join('&')}`;
 }
 
 /** A catalog track resource is a song unless its `type` says otherwise. */
