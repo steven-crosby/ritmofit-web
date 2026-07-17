@@ -148,6 +148,23 @@ describe('fetchSoundCloudLikes', () => {
     return { fetchImpl, calls };
   }
 
+  function pagedFetch(handlers: Record<string, unknown>) {
+    const calls: { url: string; init?: Parameters<FetchLike>[1] }[] = [];
+    const fetchImpl: FetchLike = async (url, init) => {
+      calls.push({ url, init });
+      if (!(url in handlers)) {
+        return { ok: false, status: 404, json: async () => ({}), text: async () => '' };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => handlers[url],
+        text: async () => JSON.stringify(handlers[url]),
+      };
+    };
+    return { fetchImpl, calls };
+  }
+
   it('maps the liked tracks with the user token as OAuth auth', async () => {
     const { fetchImpl, calls } = statusFetch(200, { collection: [SC_TRACK] });
     const out = await fetchSoundCloudLikes({
@@ -166,6 +183,88 @@ describe('fetchSoundCloudLikes', () => {
     expect(
       (await fetchSoundCloudLikes({ accessToken: 't', fetchImpl, apiBase: API_BASE })).length,
     ).toBe(1);
+  });
+
+  it('follows the exact linked_partitioning cursor and preserves OAuth on every page', async () => {
+    const firstUrl = `${API_BASE}/me/likes/tracks?limit=1&linked_partitioning=true&access=playable`;
+    const nextUrl = 'https://cursor.soundcloud.test/me/likes/tracks?cursor=opaque%2Bvalue';
+    const { fetchImpl, calls } = pagedFetch({
+      [firstUrl]: { collection: [SC_TRACK], next_href: nextUrl },
+      [nextUrl]: { collection: [{ ...SC_TRACK, id: 67890 }] },
+    });
+
+    const out = await fetchSoundCloudLikes({
+      accessToken: 'user-tok',
+      fetchImpl,
+      apiBase: API_BASE,
+      limit: 1,
+      maxTracks: 10,
+    });
+
+    expect(out.map((track) => track.providerTrackId)).toEqual(['12345', '67890']);
+    expect(calls.map((call) => call.url)).toEqual([firstUrl, nextUrl]);
+    expect(calls.map((call) => call.init?.headers?.Authorization)).toEqual([
+      'OAuth user-tok',
+      'OAuth user-tok',
+    ]);
+  });
+
+  it('stops at 200 raw rows by default and supports a smaller injected cap', async () => {
+    const page = Array.from({ length: 50 }, (_, index) => ({ ...SC_TRACK, id: index + 1 }));
+    const firstUrl = `${API_BASE}/me/likes/tracks?limit=50&linked_partitioning=true&access=playable`;
+    const handlers: Record<string, unknown> = {};
+    for (let pageNumber = 1; pageNumber <= 5; pageNumber += 1) {
+      const url = pageNumber === 1 ? firstUrl : `${API_BASE}/likes-cursor?page=${pageNumber}`;
+      handlers[url] = {
+        collection: page,
+        next_href: `${API_BASE}/likes-cursor?page=${pageNumber + 1}`,
+      };
+    }
+    const defaultRead = pagedFetch(handlers);
+
+    const out = await fetchSoundCloudLikes({
+      accessToken: 'user-tok',
+      fetchImpl: defaultRead.fetchImpl,
+      apiBase: API_BASE,
+    });
+
+    expect(out).toHaveLength(200);
+    expect(defaultRead.calls).toHaveLength(4);
+
+    const smallRead = pagedFetch({
+      [`${API_BASE}/me/likes/tracks?limit=1&linked_partitioning=true&access=playable`]: {
+        collection: [SC_TRACK],
+        next_href: `${API_BASE}/likes-cursor?page=2`,
+      },
+    });
+    await expect(
+      fetchSoundCloudLikes({
+        accessToken: 'user-tok',
+        fetchImpl: smallRead.fetchImpl,
+        apiBase: API_BASE,
+        maxTracks: 1,
+      }),
+    ).resolves.toHaveLength(1);
+    expect(smallRead.calls).toHaveLength(1);
+  });
+
+  it('rejects a malformed later likes page instead of returning a partial library', async () => {
+    const firstUrl = `${API_BASE}/me/likes/tracks?limit=1&linked_partitioning=true&access=playable`;
+    const nextUrl = `${API_BASE}/likes-cursor?page=2`;
+    const { fetchImpl } = pagedFetch({
+      [firstUrl]: { collection: [SC_TRACK], next_href: nextUrl },
+      [nextUrl]: { collection: 'invalid' },
+    });
+
+    await expect(
+      fetchSoundCloudLikes({
+        accessToken: 'user-tok',
+        fetchImpl,
+        apiBase: API_BASE,
+        limit: 1,
+        maxTracks: 10,
+      }),
+    ).rejects.toThrow('SoundCloud returned an invalid page for /me/likes/tracks.');
   });
 
   it('throws SoundCloudUnauthorizedError on 401 (the refresh signal)', async () => {
