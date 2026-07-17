@@ -367,6 +367,75 @@ describe('Dashboard class library states', () => {
     expect(api.createClass).not.toHaveBeenCalled();
   });
 
+  it('disables class creation when a saved playlist contains no tracks', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-empty',
+        name: 'Empty Ride',
+        ownerName: 'Steven',
+        trackCount: 0,
+        coverImageUrl: null,
+      },
+    ]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Empty Ride' }));
+
+    expect(await screen.findByText('No tracks found in this playlist.')).toBeTruthy();
+    const createButton = screen.getByRole('button', {
+      name: 'Start class from Empty Ride',
+    }) as HTMLButtonElement;
+    expect(createButton.disabled).toBe(true);
+    expect(api.createClass).not.toHaveBeenCalled();
+  });
+
+  it('does not create a class when a saved playlist becomes empty before submission', async () => {
+    const playlist = {
+      provider: 'spotify' as const,
+      playlistId: 'pl-emptied',
+      name: 'Emptied Ride',
+      ownerName: 'Steven',
+      trackCount: 1,
+      coverImageUrl: null,
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
+    vi.mocked(api.listPlaylistTracks)
+      .mockResolvedValueOnce([
+        {
+          provider: 'spotify',
+          providerTrackId: 'track-1',
+          providerUri: null,
+          title: 'Track One',
+          artist: 'Artist',
+          durationMs: 180000,
+          albumArtUrl: null,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Emptied Ride' }));
+    await screen.findByText('Track One');
+    fireEvent.click(screen.getByRole('button', { name: 'Start class from Emptied Ride' }));
+
+    expect(
+      await screen.findByText(
+        'No tracks found in this playlist. Choose another playlist to start a class.',
+      ),
+    ).toBeTruthy();
+    expect(api.createClass).not.toHaveBeenCalled();
+  });
+
   it('reports partial imports and retries failures against the same class', async () => {
     const tracks = [
       {
