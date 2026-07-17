@@ -7,7 +7,7 @@
  * Unknown / not-owned tracks return 404 so a user can't probe another's library.
  */
 import { Hono } from 'hono';
-import { and, eq, gte, isNull } from 'drizzle-orm';
+import { and, eq, gte, isNull, notExists } from 'drizzle-orm';
 import {
   createTrackSchema,
   updateTrackSchema,
@@ -28,7 +28,7 @@ import { getMusicProvider } from '../lib/music/registry.js';
 import { makeMatchKey, type MatchableTrack } from '../lib/same-song.js';
 import { resolveTrackProvider } from '../lib/resolve-provider.js';
 import { attachProviderId } from '../lib/track-import.js';
-import { classTracks, tracks, trackProviderIds } from '../db/schema.js';
+import { classTrackMoves, classTracks, cues, tracks, trackProviderIds } from '../db/schema.js';
 import type { Db } from '../lib/db.js';
 
 /** Load a track the caller owns, or throw 404 (existence hidden). */
@@ -87,31 +87,6 @@ trackRoutes.patch('/tracks/:id', async (c) => {
   const existing = await requireOwnedTrack(db, c.get('userId'), id);
   const body = updateTrackSchema.parse(await c.req.json());
 
-  // Placements without a class-specific duration override inherit this library
-  // duration. Do not let a correction shrink their resolved base to/below an
-  // existing clip start: that collapses the effective duration to zero and makes
-  // the entire class run-payload fail response validation.
-  if ('durationMs' in body && body.durationMs != null) {
-    const collapsedPlacement = await db
-      .select({ id: classTracks.id })
-      .from(classTracks)
-      .where(
-        and(
-          eq(classTracks.trackId, id),
-          isNull(classTracks.durationMsOverride),
-          gte(classTracks.clipStartMs, body.durationMs),
-        ),
-      )
-      .get();
-    if (collapsedPlacement) {
-      throw new HttpError(
-        422,
-        'VALIDATION_ERROR',
-        'Track duration must stay after the clip start of every clipped class placement.',
-      );
-    }
-  }
-
   const patch = buildPatch(body) as ReturnType<typeof buildPatch<typeof body>> & {
     matchKey?: string;
   };
@@ -120,7 +95,68 @@ trackRoutes.patch('/tracks/:id', async (c) => {
     patch.matchKey = makeMatchKey(body.title ?? existing.title, body.artist ?? existing.artist);
   }
 
-  await db.update(tracks).set(patch).where(eq(tracks.id, id));
+  if ('durationMs' in body && body.durationMs != null) {
+    // Placements without a class-specific duration override inherit this library
+    // duration. The new half-open end must remain after every clip start, cue, and
+    // placed move; otherwise the run payload either fails validation at zero length
+    // or silently carries choreography that playback can never reach.
+    const collapsedPlacement = db
+      .select({ id: classTracks.id })
+      .from(classTracks)
+      .where(
+        and(
+          eq(classTracks.trackId, id),
+          isNull(classTracks.durationMsOverride),
+          gte(classTracks.clipStartMs, body.durationMs),
+        ),
+      );
+    const unreachableCue = db
+      .select({ id: cues.id })
+      .from(cues)
+      .innerJoin(classTracks, eq(classTracks.id, cues.classTrackId))
+      .where(
+        and(
+          eq(classTracks.trackId, id),
+          isNull(classTracks.durationMsOverride),
+          gte(cues.anchorMs, body.durationMs),
+        ),
+      );
+    const unreachableMove = db
+      .select({ id: classTrackMoves.id })
+      .from(classTrackMoves)
+      .innerJoin(classTracks, eq(classTracks.id, classTrackMoves.classTrackId))
+      .where(
+        and(
+          eq(classTracks.trackId, id),
+          isNull(classTracks.durationMsOverride),
+          gte(classTrackMoves.anchorMs, body.durationMs),
+        ),
+      );
+
+    // Keep the guard and write in one SQLite statement. A separate preflight read
+    // would leave a race where choreography could be inserted before the update.
+    const updated = await db
+      .update(tracks)
+      .set(patch)
+      .where(
+        and(
+          eq(tracks.id, id),
+          notExists(collapsedPlacement),
+          notExists(unreachableCue),
+          notExists(unreachableMove),
+        ),
+      )
+      .returning({ id: tracks.id });
+    if (updated.length === 0) {
+      throw new HttpError(
+        422,
+        'VALIDATION_ERROR',
+        'Track duration must stay after every clip start, cue, or move in each inherited clipped class placement.',
+      );
+    }
+  } else {
+    await db.update(tracks).set(patch).where(eq(tracks.id, id));
+  }
   const row = await db.select().from(tracks).where(eq(tracks.id, id)).get();
   return c.json(serializeTrack(row!));
 });
