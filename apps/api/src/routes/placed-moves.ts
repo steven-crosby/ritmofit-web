@@ -7,17 +7,21 @@
  * schema invariant). References are also checked to exist / be owned (→ 422).
  */
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { and, eq, exists, sql } from 'drizzle-orm';
 import { placeClassTrackMoveSchema, updateClassTrackMoveSchema } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { requireClassTrackAccess, requireClassTrackMoveAccess } from '../lib/authz.js';
-import { assertAnchorWithinTrack } from '../lib/anchor.js';
+import {
+  anchorWithinTrackWhere,
+  assertAnchorWithinTrack,
+  throwAnchorWriteConflict,
+} from '../lib/anchor.js';
 import { buildPatch } from '../lib/patch.js';
 import { HttpError } from '../lib/errors.js';
 import { serializeClassTrackMove } from '../lib/serialize.js';
-import { classTrackMoves, moves, userMoves } from '../db/schema.js';
+import { classTrackMoves, classTracks, moves, tracks, userMoves } from '../db/schema.js';
 import type { Db } from '../lib/db.js';
 import { touchClassTrackParentUpdatedAt } from '../lib/class-recency.js';
 
@@ -90,9 +94,31 @@ placedMoveRoutes.post('/class-tracks/:id/moves', async (c) => {
     createdAt: now,
     updatedAt: now,
   };
-  await db.insert(classTrackMoves).values(row);
+  const inserted = await db
+    .insert(classTrackMoves)
+    .select(
+      db
+        .select({
+          id: sql<string>`${row.id}`.as('id'),
+          classTrackId: classTracks.id,
+          anchorMs: sql<number>`${row.anchorMs}`.as('anchor_ms'),
+          moveId: sql<string | null>`${row.moveId}`.as('move_id'),
+          userMoveId: sql<string | null>`${row.userMoveId}`.as('user_move_id'),
+          nameOverride: sql<string | null>`${row.nameOverride}`.as('name_override'),
+          intensity: sql<typeof row.intensity>`${row.intensity}`.as('intensity'),
+          createdAt: sql<number>`${row.createdAt}`.as('created_at'),
+          updatedAt: sql<number>`${row.updatedAt}`.as('updated_at'),
+        })
+        .from(classTracks)
+        .innerJoin(tracks, eq(tracks.id, classTracks.trackId))
+        .where(anchorWithinTrackWhere(classTrackId, body.anchorMs)),
+    )
+    .returning();
+  if (inserted.length === 0) {
+    await throwAnchorWriteConflict(db, classTrackId, body.anchorMs);
+  }
   await touchClassTrackParentUpdatedAt(db, classTrackId);
-  return c.json(serializeClassTrackMove(row), 201);
+  return c.json(serializeClassTrackMove(inserted[0]!), 201);
 });
 
 /** PATCH /class-track-moves/:id — update a placement (edit access). */
@@ -117,10 +143,30 @@ placedMoveRoutes.patch('/class-track-moves/:id', async (c) => {
   await assertValidMoveRefs(db, me, merged.moveId, merged.userMoveId);
   await assertAnchorWithinTrack(db, classTrackId, merged.anchorMs);
 
-  await db.update(classTrackMoves).set(buildPatch(merged)).where(eq(classTrackMoves.id, id));
+  let updated: (typeof classTrackMoves.$inferSelect)[];
+  if ('anchorMs' in body) {
+    const validParent = db
+      .select({ id: classTracks.id })
+      .from(classTracks)
+      .innerJoin(tracks, eq(tracks.id, classTracks.trackId))
+      .where(anchorWithinTrackWhere(classTrackId, merged.anchorMs));
+    updated = await db
+      .update(classTrackMoves)
+      .set(buildPatch(merged))
+      .where(and(eq(classTrackMoves.id, id), exists(validParent)))
+      .returning();
+    if (updated.length === 0) {
+      await throwAnchorWriteConflict(db, classTrackId, merged.anchorMs);
+    }
+  } else {
+    updated = await db
+      .update(classTrackMoves)
+      .set(buildPatch(merged))
+      .where(eq(classTrackMoves.id, id))
+      .returning();
+  }
   await touchClassTrackParentUpdatedAt(db, classTrackId);
-  const row = await db.select().from(classTrackMoves).where(eq(classTrackMoves.id, id)).get();
-  return c.json(serializeClassTrackMove(row!));
+  return c.json(serializeClassTrackMove(updated[0]!));
 });
 
 /** DELETE /class-track-moves/:id — remove a placement (edit access). */

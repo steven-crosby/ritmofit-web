@@ -16,7 +16,7 @@
  * clip has no known end (unknown length and no explicit clip end), we can't bound
  * the top — apply only the lower bound rather than guess.
  */
-import { eq } from 'drizzle-orm';
+import { and, eq, gt, isNotNull, isNull, lte, or, type SQL } from 'drizzle-orm';
 import { classTracks, tracks } from '../db/schema.js';
 import { HttpError } from './errors.js';
 import type { Db } from './db.js';
@@ -41,6 +41,26 @@ export function anchorOutsideClipWindow(
     return `anchorMs (${anchorMs}) must be before the clip end (${endMs}ms).`;
   }
   return null;
+}
+
+/**
+ * SQL twin of `anchorOutsideClipWindow` / `resolveClipWindow`, scoped to one
+ * class_track. Use this inside anchor-writing INSERT/UPDATE statements so a
+ * concurrent duration change cannot land between validation and persistence.
+ */
+export function anchorWithinTrackWhere(classTrackId: string, anchorMs: number): SQL | undefined {
+  return and(
+    eq(classTracks.id, classTrackId),
+    lte(classTracks.clipStartMs, anchorMs),
+    or(isNull(classTracks.clipEndMs), gt(classTracks.clipEndMs, anchorMs)),
+    or(
+      and(isNotNull(classTracks.durationMsOverride), gt(classTracks.durationMsOverride, anchorMs)),
+      and(
+        isNull(classTracks.durationMsOverride),
+        or(isNull(tracks.durationMs), gt(tracks.durationMs, anchorMs)),
+      ),
+    ),
+  );
 }
 
 export async function assertAnchorWithinTrack(
@@ -69,4 +89,23 @@ export async function assertAnchorWithinTrack(
   );
   const error = anchorOutsideClipWindow(anchorMs, startMs, endMs);
   if (error) throw new HttpError(422, 'VALIDATION_ERROR', error);
+}
+
+/**
+ * A conditional anchor write returned no row. Re-read only to preserve the
+ * route's precise validation message; the write statement itself remains the
+ * authoritative guard. If the window changed back before this diagnostic read,
+ * surface an explicit retryable conflict rather than misreporting validation.
+ */
+export async function throwAnchorWriteConflict(
+  db: Db,
+  classTrackId: string,
+  anchorMs: number,
+): Promise<never> {
+  await assertAnchorWithinTrack(db, classTrackId, anchorMs);
+  throw new HttpError(
+    409,
+    'CONFLICT',
+    'Track timing changed while saving choreography. Retry your change.',
+  );
 }
