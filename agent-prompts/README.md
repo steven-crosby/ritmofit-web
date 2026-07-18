@@ -66,6 +66,10 @@ safe rebases of trivially-stale green `auto-maintenance` branches (use `REPORT-O
 read-only pass). No prompt ever merges, deploys, migrates the remote D1, or changes secrets.
 
 ## Folder
+- `design-audit/` — **UI/UX polish audit pack v3** (critique → ranked backlog → optional
+  mockups → written owner decisions → per-surface implement briefs). Start at
+  [`design-audit/README.md`](./design-audit/README.md). Artifacts land in `docs/audits/<run-id>/`.
+  Interactive / owner-gated — not unattended remote maintenance.
 - `daily/` — **interactive**, person-in-the-loop prompts that run on your own machine:
   - `start-session` — interactive orientation before a personal work block.
   - `close-session` — interactive cleanup, verification, PR/deploy hygiene, and handoff.
