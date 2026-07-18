@@ -10,6 +10,27 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-17 (all-harden round 23) — deployed (Worker
+> `65a69959-c7b7-411a-a15c-7fc33b701669`).** Application-code source `f193abd` (merge of **PR
+> #341**) contains three sequential disjoint-lane PRs with green combined CI, plus the earlier
+> **PR #338** atomic cue/move anchor-write follow-up that had already reached `main`. Code and tests
+> only — **no schema / migration** (remote D1: "No migrations to apply"). Rollback anchor: prior live
+> Worker `5e04d218-dada-4d28-beba-88d19144bb09` (the intermediate #338-only production publish that
+> landed after round 22 without a HISTORY line; round 22 Worker was
+> `8182f11f-c0c7-4678-b93a-898d27a34695`). **PR #340** normalizes Apple catalog `getPlaylist` paging
+> so page-2+ URLs carry exactly one `limit=300`. **PR #342** makes `PATCH /class-tracks/:id`
+> clip-window updates re-check exterior cues/moves inside the authoritative `UPDATE`, closing the
+> inverse of the #338 race. **PR #341** refreshes Account Music connections when Manage
+> disconnect/connect bumps `connectionRevision` (Music resting shelves were already covered). The
+> full pre-deploy gate passed: formatting, typecheck, lint, design-system verification, 570 web
+> tests, API unit tests, 30 music-package tests, 149 Worker/D1 integration tests, production build,
+> OpenAPI no-drift, contract parity, and dependency-audit policy. Post-deploy smoke passed on
+> `https://ritmofit.studio`: SPA and health `200`; protected class, community, share,
+> playlist-import, cover, and provider routes `401`; security headers present. Served SPA asset
+> `assets/index-Cu2ptcuQ.js` matched the production build with SHA-256
+> `f1f0186199b418ad3a40c63a385441c9880710acf5716f0e5f2ecba84e3045e0`, and Cloudflare reported
+> the new Worker version at 100%.
+
 > **Session 2026-07-17 (round 22 atomic choreography follow-up) — merged, not deployed.** Main
 > reached `9841f11` (merge of **PR #338**) after the round 22 production deployment. The follow-up
 > makes cue and placed-move creates and anchor-changing updates re-check the effective half-open track
