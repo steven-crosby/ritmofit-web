@@ -65,7 +65,7 @@ authorization is later recorded.
 ### Explicit non-goals this round
 
 - No production implementation before Gate B approval.
-- No PR, merge, deploy, or direct changes to `main`.
+- No merge, deploy, or direct changes to `main`; Gate C may separately authorize a draft review PR.
 - Preserve the existing product shell and the audit backlog's out-of-scope list.
 
 ### Dissent / overrides on critique
@@ -75,50 +75,59 @@ authorization is later recorded.
 ### Answers to owner questions
 
 1. Music selection default: Nothing selected initially.
-2. Mobile scoring pattern: Compare bottom sheet, inline expansion, and full-screen editor.
+2. Mobile scoring pattern: Use the bottom sheet; the inline and full-screen treatments remain comparison
+   evidence only.
 3. Readiness vocabulary: “Can start,” “Music checked,” and “Class complete.”
 4. No-cue Live lead state: Lead with track identity plus section/effort.
 
 ### Gate A signature
 
 - Decision: **proceed to mockups**
-- Signed: **\_STEVEN CROSBY\*\***\_\_**\*\*** Date: \_07/18/2026**\_\_\_\_**
+- Signed: **Steven Crosby** — Date: **07/18/2026**
 
 ## Gate B — After mockups
 
 Mockup files reviewed:
 
--
+- `mockups/polish-preview.html`
+- `mockups/polish-preview-notes.md`
 
-- [ ] Direction approved as-is
+- [x] Direction approved as-is
 - [ ] Approved with revisions (list below)
 - [ ] Rejected — rework mockups
 - [ ] Drop mockup-driven items; fall back to smaller polish
 
 ### Revisions required
 
--
+- None. For implementation, use the approved bottom-sheet scoring direction from the comparison set.
 
 ### Gate B signature
 
-- Decision: **approve for implement briefs** / **rework** / **stop**
-- Signed: **\*\***\_\_\_**\*\*** Date: **\*\***\_\_\_**\*\***
+- Decision: **approve for implement briefs**
+- Signed: **Steven Crosby** — Date: **07/18/2026**
 
 ## Gate C — Implement authorization
 
 This gate is separate from A and B.
 
-- [ ] I authorize production implementation of the approved set.
-- [ ] PR strategy: multiple small PRs by surface.
-- [ ] Token/design-system changes: allowed / limited to: **\*\***\_\_\_**\*\***
-- [ ] Branch prefix preference: e.g. `polishv3/…`
+- [x] I authorize production implementation of the approved set.
+- [x] PR strategy: one draft review PR from the existing branch, built as six ordered commit batches.
+- [x] Token/design-system changes: allowed when required by the approved implementation.
+- [x] Branch prefix preference: `polishv3/…`
 
 ### Ordered implement set
 
-1.
-2.
-3.
+1. Foundations — `P0-08`, `P1-07`, `P2-03`, `P2-04`
+2. Music + Connections — `P0-01`, `P0-06`, `P0-07`, `P1-04`, `P1-09`, `P2-02`
+3. Builder + Timeline — `P0-02`, `P0-03`, `P1-03`, `P1-05`, `P1-06`, `P1-10`
+4. Classes — `P1-01`, `P1-02`
+5. Live — `P0-04`, `P0-05`
+6. Account + Login — `P1-08`, `P1-11`, `P2-01`
+
+Owner resolution: P0-03 uses the bottom-sheet mobile scoring pattern. Open a draft PR for review after
+the authorized branch changes are committed and pushed. Do not merge or deploy without separate owner
+authorization.
 
 ### Gate C signature
 
-- Signed: **\*\***\_\_\_**\*\*** Date: **\*\***\_\_\_**\*\***
+- Signed: **Steven Crosby** — Date: **07/18/2026**
