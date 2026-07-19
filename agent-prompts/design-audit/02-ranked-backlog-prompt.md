@@ -1,142 +1,122 @@
-# 02 — Ranked polish backlog + mockup brief
+# Phase 2: ranked backlog and comprehensive preview specification
 
-**Phase 2 of the continuous pack.** Orchestrator: pack `README.md`. Context: `00-context.md`.
-
-You convert the critique into an **actionable polish backlog**. This is not a redesign bible.
-
-## Read first
-
-1. Pack `README.md`  
-2. `00-context.md`  
-3. `docs/audits/<run-id>/critique.md`  
-4. Screenshot folder from 01  
-5. Skim live UI only if needed to verify file/surface mapping  
-
-Do **not** restart the full critique. Do **not** edit production code.
+Read the pack `README.md`, `00-context.md`, phase 1 inventory, critique, and current screenshots. Convert the
+diagnosis into a complete, traceable proposal specification. Do not edit production code.
 
 ## Outputs
 
-Write:
+- `docs/audits/<run-id>/backlog.md`
+- `docs/audits/<run-id>/preview-brief.md`
 
-1. `docs/audits/<run-id>/backlog.md`  
-2. `docs/audits/<run-id>/mockup-brief.md` — only if any items likely need P0 direction mockups; otherwise write a short file stating **“No mockups recommended; all items are implement-without-mockup polish.”**
+## `backlog.md`
 
-Then **immediately** complete phase **2b** (see below).
+### Polish thesis
 
----
+Write one sentence describing how Ritmo Studio should change and why it improves creation speed first.
 
-# Deliverable 1 — `backlog.md`
+### Ranked findings
 
-## 1. Polish thesis (one line)
-
-Use: “Ritmo Studio should move from ______ to ______ by ______.”  
-Must serve **faster class build** first.
-
-## 2. Ranking rules (state them)
-
-Restate ranking:
-
-1. Faster class build  
-2. Pitch-deck gorgeous  
-3. Live pride  
-
-Builder: airier Spotify-ish. Live: 80/20 safety/swagger.  
-Shell supports the build factory; Builder path is P0 factory.
-
-## 3. Ranked backlog table
-
-Each item **must** include:
+Each item must include:
 
 | Field | Requirement |
 | --- | --- |
-| **ID** | `P0-01`, `P1-02`, … |
-| **Title** | Specific |
-| **Type** | `token` \| `component` \| `copy` \| `layout-within-shell` \| `interaction` \| `a11y` \| `motion` \| `state` |
-| **Surface(s)** | From in-scope list only |
-| **User outcome** | Especially time-to-build or Live safety |
-| **Evidence** | Critique section + screenshot if any |
-| **Likely files** | Under `apps/web/` and/or `ritmofit_design_system/` — best effort |
-| **Effort** | S / M / L |
-| **Risk** | low / med / high |
-| **Priority** | P0 / P1 / P2 |
-| **Mockup?** | `yes-direction` \| `no` |
-| **Acceptance** | One sentence testable outcome |
+| ID | `P0-01`, `P1-02`, etc. |
+| Title | Specific behavior or design change |
+| Source status | new, regression, known-open, superseded |
+| Type | workflow, navigation-within-shell, layout, component, token, copy, interaction, state, a11y, motion |
+| Surface IDs | Exact inventory rows affected |
+| Scenario outcome | Faster build, clearer recovery, Live safety, or premium craft |
+| Evidence | Critique section and current screenshots |
+| Current canon relationship | app drift, canon gap, proposed canon change, or none |
+| Likely files | Best-effort source and design-system mapping |
+| Effort/risk | S/M/L and low/medium/high |
+| Priority | P0/P1/P2 or `product-decision-required` |
+| Prototype coverage | Exact proposed screens/states that must demonstrate it |
+| Acceptance | Owner-tryable, visually and behaviorally testable outcome |
 
-### Priority definitions
+Priorities:
 
-- **P0:** Clear build-speed or Live-safety win; do soon  
-- **P1:** Premium / consistency / secondary speed  
-- **P2:** Nice-to-have; list in backlog but **do not brief** this run (default `defer`)  
+- **P0:** material class-creation speed, blocked comprehension, accessibility, or Live-safety improvement.
+- **P1:** cross-surface coherence, premium craft, state quality, or secondary speed improvement.
+- **P2:** worthwhile but lower-leverage refinement.
+- **Product decision required:** structural change outside the locked preview scope.
 
-### Hard rules
+The prototype still shows P0, P1, and any P2 change needed to make the proposed product coherent. It may
+annotate a product-decision-required item without inventing the redesign.
 
-- No Explore / Teams / shares / marketing items.  
-- No audience/room Live implement items (critique may have noted future only).  
-- No “redesign the shell IA” items unless critique proved a critical failure **and** you flag **redesign re-open required** (still not implemented in this pack).  
-- Prefer many small items over epic refactors.  
-- Mark `Mockup? = yes-direction` sparingly (visual language / major density system / new component look). Most polish is `no`.
+### Scenario map
 
-## 4. Build-path map
+Map backlog IDs onto every supported scenario from `00-context.md`. Surface polish that helps only one
+assumed funnel must not erase alternative creation entry points.
 
-One short subsection: ordered list of P0/P1 items that sit on  
-**Classes/Music → search → place → timeline/choreography → preview → ready**.
+### Dependency and collision map
 
-## 5. Suggested PR grouping (by surface)
+Identify shared foundations, downstream surfaces, and likely file collisions. This will later drive efficient
+implementation prompts; it does not authorize implementation now.
 
-Group IDs into **future product** PR buckets (do not implement; do not open these PRs now):
+### Kill/defer list
 
-- Classes  
-- Music + Connections  
-- Builder / timeline / choreography / search / preview  
-- Live preflight + run  
-- Account + Login  
-- Tokens / design-system (if any)
+Record ideas intentionally excluded because they revive dormant scope, add decorative noise, conflict with
+provider constraints, over-specialize one discipline, or cost more than their outcome justifies.
 
-## 6. Out of scope / kill list
+## `preview-brief.md`
 
-Things the critique mentioned that this program will **not** do.
+This file is the binding specification for phase 3.
 
-## 7. Open questions (resolved by agent)
+### 1. Product-specific direction
 
-Do **not** leave blocking questions for the owner. Resolve with ranking-aligned defaults and record the call in `run-decisions.md`. Optional non-blocking notes for PR reviewers are fine.
+Document:
 
----
+- Domain concepts (minimum five).
+- Natural color/material world (minimum five).
+- One Ritmo-specific signature.
+- Three or more rejected generic defaults and their replacements.
+- Depth strategy, surface hierarchy, typography roles, spacing basis, radius behavior, navigation treatment,
+  and motion posture.
 
-# Deliverable 2 — `mockup-brief.md`
+Every decision must explain why it serves this instructor and task. “Clean,” “modern,” and “premium” are not
+sufficient explanations.
 
-If any item is `Mockup? = yes-direction`:
+### 2. Coverage contract
 
-- Which items (IDs)  
-- Which screens/states to show (desktop + 390×844)  
-- What “success” looks like for the mockup  
-- What to **exclude** from mockups (no Teams, no marketing, no full app clone)  
-- How mockups should reflect **current shell** (not a new IA)
+Copy every `primary` and `must-mock-state` row from `surface-inventory.md`. For each specify:
 
-If none: one paragraph stating no mockups.
+- Proposed prototype view ID.
+- Desktop and mobile requirement.
+- Content fixture and meaningful state.
+- Backlog IDs demonstrated.
+- Interaction needed to understand the direction.
+- Current screenshot used for comparison.
 
----
+No primary row may be silently dropped. When several rows share an identical treatment, they may share a
+prototype component but must remain individually navigable and traceable.
 
-# Phase 2b — Agent run decisions (required, same continuous run)
+### 3. Prototype information architecture
 
-1. Copy structure from `run-decisions-template.md` → `docs/audits/<run-id>/run-decisions.md`.  
-2. Disposition **every** backlog id (`ship` / `ship-after-mockup` / `defer` / `kill`) using pack README rules.  
-3. List mockup flags = all `ship-after-mockup` ids.  
-4. List the **P0 + P1** brief set (`ship` + `ship-after-mockup` only).  
-5. Default P2 → `defer` for this run’s briefs.
+Specify a persistent review index with:
 
-**No owner signature. No stop.**
+- Surface/workflow navigation.
+- Desktop/mobile switch.
+- State and fixture switch where relevant.
+- Backlog annotations that can be shown without obscuring the UI.
+- Direct links or stable anchors for owner review.
 
----
+### 4. Shared component and token plan
 
-## After this phase
+List the prototype primitives that guarantee one coherent product: shell, navigation, headings, controls,
+buttons, rows/cards, dialogs, state panels, playback language, timeline marks, Live data, and annotations.
 
-1. Confirm `backlog.md`, `mockup-brief.md`, and `run-decisions.md` exist.  
-2. Continue immediately to phase **03** (`03-mockup-preview-prompt.md`). If no mockup flags, still open 03, record skip, self-approve “none,” and continue to 04.
+### 5. Before/after evidence plan
 
-## Chat checkpoint (optional, brief)
+For each primary surface identify the current screenshot and required proposed screenshot. Proposed captures
+are mandatory, not optional.
 
-- Paths written  
-- Count of P0 / P1 / P2  
-- Disposition summary  
-- Items needing mockups  
-- Top 5 build-speed recommendations — then proceed to 03  
+### 6. Hostile and accessibility plan
+
+Identify which prototype views demonstrate long text, dense content, empty/error/disconnected state, focus,
+reduced motion, narrow reflow, color-independent meaning, and Live pressure hierarchy.
+
+## Quality gate
+
+Before phase 3, verify that inventory rows, backlog IDs, prototype views, and screenshots form a closed
+traceability chain. Then continue directly to phase 3.

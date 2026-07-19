@@ -1,93 +1,107 @@
-# 03 — Isolated mockup preview (P0 direction only)
+# Phase 3: comprehensive navigable product preview
 
-**Phase 3 of the continuous pack.** Orchestrator: pack `README.md`. Context: `00-context.md`.
+Build the complete owner-review artifact specified by `preview-brief.md`. This phase is mandatory and cannot
+be skipped because no single P0 “direction item” exists. The product-wide proposal is the deliverable.
 
-Create **isolated** visual previews for polish items that need **direction clarity** before implement briefs.  
-The agent **self-selects** (via `run-decisions.md`) and **self-approves**. There is no owner Gate B.
+Do not edit `apps/web/`, API code, shared contracts, or production design-system sources.
 
-## Preconditions
+## Inputs
 
-1. Pack `README.md` + `00-context.md` read  
-2. `critique.md` + `backlog.md` exist  
-3. `run-decisions.md` exists with dispositions and mockup flags  
+- `surface-inventory.md`, `critique.md`, `backlog.md`, and `preview-brief.md`.
+- Current screenshots and the live local UI.
+- Current design-system tokens, components, and mockups.
 
-If mockup list is empty: write a short note under `docs/audits/<run-id>/mockups/SKIPPED.md` (or update `run-decisions.md` only) stating no mockups; mark self-approved; **continue to 04**. Do not invent mockups for filler.
+## Required outputs
 
-## Non-negotiable
+```text
+docs/audits/<run-id>/
+  mockups/
+    index.html
+    preview.css
+    preview.js
+    assets/                 # only when genuinely needed
+    README.md
+  screenshots/proposed/
+  review-guide.md
+  run-decisions.md
+```
 
-- **No production app/web source edits**  
-- Artifacts only under `docs/audits/<run-id>/mockups/`  
-- Stay inside **current shell** patterns (nav, workspaces, dark app chrome) — polish, not a new product IA  
-- No Explore / Teams / marketing / audience-room product mockups  
+Additional split HTML/CSS/JS files are allowed when they improve maintainability. All links must work when
+served by a simple local static server from the repository.
 
-## Read first
+## Prototype requirements
 
-- `docs/audits/<run-id>/run-decisions.md` (mockup flags)  
-- `backlog.md` items flagged for mockup  
-- `mockup-brief.md`  
-- `critique.md` sections those items cite  
-- Live `pnpm dev:web` for fidelity to current structure  
-- `ritmofit_design_system` token names where possible (so mockups translate)
+1. Cover every inventory row marked `primary` and `must-mock-state`.
+2. Provide desktop and 390px treatments for every primary surface; validate fragile surfaces at 320px and
+   200% zoom.
+3. Provide realistic, internally coherent data across the whole product. The same instructor, classes,
+   playlists, tracks, cues, and readiness conditions should tell one story.
+4. Demonstrate populated plus materially different empty/loading/error/disconnected/disabled/recovery states.
+5. Keep public entry/auth and active solo-product surfaces; omit dormant community functionality.
+6. Keep the current shell recognizable. Annotate structural findings rather than smuggling in an IA redesign.
+7. Use shared prototype tokens and components. Avoid one-off page styling that cannot become a maintainable
+   implementation system.
+8. Make important navigation and state switches functional enough for review. Do not build a fake backend.
+9. Use real product copy. Do not rely on generated-image text or lorem ipsum.
+10. Cite backlog IDs in the review layer, not as clutter inside the proposed product UI.
+11. Let the reviewer reveal the matching current screenshot beside or over the proposed surface without
+    contaminating the proposed UI itself.
 
-## Task
+## Direction exploration
 
-Produce a static, reviewable preview that expresses **only** the flagged direction changes. Owner visual review happens on the audit PR, not mid-run.
+If visual direction remains ambiguous and image generation is available, it may be used for direction boards
+or screenshot paintovers. Save only references that materially shaped the proposal and document the extracted
+decisions. Generated images are never the final UI source of truth.
 
-### Required deliverables (when mockups run)
+## Adversarial craft pass
 
-| Path | Content |
-| --- | --- |
-| `docs/audits/<run-id>/mockups/polish-preview.html` | Main preview (single page multi-section OK) |
-| `docs/audits/<run-id>/mockups/polish-preview.css` | Optional |
-| `docs/audits/<run-id>/mockups/polish-preview.js` | Optional, minimal |
-| `docs/audits/<run-id>/mockups/polish-preview-notes.md` | Notes (structure below) |
-| `docs/audits/<run-id>/screenshots/mockups/` | Optional captures of the mockup itself |
+Before capturing proposed screenshots, inspect and revise the prototype using all of these checks:
 
-Show **desktop-wide and ~390px** treatments for each mocked surface (tabs, sections, or side-by-side).
+- **Swap:** Would replacing the type, layout, or cards with common dashboard defaults make little difference?
+- **Squint:** Is the focal hierarchy still clear without harsh borders or competing accents?
+- **Signature:** Is the Ritmo-specific signature visible in at least five appropriate surfaces?
+- **Token:** Do prototype variables form a coherent product system rather than random values?
+- **Composition:** Do proportions and density change intentionally between discovery, creation, and Live?
+- **Content:** Does every visible string and data point belong to the same credible instructor story?
+- **State:** Are hover, active, focus, disabled, loading, empty, error, disconnected, and recovery treatments present where needed?
+- **Responsive:** Is mobile a designed treatment rather than a cropped desktop composition?
+- **Accessibility:** Does meaning survive grayscale and reduced motion, and can focus/targets be inspected?
+- **Feasibility:** Could the proposal be built with the repository's component and token architecture without structural hacks?
 
-### What to demonstrate
+For each check, record pass/revision/gap in `mockups/README.md`. Fix failures before owner review.
 
-Only patterns required by flagged items, drawn from this menu as applicable:
+## Proposed screenshots
 
-- Airier Builder hierarchy and track rows  
-- Music shelves / connection truth presentation  
-- Timeline / cue / move readability  
-- Live glanceability (large type, calm chrome, 80/20 safety)  
-- Classes library scan  
-- Account connection summary clarity  
-- State language (empty / loading / error / connected)  
-- Token-level direction if P0 is system-wide (color, type scale, radius, elevation)
+Capture every primary surface at desktop and 390x844 from the prototype. Use names that map directly to the
+inventory ID. Add state-specific captures where they materially affect a decision. Screenshots are evidence
+and review shortcuts; the navigable prototype remains authoritative.
 
-### Notes file structure (`polish-preview-notes.md`)
+## `review-guide.md`
 
-1. Which backlog IDs this expresses  
-2. What changed vs current UI direction  
-3. Screens / states shown  
-4. Intentionally excluded  
-5. What a PR reviewer should inspect first  
-6. Known limitations (static, fake data, etc.)  
-7. Self-approval: accepted as-is / accepted with in-mockup revisions (list)  
-8. What implement briefs must not over-literalize  
+Include:
 
-## Self-approval (required)
+1. Exact command and URL for opening the prototype.
+2. Baseline branch/commit and scope statement.
+3. Recommended review order by scenario.
+4. Direct links/anchors to every primary surface.
+5. A concise design thesis and the five most consequential changes.
+6. How to compare current and proposed screenshots.
+7. Known limitations and evidence gaps.
+8. Instructions for recording decisions in `run-decisions.md` or supplying them in chat.
 
-Update `run-decisions.md`:
+## `run-decisions.md`
 
-- Mark mockups complete  
-- Record self-approval (and any dropped/re-dispositioned items)  
-- Confirm the brief set is still accurate  
+Copy `run-decisions-template.md`. Pre-fill run metadata, every surface ID, every backlog ID, prototype links,
+and the agent's concise recommendation. Leave owner disposition and owner notes unfilled.
 
-**Do not stop for owner mockup approval.**
+The agent may recommend; it may not self-approve.
 
----
+## Stop gate
 
-## After this phase
+After all outputs are complete:
 
-Continue immediately to phase **04** (`04-implementation-briefs-prompt.md`).
-
-## Chat checkpoint (optional, brief)
-
-- How to open the HTML file locally (if any)  
-- IDs covered or skip  
-- Confirm self-approval recorded  
-- Confirm no production code modified — then proceed to 04  
+- Report the prototype path/open command, review guide, screenshot folders, inventory coverage, and gaps.
+- Confirm no production code changed.
+- Stop for owner review.
+- Do not generate phase 4 prompts, create a branch, commit, push, or open a PR without the corresponding
+  separate authorization.

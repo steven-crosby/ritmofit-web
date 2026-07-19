@@ -1,178 +1,197 @@
-# Ritmo Studio UI/UX Polish Audit Pack v4
+# Ritmo Studio full-product design preview pack v5
 
-**Continuous, audit-only pack.** One kickoff → full pipeline → **one PR of audit artifacts**.  
-Not a redesign program. Not a marketing or community audit. **Does not edit production app code.**
+**Review-first, implementation-later.** This pack audits the active Ritmo Studio product, captures the
+current experience, builds one cohesive navigable mockup covering every active surface, and pauses for
+owner decisions. Only after those decisions does it generate implementation-ready agent prompts for a
+separately authorized product session.
 
-**Canonical prompt pack:** `agent-prompts/design-audit/` in this `ritmofit-web` repo.  
-**All audit artifacts** go in **tracked** `docs/audits/<run-id>/` (same repo).
+This pack does **not** edit production application code, merge, deploy, or implement its own proposals.
 
----
+**Canonical pack:** `agent-prompts/design-audit/`
+**Tracked outputs:** `docs/audits/<run-id>/`
 
-## How to run (owner)
+## Owner invocation
 
-Tell the agent something like:
+Start the preview session with:
 
-> Read `agent-prompts/design-audit/README.md` and execute the full polish audit pack.
+> Read `agent-prompts/design-audit/README.md` and execute phases 0-3 of the full-product design preview.
 
-That is sufficient. Do **not** commission passes one-by-one unless you are intentionally resuming a partial run.
+That invocation authorizes audit-artifact edits only. It does not authorize branch creation, commit, push,
+PR creation, product implementation, merge, or deploy. Ask separately before each external Git action unless
+the owner explicitly included it.
 
-The agent must complete **all phases in one continuous session** (or resume from the last unfinished phase without re-asking for permission) until it has **opened a draft/open PR** for the audit branch — or reported a hard stop / PR failure with the exact recovery command.
+After reviewing the preview and recording approve/revise/reject/defer decisions, resume with:
 
----
+> Apply my decisions to the current design-preview run and execute phase 4 to generate the implementation prompts.
+
+## Outcome
+
+The pack has three deliberately separate outcomes:
+
+1. **Preview session:** evidence-backed critique, complete active-surface inventory, current screenshots,
+   a coherent navigable HTML/CSS prototype, proposed screenshots, and an owner decision ledger.
+2. **Prompt-finalization session:** implementation prompts generated only from owner-approved directions,
+   plus dependency order and collision notes.
+3. **Future implementation sessions:** separately commissioned product changes using those prompts.
+
+An audit is not complete merely because its prose is polished. The preview must let the owner inspect the
+proposed product visually and decide surface by surface.
 
 ## Authority
 
 | Layer | File | Role |
 | --- | --- | --- |
-| **Orchestrator (entry)** | **This README** | Sequence, scope, decisions policy, hard stops, PR closeout |
-| Mission / constraints | `00-context.md` | Product frame, surfaces, ranking, engineering don’ts |
-| Phase specs | `01`–`04` | Deliverable structure only — no mid-run owner gates |
-| Decisions template | `run-decisions-template.md` | Agent fills `run-decisions.md` (auto-disposition) |
+| Orchestrator | `README.md` | Sequence, authority, gates, setup, closeout |
+| Mission and scope | `00-context.md` | Product frame, active surfaces, evidence and craft rules |
+| Phase 1 | `01-brutal-critique-prompt.md` | Inventory, baseline capture, workflow and design critique |
+| Phase 2 | `02-ranked-backlog-prompt.md` | Ranked findings and full-preview specification |
+| Phase 3 | `03-mockup-preview-prompt.md` | Comprehensive navigable prototype and owner-review package |
+| Owner decisions | `run-decisions-template.md` | Approve/revise/reject/defer ledger; owner is final authority |
+| Phase 4 | `04-implementation-prompts.md` | Approved-only, ready-to-run implementation prompts |
 
-If a phase file conflicts with this README on **stopping, gates, or PR behavior**, **this README wins**.
+If a phase file conflicts with this README about authority, stopping, scope, or Git actions, this README wins.
 
----
+## Locked scope
 
-## End state (locked)
+Include:
 
-1. Run folder under `docs/audits/<run-id>/` with critique, screenshots, backlog, run decisions, mockups (if any), and P0+P1 implementation briefs.
-2. **No** production UI / `apps/web` / design-system **product** changes in this run (artifacts + docs only).
-3. **One audit PR** on a dedicated branch (e.g. `docs/audit-YYYY-MM-DD-polish`).
-4. Briefs **prescribe later multi-surface implement PRs**; those product PRs are **not** opened in this run.
-5. **Do not merge** the audit PR. Do not deploy.
+- Public landing/entry, login/sign-up, password recovery, privacy, not-found, and update/recovery UI.
+- Every active solo-product workspace: Classes, Music, Builder/choreography, Live, and Account.
+- Every reachable active dialog, overlay, provider flow, and materially different UI state.
+- Desktop and mobile treatments for every primary surface.
 
----
+Exclude:
 
-## Continuous sequence
+- Dormant Explore, Teams, shares/public classes, collaborators, community, and pricing/subscription flows.
+- A new information architecture. Structural problems may be documented as `product-decision-required`,
+  but this preview stays recognizably inside the current shell.
+- Production code edits.
 
-| Phase | Spec | Output under `docs/audits/<run-id>/` | Then |
-| --- | --- | --- | --- |
-| 0 | Read this README + `00-context.md` | — | Continue |
-| 1 | `01-brutal-critique-prompt.md` | `critique.md` + `screenshots/` | **Continue immediately** |
-| 2 | `02-ranked-backlog-prompt.md` | `backlog.md` + `mockup-brief.md` | **Continue immediately** |
-| 2b | Agent auto-disposition | `run-decisions.md` (from template) | **Continue immediately** |
-| 3 | `03-mockup-preview-prompt.md` | `mockups/` if any direction items; else short skip note | **Continue immediately** (self-approve) |
-| 4 | `04-implementation-briefs-prompt.md` | `implementation-briefs/*` for **P0 + P1 ship** set | **Continue immediately** |
-| 5 | Closeout (this README) | Commit artifacts on branch + **open PR** | **Stop** (done) |
+Do not infer active scope from filenames alone. Trace the current app entry points and rendered component
+tree; dormant components may remain in the repository.
 
-There are **no owner gates** (no Gate A/B/C, no “wait for written signature,” no mid-run approve/kill loop).
+## Two-session sequence
 
-### Mockup rule
-
-- Mockups only for items the agent marks **P0 direction** (`yes-direction`): visual language, major component look, density system shift.
-- Copy, spacing, a11y, and small hierarchy fixes → briefs without mockups.
-- Agent **self-selects**, builds, **self-approves** in `run-decisions.md`, and continues. Owner review happens on the PR.
-
-### Scope for this run’s briefs
-
-| Priority | In backlog? | Mockups / briefs this run? |
+| Phase | Output | Continue? |
 | --- | --- | --- |
-| **P0** | Yes | Yes (if disposition is `ship` / `ship-after-mockup`) |
-| **P1** | Yes | Yes (same) |
-| **P2** | Yes (listed) | **No** — disposition `defer` for this run’s briefs unless the agent has a rare, documented exception |
+| 0. Orient and boot | Clean baseline, commit SHA, local app, realistic fixtures | Continue |
+| 1. Inventory and critique | `surface-inventory.md`, `critique.md`, `screenshots/current/` | Continue |
+| 2. Backlog and preview specification | `backlog.md`, `preview-brief.md` | Continue |
+| 3. Full-product prototype | `mockups/`, `screenshots/proposed/`, `run-decisions.md`, `review-guide.md` | **Stop for owner review** |
+| 4. Approved implementation prompts | `implementation-prompts/`, `implementation-sequence.md` | Stop; implementation remains separate |
 
----
+There is exactly one mandatory owner gate: after phase 3 and before phase 4. The preview agent may revise
+its own draft during phase 3, but it may not approve directions on the owner's behalf.
 
-## Agent auto-decisions (phase 2b)
+## Phase 0: safe local setup
 
-After writing `backlog.md`, the agent **must** write `run-decisions.md` using `run-decisions-template.md`.
+1. Confirm a clean, current `ritmofit-web` checkout and record the branch and commit SHA. Do not discard,
+   stash, overwrite, or include unrelated work.
+2. Read `AGENTS.md`, `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`, D20/D21 in `decisions.md`, and the relevant
+   `ritmofit_design_system/` guidance.
+3. Install with `pnpm install --frozen-lockfile` if needed.
+4. If `apps/api/.dev.vars` is absent, create it from `.dev.vars.example` with a newly generated local-only
+   `BETTER_AUTH_SECRET` and `MOCK_PROVIDERS=true`. Never copy or inspect production secrets.
+5. Run local migrations and seed:
 
-Disposition rules (apply success ranking: build speed → gorgeous → Live pride):
+   ```bash
+   pnpm --filter @ritmofit/api db:migrate:local
+   pnpm --filter @ritmofit/api db:seed:local
+   ```
 
-| Disposition | When |
-| --- | --- |
-| `ship` | Clear polish; no direction mockup needed |
-| `ship-after-mockup` | P0 direction change; mockup first, then brief |
-| `defer` | P2, or low leverage / high effort for this run |
-| `kill` | Out of scope, fights the shell, community/marketing, or pure noise |
+6. Start both services:
 
-Do not stop for owner signature. Record rationale briefly per item or per group.  
-Mockup flags = all `ship-after-mockup` IDs. Self-approve mockups in the same file after phase 3 (or note “no mockups”).
+   ```bash
+   pnpm dev:api
+   pnpm dev:web
+   ```
 
----
+7. Create two local accounts: one populated with realistic classes/tracks/cues/moves and one fresh for
+   empty states. Add at least one pathological fixture with long names and a dense class.
+8. Create `docs/audits/YYYY-MM-DD-full-product-preview/`.
 
-## Hard stops (only these)
+If local setup would overwrite an existing `.dev.vars` or local data the owner may care about, stop and
+ask. Otherwise, local disposable fixture creation is in scope.
 
-Stop the pipeline and report clearly if:
+## Evidence minimum
 
-1. **App will not run** or you **cannot sign in** enough to gather primary visual evidence — do not invent a full critique from code alone without stating the limitation and stopping if evidence is insufficient for a useful audit.
-2. **PR open fails** after artifacts are ready — leave the branch pushed (if possible) and print the exact error plus the `gh pr create` (or equivalent) command. Do not fake a PR URL.
+The preview must distinguish `observed`, `code-confirmed`, `inferred`, and `not-checked` claims. Required:
 
-### Soft continue (document, do not halt)
+- Browser viewport emulation at 390x844 and a representative desktop size for every primary surface.
+- 320px and 200% zoom/reflow checks for fragile Builder, dialog, and Live surfaces.
+- Keyboard-only traversal, visible focus, reduced motion, contrast, target size, and color-independent state.
+- Populated, empty, loading, error, disconnected, disabled, long-content, and recovery states where relevant.
+- Console/network/font errors recorded during the tour.
+- Several creation entry scenarios, not one forced funnel: start from a class/template, provider playlist,
+  specific track, movement/choreography idea where supported, and an existing class/rehearsal need.
+- Current screenshot and source/component mapping for every proposed change.
 
-- Some in-scope surfaces unreachable → continue; list gaps in critique evidence log and run-decisions.
-- Ambiguous product intent → pick the ranking-aligned call; note it in `run-decisions.md`.
-- Token / visual-system overhaul as P0 → self-decide; mockup if direction-level; brief it. Do not pause.
-- Music / provider / “legal later” concerns → **do not hard-stop**. At most note “implement must re-check product music constraints in `AGENTS.md`” inside briefs. This is a beta single-user context for **audit pacing**; do not block the pack on legal review.
+## Prototype standard
 
-### Permanent don’ts (not “ask first”)
+Phase 3 produces one navigable static prototype under `mockups/`; it is not a loose mood board or a few
+hero screens. It must:
 
-- Do **not** edit production app code (`apps/web` product UI, etc.) in this run.
-- Do **not** merge the audit PR, deploy, force-push, rewrite published history, or commit secrets.
-- Do **not** revive Explore / Teams / shares / marketing / community as in-scope polish.
-- Do **not** treat IA redesign as in-scope; stay inside the current shell unless a finding is catastrophic — then **flag** in decisions/backlog as “redesign re-open required,” still without redesigning in this run.
+- Cover every inventory row marked `primary` and every materially different state marked `must-mock`.
+- Use shared prototype tokens/components so the proposal reads as one product.
+- Include a persistent index for navigating surfaces and switching desktop/mobile and important states.
+- Include a review-layer current/proposed comparison for every primary surface, using the captured baseline
+  rather than attempting to rebuild the old UI inside the prototype.
+- Use realistic, coherent product content rather than lorem ipsum or unrelated fake data.
+- Preserve the current shell and functional information requirements.
+- Explain deviations from current design-system canon as explicit proposed canon changes, not accidental drift.
+- Pass the swap, squint, signature, token, content-coherence, responsive, and accessibility checks before review.
 
----
+Image generation may support direction exploration when available, but generated images are references only.
+The final review artifact must be inspectable HTML/CSS/JS with real text and feasible component structure.
 
-## Setup (agent)
+## Phase 3 owner gate
 
-1. Work in a clean `ritmofit-web` checkout on current `main` (or owner-specified base).
-2. Create branch: `docs/audit-YYYY-MM-DD-polish` (or `docs/audit-<run-id>`).
-3. `pnpm install --frozen-lockfile` if needed; run **`pnpm dev:web`**.
-4. Sign in with a beta-capable local account (seed/local auth as project docs describe).
-5. Create run folder: `docs/audits/YYYY-MM-DD-polish/`.
-6. Capture screenshots at **desktop** and **390×844** for reachable in-scope surfaces.
-7. Execute phases 1 → 2 → 2b → 3 → 4 → 5 without waiting for owner.
+At the end of phase 3:
 
----
+1. Provide exact instructions to open the prototype.
+2. Provide `review-guide.md` with the recommended inspection order.
+3. Populate `run-decisions.md` with every backlog ID and surface, leaving owner disposition fields open.
+4. Report evidence gaps and anything the prototype could not honestly demonstrate.
+5. Stop. Do not generate final implementation prompts until the owner supplies decisions.
 
-## Phase 5 — Commit and open PR
+Owner dispositions are `approve`, `approve-with-notes`, `revise`, `reject`, or `defer`.
 
-After briefs exist:
+## Phase 4 rules
 
-1. Ensure all artifacts under `docs/audits/<run-id>/` are complete.
-2. Stage **only** audit artifacts (and any intentional pack fixes if the owner asked to update prompts in the same work — default is artifacts only).
-3. Commit with a Conventional Commit, e.g. `docs(audit): YYYY-MM-DD polish critique backlog briefs`.
-4. Push branch to `origin`.
-5. Open **one** PR (draft is fine) with:
-   - Summary of polish thesis and top build-speed findings  
-   - Link/paths to critique, backlog, run-decisions, mockups, briefs  
-   - Explicit note: **audit-only — no production UI changes; implement via later surface PRs from briefs**  
-   - Suggested later implement order (from phase 4)  
-6. Final chat response: PR URL, branch name, run folder path, hard gaps, confirm no production code modified.
+Phase 4 begins only after owner decisions exist. It must:
 
-If `gh` is unavailable, push the branch and give the compare URL / exact commands; still treat “owner must run create” as a **reported** PR failure path, not a silent partial finish.
+- Exclude rejected and deferred directions.
+- Incorporate all approval notes and resolve revisions before prompt generation.
+- Produce ready-to-paste agent prompts, not vague briefs.
+- Order prompts by shared foundations and dependencies while keeping product PRs small.
+- Identify files likely to collide so concurrent agents are not assigned overlapping ownership.
+- Keep implementation, commit, push, PR, merge, and deploy as separate future permissions.
 
----
+## Hard stops
 
-## Files in this pack
+Stop and report precisely when:
 
-| File | Purpose |
-| --- | --- |
-| `README.md` | **Entry / orchestrator** — continuous run through audit PR |
-| `00-context.md` | Shared mission, scope, constraints |
-| `01-brutal-critique-prompt.md` | Phase 1 — diagnosis |
-| `02-ranked-backlog-prompt.md` | Phase 2 — ranked backlog + mockup brief |
-| `run-decisions-template.md` | Phase 2b — agent auto-disposition template |
-| `03-mockup-preview-prompt.md` | Phase 3 — isolated mockups for direction items |
-| `04-implementation-briefs-prompt.md` | Phase 4 — per-surface implement briefs (P0+P1) |
-| `LEGACY-v2.md` | Historical note (v2 prompt files removed) |
+1. The app cannot run or authenticate after the documented local setup and bounded troubleshooting.
+2. Primary product surfaces cannot be reached well enough for a truthful comprehensive preview.
+3. A required decision changes product scope, information architecture, provider/legal behavior, schema, or
+   another locked product constraint.
+4. Phase 4 is requested without owner dispositions.
 
----
+Partial evidence may still be useful, but it must never be rounded up to a complete full-product preview.
+
+## Git and closeout
+
+Artifact creation does not automatically authorize branch creation, commit, push, or PR creation. When
+separately authorized:
+
+- Stage only `docs/audits/<run-id>/` and intentional prompt-pack changes requested by the owner.
+- Use a docs-scoped Conventional Commit.
+- Open one audit/preview PR for review; never merge it.
+- Product implementation belongs to later branches/PRs generated from approved prompt slices.
 
 ## Resume policy
 
-If a previous run left partial artifacts:
-
-1. Detect `docs/audits/<run-id>/` and which outputs exist.
-2. Resume at the first missing phase; do not redo completed phases unless evidence is wrong.
-3. Still finish through open PR unless a hard stop applies.
-
----
-
-## Out of scope for this pack
-
-- Production implementation and product PRs  
-- Redesigning Classes / Music / Live / Account IA  
-- Explore, Teams, marketing, landing, pricing merchandising  
-- Owner mid-run approval ceremonies  
+1. Identify the latest run folder and completed phase outputs.
+2. Verify its recorded commit still matches the intended baseline; note drift if not.
+3. Resume at the first unfinished phase.
+4. Never treat an agent-filled draft as owner approval.

@@ -1,192 +1,131 @@
-# Ritmo Studio — UI/UX Polish Audit · Shared Context
+# Ritmo Studio full-product design preview: shared context
 
-**Pack version:** 4 (polish-first, continuous audit-only).  
-**Product name in all audit copy:** **Ritmo Studio** (not “RitmoFit” except when quoting legacy strings in the app).
+**Pack version:** 5
+**Product name in review copy:** Ritmo Studio
 
-Every pass (01–04) must read this file and the pack **`README.md`** first. The README is the orchestrator for sequence, auto-decisions, hard stops, and PR closeout. Do not restate sacred mission language at full length in later prompts; reference this document.
+Every phase reads this file and the pack `README.md`. The README controls authority, gates, setup, and stop
+conditions.
 
----
+## Mandate
 
-## Mandate (locked)
+Show the owner, in one coherent navigable prototype, how every active Ritmo Studio product surface could
+become faster, clearer, more distinctive, and more pressure-ready before production implementation begins.
 
-**Polish the current shell so it feels premium.**  
-Do **not** redesign information architecture or invent a new Classes / Music / Live / Account layout model unless a finding is catastrophic *and* the owner explicitly re-opens redesign outside this pack. Prefer hierarchy, density, density-of-action, copy, state language, spacing, tokens, and component consistency **inside** the existing shell.
+The prototype is comprehensive within the active solo-product scope. It is not an IA redesign, a marketing
+campaign, a community revival, or production code.
 
----
+## Success order
 
-## Success ranking (locked)
+When goals conflict:
 
-When recommendations conflict, rank by:
+1. Faster, lower-friction class creation across multiple legitimate entry points.
+2. Premium, product-specific craft that does not resemble a generic SaaS dashboard.
+3. Live confidence, safety, recovery, and glanceability under pressure.
 
-1. **Faster class build** (primary) — fewer steps, less scan cost, clearer primary actions, less cognitive load on Discover → place → choreograph → ready.
-2. **Pitch-deck gorgeous** (secondary) — premium, distinctive, non-generic; loses when it fights (1).
-3. **Proud to teach from Live** (tertiary) — instructor confidence under pressure; still required quality bar for Live work.
+Live is instructor-only today. Safety and clarity beat spectacle.
 
-**Live usage context today:** The on-screen UI is **instructor-only**. The class does not see what the instructor sees. Do not optimize primarily for “presenting to the room.”
+## Product truth
 
-**Future (out of implement scope for this pack):** A room / audience Live view on a large display may exist later. In **01 only**, include a short **“Future: room / audience display”** note (vision crumbs only). Do **not** add mockup or backlog implement items for it.
+Ritmo Studio is a movement-first creative workstation for individual rhythm-fitness instructors. Spotify,
+Apple Music, and SoundCloud provide the trusted music substrate; Ritmo Studio adds class structure,
+choreography, rehearsal, playback windows, readiness, and Live Mode.
 
----
+The instructor is a creator shaping a physical music experience. The interface should feel familiar before
+specialized, support curiosity, and avoid forcing one canonical creation sequence.
 
-## Core mission (sacred)
+### Cultural and expressive direction
 
-Ritmo Studio is a **movement-first creative tool for rhythm fitness instructors**. It helps instructors discover, shape, and perform the class hidden inside the music — with the clarity of Nike, the pulse of the club, and the restraint of a premium studio instrument.
+- Club athletic plus creator swagger with Nike-like restraint and clarity, not visual imitation.
+- Latin energy is ambient and personal: rhythm, heat, percussion, movement, confidence. It is never costume,
+  tropical decoration, or party-fitness parody.
+- The system is modality-neutral even when present content is Cycle, Pilates, or HIIT.
 
-- **Core insight:** The instructor is a **creator** designing a physical music experience, not a coach merely running a workout. Rhythm classes synthesize HIIT and choreography. The product’s job is to help the instructor discover the class the way a sculptor finds form in marble, or a jazz musician finds a phrase in improvisation.
-- **Audience order:** Instructors (producers) first. Members (consumers) second.
-- **Cultural voice — 90/10 rule:** Latin culture is personal, not decorative (family roots). **90%** ambient Latin energy (rhythm, heat, percussion, confidence, movement; Spanish-rooted naming used lightly). **10%** intentional Latin moments (earned easter eggs). Never costume-like, never “tropical,” never party-gimmick.
-- **Movement model:** Design system is movement-first and **modality-agnostic** (spin today; Pilates / yoga / barre later). Current UI may stay spin-focused; the system must not paint into a corner.
-- **“Nike”:** Physical confidence, brutal clarity, campaign-grade phrasing — **tone/voice**, not visual imitation.
-- **Playfulness:** Club athletic + creator swagger, with Nike restraint. Confident and physical; never loose or gimmicky.
+## Active-surface scope
 
-If it sounds like LMFAO or Pitbull, it is not Ritmo Studio.
+The agent must derive the final inventory from the running app and rendered code. At minimum inspect:
 
----
+- Public landing/entry, login/sign-up, password recovery, privacy, not-found, beta restrictions, and update recovery.
+- Classes library, creation, templates, recency, class summary, and open/edit entry.
+- Music home, provider shelves, likes, playlists, search, import, connection truth, and track preview.
+- Builder track list, ordering, sections, timeline, choreography, cues, moves, clip windows, and readiness.
+- Connections management and active solo-product dialogs/overlays.
+- Live queue, preflight, run, pause, seek, warning, disconnect, error, recovery, and exit.
+- Account/profile and music-connection summary.
 
-## Challengeable vs sacred
+Exclude dormant community, Explore merchandising, Teams, shares/public pages, collaborators, invitations,
+pricing, and subscription merchandising even when components remain in the tree.
 
-| Layer | Status |
-| --- | --- |
-| Core mission, principles above, producers-first, 90/10 discipline, modality-agnostic system | **Sacred** — do not abandon |
-| Prior “sacred cows” such as warm orange/dark lock, “never look like Spotify,” fixed accent recipes | **Challengeable** — critique may recommend change if it better serves mission + faster class build |
+## Scenario coverage
 
----
+Do not grade only one linear funnel. Exercise and mock the supported parts of these jobs:
 
-## Product frame (D20 / D21)
+1. Start a class from a discipline/template.
+2. Begin from a provider playlist or liked-music shelf.
+3. Begin from a specific track and turn discovery into a class.
+4. Resume an existing class to place/reorder music and add choreography.
+5. Rehearse/preview and resolve readiness before Live.
+6. Run, pause, recover, and exit Live under pressure.
 
-- **Solo-first.** Individual instructor experience only.
-- **Web-first** product definition; iOS follows contracts later.
-- **Creator workstation shell:** Classes · Music · Live · Account (plus Login; Connections as music-connect surface).
-- Community / Teams / Explore merchandising / shares / public class pages: **dormant** — ignore even if code remains in the tree.
+For each scenario record steps, decision points, dead ends, recovery, and the surface changes that reduce
+friction. If a scenario is unsupported, label that as observed product truth rather than inventing a flow.
 
----
+## Design-system relationship
 
-## Surfaces
+`ritmofit_design_system/` is current canon and the default implementation constraint. The critique must
+separate:
 
-### In scope
+- **App drift:** implementation fails current canon.
+- **Canon gap:** the design system does not answer a real product need.
+- **Proposed canon change:** the preview deliberately challenges an existing rule to better serve the mission.
 
-| Surface | Role in polish |
-| --- | --- |
-| Login | Entry, trust, beta clarity |
-| Classes | Library, open/create, recency, templates |
-| Music | Resting shelves, browse entry, connection truth |
-| Connections | Provider connect/reconnect/disconnect |
-| Builder / track list | Placement, ordering, free vs sequential |
-| Timeline / choreography | Cues, moves, segments, clip window, density |
-| Track search / likes / playlists | Discover and add music into the class |
-| Track preview | Clip-aware preview |
-| Live preflight | Readiness before go-live |
-| Live run | Glanceability, safety, recovery |
-| Account | Profile, music connection summary |
+Do not call a deliberate proposal a compliance fix. Cite the affected token/component guidance and show why
+the change improves the success order.
 
-### Explicitly out
+## Product-specific direction requirement
 
-Explore, Teams, shares, public class pages, marketing/landing, pricing/subscription merchandising, dormant community UI.
+Before composing the prototype, record in `preview-brief.md`:
 
-### P0 bias (build factory)
+- **Domain:** at least five concepts from rhythm instruction, choreography, rehearsal, music sourcing, and performance.
+- **Color world:** at least five colors/material cues that belong naturally to that world.
+- **Signature:** one visual, structural, or interaction element that could only belong to Ritmo Studio.
+- **Rejected defaults:** at least three obvious generic dashboard/workstation patterns and their replacements.
 
-**In-class Builder path is the P0 factory:** Music → search/likes/playlists → place tracks → timeline/choreography → preview → ready.  
-Shell polish (Classes list, Music resting, Account, Login) is **P0/P1 support** so the factory is easy to enter and trust. Live is **required quality** with 80/20 rules below, but does not outrank build-speed for backlog ordering unless Live is unsafe.
+The signature must appear concretely in at least five relevant prototype surfaces without becoming decoration.
 
----
+## Density and behavior
 
-## Density and Live rules (locked)
+- Music and Builder: calm, consumer-readable, and airy enough to scan; specialized controls reveal themselves
+  when needed rather than dominating the resting state.
+- Live: 80% glanceability/safety and 20% swagger; maximum clarity, large data, restrained chrome, clear recovery.
+- Navigation is part of the product model and must remain grounded across every mocked screen.
+- Every proposed control needs visible default, hover, active, focus, and disabled behavior where applicable.
+- Data surfaces need loading, empty, error, disconnected/offline, and recovery treatments.
 
-- **Builder:** Prefer **airier / consumer (Spotify-ish)** density — scannable, breathing room, clear hierarchy — not dense Logic-pro engineering UI.
-- **Live:** **80% glanceability/safety · 20% swagger.** When they conflict, safety wins.
+## Accessibility and hostile cases
 
----
+- WCAG AA across general UI; follow the repo's stronger Live contrast target.
+- Meaning never depends on color alone.
+- Keyboard operation and visible focus for every high-frequency workflow.
+- Touch targets and mobile layouts remain usable at the documented minimums.
+- Reduced motion removes affect without removing information.
+- Check long names, dense class content, narrow widths, and 200% zoom.
 
-## Reference interpretation (standards, not imitation)
+## Music and engineering constraints
 
-- **Spotify:** mature music interaction patterns (persistent playback language, scan-friendly rows, active-track, library organization). Not a visual clone target — but **airier Builder** may honestly share *density* lessons with consumer music UIs.
-- **Logic Pro:** simplified timeline precision and creative tooling for instructors, not audio engineers.
-- **MainStage:** live performance readiness, glanceability, pressure-proof confidence.
-- **Nike:** tone/clarity/phrasing only.
+- Official provider-authorized playback only.
+- Never cache, proxy, download, decode, mix, crossfade, analyze, or derive provider audio.
+- Never source BPM from Spotify.
+- No schema or migration proposal unless the owner explicitly reopens that scope.
+- Token/design-system changes may be proposed, but implementation is later and must follow package generation rules.
+- Do not log or commit secrets, tokens, cookies, authorization headers, or production data.
 
----
+## Evidence labels
 
-## Non-negotiable engineering constraints (all passes)
+Every material claim uses one of:
 
-These shape **what implement briefs may propose**. They are **not** mid-run hard stops for the audit pipeline (see pack README). For this beta single-user audit pack, music/provider legal review does not halt critique/backlog/mockups/briefs; briefs may still remind implementers to re-check repo `AGENTS.md` music rules before coding playback.
+- `observed`: exercised in the browser.
+- `code-confirmed`: verified in current source.
+- `inferred`: plausible interpretation, clearly labeled.
+- `not-checked`: gap that prevents a stronger claim.
 
-- Prefer not to recommend provider audio cache/proxy/decode/derivative or non-SDK playback paths in implement briefs.
-- Prefer not to recommend Spotify BPM as a data source.
-- No schema/migrations unless owner explicitly re-opens (not expected in polish).
-- No reviving D20 community surfaces.
-- Token / design-system / iOS token regen **allowed** when polish needs them (implement later).
-- **This pack does not edit production code.** Audit artifacts and one audit PR only. Product implementation is a separate owner-commissioned effort using the briefs.
-
----
-
-## Repo and evidence (locked)
-
-| Item | Value |
-| --- | --- |
-| Code checkout | `ritmofit-web` monorepo |
-| Run UI | `pnpm dev:web` (local) — primary evidence |
-| Truth for UI | `apps/web/` |
-| Design tokens | `ritmofit_design_system/` (+ generated web/iOS tokens) |
-| Product decisions | `ritmofit_dev_plan/decisions.md` (D20/D21), `DEVELOPMENT_PLAN.md` |
-| Audit outputs | Tracked under `docs/audits/<run-id>/` in **ritmofit-web** |
-| Prompt pack location | `agent-prompts/design-audit/` (canonical entry: `README.md`) |
-
-### Required viewports for screenshots
-
-- **Desktop** (e.g. 1280×800 or similar)
-- **Mobile** **390×844**
-
-Both for every primary in-scope surface you can reach while signed in. Unreachable surfaces → document gaps and continue.
-
----
-
-## Pipeline (continuous)
-
-```
-01 Critique  →  02 Backlog  →  2b Agent run-decisions (auto)
-     →  03 Mockups (self-select + self-approve; skip if none)
-     →  04 Implementation briefs (P0 + P1 ship set)
-     →  05 One audit PR (artifacts only; do not merge)
-```
-
-- **No mid-run owner gates.** Owner review is the audit PR.
-- Later **product** work: multiple small PRs by surface, driven by briefs — **not** part of this pack’s session.
-
-### Later implement shape (prescribed in briefs only)
-
-**Multiple small PRs by surface**, e.g.:
-
-- `polish/classes-…`
-- `polish/music-…`
-- `polish/builder-…` / `polish/timeline-…`
-- `polish/live-…`
-- `polish/account-…` / `polish/login-…`
-- `polish/tokens-…` (if shared foundation)
-
-Not one mega redesign PR. Not opened during this audit run.
-
----
-
-## Run folder convention
-
-Create one run directory:
-
-`docs/audits/YYYY-MM-DD-polish/`
-
-Suggested files:
-
-| File | Producer |
-| --- | --- |
-| `critique.md` | 01 |
-| `screenshots/` | 01 (and 03 if needed) |
-| `backlog.md` | 02 |
-| `mockup-brief.md` | 02 |
-| `run-decisions.md` | Agent (2b; template `run-decisions-template.md`) |
-| `mockups/` | 03 (if any) |
-| `implementation-briefs/` | 04 |
-
----
-
-## Agent-neutral language
-
-This pack is for any coding agent (Grok, Codex, Claude, etc.). Do not assume a single vendor CLI.
+Screenshots alone do not prove interaction quality; source inspection alone does not prove rendered truth.

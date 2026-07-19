@@ -1,115 +1,79 @@
-# Run decisions — polish audit (agent-authored)
+# Owner decisions: full-product design preview
 
-Copy this structure into the run folder as:
-
-`docs/audits/<run-id>/run-decisions.md`
-
-**The agent fills this file.** No owner signature is required mid-run.  
-Dispositions follow pack `README.md` + success ranking in `00-context.md`.
-
----
+Copy to `docs/audits/<run-id>/run-decisions.md`. The preview agent pre-fills evidence, links, and
+recommendations. Only the owner fills or explicitly supplies the final dispositions.
 
 ## Run metadata
 
 | Field | Value |
 | --- | --- |
-| Run id | `YYYY-MM-DD-polish` |
+| Run ID | |
+| Baseline branch | |
+| Baseline commit | |
+| Surface inventory | `surface-inventory.md` |
 | Critique | `critique.md` |
 | Backlog | `backlog.md` |
+| Prototype | `mockups/index.html` |
+| Review guide | `review-guide.md` |
 | Date | |
-| Agent | |
-| Policy | Continuous audit-only v4; auto-disposition; P0+P1 briefs |
+| Preview agent | |
 
----
+## Global direction
 
-## Global acceptance
+| Question | Agent recommendation | Owner disposition (`approve` / `approve-with-notes` / `revise` / `reject` / `defer`) | Owner notes |
+| --- | --- | --- | --- |
+| Product-wide thesis | | | |
+| Visual signature | | | |
+| Navigation/shell treatment | | | |
+| Typography and density | | | |
+| Color/depth/token direction | | | |
+| Motion posture | | | |
 
-- [ ] Critique top diagnosis accepted as the working thesis (or dissent noted below)
-- [ ] Success ranking applied: (1) faster class build (2) gorgeous (3) Live pride
-- [ ] Current shell only; no community / marketing expansion
-- [ ] This run produces audit artifacts + one audit PR only (no production UI edits)
+## Surface decisions
 
-### Dissent / overrides on critique
+One row for every `primary` and `must-mock-state` inventory ID.
 
--
+| Surface ID | Surface/state | Prototype anchor | Current/proposed screenshots | Backlog IDs | Agent recommendation | Owner disposition | Owner notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| | | | | | | | |
 
----
+## Backlog decisions
 
-## Backlog disposition
+Every P0/P1/P2 and `product-decision-required` item must appear.
 
-For each backlog item id from `backlog.md`, set one disposition:
+| ID | Title | Priority | Surfaces | Agent recommendation | Owner disposition | Owner notes/revision requirement |
+| --- | --- | --- | --- | --- | --- | --- |
+| | | | | | | |
 
-| ID | Title | Priority | Disposition (`ship` / `ship-after-mockup` / `defer` / `kill`) | Rationale (short) |
-| --- | --- | --- | --- | --- |
-| P0-… | | | | |
-| P1-… | | | | |
-| P2-… | | | | |
+## Revision log
 
-### Defaults to apply when unsure
+Use this when an item is marked `revise`. A revised direction is not approved until the owner records a new
+disposition.
 
-- P0 build-speed or Live-safety → `ship` or `ship-after-mockup`
-- P1 premium/consistency → `ship` unless weak leverage → `defer`
-- P2 → `defer` for this run’s briefs
-- Out of scope / shell-breaking / community → `kill`
+| Item/surface | Requested revision | Revision artifact | Agent summary | Final owner disposition | Final notes |
+| --- | --- | --- | --- | --- | --- |
+| | | | | | |
 
----
+## Approved implementation set
 
-## Mockup flags (agent self-select)
+Filled during phase 4 from final owner decisions only.
 
-Item ids with disposition `ship-after-mockup` (P0 direction only):
+| Approved ID | Owner notes incorporated | Owning implementation prompt |
+| --- | --- | --- |
+| | | |
 
--
+## Explicitly excluded from implementation prompts
 
-After phase 03:
+| ID/surface | Disposition | Reason |
+| --- | --- | --- |
+| | | |
 
-- [ ] Mockups built for all flagged ids **or** none flagged
-- [ ] Direction **self-approved** for briefs (note revisions applied while mocking, if any)
-- [ ] Rejected / dropped items (if any) re-dispositioned above
+## Owner gate
 
-Mockup paths:
+- [ ] I reviewed the product-wide direction.
+- [ ] I reviewed all primary surfaces or explicitly deferred them.
+- [ ] Every backlog item has a disposition.
+- [ ] Required revisions have a final disposition.
+- [ ] Phase 4 may generate implementation prompts from approved items only.
 
--
-
-### Self-approval notes
-
--
-
----
-
-## Brief set for this run (P0 + P1)
-
-Ordered list of ids that will receive implementation briefs (all `ship` + `ship-after-mockup` at P0/P1):
-
-1.
-2.
-3.
-
-### Explicitly not briefed this run
-
-- All `defer` / `kill` / remaining P2:
-
--
-
-### Explicit non-goals this round
-
--
-
----
-
-## Later product implement note (not this PR)
-
-When the owner later authorizes production work, briefs recommend **multiple small PRs by surface**.  
-This audit run does **not** open those PRs and does **not** edit product code.
-
-Suggested branch prefix for a future implement pass: `polish/…`
-
----
-
-## Continuity checklist
-
-- [ ] Phase 01 complete
-- [ ] Phase 02 complete
-- [ ] Phase 2b (this file) complete
-- [ ] Phase 03 complete or skipped with note
-- [ ] Phase 04 complete for brief set above
-- [ ] Phase 05: audit branch committed, pushed, PR opened (or failure reported)
+The agent must not check these boxes or infer authorization on the owner's behalf.
