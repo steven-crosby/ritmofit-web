@@ -1,154 +1,137 @@
-# 01 — Brutal UI/UX + design-system critique (polish)
+# Phase 1: active-product inventory, baseline, and critique
 
-**Phase 1 of the continuous pack.** Orchestrator: pack `README.md`. Context: `00-context.md`.
+Read the pack `README.md` and `00-context.md` first. This phase diagnoses current rendered truth and builds
+the coverage contract for the later prototype. Do not edit production code.
 
-You are a ruthless but disciplined aesthetic critic, senior product designer, and design-systems auditor for **Ritmo Studio**.
+## Inputs
 
-## Read first
+- Running local API and web app from phase 0.
+- `AGENTS.md`, current D20/D21 decisions, and relevant design-system guidance.
+- Current `apps/web/` entry points, active component tree, tokens, and shared components.
+- Existing audit artifacts and open/recent work when available, to distinguish new findings from known work.
 
-1. Pack `README.md` (sequence, hard stops, no mid-run gates)
-2. `00-context.md` (authoritative scope and mission)
-3. In the `ritmofit-web` checkout: `AGENTS.md`, D20/D21 notes in `ritmofit_dev_plan/decisions.md` as needed
-4. Live local UI via **`pnpm dev:web`**
-5. Relevant `apps/web/` surfaces and `ritmofit_design_system/` tokens
+## Required outputs
 
-## Mission of this pass
+- `docs/audits/<run-id>/surface-inventory.md`
+- `docs/audits/<run-id>/critique.md`
+- `docs/audits/<run-id>/screenshots/current/`
 
-**Diagnosis only.** Expose what slows class build, what feels generic or unpremium, and what fails Live safety/glanceability — **inside the current shell**.
+## 1. Build the active-surface inventory
 
-- Do **not** redesign IA.
-- Do **not** edit production code.
-- Do **not** expand into Explore / Teams / shares / marketing.
-- Directional hints are OK; solution dumps belong in 02.
+Trace the rendered application, not filenames alone. Give each primary page/workspace, active dialog/overlay,
+and materially different state a stable ID such as `CLS-01`, `MUS-03`, `BLD-07`, or `LIVE-04`.
 
-## Run setup
+Each inventory row must include:
 
-1. Create `docs/audits/YYYY-MM-DD-polish/` if missing.
-2. Start local web; sign in.
-3. Capture screenshots: **desktop + 390×844** for each reachable in-scope surface.
-4. Save screenshots under `docs/audits/<run-id>/screenshots/`.
-5. Write the report to `docs/audits/<run-id>/critique.md`.
+| Field | Requirement |
+| --- | --- |
+| ID | Stable surface/state ID |
+| Surface/state | Human-readable name |
+| Entry path | How the instructor reaches it |
+| Active? | Evidence that it is currently reachable |
+| Scenario(s) | Which job(s) in `00-context.md` use it |
+| Current evidence | Desktop/mobile screenshot paths and relevant source files |
+| State class | default, populated, empty, loading, error, disconnected, disabled, recovery, edge case |
+| Preview requirement | `primary`, `must-mock-state`, `reference-only`, or `excluded-dormant` |
+| Coverage | observed, code-confirmed, inferred, or not-checked |
+| Notes/gap | Why evidence is incomplete, if applicable |
 
-If the app cannot run or you cannot sign in for primary evidence: **hard stop** per pack README; do not fake a full visual critique from code alone without stating the limitation.
+At the end, include counts by classification. A comprehensive preview cannot silently omit inventory rows.
 
-If some surfaces are unreachable: document gaps in the evidence log and **continue**.
+## 2. Capture rendered truth
 
-## In-scope surfaces (only these)
+For every primary surface:
 
-Login · Classes · Music (resting shelves) · Connections · Builder / track list · Timeline / choreography · Track search / likes / playlists · Track preview · Live preflight · Live run · Account
+- Capture desktop and 390x844 using browser viewport emulation.
+- Capture the important state variants identified in the inventory.
+- Exercise 320px and 200% zoom on Builder, dialogs, and Live.
+- Exercise keyboard-only navigation and visible focus.
+- Emulate reduced motion on motion-bearing surfaces.
+- Observe console, network, asset, and font failures.
+- Use realistic populated data, a fresh account, and long/dense hostile content.
 
-**Ignore** dormant community UI even if present in the tree.
+Do not manufacture a visual finding from a cropped narrow window. If a surface cannot be reached, record
+the exact blocker and do not pretend it was reviewed.
 
-## Evaluation priorities
+## 3. Exercise product scenarios
 
-Score and weight findings using success ranking from `00-context.md`:
+Walk every supported scenario in `00-context.md`. For each, record:
 
-1. Faster class build  
-2. Pitch-deck gorgeous  
-3. Live pride / pressure confidence  
+- Start condition and goal.
+- Steps and major decisions.
+- Context switches, repeated work, dead ends, unclear labels, and recovery.
+- What was measured directly versus inferred.
+- Candidate improvements, without yet prescribing full solutions.
 
-Builder density target: **airier, consumer (Spotify-ish)**.  
-Live split: **80% glanceability/safety · 20% swagger**.
+Do not treat one discovery-to-Live sequence as the only valid instructor workflow.
 
-## Challenge rules
+## 4. Write `critique.md`
 
-- **Sacred:** mission and design principles in `00-context.md`.
-- **Challengeable:** prior visual locks (e.g. orange/dark dogma, anti-Spotify aesthetics). If challenging them, explain how the change serves mission + faster build.
+Use this structure:
 
-## Critique style
+### A. Verdict
 
-Brutally honest, specific, useful. No “make it more modern.” Name generic, weak, slow, risky, or confused execution. Prefer evidence: screenshot path, component, or user step.
+- Strongest product asset.
+- Most damaging workflow friction.
+- Most generic/defaulted design behavior.
+- Most important Live pressure risk.
+- Whether current Ritmo Studio feels like a coherent premium creative instrument.
 
-## Start visual-first, end UX-first
+### B. Workflow findings
 
-1. Aesthetic / brand / premium feel  
-2. Hierarchy, density, type, color, components, state language  
-3. Workflow UX (build path first)  
-4. Live safety/glanceability  
-5. What it wants to become **without leaving the shell**
+Group by scenario. For every finding provide:
 
----
+- Finding ID and status: `new`, `regression`, `known-open`, or `superseded`.
+- Evidence label and surface IDs.
+- Current behavior and instructor consequence.
+- Frequency/severity and why it affects the success order.
+- Rival explanation considered or evidence gap.
 
-# Required report structure (`critique.md`)
+### C. Surface critique
 
-## 1. Executive brutal critique
+For every primary inventory row:
 
-8–12 bullets. Include: strongest asset; weakest; biggest mismatch with mission; most embarrassing risk; biggest missed opportunity for **faster class build**; whether it feels like a premium creative instrument.
+- Intent and focal action.
+- What works and should be preserved.
+- Composition, proportion, hierarchy, density, typography, surface, and content-coherence problems.
+- Interaction/state/accessibility problems.
+- Desktop/mobile difference and hostile-case behavior.
+- Screenshot and source references.
 
-## 2. Mission alignment scorecard
+### D. System critique
 
-Score **1–10** (each with evidence, why it matters, what holds it back):
+Review navigation, tokens, typography, spacing, depth, components, controls, music presentation, timeline
+language, Live treatment, motion, and state consistency. Classify each issue as app drift, canon gap, or
+proposed canon change.
 
-- Movement-first creative tool  
-- Premium studio instrument  
-- Music-native interaction maturity  
-- **Class-build speed** (workflow)  
-- Builder calm + airy scanability  
-- Live glanceability + pressure-readiness  
-- Nike-level clarity (tone/UI clarity, not logo)  
-- Warm brand distinctiveness (challengeable execution)  
-- Latin 90/10 restraint  
-- Accessibility + sustained-use comfort  
-- Mobile-first usefulness (390×844)  
-- Overall aesthetic desirability  
-- Overall UX credibility  
+### E. Brand and voice
 
-## 3. Surface-by-surface critique
+Flag generic SaaS language, weak action labels, costume-Latin expression, or places where movement/music
+language can become more precise without becoming theatrical.
 
-Only in-scope surfaces you could open. For each:
+### F. Accessibility and sustained-use comfort
 
-- Intent of the surface  
-- What works  
-- What is slow, generic, weak, or confusing  
-- Hierarchy / density problems  
-- Workflow friction (especially build path)  
-- A11y / glanceability  
-- Screenshot refs (desktop + mobile when available)
+Report keyboard, focus, contrast, redundant encoding, target size, zoom/reflow, reduced motion, and stress-use
+findings. State the method used; do not award accessibility from appearance alone.
 
-## 4. Design-system critique
+### G. Structural findings outside polish
 
-Tokens, type, spacing rhythm, components, states (active / loading / empty / error / connected / live), music patterns, timeline language, contradictions. Note iOS token implications only if web token changes would be needed later.
+Record meaningful shell/IA problems as `product-decision-required` even when they are not catastrophic.
+Explain the consequence and stop short of redesigning them.
 
-## 5. Brand and voice critique
+### H. Evidence ledger
 
-Copy/labels against mission filters. Flag SaaS-generic, dashboard-generic, or costume-Latin voice.
+Inventory and screenshot counts; files, routes, scenarios, states, viewports, and checks completed; explicit
+gaps; current baseline branch and commit SHA.
 
-## 6. UX and workflow critique (build path first)
+## Quality gate
 
-Trace: open/create class → music → place tracks → choreography/timeline → preview → connections readiness → live preflight → live run → account/settings as needed.
+Before phase 2:
 
-Call out friction, missing affordances, overload, form-like vs instrument-like moments.
+- Every active primary surface has an inventory row.
+- Every primary row has desktop and mobile evidence or an explicit gap.
+- Findings cite evidence and instructor consequences rather than aesthetic adjectives alone.
+- Dormant community components are identified and excluded.
+- Current canon violations are not confused with proposed canon changes.
 
-## 7. Embarrassment audit
-
-Items that would hurt in front of a serious instructor, designer, or boutique studio owner. Severity: low / medium / high / critical. Tie to build speed or Live safety when possible.
-
-## 8. What this wants to become (polish thesis)
-
-- What it is accidentally becoming  
-- What to amplify / kill / restrain **within the shell**  
-- One line: “Ritmo Studio currently feels like ______, but it should feel like ______.”
-
-## 9. Future: room / audience display (short only)
-
-**Max ~½ page.** Vision crumbs for a later large-screen audience Live view. No backlog items, no mockup requirements, no implement recommendations. Explicitly mark **out of this polish program**.
-
-## 10. Evidence log
-
-Files, routes, components, screenshots inspected; gaps (could not reach surface X).
-
----
-
-## After this phase
-
-1. Confirm `critique.md` + screenshots are written.  
-2. **Do not stop for owner review.**  
-3. Continue immediately to phase **02** (`02-ranked-backlog-prompt.md`).
-
-## Chat checkpoint (optional, brief)
-
-- Path to `critique.md`  
-- Screenshot folder  
-- Top 5 findings (build-speed first)  
-- Gaps / hard stops  
-- Confirm no production code modified — then proceed to 02  
+Then continue to phase 2 without requesting design approval.

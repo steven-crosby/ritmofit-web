@@ -1,16 +1,13 @@
-# Legacy v2 prompts (removed)
+# Legacy design-audit prompt generations
 
-The v2 redesign-framed prompt files were **deleted** in pack v4 so agents do not pick the wrong entrypoint. Git history still has them if needed.
+The v2 redesign prompts were removed because they expanded dormant product scope, assumed one agent vendor,
+and mixed redesign with implementation authority.
 
-Former filenames (do not recreate for new audits):
+The v4 polish pack was superseded by v5 because it produced optional mockups only for selected P0 direction
+items, let the agent self-approve them, generated implementation briefs before owner visual decisions, and
+did not guarantee a complete active-product preview.
 
-- `01-ritmofit-design-system-brutal-critique-prompt.md`
-- `02-ritmofit-ranked-redesign-prescription-prompt.md`
-- `03-ritmofit-redesign-mockup-preview-prompt.md`
-- `04-ritmofit-codex-redesign-agent-prompt-prompt.md`
+Use v5 from `README.md`: inventory and critique -> complete navigable prototype -> owner decision gate ->
+approved-only implementation prompts -> separately authorized implementation sessions.
 
-v2 problems (summary): redesign framing; Teams/Explore/marketing scope; Codex-only; weak monorepo binding; mandatory full mockup suite; human owner gates; sacred visual cows instead of sacred principles.
-
-**Use v4 instead:** start at `README.md` (continuous orchestrator). Supporting files: `00-context.md`, `01`–`04` phase specs, `run-decisions-template.md`.
-
-Also removed in v4: mid-run `owner-decision-template.md` / Gate A–C flow. Replaced by agent-authored `run-decisions.md`.
+Git history preserves previous prompt files when provenance is needed. Do not recreate or use them for new runs.
