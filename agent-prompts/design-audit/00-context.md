@@ -1,16 +1,16 @@
 # Ritmo Studio — UI/UX Polish Audit · Shared Context
 
-**Pack version:** 3 (polish-first).  
+**Pack version:** 4 (polish-first, continuous audit-only).  
 **Product name in all audit copy:** **Ritmo Studio** (not “RitmoFit” except when quoting legacy strings in the app).
 
-Every pass (01–04) must read this file first. Do not restate sacred mission language at full length in later prompts; reference this document.
+Every pass (01–04) must read this file and the pack **`README.md`** first. The README is the orchestrator for sequence, auto-decisions, hard stops, and PR closeout. Do not restate sacred mission language at full length in later prompts; reference this document.
 
 ---
 
 ## Mandate (locked)
 
 **Polish the current shell so it feels premium.**  
-Do **not** redesign information architecture or invent a new Classes / Music / Live / Account layout model unless a finding is catastrophic *and* the owner explicitly re-opens redesign. Prefer hierarchy, density, density-of-action, copy, state language, spacing, tokens, and component consistency **inside** the existing shell.
+Do **not** redesign information architecture or invent a new Classes / Music / Live / Account layout model unless a finding is catastrophic *and* the owner explicitly re-opens redesign outside this pack. Prefer hierarchy, density, density-of-action, copy, state language, spacing, tokens, and component consistency **inside** the existing shell.
 
 ---
 
@@ -108,12 +108,14 @@ Shell polish (Classes list, Music resting, Account, Login) is **P0/P1 support** 
 
 ## Non-negotiable engineering constraints (all passes)
 
-- No provider audio cache/proxy/decode/derivative; playback only via official SDKs/widgets.
-- No Spotify BPM.
+These shape **what implement briefs may propose**. They are **not** mid-run hard stops for the audit pipeline (see pack README). For this beta single-user audit pack, music/provider legal review does not halt critique/backlog/mockups/briefs; briefs may still remind implementers to re-check repo `AGENTS.md` music rules before coding playback.
+
+- Prefer not to recommend provider audio cache/proxy/decode/derivative or non-SDK playback paths in implement briefs.
+- Prefer not to recommend Spotify BPM as a data source.
 - No schema/migrations unless owner explicitly re-opens (not expected in polish).
 - No reviving D20 community surfaces.
-- Token / design-system / iOS token regen **allowed** when polish needs them.
-- Do not edit production code in 01–03. Implement only after written owner decision and a separate implement authorization.
+- Token / design-system / iOS token regen **allowed** when polish needs them (implement later).
+- **This pack does not edit production code.** Audit artifacts and one audit PR only. Product implementation is a separate owner-commissioned effort using the briefs.
 
 ---
 
@@ -121,37 +123,36 @@ Shell polish (Classes list, Music resting, Account, Login) is **P0/P1 support** 
 
 | Item | Value |
 | --- | --- |
-| Code checkout | `ritmofit-web` monorepo (e.g. workspace `agent1/ritmofit-web`) |
+| Code checkout | `ritmofit-web` monorepo |
 | Run UI | `pnpm dev:web` (local) — primary evidence |
 | Truth for UI | `apps/web/` |
 | Design tokens | `ritmofit_design_system/` (+ generated web/iOS tokens) |
 | Product decisions | `ritmofit_dev_plan/decisions.md` (D20/D21), `DEVELOPMENT_PLAN.md` |
 | Audit outputs | Tracked under `docs/audits/<run-id>/` in **ritmofit-web** |
-| Prompt pack location | `agent-prompts/design-audit/` in this repo (canonical). Workspace copy under `agent1/ritmofit-design-audit-prompts-v2` may lag. |
+| Prompt pack location | `agent-prompts/design-audit/` (canonical entry: `README.md`) |
 
 ### Required viewports for screenshots
 
 - **Desktop** (e.g. 1280×800 or similar)
 - **Mobile** **390×844**
 
-Both for every primary in-scope surface you can reach while signed in.
+Both for every primary in-scope surface you can reach while signed in. Unreachable surfaces → document gaps and continue.
 
 ---
 
-## Pipeline and human authority (locked)
+## Pipeline (continuous)
 
 ```
-01 Critique  →  02 Backlog  →  OWNER WRITTEN DECISION
-     →  03 Mockups (P0 direction items only)
-     →  OWNER WRITTEN DECISION
-     →  Implement (separate authorization; multiple small PRs by surface)
+01 Critique  →  02 Backlog  →  2b Agent run-decisions (auto)
+     →  03 Mockups (self-select + self-approve; skip if none)
+     →  04 Implementation briefs (P0 + P1 ship set)
+     →  05 One audit PR (artifacts only; do not merge)
 ```
 
-- **Human-only decision first** — agents stop before production implementation.
-- Owner decisions are **written in-repo** (see `owner-decision-template.md` and run folder `owner-decisions.md`).
-- Chat “go” is not sufficient for leaving the audit phase.
+- **No mid-run owner gates.** Owner review is the audit PR.
+- Later **product** work: multiple small PRs by surface, driven by briefs — **not** part of this pack’s session.
 
-### Implement shape (when later authorized)
+### Later implement shape (prescribed in briefs only)
 
 **Multiple small PRs by surface**, e.g.:
 
@@ -162,7 +163,7 @@ Both for every primary in-scope surface you can reach while signed in.
 - `polish/account-…` / `polish/login-…`
 - `polish/tokens-…` (if shared foundation)
 
-Not one mega redesign PR.
+Not one mega redesign PR. Not opened during this audit run.
 
 ---
 
@@ -179,10 +180,10 @@ Suggested files:
 | `critique.md` | 01 |
 | `screenshots/` | 01 (and 03 if needed) |
 | `backlog.md` | 02 |
-| `mockup-brief.md` | 02 (only items needing mockups) |
-| `owner-decisions.md` | Owner (use template) |
-| `mockups/` | 03 |
-| `implementation-briefs/` | 04 (after owner approve) |
+| `mockup-brief.md` | 02 |
+| `run-decisions.md` | Agent (2b; template `run-decisions-template.md`) |
+| `mockups/` | 03 (if any) |
+| `implementation-briefs/` | 04 |
 
 ---
 
