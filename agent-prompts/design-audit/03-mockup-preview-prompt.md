@@ -1,15 +1,17 @@
 # 03 — Isolated mockup preview (P0 direction only)
 
-Create **isolated** visual previews for polish items that need **direction approval** before code.
+**Phase 3 of the continuous pack.** Orchestrator: pack `README.md`. Context: `00-context.md`.
+
+Create **isolated** visual previews for polish items that need **direction clarity** before implement briefs.  
+The agent **self-selects** (via `run-decisions.md`) and **self-approves**. There is no owner Gate B.
 
 ## Preconditions
 
-1. `00-context.md` read  
+1. Pack `README.md` + `00-context.md` read  
 2. `critique.md` + `backlog.md` exist  
-3. **`owner-decisions.md` Gate A complete**  
-4. Owner listed specific item IDs under **Mockup flags**
+3. `run-decisions.md` exists with dispositions and mockup flags  
 
-If Gate A is missing or mockup list is empty: **do not invent mockups**. Stop and say so.
+If mockup list is empty: write a short note under `docs/audits/<run-id>/mockups/SKIPPED.md` (or update `run-decisions.md` only) stating no mockups; mark self-approved; **continue to 04**. Do not invent mockups for filler.
 
 ## Non-negotiable
 
@@ -20,17 +22,18 @@ If Gate A is missing or mockup list is empty: **do not invent mockups**. Stop an
 
 ## Read first
 
-- `docs/audits/<run-id>/owner-decisions.md` (mockup flags and notes)  
+- `docs/audits/<run-id>/run-decisions.md` (mockup flags)  
 - `backlog.md` items flagged for mockup  
+- `mockup-brief.md`  
 - `critique.md` sections those items cite  
 - Live `pnpm dev:web` for fidelity to current structure  
 - `ritmofit_design_system` token names where possible (so mockups translate)
 
 ## Task
 
-Produce a static, reviewable preview that lets the owner judge **only** the flagged direction changes.
+Produce a static, reviewable preview that expresses **only** the flagged direction changes. Owner visual review happens on the audit PR, not mid-run.
 
-### Required deliverables
+### Required deliverables (when mockups run)
 
 | Path | Content |
 | --- | --- |
@@ -57,20 +60,34 @@ Only patterns required by flagged items, drawn from this menu as applicable:
 
 ### Notes file structure (`polish-preview-notes.md`)
 
-1. Which owner-flagged backlog IDs this expresses  
+1. Which backlog IDs this expresses  
 2. What changed vs current UI direction  
 3. Screens / states shown  
 4. Intentionally excluded  
-5. What the owner should inspect first  
+5. What a PR reviewer should inspect first  
 6. Known limitations (static, fake data, etc.)  
-7. Approval questions  
-8. What must be revised before implement  
+7. Self-approval: accepted as-is / accepted with in-mockup revisions (list)  
+8. What implement briefs must not over-literalize  
 
-## Final chat response
+## Self-approval (required)
 
-- How to open the HTML file locally  
-- IDs covered  
-- What still needs human Gate B in `owner-decisions.md`  
-- Confirm no production code modified  
+Update `run-decisions.md`:
 
-**Stop after this pass** until owner completes Gate B.
+- Mark mockups complete  
+- Record self-approval (and any dropped/re-dispositioned items)  
+- Confirm the brief set is still accurate  
+
+**Do not stop for owner mockup approval.**
+
+---
+
+## After this phase
+
+Continue immediately to phase **04** (`04-implementation-briefs-prompt.md`).
+
+## Chat checkpoint (optional, brief)
+
+- How to open the HTML file locally (if any)  
+- IDs covered or skip  
+- Confirm self-approval recorded  
+- Confirm no production code modified — then proceed to 04  

@@ -1,20 +1,23 @@
 # 01 — Brutal UI/UX + design-system critique (polish)
 
+**Phase 1 of the continuous pack.** Orchestrator: pack `README.md`. Context: `00-context.md`.
+
 You are a ruthless but disciplined aesthetic critic, senior product designer, and design-systems auditor for **Ritmo Studio**.
 
 ## Read first
 
-1. `00-context.md` in this prompt pack (authoritative scope and mission)
-2. In the `ritmofit-web` checkout: `AGENTS.md`, D20/D21 notes in `ritmofit_dev_plan/decisions.md` as needed
-3. Live local UI via **`pnpm dev:web`**
-4. Relevant `apps/web/` surfaces and `ritmofit_design_system/` tokens
+1. Pack `README.md` (sequence, hard stops, no mid-run gates)
+2. `00-context.md` (authoritative scope and mission)
+3. In the `ritmofit-web` checkout: `AGENTS.md`, D20/D21 notes in `ritmofit_dev_plan/decisions.md` as needed
+4. Live local UI via **`pnpm dev:web`**
+5. Relevant `apps/web/` surfaces and `ritmofit_design_system/` tokens
 
 ## Mission of this pass
 
 **Diagnosis only.** Expose what slows class build, what feels generic or unpremium, and what fails Live safety/glanceability — **inside the current shell**.
 
 - Do **not** redesign IA.
-- Do **not** propose production code edits.
+- Do **not** edit production code.
 - Do **not** expand into Explore / Teams / shares / marketing.
 - Directional hints are OK; solution dumps belong in 02.
 
@@ -26,7 +29,9 @@ You are a ruthless but disciplined aesthetic critic, senior product designer, an
 4. Save screenshots under `docs/audits/<run-id>/screenshots/`.
 5. Write the report to `docs/audits/<run-id>/critique.md`.
 
-If the app cannot run, stop and report the blocker; do not fake a full visual critique from code alone without stating the limitation.
+If the app cannot run or you cannot sign in for primary evidence: **hard stop** per pack README; do not fake a full visual critique from code alone without stating the limitation.
+
+If some surfaces are unreachable: document gaps in the evidence log and **continue**.
 
 ## In-scope surfaces (only these)
 
@@ -134,10 +139,16 @@ Files, routes, components, screenshots inspected; gaps (could not reach surface 
 
 ---
 
-## Final chat response
+## After this phase
+
+1. Confirm `critique.md` + screenshots are written.  
+2. **Do not stop for owner review.**  
+3. Continue immediately to phase **02** (`02-ranked-backlog-prompt.md`).
+
+## Chat checkpoint (optional, brief)
 
 - Path to `critique.md`  
 - Screenshot folder  
 - Top 5 findings (build-speed first)  
-- Any run blockers  
-- Confirm no production code was modified
+- Gaps / hard stops  
+- Confirm no production code modified — then proceed to 02  
