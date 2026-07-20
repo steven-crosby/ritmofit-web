@@ -273,7 +273,7 @@ export function SegmentBand({
 
   return (
     <figure className="mt-2 flex flex-col gap-1">
-      <figcaption className="flex items-center justify-between font-ui text-xs uppercase tracking-wide text-text-tertiary">
+      <figcaption className="flex flex-wrap items-center justify-between gap-2 font-ui text-xs uppercase tracking-wide text-text-tertiary">
         <span className="flex items-center gap-1.5">
           Segments
           {provisional && (
@@ -296,7 +296,7 @@ export function SegmentBand({
           )}
         </span>
         {canEdit && canSnap && !provisional && (
-          <label className="flex items-center gap-1.5 normal-case tracking-normal text-text-secondary">
+          <label className="flex min-h-11 items-center gap-1.5 normal-case tracking-normal text-text-secondary">
             <input
               type="checkbox"
               checked={snapTracks}
@@ -309,7 +309,7 @@ export function SegmentBand({
       {hasBand ? (
         <div
           ref={bandRef}
-          className="relative h-6 w-full overflow-hidden rounded-card bg-bg-base"
+          className="relative h-11 w-full overflow-hidden rounded-card bg-bg-base"
           role={canEdit && !provisional ? 'group' : 'img'}
           aria-label={`${provisional ? 'Auto-banded segments' : 'Segments'}: ${arc}`}
         >
@@ -485,7 +485,7 @@ function SegmentHandle({
       onKeyDown={onKeyDown}
       onBlur={() => void commit(draftMs)}
       style={{ left: `${leftPct}%` }}
-      className="absolute inset-y-0 z-10 flex w-3 -translate-x-1/2 cursor-ew-resize touch-none items-stretch justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+      className="absolute inset-y-0 z-10 flex w-11 -translate-x-1/2 cursor-ew-resize touch-none items-stretch justify-center rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
     >
       <span aria-hidden className="w-0.5 bg-interactive" />
     </div>
@@ -571,7 +571,7 @@ function SegmentEditor({
     </option>
   ));
   const fieldClass =
-    'rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-ui text-sm text-text-primary';
+    'min-h-11 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-ui text-sm text-text-primary sm:rounded-pill';
   // Start-time takes `m:ss` (parsed + bounded to the class length), matching the
   // cue/move editors and the row display; an out-of-range value is caught here.
   const startInputClass = (invalid: boolean) =>
@@ -609,14 +609,14 @@ function SegmentEditor({
                     {typeOptions}
                   </select>
                   <button
-                    className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
+                    className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
                     onClick={saveEdit}
                     disabled={busy || editStart.ms == null}
                   >
                     Save
                   </button>
                   <button
-                    className="shrink-0 font-ui text-xs text-text-tertiary disabled:opacity-40"
+                    className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-text-tertiary disabled:opacity-40"
                     onClick={() => setEditingId(null)}
                     disabled={busy}
                   >
@@ -626,7 +626,7 @@ function SegmentEditor({
               ) : (
                 <li
                   key={s.id}
-                  className="flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5"
+                  className="flex items-center gap-2 rounded-control bg-bg-raised px-3"
                 >
                   <span aria-hidden style={{ color: SEGMENT_META[s.type].tint }}>
                     <SegmentIcon type={s.type} />
@@ -638,7 +638,7 @@ function SegmentEditor({
                     {SEGMENT_META[s.type].label}
                   </span>
                   <button
-                    className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
+                    className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
                     onClick={() => startEdit(s)}
                     disabled={busy}
                     aria-label={`Edit ${SEGMENT_META[s.type].label} segment`}
@@ -646,7 +646,7 @@ function SegmentEditor({
                     Edit
                   </button>
                   <button
-                    className="shrink-0 font-ui text-xs text-text-tertiary hover:text-state-danger disabled:opacity-40"
+                    className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-text-tertiary hover:text-state-danger disabled:opacity-40"
                     onClick={() => remove(s.id)}
                     disabled={busy}
                     aria-label={`Delete ${SEGMENT_META[s.type].label} segment`}
@@ -679,7 +679,7 @@ function SegmentEditor({
           {typeOptions}
         </select>
         <button
-          className="shrink-0 rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+          className="min-h-11 shrink-0 rounded-control border border-interactive px-3 font-ui text-sm text-interactive disabled:opacity-40 sm:rounded-pill"
           onClick={add}
           disabled={busy || addStart.ms == null}
         >

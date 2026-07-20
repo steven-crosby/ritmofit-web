@@ -1157,7 +1157,8 @@ describe('Dashboard class detail', () => {
     renderDashboard();
     // Select the slow class, then immediately switch to the fast one.
     fireEvent.click(await screen.findByRole('button', { name: /^First ride/ }));
-    fireEvent.click(screen.getByRole('button', { name: /^Second ride/ }));
+    const chooser = await screen.findByRole('navigation', { name: 'Class chooser' });
+    fireEvent.click(within(chooser).getByRole('button', { name: /^Second ride/ }));
 
     expect(await screen.findByRole('heading', { name: 'Second ride' })).toBeTruthy();
 
@@ -1231,9 +1232,8 @@ describe('Dashboard class detail', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: /^Manual ride/ }));
-    const durationInputs = await screen.findAllByLabelText('Track duration in minutes and seconds');
-    const durationInput = durationInputs[0];
-    if (!durationInput) throw new Error('Expected a manual track duration input.');
+    fireEvent.click(await screen.findByRole('button', { name: 'Manual track' }));
+    const durationInput = await screen.findByLabelText('Track duration in minutes and seconds');
     const form = durationInput.closest('form');
     if (!form) throw new Error('Expected the duration input to live inside a form.');
     const addTrackForm = within(form as HTMLFormElement);
@@ -1296,6 +1296,116 @@ describe('Dashboard track focus management', () => {
   const rowSelectButton = (classTrackId: string) =>
     document.querySelector<HTMLElement>(`[data-track-select-id="${classTrackId}"]`);
 
+  it('preserves the selected track and unsaved scoring while workbench tasks change', async () => {
+    installClassWithTracks('Context ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+      { classTrackId: 'ct-2', durationMs: 180000, title: 'Second Song' },
+    ]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Context ride/ }));
+    await screen.findByRole('heading', { name: 'Context ride' });
+
+    const firstRow = rowSelectButton('ct-1');
+    expect(firstRow).not.toBeNull();
+    fireEvent.click(firstRow as HTMLElement);
+
+    const notes = await screen.findByRole('textbox', { name: 'Creator notes' });
+    fireEvent.change(notes, { target: { value: 'Hold this thought through every task.' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show timeline' }));
+    expect(screen.getByRole('region', { name: 'Timeline precision' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add music' }));
+    expect(screen.getByRole('region', { name: 'Add music to Context ride' })).toBeTruthy();
+
+    const closeMusic = screen.getByRole('button', { name: 'Close music' });
+    fireEvent.click(closeMusic);
+    await waitFor(() => expect(document.activeElement).toBe(closeMusic));
+
+    expect(
+      (screen.getByRole('textbox', { name: 'Creator notes' }) as HTMLTextAreaElement).value,
+    ).toBe('Hold this thought through every task.');
+    expect(rowSelectButton('ct-1')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('keeps compact cross-class orientation while a class is open', async () => {
+    const first = installClassWithTracks('Saturday Heat', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+    ]);
+    const second = makeClass('Sunrise Source');
+    vi.mocked(api.listClasses).mockResolvedValue(page([first, second]));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Saturday Heat/ }));
+
+    const chooser = await screen.findByRole('navigation', { name: 'Class chooser' });
+    expect(
+      within(chooser)
+        .getByRole('button', { name: /Saturday Heat/ })
+        .getAttribute('aria-current'),
+    ).toBe('page');
+    expect(within(chooser).getByRole('button', { name: /Sunrise Source/ })).toBeTruthy();
+    expect(within(chooser).getByRole('button', { name: 'All classes' })).toBeTruthy();
+  });
+
+  it('keeps the selected track and draft stable through an optimistic reorder refresh', async () => {
+    installClassWithTracks('Reorder ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+      { classTrackId: 'ct-2', durationMs: 180000, title: 'Second Song' },
+    ]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.reorderTracks).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Reorder ride/ }));
+    await screen.findByRole('heading', { name: 'Reorder ride' });
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for First Light',
+    });
+    fireEvent.change(within(inspector).getByRole('textbox', { name: 'Creator notes' }), {
+      target: { value: 'Draft survives reorder.' },
+    });
+    fireEvent.keyDown(
+      screen.getByRole('button', { name: /Reorder First Light, position 1 of 2/i }),
+      { key: 'ArrowDown' },
+    );
+
+    await waitFor(() => expect(api.reorderTracks).toHaveBeenCalledTimes(1));
+    expect(
+      (within(inspector).getByRole('textbox', { name: 'Creator notes' }) as HTMLTextAreaElement)
+        .value,
+    ).toBe('Draft survives reorder.');
+    expect(rowSelectButton('ct-1')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('keeps a failed scoring save local, visible, and editable', async () => {
+    installClassWithTracks('Save failure ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+    ]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateClassTrack).mockRejectedValue(new Error('save timed out'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Save failure ride/ }));
+    await screen.findByRole('heading', { name: 'Save failure ride' });
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for First Light',
+    });
+    const notes = within(inspector).getByRole('textbox', { name: 'Creator notes' });
+    fireEvent.change(notes, { target: { value: 'Do not lose this draft.' } });
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Save' }));
+
+    expect(await within(inspector).findByText('save timed out')).toBeTruthy();
+    expect((notes as HTMLTextAreaElement).value).toBe('Do not lose this draft.');
+    expect(rowSelectButton('ct-1')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
   it('returns focus to the nearest remaining track after removing one', async () => {
     installClassWithTracks('Focus ride', [
       { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
@@ -1351,8 +1461,8 @@ describe('Dashboard track focus management', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^Addition ride/ }));
     await screen.findByRole('heading', { name: 'Addition ride' });
 
-    // Open the "Add manually" disclosure
-    fireEvent.click(screen.getByText('Add manually'));
+    // Open the sourcing task and its manual-entry disclosure.
+    fireEvent.click(screen.getByRole('button', { name: 'Manual track' }));
 
     // Fill the manual track form
     fireEvent.change(screen.getByRole('textbox', { name: 'Track title' }), {

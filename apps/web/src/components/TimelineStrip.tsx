@@ -217,7 +217,7 @@ export function TimelineStrip({
     <figure className="flex flex-col gap-1">
       {snapApplies && (
         <figcaption className="flex items-center justify-end font-ui text-xs text-text-tertiary">
-          <label className="flex items-center gap-1.5 text-text-secondary">
+          <label className="flex min-h-11 items-center gap-2 text-text-secondary">
             <input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)} />
             Snap to beat
           </label>
@@ -227,7 +227,7 @@ export function TimelineStrip({
         ref={stripRef}
         role={interactive ? undefined : 'img'}
         aria-label={interactive ? undefined : summary}
-        className="relative h-10 w-full"
+        className="relative h-24 w-full"
       >
         {/* Beat/bar grid — faint, full-height, behind blocks and markers. */}
         {blocks.map((b) => {
@@ -286,7 +286,7 @@ export function TimelineStrip({
               aria-label={`Select track ${b.position + 1}`}
               onClick={() => onSelectTrack(b.classTrackId)}
               style={style}
-              className={`absolute top-0 flex h-5 items-center justify-center overflow-hidden rounded-sm border-l border-interactive/15 first:border-l-0 hover:bg-bg-raised ${ring}${pulseClass}`}
+              className={`absolute top-0 flex h-11 items-center justify-center overflow-hidden rounded-control border-l border-interactive/15 first:border-l-0 hover:bg-bg-raised ${ring}${pulseClass}`}
             >
               {inner}
             </button>
@@ -329,7 +329,7 @@ export function TimelineStrip({
               style={{ left: `${m.leftPct}%` }}
               title={`${m.kind} ${formatDuration(m.absMs)} — ${m.label}`}
               aria-label={`${m.kind} at ${formatDuration(m.absMs)}: ${m.label}, select track ${m.position + 1}`}
-              className="absolute bottom-0 -translate-x-1/2 px-1 py-0.5 text-text-secondary"
+              className="absolute bottom-0 flex h-11 min-w-11 -translate-x-1/2 items-center justify-center rounded-control text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
             >
               <Glyph kind={m.kind} color={m.color} />
             </button>
@@ -520,7 +520,7 @@ function TrackBlockHandle({
           ? ({ left: `${leftPct}%`, width: `${widthPct}%`, '--rf-bpm': block.bpm } as CSSProperties)
           : { left: `${leftPct}%`, width: `${widthPct}%` }
       }
-      className={`absolute top-0 flex h-5 cursor-ew-resize touch-none items-center justify-center overflow-hidden rounded-sm border-l border-interactive/15 hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive ${selected ? 'ring-2 ring-interactive' : ''}${pulse ? ' rf-beat-pulse-subtle' : ''}`}
+      className={`absolute top-0 flex h-11 cursor-ew-resize touch-none items-center justify-center overflow-hidden rounded-control border-l border-interactive/15 hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive ${selected ? 'ring-2 ring-interactive' : ''}${pulse ? ' rf-beat-pulse-subtle' : ''}`}
     >
       <span className="font-data text-[10px] text-text-tertiary">{block.position + 1}</span>
     </button>
@@ -656,7 +656,7 @@ function MarkerHandle({
       onBlur={() => void commit(draftTrackRel)}
       style={{ left: `${leftPct}%` }}
       title={`${marker.kind} ${formatDuration(absMs)} — ${marker.label}`}
-      className="absolute bottom-0 -translate-x-1/2 cursor-ew-resize touch-none px-1 py-0.5 text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+      className="absolute bottom-0 flex h-11 min-w-11 -translate-x-1/2 cursor-ew-resize touch-none items-center justify-center rounded-control text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
     >
       <Glyph kind={marker.kind} color={marker.color} />
     </button>

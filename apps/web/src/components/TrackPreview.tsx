@@ -31,6 +31,7 @@ import { PreviewPlaybackController, type PreviewStatus } from '../lib/playback/p
 import type { RunPayloadProviderRef, UnplayableReason } from '../lib/playback/types.js';
 import { PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
 import { providerLabel } from '../lib/providers.js';
+import { StatusLabel } from './SharedState.js';
 
 /** Providers the track has a ref for AND the web player can actually drive. */
 function playableRefProviders(entry: RunPayloadTrackEntry): string[] {
@@ -48,14 +49,23 @@ function orJoin(labels: string[]): string {
 }
 
 export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
+  const playbackWindow = playbackWindowFor(entry);
+  const previewDurationMs = Number.isFinite(playbackWindow.endMs)
+    ? Math.max(0, playbackWindow.endMs - playbackWindow.startMs)
+    : null;
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
   const [connectionsError, setConnectionsError] = useState<string | null>(null);
   const [status, setStatus] = useState<PreviewStatus>({ kind: 'idle' });
+  const [elapsedMs, setElapsedMs] = useState(0);
   // A cross-provider resolution attached a playable ref this session — overlay it
   // on the entry so the verdict/preview update immediately (it's persisted
   // server-side, and a full class reload carries it too). Reset per selected track.
   const [overrideRefs, setOverrideRefs] = useState<RunPayloadProviderRef[] | null>(null);
   const controllerRef = useRef<PreviewPlaybackController | null>(null);
+  const lastActionRef = useRef<'start' | 'resume'>('start');
+  const baseRef = useRef(0);
+  const startRef = useRef(0);
+  const displayedElapsedRef = useRef(0);
   // The host rAF clock runs exactly while the controller reports `playing`.
   // Deriving this from status (rather than a separate `playing` flag the
   // handlers and a reconciling effect kept in sync) is what makes the clock
@@ -88,7 +98,11 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
       now: () => Date.now(),
       adapters: PLAYBACK_ADAPTERS,
       availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
-      onStatus: setStatus,
+      onStatus: (next) => {
+        setStatus(next);
+        if (next.kind === 'idle') setElapsedMs(0);
+        if (next.kind === 'ended') setElapsedMs(previewDurationMs ?? baseRef.current);
+      },
     });
     controllerRef.current = controller;
     return () => {
@@ -97,7 +111,7 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
       // destroy() doesn't push status; reset it here so `playing` derives false.
       setStatus({ kind: 'idle' });
     };
-  }, [connections]);
+  }, [connections, previewDurationMs]);
 
   // Switching the selected track stops any in-flight preview (single-track
   // model). stop() pushes `idle` via onStatus, which clears `playing`.
@@ -112,14 +126,16 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
 
   // Host clock: accumulate preview-relative time only while playing, and let the
   // controller stop at the clip-window end. Same rAF shape as Live Mode.
-  const baseRef = useRef(0);
-  const startRef = useRef(0);
   useEffect(() => {
     if (!playing) return;
     startRef.current = performance.now();
     let raf = 0;
     const frame = () => {
       const elapsed = baseRef.current + (performance.now() - startRef.current);
+      if (elapsed - displayedElapsedRef.current >= 250) {
+        displayedElapsedRef.current = elapsed;
+        setElapsedMs(elapsed);
+      }
       void controllerRef.current?.tick(elapsed);
       raf = requestAnimationFrame(frame);
     };
@@ -138,6 +154,9 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
 
   const onPreview = useCallback(() => {
     baseRef.current = 0;
+    displayedElapsedRef.current = 0;
+    setElapsedMs(0);
+    lastActionRef.current = 'start';
     void controllerRef.current?.play(effectiveEntry);
   }, [effectiveEntry]);
 
@@ -146,10 +165,14 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
   }, []);
 
   const onResume = useCallback(() => {
+    lastActionRef.current = 'resume';
     void controllerRef.current?.resume();
   }, []);
 
   const onStop = useCallback(() => {
+    baseRef.current = 0;
+    displayedElapsedRef.current = 0;
+    setElapsedMs(0);
     void controllerRef.current?.stop();
   }, []);
 
@@ -169,80 +192,135 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
         availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
       })
     : null;
-  const playbackWindow = playbackWindowFor(entry);
   const isClipped = entry.clipStartMs > 0 || entry.track.durationMs != null;
+  const providerName =
+    status.kind === 'preparing' ||
+    status.kind === 'awaiting_authorization' ||
+    status.kind === 'playing' ||
+    status.kind === 'paused'
+      ? providerLabel(status.provider)
+      : status.kind === 'error' && status.error.provider
+        ? providerLabel(status.error.provider)
+        : selection?.status === 'playable'
+          ? providerLabel(selection.provider)
+          : null;
+  const resumeFailed = status.kind === 'error' && lastActionRef.current === 'resume';
+  const totalMs = previewDurationMs;
 
   return (
-    <div className="flex flex-col gap-2 rounded-card border border-interactive/20 bg-bg-base p-4">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Preview</span>
-        <PreviewChip status={status} />
+    <section
+      aria-label={`Track preview for ${entry.track.title}`}
+      className={`sticky bottom-2 z-20 flex min-w-0 flex-col gap-3 rounded-card border bg-bg-raised p-3 shadow-overlay sm:p-4 ${
+        status.kind === 'error' ? 'border-state-caution/55' : 'border-border-strong'
+      }`}
+    >
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="rf-eyebrow">Selected-track preview</p>
+          <h3 className="mt-1 truncate font-display text-base font-semibold text-text-primary">
+            {entry.track.title}
+          </h3>
+          <p className="truncate font-ui text-xs text-text-secondary">{entry.track.artist}</p>
+        </div>
+        <div className="shrink-0" aria-live="polite" aria-atomic="true">
+          <PreviewChip
+            status={status}
+            ready={connections != null && selection?.status === 'playable'}
+            checked={connections != null}
+            unverified={connectionsError != null}
+            resumeFailed={resumeFailed}
+          />
+        </div>
       </div>
 
       {connectionsError && (
-        <p className="font-ui text-xs text-text-tertiary">
-          Couldn’t check provider connections ({connectionsError}).
-        </p>
-      )}
-
-      {connections && selection?.status === 'unplayable' ? (
-        <UnplayableVerdict
-          entry={effectiveEntry}
-          reason={selection.reason}
-          onReconnect={reconnectProvider}
-          onResolved={setOverrideRefs}
-        />
-      ) : (
-        <PreviewControls
-          status={status}
-          providerLabelText={
-            selection?.status === 'playable' ? providerLabel(selection.provider) : null
-          }
-          ready={connections != null}
-          onPreview={onPreview}
-          onPause={onPause}
-          onResume={onResume}
-          onStop={onStop}
-        />
-      )}
-
-      {status.kind === 'error' && (
-        <div
-          role="alert"
-          className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-state-danger/40 bg-bg-raised px-3 py-2"
-        >
-          <p className="font-ui text-xs font-semibold text-text-primary">
-            <span aria-hidden className="mr-1 text-state-danger">
-              ⚠
-            </span>
-            Preview stopped: {status.error.message}
+        <div role="status" className="rounded-card border border-border-subtle bg-bg-sunken p-3">
+          <StatusLabel kind="unavailable" label="Playback status unverified" />
+          <p className="mt-1 font-ui text-xs text-text-secondary">
+            Couldn’t check provider connections ({connectionsError}). Your class edit is unchanged.
           </p>
-          <button
-            type="button"
-            onClick={onPreview}
-            className="min-h-9 rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-xs font-semibold text-text-on-accent"
-          >
-            Retry
-          </button>
-          <button
-            type="button"
-            onClick={onStop}
-            className="min-h-9 rounded-pill border border-interactive px-3 py-1.5 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive"
-          >
-            Dismiss
-          </button>
         </div>
       )}
 
-      {selection?.status === 'playable' && isClipped && (
-        <p className="font-data text-[0.7rem] text-text-tertiary">
-          Plays the class clip{' '}
-          {entry.track.durationMs != null
-            ? `(${formatWindow(playbackWindow.startMs, playbackWindow.endMs)})`
-            : '(from the clip start)'}
-        </p>
+      <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <p className="font-data text-xs text-text-secondary">
+            {providerName ?? 'Provider not selected'} · {formatClock(elapsedMs)}
+            {totalMs != null ? ` / ${formatClock(totalMs)}` : ''}
+          </p>
+          <p className="mt-1 font-data text-[0.7rem] text-text-tertiary">
+            Clip {formatWindow(playbackWindow.startMs, playbackWindow.endMs)} · Track{' '}
+            {entry.position + 1}
+          </p>
+        </div>
+
+        {connections && selection?.status === 'unplayable' ? (
+          <UnplayableVerdict
+            entry={effectiveEntry}
+            reason={selection.reason}
+            onReconnect={reconnectProvider}
+            onResolved={setOverrideRefs}
+          />
+        ) : status.kind !== 'error' ? (
+          <PreviewControls
+            status={status}
+            providerLabelText={
+              selection?.status === 'playable' ? providerLabel(selection.provider) : null
+            }
+            ready={connections != null}
+            onPreview={onPreview}
+            onPause={onPause}
+            onResume={onResume}
+            onStop={onStop}
+          />
+        ) : null}
+      </div>
+
+      {status.kind === 'error' && (
+        <div role="alert" className="rounded-card border border-state-caution/45 bg-bg-sunken p-3">
+          <StatusLabel
+            kind="error"
+            label={resumeFailed ? 'Preview could not resume' : 'Preview interrupted'}
+          />
+          <p className="mt-2 font-ui text-sm font-semibold text-text-primary">
+            {status.error.message}
+          </p>
+          <p className="mt-1 font-ui text-xs text-text-secondary">
+            Your class edit, selected track, and scoring changes are unchanged. Restart this clip or
+            stop auditioning.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onPreview}
+              className="min-h-11 rounded-control rf-btn-primary px-3 font-ui text-xs font-semibold text-text-on-accent sm:rounded-pill"
+            >
+              Start clip again
+            </button>
+            <button
+              type="button"
+              onClick={onStop}
+              className="min-h-11 rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+            >
+              Stop auditioning
+            </button>
+            {status.error.provider && (
+              <button
+                type="button"
+                onClick={() => void reconnectProvider(status.error.provider!)}
+                className="min-h-11 rounded-control px-3 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+              >
+                Reconnect {providerLabel(status.error.provider)}
+              </button>
+            )}
+          </div>
+        </div>
       )}
-    </div>
+
+      {selection?.status === 'playable' && !isClipped && (
+        <p className="font-ui text-xs text-text-tertiary">Preview starts at the track boundary.</p>
+      )}
+    </section>
   );
 }
 
@@ -324,7 +402,7 @@ function ReconnectSpotifyAction({
         type="button"
         onClick={reconnect}
         disabled={state === 'reconnecting'}
-        className="inline-flex min-h-9 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 py-1.5 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive disabled:opacity-50"
+        className="inline-flex min-h-11 items-center gap-1.5 self-start rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive disabled:opacity-50 sm:rounded-pill"
       >
         <span aria-hidden>↻</span>
         {state === 'reconnecting' ? 'Reconnecting…' : 'Reconnect Spotify for playback'}
@@ -368,7 +446,7 @@ function ResolveProviderAction({
   const [state, setState] = useState<ResolveState>({ kind: 'idle' });
 
   const btn =
-    'inline-flex min-h-9 items-center gap-1.5 rounded-pill border border-interactive px-3 py-1.5 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive disabled:opacity-50';
+    'inline-flex min-h-11 items-center gap-1.5 rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive disabled:opacity-50 sm:rounded-pill';
   const targets = orJoin(PLAYBACK_ADAPTER_PROVIDERS.map((p) => providerLabel(p)));
 
   const find = () => {
@@ -474,9 +552,9 @@ function PreviewControls({
   onStop: () => void;
 }) {
   const primary =
-    'inline-flex min-h-9 items-center gap-1.5 rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50';
+    'inline-flex min-h-11 items-center gap-1.5 rounded-control rf-btn-primary px-4 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50 sm:rounded-pill';
   const secondary =
-    'inline-flex min-h-9 items-center gap-1.5 rounded-pill border border-interactive px-3 py-1.5 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive';
+    'inline-flex min-h-11 items-center gap-1.5 rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill';
 
   if (status.kind === 'preparing') {
     return (
@@ -526,46 +604,74 @@ function PreviewControls({
   // idle / ended / error → offer a fresh preview.
   return (
     <button type="button" onClick={onPreview} disabled={!ready} className={primary}>
-      <span aria-hidden>▶</span> Preview{providerLabelText ? ` on ${providerLabelText}` : ''}
+      <span aria-hidden>{status.kind === 'ended' ? '↺' : '▶'}</span>{' '}
+      {status.kind === 'ended' ? 'Replay clip' : 'Play preview'}
+      {providerLabelText ? ` on ${providerLabelText}` : ''}
     </button>
   );
 }
 
 /** Status chip mirroring the Live Mode player-rail vocabulary (glyph + label). */
-function PreviewChip({ status }: { status: PreviewStatus }) {
+function PreviewChip({
+  status,
+  ready,
+  checked,
+  unverified,
+  resumeFailed,
+}: {
+  status: PreviewStatus;
+  ready: boolean;
+  checked: boolean;
+  unverified: boolean;
+  resumeFailed: boolean;
+}) {
   let text: string;
+  let glyph = '◇';
   switch (status.kind) {
     case 'preparing':
       text = `Preparing ${providerLabel(status.provider)}…`;
+      glyph = '…';
       break;
     case 'awaiting_authorization':
       text = `Waiting for ${providerLabel(status.provider)} authorization…`;
+      glyph = '⏳';
       break;
     case 'playing':
-      text = providerLabel(status.provider);
+      text = `Now playing · ${providerLabel(status.provider)}`;
+      glyph = '▶';
       break;
     case 'paused':
-      text = 'Paused';
+      text = `Preview paused · ${providerLabel(status.provider)}`;
+      glyph = 'Ⅱ';
       break;
     case 'ended':
-      text = 'Preview ended';
+      text = 'Preview complete';
+      glyph = '✓';
       break;
     case 'error':
-      text = 'Preview error';
+      text = resumeFailed ? 'Resume failed' : 'Preview interrupted';
+      glyph = '!';
       break;
     default:
-      text = 'Idle';
+      text = ready
+        ? 'Preview ready'
+        : unverified
+          ? 'Playback unverified'
+          : checked
+            ? 'Preview unavailable'
+            : 'Checking playback';
+      glyph = ready ? '▶' : checked ? '⊘' : '…';
   }
   const isError = status.kind === 'error';
-  const isWaiting = status.kind === 'awaiting_authorization';
-  if (status.kind === 'idle') return null;
   return (
     <span
-      className={`flex shrink-0 items-center gap-1 font-data text-[0.7rem] ${
-        isError ? 'font-semibold text-state-danger' : 'text-text-tertiary'
+      className={`flex min-h-7 shrink-0 items-center gap-1 rounded-pill border px-2 font-data text-[0.7rem] ${
+        isError
+          ? 'border-state-caution/45 font-semibold text-state-caution'
+          : 'border-border-subtle text-text-secondary'
       }`}
     >
-      <span aria-hidden>{isError ? '⚠' : isWaiting ? '⏳' : '♪'}</span>
+      <span aria-hidden>{glyph}</span>
       <span className="sr-only">Preview: </span>
       {text}
     </span>
@@ -574,9 +680,10 @@ function PreviewChip({ status }: { status: PreviewStatus }) {
 
 /** m:ss–m:ss window label for the clip range. */
 function formatWindow(startMs: number, endMs: number): string {
-  const clock = (ms: number) => {
-    const total = Math.max(0, Math.round(ms / 1000));
-    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
-  };
-  return `${clock(startMs)}–${clock(endMs)}`;
+  return `${formatClock(startMs)}–${Number.isFinite(endMs) ? formatClock(endMs) : 'track end'}`;
+}
+
+function formatClock(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }

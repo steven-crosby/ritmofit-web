@@ -37,7 +37,7 @@ export function IntensitySegmentedControl({
             // must carry the keyboard focus ring itself, or focus is invisible
             // (design system: "visible cyan focus ring at all times"). `has-[:focus-visible]`
             // lifts the contained radio's focus onto the label.
-            className={`cursor-pointer rounded-pill px-2.5 py-1 font-ui text-xs transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-interactive ${
+            className={`flex min-h-11 cursor-pointer items-center rounded-pill px-2.5 font-ui text-xs transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-interactive ${
               selected
                 ? 'rf-btn-primary font-semibold text-text-on-accent'
                 : 'text-text-secondary hover:text-text-primary'
