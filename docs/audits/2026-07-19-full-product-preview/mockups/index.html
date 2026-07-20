@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ritmo Studio — full-product design preview</title>
+    <link rel="stylesheet" href="preview.css?v=20260719g" />
+  </head>
+  <body>
+    <a class="skip" href="#preview">Skip review controls</a>
+    <header class="review-header">
+      <div>
+        <p class="review-kicker">2026-07-19 · owner review</p>
+        <h1>Ritmo Studio full-product preview</h1>
+      </div>
+      <div class="review-actions" aria-label="Preview controls">
+        <button id="device-desktop" class="review-button is-active" aria-pressed="true">
+          Desktop
+        </button>
+        <button id="device-mobile" class="review-button" aria-pressed="false">390 mobile</button>
+        <button id="compare-toggle" class="review-button" aria-pressed="false">Show current</button>
+        <button id="annotations-toggle" class="review-button" aria-pressed="false">
+          Show decisions
+        </button>
+      </div>
+    </header>
+
+    <div class="review-layout">
+      <aside class="review-index" aria-label="Surface index">
+        <label for="surface-search">Find a surface</label>
+        <input id="surface-search" type="search" placeholder="Builder, recovery, Live…" />
+        <nav id="surface-nav" aria-label="Preview surfaces"></nav>
+      </aside>
+
+      <main id="preview" class="review-main" tabindex="-1">
+        <section class="review-meta" aria-live="polite">
+          <div>
+            <p id="surface-category" class="review-kicker"></p>
+            <h2 id="surface-title"></h2>
+            <p id="surface-purpose"></p>
+          </div>
+          <div id="state-switcher" class="state-switcher" aria-label="State switcher"></div>
+        </section>
+
+        <section class="compare-grid">
+          <figure id="current-panel" class="current-panel" hidden>
+            <figcaption>Current · captured from <code>origin/main</code></figcaption>
+            <img id="current-image" alt="Current application screenshot for comparison" />
+          </figure>
+
+          <article class="prototype-frame" aria-label="Proposed product preview">
+            <div id="prototype-screen" class="prototype-screen" data-device="desktop"></div>
+          </article>
+        </section>
+
+        <aside id="decision-layer" class="decision-layer" hidden aria-label="Design decisions">
+          <div>
+            <p class="review-kicker">Traceability</p>
+            <h3>Why this direction</h3>
+          </div>
+          <p id="decision-copy"></p>
+          <p><strong>Backlog:</strong> <span id="decision-ids"></span></p>
+        </aside>
+      </main>
+    </div>
+
+    <script src="preview.js?v=20260719g"></script>
+  </body>
+</html>
