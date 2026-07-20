@@ -14,6 +14,7 @@ import { MarketingPage } from './components/MarketingPage.js';
 import { ResetPassword } from './components/ResetPassword.js';
 import { NotFound } from './components/NotFound.js';
 import { PrivacyPage } from './components/PrivacyPage.js';
+import { WorkspaceLoadingState } from './components/SharedState.js';
 import { markOnboardingVideoPending } from './lib/onboarding-video.js';
 
 // The app navigates in-component (no router); the real URL surface is '/' and
@@ -44,11 +45,7 @@ export function App() {
   if (!KNOWN_PATHS.has(window.location.pathname)) return <NotFound />;
 
   if (isPending) {
-    return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="font-ui text-text-tertiary">Loading…</p>
-      </main>
-    );
+    return <WorkspaceLoadingState />;
   }
 
   // Signed in → Dashboard.

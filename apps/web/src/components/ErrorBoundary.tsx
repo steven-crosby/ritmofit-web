@@ -8,6 +8,7 @@
  * `componentDidCatch`) can catch descendant render errors in React.
  */
 import { Component, type ReactNode } from 'react';
+import { RecoveryState } from './SharedState.js';
 
 interface Props {
   children: ReactNode;
@@ -46,21 +47,25 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return (
       <main className="rf-hero-glow flex min-h-screen flex-col items-center justify-center p-8">
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-card bg-bg-raised p-6 shadow-card">
-          <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-text-primary">
-            Something went wrong
-          </h1>
-          <p className="font-ui text-text-secondary">
-            An unexpected error interrupted the app. Your saved work is safe on the server.
-          </p>
-          <button
-            type="button"
-            onClick={this.handleReset}
-            className="rounded-pill rf-btn-primary px-5 py-2 font-ui font-semibold text-text-on-accent"
-          >
-            {this.props.resetLabel ?? 'Reload'}
-          </button>
-        </div>
+        <RecoveryState
+          kind="error"
+          title="This view lost the beat."
+          event="An unexpected render error interrupted Ritmo Studio."
+          safety="Your saved class work remains on the server. Unsaved changes in this view may need to be entered again."
+          statusLabel="Render interrupted"
+          role="alert"
+          headingLevel="h1"
+          className="w-full max-w-md shadow-card"
+          primaryAction={
+            <button
+              type="button"
+              onClick={this.handleReset}
+              className="min-h-11 rounded-input rf-btn-primary px-5 font-ui text-sm font-semibold text-text-on-accent"
+            >
+              {this.props.resetLabel ?? 'Reload safely'}
+            </button>
+          }
+        />
       </main>
     );
   }

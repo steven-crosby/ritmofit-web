@@ -5,12 +5,15 @@ import { App } from './App.js';
 
 // Signed-out session so the root path resolves to MarketingPage (D15), not Dashboard.
 // The components import the client at module load.
+const sessionState = vi.hoisted(() => ({ data: null, isPending: false }));
+
 vi.mock('./lib/auth-client.js', () => ({
-  authClient: { useSession: () => ({ data: null, isPending: false }) },
+  authClient: { useSession: () => sessionState },
 }));
 
 afterEach(() => {
   cleanup();
+  sessionState.isPending = false;
   window.history.pushState({}, '', '/');
 });
 
@@ -29,6 +32,16 @@ describe('App path routing', () => {
     window.history.pushState({}, '', '/');
     render(<App />);
     expect(screen.queryByText('404')).toBeNull();
+  });
+
+  it('preserves workspace shape while the session is loading', () => {
+    sessionState.isPending = true;
+    render(<App />);
+
+    const status = screen.getByRole('status');
+    expect(status.getAttribute('aria-busy')).toBe('true');
+    expect(screen.getByRole('heading', { name: 'Restoring your workspace…' })).toBeTruthy();
+    expect(screen.getByText(/Classes, music connections/)).toBeTruthy();
   });
 
   it('renders the private-beta privacy notice without a session', () => {

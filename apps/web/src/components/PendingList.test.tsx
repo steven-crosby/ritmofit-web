@@ -10,7 +10,7 @@ afterEach(() => {
 describe('PendingList', () => {
   it('shows "Loading…" while the fetch is genuinely pending (no error yet)', () => {
     render(<PendingList error={null} onRetry={() => {}} />);
-    expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(screen.getByText('Loading')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 
@@ -18,7 +18,7 @@ describe('PendingList', () => {
     const onRetry = vi.fn();
     render(<PendingList error="Network error" onRetry={onRetry} />);
     // The misleading "Loading…" must be gone — the error no longer masquerades as pending.
-    expect(screen.queryByText('Loading…')).toBeNull();
+    expect(screen.queryByText('Loading')).toBeNull();
     const retry = screen.getByRole('button', { name: 'Try again' });
     fireEvent.click(retry);
     expect(onRetry).toHaveBeenCalledTimes(1);
