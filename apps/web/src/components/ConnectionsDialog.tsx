@@ -29,6 +29,7 @@ import { authorizeAppleMusic } from '../lib/musickit.js';
 import {
   PROVIDER_ORDER,
   providerLabel,
+  providerCapabilityTruth,
   providerConnectionState,
   connectionHasSavedPlaylistScope,
   connectionHasPlaybackScope,
@@ -68,13 +69,16 @@ export function ConnectionsDialog({
   const [confirming, setConfirming] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [statusVerified, setStatusVerified] = useState(false);
 
   const refresh = useCallback(async () => {
     setError(null);
     try {
       setConnections(await listConnections());
+      setStatusVerified(true);
     } catch (e) {
       setError((e as Error).message);
+      setStatusVerified(false);
     }
   }, []);
 
@@ -147,7 +151,7 @@ export function ConnectionsDialog({
     <Dialog
       onClose={onClose}
       label="Music connections"
-      panelClassName="flex w-full max-w-md flex-col gap-4 rounded-panel bg-bg-raised p-6 shadow-lifted"
+      panelClassName="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-panel bg-bg-raised p-6 shadow-lifted"
     >
       <header className="flex items-start justify-between gap-3">
         <div>
@@ -155,11 +159,11 @@ export function ConnectionsDialog({
             Music connections
           </h2>
           <p className="font-ui text-xs text-text-tertiary">
-            Link an account to search your own library.
+            Catalog, library, and playback permissions stay distinct.
           </p>
         </div>
         <button
-          className="rounded-pill px-2 py-1 font-ui text-sm text-text-tertiary hover:text-text-primary"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-pill font-ui text-sm text-text-tertiary hover:text-text-primary"
           onClick={onClose}
           aria-label="Close connections dialog"
         >
@@ -193,7 +197,7 @@ export function ConnectionsDialog({
               <button
                 type="button"
                 onClick={() => void refresh()}
-                className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+                className="min-h-11 rounded-pill border border-interactive px-3 font-ui text-sm text-interactive"
               >
                 Try again
               </button>
@@ -212,6 +216,12 @@ export function ConnectionsDialog({
             const showReconnecting =
               busy && (dataState === 'disconnected' || dataState === 'expired');
             const meta = STATE_META[showReconnecting ? 'reconnecting' : dataState];
+            const truth = providerCapabilityTruth(
+              provider,
+              connection,
+              Date.now(),
+              statusVerified ? 'verified' : 'unverified',
+            );
             // A Spotify connection made before playback launched (or that never
             // granted `streaming`) is a live token that still can't drive in-app
             // playback — Live preflight reports `playback_reauth_required` and tells
@@ -241,9 +251,11 @@ export function ConnectionsDialog({
                     <p className="font-ui text-sm font-semibold text-text-primary">
                       {providerLabel(provider)}
                     </p>
-                    <p className={`flex items-center gap-1.5 font-ui text-xs ${meta.tone}`}>
-                      <span aria-hidden>{meta.glyph}</span>
-                      <span>{meta.label}</span>
+                    <p
+                      className={`flex items-center gap-1.5 font-ui text-xs ${statusVerified ? meta.tone : 'text-text-tertiary'}`}
+                    >
+                      <span aria-hidden>{statusVerified ? meta.glyph : '?'}</span>
+                      <span>{statusVerified ? meta.label : 'Last known · unverified'}</span>
                     </p>
                   </div>
 
@@ -259,14 +271,14 @@ export function ConnectionsDialog({
                           type="button"
                           onClick={() => disconnect(provider)}
                           disabled={busy}
-                          className="rounded-pill border border-state-danger/50 px-3 py-1 font-ui text-xs text-state-danger disabled:opacity-50"
+                          className="min-h-11 rounded-pill border border-state-danger/50 px-3 font-ui text-xs text-state-danger disabled:opacity-50"
                         >
                           {busy ? 'Removing…' : 'Confirm'}
                         </button>
                         <button
                           type="button"
                           onClick={() => setConfirming(null)}
-                          className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-text-primary"
+                          className="min-h-11 rounded-pill px-2 font-ui text-xs text-text-tertiary hover:text-text-primary"
                         >
                           Cancel
                         </button>
@@ -275,7 +287,7 @@ export function ConnectionsDialog({
                       <button
                         type="button"
                         onClick={() => setConfirming(provider)}
-                        className="shrink-0 rounded-pill border border-interactive/40 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+                        className="min-h-11 shrink-0 rounded-pill border border-interactive/40 px-3 font-ui text-xs text-text-secondary hover:text-text-primary"
                       >
                         Disconnect
                       </button>
@@ -286,7 +298,7 @@ export function ConnectionsDialog({
                       type="button"
                       onClick={() => connect(provider)}
                       disabled={busy}
-                      className="shrink-0 rounded-pill border border-interactive px-3 py-1 font-ui text-xs font-semibold text-interactive disabled:opacity-50"
+                      className="min-h-11 shrink-0 rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive disabled:opacity-50"
                     >
                       {busy ? 'Reconnecting…' : 'Reconnect'}
                     </button>
@@ -295,12 +307,40 @@ export function ConnectionsDialog({
                       type="button"
                       onClick={() => connect(provider)}
                       disabled={busy}
-                      className="shrink-0 rounded-pill rf-btn-primary px-3 py-1 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+                      className="min-h-11 shrink-0 rounded-pill rf-btn-primary px-3 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
                     >
                       {busy ? 'Connecting…' : 'Connect'}
                     </button>
                   )}
                 </div>
+
+                <dl
+                  className="grid gap-1 border-t border-interactive/10 pt-2 font-ui text-xs"
+                  aria-label={`${providerLabel(provider)} capabilities`}
+                >
+                  {(
+                    [
+                      ['Catalog', truth.catalog],
+                      ['Library', truth.library],
+                      ['Playback', truth.playback],
+                    ] as const
+                  ).map(([label, capability]) => (
+                    <div key={label} className="flex min-w-0 items-baseline justify-between gap-3">
+                      <dt className="text-text-tertiary">{label}</dt>
+                      <dd
+                        className={
+                          capability.state === 'ready'
+                            ? 'text-state-positive'
+                            : capability.state === 'unverified' || capability.state === 'checking'
+                              ? 'text-text-tertiary'
+                              : 'text-state-caution'
+                        }
+                      >
+                        {capability.label}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
 
                 {needsPlaybackReconnect && (
                   <div className="flex flex-col gap-1.5 border-t border-interactive/10 pt-2">
@@ -315,7 +355,7 @@ export function ConnectionsDialog({
                       type="button"
                       onClick={() => connect(provider)}
                       disabled={busy}
-                      className="inline-flex min-h-8 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 py-1 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50"
+                      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50"
                     >
                       <span aria-hidden>↻</span>
                       {busy ? 'Reconnecting…' : 'Reconnect for playback'}
@@ -335,7 +375,7 @@ export function ConnectionsDialog({
                       type="button"
                       onClick={() => connect(provider)}
                       disabled={busy}
-                      className="inline-flex min-h-8 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 py-1 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50"
+                      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50"
                     >
                       <span aria-hidden>↻</span>
                       {busy ? 'Reconnecting…' : 'Reconnect to browse playlists'}

@@ -82,7 +82,13 @@ import {
   type ListStatus,
 } from '../lib/library-state.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
-import { PROVIDER_ORDER, providerConnectionState, providerLabel } from '../lib/providers.js';
+import {
+  PROVIDER_ORDER,
+  providerCapabilityTruth,
+  providerConnectionState,
+  providerLabel,
+  type ProviderCapabilityView,
+} from '../lib/providers.js';
 import { Dialog } from './Dialog.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 import { IntensityRibbon } from './IntensityRibbon.js';
@@ -1758,43 +1764,47 @@ function MusicWorkspace({
     <section className="grid w-full min-w-0 gap-5 overflow-hidden xl:grid-cols-[240px_minmax(0,1fr)] xl:items-start">
       <aside className="min-w-0 rounded-card bg-bg-raised p-4 xl:sticky xl:top-6">
         <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Sources</p>
-        {(connectionsStatus === 'ready' || connections.length > 0) && (
-          <nav className="mt-3 flex max-w-full gap-2 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
-            {PROVIDER_ORDER.map((provider) => {
-              const connectionState = providerConnectionState(
-                provider,
-                connections.find((row) => row.provider === provider),
-                Date.now(),
-              );
-              const rows = playlists[provider];
-              const canBrowse = connectionState === 'connected' && !!rows?.length;
-              return (
-                <button
-                  key={provider}
-                  type="button"
-                  aria-label={
-                    canBrowse
-                      ? `Browse ${providerLabel(provider)} playlists`
-                      : `Manage ${providerLabel(provider)} connection`
-                  }
-                  onClick={() =>
-                    canBrowse ? onBrowsePlaylists(provider, rows!) : onOpenConnections()
-                  }
-                  className="flex min-h-11 min-w-0 shrink-0 items-center justify-between gap-3 rounded-control bg-bg-base px-3 py-2 text-left font-ui text-sm text-text-primary transition-colors hover:bg-interactive/5 xl:w-full"
-                >
-                  <span>{providerLabel(provider)}</span>
-                  <span className="font-data text-[10px] uppercase text-text-tertiary">
-                    {connectionState === 'connected' ? 'Linked' : 'Source'}
-                  </span>
-                </button>
-              );
-            })}
-          </nav>
-        )}
+        <nav className="mt-3 flex max-w-full gap-2 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
+          {PROVIDER_ORDER.map((provider) => {
+            const connectionState = providerConnectionState(
+              provider,
+              connections.find((row) => row.provider === provider),
+              Date.now(),
+            );
+            const rows = playlists[provider];
+            const canBrowse = connectionState === 'connected' && !!rows?.length;
+            return (
+              <button
+                key={provider}
+                type="button"
+                aria-label={
+                  canBrowse
+                    ? `Browse ${providerLabel(provider)} playlists`
+                    : `Manage ${providerLabel(provider)} connection`
+                }
+                onClick={() =>
+                  canBrowse ? onBrowsePlaylists(provider, rows!) : onOpenConnections()
+                }
+                className="flex min-h-11 min-w-0 shrink-0 items-center justify-between gap-3 rounded-control bg-bg-base px-3 py-2 text-left font-ui text-sm text-text-primary transition-colors hover:bg-interactive/5 xl:w-full"
+              >
+                <span>{providerLabel(provider)}</span>
+                <span className="font-data text-[10px] uppercase text-text-tertiary">
+                  {connectionsStatus === 'loading'
+                    ? 'Checking'
+                    : connectionsStatus === 'error'
+                      ? 'Unverified'
+                      : connectionState === 'connected'
+                        ? 'Linked'
+                        : 'Catalog'}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
         <button
           type="button"
           onClick={onOpenConnections}
-          className="mt-4 min-h-10 w-full rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10"
+          className="mt-4 min-h-11 w-full rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10"
         >
           Manage connections
         </button>
@@ -1833,7 +1843,7 @@ function MusicWorkspace({
           onRetry={retryConnections}
         />
 
-        {(connectionsStatus === 'ready' || connections.length > 0) && (
+        {(connectionsStatus !== 'loading' || connections.length > 0) && (
           <section className="grid min-w-0 gap-3 lg:grid-cols-3">
             {PROVIDER_ORDER.map((provider) => {
               const connected = isProviderConnected(provider);
@@ -1842,6 +1852,7 @@ function MusicWorkspace({
                   key={provider}
                   provider={provider}
                   connection={connections.find((row) => row.provider === provider)}
+                  connectionStatus={connectionsStatus}
                   playlists={playlists[provider] ?? null}
                   loadingPlaylists={playlistsLoading[provider] ?? false}
                   playlistError={playlistsError[provider] ?? null}
@@ -2447,6 +2458,7 @@ function ReadinessTile({ label, value }: { label: string; value: string }) {
 function ProviderShelfCard({
   provider,
   connection,
+  connectionStatus,
   playlists,
   loadingPlaylists,
   playlistError,
@@ -2459,6 +2471,7 @@ function ProviderShelfCard({
 }: {
   provider: (typeof PROVIDER_ORDER)[number];
   connection: MusicConnectionView | undefined;
+  connectionStatus: 'loading' | 'ready' | 'error';
   playlists: ProviderPlaylistSummary[] | null;
   loadingPlaylists: boolean;
   playlistError: string | null;
@@ -2472,10 +2485,20 @@ function ProviderShelfCard({
   const label = providerLabel(provider);
   const canBrowseSavedPlaylists = providerCapabilities[provider].savedPlaylists;
   const canUseLikes = providerCapabilities[provider].userLikes;
-  const connectionState = providerConnectionState(provider, connection, Date.now());
+  const truth = providerCapabilityTruth(
+    provider,
+    connection,
+    Date.now(),
+    connectionStatus === 'ready' ? 'verified' : 'unverified',
+  );
+  const connectionState = truth.connectionState;
 
   let likesSummary = 'Liked-track browsing is coming soon for this provider.';
-  if (canUseLikes && connectionState === 'connected') {
+  if (canUseLikes && truth.library.state === 'unverified') {
+    likesSummary = connection
+      ? 'Showing last-known liked-track access; connection is unverified.'
+      : 'Liked-track access is unavailable until connection status returns.';
+  } else if (canUseLikes && connectionState === 'connected') {
     if (loadingLikes) {
       likesSummary = 'Loading your liked tracks…';
     } else if (likesError) {
@@ -2495,7 +2518,11 @@ function ProviderShelfCard({
   }
 
   let playlistSummary = 'Saved-playlist browsing is coming soon for this provider.';
-  if (canBrowseSavedPlaylists && connectionState === 'connected') {
+  if (canBrowseSavedPlaylists && truth.library.state === 'unverified') {
+    playlistSummary = connection
+      ? 'Showing last-known playlist access; connection is unverified.'
+      : 'Playlist access is unavailable until connection status returns.';
+  } else if (canBrowseSavedPlaylists && connectionState === 'connected') {
     if (loadingPlaylists) {
       playlistSummary = 'Loading your saved playlists…';
     } else if (playlistError) {
@@ -2515,18 +2542,42 @@ function ProviderShelfCard({
   }
 
   const connected = connectionState === 'connected';
+  const statusLabel =
+    connectionStatus === 'error'
+      ? 'Last known'
+      : connected
+        ? 'Connected'
+        : connectionState === 'expired'
+          ? 'Expired'
+          : connectionStatus === 'loading'
+            ? 'Checking'
+            : 'Catalog only';
   return (
-    <article className="min-w-0 rounded-card bg-bg-base p-4">
+    <article className="min-w-0 rounded-card border border-interactive/10 bg-bg-base p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h4 className="font-ui text-sm font-semibold text-text-primary">{label}</h4>
           <p className="mt-1 font-ui text-xs leading-5 text-text-tertiary">
-            {connected ? 'Ready for music browsing.' : 'Connect to browse your music.'}
+            {connectionStatus === 'error'
+              ? 'Connection status could not be refreshed.'
+              : connectionStatus === 'loading'
+                ? 'Checking library and playback authorization.'
+                : connected
+                  ? 'Your provider library is in reach.'
+                  : 'Catalog browsing stays available without a linked account.'}
           </p>
         </div>
         <span className="shrink-0 rounded-pill bg-bg-raised px-2 py-1 font-data text-[10px] uppercase tracking-wide text-text-secondary">
-          {connected ? 'Connected' : connectionState === 'expired' ? 'Expired' : 'Not connected'}
+          {statusLabel}
         </span>
+      </div>
+      <div
+        className="mt-4 grid gap-1.5 border-y border-interactive/10 py-3"
+        aria-label={`${label} capabilities`}
+      >
+        <ProviderCapabilityRow label="Catalog" capability={truth.catalog} />
+        <ProviderCapabilityRow label="Library" capability={truth.library} />
+        <ProviderCapabilityRow label="Playback" capability={truth.playback} />
       </div>
       <div className="mt-4 grid min-w-0 gap-2">
         {onBrowseLikes ? (
@@ -2561,7 +2612,7 @@ function ProviderShelfCard({
             {playlistSummary}
           </span>
         )}
-        {!connected && (
+        {!connected && connectionStatus !== 'error' && (
           <button
             type="button"
             onClick={onManageConnections}
@@ -2572,6 +2623,63 @@ function ProviderShelfCard({
         )}
       </div>
     </article>
+  );
+}
+
+function ProviderCapabilityRow({
+  label,
+  capability,
+}: {
+  label: string;
+  capability: ProviderCapabilityView;
+}) {
+  const glyph =
+    capability.state === 'ready'
+      ? '✓'
+      : capability.state === 'partial'
+        ? '◐'
+        : capability.state === 'checking'
+          ? '◌'
+          : capability.state === 'unverified'
+            ? '?'
+            : '→';
+  const tone =
+    capability.state === 'ready'
+      ? 'text-state-positive'
+      : capability.state === 'unverified' || capability.state === 'checking'
+        ? 'text-text-tertiary'
+        : 'text-state-caution';
+  return (
+    <div className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] items-baseline gap-2 font-ui text-xs">
+      <span className="text-text-tertiary">{label}</span>
+      <span className={`min-w-0 text-right ${tone}`}>
+        <span aria-hidden>{glyph} </span>
+        {capability.label}
+      </span>
+    </div>
+  );
+}
+
+function MusicCarryPath({ source, destination }: { source: string; destination: string }) {
+  return (
+    <div
+      className="mb-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 rounded-control border border-interactive/20 bg-interactive/5 px-3 py-2 font-ui text-xs"
+      aria-label={`Source ${source}; destination ${destination}`}
+    >
+      <span className="min-w-0">
+        <span className="block text-[10px] uppercase tracking-wide text-text-tertiary">Source</span>
+        <strong className="block truncate font-semibold text-text-primary">{source}</strong>
+      </span>
+      <span aria-hidden className="text-interactive">
+        →
+      </span>
+      <span className="min-w-0 text-right">
+        <span className="block text-[10px] uppercase tracking-wide text-text-tertiary">
+          Destination
+        </span>
+        <strong className="block truncate font-semibold text-text-primary">{destination}</strong>
+      </span>
+    </div>
   );
 }
 
@@ -2634,7 +2742,7 @@ function PlaylistBrowserDialog({
     <Dialog
       label={`Browse ${label} playlists`}
       onClose={onClose}
-      panelClassName="w-full max-w-lg rounded-card bg-bg-raised p-6 shadow-overlay"
+      panelClassName="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-card bg-bg-raised p-6 shadow-overlay"
     >
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
@@ -2654,11 +2762,16 @@ function PlaylistBrowserDialog({
           type="button"
           onClick={onClose}
           aria-label="Close playlist browser"
-          className="shrink-0 rounded-pill border border-interactive/30 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+          className="min-h-11 shrink-0 rounded-pill border border-interactive/30 px-3 font-ui text-xs text-text-secondary hover:text-text-primary"
         >
           Close
         </button>
       </div>
+
+      <MusicCarryPath
+        source={selectedPlaylist ? `${label} · ${selectedPlaylist.name}` : `${label} playlists`}
+        destination={`New ${formatTemplateLabel(template)} class`}
+      />
 
       {/* Template picker — applies to every "Create class" action in this dialog. */}
       <div className="mb-4">
@@ -2673,7 +2786,7 @@ function PlaylistBrowserDialog({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => setTemplate(value)}
-                className={`rounded-pill border px-3 py-1 font-ui text-xs ${
+                className={`min-h-11 rounded-pill border px-3 font-ui text-xs ${
                   selected
                     ? 'border-interactive bg-interactive/15 text-text-primary'
                     : 'border-interactive/30 text-text-secondary hover:text-text-primary'
@@ -2702,7 +2815,7 @@ function PlaylistBrowserDialog({
                 setTracks(null);
                 setRowError(null);
               }}
-              className="rounded-pill border border-interactive/30 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+              className="min-h-11 rounded-pill border border-interactive/30 px-3 font-ui text-xs text-text-secondary hover:text-text-primary"
             >
               Back to playlists
             </button>
@@ -2711,7 +2824,7 @@ function PlaylistBrowserDialog({
               onClick={() => void handleCreate(selectedPlaylist)}
               disabled={!!creatingId || loadingTracks || !tracks?.length}
               aria-label={`Start class from ${selectedPlaylist.name}`}
-              className="rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+              className="min-h-11 rounded-pill rf-btn-primary px-3 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
             >
               {creatingId === selectedPlaylist.playlistId ? 'Creating...' : 'Start class'}
             </button>
@@ -2801,7 +2914,7 @@ function PlaylistBrowserDialog({
                 type="button"
                 onClick={() => void openPlaylist(playlist)}
                 aria-label={`Open ${playlist.name}`}
-                className="shrink-0 rounded-pill border border-interactive/35 px-3 py-1.5 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
+                className="min-h-11 shrink-0 rounded-pill border border-interactive/35 px-3 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
               >
                 Open
               </button>
@@ -2856,7 +2969,7 @@ function LikesBrowserDialog({
     <Dialog
       label={`Browse ${label} likes`}
       onClose={onClose}
-      panelClassName="w-full max-w-lg rounded-card bg-bg-raised p-6 shadow-overlay"
+      panelClassName="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-card bg-bg-raised p-6 shadow-overlay"
     >
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
@@ -2871,11 +2984,16 @@ function LikesBrowserDialog({
           type="button"
           onClick={onClose}
           aria-label="Close likes browser"
-          className="shrink-0 rounded-pill border border-interactive/30 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+          className="min-h-11 shrink-0 rounded-pill border border-interactive/30 px-3 font-ui text-xs text-text-secondary hover:text-text-primary"
         >
           Close
         </button>
       </div>
+
+      <MusicCarryPath
+        source={`${label} likes`}
+        destination={`New ${formatTemplateLabel(template)} class`}
+      />
 
       {/* Likes have no source title to borrow, so the instructor names the class. */}
       <div className="mb-4">
@@ -2890,7 +3008,7 @@ function LikesBrowserDialog({
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-control border border-interactive/20 bg-bg-base px-3 py-2 font-ui text-sm text-text-primary"
+          className="min-h-11 w-full rounded-control border border-interactive/20 bg-bg-base px-3 font-ui text-sm text-text-primary"
         />
       </div>
 
@@ -2907,7 +3025,7 @@ function LikesBrowserDialog({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => setTemplate(value)}
-                className={`rounded-pill border px-3 py-1 font-ui text-xs ${
+                className={`min-h-11 rounded-pill border px-3 font-ui text-xs ${
                   selected
                     ? 'border-interactive bg-interactive/15 text-text-primary'
                     : 'border-interactive/30 text-text-secondary hover:text-text-primary'
@@ -2935,7 +3053,7 @@ function LikesBrowserDialog({
           onClick={() => void handleCreate()}
           disabled={creating || !title.trim() || tracks.length === 0}
           aria-label={`Create class from ${tracks.length} liked tracks`}
-          className="shrink-0 rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+          className="min-h-11 shrink-0 rounded-pill rf-btn-primary px-3 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
         >
           {creating ? 'Creating…' : `Create class from ${tracks.length} liked tracks`}
         </button>
