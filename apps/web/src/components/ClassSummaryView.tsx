@@ -6,6 +6,10 @@ import { formatDuration, avgBpm, formatTemplateLabel } from '../lib/class-summar
 import { useAsyncAction } from '../lib/use-async-action.js';
 import { SEGMENT_META } from './SegmentBand.js';
 import { INTENSITY_LABEL } from './IntensityReadout.js';
+import { classReadiness } from '../lib/readiness.js';
+import { ClassPulse } from './ClassPulse.js';
+import { ClassReadinessSummary } from './ClassReadinessSummary.js';
+import { RecoveryState, StatusLabel } from './SharedState.js';
 
 /**
  * Read-only class detail — the full class shape (songs, plus each track's placed
@@ -22,6 +26,8 @@ export function ClassSummaryView({
   onClose,
   onCopied,
   onOpenInBuilder,
+  pulseConfirmed = false,
+  onTogglePulseConfirmation,
 }: {
   classId: string;
   onClose: () => void;
@@ -29,6 +35,9 @@ export function ClassSummaryView({
   onCopied?: (cls: ClassWithAccess) => void;
   /** Owned preview — open this class in the builder to edit it. */
   onOpenInBuilder?: () => void;
+  /** Ephemeral confirmation owned by the authenticated Dashboard session. */
+  pulseConfirmed?: boolean;
+  onTogglePulseConfirmation?: () => void;
 }) {
   const [payload, setPayload] = useState<RunPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,17 +77,21 @@ export function ClassSummaryView({
 
   const averageBpm = payload ? avgBpm(payload) : null;
   const templateLabel = payload ? formatTemplateLabel(payload.class.template) : null;
+  const readiness = payload ? classReadiness(payload) : null;
 
   return (
     <Dialog
       onClose={onClose}
       label="Class Summary"
-      panelClassName="flex max-h-[90vh] w-full max-w-2xl flex-col gap-4 rounded-panel bg-bg-raised p-6 shadow-lifted"
+      panelClassName="flex max-h-[calc(100svh-2rem)] w-full max-w-4xl flex-col gap-4 rounded-panel bg-bg-raised p-4 shadow-lifted sm:p-6"
     >
       <header className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <h2 className="font-display text-xl font-semibold text-text-primary">
-            {payload ? payload.class.title : 'Loading…'}
+          <p className="font-data text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
+            Read-only rehearsal view
+          </p>
+          <h2 className="mt-1 font-display text-2xl font-bold tracking-[-0.02em] text-text-primary sm:text-3xl">
+            {payload ? payload.class.title : 'Loading class…'}
           </h2>
           {payload && (
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-data text-xs text-text-secondary">
@@ -109,7 +122,7 @@ export function ClassSummaryView({
           )}
         </div>
         <button
-          className="rounded-pill px-2 py-1 font-ui text-sm text-text-tertiary hover:text-text-primary"
+          className="min-h-11 min-w-11 rounded-control px-2 font-ui text-sm text-text-tertiary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
           onClick={onClose}
           aria-label="Close summary dialog"
         >
@@ -117,38 +130,83 @@ export function ClassSummaryView({
         </button>
       </header>
 
-      {error && (
-        <p className="font-ui text-sm text-state-danger" role="alert">
-          {error}
-        </p>
-      )}
-
       {loading ? (
-        <p className="font-ui text-sm text-text-tertiary">Loading class details…</p>
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="rounded-card bg-bg-sunken p-5"
+        >
+          <StatusLabel kind="loading" label="Loading rehearsal details" />
+          <div aria-hidden="true" className="mt-4 h-24 rounded-card bg-border-subtle/50" />
+        </div>
+      ) : error && !payload ? (
+        <RecoveryState
+          compact
+          kind="unavailable"
+          role="alert"
+          statusLabel="Rehearsal unavailable"
+          title="The class summary could not load."
+          event={error}
+          safety="The class remains in your library, and no score or ordering changed."
+          primaryAction={
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
+            >
+              Try rehearsal again
+            </button>
+          }
+          secondaryAction={
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-11 rounded-control border border-interactive/50 px-4 font-ui text-sm font-semibold text-interactive sm:rounded-pill"
+            >
+              Return to Classes
+            </button>
+          }
+        />
       ) : payload ? (
         <div className="flex flex-col gap-4 overflow-y-auto">
-          <div className="flex items-center justify-between gap-3 rounded-card bg-bg-base p-4">
-            <p className="min-w-0 flex-1 font-ui text-sm text-text-secondary">
-              {owned
-                ? 'Read-only preview — songs, moves, cues, and sections at a glance.'
-                : 'Read-only preview. Save a copy to your library to edit it.'}
-            </p>
-            {owned ? (
-              <button
-                className="shrink-0 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
-                onClick={onOpenInBuilder}
-              >
-                Open in builder
-              </button>
-            ) : (
-              <button
-                className="shrink-0 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
-                onClick={handleSaveCopy}
-                disabled={saving}
-              >
-                {saving ? 'Saving…' : 'Save a copy'}
-              </button>
+          {error && (
+            <div role="alert" className="rounded-card bg-bg-sunken p-3">
+              <StatusLabel kind="error" label={error} />
+            </div>
+          )}
+          <ClassPulse
+            payload={payload}
+            confirmed={pulseConfirmed}
+            onConfirm={onTogglePulseConfirmation}
+          />
+
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+            {readiness && (
+              <ClassReadinessSummary
+                readiness={readiness}
+                canEdit={false}
+                onSelectTrack={() => {}}
+              />
             )}
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              {owned ? (
+                <button
+                  className="min-h-11 shrink-0 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
+                  onClick={onOpenInBuilder}
+                >
+                  Open in Builder
+                </button>
+              ) : (
+                <button
+                  className="min-h-11 shrink-0 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:rounded-pill"
+                  onClick={handleSaveCopy}
+                  disabled={saving}
+                >
+                  {saving ? 'Saving…' : 'Save a copy'}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Section / energy bands (read-only): label + start time, tint dot reinforces
@@ -179,11 +237,29 @@ export function ClassSummaryView({
             </div>
           )}
 
-          <ol className="flex flex-col gap-2">
-            {payload.tracks.map((t, i) => (
-              <TrackDetailRow key={t.classTrackId} entry={t} index={i} />
-            ))}
-          </ol>
+          <section aria-labelledby="summary-run-of-show">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div>
+                <p className="font-data text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
+                  Run of show
+                </p>
+                <h3
+                  id="summary-run-of-show"
+                  className="font-display text-lg font-semibold text-text-primary"
+                >
+                  Track score
+                </h3>
+              </div>
+              <span className="font-data text-xs text-text-tertiary">
+                {payload.tracks.length} tracks
+              </span>
+            </div>
+            <ol className="flex flex-col gap-2">
+              {payload.tracks.map((t, i) => (
+                <TrackDetailRow key={t.classTrackId} entry={t} index={i} />
+              ))}
+            </ol>
+          </section>
         </div>
       ) : null}
     </Dialog>
@@ -223,6 +299,9 @@ function TrackDetailRow({ entry, index }: { entry: RunPayloadTrackEntry; index: 
             <span className="ml-1 text-xs text-text-tertiary">BPM</span>
           </span>
         )}
+        <span className="shrink-0 font-data text-xs text-text-secondary">
+          {entry.intensity === 'none' ? 'Effort unscored' : INTENSITY_LABEL[entry.intensity]}
+        </span>
         <span className="shrink-0 font-data text-xs text-text-tertiary">
           {track.durationMs != null ? formatDuration(track.durationMs) : '--:--'}
         </span>

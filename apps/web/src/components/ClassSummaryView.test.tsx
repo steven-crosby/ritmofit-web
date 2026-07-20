@@ -35,6 +35,38 @@ afterEach(() => {
 });
 
 describe('ClassSummaryView', () => {
+  it('keeps load failure distinct and recovers through an actual retry', async () => {
+    vi.mocked(api.getRunPayload)
+      .mockRejectedValueOnce(new Error('summary offline'))
+      .mockResolvedValueOnce(payload());
+
+    render(<ClassSummaryView classId="c1" onClose={() => {}} onCopied={() => {}} />);
+
+    expect(await screen.findByText('The class summary could not load.')).toBeTruthy();
+    expect(screen.getByText('summary offline')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Try rehearsal again' }));
+    expect(await screen.findByText('Opener')).toBeTruthy();
+    expect(api.getRunPayload).toHaveBeenCalledTimes(2);
+  });
+
+  it('surfaces controlled view-only Pulse confirmation', async () => {
+    vi.mocked(api.getRunPayload).mockResolvedValue(payload());
+    const onToggle = vi.fn();
+
+    render(
+      <ClassSummaryView
+        classId="c1"
+        onClose={() => {}}
+        onCopied={() => {}}
+        pulseConfirmed
+        onTogglePulseConfirmation={onToggle}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /confirmed for this view/i }));
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
   it('renders songs, placed moves, cues, and section bands from the run-payload', async () => {
     vi.mocked(api.getRunPayload).mockResolvedValue(payload());
 
@@ -64,7 +96,7 @@ describe('ClassSummaryView', () => {
 
     render(<ClassSummaryView classId="c1" onClose={() => {}} onOpenInBuilder={onOpenInBuilder} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Open in builder' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open in Builder' }));
     expect(onOpenInBuilder).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('button', { name: 'Save a copy' })).toBeNull();
   });

@@ -198,9 +198,11 @@ describe('Dashboard class library states', () => {
       await classes.promise;
     });
 
-    expect(await screen.findByText('Morning ride')).toBeTruthy();
+    expect((await screen.findAllByText('Morning ride')).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('Loading your classes…')).toBeNull();
-    expect(screen.getByRole('heading', { name: 'Open a class to keep building.' })).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: 'Pick up where the energy left off.' }),
+    ).toBeTruthy();
   });
 
   it('shows a distinct error state when the class list fails to load, and retries', async () => {
@@ -210,12 +212,12 @@ describe('Dashboard class library states', () => {
 
     expect(await screen.findByText('Couldn’t load your classes.')).toBeTruthy();
     // The top-level banner surfaces the underlying message too.
-    expect(screen.getByText('network down')).toBeTruthy();
+    expect(screen.getByText(/network down/)).toBeTruthy();
 
     // Retry actually re-fetches and recovers — not just dead-end "try again" copy.
     vi.mocked(api.listClasses).mockResolvedValueOnce(page([makeClass('Recovered ride')]));
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByText('Recovered ride')).toBeTruthy();
+    expect((await screen.findAllByText('Recovered ride')).length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows the empty state when the library is genuinely empty', async () => {
@@ -231,7 +233,13 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
 
-    expect(await screen.findByRole('heading', { name: 'Create your first class.' })).toBeTruthy();
+    expect(
+      await screen.findByRole('heading', { name: 'Your first class can start anywhere.' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Find a track or source/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Start Cycle, Pilates, or HIIT/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Start with a move/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Start from memory/ })).toBeTruthy();
     expect(screen.queryByText('Select a class to keep building.')).toBeNull();
   });
 
@@ -697,7 +705,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
 
-    expect(await screen.findByText('My ride')).toBeTruthy();
+    expect((await screen.findAllByText('My ride')).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('owner')).toBeNull();
   });
 
@@ -711,7 +719,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
 
-    expect(await screen.findByText('My Monday class')).toBeTruthy();
+    expect((await screen.findAllByText('My Monday class')).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('Shared studio class')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Explore' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Teams' })).toBeNull();
@@ -752,6 +760,22 @@ describe('Dashboard class library states', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
     expect(await screen.findByRole('heading', { name: 'Personal workspace' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Provider accounts' })).toBeTruthy();
+  });
+
+  it('returns from a selected class to the run-of-show shelf through Classes', async () => {
+    const selectedClass = makeClass('Return path ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([selectedClass]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Return path ride/ }));
+    expect(await screen.findByRole('heading', { name: 'Return path ride' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Classes' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Pick up where the energy left off.' }),
+    ).toBeTruthy();
   });
 
   it('surfaces classes with tracks from the Live destination and runs a ready one', async () => {
@@ -1071,8 +1095,11 @@ describe('Dashboard onboarding video', () => {
 
     renderDashboard();
 
-    const dialog = await screen.findByRole('dialog', { name: 'New instructor tutorial video' });
-    expect(within(dialog).getByText('Build your first class in one loop')).toBeTruthy();
+    const dialog = await screen.findByRole('dialog', {
+      name: 'New instructor four-count tutorial',
+    });
+    expect(within(dialog).getByText('Build your first class in four counts')).toBeTruthy();
+    expect(within(dialog).getByText('3 · Score')).toBeTruthy();
     expect(within(dialog).queryByText(/Teams/i)).toBeNull();
     expect(within(dialog).queryByText(/Explore/i)).toBeNull();
 
@@ -1106,7 +1133,11 @@ describe('Dashboard class detail', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^Sunset climb/ }));
 
     expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
-    expect(screen.getByText(/No tracks yet/)).toBeTruthy();
+    expect(screen.getByText('Empty run of show')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Music search' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Playlist or source' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Movement pairing' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Manual track' })).toBeTruthy();
   });
 
   it('keeps the newly selected class when a slower prior load resolves late', async () => {
