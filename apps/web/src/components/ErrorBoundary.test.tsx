@@ -25,7 +25,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     );
     expect(screen.getByText('All good')).toBeTruthy();
-    expect(screen.queryByText('Something went wrong')).toBeNull();
+    expect(screen.queryByText('This view lost the beat.')).toBeNull();
   });
 
   it('catches a descendant render error and shows the fallback', () => {
@@ -34,9 +34,9 @@ describe('ErrorBoundary', () => {
         <Boom />
       </ErrorBoundary>,
     );
-    expect(screen.getByText('Something went wrong')).toBeTruthy();
-    // Default recover label is "Reload" when no onReset is provided.
-    expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
+    expect(screen.getByText('This view lost the beat.')).toBeTruthy();
+    expect(screen.getByText(/Unsaved changes in this view/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reload safely' })).toBeTruthy();
   });
 
   it('uses the custom reset label and calls onReset instead of reloading', () => {

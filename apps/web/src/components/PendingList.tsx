@@ -1,3 +1,5 @@
+import { StatusLabel } from './SharedState.js';
+
 /**
  * The not-yet-loaded state for a dialog's async list. Renders a plain "Loading…"
  * while a fetch is genuinely pending, but a "Try again" affordance once that fetch
@@ -11,11 +13,11 @@ export function PendingList({ error, onRetry }: { error: string | null; onRetry:
       <button
         type="button"
         onClick={onRetry}
-        className="self-start rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+        className="min-h-11 self-start rounded-input border border-interactive px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10"
       >
         Try again
       </button>
     );
   }
-  return <p className="font-ui text-sm text-text-tertiary">Loading…</p>;
+  return <StatusLabel kind="loading" />;
 }

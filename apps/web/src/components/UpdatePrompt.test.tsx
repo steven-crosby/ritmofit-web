@@ -37,22 +37,23 @@ describe('UpdatePrompt', () => {
     render(<UpdatePrompt />);
     const status = screen.getByRole('status');
     expect(status.getAttribute('aria-live')).toBe('polite');
-    expect(status.textContent).toMatch(/new version/i);
+    expect(status.textContent).toMatch(/fresh build/i);
+    expect(status.textContent).toMatch(/does not change saved classes/i);
   });
 
-  it('activates the waiting worker only when the instructor chooses Refresh', () => {
+  it('activates the waiting worker only when the instructor chooses Reload now', () => {
     needRefresh = true;
     render(<UpdatePrompt />);
     // Nothing reloads on its own — the update waits for an explicit choice.
     expect(updateServiceWorker).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reload now' }));
     expect(updateServiceWorker).toHaveBeenCalledTimes(1);
   });
 
   it('dismisses without updating when the instructor chooses Later', () => {
     needRefresh = true;
     render(<UpdatePrompt />);
-    fireEvent.click(screen.getByRole('button', { name: /dismiss update notice/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Later' }));
     expect(setNeedRefresh).toHaveBeenCalledWith(false);
     expect(updateServiceWorker).not.toHaveBeenCalled();
   });

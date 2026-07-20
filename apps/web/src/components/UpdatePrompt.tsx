@@ -1,4 +1,5 @@
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { RecoveryState } from './SharedState.js';
 
 // How often to re-check for a newer service worker while a tab stays open. An
 // instructor may leave the app running for hours, so on-load registration alone
@@ -9,7 +10,7 @@ const UPDATE_POLL_MS = 60 * 60 * 1000;
  * Deploy-update surface. With `registerType: 'prompt'` the new service worker
  * installs but waits, so already-open clients keep serving the old precached
  * assets until the instructor opts in. This renders a non-intrusive toast when a
- * new version is ready; "Refresh" calls `updateServiceWorker()`, which activates
+ * new version is ready; "Reload now" calls `updateServiceWorker()`, which activates
  * the waiting worker (skip-waiting) and reloads to the fresh bundle. Nothing
  * reloads on its own — Live Mode and in-progress edits are never interrupted.
  */
@@ -35,31 +36,35 @@ export function UpdatePrompt() {
   if (!needRefresh) return null;
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="fixed inset-x-0 bottom-0 z-[110] flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
-    >
-      <div className="flex w-full max-w-md items-center gap-3 rounded-card border border-interactive/20 bg-bg-raised p-3 shadow-card sm:p-4">
-        <p className="flex-1 font-ui text-sm text-text-primary">
-          A new version of Ritmo Studio is available.
-        </p>
-        <button
-          type="button"
-          onClick={() => void updateServiceWorker()}
-          className="min-h-11 shrink-0 rounded-pill rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent"
-        >
-          Refresh
-        </button>
-        <button
-          type="button"
-          onClick={() => setNeedRefresh(false)}
-          aria-label="Dismiss update notice"
-          className="min-h-11 shrink-0 rounded-pill px-2 font-ui text-sm text-text-tertiary hover:text-text-secondary"
-        >
-          Later
-        </button>
-      </div>
+    <div className="fixed inset-x-0 bottom-0 z-[110] flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <RecoveryState
+        kind="update"
+        title="A fresh build is ready."
+        event="Reload now to update Ritmo Studio."
+        safety="Reloading does not change saved classes or music-connection settings."
+        statusLabel="Update available"
+        role="status"
+        compact
+        className="w-full max-w-md shadow-lifted"
+        primaryAction={
+          <button
+            type="button"
+            onClick={() => void updateServiceWorker()}
+            className="min-h-11 shrink-0 rounded-input rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent"
+          >
+            Reload now
+          </button>
+        }
+        secondaryAction={
+          <button
+            type="button"
+            onClick={() => setNeedRefresh(false)}
+            className="min-h-11 shrink-0 rounded-input px-3 font-ui text-sm font-semibold text-text-tertiary hover:bg-bg-overlay hover:text-text-secondary"
+          >
+            Later
+          </button>
+        }
+      />
     </div>
   );
 }

@@ -185,6 +185,26 @@ to fix it, in the interface's voice. Never vague, never an apology.
 Signature surfaces do not use empty states when tracks exist. Show derived provisional shape, tempo,
 artwork, and structure wherever the data supports it, then invite refinement.
 
+### Shared status and recovery grammar
+
+Shared system state uses the web `StatusLabel` contract: a visible glyph plus a short label carries the
+meaning, while semantic color only reinforces it. The supported foundation states are loading, empty,
+unavailable, interrupted/error, update available, disabled, retrying, and recovered. A state label does
+not create its own live region; the owning surface chooses announcement timing so composed interfaces do
+not chatter or nest announcements.
+
+Recoverable interruption uses `RecoveryState` and always reads in this order:
+
+1. What happened, in task-specific language when the task is known.
+2. What remains safe or unchanged, without overstating unsaved work.
+3. The best next action.
+4. A truthful secondary escape, when one exists.
+
+Loading retains the silhouette and name of the workspace being restored, but never invents classes,
+provider state, people, or account content. Empty, unavailable, disconnected, unauthorized, and deleted
+remain distinct states. Raised depth is allowed for update trays and critical recovery overlays; ordinary
+inline status stays on the containing planning surface.
+
 ## Provider connection states
 
 Music providers are core to trust. Catalog availability, user-account connection, library access, and
