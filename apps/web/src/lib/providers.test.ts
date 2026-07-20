@@ -16,6 +16,7 @@ import {
   ALL_PROVIDERS_LABELLED,
   spotifyScopeHasSavedPlaylists,
   connectionHasSavedPlaylistScope,
+  providerCapabilityTruth,
 } from './providers.js';
 
 describe('provider presentation', () => {
@@ -181,5 +182,59 @@ describe('connectionHasSavedPlaylistScope', () => {
     );
     expect(connectionHasSavedPlaylistScope('spotify', { scope: 'streaming' })).toBe(false);
     expect(connectionHasSavedPlaylistScope('spotify', undefined)).toBe(false);
+  });
+});
+
+describe('providerCapabilityTruth', () => {
+  const NOW = 1_000_000;
+
+  it('keeps catalog available while account-backed capabilities require connection', () => {
+    const truth = providerCapabilityTruth('spotify', undefined, NOW);
+    expect(truth.catalog).toEqual({ state: 'ready', label: 'Browse catalog' });
+    expect(truth.library).toEqual({ state: 'action-required', label: 'Connect account' });
+    expect(truth.playback).toEqual({ state: 'action-required', label: 'Connect account' });
+  });
+
+  it('surfaces partial Spotify scope instead of calling every capability ready', () => {
+    const truth = providerCapabilityTruth(
+      'spotify',
+      { expiresAt: null, scope: 'user-library-read streaming' },
+      NOW,
+    );
+    expect(truth.library).toEqual({
+      state: 'partial',
+      label: 'Likes ready · reconnect playlists',
+    });
+    expect(truth.playback).toEqual({ state: 'ready', label: 'Authorized' });
+  });
+
+  it('marks last-known account capabilities unverified after status failure', () => {
+    const truth = providerCapabilityTruth(
+      'apple_music',
+      { expiresAt: null, scope: null },
+      NOW,
+      'unverified',
+    );
+    expect(truth.catalog.state).toBe('ready');
+    expect(truth.library).toEqual({ state: 'unverified', label: 'Last known linked' });
+    expect(truth.playback).toEqual({
+      state: 'unverified',
+      label: 'Authorization unverified',
+    });
+  });
+
+  it('keeps the initial account check distinct from unavailable status', () => {
+    const truth = providerCapabilityTruth('spotify', undefined, NOW, 'checking');
+    expect(truth.library).toEqual({ state: 'checking', label: 'Checking account' });
+    expect(truth.playback).toEqual({
+      state: 'checking',
+      label: 'Checking authorization',
+    });
+  });
+
+  it('keeps SoundCloud widget playback independent from account status', () => {
+    const truth = providerCapabilityTruth('soundcloud', undefined, NOW, 'unverified');
+    expect(truth.library).toEqual({ state: 'unverified', label: 'Status unavailable' });
+    expect(truth.playback).toEqual({ state: 'ready', label: 'Public widget ready' });
   });
 });

@@ -4,7 +4,12 @@
  * *values* are the shared enum (`providerValues`); this only adds display labels
  * and the order/default the builder's search UI shows. No new contract.
  */
-import { providerValues, supportsUserAccount, type Provider } from '@ritmofit/shared';
+import {
+  playbackRequiresConnection,
+  providerValues,
+  supportsUserAccount,
+  type Provider,
+} from '@ritmofit/shared';
 
 /** Human label per provider (the enum values are snake/lowercase). */
 export const PROVIDER_LABELS: Record<Provider, string> = {
@@ -151,4 +156,80 @@ export function connectionHasSavedPlaylistScope(
 ): boolean {
   if (provider !== 'spotify') return true;
   return spotifyScopeHasSavedPlaylists(connection?.scope);
+}
+
+export type ProviderCapabilityState =
+  | 'ready'
+  | 'partial'
+  | 'action-required'
+  | 'checking'
+  | 'unverified';
+
+export type ProviderCapabilityFreshness = 'verified' | 'checking' | 'unverified';
+
+export interface ProviderCapabilityView {
+  state: ProviderCapabilityState;
+  label: string;
+}
+
+export interface ProviderCapabilityTruth {
+  connectionState: ProviderConnectionState;
+  freshness: ProviderCapabilityFreshness;
+  catalog: ProviderCapabilityView;
+  library: ProviderCapabilityView;
+  playback: ProviderCapabilityView;
+}
+
+/**
+ * Translate provider/auth data into the three capabilities instructors actually
+ * use. A failed status refresh never becomes a fake disconnect: account-backed
+ * capabilities are marked unverified while catalog search (and SoundCloud's
+ * public widget playback) retain their independently known availability.
+ */
+export function providerCapabilityTruth(
+  provider: Provider,
+  connection: { expiresAt: number | null; scope: string | null } | undefined,
+  now: number,
+  freshness: ProviderCapabilityFreshness = 'verified',
+): ProviderCapabilityTruth {
+  const connectionState = providerConnectionState(provider, connection, now);
+  const catalog: ProviderCapabilityView = { state: 'ready', label: 'Browse catalog' };
+
+  let library: ProviderCapabilityView;
+  if (freshness === 'checking') {
+    library = { state: 'checking', label: 'Checking account' };
+  } else if (freshness === 'unverified') {
+    library = {
+      state: 'unverified',
+      label: connection ? 'Last known linked' : 'Status unavailable',
+    };
+  } else if (connectionState === 'connected') {
+    library = connectionHasSavedPlaylistScope(provider, connection)
+      ? { state: 'ready', label: 'Likes & playlists ready' }
+      : { state: 'partial', label: 'Likes ready · reconnect playlists' };
+  } else if (connectionState === 'expired') {
+    library = { state: 'action-required', label: 'Reconnect account' };
+  } else {
+    library = { state: 'action-required', label: 'Connect account' };
+  }
+
+  let playback: ProviderCapabilityView;
+  if (!playbackRequiresConnection(provider)) {
+    playback = { state: 'ready', label: 'Public widget ready' };
+  } else if (freshness === 'checking') {
+    playback = { state: 'checking', label: 'Checking authorization' };
+  } else if (freshness === 'unverified') {
+    playback = {
+      state: 'unverified',
+      label: connection ? 'Authorization unverified' : 'Status unavailable',
+    };
+  } else if (connectionState === 'connected' && connectionHasPlaybackScope(provider, connection)) {
+    playback = { state: 'ready', label: 'Authorized' };
+  } else if (connectionState === 'connected' || connectionState === 'expired') {
+    playback = { state: 'action-required', label: 'Reconnect for playback' };
+  } else {
+    playback = { state: 'action-required', label: 'Connect account' };
+  }
+
+  return { connectionState, freshness, catalog, library, playback };
 }

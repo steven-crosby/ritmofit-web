@@ -32,6 +32,7 @@ import { formatDuration } from '../lib/class-summary.js';
 import {
   DEFAULT_PROVIDER,
   PROVIDER_ORDER,
+  providerCapabilityTruth,
   providerConnectionState,
   providerHandoffHref,
   providerLabel,
@@ -180,14 +181,21 @@ export function TrackSearch({
   // reflects an expired/absent account *before* a failed likes fetch (audit #7,
   // cross-surface provider coherence). Best-effort: a failed fetch just hides it.
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  );
   useEffect(() => {
     let alive = true;
     void (async () => {
       try {
         const c = await listConnections();
-        if (alive && c) setConnections(c);
+        if (alive && c) {
+          setConnections(c);
+          setConnectionStatus('ready');
+        }
       } catch {
         // Best-effort: readiness is a hint, not a blocker for catalog search.
+        if (alive) setConnectionStatus('error');
       }
     })();
     return () => {
@@ -201,6 +209,16 @@ export function TrackSearch({
         Date.now(),
       )
     : null;
+  const providerTruth = providerCapabilityTruth(
+    provider,
+    connections?.find((c) => c.provider === provider),
+    Date.now(),
+    connectionStatus === 'ready'
+      ? 'verified'
+      : connectionStatus === 'loading'
+        ? 'checking'
+        : 'unverified',
+  );
 
   // "My likes" reads the caller's connected account; only providers with a
   // per-user integration support it. Catalog search stays available for all.
@@ -463,7 +481,7 @@ export function TrackSearch({
               disabled={busy || bulkBusy || added}
               aria-busy={busy || bulkBusy}
               aria-label={added ? `${r.title} added` : `Add ${r.title} by ${r.artist}`}
-              className={`shrink-0 rounded-pill px-3 py-1 font-ui text-xs font-semibold disabled:opacity-60 ${
+              className={`min-h-11 shrink-0 rounded-pill px-3 font-ui text-xs font-semibold disabled:opacity-60 ${
                 added ? 'bg-bg-raised text-text-tertiary' : 'rf-btn-primary text-text-on-accent'
               }`}
             >
@@ -488,7 +506,7 @@ export function TrackSearch({
           <button
             type="button"
             onClick={() => void openSavedPlaylist(selected)}
-            className="self-start rounded-pill border border-interactive/35 px-3 py-1 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
+            className="min-h-11 self-start rounded-pill border border-interactive/35 px-3 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
           >
             Try again
           </button>
@@ -526,7 +544,7 @@ export function TrackSearch({
               type="button"
               aria-pressed={selected}
               onClick={() => setProvider(p)}
-              className={`rounded-pill border px-3 py-1 font-ui text-xs ${
+              className={`min-h-11 rounded-pill border px-3 py-1 font-ui text-xs ${
                 selected
                   ? 'border-interactive bg-interactive/15 text-text-primary'
                   : 'border-interactive/30 text-text-secondary hover:text-text-primary'
@@ -542,7 +560,14 @@ export function TrackSearch({
           positive when connected; the caution channel when the session expired
           (the one that needs action); a neutral hint when simply not connected,
           since catalog search still works without an account. */}
-      {connectionState && connectionState !== 'catalog-only' && (
+      {connectionStatus === 'error' ? (
+        <p role="status" className="flex items-center gap-1.5 font-ui text-xs text-text-tertiary">
+          <span aria-hidden>?</span>
+          <span>
+            {providerLabel(provider)} account status is unavailable. Catalog search still works.
+          </span>
+        </p>
+      ) : connectionState && connectionState !== 'catalog-only' ? (
         <p role="status" className="flex items-center gap-1.5 font-ui text-xs">
           {connectionState === 'connected' ? (
             <>
@@ -574,7 +599,40 @@ export function TrackSearch({
             </>
           )}
         </p>
-      )}
+      ) : null}
+
+      <div
+        className="grid gap-1 rounded-card border border-interactive/10 bg-bg-base p-2 sm:grid-cols-3"
+        aria-label={`${providerLabel(provider)} capability summary`}
+      >
+        {(
+          [
+            ['Catalog', providerTruth.catalog],
+            ['Library', providerTruth.library],
+            ['Playback', providerTruth.playback],
+          ] as const
+        ).map(([label, capability]) => (
+          <div
+            key={label}
+            className="flex min-w-0 items-baseline justify-between gap-2 font-ui sm:block sm:text-center"
+          >
+            <p className="shrink-0 text-[10px] uppercase tracking-wide text-text-tertiary">
+              {label}
+            </p>
+            <p
+              className={`min-w-0 text-right text-[11px] sm:mt-0.5 sm:text-center ${
+                capability.state === 'ready'
+                  ? 'text-state-positive'
+                  : capability.state === 'unverified' || capability.state === 'checking'
+                    ? 'text-text-tertiary'
+                    : 'text-state-caution'
+              }`}
+            >
+              {capability.label}
+            </p>
+          </div>
+        ))}
+      </div>
 
       {/* Mode toggle — search the catalog, or browse the caller's own likes (S3).
           "My likes" only appears for providers with a per-user integration. */}
@@ -594,7 +652,7 @@ export function TrackSearch({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => setMode(m)}
-                className={`rounded-pill px-3 py-1 font-ui text-xs ${
+                className={`min-h-11 rounded-pill px-3 py-1 font-ui text-xs ${
                   selected
                     ? 'bg-interactive/15 text-text-primary'
                     : 'text-text-tertiary hover:text-text-secondary'
@@ -612,6 +670,19 @@ export function TrackSearch({
           })}
       </div>
 
+      <aside
+        className="flex min-h-11 items-center justify-between gap-3 rounded-control border border-interactive/20 bg-interactive/5 px-3 py-2"
+        aria-label="Track destination"
+      >
+        <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+          Destination
+        </span>
+        <span className="min-w-0 text-right font-ui text-xs text-text-secondary">
+          <strong className="font-semibold text-text-primary">Current class</strong>
+          {addedKeys.size > 0 && ` · ${addedKeys.size} added this session`}
+        </span>
+      </aside>
+
       {mode === 'saved_playlists' && selectedPlaylist && (
         <div className="flex items-center justify-between gap-2">
           <button
@@ -621,7 +692,7 @@ export function TrackSearch({
               setResults(null);
               setBulkImportAttempted(false);
             }}
-            className="rounded-pill border border-interactive/30 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
+            className="min-h-11 rounded-pill border border-interactive/30 px-3 font-ui text-xs text-text-secondary hover:text-text-primary"
           >
             Back to playlists
           </button>
@@ -645,7 +716,7 @@ export function TrackSearch({
                     ? `Retry ${remainingPlaylistTrackCount} remaining ${remainingPlaylistTrackCount === 1 ? 'track' : 'tracks'} from ${selectedPlaylist.name}`
                     : `Import all ${results.length} tracks from ${selectedPlaylist.name}`
               }
-              className="shrink-0 rounded-pill rf-btn-primary px-3 py-1 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+              className="min-h-11 shrink-0 rounded-pill rf-btn-primary px-3 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
             >
               {importingAllFromPlaylist
                 ? 'Importing…'
@@ -682,7 +753,7 @@ export function TrackSearch({
           <input
             id="track-search-input"
             type="search"
-            className="rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
+            className="min-h-11 rounded-pill border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary"
             placeholder={`Search ${providerLabel(provider)}…`}
             value={query}
             onChange={(e) => {
@@ -704,7 +775,7 @@ export function TrackSearch({
           <input
             id="playlist-url-input"
             type="url"
-            className="rounded-pill flex-1 border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
+            className="min-h-11 flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary"
             placeholder={`Paste a ${providerLabel(provider)} playlist URL…`}
             value={playlistUrl}
             onChange={(e) => setPlaylistUrl(e.target.value)}
@@ -713,7 +784,7 @@ export function TrackSearch({
             type="button"
             onClick={importList}
             disabled={importingPlaylist || !playlistUrl.trim()}
-            className="rounded-pill rf-btn-primary px-3 py-1 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+            className="min-h-11 rounded-pill rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
           >
             {importingPlaylist ? 'Importing…' : 'Import'}
           </button>
@@ -753,7 +824,7 @@ export function TrackSearch({
             <button
               type="button"
               onClick={() => setReloadKey((k) => k + 1)}
-              className="self-start rounded-pill border border-interactive/35 px-3 py-1 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
+              className="min-h-11 self-start rounded-pill border border-interactive/35 px-3 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
             >
               Try again
             </button>
@@ -803,7 +874,7 @@ export function TrackSearch({
                 <button
                   type="button"
                   onClick={() => void openSavedPlaylist(playlist)}
-                  className="shrink-0 rounded-pill border border-interactive/35 px-3 py-1 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
+                  className="min-h-11 shrink-0 rounded-pill border border-interactive/35 px-3 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary"
                 >
                   Open
                 </button>

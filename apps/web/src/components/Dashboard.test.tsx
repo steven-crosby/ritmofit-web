@@ -1079,7 +1079,10 @@ describe('Dashboard class library states', () => {
     expect(alert.textContent).toContain('Couldn’t load music connections.');
     expect(alert.textContent).toContain('Source status is unavailable.');
     expect(screen.queryByText('Connect this provider to browse liked tracks.')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Manage Spotify connection' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Manage Spotify connection' }).textContent).toContain(
+      'Unverified',
+    );
+    expect(screen.getAllByText('Status unavailable').length).toBeGreaterThan(0);
 
     fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
 
