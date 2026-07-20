@@ -43,9 +43,11 @@ export function ClassReadinessSummary({
   readiness,
   canEdit,
   onSelectTrack,
+  compact = false,
 }: {
   readiness: ClassReadiness;
   canEdit: boolean;
+  compact?: boolean;
   /** Jump the inspector to a flagged track so the gap can be fixed in place. */
   onSelectTrack: (classTrackId: string) => void;
 }) {
@@ -64,6 +66,7 @@ export function ClassReadinessSummary({
       <ul className="flex flex-col gap-1.5">
         {readiness.dimensions.map((d) => {
           const ready = d.level === 'ready';
+          const visibleTracks = compact ? d.tracks.slice(0, 2) : d.tracks;
           return (
             <li key={d.key} className="flex flex-col gap-1">
               <div className="flex items-baseline gap-2">
@@ -87,9 +90,9 @@ export function ClassReadinessSummary({
                   {!ready && <p className="font-ui text-xs text-text-tertiary">{d.detail}</p>}
                 </div>
               </div>
-              {canEdit && d.tracks.length > 0 && (
+              {canEdit && visibleTracks.length > 0 && (
                 <div className="ml-6 flex flex-wrap gap-1.5">
-                  {d.tracks.map((t) => (
+                  {visibleTracks.map((t) => (
                     <button
                       key={t.classTrackId}
                       type="button"
@@ -98,12 +101,17 @@ export function ClassReadinessSummary({
                       // knows what it does. Keeps the visible title in the name
                       // (label-in-name / voice control).
                       aria-label={`Fix ${DIMENSION_NOUN[d.key]} on ${t.track.title}`}
-                      className="min-h-8 rounded-pill border border-interactive/50 px-2.5 py-0.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive"
+                      className="min-h-11 rounded-control border border-interactive/50 px-2.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
                       onClick={() => onSelectTrack(t.classTrackId)}
                     >
                       {t.track.title}
                     </button>
                   ))}
+                  {compact && d.tracks.length > visibleTracks.length && (
+                    <span className="flex min-h-11 items-center font-data text-[10px] text-text-tertiary">
+                      +{d.tracks.length - visibleTracks.length} more
+                    </span>
+                  )}
                 </div>
               )}
             </li>

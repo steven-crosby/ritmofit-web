@@ -91,7 +91,7 @@ import {
 } from '../lib/providers.js';
 import { Dialog } from './Dialog.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
-import { IntensityRibbon } from './IntensityRibbon.js';
+import { ClassPulse } from './ClassPulse.js';
 import { TimelineStrip } from './TimelineStrip.js';
 import { SegmentBand } from './SegmentBand.js';
 import { lazyWithReload } from '../lib/lazyWithReload.js';
@@ -331,14 +331,23 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     ]);
 
     if (tracksResult.status === 'rejected') {
+      const message =
+        tracksResult.reason instanceof Error
+          ? tracksResult.reason.message
+          : 'Could not load this class.';
+      // An in-place refresh follows a mutation that already succeeded. Keep the
+      // current workbench and any local inspector draft mounted if that refresh
+      // fails; the global alert reports the stale read without pretending the
+      // class disappeared or clearing the selected track.
+      if (opts?.silent) {
+        setError(`Saved, but the latest class details could not be refreshed: ${message}`);
+        return;
+      }
       dispatchDetail({
         type: 'failure',
         classId,
         requestId,
-        error:
-          tracksResult.reason instanceof Error
-            ? tracksResult.reason.message
-            : 'Could not load this class.',
+        error: message,
       });
       return;
     }
@@ -708,7 +717,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               columns; the library is the first column. */
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start">
             <LibraryRail
-              className={selected ? 'order-3 xl:order-none' : undefined}
+              className={selected ? 'hidden xl:flex' : undefined}
               classes={classes}
               status={listStatus}
               hasMore={nextClassCursor !== null}
@@ -740,6 +749,18 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               }}
             />
 
+            {selected && (
+              <CompactClassChooser
+                classes={classes}
+                selectedId={selected.id}
+                onOpen={openClass}
+                onShowAll={() => {
+                  setSelected(null);
+                  dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
+                }}
+              />
+            )}
+
             {selected && detail.classId === selected.id && detail.status === 'ready' ? (
               <ClassWorkspace
                 key={selected.id}
@@ -747,7 +768,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 tracks={detail.tracks}
                 payload={detail.payload}
                 onError={setError}
-                onTrackChanged={() => void loadDetail(selected.id)}
+                onTrackChanged={() => void loadDetail(selected.id, { silent: true })}
                 onTrackAdded={() => void loadDetail(selected.id, { silent: true })}
                 onChoreographyChanged={() => void loadDetail(selected.id, { silent: true })}
                 onReordered={() => void loadDetail(selected.id, { silent: true })}
@@ -756,6 +777,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 onClassUpdated={applyClassUpdate}
                 onClassDeleted={handleClassDeleted}
                 onOpenSongsByMove={() => setSongsByMoveOpen(true)}
+                pulseConfirmed={confirmedPulseIds.has(selected.id)}
+                onTogglePulseConfirmation={() => togglePulseConfirmation(selected.id)}
                 onBackToClasses={() => {
                   setSelected(null);
                   dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
@@ -827,6 +850,69 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         )}
       </div>
     </main>
+  );
+}
+
+/**
+ * Mobile Builder orientation. The full library remains the desktop rail; narrow
+ * viewports get one compact, horizontally scrollable chooser so switching class
+ * context never requires traversing the entire library below the active workbench.
+ */
+function CompactClassChooser({
+  classes,
+  selectedId,
+  onOpen,
+  onShowAll,
+}: {
+  classes: ClassListItem[];
+  selectedId: string;
+  onOpen: (cls: ClassListItem) => void;
+  onShowAll: () => void;
+}) {
+  return (
+    <nav
+      aria-label="Class chooser"
+      className="order-0 min-w-0 rounded-card border border-border-subtle bg-bg-raised p-3 xl:hidden"
+    >
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">
+          Your classes
+        </span>
+        <button
+          type="button"
+          onClick={onShowAll}
+          className="min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+        >
+          All classes
+        </button>
+      </div>
+      <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
+        {classes.map((cls) => {
+          const active = cls.id === selectedId;
+          return (
+            <button
+              key={cls.id}
+              type="button"
+              aria-current={active ? 'page' : undefined}
+              onClick={() => onOpen(cls)}
+              className={`min-h-16 min-w-[11rem] max-w-[15rem] shrink-0 rounded-control border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive ${
+                active
+                  ? 'border-interactive bg-interactive/5'
+                  : 'border-border-subtle bg-bg-base hover:border-interactive/45'
+              }`}
+            >
+              <span className="block truncate font-ui text-sm font-semibold text-text-primary">
+                {cls.title}
+              </span>
+              <span className="mt-1 block truncate font-data text-[10px] text-text-tertiary">
+                {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount}{' '}
+                {cls.trackCount === 1 ? 'track' : 'tracks'}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
@@ -3115,6 +3201,8 @@ function ClassWorkspace({
   onClassUpdated,
   onClassDeleted,
   onOpenSongsByMove,
+  pulseConfirmed,
+  onTogglePulseConfirmation,
   onBackToClasses,
 }: {
   cls: ClassWithAccess;
@@ -3137,11 +3225,16 @@ function ClassWorkspace({
   onClassDeleted: (classId: string) => void;
   /** Open the Songs-by-Move dialog (the top-bar dialog, reused in the builder). */
   onOpenSongsByMove: () => void;
+  /** Presentational-only Class Pulse confirmation inherited from Slice 2. */
+  pulseConfirmed: boolean;
+  onTogglePulseConfirmation: () => void;
   /** Narrow-layout return path when the selected class is shown before the library. */
   onBackToClasses: () => void;
 }) {
   // The selected track (by class_track id) drives the inspector.
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [sourceOpen, setSourceOpen] = useState(false);
   // A cue/move marker click also asks the inspector to focus that row. The `nonce`
   // bumps on every marker click so re-clicking the same marker re-flashes.
   const [markerFocus, setMarkerFocus] = useState<{
@@ -3162,7 +3255,8 @@ function ClassWorkspace({
   // effect applies it before paint (no flash of lost focus); the removed row is still
   // in the DOM at that point (the reload hasn't landed), so the anchor query resolves.
   const trackListRef = useRef<HTMLDivElement | null>(null);
-  const trackSourceRef = useRef<HTMLDivElement | null>(null);
+  const trackSourceRef = useRef<HTMLElement | null>(null);
+  const trackSourceToggleRef = useRef<HTMLButtonElement | null>(null);
   const manualEntryRef = useRef<HTMLDetailsElement | null>(null);
   const inspectorPlaceholderRef = useRef<HTMLDivElement | null>(null);
   const [pendingRowFocus, setPendingRowFocus] = useState<string | 'placeholder' | null>(null);
@@ -3234,20 +3328,40 @@ function ClassWorkspace({
       ? markerFocus
       : null;
 
-  const focusTrackSources = () => {
-    trackSourceRef.current?.focus();
+  useLayoutEffect(() => {
+    if (!sourceOpen) return;
+    trackSourceRef.current
+      ?.querySelector<HTMLElement>('input:not([type="hidden"]), button, summary')
+      ?.focus();
+  }, [sourceOpen]);
+
+  const focusTrackSources = () => setSourceOpen(true);
+
+  const toggleTrackSources = () => {
+    if (sourceOpen) {
+      setSourceOpen(false);
+      requestAnimationFrame(() => trackSourceToggleRef.current?.focus());
+      return;
+    }
+    setSourceOpen(true);
   };
 
   const openManualEntry = () => {
-    if (!manualEntryRef.current) return;
-    manualEntryRef.current.open = true;
-    manualEntryRef.current.querySelector<HTMLElement>('input')?.focus();
+    setSourceOpen(true);
+    requestAnimationFrame(() => {
+      if (!manualEntryRef.current) return;
+      manualEntryRef.current.open = true;
+      manualEntryRef.current.querySelector<HTMLElement>('input')?.focus();
+    });
   };
+
+  const timelinePanelId = `builder-timeline-${cls.id}`;
+  const sourcePanelId = `builder-source-${cls.id}`;
 
   return (
     <>
       {/* ── Center column: header summary · energy ribbon · track list ── */}
-      <section className="order-1 flex min-w-0 flex-col gap-4 xl:order-none">
+      <section className="order-1 flex min-w-0 flex-col gap-4 xl:col-start-2 xl:row-start-1">
         <button
           type="button"
           onClick={onBackToClasses}
@@ -3269,80 +3383,116 @@ function ClassWorkspace({
           onDeleted={() => onClassDeleted(cls.id)}
         />
 
-        {/* The energy arc + timeline — the class's shape and its cue/move markers,
-            sharing one time axis, both derived from the run-payload (no new schema). */}
+        {/* Slice 2 owns this derived presentation. Builder consumes it unchanged as
+            the persistent class-shape instrument above the editable track score. */}
         {payload && payload.tracks.length > 0 && (
-          <div className="flex flex-col gap-4 rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
-            {/* Workbench heading — the class shape is the builder's central instrument,
-                so it carries a real title (not a peer section label) alongside the
-                placement control (design system 09: "shape is the instrument"). */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex flex-col">
-                <h3 className="font-display text-lg font-semibold leading-tight text-text-primary">
-                  Class shape
-                </h3>
-                <p className="font-ui text-xs text-text-tertiary">Intensity across the class</p>
-              </div>
-              {canEdit && (
-                <div className="flex items-center gap-2">
-                  <span className="font-ui text-xs text-text-tertiary">
-                    {isFree ? 'Free placement (gaps allowed)' : 'Back-to-back'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={toggleTimelineMode}
-                    className="rounded-pill border border-interactive/40 px-3 py-1 font-ui text-xs text-text-secondary hover:text-text-primary"
-                  >
-                    {isFree ? 'Switch to back-to-back' : 'Switch to free placement'}
-                  </button>
-                </div>
-              )}
-            </div>
-            {/* The shape surface — the energy arc (hero) and the timeline ride one
-                shared time axis on a single inset surface, so they read as one object
-                (height = intensity above, blocks/markers below) instead of stacked strips. */}
-            <div className="flex flex-col gap-2 rounded-card bg-bg-base p-3 sm:p-4">
-              <IntensityRibbon payload={payload} selectedClassTrackId={selectedTrackId} />
-              <TimelineStrip
-                payload={payload}
-                selectedTrackId={selectedTrackId}
-                onSelectTrack={selectFromTimeline}
-                onMoveMarker={
-                  canEdit
-                    ? async (marker, anchorMs) => {
-                        if (marker.kind === 'cue') await updateCue(marker.id, { anchorMs });
-                        else await updatePlacedMove(marker.id, { anchorMs });
-                        onTrackChanged();
-                      }
-                    : undefined
-                }
-                onMoveTrack={
-                  canEdit && isFree
-                    ? async (classTrackId, startOffsetMs) => {
-                        await updateClassTrack(classTrackId, { startOffsetMs });
-                        onTrackChanged();
-                      }
-                    : undefined
-                }
-              />
-            </div>
-            <SegmentBand
-              classId={cls.id}
-              totalDurationMs={payload.class.totalDurationMs}
-              canEdit={canEdit}
-              trackStartsMs={payload.tracks.map((t) => t.startOffsetMs ?? 0)}
-              onChanged={onTrackChanged}
+          <>
+            <ClassPulse
+              payload={payload}
+              confirmed={pulseConfirmed}
+              onConfirm={onTogglePulseConfirmation}
             />
-          </div>
+            {timelineOpen && (
+              <section
+                id={timelinePanelId}
+                role="region"
+                aria-label="Timeline precision"
+                className="flex flex-col gap-3 rounded-card border border-border-subtle bg-bg-raised p-4 sm:p-5"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="rf-eyebrow">Placement focus</p>
+                    <h3 className="mt-1 font-display text-lg font-semibold text-text-primary">
+                      {isFree ? 'Free placement · gaps allowed' : 'Back-to-back timeline'}
+                    </h3>
+                  </div>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={toggleTimelineMode}
+                      className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-xs font-semibold text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                    >
+                      {isFree ? 'Switch to back-to-back' : 'Switch to free placement'}
+                    </button>
+                  )}
+                </div>
+                <div className="min-w-0 overflow-x-auto rounded-card bg-bg-sunken p-3">
+                  <TimelineStrip
+                    payload={payload}
+                    selectedTrackId={selectedTrackId}
+                    onSelectTrack={selectFromTimeline}
+                    onMoveMarker={
+                      canEdit
+                        ? async (marker, anchorMs) => {
+                            if (marker.kind === 'cue') await updateCue(marker.id, { anchorMs });
+                            else await updatePlacedMove(marker.id, { anchorMs });
+                            onTrackChanged();
+                          }
+                        : undefined
+                    }
+                    onMoveTrack={
+                      canEdit && isFree
+                        ? async (classTrackId, startOffsetMs) => {
+                            await updateClassTrack(classTrackId, { startOffsetMs });
+                            onTrackChanged();
+                          }
+                        : undefined
+                    }
+                  />
+                </div>
+                <SegmentBand
+                  classId={cls.id}
+                  totalDurationMs={payload.class.totalDurationMs}
+                  canEdit={canEdit}
+                  trackStartsMs={payload.tracks.map((t) => t.startOffsetMs ?? 0)}
+                  onChanged={onTrackChanged}
+                />
+              </section>
+            )}
+          </>
+        )}
+
+        {selectedEntry && (
+          <Suspense fallback={null}>
+            <TrackPreview entry={selectedEntry} />
+          </Suspense>
         )}
 
         <div
           ref={trackListRef}
           className="flex flex-col gap-2 rounded-card bg-bg-raised p-4 shadow-card"
         >
-          <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-            Track list
-          </span>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <span className="rf-eyebrow">Run of show</span>
+              <h3 className="mt-1 font-display text-lg font-semibold text-text-primary">
+                Track stack
+              </h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                ref={trackSourceToggleRef}
+                type="button"
+                onClick={toggleTrackSources}
+                aria-expanded={sourceOpen}
+                aria-controls={sourcePanelId}
+                className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+              >
+                {sourceOpen ? 'Close music' : 'Add music'}
+              </button>
+              {payload && payload.tracks.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setTimelineOpen((open) => !open)}
+                  aria-expanded={timelineOpen}
+                  aria-controls={timelinePanelId}
+                  className="min-h-11 rounded-control px-3 font-ui text-sm font-semibold text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                >
+                  {timelineOpen ? 'Hide timeline' : 'Show timeline'}
+                </button>
+              )}
+            </div>
+          </div>
           {tracks.length === 0 && (
             <div className="rounded-card border border-border-subtle bg-bg-sunken p-4">
               <StatusLabel kind="empty" label="Empty run of show" />
@@ -3405,10 +3555,13 @@ function ClassWorkspace({
                 ))}
               </ol>
             ))}
-          <div
+          <section
+            id={sourcePanelId}
             ref={trackSourceRef}
-            tabIndex={-1}
-            className="rounded-control outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+            role="region"
+            aria-label={`Add music to ${cls.title}`}
+            hidden={!sourceOpen}
+            className="rounded-card border border-border-subtle bg-bg-sunken p-3 outline-none focus-visible:ring-2 focus-visible:ring-interactive"
           >
             <TrackSearch
               classId={cls.id}
@@ -3422,41 +3575,34 @@ function ClassWorkspace({
                 }
               }}
             />
-          </div>
-          {/* Manual entry stays available but de-emphasized (search/import is the
-              primary path; 09). For a track a provider can't return, or no creds. */}
-          <details ref={manualEntryRef} className="mt-1">
-            <summary className="cursor-pointer font-ui text-xs text-text-tertiary hover:text-text-secondary">
-              Add manually
-            </summary>
-            <AddTrackForm
-              classId={cls.id}
-              onAdded={(id) => {
-                if (id) {
-                  setSelectedTrackId(id);
-                  setPendingRowFocus(id);
-                  onTrackAdded(id);
-                } else {
-                  onTrackChanged();
-                }
-              }}
-              onError={onError}
-            />
-          </details>
+            {/* Manual entry stays available but de-emphasized (search/import is the
+                primary path; 09). For a track a provider can't return, or no creds. */}
+            <details ref={manualEntryRef} className="mt-3 border-t border-border-subtle pt-3">
+              <summary className="flex min-h-11 cursor-pointer items-center font-ui text-xs font-semibold text-text-secondary hover:text-text-primary">
+                Add manually
+              </summary>
+              <AddTrackForm
+                classId={cls.id}
+                onAdded={(id) => {
+                  if (id) {
+                    setSelectedTrackId(id);
+                    setPendingRowFocus(id);
+                    onTrackAdded(id);
+                  } else {
+                    onTrackChanged();
+                  }
+                }}
+                onError={onError}
+              />
+            </details>
+          </section>
         </div>
       </section>
 
       {/* ── Right column: the sticky inspector for the selected track ── */}
-      <aside className="order-2 min-w-0 xl:order-none xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
+      <aside className="order-2 min-w-0 xl:sticky xl:top-6 xl:col-start-3 xl:row-start-1 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
         {selectedTrack ? (
           <div className="flex flex-col gap-3">
-            {/* Manual clip-window preview of the selected track (no auto-advance);
-                only once the run-payload entry (provider refs + window) resolved. */}
-            {selectedEntry && (
-              <Suspense fallback={null}>
-                <TrackPreview entry={selectedEntry} />
-              </Suspense>
-            )}
             <TrackInspector
               key={selectedTrack.id}
               track={selectedTrack}
@@ -3638,7 +3784,7 @@ export function ClassHeaderCard({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="mt-2 min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 sm:min-h-8"
+                  className="mt-2 min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10"
                 >
                   {cls.coverImageUrl ? 'Change cover' : 'Upload cover'}
                 </button>
@@ -3674,18 +3820,18 @@ export function ClassHeaderCard({
                     if (e.key === 'Escape') setEditingTitle(false);
                   }}
                   maxLength={200}
-                  className="min-w-0 flex-1 rounded-card border border-interactive/40 bg-bg-base px-2 py-1 font-display text-xl font-semibold text-text-primary"
+                  className="min-h-11 min-w-0 flex-1 rounded-card border border-interactive/40 bg-bg-sunken px-2 font-display text-xl font-semibold text-text-primary"
                 />
                 <button
                   type="submit"
-                  className="rounded-pill rf-btn-primary px-3 py-1 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+                  className="min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:rounded-pill"
                   disabled={renaming}
                 >
                   {renaming ? '…' : 'Save'}
                 </button>
                 <button
                   type="button"
-                  className="rounded-pill border border-interactive/40 px-3 py-1 font-ui text-sm text-text-secondary"
+                  className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary sm:rounded-pill"
                   onClick={() => setEditingTitle(false)}
                   disabled={renaming}
                 >
@@ -3701,7 +3847,7 @@ export function ClassHeaderCard({
                 </h2>
                 {isOwner && (
                   <button
-                    className="shrink-0 rounded-pill border border-interactive/40 px-2 py-0.5 font-ui text-xs text-text-secondary hover:text-text-primary"
+                    className="min-h-11 shrink-0 rounded-control border border-interactive/40 px-2 font-ui text-xs text-text-secondary hover:text-text-primary sm:rounded-pill"
                     onClick={startRename}
                     aria-label="Rename class"
                   >
@@ -3723,7 +3869,7 @@ export function ClassHeaderCard({
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="ml-0.5 text-text-secondary hover:text-state-danger"
+                      className="ml-0.5 inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-text-secondary hover:text-state-danger"
                       aria-label={`Remove tag ${tag}`}
                     >
                       ×
@@ -3738,7 +3884,7 @@ export function ClassHeaderCard({
                     placeholder="Add tag…"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
-                    className="rounded-pill border border-interactive/30 bg-bg-base px-2.5 py-1 font-ui text-xs text-text-primary"
+                    className="min-h-11 rounded-control border border-interactive/30 bg-bg-sunken px-2.5 font-ui text-xs text-text-primary sm:rounded-pill"
                     maxLength={50}
                   />
                 </form>
@@ -3754,14 +3900,14 @@ export function ClassHeaderCard({
             (confirmingDelete ? (
               <span className="col-span-2 grid grid-cols-2 gap-1 sm:flex sm:items-center">
                 <button
-                  className="min-h-11 rounded-control bg-state-danger/15 px-3 font-ui text-sm font-semibold text-state-danger disabled:opacity-40 sm:min-h-0 sm:rounded-pill sm:py-1.5"
+                  className="min-h-11 rounded-control bg-state-danger/15 px-3 font-ui text-sm font-semibold text-state-danger disabled:opacity-40 sm:rounded-pill"
                   onClick={confirmDelete}
                   disabled={deleting}
                 >
                   {deleting ? '…' : 'Delete class'}
                 </button>
                 <button
-                  className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary sm:min-h-0 sm:rounded-pill sm:py-1.5"
+                  className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary sm:rounded-pill"
                   onClick={() => setConfirmingDelete(false)}
                   disabled={deleting}
                 >
@@ -3770,7 +3916,7 @@ export function ClassHeaderCard({
               </span>
             ) : (
               <button
-                className="min-h-11 rounded-control border border-state-danger/50 px-3 font-ui text-sm text-state-danger sm:min-h-0 sm:rounded-pill sm:px-4 sm:py-1.5"
+                className="min-h-11 rounded-control border border-state-danger/50 px-3 font-ui text-sm text-state-danger sm:rounded-pill sm:px-4"
                 onClick={() => setConfirmingDelete(true)}
                 title="Delete this class"
               >
@@ -3778,7 +3924,7 @@ export function ClassHeaderCard({
               </button>
             ))}
           <button
-            className="order-first col-span-2 min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:order-none sm:col-span-auto sm:min-h-0 sm:rounded-pill sm:px-4 sm:py-1.5"
+            className="order-first col-span-2 min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:order-none sm:col-span-auto sm:rounded-pill sm:px-4"
             onClick={onRun}
             disabled={!canRun}
             aria-describedby={runBlockedReason ? runBlockedId : undefined}
@@ -3839,6 +3985,7 @@ export function ClassHeaderCard({
           readiness={readiness}
           canEdit={canEdit}
           onSelectTrack={onSelectTrack}
+          compact
         />
       )}
     </div>
@@ -4134,7 +4281,7 @@ function SongRow({
           }}
           aria-label={`Reorder ${entry.track.title}, position ${position + 1} of ${count}. Use arrow up and down.`}
           title="Drag, or use ↑/↓, to reorder"
-          className="shrink-0 cursor-grab rounded-card px-2 py-3 font-data text-text-tertiary hover:text-text-secondary focus-visible:ring-2 focus-visible:ring-interactive active:cursor-grabbing"
+          className="min-h-11 min-w-11 shrink-0 cursor-grab rounded-card px-2 font-data text-text-tertiary hover:text-text-secondary focus-visible:ring-2 focus-visible:ring-interactive active:cursor-grabbing"
         >
           ⋮⋮
         </button>
@@ -4323,6 +4470,7 @@ function TrackInspector({
     <section
       ref={containerRef}
       tabIndex={-1}
+      aria-label={`Track inspector for ${title}`}
       className="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none focus-visible:ring-2 focus-visible:ring-interactive"
     >
       <div className="flex items-center justify-between gap-2">
@@ -4371,13 +4519,13 @@ function TrackInspector({
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
               Display BPM override
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 type="number"
                 min={1}
                 inputMode="numeric"
                 placeholder="—"
-                className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
                 value={bpm}
                 onChange={(e) => setBpm(e.target.value)}
               />
@@ -4386,7 +4534,7 @@ function TrackInspector({
                 type="button"
                 onClick={lookupTrackBpm}
                 disabled={bpmBusy}
-                className="rounded-pill border border-interactive/40 px-3 py-1.5 font-ui text-xs text-text-secondary hover:text-text-primary disabled:opacity-50"
+                className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50 sm:rounded-pill"
               >
                 {bpmBusy ? 'Looking up…' : 'Look up BPM'}
               </button>
@@ -4405,7 +4553,7 @@ function TrackInspector({
               inputMode="numeric"
               placeholder="m:ss"
               aria-describedby={`duration-help-${track.id}`}
-              className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+              className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
             />
@@ -4414,29 +4562,64 @@ function TrackInspector({
             </span>
           </label>
 
+          <fieldset className="flex flex-col gap-1">
+            <legend className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+              Clip window
+            </legend>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="start"
+                aria-label="Clip start (minutes:seconds)"
+                aria-describedby={`clip-help-${track.id}`}
+                className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                value={clipStart}
+                onChange={(e) => setClipStart(e.target.value)}
+              />
+              <span aria-hidden className="font-ui text-sm text-text-tertiary">
+                –
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="end"
+                aria-label="Clip end (minutes:seconds)"
+                aria-describedby={`clip-help-${track.id}`}
+                className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                value={clipEnd}
+                onChange={(e) => setClipEnd(e.target.value)}
+              />
+            </div>
+            <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+              Audition and run only this authored range. Blank start or end uses the track boundary.
+            </span>
+          </fieldset>
+
           <label className="flex flex-col gap-1">
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Notes
+              Creator notes
             </span>
             <textarea
+              aria-label="Creator notes"
               rows={2}
-              className="resize-none rounded-card border border-interactive/30 bg-bg-raised px-3 py-2 font-ui text-sm text-text-primary"
+              className="min-h-20 resize-none rounded-card border border-interactive/30 bg-bg-sunken px-3 py-2 font-ui text-sm text-text-primary"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
           </label>
 
-          {/* Advanced — the long tail (cadence, holds, trim, downbeat, placement),
+          {/* Advanced — the long tail (cadence, holds, downbeat, placement),
               collapsed by default so the common act reads as scoring the class, not
               filling every field before the shape is visible (design system 09
               §Inspector "score, don't fill"). Native <details>: the inputs stay
               mounted, so the single Save below still commits them while collapsed. */}
           <details>
-            <summary className="cursor-pointer font-ui text-xs uppercase tracking-wide text-text-tertiary hover:text-text-secondary">
-              Advanced
+            <summary className="flex min-h-11 cursor-pointer items-center font-ui text-xs font-semibold uppercase tracking-wide text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive">
+              Advanced timing and placement
             </summary>
             <div className="mt-3 flex flex-col gap-3">
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <label className="flex flex-col gap-1">
                   <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
                     RPM
@@ -4447,7 +4630,7 @@ function TrackInspector({
                     inputMode="numeric"
                     placeholder="—"
                     aria-describedby={`rpm-help-${track.id}`}
-                    className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                    className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
                     value={rpm}
                     onChange={(e) => setRpm(e.target.value)}
                   />
@@ -4466,7 +4649,7 @@ function TrackInspector({
                     inputMode="numeric"
                     placeholder="—"
                     aria-describedby={`holds-help-${track.id}`}
-                    className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                    className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
                     value={holdCountVal}
                     onChange={(e) => setHoldCountVal(e.target.value)}
                   />
@@ -4479,41 +4662,6 @@ function TrackInspector({
                 </label>
               </div>
 
-              <fieldset className="flex flex-col gap-1">
-                <legend className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                  Trim
-                </legend>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="start"
-                    aria-label="Clip start (minutes:seconds)"
-                    aria-describedby={`clip-help-${track.id}`}
-                    className="w-24 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
-                    value={clipStart}
-                    onChange={(e) => setClipStart(e.target.value)}
-                  />
-                  <span aria-hidden className="font-ui text-sm text-text-tertiary">
-                    –
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="end"
-                    aria-label="Clip end (minutes:seconds)"
-                    aria-describedby={`clip-help-${track.id}`}
-                    className="w-24 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
-                    value={clipEnd}
-                    onChange={(e) => setClipEnd(e.target.value)}
-                  />
-                </div>
-                <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-                  Play only part of the track. Blank start = from the beginning; blank end = to the
-                  end.
-                </span>
-              </fieldset>
-
               <label className="flex flex-col gap-1">
                 <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
                   Downbeat
@@ -4523,7 +4671,7 @@ function TrackInspector({
                   inputMode="numeric"
                   placeholder="m:ss"
                   aria-describedby={`downbeat-help-${track.id}`}
-                  className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                  className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
                   value={downbeat}
                   onChange={(e) => setDownbeat(e.target.value)}
                 />
@@ -4547,7 +4695,7 @@ function TrackInspector({
                     inputMode="numeric"
                     placeholder="m:ss"
                     aria-describedby={`startat-help-${track.id}`}
-                    className="w-32 rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-data text-sm text-text-primary"
+                    className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
                     value={startAt}
                     onChange={(e) => setStartAt(e.target.value)}
                   />
@@ -4567,14 +4715,14 @@ function TrackInspector({
 
           <div className="flex items-center gap-2">
             <button
-              className="rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
+              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:rounded-pill"
               onClick={save}
               disabled={busy}
             >
               Save
             </button>
             <button
-              className="ml-auto rounded-pill border border-state-danger/50 px-4 py-1.5 font-ui text-sm text-state-danger disabled:opacity-40"
+              className="ml-auto min-h-11 rounded-control border border-state-danger/50 px-4 font-ui text-sm text-state-danger disabled:opacity-40 sm:rounded-pill"
               onClick={remove}
               disabled={busy}
             >
@@ -4665,14 +4813,14 @@ function AddTrackForm({
       <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Add a track</p>
       <div className="flex flex-wrap gap-2">
         <input
-          className="min-w-0 flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
+          className="min-h-11 min-w-0 flex-1 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-ui text-sm text-text-primary sm:rounded-pill"
           placeholder="Title"
           aria-label="Track title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
         <input
-          className="min-w-0 flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-ui text-sm text-text-primary"
+          className="min-h-11 min-w-0 flex-1 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-ui text-sm text-text-primary sm:rounded-pill"
           placeholder="Artist"
           aria-label="Track artist"
           value={artist}
@@ -4686,7 +4834,7 @@ function AddTrackForm({
           ariaLabel="Track intensity"
         />
         <input
-          className="w-28 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1.5 font-data text-sm text-text-primary"
+          className="min-h-11 w-28 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
           inputMode="numeric"
           placeholder="3:00"
           aria-label="Track duration in minutes and seconds"
@@ -4695,7 +4843,7 @@ function AddTrackForm({
         />
         <button
           disabled={busy}
-          className="ml-auto rounded-pill rf-btn-primary px-4 py-1.5 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50"
+          className="ml-auto min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50 sm:rounded-pill"
         >
           {busy ? '…' : 'Add track'}
         </button>

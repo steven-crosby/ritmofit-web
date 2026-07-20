@@ -69,7 +69,7 @@ function SnapToggle({
 }) {
   if (!canSnap) return null;
   return (
-    <label className="flex items-center gap-1.5 font-ui text-xs text-text-secondary">
+    <label className="flex min-h-11 items-center gap-2 font-ui text-xs text-text-secondary">
       <input type="checkbox" checked={snap} onChange={(e) => onChange(e.target.checked)} />
       Snap to beat
     </label>
@@ -94,7 +94,7 @@ function loadMovesLibrary(): Promise<Move[]> {
 }
 
 const fieldClass =
-  'rounded-pill border border-interactive/30 bg-bg-raised px-3 py-1.5 font-ui text-sm text-text-primary';
+  'min-h-11 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-ui text-sm text-text-primary sm:rounded-pill';
 // Anchor inputs take `m:ss` (parsed + bounded to the track length via
 // `anchorFieldState`), matching the Duration/Trim fields and the row display; an
 // out-of-range or malformed value is caught client-side rather than as a 422.
@@ -177,14 +177,14 @@ function CueColorPicker({
   const inPalette =
     value != null && CUE_COLOR_TAGS.some((t) => t.hex.toLowerCase() === value.toLowerCase());
   return (
-    <div role="group" aria-label="Cue color tag" className="flex items-center gap-1.5">
+    <div role="group" aria-label="Cue color tag" className="flex flex-wrap items-center gap-1.5">
       <button
         type="button"
         aria-pressed={value == null}
         aria-label="No color"
         title="No color"
         onClick={() => onChange(null)}
-        className={`flex h-5 w-5 items-center justify-center rounded-full border border-interactive/40 text-[10px] leading-none text-text-tertiary ${
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-interactive/40 text-[10px] leading-none text-text-tertiary ${
           value == null ? 'ring-2 ring-interactive' : ''
         }`}
       >
@@ -200,9 +200,14 @@ function CueColorPicker({
             aria-label={t.name}
             title={t.name}
             onClick={() => onChange(t.hex)}
-            style={{ backgroundColor: t.hex }}
-            className={`h-5 w-5 rounded-full ${selected ? 'ring-2 ring-interactive ring-offset-1 ring-offset-bg-base' : ''}`}
-          />
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control"
+          >
+            <span
+              aria-hidden
+              style={{ backgroundColor: t.hex }}
+              className={`h-5 w-5 rounded-full ${selected ? 'ring-2 ring-interactive ring-offset-1 ring-offset-bg-base' : ''}`}
+            />
+          </button>
         );
       })}
       {value != null && !inPalette && (
@@ -212,9 +217,14 @@ function CueColorPicker({
           aria-label="Current custom color"
           title={value}
           onClick={() => onChange(value)}
-          style={{ backgroundColor: value }}
-          className="h-5 w-5 rounded-full ring-2 ring-interactive ring-offset-1 ring-offset-bg-base"
-        />
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control"
+        >
+          <span
+            aria-hidden
+            style={{ backgroundColor: value }}
+            className="h-5 w-5 rounded-full ring-2 ring-interactive ring-offset-1 ring-offset-bg-base"
+          />
+        </button>
       )}
     </div>
   );
@@ -364,14 +374,14 @@ export function CuesSection({
               />
               <CueColorPicker value={editColor} onChange={setEditColor} />
               <button
-                className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
+                className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={saveEdit}
                 disabled={busy || !editText.trim() || editAnchor.ms == null}
               >
                 Save
               </button>
               <button
-                className="shrink-0 font-ui text-xs text-text-tertiary disabled:opacity-40"
+                className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-text-tertiary disabled:opacity-40"
                 onClick={() => setEditingId(null)}
                 disabled={busy}
               >
@@ -410,7 +420,7 @@ export function CuesSection({
                 {cue.text}
               </span>
               <button
-                className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
+                className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={() => startEdit(cue)}
                 disabled={busy}
                 aria-label={`Edit cue ${cue.text}`}
@@ -418,7 +428,7 @@ export function CuesSection({
                 Edit
               </button>
               <button
-                className="shrink-0 font-ui text-xs text-state-danger disabled:opacity-40"
+                className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-state-danger disabled:opacity-40"
                 onClick={() => remove(cue.id)}
                 disabled={busy}
                 aria-label={`Delete cue ${cue.text}`}
@@ -449,7 +459,7 @@ export function CuesSection({
             onChange={(e) => setText(e.target.value)}
           />
           <button
-            className="shrink-0 rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+            className="min-h-11 shrink-0 rounded-control border border-interactive px-3 font-ui text-sm text-interactive disabled:opacity-40 sm:rounded-pill"
             onClick={add}
             disabled={busy || !text.trim() || addAnchor.ms == null}
           >
@@ -459,7 +469,7 @@ export function CuesSection({
         {addAnchor.message && (
           <p className="font-ui text-xs text-state-danger">{addAnchor.message}</p>
         )}
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <CueColorPicker value={color} onChange={setColor} />
           <SnapToggle canSnap={canSnap} snap={snap} onChange={setSnap} />
         </div>
@@ -696,7 +706,7 @@ export function MovesSection({
           {onOpenSongsByMove && (
             <button
               type="button"
-              className="font-ui text-xs text-interactive"
+              className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive"
               onClick={onOpenSongsByMove}
               title="Find songs you’ve choreographed with a move"
             >
@@ -705,7 +715,7 @@ export function MovesSection({
           )}
           <button
             type="button"
-            className="font-ui text-xs text-interactive"
+            className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive"
             onClick={() => setManaging(true)}
           >
             Manage…
@@ -778,7 +788,7 @@ export function MovesSection({
                 ))}
               </select>
               <button
-                className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
+                className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={saveEdit}
                 disabled={
                   busy || (editSel.kind === 'custom' && !editCustom.trim()) || editAnchor.ms == null
@@ -787,7 +797,7 @@ export function MovesSection({
                 Save
               </button>
               <button
-                className="shrink-0 font-ui text-xs text-text-tertiary disabled:opacity-40"
+                className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-text-tertiary disabled:opacity-40"
                 onClick={() => setEditingId(null)}
                 disabled={busy}
               >
@@ -818,7 +828,7 @@ export function MovesSection({
               </span>
               {m.intensity && <IntensityReadout intensity={m.intensity} />}
               <button
-                className="shrink-0 font-ui text-xs text-interactive disabled:opacity-40"
+                className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={() => startEdit(m)}
                 disabled={busy}
                 aria-label={`Edit move ${nameOf(m)}`}
@@ -826,7 +836,7 @@ export function MovesSection({
                 Edit
               </button>
               <button
-                className="shrink-0 font-ui text-xs text-state-danger disabled:opacity-40"
+                className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-state-danger disabled:opacity-40"
                 onClick={() => remove(m.id)}
                 disabled={busy}
                 aria-label={`Delete move ${nameOf(m)}`}
@@ -861,7 +871,7 @@ export function MovesSection({
         </select>
         {addNeedsName && (
           <input
-            className={`min-w-0 flex-1 ${fieldClass}`}
+            className={`min-w-0 basis-full sm:basis-auto flex-1 ${fieldClass}`}
             placeholder={addSel.kind === 'new' ? 'New custom move name' : 'Move name'}
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
@@ -882,7 +892,7 @@ export function MovesSection({
           ))}
         </select>
         <button
-          className="shrink-0 rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+          className="min-h-11 shrink-0 rounded-control border border-interactive px-3 font-ui text-sm text-interactive disabled:opacity-40 sm:rounded-pill"
           onClick={add}
           disabled={busy || (addNeedsName && !customName.trim()) || addAnchor.ms == null}
         >
