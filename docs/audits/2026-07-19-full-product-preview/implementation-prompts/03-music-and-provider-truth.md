@@ -122,5 +122,5 @@ layer; do not fold a speculative fix into this visual slice.
 Report capability matrix/source, changed files, tests/gates, browser/playback results per capability, screenshots,
 unresolved provider seams, consumer contract for prompts 04/05/06, and unauthorized actions not taken.
 
-Suggested branch: `codex/music-provider-truth`  
+Suggested branch: `codex/music-provider-truth`
 Suggested PR title: `feat(web): unify music sourcing and provider capability states`

@@ -120,5 +120,5 @@ product boundary.
 Report changed files, auth/account behavior preserved, tests/gates, screenshots, fixture provenance, remaining
 evidence gaps, secret-scan result, and unauthorized actions not taken.
 
-Suggested branch: `codex/public-auth-account-trust`  
+Suggested branch: `codex/public-auth-account-trust`
 Suggested PR title: `feat(web): align public auth and account trust`

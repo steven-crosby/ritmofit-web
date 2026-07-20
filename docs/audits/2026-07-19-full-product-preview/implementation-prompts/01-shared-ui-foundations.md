@@ -158,5 +158,5 @@ Report any current-source contradiction or token-generation drift; do not route 
 Report changed files, shared contracts, tests/gates, browser screenshot paths, observed gaps, downstream
 requirements, and every unauthorized action not taken. Do not claim prompts 02–06 are complete.
 
-Suggested branch: `codex/shared-ui-foundations`  
+Suggested branch: `codex/shared-ui-foundations`
 Suggested PR title: `feat(web): establish shared workstation UI foundations`

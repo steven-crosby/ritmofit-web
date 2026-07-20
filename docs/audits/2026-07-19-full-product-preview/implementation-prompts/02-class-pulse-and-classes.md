@@ -121,5 +121,5 @@ truthful derivation, or if current product canon contradicts the approved shelf.
 Report changed files, pulse input/output contract, behavior preserved, tests/gates, browser evidence, sparse-data
 gaps, downstream integration notes, and unauthorized actions not taken.
 
-Suggested branch: `codex/class-pulse-classes`  
+Suggested branch: `codex/class-pulse-classes`
 Suggested PR title: `feat(web): add class pulse and run-of-show classes`

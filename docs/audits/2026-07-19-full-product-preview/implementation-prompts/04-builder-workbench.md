@@ -126,5 +126,5 @@ existing behavior rather than normalizing it silently.
 Report changed files, preserved state invariants, tests/gates, screenshots, playback results, responsive/a11y
 results, unresolved runtime/provider gaps, downstream Live notes, and unauthorized actions not taken.
 
-Suggested branch: `codex/builder-workbench`  
+Suggested branch: `codex/builder-workbench`
 Suggested PR title: `feat(web): compose the builder workbench`

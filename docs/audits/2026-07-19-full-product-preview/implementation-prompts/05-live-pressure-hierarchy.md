@@ -109,5 +109,5 @@ behavioral fix.
 Report changed files, state-transition invariants, tests/gates, screenshots, playback matrix, accessibility/
 responsive results, remaining failures, and unauthorized actions not taken.
 
-Suggested branch: `codex/live-pressure-hierarchy`  
+Suggested branch: `codex/live-pressure-hierarchy`
 Suggested PR title: `feat(web): refine live pressure hierarchy`

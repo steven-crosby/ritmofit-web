@@ -1,7 +1,7 @@
 # Surface inventory
 
-Run: `2026-07-19-full-product-preview`  
-Baseline: `origin/main` at `addaff3f6ce6c083bc46c2f10eaac7faaf09ea4b`  
+Run: `2026-07-19-full-product-preview`
+Baseline: `origin/main` at `addaff3f6ce6c083bc46c2f10eaac7faaf09ea4b`
 Scope: D20/D21 public entry plus active solo product only. Explore, Teams, sharing/public classes, collaborators, community, pricing, and subscriptions are excluded.
 
 Evidence labels:
