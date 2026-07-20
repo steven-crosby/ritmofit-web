@@ -202,6 +202,11 @@ export const reorderTracks = (classId: string, classTrackIds: string[]) =>
 export const getRunPayload = (classId: string) =>
   api<RunPayload>(`/classes/${classId}/run-payload`);
 
+/** Same read-only projection, named separately so bounded Classes-shelf enrichment
+ * remains an independently mockable consumer and cannot consume Builder/Live test
+ * request sequences. The HTTP contract and endpoint are unchanged. */
+export const getClassShelfPayload = (classId: string) => getRunPayload(classId);
+
 // ── Music providers: search a provider, import a candidate into the library ───
 /** Provider search candidates (server serves the live adapter or the dev mock). */
 export const searchProvider = (provider: Provider, q: string) =>

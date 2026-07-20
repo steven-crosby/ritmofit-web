@@ -98,6 +98,8 @@ import {
   markOnboardingVideoDismissed,
 } from '../lib/onboarding-video.js';
 import { OnboardingVideoDialog } from './OnboardingVideoDialog.js';
+import { ClassRunOfShowShelf } from './ClassRunOfShowShelf.js';
+import { RecoveryState, StatusLabel } from './SharedState.js';
 
 // Code-split the heavy, interaction-gated surfaces into their own chunks so the
 // initial builder paint doesn't ship Live mode, the choreography editor, or the
@@ -193,12 +195,28 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     tracks: TrackSearchResult[];
   } | null>(null);
   const [onboardingVideoOpen, setOnboardingVideoOpen] = useState(false);
+  // Presentational confirmation only. This set resets with the authenticated
+  // dashboard and is never written to storage or sent to the API.
+  const [confirmedPulseIds, setConfirmedPulseIds] = useState<Set<string>>(new Set());
   const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
     null,
   );
   const [error, setError] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<CollectionImportResult | null>(null);
   const [retryingImport, setRetryingImport] = useState(false);
+
+  const togglePulseConfirmation = useCallback((classId: string) => {
+    setConfirmedPulseIds((current) => {
+      const next = new Set(current);
+      if (next.has(classId)) next.delete(classId);
+      else next.add(classId);
+      return next;
+    });
+  }, []);
+
+  const focusClassCreator = useCallback(() => {
+    document.getElementById('new-class-title')?.focus();
+  }, []);
 
   // Merge a page's tags into the known-tags set (only an unfiltered page widens
   // it; a filtered page only re-adds the active tag, which is harmless).
@@ -564,7 +582,13 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                     ? 'border-transparent bg-transparent text-text-primary underline decoration-interactive decoration-2 underline-offset-8'
                     : 'border-transparent bg-transparent text-text-secondary hover:text-text-primary'
                 }`}
-                onClick={() => setDestination(value)}
+                onClick={() => {
+                  setDestination(value);
+                  if (value === 'classes') {
+                    setSelected(null);
+                    dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
+                  }
+                }}
               >
                 {label}
               </button>
@@ -620,6 +644,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         {cardPreview && (
           <ClassSummaryView
             classId={cardPreview.id}
+            pulseConfirmed={confirmedPulseIds.has(cardPreview.id)}
+            onTogglePulseConfirmation={() => togglePulseConfirmation(cardPreview.id)}
             onClose={() => setCardPreview(null)}
             onOpenInBuilder={() => {
               const cls = cardPreview;
@@ -631,7 +657,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       </Suspense>
 
       <div className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6">
-        {error && <p className="mb-4 font-ui text-sm text-state-danger">{error}</p>}
+        {error &&
+          !(destination === 'classes' && listStatus === 'error' && classes.length === 0) && (
+            <p className="mb-4 font-ui text-sm text-state-danger">{error}</p>
+          )}
         {importResult && (
           <div
             role={importResult.failed.length > 0 ? 'alert' : 'status'}
@@ -747,8 +776,21 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               <WorkstationRestingState
                 classes={classes}
                 activeTag={activeTag}
-                listReady={listStatus === 'ready'}
+                status={listStatus}
+                libraryError={error}
+                confirmedPulseIds={confirmedPulseIds}
+                onTogglePulseConfirmation={togglePulseConfirmation}
+                onOpen={openClass}
+                onPreview={(cls) => setCardPreview(cls)}
                 onClearTag={() => void applyTagFilter(null)}
+                onRetry={() => {
+                  setListStatus('loading');
+                  void refreshClasses();
+                }}
+                onStartMusic={() => setDestination('music')}
+                onStartMovement={() => setSongsByMoveOpen(true)}
+                onStartTemplate={focusClassCreator}
+                onStartManual={focusClassCreator}
               />
             )}
           </div>
@@ -904,7 +946,7 @@ export function LibraryRail({
           </p>
           <button
             type="button"
-            className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+            className="min-h-11 rounded-control border border-interactive px-3 font-ui text-sm text-interactive sm:min-h-8 sm:rounded-pill"
             onClick={() => setQuery('')}
           >
             Show all classes
@@ -927,7 +969,7 @@ export function LibraryRail({
             <li className="flex justify-center pt-1">
               <button
                 type="button"
-                className="rounded-pill border border-interactive px-4 py-1.5 font-ui text-sm text-interactive disabled:opacity-40"
+                className="min-h-11 rounded-control border border-interactive px-4 font-ui text-sm text-interactive disabled:opacity-40 sm:min-h-8 sm:rounded-pill"
                 onClick={onLoadMore}
                 disabled={loadingMore}
               >
@@ -967,7 +1009,7 @@ function LibraryOrganizeControls({
         <input
           type="text"
           role="searchbox"
-          className="w-full rounded-pill border border-interactive/30 bg-bg-base py-1 pl-3 pr-8 font-ui text-xs text-text-primary"
+          className="min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base pl-3 pr-12 font-ui text-xs text-text-primary sm:min-h-8 sm:rounded-pill sm:pr-9"
           placeholder="Search loaded classes…"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
@@ -978,7 +1020,7 @@ function LibraryOrganizeControls({
             type="button"
             onClick={() => onQueryChange('')}
             aria-label="Clear search"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full px-1.5 font-ui text-xs text-text-tertiary hover:text-text-primary"
+            className="absolute right-0 top-1/2 min-h-11 min-w-11 -translate-y-1/2 rounded-control font-ui text-xs text-text-tertiary hover:text-text-primary sm:right-1 sm:min-h-8 sm:min-w-8 sm:rounded-full"
           >
             ✕
           </button>
@@ -993,7 +1035,7 @@ function LibraryOrganizeControls({
         </label>
         <select
           id={sortId}
-          className="min-w-0 flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1 font-ui text-xs text-text-primary"
+          className="min-h-11 min-w-0 flex-1 rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-xs text-text-primary sm:min-h-8 sm:rounded-pill"
           value={sort}
           onChange={(e) => onSortChange(e.target.value as ClassSortKey)}
         >
@@ -1196,7 +1238,7 @@ function TagFilter({
           <button
             type="button"
             onClick={() => onSelectTag(null)}
-            className="rounded-pill border border-interactive bg-interactive px-2 py-0.5 font-ui text-xs text-bg-base"
+            className="min-h-11 rounded-control border border-interactive bg-interactive px-2 font-ui text-xs text-bg-base sm:min-h-8 sm:rounded-pill"
             aria-label={`Clear tag filter ${activeTag}`}
           >
             #{activeTag} ×
@@ -1209,7 +1251,7 @@ function TagFilter({
               key={tag}
               type="button"
               onClick={() => onSelectTag(tag)}
-              className="rounded-pill border border-interactive/30 bg-bg-base px-2 py-0.5 font-ui text-xs text-text-secondary hover:text-text-primary"
+              className="min-h-11 rounded-control border border-interactive/30 bg-bg-base px-2 font-ui text-xs text-text-secondary hover:text-text-primary sm:min-h-8 sm:rounded-pill"
             >
               #{tag}
             </button>
@@ -1256,6 +1298,7 @@ function CreateClassForm({
     >
       <div className="flex min-w-0 gap-2">
         <input
+          id="new-class-title"
           className="min-h-11 min-w-0 flex-1 rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary sm:rounded-pill sm:px-4 sm:text-base"
           placeholder="New class title"
           aria-label="New class title"
@@ -1283,7 +1326,7 @@ function CreateClassForm({
               type="button"
               aria-pressed={selected}
               onClick={() => setTemplate(value)}
-              className={`min-h-8 shrink-0 rounded-pill border px-2.5 font-ui text-xs ${
+              className={`min-h-11 shrink-0 rounded-control border px-2.5 font-ui text-xs sm:min-h-8 sm:rounded-pill ${
                 selected
                   ? 'border-interactive bg-interactive/15 text-text-primary'
                   : 'border-interactive/30 text-text-secondary hover:text-text-primary'
@@ -1496,52 +1539,192 @@ function ProviderConnectionsLoadState({
   );
 }
 
-/** Compact Classes resting state. The library remains the dominant surface; this
- * panel names one immediate action instead of duplicating Music or dashboard metrics. */
+/** Classes landing state: the loaded library becomes a bounded run-of-show shelf;
+ * fresh, filtered-empty, loading, and unavailable remain distinct. */
 function WorkstationRestingState({
   classes,
   activeTag,
-  listReady,
+  status,
+  libraryError,
+  confirmedPulseIds,
+  onTogglePulseConfirmation,
+  onOpen,
+  onPreview,
   onClearTag,
+  onRetry,
+  onStartMusic,
+  onStartMovement,
+  onStartTemplate,
+  onStartManual,
 }: {
   classes: ClassListItem[];
   activeTag: string | null;
-  listReady: boolean;
+  status: ListStatus;
+  libraryError: string | null;
+  confirmedPulseIds: ReadonlySet<string>;
+  onTogglePulseConfirmation: (classId: string) => void;
+  onOpen: (cls: ClassListItem) => void;
+  onPreview: (cls: ClassListItem) => void;
   onClearTag: () => void;
+  onRetry: () => void;
+  onStartMusic: () => void;
+  onStartMovement: () => void;
+  onStartTemplate: () => void;
+  onStartManual: () => void;
 }) {
   const hasClasses = classes.length > 0;
 
+  if (hasClasses) {
+    return (
+      <ClassRunOfShowShelf
+        classes={classes}
+        confirmedPulseIds={confirmedPulseIds}
+        onTogglePulseConfirmation={onTogglePulseConfirmation}
+        onOpen={onOpen}
+        onPreview={onPreview}
+      />
+    );
+  }
+
+  if (status === 'loading') {
+    return (
+      <section
+        className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-5 sm:p-6 xl:col-span-2"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <StatusLabel kind="loading" label="Loading your class library" />
+        <h2 className="mt-3 font-display text-2xl font-semibold text-text-primary">
+          Reading your next run of show…
+        </h2>
+        <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
+          Ritmo is checking classes before it suggests a next step.
+        </p>
+        <div aria-hidden="true" className="mt-5 grid gap-3 sm:grid-cols-2">
+          <span className="h-32 rounded-card bg-bg-sunken" />
+          <span className="h-32 rounded-card bg-bg-sunken" />
+        </div>
+      </section>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="min-w-0 xl:col-span-2">
+        <RecoveryState
+          kind="unavailable"
+          role="alert"
+          statusLabel="Class library unavailable"
+          title="Your library is temporarily unavailable."
+          event={
+            libraryError
+              ? `Ritmo could not read the class list: ${libraryError}`
+              : 'Ritmo could not read the class list. This is not an empty account.'
+          }
+          safety="No class was removed. A new draft remains a separate, safe starting point."
+          primaryAction={
+            <button
+              type="button"
+              onClick={onRetry}
+              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
+            >
+              Try the library again
+            </button>
+          }
+          secondaryAction={
+            <button
+              type="button"
+              onClick={onStartTemplate}
+              className="min-h-11 rounded-control border border-interactive/50 px-4 font-ui text-sm font-semibold text-interactive sm:rounded-pill"
+            >
+              Start a new draft
+            </button>
+          }
+        />
+      </div>
+    );
+  }
+
+  if (activeTag) {
+    return (
+      <section className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-5 sm:p-6 xl:col-span-2">
+        <StatusLabel kind="empty" label={`No classes tagged #${activeTag}`} />
+        <h2 className="mt-3 font-display text-2xl font-semibold text-text-primary">
+          This filter has no run of show yet.
+        </h2>
+        <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
+          Clear the filter to return to your loaded classes. Nothing was removed.
+        </p>
+        <button
+          type="button"
+          onClick={onClearTag}
+          className="mt-4 min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
+        >
+          Clear #{activeTag} filter
+        </button>
+      </section>
+    );
+  }
+
+  const starts = [
+    {
+      eyebrow: 'Music first',
+      title: 'Find a track or source',
+      detail: 'Browse provider catalogs and carry the choice into a class.',
+      action: onStartMusic,
+    },
+    {
+      eyebrow: 'Template first',
+      title: 'Start Cycle, Pilates, or HIIT',
+      detail: 'Name the class and choose its discipline before filling it in.',
+      action: onStartTemplate,
+    },
+    {
+      eyebrow: 'Movement first',
+      title: 'Start with a move',
+      detail: 'Reuse a song–movement pairing you already teach.',
+      action: onStartMovement,
+    },
+    {
+      eyebrow: 'Manual first',
+      title: 'Start from memory',
+      detail: 'Create the class, then enter title, artist, duration, and effort yourself.',
+      action: onStartManual,
+    },
+  ];
+
   return (
     <section className="min-w-0 xl:col-span-2">
-      <div className="rounded-card bg-bg-raised p-5 sm:p-6">
-        <p className="font-ui text-xs font-semibold uppercase tracking-wide text-text-tertiary">
-          Classes
-        </p>
-        <h2 className="mt-2 font-display text-2xl font-semibold leading-tight text-text-primary">
-          {activeTag
-            ? `No classes tagged #${activeTag}`
-            : hasClasses
-              ? 'Open a class to keep building.'
-              : 'Create your first class.'}
+      <div className="rounded-card border border-border-subtle bg-bg-raised p-5 sm:p-6">
+        <p className="rf-eyebrow">First workspace</p>
+        <h2 className="mt-2 text-balance font-display text-3xl font-bold tracking-[-0.03em] text-text-primary sm:text-5xl">
+          Your first class can start anywhere.
         </h2>
-        <p className="mt-2 max-w-prose font-ui text-sm leading-6 text-text-secondary">
-          {activeTag
-            ? 'Clear the filter to return to your full class list.'
-            : hasClasses
-              ? 'Choose a class from the list to edit its music, shape, and Live readiness.'
-              : listReady
-                ? 'Name it and choose Cycle, Pilates, or HIIT in the class list.'
-                : 'Loading your class list…'}
+        <p className="mt-3 max-w-prose font-ui text-sm leading-6 text-text-secondary sm:text-base">
+          Bring music, a template, a movement idea, or a manual track. Ritmo will help shape the run
+          of show.
         </p>
-        {activeTag && (
-          <button
-            type="button"
-            onClick={onClearTag}
-            className="mt-4 min-h-11 rounded-control bg-interactive px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
-          >
-            Clear #{activeTag} filter
-          </button>
-        )}
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {starts.map((start) => (
+            <button
+              key={start.eyebrow}
+              type="button"
+              onClick={start.action}
+              className="min-h-32 rounded-card border border-border-subtle bg-bg-sunken p-4 text-left hover:border-interactive/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+            >
+              <span className="font-data text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
+                {start.eyebrow}
+              </span>
+              <span className="mt-2 block font-display text-lg font-semibold text-text-primary">
+                {start.title}
+              </span>
+              <span className="mt-2 block font-ui text-sm leading-5 text-text-secondary">
+                {start.detail}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -2861,6 +3044,8 @@ function ClassWorkspace({
   // effect applies it before paint (no flash of lost focus); the removed row is still
   // in the DOM at that point (the reload hasn't landed), so the anchor query resolves.
   const trackListRef = useRef<HTMLDivElement | null>(null);
+  const trackSourceRef = useRef<HTMLDivElement | null>(null);
+  const manualEntryRef = useRef<HTMLDetailsElement | null>(null);
   const inspectorPlaceholderRef = useRef<HTMLDivElement | null>(null);
   const [pendingRowFocus, setPendingRowFocus] = useState<string | 'placeholder' | null>(null);
   useLayoutEffect(() => {
@@ -2930,6 +3115,16 @@ function ClassWorkspace({
     markerFocus && selectedTrack && markerFocus.classTrackId === selectedTrack.id
       ? markerFocus
       : null;
+
+  const focusTrackSources = () => {
+    trackSourceRef.current?.focus();
+  };
+
+  const openManualEntry = () => {
+    if (!manualEntryRef.current) return;
+    manualEntryRef.current.open = true;
+    manualEntryRef.current.querySelector<HTMLElement>('input')?.focus();
+  };
 
   return (
     <>
@@ -3031,9 +3226,46 @@ function ClassWorkspace({
             Track list
           </span>
           {tracks.length === 0 && (
-            <p className="font-ui text-sm text-text-tertiary">
-              No tracks yet — add your first below.
-            </p>
+            <div className="rounded-card border border-border-subtle bg-bg-sunken p-4">
+              <StatusLabel kind="empty" label="Empty run of show" />
+              <h3 className="mt-2 font-display text-lg font-semibold text-text-primary">
+                Choose the strongest starting point.
+              </h3>
+              <p className="mt-1 font-ui text-sm leading-5 text-text-secondary">
+                All four routes add to this class. Pulse stays empty until real duration and effort
+                data exists.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={focusTrackSources}
+                  className="min-h-11 rounded-control border border-interactive/40 px-3 text-left font-ui text-sm font-semibold text-interactive sm:rounded-pill"
+                >
+                  Music search
+                </button>
+                <button
+                  type="button"
+                  onClick={focusTrackSources}
+                  className="min-h-11 rounded-control border border-interactive/40 px-3 text-left font-ui text-sm font-semibold text-interactive sm:rounded-pill"
+                >
+                  Playlist or source
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenSongsByMove}
+                  className="min-h-11 rounded-control border border-interactive/40 px-3 text-left font-ui text-sm font-semibold text-interactive sm:rounded-pill"
+                >
+                  Movement pairing
+                </button>
+                <button
+                  type="button"
+                  onClick={openManualEntry}
+                  className="min-h-11 rounded-control border border-interactive/40 px-3 text-left font-ui text-sm font-semibold text-interactive sm:rounded-pill"
+                >
+                  Manual track
+                </button>
+              </div>
+            </div>
           )}
           {/* Rich, reorderable song rows from the run-payload (title/artist/BPM/art);
               fall back to the lean, non-reorderable rows only if the payload couldn't
@@ -3055,21 +3287,27 @@ function ClassWorkspace({
                 ))}
               </ol>
             ))}
-          <TrackSearch
-            classId={cls.id}
-            onAdded={(id) => {
-              if (id) {
-                setSelectedTrackId(id);
-                setPendingRowFocus(id);
-                onTrackAdded(id);
-              } else {
-                onTrackChanged();
-              }
-            }}
-          />
+          <div
+            ref={trackSourceRef}
+            tabIndex={-1}
+            className="rounded-control outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+          >
+            <TrackSearch
+              classId={cls.id}
+              onAdded={(id) => {
+                if (id) {
+                  setSelectedTrackId(id);
+                  setPendingRowFocus(id);
+                  onTrackAdded(id);
+                } else {
+                  onTrackChanged();
+                }
+              }}
+            />
+          </div>
           {/* Manual entry stays available but de-emphasized (search/import is the
               primary path; 09). For a track a provider can't return, or no creds. */}
-          <details className="mt-1">
+          <details ref={manualEntryRef} className="mt-1">
             <summary className="cursor-pointer font-ui text-xs text-text-tertiary hover:text-text-secondary">
               Add manually
             </summary>
