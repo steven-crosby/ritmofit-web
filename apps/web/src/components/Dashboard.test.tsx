@@ -334,9 +334,15 @@ describe('Dashboard class library states', () => {
 
     // Clicking opens the likes browser with a track preview + create action.
     fireEvent.click(browseBtn);
-    expect(await screen.findByRole('dialog', { name: 'Browse Spotify likes' })).toBeTruthy();
+    const likesDialog = await screen.findByRole('dialog', { name: 'Browse Spotify likes' });
     expect(screen.getByText('Levels')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Create class from 2 liked tracks' })).toBeTruthy();
+    const createButton = within(likesDialog).getByRole('button', {
+      name: 'Create class from 2 liked tracks',
+    });
+    expect(createButton.parentElement?.className).toContain('flex-col');
+    expect(createButton.parentElement?.className).toContain('sm:flex-row');
+    expect(createButton.className).toContain('w-full');
+    expect(createButton.className).toContain('sm:w-auto');
   });
 
   it('does not create a class when the provider collection fetch fails', async () => {
@@ -1192,6 +1198,12 @@ describe('Dashboard onboarding video', () => {
     expect(within(dialog).getByText('3 · Score')).toBeTruthy();
     expect(within(dialog).queryByText(/Teams/i)).toBeNull();
     expect(within(dialog).queryByText(/Explore/i)).toBeNull();
+    expect(
+      within(dialog).getByRole('button', { name: 'Pause tutorial video' }).className,
+    ).toContain('min-h-11');
+    expect(
+      within(dialog).getByRole('button', { name: 'Replay tutorial video' }).className,
+    ).toContain('min-h-11');
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Start building' }));
 
