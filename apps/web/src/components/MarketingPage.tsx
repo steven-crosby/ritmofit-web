@@ -4,7 +4,7 @@
  * Uses existing index.css recipes: rf-topbar, rf-brand-mark, rf-eyebrow,
  * rf-heat-bloom, rf-heat-text, rf-btn-primary.
  */
-import { TutorialVideo } from './TutorialVideo.js';
+import { CreatorLoopProof } from './CreatorLoopProof.js';
 
 interface MarketingPageProps {
   /** Existing instructors return through sign-in. */
@@ -29,7 +29,7 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
         {/* Brand */}
         <a
           href="/"
-          className="flex items-center gap-2 no-underline sm:gap-2.5"
+          className="flex min-h-11 items-center gap-2 no-underline sm:gap-2.5"
           aria-label="Ritmo Studio home"
         >
           <span className="rf-brand-mark" aria-hidden="true">
@@ -39,28 +39,31 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
         </a>
 
         {/* Anchor nav */}
-        <nav aria-label="Marketing navigation" className="hidden items-center gap-6 sm:flex">
+        <nav
+          aria-label="Marketing navigation"
+          className="hidden items-center gap-4 lg:flex xl:gap-6"
+        >
           <a
             href="#product"
-            className="font-ui text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:text-text-primary"
+            className="flex min-h-11 min-w-11 items-center justify-center font-ui text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:text-text-primary"
           >
             Product
           </a>
           <a
             href="#method"
-            className="font-ui text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:text-text-primary"
+            className="flex min-h-11 min-w-11 items-center justify-center font-ui text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:text-text-primary"
           >
             Method
           </a>
           <a
             href="#studios"
-            className="font-ui text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:text-text-primary"
+            className="flex min-h-11 min-w-11 items-center justify-center font-ui text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:text-text-primary"
           >
             Live mode
           </a>
           <a
             href="#class-shape"
-            className="font-ui text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:text-text-primary"
+            className="flex min-h-11 min-w-11 items-center justify-center font-ui text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:text-text-primary"
           >
             Learn the workflow
           </a>
@@ -72,7 +75,7 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
             id="marketing-signin-btn"
             type="button"
             onClick={onSignIn}
-            className="rounded-pill border border-interactive/30 px-3 py-1.5 font-ui text-sm text-interactive transition-colors hover:border-interactive/60 hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:px-4"
+            className="min-h-11 rounded-pill border border-interactive/30 px-3 font-ui text-sm text-interactive transition-colors hover:border-interactive/60 hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:px-4"
           >
             Sign in
           </button>
@@ -81,7 +84,7 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
             type="button"
             aria-label="Start building"
             onClick={onStartBuilding}
-            className="rounded-pill rf-btn-primary px-3 py-1.5 font-ui text-sm font-semibold text-text-on-accent sm:px-4"
+            className="min-h-11 rounded-pill rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent sm:px-4"
           >
             <span className="sm:hidden">Start</span>
             <span className="hidden sm:inline">Start building</span>
@@ -94,7 +97,7 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
         {/* Hero */}
         <section
           aria-label="Hero"
-          className="rf-heat-bloom flex min-h-[80svh] flex-col items-start justify-center gap-10 px-6 py-16 sm:px-12 lg:flex-row lg:items-center lg:gap-16 lg:px-24"
+          className="rf-heat-bloom grid min-h-[78svh] items-center gap-10 px-6 py-16 sm:px-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(520px,1.1fr)] lg:gap-16 lg:px-24"
         >
           {/* Copy */}
           <div className="flex max-w-lg flex-col gap-5">
@@ -103,8 +106,8 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
               Find the class inside the <span className="rf-heat-text">music.</span>
             </h1>
             <p className="font-ui text-body text-text-secondary">
-              Anyone can press play. You build the room — track by track, cue by cue, from the music
-              up.
+              Source the right tracks. Shape the energy. Score the movement. Walk into Live knowing
+              what comes next.
             </p>
             <div className="flex flex-wrap gap-3">
               <button
@@ -128,12 +131,7 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
             </span>
           </div>
 
-          <TutorialVideo
-            id="class-shape"
-            variant="landing"
-            autoPlay
-            className="w-full max-w-2xl scroll-mt-20"
-          />
+          <CreatorLoopProof id="class-shape" />
         </section>
 
         {/* Feature grid */}
@@ -145,22 +143,30 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
           <h2 id="features-heading" className="sr-only">
             Features
           </h2>
-          <div className="grid gap-4 sm:grid-cols-3" id="method">
+          <div
+            className="grid gap-px overflow-hidden rounded-panel border border-border-subtle bg-border-subtle sm:grid-cols-2 lg:grid-cols-4"
+            id="method"
+          >
             <FeatureCard
               eyebrow="01 / Find"
-              heading="Start with your music."
-              body="Select saved tracks in Music and carry them directly into a new class. The source material and the authoring workflow stay connected."
+              heading="Start with the right track."
+              body="Browse provider catalogs or your authorized library, then carry the source into class work."
             />
             <FeatureCard
               eyebrow="02 / Shape"
               heading="Make the energy visible."
-              body="Sequence tracks, assign effort, score movement, and see the class become a shape before the room hears the first beat."
-              id="studios"
+              body="Order tracks and assign intended effort so the class arc is readable before rehearsal."
             />
             <FeatureCard
-              eyebrow="03 / Perform"
-              heading="Lead without losing the beat."
-              body="Live mode puts current cue, next cue, BPM, time, and intensity where an instructor can read them while moving."
+              eyebrow="03 / Score"
+              heading="Write what you will teach."
+              body="Keep cues, movement, BPM, notes, and clip decisions attached to the track that needs them."
+            />
+            <FeatureCard
+              id="studios"
+              eyebrow="04 / Lead"
+              heading="Run the room under pressure."
+              body="Live keeps the current cue, next cue, time, effort, and provider truth in one pressure-safe view."
             />
           </div>
         </section>
@@ -191,7 +197,7 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
           <span>© {new Date().getFullYear()} Ritmo Studio · Built for instructors who create</span>
           <a
             href="/privacy"
-            className="rounded-control text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control px-2 text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
           >
             Privacy and data
           </a>
@@ -212,10 +218,7 @@ interface FeatureCardProps {
 
 function FeatureCard({ eyebrow, heading, body, id }: FeatureCardProps) {
   return (
-    <article
-      id={id}
-      className="flex flex-col gap-3 rounded-card border border-border-subtle bg-bg-raised p-6 scroll-mt-20"
-    >
+    <article id={id} className="flex flex-col gap-3 bg-bg-raised p-6 scroll-mt-20">
       <span className="rf-eyebrow">{eyebrow}</span>
       <h3 className="font-display text-xl font-bold text-text-primary">{heading}</h3>
       <p className="font-ui text-sm text-text-secondary">{body}</p>

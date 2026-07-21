@@ -21,11 +21,17 @@ import { markOnboardingVideoPending } from './lib/onboarding-video.js';
 // '/reset-password'. Everything else is an unknown path → NotFound.
 const KNOWN_PATHS = new Set(['/', '/privacy', '/reset-password']);
 
+function initialAuthIntent(): 'signin' | 'signup' | null {
+  if (window.location.pathname !== '/') return null;
+  const intent = new URLSearchParams(window.location.search).get('auth');
+  return intent === 'signin' || intent === 'signup' ? intent : null;
+}
+
 export function App() {
   const { data: session, isPending } = authClient.useSession();
   // Preserve the acquisition promise across the signed-out state switch: a
   // "Start building" click must land on account creation, never generic sign-in.
-  const [authIntent, setAuthIntent] = useState<'signin' | 'signup' | null>(null);
+  const [authIntent, setAuthIntent] = useState<'signin' | 'signup' | null>(initialAuthIntent);
 
   const skipLink = (
     <a
@@ -65,7 +71,10 @@ export function App() {
         {skipLink}
         <Login
           initialMode={authIntent}
-          onBack={() => setAuthIntent(null)}
+          onBack={() => {
+            window.history.replaceState({}, '', '/');
+            setAuthIntent(null);
+          }}
           onSignedUp={markOnboardingVideoPending}
         />
       </>

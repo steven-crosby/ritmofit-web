@@ -20,14 +20,19 @@ describe('MarketingPage acquisition paths', () => {
     expect(onStartBuilding).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps the workflow tutorial recoverable and uses the Music destination name', () => {
+  it('proves the creator loop with the landed Class Pulse contract', () => {
     render(<MarketingPage onSignIn={() => {}} onStartBuilding={() => {}} />);
 
     expect(screen.getAllByRole('link', { name: 'Learn the workflow' })).toHaveLength(2);
     for (const link of screen.getAllByRole('link', { name: 'Learn the workflow' })) {
       expect(link.getAttribute('href')).toBe('#class-shape');
     }
-    expect(screen.getByText(/saved tracks in Music/)).toBeTruthy();
-    expect(screen.queryByText(/saved tracks in Library/)).toBeNull();
+    expect(screen.getByRole('region', { name: 'Class Pulse' })).toBeTruthy();
+    expect(screen.getByText(/Synthetic class · authored order, duration, and effort/)).toBeTruthy();
+    for (const step of ['Find', 'Shape', 'Score', 'Lead']) {
+      expect(screen.getAllByText(step).length).toBeGreaterThan(0);
+    }
+    expect(screen.getByText(/playback uses your connected provider account/i)).toBeTruthy();
+    expect(screen.queryByText(/Teams|Explore|collaborators/i)).toBeNull();
   });
 });

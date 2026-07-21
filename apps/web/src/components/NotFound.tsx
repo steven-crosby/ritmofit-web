@@ -6,18 +6,37 @@
  */
 export function NotFound() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
-      <p className="font-data text-sm uppercase tracking-wide text-text-tertiary">404</p>
-      <h1 className="font-ui text-xl font-semibold text-text-primary">This page doesn’t exist</h1>
-      <p className="max-w-sm font-ui text-sm text-text-secondary">
-        The link may be broken or the page may have moved.
-      </p>
-      <a
-        href="/"
-        className="rounded-pill border border-interactive bg-interactive/15 px-4 py-1.5 font-ui text-sm text-text-primary hover:bg-interactive/25"
-      >
-        Back to Ritmo Studio
-      </a>
+    <main className="rf-hero-glow flex min-h-screen items-center px-5 py-12 sm:px-8">
+      <div className="mx-auto w-full max-w-3xl">
+        <div className="flex items-center gap-3">
+          <span className="rf-brand-mark" aria-hidden="true">
+            R
+          </span>
+          <span className="font-display text-lg font-bold text-text-primary">Ritmo Studio</span>
+        </div>
+        <p className="rf-eyebrow mt-16">404 · safe return</p>
+        <h1 className="mt-3 max-w-2xl font-display text-[clamp(2.6rem,8vw,5rem)] font-bold leading-[0.94] tracking-tight text-text-primary">
+          This beat is off the map.
+        </h1>
+        <p className="mt-5 max-w-xl font-ui text-base leading-7 text-text-secondary">
+          This address does not exist. Opening it did not change saved classes, account settings, or
+          music connections.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3 rounded-card border border-border-subtle bg-bg-raised p-4 sm:p-5">
+          <div className="min-w-0 flex-1">
+            <p className="font-ui font-semibold text-text-primary">Return to the active product</p>
+            <p className="mt-1 font-ui text-sm text-text-tertiary">
+              The public entry is the safe route back into Ritmo Studio.
+            </p>
+          </div>
+          <a
+            href="/"
+            className="inline-flex min-h-11 items-center self-center rounded-control rf-btn-primary px-5 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
+          >
+            Back to Ritmo Studio
+          </a>
+        </div>
+      </div>
     </main>
   );
 }
