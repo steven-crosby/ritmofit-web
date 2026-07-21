@@ -2103,14 +2103,13 @@ function LiveWorkspace({
 
   return (
     <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
-      <div className="rounded-card bg-bg-raised p-5 shadow-card sm:p-6">
-        <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Live</p>
-        <h2 className="mt-2 font-display text-2xl font-semibold leading-tight text-text-primary">
-          Pick a class to run.
+      <div className="min-w-0">
+        <p className="rf-eyebrow">Live queue</p>
+        <h2 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.03em] text-text-primary sm:text-4xl">
+          What are you teaching next?
         </h2>
-        <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
-          Live stays in the same workspace map: choose the class, preflight music, then run the
-          room.
+        <p className="mt-3 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
+          Choose a class, scan what needs attention, then enter playback preflight.
         </p>
         <p className="sr-only" aria-live="polite" aria-atomic="true">
           {liveStatus}
@@ -2138,8 +2137,10 @@ function LiveWorkspace({
         </div>
       </div>
 
-      <aside className="rounded-card border border-interactive/15 bg-bg-base p-5 xl:sticky xl:top-6">
-        <p className="font-ui text-sm font-semibold text-text-primary">Preflight checks</p>
+      <aside className="rounded-card border border-border-subtle bg-bg-sunken p-4 xl:sticky xl:top-6">
+        <p className="font-data text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+          Queue readiness
+        </p>
         <div className="mt-3 grid gap-2">
           <ReadinessTile
             label="Runnable"
@@ -2193,26 +2194,41 @@ function LiveQueueCard({
       : state?.status === 'ready' && !state.readiness.runnable
         ? (runBlockedMessage(state.payload) ?? undefined)
         : undefined;
+  const lastOpened = formatLastOpened(cls.lastOpenedAt, Date.now());
 
   return (
     <article
-      className="flex flex-col gap-3 rounded-card border border-interactive/10 bg-bg-base p-3"
+      className="flex flex-col gap-3 rounded-card border border-border-subtle bg-bg-raised p-4 sm:p-5"
       aria-busy={state === undefined || state.status === 'loading'}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <ArtCollage urls={cls.albumArtUrls} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-ui text-sm font-semibold text-text-primary">{cls.title}</h3>
-          <p className="font-data text-xs text-text-tertiary">
+          <div className="flex flex-wrap items-center gap-2">
+            {state?.status === 'ready' ? (
+              <StatusLabel
+                kind={state.readiness.runnable ? 'recovered' : 'unavailable'}
+                label={state.readiness.runnable ? 'Runnable' : 'Needs a duration'}
+              />
+            ) : state?.status === 'error' ? (
+              <StatusLabel kind="unavailable" label="Readiness unavailable" />
+            ) : (
+              <StatusLabel kind="loading" label="Checking readiness" />
+            )}
+          </div>
+          <h3 className="mt-2 break-words font-display text-xl font-semibold text-text-primary">
+            {cls.title}
+          </h3>
+          <p className="mt-1 font-data text-xs text-text-tertiary">
             {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount} tracks ·{' '}
             {formatDuration(cls.totalDurationMs)}
           </p>
+          {lastOpened && <p className="mt-1 font-ui text-xs text-text-tertiary">{lastOpened}</p>}
         </div>
         <div className="flex shrink-0 gap-2">
           <button
             type="button"
             onClick={onEdit}
-            className="min-h-10 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary sm:rounded-pill"
+            className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
           >
             Edit
           </button>
@@ -2222,9 +2238,9 @@ function LiveQueueCard({
             disabled={!canRun}
             aria-describedby={blockReason ? reasonId : undefined}
             title={canRun ? 'Run this class live' : undefined}
-            className="min-h-10 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50 sm:rounded-pill"
+            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive disabled:opacity-50 sm:rounded-pill"
           >
-            Run live
+            Preflight
           </button>
         </div>
       </div>
@@ -2251,9 +2267,15 @@ function LiveQueueCard({
         </p>
       ) : (
         <>
+          <ClassPulse payload={state.payload} compact />
           {/* Reuse the builder's readiness readout; the queue can't jump the inspector,
               so fix-chips stay off (canEdit=false) — fixing happens via Edit. */}
-          <ClassReadinessSummary readiness={state.readiness} canEdit={false} onSelectTrack={noop} />
+          <ClassReadinessSummary
+            readiness={state.readiness}
+            canEdit={false}
+            compact
+            onSelectTrack={noop}
+          />
           {blockReason && (
             <p
               id={reasonId}
