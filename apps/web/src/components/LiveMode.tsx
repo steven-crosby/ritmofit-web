@@ -39,11 +39,12 @@ import { PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/r
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { useWakeLock, type WakeLockStatus } from '../lib/use-wake-lock.js';
 import { ConnectionsDialog } from './ConnectionsDialog.js';
+import { ClassPulse } from './ClassPulse.js';
 import { IntensityReadout } from './IntensityReadout.js';
-import { IntensityRibbon } from './IntensityRibbon.js';
 import { LivePreflight } from './LivePreflight.js';
 import { LiveTimeline } from './LiveTimeline.js';
 import { SEGMENT_META, SegmentIcon } from './SegmentBand.js';
+import { RecoveryState, StatusLabel } from './SharedState.js';
 
 type View = 'cue' | 'list';
 
@@ -61,6 +62,8 @@ export interface TimelineEvent {
   text: string;
   color: string | null;
   intensity: Intensity | null;
+  beat: number | null;
+  bar: number | null;
 }
 
 /** Stable empty reference so a track-less / pre-roll frame doesn't churn memos. */
@@ -146,6 +149,8 @@ function eventsFor(entry: RunPayloadTrackEntry): TimelineEvent[] {
     text: c.text,
     color: c.color,
     intensity: null,
+    beat: c.beat,
+    bar: c.bar,
   }));
   const moves: TimelineEvent[] = entry.moves.map((m) => ({
     atMs: base + m.anchorMs,
@@ -153,8 +158,20 @@ function eventsFor(entry: RunPayloadTrackEntry): TimelineEvent[] {
     text: m.name,
     color: null,
     intensity: m.intensity,
+    beat: m.beat,
+    bar: m.bar,
   }));
   return [...cues, ...moves].sort((a, b) => a.atMs - b.atMs);
+}
+
+/** Existing authored bar/beat truth, formatted without inventing a missing count. */
+export function eventCount(event: TimelineEvent | null): string | null {
+  if (!event || event.beat == null) return null;
+  return event.bar == null ? String(event.beat) : `${event.bar}.${event.beat}`;
+}
+
+function sentence(text: string): string {
+  return /[.!?]$/.test(text.trim()) ? text : `${text}.`;
 }
 
 /** The active section + the one after it, for the live energy-arc indicator. */
@@ -225,6 +242,7 @@ function LiveSectionBar({ section }: { section: LiveSection }) {
 export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () => void }) {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const [view, setView] = useState<View>('cue');
   // Preflight gates class start (plan: "preflight every track before class
   // start"). An empty class has nothing to preflight — straight to the prompter.
@@ -239,6 +257,10 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   // completion so a late request cannot restore stale playback readiness.
   const connectionsRequestId = useRef(0);
   const [playback, setPlayback] = useState<CoordinatorStatus>({ kind: 'idle' });
+  // Presentation-level recovery state survives a transport pause. The coordinator
+  // truth can move from error -> paused, but the instructor still needs the cause
+  // and recovery actions until playback succeeds or music is deliberately dismissed.
+  const [playbackFailure, setPlaybackFailure] = useState<string | null>(null);
   // Null = prompter-only (no music started, or the instructor bailed out of a
   // playback failure). The coordinator is imperative on purpose: the rAF clock
   // drives it, and React state only mirrors its status for display.
@@ -366,10 +388,15 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
       now: Date.now(),
       adapters: PLAYBACK_ADAPTERS,
       availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
-      onStatus: setPlayback,
+      onStatus: (next) => {
+        setPlayback(next);
+        if (next.kind === 'error') setPlaybackFailure(next.error.message);
+        if (next.kind === 'playing') setPlaybackFailure(null);
+      },
     });
     coordinatorRef.current = coordinator;
     setPhase('live');
+    setHasStarted(true);
     setPlaying(true);
     void coordinator.start(0);
   };
@@ -381,11 +408,13 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
       if (next) void coordinator.resume(elapsedMs);
       else void coordinator.pause();
     }
+    if (next) setHasStarted(true);
     setPlaying(next);
   };
 
   /** Retry from a playback failure: re-enter the segment at the clock position. */
   const retryPlayback = () => {
+    setHasStarted(true);
     if (!playing) setPlaying(true);
     void coordinatorRef.current?.resume(elapsedMs);
   };
@@ -395,6 +424,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     coordinatorRef.current?.destroy();
     coordinatorRef.current = null;
     setPlayback({ kind: 'idle' });
+    setPlaybackFailure(null);
   };
 
   // Flatten + sort each track's cues/moves once per payload, not on every animation
@@ -457,7 +487,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   } else if (gap) {
     announcement = gap.nextTitle ? `Silence. Next track: ${gap.nextTitle}.` : 'Silence.';
   } else if (currentEvent) {
-    announcement = `${currentEvent.kind === 'move' ? 'Move' : 'Cue'}: ${currentEvent.text}.`;
+    announcement = `${currentEvent.kind === 'move' ? 'Move' : 'Cue'}: ${sentence(currentEvent.text)}`;
   } else if (live) {
     announcement = `Track ${live.index + 1}: ${live.entry.track.title}.`;
   }
@@ -510,6 +540,8 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     // repeated-text cue), never per animation frame. `announcement` is read fresh here —
     // it changes in lockstep with the key, so the closure is never stale.
   }, [announcementKey]);
+
+  const runState = ended ? 'Complete' : playing ? 'Now teaching' : !hasStarted ? 'Ready' : 'Paused';
 
   // Live runs on bg-live (ink-950, darker than bg-base) for maximum AAA contrast
   // in a dim studio — and stays dark in both themes (02/04-layout).
@@ -572,8 +604,12 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         {sectionAnnouncement}
       </p>
-      <header className="flex items-center justify-between border-b border-interactive/20 px-6 py-3">
-        <div>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-interactive/20 px-4 py-3 sm:px-6">
+        <div className="min-w-0">
+          <p className="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+            {runState}
+            {live ? ` · Track ${live.index + 1} of ${payload.tracks.length}` : ''}
+          </p>
           <h1 className="font-display text-lg font-semibold text-text-primary">
             {payload.class.title}
           </h1>
@@ -581,10 +617,10 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             {fmt(elapsedMs)} / {fmt(payload.class.totalDurationMs)}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
           <ViewToggle view={view} setView={setView} />
           <button
-            className="rounded-pill border border-interactive px-3 py-1.5 font-ui text-sm text-interactive"
+            className="min-h-11 shrink-0 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
             onClick={onExit}
           >
             Exit
@@ -606,7 +642,12 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             trackHasDuration={trackDurationMs != null}
             classTotalMs={payload.class.totalDurationMs}
             playing={playing}
+            hasStarted={hasStarted}
             gap={gap}
+            playbackError={playbackFailure}
+            onRetryPlayback={retryPlayback}
+            onContinueWithoutMusic={continueWithoutMusic}
+            onManageConnections={() => setConnectionsOpen(true)}
           />
         ) : (
           <FullList
@@ -619,43 +660,12 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
         )}
       </div>
 
-      {/* Playback failure — serious and recoverable (plan): the class clock and
-          prompter keep running while the instructor retries, hands off to the
-          provider app (recovery-only surface), or continues without music. */}
-      {playback.kind === 'error' && (
-        <div
-          role="alert"
-          className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-state-danger/40 bg-bg-raised px-6 py-3"
-        >
-          <p className="font-ui text-sm font-semibold text-text-primary">
-            <span aria-hidden className="mr-1.5 text-state-danger">
-              ⚠
-            </span>
-            Playback stopped: {playback.error.message}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              className="min-h-11 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
-              onClick={retryPlayback}
-            >
-              Retry
-            </button>
-            <button
-              className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive"
-              onClick={continueWithoutMusic}
-            >
-              Continue without music
-            </button>
-            {live && <ProviderHandoffLinks entry={live.entry} />}
-          </div>
-        </div>
-      )}
-
       <Transport
         playing={playing}
         onToggle={togglePlay}
         onReset={() => {
           setPlaying(false);
+          setHasStarted(false);
           void coordinatorRef.current?.pause();
           seek(0);
         }}
@@ -666,6 +676,12 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
         wakeStatus={wakeStatus}
         primaryButtonRef={primaryButtonRef}
       />
+      {connectionsOpen && (
+        <ConnectionsDialog
+          onClose={() => setConnectionsOpen(false)}
+          onConnectionsChanged={() => void refreshConnections()}
+        />
+      )}
     </div>
   );
 }
@@ -760,7 +776,7 @@ function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void 
           role="tab"
           aria-selected={view === v}
           onClick={() => setView(v)}
-          className={`rounded-pill px-3 py-1 font-ui text-sm ${
+          className={`min-h-11 rounded-pill px-3 py-2 font-ui text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive ${
             view === v ? 'bg-interactive text-text-on-accent' : 'text-text-secondary'
           }`}
         >
@@ -794,12 +810,12 @@ function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing:
       </div>
       {entry.displayBpm != null ? (
         <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
-          {/* data-hero tempo: 88px (5.5rem) Azeret Mono, tracking -0.04em, weight 700. */}
+          {/* Tempo stays subordinate to the actionable cue/count under pressure. */}
           <p
             className={`flex items-baseline ${pulse ? 'rf-beat-pulse' : ''}`}
             style={pulse ? ({ '--rf-bpm': entry.displayBpm } as CSSProperties) : undefined}
           >
-            <span className="font-data text-[clamp(3rem,8vw,5.5rem)] font-bold leading-[0.9] tracking-[-0.04em] text-text-primary">
+            <span className="font-data text-2xl font-semibold text-text-secondary sm:text-3xl">
               {entry.displayBpm}
             </span>
             <span className="ml-2 font-data text-sm uppercase tracking-wide text-text-tertiary">
@@ -845,7 +861,12 @@ function CueByCue({
   trackHasDuration,
   classTotalMs,
   playing,
+  hasStarted,
   gap,
+  playbackError,
+  onRetryPlayback,
+  onContinueWithoutMusic,
+  onManageConnections,
 }: {
   payload: RunPayload;
   live: { entry: RunPayloadTrackEntry; index: number } | null;
@@ -856,8 +877,13 @@ function CueByCue({
   trackHasDuration: boolean;
   classTotalMs: number;
   playing: boolean;
+  hasStarted: boolean;
   /** Free-mode silence between tracks: a countdown to the next track. */
   gap: { untilMs: number; nextTitle: string | null } | null;
+  playbackError: string | null;
+  onRetryPlayback: () => void;
+  onContinueWithoutMusic: () => void;
+  onManageConnections: () => void;
 }) {
   if (!live) {
     return (
@@ -883,7 +909,7 @@ function CueByCue({
               Next track
             </p>
             <div className="mt-2 flex items-baseline justify-between gap-3">
-              <p className="min-w-0 truncate font-display text-lg font-semibold text-text-primary">
+              <p className="min-w-0 break-words font-display text-lg font-semibold text-text-primary">
                 {gap.nextTitle ?? '—'}
               </p>
               <span
@@ -910,7 +936,8 @@ function CueByCue({
   // at this instant: lead with the affirmative ready state + a class-shape mini-map
   // instead of "No cue set" (alive at rest, design system 05 §Live). Once playing —
   // or paused mid-class — the normal cue / no-cue prompter takes over.
-  const showReadyHero = !playing && elapsedMs === 0 && currentEvent == null;
+  const showReadyHero = !hasStarted && elapsedMs === 0 && currentEvent == null;
+  const count = eventCount(currentEvent);
   return (
     <div className="flex min-h-full flex-col gap-4 p-4 sm:p-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:p-8">
       {/* LEFT — the focal cue: the one thing the instructor reads across the room.
@@ -928,13 +955,27 @@ function CueByCue({
             the tempo numeral and the cue read as one state-object. */}
         <div className="relative flex flex-1 flex-col justify-center">
           <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
-            {showReadyHero ? 'Ready' : 'Now'}
+            {showReadyHero
+              ? 'First action'
+              : currentEvent?.kind === 'move'
+                ? 'Current move'
+                : 'Current cue'}
           </p>
           {currentEvent ? (
             <>
+              {count && (
+                <p
+                  className="relative mt-5 font-data text-[clamp(3.5rem,9vw,7rem)] font-bold leading-none tracking-[-0.05em] text-text-primary"
+                  aria-label={
+                    currentEvent.bar == null ? `Count ${count}` : `Bar and count ${count}`
+                  }
+                >
+                  {count}
+                </p>
+              )}
               <p
                 key={currentEvent.text}
-                className={`relative mt-3 break-words font-display text-[clamp(2.75rem,7vw,6rem)] font-semibold leading-[0.95] text-text-primary ${
+                className={`relative mt-3 break-words font-display text-[clamp(2.75rem,7vw,5.5rem)] font-semibold leading-[0.95] text-text-primary ${
                   isAllOut ? 'rf-drop-in' : ''
                 }`}
                 style={currentEvent.color ? { color: currentEvent.color } : undefined}
@@ -959,15 +1000,10 @@ function CueByCue({
                 <span aria-hidden className="shrink-0 font-data text-base text-text-tertiary">
                   ♫
                 </span>
-                <span className="truncate font-display text-[clamp(1.5rem,3.5vw,2.5rem)] font-semibold text-text-primary">
+                <span className="break-words font-display text-[clamp(1.5rem,3.5vw,2.5rem)] font-semibold text-text-primary">
                   {entry.track.title}
                 </span>
               </p>
-              {/* Class-shape mini-map: the whole arc, visible before the first beat.
-                Reuses the builder ribbon (and its provisional "auto shape" when unshaped). */}
-              <div className="relative mt-6">
-                <IntensityRibbon payload={payload} />
-              </div>
             </>
           ) : (
             // No cue at this moment: never a bare dash. Name the state, then what's
@@ -975,14 +1011,14 @@ function CueByCue({
             // #3; prescription §8 "No cue set + current track"). Mirrors the assertive
             // screen-reader announcement, which already falls back to the track.
             <>
-              <p className="relative mt-3 font-display text-[clamp(2.25rem,5.5vw,4rem)] font-semibold leading-[0.95] text-text-secondary">
-                No cue set
+              <p className="relative mt-3 font-display text-[clamp(2.25rem,5.5vw,4rem)] font-semibold leading-[0.95] text-text-primary">
+                Lead this track
               </p>
               <p className="relative mt-4 flex min-w-0 items-baseline gap-2">
                 <span aria-hidden className="shrink-0 font-data text-base text-text-tertiary">
                   ♫
                 </span>
-                <span className="truncate font-display text-[clamp(1.5rem,3.5vw,2.5rem)] font-semibold text-text-primary">
+                <span className="break-words font-display text-[clamp(1.5rem,3.5vw,2.5rem)] font-semibold text-text-primary">
                   {entry.track.title}
                 </span>
               </p>
@@ -999,7 +1035,7 @@ function CueByCue({
         {/* Next cue + countdown. */}
         <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
           <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-            Next
+            Next cue
           </p>
           <div className="mt-2 flex items-baseline justify-between gap-3">
             <p className="min-w-0 font-display text-xl font-semibold text-text-primary">
@@ -1015,6 +1051,8 @@ function CueByCue({
             )}
           </div>
         </div>
+
+        <ClassPulse payload={payload} compact />
 
         {/* Timers — track + class countdowns, the performance's running clock. */}
         <div className="grid grid-cols-2 gap-3">
@@ -1039,13 +1077,51 @@ function CueByCue({
           </div>
         </div>
 
+        {playbackError && (
+          <RecoveryState
+            kind="error"
+            role="alert"
+            compact
+            title="Playback stopped"
+            event={playbackError}
+            safety="Your current cue and class clock are still running."
+            statusLabel="Music interrupted"
+            className="border-state-danger/35"
+            primaryAction={
+              <button
+                className="min-h-11 rounded-control rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
+                onClick={onContinueWithoutMusic}
+              >
+                Continue without music
+              </button>
+            }
+            secondaryAction={
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+                  onClick={onRetryPlayback}
+                >
+                  Retry playback
+                </button>
+                <button
+                  className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+                  onClick={onManageConnections}
+                >
+                  Manage connections
+                </button>
+                <ProviderHandoffLinks entry={entry} />
+              </div>
+            }
+          />
+        )}
+
         {/* Track identity (+ any instructor notes). Provider handoff links left
             this card for the playback-failure recovery surface (D19). */}
         <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
           <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
             Track {live.index + 1}
           </p>
-          <p className="mt-1 truncate font-display text-lg font-semibold text-text-primary">
+          <p className="mt-1 break-words font-display text-lg font-semibold text-text-primary">
             {entry.track.title}
           </p>
           <p className="truncate font-ui text-sm text-text-secondary">{entry.track.artist}</p>
@@ -1079,90 +1155,125 @@ function FullList({
   onSeek: (ms: number) => void;
 }) {
   return (
-    <ol className="mx-auto flex max-w-2xl flex-col gap-3 p-6">
-      {payload.tracks.map((t, i) => {
-        const start = t.startOffsetMs ?? 0;
-        const isLive = i === liveIndex;
-        return (
-          <li
-            key={t.classTrackId}
-            className={`rounded-card bg-bg-raised p-4 shadow-card ${isLive ? 'ring-2 ring-interactive' : ''}`}
-          >
-            <div className="flex items-center justify-between">
-              <button
-                className="text-left"
-                onClick={() => onSeek(start)}
-                aria-label={`Jump to track ${i + 1}`}
-              >
-                <span className="font-data text-xs text-text-tertiary">
-                  {fmt(start)} · #{i + 1}
-                </span>
-                <p className="font-display font-semibold text-text-primary">{t.track.title}</p>
-                <p className="font-ui text-sm text-text-secondary">{t.track.artist}</p>
-              </button>
-              <div className="flex flex-col items-end gap-1">
-                <IntensityReadout intensity={t.intensity} />
-                {t.displayBpm != null && (
-                  <span className="font-data text-xs text-text-tertiary">{t.displayBpm} BPM</span>
-                )}
-                {t.displayRpm != null && (
-                  <span className="font-data text-xs text-text-tertiary">{t.displayRpm} RPM</span>
-                )}
-                {t.holdCount != null && (
-                  <span className="font-data text-xs text-text-tertiary">
-                    {t.holdCount} {t.holdCount === 1 ? 'Hold' : 'Holds'}
+    <section className="mx-auto w-full max-w-5xl p-4 sm:p-6">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+            Run of show
+          </p>
+          <h2 className="mt-1 font-display text-2xl font-semibold text-text-primary">
+            {liveIndex >= 0
+              ? `Track ${liveIndex + 1} of ${payload.tracks.length}`
+              : 'No current track'}
+          </h2>
+        </div>
+        {liveIndex >= 0 && <StatusLabel kind="recovered" label="Current position" />}
+      </div>
+
+      <ol className="overflow-hidden rounded-card border border-border-subtle bg-bg-raised">
+        {payload.tracks.map((t, i) => {
+          const start = t.startOffsetMs ?? 0;
+          const isLive = i === liveIndex;
+          return (
+            <li
+              key={t.classTrackId}
+              aria-current={isLive ? 'step' : undefined}
+              className={`border-b border-border-subtle last:border-b-0 ${
+                isLive ? 'border-l-2 border-l-interactive bg-interactive/5' : ''
+              }`}
+            >
+              <div className="grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-4">
+                <button
+                  className="grid min-h-11 min-w-0 grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-3 rounded-control text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                  onClick={() => onSeek(start)}
+                  aria-label={`Jump to track ${i + 1}, ${t.track.title}`}
+                >
+                  <span className="font-data text-xs text-text-tertiary">{fmt(start)}</span>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-control bg-bg-base font-data text-sm text-text-secondary">
+                    {i + 1}
                   </span>
-                )}
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="break-words font-display font-semibold text-text-primary">
+                        {t.track.title}
+                      </span>
+                      {isLive && (
+                        <span className="font-data text-[10px] font-semibold uppercase tracking-wide text-interactive">
+                          ▶ Current
+                        </span>
+                      )}
+                    </span>
+                    <span className="block break-words font-ui text-sm text-text-secondary">
+                      {t.track.artist}
+                    </span>
+                  </span>
+                </button>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-[5.75rem] sm:justify-end sm:pl-0">
+                  <span className="font-data text-xs text-text-tertiary">
+                    {t.track.durationMs == null ? 'Duration unset' : fmt(t.track.durationMs)}
+                  </span>
+                  {t.displayBpm != null && (
+                    <span className="font-data text-xs text-text-tertiary">{t.displayBpm} BPM</span>
+                  )}
+                  <IntensityReadout intensity={t.intensity} />
+                </div>
               </div>
-            </div>
-            {t.notes && (
-              <p className="mt-2 whitespace-pre-wrap font-ui text-sm text-text-secondary">
-                <span className="mr-1 font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                  Notes:
-                </span>
-                {t.notes}
-              </p>
-            )}
-            {(t.cues.length > 0 || t.moves.length > 0) && (
-              <ul className="mt-3 flex flex-col gap-1 border-t border-interactive/15 pt-2">
-                {eventsByTrack[i]!.map((e, j) => {
-                  const past = e.atMs <= elapsedMs && isLive;
-                  return (
-                    <li
-                      key={j}
-                      className={`flex items-center gap-2 font-ui text-sm ${past ? 'text-text-tertiary line-through' : 'text-text-secondary'}`}
-                    >
-                      <span className="font-data text-xs text-text-tertiary">
-                        {fmt(e.atMs - start)}
-                      </span>
-                      <span
-                        className="rounded-pill px-1.5 py-0.5 font-data text-[10px] uppercase"
-                        style={{
-                          backgroundColor:
-                            e.kind === 'cue'
-                              ? (e.color ?? 'var(--rf-color-semantic-interactive-default)')
-                              : 'var(--rf-color-semantic-bg-base)',
-                          color:
-                            e.kind === 'cue'
-                              ? 'var(--rf-color-semantic-text-on-accent)'
-                              : undefined,
-                        }}
+              {(t.notes ||
+                eventsByTrack[i]!.length > 0 ||
+                t.displayRpm != null ||
+                t.holdCount != null) && (
+                <div className="grid gap-2 border-t border-border-subtle px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <div className="min-w-0">
+                    {t.notes && (
+                      <p className="whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
+                        <span className="mr-1 font-data text-[10px] uppercase tracking-wide text-text-tertiary">
+                          Notes
+                        </span>
+                        {t.notes}
+                      </p>
+                    )}
+                    {eventsByTrack[i]!.length > 0 && (
+                      <ul
+                        className="mt-2 flex flex-wrap gap-2"
+                        aria-label={`Rehearsal marks for ${t.track.title}`}
                       >
-                        {e.kind}
+                        {eventsByTrack[i]!.map((e, j) => {
+                          const past = e.atMs <= elapsedMs && isLive;
+                          return (
+                            <li
+                              key={j}
+                              className={`inline-flex min-w-0 items-center gap-1.5 rounded-control border border-border-subtle px-2 py-1 font-ui text-xs ${
+                                past ? 'text-text-tertiary line-through' : 'text-text-secondary'
+                              }`}
+                            >
+                              <span className="shrink-0 font-data text-[10px] text-text-tertiary">
+                                {fmt(e.atMs - start)} · {e.kind}
+                              </span>
+                              <span className="break-words">{e.text}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 font-data text-xs text-text-tertiary sm:justify-end">
+                    {t.displayRpm != null && <span>{t.displayRpm} RPM</span>}
+                    {t.holdCount != null && (
+                      <span>
+                        {t.holdCount} {t.holdCount === 1 ? 'Hold' : 'Holds'}
                       </span>
-                      <span>{e.text}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </li>
-        );
-      })}
-      {payload.tracks.length === 0 && (
-        <li className="font-ui text-text-tertiary">This class has no tracks yet.</li>
-      )}
-    </ol>
+                    )}
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+        {payload.tracks.length === 0 && (
+          <li className="p-5 font-ui text-text-tertiary">This class has no tracks yet.</li>
+        )}
+      </ol>
+    </section>
   );
 }
 

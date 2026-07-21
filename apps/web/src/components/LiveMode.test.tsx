@@ -13,6 +13,7 @@ import { authorizeAppleMusic } from '../lib/musickit.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
 import type { PlaybackAdapter } from '../lib/playback/types.js';
 import {
+  eventCount,
   LiveMode,
   lastAtOrBefore,
   liveSectionAt,
@@ -175,11 +176,18 @@ describe('LiveMode preflight', () => {
     expect(within(list).getByText('Active Track')).toBeTruthy();
     // No Apple Music connection → nothing can play it.
     expect(within(list).getByText('No connected provider can play this')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Blocked' })).toBeTruthy();
+    expect(screen.getByText('Blocked')).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: '0 tracks ready · 1 needs a decision' }),
+    ).toBeTruthy();
     expect(screen.getByText('1 track needs a fix before hands-free playback.')).toBeTruthy();
-    expect(screen.getByText('Runnable with warnings')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Prompter-only is ready now. Music can be fixed before the run or left off deliberately.',
+      ),
+    ).toBeTruthy();
     const exceptionRow = within(list).getByText('Active Track').closest('li');
-    expect(exceptionRow?.className).toContain('p-4');
+    expect(exceptionRow?.className).toContain('py-3');
     expect(exceptionRow?.className).not.toContain('shadow-card');
     const start = screen.getByRole('button', { name: 'Start class' });
     expect((start as HTMLButtonElement).disabled).toBe(true);
@@ -199,7 +207,8 @@ describe('LiveMode preflight', () => {
     render(<LiveMode payload={{ ...payload, tracks: [soundcloudOnly] }} onExit={() => {}} />);
     const list = await screen.findByRole('list', { name: 'Track playback check' });
     expect(within(list).getByText('Plays on SoundCloud')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Live ready' })).toBeTruthy();
+    expect(screen.getByText('Live ready')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '1 track ready · 0 need a decision' })).toBeTruthy();
     expect(screen.getByText('All 1 track can play hands-free.')).toBeTruthy();
     const passingRow = within(list).getByText('Active Track').closest('li');
     expect(passingRow?.className).toContain('py-3');
@@ -244,7 +253,8 @@ describe('LiveMode preflight', () => {
     expect(screen.getByRole('heading', { name: 'Runnable with warnings' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(screen.getByText(/has not marked any provider disconnected/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry check' }));
     const list = await screen.findByRole('list', { name: 'Track playback check' });
     expect(within(list).getByText('Plays on SoundCloud')).toBeTruthy();
   });
@@ -446,8 +456,10 @@ describe('LiveMode playback failure', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
 
     const alert = await screen.findByRole('alert');
-    expect(within(alert).getByText(/Playback stopped: widget failed/)).toBeTruthy();
-    expect(within(alert).getByRole('button', { name: 'Retry' })).toBeTruthy();
+    expect(within(alert).getByRole('heading', { name: 'Playback stopped' })).toBeTruthy();
+    expect(within(alert).getByText('widget failed')).toBeTruthy();
+    expect(within(alert).getByText(/cue and class clock are still running/)).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'Retry playback' })).toBeTruthy();
 
     // Handoff links live ONLY here (recovery surface), and only trusted URIs:
     // the track's soundcloud ref is a javascript: URI and must not render.
@@ -462,6 +474,48 @@ describe('LiveMode playback failure', () => {
     fireEvent.click(within(alert).getByRole('button', { name: 'Continue without music' }));
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByText('Music off')).toBeTruthy();
+  });
+
+  it('keeps the current cue, count, clock, and recovery visible when a failure is paused', async () => {
+    const countedCue = {
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            {
+              id: '00000000-0000-4000-8000-0000000000f1',
+              anchorMs: 0,
+              beat: 4,
+              bar: 12,
+              text: 'Hands light. Hips lead.',
+              color: null,
+            },
+          ],
+        },
+      ],
+    } satisfies RunPayload;
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(
+      (): PlaybackAdapter => ({
+        ...workingAdapter(),
+        prepare: () => Promise.reject(new Error('widget failed')),
+      }),
+    );
+
+    render(<LiveMode payload={countedCue} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.getByText('Hands light. Hips lead.')).toBeTruthy();
+    expect(screen.getByLabelText('Bar and count 12.4')).toBeTruthy();
+    expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+    expect(screen.getByText(/Paused · Track 1 of 1/)).toBeTruthy();
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.getByText('Hands light. Hips lead.')).toBeTruthy();
+    expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
   });
 });
 
@@ -491,7 +545,7 @@ describe('LiveMode track notes', () => {
     expect(screen.getByText('Watch the new rider in row 2')).toBeTruthy();
     // The notes are a subordinate block, not the focal cue: at rest the focal card
     // leads with the "Ready" eyebrow, and the "Notes" label renders distinctly.
-    expect(screen.getByText('Ready')).toBeTruthy();
+    expect(screen.getByText('First action')).toBeTruthy();
     expect(screen.getByText('Notes')).toBeTruthy();
   });
 
@@ -507,6 +561,81 @@ describe('LiveMode track notes', () => {
     await renderLive();
 
     expect(screen.queryByText(/Notes/)).toBeNull();
+  });
+
+  it('keeps current position, notes, and rehearsal marks in the compact full list', async () => {
+    const scored = {
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          notes: 'Respira con calma — hold the room through the long transition.',
+          cues: [
+            {
+              id: '00000000-0000-4000-8000-0000000000a1',
+              anchorMs: 0,
+              beat: 1,
+              bar: 1,
+              text: 'Hands light. Hips lead.',
+              color: null,
+            },
+          ],
+          moves: [
+            {
+              id: '00000000-0000-4000-8000-0000000000a2',
+              anchorMs: 30000,
+              beat: 1,
+              bar: 9,
+              name: 'Stand and climb',
+              intensity: 'hard',
+            },
+          ],
+        },
+      ],
+    } satisfies RunPayload;
+    await renderLive(scored);
+    fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+
+    expect(screen.getByRole('heading', { name: 'Track 1 of 1' })).toBeTruthy();
+    expect(screen.getByText('▶ Current')).toBeTruthy();
+    expect(screen.getByText(/Respira con calma/)).toBeTruthy();
+    const marks = screen.getByRole('list', { name: 'Rehearsal marks for Active Track' });
+    expect(within(marks).getByText('Hands light. Hips lead.')).toBeTruthy();
+    expect(within(marks).getByText('Stand and climb')).toBeTruthy();
+    expect(
+      screen
+        .getByRole('button', { name: 'Jump to track 1, Active Track' })
+        .closest('li')
+        ?.getAttribute('aria-current'),
+    ).toBe('step');
+  });
+
+  it('keeps a twelve-track run compact and preserves every seek target', async () => {
+    const tracks = Array.from({ length: 12 }, (_, index) => ({
+      ...activeTrack,
+      classTrackId: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+      position: index,
+      startOffsetMs: index * 60000,
+      providerRefs: [],
+      track: {
+        ...activeTrack.track,
+        id: `00000000-0000-4000-8001-${String(index + 1).padStart(12, '0')}`,
+        title: `Bloque ${index + 1} — transición larga / 長い移行`,
+        durationMs: 60000,
+      },
+    })) satisfies RunPayloadTrackEntry[];
+    const longRun = {
+      ...payload,
+      class: { ...payload.class, totalDurationMs: 12 * 60000 },
+      tracks,
+    } satisfies RunPayload;
+
+    await renderLive(longRun);
+    fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+
+    expect(screen.getByRole('heading', { name: 'Track 1 of 12' })).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: /Jump to track/ })).toHaveLength(12);
+    expect(screen.getByText('Bloque 12 — transición larga / 長い移行')).toBeTruthy();
   });
 });
 
@@ -531,6 +660,31 @@ describe('LiveMode sparse-data fallbacks', () => {
     expect(screen.getByText('Tempo missing')).toBeTruthy();
     expect(screen.getByText('Pulse off')).toBeTruthy();
     expect(screen.queryByText('No BPM set')).toBeNull();
+  });
+
+  it('uses an affirmative teaching state instead of making missing cue data the hero', async () => {
+    await renderLive();
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    expect(screen.getByText('Lead this track')).toBeTruthy();
+    expect(screen.queryByText('No cue set')).toBeNull();
+  });
+});
+
+describe('eventCount', () => {
+  const base: TimelineEvent = {
+    atMs: 0,
+    kind: 'cue',
+    text: 'Push',
+    color: null,
+    intensity: null,
+    beat: null,
+    bar: null,
+  };
+
+  it('uses existing authored bar and beat truth without inventing missing counts', () => {
+    expect(eventCount({ ...base, beat: 4, bar: 12 })).toBe('12.4');
+    expect(eventCount({ ...base, beat: 8 })).toBe('8');
+    expect(eventCount(base)).toBeNull();
   });
 });
 
@@ -834,6 +988,8 @@ describe('lastAtOrBefore', () => {
     text: `@${atMs}`,
     color: null,
     intensity: null,
+    beat: null,
+    bar: null,
   });
   // Includes a tie at 1000 to confirm the last-of-equals behavior current/next rely on.
   const events = [ev(1000), ev(1000), ev(2000), ev(5000)];

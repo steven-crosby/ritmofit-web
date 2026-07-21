@@ -755,7 +755,9 @@ describe('Dashboard class library states', () => {
     expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
 
     fireEvent.click(screen.getByRole('button', { name: 'Live' }));
-    expect(await screen.findByRole('heading', { name: 'Pick a class to run.' })).toBeTruthy();
+    expect(
+      await screen.findByRole('heading', { name: 'What are you teaching next?' }),
+    ).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
     expect(await screen.findByRole('heading', { name: 'Personal workspace' })).toBeTruthy();
@@ -802,8 +804,10 @@ describe('Dashboard class library states', () => {
     // Empty classes have nothing to preflight and never enter the queue.
     expect(screen.queryByText('Draft shell')).toBeNull();
 
-    const runBtn = (await screen.findByRole('button', { name: 'Run live' })) as HTMLButtonElement;
+    const runBtn = (await screen.findByRole('button', { name: 'Preflight' })) as HTMLButtonElement;
     await waitFor(() => expect(runBtn.disabled).toBe(false));
+    expect(screen.getByRole('region', { name: 'Class Pulse' })).toBeTruthy();
+    expect(screen.getByText('◇ derived · confirm')).toBeTruthy();
     // The mount already fetched the payload for readiness; isolate the run request.
     vi.mocked(api.getRunPayload).mockClear();
     fireEvent.click(runBtn);
@@ -833,7 +837,7 @@ describe('Dashboard class library states', () => {
     // The card appears, but Run live is disabled with the real block message —
     // no false "runnable" that dies on click.
     expect(await screen.findByText('Half-timed ride')).toBeTruthy();
-    const runBtn = (await screen.findByRole('button', { name: 'Run live' })) as HTMLButtonElement;
+    const runBtn = (await screen.findByRole('button', { name: 'Preflight' })) as HTMLButtonElement;
     await waitFor(() => expect(runBtn.disabled).toBe(true));
     expect(
       screen.getByText('Set a duration for Untimed Track before starting Live mode.'),
@@ -841,7 +845,7 @@ describe('Dashboard class library states', () => {
     // The button points assistive tech at that reason.
     expect(runBtn.getAttribute('aria-describedby')).toBe(`live-blocked-${falseRunnable.id}`);
     // Preflight rail counts it as blocked, not runnable.
-    const rail = screen.getByText('Preflight checks').closest('aside') as HTMLElement;
+    const rail = screen.getByText('Queue readiness').closest('aside') as HTMLElement;
     expect(within(rail).getByText('Needs a duration').nextSibling?.textContent).toBe('1');
     expect(within(rail).getByText('Runnable').nextSibling?.textContent).toBe('0 of 1');
   });
@@ -862,7 +866,7 @@ describe('Dashboard class library states', () => {
 
     // The failed readiness check must never masquerade as runnable.
     expect(await screen.findByRole('button', { name: 'Retry' })).toBeTruthy();
-    const runBtn = screen.getByRole('button', { name: 'Run live' }) as HTMLButtonElement;
+    const runBtn = screen.getByRole('button', { name: 'Preflight' }) as HTMLButtonElement;
     expect(runBtn.disabled).toBe(true);
 
     // Retrying re-fetches just this class; the second attempt succeeds and unblocks it.
@@ -922,7 +926,7 @@ describe('Dashboard class library states', () => {
     renderDashboard();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Run live' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Preflight' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Exit' }));
 
     const heading = await screen.findByRole('heading', { name: 'Ritmo Studio' });
