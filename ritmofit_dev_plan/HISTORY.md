@@ -10,6 +10,26 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-20 (Slice 5 Live pressure hierarchy) — deployed (Worker
+> `5d68832a-6959-472a-8750-96feea7e46ac`).** Main HEAD `07777e4` (merge of **PR #354**) establishes
+> the approved Live teaching hierarchy: current authored cue/count, next cue, transport, then time and
+> effort. Queue, preflight, ready, active, paused, compact full-list, prompter-only, and recovery states
+> reuse the landed Class Pulse, provider-truth, focus, target-size, reduced-motion, and shared recovery
+> contracts. Code and tests only — **no schema / migration** (remote D1: "No migrations to apply").
+> Rollback anchor: prior Worker `65a69959-c7b7-411a-a15c-7fc33b701669`. The final local and GitHub CI
+> gates passed: formatting, typecheck, lint, design-system verification, 615 web tests, 425 API unit
+> tests, 30 music-package tests, 149 Worker/D1 integration tests, production build, OpenAPI no-drift,
+> contract parity, and dependency-audit policy. Browser QA covered 1440×1000, 1280×800, 390×844,
+> direct 320px, and 640×400 reflow with no horizontal overflow; production also exercised the stale
+> service-worker update notice and confirmed Refresh moved from the prior shell to the new entry asset.
+> Post-deploy smoke passed on `https://ritmofit.studio`: SPA and health `200`; protected class,
+> community, share, playlist-import, cover/tag, and provider routes `401`; missing public cover `404`;
+> security headers present. Served SPA asset `assets/index-CmPI6kGU.js` matched the production build
+> with SHA-256 `9ece6c846d630f6abe66a65803ae106880df95d0c23c5f844bdfa808e07effb8`, and Cloudflare reported
+> the new Worker version at 100%. The signed-in production Live queue rendered the new hierarchy with
+> no browser warnings/errors. No authorized audible provider verification was performed during this
+> release; playback runtime and provider adapters were unchanged.
+
 > **Session 2026-07-17 (all-harden round 23) — deployed (Worker
 > `65a69959-c7b7-411a-a15c-7fc33b701669`).** Application-code source `f193abd` (merge of **PR
 > #341**) contains three sequential disjoint-lane PRs with green combined CI, plus the earlier
