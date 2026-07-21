@@ -3252,7 +3252,7 @@ function LikesBrowserDialog({
         </p>
       )}
 
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="font-ui text-xs text-text-secondary">
           {tracks.length} liked {tracks.length === 1 ? 'track' : 'tracks'} will be imported
         </p>
@@ -3261,7 +3261,7 @@ function LikesBrowserDialog({
           onClick={() => void handleCreate()}
           disabled={creating || !title.trim() || tracks.length === 0}
           aria-label={`Create class from ${tracks.length} liked tracks`}
-          className="min-h-11 shrink-0 rounded-pill rf-btn-primary px-3 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+          className="min-h-11 w-full rounded-pill rf-btn-primary px-3 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50 sm:w-auto sm:shrink-0"
         >
           {creating ? 'Creating…' : `Create class from ${tracks.length} liked tracks`}
         </button>

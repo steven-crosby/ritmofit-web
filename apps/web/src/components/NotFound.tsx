@@ -22,7 +22,7 @@ export function NotFound() {
           This address does not exist. Opening it did not change saved classes, account settings, or
           music connections.
         </p>
-        <div className="mt-8 flex flex-wrap gap-3 rounded-card border border-border-subtle bg-bg-raised p-4 sm:p-5">
+        <div className="mt-8 flex flex-col gap-3 rounded-card border border-border-subtle bg-bg-raised p-4 sm:flex-row sm:flex-wrap sm:p-5">
           <div className="min-w-0 flex-1">
             <p className="font-ui font-semibold text-text-primary">Return to the active product</p>
             <p className="mt-1 font-ui text-sm text-text-tertiary">
@@ -31,7 +31,7 @@ export function NotFound() {
           </div>
           <a
             href="/"
-            className="inline-flex min-h-11 items-center self-center rounded-control rf-btn-primary px-5 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
+            className="inline-flex min-h-11 w-full items-center justify-center self-center rounded-control rf-btn-primary px-5 font-ui text-sm font-semibold text-text-on-accent sm:w-auto sm:rounded-pill"
           >
             Back to Ritmo Studio
           </a>

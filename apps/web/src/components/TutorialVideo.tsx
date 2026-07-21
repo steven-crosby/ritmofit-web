@@ -283,7 +283,7 @@ export function TutorialVideo({
               type="button"
               onClick={() => (playing ? setPlaying(false) : startPlayback())}
               aria-label={playing ? 'Pause tutorial video' : 'Play tutorial video'}
-              className="rounded-pill border border-interactive/40 px-3 py-1.5 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-pill border border-interactive/40 px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10"
             >
               {playing ? 'Pause' : 'Play'}
             </button>
@@ -291,7 +291,7 @@ export function TutorialVideo({
               type="button"
               onClick={replay}
               aria-label="Replay tutorial video"
-              className="rounded-pill border border-interactive/30 px-3 py-1.5 font-ui text-xs text-text-secondary transition-colors hover:text-text-primary"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-pill border border-interactive/30 px-3 font-ui text-xs text-text-secondary transition-colors hover:text-text-primary"
             >
               Replay
             </button>
