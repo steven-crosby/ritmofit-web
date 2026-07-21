@@ -87,7 +87,6 @@ import {
   providerCapabilityTruth,
   providerConnectionState,
   providerLabel,
-  type ProviderCapabilityView,
 } from '../lib/providers.js';
 import { Dialog } from './Dialog.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
@@ -106,6 +105,7 @@ import {
 import { OnboardingVideoDialog } from './OnboardingVideoDialog.js';
 import { ClassRunOfShowShelf } from './ClassRunOfShowShelf.js';
 import { RecoveryState, StatusLabel } from './SharedState.js';
+import { ProviderCapabilityLedger } from './ProviderCapabilityLedger.js';
 
 // Code-split the heavy, interaction-gated surfaces into their own chunks so the
 // initial builder paint doesn't ship Live mode, the choreography editor, or the
@@ -592,7 +592,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 key={value}
                 type="button"
                 aria-current={active ? 'page' : undefined}
-                className={`min-h-11 shrink-0 rounded-control border px-3 font-ui text-xs font-semibold transition-colors sm:min-h-0 sm:rounded-pill sm:px-4 sm:py-1.5 sm:text-sm ${
+                className={`min-h-11 shrink-0 rounded-control border px-3 font-ui text-xs font-semibold transition-colors sm:rounded-pill sm:px-4 sm:text-sm ${
                   active
                     ? 'border-transparent bg-transparent text-text-primary underline decoration-interactive decoration-2 underline-offset-8'
                     : 'border-transparent bg-transparent text-text-secondary hover:text-text-primary'
@@ -2312,36 +2312,69 @@ function AccountWorkspace({
   const [profile, setProfile] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState(profileName);
   const [imageUrl, setImageUrl] = useState('');
-  // null only before the first successful connections load — refresh keeps last-known
-  // rows so Manage → Disconnect/Connect does not flash empty / "..." badges.
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
-  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [profileStatus, setProfileStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [connectionsStatus, setConnectionsStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  );
+  const [profileAttempt, setProfileAttempt] = useState(0);
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
+  const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
+  const [connectionsLoadError, setConnectionsLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const saveErrorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let alive = true;
-    void (async () => {
-      try {
-        const [user, rows] = await Promise.all([getMe(), listConnections()]);
+    setProfileStatus('loading');
+    setProfileLoadError(null);
+    void getMe()
+      .then((user) => {
         if (!alive) return;
         setProfile(user);
         setDisplayName(user.displayName ?? '');
         setImageUrl(user.imageUrl ?? '');
-        setConnections(rows);
-        setLoadingError(null);
-      } catch (e) {
-        if (alive) setLoadingError((e as Error).message);
-      }
-    })();
+        setProfileStatus('ready');
+      })
+      .catch((e: unknown) => {
+        if (!alive) return;
+        setProfileLoadError((e as Error).message);
+        setProfileStatus('error');
+      });
     return () => {
       alive = false;
     };
-  }, [connectionRevision]);
+  }, [profileAttempt]);
+
+  useEffect(() => {
+    let alive = true;
+    setConnectionsStatus('loading');
+    setConnectionsLoadError(null);
+    void listConnections()
+      .then((rows) => {
+        if (!alive) return;
+        setConnections(rows);
+        setConnectionsStatus('ready');
+      })
+      .catch((e: unknown) => {
+        if (!alive) return;
+        setConnectionsLoadError((e as Error).message);
+        setConnectionsStatus('error');
+      });
+    return () => {
+      alive = false;
+    };
+  }, [connectionAttempt, connectionRevision]);
+
+  useEffect(() => {
+    if (saveError) saveErrorRef.current?.focus();
+  }, [saveError]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!profile) return;
     setSaving(true);
     setSaveError(null);
     setNotice(null);
@@ -2362,16 +2395,24 @@ function AccountWorkspace({
     }
   };
 
+  const profileTrusted = profile !== null;
+  const connectionFreshness =
+    connectionsStatus === 'ready'
+      ? 'verified'
+      : connectionsStatus === 'loading'
+        ? 'checking'
+        : 'unverified';
+
   return (
-    <section className="grid w-full min-w-0 gap-5 overflow-hidden xl:grid-cols-[260px_minmax(0,1fr)] xl:items-start">
-      <aside className="min-w-0 rounded-card bg-bg-raised p-4 xl:sticky xl:top-6">
-        <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Account</p>
-        <nav className="mt-3 flex max-w-full gap-2 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
+    <section className="grid w-full min-w-0 gap-5 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
+      <aside className="min-w-0 border-b border-border-subtle pb-4 xl:sticky xl:top-6 xl:border-r xl:border-b-0 xl:pr-4 xl:pb-0">
+        <p className="rf-eyebrow">Account</p>
+        <nav className="mt-3 grid max-w-full grid-cols-2 gap-2 xl:flex xl:flex-col">
           {['Profile', 'Preferences', 'Music connections', 'Security'].map((item) => (
             <a
               key={item}
               href={`#account-${item.toLowerCase().replace(/\s+/g, '-')}`}
-              className="min-h-11 min-w-0 shrink-0 rounded-control bg-bg-base px-3 py-2 font-ui text-sm text-text-primary xl:w-full"
+              className="flex min-h-11 min-w-0 shrink-0 items-center rounded-control px-3 font-ui text-sm text-text-secondary hover:bg-bg-raised hover:text-text-primary xl:w-full"
             >
               {item}
             </a>
@@ -2379,101 +2420,174 @@ function AccountWorkspace({
         </nav>
       </aside>
 
-      <div className="flex w-full min-w-0 flex-col gap-5 overflow-hidden">
-        <section id="account-profile" className="min-w-0 rounded-card bg-bg-raised p-5 sm:p-6">
-          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Profile</p>
-          <h2 className="mt-2 font-display text-2xl font-semibold text-text-primary">
-            Personal workspace
-          </h2>
-          {loadingError && (
-            <p className="mt-3 font-ui text-sm text-state-danger" role="alert">
-              {loadingError}
-            </p>
-          )}
+      <div className="w-full min-w-0 overflow-hidden rounded-panel border border-border-subtle bg-bg-raised">
+        <header className="border-b border-border-subtle p-5 sm:p-6">
+          <p className="rf-eyebrow">Personal workspace</p>
+          <div className="mt-3 flex min-w-0 flex-wrap items-end justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="break-words font-display text-3xl font-semibold text-text-primary">
+                {profile?.displayName ?? profileName}
+              </h2>
+              <p className="mt-1 break-all font-ui text-xs text-text-tertiary">
+                {profile?.email ?? 'Signed-in identity · profile details unavailable'}
+              </p>
+            </div>
+            {profileStatus === 'loading' ? (
+              <StatusLabel kind="loading" label="Checking profile" />
+            ) : profileStatus === 'error' ? (
+              <StatusLabel kind="unavailable" label="Profile unverified" />
+            ) : (
+              <StatusLabel kind="recovered" label="Profile verified" />
+            )}
+          </div>
+        </header>
+
+        {(profileStatus === 'error' || connectionsStatus === 'error') && (
+          <div className="border-b border-border-subtle p-4 sm:p-5">
+            <RecoveryState
+              kind="unavailable"
+              compact
+              role="alert"
+              title="Some account status is unavailable"
+              event={
+                profileStatus === 'error' && connectionsStatus === 'error'
+                  ? 'Ritmo could not verify profile or music-connection status.'
+                  : profileStatus === 'error'
+                    ? `Ritmo could not verify the profile${profileLoadError ? `: ${profileLoadError}` : '.'}`
+                    : `Ritmo could not verify music connections${connectionsLoadError ? `: ${connectionsLoadError}` : '.'}`
+              }
+              safety="No profile or provider setting changed. Verified sections remain usable; untrusted edits are disabled and provider capabilities are marked unverified."
+              primaryAction={
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (profileStatus === 'error') setProfileAttempt((attempt) => attempt + 1);
+                    if (connectionsStatus === 'error')
+                      setConnectionAttempt((attempt) => attempt + 1);
+                  }}
+                  className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
+                >
+                  Check status again
+                </button>
+              }
+              secondaryAction={
+                <button
+                  type="button"
+                  onClick={onOpenConnections}
+                  className="min-h-11 rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive sm:rounded-pill"
+                >
+                  Review music connections
+                </button>
+              }
+            />
+          </div>
+        )}
+
+        <section id="account-profile" className="min-w-0 border-b border-border-subtle p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Profile</p>
+              <h3 className="mt-2 font-display text-xl font-semibold text-text-primary">
+                Identity
+              </h3>
+            </div>
+            {!profileTrusted && <StatusLabel kind="disabled" label="Edits paused until verified" />}
+          </div>
           {notice && (
             <p className="mt-3 font-ui text-sm text-state-positive" role="status">
               {notice}
             </p>
           )}
           {saveError && (
-            <p className="mt-3 font-ui text-sm text-state-danger" role="alert">
-              {saveError}
-            </p>
+            <div
+              ref={saveErrorRef}
+              tabIndex={-1}
+              className="mt-3 rounded-control border border-state-danger/30 bg-state-danger/5 p-3 font-ui text-sm text-state-danger outline-none"
+              role="alert"
+            >
+              <strong className="block text-text-primary">Profile was not changed</strong>
+              <span>{saveError}</span>
+              <span className="mt-1 block text-xs text-text-secondary">
+                Your entered values are still in the form.
+              </span>
+            </div>
           )}
 
-          {!profile ? (
-            <p className="mt-4 font-ui text-sm text-text-tertiary">Loading account…</p>
-          ) : (
-            <form
-              className="mt-5 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_220px]"
-              onSubmit={submit}
-            >
-              <div className="flex flex-col gap-4">
-                <label className="flex flex-col gap-1.5 font-ui text-sm text-text-secondary">
-                  Display name
-                  <input
-                    className="min-h-11 w-full min-w-0 rounded-control border border-border-subtle bg-bg-base px-3 text-text-primary outline-none focus:border-interactive"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Instructor name"
-                    maxLength={200}
-                  />
-                </label>
-                <label className="flex flex-col gap-1.5 font-ui text-sm text-text-secondary">
-                  Profile image URL
-                  <input
-                    className="min-h-11 w-full min-w-0 rounded-control border border-border-subtle bg-bg-base px-3 text-text-primary outline-none focus:border-interactive"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    inputMode="url"
-                  />
-                </label>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle pt-4">
-                  <button
-                    type="button"
-                    className="min-h-10 rounded-control border border-border-subtle px-4 font-ui text-sm text-text-secondary transition-colors hover:text-text-primary sm:rounded-pill"
-                    onClick={() => authClient.signOut()}
-                  >
-                    Sign out
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="min-h-10 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50 sm:rounded-pill"
-                  >
-                    {saving ? 'Saving...' : 'Save profile'}
-                  </button>
-                </div>
+          <form
+            className="mt-5 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_220px]"
+            onSubmit={submit}
+            aria-busy={saving}
+          >
+            <div className="flex min-w-0 flex-col gap-4">
+              <label className="flex min-w-0 flex-col gap-1.5 font-ui text-sm text-text-secondary">
+                Display name
+                <input
+                  className="min-h-11 w-full min-w-0 rounded-control border border-border-subtle bg-bg-base px-3 text-text-primary outline-none focus:border-interactive"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Instructor name"
+                  maxLength={200}
+                  autoComplete="name"
+                  disabled={!profileTrusted}
+                />
+              </label>
+              <label className="flex min-w-0 flex-col gap-1.5 font-ui text-sm text-text-secondary">
+                Profile image URL
+                <input
+                  className="min-h-11 w-full min-w-0 rounded-control border border-border-subtle bg-bg-base px-3 text-text-primary outline-none focus:border-interactive"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="https://..."
+                  inputMode="url"
+                  disabled={!profileTrusted}
+                />
+              </label>
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-border-subtle pt-4">
+                <button
+                  type="button"
+                  className="min-h-11 rounded-control border border-border-subtle px-4 font-ui text-sm text-text-secondary transition-colors hover:text-text-primary sm:rounded-pill"
+                  onClick={() => authClient.signOut()}
+                >
+                  Sign out
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving || !profileTrusted}
+                  className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50 sm:rounded-pill"
+                >
+                  {saving ? 'Saving…' : 'Save profile'}
+                </button>
               </div>
-              <div className="rounded-card border border-border-subtle bg-bg-base p-4">
-                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-border-subtle bg-bg-raised font-display text-xl font-semibold text-text-primary">
-                  {profile.imageUrl ? (
-                    <img
-                      src={profile.imageUrl}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    (profile.displayName ?? profile.email).slice(0, 1).toUpperCase()
-                  )}
-                </div>
-                <p className="mt-3 truncate font-ui text-sm font-semibold text-text-primary">
-                  {profile.displayName ?? 'Unnamed instructor'}
-                </p>
-                <p className="break-all font-ui text-xs text-text-tertiary">{profile.email}</p>
+            </div>
+            <div className="min-w-0 rounded-card border border-border-subtle bg-bg-base p-4">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-border-subtle bg-bg-raised font-display text-xl font-semibold text-text-primary">
+                {profile?.imageUrl ? (
+                  <img
+                    src={profile.imageUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  (profile?.displayName ?? profile?.email ?? profileName).slice(0, 1).toUpperCase()
+                )}
               </div>
-            </form>
-          )}
+              <p className="mt-3 truncate font-ui text-sm font-semibold text-text-primary">
+                {profile?.displayName ?? profileName ?? 'Unnamed instructor'}
+              </p>
+              <p className="break-all font-ui text-xs text-text-tertiary">
+                {profile?.email ?? 'Profile details unavailable'}
+              </p>
+            </div>
+          </form>
         </section>
 
-        <section
-          id="account-preferences"
-          className="rounded-card border border-interactive/10 bg-bg-base p-5"
-        >
+        <section id="account-preferences" className="border-b border-border-subtle p-5 sm:p-6">
           <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Preferences</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <h3 className="mt-2 font-display text-xl font-semibold text-text-primary">
+            Workspace defaults
+          </h3>
+          <div className="mt-4 grid gap-px overflow-hidden rounded-card border border-border-subtle bg-border-subtle sm:grid-cols-3">
             <ReadinessTile label="Default templates" value="Cycle / Pilates / HIIT" />
             <ReadinessTile label="Playback" value="Manual preview" />
             <ReadinessTile label="Workspace" value="Solo-first" />
@@ -2482,69 +2596,96 @@ function AccountWorkspace({
 
         <section
           id="account-music-connections"
-          className="min-w-0 rounded-card bg-bg-raised p-5 sm:p-6"
+          className="min-w-0 border-b border-border-subtle p-5 sm:p-6"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
                 Music connections
               </p>
-              <h2 className="mt-2 font-display text-xl font-semibold text-text-primary">
+              <h3 className="mt-2 font-display text-xl font-semibold text-text-primary">
                 Provider accounts
-              </h2>
+              </h3>
+              <p className="mt-1 font-ui text-xs leading-5 text-text-tertiary">
+                Catalog, library, and playback remain separate capabilities.
+              </p>
             </div>
             <button
               type="button"
               onClick={onOpenConnections}
-              className="min-h-10 rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 sm:rounded-pill"
+              className="min-h-11 rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 sm:rounded-pill"
             >
               Manage
             </button>
           </div>
           <div className="mt-4 grid gap-2">
             {PROVIDER_ORDER.map((provider) => {
-              const state = providerConnectionState(
+              const connection = connections?.find((row) => row.provider === provider);
+              const truth = providerCapabilityTruth(
                 provider,
-                connections?.find((row) => row.provider === provider),
+                connection,
                 Date.now(),
+                connectionFreshness,
               );
+              const stateLabel =
+                connectionsStatus === 'loading'
+                  ? 'Checking status'
+                  : connectionsStatus === 'error'
+                    ? connection
+                      ? 'Last known · unverified'
+                      : 'Status unavailable'
+                    : truth.connectionState === 'connected'
+                      ? 'Connected'
+                      : truth.connectionState === 'expired'
+                        ? 'Session expired'
+                        : 'Not connected';
               return (
-                <div
+                <article
                   key={provider}
-                  className="flex items-center justify-between gap-3 rounded-card bg-bg-base px-3 py-2.5"
+                  className="rounded-card border border-border-subtle bg-bg-base p-4"
                 >
-                  <div>
-                    <p className="font-ui text-sm font-semibold text-text-primary">
-                      {providerLabel(provider)}
-                    </p>
-                    <p className="font-ui text-xs text-text-tertiary">
-                      {state === 'connected'
-                        ? 'Connected for library browsing and playback where available.'
-                        : state === 'expired'
-                          ? 'Session expired.'
-                          : 'Not connected.'}
-                    </p>
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-ui text-sm font-semibold text-text-primary">
+                        {providerLabel(provider)}
+                      </p>
+                      <p className="mt-1 font-ui text-xs text-text-tertiary">
+                        {connectionsStatus === 'error'
+                          ? 'Current account authorization could not be verified.'
+                          : 'Provider audio and authorization remain with the music service.'}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-ui text-xs text-text-tertiary">
+                      <span aria-hidden="true">
+                        {connectionsStatus === 'ready'
+                          ? truth.connectionState === 'connected'
+                            ? '✓ '
+                            : truth.connectionState === 'expired'
+                              ? '⧖ '
+                              : '○ '
+                          : connectionsStatus === 'loading'
+                            ? '◌ '
+                            : '? '}
+                      </span>
+                      {stateLabel}
+                    </span>
                   </div>
-                  <span className="rounded-pill border border-interactive/20 px-2 py-0.5 font-data text-[10px] uppercase text-text-secondary">
-                    {connections === null ? '...' : state}
-                  </span>
-                </div>
+                  <ProviderCapabilityLedger provider={provider} truth={truth} className="mt-3" />
+                </article>
               );
             })}
           </div>
         </section>
 
-        <section
-          id="account-security"
-          className="rounded-card border border-interactive/10 bg-bg-base p-5"
-        >
+        <section id="account-security" className="p-5 sm:p-6">
           <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Security</p>
           <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
-            Email, password, and social sign-in settings remain with the active sign-in provider.
+            Email, password, and social sign-in remain with the active sign-in provider. Sign in
+            with Apple is separate from an Apple Music connection.
           </p>
           <a
             href="/privacy"
-            className="mt-3 inline-flex min-h-10 items-center rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+            className="mt-3 inline-flex min-h-11 items-center rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
           >
             Privacy and data notice
           </a>
@@ -2556,7 +2697,7 @@ function AccountWorkspace({
 
 function ReadinessTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-card border border-interactive/10 bg-bg-base p-3">
+    <div className="bg-bg-base p-3">
       <p className="font-ui text-[11px] uppercase tracking-wide text-text-tertiary">{label}</p>
       <p className="mt-1 font-data text-lg font-semibold text-text-primary">{value}</p>
     </div>
@@ -2679,14 +2820,7 @@ function ProviderShelfCard({
           {statusLabel}
         </span>
       </div>
-      <div
-        className="mt-4 grid gap-1.5 border-y border-interactive/10 py-3"
-        aria-label={`${label} capabilities`}
-      >
-        <ProviderCapabilityRow label="Catalog" capability={truth.catalog} />
-        <ProviderCapabilityRow label="Library" capability={truth.library} />
-        <ProviderCapabilityRow label="Playback" capability={truth.playback} />
-      </div>
+      <ProviderCapabilityLedger provider={provider} truth={truth} className="mt-4 border-y py-3" />
       <div className="mt-4 grid min-w-0 gap-2">
         {onBrowseLikes ? (
           <button
@@ -2731,40 +2865,6 @@ function ProviderShelfCard({
         )}
       </div>
     </article>
-  );
-}
-
-function ProviderCapabilityRow({
-  label,
-  capability,
-}: {
-  label: string;
-  capability: ProviderCapabilityView;
-}) {
-  const glyph =
-    capability.state === 'ready'
-      ? '✓'
-      : capability.state === 'partial'
-        ? '◐'
-        : capability.state === 'checking'
-          ? '◌'
-          : capability.state === 'unverified'
-            ? '?'
-            : '→';
-  const tone =
-    capability.state === 'ready'
-      ? 'text-state-positive'
-      : capability.state === 'unverified' || capability.state === 'checking'
-        ? 'text-text-tertiary'
-        : 'text-state-caution';
-  return (
-    <div className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] items-baseline gap-2 font-ui text-xs">
-      <span className="text-text-tertiary">{label}</span>
-      <span className={`min-w-0 text-right ${tone}`}>
-        <span aria-hidden>{glyph} </span>
-        {capability.label}
-      </span>
-    </div>
   );
 }
 

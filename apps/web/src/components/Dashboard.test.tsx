@@ -760,7 +760,7 @@ describe('Dashboard class library states', () => {
     ).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
-    expect(await screen.findByRole('heading', { name: 'Personal workspace' })).toBeTruthy();
+    expect(await screen.findByText('Personal workspace')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Provider accounts' })).toBeTruthy();
   });
 
@@ -1029,34 +1029,30 @@ describe('Dashboard class library states', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
 
     expect(await screen.findByRole('heading', { name: 'Provider accounts' })).toBeTruthy();
-    expect(
-      await screen.findByText('Connected for library browsing and playback where available.'),
-    ).toBeTruthy();
+    const musicSection = document.getElementById('account-music-connections');
+    expect(musicSection).toBeTruthy();
+    expect(await within(musicSection!).findByText('Connected')).toBeTruthy();
+    expect(within(musicSection!).getByText('Authorized')).toBeTruthy();
 
     // Account stays mounted while Manage dialog runs; connectionRevision must
     // re-fetch listConnections so the Spotify row flips without a nav away/back.
     fireEvent.click(screen.getByRole('button', { name: 'Manage' }));
-    expect(await screen.findByRole('dialog', { name: 'Music connections' })).toBeTruthy();
-    expect(await screen.findByText('Connected')).toBeTruthy();
+    const connectionsDialog = await screen.findByRole('dialog', { name: 'Music connections' });
+    expect((await within(connectionsDialog).findAllByText('Connected')).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     await waitFor(() => {
-      expect(
-        screen.queryByText('Connected for library browsing and playback where available.'),
-      ).toBeNull();
+      expect(within(musicSection!).queryByText('Connected')).toBeNull();
     });
     expect(screen.getByRole('heading', { name: 'Provider accounts' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Account' }).getAttribute('aria-current')).toBe(
       'page',
     );
-    // Spotify badge text is the connection state enum; last-known rows mean we
-    // never flash "..." on this revision refresh path after the first load.
-    const musicSection = document.getElementById('account-music-connections');
-    expect(musicSection).toBeTruthy();
-    expect(within(musicSection!).queryByText('...')).toBeNull();
+    // Account keeps a visible, capability-specific state after the dialog refresh.
+    expect(within(musicSection!).queryByText('Checking status')).toBeNull();
     expect(within(musicSection!).getByText('Spotify')).toBeTruthy();
-    expect(within(musicSection!).getAllByText('disconnected').length).toBeGreaterThan(0);
+    expect(within(musicSection!).getAllByText('Not connected').length).toBeGreaterThan(0);
   });
 
   it('shows an honest retryable state when music connections fail to load', async () => {
@@ -1092,6 +1088,93 @@ describe('Dashboard class library states', () => {
 
     expect(await screen.findByRole('button', { name: 'Browse Spotify playlists' })).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('Dashboard Account status ledger', () => {
+  const profile = {
+    id: 'me',
+    email: 'tester@example.com',
+    displayName: 'Tester',
+    imageUrl: null,
+    createdAt: 1,
+    updatedAt: 1,
+  } as const;
+
+  it('keeps verified profile editing available when provider status fails', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+    vi.mocked(api.listConnections).mockRejectedValue(new Error('provider status offline'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    expect(await screen.findByText('Some account status is unavailable')).toBeTruthy();
+    expect(screen.getByText(/No profile or provider setting changed/)).toBeTruthy();
+    expect(screen.getByLabelText('Display name')).toHaveProperty('disabled', false);
+    expect(screen.getByRole('button', { name: 'Save profile' })).toHaveProperty('disabled', false);
+    const musicSection = document.getElementById('account-music-connections');
+    expect(musicSection).toBeTruthy();
+    expect(within(musicSection!).queryByText('Not connected')).toBeNull();
+    expect(within(musicSection!).getAllByText('Status unavailable').length).toBeGreaterThan(0);
+  });
+
+  it('preserves session identity and disables only profile edits when the profile fails', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockRejectedValue(new Error('profile offline'));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    expect(await screen.findByText('Some account status is unavailable')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Tester' })).toBeTruthy();
+    expect(screen.getByText('Signed-in identity · profile details unavailable')).toBeTruthy();
+    expect(screen.getByLabelText('Display name')).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Save profile' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Sign out' })).toHaveProperty('disabled', false);
+    expect(screen.getByRole('button', { name: 'Manage' })).toHaveProperty('disabled', false);
+    const musicSection = document.getElementById('account-music-connections');
+    expect(musicSection).toBeTruthy();
+    expect(within(musicSection!).getByText('Connected')).toBeTruthy();
+    expect(within(musicSection!).getByText('Authorized')).toBeTruthy();
+  });
+
+  it('preserves typed profile values and focuses a failed mutation', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateMe).mockRejectedValue(new Error('save offline'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+    const name = await screen.findByLabelText('Display name');
+    fireEvent.change(name, { target: { value: 'A very long instructor display name' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save profile' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Profile was not changed');
+    expect(alert.textContent).toContain('save offline');
+    expect(document.activeElement).toBe(alert);
+    expect(name).toHaveProperty('value', 'A very long instructor display name');
+  });
+
+  it('recovers provider status without reloading or changing the profile', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+    vi.mocked(api.listConnections)
+      .mockRejectedValueOnce(new Error('provider status offline'))
+      .mockResolvedValueOnce([spotifyConnection()]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Check status again' }));
+
+    const musicSection = document.getElementById('account-music-connections');
+    expect(musicSection).toBeTruthy();
+    expect(await within(musicSection!).findByText('Connected')).toBeTruthy();
+    expect(screen.getByLabelText('Display name')).toHaveProperty('value', 'Tester');
+    expect(screen.queryByText('Some account status is unavailable')).toBeNull();
   });
 });
 

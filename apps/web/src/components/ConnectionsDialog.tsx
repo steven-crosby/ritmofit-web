@@ -37,6 +37,7 @@ import {
 } from '../lib/providers.js';
 import { Dialog } from './Dialog.js';
 import { DialogState } from './DialogState.js';
+import { ProviderCapabilityLedger } from './ProviderCapabilityLedger.js';
 
 /**
  * Presentation per state: a glyph and label carry the meaning; the tone maps to
@@ -314,33 +315,7 @@ export function ConnectionsDialog({
                   )}
                 </div>
 
-                <dl
-                  className="grid gap-1 border-t border-interactive/10 pt-2 font-ui text-xs"
-                  aria-label={`${providerLabel(provider)} capabilities`}
-                >
-                  {(
-                    [
-                      ['Catalog', truth.catalog],
-                      ['Library', truth.library],
-                      ['Playback', truth.playback],
-                    ] as const
-                  ).map(([label, capability]) => (
-                    <div key={label} className="flex min-w-0 items-baseline justify-between gap-3">
-                      <dt className="text-text-tertiary">{label}</dt>
-                      <dd
-                        className={
-                          capability.state === 'ready'
-                            ? 'text-state-positive'
-                            : capability.state === 'unverified' || capability.state === 'checking'
-                              ? 'text-text-tertiary'
-                              : 'text-state-caution'
-                        }
-                      >
-                        {capability.label}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
+                <ProviderCapabilityLedger provider={provider} truth={truth} />
 
                 {needsPlaybackReconnect && (
                   <div className="flex flex-col gap-1.5 border-t border-interactive/10 pt-2">

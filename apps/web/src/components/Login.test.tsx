@@ -40,7 +40,7 @@ describe('Login accessible labels', () => {
 
     expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy();
     expect(screen.getByLabelText('Name')).toBeTruthy();
-    expect(screen.getByText('Create an account with your invited email')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Use your invited email' })).toBeTruthy();
   });
 
   it('associates a label with the email and password inputs in sign-in mode', () => {
@@ -53,7 +53,7 @@ describe('Login accessible labels', () => {
     render(<Login />);
     // No name field while signing in.
     expect(screen.queryByLabelText('Name')).toBeNull();
-    fireEvent.click(screen.getByText('Need an account? Sign up'));
+    fireEvent.click(screen.getByText('Need an invited account? Sign up'));
     expect(screen.getByLabelText('Name')).toBeTruthy();
     expect(screen.getByLabelText('Email')).toBeTruthy();
     expect(screen.getByLabelText('Password')).toBeTruthy();
@@ -66,10 +66,15 @@ describe('Login accessible labels', () => {
     expect(screen.queryByLabelText('Password')).toBeNull();
   });
 
-  it('hides Apple sign-in when the backend capability is disabled', async () => {
+  it('states when Apple sign-in is unavailable without implying Apple Music state', async () => {
     render(<Login />);
-    await waitFor(() => expect(api.getAuthCapabilities).toHaveBeenCalled());
+    expect(
+      await screen.findByText(
+        'Sign in with Apple is not available here. Email sign-in remains available.',
+      ),
+    ).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Continue with Apple' })).toBeNull();
+    expect(screen.queryByText(/Apple Music/)).toBeNull();
   });
 
   it('shows Apple sign-in when the backend capability is enabled', async () => {
@@ -89,8 +94,8 @@ describe('Login accessible labels', () => {
     expect(
       await screen.findByText('Private beta · New accounts require an invitation.'),
     ).toBeTruthy();
-    fireEvent.click(screen.getByText('Need an account? Sign up'));
-    expect(screen.getByText('Create an account with your invited email')).toBeTruthy();
+    fireEvent.click(screen.getByText('Need an invited account? Sign up'));
+    expect(screen.getByRole('heading', { name: 'Use your invited email' })).toBeTruthy();
   });
 
   it('notifies the app after a successful sign-up', async () => {
@@ -98,7 +103,7 @@ describe('Login accessible labels', () => {
     authMocks.signUpEmail.mockResolvedValue({ error: null });
 
     render(<Login onSignedUp={onSignedUp} />);
-    fireEvent.click(screen.getByText('Need an account? Sign up'));
+    fireEvent.click(screen.getByText('Need an invited account? Sign up'));
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Instructor' } });
     fireEvent.change(screen.getByLabelText('Email'), {
       target: { value: 'instructor@example.com' },
@@ -121,7 +126,7 @@ describe('Login accessible labels', () => {
     authMocks.signUpEmail.mockResolvedValue({ error: { message: 'Email already exists' } });
 
     render(<Login onSignedUp={onSignedUp} />);
-    fireEvent.click(screen.getByText('Need an account? Sign up'));
+    fireEvent.click(screen.getByText('Need an invited account? Sign up'));
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Instructor' } });
     fireEvent.change(screen.getByLabelText('Email'), {
       target: { value: 'instructor@example.com' },
@@ -131,5 +136,54 @@ describe('Login accessible labels', () => {
 
     expect(await screen.findByText('Email already exists')).toBeTruthy();
     expect(onSignedUp).not.toHaveBeenCalled();
+  });
+
+  it('preserves invited-signup intent and focuses the exact invitation failure', async () => {
+    authMocks.signUpEmail.mockResolvedValue({
+      error: { message: 'Ritmo Studio is currently available by invitation only.' },
+    });
+
+    render(<Login initialMode="signup" />);
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Instructor' } });
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'instructor@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Ritmo Studio is currently available by invitation only.');
+    expect(document.activeElement).toBe(alert);
+    expect(screen.getByLabelText('Name')).toHaveProperty('value', 'New Instructor');
+    expect(screen.getByLabelText('Email')).toHaveProperty('value', 'instructor@example.com');
+  });
+
+  it('keeps email recovery calm and non-enumerating', async () => {
+    authMocks.requestPasswordReset.mockResolvedValue({ error: null });
+
+    render(<Login />);
+    fireEvent.click(screen.getByText('Forgot password?'));
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'instructor@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Send reset link' }));
+
+    expect(
+      await screen.findByText('If that email has an account, a reset link is on its way.'),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Email')).toHaveProperty('value', 'instructor@example.com');
+  });
+
+  it('marks Apple availability unverified when the capability check fails', async () => {
+    vi.mocked(api.getAuthCapabilities).mockRejectedValue(new Error('network down'));
+
+    render(<Login />);
+
+    expect(
+      await screen.findByText(
+        'Couldn’t check Sign in with Apple. Email sign-in remains available.',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Continue with Apple' })).toBeNull();
   });
 });

@@ -21,8 +21,8 @@ describe('App path routing', () => {
   it('renders a 404 view for an unknown path', () => {
     window.history.pushState({}, '', '/totally-unknown');
     render(<App />);
-    expect(screen.getByText('404')).toBeTruthy();
-    expect(screen.getByText(/doesn’t exist/i)).toBeTruthy();
+    expect(screen.getByText(/404 · safe return/i)).toBeTruthy();
+    expect(screen.getByText(/does not exist/i)).toBeTruthy();
     expect(screen.getByRole('link', { name: /back to ritmo studio/i }).getAttribute('href')).toBe(
       '/',
     );
@@ -31,7 +31,7 @@ describe('App path routing', () => {
   it('renders the app (MarketingPage when signed out) at the root path', () => {
     window.history.pushState({}, '', '/');
     render(<App />);
-    expect(screen.queryByText('404')).toBeNull();
+    expect(screen.queryByText(/404 · safe return/i)).toBeNull();
   });
 
   it('preserves workspace shape while the session is loading', () => {
@@ -47,7 +47,7 @@ describe('App path routing', () => {
   it('renders the private-beta privacy notice without a session', () => {
     window.history.pushState({}, '', '/privacy');
     render(<App />);
-    expect(screen.getByRole('heading', { name: 'Privacy and data notice' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Privacy without mystery.' })).toBeTruthy();
     expect(screen.getByText(/invite-only, non-commercial beta/i)).toBeTruthy();
   });
 });
@@ -77,5 +77,13 @@ describe('App acquisition intent', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Enter the private beta' }));
     expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy();
+  });
+
+  it('uses the reset safe-return query to open sign-in directly', () => {
+    window.history.pushState({}, '', '/?auth=signin');
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: 'Welcome back, instructor.' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
   });
 });
