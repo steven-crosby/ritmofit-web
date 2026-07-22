@@ -10,6 +10,33 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-20–21 (full-product UI upgrade closeout) — deployed (Worker
+> `2456a149-c2a0-43b0-b8fb-b1a282b31d49`).** Main HEAD `1be7d7e` closes the approved six-slice
+> D20/D21 full-product sequence and its post-sequence reconciliation: shared UI foundations (**PR
+> #350**), Class Pulse and Classes (**PR #351**), music/provider truth (**PR #352**), Builder
+> workbench (**PR #353**), Live pressure hierarchy (**PR #354**), public/auth/Account trust (**PR
+> #356**), and the three narrow reconciliation repairs (**PR #357**). The repair PR stacks the
+> not-found safe-return card and liked-track creation action at phone widths and raises tutorial
+> Pause/Replay controls to the established 44px target. Client-only web changes — **no schema /
+> migration** (remote D1: "No migrations to apply"). Rollback anchor: prior Worker
+> `5d68832a-6959-472a-8750-96feea7e46ac`. The complete final local gate and GitHub CI passed:
+> formatting, typecheck, lint, design-system verification, 632 web tests, 425 API unit tests, 30
+> music-package tests, 149 Worker/D1 integration tests, production build, OpenAPI no-drift,
+> contract parity, dependency-audit policy, and `git diff --check`. Browser QA covered 1440×1000,
+> 1280×800, 390×844, direct 320px, and 640×400 reflow. Post-deploy smoke passed: SPA and health
+> `200`; protected class, community, provider, cover, and tag routes returned the expected `401`;
+> required security headers were present. Served SPA asset `assets/index-CItIH7Ro.js` matched the
+> production build with SHA-256
+> `fb2df89351373052f69b4d263f1b6c099225d8ce2485a2a9f9c383d3ed7c2927`. A signed-in production
+> pass confirmed the not-found recovery and liked-track import layouts at phone widths with no
+> overflow, overlap, clipping, or browser warnings. The stale-service-worker recovery prompt also
+> moved the browser from the prior shell to the deployed entry asset. Production did not create a
+> new account solely to retrigger the one-time onboarding tutorial; its 44px control behavior was
+> verified locally and the deployed JavaScript matched that build byte-for-byte. Real SoundCloud
+> resume/reconnect/clip-completion remains a separately authorized provider-runtime check, not a
+> claim of this UI release. Consolidated evidence and explicit deferrals are recorded in
+> `docs/audits/2026-07-19-full-product-preview/implementation-evidence/07-full-product-reconciliation/README.md`.
+
 > **Session 2026-07-20 (Slice 5 Live pressure hierarchy) — deployed (Worker
 > `5d68832a-6959-472a-8750-96feea7e46ac`).** Main HEAD `07777e4` (merge of **PR #354**) establishes
 > the approved Live teaching hierarchy: current authored cue/count, next cue, transport, then time and
