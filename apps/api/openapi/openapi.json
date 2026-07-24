@@ -366,7 +366,7 @@
         }
       ],
       "post": {
-        "summary": "Add a tag to a class (edit). Tag is lowercased; duplicates are no-ops.",
+        "summary": "Add a tag to a class (edit; maximum 20). Tag is lowercased; duplicates are no-ops.",
         "requestBody": {
           "required": true,
           "content": {
@@ -376,7 +376,8 @@
                 "properties": {
                   "tag": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "maxLength": 50
                   }
                 },
                 "required": [
@@ -409,8 +410,8 @@
               }
             }
           },
-          "400": {
-            "description": "Tag must be a non-empty string"
+          "422": {
+            "description": "Invalid tag, or the class already has 20 unique tags"
           }
         }
       }

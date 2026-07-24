@@ -16,6 +16,14 @@ import { createTrackSchema } from './tracks.js';
 /** Maximum accepted custom class-cover size (5 MiB), shared by web and API validation. */
 export const MAX_CLASS_COVER_BYTES = 5 * 1024 * 1024;
 
+/** Class-tag bounds shared by response validation and the tag-write endpoint. */
+export const MAX_CLASS_TAGS = 20;
+export const MAX_CLASS_TAG_LENGTH = 50;
+export const classTagSchema = z.string().min(1).max(MAX_CLASS_TAG_LENGTH);
+export const classTagInputSchema = z.string().trim().toLowerCase().pipe(classTagSchema);
+export const addClassTagSchema = z.object({ tag: classTagInputSchema });
+export type AddClassTag = z.infer<typeof addClassTagSchema>;
+
 /**
  * A class, owned by exactly one user. No `teamId` — others get access via shares.
  */
@@ -31,7 +39,7 @@ export const classSchema = z.object({
   targetDurationMs: timestampMsSchema.nullable(),
   featuredCategory: z.string().max(100).nullable(),
   coverImageUrl: z.string().url().max(1000).nullable(),
-  tags: z.array(z.string().min(1).max(50)).max(20).default([]),
+  tags: z.array(classTagSchema).max(MAX_CLASS_TAGS).default([]),
   ...timestampsShape,
   lastOpenedAt: timestampMsSchema.nullable(),
 });
@@ -149,7 +157,7 @@ export const classListQuerySchema = z.object({
   cursor: z.string().min(1).max(512).optional(),
   // Filter the library to classes carrying this tag (server-side theme search).
   // Normalized to match how tags are stored (trimmed + lowercased).
-  tag: z.string().trim().toLowerCase().min(1).max(50).optional(),
+  tag: classTagInputSchema.optional(),
 });
 export type ClassListQuery = z.infer<typeof classListQuerySchema>;
 
