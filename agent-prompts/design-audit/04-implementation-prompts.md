@@ -1,8 +1,8 @@
 # Phase 4: approved implementation-agent prompts
 
-This phase runs only after the owner has reviewed the phase 3 prototype and supplied dispositions. It creates
-ready-to-paste prompts for later implementation sessions; it does not implement, commit, push, open product
-PRs, merge, or deploy.
+This phase runs only after the owner has reviewed the Phase 3 prototype and supplied dispositions in `run-decisions.md`. It creates ready-to-paste prompts for later implementation sessions; it does not implement, commit, push, open product PRs, merge, or deploy.
+
+All outputs land in `docs/audits/[agent-id]-design-audit-[ISO-date]/`.
 
 ## Preconditions
 
@@ -11,13 +11,12 @@ PRs, merge, or deploy.
 - Every `revise` item has either been revised and re-approved or explicitly deferred.
 - There are no unresolved owner notes that materially change product scope or direction.
 
-If any precondition fails, stop and identify the exact missing decisions. Never infer approval from an
-agent recommendation, an unchanged mockup, or silence.
+If any precondition fails, stop and identify the exact missing decisions. Never infer approval from an agent recommendation, an unchanged mockup, or silence.
 
 ## Outputs
 
 ```text
-docs/audits/<run-id>/
+docs/audits/[agent-id]-design-audit-[ISO-date]/
   implementation-sequence.md
   implementation-prompts/
     01-<foundation-or-surface>.md
@@ -25,13 +24,11 @@ docs/audits/<run-id>/
     ...
 ```
 
-Generate only non-empty prompts. Use as few prompts as practical while keeping ownership disjoint, reviewable,
-and safe to implement as small product PRs.
+Generate only non-empty prompts. Use as few prompts as practical while keeping ownership disjoint, reviewable, and safe to implement as small product PRs.
 
 ## Select the approved set
 
-Include only backlog items with owner disposition `approve` or `approve-with-notes`. Apply the notes exactly.
-Exclude `reject` and `defer`. A revised item enters the set only after its revision is approved.
+Include only backlog items with owner disposition `approve` or `approve-with-notes`. Apply the notes exactly. Exclude `reject` and `defer`. A revised item enters the set only after its revision is approved.
 
 Update the backlog or a short disposition appendix so every omitted ID has a clear reason.
 
@@ -65,8 +62,7 @@ Combine or split only when the dependency and ownership evidence supports it.
 
 ## Every prompt must be executable
 
-Write each file as a standalone prompt another coding agent can follow without rediscovering the audit.
-Include:
+Write each file as a standalone prompt any coding agent can follow without rediscovering the audit. Include:
 
 1. **Role and outcome:** exact surface and instructor outcome.
 2. **Authority:** implementation only; no commit/push/PR/merge/deploy unless separately granted.
@@ -101,13 +97,11 @@ Include:
 
 Before finishing:
 
-- Every approved backlog ID appears in exactly one owning prompt, unless an explicitly documented shared
-  foundation has downstream acceptance checks.
+- Every approved backlog ID appears in exactly one owning prompt, unless an explicitly documented shared foundation has downstream acceptance checks.
 - No rejected/deferred item appears as an invitation to implement.
 - Likely file ownership is disjoint enough for the proposed parallelism.
 - Dependencies are ordered and integration gates are concrete.
 - Each prompt can fail its acceptance checks; no verification theater.
 - Final reconciliation checks the product as a whole rather than merely trusting isolated PRs.
 
-Stop after reporting the prompt paths and recommended sequence. Product implementation requires a separate
-owner request.
+Stop after reporting the prompt paths and recommended sequence. Product implementation requires a separate owner request.

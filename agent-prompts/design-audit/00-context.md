@@ -3,16 +3,15 @@
 **Pack version:** 5
 **Product name in review copy:** Ritmo Studio
 
-Every phase reads this file and the pack `README.md`. The README controls authority, gates, setup, and stop
-conditions.
+Every phase reads this file and `README.md`. `README.md` controls authority, gates, setup, execution protocol, and stop conditions.
 
 ## Mandate
 
-Show the owner, in one coherent navigable prototype, how every active Ritmo Studio product surface could
-become faster, clearer, more distinctive, and more pressure-ready before production implementation begins.
+Show the owner, in one coherent navigable prototype, how every active Ritmo Studio product surface could become faster, clearer, more distinctive, and more pressure-ready before production implementation begins.
 
-The prototype is comprehensive within the active solo-product scope. It is not an IA redesign, a marketing
-campaign, a community revival, or production code.
+The prototype is comprehensive within the active solo-product scope. It is not an IA redesign, a marketing campaign, a community revival, or production code.
+
+All deliverables land in a self-contained, dedicated run directory: `docs/audits/[agent-id]-design-audit-[ISO-date]/` on dedicated branch `audit/[agent-id]-[ISO-date]` (e.g. `docs/audits/gemini-design-audit-2026-07-24/`).
 
 ## Success order
 
@@ -26,23 +25,19 @@ Live is instructor-only today. Safety and clarity beat spectacle.
 
 ## Product truth
 
-Ritmo Studio is a movement-first creative workstation for individual rhythm-fitness instructors. Spotify,
-Apple Music, and SoundCloud provide the trusted music substrate; Ritmo Studio adds class structure,
-choreography, rehearsal, playback windows, readiness, and Live Mode.
+Ritmo Studio is a movement-first creative workstation for individual rhythm-fitness instructors. Spotify, Apple Music, and SoundCloud provide the trusted music substrate; Ritmo Studio adds class structure, choreography, rehearsal, playback windows, readiness, and Live Mode.
 
-The instructor is a creator shaping a physical music experience. The interface should feel familiar before
-specialized, support curiosity, and avoid forcing one canonical creation sequence.
+The instructor is a creator shaping a physical music experience. The interface should feel familiar before specialized, support curiosity, and avoid forcing one canonical creation sequence.
 
 ### Cultural and expressive direction
 
 - Club athletic plus creator swagger with Nike-like restraint and clarity, not visual imitation.
-- Latin energy is ambient and personal: rhythm, heat, percussion, movement, confidence. It is never costume,
-  tropical decoration, or party-fitness parody.
+- Latin energy is ambient and personal: rhythm, heat, percussion, movement, confidence. It is never costume, tropical decoration, or party-fitness parody.
 - The system is modality-neutral even when present content is Cycle, Pilates, or HIIT.
 
 ## Active-surface scope
 
-The agent must derive the final inventory from the running app and rendered code. At minimum inspect:
+The executing AI agent must derive the final inventory from the running app and rendered code. At minimum inspect:
 
 - Public landing/entry, login/sign-up, password recovery, privacy, not-found, beta restrictions, and update recovery.
 - Classes library, creation, templates, recency, class summary, and open/edit entry.
@@ -52,8 +47,7 @@ The agent must derive the final inventory from the running app and rendered code
 - Live queue, preflight, run, pause, seek, warning, disconnect, error, recovery, and exit.
 - Account/profile and music-connection summary.
 
-Exclude dormant community, Explore merchandising, Teams, shares/public pages, collaborators, invitations,
-pricing, and subscription merchandising even when components remain in the tree.
+Exclude dormant community, Explore merchandising, Teams, shares/public pages, collaborators, invitations, pricing, and subscription merchandising even when components remain in the tree.
 
 ## Scenario coverage
 
@@ -66,20 +60,17 @@ Do not grade only one linear funnel. Exercise and mock the supported parts of th
 5. Rehearse/preview and resolve readiness before Live.
 6. Run, pause, recover, and exit Live under pressure.
 
-For each scenario record steps, decision points, dead ends, recovery, and the surface changes that reduce
-friction. If a scenario is unsupported, label that as observed product truth rather than inventing a flow.
+For each scenario record steps, decision points, dead ends, recovery, and the surface changes that reduce friction. If a scenario is unsupported, label that as observed product truth rather than inventing a flow.
 
 ## Design-system relationship
 
-`ritmofit_design_system/` is current canon and the default implementation constraint. The critique must
-separate:
+`ritmofit_design_system/` is current canon and the default implementation constraint. The critique must separate:
 
 - **App drift:** implementation fails current canon.
 - **Canon gap:** the design system does not answer a real product need.
 - **Proposed canon change:** the preview deliberately challenges an existing rule to better serve the mission.
 
-Do not call a deliberate proposal a compliance fix. Cite the affected token/component guidance and show why
-the change improves the success order.
+Do not call a deliberate proposal a compliance fix. Cite the affected token/component guidance and show why the change improves the success order.
 
 ## Product-specific direction requirement
 
@@ -94,8 +85,7 @@ The signature must appear concretely in at least five relevant prototype surface
 
 ## Density and behavior
 
-- Music and Builder: calm, consumer-readable, and airy enough to scan; specialized controls reveal themselves
-  when needed rather than dominating the resting state.
+- Music and Builder: calm, consumer-readable, and airy enough to scan; specialized controls reveal themselves when needed rather than dominating the resting state.
 - Live: 80% glanceability/safety and 20% swagger; maximum clarity, large data, restrained chrome, clear recovery.
 - Navigation is part of the product model and must remain grounded across every mocked screen.
 - Every proposed control needs visible default, hover, active, focus, and disabled behavior where applicable.

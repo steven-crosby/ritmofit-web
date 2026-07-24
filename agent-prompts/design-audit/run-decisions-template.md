@@ -1,13 +1,13 @@
 # Owner decisions: full-product design preview
 
-Copy to `docs/audits/<run-id>/run-decisions.md`. The preview agent pre-fills evidence, links, and
-recommendations. Only the owner fills or explicitly supplies the final dispositions.
+Copy to `docs/audits/[agent-id]-design-audit-[ISO-date]/run-decisions.md`. The preview agent pre-fills evidence, links, and recommendations. Only the owner fills or explicitly supplies the final dispositions.
 
 ## Run metadata
 
 | Field | Value |
 | --- | --- |
 | Run ID | |
+| Agent ID | (e.g., gemini, claude, codex) |
 | Baseline branch | |
 | Baseline commit | |
 | Surface inventory | `surface-inventory.md` |
@@ -47,8 +47,7 @@ Every P0/P1/P2 and `product-decision-required` item must appear.
 
 ## Revision log
 
-Use this when an item is marked `revise`. A revised direction is not approved until the owner records a new
-disposition.
+Use this when an item is marked `revise`. A revised direction is not approved until the owner records a new disposition.
 
 | Item/surface | Requested revision | Revision artifact | Agent summary | Final owner disposition | Final notes |
 | --- | --- | --- | --- | --- | --- |

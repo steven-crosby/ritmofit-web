@@ -70,7 +70,7 @@ read-only pass). No prompt ever merges, deploys, migrates the remote D1, or chan
   comprehensive navigable desktop/mobile prototype → owner approve/revise/reject gate → approved-only,
   implementation-ready agent prompts. Product implementation remains a separately authorized session.
   Start at [`design-audit/README.md`](./design-audit/README.md); artifacts land in
-  `docs/audits/<run-id>/`. Not unattended remote maintenance.
+  `docs/audits/[agent-id]-design-audit-[ISO-date]/`. Not unattended remote maintenance.
 - `daily/` — **interactive**, person-in-the-loop prompts that run on your own machine:
   - `start-session` — interactive orientation before a personal work block.
   - `close-session` — interactive cleanup, verification, PR/deploy hygiene, and handoff.

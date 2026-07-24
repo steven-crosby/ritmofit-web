@@ -1,7 +1,8 @@
 # Phase 1: active-product inventory, baseline, and critique
 
-Read the pack `README.md` and `00-context.md` first. This phase diagnoses current rendered truth and builds
-the coverage contract for the later prototype. Do not edit production code.
+Read `README.md` and `00-context.md` first. This phase diagnoses current rendered truth and builds the coverage contract for the later prototype. Do not edit production code.
+
+All outputs land in `docs/audits/[agent-id]-design-audit-[ISO-date]/`.
 
 ## Inputs
 
@@ -12,14 +13,13 @@ the coverage contract for the later prototype. Do not edit production code.
 
 ## Required outputs
 
-- `docs/audits/<run-id>/surface-inventory.md`
-- `docs/audits/<run-id>/critique.md`
-- `docs/audits/<run-id>/screenshots/current/`
+- `docs/audits/[agent-id]-design-audit-[ISO-date]/surface-inventory.md`
+- `docs/audits/[agent-id]-design-audit-[ISO-date]/critique.md`
+- `docs/audits/[agent-id]-design-audit-[ISO-date]/screenshots/current/`
 
 ## 1. Build the active-surface inventory
 
-Trace the rendered application, not filenames alone. Give each primary page/workspace, active dialog/overlay,
-and materially different state a stable ID such as `CLS-01`, `MUS-03`, `BLD-07`, or `LIVE-04`.
+Trace the rendered application, not filenames alone. Give each primary page/workspace, active dialog/overlay, and materially different state a stable ID such as `CLS-01`, `MUS-03`, `BLD-07`, or `LIVE-04`.
 
 Each inventory row must include:
 
@@ -50,8 +50,7 @@ For every primary surface:
 - Observe console, network, asset, and font failures.
 - Use realistic populated data, a fresh account, and long/dense hostile content.
 
-Do not manufacture a visual finding from a cropped narrow window. If a surface cannot be reached, record
-the exact blocker and do not pretend it was reviewed.
+Do not manufacture a visual finding from a cropped narrow window. If a surface cannot be reached, record the exact blocker and do not pretend it was reviewed.
 
 ## 3. Exercise product scenarios
 
@@ -100,33 +99,27 @@ For every primary inventory row:
 
 ### D. System critique
 
-Review navigation, tokens, typography, spacing, depth, components, controls, music presentation, timeline
-language, Live treatment, motion, and state consistency. Classify each issue as app drift, canon gap, or
-proposed canon change.
+Review navigation, tokens, typography, spacing, depth, components, controls, music presentation, timeline language, Live treatment, motion, and state consistency. Classify each issue as app drift, canon gap, or proposed canon change.
 
 ### E. Brand and voice
 
-Flag generic SaaS language, weak action labels, costume-Latin expression, or places where movement/music
-language can become more precise without becoming theatrical.
+Flag generic SaaS language, weak action labels, costume-Latin expression, or places where movement/music language can become more precise without becoming theatrical.
 
 ### F. Accessibility and sustained-use comfort
 
-Report keyboard, focus, contrast, redundant encoding, target size, zoom/reflow, reduced motion, and stress-use
-findings. State the method used; do not award accessibility from appearance alone.
+Report keyboard, focus, contrast, redundant encoding, target size, zoom/reflow, reduced motion, and stress-use findings. State the method used; do not award accessibility from appearance alone.
 
 ### G. Structural findings outside polish
 
-Record meaningful shell/IA problems as `product-decision-required` even when they are not catastrophic.
-Explain the consequence and stop short of redesigning them.
+Record meaningful shell/IA problems as `product-decision-required` even when they are not catastrophic. Explain the consequence and stop short of redesigning them.
 
 ### H. Evidence ledger
 
-Inventory and screenshot counts; files, routes, scenarios, states, viewports, and checks completed; explicit
-gaps; current baseline branch and commit SHA.
+Inventory and screenshot counts; files, routes, scenarios, states, viewports, and checks completed; explicit gaps; current baseline branch and commit SHA.
 
 ## Quality gate
 
-Before phase 2:
+Before proceeding to Phase 2:
 
 - Every active primary surface has an inventory row.
 - Every primary row has desktop and mobile evidence or an explicit gap.
@@ -134,4 +127,4 @@ Before phase 2:
 - Dormant community components are identified and excluded.
 - Current canon violations are not confused with proposed canon changes.
 
-Then continue to phase 2 without requesting design approval.
+Upon passing this quality gate during end-to-end execution, continue directly to Phase 2.

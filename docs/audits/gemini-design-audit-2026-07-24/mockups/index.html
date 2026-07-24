@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ritmo Studio — Proposed Product Design Preview (Audit Run: gemini-2026-07-24)</title>
+  
+  <!-- Google Fonts for Sora and Azeret Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;600;700;800&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="preview.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Navigation & Reviewer Header -->
+    <header class="prototype-header">
+      <a href="#" class="brand-logo" onclick="window.setDestination('classes'); return false;">
+        <div class="brand-mark">R</div>
+        <span>Ritmo Studio</span>
+      </a>
+
+      <!-- Primary Workspaces -->
+      <nav class="nav-destinations">
+        <button class="nav-btn active" data-dest="classes">🚴 Classes</button>
+        <button class="nav-btn" data-dest="music">🎵 Music</button>
+        <button class="nav-btn" data-dest="builder">⚡ Builder</button>
+        <button class="nav-btn" data-dest="live">🔥 Live</button>
+        <button class="nav-btn" data-dest="account">👤 Account</button>
+      </nav>
+
+      <!-- Reviewer Tools -->
+      <div class="reviewer-toolbar">
+        <button class="toolbar-btn" id="toggle-viewport">🖥️ Desktop</button>
+        <button class="toolbar-btn" id="toggle-state">State: POPULATED</button>
+        <button class="toolbar-btn" id="toggle-annotations">Annotations: ON</button>
+      </div>
+    </header>
+
+    <!-- Main Viewport Area -->
+    <main class="main-viewport">
+      <div id="prototype-content">
+        <!-- Rendered dynamically by preview.js -->
+      </div>
+    </main>
+  </div>
+
+  <script src="preview.js"></script>
+</body>
+</html>

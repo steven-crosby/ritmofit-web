@@ -1,9 +1,8 @@
 # Phase 3: comprehensive navigable product preview
 
-Build the complete owner-review artifact specified by `preview-brief.md`. This phase is mandatory and cannot
-be skipped because no single P0 “direction item” exists. The product-wide proposal is the deliverable.
+Build the complete owner-review artifact specified by `preview-brief.md`. This phase is mandatory and cannot be skipped because no single P0 “direction item” exists. The product-wide proposal is the deliverable.
 
-Do not edit `apps/web/`, API code, shared contracts, or production design-system sources.
+Do not edit `apps/web/`, API code, shared contracts, or production design-system sources. All outputs land in `docs/audits/[agent-id]-design-audit-[ISO-date]/`.
 
 ## Inputs
 
@@ -14,7 +13,7 @@ Do not edit `apps/web/`, API code, shared contracts, or production design-system
 ## Required outputs
 
 ```text
-docs/audits/<run-id>/
+docs/audits/[agent-id]-design-audit-[ISO-date]/
   mockups/
     index.html
     preview.css
@@ -26,32 +25,25 @@ docs/audits/<run-id>/
   run-decisions.md
 ```
 
-Additional split HTML/CSS/JS files are allowed when they improve maintainability. All links must work when
-served by a simple local static server from the repository.
+Additional split HTML/CSS/JS files are allowed when they improve maintainability. All links must work when served by a simple local static server from the repository root.
 
 ## Prototype requirements
 
 1. Cover every inventory row marked `primary` and `must-mock-state`.
-2. Provide desktop and 390px treatments for every primary surface; validate fragile surfaces at 320px and
-   200% zoom.
-3. Provide realistic, internally coherent data across the whole product. The same instructor, classes,
-   playlists, tracks, cues, and readiness conditions should tell one story.
+2. Provide desktop and 390px treatments for every primary surface; validate fragile surfaces at 320px and 200% zoom.
+3. Provide realistic, internally coherent data across the whole product. The same instructor, classes, playlists, tracks, cues, and readiness conditions should tell one story.
 4. Demonstrate populated plus materially different empty/loading/error/disconnected/disabled/recovery states.
 5. Keep public entry/auth and active solo-product surfaces; omit dormant community functionality.
 6. Keep the current shell recognizable. Annotate structural findings rather than smuggling in an IA redesign.
-7. Use shared prototype tokens and components. Avoid one-off page styling that cannot become a maintainable
-   implementation system.
+7. Use shared prototype tokens and components. Avoid one-off page styling that cannot become a maintainable implementation system.
 8. Make important navigation and state switches functional enough for review. Do not build a fake backend.
 9. Use real product copy. Do not rely on generated-image text or lorem ipsum.
 10. Cite backlog IDs in the review layer, not as clutter inside the proposed product UI.
-11. Let the reviewer reveal the matching current screenshot beside or over the proposed surface without
-    contaminating the proposed UI itself.
+11. Let the reviewer reveal the matching current screenshot beside or over the proposed surface without contaminating the proposed UI itself.
 
 ## Direction exploration
 
-If visual direction remains ambiguous and image generation is available, it may be used for direction boards
-or screenshot paintovers. Save only references that materially shaped the proposal and document the extracted
-decisions. Generated images are never the final UI source of truth.
+If visual direction remains ambiguous and image generation tools are available, they may be used for direction boards or screenshot paintovers. Save only references that materially shaped the proposal and document the extracted decisions. Generated images are never the final UI source of truth.
 
 ## Adversarial craft pass
 
@@ -72,9 +64,7 @@ For each check, record pass/revision/gap in `mockups/README.md`. Fix failures be
 
 ## Proposed screenshots
 
-Capture every primary surface at desktop and 390x844 from the prototype. Use names that map directly to the
-inventory ID. Add state-specific captures where they materially affect a decision. Screenshots are evidence
-and review shortcuts; the navigable prototype remains authoritative.
+Capture every primary surface at desktop and 390x844 from the prototype. Use names that map directly to the inventory ID. Add state-specific captures where they materially affect a decision. Screenshots are evidence and review shortcuts; the navigable prototype remains authoritative.
 
 ## `review-guide.md`
 
@@ -91,17 +81,17 @@ Include:
 
 ## `run-decisions.md`
 
-Copy `run-decisions-template.md`. Pre-fill run metadata, every surface ID, every backlog ID, prototype links,
-and the agent's concise recommendation. Leave owner disposition and owner notes unfilled.
+Copy `run-decisions-template.md`. Pre-fill run metadata, every surface ID, every backlog ID, prototype links, and the executing agent's concise recommendation. Include `<agent-id>` in the run metadata. Leave owner disposition and owner notes unfilled.
 
 The agent may recommend; it may not self-approve.
 
 ## Stop gate
 
-After all outputs are complete:
+After all Phase 3 outputs are complete:
 
-- Report the prototype path/open command, review guide, screenshot folders, inventory coverage, and gaps.
-- Confirm no production code changed.
-- Stop for owner review.
-- Do not generate phase 4 prompts, create a branch, commit, push, or open a PR without the corresponding
-  separate authorization.
+- Stage `docs/audits/[agent-id]-design-audit-[ISO-date]/` and commit: `git commit -m "docs(audit): add [agent-id] design preview ([ISO-date])"`.
+- Push branch `audit/[agent-id]-[ISO-date]` and open a draft PR: `gh pr create --draft ...`.
+- Report the prototype path/open command, review guide, draft PR link, screenshot folders, inventory coverage, and evidence gaps.
+- Confirm no production application code was modified.
+- Stop and request owner review of `run-decisions.md` and the navigable prototype.
+- Do not generate Phase 4 implementation prompts or merge the draft PR without explicit owner permission.
