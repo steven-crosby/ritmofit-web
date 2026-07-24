@@ -59,14 +59,26 @@ the request.
 | Ability to author HTML/CSS/JS and open it locally | Phase 3 prototype |
 | Long-run working context across phases 0b–5 | Single continuous run |
 
-Test the capture path before requesting permission — do not assume it. A browser that only returns images
-into the agent's own context cannot build the deliverable: `screenshots/current/` needs image **files**.
-If the environment has no scriptable browser that writes files, that is a missing capability, and
-installing one (a headless browser driver, for example) is an environment prerequisite to name in the
-permission request rather than something to do unannounced.
+Test the capture path before requesting permission — do not assume it, and do not conclude it is absent
+without checking `PATH` for an already-installed headless browser driver. A browser that only returns
+images into the agent's own context cannot build the deliverable: `screenshots/current/` needs image
+**files**. If no scriptable browser writes files, that is a missing capability, and installing a driver is
+an environment prerequisite to name in the permission request rather than something to do unannounced —
+it may also touch `package.json` or the lockfile, which this run may not do.
 
-Confirm the compression tooling the same way. On macOS, `sips` is present by default and `cwebp` is a
-common addition; verify one of them actually runs before promising a size-budgeted deliverable.
+Prove the path with one real capture before promising the deliverable. A verified example, using a
+Playwright-style CLI driver:
+
+```bash
+playwright screenshot --viewport-size "390,844" "http://localhost:5173" probe-390.jpg
+```
+
+Capture straight to `.jpg` at the target viewport. Measured on the 2026-07-19 prototype, that produces
+about 36 KB at 390×844 and 128 KB at 1440×1000 — roughly 8 MB across a full run, inside budget. Do not
+post-process: re-encoding that output through a generic image tool measured *larger* than the original.
+
+Confirm the compression tooling the same way, for the cases where a capture does need reducing. On macOS,
+`sips` is present by default and `cwebp` is a common addition; verify one of them actually runs.
 
 **Missing any capability is a hard stop.** Report which capability is absent and end the run. Do not
 substitute code reading for rendered evidence, do not deliver a partial folder labelled as a full audit,
