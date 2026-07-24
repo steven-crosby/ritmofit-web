@@ -5,10 +5,24 @@
 <!-- note (Codex, 2026-07-12): Consolidated canonical instructions into AGENTS.md and removed Claude-only wrappers. -->
 <!-- note (Codex, 2026-07-13): Promoted verified OpenAPI, migration, PWA, provider, and deployment lessons from historical agent memory. -->
 <!-- note (Codex, 2026-07-16): Restored stale-chunk recovery and real-browser playback verification guidance. -->
+<!-- note (Grok, 2026-07-22): Added short workspace-container block so nested-git sessions still see multi-checkout rules. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
 to it, identify the agent and date in a short HTML comment.
+
+## Workspace container (parent)
+
+This checkout often lives under `~/repos/ritmostudio/`, a **non-git workspace container** with
+`ritmofit-ios/` and multiple independent `ritmofit-web` checkouts. Parent routing guide:
+`../../AGENTS.md` (or `~/repos/ritmostudio/AGENTS.md`).
+
+- Confirm which checkout and branch you are in before editing
+  (`git branch --show-current`). Sibling checkouts are not in sync by default.
+- Never copy changes between checkouts — use git (commit/push/pull) through shared `origin`.
+- Serialize shared browser profiles, GUI sessions, and local-port QA when concurrent lanes need them.
+- Freeze shared OpenAPI/routes/auth-db-error helpers/migrations across parallel lanes until coordinated.
+- **This file remains authoritative** for code in this checkout.
 
 ## Source Of Truth
 
