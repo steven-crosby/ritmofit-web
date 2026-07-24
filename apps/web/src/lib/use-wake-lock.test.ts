@@ -29,6 +29,14 @@ function setVisibility(state: 'visible' | 'hidden') {
   document.dispatchEvent(new Event('visibilitychange'));
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
+}
+
 afterEach(() => {
   setWakeLock(undefined);
   vi.restoreAllMocks();
@@ -79,6 +87,67 @@ describe('useWakeLock', () => {
     // Returning to the page re-acquires.
     setVisibility('visible');
     await waitFor(() => expect(fake.request).toHaveBeenCalledTimes(2));
+  });
+
+  it('does not start another acquisition while the first request is pending', async () => {
+    const pending = deferred<WakeLockSentinel>();
+    const sentinel = fakeWakeLock().sentinel as unknown as WakeLockSentinel;
+    const request = vi.fn(() => pending.promise);
+    setWakeLock({ request });
+
+    const { result } = renderHook(() => useWakeLock(true));
+    await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+
+    setVisibility('visible');
+    setVisibility('visible');
+    expect(request).toHaveBeenCalledTimes(1);
+
+    pending.resolve(sentinel);
+    await waitFor(() => expect(result.current).toBe('awake'));
+  });
+
+  it('ignores a stale sentinel release after a newer lock is acquired', async () => {
+    const releaseListeners: Array<() => void> = [];
+    const sentinels = [0, 1].map((index) => ({
+      released: false,
+      release: vi.fn(async () => undefined),
+      addEventListener: (type: string, cb: () => void) => {
+        if (type === 'release') releaseListeners[index] = cb;
+      },
+    }));
+    const request = vi
+      .fn<() => Promise<WakeLockSentinel>>()
+      .mockResolvedValueOnce(sentinels[0] as unknown as WakeLockSentinel)
+      .mockResolvedValueOnce(sentinels[1] as unknown as WakeLockSentinel);
+    setWakeLock({ request });
+
+    renderHook(() => useWakeLock(true));
+    await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+
+    releaseListeners[0]!();
+    setVisibility('visible');
+    await waitFor(() => expect(request).toHaveBeenCalledTimes(2));
+
+    releaseListeners[0]!();
+    setVisibility('visible');
+    expect(request).toHaveBeenCalledTimes(2);
+  });
+
+  it('releases a pending acquisition that resolves after becoming inactive', async () => {
+    const pending = deferred<WakeLockSentinel>();
+    const fake = fakeWakeLock();
+    const request = vi.fn(() => pending.promise);
+    setWakeLock({ request });
+    const { result, rerender } = renderHook(({ active }) => useWakeLock(active), {
+      initialProps: { active: true },
+    });
+    await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+
+    rerender({ active: false });
+    pending.resolve(fake.sentinel as unknown as WakeLockSentinel);
+
+    await waitFor(() => expect(fake.sentinel.release).toHaveBeenCalledTimes(1));
+    expect(result.current).toBe('idle');
   });
 
   describe('status reporting', () => {
