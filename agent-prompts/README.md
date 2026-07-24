@@ -66,11 +66,15 @@ safe rebases of trivially-stale green `auto-maintenance` branches (use `REPORT-O
 read-only pass). No prompt ever merges, deploys, migrates the remote D1, or changes secrets.
 
 ## Folder
-- `design-audit/` — **full-product design preview pack v5**: active-surface inventory and critique →
-  comprehensive navigable desktop/mobile prototype → owner approve/revise/reject gate → approved-only,
-  implementation-ready agent prompts. Product implementation remains a separately authorized session.
-  Start at [`design-audit/README.md`](./design-audit/README.md); artifacts land in
-  `docs/audits/<run-id>/`. Not unattended remote maintenance.
+- `design-audit/` — **design-audit pack v6**: an agent-agnostic, repeatable full-product audit. Point any
+  capable agent at the folder; it assesses the objective, requests permission once, then runs
+  continuously: active-surface inventory and critique → ranked backlog → comprehensive navigable
+  desktop/mobile prototype → proposed implementation prompts. The deliverable is exactly one folder,
+  `docs/audits/<agent>-design-audit-<YYYY-MM-DD>/`, and the agent runs **no Git commands**. The owner gate
+  is at the end: nothing is implemented until dispositions are recorded in that run's `run-decisions.md`.
+  Runs are comparable because they bind to canonical `surface-ids.md` and build the deterministic
+  `fixtures.md` data. Start at [`design-audit/README.md`](./design-audit/README.md). Not unattended remote
+  maintenance — it needs a browser, a running local app, and an owner to say go.
 - `daily/` — **interactive**, person-in-the-loop prompts that run on your own machine:
   - `start-session` — interactive orientation before a personal work block.
   - `close-session` — interactive cleanup, verification, PR/deploy hygiene, and handoff.

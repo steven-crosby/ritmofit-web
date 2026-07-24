@@ -6,6 +6,7 @@
 <!-- note (Codex, 2026-07-13): Promoted verified OpenAPI, migration, PWA, provider, and deployment lessons from historical agent memory. -->
 <!-- note (Codex, 2026-07-16): Restored stale-chunk recovery and real-browser playback verification guidance. -->
 <!-- note (Grok, 2026-07-22): Added short workspace-container block so nested-git sessions still see multi-checkout rules. -->
+<!-- note (Claude, 2026-07-24): Recorded the agent-agnostic design-audit pack v6 and its docs/audits deliverable path. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -34,6 +35,10 @@ This checkout often lives under `~/repos/ritmostudio/`, a **non-git workspace co
   `agent-prompts/daily/close-session.md` for interactive work blocks.
 - `README.md`: setup, local dev, and broad repo orientation.
 - `agent-prompts/`: canonical session, maintenance, and remote-agent prompts.
+- `agent-prompts/design-audit/`: agent-agnostic full-product design audit. One owner authorization, one
+  continuous run, one deliverable folder at `docs/audits/<agent>-design-audit-<YYYY-MM-DD>/`. The running
+  agent makes no Git commits and no production code edits; implementation is a separate session, unlocked
+  only by owner dispositions in that run's `run-decisions.md`.
 
 Keep `AGENTS.md` limited to durable operating rules and canonical command surfaces. Do not use it as a
 dated status log; update the planning docs for status changes and `HISTORY.md` for deploy/build history.

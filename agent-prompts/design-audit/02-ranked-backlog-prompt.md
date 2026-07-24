@@ -5,8 +5,8 @@ diagnosis into a complete, traceable proposal specification. Do not edit product
 
 ## Outputs
 
-- `docs/audits/<run-id>/backlog.md`
-- `docs/audits/<run-id>/preview-brief.md`
+- `<run-folder>/backlog.md`
+- `<run-folder>/preview-brief.md`
 
 ## `backlog.md`
 
@@ -20,11 +20,11 @@ Each item must include:
 
 | Field | Requirement |
 | --- | --- |
-| ID | `P0-01`, `P1-02`, etc. |
+| ID | `P0-01`, `P1-02`, etc. — per-run, never carried between runs |
 | Title | Specific behavior or design change |
-| Source status | new, regression, known-open, superseded |
+| Source status | new, regression, known-open, resolved-since, superseded |
 | Type | workflow, navigation-within-shell, layout, component, token, copy, interaction, state, a11y, motion |
-| Surface IDs | Exact inventory rows affected |
+| Surface IDs | Exact canonical IDs affected — this is the only cross-run traceability key |
 | Scenario outcome | Faster build, clearer recovery, Live safety, or premium craft |
 | Evidence | Critique section and current screenshots |
 | Current canon relationship | app drift, canon gap, proposed canon change, or none |
@@ -119,4 +119,5 @@ reduced motion, narrow reflow, color-independent meaning, and Live pressure hier
 ## Quality gate
 
 Before phase 3, verify that inventory rows, backlog IDs, prototype views, and screenshots form a closed
-traceability chain. Then continue directly to phase 3.
+traceability chain, and that every backlog row cites at least one canonical surface ID. Then continue
+directly to phase 3.

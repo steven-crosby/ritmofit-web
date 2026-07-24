@@ -119,5 +119,10 @@ migrations **before** the code that depends on them.
   accessibility, motion, and layout guidance for UI work.
 - [`docs/onboarding/ritmofit-tutorial-video-cuts.md`](docs/onboarding/ritmofit-tutorial-video-cuts.md) —
   caption/cut specs for the landing-hero and onboarding tutorial videos.
+- [`agent-prompts/`](agent-prompts/) — session, maintenance, and remote-agent prompts, including the
+  agent-agnostic [design-audit pack](agent-prompts/design-audit/README.md);
+  [`agent-prompts/SCHEDULE.md`](agent-prompts/SCHEDULE.md) says when to run each one.
+- [`docs/audits/`](docs/audits/) — delivered design-audit runs (critique, prototype, screenshots, and
+  proposed implementation prompts). Excluded from the format/lint gates.
 - [`ritmofit_dev_plan/archive/`](ritmofit_dev_plan/archive/) — archived launch-readiness review
   (`REVIEW.md`/`REVIEW_HISTORY.md`), pre-launch audit reports, and superseded AI session prompts.
