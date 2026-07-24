@@ -8,7 +8,7 @@ import Foundation
 // ms-based); they are NOT the SwiftData cache models. (The pre-v1 `ClassPlan`/
 // `ClassSlot` model family was removed in the 2026-06-14 stale-model cleanup.)
 //
-// Closed wire enums (`template`, section `type`, `provider`) decode **leniently**:
+// Closed wire enums (`template`, `timelineMode`, section `type`, `provider`) decode **leniently**:
 // an unrecognised value lands in `.other(raw)` instead of failing the whole payload,
 // so a future contract addition can't black out the live screen. `intensity` reuses
 // the existing `Intensity` ramp.
@@ -39,6 +39,8 @@ nonisolated extension RunPayload {
         let template: ClassTemplate?
         /// The instructor's planned length; may be absent.
         let targetDurationMs: Int?
+        /// Whether tracks advance on one assembled timeline or run independently.
+        let timelineMode: TimelineMode
         /// The assembled timeline length (sum of track durations); drives the live timer.
         let totalDurationMs: Int
     }
@@ -50,9 +52,17 @@ nonisolated extension RunPayload {
         let position: Int
         /// Resolved BPM (`display_bpm_override ?? track.display_bpm`); manual/optional in M1.
         let displayBpm: Int?
+        /// Instructor-facing cadence target; distinct from the music BPM.
+        let displayRpm: Int?
+        /// Optional number of repeated counts to hold.
+        let holdCount: Int?
         let intensity: Intensity
         /// Server-derived start on the assembled timeline (read-only).
         let startOffsetMs: Int?
+        /// Offset into the provider track where this placement begins.
+        let clipStartMs: Int
+        /// Millisecond position of beat one used to align beat/bar annotations.
+        let beatAnchorMs: Int
         let notes: String?
         let track: TrackMeta
         let providerRefs: [ProviderRef]
@@ -63,16 +73,36 @@ nonisolated extension RunPayload {
         var id: String { classTrackId }
 
         private enum CodingKeys: String, CodingKey {
-            case classTrackId, position, displayBpm, intensity, startOffsetMs, notes
+            case classTrackId, position, displayBpm, displayRpm, holdCount
+            case intensity, startOffsetMs, clipStartMs, beatAnchorMs, notes
             case track, providerRefs, cues, moves
         }
 
-        init(classTrackId: String, position: Int, displayBpm: Int?, intensity: Intensity, startOffsetMs: Int?, notes: String?, track: TrackMeta, providerRefs: [ProviderRef], cues: [Cue], moves: [Move]) {
+        init(
+            classTrackId: String,
+            position: Int,
+            displayBpm: Int?,
+            displayRpm: Int?,
+            holdCount: Int?,
+            intensity: Intensity,
+            startOffsetMs: Int?,
+            clipStartMs: Int,
+            beatAnchorMs: Int,
+            notes: String?,
+            track: TrackMeta,
+            providerRefs: [ProviderRef],
+            cues: [Cue],
+            moves: [Move]
+        ) {
             self.classTrackId = classTrackId
             self.position = position
             self.displayBpm = displayBpm
+            self.displayRpm = displayRpm
+            self.holdCount = holdCount
             self.intensity = intensity
             self.startOffsetMs = startOffsetMs
+            self.clipStartMs = clipStartMs
+            self.beatAnchorMs = beatAnchorMs
             self.notes = notes
             self.track = track
             self.providerRefs = providerRefs
@@ -85,9 +115,13 @@ nonisolated extension RunPayload {
             classTrackId = try c.decode(String.self, forKey: .classTrackId)
             position = try c.decode(Int.self, forKey: .position)
             displayBpm = try c.decodeIfPresent(Int.self, forKey: .displayBpm)
+            displayRpm = try c.decodeIfPresent(Int.self, forKey: .displayRpm)
+            holdCount = try c.decodeIfPresent(Int.self, forKey: .holdCount)
             // Lenient: an unknown intensity falls back rather than failing the payload.
             intensity = Intensity(rawValue: try c.decode(String.self, forKey: .intensity)) ?? .none
             startOffsetMs = try c.decodeIfPresent(Int.self, forKey: .startOffsetMs)
+            clipStartMs = try c.decode(Int.self, forKey: .clipStartMs)
+            beatAnchorMs = try c.decode(Int.self, forKey: .beatAnchorMs)
             notes = try c.decodeIfPresent(String.self, forKey: .notes)
             track = try c.decode(TrackMeta.self, forKey: .track)
             providerRefs = try c.decode([ProviderRef].self, forKey: .providerRefs)
@@ -105,8 +139,8 @@ nonisolated extension RunPayload {
         let albumArtUrl: String?
     }
 
-    /// A provider handoff reference — used to deep-link to the provider app (deferred);
-    /// for now it only signals which providers carry the track. Never in-app playback.
+    /// A provider reference used for provider-authorized playback or handoff. The app
+    /// never downloads, caches, decodes, proxies, mixes, or analyzes provider audio.
     struct ProviderRef: Decodable, Equatable {
         let provider: ProviderKind
         let providerTrackId: String
@@ -128,15 +162,19 @@ nonisolated extension RunPayload {
     struct Move: Decodable, Equatable, Identifiable {
         let id: String
         let anchorMs: Int
+        let beat: Int?
+        let bar: Int?
         let name: String
         let intensity: Intensity?
 
-        private enum CodingKeys: String, CodingKey { case id, anchorMs, name, intensity }
+        private enum CodingKeys: String, CodingKey { case id, anchorMs, beat, bar, name, intensity }
 
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             id = try c.decode(String.self, forKey: .id)
             anchorMs = try c.decode(Int.self, forKey: .anchorMs)
+            beat = try c.decodeIfPresent(Int.self, forKey: .beat)
+            bar = try c.decodeIfPresent(Int.self, forKey: .bar)
             name = try c.decode(String.self, forKey: .name)
             if let raw = try c.decodeIfPresent(String.self, forKey: .intensity) {
                 intensity = Intensity(rawValue: raw)
@@ -148,11 +186,9 @@ nonisolated extension RunPayload {
 
     /// A timeline section boundary — the band of effort starting at `startOffsetMs`.
     struct Section: Decodable, Equatable, Identifiable {
+        let id: String
         let type: SectionType
         let startOffsetMs: Int
-
-        /// Stable enough for `ForEach` (sections are ordered, non-overlapping).
-        var id: Int { startOffsetMs }
     }
 
     /// Index into `sections` of the section live at `elapsedMs` — the last whose window has
@@ -192,6 +228,20 @@ nonisolated enum ClassTemplate: Decodable, Equatable {
         case .sculpt: return "Sculpt"
         case .tread: return "Tread"
         case let .other(raw): return raw.prefix(1).uppercased() + raw.dropFirst()
+        }
+    }
+}
+
+/// Timeline behavior. `.other` keeps a newly added server mode from blacking out Live.
+nonisolated enum TimelineMode: Decodable, Equatable {
+    case sequential, free
+    case other(String)
+
+    init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "sequential": self = .sequential
+        case "free": self = .free
+        case let raw: self = .other(raw)
         }
     }
 }
@@ -237,7 +287,8 @@ nonisolated enum SectionType: Decodable, Equatable {
     }
 }
 
-/// Music provider that carries a track. Brand-colored marks only; no in-app playback.
+/// Music provider that carries a track. Playback, when present, uses only the
+/// provider's authorized SDK or widget.
 nonisolated enum ProviderKind: Decodable, Equatable {
     case spotify, appleMusic, soundcloud
     case other(String)

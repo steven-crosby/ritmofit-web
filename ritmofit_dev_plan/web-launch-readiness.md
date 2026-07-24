@@ -144,8 +144,7 @@ test data and delete any production test data before close-session.
 
 These do not block web launch unless a verification pass proves they break the launch-scoped core loop:
 
-- iOS builder/library/search/explore/sharing parity and currently allowlisted run-payload DTO fields.
-- iOS design-token drift automation.
+- iOS builder/library/search/explore/sharing parity beyond the Phase 0 contract/design baseline.
 - Featured/admin curation for Explore.
 - Richer Explore merchandising: category chips, cover-art cards, and themed collection treatment.
 - Teams expansion beyond the shipped creation, membership, and team-share management flow.
