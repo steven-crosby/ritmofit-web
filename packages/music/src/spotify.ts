@@ -296,7 +296,9 @@ export async function fetchSpotifySavedTracks(cfg: {
     if (res.status === 401) throw new SpotifyUnauthorizedError();
     if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for /me/tracks`);
     const parsed = spSavedPageSchema.safeParse(await readJson(res, 'spotify'));
-    if (!parsed.success) break;
+    if (!parsed.success) {
+      throw new ProviderError('spotify', 'Spotify returned an invalid saved-track page.');
+    }
     const pageItems = parsed.data.items;
     for (const item of pageItems) {
       const candidate = toSpotifyCandidate(item.track);
@@ -337,7 +339,9 @@ export async function fetchSpotifySavedPlaylists(cfg: {
     if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for /me/playlists`);
 
     const parsed = spLibraryPlaylistsPageSchema.safeParse(await readJson(res, 'spotify'));
-    if (!parsed.success) break;
+    if (!parsed.success) {
+      throw new ProviderError('spotify', 'Spotify returned an invalid saved-playlist page.');
+    }
 
     for (const raw of parsed.data.items) {
       const candidate = providerPlaylistSummarySchema.safeParse({
@@ -389,7 +393,9 @@ export async function fetchSpotifyPlaylistTracks(cfg: {
     if (res.status === 403) throw new SpotifyPlaylistAccessDeniedError();
     if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for playlist items`);
     const parsed = spPlaylistPageSchema.safeParse(await readJson(res, 'spotify'));
-    if (!parsed.success) break;
+    if (!parsed.success) {
+      throw new ProviderError('spotify', 'Spotify returned an invalid saved-playlist track page.');
+    }
 
     for (const item of parsed.data.items) {
       const candidate = toSpotifyCandidate(item.item);

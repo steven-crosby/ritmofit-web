@@ -299,6 +299,21 @@ describe('fetchSpotifySavedTracks', () => {
     ]);
   });
 
+  it('rejects a malformed later page instead of returning partial saved tracks', async () => {
+    const { fetchImpl } = fakeFetch({
+      [`${SAVED_URL}?limit=50&offset=1`]: { items: 'invalid', total: 2 },
+      [`${SAVED_URL}?limit=50&offset=0`]: { items: [{ track: SP_TRACK }], total: 2 },
+    });
+
+    await expect(
+      fetchSpotifySavedTracks({
+        accessToken: 't',
+        fetchImpl,
+        apiBase: API_BASE,
+      }),
+    ).rejects.toThrow('Spotify returned an invalid saved-track page.');
+  });
+
   it('stops at the maxTracks cap while appending a saved-track page', async () => {
     const fullPage = Array.from({ length: 50 }, (_, index) => ({
       track: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
@@ -370,6 +385,24 @@ describe('fetchSpotifySavedPlaylists', () => {
       },
     ]);
     expect(calls[0]?.init?.headers?.Authorization).toBe('Bearer user-playlist-token');
+  });
+
+  it('rejects a malformed later page instead of returning partial saved playlists', async () => {
+    const { fetchImpl } = fakeFetch({
+      [`${PLAYLISTS_URL}?limit=50&offset=1`]: { items: 'invalid', total: 2 },
+      [`${PLAYLISTS_URL}?limit=50&offset=0`]: {
+        items: [{ id: 'pl-1', name: 'Warmup Ride', items: { total: 1 } }],
+        total: 2,
+      },
+    });
+
+    await expect(
+      fetchSpotifySavedPlaylists({
+        accessToken: 't',
+        fetchImpl,
+        apiBase: API_BASE,
+      }),
+    ).rejects.toThrow('Spotify returned an invalid saved-playlist page.');
   });
 
   it('throws SpotifyUnauthorizedError on a 401 so callers can refresh + retry', async () => {
@@ -478,6 +511,22 @@ describe('fetchSpotifyPlaylistTracks', () => {
       `${itemsUrl('pl-1')}?limit=50&offset=0`,
       `${itemsUrl('pl-1')}?limit=50&offset=50`,
     ]);
+  });
+
+  it('rejects a malformed later page instead of returning partial playlist tracks', async () => {
+    const { fetchImpl } = fakeFetch({
+      [`${itemsUrl('pl-1')}?limit=50&offset=1`]: { items: 'invalid', total: 2 },
+      [`${itemsUrl('pl-1')}?limit=50&offset=0`]: { items: [{ item: SP_TRACK }], total: 2 },
+    });
+
+    await expect(
+      fetchSpotifyPlaylistTracks({
+        accessToken: 't',
+        playlistId: 'pl-1',
+        fetchImpl,
+        apiBase: API_BASE,
+      }),
+    ).rejects.toThrow('Spotify returned an invalid saved-playlist track page.');
   });
 
   it('stops at the maxTracks cap so detail reads stay bounded', async () => {
