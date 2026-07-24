@@ -20,9 +20,9 @@
   "dependencies": {
     "@ritmofit/music": "workspace:*",
     "@ritmofit/shared": "workspace:*",
-    "better-auth": "^1.6.17",
+    "better-auth": "^1.6.25",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.6.8",
+    "hono": "^4.12.31",
     "zod": "^4.4.3"
   },
   "devDependencies": {
