@@ -1,10 +1,11 @@
 # Ritmo Studio full-product design preview: shared context
 
-**Pack version:** 5
+**Pack version:** 6
 **Product name in review copy:** Ritmo Studio
 
-Every phase reads this file and the pack `README.md`. The README controls authority, gates, setup, and stop
-conditions.
+Every phase reads this file and the pack `README.md`. The README controls authority, the capability floor,
+setup, the deliverable path, repeatability rules, and stop conditions. `<run-folder>` below always means
+`docs/audits/<agent>-design-audit-<YYYY-MM-DD>/`.
 
 ## Mandate
 
@@ -42,7 +43,8 @@ specialized, support curiosity, and avoid forcing one canonical creation sequenc
 
 ## Active-surface scope
 
-The agent must derive the final inventory from the running app and rendered code. At minimum inspect:
+The agent must derive the final inventory from the running app and rendered code, then bind every surface
+it finds to the canonical IDs in `surface-ids.md`. At minimum inspect:
 
 - Public landing/entry, login/sign-up, password recovery, privacy, not-found, beta restrictions, and update recovery.
 - Classes library, creation, templates, recency, class summary, and open/edit entry.

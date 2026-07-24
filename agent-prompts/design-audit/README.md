@@ -1,61 +1,164 @@
-# Ritmo Studio full-product design preview pack v5
+# Ritmo Studio design-audit pack v6
 
-**Review-first, implementation-later.** This pack audits the active Ritmo Studio product, captures the
-current experience, builds one cohesive navigable mockup covering every active surface, and pauses for
-owner decisions. Only after those decisions does it generate implementation-ready agent prompts for a
-separately authorized product session.
+**Pack version:** 6
+**Entry point:** this file. Point any capable coding agent at `agent-prompts/design-audit/` and it can
+run the whole audit from here.
+**Deliverable:** exactly one new folder, `docs/audits/<agent>-design-audit-<YYYY-MM-DD>/`.
 
-This pack does **not** edit production application code, merge, deploy, or implement its own proposals.
+This pack audits the active Ritmo Studio product, captures current rendered truth, builds one cohesive
+navigable prototype covering every active surface, and produces implementation-ready prompts for later,
+separately authorized product sessions.
 
-**Canonical pack:** `agent-prompts/design-audit/`
-**Tracked outputs:** `docs/audits/<run-id>/`
+The pack is **agent-agnostic**. It names no vendor, no CLI, no tool, and no model. It states the
+capabilities a run requires and stops if they are missing. Any agent that meets the capability floor
+should produce a comparably structured deliverable from the same repository state.
 
-## Owner invocation
+This pack does **not** edit production application code, run Git commands, merge, deploy, or implement
+its own proposals.
 
-Start the preview session with:
+## Run model
 
-> Read `agent-prompts/design-audit/README.md` and execute phases 0-3 of the full-product design preview.
+One owner authorization, one continuous run, one folder.
 
-That invocation authorizes audit-artifact edits only. It does not authorize branch creation, commit, push,
-PR creation, product implementation, merge, or deploy. Ask separately before each external Git action unless
-the owner explicitly included it.
-
-After reviewing the preview and recording approve/revise/reject/defer decisions, resume with:
-
-> Apply my decisions to the current design-preview run and execute phase 4 to generate the implementation prompts.
-
-## Outcome
-
-The pack has three deliberately separate outcomes:
-
-1. **Preview session:** evidence-backed critique, complete active-surface inventory, current screenshots,
-   a coherent navigable HTML/CSS prototype, proposed screenshots, and an owner decision ledger.
-2. **Prompt-finalization session:** implementation prompts generated only from owner-approved directions,
-   plus dependency order and collision notes.
-3. **Future implementation sessions:** separately commissioned product changes using those prompts.
-
-An audit is not complete merely because its prose is polished. The preview must let the owner inspect the
-proposed product visually and decide surface by surface.
-
-## Authority
-
-| Layer | File | Role |
+| Phase | File | Output |
 | --- | --- | --- |
-| Orchestrator | `README.md` | Sequence, authority, gates, setup, closeout |
-| Mission and scope | `00-context.md` | Product frame, active surfaces, evidence and craft rules |
-| Phase 1 | `01-brutal-critique-prompt.md` | Inventory, baseline capture, workflow and design critique |
-| Phase 2 | `02-ranked-backlog-prompt.md` | Ranked findings and full-preview specification |
-| Phase 3 | `03-mockup-preview-prompt.md` | Comprehensive navigable prototype and owner-review package |
-| Owner decisions | `run-decisions-template.md` | Approve/revise/reject/defer ledger; owner is final authority |
-| Phase 4 | `04-implementation-prompts.md` | Approved-only, ready-to-run implementation prompts |
+| 0. Assess and request permission | this file | Permission request; **stop until the owner agrees** |
+| 0b. Boot | this file + `fixtures.md` | Local app, deterministic fixtures, recorded baseline SHA |
+| 1. Inventory and critique | `01-brutal-critique-prompt.md` | `surface-inventory.md`, `critique.md`, `screenshots/current/` |
+| 2. Backlog and preview spec | `02-ranked-backlog-prompt.md` | `backlog.md`, `preview-brief.md` |
+| 3. Prototype | `03-mockup-preview-prompt.md` | `mockups/`, `screenshots/proposed/` |
+| 4. Implementation prompts | `04-implementation-prompts.md` | `implementation-sequence.md`, `implementation-prompts/` |
+| 5. Close | this file | Run folder `README.md`, `run-decisions.md`, final report to the owner |
 
-If a phase file conflicts with this README about authority, stopping, scope, or Git actions, this README wins.
+There is exactly one stop-and-wait point: the permission request in phase 0. After the owner agrees, run
+phases 0b through 5 continuously without asking for further approval, unless a hard stop fires.
+
+**The owner gate moved to the end.** Phase 4 prompts are generated from the agent's own recommendations,
+so they are *proposals*, not authorized work. Nothing in the delivered folder may be implemented until the
+owner records dispositions in `run-decisions.md`. Every generated prompt must say so in its own header.
+
+Supporting files: `00-context.md` (mission, scope, evidence rules — read before phase 1),
+`surface-ids.md` (canonical surface IDs — bind to these, never renumber), `fixtures.md` (deterministic
+fixture recipe), `run-decisions-template.md` (owner review ledger).
+
+If a phase file conflicts with this README about authority, scope, stopping, the deliverable path, or Git
+actions, this README wins. For craft, evidence, and output detail, the phase file wins.
+
+## Capability floor
+
+A run requires all of the following. Check each **before** requesting permission and report the results in
+the request.
+
+| Capability | Why it is required |
+| --- | --- |
+| Read/write access to this repository checkout | All inputs and the deliverable |
+| Ability to run local shell commands (install, migrate, seed, dev servers) | Phase 0b |
+| A controllable real browser with viewport emulation | Phases 1 and 3 rendered truth |
+| Screenshot capture **written to disk as image files** | `screenshots/current/` and `screenshots/proposed/` |
+| Image compression to JPEG or WebP | Deliverable size budget |
+| Ability to author HTML/CSS/JS and open it locally | Phase 3 prototype |
+| Long-run working context across phases 0b–5 | Single continuous run |
+
+Test the capture path before requesting permission — do not assume it. A browser that only returns images
+into the agent's own context cannot build the deliverable: `screenshots/current/` needs image **files**.
+If the environment has no scriptable browser that writes files, that is a missing capability, and
+installing one (a headless browser driver, for example) is an environment prerequisite to name in the
+permission request rather than something to do unannounced.
+
+Confirm the compression tooling the same way. On macOS, `sips` is present by default and `cwebp` is a
+common addition; verify one of them actually runs before promising a size-budgeted deliverable.
+
+**Missing any capability is a hard stop.** Report which capability is absent and end the run. Do not
+substitute code reading for rendered evidence, do not deliver a partial folder labelled as a full audit,
+and do not silently downgrade claims to `code-confirmed` to work around a missing browser. Comparability
+between runs is the reason this pack exists in the repeatable form; a degraded run destroys it.
+
+## Phase 0: assess and request permission
+
+1. Establish the baseline. Record branch and commit SHA, and check whether the branch trails its remote
+   (`git rev-list --count HEAD..origin/main`) — auditing a stale baseline produces findings that may
+   already be fixed. If the working tree has uncommitted changes, list them in the permission request and
+   ask whether to proceed on top of them or wait; unrelated work in progress is a reason to pause, not to
+   clean up. Never discard, stash, overwrite, or silently include it. These are the only Git commands the
+   run may use, and they are read-only.
+2. Read `AGENTS.md`, `README.md`, `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`, and D20/D21 in
+   `ritmofit_dev_plan/decisions.md`. Then read the design-system canon this audit is judged against:
+   `ritmofit_design_system/README.md` first, then `02-color-system.md`, `03-typography.md`,
+   `04-layout-and-surfaces.md`, `05-components.md`, `06-motion.md`, `07-accessibility.md`,
+   `09-class-builder-guidelines.md`, `10-rhythm-system.md`, and `11-library-guidelines.md`.
+3. Read `00-context.md`, `surface-ids.md`, and `fixtures.md` in this pack.
+4. Read `docs/audits/README.md` and the most recent prior run folder, if any. Prior findings that are now
+   implemented are not new findings.
+5. Resolve the deliverable folder name (see below).
+6. Run the capability check above.
+7. Present the permission request and **stop**.
+
+The permission request must state, briefly:
+
+- The resolved deliverable path.
+- Baseline branch, commit SHA, whether it trails the remote, and any uncommitted work in the tree.
+- Capability check results, including anything missing and any environment prerequisite the owner must
+  approve (installing a capture driver, freeing ports 8787/5173, compression tooling).
+- What the run will touch locally: creating `apps/api/.dev.vars` if absent, running local D1
+  migrate/seed, starting local dev servers, and creating disposable local accounts and fixtures.
+- What it will not do: no production code edits, no Git commands, no schema or migration changes, no
+  deploys, no production data or secrets.
+- Realistic expected duration and the approximate deliverable size.
+- Which prior run it is building on, and whether the baseline has drifted from that run.
+
+Then wait. Silence, an unanswered question, or an unrelated instruction is not permission.
+
+### Deliverable folder name
+
+`docs/audits/<agent>-design-audit-<YYYY-MM-DD>/`
+
+- `<agent>`: a lowercase slug for the agent performing the run — for example `claude`, `codex`, `grok`,
+  `gemini`, `cursor`. Take it from the owner's invocation. If the invocation does not state one, ask for
+  it in the permission request rather than guessing; agents identify their own vendor unreliably.
+- `<YYYY-MM-DD>`: ISO date the run starts, from the system clock. Do not infer it from file timestamps or
+  prior run names.
+- If that exact folder already exists, append `-2`, `-3`, and so on. Never write into an existing run
+  folder from a new run.
+
+## Phase 0b: boot
+
+1. Install dependencies if needed: `pnpm install --frozen-lockfile`.
+2. If `apps/api/.dev.vars` is absent, copy `apps/api/.dev.vars.example` and set a newly generated
+   local-only `BETTER_AUTH_SECRET`. Keep `MOCK_PROVIDERS=true` and leave `BETA_ALLOWED_EMAILS` **blank** —
+   a populated allowlist blocks new local signups and phase 0b account creation will fail. If a
+   `.dev.vars` already exists, do not modify it; if its `BETA_ALLOWED_EMAILS` is set, either use an
+   allowlisted address or stop and ask. Never copy, read, or inspect production secrets.
+3. Apply local database state:
+
+   ```bash
+   pnpm --filter @ritmofit/api db:migrate:local
+   pnpm --filter @ritmofit/api db:seed:local
+   ```
+
+4. Start both services:
+
+   ```bash
+   pnpm dev:api   # http://localhost:8787
+   pnpm dev:web   # http://localhost:5173
+   ```
+
+   These ports are fixed. This checkout may sit beside sibling checkouts (see `AGENTS.md`, "Workspace
+   container"): confirm the ports are free and that no other session is doing local-port QA before
+   claiming them. Stop and report rather than killing another session's server.
+
+5. Build the fixtures exactly as specified in `fixtures.md`. Fixture drift between runs makes critiques
+   incomparable, so follow the recipe rather than improvising content.
+6. Create `docs/audits/<agent>-design-audit-<YYYY-MM-DD>/`.
+
+Stop and ask if boot would overwrite an existing `.dev.vars` or local data the owner may care about.
+Creating disposable local fixture accounts is in scope.
 
 ## Locked scope
 
 Include:
 
-- Public landing/entry, login/sign-up, password recovery, privacy, not-found, and update/recovery UI.
+- Public landing/entry, login/sign-up, password recovery, privacy, not-found, invitation rejection, and
+  update/recovery UI.
 - Every active solo-product workspace: Classes, Music, Builder/choreography, Live, and Account.
 - Every reachable active dialog, overlay, provider flow, and materially different UI state.
 - Desktop and mobile treatments for every primary surface.
@@ -63,135 +166,147 @@ Include:
 Exclude:
 
 - Dormant Explore, Teams, shares/public classes, collaborators, community, and pricing/subscription flows.
-- A new information architecture. Structural problems may be documented as `product-decision-required`,
-  but this preview stays recognizably inside the current shell.
-- Production code edits.
+- A new information architecture. Structural problems are documented as `product-decision-required`; the
+  proposal stays recognizably inside the current shell.
+- Production code edits, schema and migration proposals, and provider-policy changes.
 
-Do not infer active scope from filenames alone. Trace the current app entry points and rendered component
-tree; dormant components may remain in the repository.
+Do not infer active scope from filenames. Trace current entry points and the rendered component tree;
+dormant components remain in the repository.
 
-## Two-session sequence
+## Repeatability rules
 
-| Phase | Output | Continue? |
-| --- | --- | --- |
-| 0. Orient and boot | Clean baseline, commit SHA, local app, realistic fixtures | Continue |
-| 1. Inventory and critique | `surface-inventory.md`, `critique.md`, `screenshots/current/` | Continue |
-| 2. Backlog and preview specification | `backlog.md`, `preview-brief.md` | Continue |
-| 3. Full-product prototype | `mockups/`, `screenshots/proposed/`, `run-decisions.md`, `review-guide.md` | **Stop for owner review** |
-| 4. Approved implementation prompts | `implementation-prompts/`, `implementation-sequence.md` | Stop; implementation remains separate |
+These are what make two runs comparable — by different agents, or by the same agent months apart.
 
-There is exactly one mandatory owner gate: after phase 3 and before phase 4. The preview agent may revise
-its own draft during phase 3, but it may not approve directions on the owner's behalf.
+1. **Bind to `surface-ids.md`.** Reuse the existing ID for any surface that still exists. Never renumber
+   an existing surface to suit a new inventory order. New surfaces take the next free number in their
+   prefix and must be appended to `surface-ids.md` as part of the run. Removed surfaces are marked
+   `retired` there, not deleted.
+2. **Use the `fixtures.md` recipe verbatim** so critiques describe the product, not the test data.
+3. **Backlog IDs are per-run** (`P0-01`, …) and must always cite the surface IDs they touch. Cross-run
+   traceability runs through surface IDs, never backlog numbers.
+4. **Deduplicate against prior runs.** Every finding is labelled `new`, `regression`, `known-open`
+   (still open from a prior run — cite the run and ID), or `resolved-since` (prior finding now fixed).
+5. **Record the baseline SHA** in the run folder `README.md` and `surface-inventory.md`.
 
-## Phase 0: safe local setup
+## Evidence rules
 
-1. Confirm a clean, current `ritmofit-web` checkout and record the branch and commit SHA. Do not discard,
-   stash, overwrite, or include unrelated work.
-2. Read `AGENTS.md`, `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`, D20/D21 in `decisions.md`, and the relevant
-   `ritmofit_design_system/` guidance.
-3. Install with `pnpm install --frozen-lockfile` if needed.
-4. If `apps/api/.dev.vars` is absent, create it from `.dev.vars.example` with a newly generated local-only
-   `BETTER_AUTH_SECRET` and `MOCK_PROVIDERS=true`. Never copy or inspect production secrets.
-5. Run local migrations and seed:
+Every material claim carries a label: `observed` (exercised in the browser), `code-confirmed` (verified in
+current source but not induced), `inferred` (clearly labelled interpretation), or `not-checked` (an
+acknowledged gap). Screenshots do not prove interaction quality; source reading does not prove rendered
+truth.
 
-   ```bash
-   pnpm --filter @ritmofit/api db:migrate:local
-   pnpm --filter @ritmofit/api db:seed:local
-   ```
+Required coverage:
 
-6. Start both services:
+- Browser viewport emulation at 390×844 and a representative desktop size for every primary surface.
+- 320px and 200% zoom/reflow checks for Builder, dialogs, and Live.
+- Keyboard-only traversal, visible focus, reduced motion, contrast, target size, and color-independent
+  state.
+- Populated, empty, loading, error, disconnected, disabled, long-content, and recovery states where they
+  exist.
+- Console, network, asset, and font errors recorded during the tour.
+- Several creation entry scenarios, not one forced funnel (see `00-context.md`).
+- A current screenshot and source mapping for every proposed change.
 
-   ```bash
-   pnpm dev:api
-   pnpm dev:web
-   ```
+Use browser viewport emulation for narrow checks. Shrinking a window can capture a cropped wider layout
+and manufacture a false finding.
 
-7. Create two local accounts: one populated with realistic classes/tracks/cues/moves and one fresh for
-   empty states. Add at least one pathological fixture with long names and a dense class.
-8. Create `docs/audits/YYYY-MM-DD-full-product-preview/`.
+## Screenshot and size budget
 
-If local setup would overwrite an existing `.dev.vars` or local data the owner may care about, stop and
-ask. Otherwise, local disposable fixture creation is in scope.
+The deliverable is committed to the repository and every run adds permanent weight.
 
-## Evidence minimum
+- Format: **JPEG or WebP**. Never PNG for screenshots.
+- Width: cap desktop captures at 1440px; capture mobile at its native emulated width.
+- Target ≤ 300 KB per image.
+- **Total run folder budget: 15 MB.** If a run approaches it, reduce state-variant captures before
+  reducing primary-surface coverage, and record what was dropped in the run folder `README.md`.
+- Name every capture after the surface ID it proves: `BLD-04-timeline-desktop.jpg`,
+  `BLD-04-timeline-390.jpg`.
+- Report the final folder size in the closing report.
 
-The preview must distinguish `observed`, `code-confirmed`, `inferred`, and `not-checked` claims. Required:
+Silent truncation is worse than a documented gap. Never let a size budget produce a run that claims
+coverage it does not have.
 
-- Browser viewport emulation at 390x844 and a representative desktop size for every primary surface.
-- 320px and 200% zoom/reflow checks for fragile Builder, dialog, and Live surfaces.
-- Keyboard-only traversal, visible focus, reduced motion, contrast, target size, and color-independent state.
-- Populated, empty, loading, error, disconnected, disabled, long-content, and recovery states where relevant.
-- Console/network/font errors recorded during the tour.
-- Several creation entry scenarios, not one forced funnel: start from a class/template, provider playlist,
-  specific track, movement/choreography idea where supported, and an existing class/rehearsal need.
-- Current screenshot and source/component mapping for every proposed change.
+## Deliverable shape
 
-## Prototype standard
+```text
+docs/audits/<agent>-design-audit-<YYYY-MM-DD>/
+  README.md                       # entry point for the owner
+  surface-inventory.md
+  critique.md
+  backlog.md
+  preview-brief.md
+  mockups/
+    index.html
+    preview.css
+    preview.js
+    README.md                     # craft-pass log
+    assets/                       # only when genuinely needed
+  screenshots/
+    current/
+    proposed/
+  run-decisions.md                # owner ledger, dispositions left blank
+  implementation-sequence.md
+  implementation-prompts/
+    01-<foundation-or-surface>.md
+    ...
+  shared-foundations-contract.md  # when phase 4 defines shared primitives
+```
 
-Phase 3 produces one navigable static prototype under `mockups/`; it is not a loose mood board or a few
-hero screens. It must:
+Additional split HTML/CSS/JS files are allowed when they improve maintainability. Every link must work
+when the folder is served by a simple local static server from the repository root.
 
-- Cover every inventory row marked `primary` and every materially different state marked `must-mock`.
-- Use shared prototype tokens/components so the proposal reads as one product.
-- Include a persistent index for navigating surfaces and switching desktop/mobile and important states.
-- Include a review-layer current/proposed comparison for every primary surface, using the captured baseline
-  rather than attempting to rebuild the old UI inside the prototype.
-- Use realistic, coherent product content rather than lorem ipsum or unrelated fake data.
-- Preserve the current shell and functional information requirements.
-- Explain deviations from current design-system canon as explicit proposed canon changes, not accidental drift.
-- Pass the swap, squint, signature, token, content-coherence, responsive, and accessibility checks before review.
+The run folder `README.md` is the owner's entry point and must include:
 
-Image generation may support direction exploration when available, but generated images are references only.
-The final review artifact must be inspectable HTML/CSS/JS with real text and feasible component structure.
+1. One-paragraph verdict and the design thesis.
+2. Baseline branch, commit SHA, agent slug, run date, and the phases completed.
+3. The exact command and URL to open the prototype.
+4. Recommended review order and direct anchors to every primary surface.
+5. The five most consequential proposed changes.
+6. How to compare current and proposed screenshots.
+7. Inventory coverage counts, evidence gaps, and anything the prototype could not honestly demonstrate.
+8. What the owner must decide next, and how to record it in `run-decisions.md`.
+9. A plain statement that no implementation prompt is authorized until dispositions exist.
+10. Final folder size.
 
-## Phase 3 owner gate
+## Git and closeout
 
-At the end of phase 3:
+**The agent runs no Git commands.** No branch, no commit, no push, no PR, no merge, no deploy — not even
+for the deliverable folder. Leave the new folder in the working tree and tell the owner it is ready. The
+owner decides how it lands.
 
-1. Provide exact instructions to open the prototype.
-2. Provide `review-guide.md` with the recommended inspection order.
-3. Populate `run-decisions.md` with every backlog ID and surface, leaving owner disposition fields open.
-4. Report evidence gaps and anything the prototype could not honestly demonstrate.
-5. Stop. Do not generate final implementation prompts until the owner supplies decisions.
+Before reporting completion:
 
-Owner dispositions are `approve`, `approve-with-notes`, `revise`, `reject`, or `defer`.
+- Verify no file outside `docs/audits/<agent>-design-audit-<YYYY-MM-DD>/` and `surface-ids.md` changed.
+  `git status --porcelain` is read-only and is the correct check.
+- Confirm that no production code, schema, migration, token source, or configuration file was touched.
+- Stop the local dev servers started in phase 0b.
+- Report: deliverable path, prototype open command, coverage counts, evidence gaps, folder size, and the
+  decisions the owner now owes.
 
-## Phase 4 rules
-
-Phase 4 begins only after owner decisions exist. It must:
-
-- Exclude rejected and deferred directions.
-- Incorporate all approval notes and resolve revisions before prompt generation.
-- Produce ready-to-paste agent prompts, not vague briefs.
-- Order prompts by shared foundations and dependencies while keeping product PRs small.
-- Identify files likely to collide so concurrent agents are not assigned overlapping ownership.
-- Keep implementation, commit, push, PR, merge, and deploy as separate future permissions.
+`docs/audits/` is excluded from `pnpm format:check` and `pnpm lint`, so run artifacts cannot redden the
+repository gates. That exclusion is not a licence for sloppy prototype code — phase 3's feasibility check
+still applies.
 
 ## Hard stops
 
 Stop and report precisely when:
 
-1. The app cannot run or authenticate after the documented local setup and bounded troubleshooting.
-2. Primary product surfaces cannot be reached well enough for a truthful comprehensive preview.
-3. A required decision changes product scope, information architecture, provider/legal behavior, schema, or
-   another locked product constraint.
-4. Phase 4 is requested without owner dispositions.
+1. A required capability is missing.
+2. The app cannot run or authenticate after documented setup and bounded troubleshooting.
+3. Primary product surfaces cannot be reached well enough for a truthful comprehensive preview.
+4. A required decision would change product scope, information architecture, provider or legal behavior,
+   schema, or another locked constraint.
+5. Local setup would overwrite owner data.
+6. The deliverable cannot be produced within the size budget without hiding a coverage gap.
 
-Partial evidence may still be useful, but it must never be rounded up to a complete full-product preview.
-
-## Git and closeout
-
-Artifact creation does not automatically authorize branch creation, commit, push, or PR creation. When
-separately authorized:
-
-- Stage only `docs/audits/<run-id>/` and intentional prompt-pack changes requested by the owner.
-- Use a docs-scoped Conventional Commit.
-- Open one audit/preview PR for review; never merge it.
-- Product implementation belongs to later branches/PRs generated from approved prompt slices.
+Partial evidence can still be useful, but it must never be rounded up to a complete audit. Report what was
+covered, what was not, and why.
 
 ## Resume policy
 
-1. Identify the latest run folder and completed phase outputs.
-2. Verify its recorded commit still matches the intended baseline; note drift if not.
-3. Resume at the first unfinished phase.
-4. Never treat an agent-filled draft as owner approval.
+If a run is interrupted:
+
+1. Identify the run folder and which phase outputs are complete.
+2. Verify the recorded baseline SHA still matches the checkout; note drift if it does not.
+3. Resume at the first unfinished phase, writing into the same folder.
+4. Never treat an agent recommendation as an owner decision.

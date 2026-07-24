@@ -1,7 +1,8 @@
 # Phase 3: comprehensive navigable product preview
 
 Build the complete owner-review artifact specified by `preview-brief.md`. This phase is mandatory and cannot
-be skipped because no single P0 “direction item” exists. The product-wide proposal is the deliverable.
+be skipped because no single P0 “direction item” exists. The product-wide proposal is the deliverable, and
+it is what the owner will judge every phase-4 prompt against.
 
 Do not edit `apps/web/`, API code, shared contracts, or production design-system sources.
 
@@ -14,20 +15,21 @@ Do not edit `apps/web/`, API code, shared contracts, or production design-system
 ## Required outputs
 
 ```text
-docs/audits/<run-id>/
+<run-folder>/
   mockups/
     index.html
     preview.css
     preview.js
     assets/                 # only when genuinely needed
-    README.md
+    README.md               # craft-pass log
   screenshots/proposed/
-  review-guide.md
-  run-decisions.md
 ```
 
 Additional split HTML/CSS/JS files are allowed when they improve maintainability. All links must work when
-served by a simple local static server from the repository.
+served by a simple local static server from the repository root.
+
+The owner-facing entry point (`<run-folder>/README.md`) and the decision ledger (`run-decisions.md`) are
+written at closeout, after phase 4, so they can describe the finished deliverable.
 
 ## Prototype requirements
 
@@ -72,36 +74,20 @@ For each check, record pass/revision/gap in `mockups/README.md`. Fix failures be
 
 ## Proposed screenshots
 
-Capture every primary surface at desktop and 390x844 from the prototype. Use names that map directly to the
-inventory ID. Add state-specific captures where they materially affect a decision. Screenshots are evidence
-and review shortcuts; the navigable prototype remains authoritative.
+Capture every primary surface at desktop and 390x844 from the prototype into
+`<run-folder>/screenshots/proposed/`. Use JPEG or WebP named after the canonical surface ID and viewport,
+mirroring the `current/` naming so the two folders line up. Add state-specific captures where they
+materially affect a decision, and drop state variants first if the run approaches the size budget.
+Screenshots are evidence and review shortcuts; the navigable prototype remains authoritative.
 
-## `review-guide.md`
+## Quality gate
 
-Include:
+Before phase 4:
 
-1. Exact command and URL for opening the prototype.
-2. Baseline branch/commit and scope statement.
-3. Recommended review order by scenario.
-4. Direct links/anchors to every primary surface.
-5. A concise design thesis and the five most consequential changes.
-6. How to compare current and proposed screenshots.
-7. Known limitations and evidence gaps.
-8. Instructions for recording decisions in `run-decisions.md` or supplying them in chat.
+- Every `primary` and `must-mock-state` row from the coverage contract is navigable in the prototype.
+- Every adversarial check above is recorded as pass, revision, or gap in `mockups/README.md`.
+- Current and proposed captures exist for every primary surface, or the gap is explicit.
+- No production code, token source, schema, or configuration file changed.
 
-## `run-decisions.md`
-
-Copy `run-decisions-template.md`. Pre-fill run metadata, every surface ID, every backlog ID, prototype links,
-and the agent's concise recommendation. Leave owner disposition and owner notes unfilled.
-
-The agent may recommend; it may not self-approve.
-
-## Stop gate
-
-After all outputs are complete:
-
-- Report the prototype path/open command, review guide, screenshot folders, inventory coverage, and gaps.
-- Confirm no production code changed.
-- Stop for owner review.
-- Do not generate phase 4 prompts, create a branch, commit, push, or open a PR without the corresponding
-  separate authorization.
+Then continue to phase 4. This is a single continuous run; the owner reviews the finished folder, not a
+mid-run checkpoint.

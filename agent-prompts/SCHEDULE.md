@@ -83,6 +83,7 @@ Do not deploy from an unattended prompt. Deployment remains an explicit owner de
 | You need to decide what to build next | `remote-prompts/planning/roadmap-sync.md` |
 | You need an actionable implementation slice | `remote-prompts/planning/next-slice-planner.md` |
 | Docs may no longer match reality | `remote-prompts/planning/doc-drift.md` |
+| You want a full-product design audit and proposed redesign preview | `design-audit/README.md` (owner-initiated, attended, one deliverable folder) |
 | You are preparing to ship | `remote-prompts/planning/release-readiness.md` |
 | You need to clear open maintenance PRs | `remote-prompts/planning/pr-triage.md` |
 | You are starting interactive coding | `daily/start-session.md` |
@@ -96,3 +97,6 @@ Do not deploy from an unattended prompt. Deployment remains an explicit owner de
   specialist runs.
 - Do not let unattended prompts make schema, auth, migration, visual redesign, deployment, or
   product-scope decisions. Those become report-only recommendations.
+- `design-audit/` is not on a cadence. Run it when a full-product design pass is genuinely wanted — it is
+  attended, takes hours, and each run adds a permanent folder to `docs/audits/`. Prefer
+  `remote-prompts/technical/design-system.md` for routine drift checks.

@@ -20,6 +20,11 @@ design-system-audits/
 .claude/
 agent-prompts/
 
+# Agent-authored design-audit deliverables (prose, prototype HTML/CSS/JS, and
+# screenshots produced by `agent-prompts/design-audit/`). Owned by their run, not
+# by Prettier — an audit run must not be able to redden the repo format gate.
+docs/audits/
+
 # Vendored read-only snapshot of ritmofit-ios source (cross-surface parity prompts).
 # Foreign content; refreshed verbatim from ritmofit-ios, never formatter-owned.
 ios-snapshot/
