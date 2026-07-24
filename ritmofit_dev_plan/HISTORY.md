@@ -10,6 +10,28 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-24 (all-harden round 24 + dependency hardening) — deployed (Worker
+> `c25b7515-c92f-462e-8686-24289774687e`).** Main HEAD `e36fcf9` contains three sequential
+> disjoint-lane PRs with green combined CI: **PR #360** serializes Live Screen Wake Lock acquisition
+> and ignores stale sentinel releases; **PR #361** enforces the existing 50-character / 20-unique-tag
+> class contract atomically at the write boundary while preserving duplicate-add success; and **PR
+> #362** makes malformed later Spotify saved-track, saved-playlist, and playlist-track pages fail
+> closed instead of returning misleading partial results. The release also includes **PR #359**'s
+> Hono, Better Auth, and PostCSS advisory updates plus workspace-routing documentation. Code, tests,
+> generated OpenAPI, and dependency updates — **no schema / migration** (remote D1: "No migrations
+> to apply"). Rollback anchor: prior Worker `2456a149-c2a0-43b0-b8fb-b1a282b31d49`. The exact clean
+> release tree passed formatting, typecheck, lint, design-system verification, 635 web tests, 428 API
+> unit tests, 30 music-package tests, 151 Worker/D1 integration tests, production build, OpenAPI
+> no-drift, contract parity, dependency-audit policy, and `git diff --check`. Post-deploy smoke passed:
+> SPA and health `200`; protected class, community, share, playlist-import, cover/tag, and provider
+> routes `401`; missing public cover `404`; required security headers present; and Cloudflare reported
+> the new Worker version at 100%. Served SPA asset `assets/index-BtwXnVAT.js` matched the production
+> build with SHA-256
+> `d0969cf1b658fa0c46f94342ac0b4c8153c898ed155ab56cd6b78fc85fa90095`. A signed-in browser
+> initially loaded the prior service-worker shell, displayed the update prompt, and advanced through
+> "Reload now" to the deployed entry asset; the workspace restored with no browser warnings, errors,
+> or horizontal overflow. No audible provider playback or production-data mutation was performed.
+
 > **Session 2026-07-20–21 (full-product UI upgrade closeout) — deployed (Worker
 > `2456a149-c2a0-43b0-b8fb-b1a282b31d49`).** Main HEAD `1be7d7e` closes the approved six-slice
 > D20/D21 full-product sequence and its post-sequence reconciliation: shared UI foundations (**PR
