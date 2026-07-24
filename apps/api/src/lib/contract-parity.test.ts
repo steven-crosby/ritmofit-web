@@ -192,20 +192,15 @@ describe('compareContractParity', () => {
     ]);
   });
 
-  it('allowlists the additive Section.id (iOS decodes only type + startOffsetMs)', () => {
-    // The run-payload now serves a stable `id` on each section, but the vendored
-    // iOS Section derives its `id` (computed `var id: Int { startOffsetMs }`) and
-    // does not decode the wire field — a tracked lag, not a gate failure. With the
-    // real allowlist, Section.id must land in `allowlisted`, never in `failing`,
-    // and must not register as a stale entry.
+  it('requires Section.id now that the real parity allowlist is empty', () => {
     const result = compareContractParity(
       { Section: ['id', 'type', 'startOffsetMs'] },
-      { Section: ['type', 'startOffsetMs'] },
+      { Section: ['id', 'type', 'startOffsetMs'] },
       CONTRACT_PARITY_ALLOWLIST,
     );
     expect(result.failing).toEqual([]);
-    expect(result.allowlisted.map((d) => `${d.struct}.${d.field}`)).toEqual(['Section.id']);
-    expect(result.staleAllowlist.map((e) => `${e.struct}.${e.field}`)).not.toContain('Section.id');
+    expect(result.allowlisted).toEqual([]);
+    expect(result.staleAllowlist).toEqual([]);
   });
 });
 

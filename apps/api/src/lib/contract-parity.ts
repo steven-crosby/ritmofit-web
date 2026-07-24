@@ -17,8 +17,8 @@
  * - `missing-on-ios` — server serves a field the DTO doesn't decode. Additive and
  *   forward-compatible (Swift `Decodable` with explicit `CodingKeys` ignores
  *   unknown keys), so it never blacks out the live screen — but it is a real
- *   **capability lag** (iOS can't surface that field). Known lags are tracked in
- *   {@link CONTRACT_PARITY_ALLOWLIST}; a NEW one fails CI.
+ *   **capability lag** (iOS can't surface that field). Temporary, explicitly
+ *   accepted lags belong in {@link CONTRACT_PARITY_ALLOWLIST}; a new one fails CI.
  * - `unknown-to-server` — the DTO decodes a field the server never sends. This is
  *   the client-crashing direction (a removed/renamed contract field). Never
  *   allowlisted by default.
@@ -207,62 +207,14 @@ export interface ParityResult {
 }
 
 /**
- * Known, tracked DTO lags — additive run-payload fields the iOS snapshot does not
- * yet decode. Each is forward-compatible (the live screen still renders), so it is
- * a capability follow-up for the `ritmofit-ios` repo, not a web defect. Remove an
- * entry once the iOS DTO adds the field (the stale-allowlist guard enforces this).
+ * Temporary, tracked DTO lags. Phase 0 reconciled the iOS run-payload DTO with the
+ * current contract, so the allowlist is intentionally empty. If an additive lag is
+ * ever accepted again, document why and remove it as soon as iOS catches up (the
+ * stale-allowlist guard enforces removal).
  *
  * Source contract: `packages/shared/src/entities/run-payload.ts`.
  */
-export const CONTRACT_PARITY_ALLOWLIST: AllowlistEntry[] = [
-  {
-    struct: 'RunClass',
-    field: 'timelineMode',
-    reason:
-      'Additive v1 field (sequential|free). iOS RunClass omits it; consumers assume sequential. iOS parity follow-up.',
-  },
-  {
-    struct: 'RunTrack',
-    field: 'displayRpm',
-    reason:
-      'M6/D14 per-track cadence (PR #110). iOS RunTrack does not decode it yet — Live cannot surface RPM. iOS parity follow-up.',
-  },
-  {
-    struct: 'RunTrack',
-    field: 'holdCount',
-    reason:
-      'M6/D14 per-track hold count (PR #110). iOS RunTrack does not decode it yet. iOS parity follow-up.',
-  },
-  {
-    struct: 'RunTrack',
-    field: 'clipStartMs',
-    reason:
-      'Additive v1 clip-window start. iOS RunTrack omits it; cue/move anchors are pre-rebased so Live is correct, but the beat grid origin is unavailable. iOS parity follow-up.',
-  },
-  {
-    struct: 'RunTrack',
-    field: 'beatAnchorMs',
-    reason:
-      'Additive v1 downbeat offset. iOS RunTrack omits it; needed only for editor beat-grid drawing. iOS parity follow-up.',
-  },
-  {
-    struct: 'Move',
-    field: 'beat',
-    reason:
-      'Additive v1 derived beat (mirrors Cue). iOS Move omits it; Move shows time/name without beat number. iOS parity follow-up.',
-  },
-  {
-    struct: 'Move',
-    field: 'bar',
-    reason: 'Additive v1 derived bar (mirrors Cue). iOS Move omits it. iOS parity follow-up.',
-  },
-  {
-    struct: 'Section',
-    field: 'id',
-    reason:
-      'Additive v1 stable section id (matches the class_sections row, mirrors cue/move id). iOS Section uses a computed `id` derived from startOffsetMs, not the wire id, so it does not decode this field — decode follow-up so Live can deep-link a band. iOS parity follow-up.',
-  },
-];
+export const CONTRACT_PARITY_ALLOWLIST: AllowlistEntry[] = [];
 
 /**
  * Compare the contract the server advertises against what the iOS DTOs decode.

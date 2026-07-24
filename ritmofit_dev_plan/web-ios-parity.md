@@ -35,8 +35,8 @@ In practice, for current web PRs:
 
 | Layer | Mechanism | Enforced? |
 |---|---|---|
-| **Data** | Versioned **`GET /classes/:id/run-payload`** + the rest of the REST surface; shared Zod types in `packages/shared`; `apps/api/openapi/openapi.json` is generated and **drift-gated** in web CI. A vendored iOS run-payload snapshot is also checked for additive field drift. | ✅ within web; iOS type/nullability/enum review remains manual |
-| **Design** | `ritmofit_design_system/tokens.json` is the platform-agnostic source of truth. Web token CSS and the in-repo generated `ritmofit_design_system/ios/RFTokens.swift` are drift-gated by the web "Design system verify" CI step. The separate iOS repo's vendored token copy is not yet cross-repo gated. | ⚠️ partial |
+| **Data** | Versioned **`GET /classes/:id/run-payload`** + the rest of the REST surface; shared Zod types in `packages/shared`; `apps/api/openapi/openapi.json` is generated and **drift-gated** in web CI. A vendored iOS run-payload snapshot is checked for field drift, and iOS CI compares both repositories directly. | ✅ automated field parity; type/nullability/enum review remains manual |
+| **Design** | `ritmofit_design_system/tokens.json` is the platform-agnostic source of truth. Web token CSS and generated Swift are drift-gated in web CI; iOS CI compares its vendored tokens and generated Swift against current web canon. | ✅ cross-repo gated |
 | **Capability** | D20 solo-first/web-first direction now controls current product planning; this doc is historical context. | Paused as a gate |
 
 ### Known seam gaps (process debt to close)
@@ -45,22 +45,16 @@ In practice, for current web PRs:
   step **"iOS contract parity (run-payload DTO drift)"** (`pnpm --filter @ritmofit/api contract-parity`,
   `apps/api/scripts/check-contract-parity.ts`) compares the field sets the OpenAPI spec advertises
   against the fields the vendored `ios-snapshot/Core/Models/RunPayload.swift` DTOs decode. A *new* drift
-  in either direction fails CI; known, accepted additive lag is tracked in the script's allowlist
+  in either direction fails CI; a temporary, explicitly accepted additive lag can be tracked in the script's allowlist
   (`apps/api/src/lib/contract-parity.ts` → `CONTRACT_PARITY_ALLOWLIST`). Field-name presence only —
   type/nullability/enum drift stays the job of the manual `agent-prompts/remote-prompts/technical/api-contract-parity.md`
-  pass. **Currently allowlisted (iOS DTO follow-ups owned in `ritmofit-ios`):** `RunClass.timelineMode`;
-  `RunTrack.displayRpm` / `holdCount` (D14, PR #110) / `clipStartMs` / `beatAnchorMs`; `Move.beat` /
-  `Move.bar`. Last verified during Session 9 on 2026-06-29: OpenAPI regenerated cleanly (`42 schemas,
-44 paths`) — **current spec is 48 schemas · 50 paths** (last confirmed 2026-07-07 deploy, Worker `9d0a5710`).
-- **Still open: no design-token drift check for the iOS-vendored copy.** iOS vendors its own
-  `ritmofit-ios/design-tokens/tokens.json` and `…/Core/DesignSystem/RFTokens.swift`, hand-synced from web
-  canon; nothing fails when they drift from `ritmofit-web/ritmofit_design_system/tokens.json` (live
-  symptom: iOS lagged the v4.1 font migration). The contract-parity gate above doesn't cover tokens
-  because the iOS `tokens.json` isn't vendored into this repo — closing it needs either vendoring it or a
-  cross-repo check.
-- **iOS Swift models can silently lag additive contract fields** — now caught by the gate above for the
-  run-payload surface. Re-verify the iOS DTO against the current contract before integration work; refresh
-  `ios-snapshot/` so the gate compares against current iOS.
+  pass. **Currently allowlisted: none.** Phase 0 added `timelineMode`; RPM/hold and clip/beat anchors;
+  move beat/bar; and stable section IDs to the iOS DTO. Verified 2026-07-24 against the current
+  generated spec: **54 schemas · 55 paths**.
+- **Cross-repo drift is now gated from iOS CI.** The iOS check compares its vendored OpenAPI/docs,
+  design tokens, generated `RFTokens.swift`, and the web repo's vendored contract-facing Swift snapshot
+  against the two checked-out repositories. Web remains authoritative; the check makes an overdue
+  refresh fail visibly instead of depending on a manual reminder.
 
 ## Historical / Paused Parity Backlog
 
@@ -174,9 +168,6 @@ Keep it as historical context for later iOS refinement and contract/design sync.
   label + grayscale encoding intact, plasma only at the all-out crest. iOS builder should mirror the
   class-shape workbench (arc as the central instrument) when its builder surface lands. Presentation
   only — derived from the existing run-payload, no contract change.
-- Run-payload DTO catch-up for currently allowlisted additive fields: `RunClass.timelineMode`;
-  `RunTrack.displayRpm` / `holdCount` / `clipStartMs` / `beatAnchorMs`; `Move.beat` / `Move.bar`
-
 **iOS has, web needs:**
 
 - No current capability-level backlog item. The prior full **live-run** gap is closed on web:
