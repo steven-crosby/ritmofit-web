@@ -39,9 +39,12 @@ export function useWakeLock(active: boolean): WakeLockStatus {
     }
 
     let sentinel: WakeLockSentinel | null = null;
+    let acquiring = false;
     let cancelled = false;
 
     const acquire = async () => {
+      if (cancelled || sentinel !== null || acquiring) return;
+      acquiring = true;
       try {
         const next = await wakeLock.request('screen');
         if (cancelled) {
@@ -55,12 +58,15 @@ export function useWakeLock(active: boolean): WakeLockStatus {
         // `awake` across a hide/return — the capability holds, and re-acquire is
         // automatic — so the chip doesn't flicker to caution behind a hidden tab.
         next.addEventListener('release', () => {
-          sentinel = null;
+          // A late release from an older sentinel must not clear a newer lock.
+          if (sentinel === next) sentinel = null;
         });
       } catch {
         // Permissions / not-visible / unsupported — leave the screen unmanaged
         // and say so, so the instructor can turn off the device's auto-lock.
-        setStatus('unavailable');
+        if (!cancelled) setStatus('unavailable');
+      } finally {
+        acquiring = false;
       }
     };
 
