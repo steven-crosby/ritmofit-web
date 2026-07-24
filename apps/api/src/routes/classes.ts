@@ -3,11 +3,13 @@
  * centralized `requireAccess` (D1 has no RLS; a missing check is a security bug).
  */
 import { Hono } from 'hono';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import {
   CLASS_LIST_DEFAULT_LIMIT,
   CLASS_LIST_NEXT_CURSOR_HEADER,
   MAX_CLASS_COVER_BYTES,
+  MAX_CLASS_TAGS,
+  addClassTagSchema,
   classListQuerySchema,
   createClassSchema,
   updateClassSchema,
@@ -504,23 +506,45 @@ classRoutes.post('/:id/tags', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');
   await requireAccess(db, c.get('userId'), id, 'edit');
-  const body = await c.req.json().catch(() => ({}));
-  if (typeof body.tag !== 'string' || body.tag.trim() === '') {
-    throw new HttpError(400, 'BAD_REQUEST', 'Tag must be a non-empty string.');
-  }
-  const tag = body.tag.trim().toLowerCase();
+  const { tag } = addClassTagSchema.parse(await c.req.json());
 
   const now = Date.now();
-  await db
+  const inserted = await db
     .insert(classTags)
-    .values({
-      id: crypto.randomUUID(),
-      classId: id,
-      tag,
-      createdAt: now,
-      updatedAt: now,
-    })
-    .onConflictDoNothing({ target: [classTags.classId, classTags.tag] });
+    .select(
+      db
+        .select({
+          id: sql<string>`${crypto.randomUUID()}`.as('id'),
+          classId: classes.id,
+          tag: sql<string>`${tag}`.as('tag'),
+          createdAt: sql<number>`${now}`.as('created_at'),
+          updatedAt: sql<number>`${now}`.as('updated_at'),
+        })
+        .from(classes)
+        .where(
+          and(
+            eq(classes.id, id),
+            sql`(SELECT count(*) FROM ${classTags} WHERE ${classTags.classId} = ${id}) < ${MAX_CLASS_TAGS}`,
+          ),
+        ),
+    )
+    .onConflictDoNothing({ target: [classTags.classId, classTags.tag] })
+    .returning({ id: classTags.id });
+
+  if (inserted.length === 0) {
+    const existing = await db
+      .select({ id: classTags.id })
+      .from(classTags)
+      .where(and(eq(classTags.classId, id), eq(classTags.tag, tag)))
+      .get();
+    if (!existing) {
+      throw new HttpError(
+        422,
+        'VALIDATION_ERROR',
+        `A class can have at most ${MAX_CLASS_TAGS} tags.`,
+      );
+    }
+  }
 
   return c.json({ success: true, tag }, 201);
 });

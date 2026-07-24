@@ -5,7 +5,11 @@
  * see never surfaces, even when it carries the searched tag.
  */
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CLASS_LIST_NEXT_CURSOR_HEADER } from '@ritmofit/shared';
+import {
+  CLASS_LIST_NEXT_CURSOR_HEADER,
+  MAX_CLASS_TAG_LENGTH,
+  MAX_CLASS_TAGS,
+} from '@ritmofit/shared';
 import { authed, signUpUser, type TestUser } from './helpers.js';
 
 interface ClassRow {
@@ -88,5 +92,60 @@ describe('class tag filter (integration)', () => {
     // The two pages are distinct and together cover both HIIT classes.
     expect(secondPage[0]!.id).not.toBe(firstPage[0]!.id);
     expect([firstPage[0]!.id, secondPage[0]!.id].sort()).toEqual([hiitA, hiitB].sort());
+  });
+
+  it('rejects an oversized tag without poisoning class responses', async () => {
+    const classId = await createClass(owner, 'Bounded tag length');
+    const rejected = await authed(owner.cookie)(`/api/v1/classes/${classId}/tags`, {
+      method: 'POST',
+      body: JSON.stringify({ tag: 'x'.repeat(MAX_CLASS_TAG_LENGTH + 1) }),
+    });
+
+    expect(rejected.status).toBe(422);
+    expect(await rejected.json()).toMatchObject({
+      error: { code: 'VALIDATION_ERROR' },
+    });
+
+    const detail = await authed(owner.cookie)(`/api/v1/classes/${classId}`);
+    expect(detail.status).toBe(200);
+    expect((await detail.json()) as { tags: string[] }).toMatchObject({ tags: [] });
+
+    const library = await authed(owner.cookie)('/api/v1/classes');
+    expect(library.status).toBe(200);
+  });
+
+  it('atomically caps unique tags while preserving duplicate-add success', async () => {
+    const classId = await createClass(owner, 'Bounded tag count');
+    for (let index = 0; index < MAX_CLASS_TAGS - 1; index += 1) {
+      await tagClass(owner, classId, `tag-${index}`);
+    }
+
+    const competingAdds = await Promise.all(
+      ['tag-last-a', 'tag-last-b'].map((tag) =>
+        authed(owner.cookie)(`/api/v1/classes/${classId}/tags`, {
+          method: 'POST',
+          body: JSON.stringify({ tag }),
+        }),
+      ),
+    );
+    expect(competingAdds.map((response) => response.status).sort()).toEqual([201, 422]);
+    const overflow = competingAdds.find((response) => response.status === 422)!;
+    expect(await overflow.json()).toEqual({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: `A class can have at most ${MAX_CLASS_TAGS} tags.`,
+      },
+    });
+
+    const duplicate = await authed(owner.cookie)(`/api/v1/classes/${classId}/tags`, {
+      method: 'POST',
+      body: JSON.stringify({ tag: ' TAG-0 ' }),
+    });
+    expect(duplicate.status).toBe(201);
+    expect(await duplicate.json()).toEqual({ success: true, tag: 'tag-0' });
+
+    const detail = await authed(owner.cookie)(`/api/v1/classes/${classId}`);
+    expect(detail.status).toBe(200);
+    expect(((await detail.json()) as { tags: string[] }).tags).toHaveLength(MAX_CLASS_TAGS);
   });
 });

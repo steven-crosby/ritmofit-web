@@ -18,6 +18,8 @@ import {
   CLASS_LIST_MAX_LIMIT,
   CLASS_LIST_NEXT_CURSOR_HEADER,
   MAX_CLASS_COVER_BYTES,
+  MAX_CLASS_TAG_LENGTH,
+  MAX_CLASS_TAGS,
   classSchema,
   classWithAccessSchema,
   classListItemSchema,
@@ -302,14 +304,16 @@ const doc = {
     '/classes/{id}/tags': {
       parameters: [idParam],
       post: {
-        summary: 'Add a tag to a class (edit). Tag is lowercased; duplicates are no-ops.',
+        summary: `Add a tag to a class (edit; maximum ${MAX_CLASS_TAGS}). Tag is lowercased; duplicates are no-ops.`,
         requestBody: {
           required: true,
           content: {
             'application/json': {
               schema: {
                 type: 'object',
-                properties: { tag: { type: 'string', minLength: 1 } },
+                properties: {
+                  tag: { type: 'string', minLength: 1, maxLength: MAX_CLASS_TAG_LENGTH },
+                },
                 required: ['tag'],
               },
             },
@@ -328,7 +332,9 @@ const doc = {
               },
             },
           },
-          '400': { description: 'Tag must be a non-empty string' },
+          '422': {
+            description: `Invalid tag, or the class already has ${MAX_CLASS_TAGS} unique tags`,
+          },
         },
       },
     },
