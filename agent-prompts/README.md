@@ -80,6 +80,13 @@ read-only pass). No prompt ever merges, deploys, migrates the remote D1, or chan
   Runs are comparable because they bind to canonical `surface-ids.md` and build the deterministic
   `fixtures.md` data. Start at [`design-audit/README.md`](./design-audit/README.md). Not unattended remote
   maintenance — it needs a browser, a running local app, and an owner to say go.
+- `browser-verification/` — a zero-dependency harness that measures the running app in real
+  Chrome over the DevTools Protocol: contrast (AAA on Live), focus rings, horizontal overflow,
+  and reduced motion. Tooling, not a prompt — use it to satisfy the "verify in a real browser"
+  requirement instead of eyeballing a screenshot. It ships with a self-test that validates it
+  against `tokens.json` and is itself verified to fail; **run that first, because the two
+  measurement mistakes it guards against produce plausible-looking wrong numbers rather than
+  obvious errors.** Start at [`browser-verification/README.md`](./browser-verification/README.md).
 - `daily/` — **interactive**, person-in-the-loop prompts that run on your own machine:
   - `start-session` — interactive orientation before a personal work block.
   - `close-session` — interactive cleanup, verification, PR/deploy hygiene, and handoff.
