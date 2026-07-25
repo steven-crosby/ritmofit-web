@@ -66,6 +66,11 @@ safe rebases of trivially-stale green `auto-maintenance` branches (use `REPORT-O
 read-only pass). No prompt ever merges, deploys, migrates the remote D1, or changes secrets.
 
 ## Folder
+- `orchestrate-parallel-round.md` — orchestrator runbook for a round of **concurrent lane-agents**
+  across the `ritmofit-web` checkouts. Paste it at the workspace container root, not inside a
+  checkout. Sits outside both the daily and remote loops: map state → disjoint-lane partition →
+  ephemeral briefs → plan gate → CI gate → merge/cleanup loop. The iOS repo keeps a counterpart for
+  its own clones; the method is shared, the partitions and gates are not.
 - `design-audit/` — **design-audit pack v6**: an agent-agnostic, repeatable full-product audit. Point any
   capable agent at the folder; it assesses the objective, requests permission once, then runs
   continuously: active-surface inventory and critique → ranked backlog → comprehensive navigable

@@ -7,6 +7,7 @@
 <!-- note (Codex, 2026-07-16): Restored stale-chunk recovery and real-browser playback verification guidance. -->
 <!-- note (Grok, 2026-07-22): Added short workspace-container block so nested-git sessions still see multi-checkout rules. -->
 <!-- note (Claude, 2026-07-24): Recorded the agent-agnostic design-audit pack v6 and its docs/audits deliverable path. -->
+<!-- note (Claude, 2026-07-25): Replaced the hardcoded `~/repos/ritmostudio/` workspace path with portable discovery commands (split containers are now possible, and ritmofit-ios clones can live in either), noted cross-round machine contention, and pointed at the new parallel-round runbook. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -14,15 +15,27 @@ to it, identify the agent and date in a short HTML comment.
 
 ## Workspace container (parent)
 
-This checkout often lives under `~/repos/ritmostudio/`, a **non-git workspace container** with
-`ritmofit-ios/` and multiple independent `ritmofit-web` checkouts. Parent routing guide:
-`../../AGENTS.md` (or `~/repos/ritmostudio/AGENTS.md`).
+This checkout usually lives inside a **non-git workspace container** (running `git` at that root
+fails) holding several independent `ritmofit-web` checkouts, one per concurrent agent. Machines may
+use a single container or a split pair — one per product — and `ritmofit-ios` clones can appear in
+either. Discover the live set instead of assuming it; per "New Machine And Portability" below, do not
+hardcode a home directory here:
+
+```bash
+# From a workspace container root; repeat in each sibling container.
+find . -mindepth 1 -maxdepth 3 -type d -name ritmofit-web -exec test -e '{}/.git' ';' -print
+find . -mindepth 1 -maxdepth 3 -type d -name ritmofit-ios -exec test -e '{}/.git' ';' -print
+```
 
 - Confirm which checkout and branch you are in before editing
   (`git branch --show-current`). Sibling checkouts are not in sync by default.
 - Never copy changes between checkouts — use git (commit/push/pull) through shared `origin`.
 - Serialize shared browser profiles, GUI sessions, and local-port QA when concurrent lanes need them.
+  A concurrent iOS round serializes different resources (simulator devices, DerivedData) but shares
+  the same machine — coordinate total agent count across both.
 - Freeze shared OpenAPI/routes/auth-db-error helpers/migrations across parallel lanes until coordinated.
+- To run a round of concurrent lane-agents across the checkouts, use
+  `agent-prompts/orchestrate-parallel-round.md`.
 - **This file remains authoritative** for code in this checkout.
 
 ## Source Of Truth
