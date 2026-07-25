@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { betaAllowedEmails, canCreateBetaAccount } from './auth.js';
+import { betaAccessMode, betaAllowedEmails, canCreateBetaAccount } from './auth.js';
 
 describe('private-beta account allowlist', () => {
   it('normalizes comma-separated emails', () => {
@@ -56,5 +56,46 @@ describe('private-beta account allowlist', () => {
         'generated@example.com',
       ),
     ).toBe(true);
+  });
+});
+
+describe('reported access mode', () => {
+  it('reports invite_only wherever the gate actually requires an invitation', () => {
+    expect(betaAccessMode({ BETTER_AUTH_URL: 'https://ritmofit.studio' })).toBe('invite_only');
+    expect(
+      betaAccessMode({
+        BETTER_AUTH_URL: 'https://ritmofit.studio',
+        BETA_ALLOWED_EMAILS: 'wife@example.com',
+      }),
+    ).toBe('invite_only');
+    // An arbitrary HTTP host is not local development.
+    expect(betaAccessMode({ BETTER_AUTH_URL: 'http://beta.example.com' })).toBe('invite_only');
+    // A configured allowlist on localhost still gates.
+    expect(
+      betaAccessMode({
+        BETTER_AUTH_URL: 'http://localhost:8787',
+        BETA_ALLOWED_EMAILS: 'wife@example.com',
+      }),
+    ).toBe('invite_only');
+  });
+
+  it('reports open only where signup genuinely is', () => {
+    expect(betaAccessMode({ BETTER_AUTH_URL: 'http://localhost:8787' })).toBe('open');
+  });
+
+  it('never disagrees with the gate it reports on', () => {
+    const environments = [
+      { BETTER_AUTH_URL: 'https://ritmofit.studio' },
+      { BETTER_AUTH_URL: 'https://ritmofit.studio', BETA_ALLOWED_EMAILS: 'wife@example.com' },
+      { BETTER_AUTH_URL: 'http://localhost:8787' },
+      { BETTER_AUTH_URL: 'http://localhost:8787', BETA_ALLOWED_EMAILS: 'wife@example.com' },
+      { BETTER_AUTH_URL: 'http://beta.example.com' },
+    ];
+    for (const env of environments) {
+      // "open" must mean any email can create an account; "invite_only" must mean
+      // an uninvited one cannot. The claim and the enforcement are one condition.
+      const uninvited = canCreateBetaAccount(env, 'stranger@example.com');
+      expect(betaAccessMode(env) === 'open').toBe(uninvited);
+    }
   });
 });

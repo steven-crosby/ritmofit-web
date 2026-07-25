@@ -37,13 +37,29 @@ export function canCreateBetaAccount(
   env: Pick<Env, 'BETTER_AUTH_URL' | 'BETA_ALLOWED_EMAILS' | 'MOCK_PROVIDERS'>,
   email: string,
 ): boolean {
-  const authUrl = new URL(env.BETTER_AUTH_URL);
-  const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(authUrl.hostname);
   // Local browser smoke can create throwaway users without weakening the invite
   // boundary on any remotely reachable origin. MOCK_PROVIDERS controls music seams;
   // it must never act as an account-creation override.
-  if (isLocalhost && !env.BETA_ALLOWED_EMAILS) return true;
+  if (betaAccessMode(env) === 'open') return true;
   return betaAllowedEmails(env.BETA_ALLOWED_EMAILS).has(email.trim().toLowerCase());
+}
+
+/**
+ * What the account-creation gate is *actually* doing right now, so the sign-in
+ * surface can stop asserting "New accounts require an invitation" in an
+ * environment where nothing requires one (design audit 2026-07-24, P1-05).
+ *
+ * This reports the same condition `canCreateBetaAccount` enforces — it does not
+ * introduce a second rule. `open` is only ever reachable on a localhost origin
+ * with no allowlist configured; every HTTPS environment reports `invite_only`,
+ * and one with an empty allowlist fails closed, exactly as before.
+ */
+export function betaAccessMode(
+  env: Pick<Env, 'BETTER_AUTH_URL' | 'BETA_ALLOWED_EMAILS'>,
+): 'open' | 'invite_only' {
+  const authUrl = new URL(env.BETTER_AUTH_URL);
+  const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(authUrl.hostname);
+  return isLocalhost && !env.BETA_ALLOWED_EMAILS ? 'open' : 'invite_only';
 }
 
 export function hasAppleSignInConfig(env: Env): boolean {

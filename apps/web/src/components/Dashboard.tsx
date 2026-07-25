@@ -82,6 +82,7 @@ import {
 } from '../lib/class-ordering.js';
 import { summarizeQueue } from '../lib/live-readiness.js';
 import { errMessage } from '../lib/errors.js';
+import { errorReference } from '../lib/error-reference.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
 import {
   libraryView,
@@ -1810,11 +1811,12 @@ function WorkstationRestingState({
           role="alert"
           statusLabel="Class library unavailable"
           title="Your library is temporarily unavailable."
-          event={
-            libraryError
-              ? `Ritmo could not read the class list: ${libraryError}`
-              : 'Ritmo could not read the class list. This is not an empty account.'
-          }
+          // The upstream message never reaches the instructor; a stable code does,
+          // so the same failure always reads the same way (P1-05).
+          event={`Ritmo could not read the class list. This is not an empty account. Reference ${errorReference(
+            'CLS',
+            libraryError,
+          )}.`}
           safety="No class was removed. A new draft remains a separate, safe starting point."
           primaryAction={
             <button
@@ -2804,12 +2806,15 @@ function AccountWorkspace({
                 {profile?.email ?? 'Signed-in identity · profile details unavailable'}
               </p>
             </div>
+            {/* This measures whether the profile payload loaded — nothing here
+                verifies an identity or an email address, and the label used to
+                read as though it did (P1-05). */}
             {profileStatus === 'loading' ? (
-              <StatusLabel kind="loading" label="Checking profile" />
+              <StatusLabel kind="loading" label="Loading profile" />
             ) : profileStatus === 'error' ? (
-              <StatusLabel kind="unavailable" label="Profile unverified" />
+              <StatusLabel kind="unavailable" label="Profile unavailable" />
             ) : (
-              <StatusLabel kind="recovered" label="Profile verified" />
+              <StatusLabel kind="recovered" label="Profile loaded" />
             )}
           </div>
         </header>
@@ -2823,12 +2828,12 @@ function AccountWorkspace({
               title="Some account status is unavailable"
               event={
                 profileStatus === 'error' && connectionsStatus === 'error'
-                  ? 'Ritmo could not verify profile or music-connection status.'
+                  ? `Ritmo could not read profile or music-connection status. Reference ${errorReference('ACC', profileLoadError ?? connectionsLoadError)}.`
                   : profileStatus === 'error'
-                    ? `Ritmo could not verify the profile${profileLoadError ? `: ${profileLoadError}` : '.'}`
-                    : `Ritmo could not verify music connections${connectionsLoadError ? `: ${connectionsLoadError}` : '.'}`
+                    ? `Ritmo could not read the profile. Reference ${errorReference('ACC', profileLoadError)}.`
+                    : `Ritmo could not read music connections. Reference ${errorReference('CONN', connectionsLoadError)}.`
               }
-              safety="No profile or provider setting changed. Verified sections remain usable; untrusted edits are disabled and provider capabilities are marked unverified."
+              safety="No profile or provider setting changed. Loaded sections remain usable; edits are paused and provider capabilities are marked unverified."
               primaryAction={
                 <button
                   type="button"
@@ -2863,7 +2868,9 @@ function AccountWorkspace({
                 Identity
               </h3>
             </div>
-            {!profileTrusted && <StatusLabel kind="disabled" label="Edits paused until verified" />}
+            {!profileTrusted && (
+              <StatusLabel kind="disabled" label="Edits paused until the profile loads" />
+            )}
           </div>
           {notice && (
             <p className="mt-3 font-ui text-sm text-state-positive" role="status">
@@ -3990,8 +3997,10 @@ function ClassWorkspace({
           {tracks.length === 0 && (
             <div className="rounded-card border border-border-subtle bg-bg-sunken p-4">
               <StatusLabel kind="empty" label="Empty run of show" />
+              {/* This promised a ranking the layout does not provide — the four
+                  routes are presented as equals because they are (P1-05, D20). */}
               <h3 className="mt-2 font-display text-lg font-semibold text-text-primary">
-                Choose the strongest starting point.
+                Start this class any way you like.
               </h3>
               <p className="mt-1 font-ui text-sm leading-5 text-text-secondary">
                 All four routes add to this class. Pulse stays empty until real duration and effort

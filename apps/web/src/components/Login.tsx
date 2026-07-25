@@ -113,7 +113,9 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
 
   const title =
     mode === 'signup'
-      ? 'Use your invited email'
+      ? inviteOnly
+        ? 'Use your invited email'
+        : 'Create your account'
       : mode === 'forgot'
         ? 'Reset your password'
         : 'Welcome back, instructor.';
@@ -309,7 +311,9 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
             onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')}
           >
             {mode === 'signin'
-              ? 'Need an invited account? Sign up'
+              ? inviteOnly
+                ? 'Need an invited account? Sign up'
+                : 'Need an account? Sign up'
               : mode === 'forgot'
                 ? 'Back to sign in'
                 : 'Have an account? Sign in'}

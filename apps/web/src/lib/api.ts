@@ -111,7 +111,8 @@ export interface ClassListPage {
 
 export interface AuthCapabilities {
   access: {
-    mode: 'invite_only';
+    /** Derived from the live account-creation gate, not a constant. */
+    mode: 'invite_only' | 'open';
   };
   socialProviders: {
     apple: boolean;
