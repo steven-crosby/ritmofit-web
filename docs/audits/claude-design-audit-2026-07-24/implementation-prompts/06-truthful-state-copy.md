@@ -16,8 +16,17 @@ currently untrue or unearned, and one error path leaks raw upstream text to the 
 
 ## Authority
 
-Implementation only. No commit, push, PR, merge, or deploy unless separately granted. This slice touches
-one **API** file — see the constraint below.
+Implementation **plus** commit, push, PR, and merge — granted by the owner on 2026-07-24.
+
+- **Granted:** branch, commit, push, open a PR, and merge it once CI is green.
+- **NOT granted:** **deploy.** Deploys are manual and production-facing (`AGENTS.md`, "Security And
+  Deployment"); merging to `main` does not deploy. Ask the owner separately, and never fold a deploy
+  into a merge.
+
+Branch from `main` (never commit directly to it), keep the PR to this slice's scope, and run the repo
+gates before requesting merge.
+
+This slice touches one **API** file — see the constraint below.
 
 ## Baseline
 
@@ -138,9 +147,11 @@ OpenAPI regeneration produces a diff you did not intend.
 ## Handoff
 
 Changed files, verification results, screenshot paths, OpenAPI/contract-parity outcomes, gaps, and
-confirmation that no commit/push/PR/merge/deploy occurred.
+the branch name, commit SHA, and PR link, and explicit confirmation that **no deploy** was performed.
 
-## Suggested branch and PR title (suggestions only)
+## Branch and PR (authorized)
+
+Use these unless you have a better reason; adjust the PR title to match what actually landed.
 
 - Branch: `design-audit/06-truthful-state-copy`
 - PR title: `fix(web): only claim what the system has verified`

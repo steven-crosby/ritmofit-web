@@ -10,7 +10,8 @@ a navigable prototype of that proposal, and ready-to-paste implementation prompt
 > **Starting an implementation session? Go to
 > [`IMPLEMENTATION-KICKOFF.md`](IMPLEMENTATION-KICKOFF.md).**
 >
-> Approval covers **implementation only** — commit, push, PR, merge, and deploy remain separate grants.
+> Implementation, commit, push, PR, and merge are all granted. **Deploy is not** — it stays a separate
+> ask, and merging to `main` does not deploy.
 
 ---
 
@@ -148,10 +149,12 @@ clauses. All six prompts are executable.
 resolved (teaching-readiness default · Music owns sourcing · group-and-demote). All six prompts are
 authorized. Start at [`IMPLEMENTATION-KICKOFF.md`](IMPLEMENTATION-KICKOFF.md).
 
-This run made **no Git commits, opened no PR, changed no production code, proposed no schema or migration
-change, and deployed nothing.** The only files it wrote are inside this folder. Owner disposition,
-implementation, commit, push, PR, merge, and deploy are seven separate grants — approving an item here
-authorizes *implementation of that item, in a separate session*, and nothing more.
+The audit run itself made no Git commits and changed no production code; the deliverable was landed
+separately in PR #367 after the owner approved it.
+
+Implementation sessions are authorized to **branch, commit, push, open a PR, and merge** once CI is green
+(granted 2026-07-24). **Deploy is not granted** — deploys are manual and production-facing, and merging
+to `main` does not deploy.
 
 ## 10. Contents
 

@@ -18,8 +18,15 @@ never a lie, and selection controls behave consistently across the product.
 
 ## Authority
 
-Implementation only. **No commit, push, PR, merge, or deploy** unless separately granted. Do not run Git
-commands beyond read-only inspection.
+Implementation **plus** commit, push, PR, and merge — granted by the owner on 2026-07-24.
+
+- **Granted:** branch, commit, push, open a PR, and merge it once CI is green.
+- **NOT granted:** **deploy.** Deploys are manual and production-facing (`AGENTS.md`, "Security And
+  Deployment"); merging to `main` does not deploy. Ask the owner separately, and never fold a deploy
+  into a merge.
+
+Branch from `main` (never commit directly to it), keep the PR to this slice's scope, and run the repo
+gates before requesting merge.
 
 ## Baseline
 
@@ -180,10 +187,12 @@ Scope expansion is a stop condition. Do not fix unrelated issues you notice; rep
 ## Handoff
 
 Report: changed files; verification commands and their results; screenshot paths; the measured Live
-contrast table; anything you could not complete; and an explicit statement of unauthorized actions **not**
-taken (no commit, no push, no PR, no merge, no deploy).
+contrast table; the branch name, commit SHA, and PR link; anything you could not complete; and
+explicit confirmation that **no deploy** was performed.
 
-## Suggested branch and PR title (suggestions only, not permission)
+## Branch and PR (authorized)
+
+Use these unless you have a better reason; adjust the PR title to match what actually landed.
 
 - Branch: `design-audit/01-shared-foundations`
 - PR title: `feat(web): live contrast, class pulse integrity, and shared control foundations`

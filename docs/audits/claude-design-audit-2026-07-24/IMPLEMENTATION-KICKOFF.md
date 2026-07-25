@@ -21,11 +21,28 @@ All three product decisions were resolved by the owner in the same exchange:
 
 All six prompts are authorized to execute.
 
-### What is still NOT granted
+### Git rights — granted 2026-07-24
 
-Approval covers **implementation only**. Commit, push, PR, merge, and deploy are **separate grants** — ask
-the owner for each. This audit run performed no Git operation and edited no production file; keep that
-property until the owner says otherwise.
+You may **branch, commit, push, open a PR, and merge it once CI is green.** The owner granted this on
+2026-07-24, after approving the backlog.
+
+**Deploy is NOT granted.** Deploys are manual and production-facing (`AGENTS.md`, "Security And
+Deployment"), Ritmo ships in deliberate batches, and **merging to `main` does not deploy**. Ask the owner
+separately, and never fold a deploy into a merge.
+
+Working rules that come with the grant:
+
+- **Branch from `main`; never commit directly to it.** One branch per slice.
+- **One PR per slice.** Keep it to that slice's scope — no drive-by refactors or unrelated cleanup.
+- **Run the repo gates before requesting merge** (see each prompt's Tests section for the proportionate
+  set; the full CI-equivalent gate is in `AGENTS.md`).
+- **Commit messages:** small Conventional Commits, e.g. `feat(web): …`, `fix(api): …`, `docs: …`.
+- **PRs** explain behaviour and risk, list verification, include screenshots for UI changes, and call out
+  schema, migration, shared-contract, config, secret, or deployment impact.
+
+> **Note on production drift.** As of 2026-07-24 production is behind `main` by 7 app-code commits from
+> *before* this work started. That is a pre-existing batch decision for the owner — do not treat it as
+> something your slice should resolve, and do not deploy to "catch up".
 
 ---
 
@@ -153,7 +170,8 @@ If a slice tempts you to close one of these gaps, stop and ask — it is new sco
 
 > Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`, then execute
 > `implementation-prompts/01-shared-foundations.md`. All backlog items are owner-approved per
-> `run-decisions.md` (2026-07-24). Implementation only — do not commit, push, open a PR, merge, or deploy.
+> `run-decisions.md` (2026-07-24). You are authorized to branch, commit, push, open a PR, and merge it
+> once CI is green — **do not deploy.**
 
 Swap in the next prompt filename for each subsequent slice.
 

@@ -159,4 +159,5 @@ owns is approved. Partially approved prompts must be revised before use, not run
 > explicitly in the same exchange. The agent transcribed them; it did not self-approve. Correct any row
 > directly if this does not match your intent — the ledger, not the transcript, is the authority.
 
-Implementation, commit, push, PR, merge, and deploy remain separate grants after this gate.
+Implementation, branch, commit, push, PR, and merge were granted by the owner on **2026-07-24**.
+**Deploy remains a separate grant** and has not been given — merging to `main` does not deploy.

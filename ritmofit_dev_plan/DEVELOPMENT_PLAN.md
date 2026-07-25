@@ -247,6 +247,24 @@ web launch deferrals remain in [`web-launch-readiness.md`](./web-launch-readines
 cross-surface parity record remains in [`web-ios-parity.md`](./web-ios-parity.md), but it is not the
 current planning queue.
 
+**Active approved queue — design-audit implementation (2026-07-24):**
+
+The `claude` design-audit run is delivered and **owner-approved**: 18 backlog items disposition
+`approve`, and PDR-01/02/03 resolved (teaching-readiness default ordering · Music owns sourcing ·
+group-and-demote in the move library). Six implementation slices are authorized and **not yet started**.
+
+- **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
+- **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
+  the ledger, not any summary, is authoritative.
+- **Order and collisions:** [`implementation-sequence.md`](../docs/audits/claude-design-audit-2026-07-24/implementation-sequence.md).
+  Prompt 01 (shared foundations: Live AAA contrast + gate, Class Pulse integrity, intensity control,
+  focus ring) is a hard gate for the other five. Prompts 02/03/04/06 all edit `Dashboard.tsx` and must
+  run serially; 05 is parallel-safe.
+- **Headline items:** Music becomes a sourcing workspace (P0-01); Live meets the AAA contrast target its
+  own design system sets (P0-04/P0-05); Classes and Live rank by teaching readiness (P0-02/P0-03).
+
+Implementation sessions may branch, commit, push, PR, and merge. **Deploy remains a separate grant.**
+
 **Open production issues:**
 
 - _None currently tracked here._

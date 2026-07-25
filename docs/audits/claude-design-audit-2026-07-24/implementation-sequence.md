@@ -125,10 +125,18 @@ Every backlog ID is owned by exactly one prompt:
 | 05 | P1-04 |
 | 06 | P1-05 |
 
-## 10. Permissions reminder
+## 10. Permissions — current state
 
-**Owner disposition, implementation, commit, push, PR, merge, and deploy are seven separate grants.**
+| Grant | Status |
+| --- | --- |
+| Owner disposition on every backlog item | ✅ granted 2026-07-24 |
+| Implementation | ✅ granted 2026-07-24 |
+| Branch, commit, push | ✅ granted 2026-07-24 |
+| Open a PR and merge it once CI is green | ✅ granted 2026-07-24 |
+| **Deploy** | ❌ **not granted** — ask the owner separately |
 
-Recording `approve` in `run-decisions.md` authorizes *implementation of that item*, in a separate session,
-and nothing else. It is not permission to commit, open a PR, merge, or deploy. This audit run performed no
-Git operation of any kind and edited no production file.
+Deploys are manual and production-facing, and **merging to `main` does not deploy** (`AGENTS.md`,
+"Security And Deployment"). Ritmo ships in deliberate batches, not once per merge. Never fold a deploy
+into a merge, and do not deploy to close the pre-existing gap between production and `main`.
+
+Branch from `main` — never commit directly to it — and keep one PR per slice.
