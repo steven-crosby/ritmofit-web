@@ -14,6 +14,7 @@ describe('deriveClassPulse', () => {
   it('returns an honest empty model', () => {
     expect(deriveClassPulse([])).toEqual({
       state: 'empty',
+      provisional: false,
       segments: [],
       coverage: {
         trackCount: 0,
@@ -77,14 +78,61 @@ describe('deriveClassPulse', () => {
     expect(classPulseCoverageLabel(model)).toContain('2 unscored efforts');
   });
 
-  it('does not fabricate an arc for one track or a large unscored class', () => {
-    expect(deriveClassPulse([input({ effort: 'none' })]).segments[0]?.effort).toBeNull();
+  it('never fabricates a STORED effort, even where it derives a shape', () => {
+    // A lone track can't form an arc, so it stays unshaped and flat.
+    const single = deriveClassPulse([input({ effort: 'none' })]);
+    expect(single.provisional).toBe(false);
+    expect(single.segments[0]?.effort).toBeNull();
+
     const large = deriveClassPulse(
       Array.from({ length: 100 }, (_, index) =>
         input({ classTrackId: `track-${index}`, order: index, effort: 'none' }),
       ),
     );
     expect(large.segments).toHaveLength(100);
+    // The shape is derived (that's P0-07) but the stored effort stays unknown, so
+    // the bars keep their hatch and nothing claims the instructor scored them.
+    expect(large.provisional).toBe(true);
     expect(large.segments.every((segment) => segment.effort == null)).toBe(true);
+    expect(large.segments.every((segment) => segment.shapeEffort != null)).toBe(true);
+  });
+
+  it('derives a non-flat arc when every track shares one effort (P0-07)', () => {
+    const flat = deriveClassPulse(
+      Array.from({ length: 6 }, (_, index) =>
+        input({ classTrackId: `track-${index}`, order: index, effort: 'mod' }),
+      ),
+    );
+    expect(flat.provisional).toBe(true);
+    // The stored zone is untouched; only the drawn shape moves.
+    expect(flat.segments.every((segment) => segment.effort === 'mod')).toBe(true);
+    expect(new Set(flat.segments.map((segment) => segment.shapeEffort)).size).toBeGreaterThan(1);
+    // ...and it reads as an arc: it rises off the floor and comes back down.
+    const shape = flat.segments.map((segment) => segment.shapeEffort);
+    expect(shape[0]).toBe('easy');
+    expect(shape).toContain('hard');
+    expect(shape.at(-1)).toBe('mod');
+  });
+
+  it('lets a single authored zone win over the derivation', () => {
+    const authored = deriveClassPulse([
+      input({ classTrackId: 'a', order: 0, effort: 'mod' }),
+      input({ classTrackId: 'b', order: 1, effort: 'mod' }),
+      input({ classTrackId: 'c', order: 2, effort: 'all_out' }),
+    ]);
+    expect(authored.provisional).toBe(false);
+    expect(authored.segments.map((segment) => segment.shapeEffort)).toEqual([
+      'mod',
+      'mod',
+      'all_out',
+    ]);
+  });
+
+  it('captions a derived shape with the assumption it made', () => {
+    const flat = deriveClassPulse([
+      input({ classTrackId: 'a', order: 0, effort: 'hard' }),
+      input({ classTrackId: 'b', order: 1, effort: 'hard' }),
+    ]);
+    expect(classPulseCoverageLabel(flat)).toMatch(/auto-shaped from track order and length/i);
   });
 });
