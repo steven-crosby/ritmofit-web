@@ -89,17 +89,29 @@ Two setup facts this run learned the hard way, both of which will otherwise cost
 
 **Prompt 01 is a hard gate.** Merge it and pass gate G1 before starting anything else.
 
-> **Status, 2026-07-25: prompt 01 has landed and G1 passed** (PR #370). Live measures 0 text nodes below
-> its AAA target across all four geometries, and every focusable control shares one ring. **Start at
-> prompt 02.** Two primitives it introduced are binding on every later slice and are easy to
-> re-fork by accident: the focus ring is now the single class `.rf-focus-ring` (do not write
-> `focus-visible:ring-2 focus-visible:ring-interactive`), and the Live token re-maps live under
-> `.bg-bg-live` in `index.css` plus `semantic.live.*` in `tokens.json`.
+> **Status, 2026-07-25: prompts 01 and 02 have landed; G1 and G2 passed.** Prompt 01 landed in PR #370.
+> Prompt 02 landed in PR #375 (`2bbc1ed`) with the full local gate and GitHub CI green. Music can
+> search, preview, select in instructor order, and start a class without entering Builder; Builder's
+> Add music renders through the same extracted component. **Start at prompt 03.**
+>
+> Four primitives from the landed slices are binding and easy to re-fork by accident:
+>
+> 1. The focus ring is the single class `.rf-focus-ring`; do not write
+>    `focus-visible:ring-2 focus-visible:ring-interactive`.
+> 2. Live token re-maps live under `.bg-bg-live` in `index.css` plus `semantic.live.*` in
+>    `tokens.json`.
+> 3. `SourceList.tsx` is the one source-row, provider-handoff, selection, and tray grammar for Music
+>    and Builder. Extend its action modes instead of copying its rows.
+> 4. Provider state remains `providerCapabilityTruth` rendered by `ProviderCapabilityLedger`
+>    (Catalog / Library / Playback). Do not create new labels or a second capability matrix.
+>
+> Prompt 02's one documented evidence gap remains: the local mock seam returns an empty saved-playlist
+> array, so the populated MUS-05 playlist-detail path was not verified and must not be claimed.
 
 | Order | Prompt | Owns | Concurrency |
 | --- | --- | --- | --- |
 | 1 | [`01-shared-foundations.md`](implementation-prompts/01-shared-foundations.md) — ✅ landed | tokens, contrast gate, `ClassPulse`, intensity control, focus ring | **alone** |
-| 2 | [`02-music-sourcing.md`](implementation-prompts/02-music-sourcing.md) | source-list extraction, Music workspace, connections | serial w/ 03, 04, 06 |
+| 2 | [`02-music-sourcing.md`](implementation-prompts/02-music-sourcing.md) — ✅ landed | source-list extraction, Music workspace, connections | serial w/ 03, 04, 06 |
 | 3 | [`03-classes-ranking.md`](implementation-prompts/03-classes-ranking.md) | Classes ordering, card verbs, mobile rail | serial w/ 02, 04, 06 |
 | 4 | [`04-live-pressure.md`](implementation-prompts/04-live-pressure.md) | Live queue density, runtime composition | serial w/ 02, 03, 06 |
 | 5 | [`05-builder-moves.md`](implementation-prompts/05-builder-moves.md) | move picker, moves dialogs | **parallel-safe** |
@@ -201,11 +213,15 @@ If a slice tempts you to close one of these gaps, stop and ask — it is new sco
 
 ## Suggested first message for a fresh session
 
-> Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`, then execute
-> `implementation-prompts/02-music-sourcing.md`. All backlog items are owner-approved per
-> `run-decisions.md` (2026-07-24). You are authorized to branch, commit, push, open a PR, and merge it
-> once CI is green — **do not deploy.** Verify in a real browser with
-> `agent-prompts/browser-verification/`, and run its self-test first.
+> Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`, including the dated
+> Step 2 status, then read the revision log in `run-decisions.md` and execute
+> `implementation-prompts/03-classes-ranking.md`. All backlog items are owner-approved. Prompt 02
+> landed in PR #375 at merge commit `2bbc1ed`, and gate G2 passed, so 03 is unblocked. Preserve
+> `.rf-focus-ring`, `ClassPulse`, `SourceList`, and the existing provider capability truth/ledger
+> rather than re-forking them. You are authorized to branch, commit, push, open a PR, and merge it once
+> CI is green — **do not deploy.** Run the full CI-equivalent gate in `AGENTS.md`. Verify both class
+> orderings in a real browser at 1440×1000, 390×844, and 320×844 with the committed
+> `agent-prompts/browser-verification/` harness, and run its self-test before trusting measurements.
 
 Swap in the next prompt filename for each subsequent slice.
 

@@ -1,6 +1,6 @@
 # Ritmo Studio interface memory
 
-Last updated: 2026-07-19
+Last updated: 2026-07-25
 
 This file preserves reusable interface decisions for design sessions. The canonical design system in
 `ritmofit_design_system/` and written product decisions remain authoritative if this summary drifts.
@@ -57,6 +57,32 @@ This file preserves reusable interface decisions for design sessions. The canoni
 - Give the surface a named loading label, `aria-busy="true"`, and one polite live region. Hide decorative
   placeholders from assistive technology.
 - Loading remains understandable without animation and must respect reduced-motion preferences.
+
+## Music sourcing patterns
+
+### Shared source list
+
+- `SourceList.tsx` is the single visual and interaction grammar for music candidates in Music and
+  Builder's Add music flow. Do not fork its 44px artwork, title/artist truncation, duration, provider
+  handoff, focus treatment, or row density into another component.
+- The caller owns fetching and the destination action. `SourceList` owns two explicit action modes:
+  Builder imports one candidate, while Music selects candidates and renders the selection tray.
+- Selection order is instructor-authored class order. Preserve it through the tray and import tracks
+  serially so request completion timing cannot reshuffle the class.
+- In selection mode, the checkbox and row action are independently keyboard-focusable and have distinct
+  accessible names. The tray announces selected count and duration as a polite status.
+
+### Sourcing workspace
+
+- Music rests on catalog search, not provider-connection status. Catalog browsing stays available
+  without a linked account; connection is requested only for provider library or playback capabilities.
+- Keep provider cards compact and state-bearing: provider plus the existing Catalog / Library / Playback
+  ledger. Derive every label and glyph from `providerCapabilityTruth` and
+  `ProviderCapabilityLedger`; do not introduce parallel provider-state vocabulary.
+- On mobile, the provider rail scrolls horizontally above the source list without creating document
+  overflow. Source rows wrap or truncate their own metadata rather than widening the page.
+- Keep one copper primary for the create action. Provider connect, reconnect, library, and management
+  actions are cyan/bordered secondaries, and every provider-scoped control names its provider.
 
 ## Consistency checks
 
