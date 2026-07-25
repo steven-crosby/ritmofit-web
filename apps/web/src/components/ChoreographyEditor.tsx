@@ -7,13 +7,14 @@
  * The run-payload's per-track cues/moves lack ids, so editing reads the real
  * `GET /class-tracks/:id/cues` + `/moves` (which carry ids).
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   intensityValues,
   snapToBeat,
   beatPositionAt,
   type Cue,
   type ClassTrackMove,
+  type ClassTemplate,
   type Move,
   type UserMove,
   type Intensity,
@@ -35,6 +36,8 @@ import {
 import { IntensityReadout, INTENSITY_LABEL } from './IntensityReadout.js';
 import { CUE_COLOR_TAGS, tagLabel } from '../lib/cue-colors.js';
 import { CUSTOM, NEW, parseMovePick, pickForPlacement } from '../lib/move-pick.js';
+import { groupMovesByTemplate, moveOptionLabel } from '../lib/move-groups.js';
+import { formatTemplateLabel } from '../lib/class-summary.js';
 import { CustomMovesDialog } from './CustomMovesDialog.js';
 import { anchorFieldState, formatClockFromMs } from '../lib/duration.js';
 
@@ -484,6 +487,7 @@ export function CuesSection({
 export function MovesSection({
   classTrackId,
   durationMs,
+  template = null,
   bpm = null,
   beatAnchorMs = 0,
   focus = null,
@@ -492,6 +496,8 @@ export function MovesSection({
 }: {
   classTrackId: string;
   durationMs: number | null;
+  /** The open class's discipline — its moves lead the picker (P1-04). */
+  template?: ClassTemplate | null;
   /** Resolved BPM + downbeat offset for beat-snapping (no snapping without a tempo). */
   bpm?: number | null;
   beatAnchorMs?: number;
@@ -510,6 +516,9 @@ export function MovesSection({
   // (creating one here), so they're component state refreshed on demand, not the
   // session-cached library promise.
   const [userMoves, setUserMoves] = useState<UserMove[]>([]);
+  // Other disciplines start collapsed behind an explicit control rather than
+  // hidden; once opened it stays open for the session's editing run.
+  const [showAllDisciplines, setShowAllDisciplines] = useState(false);
   const [pick, setPick] = useState<string>(CUSTOM); // CUSTOM | NEW | m:<id> | u:<id>
   const [customName, setCustomName] = useState(''); // freeform name (CUSTOM) or new-move name (NEW)
   const [anchorClock, setAnchorClock] = useState('0:00');
@@ -559,6 +568,16 @@ export function MovesSection({
     userMoves.find((u) => u.id === m.userMoveId)?.name ??
     '(move)';
 
+  /**
+   * The discipline a placed library move belongs to. Custom moves and one-off
+   * names have none — the badge is for provenance, not decoration, so it simply
+   * does not render for them.
+   */
+  const templateOf = (m: ClassTrackMove): string | null => {
+    const move = library.find((lib) => lib.id === m.moveId);
+    return move?.template ? (formatTemplateLabel(move.template) ?? move.template) : null;
+  };
+
   /** The reference fields for a placement body from a parsed selector value. */
   const refFields = (
     value: string,
@@ -576,17 +595,28 @@ export function MovesSection({
   };
 
   // The picker option groups, shared by the add + edit selects.
+  //
+  // Grouped by discipline with this class's own first (PDR-03: group and demote,
+  // never hide). A Cycle class used to offer Burpees, Press-Ups, and Crunches in
+  // one flat alphabetical list of all 21 seeded moves. Other disciplines stay one
+  // interaction away behind "Show every discipline" — collapsed, never removed,
+  // because borrowing across disciplines is deliberate practice, not a mistake.
+  const grouped = useMemo(() => groupMovesByTemplate(library, template), [library, template]);
+  const ownGroup = template ? grouped.find((group) => group.template === template) : undefined;
+  const otherGroups = grouped.filter((group) => group !== ownGroup);
+  const visibleGroups = showAllDisciplines || !ownGroup ? grouped : [ownGroup];
+
   const moveOptionGroups = (
     <>
-      {library.length > 0 && (
-        <optgroup label="Library">
-          {library.map((m) => (
+      {visibleGroups.map((group) => (
+        <optgroup key={group.template ?? 'other'} label={group.label}>
+          {group.moves.map((m) => (
             <option key={m.id} value={`m:${m.id}`}>
-              {m.name}
+              {moveOptionLabel(m)}
             </option>
           ))}
         </optgroup>
-      )}
+      ))}
       {userMoves.length > 0 && (
         <optgroup label="Your moves">
           {userMoves.map((u) => (
@@ -598,6 +628,20 @@ export function MovesSection({
       )}
     </>
   );
+
+  /** The disclosure that reaches the disciplines this class does not teach. */
+  const disciplineToggle =
+    ownGroup && otherGroups.length > 0 ? (
+      <label className="flex min-h-11 shrink-0 items-center gap-1.5 font-ui text-xs text-text-secondary rf-focus-ring sm:min-h-8">
+        <input
+          type="checkbox"
+          checked={showAllDisciplines}
+          onChange={(e) => setShowAllDisciplines(e.target.checked)}
+          className="h-4 w-4 accent-interactive"
+        />
+        Show every discipline
+      </label>
+    ) : null;
 
   const add = async () => {
     const sel = parseMovePick(pick);
@@ -826,6 +870,13 @@ export function MovesSection({
               <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">
                 {nameOf(m)}
               </span>
+              {/* Which discipline a placed move came from, per canon 09 — the one
+                  thing a borrowed move otherwise hides once it is on the timeline. */}
+              {templateOf(m) && (
+                <span className="shrink-0 rounded-pill bg-bg-base px-1.5 font-data text-[10px] uppercase tracking-wide text-text-tertiary">
+                  {templateOf(m)}
+                </span>
+              )}
               {m.intensity && <IntensityReadout intensity={m.intensity} />}
               <button
                 className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
@@ -869,6 +920,7 @@ export function MovesSection({
           <option value={NEW}>＋ New custom move…</option>
           {moveOptionGroups}
         </select>
+        {disciplineToggle}
         {addNeedsName && (
           <input
             className={`min-w-0 basis-full sm:basis-auto flex-1 ${fieldClass}`}
