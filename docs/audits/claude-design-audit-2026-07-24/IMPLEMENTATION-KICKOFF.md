@@ -89,9 +89,16 @@ Two setup facts this run learned the hard way, both of which will otherwise cost
 
 **Prompt 01 is a hard gate.** Merge it and pass gate G1 before starting anything else.
 
+> **Status, 2026-07-25: prompt 01 has landed and G1 passed** (PR #370). Live measures 0 text nodes below
+> its AAA target across all four geometries, and every focusable control shares one ring. **Start at
+> prompt 02.** Two primitives it introduced are binding on every later slice and are easy to
+> re-fork by accident: the focus ring is now the single class `.rf-focus-ring` (do not write
+> `focus-visible:ring-2 focus-visible:ring-interactive`), and the Live token re-maps live under
+> `.bg-bg-live` in `index.css` plus `semantic.live.*` in `tokens.json`.
+
 | Order | Prompt | Owns | Concurrency |
 | --- | --- | --- | --- |
-| 1 | [`01-shared-foundations.md`](implementation-prompts/01-shared-foundations.md) | tokens, contrast gate, `ClassPulse`, intensity control, focus ring | **alone** |
+| 1 | [`01-shared-foundations.md`](implementation-prompts/01-shared-foundations.md) — ✅ landed | tokens, contrast gate, `ClassPulse`, intensity control, focus ring | **alone** |
 | 2 | [`02-music-sourcing.md`](implementation-prompts/02-music-sourcing.md) | source-list extraction, Music workspace, connections | serial w/ 03, 04, 06 |
 | 3 | [`03-classes-ranking.md`](implementation-prompts/03-classes-ranking.md) | Classes ordering, card verbs, mobile rail | serial w/ 02, 04, 06 |
 | 4 | [`04-live-pressure.md`](implementation-prompts/04-live-pressure.md) | Live queue density, runtime composition | serial w/ 02, 03, 06 |
@@ -121,17 +128,41 @@ console. **Per-PR verification is not a substitute for this.**
 
 ## Measurement traps — read before you verify anything
 
-This run produced two false findings before catching them. Both are easy to repeat:
+This run produced two false findings before catching them. Both are easy to repeat, and neither looks
+wrong in the output — the incorrect numbers are entirely plausible:
 
 1. **Focus rings.** Tailwind's `outline-none` emits `outline: 2px solid transparent` and draws the real
    ring with `box-shadow`. Reading only `outline` reports "no focus ring" on controls that have one.
    **Read both.**
 2. **Contrast on gradient fills.** The copper primary paints a `linear-gradient` with a transparent
    `background-color`. A naive ancestor walk finds the page background and reports ~1:1 for ink-on-copper,
-   which actually measures 5.38–7.04:1. **Composite the gradient stops.**
+   which actually measures 5.34–7.04:1. **Composite the gradient stops and take the worst one.**
 
 Trap 2 is not merely a false-positive generator: correcting it is what surfaced a *real* finding — the
-Live transport primary at 5.38:1, below the AAA target. Prompt 01 fixes it.
+Live transport primary at 5.34:1, below the AAA target. Prompt 01 fixed it.
+
+A third trap the audit did not hit, but an implementation session will: **Chrome grants
+`:focus-visible` only when the last interaction was a keypress.** A programmatic `.focus()` reports "no
+ring" on every control in the app. Send real Tab keys.
+
+### Use the harness rather than re-deriving this
+
+`agent-prompts/browser-verification/` handles all three. It drives real Chrome over the DevTools
+Protocol with zero dependencies, and measures contrast (AAA thresholds on Live, worst backdrop per
+node), focus rings, horizontal overflow, and animations under reduced motion. `auth.mjs` signs a
+headless browser in as a local fixture user without a password.
+
+**Run its self-test first, every time:**
+
+```bash
+node agent-prompts/browser-verification/selftest.mjs
+```
+
+It renders swatches whose correct ratio is computed from `tokens.json` and requires the harness to
+agree — gradients included. Expectations are derived rather than hardcoded, so it cannot rot as tokens
+change, and it is verified to fail when the harness is broken. **If the self-test disagrees with
+`tokens.json`, nothing else the harness prints is trustworthy.** Start at
+[`agent-prompts/browser-verification/README.md`](../../../agent-prompts/browser-verification/README.md).
 
 ---
 
@@ -145,7 +176,9 @@ Live transport primary at 5.38:1, below the AAA target. Prompt 01 fixes it.
   one forced funnel. Explore, Teams, sharing, collaborators, publishing, and pricing stay dormant.
 - **Token changes go through `ritmofit_design_system/tokens.json`** and the documented generation
   workflow. Never hand-edit generated output.
-- **Real-browser verification is mandatory** for non-trivial UI work. Do not declare completion without it.
+- **Real-browser verification is mandatory** for non-trivial UI work. Do not declare completion without
+  it. Use `agent-prompts/browser-verification/` — and run its self-test before trusting any number it
+  gives you.
 - **Do not over-literalize the prototype.** It is a review artifact, not a component library. Preserve the
   proposed hierarchy, behaviour, states, and craft — not its static markup.
 
@@ -169,9 +202,10 @@ If a slice tempts you to close one of these gaps, stop and ask — it is new sco
 ## Suggested first message for a fresh session
 
 > Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`, then execute
-> `implementation-prompts/01-shared-foundations.md`. All backlog items are owner-approved per
+> `implementation-prompts/02-music-sourcing.md`. All backlog items are owner-approved per
 > `run-decisions.md` (2026-07-24). You are authorized to branch, commit, push, open a PR, and merge it
-> once CI is green — **do not deploy.**
+> once CI is green — **do not deploy.** Verify in a real browser with
+> `agent-prompts/browser-verification/`, and run its self-test first.
 
 Swap in the next prompt filename for each subsequent slice.
 
