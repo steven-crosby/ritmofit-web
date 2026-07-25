@@ -187,6 +187,10 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   window.localStorage?.clear();
+  // The class ordering is session state shared by Classes and Live, so it really
+  // does survive a re-render — clear it or one test's switch is the next one's
+  // default.
+  window.sessionStorage?.clear();
 });
 
 describe('Dashboard class library states', () => {
@@ -915,7 +919,9 @@ describe('Dashboard class library states', () => {
     // Empty classes have nothing to preflight and never enter the queue.
     expect(screen.queryByText('Draft shell')).toBeNull();
 
-    const runBtn = (await screen.findByRole('button', { name: 'Preflight' })) as HTMLButtonElement;
+    const runBtn = (await screen.findByRole('button', {
+      name: 'Preflight Ready ride',
+    })) as HTMLButtonElement;
     await waitFor(() => expect(runBtn.disabled).toBe(false));
     expect(screen.getByRole('region', { name: 'Class Pulse' })).toBeTruthy();
     expect(screen.getByText('◇ derived · confirm')).toBeTruthy();
@@ -923,6 +929,57 @@ describe('Dashboard class library states', () => {
     vi.mocked(api.getRunPayload).mockClear();
     fireEvent.click(runBtn);
     await waitFor(() => expect(api.getRunPayload).toHaveBeenCalledWith(ready.id));
+  });
+
+  it('keeps the queue card compact by default and full readiness one disclosure away', async () => {
+    const ready = { ...makeClass('Ready ride', 'owner', 'me'), trackCount: 1 };
+    vi.mocked(api.listClasses).mockResolvedValue(page([ready]));
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([{ classTrackId: 'ct-1', durationMs: 1800000 }]),
+    );
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    expect(await screen.findByText('Ready ride')).toBeTruthy();
+
+    // Shape, verdict, and the action are on the scan row; the four-dimension
+    // readiness readout is collapsed until asked for.
+    const card = (await screen.findByText('Ready ride')).closest('article') as HTMLElement;
+    const disclosure = card.querySelector('details') as HTMLDetailsElement;
+    expect(disclosure).toBeTruthy();
+    expect(disclosure.open).toBe(false);
+    expect(screen.getByRole('region', { name: 'Class Pulse' })).toBeTruthy();
+
+    fireEvent.click(disclosure.querySelector('summary')!);
+    await waitFor(() => expect(disclosure.open).toBe(true));
+    expect(within(disclosure).getByText(/Durations set|Duration/)).toBeTruthy();
+  });
+
+  it('ranks the Live queue with the ordering chosen on Classes', async () => {
+    const finished = { ...makeClass('Finished ride', 'owner', 'me'), trackCount: 1, updatedAt: 1 };
+    const blocked = { ...makeClass('Blocked ride', 'owner', 'me'), trackCount: 1, updatedAt: 9 };
+    vi.mocked(api.listClasses).mockResolvedValue(page([finished, blocked]));
+    vi.mocked(api.getRunPayload).mockImplementation(async (id: string) =>
+      id === finished.id
+        ? liveRunPayload([{ classTrackId: 'ct-1', durationMs: 1800000 }])
+        : liveRunPayload([{ classTrackId: 'ct-2', durationMs: null, title: 'Untimed' }]),
+    );
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    await screen.findByText('Finished ride');
+
+    const titles = () =>
+      screen
+        .getAllByRole('heading', { level: 3 })
+        .map((node) => node.textContent)
+        .filter((t) => t?.endsWith('ride'));
+    // Default is ready-to-teach, so the runnable class leads even though the
+    // blocked one was updated more recently.
+    await waitFor(() => expect(titles()).toEqual(['Finished ride', 'Blocked ride']));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Needs work' }));
+    await waitFor(() => expect(titles()).toEqual(['Blocked ride', 'Finished ride']));
   });
 
   it('blocks a class that looks runnable by aggregate but has a track missing its duration', async () => {
@@ -945,16 +1002,21 @@ describe('Dashboard class library states', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
 
-    // The card appears, but Run live is disabled with the real block message —
-    // no false "runnable" that dies on click.
+    // The card appears with the real block message and no Preflight control at all
+    // — a blocked class offers the verb that fixes it, not a button it can never
+    // satisfy. No false "runnable" that dies on click.
     expect(await screen.findByText('Half-timed ride')).toBeTruthy();
-    const runBtn = (await screen.findByRole('button', { name: 'Preflight' })) as HTMLButtonElement;
-    await waitFor(() => expect(runBtn.disabled).toBe(true));
-    expect(
-      screen.getByText('Set a duration for Untimed Track before starting Live mode.'),
-    ).toBeTruthy();
-    // The button points assistive tech at that reason.
-    expect(runBtn.getAttribute('aria-describedby')).toBe(`live-blocked-${falseRunnable.id}`);
+    await waitFor(() =>
+      expect(
+        screen.getByText('Set a duration for Untimed Track before starting Live mode.'),
+      ).toBeTruthy(),
+    );
+    expect(screen.queryByRole('button', { name: /^Preflight/ })).toBeNull();
+    const fixBtn = screen.getByRole('button', {
+      name: 'Set track durations — Half-timed ride',
+    });
+    // The primary points assistive tech at the reason it exists.
+    expect(fixBtn.getAttribute('aria-describedby')).toBe(`live-blocked-${falseRunnable.id}`);
     // Preflight rail counts it as blocked, not runnable.
     const rail = screen.getByText('Queue readiness').closest('aside') as HTMLElement;
     expect(within(rail).getByText('Needs a duration').nextSibling?.textContent).toBe('1');
@@ -975,15 +1037,19 @@ describe('Dashboard class library states', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
 
-    // The failed readiness check must never masquerade as runnable.
-    expect(await screen.findByRole('button', { name: 'Retry' })).toBeTruthy();
-    const runBtn = screen.getByRole('button', { name: 'Preflight' }) as HTMLButtonElement;
-    expect(runBtn.disabled).toBe(true);
+    // The failed readiness check must never masquerade as runnable: no Preflight
+    // control is offered at all until readiness is actually known.
+    const retry = await screen.findByRole('button', { name: 'Retry readiness — Flaky ride' });
+    expect(retry).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^Preflight/ })).toBeNull();
 
     // Retrying re-fetches just this class; the second attempt succeeds and unblocks it.
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    await waitFor(() => expect(runBtn.disabled).toBe(false));
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    fireEvent.click(retry);
+    expect(await screen.findByRole('button', { name: 'Preflight Flaky ride' })).toHaveProperty(
+      'disabled',
+      false,
+    );
+    expect(screen.queryByRole('button', { name: /^Retry readiness/ })).toBeNull();
   });
 
   it('restores focus to the dashboard heading when Live Mode is exited', async () => {
@@ -1037,7 +1103,7 @@ describe('Dashboard class library states', () => {
     renderDashboard();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Preflight' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Preflight / }));
     fireEvent.click(await screen.findByRole('button', { name: 'Exit' }));
 
     const heading = await screen.findByRole('heading', { name: 'Ritmo Studio' });
