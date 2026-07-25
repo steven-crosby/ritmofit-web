@@ -1,21 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ClassListItem, RunPayload } from '@ritmofit/shared';
+import type { ClassListItem } from '@ritmofit/shared';
 import { getClassShelfPayload } from '../lib/api.js';
-import { classPulseFromPayload } from '../lib/class-pulse.js';
-import { classReadiness } from '../lib/readiness.js';
+import {
+  CLASS_ORDERING_OPTIONS,
+  classNextStep,
+  orderClassesBy,
+  orderingSummary,
+  readStoredOrdering,
+  storeOrdering,
+  type ClassDetailState,
+  type ClassOrdering,
+} from '../lib/class-ordering.js';
 import { formatDuration, formatTemplateLabel } from '../lib/class-summary.js';
 import { StatusLabel } from './SharedState.js';
 import { ClassPulse } from './ClassPulse.js';
 
-type ShelfDetail =
-  | { status: 'loading' }
-  | { status: 'ready'; payload: RunPayload }
-  | { status: 'error' };
-
+/** How many ranked classes the shelf shows. */
 const MAX_SHELF_CLASSES = 4;
+/**
+ * How many classes are read to rank them. Ranking needs each class's run-payload,
+ * so the shelf reads a bounded pool of the most recently touched classes rather
+ * than the whole library — but the pool is wider than the four cards it shows, or
+ * a finished class that has not been opened lately could never reach the top
+ * (P0-02: today's shelf picks its four by recency and only then ranks them).
+ */
+const SHELF_DETAIL_POOL = 12;
 const DETAIL_CONCURRENCY = 2;
 
-function candidateClasses(classes: readonly ClassListItem[]): ClassListItem[] {
+function poolClasses(classes: readonly ClassListItem[]): ClassListItem[] {
   return [...classes]
     .sort(
       (a, b) =>
@@ -23,63 +35,7 @@ function candidateClasses(classes: readonly ClassListItem[]): ClassListItem[] {
         b.updatedAt - a.updatedAt ||
         a.title.localeCompare(b.title),
     )
-    .slice(0, MAX_SHELF_CLASSES);
-}
-
-function nextStep(detail: ShelfDetail | undefined): {
-  rank: number;
-  eyebrow: string;
-  action: string;
-  detail: string;
-} {
-  if (!detail || detail.status === 'loading') {
-    return { rank: 6, eyebrow: 'Reading class', action: 'Open class', detail: 'Checking shape…' };
-  }
-  if (detail.status === 'error') {
-    return {
-      rank: 5,
-      eyebrow: 'Details unavailable',
-      action: 'Open class',
-      detail: 'The class remains in your library.',
-    };
-  }
-
-  const payload = detail.payload;
-  if (payload.tracks.length === 0) {
-    return {
-      rank: 0,
-      eyebrow: 'Start shaping',
-      action: 'Add the first track',
-      detail: 'Empty draft',
-    };
-  }
-  const readiness = classReadiness(payload);
-  if (!readiness.runnable) {
-    return {
-      rank: 1,
-      eyebrow: 'Complete the clock',
-      action: 'Finish durations',
-      detail: readiness.dimensions.find((dimension) => dimension.key === 'duration')?.detail ?? '',
-    };
-  }
-  const pulse = classPulseFromPayload(payload);
-  if (pulse.state === 'partial') {
-    return {
-      rank: 2,
-      eyebrow: 'Continue shaping',
-      action: 'Score the class',
-      detail: `${pulse.coverage.scoredCount} of ${pulse.coverage.trackCount} efforts scored`,
-    };
-  }
-  if (!readiness.fullyReady) {
-    return {
-      rank: 3,
-      eyebrow: 'Refine before teaching',
-      action: 'Finish refinements',
-      detail: `Runnable · ${readiness.attentionCount} to finish`,
-    };
-  }
-  return { rank: 4, eyebrow: 'Ready to rehearse', action: 'Rehearse class', detail: 'Runnable' };
+    .slice(0, SHELF_DETAIL_POOL);
 }
 
 export function ClassRunOfShowShelf({
@@ -95,10 +51,11 @@ export function ClassRunOfShowShelf({
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
 }) {
-  const candidates = useMemo(() => candidateClasses(classes), [classes]);
+  const candidates = useMemo(() => poolClasses(classes), [classes]);
   const candidateKey = candidates.map((cls) => cls.id).join('|');
-  const [details, setDetails] = useState<Record<string, ShelfDetail>>({});
+  const [details, setDetails] = useState<Record<string, ClassDetailState>>({});
   const [retryRevision, setRetryRevision] = useState(0);
+  const [ordering, setOrdering] = useState<ClassOrdering>(readStoredOrdering);
 
   useEffect(() => {
     let active = true;
@@ -135,17 +92,26 @@ export function ClassRunOfShowShelf({
     const detail = details[cls.id];
     return detail && detail.status !== 'loading';
   });
-  const ordered = allSettled
-    ? [...candidates].sort((a, b) => {
-        const rank = nextStep(details[a.id]).rank - nextStep(details[b.id]).rank;
-        return rank || b.updatedAt - a.updatedAt || a.title.localeCompare(b.title);
-      })
+  // Rank only once every payload in the pool has resolved: a partial ranking would
+  // reshuffle the cards under the instructor's cursor as each fetch lands.
+  const ranked = allSettled
+    ? orderClassesBy(ordering, candidates, (cls) => classNextStep(details[cls.id]))
     : candidates;
+  const ordered = ranked.slice(0, MAX_SHELF_CLASSES);
+  const poolLabel =
+    classes.length > candidates.length
+      ? `${ordered.length} of your ${candidates.length} most recent`
+      : `${ordered.length} priority ${ordered.length === 1 ? 'class' : 'classes'}`;
+
+  const chooseOrdering = (next: ClassOrdering) => {
+    setOrdering(next);
+    storeOrdering(next);
+  };
 
   return (
-    <section aria-labelledby="run-of-show-heading" className="min-w-0 xl:col-span-2">
+    <section aria-labelledby="run-of-show-heading" className="min-w-0">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="rf-eyebrow">Classes</p>
           <h2
             id="run-of-show-heading"
@@ -154,18 +120,40 @@ export function ClassRunOfShowShelf({
             Pick up where the energy left off.
           </h2>
           <p className="mt-2 max-w-prose font-ui text-sm leading-6 text-text-secondary">
-            Ordered by the next creative step, then readiness and recency.
+            {orderingSummary(ordering)}
           </p>
         </div>
-        <span className="font-data text-xs text-text-tertiary">
-          {ordered.length} priority {ordered.length === 1 ? 'class' : 'classes'}
-        </span>
+        <span className="shrink-0 font-data text-xs text-text-tertiary">{poolLabel}</span>
+      </div>
+
+      {/* The ordering is a choice, not a hidden rule: both options are named, the
+          active one carries `aria-pressed`, and the sentence above states it in
+          words so it is never conveyed by selection styling alone. */}
+      <div role="group" aria-label="Order classes by" className="mt-4 flex flex-wrap gap-2">
+        {CLASS_ORDERING_OPTIONS.map((option) => {
+          const active = option.value === ordering;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => chooseOrdering(option.value)}
+              className={`min-h-11 rounded-control border px-4 font-ui text-sm font-semibold rf-focus-ring sm:rounded-pill ${
+                active
+                  ? 'border-interactive bg-interactive/15 text-text-primary'
+                  : 'border-border-subtle text-text-secondary hover:border-interactive/45 hover:text-text-primary'
+              }`}
+            >
+              {option.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         {ordered.map((cls) => {
           const detail = details[cls.id];
-          const step = nextStep(detail);
+          const step = classNextStep(detail);
           const payload = detail?.status === 'ready' ? detail.payload : null;
           const template = formatTemplateLabel(cls.template);
           return (
@@ -230,7 +218,7 @@ export function ClassRunOfShowShelf({
                 <StatusLabel
                   kind={
                     detail?.status === 'ready'
-                      ? step.rank === 4
+                      ? step.teachable
                         ? 'recovered'
                         : 'empty'
                       : detail?.status === 'error'
@@ -240,11 +228,15 @@ export function ClassRunOfShowShelf({
                   label={step.detail}
                 />
               </div>
+              {/* Each control names the class it acts on, so two cards never share an
+                  accessible name even when their next step is genuinely the same. The
+                  visible text leads the accessible name (WCAG 2.5.3). */}
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => onOpen(cls)}
-                  className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
+                  aria-label={`${step.action} — ${cls.title}`}
+                  className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring sm:rounded-pill"
                 >
                   {step.action}
                 </button>
@@ -252,7 +244,8 @@ export function ClassRunOfShowShelf({
                   <button
                     type="button"
                     onClick={() => onPreview(cls)}
-                    className="min-h-11 rounded-control border border-interactive/50 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 sm:rounded-pill"
+                    aria-label={`Rehearsal view — ${cls.title}`}
+                    className="min-h-11 rounded-control border border-interactive/50 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
                   >
                     Rehearsal view
                   </button>
@@ -261,7 +254,8 @@ export function ClassRunOfShowShelf({
                   <button
                     type="button"
                     onClick={() => setRetryRevision((revision) => revision + 1)}
-                    className="min-h-11 rounded-control px-3 font-ui text-sm text-text-secondary hover:text-text-primary sm:rounded-pill"
+                    aria-label={`Retry details — ${cls.title}`}
+                    className="min-h-11 rounded-control px-3 font-ui text-sm text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
                   >
                     Retry details
                   </button>

@@ -211,6 +211,44 @@ describe('Dashboard class library states', () => {
     ).toBeTruthy();
   });
 
+  it('meets a class before the creation preamble, and opens the rail to create one', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([makeClass('Morning ride')]));
+    renderDashboard();
+
+    const shelf = await screen.findByRole('heading', {
+      name: 'Pick up where the energy left off.',
+    });
+    const creator = screen.getByLabelText('New class title');
+    // The library must not be "a large preamble before the work" (canon 09): on a
+    // phone this is one column, so document order is what the instructor scrolls.
+    expect(shelf.compareDocumentPosition(creator) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('opens the collapsed rail disclosure when a fresh account starts from a template', async () => {
+    // Report a narrow viewport, so the creation controls start collapsed the way
+    // they do on a phone.
+    const realMatchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ matches: false, media: query })) as never;
+    try {
+      vi.mocked(api.listClasses).mockResolvedValue(page([]));
+      renderDashboard();
+
+      const disclosure = await screen.findByText('New class, filters, and search');
+      expect(disclosure.closest('details')).toHaveProperty('open', false);
+
+      // Creation stays one click away from the resting state, and reaching it must
+      // expand the disclosure first — focusing an input inside a closed `<details>`
+      // silently does nothing.
+      fireEvent.click(screen.getByRole('button', { name: /Start Cycle, Pilates, or HIIT/ }));
+      await waitFor(() =>
+        expect(document.activeElement).toBe(screen.getByLabelText('New class title')),
+      );
+      expect(disclosure.closest('details')).toHaveProperty('open', true);
+    } finally {
+      window.matchMedia = realMatchMedia;
+    }
+  });
+
   it('shows a distinct error state when the class list fails to load, and retries', async () => {
     vi.mocked(api.listClasses).mockRejectedValueOnce(new Error('network down'));
 
@@ -1075,7 +1113,11 @@ describe('Dashboard class library states', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
     expect(await screen.findByRole('button', { name: 'Browse Spotify catalog' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Browse saved playlists on Spotify' })).toBeNull();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Browse saved playlists on Spotify' }),
+      ).toBeNull(),
+    );
     expect(
       screen.queryByRole('button', { name: 'Connect this provider to browse liked tracks.' }),
     ).toBeNull();

@@ -147,6 +147,18 @@ interface CollectionImportResult {
   failed: TrackSearchResult[];
 }
 
+/**
+ * True on the xl 3-pane workstation, where the library rail is its own sticky
+ * column. Read once for an initial state, never subscribed to: this decides
+ * whether the rail's creation controls start expanded, and re-deciding it mid
+ * session would reopen a disclosure the instructor deliberately closed. Absent
+ * `matchMedia` (jsdom) it reports wide, so the controls default to visible.
+ */
+function prefersWideWorkstation(): boolean {
+  if (typeof window === 'undefined' || !window.matchMedia) return true;
+  return window.matchMedia('(min-width: 1280px)').matches;
+}
+
 /** Full-screen Suspense fallback while a lazy chunk (e.g. Live mode) loads. */
 function LoadingScreen() {
   return (
@@ -222,9 +234,24 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     });
   }, []);
 
+  /**
+   * The rail's creation + filtering controls collapse behind one affordance so the
+   * library does not become "a large preamble before the work" (canon 09) on a
+   * phone. They stay open on the wide 3-pane layout, where the rail is its own
+   * sticky column and costs the centre nothing.
+   */
+  const [creatorOpen, setCreatorOpen] = useState(prefersWideWorkstation);
+  const [creatorFocusRequest, setCreatorFocusRequest] = useState(0);
+  // Opening the disclosure is a render, so the focus has to wait for the commit —
+  // focusing an element inside a closed `<details>` is silently a no-op.
   const focusClassCreator = useCallback(() => {
-    document.getElementById('new-class-title')?.focus();
+    setCreatorOpen(true);
+    setCreatorFocusRequest((request) => request + 1);
   }, []);
+  useEffect(() => {
+    if (creatorFocusRequest === 0) return;
+    document.getElementById('new-class-title')?.focus();
+  }, [creatorFocusRequest]);
 
   // Merge a page's tags into the known-tags set (only an unfiltered page widens
   // it; a filtered page only re-adds the active tag, which is harmless).
@@ -729,8 +756,37 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               smaller laptops. The class workspace contributes the center + inspector
               columns; the library is the first column. */
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start">
+            {/* Resting state first in the document so a phone meets a class, not a
+                creation form (P1-06 / canon 09: the archive "must not become a large
+                preamble before the work"). Explicit grid placement keeps the rail on
+                the left at xl, where reading order and column order can differ. */}
+            {!selected && (
+              <div className="min-w-0 xl:col-span-2 xl:col-start-2 xl:row-start-1">
+                <WorkstationRestingState
+                  classes={classes}
+                  activeTag={activeTag}
+                  status={listStatus}
+                  libraryError={error}
+                  confirmedPulseIds={confirmedPulseIds}
+                  onTogglePulseConfirmation={togglePulseConfirmation}
+                  onOpen={openClass}
+                  onPreview={(cls) => setCardPreview(cls)}
+                  onClearTag={() => void applyTagFilter(null)}
+                  onRetry={() => {
+                    setListStatus('loading');
+                    void refreshClasses();
+                  }}
+                  onStartMusic={() => setDestination('music')}
+                  onStartMovement={() => setSongsByMoveOpen(true)}
+                  onStartTemplate={focusClassCreator}
+                  onStartManual={focusClassCreator}
+                />
+              </div>
+            )}
             <LibraryRail
               className={selected ? 'hidden xl:flex' : undefined}
+              creatorOpen={creatorOpen}
+              onCreatorOpenChange={setCreatorOpen}
               classes={classes}
               status={listStatus}
               hasMore={nextClassCursor !== null}
@@ -814,27 +870,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               <section className="rounded-card bg-bg-raised p-8 shadow-card" aria-busy="true">
                 <p className="font-ui text-text-tertiary">Loading class…</p>
               </section>
-            ) : (
-              <WorkstationRestingState
-                classes={classes}
-                activeTag={activeTag}
-                status={listStatus}
-                libraryError={error}
-                confirmedPulseIds={confirmedPulseIds}
-                onTogglePulseConfirmation={togglePulseConfirmation}
-                onOpen={openClass}
-                onPreview={(cls) => setCardPreview(cls)}
-                onClearTag={() => void applyTagFilter(null)}
-                onRetry={() => {
-                  setListStatus('loading');
-                  void refreshClasses();
-                }}
-                onStartMusic={() => setDestination('music')}
-                onStartMovement={() => setSongsByMoveOpen(true)}
-                onStartTemplate={focusClassCreator}
-                onStartManual={focusClassCreator}
-              />
-            )}
+            ) : null}
           </div>
         ) : destination === 'music' ? (
           <MusicWorkspace
@@ -944,6 +980,8 @@ export function LibraryRail({
   selectedId,
   knownTags,
   activeTag,
+  creatorOpen,
+  onCreatorOpenChange,
   onSelectTag,
   onError,
   onCreate,
@@ -963,6 +1001,10 @@ export function LibraryRail({
   knownTags: string[];
   /** The active server-side tag filter, or null when unfiltered. */
   activeTag: string | null;
+  /** Whether the creation/filter disclosure is expanded (lifted so "Start a
+   *  template" from the resting state can open it before focusing the title). */
+  creatorOpen: boolean;
+  onCreatorOpenChange: (open: boolean) => void;
   /** Apply (or clear, with null) the server-side tag filter; reloads from page 1. */
   onSelectTag: (tag: string | null) => void;
   onError: (msg: string | null) => void;
@@ -997,7 +1039,9 @@ export function LibraryRail({
   const narrowed = trimmedQuery.length > 0 && organized.length !== classes.length;
 
   return (
-    <aside className={`flex min-w-0 flex-col gap-3 xl:sticky xl:top-6 ${className ?? ''}`}>
+    <aside
+      className={`flex min-w-0 flex-col gap-3 xl:sticky xl:top-6 xl:col-start-1 xl:row-start-1 ${className ?? ''}`}
+    >
       <div className="flex items-center justify-between">
         <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
           Your classes
@@ -1008,18 +1052,36 @@ export function LibraryRail({
             : `${classes.length} loaded`}
         </span>
       </div>
-      <CreateClassForm onCreated={onCreate} onError={onError} />
-      {showTagFilter && (
-        <TagFilter knownTags={knownTags} activeTag={activeTag} onSelectTag={onSelectTag} />
-      )}
-      {showOrganize && (
-        <LibraryOrganizeControls
-          query={query}
-          sort={sort}
-          onQueryChange={setQuery}
-          onSortChange={setSort}
-        />
-      )}
+      {/* One affordance for everything that is *about* the library rather than in
+          it — creating, tag-filtering, searching, sorting. Expanded on the wide
+          workstation; collapsed on a phone, where these four stacked controls are
+          the preamble that pushes the class list off the first screen. */}
+      <details
+        open={creatorOpen}
+        onToggle={(e) => onCreatorOpenChange((e.currentTarget as HTMLDetailsElement).open)}
+        className="rounded-control border border-border-subtle bg-bg-raised/40"
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 font-ui text-xs font-semibold text-text-secondary rf-focus-ring">
+          <span>New class, filters, and search</span>
+          <span aria-hidden className="font-data text-[10px] text-text-tertiary">
+            {creatorOpen ? '▾' : '▸'}
+          </span>
+        </summary>
+        <div className="flex flex-col gap-3 border-t border-border-subtle p-3">
+          <CreateClassForm onCreated={onCreate} onError={onError} />
+          {showTagFilter && (
+            <TagFilter knownTags={knownTags} activeTag={activeTag} onSelectTag={onSelectTag} />
+          )}
+          {showOrganize && (
+            <LibraryOrganizeControls
+              query={query}
+              sort={sort}
+              onQueryChange={setQuery}
+              onSortChange={setSort}
+            />
+          )}
+        </div>
+      </details>
       {view === 'loading' ? (
         <p className="font-ui text-sm text-text-tertiary">Loading your classes…</p>
       ) : view === 'error' ? (
@@ -1194,7 +1256,7 @@ function ClassCard({
           type="button"
           onClick={() => onOpen(cls)}
           aria-pressed={selected}
-          className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left font-ui"
+          className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left font-ui rf-focus-ring"
         >
           <ArtCollage urls={cls.albumArtUrls} />
           <span className="min-w-0 flex-1">
@@ -1222,14 +1284,18 @@ function ClassCard({
         {/* Quiet horizontal footer for secondary actions. Each independently focusable
             and labeled (no nested buttons). Much lower visual weight than before. */}
         <div className="flex items-center justify-end gap-x-1 border-t border-border-subtle px-2 font-ui text-xs text-text-tertiary">
+          {/* Same action, same name as the shelf's secondary — "View" and
+              "Rehearsal view" used to be two words for opening `ClassSummaryView`
+              (P1-07). The surface calls itself the read-only rehearsal view, so
+              that is the name everywhere. */}
           <button
             type="button"
             onClick={() => onPreview(cls)}
-            aria-label={`Preview ${cls.title}`}
-            title="Read-only preview"
-            className="min-h-11 rounded-control px-3 hover:bg-bg-base hover:text-text-primary sm:min-h-8"
+            aria-label={`Rehearsal view — ${cls.title}`}
+            title="Read-only rehearsal view"
+            className="min-h-11 rounded-control px-3 hover:bg-bg-base hover:text-text-primary rf-focus-ring sm:min-h-8"
           >
-            View
+            Rehearsal view
           </button>
           <span aria-hidden className="text-text-tertiary/40">
             ·
@@ -1238,9 +1304,9 @@ function ClassCard({
             type="button"
             onClick={() => void run(() => onDuplicate(cls))}
             disabled={busy}
-            aria-label={`Duplicate ${cls.title}`}
+            aria-label={`Copy ${cls.title}`}
             title="Save a copy"
-            className="min-h-11 rounded-control px-3 hover:bg-bg-base hover:text-text-primary disabled:opacity-40 sm:min-h-8"
+            className="min-h-11 rounded-control px-3 hover:bg-bg-base hover:text-text-primary rf-focus-ring disabled:opacity-40 sm:min-h-8"
           >
             {busy ? '…' : 'Copy'}
           </button>
@@ -1443,9 +1509,21 @@ function CreateClassForm({
           );
         })}
       </div>
+      {/* The creative path reads in instructor language. The stored-enum fact is
+          true and worth being able to find, so it moves into a disclosure rather
+          than being deleted (P2-02). */}
       <p className="font-ui text-[11px] leading-4 text-text-tertiary">
-        Choose a template to start; Pilates stores as the current Sculpt contract.
+        Choose a discipline to start.
       </p>
+      <details className="font-ui text-[11px] leading-4 text-text-tertiary">
+        <summary className="min-h-11 cursor-pointer py-3 rf-focus-ring sm:min-h-0 sm:py-0">
+          How disciplines are stored
+        </summary>
+        <p className="mt-1 leading-4">
+          Pilates classes are stored under Ritmo’s Sculpt contract. The name you see and teach stays
+          Pilates.
+        </p>
+      </details>
     </form>
   );
 }
