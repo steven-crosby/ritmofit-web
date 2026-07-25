@@ -51,6 +51,7 @@ import {
   listPlaylists,
   listPlaylistTracks,
   importTrack,
+  searchProvider,
   getMe,
   updateMe,
 } from '../lib/api.js';
@@ -98,6 +99,7 @@ import { IntensityReadout } from './IntensityReadout.js';
 import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 import { ClassReadinessSummary } from './ClassReadinessSummary.js';
 import { TrackSearch } from './TrackSearch.js';
+import { SourceList, sourceCandidateKey } from './SourceList.js';
 import {
   consumeOnboardingVideoPending,
   markOnboardingVideoDismissed,
@@ -511,7 +513,17 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     async (tracks: TrackSearchResult[], title: string, template: ClassTemplate) => {
       const cls = await createClass({ title, template });
       await applyTagFilter(null);
-      const failed = await importCollectionTracks(cls.id, tracks);
+      // These tracks have an instructor-authored selection order. Import them
+      // serially so API completion timing cannot reshuffle the new class.
+      const failed: TrackSearchResult[] = [];
+      for (const candidate of tracks) {
+        try {
+          const track = await importTrack(candidate.provider, candidate.providerTrackId);
+          await addTrack(cls.id, { trackId: track.id, intensity: 'mod' });
+        } catch {
+          failed.push(candidate);
+        }
+      }
       setImportResult({
         classId: cls.id,
         classTitle: cls.title,
@@ -520,9 +532,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         failed,
       });
       setLikesBrowse(null);
+      setDestination('classes');
       await openClass({ ...cls, accessLevel: 'owner' });
     },
-    [applyTagFilter, importCollectionTracks, openClass],
+    [applyTagFilter, openClass],
   );
 
   const retryFailedImport = useCallback(async () => {
@@ -829,6 +842,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             onOpenConnections={() => setConnectionsOpen(true)}
             onBrowsePlaylists={(provider, playlists) => setPlaylistBrowse({ provider, playlists })}
             onBrowseLikes={(provider, tracks) => setLikesBrowse({ provider, tracks })}
+            onCreateClass={handleCreateClassFromLikes}
           />
         ) : destination === 'live' ? (
           <LiveWorkspace
@@ -1827,16 +1841,21 @@ function MusicWorkspace({
   onOpenConnections,
   onBrowsePlaylists,
   onBrowseLikes,
+  onCreateClass,
 }: {
   connectionRevision: number;
   onOpenConnections: () => void;
   onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
   onBrowseLikes: (provider: Provider, tracks: TrackSearchResult[]) => void;
+  onCreateClass: (
+    tracks: TrackSearchResult[],
+    title: string,
+    template: ClassTemplate,
+  ) => Promise<void>;
 }) {
   const {
     connections,
     connectionsStatus,
-    isProviderConnected,
     retryConnections,
     playlists,
     playlistsLoading,
@@ -1845,83 +1864,197 @@ function MusicWorkspace({
     likesLoading,
     likesError,
   } = useProviderBrowseState(connectionRevision);
-  const connectedCount = PROVIDER_ORDER.filter((provider) => isProviderConnected(provider)).length;
+  const [selectedProvider, setSelectedProvider] = useState<Provider>(PROVIDER_ORDER[0]!);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<TrackSearchResult[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [selectedTracks, setSelectedTracks] = useState<TrackSearchResult[]>([]);
+  const [classTitle, setClassTitle] = useState('New music class');
+  const [template, setTemplate] = useState<ClassTemplate>('cycle');
+  const [creating, setCreating] = useState(false);
+  const requestId = useRef(0);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      requestId.current += 1;
+      setResults(null);
+      setSearching(false);
+      setSearchError(null);
+      return;
+    }
+    const id = ++requestId.current;
+    setResults(null);
+    setSearching(true);
+    setSearchError(null);
+    const timeout = window.setTimeout(() => {
+      void searchProvider(selectedProvider, trimmed)
+        .then((tracks) => {
+          if (id === requestId.current) setResults(tracks);
+        })
+        .catch((error: unknown) => {
+          if (id === requestId.current) setSearchError((error as Error).message);
+        })
+        .finally(() => {
+          if (id === requestId.current) setSearching(false);
+        });
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [selectedProvider, query]);
+
+  const selectedKeys = useMemo(
+    () => new Set(selectedTracks.map(sourceCandidateKey)),
+    [selectedTracks],
+  );
+  const toggleTrack = (track: TrackSearchResult) => {
+    const key = sourceCandidateKey(track);
+    setSelectedTracks((current) =>
+      current.some((candidate) => sourceCandidateKey(candidate) === key)
+        ? current.filter((candidate) => sourceCandidateKey(candidate) !== key)
+        : [...current, track],
+    );
+  };
+  const startClass = async () => {
+    if (selectedTracks.length === 0 || creating) return;
+    setCreating(true);
+    setSearchError(null);
+    try {
+      await onCreateClass(
+        selectedTracks,
+        classTitle.trim() || `New ${formatTemplateLabel(template)} class`,
+        template,
+      );
+    } catch (error) {
+      setSearchError((error as Error).message);
+      setCreating(false);
+    }
+  };
+
   return (
-    <section className="grid w-full min-w-0 gap-5 overflow-hidden xl:grid-cols-[240px_minmax(0,1fr)] xl:items-start">
-      <aside className="min-w-0 rounded-card bg-bg-raised p-4 xl:sticky xl:top-6">
-        <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Sources</p>
-        <nav className="mt-3 flex max-w-full gap-2 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
+    <section className="grid w-full min-w-0 gap-5 xl:grid-cols-[260px_minmax(0,1fr)] xl:items-start">
+      <aside className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-4 xl:sticky xl:top-6">
+        <p className="rf-eyebrow">Sources</p>
+        <div className="mt-3 flex min-w-0 gap-2 overflow-x-auto pb-1 xl:grid xl:overflow-visible xl:pb-0">
           {PROVIDER_ORDER.map((provider) => {
-            const connectionState = providerConnectionState(
+            const connection = connections.find((row) => row.provider === provider);
+            const connectionState = providerConnectionState(provider, connection, Date.now());
+            const truth = providerCapabilityTruth(
               provider,
-              connections.find((row) => row.provider === provider),
+              connection,
               Date.now(),
+              connectionsStatus === 'ready' ? 'verified' : 'unverified',
             );
-            const rows = playlists[provider];
-            const canBrowse = connectionState === 'connected' && !!rows?.length;
+            const selected = selectedProvider === provider;
+            const statusLabel =
+              connectionsStatus === 'loading'
+                ? 'Checking'
+                : connectionsStatus === 'error'
+                  ? 'Unverified'
+                  : connectionState === 'connected'
+                    ? 'Connected'
+                    : connectionState === 'expired'
+                      ? 'Session expired'
+                      : 'Catalog only';
             return (
-              <button
+              <article
                 key={provider}
-                type="button"
-                aria-label={
-                  canBrowse
-                    ? `Browse ${providerLabel(provider)} playlists`
-                    : `Manage ${providerLabel(provider)} connection`
-                }
-                onClick={() =>
-                  canBrowse ? onBrowsePlaylists(provider, rows!) : onOpenConnections()
-                }
-                className="flex min-h-11 min-w-0 shrink-0 items-center justify-between gap-3 rounded-control bg-bg-base px-3 py-2 text-left font-ui text-sm text-text-primary transition-colors hover:bg-interactive/5 xl:w-full"
+                className={`min-w-[236px] shrink-0 rounded-control border p-2 xl:min-w-0 ${
+                  selected
+                    ? 'border-interactive/50 bg-interactive/10'
+                    : 'border-border-subtle bg-bg-base'
+                }`}
               >
-                <span>{providerLabel(provider)}</span>
-                <span className="font-data text-[10px] uppercase text-text-tertiary">
-                  {connectionsStatus === 'loading'
-                    ? 'Checking'
-                    : connectionsStatus === 'error'
-                      ? 'Unverified'
-                      : connectionState === 'connected'
-                        ? 'Linked'
-                        : 'Catalog'}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  aria-label={`Browse ${providerLabel(provider)} catalog`}
+                  aria-pressed={selected}
+                  onClick={() => setSelectedProvider(provider)}
+                  className="flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-control px-1 text-left rf-focus-ring"
+                >
+                  <span className="shrink-0 font-ui text-sm font-semibold text-text-primary">
+                    {providerLabel(provider)}
+                  </span>
+                  <span className="shrink-0 font-data text-[10px] text-text-tertiary">
+                    <span aria-hidden>
+                      {connectionsStatus === 'error'
+                        ? '? '
+                        : connectionState === 'connected'
+                          ? '✓ '
+                          : connectionState === 'expired'
+                            ? '⧖ '
+                            : '○ '}
+                    </span>
+                    {statusLabel}
+                  </span>
+                </button>
+                <ProviderCapabilityLedger provider={provider} truth={truth} compact />
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {likes[provider]?.length ? (
+                    <button
+                      type="button"
+                      aria-label={`Browse liked tracks on ${providerLabel(provider)}`}
+                      onClick={() => onBrowseLikes(provider, likes[provider]!)}
+                      className="min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring"
+                    >
+                      Liked tracks · {likes[provider]!.length}
+                    </button>
+                  ) : likesLoading[provider] ? (
+                    <span className="px-2 py-1 font-ui text-[11px] text-text-tertiary">
+                      Loading likes…
+                    </span>
+                  ) : likesError[provider] ? (
+                    <span className="px-2 py-1 font-ui text-[11px] text-state-caution">
+                      Likes unavailable
+                    </span>
+                  ) : null}
+                  {playlists[provider]?.length ? (
+                    <button
+                      type="button"
+                      aria-label={`Browse saved playlists on ${providerLabel(provider)}`}
+                      onClick={() => onBrowsePlaylists(provider, playlists[provider]!)}
+                      className="min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring"
+                    >
+                      Playlists · {playlists[provider]!.length}
+                    </button>
+                  ) : playlistsLoading[provider] ? (
+                    <span className="px-2 py-1 font-ui text-[11px] text-text-tertiary">
+                      Loading playlists…
+                    </span>
+                  ) : playlistsError[provider] ? (
+                    <span className="px-2 py-1 font-ui text-[11px] text-state-caution">
+                      Playlists unavailable
+                    </span>
+                  ) : providerCapabilities[provider].savedPlaylists &&
+                    connectionState === 'connected' ? (
+                    <span className="px-2 py-1 font-ui text-[11px] text-text-tertiary">
+                      No saved playlists
+                    </span>
+                  ) : null}
+                </div>
+              </article>
             );
           })}
-        </nav>
+        </div>
         <button
           type="button"
           onClick={onOpenConnections}
-          className="mt-4 min-h-11 w-full rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10"
+          className="mt-3 min-h-11 w-full rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring"
         >
           Manage connections
         </button>
       </aside>
 
-      <div className="flex w-full min-w-0 flex-col gap-5 overflow-hidden">
-        <section className="min-w-0 rounded-card bg-bg-raised p-5 sm:p-6">
-          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Music home</p>
-          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0">
-              <h2 className="font-display text-2xl font-semibold leading-tight text-text-primary">
-                Browse music, then shape it into class.
-              </h2>
-              <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
-                Saved playlists, liked tracks, and provider libraries are the raw material for
-                building.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onOpenConnections}
-              className={`min-h-11 shrink-0 rounded-control px-4 font-ui text-sm font-semibold sm:rounded-pill ${
-                connectedCount > 0
-                  ? 'bg-bg-base text-interactive hover:bg-interactive/10'
-                  : 'rf-btn-primary text-text-on-accent'
-              }`}
-            >
-              {connectedCount > 0 ? 'Manage connections' : 'Connect music'}
-            </button>
-          </div>
-        </section>
+      <div className="flex w-full min-w-0 flex-col gap-4">
+        <header className="min-w-0">
+          <p className="rf-eyebrow">Music</p>
+          <h2 className="mt-2 text-balance font-display text-3xl font-bold tracking-[-0.03em] text-text-primary sm:text-4xl">
+            Browse music, then shape it into class.
+          </h2>
+          <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
+            Provider catalogs are the raw material. Selection carries straight into a class.
+          </p>
+        </header>
 
         <ProviderConnectionsLoadState
           status={connectionsStatus}
@@ -1929,38 +2062,118 @@ function MusicWorkspace({
           onRetry={retryConnections}
         />
 
-        {(connectionsStatus !== 'loading' || connections.length > 0) && (
-          <section className="grid min-w-0 gap-3 lg:grid-cols-3">
-            {PROVIDER_ORDER.map((provider) => {
-              const connected = isProviderConnected(provider);
-              return (
-                <ProviderShelfCard
-                  key={provider}
-                  provider={provider}
-                  connection={connections.find((row) => row.provider === provider)}
-                  connectionStatus={connectionsStatus}
-                  playlists={playlists[provider] ?? null}
-                  loadingPlaylists={playlistsLoading[provider] ?? false}
-                  playlistError={playlistsError[provider] ?? null}
-                  onBrowse={
-                    connected && playlists[provider]?.length
-                      ? () => onBrowsePlaylists(provider, playlists[provider]!)
-                      : undefined
-                  }
-                  likes={likes[provider] ?? null}
-                  loadingLikes={likesLoading[provider] ?? false}
-                  likesError={likesError[provider] ?? null}
-                  onManageConnections={onOpenConnections}
-                  onBrowseLikes={
-                    connected && likes[provider]?.length
-                      ? () => onBrowseLikes(provider, likes[provider]!)
-                      : undefined
-                  }
-                />
-              );
-            })}
-          </section>
-        )}
+        <section className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-3 sm:p-4">
+          <label
+            htmlFor="music-catalog-search"
+            className="font-ui text-xs font-semibold text-text-secondary"
+          >
+            Search {providerLabel(selectedProvider)} catalog
+          </label>
+          <input
+            id="music-catalog-search"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={`Track, artist, or remix on ${providerLabel(selectedProvider)}…`}
+            className="mt-2 min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary rf-focus-ring sm:rounded-pill"
+          />
+
+          <p role="status" className="sr-only">
+            {searching
+              ? `Searching ${providerLabel(selectedProvider)}…`
+              : results
+                ? `${results.length} ${results.length === 1 ? 'result' : 'results'} on ${providerLabel(selectedProvider)}.`
+                : ''}
+          </p>
+
+          {searchError && (
+            <p role="alert" className="mt-3 font-ui text-sm text-state-danger">
+              {searchError}
+            </p>
+          )}
+
+          {query.trim() === '' ? (
+            <div className="mt-3 flex min-h-80 items-center justify-center rounded-card bg-bg-base p-6 text-center">
+              <div>
+                <p className="font-display text-lg font-semibold text-text-primary">
+                  Start with the song in your head.
+                </p>
+                <p className="mt-2 max-w-md font-ui text-sm leading-6 text-text-tertiary">
+                  Catalog search works without connecting an account. Link a provider only when you
+                  want its likes, saved playlists, or playback.
+                </p>
+              </div>
+            </div>
+          ) : searching && results === null ? (
+            <p className="mt-3 min-h-80 p-4 font-ui text-sm text-text-tertiary">
+              Searching {providerLabel(selectedProvider)}…
+            </p>
+          ) : results && results.length === 0 ? (
+            <div className="mt-3 min-h-80 rounded-card bg-bg-base p-6">
+              <p className="font-ui text-sm font-semibold text-text-primary">No matches yet.</p>
+              <p className="mt-1 font-ui text-sm text-text-tertiary">
+                Try the artist, a shorter title, or another provider.
+              </p>
+            </div>
+          ) : results && results.length > 0 ? (
+            <div className="mt-3">
+              {selectedTracks.length > 0 && (
+                <label className="mb-3 block font-ui text-xs font-semibold text-text-secondary">
+                  Class name
+                  <input
+                    type="text"
+                    value={classTitle}
+                    onChange={(event) => setClassTitle(event.target.value)}
+                    className="mt-1 min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary rf-focus-ring sm:max-w-sm sm:rounded-pill"
+                  />
+                </label>
+              )}
+              <SourceList
+                tracks={results}
+                ariaLabel={`${providerLabel(selectedProvider)} catalog results`}
+                action={{
+                  kind: 'selection',
+                  selectedKeys,
+                  selectedTracks,
+                  onToggle: toggleTrack,
+                  tray: {
+                    title: classTitle,
+                    template,
+                    templateControl: (
+                      <div
+                        role="group"
+                        aria-label="New class template"
+                        className="flex min-w-0 gap-1"
+                      >
+                        {CREATE_TEMPLATE_OPTIONS.map(({ value, label }) =>
+                          value ? (
+                            <button
+                              key={value}
+                              type="button"
+                              aria-pressed={template === value}
+                              onClick={() => setTemplate(value)}
+                              className={`min-h-11 rounded-control border px-2 font-ui text-xs rf-focus-ring ${
+                                template === value
+                                  ? 'border-interactive bg-interactive/15 text-text-primary'
+                                  : 'border-border-subtle text-text-secondary'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ) : null,
+                        )}
+                      </div>
+                    ),
+                    primaryLabel: 'Start class',
+                    primaryBusyLabel: 'Starting…',
+                    primaryBusy: creating,
+                    onPrimary: () => void startClass(),
+                  },
+                }}
+              />
+            </div>
+          ) : null}
+        </section>
       </div>
     </section>
   );
@@ -2704,7 +2917,7 @@ function ReadinessTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ProviderShelfCard({
+export function ProviderShelfCard({
   provider,
   connection,
   connectionStatus,

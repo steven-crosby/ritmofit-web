@@ -28,19 +28,18 @@ import {
   searchProvider,
   ApiError,
 } from '../lib/api.js';
-import { formatDuration } from '../lib/class-summary.js';
 import {
   DEFAULT_PROVIDER,
   PROVIDER_ORDER,
   providerCapabilityTruth,
   providerConnectionState,
-  providerHandoffHref,
   providerLabel,
   providerPlaylistHref,
 } from '../lib/providers.js';
+import { SourceList, sourceCandidateKey } from './SourceList.js';
 
 /** A stable key for a candidate (provider + provider track id). */
-const candidateKey = (r: TrackSearchResult) => `${r.provider}:${r.providerTrackId}`;
+const candidateKey = sourceCandidateKey;
 
 type Mode = 'search' | 'likes' | 'saved_playlists' | 'playlist';
 
@@ -426,71 +425,19 @@ export function TrackSearch({
         : `Added ${addedPlaylistTrackCount} of ${playlistTrackCount} tracks. ${remainingPlaylistTrackCount} couldn’t be added — retry the remaining ${remainingPlaylistTrackCount === 1 ? 'track' : 'tracks'}.`
       : null;
 
-  // The importable candidate list — shared by catalog/likes search and the opened
-  // saved-playlist drill-in so both render an identical row treatment.
+  // Catalog, likes, and playlist drill-in all consume the same source-list rows
+  // that Music uses. Builder supplies the immediate-import destination contract.
   const renderTrackList = (list: TrackSearchResult[]) => (
-    <ul className="flex flex-col gap-1.5">
-      {list.map((r) => {
-        const key = candidateKey(r);
-        const sourceHref = providerHandoffHref(r.provider, r.providerUri);
-        const added = addedKeys.has(key);
-        const busy = importingKey === key;
-        const bulkBusy = importingAllFromPlaylist && !added;
-        return (
-          <li key={key} className="flex items-center gap-3 rounded-card bg-bg-base px-2 py-1.5">
-            {/* 44px art — a small creative trigger, not a focal point (09). */}
-            {r.albumArtUrl ? (
-              <img
-                src={r.albumArtUrl}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="h-11 w-11 shrink-0 rounded-card object-cover"
-              />
-            ) : (
-              <span
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised text-text-tertiary"
-                aria-hidden
-              >
-                ♪
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-ui text-sm font-semibold text-text-primary">{r.title}</p>
-              <p className="truncate font-ui text-xs text-text-secondary">{r.artist}</p>
-              {sourceHref && (
-                <a
-                  href={sourceHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-0.5 inline-flex rounded-control font-ui text-[11px] font-semibold text-interactive hover:text-interactive-hover rf-focus-ring"
-                  aria-label={`Open ${r.title} on ${providerLabel(r.provider)}`}
-                >
-                  Source: {providerLabel(r.provider)} ↗
-                </a>
-              )}
-            </div>
-            {r.durationMs != null && (
-              <span className="shrink-0 font-data text-xs text-text-tertiary">
-                {formatDuration(r.durationMs)}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => add(r)}
-              disabled={busy || bulkBusy || added}
-              aria-busy={busy || bulkBusy}
-              aria-label={added ? `${r.title} added` : `Add ${r.title} by ${r.artist}`}
-              className={`min-h-11 shrink-0 rounded-pill px-3 font-ui text-xs font-semibold disabled:opacity-60 ${
-                added ? 'bg-bg-raised text-text-tertiary' : 'rf-btn-primary text-text-on-accent'
-              }`}
-            >
-              {added ? 'Added ✓' : busy || bulkBusy ? 'Adding…' : 'Add'}
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+    <SourceList
+      tracks={list}
+      action={{
+        kind: 'import',
+        addedKeys,
+        busyKey: importingKey,
+        bulkBusy: importingAllFromPlaylist,
+        onAdd: (candidate) => void add(candidate),
+      }}
+    />
   );
 
   // Drill-in failure, classified so an expected limitation (you don't own this

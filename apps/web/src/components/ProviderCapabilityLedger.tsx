@@ -17,14 +17,20 @@ export function ProviderCapabilityLedger({
   provider,
   truth,
   className = '',
+  compact = false,
 }: {
   provider: Provider;
   truth: ProviderCapabilityTruth;
   className?: string;
+  compact?: boolean;
 }) {
   return (
     <dl
-      className={`grid gap-1.5 border-t border-interactive/10 pt-3 font-ui text-xs ${className}`}
+      className={`grid ${
+        compact
+          ? 'gap-1 border-t border-interactive/10 px-1 pt-2 font-ui text-[11px]'
+          : 'gap-1.5 border-t border-interactive/10 pt-3 font-ui text-xs'
+      } ${className}`}
       aria-label={`${providerLabel(provider)} capabilities`}
     >
       {CAPABILITIES.map((key) => {
@@ -32,7 +38,12 @@ export function ProviderCapabilityLedger({
         const meta = capabilityMeta(capability);
         const label = key.slice(0, 1).toUpperCase() + key.slice(1);
         return (
-          <div key={key} className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] gap-2">
+          <div
+            key={key}
+            className={`grid min-w-0 gap-2 ${
+              compact ? 'grid-cols-[56px_minmax(0,1fr)]' : 'grid-cols-[72px_minmax(0,1fr)]'
+            }`}
+          >
             <dt className="text-text-tertiary">{label}</dt>
             <dd className={`min-w-0 text-right ${meta.tone}`}>
               <span aria-hidden="true">{meta.glyph} </span>

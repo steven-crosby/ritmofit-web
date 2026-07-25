@@ -272,14 +272,16 @@ export function ConnectionsDialog({
                           type="button"
                           onClick={() => disconnect(provider)}
                           disabled={busy}
-                          className="min-h-11 rounded-pill border border-state-danger/50 px-3 font-ui text-xs text-state-danger disabled:opacity-50"
+                          aria-label={`Confirm disconnect ${providerLabel(provider)}`}
+                          className="min-h-11 rounded-pill border border-state-danger/50 px-3 font-ui text-xs text-state-danger rf-focus-ring disabled:opacity-50"
                         >
-                          {busy ? 'Removing…' : 'Confirm'}
+                          {busy ? `Removing ${providerLabel(provider)}…` : 'Confirm'}
                         </button>
                         <button
                           type="button"
                           onClick={() => setConfirming(null)}
-                          className="min-h-11 rounded-pill px-2 font-ui text-xs text-text-tertiary hover:text-text-primary"
+                          aria-label={`Cancel ${providerLabel(provider)} disconnect`}
+                          className="min-h-11 rounded-pill px-2 font-ui text-xs text-text-tertiary hover:text-text-primary rf-focus-ring"
                         >
                           Cancel
                         </button>
@@ -288,9 +290,10 @@ export function ConnectionsDialog({
                       <button
                         type="button"
                         onClick={() => setConfirming(provider)}
-                        className="min-h-11 shrink-0 rounded-pill border border-interactive/40 px-3 font-ui text-xs text-text-secondary hover:text-text-primary"
+                        aria-label={`Disconnect ${providerLabel(provider)}`}
+                        className="min-h-11 shrink-0 rounded-pill border border-interactive/40 px-3 font-ui text-xs text-text-secondary hover:text-text-primary rf-focus-ring"
                       >
-                        Disconnect
+                        Disconnect {providerLabel(provider)}
                       </button>
                     )
                   ) : dataState === 'expired' ? (
@@ -299,18 +302,24 @@ export function ConnectionsDialog({
                       type="button"
                       onClick={() => connect(provider)}
                       disabled={busy}
-                      className="min-h-11 shrink-0 rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive disabled:opacity-50"
+                      aria-label={`Reconnect ${providerLabel(provider)}`}
+                      className="min-h-11 shrink-0 rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive rf-focus-ring disabled:opacity-50"
                     >
-                      {busy ? 'Reconnecting…' : 'Reconnect'}
+                      {busy
+                        ? `Reconnecting ${providerLabel(provider)}…`
+                        : `Reconnect ${providerLabel(provider)}`}
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={() => connect(provider)}
                       disabled={busy}
-                      className="min-h-11 shrink-0 rounded-pill rf-btn-primary px-3 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50"
+                      aria-label={`Connect ${providerLabel(provider)}`}
+                      className="min-h-11 shrink-0 rounded-pill border border-interactive/50 px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring disabled:opacity-50"
                     >
-                      {busy ? 'Connecting…' : 'Connect'}
+                      {busy
+                        ? `Connecting ${providerLabel(provider)}…`
+                        : `Connect ${providerLabel(provider)}`}
                     </button>
                   )}
                 </div>
@@ -330,7 +339,8 @@ export function ConnectionsDialog({
                       type="button"
                       onClick={() => connect(provider)}
                       disabled={busy}
-                      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50"
+                      aria-label={`Reconnect ${providerLabel(provider)} for playback`}
+                      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring disabled:opacity-50"
                     >
                       <span aria-hidden>↻</span>
                       {busy ? 'Reconnecting…' : 'Reconnect for playback'}
@@ -350,7 +360,8 @@ export function ConnectionsDialog({
                       type="button"
                       onClick={() => connect(provider)}
                       disabled={busy}
-                      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50"
+                      aria-label={`Reconnect ${providerLabel(provider)} to browse playlists`}
+                      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring disabled:opacity-50"
                     >
                       <span aria-hidden>↻</span>
                       {busy ? 'Reconnecting…' : 'Reconnect to browse playlists'}
