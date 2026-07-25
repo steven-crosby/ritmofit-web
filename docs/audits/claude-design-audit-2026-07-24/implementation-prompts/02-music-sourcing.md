@@ -21,7 +21,15 @@ most damaging workflow gap.
 
 ## Authority
 
-Implementation only. No commit, push, PR, merge, or deploy unless separately granted.
+Implementation **plus** commit, push, PR, and merge — granted by the owner on 2026-07-24.
+
+- **Granted:** branch, commit, push, open a PR, and merge it once CI is green.
+- **NOT granted:** **deploy.** Deploys are manual and production-facing (`AGENTS.md`, "Security And
+  Deployment"); merging to `main` does not deploy. Ask the owner separately, and never fold a deploy
+  into a merge.
+
+Branch from `main` (never commit directly to it), keep the PR to this slice's scope, and run the repo
+gates before requesting merge.
 
 ## Baseline
 
@@ -149,9 +157,11 @@ in your handoff.
 ## Handoff
 
 Changed files, verification results, screenshot paths, remaining gaps (including the playlist path above),
-and an explicit statement that no commit/push/PR/merge/deploy was performed.
+the branch name, commit SHA, and PR link, and explicit confirmation that **no deploy** was performed.
 
-## Suggested branch and PR title (suggestions only)
+## Branch and PR (authorized)
+
+Use these unless you have a better reason; adjust the PR title to match what actually landed.
 
 - Branch: `design-audit/02-music-sourcing`
 - PR title: `feat(web): make Music a sourcing workspace over a shared source list`
