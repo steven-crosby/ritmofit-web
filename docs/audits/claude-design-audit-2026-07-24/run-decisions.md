@@ -35,7 +35,7 @@ approval from silence.
 | Visual signature | Keep the Class Pulse and make it load-bearing on 8 surfaces; never flat, always provenance-marked | approve | Approved in chat, 2026-07-24. |
 | Navigation/shell treatment | **No change.** Four destinations preserved; structural questions raised as PDRs, not redesigned | approve | Approved in chat, 2026-07-24. |
 | Typography and density | No change to type roles — already correct. Density should differ intentionally: airy discovery, dense creation, sparse Live | approve | Approved in chat, 2026-07-24. |
-| Color/depth/token direction | No new token values. Two Live-scoped re-maps for AAA contrast; planning surfaces untouched | approve | Approved in chat, 2026-07-24. |
+| Color/depth/token direction | **Prefer** re-maps of existing values; a new value is allowed where a documented target cannot be met without one. Live-scoped re-maps for AAA contrast; planning surfaces untouched | approve | Approved in chat, 2026-07-24. **Amended 2026-07-25:** originally read "No new token values." The owner's position is that this is a default, not a gate — a direction row should not block a change that is otherwise correct. Implementation shipped three Live-scoped re-maps plus one new primitive (`ember-300`); see the revision log. |
 | Motion posture | **No change.** Reduced motion already fully honoured (measured zero animations); pulse allowlist stays at two surfaces | approve | Approved in chat, 2026-07-24. |
 
 ## Surface decisions
@@ -135,7 +135,7 @@ owns is approved. Partially approved prompts must be revised before use, not run
 
 | Item/surface | Requested revision | Revision artifact | Agent summary | Final owner disposition | Final notes |
 | --- | --- | --- | --- | --- | --- |
-| | | | | | |
+| Color/depth/token direction (P0-04, P0-05) | Permit a new token value where a re-map cannot reach the target | PR #370 | Live's `state/danger` measured 6.33:1 on `bg/live` as 12px semibold text — below the 7:1 AAA target, and unreachable by re-map because `ember-400` was already the lightest step in that ramp. The three alternatives were: a new primitive; a component-level change in `LiveMode.tsx` (which the contrast gate cannot enforce, defeating P0-05); or re-mapping danger to amber (which conflates danger with caution). Shipped `ember-300` `#EE7A66` at 7.52:1, Live-scoped — planning surfaces keep `ember-400`. | approve | Approved in chat, 2026-07-25, with the note that treating "no new token values" as a hard gate is an inflexibility the owner does not agree with. The global-direction row above was amended to match. |
 
 ## Excluded from implementation
 

@@ -29,15 +29,27 @@ same state.
 
 ## 1. Token layer
 
-Two **re-maps of existing values**. No new token value is introduced, and no primitive ramp changes.
+> **Amended 2026-07-25 to match what shipped in PR #370.** As proposed this section read: "Two
+> **re-maps of existing values**. No new token value is introduced, and no primitive ramp changes."
+> Implementation found a third Live role below the AAA target that no re-map could reach, so the
+> shipped foundation is **three Live-scoped re-maps plus one new primitive**. Prefer a re-map; reach
+> for a new value only when a documented target cannot be met without one, and scope it.
+
+Three **Live-scoped role re-maps**, one of which required a new primitive step.
 
 | Token | Today | Proposed | Scope | Measured |
 | --- | --- | --- | --- | --- |
 | Live supporting label | `text/tertiary` (`bone-400` `#9E927E`) | `text/secondary` (`bone-300` `#C9BEAA`) | Live surfaces only | 6.79:1 → **11.30:1** on `bg/live` |
-| Live primary fill | `copper-400 → copper-500` | `copper-400 → copper-300` | Live surfaces only | ink label 5.38:1 → **7.04:1** at the darkest stop |
+| Live primary fill | `copper-400 → copper-500` | `copper-400 → copper-300` | Live surfaces only | ink label 5.34:1 → **7.04:1** at the darkest stop |
+| Live danger *(added during implementation)* | `state/danger` (`ember-400` `#E8654F`) | new `ember-300` `#EE7A66` | Live surfaces only | 6.33:1 → **7.52:1** on `bg/live` |
 
-**Planning surfaces are unchanged.** `text/tertiary` remains correct at AA on `bg/base`, and the standard
-copper primary keeps its current gradient everywhere outside Live.
+**Planning surfaces are unchanged.** `text/tertiary` remains correct at AA on `bg/base`, `state/danger`
+keeps `ember-400`, and the standard copper primary keeps its current gradient everywhere outside Live.
+
+Two figures were corrected against measurement during implementation: the primary fill's worst stop is
+**5.34:1**, not the 5.38:1 originally recorded, and the Live ground is darker than the audit measured
+because `bg-live` was a dead Tailwind class — the utility is `bg-bg-live`, so Live had been rendering on
+`bg/base`. Both are detailed in PR #370.
 
 Token edits go through `ritmofit_design_system/tokens.json` and the documented generation workflow
 (`npm run build`, `npm run build:ios`). Never hand-edit generated output.
