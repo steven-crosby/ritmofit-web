@@ -50,3 +50,6 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 ## Breadcrumbs
 
 <!-- newest at top; one per line -->
+
+- [ ] (2026-07-25) `AccountDialog.tsx:97,140` use `bg-bg-surface`, which Tailwind never generates (no `surface` key under `colors.bg`) — same dead-class bug as `bg-live` fixed in #370. Account is prompt 06's region, so it was reported rather than fixed. — #bug
+- [ ] (2026-07-25) Design-audit finding D11 (`createPattern` `InvalidStateError`) could not be reproduced: there is no canvas or canvas dependency anywhere in `apps/web`, and a full Builder session in Chrome 150 logged zero console errors. Treat as unconfirmed, not closed. — #fact
