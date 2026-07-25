@@ -485,7 +485,7 @@ function SegmentHandle({
       onKeyDown={onKeyDown}
       onBlur={() => void commit(draftMs)}
       style={{ left: `${leftPct}%` }}
-      className="absolute inset-y-0 z-10 flex w-11 -translate-x-1/2 cursor-ew-resize touch-none items-stretch justify-center rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+      className="absolute inset-y-0 z-10 flex w-11 -translate-x-1/2 cursor-ew-resize touch-none items-stretch justify-center rounded-control rf-focus-ring"
     >
       <span aria-hidden className="w-0.5 bg-interactive" />
     </div>

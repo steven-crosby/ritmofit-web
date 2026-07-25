@@ -101,7 +101,7 @@ export function ClassReadinessSummary({
                       // knows what it does. Keeps the visible title in the name
                       // (label-in-name / voice control).
                       aria-label={`Fix ${DIMENSION_NOUN[d.key]} on ${t.track.title}`}
-                      className="min-h-11 rounded-control border border-interactive/50 px-2.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+                      className="min-h-11 rounded-control border border-interactive/50 px-2.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
                       onClick={() => onSelectTrack(t.classTrackId)}
                     >
                       {t.track.title}

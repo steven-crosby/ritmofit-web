@@ -881,7 +881,7 @@ function CompactClassChooser({
         <button
           type="button"
           onClick={onShowAll}
-          className="min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+          className="min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive rf-focus-ring"
         >
           All classes
         </button>
@@ -895,7 +895,7 @@ function CompactClassChooser({
               type="button"
               aria-current={active ? 'page' : undefined}
               onClick={() => onOpen(cls)}
-              className={`min-h-16 min-w-[11rem] max-w-[15rem] shrink-0 rounded-control border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive ${
+              className={`min-h-16 min-w-[11rem] max-w-[15rem] shrink-0 rounded-control border p-3 text-left rf-focus-ring ${
                 active
                   ? 'border-interactive bg-interactive/5'
                   : 'border-border-subtle bg-bg-base hover:border-interactive/45'
@@ -1623,7 +1623,7 @@ function ProviderConnectionsLoadState({
       <button
         type="button"
         onClick={onRetry}
-        className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+        className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
       >
         Try again
       </button>
@@ -1803,7 +1803,7 @@ function WorkstationRestingState({
               key={start.eyebrow}
               type="button"
               onClick={start.action}
-              className="min-h-32 rounded-card border border-border-subtle bg-bg-sunken p-4 text-left hover:border-interactive/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+              className="min-h-32 rounded-card border border-border-subtle bg-bg-sunken p-4 text-left hover:border-interactive/50 rf-focus-ring"
             >
               <span className="font-data text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
                 {start.eyebrow}
@@ -2228,7 +2228,7 @@ function LiveQueueCard({
           <button
             type="button"
             onClick={onEdit}
-            className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+            className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
           >
             Edit
           </button>
@@ -2238,7 +2238,7 @@ function LiveQueueCard({
             disabled={!canRun}
             aria-describedby={blockReason ? reasonId : undefined}
             title={canRun ? 'Run this class live' : undefined}
-            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive disabled:opacity-50 sm:rounded-pill"
+            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring disabled:opacity-50 sm:rounded-pill"
           >
             Preflight
           </button>
@@ -2260,7 +2260,7 @@ function LiveQueueCard({
           <button
             type="button"
             onClick={onRetry}
-            className="ml-auto shrink-0 rounded-pill border border-interactive/50 px-2.5 py-0.5 font-ui text-interactive hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive"
+            className="ml-auto shrink-0 rounded-pill border border-interactive/50 px-2.5 py-0.5 font-ui text-interactive hover:bg-interactive/10 rf-focus-ring"
           >
             Retry
           </button>
@@ -2685,7 +2685,7 @@ function AccountWorkspace({
           </p>
           <a
             href="/privacy"
-            className="mt-3 inline-flex min-h-11 items-center rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+            className="mt-3 inline-flex min-h-11 items-center rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
           >
             Privacy and data notice
           </a>
@@ -3532,7 +3532,7 @@ function ClassWorkspace({
                     <button
                       type="button"
                       onClick={toggleTimelineMode}
-                      className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-xs font-semibold text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                      className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-xs font-semibold text-interactive rf-focus-ring"
                     >
                       {isFree ? 'Switch to back-to-back' : 'Switch to free placement'}
                     </button>
@@ -3598,7 +3598,7 @@ function ClassWorkspace({
                 onClick={toggleTrackSources}
                 aria-expanded={sourceOpen}
                 aria-controls={sourcePanelId}
-                className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
               >
                 {sourceOpen ? 'Close music' : 'Add music'}
               </button>
@@ -3608,7 +3608,7 @@ function ClassWorkspace({
                   onClick={() => setTimelineOpen((open) => !open)}
                   aria-expanded={timelineOpen}
                   aria-controls={timelinePanelId}
-                  className="min-h-11 rounded-control px-3 font-ui text-sm font-semibold text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                  className="min-h-11 rounded-control px-3 font-ui text-sm font-semibold text-text-secondary hover:text-text-primary rf-focus-ring"
                 >
                   {timelineOpen ? 'Hide timeline' : 'Show timeline'}
                 </button>
@@ -3683,7 +3683,7 @@ function ClassWorkspace({
             role="region"
             aria-label={`Add music to ${cls.title}`}
             hidden={!sourceOpen}
-            className="rounded-card border border-border-subtle bg-bg-sunken p-3 outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+            className="rounded-card border border-border-subtle bg-bg-sunken p-3 outline-none rf-focus-ring"
           >
             <TrackSearch
               classId={cls.id}
@@ -3753,7 +3753,7 @@ function ClassWorkspace({
           <div
             ref={inspectorPlaceholderRef}
             tabIndex={-1}
-            className="rounded-card border border-interactive/20 bg-bg-base p-5 outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+            className="rounded-card border border-interactive/20 bg-bg-base p-5 outline-none rf-focus-ring"
           >
             <p className="font-ui text-sm text-text-tertiary">
               Select a track to edit its intensity, BPM, notes, cues, and moves.
@@ -4403,7 +4403,7 @@ function SongRow({
           }}
           aria-label={`Reorder ${entry.track.title}, position ${position + 1} of ${count}. Use arrow up and down.`}
           title="Drag, or use ↑/↓, to reorder"
-          className="min-h-11 min-w-11 shrink-0 cursor-grab rounded-card px-2 font-data text-text-tertiary hover:text-text-secondary focus-visible:ring-2 focus-visible:ring-interactive active:cursor-grabbing"
+          className="min-h-11 min-w-11 shrink-0 cursor-grab rounded-card px-2 font-data text-text-tertiary hover:text-text-secondary rf-focus-ring active:cursor-grabbing"
         >
           ⋮⋮
         </button>
@@ -4593,7 +4593,7 @@ function TrackInspector({
       ref={containerRef}
       tabIndex={-1}
       aria-label={`Track inspector for ${title}`}
-      className="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+      className="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
     >
       <div className="flex items-center justify-between gap-2">
         <h3 className="truncate font-display text-sm font-semibold text-text-primary">{title}</h3>
@@ -4737,7 +4737,7 @@ function TrackInspector({
               §Inspector "score, don't fill"). Native <details>: the inputs stay
               mounted, so the single Save below still commits them while collapsed. */}
           <details>
-            <summary className="flex min-h-11 cursor-pointer items-center font-ui text-xs font-semibold uppercase tracking-wide text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive">
+            <summary className="flex min-h-11 cursor-pointer items-center font-ui text-xs font-semibold uppercase tracking-wide text-interactive hover:text-interactive-hover rf-focus-ring">
               Advanced timing and placement
             </summary>
             <div className="mt-3 flex flex-col gap-3">

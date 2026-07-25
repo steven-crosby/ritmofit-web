@@ -329,7 +329,7 @@ export function TimelineStrip({
               style={{ left: `${m.leftPct}%` }}
               title={`${m.kind} ${formatDuration(m.absMs)} — ${m.label}`}
               aria-label={`${m.kind} at ${formatDuration(m.absMs)}: ${m.label}, select track ${m.position + 1}`}
-              className="absolute bottom-0 flex h-11 min-w-11 -translate-x-1/2 items-center justify-center rounded-control text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+              className="absolute bottom-0 flex h-11 min-w-11 -translate-x-1/2 items-center justify-center rounded-control text-text-secondary rf-focus-ring"
             >
               <Glyph kind={m.kind} color={m.color} />
             </button>
@@ -520,7 +520,7 @@ function TrackBlockHandle({
           ? ({ left: `${leftPct}%`, width: `${widthPct}%`, '--rf-bpm': block.bpm } as CSSProperties)
           : { left: `${leftPct}%`, width: `${widthPct}%` }
       }
-      className={`absolute top-0 flex h-11 cursor-ew-resize touch-none items-center justify-center overflow-hidden rounded-control border-l border-interactive/15 hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive ${selected ? 'ring-2 ring-interactive' : ''}${pulse ? ' rf-beat-pulse-subtle' : ''}`}
+      className={`absolute top-0 flex h-11 cursor-ew-resize touch-none items-center justify-center overflow-hidden rounded-control border-l border-interactive/15 hover:bg-bg-raised rf-focus-ring ${selected ? 'ring-2 ring-interactive' : ''}${pulse ? ' rf-beat-pulse-subtle' : ''}`}
     >
       <span className="font-data text-[10px] text-text-tertiary">{block.position + 1}</span>
     </button>
@@ -656,7 +656,7 @@ function MarkerHandle({
       onBlur={() => void commit(draftTrackRel)}
       style={{ left: `${leftPct}%` }}
       title={`${marker.kind} ${formatDuration(absMs)} — ${marker.label}`}
-      className="absolute bottom-0 flex h-11 min-w-11 -translate-x-1/2 cursor-ew-resize touch-none items-center justify-center rounded-control text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+      className="absolute bottom-0 flex h-11 min-w-11 -translate-x-1/2 cursor-ew-resize touch-none items-center justify-center rounded-control text-text-secondary rf-focus-ring"
     >
       <Glyph kind={marker.kind} color={marker.color} />
     </button>

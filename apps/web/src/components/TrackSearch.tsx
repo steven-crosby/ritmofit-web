@@ -463,7 +463,7 @@ export function TrackSearch({
                   href={sourceHref}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-0.5 inline-flex rounded-control font-ui text-[11px] font-semibold text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                  className="mt-0.5 inline-flex rounded-control font-ui text-[11px] font-semibold text-interactive hover:text-interactive-hover rf-focus-ring"
                   aria-label={`Open ${r.title} on ${providerLabel(r.provider)}`}
                 >
                   Source: {providerLabel(r.provider)} ↗
@@ -864,7 +864,7 @@ export function TrackSearch({
                       href={providerPlaylistHref(playlist.provider, playlist.providerUri)!}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-0.5 inline-flex rounded-control font-ui text-[11px] font-semibold text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                      className="mt-0.5 inline-flex rounded-control font-ui text-[11px] font-semibold text-interactive hover:text-interactive-hover rf-focus-ring"
                       aria-label={`Open ${playlist.name} on ${providerLabel(playlist.provider)}`}
                     >
                       Source: {providerLabel(playlist.provider)} ↗

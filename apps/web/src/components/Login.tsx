@@ -319,7 +319,7 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
             {inviteOnly && <span>Private beta · New accounts require an invitation.</span>}
             <a
               href="/privacy"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control px-2 text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control px-2 text-interactive rf-focus-ring"
             >
               Privacy and data
             </a>
