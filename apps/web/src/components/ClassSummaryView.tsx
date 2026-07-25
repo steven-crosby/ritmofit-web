@@ -122,7 +122,7 @@ export function ClassSummaryView({
           )}
         </div>
         <button
-          className="min-h-11 min-w-11 rounded-control px-2 font-ui text-sm text-text-tertiary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+          className="min-h-11 min-w-11 rounded-control px-2 font-ui text-sm text-text-tertiary hover:text-text-primary rf-focus-ring sm:rounded-pill"
           onClick={onClose}
           aria-label="Close summary dialog"
         >

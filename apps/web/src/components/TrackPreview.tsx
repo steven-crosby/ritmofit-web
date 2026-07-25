@@ -300,7 +300,7 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
             <button
               type="button"
               onClick={onStop}
-              className="min-h-11 rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+              className="min-h-11 rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
             >
               Stop auditioning
             </button>
@@ -308,7 +308,7 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
               <button
                 type="button"
                 onClick={() => void reconnectProvider(status.error.provider!)}
-                className="min-h-11 rounded-control px-3 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+                className="min-h-11 rounded-control px-3 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
               >
                 Reconnect {providerLabel(status.error.provider)}
               </button>
@@ -402,7 +402,7 @@ function ReconnectSpotifyAction({
         type="button"
         onClick={reconnect}
         disabled={state === 'reconnecting'}
-        className="inline-flex min-h-11 items-center gap-1.5 self-start rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive disabled:opacity-50 sm:rounded-pill"
+        className="inline-flex min-h-11 items-center gap-1.5 self-start rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring disabled:opacity-50 sm:rounded-pill"
       >
         <span aria-hidden>↻</span>
         {state === 'reconnecting' ? 'Reconnecting…' : 'Reconnect Spotify for playback'}
@@ -446,7 +446,7 @@ function ResolveProviderAction({
   const [state, setState] = useState<ResolveState>({ kind: 'idle' });
 
   const btn =
-    'inline-flex min-h-11 items-center gap-1.5 rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive disabled:opacity-50 sm:rounded-pill';
+    'inline-flex min-h-11 items-center gap-1.5 rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring disabled:opacity-50 sm:rounded-pill';
   const targets = orJoin(PLAYBACK_ADAPTER_PROVIDERS.map((p) => providerLabel(p)));
 
   const find = () => {
@@ -554,7 +554,7 @@ function PreviewControls({
   const primary =
     'inline-flex min-h-11 items-center gap-1.5 rounded-control rf-btn-primary px-4 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50 sm:rounded-pill';
   const secondary =
-    'inline-flex min-h-11 items-center gap-1.5 rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill';
+    'inline-flex min-h-11 items-center gap-1.5 rounded-control border border-interactive px-3 font-ui text-xs font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill';
 
   if (status.kind === 'preparing') {
     return (

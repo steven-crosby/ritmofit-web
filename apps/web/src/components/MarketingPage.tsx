@@ -19,7 +19,7 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
       {/* ── Skip link ─────────────────────────────────────────────────── */}
       <a
         href="#marketing-main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[100] rounded-pill bg-bg-raised px-4 py-2 font-ui text-text-primary shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[100] rounded-pill bg-bg-raised px-4 py-2 font-ui text-text-primary shadow-card rf-focus-ring"
       >
         Skip to main content
       </a>
@@ -75,7 +75,7 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
             id="marketing-signin-btn"
             type="button"
             onClick={onSignIn}
-            className="min-h-11 rounded-pill border border-interactive/30 px-3 font-ui text-sm text-interactive transition-colors hover:border-interactive/60 hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:px-4"
+            className="min-h-11 rounded-pill border border-interactive/30 px-3 font-ui text-sm text-interactive transition-colors hover:border-interactive/60 hover:text-interactive-hover rf-focus-ring sm:px-4"
           >
             Sign in
           </button>
@@ -121,7 +121,7 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
               <a
                 href="#class-shape"
                 id="marketing-hero-shape-btn"
-                className="rounded-pill border border-interactive/30 px-6 py-2.5 font-ui font-semibold text-interactive transition-colors hover:border-interactive/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                className="rounded-pill border border-interactive/30 px-6 py-2.5 font-ui font-semibold text-interactive transition-colors hover:border-interactive/60 rf-focus-ring"
               >
                 Learn the workflow
               </a>
@@ -197,7 +197,7 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
           <span>© {new Date().getFullYear()} Ritmo Studio · Built for instructors who create</span>
           <a
             href="/privacy"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control px-2 text-interactive hover:text-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control px-2 text-interactive hover:text-interactive-hover rf-focus-ring"
           >
             Privacy and data
           </a>

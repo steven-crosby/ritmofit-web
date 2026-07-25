@@ -29,6 +29,7 @@
   --rf-copper-500: #c8682a;
   --rf-copper-600: #a8521c;
   --rf-copper-700: #7a3b12;
+  --rf-ember-300: #ee7a66;
   --rf-ember-400: #e8654f;
   --rf-ember-500: #d9483a;
   --rf-ember-600: #b83a2b;
@@ -81,6 +82,12 @@
   --rf-border-subtle: rgba(251,247,240,0.08);
   --rf-border-default: rgba(251,247,240,0.14);
   --rf-border-strong: rgba(251,247,240,0.24);
+
+  /* live (AAA role re-maps) */
+  --rf-live-text-supporting: var(--rf-bone-300);
+  --rf-live-danger: var(--rf-ember-300);
+  --rf-live-primary-from: var(--rf-copper-400);
+  --rf-live-primary-to: var(--rf-copper-300);
 
   /* type families */
   --rf-font-ui: "Sora", "SF Pro Text", system-ui, sans-serif;

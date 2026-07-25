@@ -25,6 +25,11 @@
  */
 import { type Intensity, type RunPayload } from '@ritmofit/shared';
 import { INTENSITY_LABEL } from './IntensityReadout.js';
+import { deriveProvisionalIntensity, isUnshapedSequence } from '../lib/energy-arc.js';
+
+// Re-exported: the derivation moved to `lib/energy-arc.ts` so the ClassPulse shares
+// it (one class, one shape). Callers and tests that reached for it here still work.
+export { deriveProvisionalIntensity };
 
 /** Zone → crest height fraction (0–1). `none` keeps a small floor so it still reads as a block. */
 const ZONE_HEIGHT: Record<Intensity, number> = {
@@ -96,30 +101,9 @@ function midpointFraction(entry: Entry, totalDurationMs: number): number {
   return ((entry.startOffsetMs ?? 0) + dur / 2) / totalDurationMs;
 }
 
-/**
- * An "unshaped" class — every drawable track carries the *same* intensity, so the
- * instructor hasn't differentiated the arc yet (a single distinct zone flips this
- * off). One track can't form an arc, so a lone track is never treated as unshaped.
- */
-function isUnshaped(drawable: Entry[]): boolean {
-  if (drawable.length < 2) return false;
-  const first = drawable[0]!.intensity;
-  return drawable.every((t) => t.intensity === first);
-}
-
-/**
- * Derive a provisional zone from a track's position in the class — a warm-up →
- * build → peak → release arc. **Capped at `hard`**: a derived draft never claims
- * an all-out peak (plasma is reserved for an authored peak, and provisional state
- * never uses plasma — `05-components.md` §Provisional) and never sits at the flat
- * `none` floor. Position only; a documented assumption, not stored data.
- */
-export function deriveProvisionalIntensity(midpoint: number): Intensity {
-  if (midpoint < 0.22) return 'easy'; // warm-up
-  if (midpoint < 0.48) return 'mod'; // build
-  if (midpoint < 0.8) return 'hard'; // climb to peak (capped — no all_out)
-  return 'mod'; // release
-}
+/** See `lib/energy-arc.ts` — shared with the ClassPulse so both derive one shape. */
+const isUnshaped = (drawable: Entry[]): boolean =>
+  isUnshapedSequence(drawable.map((t) => t.intensity));
 
 /**
  * The ribbon's drawable shape. Authored intensities win; but when the class is

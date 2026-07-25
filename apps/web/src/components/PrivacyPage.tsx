@@ -6,7 +6,7 @@ export function PrivacyPage() {
         <header className="flex flex-col gap-3 border-b border-border-subtle pb-8">
           <a
             href="/"
-            className="inline-flex min-h-11 items-center self-start rounded-control px-2 font-ui text-sm font-semibold text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+            className="inline-flex min-h-11 items-center self-start rounded-control px-2 font-ui text-sm font-semibold text-interactive rf-focus-ring"
           >
             ← Back to Ritmo Studio
           </a>

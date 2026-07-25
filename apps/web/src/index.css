@@ -26,10 +26,13 @@
     background: color-mix(in srgb, var(--rf-color-primitive-copper-400) 35%, transparent);
   }
 
-  /* Global focus-visible ring for accessibility */
+  /* Global focus-visible ring — the baseline every control inherits. Width, colour
+     and offset match `.rf-focus-ring` exactly (3px / 2px), so a control that opts
+     into the explicit class and one that just inherits this are indistinguishable.
+     The offset moved 3px -> 2px to settle on one value (P1-08). */
   :focus-visible {
     outline: 3px solid var(--rf-color-semantic-interactive-focus-ring);
-    outline-offset: 3px;
+    outline-offset: 2px;
   }
 }
 
@@ -62,6 +65,75 @@
   }
   .rf-btn-primary:active:not(:disabled) {
     transform: translateY(1px);
+  }
+
+  /* ── Live-scoped AAA role re-maps ──────────────────────────────────────
+     Design system 07 targets AAA on Live: text ≥ 7:1, large display ≥ 4.5:1.
+     On bg/live (ink-950) two standard roles miss it — text/tertiary at 6.79:1
+     and state/danger at 6.33:1 — while every planning surface is fine as-is.
+
+     Re-pointing the ROLE inside the Live subtree (rather than swapping classes
+     per component) is what keeps this honest: Live components go on using their
+     normal semantic utilities, the value those resolve to clears AAA, and no
+     Live component hard-codes a colour that could drift. The values come from
+     tokens.json (semantic.live.*); this block only scopes them.
+
+     Keyed to the surface, not the route: it applies wherever bg/live is actually
+     painted, so the tutorial's Live preview card gets the same treatment on the
+     same ground. Planning surfaces never see it. */
+  .bg-bg-live {
+    --rf-color-semantic-text-tertiary: var(--rf-color-semantic-live-text-supporting);
+    --rf-color-semantic-state-danger: var(--rf-color-semantic-live-danger);
+  }
+
+  /* The primary fill on Live. The standard recipe ends on copper-500, which
+     leaves the ink label at 5.34:1 at that stop; Live brightens the far stop so
+     copper-400 becomes the darkest point of the fill and the label clears
+     7.04:1 across the whole of it. The glow keeps the standard copper-500 tint —
+     it is affect behind the control, not a surface any text sits on. */
+  .bg-bg-live .rf-btn-primary {
+    background-image: linear-gradient(
+      170deg,
+      var(--rf-color-semantic-live-primary-from),
+      var(--rf-color-semantic-live-primary-to)
+    );
+  }
+
+  /* ── The one focus ring ────────────────────────────────────────────────
+     3px `interactive/focus-ring` at 2px offset, everywhere, on every focusable
+     control. Two treatments used to coexist — this outline on some controls and
+     a 2px cyan-400 box-shadow ring on others — which is a consistency defect
+     rather than an accessibility one (both were visible), but it made "is this
+     focused?" a question the eye had to re-answer per control.
+
+     Implementers: Tailwind's `outline-none` emits `outline: 2px solid transparent`
+     and draws its ring with `box-shadow`, so a control styled that way reports no
+     outline while clearly having a ring. Read BOTH properties when verifying, or
+     the measurement lies in whichever direction you weren't looking. */
+  .rf-focus-ring:focus-visible {
+    outline: 3px solid var(--rf-color-semantic-interactive-focus-ring);
+    outline-offset: 2px;
+  }
+  /* Same ring for a control whose real focus target is a visually-hidden input
+     inside it (the label is the only visible chrome). */
+  .rf-focus-ring:has(:focus-visible) {
+    outline: 3px solid var(--rf-color-semantic-interactive-focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Intensity control — container-driven, because the inspector is ~280px wide at
+     every viewport including desktop. Below 320px of CONTAINER width the zone
+     word drops and the number + bars carry the value (canon 09 sanctions
+     "number + bars on compact rows"); the textual summary underneath keeps the
+     word present. Where container queries are unsupported the word simply stays
+     and truncates — the row never wraps either way. */
+  .rf-zone-control {
+    container-type: inline-size;
+  }
+  @container (max-width: 319px) {
+    .rf-zone-word {
+      display: none;
+    }
   }
 
   /* Brand mark — the copper-gradient rounded chip with the ink glyph

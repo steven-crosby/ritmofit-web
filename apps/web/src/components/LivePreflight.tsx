@@ -175,7 +175,7 @@ export function LivePreflight({
                   Start class
                 </button>
                 <button
-                  className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+                  className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
                   onClick={onRunWithoutMusic}
                 >
                   Run without music
@@ -190,7 +190,7 @@ export function LivePreflight({
                   Run without music
                 </button>
                 <button
-                  className="min-h-11 rounded-control border border-border-strong px-4 py-2 font-ui text-sm font-semibold text-text-tertiary focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+                  className="min-h-11 rounded-control border border-border-strong px-4 py-2 font-ui text-sm font-semibold text-text-tertiary rf-focus-ring sm:rounded-pill"
                   onClick={onStart}
                   disabled
                 >
@@ -243,7 +243,7 @@ export function LivePreflight({
       {canManageConnections && (
         <div className="flex flex-wrap items-center gap-3">
           <button
-            className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+            className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
             onClick={() => {
               setConnectionsVisited(true);
               onManageConnections();

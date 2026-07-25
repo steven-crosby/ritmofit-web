@@ -1,4 +1,9 @@
 import type { Intensity, RunPayload } from '@ritmofit/shared';
+import {
+  deriveProvisionalIntensity,
+  isUnshapedSequence,
+  PROVISIONAL_ARC_CAPTION,
+} from './energy-arc.js';
 
 export type ClassPulseInput = {
   classTrackId: string;
@@ -11,11 +16,26 @@ export type ClassPulseSegment = {
   classTrackId: string;
   startRatio: number;
   widthRatio: number;
+  /** The **stored** effort. Null = unscored, and stays visually hatched. */
   effort: Exclude<Intensity, 'none'> | null;
+  /**
+   * The effort that drives this segment's HEIGHT. Equal to `effort` for an
+   * authored class; on an unshaped class it is the derived provisional zone, which
+   * is what stops the pulse drawing a flat slab. Null only when there is no shape
+   * to draw for this segment (unscored on an authored class).
+   */
+  shapeEffort: Exclude<Intensity, 'none'> | null;
 };
 
 export type ClassPulseModel = {
   state: 'empty' | 'partial' | 'complete';
+  /**
+   * True when every drawable track shares one stored effort, so the drawn shape is
+   * a derived warm-up → build → peak → release draft rather than authored zones
+   * (`10-rhythm-system.md` §4). Surfaces must caption this, never present it as
+   * stored data.
+   */
+  provisional: boolean;
   segments: ClassPulseSegment[];
   coverage: {
     trackCount: number;
@@ -32,13 +52,25 @@ const SCORED_EFFORTS = new Set<Intensity>(['easy', 'mod', 'hard', 'all_out']);
 /**
  * Derive a Class Pulse from authored class structure only. Track order decides
  * sequence, valid positive durations decide width, and the stored class-track
- * effort decides height. Missing data stays missing; this helper never invents
- * an energy arc from position or provider audio.
+ * effort decides height.
+ *
+ * One documented exception, and it is required rather than optional: when every
+ * drawable track shares a single stored effort, the class is *unshaped* and the
+ * height falls back to a derived warm-up → build → peak → release arc, flagged
+ * `provisional` so the caller captions the assumption (`10-rhythm-system.md` §4 —
+ * "alive at rest": a class with tracks never renders as a flat slab). The
+ * derivation is shared with the `IntensityRibbon` via `lib/energy-arc.ts`, so both
+ * views of a class agree on its shape.
+ *
+ * Everything else stays missing. Position and duration are the only inputs to the
+ * derivation — never provider audio, and never a field that isn't already in the
+ * run-payload.
  */
 export function deriveClassPulse(inputs: readonly ClassPulseInput[]): ClassPulseModel {
   if (inputs.length === 0) {
     return {
       state: 'empty',
+      provisional: false,
       segments: [],
       coverage: {
         trackCount: 0,
@@ -90,14 +122,28 @@ export function deriveClassPulse(inputs: readonly ClassPulseInput[]): ClassPulse
     ];
   });
 
+  // An unshaped class carries one effort across every drawable track (unscored
+  // counts as its own uniform value, so an entirely unscored class is unshaped
+  // too). A single differing zone means the instructor has authored a shape and
+  // the stored values win.
+  const provisional = isUnshapedSequence(drawable.map((segment) => segment.effort ?? 'none'));
+
   const totalDurationMs = drawable.reduce((total, segment) => total + segment.durationMs, 0);
   let elapsedMs = 0;
   const segments = drawable.map<ClassPulseSegment>((segment) => {
+    const startRatio = elapsedMs / totalDurationMs;
+    const widthRatio = segment.durationMs / totalDurationMs;
+    // The derived zone is keyed to the track's temporal midpoint, so a long track
+    // is placed on the arc by where it actually sits in the class rather than by
+    // its index — two classes with the same running order but different track
+    // lengths genuinely have different shapes.
+    const derived = deriveProvisionalIntensity(startRatio + widthRatio / 2);
     const result = {
       classTrackId: segment.classTrackId,
-      startRatio: elapsedMs / totalDurationMs,
-      widthRatio: segment.durationMs / totalDurationMs,
+      startRatio,
+      widthRatio,
       effort: segment.effort,
+      shapeEffort: provisional ? derived : segment.effort,
     };
     elapsedMs += segment.durationMs;
     return result;
@@ -108,6 +154,7 @@ export function deriveClassPulse(inputs: readonly ClassPulseInput[]): ClassPulse
 
   return {
     state: complete ? 'complete' : 'partial',
+    provisional,
     segments,
     coverage: {
       trackCount: inputs.length,
@@ -149,5 +196,12 @@ export function classPulseCoverageLabel(model: ClassPulseModel): string {
     );
   }
   if (model.coverage.invalidCount > 0) gaps.push(`${model.coverage.invalidCount} invalid values`);
+  // A provisional shape must say so wherever it is drawn. The assumption leads,
+  // because it qualifies everything the reader is looking at; coverage gaps follow.
+  if (model.provisional) {
+    return gaps.length === 0
+      ? PROVISIONAL_ARC_CAPTION
+      : `${PROVISIONAL_ARC_CAPTION} ${gaps.join(' · ')}`;
+  }
   return gaps.length === 0 ? 'All track durations and efforts contribute.' : gaps.join(' · ');
 }

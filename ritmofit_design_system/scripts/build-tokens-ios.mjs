@@ -88,6 +88,12 @@ function colorMembers(variant) {
     out.push(`    static let state${cap(k)} = ${pick(node, variant)} // icon: ${node.icon}`);
   }
   for (const [k, node] of Object.entries(color.semantic.border)) add(`border${cap(k)}`, pick(node, variant));
+  // Live-scoped re-maps: apply these onto the standard roles inside a Live screen
+  // only (Live targets AAA on bgLive). Dark-equal, like bgLive itself.
+  for (const [k, node] of Object.entries(color.semantic.live)) {
+    if (k.startsWith("$")) continue;
+    add(`live${cap(camel(k))}`, pick(node, variant));
+  }
   return out;
 }
 
