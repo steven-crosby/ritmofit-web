@@ -8,7 +8,7 @@ import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { updateUserProfileSchema } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
-import { createAuth, hasAppleSignInConfig } from '../lib/auth.js';
+import { betaAccessMode, createAuth, hasAppleSignInConfig } from '../lib/auth.js';
 import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { users } from '../db/schema.js';
@@ -19,7 +19,9 @@ export const authRoutes = new Hono<AppEnv>();
 
 authRoutes.get('/capabilities', (c) =>
   c.json({
-    access: { mode: 'invite_only' as const },
+    // Derived from the gate that actually runs, never a constant: the sign-in
+    // surface must not claim an invitation is required where none is (P1-05).
+    access: { mode: betaAccessMode(c.env) },
     socialProviders: {
       apple: hasAppleSignInConfig(c.env),
     },

@@ -3,9 +3,12 @@ import { env } from 'cloudflare:test';
 import { authed, call, signUpUser } from './helpers.js';
 
 describe('caller profile (integration)', () => {
-  it('advertises the invite-only beta boundary', async () => {
+  it('advertises the invite-only beta boundary this environment actually enforces', async () => {
     const res = await call('/api/v1/auth/capabilities');
     expect(res.status).toBe(200);
+    // The test worker runs on a non-local HTTPS origin, where the gate genuinely
+    // requires an invitation — and the reported mode is derived from that gate
+    // rather than hardcoded, so it cannot go on claiming this if it changes.
     expect(await res.json()).toMatchObject({ access: { mode: 'invite_only' } });
   });
 

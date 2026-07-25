@@ -259,8 +259,11 @@ describe('Dashboard class library states', () => {
     renderDashboard();
 
     expect(await screen.findByText('Couldn’t load your classes.')).toBeTruthy();
-    // The top-level banner surfaces the underlying message too.
-    expect(screen.getByText(/network down/)).toBeTruthy();
+    // The upstream message never reaches the instructor — a stable reference code
+    // does, so the owner can still correlate it with logs (P1-05).
+    expect(screen.queryByText(/network down/)).toBeNull();
+    expect(screen.getByText(/Reference CLS-[0-9A-Z]+\./)).toBeTruthy();
+    expect(screen.getByText(/This is not an empty account/)).toBeTruthy();
 
     // Retry actually re-fetches and recovers — not just dead-end "try again" copy.
     vi.mocked(api.listClasses).mockResolvedValueOnce(page([makeClass('Recovered ride')]));
@@ -1304,6 +1307,35 @@ describe('Dashboard Account status ledger', () => {
     expect(musicSection).toBeTruthy();
     expect(within(musicSection!).queryByText('Not connected')).toBeNull();
     expect(within(musicSection!).getAllByText('Status unavailable').length).toBeGreaterThan(0);
+  });
+
+  it('claims only that the profile loaded, never that an identity was verified', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    // `profile !== null` means the payload arrived. Nothing here checks an email
+    // or an identity, so nothing may say "verified" (P1-05).
+    expect(await screen.findByText('Profile loaded')).toBeTruthy();
+    expect(screen.queryByText('Profile verified')).toBeNull();
+  });
+
+  it('reports a failed profile read without leaking the upstream message', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockRejectedValue(new Error('ECONNREFUSED 10.0.0.4'));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    expect(await screen.findByText('Profile unavailable')).toBeTruthy();
+    expect(screen.queryByText(/ECONNREFUSED/)).toBeNull();
+    expect(screen.getByText(/Reference ACC-[0-9A-Z]+\./)).toBeTruthy();
+    // The RecoveryState grammar is unchanged — only the interpolated value moved.
+    expect(screen.getByText(/No profile or provider setting changed/)).toBeTruthy();
   });
 
   it('preserves session identity and disables only profile edits when the profile fails', async () => {

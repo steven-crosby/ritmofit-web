@@ -98,6 +98,24 @@ describe('Login accessible labels', () => {
     expect(screen.getByRole('heading', { name: 'Use your invited email' })).toBeTruthy();
   });
 
+  it('makes no invitation claim where the gate reports signup is open', async () => {
+    // `access.mode` is derived from the gate that actually runs, so an
+    // environment with no allowlist must not be told it needs an invitation
+    // (design audit 2026-07-24, P1-05).
+    vi.mocked(api.getAuthCapabilities).mockResolvedValue({
+      access: { mode: 'open' },
+      socialProviders: { apple: false },
+    });
+
+    render(<Login />);
+
+    expect(await screen.findByText('Need an account? Sign up')).toBeTruthy();
+    expect(screen.queryByText('Private beta · New accounts require an invitation.')).toBeNull();
+    fireEvent.click(screen.getByText('Need an account? Sign up'));
+    expect(screen.getByRole('heading', { name: 'Create your account' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Use your invited email' })).toBeNull();
+  });
+
   it('notifies the app after a successful sign-up', async () => {
     const onSignedUp = vi.fn();
     authMocks.signUpEmail.mockResolvedValue({ error: null });
