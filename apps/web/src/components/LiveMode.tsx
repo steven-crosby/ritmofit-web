@@ -95,7 +95,7 @@ function ProviderHandoffLinks({ entry }: { entry: RunPayloadTrackEntry }) {
           target="_blank"
           rel="noreferrer"
           aria-label={`Open ${entry.track.title} in ${providerLabel(provider)}`}
-          className="inline-flex min-h-11 items-center rounded-pill border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 focus-visible:ring-2 focus-visible:ring-interactive"
+          className="inline-flex min-h-11 items-center rounded-pill border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring"
         >
           Open in {providerLabel(provider)}
         </a>
@@ -547,7 +547,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   // in a dim studio — and stays dark in both themes (02/04-layout).
   if (phase === 'preflight') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-live">
+      <div className="fixed inset-0 z-50 flex flex-col bg-bg-live">
         <header className="flex items-center justify-between bg-bg-raised/40 px-4 py-3 sm:px-6">
           {/* Scripted focus target on entry (tabIndex -1, not keyboard-reachable);
               outline suppressed so a mouse entry never shows a stray ring. */}
@@ -559,7 +559,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             {payload.class.title}
           </h1>
           <button
-            className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive focus-visible:ring-2 focus-visible:ring-interactive"
+            className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring"
             onClick={onExit}
           >
             Exit
@@ -586,7 +586,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-live">
+    <div className="fixed inset-0 z-50 flex flex-col bg-bg-live">
       {/* The advancing cue, spoken for screen readers — the prompter's core function.
           Visually hidden; the Cue-by-Cue card carries the same content on screen. Two
           assertive regions ping-pong (see `announced` above): the cue is written to one
@@ -620,7 +620,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
         <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
           <ViewToggle view={view} setView={setView} />
           <button
-            className="min-h-11 shrink-0 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+            className="min-h-11 shrink-0 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive rf-focus-ring sm:rounded-pill"
             onClick={onExit}
           >
             Exit
@@ -776,7 +776,7 @@ function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void 
           role="tab"
           aria-selected={view === v}
           onClick={() => setView(v)}
-          className={`min-h-11 rounded-pill px-3 py-2 font-ui text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive ${
+          className={`min-h-11 rounded-pill px-3 py-2 font-ui text-sm rf-focus-ring ${
             view === v ? 'bg-interactive text-text-on-accent' : 'text-text-secondary'
           }`}
         >
@@ -1098,13 +1098,13 @@ function CueByCue({
             secondaryAction={
               <div className="flex flex-wrap items-center gap-2">
                 <button
-                  className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+                  className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive rf-focus-ring sm:rounded-pill"
                   onClick={onRetryPlayback}
                 >
                   Retry playback
                 </button>
                 <button
-                  className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive sm:rounded-pill"
+                  className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive rf-focus-ring sm:rounded-pill"
                   onClick={onManageConnections}
                 >
                   Manage connections
@@ -1184,7 +1184,7 @@ function FullList({
             >
               <div className="grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-4">
                 <button
-                  className="grid min-h-11 min-w-0 grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-3 rounded-control text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive"
+                  className="grid min-h-11 min-w-0 grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-3 rounded-control text-left rf-focus-ring"
                   onClick={() => onSeek(start)}
                   aria-label={`Jump to track ${i + 1}, ${t.track.title}`}
                 >
@@ -1315,7 +1315,7 @@ function Transport({
         {playing ? 'Pause' : 'Play'}
       </button>
       <button
-        className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive focus-visible:ring-2 focus-visible:ring-interactive"
+        className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring"
         onClick={onReset}
       >
         Reset

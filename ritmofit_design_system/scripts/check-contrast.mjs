@@ -6,6 +6,17 @@
 //
 // Thresholds: AA small text 4.5:1; AA large/UI 3.0:1. Each pair declares which it
 // must clear. Alpha (border) colors are not text and are intentionally excluded.
+//
+// Live is held to a HIGHER bar. 07-accessibility.md targets AAA there — text 7.0,
+// large display 4.5 — because Live is read at distance in a dim studio, and that
+// target was previously undocumented in this gate and therefore unenforceable.
+// Live pairs are measured on bg/live and use the Live role re-maps
+// (semantic.live.*), which is the combination that actually ships; measuring the
+// planning roles on bg/live would gate a surface nobody renders.
+//
+// Gradient fills are composited at their DARKEST stop, not their average. A fill's
+// worst case is what the ink label has to survive, and taking the midpoint is how
+// the copper primary passed inspection while failing in practice.
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -62,19 +73,47 @@ const pairs = (variant) => {
   ];
 };
 
+// Live pairs — AAA (07-accessibility). Ground is bg/live, which stays dark in both
+// themes, so these are identical across variants by design rather than by accident.
+// `livePrimaryDark` is the darkest stop of the Live primary gradient: the ink label
+// rides the whole fill, so the worst stop is the one that has to clear the bar.
+const livePairs = (variant) => {
+  const live = S("bg.live", variant);
+  const livePrimaryDark = S("live.primary-from", variant);
+  return [
+    // Text read at distance mid-class — AAA 7.0.
+    ["LIVE text/primary", S("text.primary", variant), live, 7.0],
+    ["LIVE text/secondary", S("text.secondary", variant), live, 7.0],
+    ["LIVE supporting label (live re-map)", S("live.text-supporting", variant), live, 7.0],
+    ["LIVE interactive (cyan control text)", S("interactive.default", variant), live, 7.0],
+    ["LIVE state/caution", S("state.caution", variant), live, 7.0],
+    ["LIVE state/positive", S("state.positive", variant), live, 7.0],
+    ["LIVE danger (live re-map)", S("live.danger", variant), live, 7.0],
+    // Ink on the Live primary fill, measured at the gradient's darkest stop.
+    ["LIVE ink on primary fill (darkest stop)", S("text.on-accent", variant), livePrimaryDark, 7.0],
+    // Display-tier numerals (the run clock / countdown) — AAA large 4.5.
+    ["LIVE brand-primary on live (large display)", S("brand.primary", variant), live, 4.5],
+  ];
+};
+
 let failures = 0;
+const report = (label, fg, bg, min) => {
+  const r = ratio(fg, bg);
+  const ok = r >= min;
+  if (!ok) failures++;
+  console.log(`  ${ok ? "✓" : "✗"} ${r.toFixed(2)}:1  (need ${min})  ${label}  [${fg} on ${bg}]`);
+};
+
 for (const variant of ["dark", "light"]) {
   console.log(`\n  ${variant.toUpperCase()} theme`);
-  for (const [label, fg, bg, min] of pairs(variant)) {
-    const r = ratio(fg, bg);
-    const ok = r >= min;
-    if (!ok) failures++;
-    console.log(`  ${ok ? "✓" : "✗"} ${r.toFixed(2)}:1  (need ${min})  ${label}  [${fg} on ${bg}]`);
-  }
+  for (const [label, fg, bg, min] of pairs(variant)) report(label, fg, bg, min);
 }
 
+console.log("\n  LIVE (AAA — 07-accessibility)");
+for (const [label, fg, bg, min] of livePairs("dark")) report(label, fg, bg, min);
+
 if (failures) {
-  console.error(`\n✗ check-contrast: ${failures} pair(s) below AA`);
+  console.error(`\n✗ check-contrast: ${failures} pair(s) below their target`);
   process.exit(1);
 }
-console.log("\n✓ check-contrast: all semantic text/accent pairs clear AA.");
+console.log("\n✓ check-contrast: semantic pairs clear AA; Live pairs clear AAA.");

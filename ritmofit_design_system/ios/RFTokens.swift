@@ -27,6 +27,7 @@ enum RFColorPrimitive {
     static let copper500 = Color(hex: "C8682A")
     static let copper600 = Color(hex: "A8521C")
     static let copper700 = Color(hex: "7A3B12")
+    static let ember300 = Color(hex: "EE7A66")
     static let ember400 = Color(hex: "E8654F")
     static let ember500 = Color(hex: "D9483A")
     static let ember600 = Color(hex: "B83A2B")
@@ -74,6 +75,10 @@ enum RFColor {
     static let borderSubtle = Color(hex: "FBF7F0").opacity(0.08)
     static let borderDefault = Color(hex: "FBF7F0").opacity(0.14)
     static let borderStrong = Color(hex: "FBF7F0").opacity(0.24)
+    static let liveTextSupporting = Color(hex: "C9BEAA")
+    static let liveDanger = Color(hex: "EE7A66")
+    static let livePrimaryFrom = Color(hex: "E07E3C")
+    static let livePrimaryTo = Color(hex: "F0975A")
 }
 
 /// Opt-in light theme. Live (bgLive) stays dark in both themes; glass surfaces have no
@@ -105,6 +110,10 @@ enum RFColorLight {
     static let borderSubtle = Color(hex: "0B0A08").opacity(0.08)
     static let borderDefault = Color(hex: "0B0A08").opacity(0.14)
     static let borderStrong = Color(hex: "0B0A08").opacity(0.22)
+    static let liveTextSupporting = Color(hex: "C9BEAA")
+    static let liveDanger = Color(hex: "EE7A66")
+    static let livePrimaryFrom = Color(hex: "E07E3C")
+    static let livePrimaryTo = Color(hex: "F0975A")
 }
 
 enum RFRadius {

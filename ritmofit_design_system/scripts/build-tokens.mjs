@@ -41,7 +41,7 @@ const PRIMITIVE_ORDER = {
   ink: ["950", "900", "850", "800", "700", "600", "500"],
   bone: ["0", "50", "100", "200", "300", "400", "500"],
   copper: ["200", "300", "400", "500", "600", "700"],
-  ember: ["400", "500", "600"],
+  ember: ["300", "400", "500", "600"],
   cyan: ["300", "400", "500", "600", "700"],
   plasma: ["400", "500", "600"],
   amber: ["400", "500", "600"],
@@ -83,6 +83,14 @@ v("caution", dark(color.semantic.state.caution));
 // 7. Borders
 group("borders");
 for (const [k, node] of Object.entries(color.semantic.border)) v(`border-${k}`, dark(node));
+
+// 7b. Live-scoped role re-maps — applied onto the standard roles inside the Live
+// subtree only, so Live clears AAA on bg/live without moving any planning surface.
+group("live (AAA role re-maps)");
+for (const [k, node] of Object.entries(color.semantic.live)) {
+  if (k.startsWith("$")) continue;
+  v(`live-${k}`, dark(node));
+}
 
 // 8. Typography families
 group("type families");
