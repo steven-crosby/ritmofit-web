@@ -1025,33 +1025,36 @@ function CueByCue({
             </>
           )}
         </div>
+        {/* What is coming, in the hero card rather than across the room in the
+            rail. The audit measured ~550px of this card's 780px as void above and
+            below three short lines; this spends part of it on the one thing an
+            instructor looks for next. It sits *below* the focal cue and above the
+            vitals, so neither the current cue nor the BPM numeral gives up a pixel
+            — the flex-1 cue block still centres at its own type sizes. */}
+        <div className="relative mt-6 flex min-w-0 items-baseline gap-3 border-t border-interactive/15 pt-4">
+          <p className="shrink-0 font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
+            Next
+          </p>
+          <p className="min-w-0 flex-1 truncate font-display text-[clamp(1.25rem,2.5vw,1.875rem)] font-semibold text-text-secondary">
+            {nextEvent ? nextEvent.text : 'End of track'}
+          </p>
+          {nextEvent && (
+            <span
+              className="shrink-0 font-data text-[clamp(1.5rem,3vw,2.25rem)] leading-none text-interactive"
+              aria-label="Time to next cue"
+            >
+              {fmt(nextEvent.atMs - elapsedMs)}
+            </span>
+          )}
+        </div>
         {/* Vitals footer — current effort + the tempo as the data-hero screenshot
             numeral, paired with the cue instead of buried in a side rail. */}
         <FocalVitals entry={entry} playing={playing} />
       </div>
 
-      {/* RIGHT — the instrument rail: what's next, the timers, the track. */}
+      {/* RIGHT — the instrument rail: the shape, the timers, the track. The next
+          cue moved into the hero card, closer and larger. */}
       <div className="flex min-w-0 flex-col gap-3 lg:col-span-2 lg:gap-4">
-        {/* Next cue + countdown. */}
-        <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
-          <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-            Next cue
-          </p>
-          <div className="mt-2 flex items-baseline justify-between gap-3">
-            <p className="min-w-0 font-display text-xl font-semibold text-text-primary">
-              {nextEvent ? nextEvent.text : 'End of track'}
-            </p>
-            {nextEvent && (
-              <span
-                className="shrink-0 font-data text-3xl text-interactive"
-                aria-label="Time to next cue"
-              >
-                {fmt(nextEvent.atMs - elapsedMs)}
-              </span>
-            )}
-          </div>
-        </div>
-
         <ClassPulse payload={payload} compact />
 
         {/* Timers — track + class countdowns, the performance's running clock. */}
@@ -1136,7 +1139,53 @@ function CueByCue({
             </div>
           )}
         </div>
+
+        {/* The rail used to end in a large void below the track card. What belongs
+            there is the rest of the run of show — read-only, no seek, so nothing
+            here can be fumbled mid-class. Full seeking stays in the run-of-show
+            view behind its own control. */}
+        <UpNextTracks payload={payload} liveIndex={live.index} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * The tracks after this one, in order. Purely orientation: an instructor who
+ * knows what is coming can shape the room for it. Deliberately not interactive —
+ * the running surface should not carry a control that changes the class by
+ * accident — and it renders nothing at all on the last track rather than
+ * printing an empty shelf.
+ */
+function UpNextTracks({ payload, liveIndex }: { payload: RunPayload; liveIndex: number }) {
+  const upcoming = payload.tracks.slice(liveIndex + 1, liveIndex + 4);
+  if (upcoming.length === 0) return null;
+  const remaining = payload.tracks.length - liveIndex - 1;
+  return (
+    <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+          Up next
+        </p>
+        {remaining > upcoming.length && (
+          <p className="font-data text-[11px] text-text-tertiary">{remaining} tracks left</p>
+        )}
+      </div>
+      <ol className="mt-2 flex flex-col gap-2">
+        {upcoming.map((next, offset) => (
+          <li key={next.classTrackId} className="flex min-w-0 items-baseline gap-3">
+            <span className="shrink-0 font-data text-xs text-text-tertiary">
+              {liveIndex + offset + 2}
+            </span>
+            <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-secondary">
+              {next.track.title}
+            </span>
+            <span className="shrink-0 font-data text-xs text-text-tertiary">
+              {next.track.durationMs != null ? fmt(next.track.durationMs) : '—'}
+            </span>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

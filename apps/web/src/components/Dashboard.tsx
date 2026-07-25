@@ -71,6 +71,15 @@ import {
   runBlockedMessage,
 } from '../lib/duration.js';
 import { classReadiness, type ClassReadiness } from '../lib/readiness.js';
+import {
+  CLASS_ORDERING_OPTIONS,
+  classNextStep,
+  orderClassesBy,
+  orderingSummary,
+  readStoredOrdering,
+  storeOrdering,
+  type ClassOrdering,
+} from '../lib/class-ordering.js';
 import { summarizeQueue } from '../lib/live-readiness.js';
 import { errMessage } from '../lib/errors.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
@@ -2287,6 +2296,7 @@ function LiveWorkspace({
   // Empty classes have nothing to preflight and stay in Classes.
   const candidates = useMemo(() => classes.filter((cls) => cls.trackCount > 0), [classes]);
   const [payloads, setPayloads] = useState<Record<string, LivePayloadState>>({});
+  const [ordering, setOrdering] = useState<ClassOrdering>(readStoredOrdering);
   // Latest payload map, readable inside the fetch effect without making it a
   // dependency (which would re-run the effect as each card resolves).
   const payloadsRef = useRef(payloads);
@@ -2372,16 +2382,13 @@ function LiveWorkspace({
   const summary = summarizeQueue(readyReadinesses);
   const tilesReady = status === 'ready' && allResolved;
 
-  // Runnable-first, stable within rank so cards settle calmly once payloads land.
-  const rank = (cls: ClassListItem): number => {
-    const s = payloads[cls.id];
-    if (s?.status === 'ready') return s.readiness.runnable ? 0 : 1;
-    return 2; // loading / errored / unknown — keep below decided cards
-  };
-  const ordered = candidates
-    .map((cls, index) => ({ cls, index }))
-    .sort((a, b) => rank(a.cls) - rank(b.cls) || a.index - b.index)
-    .map((entry) => entry.cls);
+  // The queue ranks by the same rule Classes does, from the same module: a class
+  // that leads the Classes shelf leads here too, and the choice is one session
+  // setting shared across both surfaces. Ranking waits for every payload so cards
+  // do not reshuffle under the instructor as each fetch lands.
+  const ordered = allResolved
+    ? orderClassesBy(ordering, candidates, (cls) => classNextStep(payloads[cls.id]))
+    : candidates;
 
   const liveStatus =
     status !== 'ready'
@@ -2395,18 +2402,55 @@ function LiveWorkspace({
   return (
     <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
       <div className="min-w-0">
-        <p className="rf-eyebrow">Live queue</p>
-        <h2 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.03em] text-text-primary sm:text-4xl">
-          What are you teaching next?
-        </h2>
-        <p className="mt-3 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
-          Choose a class, scan what needs attention, then enter playback preflight.
-        </p>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <p className="rf-eyebrow">Live queue</p>
+            <h2 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.03em] text-text-primary sm:text-4xl">
+              What are you teaching next?
+            </h2>
+            <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
+              {orderingSummary(ordering)} Scan, then enter preflight.
+            </p>
+          </div>
+          {/* Same two orderings, same session setting, same words as Classes — the
+              queue must not invent a second ranking vocabulary. */}
+          <div
+            role="group"
+            aria-label="Order the queue by"
+            className="flex shrink-0 flex-wrap gap-2"
+          >
+            {CLASS_ORDERING_OPTIONS.map((option) => {
+              const active = option.value === ordering;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => {
+                    setOrdering(option.value);
+                    storeOrdering(option.value);
+                  }}
+                  className={`min-h-11 rounded-control border px-4 font-ui text-sm font-semibold rf-focus-ring sm:rounded-pill ${
+                    active
+                      ? 'border-interactive bg-interactive/15 text-text-primary'
+                      : 'border-border-subtle text-text-secondary hover:border-interactive/45 hover:text-text-primary'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <p className="sr-only" aria-live="polite" aria-atomic="true">
           {liveStatus}
         </p>
 
-        <div className="mt-5 flex flex-col gap-2">
+        {/* Two columns from xl. A scan row cannot get shorter than the Class Pulse
+            block it carries (~156px floor, and the component is prompt 01's to
+            change, not this slice's), so the fourth card is bought with width
+            rather than by dropping the shape that makes the row worth scanning. */}
+        <div className="mt-5 grid gap-2 xl:grid-cols-2">
           {status === 'loading' ? (
             <p className="font-ui text-sm text-text-tertiary">Loading classes…</p>
           ) : candidates.length === 0 ? (
@@ -2485,54 +2529,73 @@ function LiveQueueCard({
       : state?.status === 'ready' && !state.readiness.runnable
         ? (runBlockedMessage(state.payload) ?? undefined)
         : undefined;
-  const lastOpened = formatLastOpened(cls.lastOpenedAt, Date.now());
+  // The same next-step derivation Classes uses. A duration-blocked class gets the
+  // verb that fixes it rather than a disabled "Preflight" it can never satisfy —
+  // the gate is unchanged, the dead-end control is what goes.
+  const step = classNextStep(state);
+  const gapCount = state?.status === 'ready' ? state.readiness.attentionCount : 0;
 
   return (
     <article
-      className="flex flex-col gap-3 rounded-card border border-border-subtle bg-bg-raised p-4 sm:p-5"
+      className="flex flex-col gap-2 rounded-card border border-border-subtle bg-bg-raised p-3 sm:p-4"
       aria-busy={state === undefined || state.status === 'loading'}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+      {/* One scan row: verdict · name and shape facts · pulse · actions. Stacks
+          below sm, where there is no horizontal room to scan anyway. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="shrink-0 sm:w-[124px]">
+          {state?.status === 'ready' ? (
+            <StatusLabel
+              kind={state.readiness.runnable ? 'recovered' : 'unavailable'}
+              label={state.readiness.runnable ? 'Runnable' : 'Needs a duration'}
+            />
+          ) : state?.status === 'error' ? (
+            <StatusLabel kind="unavailable" label="Readiness unavailable" />
+          ) : (
+            <StatusLabel kind="loading" label="Checking readiness" />
+          )}
+        </div>
+
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            {state?.status === 'ready' ? (
-              <StatusLabel
-                kind={state.readiness.runnable ? 'recovered' : 'unavailable'}
-                label={state.readiness.runnable ? 'Runnable' : 'Needs a duration'}
-              />
-            ) : state?.status === 'error' ? (
-              <StatusLabel kind="unavailable" label="Readiness unavailable" />
-            ) : (
-              <StatusLabel kind="loading" label="Checking readiness" />
-            )}
-          </div>
-          <h3 className="mt-2 break-words font-display text-xl font-semibold text-text-primary">
+          <h3 className="truncate font-display text-lg font-semibold text-text-primary">
             {cls.title}
           </h3>
-          <p className="mt-1 font-data text-xs text-text-tertiary">
+          <p className="truncate font-data text-xs text-text-tertiary">
             {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount} tracks ·{' '}
             {formatDuration(cls.totalDurationMs)}
           </p>
-          {lastOpened && <p className="mt-1 font-ui text-xs text-text-tertiary">{lastOpened}</p>}
         </div>
-        <div className="flex shrink-0 gap-2">
+
+        <div className="flex shrink-0 flex-wrap gap-2">
           <button
             type="button"
             onClick={onEdit}
+            aria-label={`Edit ${cls.title}`}
             className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
           >
             Edit
           </button>
-          <button
-            type="button"
-            onClick={onRun}
-            disabled={!canRun}
-            aria-describedby={blockReason ? reasonId : undefined}
-            title={canRun ? 'Run this class live' : undefined}
-            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring disabled:opacity-50 sm:rounded-pill"
-          >
-            Preflight
-          </button>
+          {canRun ? (
+            <button
+              type="button"
+              onClick={onRun}
+              aria-label={`Preflight ${cls.title}`}
+              title="Run this class live"
+              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring sm:rounded-pill"
+            >
+              Preflight
+            </button>
+          ) : state?.status === 'ready' ? (
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={`${step.action} — ${cls.title}`}
+              aria-describedby={blockReason ? reasonId : undefined}
+              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring sm:rounded-pill"
+            >
+              {step.action}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -2551,22 +2614,40 @@ function LiveQueueCard({
           <button
             type="button"
             onClick={onRetry}
-            className="ml-auto shrink-0 rounded-pill border border-interactive/50 px-2.5 py-0.5 font-ui text-interactive hover:bg-interactive/10 rf-focus-ring"
+            aria-label={`Retry readiness — ${cls.title}`}
+            className="ml-auto min-h-11 shrink-0 rounded-control border border-interactive/50 px-2.5 font-ui text-interactive hover:bg-interactive/10 rf-focus-ring sm:min-h-8 sm:rounded-pill"
           >
             Retry
           </button>
         </p>
       ) : (
         <>
+          {/* The shape gets the card's full width: the Class Pulse's caption and
+              provenance marker are single lines at ~470px and wrap to five at 140,
+              which is what made the old card tall. */}
           <ClassPulse payload={state.payload} compact />
-          {/* Reuse the builder's readiness readout; the queue can't jump the inspector,
-              so fix-chips stay off (canEdit=false) — fixing happens via Edit. */}
-          <ClassReadinessSummary
-            readiness={state.readiness}
-            canEdit={false}
-            compact
-            onSelectTrack={noop}
-          />
+          {/* Full readiness is one disclosure away rather than four stacked detail
+              pages — the queue's job is choosing, not fixing. */}
+          <details className="group">
+            <summary className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 font-ui text-xs font-semibold text-interactive rf-focus-ring sm:min-h-8">
+              <span aria-hidden className="font-data text-[10px]">
+                ▸
+              </span>
+              {gapCount === 0
+                ? 'Readiness detail'
+                : `${gapCount} to finish — ${step.eyebrow.toLowerCase()}`}
+            </summary>
+            <div className="mt-2">
+              {/* Reuse the builder's readiness readout; the queue can't jump the
+                  inspector, so fix-chips stay off (canEdit=false). */}
+              <ClassReadinessSummary
+                readiness={state.readiness}
+                canEdit={false}
+                compact
+                onSelectTrack={noop}
+              />
+            </div>
+          </details>
           {blockReason && (
             <p
               id={reasonId}

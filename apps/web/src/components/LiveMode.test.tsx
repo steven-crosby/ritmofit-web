@@ -521,6 +521,59 @@ describe('LiveMode playback failure', () => {
   });
 });
 
+describe('LiveMode runtime composition', () => {
+  const threeTrack = {
+    ...payload,
+    tracks: [
+      {
+        ...activeTrack,
+        cues: [
+          { id: 'c1', anchorMs: 0, beat: 1, bar: 1, text: 'Settle in', color: null },
+          { id: 'c2', anchorMs: 60000, beat: 1, bar: 1, text: 'Climb now', color: null },
+        ],
+      },
+      {
+        ...activeTrack,
+        classTrackId: '00000000-0000-4000-8000-0000000000a2',
+        position: 1,
+        startOffsetMs: 180000,
+        track: { ...activeTrack.track, id: 'tr-2', title: 'Second Track', durationMs: 120000 },
+      },
+      {
+        ...activeTrack,
+        classTrackId: '00000000-0000-4000-8000-0000000000a3',
+        position: 2,
+        startOffsetMs: 300000,
+        track: { ...activeTrack.track, id: 'tr-3', title: 'Third Track', durationMs: 90000 },
+      },
+    ],
+  } as unknown as RunPayload;
+
+  it('puts the next cue in the focal card with the current cue, not across the room', async () => {
+    await renderLive(threeTrack);
+    // The focal card carries the current cue AND what is coming, so the two are
+    // read in one glance. The current cue keeps its own type scale.
+    const focal = screen.getByText('Settle in').closest('div[class*="min-h-"]') as HTMLElement;
+    expect(within(focal).getByText('Next')).toBeTruthy();
+    expect(within(focal).getByText('Climb now')).toBeTruthy();
+    expect(within(focal).getByLabelText('Time to next cue')).toBeTruthy();
+  });
+
+  it('spends the rail tail on the rest of the run of show, read-only', async () => {
+    await renderLive(threeTrack);
+    const upNext = screen.getByText('Up next').closest('div[class*="rounded-card"]') as HTMLElement;
+    expect(within(upNext).getByText('Second Track')).toBeTruthy();
+    expect(within(upNext).getByText('Third Track')).toBeTruthy();
+    // Orientation only — nothing here can change the class mid-run.
+    expect(within(upNext).queryByRole('button')).toBeNull();
+  });
+
+  it('prints no up-next shelf on the last track rather than an empty one', async () => {
+    await renderLive();
+    expect(screen.queryByText('Up next')).toBeNull();
+  });
+});
+
 describe('LiveMode provider handoff', () => {
   it('keeps handoff links off the prompter surfaces (recovery alert only)', async () => {
     await renderLive();
