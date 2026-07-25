@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ritmo Studio — proposed product preview (claude, 2026-07-24)</title>
+    <link rel="stylesheet" href="preview.css" />
+  </head>
+  <body>
+    <div class="review">
+      <aside class="review-index">
+        <h1>Proposed product preview</h1>
+        <p class="meta">
+          claude · 2026-07-24<br />
+          baseline 9b188df
+        </p>
+        <nav id="index-nav" aria-label="Prototype surfaces"></nav>
+        <p class="meta" style="margin-top: 24px; line-height: 1.5">
+          Nothing here is authorized.<br />Dispositions live in<br /><code>run-decisions.md</code>.
+        </p>
+      </aside>
+
+      <main class="review-main">
+        <div class="review-controls">
+          <button class="rc-btn" id="vp-desktop" aria-pressed="true">Desktop</button>
+          <button class="rc-btn" id="vp-mobile" aria-pressed="false">Mobile 390</button>
+          <span style="width: 12px"></span>
+          <button class="rc-btn" id="ann-toggle" aria-pressed="true">Backlog annotations</button>
+          <span class="mono-sm" style="margin-left: auto">
+            proposal only · not implementation approval
+          </span>
+        </div>
+
+        <section style="margin-bottom: 40px; max-width: 78ch">
+          <p class="eyebrow">How to read this</p>
+          <h2 style="font-family: var(--font-display); font-size: 30px; margin: 0 0 12px">
+            One coherent proposal, one instructor, one library.
+          </h2>
+          <p class="muted">
+            Every view below shows the same fixture data as the captured current state: Marisol Vega's
+            five classes, the ten-track <b>Sunrise Climb</b>, two SoundCloud likes, and one expired
+            Spotify session. Each view names the canonical surface IDs it covers, the backlog items it
+            demonstrates, and the current screenshot it replaces — open the disclosure under any view to
+            see that screenshot without leaving the page.
+          </p>
+          <p class="muted">
+            The current shell is deliberately preserved: four destinations, no new navigation model.
+            Structural questions are annotated as <span class="badge warn">PDR</span> rather than
+            resolved by redesign. Views whose current behaviour could not be verified in this run carry
+            an explicit amber note, so no proposal appears better evidenced than it is.
+          </p>
+        </section>
+
+        <div id="views"></div>
+
+        <footer style="border-top: 1px solid var(--border-subtle); padding-top: 24px; margin-top: 48px">
+          <p class="mono-sm">
+            Ritmo Studio design audit · agent slug <b>claude</b> · run date 2026-07-24 · baseline
+            <b>9b188df</b> · pack v6
+          </p>
+          <p class="tiny muted" style="max-width: 70ch">
+            This prototype is a review artifact. It contains no production code, makes no schema claim,
+            and derives nothing from provider audio. No implementation prompt in this run folder is
+            authorized until the owner records dispositions in <code>run-decisions.md</code>.
+          </p>
+        </footer>
+      </main>
+    </div>
+
+    <script type="module" src="preview.js"></script>
+  </body>
+</html>
