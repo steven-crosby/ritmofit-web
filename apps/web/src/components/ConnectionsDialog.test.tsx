@@ -32,7 +32,9 @@ describe('ConnectionsDialog capability gating', () => {
     render(<ConnectionsDialog onClose={() => {}} />);
 
     // SoundCloud, Spotify, and Apple Music all support a per-user account link.
-    expect(await screen.findAllByRole('button', { name: 'Connect' })).toHaveLength(3);
+    expect(await screen.findByRole('button', { name: 'Connect SoundCloud' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Connect Spotify' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Connect Apple Music' })).toBeTruthy();
     // Each disconnected provider shows an explicit glyph+label status, not color alone.
     expect(screen.getAllByText('Not connected').length).toBe(3);
     // No provider is a catalog-only dead end anymore.
@@ -51,13 +53,15 @@ describe('ConnectionsDialog capability gating', () => {
     expect(await screen.findByText('Connected')).toBeTruthy();
 
     // Disconnect is a two-step confirm so it can't be triggered by a stray click.
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect SoundCloud' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect SoundCloud' }));
 
     await waitFor(() => expect(api.disconnectProvider).toHaveBeenCalledWith('soundcloud'));
     expect(onConnectionsChanged).toHaveBeenCalledTimes(1);
     // After the refresh returns no connections, all three providers offer Connect.
-    expect(await screen.findAllByRole('button', { name: 'Connect' })).toHaveLength(3);
+    expect(await screen.findByRole('button', { name: 'Connect SoundCloud' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Connect Spotify' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Connect Apple Music' })).toBeTruthy();
   });
 
   it('shows a success notice when an OAuth round-trip connected a provider', async () => {
@@ -88,7 +92,9 @@ describe('ConnectionsDialog saved-playlist reconnect affordance', () => {
     expect(
       await screen.findByText('Connected for library access. Reconnect to browse saved playlists.'),
     ).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Reconnect to browse playlists/i })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Reconnect Spotify to browse playlists' }),
+    ).toBeTruthy();
   });
 
   it('hides the affordance once the connection carries the playlist scope', async () => {
@@ -100,7 +106,9 @@ describe('ConnectionsDialog saved-playlist reconnect affordance', () => {
 
     await screen.findByText('Connected');
     expect(screen.queryByText(/Reconnect to browse saved playlists/i)).toBeNull();
-    expect(screen.queryByRole('button', { name: /Reconnect to browse playlists/i })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Reconnect Spotify to browse playlists' }),
+    ).toBeNull();
   });
 
   it('never gates SoundCloud or Apple Music on the Spotify playlist scope', async () => {
@@ -130,7 +138,7 @@ describe('ConnectionsDialog playback reconnect affordance', () => {
         'Connected for library access. Reconnect to enable in-app playback in Live mode.',
       ),
     ).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Reconnect for playback/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reconnect Spotify for playback' })).toBeTruthy();
   });
 
   it('hides the affordance once the connection carries the streaming scope', async () => {
@@ -142,7 +150,7 @@ describe('ConnectionsDialog playback reconnect affordance', () => {
 
     await screen.findByText('Connected');
     expect(screen.queryByText(/Reconnect to enable in-app playback/i)).toBeNull();
-    expect(screen.queryByRole('button', { name: /Reconnect for playback/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reconnect Spotify for playback' })).toBeNull();
   });
 
   it('never gates SoundCloud or Apple Music on the Spotify playback scope', async () => {
@@ -153,7 +161,7 @@ describe('ConnectionsDialog playback reconnect affordance', () => {
     render(<ConnectionsDialog onClose={() => {}} />);
 
     await screen.findByText('Connected');
-    expect(screen.queryByRole('button', { name: /Reconnect for playback/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reconnect Spotify for playback' })).toBeNull();
   });
 
   it('shows only the playback prompt when both playback and playlist scopes are missing', async () => {
@@ -165,7 +173,11 @@ describe('ConnectionsDialog playback reconnect affordance', () => {
 
     render(<ConnectionsDialog onClose={() => {}} />);
 
-    expect(await screen.findByRole('button', { name: /Reconnect for playback/i })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Reconnect to browse playlists/i })).toBeNull();
+    expect(
+      await screen.findByRole('button', { name: 'Reconnect Spotify for playback' }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'Reconnect Spotify to browse playlists' }),
+    ).toBeNull();
   });
 });

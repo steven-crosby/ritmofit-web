@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ClassTrack, ClassWithAccess, ClassListItem, RunPayload } from '@ritmofit/shared';
+import type {
+  ClassTrack,
+  ClassWithAccess,
+  ClassListItem,
+  Provider,
+  RunPayload,
+} from '@ritmofit/shared';
 import { Dashboard } from './Dashboard.js';
 import * as api from '../lib/api.js';
 import type { ClassListPage } from '../lib/api.js';
@@ -252,6 +258,67 @@ describe('Dashboard class library states', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
 
     expect(await screen.findByRole('dialog', { name: 'Music connections' })).toBeTruthy();
+  });
+
+  it('searches, selects in instructor order, and starts a class from Music', async () => {
+    const results = [
+      {
+        provider: 'soundcloud' as const,
+        providerTrackId: 'tr-1',
+        providerUri: 'https://soundcloud.com/ritmo/first',
+        title: 'First result',
+        artist: 'Artist',
+        albumArtUrl: null,
+        durationMs: 180000,
+      },
+      {
+        provider: 'soundcloud' as const,
+        providerTrackId: 'tr-2',
+        providerUri: 'https://soundcloud.com/ritmo/second',
+        title: 'Second result',
+        artist: 'Artist',
+        albumArtUrl: null,
+        durationMs: 210000,
+      },
+    ];
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.searchProvider).mockResolvedValue(results);
+    vi.mocked(api.createClass).mockResolvedValue(
+      makeClass('New music class') as Awaited<ReturnType<typeof api.createClass>>,
+    );
+    vi.mocked(api.importTrack).mockImplementation(
+      async (_provider: Provider, providerTrackId: string) => {
+        return { id: `imported-${providerTrackId}` } as Awaited<ReturnType<typeof api.importTrack>>;
+      },
+    );
+    vi.mocked(api.addTrack).mockResolvedValue({} as ClassTrack);
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search SoundCloud catalog' }), {
+      target: { value: 'climb' },
+    });
+
+    expect(await screen.findByText('First result')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Select Second result by Artist' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Select First result by Artist' }));
+    expect(screen.getByText(/2 selected/).textContent).toContain('2 selected');
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+
+    await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(2));
+    expect(api.createClass).toHaveBeenCalledWith({
+      title: 'New music class',
+      template: 'cycle',
+    });
+    expect(
+      vi.mocked(api.importTrack).mock.calls.map((call: [Provider, string]) => call[1]),
+    ).toEqual(['tr-2', 'tr-1']);
+    expect(screen.getByRole('button', { name: 'Classes' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
   });
 
   it('shows connected Spotify saved playlists in Music and opens the browser dialog', async () => {
@@ -535,8 +602,8 @@ describe('Dashboard class library states', () => {
     expect(screen.getByRole('button', { name: /Browse liked tracks/i })).toBeTruthy();
     fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
     expect(await screen.findByText('Connected')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
     await waitFor(() => {
       expect(
@@ -583,8 +650,8 @@ describe('Dashboard class library states', () => {
     expect(await screen.findByRole('button', { name: /Browse saved playlists/i })).toBeTruthy();
     fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
     expect(await screen.findByText('Connected')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('Couldn’t load music connections.');
@@ -611,8 +678,8 @@ describe('Dashboard class library states', () => {
     await waitFor(() => expect(api.listPlaylists).toHaveBeenCalledWith('spotify'));
     fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
     expect(await screen.findByText('Connected')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Connect Spotify' })).toBeTruthy(),
@@ -956,8 +1023,10 @@ describe('Dashboard class library states', () => {
     renderDashboard();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    // The Sources sidebar entry browses the provider once its playlists load.
-    const sourceBtn = await screen.findByRole('button', { name: 'Browse Spotify playlists' });
+    // Saved collections remain directly reachable from the compact provider rail.
+    const sourceBtn = await screen.findByRole('button', {
+      name: 'Browse saved playlists on Spotify',
+    });
     fireEvent.click(sourceBtn);
     expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
   });
@@ -995,16 +1064,18 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    expect(await screen.findByRole('button', { name: 'Browse Spotify playlists' })).toBeTruthy();
+    expect(
+      await screen.findByRole('button', { name: 'Browse saved playlists on Spotify' }),
+    ).toBeTruthy();
     expect(screen.getByRole('button', { name: /Browse liked tracks/i })).toBeTruthy();
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
     expect(await screen.findByText('Connected')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
-    expect(await screen.findByRole('button', { name: 'Manage Spotify connection' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Browse Spotify playlists' })).toBeNull();
+    expect(await screen.findByRole('button', { name: 'Browse Spotify catalog' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Browse saved playlists on Spotify' })).toBeNull();
     expect(
       screen.queryByRole('button', { name: 'Connect this provider to browse liked tracks.' }),
     ).toBeNull();
@@ -1045,8 +1116,8 @@ describe('Dashboard class library states', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Manage' }));
     const connectionsDialog = await screen.findByRole('dialog', { name: 'Music connections' });
     expect((await within(connectionsDialog).findAllByText('Connected')).length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
     await waitFor(() => {
       expect(within(musicSection!).queryByText('Connected')).toBeNull();
@@ -1085,14 +1156,16 @@ describe('Dashboard class library states', () => {
     expect(alert.textContent).toContain('Couldn’t load music connections.');
     expect(alert.textContent).toContain('Source status is unavailable.');
     expect(screen.queryByText('Connect this provider to browse liked tracks.')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Manage Spotify connection' }).textContent).toContain(
+    expect(screen.getByRole('button', { name: 'Browse Spotify catalog' }).textContent).toContain(
       'Unverified',
     );
     expect(screen.getAllByText('Status unavailable').length).toBeGreaterThan(0);
 
     fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
 
-    expect(await screen.findByRole('button', { name: 'Browse Spotify playlists' })).toBeTruthy();
+    expect(
+      await screen.findByRole('button', { name: 'Browse saved playlists on Spotify' }),
+    ).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });

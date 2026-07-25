@@ -288,7 +288,7 @@ describe('LiveMode preflight', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Music connections' });
     const appleRow = within(dialog).getByText('Apple Music').closest('li');
     expect(appleRow).not.toBeNull();
-    fireEvent.click(within(appleRow!).getByRole('button', { name: 'Connect' }));
+    fireEvent.click(within(appleRow!).getByRole('button', { name: 'Connect Apple Music' }));
 
     expect(await screen.findByText('Plays on Apple Music')).toBeTruthy();
     expect(
@@ -330,7 +330,7 @@ describe('LiveMode preflight', () => {
     fireEvent.click(manage);
     let dialog = await screen.findByRole('dialog', { name: 'Music connections' });
     let appleRow = within(dialog).getByText('Apple Music').closest('li');
-    fireEvent.click(within(appleRow!).getByRole('button', { name: 'Connect' }));
+    fireEvent.click(within(appleRow!).getByRole('button', { name: 'Connect Apple Music' }));
     expect(await screen.findByText('Plays on Apple Music')).toBeTruthy();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
 
@@ -338,8 +338,10 @@ describe('LiveMode preflight', () => {
     fireEvent.click(manage);
     dialog = await screen.findByRole('dialog', { name: 'Music connections' });
     appleRow = within(dialog).getByText('Apple Music').closest('li');
-    fireEvent.click(within(appleRow!).getByRole('button', { name: 'Disconnect' }));
-    fireEvent.click(within(appleRow!).getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(within(appleRow!).getByRole('button', { name: 'Disconnect Apple Music' }));
+    fireEvent.click(
+      within(appleRow!).getByRole('button', { name: 'Confirm disconnect Apple Music' }),
+    );
     await waitFor(() => expect(disconnectProvider).toHaveBeenCalledWith('apple_music'));
     await waitFor(() => expect(listConnections).toHaveBeenCalledTimes(7));
 
