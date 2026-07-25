@@ -13,7 +13,8 @@ the same [`fixtures.md`](../../agent-prompts/design-audit/fixtures.md) data.
 
 | Run | Pack | Baseline | Status |
 | --- | --- | --- | --- |
-| [`2026-07-19-full-product-preview`](2026-07-19-full-product-preview/) | v5 | `addaff3f` | Owner-approved; prompts 01–02 and the reconciliation pass implemented (PR #358). P2-01 and P2-02 deferred. Pre-v6 naming, kept as the ID baseline. |
+| [`claude-design-audit-2026-07-24`](claude-design-audit-2026-07-24/) | v6 | `9b188df` | Owner-approved 2026-07-24: all 18 backlog items `approve`, PDR-01/02/03 resolved. Six implementation prompts authorized; implementation not yet started. Start at that folder's `IMPLEMENTATION-KICKOFF.md`. |
+| [`2026-07-19-full-product-preview`](2026-07-19-full-product-preview/) | v5 | `addaff3f` | Owner-approved; **all six implementation prompts landed** (`c6eca5f`, `c2ff378`, `a83c32c`, `5d4fe18`, `07777e4`, `de3b4f3`) plus the narrow-responsive repair `1be7d7e`; PR #358 was the closing record. P2-01 and P2-02 deferred. Pre-v6 naming, kept as the ID baseline. |
 
 Add a row when a run is delivered, and record the disposition outcome once the owner has filled that run's
 `run-decisions.md`.
@@ -23,6 +24,7 @@ Add a row when a run is delivered, and record the disposition outcome once the o
 - `docs/audits/` is excluded from `pnpm format:check` and `pnpm lint` so agent-authored artifacts cannot
   break the repository gates.
 - From v6, screenshots are committed as JPEG/WebP with a 15 MB per-run budget. The 2026-07-19 run predates
-  that rule and carries 64 MB of PNGs; do not use it as a size precedent.
+  that rule and carries 64 MB of PNGs; do not use it as a size precedent. The 2026-07-24 run is the first
+  under the budget at 12.6 MB.
 - Audit runs never edit production code. Implementation happens in separate, separately authorized
   sessions driven by an approved run's `implementation-prompts/`.
