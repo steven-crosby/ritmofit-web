@@ -89,12 +89,16 @@ Two setup facts this run learned the hard way, both of which will otherwise cost
 
 **Prompt 01 is a hard gate.** Merge it and pass gate G1 before starting anything else.
 
-> **Status, 2026-07-25: prompts 01 and 02 have landed; G1 and G2 passed.** Prompt 01 landed in PR #370.
-> Prompt 02 landed in PR #375 (`2bbc1ed`) with the full local gate and GitHub CI green. Music can
-> search, preview, select in instructor order, and start a class without entering Builder; Builder's
-> Add music renders through the same extracted component. **Start at prompt 03.**
+> **Status, 2026-07-25: all six prompts have landed and the §8 reconciliation passed.** Nothing in
+> this file remains to be executed. PRs #370 (01), #375 (02), #377 (03), #378 (04), #379 (05), and
+> #380 (06); every one merged with GitHub CI green. **Not deployed** — that grant was never given.
 >
-> Four primitives from the landed slices are binding and easy to re-fork by accident:
+> The reconciliation measured every touched surface at 1440×1000, 390×844, 320×844, and a
+> 200%-equivalent reflow: **Live runtime 0 of 36 text nodes below AAA**, zero animations over 50ms
+> under reduced motion, and a clean console across the whole traversal.
+>
+> Six primitives from the landed slices are binding on anything built next, and each is easy to
+> re-fork by accident:
 >
 > 1. The focus ring is the single class `.rf-focus-ring`; do not write
 >    `focus-visible:ring-2 focus-visible:ring-interactive`.
@@ -104,18 +108,36 @@ Two setup facts this run learned the hard way, both of which will otherwise cost
 >    and Builder. Extend its action modes instead of copying its rows.
 > 4. Provider state remains `providerCapabilityTruth` rendered by `ProviderCapabilityLedger`
 >    (Catalog / Library / Playback). Do not create new labels or a second capability matrix.
+> 5. `lib/class-ordering.ts` is the one ranking rule and the one next-step verb, shared by the
+>    Classes shelf and the Live queue. A surface that ranks classes consumes it; it does not
+>    re-derive one.
+> 6. `lib/error-reference.ts` is how a failure is named to the instructor. No user-facing string
+>    interpolates an upstream message.
 >
-> Prompt 02's one documented evidence gap remains: the local mock seam returns an empty saved-playlist
-> array, so the populated MUS-05 playlist-detail path was not verified and must not be claimed.
+> **Two findings this run measured but did not fix**, both pre-existing and both out of the slices'
+> scope:
+>
+> - The Builder surface with a class open has page-level horizontal overflow at 390 and 320 — document
+>   width 425px against a 320px viewport, a WCAG 1.4.10 (Reflow) failure. `CompactClassChooser`'s cards
+>   escape their `overflow-x-auto` container. Confirmed identical on `main` at `798b9dc`, before any of
+>   this work. The audit's "no horizontal overflow" finding held for Live and Classes and still does; it
+>   never measured Builder-with-a-class-open.
+> - `.rf-brand-mark` (the header "R") is ink on the copper gradient at **3.79:1**. It is a logotype,
+>   which WCAG 1.4.3 exempts from contrast, and it is app-shell branding no slice touched — recorded
+>   so the next run does not re-derive it as new.
+>
+> Prompt 02's evidence gap stands: the local mock seam returns an empty saved-playlist array, so the
+> populated MUS-05 playlist-detail path was never verified and must not be claimed. LIVE-09 likewise
+> remains `code-confirmed` only — the fixture class runs prompter-only and never requests a stream.
 
 | Order | Prompt | Owns | Concurrency |
 | --- | --- | --- | --- |
 | 1 | [`01-shared-foundations.md`](implementation-prompts/01-shared-foundations.md) — ✅ landed | tokens, contrast gate, `ClassPulse`, intensity control, focus ring | **alone** |
 | 2 | [`02-music-sourcing.md`](implementation-prompts/02-music-sourcing.md) — ✅ landed | source-list extraction, Music workspace, connections | serial w/ 03, 04, 06 |
-| 3 | [`03-classes-ranking.md`](implementation-prompts/03-classes-ranking.md) | Classes ordering, card verbs, mobile rail | serial w/ 02, 04, 06 |
-| 4 | [`04-live-pressure.md`](implementation-prompts/04-live-pressure.md) | Live queue density, runtime composition | serial w/ 02, 03, 06 |
-| 5 | [`05-builder-moves.md`](implementation-prompts/05-builder-moves.md) | move picker, moves dialogs | **parallel-safe** |
-| 6 | [`06-truthful-state-copy.md`](implementation-prompts/06-truthful-state-copy.md) | account trust copy, derived access mode, error hygiene | last; serial w/ 02–04 |
+| 3 | [`03-classes-ranking.md`](implementation-prompts/03-classes-ranking.md) — ✅ landed | Classes ordering, card verbs, mobile rail | serial w/ 02, 04, 06 |
+| 4 | [`04-live-pressure.md`](implementation-prompts/04-live-pressure.md) — ✅ landed | Live queue density, runtime composition | serial w/ 02, 03, 06 |
+| 5 | [`05-builder-moves.md`](implementation-prompts/05-builder-moves.md) — ✅ landed | move picker, moves dialogs | **parallel-safe** |
+| 6 | [`06-truthful-state-copy.md`](implementation-prompts/06-truthful-state-copy.md) — ✅ landed | account trust copy, derived access mode, error hygiene | last; serial w/ 02–04 |
 
 **The one hard constraint:** `apps/web/src/components/Dashboard.tsx` is 4,975 lines and prompts 02, 03,
 04, and 06 all edit it. Ownership is partitioned by *workspace region*, not by file. **Never run two of
@@ -227,10 +249,13 @@ Swap in the next prompt filename for each subsequent slice.
 
 ---
 
-## Two housekeeping items for the owner
+## Housekeeping — done
 
-1. **The audit index row is not yet added.** [`docs/audits/README.md`](../README.md) has no row for this
-   run. This run deliberately wrote nothing outside its own folder, so adding it is your call.
-2. **That same index describes the 2026-07-19 run as "prompts 01–02 … implemented"**, but git shows all
-   six landed (`c6eca5f`, `c2ff378`, `a83c32c`, `5d4fe18`, `07777e4`, `de3b4f3`, `1be7d7e`). Worth
-   correcting so the next audit is not misled about the baseline.
+Both items this file used to leave open are closed. [`docs/audits/README.md`](../README.md) now carries a
+row for this run recording that all six prompts landed, and its 2026-07-19 row already describes that run
+correctly as all six landed rather than "prompts 01–02 … implemented".
+
+One item is genuinely open and belongs to the owner: `AGENTS.md`'s verification gate lists
+`pnpm audit:ci`, which is **not defined as a root script** — running it fails with
+`Command "audit:ci" not found`. GitHub CI runs its own audit step, so nothing is unguarded, but the
+documented local gate cannot be run verbatim.
