@@ -4103,6 +4103,7 @@ function ClassWorkspace({
               title={selectedEntry?.track.title ?? 'Track'}
               durationMs={selectedEntry?.track.durationMs ?? null}
               displayBpm={selectedEntry?.displayBpm ?? null}
+              template={cls.template}
               canEdit={canEdit}
               canPlaceFreely={isFree}
               focus={inspectorFocus}
@@ -4809,6 +4810,7 @@ function TrackInspector({
   title,
   durationMs,
   displayBpm,
+  template,
   canEdit,
   canPlaceFreely,
   focus,
@@ -4822,6 +4824,8 @@ function TrackInspector({
   durationMs: number | null;
   /** Resolved BPM (override ?? base) — drives beat-snapping in the choreography editor. */
   displayBpm: number | null;
+  /** The class's discipline, so the move picker leads with its own moves (P1-04). */
+  template: ClassTemplate | null;
   canEdit: boolean;
   /** Free-placement mode: show the editable "Start at" timeline offset. */
   canPlaceFreely: boolean;
@@ -5245,6 +5249,7 @@ function TrackInspector({
             <MovesSection
               classTrackId={track.id}
               durationMs={durationMs}
+              template={template}
               bpm={displayBpm}
               beatAnchorMs={track.beatAnchorMs}
               focus={
