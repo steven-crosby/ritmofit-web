@@ -13,7 +13,7 @@ the same [`fixtures.md`](../../agent-prompts/design-audit/fixtures.md) data.
 
 | Run | Pack | Baseline | Status |
 | --- | --- | --- | --- |
-| [`claude-design-audit-2026-07-24`](claude-design-audit-2026-07-24/) | v6 | `9b188df` | Owner-approved 2026-07-24: all 18 backlog items `approve`, PDR-01/02/03 resolved. Six implementation prompts authorized; implementation not yet started. Start at that folder's `IMPLEMENTATION-KICKOFF.md`. |
+| [`claude-design-audit-2026-07-24`](claude-design-audit-2026-07-24/) | v6 | `9b188df` | Owner-approved 2026-07-24: all 18 backlog items `approve`, PDR-01/02/03 resolved. **All six implementation prompts landed** 2026-07-25 (PRs #370, #375, #377, #378, #379, #380) and the `implementation-sequence.md` §8 reconciliation passed. Not deployed — that grant is separate. Start at that folder's `IMPLEMENTATION-KICKOFF.md`. |
 | [`2026-07-19-full-product-preview`](2026-07-19-full-product-preview/) | v5 | `addaff3f` | Owner-approved; **all six implementation prompts landed** (`c6eca5f`, `c2ff378`, `a83c32c`, `5d4fe18`, `07777e4`, `de3b4f3`) plus the narrow-responsive repair `1be7d7e`; PR #358 was the closing record. P2-01 and P2-02 deferred. Pre-v6 naming, kept as the ID baseline. |
 
 Add a row when a run is delivered, and record the disposition outcome once the owner has filled that run's

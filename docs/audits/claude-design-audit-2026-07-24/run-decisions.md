@@ -137,6 +137,36 @@ owns is approved. Partially approved prompts must be revised before use, not run
 | --- | --- | --- | --- | --- | --- |
 | Color/depth/token direction (P0-04, P0-05) | Permit a new token value where a re-map cannot reach the target | PR #370 | Live's `state/danger` measured 6.33:1 on `bg/live` as 12px semibold text — below the 7:1 AAA target, and unreachable by re-map because `ember-400` was already the lightest step in that ramp. The three alternatives were: a new primitive; a component-level change in `LiveMode.tsx` (which the contrast gate cannot enforce, defeating P0-05); or re-mapping danger to amber (which conflates danger with caution). Shipped `ember-300` `#EE7A66` at 7.52:1, Live-scoped — planning surfaces keep `ember-400`. | approve | Approved in chat, 2026-07-25, with the note that treating "no new token values" as a hard gate is an inflexibility the owner does not agree with. The global-direction row above was amended to match. |
 
+## Implementation outcome
+
+All six prompts landed on 2026-07-25 and the `implementation-sequence.md` §8 reconciliation passed.
+**No deploy was performed** — that grant was never given, and merging to `main` does not deploy.
+
+| Prompt | Backlog IDs | PR | Outcome |
+| --- | --- | --- | --- |
+| 01 shared foundations | P0-04, P0-05, P0-07, P0-08, P1-01, P1-08 | #370 | Landed; G1 passed |
+| 02 music sourcing | P0-01, P0-06, P1-02, P2-01 (Music) | #375 | Landed; G2 passed |
+| 03 classes ranking | P0-02, P0-03, P1-06, P1-07, P2-02 | #377 | Landed; G3 passed |
+| 04 live pressure | P1-03, P2-01 (Live) + P0-02/P0-03 Live halves | #378 | Landed; G4 passed |
+| 05 builder moves | P1-04 | #379 | Landed; G5 passed |
+| 06 truthful state copy | P1-05 | #380 | Landed; G6 passed |
+
+Three decisions taken during implementation that the ledger should carry:
+
+1. **P0-02 and P0-03 had a Live half with no owning prompt.** PDR-01 resolves to teaching readiness as
+   the default "on both Classes and Live", and P0-02's acceptance names both surfaces — but prompt 03
+   froze the Live region and prompt 04's scope table listed only P1-03 and P2-01. The owner approved
+   folding the Live halves into prompt 04, which is where `LiveWorkspace` lives. Both surfaces now rank
+   through one shared module and one session setting.
+2. **P1-05's "report real verification state" option was not available.** `users.email_verified` exists
+   in the database but not in the `User` wire contract, and prompt 06's API constraint permits no
+   response-contract change beyond `access.mode`. The label was renamed to what it measures instead.
+   **Surfacing genuine email-verification state remains open and needs an owner decision** on widening
+   the contract.
+3. **Prompt 05 touched `Dashboard.tsx`, which it nominally freezes.** The move picker cannot know the
+   open class's discipline without a prop pass-through. That freeze is a concurrency guard for slices
+   running in parallel; this run was serial, so there was nothing to collide with.
+
 ## Excluded from implementation
 
 | ID/surface | Disposition | Reason |
