@@ -800,7 +800,7 @@ export function MovesSection({
                 title="Move time (m:ss)"
               />
               <select
-                className={fieldClass}
+                className={`min-w-0 grow basis-48 ${fieldClass}`}
                 value={editPick}
                 onChange={(e) => setEditPick(e.target.value)}
                 aria-label="Move"
@@ -910,8 +910,15 @@ export function MovesSection({
           aria-invalid={addAnchor.invalid || undefined}
           title="Move time (m:ss)"
         />
+        {/* A native select sizes itself to its widest <option>, so carrying each
+            move's description in the label (P1-04) made this control 392px wide
+            and pushed the whole page into horizontal scroll at 320 — a WCAG
+            1.4.10 failure. Width is layout-driven here instead; `min-w-0` is what
+            lets a flex item shrink below its content, and the open dropdown is
+            drawn by the platform at full width, so the descriptions still do
+            their disambiguating job at the point of choice. */}
         <select
-          className={fieldClass}
+          className={`min-w-0 grow basis-48 ${fieldClass}`}
           value={pick}
           onChange={(e) => setPick(e.target.value)}
           aria-label="Move"

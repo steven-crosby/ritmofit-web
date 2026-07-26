@@ -117,11 +117,18 @@ Two setup facts this run learned the hard way, both of which will otherwise cost
 > **Two findings this run measured but did not fix**, both pre-existing and both out of the slices'
 > scope:
 >
-> - The Builder surface with a class open has page-level horizontal overflow at 390 and 320 — document
->   width 425px against a 320px viewport, a WCAG 1.4.10 (Reflow) failure. `CompactClassChooser`'s cards
->   escape their `overflow-x-auto` container. Confirmed identical on `main` at `798b9dc`, before any of
->   this work. The audit's "no horizontal overflow" finding held for Live and Classes and still does; it
->   never measured Builder-with-a-class-open.
+> - ~~The Builder surface's horizontal overflow is pre-existing.~~ **Corrected 2026-07-25: it was
+>   introduced by prompt 05 and is now fixed.** The cause was not `CompactClassChooser` — that track
+>   scrolls correctly inside itself (clientWidth 262, scrollWidth 1096). It was the move picker: a
+>   native `<select>` sizes itself to its widest `<option>`, so carrying each move's description in the
+>   label made the control 392px wide and pushed the document to 425px against a 320px viewport.
+>   Proven by shortening the option text in the live DOM, which took the document straight back to 320.
+>
+>   The original "identical on clean `main` at `798b9dc`" comparison was **wrong**: it used `git stash`
+>   while Vite served the page with HMR, and the harness navigated before the rebuild landed, so the
+>   same code was measured twice. **Lesson for the next run: to compare against another commit, use a
+>   separate checkout or wait for the dev server to actually reload — never `git stash` under a running
+>   HMR server.**
 > - `.rf-brand-mark` (the header "R") is ink on the copper gradient at **3.79:1**. It is a logotype,
 >   which WCAG 1.4.3 exempts from contrast, and it is app-shell branding no slice touched — recorded
 >   so the next run does not re-derive it as new.

@@ -89,6 +89,27 @@ describe('move picker grouping', () => {
     ).toBeTruthy();
   });
 
+  it('keeps the picker shrinkable so long option labels cannot widen the page', async () => {
+    mockLibrary();
+    render(<MovesSection classTrackId="ct-1" durationMs={180000} template="cycle" />);
+    const select = await addPicker();
+
+    // A native select sizes itself to its widest <option>, so carrying each move's
+    // description in the label made this control 392px wide and pushed the whole
+    // page into horizontal scroll at a 320px viewport — WCAG 1.4.10. `min-w-0` is
+    // what allows a flex item to shrink below its content width.
+    //
+    // jsdom has no layout engine, so this asserts the affordance rather than the
+    // measurement; the real number comes from `agent-prompts/browser-verification`
+    // (`horizontalOverflow()` must report `overflows: false` at 320 and 390).
+    expect(select.className).toContain('min-w-0');
+    // And the descriptions must survive — they are what tells "Sprint" from
+    // "Sprint Hold" at the point of choice.
+    expect([...select.querySelectorAll('option')].some((o) => o.textContent?.includes(' — '))).toBe(
+      true,
+    );
+  });
+
   it('offers every discipline when the class has no template at all', async () => {
     mockLibrary();
     render(<MovesSection classTrackId="ct-1" durationMs={180000} />);
