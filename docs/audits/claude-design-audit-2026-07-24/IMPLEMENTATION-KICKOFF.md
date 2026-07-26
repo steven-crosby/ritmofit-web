@@ -262,7 +262,13 @@ Both items this file used to leave open are closed. [`docs/audits/README.md`](..
 row for this run recording that all six prompts landed, and its 2026-07-19 row already describes that run
 correctly as all six landed rather than "prompts 01–02 … implemented".
 
-One item is genuinely open and belongs to the owner: `AGENTS.md`'s verification gate lists
-`pnpm audit:ci`, which is **not defined as a root script** — running it fails with
-`Command "audit:ci" not found`. GitHub CI runs its own audit step, so nothing is unguarded, but the
-documented local gate cannot be run verbatim.
+~~One item is genuinely open: `AGENTS.md` lists a `pnpm audit:ci` gate that is not defined.~~
+**Corrected 2026-07-25: that finding was wrong.** `audit:ci` **is** defined in the root `package.json`
+as `pnpm audit --prod`. It was reported missing after being run from `apps/web`, where pnpm's workspace
+resolution answers `Command "audit:ci" not found` — the script is real, the working directory was not
+the root. **Run the documented gate from the repository root.**
+
+Worth knowing when it does fail: `pnpm audit` depends on npm's live advisory endpoint, which
+intermittently returns a body pnpm cannot parse (`ERR_PNPM_AUDIT_BAD_RESPONSE`). That failure is
+registry-side and reproduces for everyone at once — check whether it also fails on an untouched
+checkout before treating it as a defect in your change.
