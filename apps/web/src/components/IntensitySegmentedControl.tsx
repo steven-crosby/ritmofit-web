@@ -80,7 +80,7 @@ export function IntensitySegmentedControl({
         aria-label={ariaLabel}
         aria-describedby={summaryId}
         onKeyDown={onKeyDown}
-        className="flex items-stretch overflow-hidden rounded-control border border-border-default bg-bg-base"
+        className="flex items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
       >
         {intensityValues.map((v) => {
           const selected = value === v;
