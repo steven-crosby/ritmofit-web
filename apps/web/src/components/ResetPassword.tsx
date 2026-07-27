@@ -128,7 +128,7 @@ export function ResetPassword() {
                 New password
                 <input
                   id="new-password"
-                  className="min-h-11 rounded-input border border-border-default bg-bg-sunken px-4 font-ui text-text-primary"
+                  className="min-h-11 rounded-input border border-border bg-bg-sunken px-4 font-ui text-text-primary"
                   type="password"
                   autoComplete="new-password"
                   value={password}
@@ -145,7 +145,7 @@ export function ResetPassword() {
                 Confirm password
                 <input
                   id="confirm-password"
-                  className="min-h-11 rounded-input border border-border-default bg-bg-sunken px-4 font-ui text-text-primary"
+                  className="min-h-11 rounded-input border border-border bg-bg-sunken px-4 font-ui text-text-primary"
                   type="password"
                   autoComplete="new-password"
                   value={confirmation}

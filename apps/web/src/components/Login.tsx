@@ -193,7 +193,7 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
                 Name
                 <input
                   id="login-name"
-                  className="min-h-11 rounded-input border border-border-default bg-bg-sunken px-4 font-ui text-text-primary"
+                  className="min-h-11 rounded-input border border-border bg-bg-sunken px-4 font-ui text-text-primary"
                   autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -206,7 +206,7 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
               Email
               <input
                 id="login-email"
-                className="min-h-11 rounded-input border border-border-default bg-bg-sunken px-4 font-ui text-text-primary"
+                className="min-h-11 rounded-input border border-border bg-bg-sunken px-4 font-ui text-text-primary"
                 type="email"
                 autoComplete="email"
                 value={email}
@@ -221,7 +221,7 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
                 Password
                 <input
                   id="login-password"
-                  className="min-h-11 rounded-input border border-border-default bg-bg-sunken px-4 font-ui text-text-primary"
+                  className="min-h-11 rounded-input border border-border bg-bg-sunken px-4 font-ui text-text-primary"
                   type="password"
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   value={password}
@@ -278,7 +278,7 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
                 disabled={socialBusy || busy}
                 aria-busy={socialBusy}
                 onClick={signInWithApple}
-                className="min-h-11 rounded-input border border-border-default bg-bg-sunken px-5 font-ui font-semibold text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-input border border-border bg-bg-sunken px-5 font-ui font-semibold text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {socialBusy ? 'Opening Apple sign-in…' : 'Continue with Apple'}
               </button>

@@ -44,16 +44,13 @@ function DialogStatePlaceholder({ kind }: { kind: DialogStatePlaceholder }) {
             <div className="flex items-center gap-2">
               <span className="h-9 w-9 rounded-control bg-bg-overlay" />
               <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <span className="h-2 rounded-pill bg-border-default" />
+                <span className="h-2 rounded-pill bg-border" />
                 <span className="h-2 w-2/3 rounded-pill bg-border-subtle" />
               </span>
             </div>
             <div className="mt-3 flex items-end gap-1">
               {CLASS_SHAPE_BARS.map((heightClass, bar) => (
-                <span
-                  key={bar}
-                  className={`w-full rounded-pill bg-border-default ${heightClass}`}
-                />
+                <span key={bar} className={`w-full rounded-pill bg-border ${heightClass}`} />
               ))}
             </div>
           </div>
@@ -68,7 +65,7 @@ function DialogStatePlaceholder({ kind }: { kind: DialogStatePlaceholder }) {
         <div key={index} className="flex items-center gap-3 rounded-control bg-bg-raised px-3 py-2">
           <PlaceholderGlyph kind={kind} index={index} />
           <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <span className="h-2 rounded-pill bg-border-default" />
+            <span className="h-2 rounded-pill bg-border" />
             <span className="h-2 w-2/3 rounded-pill bg-border-subtle" />
           </span>
           {kind !== 'move-rows' && (
