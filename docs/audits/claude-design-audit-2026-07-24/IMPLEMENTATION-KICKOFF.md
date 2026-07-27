@@ -3,6 +3,16 @@
 **Read this first if you are an agent starting an implementation session.**
 Everything you need is in this folder. You do not need the audit transcript.
 
+> ## Where this run stands — 2026-07-27
+>
+> **The six-prompt run is closed.** All six prompts landed, the §8 reconciliation passed, and the one
+> defect the run introduced was fixed and merged (#382, merge commit `1acf615`). Nothing in
+> [Step 2](#step-2--run-the-prompts) remains to be executed. **Not deployed** — that grant was never given.
+>
+> **If you are a new session, your work is [Follow-up work](#follow-up-work--open-as-of-2026-07-27), not
+> the prompt table.** Read Step 0, the [measurement traps](#measurement-traps--read-before-you-verify-anything),
+> and the non-negotiables — those all still bind — then go to the follow-up section. Skip Step 2.
+
 ---
 
 ## Authorization status
@@ -114,11 +124,13 @@ Two setup facts this run learned the hard way, both of which will otherwise cost
 > 6. `lib/error-reference.ts` is how a failure is named to the instructor. No user-facing string
 >    interpolates an upstream message.
 >
-> **Two findings this run measured but did not fix**, both pre-existing and both out of the slices'
-> scope:
+> **Two findings this run measured but did not fix in the slices themselves:**
 >
 > - ~~The Builder surface's horizontal overflow is pre-existing.~~ **Corrected 2026-07-25: it was
->   introduced by prompt 05 and is now fixed.** The cause was not `CompactClassChooser` — that track
+>   introduced by prompt 05. Fixed and merged 2026-07-27 in PR #382, merge commit `1acf615`** —
+>   `min-w-0 grow basis-48` makes the control layout-driven instead of content-driven, verified
+>   `overflows: false` across all seven surface states at 320 and 390 with the select at 254/236/218px
+>   and its 44px target intact. The cause was not `CompactClassChooser` — that track
 >   scrolls correctly inside itself (clientWidth 262, scrollWidth 1096). It was the move picker: a
 >   native `<select>` sizes itself to its widest `<option>`, so carrying each move's description in the
 >   label made the control 392px wide and pushed the document to 425px against a 320px viewport.
@@ -186,9 +198,31 @@ A third trap the audit did not hit, but an implementation session will: **Chrome
 `:focus-visible` only when the last interaction was a keypress.** A programmatic `.focus()` reports "no
 ring" on every control in the app. Send real Tab keys.
 
+Two more the *implementation* run hit, both of which produced confidently-stated false findings that
+reached merged PR descriptions before being caught. They share one root cause — **a command's output was
+trusted without checking the conditions it ran under**:
+
+4. **Comparing against another commit under a live dev server.** `git stash` while Vite is serving with
+   HMR does not give you the other commit's page: the harness navigates before the rebuild lands and you
+   measure the same code twice. This is what made a defect *introduced by prompt 05* look pre-existing on
+   `main`. **Use a separate checkout, or wait for the dev server to actually reload.**
+5. **Running workspace scripts from a package directory.** `pnpm audit:ci` in `apps/web` answers
+   `Command "audit:ci" not found` — the script is real and defined at root `package.json:20`; the working
+   directory was wrong. This was reported as documentation drift in `AGENTS.md` twice. **Run the
+   documented gates from the repository root.**
+6. **Reasoning from config instead of the page.** A class missing from `tailwind.config.js` does *not*
+   imply the property is unset: preflight supplies `border-color: #E5E7EB`, so a dead `border-*` class
+   renders a bright gray hairline while a dead `bg-*` class goes transparent. And a component's source is
+   not evidence it is mounted — `AccountDialog.tsx` is imported by nothing but its own test. **Grep for
+   the call site, and read the computed style off the running page.**
+
+The method that catches all of these is the one the harness README already prescribes: **swap the old
+value back onto the same nodes in the same session and re-measure.** Two numbers from one session beat
+two numbers from two runs, because everything else is held constant.
+
 ### Use the harness rather than re-deriving this
 
-`agent-prompts/browser-verification/` handles all three. It drives real Chrome over the DevTools
+`agent-prompts/browser-verification/` handles the first three. It drives real Chrome over the DevTools
 Protocol with zero dependencies, and measures contrast (AAA thresholds on Live, worst backdrop per
 node), focus rings, horizontal overflow, and animations under reduced motion. `auth.mjs` signs a
 headless browser in as a local fixture user without a password.
@@ -240,19 +274,96 @@ If a slice tempts you to close one of these gaps, stop and ask — it is new sco
 
 ---
 
+## Follow-up work — open as of 2026-07-27
+
+**This is what a new session implements.** The six prompts are done; these are the items the run
+surfaced but did not close. Each says plainly whether it is actionable now.
+
+A third measurement lesson, from F-01 itself: **reading the config is not measuring the page.** Both
+false claims in the first draft of F-01 came from reasoning about `tailwind.config.js` instead of asking
+the browser — one about what a dead class renders, one about whether the file renders at all. The
+corrected findings are below; the method that caught them is in [Measurement
+traps](#measurement-traps--read-before-you-verify-anything).
+
+### Authorization for this follow-up
+
+The 2026-07-24 git grant was scoped to *that run's six slices*. **It does not automatically extend
+here.** The owner asked for this follow-up kickoff on 2026-07-27 but has not restated branch/push/PR/merge
+rights for it. **Confirm the grant before pushing anything.** Deploy remains not granted, as always.
+
+### F-01 — Color classes Tailwind never generates (✅ fixed 2026-07-27)
+
+**Three class names were used in 12 places across 5 files that Tailwind never emitted**, so each element
+fell back to something other than the token it named. Found by sweeping every `bg-*`/`text-*`/`border-*`
+usage in `apps/web/src` against `apps/web/tailwind.config.js`; the INBOX breadcrumb had recorded only the
+`AccountDialog` case.
+
+| Dead class | Uses | Where | Why it was dead | What it actually rendered |
+| --- | --- | --- | --- | --- |
+| `border-border-default` | 7 | `Login.tsx:196,209,224,281`, `ResetPassword.tsx:131,148`, `IntensitySegmentedControl.tsx:83` | `border` is a `DEFAULT` key — the class is **`border-border`** | Preflight's `#E5E7EB` — a cool gray hairline, where `border/default` is `rgba(251,247,240,0.14)` |
+| `bg-border-default` | 3 | `DialogState.tsx:47,55,71` | Same `DEFAULT` mistake — the class is **`bg-border`** | `transparent` — genuinely invisible |
+| `bg-bg-surface` | 2 | `AccountDialog.tsx:97,140` | No `surface` key under `colors.bg` (`base`/`raised`/`overlay`/`sunken`/`live`); the `surface` token is the unrelated glass block | `transparent` — but latent, see below |
+
+**Two things a config-only reading of this gets wrong, and both were caught only by measuring:**
+
+1. **A dead `border-*` class does not remove the border.** Tailwind preflight supplies
+   `border-color: #E5E7EB`, so the auth inputs rendered a *bright cool-gray* hairline on a near-black
+   warm surface — off-palette and more prominent than intended, not absent. Measured in real Chrome on
+   the same nodes in one session: PUB-02 sign-in inputs, PUB-05 reset inputs (the form needs a `token`
+   query param to render), and the Builder intensity control all read `rgb(229,231,235)` before and
+   `rgba(251,247,240,0.14)` after. **A dead `bg-*` class does go fully transparent** — the SYS-01
+   skeleton's primary line was empty space beside its `bg-border-subtle` sibling at 0.08.
+2. **`AccountDialog.tsx` is orphaned.** It is referenced by nothing but its own test — the app renders
+   `AccountWorkspace` inside `Dashboard.tsx` instead. So the `bg-bg-surface` uses had **no user-facing
+   impact**; ACC-01 in the running app was never affected. Corrected to `bg-bg-base` anyway, matching the
+   sibling cards at `AccountDialog.tsx:121,132`.
+
+Fixed as a **token-consumption change only** — `tokens.json` untouched — and the built CSS now emits all
+three classes against the intended custom properties.
+
+**Still open:** a `bg-*`/`text-*`/`border-*` class that does not exist is invisible to both `tsc` and
+lint, which is why 12 of them accumulated. A gate that catches the next one belongs in CI. Propose it
+separately; it was deliberately not folded into the fix.
+
+### F-02 — D11 `createPattern` `InvalidStateError` (unconfirmed, do not close)
+
+The audit reported it; the implementation run could not reproduce it. There is **no canvas and no canvas
+dependency anywhere in `apps/web`**, and a full Builder session in Chrome 150 logged zero console errors.
+**Treat as unconfirmed, not fixed and not closed** — if a future change introduces a canvas, re-check.
+
+### F-03 — Evidence gaps that no amount of local work can close
+
+Carried from [What is deliberately NOT in scope](#what-is-deliberately-not-in-scope) so they are not
+re-derived as new findings: **MUS-05** populated playlist detail (the local mock seam returns an empty
+playlist array by design), **BLD-15/16** preview failure and clip completion, and **LIVE-09** runtime
+playback failure (`code-confirmed` only — the fixture class runs prompter-only and never requests a
+stream). These need real provider audio or a non-headless browser. **Do not claim any of them works.**
+
+### F-04 — Owner decisions still open
+
+Not agent work; listed so a session does not treat them as its own to resolve.
+
+- **Deploy.** Production was 7 app-code commits behind `main` before this run started, and the run added
+  seven more merges on top. Batch timing is the owner's call.
+- **`.rf-brand-mark` at 3.79:1.** A logotype, which WCAG 1.4.3 exempts. Recorded, not a defect.
+- **Repo cleanup.** Merged remote branches from this run are still on `origin`.
+
+---
+
 ## Suggested first message for a fresh session
 
-> Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`, including the dated
-> Step 2 status, then read the revision log in `run-decisions.md` and execute
-> `implementation-prompts/03-classes-ranking.md`. All backlog items are owner-approved. Prompt 02
-> landed in PR #375 at merge commit `2bbc1ed`, and gate G2 passed, so 03 is unblocked. Preserve
-> `.rf-focus-ring`, `ClassPulse`, `SourceList`, and the existing provider capability truth/ledger
-> rather than re-forking them. You are authorized to branch, commit, push, open a PR, and merge it once
-> CI is green — **do not deploy.** Run the full CI-equivalent gate in `AGENTS.md`. Verify both class
-> orderings in a real browser at 1440×1000, 390×844, and 320×844 with the committed
-> `agent-prompts/browser-verification/` harness, and run its self-test before trusting measurements.
+> Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md` — the six-prompt run is
+> closed, so **skip Step 2** and work the **Follow-up work** section. F-01 is fixed; start from whatever
+> is still marked open there. Do not re-derive F-02 or F-03 as new findings — read why each is open
+> first. Preserve `.rf-focus-ring`, `ClassPulse`, `SourceList`, `lib/class-ordering.ts`,
+> `lib/error-reference.ts`, and the provider capability truth/ledger rather than re-forking them. Run the
+> full CI-equivalent gate in `AGENTS.md` **from the repository root**. Verify any UI change in a real
+> browser at 1440×1000, 390×844, and 320×844 with the committed `agent-prompts/browser-verification/`
+> harness, and run its self-test first. **Confirm your git rights with the owner before pushing** — the
+> 2026-07-24 grant covered that run's six slices, not this follow-up. **Do not deploy.**
 
-Swap in the next prompt filename for each subsequent slice.
+If you are instead re-running one of the six prompts, swap in its filename and cite the gate that
+unblocked it — but check the Step 2 status first, because all six have landed.
 
 ---
 
