@@ -167,6 +167,21 @@ Three decisions taken during implementation that the ledger should carry:
    open class's discipline without a prop pass-through. That freeze is a concurrency guard for slices
    running in parallel; this run was serial, so there was nothing to collide with.
 
+### Post-run correction, 2026-07-25
+
+The closeout recorded the Builder surface's horizontal overflow at 320/390 as **pre-existing**. That was
+wrong. It was introduced by prompt 05: a native `<select>` sizes itself to its widest `<option>`, so
+carrying each move's description in the label (the P1-04 disambiguation) made the control 392px wide and
+pushed the document to 425px against a 320px viewport — a WCAG 1.4.10 (Reflow) failure.
+
+The misattribution came from the comparison method, not the measurement: `git stash` was used to test
+"clean `main`" while Vite served the page with HMR, and the browser was driven before the rebuild landed,
+so the same code was measured twice. A separate checkout, or waiting for the reload, would have caught it.
+
+Fixed by making the control's width layout-driven (`min-w-0 grow basis-48`) rather than content-driven.
+The open dropdown is drawn by the platform at full width, so the descriptions still disambiguate at the
+point of choice. Verified `overflows: false` at 320, 390, and 1440, with the select at 254 / 236 / 218px.
+
 ## Excluded from implementation
 
 | ID/surface | Disposition | Reason |

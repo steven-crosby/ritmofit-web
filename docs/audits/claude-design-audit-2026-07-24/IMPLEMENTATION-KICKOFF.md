@@ -117,11 +117,18 @@ Two setup facts this run learned the hard way, both of which will otherwise cost
 > **Two findings this run measured but did not fix**, both pre-existing and both out of the slices'
 > scope:
 >
-> - The Builder surface with a class open has page-level horizontal overflow at 390 and 320 — document
->   width 425px against a 320px viewport, a WCAG 1.4.10 (Reflow) failure. `CompactClassChooser`'s cards
->   escape their `overflow-x-auto` container. Confirmed identical on `main` at `798b9dc`, before any of
->   this work. The audit's "no horizontal overflow" finding held for Live and Classes and still does; it
->   never measured Builder-with-a-class-open.
+> - ~~The Builder surface's horizontal overflow is pre-existing.~~ **Corrected 2026-07-25: it was
+>   introduced by prompt 05 and is now fixed.** The cause was not `CompactClassChooser` — that track
+>   scrolls correctly inside itself (clientWidth 262, scrollWidth 1096). It was the move picker: a
+>   native `<select>` sizes itself to its widest `<option>`, so carrying each move's description in the
+>   label made the control 392px wide and pushed the document to 425px against a 320px viewport.
+>   Proven by shortening the option text in the live DOM, which took the document straight back to 320.
+>
+>   The original "identical on clean `main` at `798b9dc`" comparison was **wrong**: it used `git stash`
+>   while Vite served the page with HMR, and the harness navigated before the rebuild landed, so the
+>   same code was measured twice. **Lesson for the next run: to compare against another commit, use a
+>   separate checkout or wait for the dev server to actually reload — never `git stash` under a running
+>   HMR server.**
 > - `.rf-brand-mark` (the header "R") is ink on the copper gradient at **3.79:1**. It is a logotype,
 >   which WCAG 1.4.3 exempts from contrast, and it is app-shell branding no slice touched — recorded
 >   so the next run does not re-derive it as new.
@@ -255,7 +262,13 @@ Both items this file used to leave open are closed. [`docs/audits/README.md`](..
 row for this run recording that all six prompts landed, and its 2026-07-19 row already describes that run
 correctly as all six landed rather than "prompts 01–02 … implemented".
 
-One item is genuinely open and belongs to the owner: `AGENTS.md`'s verification gate lists
-`pnpm audit:ci`, which is **not defined as a root script** — running it fails with
-`Command "audit:ci" not found`. GitHub CI runs its own audit step, so nothing is unguarded, but the
-documented local gate cannot be run verbatim.
+~~One item is genuinely open: `AGENTS.md` lists a `pnpm audit:ci` gate that is not defined.~~
+**Corrected 2026-07-25: that finding was wrong.** `audit:ci` **is** defined in the root `package.json`
+as `pnpm audit --prod`. It was reported missing after being run from `apps/web`, where pnpm's workspace
+resolution answers `Command "audit:ci" not found` — the script is real, the working directory was not
+the root. **Run the documented gate from the repository root.**
+
+Worth knowing when it does fail: `pnpm audit` depends on npm's live advisory endpoint, which
+intermittently returns a body pnpm cannot parse (`ERR_PNPM_AUDIT_BAD_RESPONSE`). That failure is
+registry-side and reproduces for everyone at once — check whether it also fails on an untouched
+checkout before treating it as a defect in your change.
