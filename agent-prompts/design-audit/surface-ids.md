@@ -90,7 +90,7 @@ Baseline: established by run `2026-07-19-full-product-preview` at
 | LIVE-08 | — | — | reserved |
 | LIVE-09 | Runtime playback failure / recovery | `LiveMode.tsx`, provider player path | active |
 | ACC-01 | Account workspace | `Dashboard.tsx` `AccountWorkspace` | active |
-| ACC-02 | Account music connections | `AccountDialog.tsx`, `ConnectionsDialog.tsx` | active |
+| ACC-02 | Account music connections | `Dashboard.tsx` `AccountWorkspace`, `ConnectionsDialog.tsx` | active |
 | ACC-03 | Account/profile status unavailable | `Dashboard.tsx` `AccountWorkspace` | active |
 
 Active surfaces: 51. Reserved: LIVE-07, LIVE-08 (used by a superseded draft of the 2026-07-19 inventory
@@ -102,3 +102,4 @@ and never published).
 | --- | --- | --- |
 | 2026-07-19 | `2026-07-19-full-product-preview` | Initial 51-surface inventory established |
 | 2026-07-24 | pack v6 | Registry extracted from that run and made canonical |
+| 2026-07-27 | audit follow-up | ACC-02 repointed to `AccountWorkspace`; orphaned `AccountDialog.tsx` deleted |

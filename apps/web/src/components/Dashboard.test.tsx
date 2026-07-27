@@ -1378,6 +1378,60 @@ describe('Dashboard Account status ledger', () => {
     expect(name).toHaveProperty('value', 'A very long instructor display name');
   });
 
+  // Ported from the deleted AccountDialog suite: AccountWorkspace superseded that
+  // component, but its save success path and blank-field normalization were only
+  // covered there.
+  it('saves edited profile fields and propagates the new name to the shell', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateMe).mockResolvedValue({
+      ...profile,
+      displayName: 'Coach Two',
+      imageUrl: 'https://example.com/me.jpg',
+      updatedAt: 2,
+    });
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    const name = await screen.findByLabelText('Display name');
+    fireEvent.change(name, { target: { value: 'Coach Two' } });
+    fireEvent.change(screen.getByLabelText('Profile image URL'), {
+      target: { value: 'https://example.com/me.jpg' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save profile' }));
+
+    await waitFor(() =>
+      expect(api.updateMe).toHaveBeenCalledWith({
+        displayName: 'Coach Two',
+        imageUrl: 'https://example.com/me.jpg',
+      }),
+    );
+    expect(await screen.findByText('Profile updated.')).toBeTruthy();
+    // The shell header reads `profileName`, which only the save callback updates.
+    expect(screen.getAllByText('Coach Two').length).toBeGreaterThan(1);
+    expect(screen.queryByText('Tester')).toBeNull();
+  });
+
+  it('normalizes blank optional profile fields to null', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateMe).mockResolvedValue({ ...profile, displayName: null, imageUrl: null });
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    fireEvent.change(await screen.findByLabelText('Display name'), { target: { value: '   ' } });
+    fireEvent.change(screen.getByLabelText('Profile image URL'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save profile' }));
+
+    await waitFor(() =>
+      expect(api.updateMe).toHaveBeenCalledWith({ displayName: null, imageUrl: null }),
+    );
+  });
+
   it('recovers provider status without reloading or changing the profile', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.getMe).mockResolvedValue(profile);
