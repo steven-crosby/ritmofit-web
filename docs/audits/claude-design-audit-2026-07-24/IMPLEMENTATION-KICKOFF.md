@@ -210,6 +210,15 @@ trusted without checking the conditions it ran under**:
    `Command "audit:ci" not found` — the script is real and defined at root `package.json:20`; the working
    directory was wrong. This was reported as documentation drift in `AGENTS.md` twice. **Run the
    documented gates from the repository root.**
+6. **Reasoning from config instead of the page.** A class missing from `tailwind.config.js` does *not*
+   imply the property is unset: preflight supplies `border-color: #E5E7EB`, so a dead `border-*` class
+   renders a bright gray hairline while a dead `bg-*` class goes transparent. And a component's source is
+   not evidence it is mounted — `AccountDialog.tsx` is imported by nothing but its own test. **Grep for
+   the call site, and read the computed style off the running page.**
+
+The method that catches all of these is the one the harness README already prescribes: **swap the old
+value back onto the same nodes in the same session and re-measure.** Two numbers from one session beat
+two numbers from two runs, because everything else is held constant.
 
 ### Use the harness rather than re-deriving this
 
@@ -270,41 +279,51 @@ If a slice tempts you to close one of these gaps, stop and ask — it is new sco
 **This is what a new session implements.** The six prompts are done; these are the items the run
 surfaced but did not close. Each says plainly whether it is actionable now.
 
+A third measurement lesson, from F-01 itself: **reading the config is not measuring the page.** Both
+false claims in the first draft of F-01 came from reasoning about `tailwind.config.js` instead of asking
+the browser — one about what a dead class renders, one about whether the file renders at all. The
+corrected findings are below; the method that caught them is in [Measurement
+traps](#measurement-traps--read-before-you-verify-anything).
+
 ### Authorization for this follow-up
 
 The 2026-07-24 git grant was scoped to *that run's six slices*. **It does not automatically extend
 here.** The owner asked for this follow-up kickoff on 2026-07-27 but has not restated branch/push/PR/merge
 rights for it. **Confirm the grant before pushing anything.** Deploy remains not granted, as always.
 
-### F-01 — Dead Tailwind color classes (actionable now)
+### F-01 — Color classes Tailwind never generates (✅ fixed 2026-07-27)
 
-**Three class names that Tailwind never generates are used in 12 places across 5 files.** Each one
-silently renders nothing: no background, no border. Verified 2026-07-27 against
-`apps/web/tailwind.config.js` and corroborated against the built CSS, where all three are absent while
-neighbouring valid classes are present.
+**Three class names were used in 12 places across 5 files that Tailwind never emitted**, so each element
+fell back to something other than the token it named. Found by sweeping every `bg-*`/`text-*`/`border-*`
+usage in `apps/web/src` against `apps/web/tailwind.config.js`; the INBOX breadcrumb had recorded only the
+`AccountDialog` case.
 
-| Dead class | Uses | Where | Why it is dead |
-| --- | --- | --- | --- |
-| `border-border-default` | 7 | `Login.tsx:196,209,224,281`, `ResetPassword.tsx:131,148`, `IntensitySegmentedControl.tsx:83` | `border` is a `DEFAULT` key — the class is **`border-border`**, not `-default` |
-| `bg-border-default` | 3 | `DialogState.tsx:47,55,71` | Same `DEFAULT` mistake — the class is **`bg-border`** |
-| `bg-bg-surface` | 2 | `AccountDialog.tsx:97,140` | There is **no `surface` key** under `colors.bg` (`base`/`raised`/`overlay`/`sunken`/`live`) |
+| Dead class | Uses | Where | Why it was dead | What it actually rendered |
+| --- | --- | --- | --- | --- |
+| `border-border-default` | 7 | `Login.tsx:196,209,224,281`, `ResetPassword.tsx:131,148`, `IntensitySegmentedControl.tsx:83` | `border` is a `DEFAULT` key — the class is **`border-border`** | Preflight's `#E5E7EB` — a cool gray hairline, where `border/default` is `rgba(251,247,240,0.14)` |
+| `bg-border-default` | 3 | `DialogState.tsx:47,55,71` | Same `DEFAULT` mistake — the class is **`bg-border`** | `transparent` — genuinely invisible |
+| `bg-bg-surface` | 2 | `AccountDialog.tsx:97,140` | No `surface` key under `colors.bg` (`base`/`raised`/`overlay`/`sunken`/`live`); the `surface` token is the unrelated glass block | `transparent` — but latent, see below |
 
-Impact is real, not cosmetic: the auth form inputs on **PUB-02** and **PUB-05** have no visible border,
-and the **SYS-01** loading skeletons in `DialogState.tsx` have no fill — a skeleton that renders as empty
-space is not a skeleton. `AccountDialog`'s two cards (**ACC-01**) lose their surface tint.
+**Two things a config-only reading of this gets wrong, and both were caught only by measuring:**
 
-Evident intent, to be confirmed by eye rather than assumed: `bg-bg-surface` → **`bg-bg-base`**, matching
-its own sibling cards at `AccountDialog.tsx:121,132` inside a `bg-bg-raised` panel. The two `DEFAULT`
-cases are a straight rename.
+1. **A dead `border-*` class does not remove the border.** Tailwind preflight supplies
+   `border-color: #E5E7EB`, so the auth inputs rendered a *bright cool-gray* hairline on a near-black
+   warm surface — off-palette and more prominent than intended, not absent. Measured in real Chrome on
+   the same nodes in one session: PUB-02 sign-in inputs, PUB-05 reset inputs (the form needs a `token`
+   query param to render), and the Builder intensity control all read `rgb(229,231,235)` before and
+   `rgba(251,247,240,0.14)` after. **A dead `bg-*` class does go fully transparent** — the SYS-01
+   skeleton's primary line was empty space beside its `bg-border-subtle` sibling at 0.08.
+2. **`AccountDialog.tsx` is orphaned.** It is referenced by nothing but its own test — the app renders
+   `AccountWorkspace` inside `Dashboard.tsx` instead. So the `bg-bg-surface` uses had **no user-facing
+   impact**; ACC-01 in the running app was never affected. Corrected to `bg-bg-base` anyway, matching the
+   sibling cards at `AccountDialog.tsx:121,132`.
 
-Two constraints. **This is a token-consumption fix, not a token change** — nothing here touches
-`tokens.json`, and if it appears to, stop. And **`AccountDialog` is prompt 06's region**, which is why
-the run reported it instead of fixing it inside a slice; that partition no longer binds now that all six
-have landed.
+Fixed as a **token-consumption change only** — `tokens.json` untouched — and the built CSS now emits all
+three classes against the intended custom properties.
 
-A generated `bg-*`/`text-*`/`border-*` class that does not exist is invisible to `tsc` and to lint. If
-you fix these, consider whether a check belongs in the gates so the next one is caught by CI rather than
-by an audit — but propose that separately; it is not part of the fix.
+**Still open:** a `bg-*`/`text-*`/`border-*` class that does not exist is invisible to both `tsc` and
+lint, which is why 12 of them accumulated. A gate that catches the next one belongs in CI. Propose it
+separately; it was deliberately not folded into the fix.
 
 ### F-02 — D11 `createPattern` `InvalidStateError` (unconfirmed, do not close)
 
@@ -334,17 +353,14 @@ Not agent work; listed so a session does not treat them as its own to resolve.
 ## Suggested first message for a fresh session
 
 > Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md` — the six-prompt run is
-> closed, so **skip Step 2** and work the **Follow-up work** section. Implement **F-01**: three Tailwind
-> color classes that are never generated, used in 12 places across `Login.tsx`, `ResetPassword.tsx`,
-> `IntensitySegmentedControl.tsx`, `DialogState.tsx`, and `AccountDialog.tsx`. Re-verify each against
-> `apps/web/tailwind.config.js` before changing it rather than trusting the table. This is a
-> token-consumption fix — **do not touch `tokens.json`.** Preserve `.rf-focus-ring`, `ClassPulse`,
-> `SourceList`, `lib/class-ordering.ts`, `lib/error-reference.ts`, and the provider capability
-> truth/ledger rather than re-forking them. Run the full CI-equivalent gate in `AGENTS.md` **from the
-> repository root**. Verify PUB-02, PUB-05, SYS-01, and ACC-01 in a real browser at 1440×1000, 390×844,
-> and 320×844 with the committed `agent-prompts/browser-verification/` harness, and run its self-test
-> first. **Confirm your git rights with the owner before pushing** — the 2026-07-24 grant covered that
-> run's six slices, not this follow-up. **Do not deploy.**
+> closed, so **skip Step 2** and work the **Follow-up work** section. F-01 is fixed; start from whatever
+> is still marked open there. Do not re-derive F-02 or F-03 as new findings — read why each is open
+> first. Preserve `.rf-focus-ring`, `ClassPulse`, `SourceList`, `lib/class-ordering.ts`,
+> `lib/error-reference.ts`, and the provider capability truth/ledger rather than re-forking them. Run the
+> full CI-equivalent gate in `AGENTS.md` **from the repository root**. Verify any UI change in a real
+> browser at 1440×1000, 390×844, and 320×844 with the committed `agent-prompts/browser-verification/`
+> harness, and run its self-test first. **Confirm your git rights with the owner before pushing** — the
+> 2026-07-24 grant covered that run's six slices, not this follow-up. **Do not deploy.**
 
 If you are instead re-running one of the six prompts, swap in its filename and cite the gate that
 unblocked it — but check the Step 2 status first, because all six have landed.
