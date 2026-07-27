@@ -94,7 +94,7 @@ export function AccountDialog({
         <PendingList error={loadingError} onRetry={refresh} />
       ) : (
         <form className="flex flex-col gap-4" onSubmit={submit}>
-          <section className="flex items-center gap-3 rounded-card border border-border-subtle bg-bg-surface p-3">
+          <section className="flex items-center gap-3 rounded-card border border-border-subtle bg-bg-base p-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border-subtle bg-bg-base font-display text-lg font-semibold text-text-primary">
               {profile.imageUrl ? (
                 <img
@@ -137,7 +137,7 @@ export function AccountDialog({
             />
           </label>
 
-          <div className="rounded-card border border-border-subtle bg-bg-surface p-3">
+          <div className="rounded-card border border-border-subtle bg-bg-base p-3">
             <p className="font-ui text-xs uppercase text-text-tertiary">Sign-in email</p>
             <p className="break-all font-ui text-sm text-text-primary">{profile.email}</p>
             <p className="mt-1 font-ui text-xs text-text-tertiary">
