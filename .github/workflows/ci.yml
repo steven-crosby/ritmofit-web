@@ -51,6 +51,19 @@ jobs:
         working-directory: ritmofit_design_system
         run: npm run verify
 
+      # Catches colour utilities Tailwind never generates — `bg-bg-surface`,
+      # `border-border-default`. Neither tsc nor ESLint can see them (a class is
+      # just a string), and the failure is silent: a dead bg-* renders transparent
+      # while a dead border-* inherits preflight's #E5E7EB and looks deliberate.
+      # Twelve shipped before this gate existed; see F-01 in
+      # docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md.
+      # The self-test runs first — a checker nobody has watched fail is not a gate.
+      - name: Theme class self-test
+        run: pnpm --filter @ritmofit/web theme-classes --selftest
+
+      - name: Theme classes resolve
+        run: pnpm --filter @ritmofit/web theme-classes
+
       - name: Test
         run: pnpm test
 

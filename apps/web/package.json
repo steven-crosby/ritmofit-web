@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "tokens": "node scripts/generate-tokens.mjs",
+    "theme-classes": "node scripts/check-theme-classes.mjs",
     "dev": "pnpm tokens && vite",
     "build": "pnpm tokens && tsc --noEmit && vite build",
     "preview": "vite preview",

@@ -321,9 +321,17 @@ usage in `apps/web/src` against `apps/web/tailwind.config.js`; the INBOX breadcr
 Fixed as a **token-consumption change only** — `tokens.json` untouched — and the built CSS now emits all
 three classes against the intended custom properties.
 
-**Still open:** a `bg-*`/`text-*`/`border-*` class that does not exist is invisible to both `tsc` and
-lint, which is why 12 of them accumulated. A gate that catches the next one belongs in CI. Propose it
-separately; it was deliberately not folded into the fix.
+~~**Still open:** a class that does not exist is invisible to both `tsc` and lint, which is why 12
+accumulated. A gate belongs in CI.~~ **Closed 2026-07-27:** `pnpm --filter @ritmofit/web theme-classes`
+runs in CI ahead of the test step, with `--selftest` first. Valid names are derived from
+`tailwind.config.js`, so the gate cannot rot as tokens change, and the self-test asserts it still rejects
+all three original regressions.
+
+Building it surfaced a fourth class of bug worth knowing: **a colour-utility prefix is not owned by the
+colour scale.** The first version flagged `shadow-peak-glow` in `TutorialVideo.tsx` as dead — it is a
+legitimate `theme.extend.boxShadow` key, and the built CSS proves it generates. The checker now resolves
+each utility against every scale it reads (`shadow`→`boxShadow`, `border`→`borderRadius`,
+`text`→`fontSize`, `bg`→`backgroundImage`), and the self-test covers every key of those scales.
 
 ### F-02 — D11 `createPattern` `InvalidStateError` (unconfirmed, do not close)
 
