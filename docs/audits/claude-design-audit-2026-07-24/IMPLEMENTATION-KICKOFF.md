@@ -414,19 +414,57 @@ Not agent work; listed so a session does not treat them as its own to resolve.
 
 ---
 
-## Suggested first message for a fresh session
+## Prompt for a fresh session
 
-> Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md` — the six-prompt run is
-> closed, so **skip Step 2** and work the **Follow-up work** section. F-01 is fixed and F-03 is largely
-> verified on production, and F-05 is fixed and deployed. **Only F-02 and LIVE-09 remain, and neither is
-> straightforwardly actionable** — read why before touching either. Do not re-derive them as new findings —
-> read why each is open
-> first. Preserve `.rf-focus-ring`, `ClassPulse`, `SourceList`, `lib/class-ordering.ts`,
-> `lib/error-reference.ts`, and the provider capability truth/ledger rather than re-forking them. Run the
-> full CI-equivalent gate in `AGENTS.md` **from the repository root**. Verify any UI change in a real
-> browser at 1440×1000, 390×844, and 320×844 with the committed `agent-prompts/browser-verification/`
-> harness, and run its self-test first. **Confirm your git rights with the owner before pushing** — the
-> 2026-07-24 grant covered that run's six slices, not this follow-up. **Do not deploy.**
+Paste this verbatim. **Fill in the authorization line before sending** — it is deliberately blank, and an
+agent that assumes a grant it was never given is the failure this run kept guarding against.
+
+> Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md` first, then
+> `AGENTS.md` — `AGENTS.md` wins wherever they disagree.
+>
+> **The 2026-07-24 design-audit run is closed.** All six prompts landed, the §8 reconciliation passed,
+> and the follow-up work is mostly done: F-01 (dead colour classes) fixed with a CI gate to prevent
+> recurrence, F-03 verified against live providers on production, F-05 (Apple Music "0 tracks") fixed and
+> deployed. **Skip Step 2 entirely.** Your work is the **Follow-up work** section.
+>
+> **What is actually open, and why none of it is easy:**
+>
+> - **F-02** — the D11 `createPattern` `InvalidStateError` from the audit. Unreproducible: there is no
+>   canvas or canvas dependency anywhere in `apps/web`. It stays *unconfirmed*, not closed. Do not
+>   re-derive it as a new finding.
+> - **LIVE-09** — runtime playback failure, still never induced. `PlaybackRuntime.fail()`
+>   (`apps/web/src/lib/playback/runtime.ts`) has exactly five triggers, listed in F-03. Two inductions
+>   have already been tried and **both are unfair tests** — blanking the SoundCloud iframe emits no
+>   `onError`, and removing `window.SC.Widget` self-heals via the loader's script re-inject. Read F-03
+>   before attempting a third.
+> - **The silent-player-death question.** When a player died without emitting an error, the Live runtime
+>   kept advancing and kept displaying "♪ SoundCloud" with no alert; there is no liveness check.
+>   `LiveMode.tsx` states the intent as "never a silent skip". The induction was artificial, so this is a
+>   **question to investigate, not a defect to fix.** Do not report it as a bug without a faithful repro.
+>
+> **Standing constraints.** Preserve `.rf-focus-ring`, `ClassPulse`, `SourceList`, `lib/class-ordering.ts`,
+> `lib/error-reference.ts`, and `providerCapabilityTruth`/`ProviderCapabilityLedger` rather than
+> re-forking them — see the Step 2 status for why each is easy to duplicate by accident. Token changes go
+> through `ritmofit_design_system/tokens.json`, never hand-edited output. No schema or migration changes;
+> if a task appears to need one, that is a stop condition — report it.
+>
+> **Verification.** Run the full CI-equivalent gate from the **repository root** (a workspace script run
+> from `apps/web` reports "command not found" and has already caused two false findings). For UI work use
+> the committed `agent-prompts/browser-verification/` harness at 1440×1000, 390×844, and 320×844, and run
+> its self-test first — if the self-test disagrees with `tokens.json`, nothing else it prints is
+> trustworthy. **Read the Measurement traps section before you measure anything**; all six traps in it
+> come from real false findings this project shipped, including one that reached two merged PR
+> descriptions.
+>
+> **If you verify against production** (the only place live-provider paths exist): browse and playback
+> controls are read-only, but **"Start class" in the playlist browser imports a playlist and creates a
+> class** — do not click it. Live mode writes nothing; it consumes one `run-payload` GET. Confirm before
+> any action that mutates real data.
+>
+> **Authorization — the owner fills this in:** _______________________________________________
+> (e.g. "you may branch, commit, push, and open a PR, but ask before merging" — the 2026-07-24 grant
+> covered that run's six slices only and does **not** extend here). **Deploy is separate and is never
+> implied by a merge.** If this line is blank, ask before pushing anything.
 
 If you are instead re-running one of the six prompts, swap in its filename and cite the gate that
 unblocked it — but check the Step 2 status first, because all six have landed.
