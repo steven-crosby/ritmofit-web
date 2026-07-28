@@ -350,7 +350,7 @@ export async function fetchSpotifySavedPlaylists(cfg: {
         providerUri: raw.external_urls?.spotify ?? null,
         name: raw.name ?? 'Untitled playlist',
         ownerName: raw.owner?.display_name ?? null,
-        trackCount: raw.items?.total ?? 0,
+        trackCount: raw.items?.total ?? null,
         coverImageUrl: raw.images?.[0]?.url ?? null,
       });
       if (candidate.success) out.push(candidate.data);

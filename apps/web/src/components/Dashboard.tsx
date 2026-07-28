@@ -3271,6 +3271,17 @@ function MusicCarryPath({ source, destination }: { source: string; destination: 
 }
 
 /**
+ * " · N tracks", or nothing at all when the provider never told us. Apple Music's
+ * library-playlist attributes carry no count, so a `0` fallback made all 70 saved
+ * playlists claim "0 tracks" directly above their real tracks (P1-05: never assert
+ * what the system has not verified).
+ */
+function playlistCountLabel(trackCount: number | null): string {
+  if (trackCount == null) return '';
+  return ` · ${trackCount} ${trackCount === 1 ? 'track' : 'tracks'}`;
+}
+
+/**
  * Browse a provider's saved playlists and create a new class from one. Browse-first:
  * open a playlist to inspect its tracks, then "Start class" imports the whole
  * playlist and opens it in the builder. The discipline template picker is shared
@@ -3341,7 +3352,8 @@ function PlaylistBrowserDialog({
           </h2>
           {selectedPlaylist && (
             <p className="mt-1 font-ui text-xs text-text-tertiary">
-              {selectedPlaylist.ownerName ?? label} · {selectedPlaylist.trackCount} tracks
+              {selectedPlaylist.ownerName ?? label}
+              {playlistCountLabel(selectedPlaylist.trackCount)}
             </p>
           )}
         </div>
@@ -3494,7 +3506,8 @@ function PlaylistBrowserDialog({
                   {playlist.name}
                 </p>
                 <p className="truncate font-ui text-xs text-text-secondary">
-                  {playlist.ownerName ?? label} · {playlist.trackCount} tracks
+                  {playlist.ownerName ?? label}
+                  {playlistCountLabel(playlist.trackCount)}
                 </p>
               </div>
               <button
