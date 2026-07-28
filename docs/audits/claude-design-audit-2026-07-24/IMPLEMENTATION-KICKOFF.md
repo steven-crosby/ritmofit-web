@@ -339,30 +339,78 @@ The audit reported it; the implementation run could not reproduce it. There is *
 dependency anywhere in `apps/web`**, and a full Builder session in Chrome 150 logged zero console errors.
 **Treat as unconfirmed, not fixed and not closed** — if a future change introduces a canvas, re-check.
 
-### F-03 — Evidence gaps that no amount of local work can close
+### F-03 — Evidence gaps — mostly closed 2026-07-27
 
-Carried from [What is deliberately NOT in scope](#what-is-deliberately-not-in-scope) so they are not
-re-derived as new findings: **MUS-05** populated playlist detail (the local mock seam returns an empty
-playlist array by design), **BLD-15/16** preview failure and clip completion, and **LIVE-09** runtime
-playback failure (`code-confirmed` only — the fixture class runs prompter-only and never requests a
-stream). These need real provider audio or a non-headless browser. **Do not claim any of them works.**
+Verified on **production** in a real (non-headless) Chrome against a live Apple Music and SoundCloud
+account, which is the only place these paths exist. Nothing was written: the run used browse-only and
+playback controls, `Start class` in the playlist browser was never clicked (it imports and creates a
+class), and Live mode issues no writes at all — it consumes one `run-payload` GET.
+
+| Surface | Status | Evidence |
+| --- | --- | --- |
+| **MUS-05** playlist detail, populated | ✅ **works** | 70 real Apple Music playlists; opening one renders tracks with artwork, artist, and duration. **But see F-05 — the track count is wrong.** |
+| **BLD-05/06/14** preview ready / playing / paused | ✅ **works** | "Preview ready" → "Now playing · SoundCloud" with the clock advancing → "Preview paused" at 0:15 |
+| **BLD-15** preview resume failed | ✅ **works** | Induced by neutralising the SoundCloud widget while paused. Renders "Resume failed" → "SoundCloud could not start playback", names the provider without leaking an upstream message, states "your class edit, selected track, and scoring changes are unchanged", and offers Start clip again / Stop auditioning / Reconnect SoundCloud. Recovery works: "Start clip again" rebuilt the widget and resumed. |
+| **BLD-16** preview clip complete | ✅ **works** | Let the clip run its full 3:04 window; renders "Preview complete" at 3:04/3:04 with the action flipped to "Replay clip on SoundCloud" |
+| **LIVE-01/02** queue and preflight | ✅ **works** | Readiness ledger reads "Runnable 3 of 3 · needs a duration 0 · music all linked"; preflight resolves real provider capability — "10 tracks ready · 0 need a decision", per-track "Plays on SoundCloud" |
+| **LIVE-09** runtime playback failure | ❌ **still not induced** | See below — two attempts, both unfaithful |
+
+**LIVE-09 resisted induction, and the reason is worth carrying forward.** `PlaybackRuntime.fail()`
+(`apps/web/src/lib/playback/runtime.ts:403`) is reachable only from five triggers: preflight finds a
+track unplayable, connections change mid-class, no adapter factory exists for the provider, the adapter
+emits `onError`, or the adapter throws while loading. Two inductions were tried and **neither is a fair
+test**:
+
+1. **Blanking the SoundCloud widget iframe.** The widget stops responding without emitting anything, so
+   no `onError` ever fires. This proves nothing about a genuine provider error.
+2. **Removing `window.SC.Widget`.** The loader (`soundcloud-adapter.ts:65`) re-injects the script and
+   recovers, so the adapter never throws.
+
+Reaching it honestly needs a real provider outage, or a connection change mid-class — which is a write.
+**LIVE-09 stays `code-confirmed` only. Do not claim it works.**
+
+**One risk surfaced while trying, unproven and worth a look:** when the player died silently (iframe
+blanked), the Live runtime kept advancing the clock and kept displaying "♪ SoundCloud" with no alert —
+the instructor would get silence with no signal. `LiveMode.tsx` states the intent as "playback failure is
+a serious recoverable alert … never a silent skip", and there is **no liveness check** on the adapter to
+enforce that. Whether a provider player can die this way in the wild is unknown; the induction was
+artificial. **Treat as a question to investigate, not a defect.**
+
+### F-05 — Apple Music playlists always report "0 tracks" (open, found 2026-07-27)
+
+Every one of 70 saved playlists renders "0 tracks" — on each list row and in the detail header, directly
+above a list of real tracks. `packages/music/src/apple-music.ts:397` reads
+`trackCount: a?.trackCount ?? 0`, but the fetch is `/v1/me/library/playlists` and Apple's
+`LibraryPlaylists` attributes do not carry `trackCount`, so the fallback fires every time.
+
+**Apple-Music-specific.** Spotify reads `raw.items.total` (`spotify.ts:353`) and SoundCloud reads
+`pl.data.track_count` (`soundcloud.ts:458`); both providers do return those.
+
+This is a P1-05 violation in the shipped product — the surface states a confident "0 tracks" for
+something it never learned. The truthful fix is to **omit the count when the provider does not report
+one** rather than fetch tracks for every playlist to compute it. Confirm the API behaviour first; do not
+assume this note is still accurate.
+
+**Only live providers could have found this.** The local mock seam returns an empty playlist array, so
+there was never a row to render a count on.
 
 ### F-04 — Owner decisions still open
 
 Not agent work; listed so a session does not treat them as its own to resolve.
 
-- **Deploy.** Production was 7 app-code commits behind `main` before this run started, and the run added
-  seven more merges on top. Batch timing is the owner's call.
+- ~~**Deploy.**~~ **Done 2026-07-27** — Worker `085a153f`, then `d0a89df6` to realign prod with `main`.
+  See `ritmofit_dev_plan/HISTORY.md`.
 - **`.rf-brand-mark` at 3.79:1.** A logotype, which WCAG 1.4.3 exempts. Recorded, not a defect.
-- **Repo cleanup.** Merged remote branches from this run are still on `origin`.
+- ~~**Repo cleanup.**~~ Done 2026-07-27; merged branches from this run are off `origin`.
 
 ---
 
 ## Suggested first message for a fresh session
 
 > Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md` — the six-prompt run is
-> closed, so **skip Step 2** and work the **Follow-up work** section. F-01 is fixed; start from whatever
-> is still marked open there. Do not re-derive F-02 or F-03 as new findings — read why each is open
+> closed, so **skip Step 2** and work the **Follow-up work** section. F-01 is fixed and F-03 is largely
+> verified on production; **F-05 is the open defect.** Do not re-derive F-02 or LIVE-09 as new findings —
+> read why each is open
 > first. Preserve `.rf-focus-ring`, `ClassPulse`, `SourceList`, `lib/class-ordering.ts`,
 > `lib/error-reference.ts`, and the provider capability truth/ledger rather than re-forking them. Run the
 > full CI-equivalent gate in `AGENTS.md` **from the repository root**. Verify any UI change in a real
