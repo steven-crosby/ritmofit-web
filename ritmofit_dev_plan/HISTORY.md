@@ -10,6 +10,38 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-27 (realign prod with `main`) — deployed (Worker
+> `d0a89df6-82cd-40bd-ac79-1b5287d324aa`).** Main HEAD `cc772af`. A bookkeeping deploy taken so
+> `deployed == main` holds as an operational invariant: **no user-visible change**. It carries **PR
+> #385** (deleting the orphaned `AccountDialog.tsx`, porting its two uncovered test paths into
+> `Dashboard.test.tsx`, and repointing surface ID ACC-02 at `AccountWorkspace`) and **PR #386** (the
+> deploy record for `085a153f`). No schema / migration — remote D1 "No migrations to apply". `apps/api`
+> and `packages` were untouched since `4aadd66`, so the Worker bundle input was unchanged. Rollback
+> anchor: prior Worker `085a153f-fa09-410b-ba4a-c248022a58c2`.
+>
+> **The functional delta was measured, not assumed.** `4aadd66` was rebuilt in a separate worktree — it
+> reproduced the exact entry hash production was serving, proving the build deterministic and the
+> comparison sound. Against a build of `cc772af`: **every JS chunk is byte-identical once chunk-filename
+> references are normalized** (all nine, entry included), and the sole content change is the CSS dropping
+> two rules — `.w-12{width:3rem}` and `.hover\:opacity-90:hover{opacity:.9}` — which existed only because
+> the deleted component used them (0 live references each). The deployed bundle never contained
+> `AccountDialog` at all, confirming it was unreachable and that #384's fix to it was latent-only. Cost
+> of the deploy was therefore a full asset-filename turnover (10 of 13 stems, cache-bust + service-worker
+> precache invalidation) to remove ~50 bytes of dead CSS — accepted deliberately for the invariant.
+>
+> **Post-deploy smoke passed:** SPA and health `200`; `/classes`, `/explore`, `/teams` `401`
+> unauthenticated; all six required security headers present; `/api/v1/auth/capabilities` still
+> `{"access":{"mode":"invite_only"}}`. Served entry `assets/index-D1tZB2BT.js` (SHA-256
+> `ad91d7d2ed518604494631a76f32b1ac52db775acc6abe428eeb3f5b0f7f2ac3`) and CSS
+> `assets/index-lKV5nKyd.css` both matched the build, with the two dropped rules confirmed absent from
+> production CSS.
+>
+> **Asset-hash transient, worth knowing:** the first post-deploy hash check disagreed with the build
+> (`f4e544…` vs `ad91d7d2…`) seconds after upload; three cache-busted re-fetches then returned the
+> correct bytes on every attempt. This is the case the runbook already anticipates — cache-bust before
+> diagnosing a rollback — and the window is real but brief. **Do not read a single disagreeing hash
+> immediately after deploy as a broken release.**
+
 > **Session 2026-07-27 (2026-07-24 design-audit implementation run) — deployed (Worker
 > `085a153f-fa09-410b-ba4a-c248022a58c2`).** Main HEAD `4aadd66`. The largest user-visible batch since
 > launch: **12 app-code commits**, carrying all six implementation prompts of the 2026-07-24 Claude
