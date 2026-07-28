@@ -59,6 +59,7 @@ post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). **BPM loo
    pnpm -r typecheck
    pnpm lint
    (cd ritmofit_design_system && npm run verify)
+   pnpm --filter @ritmofit/web theme-classes
    pnpm test
    pnpm --filter @ritmofit/api test:integration
    pnpm --filter @ritmofit/web build

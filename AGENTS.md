@@ -137,6 +137,8 @@ Use Node `>=22.13` and pnpm `>=11.4`.
 - `pnpm format:check`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test`: core local gates.
 - `pnpm --filter @ritmofit/api test:integration`: Worker/D1 integration tests.
 - `pnpm --filter @ritmofit/web build`: production SPA build.
+- `pnpm --filter @ritmofit/web theme-classes`: fail on colour utilities Tailwind never generates
+  (`--selftest` verifies the checker itself). `tsc` and ESLint cannot see these — a class is a string.
 - `pnpm --filter @ritmofit/api openapi`: regenerate `apps/api/openapi/openapi.json`.
 - `pnpm --filter @ritmofit/api contract-parity`: compare backend/OpenAPI run-payload DTOs with the
   vendored iOS snapshot allowlist.
@@ -208,6 +210,7 @@ pnpm format:check
 pnpm -r typecheck
 pnpm lint
 (cd ritmofit_design_system && npm run verify)
+pnpm --filter @ritmofit/web theme-classes
 pnpm test
 pnpm --filter @ritmofit/api test:integration
 pnpm --filter @ritmofit/web build
