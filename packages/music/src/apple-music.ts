@@ -394,7 +394,7 @@ export async function fetchAppleMusicLibraryPlaylists(cfg: {
         providerUri: a?.url ?? null,
         name: a?.name ?? 'Untitled playlist',
         ownerName: a?.curatorName ?? null,
-        trackCount: a?.trackCount ?? 0,
+        trackCount: a?.trackCount ?? null,
         coverImageUrl: a?.artwork ? renderArtwork(a.artwork) : null,
       });
       if (item.success) out.push(item.data);

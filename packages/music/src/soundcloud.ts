@@ -455,7 +455,7 @@ function toPlaylistSummary(raw: unknown): ProviderPlaylistSummary | null {
     providerUri: pl.data.permalink_url ?? null,
     name: pl.data.title ?? 'Untitled playlist',
     ownerName: pl.data.user?.username ?? null,
-    trackCount: pl.data.track_count ?? 0,
+    trackCount: pl.data.track_count ?? null,
     coverImageUrl: pl.data.artwork_url ?? null,
   });
   return item.success ? item.data : null;

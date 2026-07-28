@@ -91,7 +91,13 @@ export const providerPlaylistSummarySchema = z.object({
   providerUri: z.url().nullable().optional(),
   name: z.string().min(1),
   ownerName: z.string().nullable(),
-  trackCount: z.number().int().nonnegative(),
+  /**
+   * How many tracks the playlist holds, or `null` when the provider does not say.
+   * Apple Music's `LibraryPlaylists` attributes carry no count, and defaulting to 0
+   * made every saved playlist claim "0 tracks" above a list of real ones. A count
+   * the system never learned is not reported as zero.
+   */
+  trackCount: z.number().int().nonnegative().nullable(),
   coverImageUrl: z.string().url().nullable(),
 });
 export type ProviderPlaylistSummary = z.infer<typeof providerPlaylistSummarySchema>;

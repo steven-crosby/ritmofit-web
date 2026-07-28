@@ -415,6 +415,43 @@ describe('Dashboard class library states', () => {
     expect(screen.getByRole('button', { name: 'Start class from Warmup Ride' })).toBeTruthy();
   });
 
+  // Apple Music's library-playlist attributes carry no count, so trackCount arrives
+  // null. Reporting that as "0 tracks" told instructors a populated playlist was
+  // empty (F-05). The count is omitted instead — never asserted as zero.
+  it('omits the playlist track count when the provider does not report one', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-unknown',
+        name: 'Count Unknown',
+        ownerName: 'Steven',
+        trackCount: null,
+        coverImageUrl: null,
+      },
+      {
+        provider: 'spotify',
+        playlistId: 'pl-known',
+        name: 'Count Known',
+        ownerName: 'Steven',
+        trackCount: 1,
+        coverImageUrl: null,
+      },
+    ]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
+    expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
+
+    // No count claimed for the unknown one, and nothing anywhere reads "0 tracks".
+    expect(screen.getByText('Steven')).toBeTruthy();
+    expect(screen.queryByText(/0 tracks/)).toBeNull();
+    // A known count still renders, and singular stays singular.
+    expect(screen.getByText('Steven · 1 track')).toBeTruthy();
+  });
+
   it('shows connected Spotify liked tracks in Music and opens the likes browser', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);

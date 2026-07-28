@@ -302,7 +302,11 @@ describe('fetchAppleMusicLibraryPlaylists', () => {
     expect(calls[0]?.init?.headers?.['Music-User-Token']).toBe('mut-1');
   });
 
-  it('defaults name/owner/trackCount/cover when attributes are absent', async () => {
+  // trackCount stays null rather than 0: Apple's LibraryPlaylists attributes never
+  // carry a count, so a 0 default made every saved playlist claim "0 tracks" above
+  // its real tracks. Name and cover still fall back — those are display defaults,
+  // not claims about the library.
+  it('defaults name/owner/cover when attributes are absent, and reports an unknown trackCount as null', async () => {
     const bare = { id: 'p.bare', type: 'library-playlists' };
     const { fetchImpl } = fakeFetch({ [`${PLAYLISTS_URL}?limit=100`]: { data: [bare] } });
     const results = await fetchAppleMusicLibraryPlaylists({
@@ -318,7 +322,7 @@ describe('fetchAppleMusicLibraryPlaylists', () => {
         providerUri: null,
         name: 'Untitled playlist',
         ownerName: null,
-        trackCount: 0,
+        trackCount: null,
         coverImageUrl: null,
       },
     ]);
