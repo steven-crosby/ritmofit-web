@@ -10,6 +10,44 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-27 (2026-07-24 design-audit implementation run) — deployed (Worker
+> `085a153f-fa09-410b-ba4a-c248022a58c2`).** Main HEAD `4aadd66`. The largest user-visible batch since
+> launch: **12 app-code commits**, carrying all six implementation prompts of the 2026-07-24 Claude
+> design audit — **PR #370** (shared foundations: one `.rf-focus-ring`, the Live AAA contrast fix and
+> its gate, `ClassPulse`, the canon intensity control), **#375** (Music rebuilt as a sourcing workspace
+> on a shared `SourceList`), **#377** (Classes ranked by teaching readiness with a per-card next-step
+> verb), **#378** (Live queue density and runtime composition), **#379** (move picker grouped by
+> discipline), and **#380** (truthful account/state copy, derived `betaAccessMode`) — plus **#382**
+> (WCAG 1.4.10 reflow repair: the move picker `<select>` was widening the document to 425px at a 320px
+> viewport) and **#384** (three color classes Tailwind never generated, used in 12 places). Also
+> includes **#365**, the iOS contract-parity baseline. **No schema / migration** — remote D1 reported
+> "No migrations to apply" both before and after. Rollback anchor: prior Worker
+> `c25b7515-c92f-462e-8686-24289774687e` (deployed 2026-07-24 18:40 UTC).
+>
+> **Gate evidence.** The deployed tree (`9d8925df…`) is byte-identical to the tree GitHub CI passed on
+> `7418156`, so the full workflow — formatting, typecheck, lint, design-system verification, 689 web +
+> 431 API + 30 music tests, Worker/D1 integration, production build, OpenAPI no-drift, iOS contract
+> parity, and the dependency audit — covers exactly what shipped. Post-deploy smoke passed: SPA and
+> health `200`; `/classes`, `/explore`, `/teams` `401` unauthenticated; HSTS, CSP, Permissions-Policy,
+> Referrer-Policy, `X-Content-Type-Options`, and `X-Frame-Options` all present. Served SPA asset
+> `assets/index-BZs5V4Fv.js` matched the production build with SHA-256
+> `96048dc4356ef7e0fb7d87aadf1c1075a205d2dc8d08324ebe63018ebfef2dd4`. `BETA_ALLOWED_EMAILS` confirmed
+> present in `wrangler secret list` (names only).
+>
+> **Deviation, deliberate:** `AGENTS.md` says auth changes deploy on their own, and this batch included
+> `apps/api/src/lib/auth.ts` and `routes/auth.ts` (#380). Shipped together because the delta is provably
+> inert in production — `betaAccessMode` encodes the identical condition the previous hard-coded
+> constant did, and on a non-localhost `BETTER_AUTH_URL` it can only return `invite_only`. Confirmed
+> live after deploy: `/api/v1/auth/capabilities` returns `{"access":{"mode":"invite_only"}}`. Had it
+> returned `open`, that would have been an open signup gate and cause for immediate rollback. **The next
+> auth change should go on its own** rather than treating this as precedent.
+>
+> **Live-provider paths remain unverified.** The whole audit run was local against
+> `MOCK_PROVIDERS=true`, so MUS-05 (populated playlist detail), LIVE-09 (runtime playback failure), and
+> BLD-15/16 (preview failure, clip completion) shipped without ever being exercised — they exist only
+> where real provider audio does. Run the live connect/playback checks in a real browser before treating
+> any of them as working; do not read this entry as verification.
+
 > **Session 2026-07-24 (all-harden round 24 + dependency hardening) — deployed (Worker
 > `c25b7515-c92f-462e-8686-24289774687e`).** Main HEAD `e36fcf9` contains three sequential
 > disjoint-lane PRs with green combined CI: **PR #360** serializes Live Screen Wake Lock acquisition
