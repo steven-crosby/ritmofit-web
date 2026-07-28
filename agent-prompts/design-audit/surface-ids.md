@@ -103,3 +103,4 @@ and never published).
 | 2026-07-19 | `2026-07-19-full-product-preview` | Initial 51-surface inventory established |
 | 2026-07-24 | pack v6 | Registry extracted from that run and made canonical |
 | 2026-07-27 | audit follow-up | ACC-02 repointed to `AccountWorkspace`; orphaned `AccountDialog.tsx` deleted |
+| 2026-07-27 | live-provider verification | MUS-05, BLD-05/06/14/15/16, LIVE-01/02 and SYS-02 observed live on production for the first time. LIVE-09 still not induced — see F-03 in `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md` for the five triggers and the two inductions that do **not** work |

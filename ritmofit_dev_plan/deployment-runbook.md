@@ -109,6 +109,25 @@ curl -s "https://ritmofit.studio/?release-check=$(date +%s)" | \
   grep -oE 'assets/index-[A-Za-z0-9_-]+\.js'                                      # matches built hash
 ```
 
+**One agreeing fetch is not enough.** During the propagation window, edge nodes hold different versions
+of `index.html`, so cache-busted fetches **alternate** between the old and new entry — a single check can
+hit either and tell you nothing. Require **consecutive** agreement before believing the release, and
+before diagnosing a rollback:
+
+```bash
+EXPECTED=$(grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' apps/web/dist/index.html | head -1)
+until [ "$(curl -s -H 'Cache-Control: no-cache' "https://ritmofit.studio/?cb=$RANDOM" |
+  grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)" = "$EXPECTED" ] &&
+  [ "$(curl -s -H 'Cache-Control: no-cache' "https://ritmofit.studio/?cb=$RANDOM" |
+    grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)" = "$EXPECTED" ] &&
+  [ "$(curl -s -H 'Cache-Control: no-cache' "https://ritmofit.studio/?cb=$RANDOM" |
+    grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)" = "$EXPECTED" ]; do sleep 10; done
+```
+
+Observed 2026-07-27 on Worker `75fc1b8d`: the first post-deploy fetch returned the **previous** entry,
+then four cache-busted fetches alternated old/new/old/new before settling a couple of minutes later. Only
+once it has settled is a mismatch worth investigating.
+
 Also smoke mounted launch routes so accidental route regressions show up as something other than
 `404 NOT_FOUND`: class shares, playlist import, cover upload serving, provider search/import, and the
 class cover/tag endpoints should reach their real handlers and fail as `401`/`403`/validation/domain

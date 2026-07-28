@@ -10,6 +10,36 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-27 (F-05 truthful playlist counts) — deployed (Worker
+> `75fc1b8d-80c9-40a7-a814-3b34dd5b772f`).** Main HEAD `a657299`. Carries **PR #390**, the fix for a
+> defect found by verifying the audit's live-provider gap against a real account: all 70 saved Apple
+> Music playlists rendered "0 tracks", on every list row and in the detail header, directly above their
+> real tracks. Apple's `/v1/me/library/playlists` attributes carry no `trackCount`, so the `?? 0` fallback
+> fired every time. `ProviderPlaylistSummary.trackCount` is now `number | null` and the count is omitted
+> when unknown, rather than fetching tracks for 70 playlists to compute one. **Shared-contract change** —
+> the OpenAPI schema widens to `anyOf: [integer, null]`; iOS contract parity reports no drift, as
+> `trackCount` is not in the run-payload DTO. Also **PR #389**, the verification record. No schema /
+> migration. Rollback anchor: prior Worker `d0a89df6-82cd-40bd-ac79-1b5287d324aa`.
+>
+> **Gate evidence.** Deployed tree byte-identical to the tree CI passed on `cf149f1`. Post-deploy smoke
+> passed: SPA and health `200`; protected routes `401`; all six security headers present; served entry
+> `assets/index-D8cUcxps.js` with SHA-256
+> `026de5f86612f6774965d5474feedd23612261141349913aaa07593489ab5088` matching the build.
+>
+> **Verified live after deploy**, in a real Chrome against the same Apple Music account that exposed the
+> bug: zero occurrences of "0 tracks" anywhere in the playlist browser, list rows and detail header both
+> reading "Apple Music" alone, track lists unchanged. **SYS-02 also self-verified** — the "Update
+> available / a fresh build is ready" prompt fired on its own when this build landed, with its
+> "reloading does not change saved classes or music-connection settings" reassurance, and behaved
+> correctly on reload. SYS-02 was `code-confirmed` only in the 2026-07-24 audit; this is the first time
+> it has been observed.
+>
+> **Propagation is not instant, and the runbook's asset check was too weak.** The first post-deploy fetch
+> returned the *previous* entry, and four cache-busted fetches then alternated old/new/old/new — edge
+> nodes held different versions of `index.html` — before settling a couple of minutes later. A single
+> cache-busted fetch can hit either version, so it proves nothing. The runbook now requires **three
+> consecutive** agreeing fetches before a mismatch is worth investigating.
+
 > **Session 2026-07-27 (realign prod with `main`) — deployed (Worker
 > `d0a89df6-82cd-40bd-ac79-1b5287d324aa`).** Main HEAD `cc772af`. A bookkeeping deploy taken so
 > `deployed == main` holds as an operational invariant: **no user-visible change**. It carries **PR

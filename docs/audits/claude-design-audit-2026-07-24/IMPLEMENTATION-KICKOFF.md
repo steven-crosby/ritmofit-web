@@ -266,7 +266,8 @@ change, and it is verified to fail when the harness is broken. **If the self-tes
 | MUS-05 populated playlist detail | Cannot be verified locally — the mock seam returns an empty playlist array by design. Do not claim it works. |
 | BLD-15 / BLD-16 preview failure and clip completion | Not induced this run; need real provider audio |
 | LIVE-09 runtime playback failure | Not induced — prompter-only mode never requests a stream. Code-confirmed only. |
-| CLS-00, SYS-02, SYS-03 | Code-confirmed only; no change proposed |
+| CLS-00, SYS-03 | Code-confirmed only; no change proposed |
+| SYS-02 update available | ✅ **Verified live 2026-07-27** — fired on its own when the `75fc1b8d` build landed, carried its "reloading does not change saved classes or music-connection settings" reassurance, and reloaded correctly. No longer code-confirmed only. |
 | Audible playback truth | Headless blocks `encrypted-media`; `AGENTS.md` already requires a real browser |
 | Any IA change or fifth destination | Out of scope by the audit's own constraints |
 
@@ -376,23 +377,31 @@ a serious recoverable alert … never a silent skip", and there is **no liveness
 enforce that. Whether a provider player can die this way in the wild is unknown; the induction was
 artificial. **Treat as a question to investigate, not a defect.**
 
-### F-05 — Apple Music playlists always report "0 tracks" (open, found 2026-07-27)
+### F-05 — Apple Music playlists reported "0 tracks" (✅ fixed and verified live 2026-07-27)
 
-Every one of 70 saved playlists renders "0 tracks" — on each list row and in the detail header, directly
-above a list of real tracks. `packages/music/src/apple-music.ts:397` reads
-`trackCount: a?.trackCount ?? 0`, but the fetch is `/v1/me/library/playlists` and Apple's
-`LibraryPlaylists` attributes do not carry `trackCount`, so the fallback fires every time.
+Every one of 70 saved playlists rendered "0 tracks" — on each list row and in the detail header, directly
+above a list of real tracks. `packages/music/src/apple-music.ts` read `trackCount: a?.trackCount ?? 0`,
+but the fetch is `/v1/me/library/playlists` and Apple's `LibraryPlaylists` attributes carry no
+`trackCount`, so the fallback fired every time. A P1-05 violation in the shipped product: a confident
+number the system never learned.
 
-**Apple-Music-specific.** Spotify reads `raw.items.total` (`spotify.ts:353`) and SoundCloud reads
-`pl.data.track_count` (`soundcloud.ts:458`); both providers do return those.
+**Apple-Music-specific.** Spotify reads `raw.items.total` and SoundCloud reads `pl.data.track_count`;
+both providers return those.
 
-This is a P1-05 violation in the shipped product — the surface states a confident "0 tracks" for
-something it never learned. The truthful fix is to **omit the count when the provider does not report
-one** rather than fetch tracks for every playlist to compute it. Confirm the API behaviour first; do not
-assume this note is still accurate.
+**Fixed in PR #390**, deployed as Worker `75fc1b8d`. `ProviderPlaylistSummary.trackCount` is now
+`number | null` and the count is omitted when unknown, rather than fetching tracks for all 70 playlists
+to compute one. All three providers report `null` instead of inventing a zero. **Shared-contract
+change:** the OpenAPI schema widens to `anyOf: [integer, null]`; iOS contract parity reports no drift.
+Verified live against the same account afterwards — zero occurrences of "0 tracks" anywhere in the
+surface, track lists unchanged.
 
-**Only live providers could have found this.** The local mock seam returns an empty playlist array, so
-there was never a row to render a count on.
+**Two lessons worth more than the fix:**
+
+1. **Only live providers could have found this.** The local mock seam returns an empty playlist array, so
+   there was never a row to render a count on. Everything in F-03 shares that shape.
+2. **A test had pinned the bug as correct.** `apple-music.test.ts` asserted `trackCount: 0` for a bare
+   playlist, in a case named "defaults … trackCount …". A green suite was evidence *for* the defect. When
+   a fix makes a test fail, read the test's intent before assuming the fix is wrong.
 
 ### F-04 — Owner decisions still open
 
@@ -409,7 +418,8 @@ Not agent work; listed so a session does not treat them as its own to resolve.
 
 > Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md` — the six-prompt run is
 > closed, so **skip Step 2** and work the **Follow-up work** section. F-01 is fixed and F-03 is largely
-> verified on production; **F-05 is the open defect.** Do not re-derive F-02 or LIVE-09 as new findings —
+> verified on production, and F-05 is fixed and deployed. **Only F-02 and LIVE-09 remain, and neither is
+> straightforwardly actionable** — read why before touching either. Do not re-derive them as new findings —
 > read why each is open
 > first. Preserve `.rf-focus-ring`, `ClassPulse`, `SourceList`, `lib/class-ordering.ts`,
 > `lib/error-reference.ts`, and the provider capability truth/ledger rather than re-forking them. Run the
