@@ -10,6 +10,49 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-07-30 (F-06 Live danger AAA) — deployed (Worker
+> `0588098f-5b1f-4e7d-9aad-d340445ebe20`).** Main HEAD `4be6b7c`. Carries **PR #392**, an accessibility
+> fix on Live's playback-failure alert — the `role="alert"` that tells an instructor mid-class that the
+> music died. Its "Music interrupted" status line and `!` glyph rendered at **6.48:1** against Live's
+> 7.0 AAA target, at 1440×1000, 390×844 and 320×844 alike; they now measure **7.04:1**.
+>
+> Root cause: the token was validated against a backdrop it never renders on. The Live re-map in
+> `index.css` was working — the colour really was `live.danger` — but `live.danger` (ember-300) was
+> measured and gated only on `bg/live`, where it reads 7.52:1, while `RecoveryState` renders on
+> **`bg/raised`** (ink-800), where the same colour gives 6.48:1. Fixed by adding `ember-200`
+> (`#EF8572`) and pointing `live.danger` at it: 7.04:1 on `bg/raised`, 8.17:1 on `bg/live`.
+> `check-contrast.mjs` now gates every Live text role against **both** grounds, worst case wins, and is
+> verified to fail when the old value is restored.
+>
+> **Found only by inducing LIVE-09** (PRs #392/#393, `playback-liveness-investigation.md`). The §8
+> reconciliation's "Live runtime 0 of 36 text nodes below AAA" was accurate for the 36 nodes reachable
+> without a playback failure; with the failure surface open there are **43**, and the defect was in the
+> seven no traversal had ever entered.
+>
+> **Frontend token only — no schema / migration / API / shared-contract change.** The entire
+> production-visible delta since `75fc1b8d` is one custom property,
+> `--rf-color-semantic-live-danger: #EE7A66 → #EF8572`; everything else merged since (#391, #393) is
+> documentation, and #392's other files (`ios/RFTokens.swift`, `mockups/theme.css`,
+> `scripts/check-contrast.mjs`) ship in neither the Worker nor the SPA. **iOS:** `RFColor.liveDanger`
+> changes value and `RFColorPrimitive.ember200` is added; `ember300` is retained as a ramp step with no
+> semantic role pointing at it, so no Swift constant was removed.
+>
+> Rollback anchor: prior live `75fc1b8d-80c9-40a7-a814-3b34dd5b772f`. Remote D1: **no migrations to
+> apply** (checked before deploy). Full pre-deploy gate green on these exact bytes from the repository
+> root (format / typecheck / lint / design verify / theme-classes / unit / integration / web build /
+> openapi no-drift / contract-parity / audit:ci). SPA built before the Worker deploy.
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` → `200`,
+> protected `classes` / `explore` / `teams` → `401`, all six security headers present, and the mounted
+> launch routes (shares, provider search, playlist import, class cover, class tags, moves) reach their
+> handlers as `401` rather than `404`. Served entry `assets/index-Z_q6zbAu.js`, confirmed by **three
+> consecutive** cache-busted fetches — the first six probes alternated old/new/new/old/new/old exactly as
+> this runbook's propagation note predicts, so a single check would have proved nothing either way.
+> **The fix itself was verified on production, not merely the deploy:** the served stylesheet carries
+> `--rf-color-semantic-live-danger: #EF8572` in both theme blocks, `--rf-color-primitive-ember-200`, and
+> an intact `.bg-bg-live` re-map block. `#EE7A66` survives only as `--rf-color-primitive-ember-300`,
+> pointed at by nothing.
+
 > **Session 2026-07-27 (F-05 truthful playlist counts) — deployed (Worker
 > `75fc1b8d-80c9-40a7-a814-3b34dd5b772f`).** Main HEAD `a657299`. Carries **PR #390**, the fix for a
 > defect found by verifying the audit's live-provider gap against a real account: all 70 saved Apple
