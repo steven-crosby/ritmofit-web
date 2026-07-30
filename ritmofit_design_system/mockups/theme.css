@@ -85,7 +85,7 @@
 
   /* live (AAA role re-maps) */
   --rf-live-text-supporting: var(--rf-bone-300);
-  --rf-live-danger: var(--rf-ember-300);
+  --rf-live-danger: var(--rf-ember-200);
   --rf-live-primary-from: var(--rf-copper-400);
   --rf-live-primary-to: var(--rf-copper-300);
 
