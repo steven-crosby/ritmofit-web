@@ -7,7 +7,9 @@ Everything you need is in this folder. You do not need the audit transcript.
 >
 > **The six-prompt run is closed.** All six prompts landed, the §8 reconciliation passed, and the one
 > defect the run introduced was fixed and merged (#382, merge commit `1acf615`). Nothing in
-> [Step 2](#step-2--run-the-prompts) remains to be executed. **Not deployed** — that grant was never given.
+> [Step 2](#step-2--run-the-prompts) remains to be executed. **Deployed** — the six-prompt work shipped
+> 2026-07-27 (Workers `085a153f`, then `d0a89df6` realigning prod with `main`), and the F-06 fix below
+> shipped 2026-07-30 (Worker `0588098f`). Production is current with `main`.
 >
 > **The follow-up is now closed too, except for F-02 and one owner decision.** F-01 (dead colour classes)
 > fixed with a CI gate; F-03 verified against live providers; F-05 (Apple Music "0 tracks") fixed and
@@ -111,7 +113,8 @@ Two setup facts this run learned the hard way, both of which will otherwise cost
 
 > **Status, 2026-07-25: all six prompts have landed and the §8 reconciliation passed.** Nothing in
 > this file remains to be executed. PRs #370 (01), #375 (02), #377 (03), #378 (04), #379 (05), and
-> #380 (06); every one merged with GitHub CI green. **Not deployed** — that grant was never given.
+> #380 (06); every one merged with GitHub CI green. **Not deployed at the time of writing** — that grant
+> came later, on 2026-07-27 (Workers `085a153f`, then `d0a89df6`). See F-04.
 >
 > The reconciliation measured every touched surface at 1440×1000, 390×844, 320×844, and a
 > 200%-equivalent reflow: **Live runtime 0 of 36 text nodes below AAA**, zero animations over 50ms
@@ -460,7 +463,7 @@ surface, track lists unchanged.
    playlist, in a case named "defaults … trackCount …". A green suite was evidence *for* the defect. When
    a fix makes a test fail, read the test's intent before assuming the fix is wrong.
 
-### F-06 — Live danger failed AAA on the alert that reports playback failure (✅ fixed 2026-07-29)
+### F-06 — Live danger failed AAA on the alert that reports playback failure (✅ fixed and deployed)
 
 Found by inducing LIVE-09, and **only** findable that way. Live's playback-failure alert — the
 `role="alert"` that tells an instructor the music died — rendered its "Music interrupted" status line and
@@ -479,6 +482,12 @@ it — 7.04:1 on `bg/raised`, 8.17:1 on `bg/live`. `tokens.json` only; web + iOS
 `build:all`. **The gate now covers both grounds** — every Live text role is checked against `bg/raised` as
 well as `bg/live`, worst case wins — and is verified to bite. **iOS impact:** `RFColor.liveDanger` changes
 value, `RFColorPrimitive.ember200` is added, no constant removed.
+
+**Deployed 2026-07-30** as Worker `0588098f-5b1f-4e7d-9aad-d340445ebe20` from main HEAD `4be6b7c`. The
+production-visible delta since the previous deploy was exactly one custom property. Verified on
+production rather than inferred from the deploy succeeding: the served stylesheet carries
+`--rf-color-semantic-live-danger: #EF8572` in both theme blocks, with `#EE7A66` surviving only as the
+now-unreferenced `--rf-color-primitive-ember-300`. Full record in `ritmofit_dev_plan/HISTORY.md`.
 
 **Two lessons:**
 
@@ -505,9 +514,9 @@ Not agent work; listed so a session does not treat them as its own to resolve.
   things make it a decision rather than a task: a watchdog that fires wrongly interrupts a class that is
   playing fine, and its thresholds cannot be tuned against the local mock seam — it needs a live-provider
   session. It also widens `PlaybackAdapter`, which is shared by Live and Builder preview.
-- **Deploy of #392** (added 2026-07-29). The F-06 contrast fix is merged to `main` but **not deployed**;
-  merging is not deploying. It is a single-colour accessibility fix with no schema, migration, or
-  API impact.
+- ~~**Deploy of #392.**~~ **Done 2026-07-30** — Worker `0588098f-5b1f-4e7d-9aad-d340445ebe20`, main HEAD
+  `4be6b7c`. The fix was verified on production itself, not just the deploy: the served stylesheet
+  carries `--rf-color-semantic-live-danger: #EF8572`. See `ritmofit_dev_plan/HISTORY.md`.
 
 ---
 
