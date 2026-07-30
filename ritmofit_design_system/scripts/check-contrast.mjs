@@ -77,10 +77,27 @@ const pairs = (variant) => {
 // themes, so these are identical across variants by design rather than by accident.
 // `livePrimaryDark` is the darkest stop of the Live primary gradient: the ink label
 // rides the whole fill, so the worst stop is the one that has to clear the bar.
+//
+// bg/live is NOT the only ground inside Live. Cards in the Live subtree — most
+// importantly the playback-failure RecoveryState — render on bg/raised, which is
+// lighter than bg/live and therefore the WORSE case for light-on-dark text. Gating
+// only against bg/live is how `live.danger` shipped at 6.48:1 on the alert that
+// tells an instructor the music died: it cleared 7.52:1 on bg/live and was never
+// measured on the surface it actually renders on. Every Live text role is now gated
+// against both grounds, worst-case wins.
 const livePairs = (variant) => {
   const live = S("bg.live", variant);
+  const raised = S("bg.raised", variant);
   const livePrimaryDark = S("live.primary-from", variant);
   return [
+    // Same roles, on the raised card ground they are also read on inside Live.
+    ["LIVE text/primary on raised", S("text.primary", variant), raised, 7.0],
+    ["LIVE text/secondary on raised", S("text.secondary", variant), raised, 7.0],
+    ["LIVE supporting label on raised", S("live.text-supporting", variant), raised, 7.0],
+    ["LIVE interactive on raised", S("interactive.default", variant), raised, 7.0],
+    ["LIVE state/caution on raised", S("state.caution", variant), raised, 7.0],
+    ["LIVE state/positive on raised", S("state.positive", variant), raised, 7.0],
+    ["LIVE danger (live re-map) on raised", S("live.danger", variant), raised, 7.0],
     // Text read at distance mid-class — AAA 7.0.
     ["LIVE text/primary", S("text.primary", variant), live, 7.0],
     ["LIVE text/secondary", S("text.secondary", variant), live, 7.0],
