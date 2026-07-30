@@ -3,13 +3,20 @@
 **Read this first if you are an agent starting an implementation session.**
 Everything you need is in this folder. You do not need the audit transcript.
 
-> ## Where this run stands — 2026-07-27
+> ## Where this run stands — 2026-07-30
 >
 > **The six-prompt run is closed.** All six prompts landed, the §8 reconciliation passed, and the one
 > defect the run introduced was fixed and merged (#382, merge commit `1acf615`). Nothing in
 > [Step 2](#step-2--run-the-prompts) remains to be executed. **Not deployed** — that grant was never given.
 >
-> **If you are a new session, your work is [Follow-up work](#follow-up-work--open-as-of-2026-07-27), not
+> **The follow-up is now closed too, except for F-02 and one owner decision.** F-01 (dead colour classes)
+> fixed with a CI gate; F-03 verified against live providers; F-05 (Apple Music "0 tracks") fixed and
+> deployed; **LIVE-09 induced 2026-07-29 and no longer `code-confirmed`**; the silent-player-death question
+> **answered**. Inducing LIVE-09 exposed a real AAA defect on the playback-failure alert, fixed in #392.
+> See [`playback-liveness-investigation.md`](playback-liveness-investigation.md) — that document, not this
+> one, is the detailed record for LIVE-09 and playback liveness.
+>
+> **If you are a new session, your work is [Follow-up work](#follow-up-work--open-as-of-2026-07-30), not
 > the prompt table.** Read Step 0, the [measurement traps](#measurement-traps--read-before-you-verify-anything),
 > and the non-negotiables — those all still bind — then go to the follow-up section. Skip Step 2.
 
@@ -65,7 +72,10 @@ Read, in order:
 1. [`README.md`](README.md) — the verdict and the five consequential changes.
 2. [`implementation-sequence.md`](implementation-sequence.md) — order, dependency graph, collision map, gates.
 3. [`shared-foundations-contract.md`](shared-foundations-contract.md) — the primitives prompts 02–06 may not redefine.
-4. `AGENTS.md` at the repo root — the canonical operating rules. **It wins over anything here.**
+4. [`playback-liveness-investigation.md`](playback-liveness-investigation.md) — the LIVE-09 induction, the
+   silent-player-death answer, and the proposed liveness design. Read it before touching anything in
+   `apps/web/src/lib/playback/`.
+5. `AGENTS.md` at the repo root — the canonical operating rules. **It wins over anything here.**
 
 Then open the prototype so you can see what you are building toward:
 
@@ -181,8 +191,10 @@ console. **Per-PR verification is not a substitute for this.**
 
 ## Measurement traps — read before you verify anything
 
-This run produced two false findings before catching them. Both are easy to repeat, and neither looks
-wrong in the output — the incorrect numbers are entirely plausible:
+Eight traps, every one of them from a real false finding or a real miss this project shipped. All are
+easy to repeat, and none looks wrong in the output — the incorrect numbers are entirely plausible.
+
+The first two come from the audit run itself:
 
 1. **Focus rings.** Tailwind's `outline-none` emits `outline: 2px solid transparent` and draws the real
    ring with `box-shadow`. Reading only `outline` reports "no focus ring" on controls that have one.
@@ -215,6 +227,18 @@ trusted without checking the conditions it ran under**:
    renders a bright gray hairline while a dead `bg-*` class goes transparent. And a component's source is
    not evidence it is mounted — `AccountDialog.tsx` is imported by nothing but its own test. **Grep for
    the call site, and read the computed style off the running page.**
+7. **A state you cannot reach is a state you have not measured.** Added 2026-07-29 by F-06. The §8
+   reconciliation reported "Live runtime 0 of 36 text nodes below AAA" and was correct — for the 36 nodes
+   reachable without a playback failure. Induce LIVE-09 and there are **43**; two of the seven new ones
+   were below AAA, on the alert that tells an instructor the music died. A green sweep over the states you
+   could reach says nothing about the states you could not. **Enumerate the states a surface can occupy,
+   then ask which ones your traversal never entered.**
+8. **A contrast gate is only as good as its list of grounds.** Also F-06. `check-contrast.mjs` gated the
+   Live roles against `bg/live` alone, reasoning — in its own comment — that this was "the combination
+   that actually ships". Every card inside Live sits on `bg/raised`, which is lighter and therefore the
+   worse case; `live.danger` cleared 7.52:1 on the ground it was gated against and 6.48:1 on the one it
+   renders on. **A gate that is internally consistent can still be measuring the wrong pair.** When a role
+   is scoped to a subtree, gate it against every surface in that subtree.
 
 The method that catches all of these is the one the harness README already prescribes: **swap the old
 value back onto the same nodes in the same session and re-measure.** Two numbers from one session beat
@@ -222,7 +246,8 @@ two numbers from two runs, because everything else is held constant.
 
 ### Use the harness rather than re-deriving this
 
-`agent-prompts/browser-verification/` handles the first three. It drives real Chrome over the DevTools
+`agent-prompts/browser-verification/` handles traps 1–3. Traps 7 and 8 it cannot help with: they are
+about *what you point it at*, not how it measures. It drives real Chrome over the DevTools
 Protocol with zero dependencies, and measures contrast (AAA thresholds on Live, worst backdrop per
 node), focus rings, horizontal overflow, and animations under reduced motion. `auth.mjs` signs a
 headless browser in as a local fixture user without a password.
@@ -265,7 +290,7 @@ change, and it is verified to fail when the harness is broken. **If the self-tes
 | --- | --- |
 | MUS-05 populated playlist detail | Cannot be verified locally — the mock seam returns an empty playlist array by design. Do not claim it works. |
 | BLD-15 / BLD-16 preview failure and clip completion | Not induced this run; need real provider audio |
-| LIVE-09 runtime playback failure | Not induced — prompter-only mode never requests a stream. Code-confirmed only. |
+| LIVE-09 runtime playback failure | ✅ **Induced and verified 2026-07-29** — a genuine SoundCloud `ERROR` during widget load. No longer code-confirmed only. See [`playback-liveness-investigation.md`](playback-liveness-investigation.md). |
 | CLS-00, SYS-03 | Code-confirmed only; no change proposed |
 | SYS-02 update available | ✅ **Verified live 2026-07-27** — fired on its own when the `75fc1b8d` build landed, carried its "reloading does not change saved classes or music-connection settings" reassurance, and reloaded correctly. No longer code-confirmed only. |
 | Audible playback truth | Headless blocks `encrypted-media`; `AGENTS.md` already requires a real browser |
@@ -275,10 +300,21 @@ If a slice tempts you to close one of these gaps, stop and ask — it is new sco
 
 ---
 
-## Follow-up work — open as of 2026-07-27
+## Follow-up work — open as of 2026-07-30
 
-**This is what a new session implements.** The six prompts are done; these are the items the run
-surfaced but did not close. Each says plainly whether it is actionable now.
+**Almost all of this is now closed.** The six prompts are done; these were the items the run surfaced but
+did not close. Each says plainly whether it is actionable now.
+
+**What is still open, in full:**
+
+- **F-02** — the D11 `createPattern` `InvalidStateError`. Unreproducible, re-checked 2026-07-29. Stays
+  *unconfirmed*, not closed.
+- **The liveness watchdog** — designed in
+  [`playback-liveness-investigation.md`](playback-liveness-investigation.md), deliberately not
+  implemented. Needs a live-provider session to tune its thresholds, and an owner decision.
+- **F-04's `.rf-brand-mark`** — a logotype, WCAG-exempt. Recorded, not a defect.
+
+Everything else below is marked ✅ and is history, not work.
 
 A third measurement lesson, from F-01 itself: **reading the config is not measuring the page.** Both
 false claims in the first draft of F-01 came from reasoning about `tailwind.config.js` instead of asking
@@ -354,7 +390,7 @@ class), and Live mode issues no writes at all — it consumes one `run-payload` 
 | **BLD-15** preview resume failed | ✅ **works** | Induced by neutralising the SoundCloud widget while paused. Renders "Resume failed" → "SoundCloud could not start playback", names the provider without leaking an upstream message, states "your class edit, selected track, and scoring changes are unchanged", and offers Start clip again / Stop auditioning / Reconnect SoundCloud. Recovery works: "Start clip again" rebuilt the widget and resumed. |
 | **BLD-16** preview clip complete | ✅ **works** | Let the clip run its full 3:04 window; renders "Preview complete" at 3:04/3:04 with the action flipped to "Replay clip on SoundCloud" |
 | **LIVE-01/02** queue and preflight | ✅ **works** | Readiness ledger reads "Runnable 3 of 3 · needs a duration 0 · music all linked"; preflight resolves real provider capability — "10 tracks ready · 0 need a decision", per-track "Plays on SoundCloud" |
-| **LIVE-09** runtime playback failure | ❌ **still not induced** | See below — two attempts, both unfaithful |
+| **LIVE-09** runtime playback failure | ✅ **induced 2026-07-29** | Not on production and not by these two attempts — see below |
 
 **LIVE-09 resisted induction, and the reason is worth carrying forward.** `PlaybackRuntime.fail()`
 (`apps/web/src/lib/playback/runtime.ts:403`) is reachable only from five triggers: preflight finds a
@@ -367,15 +403,36 @@ test**:
 2. **Removing `window.SC.Widget`.** The loader (`soundcloud-adapter.ts:65`) re-injects the script and
    recovers, so the adapter never throws.
 
-Reaching it honestly needs a real provider outage, or a connection change mid-class — which is a write.
-**LIVE-09 stays `code-confirmed` only. Do not claim it works.**
+**Resolved 2026-07-29 — it needed neither.** The premise above is wrong in an instructive way: both
+attempts targeted an *already-playing* widget, which is the one window in the adapter's life where
+nothing is listening. Failing it during **load** is trivially honest. A well-formed but nonexistent
+permalink passes `soundcloudTrackUrl` validation, the real widget asks SoundCloud for a track that does
+not exist, and SoundCloud emits `ERROR` — `prepare` rejects at `soundcloud-adapter.ts:211` and
+`fail({ phase: 'prepare' })` fires. It surfaced in **under 2.5s against a 20s prepare timeout**, so it was
+a real provider error event and not the timeout path. Done entirely on a **local** class; no production
+write, no provider outage required.
+
+**LIVE-09 is verified and off `code-confirmed`.** Full record, including the AAA defect the induction
+exposed, in [`playback-liveness-investigation.md`](playback-liveness-investigation.md).
 
 **One risk surfaced while trying, unproven and worth a look:** when the player died silently (iframe
 blanked), the Live runtime kept advancing the clock and kept displaying "♪ SoundCloud" with no alert —
 the instructor would get silence with no signal. `LiveMode.tsx` states the intent as "playback failure is
 a serious recoverable alert … never a silent skip", and there is **no liveness check** on the adapter to
-enforce that. Whether a provider player can die this way in the wild is unknown; the induction was
-artificial. **Treat as a question to investigate, not a defect.**
+enforce that. ~~Whether a provider player can die this way in the wild is unknown; the induction was
+artificial.~~
+
+**Answered 2026-07-29 — it is not unknown, and this repository already recorded an instance.**
+`ritmofit_dev_plan/HISTORY.md` (session 2026-07-06, Apple Music CSP fix) describes MusicKit authorizing,
+loading the track, setting `nowPlayingItem` with the full duration, and logging **zero errors** — then
+stalling at `readyState 0` under Chrome's background-media throttling. A human caught it by moving to a
+foreground tab; nothing in the app noticed.
+
+The gap is **structural, not SoundCloud-specific**: every adapter reports *finished* and *errored*, none
+reports *stopped without being asked* or *stalled*. Confirmed at the coordinator level — status stays
+`{kind:'playing'}` after the player has stopped, emitting only `["preparing","playing"]`. A design is
+proposed and deliberately **not** implemented. Full analysis, per-provider signals, and the
+music-constraint argument: [`playback-liveness-investigation.md`](playback-liveness-investigation.md).
 
 ### F-05 — Apple Music playlists reported "0 tracks" (✅ fixed and verified live 2026-07-27)
 
@@ -403,6 +460,38 @@ surface, track lists unchanged.
    playlist, in a case named "defaults … trackCount …". A green suite was evidence *for* the defect. When
    a fix makes a test fail, read the test's intent before assuming the fix is wrong.
 
+### F-06 — Live danger failed AAA on the alert that reports playback failure (✅ fixed 2026-07-29)
+
+Found by inducing LIVE-09, and **only** findable that way. Live's playback-failure alert — the
+`role="alert"` that tells an instructor the music died — rendered its "Music interrupted" status line and
+`!` glyph at **6.48:1** against Live's 7.0 AAA target, at 1440×1000, 390×844, and 320×844 alike.
+
+**The token was validated against a backdrop it never renders on.** The Live re-map at `index.css:86` was
+working correctly; the colour really was `live.danger`. But `live.danger` (ember-300) was measured and
+gated only on `bg/live`, where it reads 7.52:1 — and `RecoveryState` renders on **`bg/raised`**
+(ink-800), where the same colour gives 6.48:1. `check-contrast.mjs` said the quiet part out loud in its
+own comment — *"Live pairs are measured on bg/live … the combination that actually ships"* — which is
+half right: it correctly avoids gating planning roles on `bg/live`, but assumed `bg/live` is the only
+ground *inside* Live. Every card in the Live subtree sits on `bg/raised`.
+
+**Fixed in PR #392** (merge commit `c096bb3`): added `ember-200` (`#EF8572`) and pointed `live.danger` at
+it — 7.04:1 on `bg/raised`, 8.17:1 on `bg/live`. `tokens.json` only; web + iOS output regenerated via
+`build:all`. **The gate now covers both grounds** — every Live text role is checked against `bg/raised` as
+well as `bg/live`, worst case wins — and is verified to bite. **iOS impact:** `RFColor.liveDanger` changes
+value, `RFColorPrimitive.ember200` is added, no constant removed.
+
+**Two lessons:**
+
+1. **A contrast gate is only as good as its list of grounds.** This one was internally consistent and
+   still wrong, because the pair it never wrote down was the one that mattered. When adding a
+   surface-scoped role, gate it against **every** surface in that subtree, not the one the subtree is
+   named after.
+2. **Un-induced states are un-measured states.** The §8 reconciliation reported "Live runtime 0 of 36 text
+   nodes below AAA" and was accurate — for the 36 nodes reachable without a failure. With the failure
+   surface open there are 43. The seven extra nodes had never been measured by anyone, which is precisely
+   where the defect was. **A surface you cannot reach is a surface you have not verified**, however green
+   the reconciliation looks.
+
 ### F-04 — Owner decisions still open
 
 Not agent work; listed so a session does not treat them as its own to resolve.
@@ -411,6 +500,14 @@ Not agent work; listed so a session does not treat them as its own to resolve.
   See `ritmofit_dev_plan/HISTORY.md`.
 - **`.rf-brand-mark` at 3.79:1.** A logotype, which WCAG 1.4.3 exempts. Recorded, not a defect.
 - ~~**Repo cleanup.**~~ Done 2026-07-27; merged branches from this run are off `origin`.
+- **The liveness watchdog** (added 2026-07-29). Designed in
+  [`playback-liveness-investigation.md`](playback-liveness-investigation.md) §2, not implemented. Two
+  things make it a decision rather than a task: a watchdog that fires wrongly interrupts a class that is
+  playing fine, and its thresholds cannot be tuned against the local mock seam — it needs a live-provider
+  session. It also widens `PlaybackAdapter`, which is shared by Live and Builder preview.
+- **Deploy of #392** (added 2026-07-29). The F-06 contrast fix is merged to `main` but **not deployed**;
+  merging is not deploying. It is a single-colour accessibility fix with no schema, migration, or
+  API impact.
 
 ---
 
@@ -422,25 +519,31 @@ agent that assumes a grant it was never given is the failure this run kept guard
 > Read `docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md` first, then
 > `AGENTS.md` — `AGENTS.md` wins wherever they disagree.
 >
-> **The 2026-07-24 design-audit run is closed.** All six prompts landed, the §8 reconciliation passed,
-> and the follow-up work is mostly done: F-01 (dead colour classes) fixed with a CI gate to prevent
-> recurrence, F-03 verified against live providers on production, F-05 (Apple Music "0 tracks") fixed and
-> deployed. **Skip Step 2 entirely.** Your work is the **Follow-up work** section.
+> **The 2026-07-24 design-audit run is closed, and so is nearly all of its follow-up.** All six prompts
+> landed and the §8 reconciliation passed. F-01 (dead colour classes) fixed with a CI gate, F-03 verified
+> against live providers, F-05 (Apple Music "0 tracks") fixed and deployed, **LIVE-09 induced**, the
+> **silent-player-death question answered**, and F-06 (Live danger below AAA on the playback-failure
+> alert) fixed. **Skip Step 2 entirely.** Read
+> `docs/audits/claude-design-audit-2026-07-24/playback-liveness-investigation.md` before touching
+> anything in `apps/web/src/lib/playback/`.
 >
-> **What is actually open, and why none of it is easy:**
+> **What is genuinely open — three things, and two are not yours to close:**
 >
 > - **F-02** — the D11 `createPattern` `InvalidStateError` from the audit. Unreproducible: there is no
->   canvas or canvas dependency anywhere in `apps/web`. It stays *unconfirmed*, not closed. Do not
->   re-derive it as a new finding.
-> - **LIVE-09** — runtime playback failure, still never induced. `PlaybackRuntime.fail()`
->   (`apps/web/src/lib/playback/runtime.ts`) has exactly five triggers, listed in F-03. Two inductions
->   have already been tried and **both are unfair tests** — blanking the SoundCloud iframe emits no
->   `onError`, and removing `window.SC.Widget` self-heals via the loader's script re-inject. Read F-03
->   before attempting a third.
-> - **The silent-player-death question.** When a player died without emitting an error, the Live runtime
->   kept advancing and kept displaying "♪ SoundCloud" with no alert; there is no liveness check.
->   `LiveMode.tsx` states the intent as "never a silent skip". The induction was artificial, so this is a
->   **question to investigate, not a defect to fix.** Do not report it as a bug without a faithful repro.
+>   canvas or canvas dependency anywhere in `apps/web`, re-checked 2026-07-29. It stays *unconfirmed*,
+>   not closed. **Do not re-derive it as a new finding.**
+> - **The liveness watchdog** — designed in `playback-liveness-investigation.md`, deliberately not
+>   implemented. A watchdog that fires wrongly is worse than none, and its polling interval and
+>   consecutive-miss threshold need tuning against a **live** provider, not the local mock seam. **Owner
+>   decision first; do not implement it unprompted.**
+> - **`.rf-brand-mark` at 3.79:1** — a logotype, WCAG 1.4.3 exempt. Recorded, not a defect. Do not
+>   re-derive it either.
+>
+> **Do not redo these — they are answered, with evidence:** LIVE-09 is induced by pointing a track at a
+> nonexistent-but-well-formed SoundCloud permalink, which makes the real widget emit `ERROR` during load
+> (the two attempts in F-03 failed only because they targeted an *already-playing* widget). Silent player
+> death is real and already recorded in `ritmofit_dev_plan/HISTORY.md` — Apple Music stalling at
+> `readyState 0` with zero errors logged.
 >
 > **Standing constraints.** Preserve `.rf-focus-ring`, `ClassPulse`, `SourceList`, `lib/class-ordering.ts`,
 > `lib/error-reference.ts`, and `providerCapabilityTruth`/`ProviderCapabilityLedger` rather than
@@ -452,7 +555,7 @@ agent that assumes a grant it was never given is the failure this run kept guard
 > from `apps/web` reports "command not found" and has already caused two false findings). For UI work use
 > the committed `agent-prompts/browser-verification/` harness at 1440×1000, 390×844, and 320×844, and run
 > its self-test first — if the self-test disagrees with `tokens.json`, nothing else it prints is
-> trustworthy. **Read the Measurement traps section before you measure anything**; all six traps in it
+> trustworthy. **Read the Measurement traps section before you measure anything**; all eight traps in it
 > come from real false findings this project shipped, including one that reached two merged PR
 > descriptions.
 >

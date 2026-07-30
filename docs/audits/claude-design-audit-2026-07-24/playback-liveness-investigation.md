@@ -7,6 +7,11 @@ and **not** implemented.
 
 Nothing in this document changes schema, migrations, or a shared contract.
 
+> **Context.** [`IMPLEMENTATION-KICKOFF.md`](IMPLEMENTATION-KICKOFF.md) is the entry point for
+> the run as a whole — authorization, the standing constraints, and the measurement traps
+> (including traps 7 and 8, which came from §1 below). This document is the detailed record
+> for LIVE-09 and playback liveness; the kickoff summarizes and links here.
+
 ---
 
 ## 1. LIVE-09 — induced, and it works
