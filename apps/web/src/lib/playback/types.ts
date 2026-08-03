@@ -44,6 +44,32 @@ export interface PlaybackAdapter {
   seek(providerMs: number): Promise<void>;
   stop(): Promise<void>;
   destroy(): void;
+  /**
+   * What the provider says its own transport is doing right now. Read through
+   * the official SDK on the same channel as play/pause/seek — a remote-control
+   * status read, not stream inspection: nothing here caches, proxies, decodes,
+   * or analyzes audio (D13/D19).
+   *
+   * Optional on purpose. Three outcomes, and the difference between them is the
+   * whole point:
+   *   - a reading      — the provider answered
+   *   - `null`         — this adapter cannot answer (no SDK member for it), so
+   *                      it is exempt from liveness observation rather than
+   *                      failing it
+   *   - a rejection    — the provider stopped answering, which is itself the
+   *                      strongest silent-death signal we get
+   */
+  getLiveness?(): Promise<LivenessReading | null>;
+}
+
+/**
+ * One provider-reported transport reading. `positionMs` is provider-relative
+ * (same frame as `seek`), and `playing` is the provider's own belief about
+ * whether audio is running — not ours.
+ */
+export interface LivenessReading {
+  positionMs: number;
+  playing: boolean;
 }
 
 /**

@@ -35,6 +35,7 @@ import type {
 import { listConnections } from '../lib/api.js';
 import { preflightPayload } from '../lib/playback/coordinator.js';
 import { RuntimePlaybackCoordinator, type CoordinatorStatus } from '../lib/playback/runtime.js';
+import { LivenessObserver, publishLivenessInspector } from '../lib/playback/liveness.js';
 import { PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { useWakeLock, type WakeLockStatus } from '../lib/use-wake-lock.js';
@@ -384,10 +385,17 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
 
   /** Start hands-free: build the coordinator and begin playback at 0 (a user gesture). */
   const startClass = () => {
+    // Observation only — it records what the provider reports and never acts on
+    // it, so it cannot interrupt a class that is playing fine. Built per run so
+    // each class gets its own buffer, and published for inspection afterwards
+    // via `__rfLiveness.summary()`. See `lib/playback/liveness.ts`.
+    const liveness = new LivenessObserver();
+    publishLivenessInspector(liveness);
     const coordinator = new RuntimePlaybackCoordinator(payload, connections ?? [], {
       now: Date.now(),
       adapters: PLAYBACK_ADAPTERS,
       availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
+      liveness,
       onStatus: (next) => {
         setPlayback(next);
         if (next.kind === 'error') setPlaybackFailure(next.error.message);

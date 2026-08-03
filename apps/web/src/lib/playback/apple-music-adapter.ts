@@ -34,6 +34,7 @@ import {
 import type {
   AdapterEvents,
   AdapterFactory,
+  LivenessReading,
   PlaybackAdapter,
   PlaybackReady,
   PlaybackWindow,
@@ -218,6 +219,35 @@ export class AppleMusicAdapter implements PlaybackAdapter {
 
   async pause(): Promise<void> {
     await this.requireInstance().pause();
+  }
+
+  /**
+   * Read MusicKit's own transport status. This is the provider whose silent
+   * death this project has actually observed: on 2026-07-06 MusicKit authorized,
+   * loaded the track, set `nowPlayingItem` with the full duration, logged zero
+   * errors, and then stalled at `readyState 0` under background throttling
+   * (`ritmofit_dev_plan/HISTORY.md`). `playbackState` distinguishes that from
+   * playing; the adapter had simply never read it.
+   *
+   * `playing` is asserted only against a state we can positively identify.
+   * Anything else — `stalled`, `waiting`, a code we have no name for — is
+   * reported as not playing, which is a claim the observer records rather than
+   * acts on. Where the state cannot be resolved at all, this returns null and
+   * the instance is exempt, since inventing a verdict is the failure mode the
+   * F-05 "0 tracks" bug was made of.
+   */
+  async getLiveness(): Promise<LivenessReading | null> {
+    const instance = this.instance;
+    const states = this.music?.PlaybackStates;
+    if (!instance || !states || this.destroyed || !this.started) return null;
+    if (transportOwners.get(instance) !== this) return null;
+
+    const seconds = instance.currentPlaybackTime;
+    const state = instance.playbackState;
+    if (typeof seconds !== 'number' || typeof state !== 'number') return null;
+    if (typeof states.playing !== 'number') return null;
+
+    return { positionMs: Math.round(seconds * 1000), playing: state === states.playing };
   }
 
   async seek(providerMs: number): Promise<void> {

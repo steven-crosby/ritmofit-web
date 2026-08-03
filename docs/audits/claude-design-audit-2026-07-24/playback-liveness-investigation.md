@@ -218,11 +218,76 @@ session, not a local one.
 
 ---
 
+## 2b. Decided 2026-08-02: instrument first, alert later
+
+The owner resolved the open question above by **splitting the design in half**. Piece 1 (the
+adapter liveness read) and the *observation* half of piece 2 are implemented; the **watchdog
+itself — anything that routes a verdict to `fail()` — is not**, and stays an owner decision.
+
+The reasoning is the open question's own: a watchdog that fires wrongly is worse than none,
+and its thresholds cannot be tuned against the local mock seam. Instrumentation removes the
+false-fire risk entirely while producing exactly the evidence tuning needs.
+
+**What shipped** (`apps/web/src/lib/playback/liveness.ts`, PR pending):
+
+- `PlaybackAdapter.getLiveness?()`, implemented on all three adapters, exactly as proposed
+  above. Three outcomes carry distinct meaning: a reading, `null` (this adapter cannot
+  answer, so it is exempt), and a **rejection** (the provider stopped answering — the
+  strongest silent-death signal there is, and the one a blanked iframe produces).
+- A `LivenessObserver` that classifies each sample, keeps a ring buffer of raw samples, and
+  logs **verdict transitions only** — a 45-minute class at 2.5 s would otherwise be a
+  thousand console lines nobody reads. `__rfLiveness.summary()` reads the buffer from the
+  running page afterwards.
+- A slow poll owned by the coordinator. It does **not** ride the host rAF tick, because rAF
+  stops entirely in a backgrounded tab — which is where the 2026-07-06 Apple Music stall
+  happened, and therefore the case most worth catching.
+
+**One verdict the original design did not have: `host_stalled`.** A backgrounded tab freezes
+the class clock and the provider alike, so non-advancement there is evidence of nothing. It is
+classified and counted separately, and can never reach the miss counter. This is not
+hypothetical — the first verification run recorded 3 straight `host_stalled` samples because
+the Chrome window was occluded, and without the distinction they would have read as provider
+death.
+
+### The measurement, and the number it produced
+
+Verified in real (non-headless) Chrome against a local SoundCloud class, forcing the page
+active via `Page.bringToFront` + `Emulation.setFocusEmulationEnabled` +
+`Page.setWebLifecycleState`. Without those the harness measures its own occlusion.
+
+| Condition | Samples | Result |
+| --- | --- | --- |
+| **Healthy playback, 90 s** | 35 | 34 `advancing`, **1** `not_advancing`; peak consecutive misses **1** |
+| **Blanked widget iframe** | 5 | 5 consecutive `unresponsive`, counter climbing 1 → 5 |
+
+Healthy playhead deltas tracked wall clock to within ~3 ms of the 2 500 ms interval
+(`deltaMax` 2502.9 ms), with ~150 host rAF ticks between samples throughout.
+
+**The tuning datum: a healthy provider reached 1 consecutive miss and never 2.** A threshold
+of **≥3** consecutive misses (~7.5 s) would have produced zero false fires across this window
+while catching the induced death comfortably.
+
+**Do not over-read that number.** It is 90 seconds, one provider, one local class, one
+machine, and no network variance. It is the shape of the answer, not the answer. The
+live-provider requirement in the open question above still stands — Spotify Connect and
+MusicKit have not been observed at all yet, and the Apple Music case is the one that
+motivated this work.
+
+**Confirmed inert.** Through both the induction and the baseline the runtime never reacted:
+no `role="alert"` in the DOM, no "Music interrupted" copy, no status change, no adapter
+teardown. That is the point — the instructor's class is untouched by being observed.
+
+---
+
 ## 3. Still open
 
 - **F-02** (D11 `createPattern` `InvalidStateError`) — re-checked this session, still no
   canvas or canvas dependency anywhere in `apps/web`. Unchanged: unconfirmed, not closed.
-- **The liveness watchdog** — designed above, awaiting a decision.
+- **The liveness watchdog** — the *observation* half is implemented and measured (§2b). The
+  **alerting** half is still an owner decision, and is now a much smaller one: the mechanism
+  exists, the classification is proven against a real induced death, and a candidate
+  threshold (≥3 consecutive misses) has a number behind it. What it still needs is a
+  live-provider session — Spotify Connect and MusicKit remain unobserved.
 - **Apple Music / Spotify runtime failure** — only the SoundCloud runtime-failure path has
   now been induced. The Apple Music and Spotify adapters reach `fail()` through their own
   error events, which this run did not exercise.
