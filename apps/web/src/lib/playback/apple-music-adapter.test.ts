@@ -53,6 +53,9 @@ const STATES = { playing: 2, paused: 3, ended: 5, completed: 10 };
 class FakeInstance implements MusicKitInstance {
   calls: string[] = [];
   isAuthorized: boolean;
+  /** Transport status for liveness reads; undefined = MusicKit has not set it. */
+  currentPlaybackTime: number | undefined = undefined;
+  playbackState: number | undefined = undefined;
   setQueueBehavior: () => Promise<unknown> = () => Promise.resolve();
   authorizeBehavior: () => Promise<string> = () => Promise.resolve('music-user-token');
   private listeners = new Map<string, Array<(event: MusicKitPlaybackEvent) => void>>();
@@ -411,5 +414,59 @@ describe('AppleMusicAdapter', () => {
     // The owner is still in control and can stop its own audio.
     await owner.stop();
     expect(instance.calls.filter((c) => c === 'stop')).toEqual(['stop']);
+  });
+});
+
+describe('AppleMusicAdapter getLiveness', () => {
+  async function playing(instance: FakeInstance) {
+    const { adapter } = makeAdapter(instance);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await adapter.play();
+    return adapter;
+  }
+
+  it('converts MusicKit seconds to the millisecond contract', async () => {
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    instance.currentPlaybackTime = 42.5;
+    instance.playbackState = STATES.playing;
+
+    await expect(adapter.getLiveness()).resolves.toEqual({ positionMs: 42_500, playing: true });
+  });
+
+  it('reports the stall that this project actually shipped', async () => {
+    // 2026-07-06: MusicKit authorized, loaded the track, set nowPlayingItem with
+    // the full duration, logged zero errors, then stalled at readyState 0 under
+    // background throttling. A human caught it. `playbackState` said so all
+    // along; the adapter had never read it.
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    const STALLED = 8;
+    instance.currentPlaybackTime = 12;
+    instance.playbackState = STALLED;
+
+    await expect(adapter.getLiveness()).resolves.toEqual({ positionMs: 12_000, playing: false });
+  });
+
+  it('is exempt rather than wrong when MusicKit has not set transport status', async () => {
+    // Inventing a number the SDK never gave is the F-05 "0 tracks" failure.
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    await expect(adapter.getLiveness()).resolves.toBeNull();
+
+    instance.currentPlaybackTime = 5;
+    await expect(adapter.getLiveness()).resolves.toBeNull();
+  });
+
+  it('stays silent while another adapter owns the shared singleton', async () => {
+    const instance = new FakeInstance();
+    instance.currentPlaybackTime = 5;
+    instance.playbackState = STATES.playing;
+    const first = await playing(instance);
+    await expect(first.getLiveness()).resolves.not.toBeNull();
+
+    const second = await playing(instance);
+    await expect(first.getLiveness()).resolves.toBeNull();
+    await expect(second.getLiveness()).resolves.not.toBeNull();
   });
 });

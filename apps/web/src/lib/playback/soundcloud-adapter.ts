@@ -16,6 +16,7 @@ import type { RunPayloadTrackEntry } from '@ritmofit/shared';
 import type {
   AdapterEvents,
   AdapterFactory,
+  LivenessReading,
   PlaybackAdapter,
   PlaybackReady,
   PlaybackWindow,
@@ -26,6 +27,13 @@ const WIDGET_API_SRC = 'https://w.soundcloud.com/player/api.js';
 const WIDGET_PLAYER_ORIGIN = 'https://w.soundcloud.com/player/';
 const DEFAULT_PREPARE_TIMEOUT_MS = 20_000;
 const DEFAULT_PLAY_TIMEOUT_MS = 10_000;
+/**
+ * A liveness read is a postMessage round trip to a same-machine iframe, so a
+ * second is already generous. Kept short deliberately: the timeout firing is
+ * not a failure of the probe, it is the signal — a widget that has stopped
+ * answering is the silent-death case, and waiting longer only delays learning.
+ */
+const DEFAULT_LIVENESS_TIMEOUT_MS = 1_000;
 
 /** The slice of the widget the adapter drives (the official Widget API shape). */
 export interface SoundCloudWidget {
@@ -34,6 +42,14 @@ export interface SoundCloudWidget {
   play(): void;
   pause(): void;
   seekTo(ms: number): void;
+  /**
+   * Both are callback-style in the official API (the widget answers over
+   * postMessage), and both are optional here because a test double or an older
+   * widget build may not provide them — an adapter that cannot read position is
+   * exempt from liveness observation, not broken.
+   */
+  getPosition?(callback: (positionMs: number) => void): void;
+  isPaused?(callback: (paused: boolean) => void): void;
 }
 
 /** `window.SC.Widget`: the widget constructor plus its event-name constants. */
@@ -114,6 +130,7 @@ export interface SoundCloudAdapterHost {
   container?: HTMLElement;
   prepareTimeoutMs?: number;
   playTimeoutMs?: number;
+  livenessTimeoutMs?: number;
 }
 
 interface PendingPlay {
@@ -270,6 +287,65 @@ export class SoundCloudAdapter implements PlaybackAdapter {
 
   async pause(): Promise<void> {
     this.requireWidget().pause();
+  }
+
+  /**
+   * Ask the widget where its playhead is and whether it thinks it is paused.
+   *
+   * Rejecting on timeout is the point rather than a defect: a blanked or wedged
+   * iframe never answers, emits no event, and raises no error — the exact
+   * failure mode that made this instrumentation necessary. The observer records
+   * that rejection as `unresponsive`.
+   *
+   * Polls instead of binding the (declared but unbound) `PAUSE` event, because
+   * `isPaused()` is the same truth without a cached field that can drift from
+   * it. The tradeoff is real and accepted: a pause-and-resume entirely between
+   * two polls stays invisible. This exists to catch sustained death, not blips.
+   */
+  async getLiveness(): Promise<LivenessReading | null> {
+    const widget = this.widget;
+    if (!widget || this.destroyed) return null;
+    const readPosition = widget.getPosition?.bind(widget);
+    const readPaused = widget.isPaused?.bind(widget);
+    if (!readPosition || !readPaused) return null;
+
+    const timeoutMs = this.host.livenessTimeoutMs ?? DEFAULT_LIVENESS_TIMEOUT_MS;
+    const [positionMs, paused] = await Promise.all([
+      this.askWidget<number>(readPosition, timeoutMs, 'its position'),
+      this.askWidget<boolean>(readPaused, timeoutMs, 'whether it is paused'),
+    ]);
+    return { positionMs, playing: !paused };
+  }
+
+  /** Promisify one callback-style widget read, bounded so it cannot hang. */
+  private askWidget<T>(
+    call: (callback: (value: T) => void) => void,
+    timeoutMs: number,
+    what: string,
+  ): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new Error(`The SoundCloud widget did not report ${what}.`));
+      }, timeoutMs);
+      try {
+        call((value) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(value);
+        });
+      } catch (cause) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(
+          cause instanceof Error ? cause : new Error(`The SoundCloud widget refused ${what}.`),
+        );
+      }
+    });
   }
 
   async seek(providerMs: number): Promise<void> {

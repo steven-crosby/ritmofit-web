@@ -367,3 +367,80 @@ describe('SoundCloudAdapter', () => {
     expect(widgets).toHaveLength(2);
   });
 });
+
+/** A widget that can answer liveness reads — or deliberately refuse to. */
+class AnsweringWidget extends FakeWidget {
+  positionMs = 0;
+  paused = false;
+  /** Blanked/wedged iframe: the call is accepted, the callback never comes. */
+  silent = false;
+
+  getPosition(callback: (positionMs: number) => void): void {
+    if (this.silent) return;
+    callback(this.positionMs);
+  }
+  isPaused(callback: (paused: boolean) => void): void {
+    if (this.silent) return;
+    callback(this.paused);
+  }
+}
+
+describe('SoundCloudAdapter getLiveness', () => {
+  async function prepared(widget?: FakeWidget) {
+    const widgets: FakeWidget[] = [];
+    const construct = (iframe: HTMLIFrameElement) => {
+      void iframe;
+      const built = widget ?? new FakeWidget();
+      widgets.push(built);
+      return built;
+    };
+    const api: SoundCloudWidgetApi = Object.assign(construct, {
+      Events: { READY: 'ready', PLAY: 'play', PAUSE: 'pause', FINISH: 'finish', ERROR: 'error' },
+    });
+    const adapter = new SoundCloudAdapter(
+      {},
+      { loadWidgetApi: () => Promise.resolve(api), livenessTimeoutMs: 20 },
+    );
+    const preparing = adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await readyUp(widgets);
+    await preparing;
+    return { adapter, widget: widgets[0]! };
+  }
+
+  it('reports position and playing state when the widget answers', async () => {
+    const widget = new AnsweringWidget();
+    widget.positionMs = 42_000;
+    const { adapter } = await prepared(widget);
+    await expect(adapter.getLiveness()).resolves.toEqual({ positionMs: 42_000, playing: true });
+  });
+
+  it('reports not playing when the widget says it is paused', async () => {
+    const widget = new AnsweringWidget();
+    widget.positionMs = 42_000;
+    widget.paused = true;
+    const { adapter } = await prepared(widget);
+    await expect(adapter.getLiveness()).resolves.toEqual({ positionMs: 42_000, playing: false });
+  });
+
+  it('rejects when the widget stops answering — the silent-death signal', async () => {
+    // A blanked iframe accepts the call and never calls back. No event, no
+    // error: the timeout is the only way this becomes observable at all.
+    const widget = new AnsweringWidget();
+    widget.silent = true;
+    const { adapter } = await prepared(widget);
+    await expect(adapter.getLiveness()).rejects.toThrow(/did not report/);
+  });
+
+  it('is exempt, not dead, when the widget cannot answer at all', async () => {
+    // An older widget build with no getPosition/isPaused must not be read as a
+    // stall — it simply has nothing to say.
+    const { adapter } = await prepared(new FakeWidget());
+    await expect(adapter.getLiveness()).resolves.toBeNull();
+  });
+
+  it('is exempt once destroyed', async () => {
+    const { adapter } = await prepared(new AnsweringWidget());
+    adapter.destroy();
+    await expect(adapter.getLiveness()).resolves.toBeNull();
+  });
+});

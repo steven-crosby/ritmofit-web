@@ -21,6 +21,7 @@ import {
   type ConnectionLike,
   type SelectionOptions,
 } from './coordinator.js';
+import type { LivenessObserver } from './liveness.js';
 import type { AdapterRegistry, PlaybackAdapter, PreflightResult } from './types.js';
 
 /**
@@ -88,10 +89,23 @@ export type CoordinatorStatus =
   | { kind: 'ended' }
   | { kind: 'error'; error: PlaybackRuntimeError };
 
+/** Slow on purpose: "has it been dead for seconds", not frame-accurate sync. */
+const DEFAULT_LIVENESS_INTERVAL_MS = 2_500;
+
 export interface RuntimeCoordinatorOptions extends SelectionOptions {
   adapters: AdapterRegistry;
   onStatus?: (status: CoordinatorStatus) => void;
   onError?: (error: PlaybackRuntimeError) => void;
+  /**
+   * Optional liveness instrumentation. Absent = no observation and no timer at
+   * all, which is why the existing suite is untouched by it: observation is
+   * wired at the app's composition root (`LiveMode`), never assumed by the core.
+   *
+   * **Recording only.** Nothing the observer sees can reach `fail()` or change
+   * status — see `liveness.ts` for why that is deliberate.
+   */
+  liveness?: LivenessObserver;
+  livenessIntervalMs?: number;
 }
 
 /** The currently prepared provider job. */
@@ -121,6 +135,19 @@ export class RuntimePlaybackCoordinator {
   private running = false;
   private epoch = 0;
   private transitions = 0;
+  /**
+   * Liveness observation state. The probe timer is the one timer this class
+   * owns, and the exemption is narrow: it drives nothing. The "host owns the
+   * clock" rule exists so the class timeline has a single master, and a
+   * read-only probe cannot move the timeline, the segment, or the status. It
+   * cannot ride the host's rAF tick either, because rAF stops entirely in a
+   * backgrounded tab — which is precisely where the Apple Music stall in
+   * `HISTORY.md` happened, and therefore the case worth catching most.
+   */
+  private livenessTimer: ReturnType<typeof setInterval> | null = null;
+  private livenessProbeInFlight = false;
+  /** rAF ticks since the last sample; zero means the host loop stalled too. */
+  private hostTicksSinceSample = 0;
 
   constructor(
     private readonly payload: RunPayload,
@@ -168,6 +195,9 @@ export class RuntimePlaybackCoordinator {
    */
   async tick(elapsedMs: number): Promise<void> {
     if (!this.running || this.transitions > 0) return;
+    // Counted before the steady-state early return below, since the frames that
+    // change nothing are exactly the ones that prove the host loop is alive.
+    this.hostTicksSinceSample++;
     const segment = segmentAt(this.payload, elapsedMs);
     if (segment.kind === 'track' && this.active?.index === segment.index) return;
     if (segment.kind === 'silence' && this.status.kind === 'silence' && !this.active) return;
@@ -226,6 +256,9 @@ export class RuntimePlaybackCoordinator {
   destroy(): void {
     this.epoch++;
     this.running = false;
+    // Assigns `status` directly below rather than via setStatus, so the probe
+    // timer would otherwise outlive the unmounted coordinator.
+    this.stopLivenessTimer();
     this.destroyTransitioningAdapter();
     if (this.active) {
       try {
@@ -396,7 +429,75 @@ export class RuntimePlaybackCoordinator {
 
   private setStatus(status: CoordinatorStatus): void {
     this.status = status;
+    this.syncLivenessTimer(status);
     this.options.onStatus?.(status);
+  }
+
+  /**
+   * Observe only while we believe audio is running. Every other status is a
+   * state we put the player into ourselves, where "not advancing" is the
+   * correct behaviour and would be pure noise in the buffer.
+   */
+  private syncLivenessTimer(status: CoordinatorStatus): void {
+    const shouldRun = status.kind === 'playing' && this.options.liveness != null;
+    if (shouldRun === (this.livenessTimer !== null)) return;
+    if (shouldRun) {
+      this.hostTicksSinceSample = 0;
+      this.livenessTimer = setInterval(
+        () => this.probeLiveness(),
+        this.options.livenessIntervalMs ?? DEFAULT_LIVENESS_INTERVAL_MS,
+      );
+    } else {
+      this.stopLivenessTimer();
+    }
+  }
+
+  private stopLivenessTimer(): void {
+    if (this.livenessTimer === null) return;
+    clearInterval(this.livenessTimer);
+    this.livenessTimer = null;
+  }
+
+  /**
+   * Take one reading and hand it to the observer. Fire-and-forget with an
+   * in-flight guard, so a provider that answers slowly delays the next sample
+   * rather than stacking probes on top of it.
+   *
+   * Every outcome is swallowed. Instrumentation that can break playback is
+   * worse than no instrumentation, and this path exists only to watch.
+   */
+  private probeLiveness(): void {
+    const observer = this.options.liveness;
+    const job = this.active;
+    if (!observer || !job || this.livenessProbeInFlight) return;
+
+    const hostTicks = this.hostTicksSinceSample;
+    this.hostTicksSinceSample = 0;
+
+    const record = (reading: Parameters<LivenessObserver['record']>[0]['reading']): void => {
+      // A superseded job's late reading describes a track we no longer play.
+      if (this.active !== job) return;
+      try {
+        observer.record({ provider: job.provider, trackIndex: job.index, reading, hostTicks });
+      } catch {
+        // An observer that throws must not take the class down with it.
+      }
+    };
+
+    const read = job.adapter.getLiveness?.bind(job.adapter);
+    if (!read) {
+      record(null);
+      return;
+    }
+
+    this.livenessProbeInFlight = true;
+    void read()
+      .then((reading) => record(reading))
+      // A rejection *is* the finding: the provider stopped answering.
+      .catch(() => record('unresponsive'))
+      .finally(() => {
+        this.livenessProbeInFlight = false;
+      });
   }
 
   /** Enter the error state: playback halts, the host offers recovery actions. */

@@ -33,6 +33,7 @@ import { SpotifyPlaybackTokenError } from '../api.js';
 import type {
   AdapterEvents,
   AdapterFactory,
+  LivenessReading,
   PlaybackAdapter,
   PlaybackReady,
   PlaybackWindow,
@@ -76,9 +77,15 @@ export class SpotifyAdapter implements PlaybackAdapter {
   private trackTitle = '';
   /** Finish detection: a track ends by transitioning from playing → paused@0. */
   private wasPlaying = false;
+  /** Last transport state the SDK pushed; the source for getLiveness(). */
+  private lastState: LivenessReading | null = null;
 
   private readonly onStateChange = (state: SpotifyPlayerState | null): void => {
     if (!this.started || !state) return;
+    // Kept for getLiveness(). Recorded before the finish logic below, because
+    // the case liveness cares about — paused at a non-zero position, which the
+    // Connect handoff produces — is exactly the one that falls through it.
+    this.lastState = { positionMs: state.position, playing: !state.paused };
     if (!state.paused) {
       this.wasPlaying = true;
       return;
@@ -121,6 +128,7 @@ export class SpotifyAdapter implements PlaybackAdapter {
     this.destroyed = false;
     this.started = false;
     this.wasPlaying = false;
+    this.lastState = null;
     this.trackTitle = entry.track.title;
     this.uri = spotifyTrackUri(ref);
     this.windowStartMs = window.startMs;
@@ -176,6 +184,22 @@ export class SpotifyAdapter implements PlaybackAdapter {
     await this.requirePlayer().pause();
   }
 
+  /**
+   * Needs no new plumbing: `player_state_changed` already delivers `paused` and
+   * `position`, and until now the paused-at-a-real-position case simply fell
+   * through `onStateChange` unused. Reads the cached state rather than calling
+   * `getCurrentState()`, so a probe cannot add SDK traffic to a live class.
+   *
+   * Silent while another adapter owns the shared transport — its state belongs
+   * to the newer track, not this one.
+   */
+  async getLiveness(): Promise<LivenessReading | null> {
+    if (this.destroyed || !this.started || !this.player) return null;
+    const owner = transportOwners.get(this.player);
+    if (owner && owner !== this) return null;
+    return this.lastState;
+  }
+
   async seek(providerMs: number): Promise<void> {
     const player = this.requirePlayer();
     if (this.started) {
@@ -191,6 +215,7 @@ export class SpotifyAdapter implements PlaybackAdapter {
     const player = this.requirePlayer();
     this.started = false;
     this.wasPlaying = false;
+    this.lastState = null;
     if (transportOwners.get(player) === this) transportOwners.delete(player);
     await player.pause();
     // A later play() re-selects the track at the window start via the Connect API.
