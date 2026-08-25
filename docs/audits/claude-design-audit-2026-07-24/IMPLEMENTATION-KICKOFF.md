@@ -11,6 +11,11 @@ Everything you need is in this folder. You do not need the audit transcript.
 > 2026-07-27 (Workers `085a153f`, then `d0a89df6` realigning prod with `main`), and the F-06 fix below
 > shipped 2026-07-30 (Worker `0588098f`). Production is current with `main`.
 >
+> **Updated 2026-08-02 — playback liveness is now instrumented.** The owner chose *observe, never alert*,
+> and that half is implemented, measured against a real induced silent death, and merged. The alerting
+> half stays an owner decision. See [`playback-liveness-investigation.md`](playback-liveness-investigation.md)
+> §2b; the rest of this banner still describes the run correctly.
+>
 > **The follow-up is now closed too, except for F-02 and one owner decision.** F-01 (dead colour classes)
 > fixed with a CI gate; F-03 verified against live providers; F-05 (Apple Music "0 tracks") fixed and
 > deployed; **LIVE-09 induced 2026-07-29 and no longer `code-confirmed`**; the silent-player-death question
@@ -312,9 +317,12 @@ did not close. Each says plainly whether it is actionable now.
 
 - **F-02** — the D11 `createPattern` `InvalidStateError`. Unreproducible, re-checked 2026-07-29. Stays
   *unconfirmed*, not closed.
-- **The liveness watchdog** — designed in
-  [`playback-liveness-investigation.md`](playback-liveness-investigation.md), deliberately not
-  implemented. Needs a live-provider session to tune its thresholds, and an owner decision.
+- **The liveness watchdog — the alerting half only.** The owner decided on 2026-08-02 to
+  **instrument first and decide about an alert separately**. Observation shipped and is measured;
+  nothing routes a verdict to `fail()`. See
+  [`playback-liveness-investigation.md`](playback-liveness-investigation.md) §2b for the decision, the
+  90-second healthy baseline, and the candidate threshold. Still needs a live-provider session before
+  any alert: Spotify Connect and MusicKit have not been observed at all.
 - **F-04's `.rf-brand-mark`** — a logotype, WCAG-exempt. Recorded, not a defect.
 
 Everything else below is marked ✅ and is history, not work.
@@ -509,11 +517,13 @@ Not agent work; listed so a session does not treat them as its own to resolve.
   See `ritmofit_dev_plan/HISTORY.md`.
 - **`.rf-brand-mark` at 3.79:1.** A logotype, which WCAG 1.4.3 exempts. Recorded, not a defect.
 - ~~**Repo cleanup.**~~ Done 2026-07-27; merged branches from this run are off `origin`.
-- **The liveness watchdog** (added 2026-07-29). Designed in
-  [`playback-liveness-investigation.md`](playback-liveness-investigation.md) §2, not implemented. Two
-  things make it a decision rather than a task: a watchdog that fires wrongly interrupts a class that is
-  playing fine, and its thresholds cannot be tuned against the local mock seam — it needs a live-provider
-  session. It also widens `PlaybackAdapter`, which is shared by Live and Builder preview.
+- ~~**The liveness watchdog**~~ (added 2026-07-29). **Split and half-closed 2026-08-02.** The owner's
+  call was to **instrument only** — observe and record, never alert — precisely because a watchdog that
+  fires wrongly interrupts a class that is playing fine and its thresholds cannot be tuned against the
+  local mock seam. `PlaybackAdapter` is widened by one *optional* member (`getLiveness?`), so Builder
+  preview is unaffected: an adapter that cannot answer is exempt rather than failing. **The alerting
+  half remains an owner decision**, now with evidence behind it — see
+  [`playback-liveness-investigation.md`](playback-liveness-investigation.md) §2b.
 - ~~**Deploy of #392.**~~ **Done 2026-07-30** — Worker `0588098f-5b1f-4e7d-9aad-d340445ebe20`, main HEAD
   `4be6b7c`. The fix was verified on production itself, not just the deploy: the served stylesheet
   carries `--rf-color-semantic-live-danger: #EF8572`. See `ritmofit_dev_plan/HISTORY.md`.
@@ -541,10 +551,13 @@ agent that assumes a grant it was never given is the failure this run kept guard
 > - **F-02** — the D11 `createPattern` `InvalidStateError` from the audit. Unreproducible: there is no
 >   canvas or canvas dependency anywhere in `apps/web`, re-checked 2026-07-29. It stays *unconfirmed*,
 >   not closed. **Do not re-derive it as a new finding.**
-> - **The liveness watchdog** — designed in `playback-liveness-investigation.md`, deliberately not
->   implemented. A watchdog that fires wrongly is worse than none, and its polling interval and
->   consecutive-miss threshold need tuning against a **live** provider, not the local mock seam. **Owner
->   decision first; do not implement it unprompted.**
+> - **The liveness watchdog — the alerting half only.** Observation shipped 2026-08-02 by owner
+>   decision: adapters answer `getLiveness?()`, the coordinator polls while playing, and a
+>   `LivenessObserver` records verdicts. **Nothing acts on them, and that is deliberate — do not wire
+>   a verdict to `fail()` unprompted.** A watchdog that fires wrongly is worse than none, and the
+>   threshold still needs a **live** provider: the 90-second local baseline in
+>   `playback-liveness-investigation.md` §2b covers SoundCloud only. Extend the instrumentation freely;
+>   the alert is the owner's call.
 > - **`.rf-brand-mark` at 3.79:1** — a logotype, WCAG 1.4.3 exempt. Recorded, not a defect. Do not
 >   re-derive it either.
 >

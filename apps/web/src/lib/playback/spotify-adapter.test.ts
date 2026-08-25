@@ -274,3 +274,62 @@ describe('SpotifyAdapter', () => {
     expect(spotifyAdapterFactory(events)).toBeInstanceOf(SpotifyAdapter);
   });
 });
+
+describe('SpotifyAdapter getLiveness', () => {
+  it('reports the last transport state the SDK pushed', async () => {
+    const player = new FakePlayer();
+    const adapter = new SpotifyAdapter({}, makeHost(player).host);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await adapter.play();
+
+    player.emit('player_state_changed', state({ paused: false, position: 45_000 }));
+    await expect(adapter.getLiveness()).resolves.toEqual({ positionMs: 45_000, playing: true });
+  });
+
+  it('reports the Connect handoff — paused at a real position, announced to nobody', async () => {
+    // The instructor's phone grabs the session, or they pause in another client.
+    // This falls straight through the finish logic (which only counts paused@0),
+    // so before liveness there was no way to observe it at all.
+    const player = new FakePlayer();
+    const onFinish = vi.fn();
+    const onError = vi.fn();
+    const adapter = new SpotifyAdapter({ onFinish, onError }, makeHost(player).host);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await adapter.play();
+
+    player.emit('player_state_changed', state({ paused: false, position: 40_000 }));
+    player.emit('player_state_changed', state({ paused: true, position: 45_000 }));
+
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+    await expect(adapter.getLiveness()).resolves.toEqual({ positionMs: 45_000, playing: false });
+  });
+
+  it('is exempt before play and after stop, when there is no transport to report', async () => {
+    const player = new FakePlayer();
+    const adapter = new SpotifyAdapter({}, makeHost(player).host);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await expect(adapter.getLiveness()).resolves.toBeNull();
+
+    await adapter.play();
+    player.emit('player_state_changed', state({ paused: false, position: 5_000 }));
+    await adapter.stop();
+    await expect(adapter.getLiveness()).resolves.toBeNull();
+  });
+
+  it('stays silent while another adapter owns the shared transport', async () => {
+    // The singleton player is shared; a superseded adapter reporting its state
+    // would describe the newer track, not its own.
+    const player = new FakePlayer();
+    const first = new SpotifyAdapter({}, makeHost(player).host);
+    const second = new SpotifyAdapter({}, makeHost(player).host);
+    await first.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await first.play();
+    player.emit('player_state_changed', state({ paused: false, position: 5_000 }));
+    await expect(first.getLiveness()).resolves.not.toBeNull();
+
+    await second.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await second.play();
+    await expect(first.getLiveness()).resolves.toBeNull();
+  });
+});

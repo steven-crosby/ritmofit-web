@@ -1,13 +1,20 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Provider, RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
 import type { ConnectionLike } from './coordinator.js';
+import { LivenessObserver } from './liveness.js';
 import {
   RuntimePlaybackCoordinator,
   segmentAt,
   type CoordinatorStatus,
   type PlaybackRuntimeError,
 } from './runtime.js';
-import type { AdapterEvents, PlaybackAdapter, PlaybackReady, PlaybackWindow } from './types.js';
+import type {
+  AdapterEvents,
+  LivenessReading,
+  PlaybackAdapter,
+  PlaybackReady,
+  PlaybackWindow,
+} from './types.js';
 
 const NOW = 1_750_000_000_000;
 
@@ -596,5 +603,187 @@ describe('RuntimePlaybackCoordinator', () => {
     created[0]!.finishPlay();
     await starting;
     expect(coordinator.getStatus()).toEqual({ kind: 'idle' });
+  });
+});
+
+/**
+ * Liveness observation is instrumentation: it watches and records, and nothing
+ * it sees reaches `fail()` or the status. These tests pin that inertness.
+ *
+ * One thing they deliberately do NOT assert is that the runtime *should* ignore
+ * a dead player. It should not — silent death is a real gap
+ * (`playback-liveness-investigation.md` §2), and the owner's 2026-08-02 decision
+ * was to gather evidence before wiring an alert whose thresholds cannot be tuned
+ * against the local mock seam. Pinning the silence as correct is the F-05 trap,
+ * where a green `apple-music.test.ts` case was evidence *for* the "0 tracks" bug.
+ */
+describe('RuntimePlaybackCoordinator liveness observation', () => {
+  class LivenessAdapter extends FakeAdapter {
+    reading: LivenessReading | null | 'reject' = { positionMs: 1_000, playing: true };
+    livenessCalls = 0;
+    async getLiveness(): Promise<LivenessReading | null> {
+      this.livenessCalls++;
+      if (this.reading === 'reject') throw new Error('the widget stopped answering');
+      return this.reading;
+    }
+  }
+
+  const INTERVAL = 2_500;
+
+  function makeLivenessHarness(options: { withGetLiveness?: boolean; observe?: boolean } = {}) {
+    const { withGetLiveness = true, observe = true } = options;
+    const payload = makePayload([makeEntry({ classTrackId: 'ct-1' })]);
+    const created: FakeAdapter[] = [];
+    const statuses: CoordinatorStatus[] = [];
+    const errors: PlaybackRuntimeError[] = [];
+    const observer = new LivenessObserver({ now: () => 0, log: () => {} });
+    const coordinator = new RuntimePlaybackCoordinator(payload, connections('soundcloud'), {
+      now: NOW,
+      adapters: {
+        soundcloud: (events: AdapterEvents) => {
+          const adapter = withGetLiveness
+            ? new LivenessAdapter('soundcloud', events)
+            : new FakeAdapter('soundcloud', events);
+          created.push(adapter);
+          return adapter;
+        },
+      },
+      onStatus: (s) => statuses.push(s),
+      onError: (e) => errors.push(e),
+      ...(observe ? { liveness: observer, livenessIntervalMs: INTERVAL } : {}),
+    });
+    return { coordinator, created, statuses, errors, observer };
+  }
+
+  /** One probe cycle, with host frames in between so the rAF loop looks alive. */
+  async function advanceOneProbe(coordinator: RuntimePlaybackCoordinator): Promise<void> {
+    await coordinator.tick(1_000);
+    await coordinator.tick(1_100);
+    await vi.advanceTimersByTimeAsync(INTERVAL);
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('samples the provider while playing', async () => {
+    const { coordinator, created, observer } = makeLivenessHarness();
+    await coordinator.start(0);
+    const adapter = created[0] as LivenessAdapter;
+
+    adapter.reading = { positionMs: 1_000, playing: true };
+    await advanceOneProbe(coordinator);
+    adapter.reading = { positionMs: 3_500, playing: true };
+    await advanceOneProbe(coordinator);
+
+    expect(adapter.livenessCalls).toBe(2);
+    expect(observer.samples().map((s) => s.verdict)).toEqual(['advancing', 'advancing']);
+    coordinator.destroy();
+  });
+
+  it('records a frozen playhead without touching playback', async () => {
+    const { coordinator, created, statuses, errors, observer } = makeLivenessHarness();
+    await coordinator.start(0);
+    const adapter = created[0] as LivenessAdapter;
+    const statusCount = statuses.length;
+
+    // The provider insists it is playing while its playhead never moves.
+    adapter.reading = { positionMs: 8_000, playing: true };
+    await advanceOneProbe(coordinator);
+    await advanceOneProbe(coordinator);
+    await advanceOneProbe(coordinator);
+
+    expect(observer.samples().map((s) => s.verdict)).toEqual([
+      'advancing',
+      'not_advancing',
+      'not_advancing',
+    ]);
+    expect(observer.summary().peakConsecutiveMisses).toBe(2);
+    // The whole point of instrument-only: nothing above changed the run.
+    expect(coordinator.getStatus()).toEqual({ kind: 'playing', index: 0, provider: 'soundcloud' });
+    expect(statuses).toHaveLength(statusCount);
+    expect(errors).toEqual([]);
+    expect(adapter.calls).not.toContain('destroy');
+    coordinator.destroy();
+  });
+
+  it('records a provider that stops answering as unresponsive, and keeps running', async () => {
+    const { coordinator, created, errors, observer } = makeLivenessHarness();
+    await coordinator.start(0);
+    const adapter = created[0] as LivenessAdapter;
+
+    adapter.reading = 'reject';
+    await advanceOneProbe(coordinator);
+
+    expect(observer.samples().at(-1)!.verdict).toBe('unresponsive');
+    expect(coordinator.getStatus()).toEqual({ kind: 'playing', index: 0, provider: 'soundcloud' });
+    expect(errors).toEqual([]);
+    coordinator.destroy();
+  });
+
+  it('exempts an adapter that cannot answer rather than calling it dead', async () => {
+    const { coordinator, observer } = makeLivenessHarness({ withGetLiveness: false });
+    await coordinator.start(0);
+    await advanceOneProbe(coordinator);
+
+    expect(observer.samples().map((s) => s.verdict)).toEqual(['exempt']);
+    coordinator.destroy();
+  });
+
+  it('blames nothing when the host loop stalled alongside the provider', async () => {
+    const { coordinator, created, observer } = makeLivenessHarness();
+    await coordinator.start(0);
+    const adapter = created[0] as LivenessAdapter;
+
+    // A backgrounded tab: no rAF frames at all between probes.
+    adapter.reading = { positionMs: 8_000, playing: true };
+    await vi.advanceTimersByTimeAsync(INTERVAL);
+    await vi.advanceTimersByTimeAsync(INTERVAL);
+
+    const verdicts = observer.samples().map((s) => s.verdict);
+    expect(verdicts).toEqual(['host_stalled', 'host_stalled']);
+    expect(observer.summary().peakConsecutiveMisses).toBe(0);
+    coordinator.destroy();
+  });
+
+  it('stops probing once playback is paused', async () => {
+    const { coordinator, created } = makeLivenessHarness();
+    await coordinator.start(0);
+    const adapter = created[0] as LivenessAdapter;
+    await advanceOneProbe(coordinator);
+    const callsWhilePlaying = adapter.livenessCalls;
+
+    await coordinator.pause();
+    await vi.advanceTimersByTimeAsync(INTERVAL * 4);
+
+    expect(adapter.livenessCalls).toBe(callsWhilePlaying);
+    coordinator.destroy();
+  });
+
+  it('stops probing after destroy, so the timer cannot outlive the run', async () => {
+    const { coordinator, created } = makeLivenessHarness();
+    await coordinator.start(0);
+    const adapter = created[0] as LivenessAdapter;
+    await advanceOneProbe(coordinator);
+    const callsWhilePlaying = adapter.livenessCalls;
+
+    coordinator.destroy();
+    await vi.advanceTimersByTimeAsync(INTERVAL * 4);
+
+    expect(adapter.livenessCalls).toBe(callsWhilePlaying);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('does not observe at all when no observer is supplied', async () => {
+    const { coordinator, created } = makeLivenessHarness({ observe: false });
+    await coordinator.start(0);
+    await advanceOneProbe(coordinator);
+
+    expect((created[0] as LivenessAdapter).livenessCalls).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+    coordinator.destroy();
   });
 });

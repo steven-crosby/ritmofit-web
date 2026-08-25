@@ -40,6 +40,18 @@ export interface MusicKitInstance {
   seekToTime(seconds: number): Promise<void>;
   addEventListener(name: string, handler: (event: MusicKitPlaybackEvent) => void): void;
   removeEventListener(name: string, handler: (event: MusicKitPlaybackEvent) => void): void;
+  /**
+   * Current playhead in SECONDS, and the current state as a `PlaybackStates`
+   * code. Read-only transport status for liveness observation
+   * (`playback/liveness.ts`) — the same official channel as play/pause/seek,
+   * never stream inspection.
+   *
+   * Optional because MusicKit populates them only once a queue is playing, and
+   * because test doubles predate them; an instance that cannot answer is exempt
+   * from observation rather than treated as dead.
+   */
+  readonly currentPlaybackTime?: number;
+  readonly playbackState?: number;
 }
 
 /** The `setQueue` options Ritmo Studio uses — one catalog song cued at `startTime`. */
@@ -68,10 +80,27 @@ export interface MusicKitGlobal {
     playbackStateDidChange: string;
     mediaPlaybackError: string;
   };
-  /** Playback-state name → numeric code — the two the adapter treats as finish. */
+  /**
+   * Playback-state name → numeric code. `completed`/`ended` are the two the
+   * adapter treats as finish; the rest are read by liveness observation only.
+   *
+   * The extra keys are optional so existing callers and doubles that supply
+   * just the finish pair keep type-checking — and so a missing key degrades to
+   * "cannot answer" rather than to a wrong answer. `stalled` and `waiting` are
+   * the states the 2026-07-06 Apple Music incident sat in while the app,
+   * reading neither, believed it was playing.
+   */
   readonly PlaybackStates: {
     completed: number;
     ended: number;
+    playing?: number;
+    paused?: number;
+    stopped?: number;
+    stalled?: number;
+    waiting?: number;
+    loading?: number;
+    seeking?: number;
+    none?: number;
   };
 }
 
