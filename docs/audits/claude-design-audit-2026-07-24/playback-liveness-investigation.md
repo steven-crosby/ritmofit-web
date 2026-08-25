@@ -228,7 +228,9 @@ The reasoning is the open question's own: a watchdog that fires wrongly is worse
 and its thresholds cannot be tuned against the local mock seam. Instrumentation removes the
 false-fire risk entirely while producing exactly the evidence tuning needs.
 
-**What shipped** (`apps/web/src/lib/playback/liveness.ts`, PR pending):
+**What shipped** (`apps/web/src/lib/playback/liveness.ts`, merged to `main` as
+[PR #395](https://github.com/steven-crosby/ritmofit-web/pull/395) on 2026-08-25, not
+deployed):
 
 - `PlaybackAdapter.getLiveness?()`, implemented on all three adapters, exactly as proposed
   above. Three outcomes carry distinct meaning: a reading, `null` (this adapter cannot
