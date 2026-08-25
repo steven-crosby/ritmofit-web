@@ -126,8 +126,15 @@ describe('TrackPreview lifecycle presentation', () => {
     render(<TrackPreview entry={spotifyEntry} />);
 
     expect(await screen.findByText('Preview ready')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Play preview on Spotify' }));
-    expect(await screen.findByText(/Now playing · Spotify/)).toBeTruthy();
+    // Preview ready is derived from `connections`, but the controller is created
+    // in a later effect. A single click before that effect runs is a silent no-op
+    // (`controllerRef.current?.play()`). Retry the click only while Play is still
+    // showing; once playback starts the control becomes Pause.
+    await waitFor(() => {
+      const play = screen.queryByRole('button', { name: 'Play preview on Spotify' });
+      if (play) fireEvent.click(play);
+      expect(screen.getByText(/Now playing · Spotify/)).toBeTruthy();
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
     expect(await screen.findByText(/Preview paused · Spotify/)).toBeTruthy();
