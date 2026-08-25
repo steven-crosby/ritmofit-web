@@ -10,6 +10,21 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-08-25 (PR #395 playback liveness instrumentation) — merged, not deployed.**
+> This is a merge-to-main record, not a deploy. Main reached
+> `b5f1ff44c36892b61107247988d99f4f13be80b3` (merge of
+> [PR #395](https://github.com/steven-crosby/ritmofit-web/pull/395)) on 2026-08-25.
+> Instrument-only playback liveness: observe, never alert, never call `fail()`. Also CI
+> unblockers: postcss / hono / undici / nanoid `audit:ci` bumps and a TrackPreview test flake
+> guard. CI green on the merged tip:
+> https://github.com/steven-crosby/ritmofit-web/actions/runs/32884347966.
+>
+> **Production is not updated.** Last recorded prod deploy remains **2026-07-30**, Worker
+> `0588098f-5b1f-4e7d-9aad-d340445ebe20` from main `4be6b7c` (F-06). After this merge, `main`
+> is ahead of production. **No schema, migration, or shared-contract change. No remote D1
+> change.** The alerting half of liveness remains an owner decision. F-02 (D11
+> `createPattern`) stays unconfirmed. Inbox empty.
+
 > **Session 2026-07-30 (F-06 Live danger AAA) — deployed (Worker
 > `0588098f-5b1f-4e7d-9aad-d340445ebe20`).** Main HEAD `4be6b7c`. Carries **PR #392**, an accessibility
 > fix on Live's playback-failure alert — the `role="alert"` that tells an instructor mid-class that the
