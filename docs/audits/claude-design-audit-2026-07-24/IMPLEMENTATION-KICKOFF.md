@@ -10,8 +10,8 @@ Everything you need is in this folder. You do not need the audit transcript.
 > [Step 2](#step-2--run-the-prompts) remains to be executed. **Deployed** — the six-prompt work shipped
 > 2026-07-27 (Workers `085a153f`, then `d0a89df6` realigning prod with `main`), and the F-06 fix below
 > shipped 2026-07-30 (Worker `0588098f`). Production was current with `main` through that
-> F-06 deploy. **After PR #395 (merged 2026-08-25 as `b5f1ff4`), `main` is ahead of
-> production — #395 is on `main` and is not deployed.**
+> F-06 deploy. **PR #395 (merged 2026-08-25 as `b5f1ff4`) deployed 2026-08-28** as Worker
+> `fc0eb9a9`; production matches `main` again.
 >
 > **Updated 2026-08-02 — playback liveness is now instrumented.** The owner chose *observe, never alert*,
 > and that half is implemented, measured against a real induced silent death, and merged. The alerting

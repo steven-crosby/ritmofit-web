@@ -10,6 +10,31 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-08-28 (PR #395 playback liveness instrumentation) — deployed (Worker
+> `fc0eb9a9-5255-4948-8753-3c5d46a5231f`).** Main HEAD `7eb013e`. Carries **PR #395**
+> (merge `b5f1ff4`) plus the #396 merge-record docs: instrument-only playback liveness
+> (observe, never alert, never call `fail()`), plus CI unblockers (postcss / hono / undici /
+> nanoid `audit:ci` bumps and a TrackPreview test flake guard). Production now matches
+> `main`. **No schema, migration, or shared-contract change. No remote D1 change.**
+>
+> Rollback anchor: prior live `0588098f-5b1f-4e7d-9aad-d340445ebe20` (2026-07-30 F-06).
+> Remote D1: **no migrations to apply** (checked before deploy). `BETA_ALLOWED_EMAILS`
+> present (name only). Full pre-deploy gate green on these exact bytes from the repository
+> root (format / typecheck / lint / design verify / theme-classes / unit / integration / web
+> build / openapi no-drift / contract-parity / audit:ci). SPA built before the Worker deploy.
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` →
+> `200`, protected `classes` / `explore` / `teams` → `401`, all six security headers present,
+> and the mounted launch routes (shares, Spotify search, saved playlists, playlist import,
+> class tags, moves) reach their handlers as `401` rather than `404`. Cover serve
+> (`GET /api/v1/uploads/covers/smoke-missing.jpg`) reaches the real handler as JSON
+> `NOT_FOUND`, not an SPA miss. Served entry `assets/index-Cxh5tVKs.js`, confirmed by
+> **three consecutive** cache-busted fetches (settled on the first three probes). Worker
+> version independently confirmed at 100% `fc0eb9a9`. F-06 Live danger token still ships:
+> `--rf-color-semantic-live-danger: #EF8572` and `--rf-color-primitive-ember-200: #EF8572`
+> on the served stylesheet. The alerting half of liveness remains an owner decision. F-02
+> (D11 `createPattern`) stays unconfirmed. Inbox empty.
+
 > **Session 2026-08-25 (PR #395 playback liveness instrumentation) — merged, not deployed.**
 > This is a merge-to-main record, not a deploy. Main reached
 > `b5f1ff44c36892b61107247988d99f4f13be80b3` (merge of
@@ -19,11 +44,11 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 > guard. CI green on the merged tip:
 > https://github.com/steven-crosby/ritmofit-web/actions/runs/32884347966.
 >
-> **Production is not updated.** Last recorded prod deploy remains **2026-07-30**, Worker
-> `0588098f-5b1f-4e7d-9aad-d340445ebe20` from main `4be6b7c` (F-06). After this merge, `main`
-> is ahead of production. **No schema, migration, or shared-contract change. No remote D1
-> change.** The alerting half of liveness remains an owner decision. F-02 (D11
-> `createPattern`) stays unconfirmed. Inbox empty.
+> **Superseded 2026-08-28** by Worker `fc0eb9a9`. At the time of this merge, production was
+> still the 2026-07-30 F-06 Worker `0588098f-5b1f-4e7d-9aad-d340445ebe20` from main
+> `4be6b7c`. **No schema, migration, or shared-contract change. No remote D1 change.** The
+> alerting half of liveness remains an owner decision. F-02 (D11 `createPattern`) stays
+> unconfirmed. Inbox empty.
 
 > **Session 2026-07-30 (F-06 Live danger AAA) — deployed (Worker
 > `0588098f-5b1f-4e7d-9aad-d340445ebe20`).** Main HEAD `4be6b7c`. Carries **PR #392**, an accessibility
