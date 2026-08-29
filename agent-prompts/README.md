@@ -89,7 +89,7 @@ read-only pass). No prompt ever merges, deploys, migrates the remote D1, or chan
   obvious errors.** Start at [`browser-verification/README.md`](./browser-verification/README.md).
 - `daily/` — **interactive**, person-in-the-loop prompts that run on your own machine:
   - `start-session` — interactive orientation before a personal work block.
-  - `close-session` — interactive cleanup, verification, PR/deploy hygiene, and handoff.
+  - `close-session` — interactive wrap: light close by default; full close adds gates and a production reconcile.
 - `remote-prompts/` — prompts written to run **unattended in a remote ephemeral sandbox**
   (an isolated, throwaway cloud container). Each opens with a sandbox banner, and every one
   leaves its result as durable, committed-and-pushed output — a branch, a draft PR, or a

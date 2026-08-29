@@ -8,16 +8,14 @@
 ## Goal
 
 Establish an accurate, low-noise session baseline, identify the highest-priority open work
-that affects the requested objective, and produce a concise implementation plan. Do not edit
-files or begin implementation during orientation.
+that affects the requested objective, and produce a concise plan. Do not edit files or
+begin implementation during orientation.
 
 ## Workflow
 
 1. Read `AGENTS.md` first. On conflict, `AGENTS.md` wins.
-2. Inspect the current repository state:
-   - `git status -sb`
-   - `git status --short`
-   - current branch, recent commits, and local branches/upstreams when relevant
+2. Inspect the current repository state with `git status -sb`. Note the current branch,
+   recent commits, and local branches/upstreams when relevant.
 3. Inspect open pull requests with `gh pr list --state open` when GitHub access is available.
    Note drafts, failing or pending checks, and branches that may already contain the work.
 4. Drain the breadcrumb catcher: read `INBOX.md`. Surface any open `- [ ]` breadcrumbs so
@@ -25,13 +23,14 @@ files or begin implementation during orientation.
    `INBOX.md`) and whether it bears on this session's objective. Do not route or delete
    lines during orientation — that happens at close-session; just make them visible.
 5. Read the current status sources:
-   - `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`
-   - relevant sections of `ritmofit_dev_plan/milestones.md`
-   - `ritmofit_dev_plan/web-launch-readiness.md` for the launch gate, live deferrals, and
-     post-launch follow-up (the completed session-by-session log is archived alongside it)
-   - `ritmofit_dev_plan/HISTORY.md` when deployment state, recent work, or blockers matter
-   - `agent-prompts/remote-prompts/daily/command-brief.md` output or recent agent reports when the
-     owner points to them
+   - the current-focus / backlog block of `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`
+   - the newest entry in `ritmofit_dev_plan/HISTORY.md` when deployment state, recent work,
+     or blockers matter — not the whole file
+   - `agent-prompts/remote-prompts/daily/command-brief.md` output or recent agent reports
+     only when the owner points to them
+   - `ritmofit_dev_plan/milestones.md` only if the objective is milestone definition
+   - `ritmofit_dev_plan/web-launch-readiness.md` only if the objective is a launch deferral
+     or a documented post-launch leftover (the file is not the current product gate)
 6. For UI work, read `ritmofit_design_system/README.md` plus the specific token/component
    guidance that applies.
 7. For API, schema, shared-contract, auth, music-provider, or iOS-impacting work, inspect the
@@ -75,7 +74,9 @@ Report a concise session baseline:
 - **Cross-surface:** expected web/iOS contract or design impact, or no cross-surface impact.
 - **Risks:** existing changes, migration/deployment concerns, missing evidence, or open
   questions.
-- **Plan:** goal, likely files, schema/API/frontend impact, verification steps, and the
-  confirmation needed before implementation.
+- **Plan:** the next action and the confirmation needed. For implementation work, include
+  likely files, schema/API/frontend impact, and verification. For deploy, merge, or no-code
+  work, say that plainly — do not invent a file list.
 
-Pair with `agent-prompts/daily/close-session.md` when wrapping up.
+Pair with `agent-prompts/daily/close-session.md` when wrapping up. Default to a light close
+unless code, contracts, schema, or deployment behavior changed.
