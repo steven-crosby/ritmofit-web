@@ -34,14 +34,14 @@ Pilates, and HIIT.
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
-- **Current operating focus (2026-08-25):** the launch gate is green and the app is live.
-  **PR #395 is on `main` (merge `b5f1ff4`) and is not deployed.** Last recorded production
-  remains **2026-07-30**, Worker `0588098f-5b1f-4e7d-9aad-d340445ebe20` from main `4be6b7c`
-  (F-06). After this merge, `main` is ahead of production. No schema, migration, or
-  shared-contract change; no remote D1 change. The six 2026-07-24 design-audit implementation
-  slices already landed and shipped (2026-07-27); they are not current work. Remaining owner
-  calls: the alerting half of playback liveness, and F-02 (D11 `createPattern`, still
-  unconfirmed). Inbox empty. The product track remains the **D21 creator-workstation-shell
+- **Current operating focus (2026-08-28):** the launch gate is green and the app is live.
+  **PR #395 is deployed** — Worker `fc0eb9a9-5255-4948-8753-3c5d46a5231f` from main
+  `7eb013e` (merge `b5f1ff4` plus #396 docs). Instrument-only playback liveness: observe,
+  never alert, never call `fail()`. No schema, migration, or shared-contract change; no
+  remote D1 change. The six 2026-07-24 design-audit implementation slices already landed
+  and shipped (2026-07-27); they are not current work. Remaining owner calls: the
+  alerting half of playback liveness, and F-02 (D11 `createPattern`, still unconfirmed).
+  Inbox empty. The product track remains the **D21 creator-workstation-shell
   slice** — the first slice (Cycle/Pilates/HIIT templates,
   readiness + discovery resting state, provider shelves) is deployed; the **saved-playlist browsing
   sub-slice is now implemented and deployed (Worker `ded27a07`)** (new `GET
@@ -63,8 +63,9 @@ Pilates, and HIIT.
   browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook. **Production does not match `main` after
-  #395.** Last recorded production application code is the 2026-07-30 F-06 Worker above.
+  Music workspace via a shared provider-browse hook. **Production matches `main` after the
+  2026-08-28 #395 deploy** (Worker `fc0eb9a9`). Prior production application code was the
+  2026-07-30 F-06 Worker `0588098f-5b1f-4e7d-9aad-d340445ebe20` from main `4be6b7c`.
   Earlier trail (not current alignment; deployment checkout `dc998dd`, application source
   `68dfc27`, 2026-07-16): all-harden round 19 (#322–#324) is deployed in Worker
   `9d144446-bd89-4792-9fda-64220eb122b9`, serving SPA asset `assets/index-BoLBQItP.js`; there was no
@@ -262,12 +263,11 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-08-25):** **PR #395** (instrument-only playback liveness —
-observe, never alert / never call `fail()`, plus CI unblockers) is **on `main` and not
-deployed**. Last recorded production remains the 2026-07-30 F-06 Worker
-`0588098f-5b1f-4e7d-9aad-d340445ebe20` from main `4be6b7c`. No schema, migration, or
-shared-contract change. The alerting half of liveness remains an owner decision; F-02 (D11
-`createPattern`) stays unconfirmed. Inbox empty. **Deploy remains a separate grant.**
+**Current `main` vs production (2026-08-28):** **PR #395** (instrument-only playback
+liveness — observe, never alert / never call `fail()`, plus CI unblockers) is **deployed**.
+Production Worker `fc0eb9a9-5255-4948-8753-3c5d46a5231f` from main `7eb013e`. No schema,
+migration, or shared-contract change. The alerting half of liveness remains an owner
+decision; F-02 (D11 `createPattern`) stays unconfirmed. Inbox empty.
 
 - **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
 - **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
