@@ -13,7 +13,7 @@ merge/deploy decisions to the owner.
 |---|---|---|
 | 1 | `daily/start-session.md` | Orient against git state, plans, recent work, parity impact, and likely verification before editing. |
 | 2 | Work session | Implement only after the owner confirms substantial plans. |
-| 3 | `daily/close-session.md` | Check git/PR/deploy/docs hygiene, run appropriate gates, and leave a clean handoff. |
+| 3 | `daily/close-session.md` | Light close by default (git/PR/docs/branch hygiene). Full close adds gates and a production reconcile when code or deploy behavior changed and those checks have not already run. |
 
 Run this loop whenever a session starts or ends, even multiple times in one day.
 
@@ -57,7 +57,7 @@ Run these in order before a meaningful release, milestone close, or owner review
 
 1. `remote-prompts/planning/release-readiness.md`
 2. `remote-prompts/planning/pr-triage.md`
-3. `daily/close-session.md` when you want the full interactive repo checklist
+3. `daily/close-session.md` (full close) when you want gates and a production reconcile
 
 Do not deploy from an unattended prompt. Deployment remains an explicit owner decision.
 
