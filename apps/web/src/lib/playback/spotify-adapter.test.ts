@@ -54,12 +54,17 @@ type Listener = (payload: unknown) => void;
 class FakePlayer {
   calls: string[] = [];
   private listeners = new Map<string, Listener[]>();
+  private currentState: SpotifyPlayerState | null = null;
 
   connect(): Promise<boolean> {
     return Promise.resolve(true);
   }
   disconnect(): void {
     this.calls.push('disconnect');
+  }
+  getCurrentState(): Promise<SpotifyPlayerState | null> {
+    this.calls.push('getCurrentState');
+    return Promise.resolve(this.currentState);
   }
   pause(): Promise<void> {
     this.calls.push('pause');
@@ -89,7 +94,13 @@ class FakePlayer {
     );
   }
   emit(event: string, payload?: unknown): void {
+    if (event === 'player_state_changed') {
+      this.currentState = (payload as SpotifyPlayerState | null | undefined) ?? null;
+    }
     for (const cb of this.listeners.get(event) ?? []) cb(payload);
+  }
+  setCurrentState(value: SpotifyPlayerState | null): void {
+    this.currentState = value;
   }
   listenerCount(event: string): number {
     return (this.listeners.get(event) ?? []).length;
@@ -276,18 +287,20 @@ describe('SpotifyAdapter', () => {
 });
 
 describe('SpotifyAdapter getLiveness', () => {
-  it('reports the last transport state the SDK pushed', async () => {
+  it('reads the current SDK state instead of a stale transition event', async () => {
     const player = new FakePlayer();
     const adapter = new SpotifyAdapter({}, makeHost(player).host);
     await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
     await adapter.play();
 
-    player.emit('player_state_changed', state({ paused: false, position: 45_000 }));
+    player.emit('player_state_changed', state({ paused: false, position: 1_000 }));
+    player.setCurrentState(state({ paused: false, position: 45_000 }));
     await expect(adapter.getLiveness()).resolves.toEqual({ positionMs: 45_000, playing: true });
+    expect(player.calls).toContain('getCurrentState');
   });
 
-  it('reports the Connect handoff — paused at a real position, announced to nobody', async () => {
-    // The instructor's phone grabs the session, or they pause in another client.
+  it('reports a paused current state without surfacing a runtime error', async () => {
+    // The instructor pauses in another client.
     // This falls straight through the finish logic (which only counts paused@0),
     // so before liveness there was no way to observe it at all.
     const player = new FakePlayer();
@@ -303,6 +316,33 @@ describe('SpotifyAdapter getLiveness', () => {
     expect(onFinish).not.toHaveBeenCalled();
     expect(onError).not.toHaveBeenCalled();
     await expect(adapter.getLiveness()).resolves.toEqual({ positionMs: 45_000, playing: false });
+  });
+
+  it('rejects when the owning SDK device is no longer active', async () => {
+    const player = new FakePlayer();
+    const adapter = new SpotifyAdapter({}, makeHost(player).host);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await adapter.play();
+    player.setCurrentState(null);
+
+    await expect(adapter.getLiveness()).rejects.toThrow(/no longer active/i);
+  });
+
+  it('rejects when Spotify Connect switches to a different track', async () => {
+    const player = new FakePlayer();
+    const adapter = new SpotifyAdapter({}, makeHost(player).host);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
+    await adapter.play();
+    player.setCurrentState(
+      state({
+        position: 12_000,
+        track_window: {
+          current_track: { id: 'other-track', uri: 'spotify:track:other-track' },
+        },
+      }),
+    );
+
+    await expect(adapter.getLiveness()).rejects.toThrow(/no longer playing the class track/i);
   });
 
   it('is exempt before play and after stop, when there is no transport to report', async () => {
