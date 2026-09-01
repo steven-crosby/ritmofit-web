@@ -47,6 +47,7 @@ export type SpotifyPlayerEvent =
 export interface SpotifyPlayer {
   connect(): Promise<boolean>;
   disconnect(): void;
+  getCurrentState(): Promise<SpotifyPlayerState | null>;
   pause(): Promise<void>;
   resume(): Promise<void>;
   seek(positionMs: number): Promise<void>;

@@ -77,15 +77,9 @@ export class SpotifyAdapter implements PlaybackAdapter {
   private trackTitle = '';
   /** Finish detection: a track ends by transitioning from playing → paused@0. */
   private wasPlaying = false;
-  /** Last transport state the SDK pushed; the source for getLiveness(). */
-  private lastState: LivenessReading | null = null;
 
   private readonly onStateChange = (state: SpotifyPlayerState | null): void => {
     if (!this.started || !state) return;
-    // Kept for getLiveness(). Recorded before the finish logic below, because
-    // the case liveness cares about — paused at a non-zero position, which the
-    // Connect handoff produces — is exactly the one that falls through it.
-    this.lastState = { positionMs: state.position, playing: !state.paused };
     if (!state.paused) {
       this.wasPlaying = true;
       return;
@@ -128,7 +122,6 @@ export class SpotifyAdapter implements PlaybackAdapter {
     this.destroyed = false;
     this.started = false;
     this.wasPlaying = false;
-    this.lastState = null;
     this.trackTitle = entry.track.title;
     this.uri = spotifyTrackUri(ref);
     this.windowStartMs = window.startMs;
@@ -185,19 +178,31 @@ export class SpotifyAdapter implements PlaybackAdapter {
   }
 
   /**
-   * Needs no new plumbing: `player_state_changed` already delivers `paused` and
-   * `position`, and until now the paused-at-a-real-position case simply fell
-   * through `onStateChange` unused. Reads the cached state rather than calling
-   * `getCurrentState()`, so a probe cannot add SDK traffic to a live class.
+   * Read the SDK's current local transport state. `player_state_changed` is a
+   * transition event, not a playhead timer, so its last payload becomes stale
+   * during healthy playback and cannot support liveness polling.
    *
    * Silent while another adapter owns the shared transport — its state belongs
-   * to the newer track, not this one.
+   * to the newer track, not this one. Once this adapter owns started playback,
+   * a null state or a different current track means the local Web Playback SDK
+   * device no longer owns the class audio (for example, another Spotify Connect
+   * device took over). Reject so the observer records that as unresponsive
+   * rather than exempting a real loss.
    */
   async getLiveness(): Promise<LivenessReading | null> {
     if (this.destroyed || !this.started || !this.player) return null;
-    const owner = transportOwners.get(this.player);
+    const player = this.player;
+    const owner = transportOwners.get(player);
     if (owner && owner !== this) return null;
-    return this.lastState;
+    const state = await player.getCurrentState();
+    if (transportOwners.get(player) !== this) return null;
+    if (!state) {
+      throw new Error('Spotify Web Playback SDK device is no longer active.');
+    }
+    if (state.track_window.current_track?.uri !== this.uri) {
+      throw new Error('Spotify Web Playback SDK is no longer playing the class track.');
+    }
+    return { positionMs: state.position, playing: !state.paused };
   }
 
   async seek(providerMs: number): Promise<void> {
@@ -215,7 +220,6 @@ export class SpotifyAdapter implements PlaybackAdapter {
     const player = this.requirePlayer();
     this.started = false;
     this.wasPlaying = false;
-    this.lastState = null;
     if (transportOwners.get(player) === this) transportOwners.delete(player);
     await player.pause();
     // A later play() re-selects the track at the window start via the Connect API.
