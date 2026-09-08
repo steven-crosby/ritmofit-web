@@ -35,10 +35,10 @@ copy a shorter list here.
   unrelated work. If ownership or recovery is unclear, stop and ask for an explicit plan.
   Note branch, upstream sync, ahead/behind state, and whether `main` is current with
   `origin/main`.
-- [ ] Prune merged branches. Delete local feature branches already merged to `main`.
-  Delete remote branches whose PRs are already merged (`git branch -r --merged origin/main`,
-  plus remotes whose PRs show `MERGED` even if git does not see them as ancestors after a
-  squash). Leave unmerged branches alone and flag them.
+- [ ] Prune merged branches. Local: delete local feature branches already merged to `main`
+  without asking; leave unmerged alone and flag them. Remote: list candidate remote branches
+  (via `git branch -r --merged origin/main` and/or PRs showing `MERGED` after squash) and get
+  an explicit owner yes before deleting any remotes.
 - [ ] If close leaves the worktree off `main`, say so ("Left on branch X") and offer
   checkout back to `main`.
 
