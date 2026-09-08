@@ -47,8 +47,12 @@ begin implementation during orientation.
    - state plainly: production matches `main`, or `main` is ahead (name the tip and any
      undeployed merges), or evidence is incomplete
    Do not deploy, apply remote migrations, modify secrets, or alter remote data.
-9. Ask one focused question only when the objective cannot be safely inferred. If the owner
-   already supplied a clear objective, summarize the discovered context and propose the plan.
+9. Ask at most one focused question, and only when the objective cannot be safely
+   inferred. If the owner already supplied a clear objective, summarize the discovered
+   context and propose the plan. End with **one** recommended next action (the strongest
+   candidate), not an unranked menu of options. Brief alternatives only if they materially
+   change the outcome; still lead with the recommendation (matches AGENTS.md: direct,
+   decisive, recommended choice first).
 
 ## Rules
 
@@ -82,9 +86,10 @@ Report a concise session baseline:
 - **Cross-surface:** expected web/iOS contract or design impact, or no cross-surface impact.
 - **Risks:** existing changes, migration/deployment concerns, missing evidence, or open
   questions.
-- **Plan:** the next action and the confirmation needed. For implementation work, include
-  likely files, schema/API/frontend impact, and verification. For deploy, merge, or no-code
-  work, say that plainly — do not invent a file list.
+- **Plan:** one recommended next action and the confirmation needed — not a picker.
+  For implementation work, include likely files, schema/API/frontend impact, and
+  verification. For deploy, merge, or no-code work, say that plainly — do not invent a
+  file list.
 
 Pair with `agent-prompts/daily/close-session.md` when wrapping up. Default to a light close
 unless code, contracts, schema, or deployment behavior changed.
