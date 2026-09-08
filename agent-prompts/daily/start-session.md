@@ -82,16 +82,21 @@ Before deep reads, fork by session intent (still end with **one** recommended ne
 
 ## Required output
 
-Report a concise session baseline:
+Lead with the one decision that matters for this session. Keep the fields below, but collapse
+routine "clean / empty / no impact" items into a single short aside unless something is dirty,
+risky, or decision-relevant.
 
 - **Git:** branch, clean or dirty, upstream sync, and recent relevant commit.
+  *(usually collapsible when clean+synced)*
 - **PRs:** open count and any item that affects this session.
 - **Production:** when checked — match / ahead / unknown, with live Worker version and
   served SPA entry hash. Do not claim alignment from docs alone.
 - **Trackers:** current milestone/slice, unresolved blockers, and strongest candidate for
   next work.
 - **Breadcrumbs:** open items in `INBOX.md`, each with its likely home, or "inbox empty."
+  *(usually collapsible when inbox empty)*
 - **Cross-surface:** expected web/iOS contract or design impact, or no cross-surface impact.
+  *(usually collapsible when no impact)*
 - **Risks:** existing changes, migration/deployment concerns, missing evidence, or open
   questions.
 - **Plan:** one recommended next action and the confirmation needed — not a picker.
