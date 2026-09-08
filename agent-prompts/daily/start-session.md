@@ -14,8 +14,14 @@ begin implementation during orientation.
 ## Workflow
 
 1. Read `AGENTS.md` first. On conflict, `AGENTS.md` wins.
-2. Inspect the current repository state with `git status -sb`. Note the current branch,
-   recent commits, and local branches/upstreams when relevant.
+2. Confirm this is the intended `ritmofit-web` checkout before trusting status, then inspect
+   the tree:
+   - `pwd` — expect the repo root for this checkout
+   - `git remote -v` — expect `steven-crosby/ritmofit-web`
+   - `git branch --show-current`
+   - then `git status -sb`; note recent commits and local branches/upstreams when relevant
+   - if the tree is dirty, surface unrelated dirty files before proposing work (do not discard,
+     overwrite, stash, or silently include them)
 3. Inspect open pull requests with `gh pr list --state open` when GitHub access is available.
    Note drafts, failing or pending checks, and branches that may already contain the work.
 4. Drain the breadcrumb catcher: read `INBOX.md`. Surface any open `- [ ]` breadcrumbs so
