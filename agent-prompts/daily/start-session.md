@@ -36,9 +36,17 @@ begin implementation during orientation.
 7. For API, schema, shared-contract, auth, music-provider, or iOS-impacting work, inspect the
    relevant shared schemas, routes, migrations, OpenAPI output, authorization helpers, and
    parity docs before proposing changes.
-8. If deployment state matters to the likely next task, use read-only commands to compare
-   production with `main`. Do not deploy, apply remote migrations, modify secrets, or alter
-   remote data.
+8. If deployment state matters to the likely next task (a deploy candidate, `main` may be
+   ahead of production, or the objective is reorient/status), compare production to `main`
+   with this **evidence bar** — all read-only:
+   - `git fetch origin` before treating local upstream sync as current
+   - live Worker version via `wrangler deployments status` (from `apps/api`, or
+     `pnpm --filter @ritmofit/api exec wrangler deployments status`)
+   - served SPA entry hash: **three consecutive** cache-busted fetches of `/` (see
+     `ritmofit_dev_plan/deployment-runbook.md`); one agreeing fetch is not enough
+   - state plainly: production matches `main`, or `main` is ahead (name the tip and any
+     undeployed merges), or evidence is incomplete
+   Do not deploy, apply remote migrations, modify secrets, or alter remote data.
 9. Ask one focused question only when the objective cannot be safely inferred. If the owner
    already supplied a clear objective, summarize the discovered context and propose the plan.
 
@@ -66,8 +74,8 @@ Report a concise session baseline:
 
 - **Git:** branch, clean or dirty, upstream sync, and recent relevant commit.
 - **PRs:** open count and any item that affects this session.
-- **Production:** whether deployed state appears aligned with `main`, when relevant and
-  verifiable.
+- **Production:** when checked — match / ahead / unknown, with live Worker version and
+  served SPA entry hash. Do not claim alignment from docs alone.
 - **Trackers:** current milestone/slice, unresolved blockers, and strongest candidate for
   next work.
 - **Breadcrumbs:** open items in `INBOX.md`, each with its likely home, or "inbox empty."
