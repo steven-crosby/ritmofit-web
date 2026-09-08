@@ -62,13 +62,7 @@ begin implementation during orientation.
   and say whether they appear related to the requested work.
 - Do not run the full test suite merely to start a session. Run gates after scope is confirmed,
   or run targeted checks only when needed to understand the baseline.
-- Preserve Ritmo Studio's music constraints: no provider audio caching, no Spotify BPM, no audio
-  mixing/crossfade, and in-app playback only through official provider-authorized SDKs/widgets
-  (see `ritmofit_dev_plan/music-providers.md`).
-- Shared contracts originate in `packages/shared`; class-scoped access requires centralized
-  authorization; D1 migrations are generated and never rewritten after application.
-- D20 pauses iOS parity as a hard merge gate. State web/iOS contract or design impact when relevant,
-  but do not create parity bookkeeping unless the owner asks for iOS handoff/refinement work.
+- Follow `AGENTS.md` for music constraints, shared contracts/authz/migrations, and D20 iOS-parity posture. In the baseline, call out only the impacts that change this session's plan (do not restate the full rules).
 - For substantial work, follow the repository's plan-and-confirm requirement before editing.
 - Use absolute dates when reporting status, deployments, or tracker conflicts.
 
