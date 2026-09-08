@@ -39,6 +39,8 @@ copy a shorter list here.
   Delete remote branches whose PRs are already merged (`git branch -r --merged origin/main`,
   plus remotes whose PRs show `MERGED` even if git does not see them as ancestors after a
   squash). Leave unmerged branches alone and flag them.
+- [ ] If close leaves the worktree off `main`, say so ("Left on branch X") and offer
+  checkout back to `main`.
 
 ## 2. PR hygiene
 
@@ -77,6 +79,11 @@ of production again.
 
 Skip rewriting a `HISTORY.md` / `DEVELOPMENT_PLAN.md` record this session already wrote.
 
+- [ ] After a production deploy this session: ensure `HISTORY.md` and the current-focus /
+  main-vs-production lines in `DEVELOPMENT_PLAN.md` are updated on a docs PR (or already on
+  `main`). Do not declare the session closed while that record is only local or only an
+  unmerged PR unless the owner explicitly parks it. Prefer Conventional Commit
+  `docs: record the #<pr-or-change> deploy (Worker <id>)`.
 - [ ] Drain `INBOX.md`: capture any breadcrumbs that surfaced this session, then route each
   open `- [ ]` item to its real home using the routing table in `INBOX.md`
   (decision → `decisions.md`, scope → `DEVELOPMENT_PLAN.md`/`milestones.md`,
@@ -88,9 +95,13 @@ Skip rewriting a `HISTORY.md` / `DEVELOPMENT_PLAN.md` record this session alread
 - [ ] Keep `AGENTS.md` limited to durable contributor rules; update it only when workflows,
   architecture boundaries, or canonical commands change.
 - [ ] Append dated deploy/build entries to `ritmofit_dev_plan/HISTORY.md` when something
-  shipped, deployed, or materially changed operational state. Use absolute dates.
-- [ ] Refresh the current-state summary in `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`, and
-  `ritmofit_dev_plan/milestones.md` if a milestone changed.
+  shipped, deployed, or materially changed operational state. Use absolute dates. Do this
+  first in the deploy-record sequence.
+- [ ] Then refresh current-focus / main-vs-production (and backlog if needed) in
+  `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`, and `ritmofit_dev_plan/milestones.md` if a
+  milestone changed.
+- [ ] Open (or confirm) the docs PR with those updates, then pause for merge before calling
+  the session closed — unless the owner explicitly parks the PR.
 - [ ] Track forward work in the most specific current-status doc. Use
   `ritmofit_dev_plan/web-ios-parity.md` only for owner-requested iOS handoff/refinement or explicit
   cross-surface contract/design notes; do not create parallel backlog lists.
@@ -119,7 +130,8 @@ Print a tight state report:
 - **Verification:** commands run and results; explicitly list skipped gates.
 - **Deployment:** whether production matches `main`, Worker version, and D1 migration state
   when checked.
-- **Docs:** status/history/parity docs updated or intentionally unchanged.
+- **Docs:** status/history/parity docs updated or intentionally unchanged; if a production
+  deploy happened, note whether the deploy-record PR is open, merged, or explicitly parked.
 - **Next session:** blockers first, then the highest-value follow-up.
 
 ## Quick reference
