@@ -11,6 +11,14 @@ Establish an accurate, low-noise session baseline, identify the highest-priority
 that affects the requested objective, and produce a concise plan. Do not edit files or
 begin implementation during orientation.
 
+## Orient mode
+
+Before deep reads, fork by session intent (still end with **one** recommended next action — step 9):
+
+1. **Clear objective** — baseline + plan for that objective (default path through the Workflow).
+2. **Reorient / no objective** — baseline + strongest next candidate + at most one question (still one recommended action).
+3. **Deploy-only** — skip design-system and API/schema deep reads (steps 6–7); go to production evidence bar (step 8) + runbook preflight evidence; propose deploy or say what's blocking.
+
 ## Workflow
 
 1. Read `AGENTS.md` first. On conflict, `AGENTS.md` wins.
