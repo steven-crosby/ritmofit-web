@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { authClient } from '../lib/auth-client.js';
 import { CreatorLoopProof } from './CreatorLoopProof.js';
+import { PasswordField } from './PasswordField.js';
 
 function readParams() {
   const params = new URLSearchParams(window.location.search);
@@ -45,7 +46,7 @@ export function ResetPassword() {
   return (
     <main
       id="main-content"
-      className="rf-hero-glow grid min-h-screen bg-bg-base lg:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)]"
+      className="grid min-h-screen bg-bg-base lg:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)]"
     >
       <section className="order-2 flex min-w-0 flex-col justify-between gap-8 border-t border-border-subtle p-5 sm:p-8 lg:order-1 lg:border-t-0 lg:border-r lg:p-12">
         <div className="flex items-center gap-3">
@@ -91,7 +92,12 @@ export function ResetPassword() {
               role="status"
               className="rounded-card border border-state-positive/25 bg-state-positive/5 p-5 outline-none"
             >
-              <p className="font-ui font-semibold text-text-primary">Password reset complete</p>
+              <p className="font-ui font-semibold text-text-primary">
+                <span aria-hidden className="mr-1.5 text-state-positive">
+                  ✓
+                </span>
+                Password reset complete
+              </p>
               <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
                 Your classes and music connections did not change. Sign in with the new password.
               </p>
@@ -110,6 +116,9 @@ export function ResetPassword() {
               className="rounded-card border border-state-danger/30 bg-state-danger/5 p-5 outline-none"
             >
               <p className="font-ui font-semibold text-text-primary">
+                <span aria-hidden className="mr-1.5 text-state-danger">
+                  ⚠
+                </span>
                 This reset link is invalid or has expired
               </p>
               <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
@@ -124,37 +133,29 @@ export function ResetPassword() {
             </div>
           ) : (
             <form onSubmit={submit} className="flex flex-col gap-4" aria-busy={busy}>
-              <label className="flex flex-col gap-1.5 font-ui text-sm text-text-secondary">
-                New password
-                <input
-                  id="new-password"
-                  className="min-h-11 rounded-input border border-border bg-bg-sunken px-4 font-ui text-text-primary"
-                  type="password"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={8}
-                  required
-                  aria-describedby={error ? 'reset-error' : 'reset-password-help'}
-                />
-              </label>
-              <p id="reset-password-help" className="-mt-2 font-ui text-xs text-text-tertiary">
-                At least eight characters.
-              </p>
-              <label className="flex flex-col gap-1.5 font-ui text-sm text-text-secondary">
-                Confirm password
-                <input
-                  id="confirm-password"
-                  className="min-h-11 rounded-input border border-border bg-bg-sunken px-4 font-ui text-text-primary"
-                  type="password"
-                  autoComplete="new-password"
-                  value={confirmation}
-                  onChange={(e) => setConfirmation(e.target.value)}
-                  minLength={8}
-                  required
-                  aria-describedby={error ? 'reset-error' : undefined}
-                />
-              </label>
+              <PasswordField
+                id="new-password"
+                label="New password"
+                autoComplete="new-password"
+                value={password}
+                onChange={setPassword}
+                minLength={8}
+                required
+                helpText="At least eight characters."
+                ariaDescribedBy={error ? 'reset-error' : undefined}
+                invalid={!!error}
+              />
+              <PasswordField
+                id="confirm-password"
+                label="Confirm password"
+                autoComplete="new-password"
+                value={confirmation}
+                onChange={setConfirmation}
+                minLength={8}
+                required
+                ariaDescribedBy={error ? 'reset-error' : undefined}
+                invalid={!!error}
+              />
               {error && (
                 <div
                   id="reset-error"
@@ -163,7 +164,12 @@ export function ResetPassword() {
                   role="alert"
                   className="rounded-control border border-state-danger/30 bg-state-danger/5 p-3 font-ui text-sm leading-5 text-state-danger outline-none"
                 >
-                  <strong className="block text-text-primary">Password was not changed</strong>
+                  <strong className="block text-text-primary">
+                    <span aria-hidden className="mr-1.5">
+                      ⚠
+                    </span>
+                    Password was not changed
+                  </strong>
                   <span>{error}</span>
                 </div>
               )}

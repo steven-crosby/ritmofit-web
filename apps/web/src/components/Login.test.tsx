@@ -206,6 +206,29 @@ describe('Login accessible labels', () => {
     expect(screen.getByLabelText('Email')).toHaveProperty('value', 'instructor@example.com');
   });
 
+  it('requires and hints a minimum password length only when signing up', () => {
+    render(<Login />);
+    expect(screen.getByLabelText('Password')).toHaveProperty('minLength', -1);
+    expect(screen.queryByText('At least eight characters.')).toBeNull();
+
+    fireEvent.click(screen.getByText('Need an invited account? Sign up'));
+    expect(screen.getByLabelText('Password')).toHaveProperty('minLength', 8);
+    expect(screen.getByText('At least eight characters.')).toBeTruthy();
+  });
+
+  it('moves focus to the new heading on an intentional mode switch', () => {
+    render(<Login />);
+    fireEvent.click(screen.getByText('Need an invited account? Sign up'));
+    expect(document.activeElement).toBe(
+      screen.getByRole('heading', { name: 'Use your invited email' }),
+    );
+
+    fireEvent.click(screen.getByText('Have an account? Sign in'));
+    expect(document.activeElement).toBe(
+      screen.getByRole('heading', { name: 'Welcome back, instructor.' }),
+    );
+  });
+
   it('marks Apple availability unverified when the capability check fails', async () => {
     vi.mocked(api.getAuthCapabilities).mockRejectedValue(new Error('network down'));
 
