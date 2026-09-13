@@ -733,19 +733,62 @@ describe('RuntimePlaybackCoordinator liveness observation', () => {
     coordinator.destroy();
   });
 
-  it('blames nothing when the host loop stalled alongside the provider', async () => {
-    const { coordinator, created, observer } = makeLivenessHarness();
+  it('lets an advancing provider win while the host rAF loop is stalled', async () => {
+    const { coordinator, created, errors, observer } = makeLivenessHarness();
     await coordinator.start(0);
     const adapter = created[0] as LivenessAdapter;
 
-    // A backgrounded tab: no rAF frames at all between probes.
+    // Hidden tab / occluded window: no rAF frames between probes.
+    adapter.reading = { positionMs: 1_000, playing: true };
+    await vi.advanceTimersByTimeAsync(INTERVAL);
+    adapter.reading = { positionMs: 3_500, playing: true };
+    await vi.advanceTimersByTimeAsync(INTERVAL);
+
+    const samples = observer.samples();
+    expect(samples.map((s) => s.verdict)).toEqual(['advancing', 'advancing']);
+    expect(samples.every((s) => s.hostTicks === 0)).toBe(true);
+    expect(observer.summary().peakConsecutiveMisses).toBe(0);
+    expect(coordinator.getStatus()).toEqual({ kind: 'playing', index: 0, provider: 'soundcloud' });
+    expect(errors).toEqual([]);
+    expect(adapter.calls).not.toContain('destroy');
+    coordinator.destroy();
+  });
+
+  it('counts a frozen playing:true reading while the host is stalled, without failing', async () => {
+    const { coordinator, created, statuses, errors, observer } = makeLivenessHarness();
+    await coordinator.start(0);
+    const adapter = created[0] as LivenessAdapter;
+    const statusCount = statuses.length;
+
     adapter.reading = { positionMs: 8_000, playing: true };
     await vi.advanceTimersByTimeAsync(INTERVAL);
     await vi.advanceTimersByTimeAsync(INTERVAL);
 
-    const verdicts = observer.samples().map((s) => s.verdict);
-    expect(verdicts).toEqual(['host_stalled', 'host_stalled']);
-    expect(observer.summary().peakConsecutiveMisses).toBe(0);
+    const samples = observer.samples();
+    expect(samples.map((s) => s.verdict)).toEqual(['advancing', 'not_advancing']);
+    expect(samples[1]!.hostTicks).toBe(0);
+    expect(observer.summary().peakConsecutiveMisses).toBe(1);
+    expect(coordinator.getStatus()).toEqual({ kind: 'playing', index: 0, provider: 'soundcloud' });
+    expect(statuses).toHaveLength(statusCount);
+    expect(errors).toEqual([]);
+    expect(adapter.calls).not.toContain('destroy');
+    coordinator.destroy();
+  });
+
+  it('still records unresponsive and increments misses when the host recorded no ticks', async () => {
+    const { coordinator, created, errors, observer } = makeLivenessHarness();
+    await coordinator.start(0);
+    const adapter = created[0] as LivenessAdapter;
+
+    adapter.reading = 'reject';
+    await vi.advanceTimersByTimeAsync(INTERVAL);
+
+    const sample = observer.samples().at(-1)!;
+    expect(sample.verdict).toBe('unresponsive');
+    expect(sample.hostTicks).toBe(0);
+    expect(sample.consecutiveMisses).toBe(1);
+    expect(coordinator.getStatus()).toEqual({ kind: 'playing', index: 0, provider: 'soundcloud' });
+    expect(errors).toEqual([]);
     coordinator.destroy();
   });
 
