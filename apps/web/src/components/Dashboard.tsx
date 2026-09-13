@@ -118,6 +118,7 @@ import { OnboardingVideoDialog } from './OnboardingVideoDialog.js';
 import { ClassRunOfShowShelf } from './ClassRunOfShowShelf.js';
 import { RecoveryState, StatusLabel } from './SharedState.js';
 import { ProviderCapabilityLedger } from './ProviderCapabilityLedger.js';
+import { TrackArt } from './TrackArt.js';
 
 // Code-split the heavy, interaction-gated surfaces into their own chunks so the
 // initial builder paint doesn't ship Live mode, the choreography editor, or the
@@ -1268,7 +1269,7 @@ function ClassCard({
           aria-pressed={selected}
           className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left font-ui rf-focus-ring"
         >
-          <ArtCollage urls={cls.albumArtUrls} />
+          <ArtCollage urls={cls.albumArtUrls} classTitle={cls.title} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-text-primary">{cls.title}</span>
             <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-data text-xs text-text-tertiary">
@@ -1328,20 +1329,14 @@ function ClassCard({
 
 /**
  * The track-art collage (design system 11: "small bounded artwork"). A bounded 44px
- * tile: one image when there's a single art, a 2×2 mosaic for several, and a neutral
- * note glyph when the class has no track art yet. Purely decorative — the title carries
- * the meaning — so images are empty-alt and the container is aria-hidden.
+ * tile: one image when there's a single art, a 2×2 mosaic for several, and a derived
+ * tile keyed to the class's own title when it has no track art yet (05-components.md
+ * — never a bare note glyph). Purely decorative — the title carries the meaning — so
+ * images are empty-alt and the container is aria-hidden.
  */
-function ArtCollage({ urls }: { urls: string[] }) {
+function ArtCollage({ urls, classTitle }: { urls: string[]; classTitle: string }) {
   if (urls.length === 0) {
-    return (
-      <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-base text-text-tertiary"
-        aria-hidden
-      >
-        ♪
-      </span>
-    );
+    return <TrackArt url={null} identity={classTitle} size={44} />;
   }
   if (urls.length === 1) {
     return (
@@ -3441,22 +3436,11 @@ function PlaylistBrowserDialog({
                     <span className="w-5 shrink-0 text-right font-data text-xs text-text-tertiary">
                       {index + 1}
                     </span>
-                    {track.albumArtUrl ? (
-                      <img
-                        src={track.albumArtUrl}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="h-10 w-10 shrink-0 rounded-card object-cover"
-                      />
-                    ) : (
-                      <span
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-bg-base text-text-tertiary"
-                        aria-hidden
-                      >
-                        ♪
-                      </span>
-                    )}
+                    <TrackArt
+                      url={track.albumArtUrl}
+                      identity={`${track.title}:${track.artist}`}
+                      size={40}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-ui text-sm font-semibold text-text-primary">
                         {track.title}
@@ -3665,22 +3649,11 @@ function LikesBrowserDialog({
             key={`${track.provider}:${track.providerTrackId}`}
             className="flex items-center gap-3 rounded-card border border-interactive/10 bg-bg-base p-3"
           >
-            {track.albumArtUrl ? (
-              <img
-                src={track.albumArtUrl}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="h-11 w-11 shrink-0 rounded-card object-cover"
-              />
-            ) : (
-              <span
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised font-ui text-lg text-text-tertiary"
-                aria-hidden
-              >
-                ♪
-              </span>
-            )}
+            <TrackArt
+              url={track.albumArtUrl}
+              identity={`${track.title}:${track.artist}`}
+              size={44}
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate font-ui text-sm font-semibold text-text-primary">
                 {track.title}
@@ -4706,22 +4679,11 @@ function SongRow({
       >
         <span className="w-5 shrink-0 font-data text-xs text-text-tertiary">{position + 1}</span>
         {/* Album art is a small creative trigger (44px), not a focal point. */}
-        {entry.track.albumArtUrl ? (
-          <img
-            src={entry.track.albumArtUrl}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-11 w-11 shrink-0 rounded-card object-cover"
-          />
-        ) : (
-          <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised text-text-tertiary"
-            aria-hidden
-          >
-            ♪
-          </span>
-        )}
+        <TrackArt
+          url={entry.track.albumArtUrl}
+          identity={`${entry.track.title}:${entry.track.artist}`}
+          size={44}
+        />
         <div className="min-w-0 flex-[1_1_9rem]">
           <p className="truncate font-ui text-sm font-semibold text-text-primary">
             {entry.track.title}

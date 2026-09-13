@@ -90,8 +90,9 @@ implementation direction but do not authorize an implementation slice by themsel
 
 | Slice / decision | Status | PR |
 | --- | --- | --- |
-| AUTH-A11Y (SPC-01–04) | Implemented, not merged | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) |
-| OD-01 / SPC-05 (sign-in warmth) | Implemented, not merged | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) — bundled with AUTH-A11Y since both touch `Login.tsx`/`ResetPassword.tsx` |
+| AUTH-A11Y (SPC-01–04) | Merged, not deployed | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) |
+| OD-01 / SPC-05 (sign-in warmth) | Merged, not deployed | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) — bundled with AUTH-A11Y since both touch `Login.tsx`/`ResetPassword.tsx` |
+| SOURCE-ARTWORK (SPC-07) | Implemented, not merged | [#415](https://github.com/steven-crosby/ritmofit-web/pull/415) — also fixed 4 uncited instances of the same pattern found in `Dashboard.tsx` |
 
 PR #414 also found that `rf-hero-glow` (the class OD-01 removes) is used on two surfaces the audit and
 the decision never considered — `NotFound.tsx` and `ErrorBoundary.tsx`. Both were left unchanged:
@@ -102,7 +103,7 @@ keep the warm treatment is an open question for a separate, explicit decision, n
 
 - This ledger and the planning entries are triage, not implementation authorization for the ten
   backlog slices.
-- PR #412 (P0 fix, merged) and PR #414 (AUTH-A11Y + OD-01, not yet merged) are the only code changes
-  produced by this session so far. Neither is deployed as of this writing.
+- PR #412 (P0 fix) and PR #414 (AUTH-A11Y + OD-01) are merged; PR #415 (SOURCE-ARTWORK) is not yet
+  merged. None of the three is deployed as of this writing.
 - No merge, deploy, production-data deletion, schema change, or provider-contract change is authorized
   by this ledger.
