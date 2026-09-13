@@ -47,13 +47,6 @@ export type LivenessVerdict =
    * blanked SoundCloud widget iframe does this: no event, no error, no reply.
    */
   | 'unresponsive'
-  /**
-   * The host's rAF loop has not ticked since the previous sample, so the class
-   * clock is not advancing either. Non-advancement here says nothing about the
-   * provider — a backgrounded tab stalls both. Recorded separately so it can
-   * never be miscounted as evidence of death.
-   */
-  | 'host_stalled'
   /** The adapter cannot answer (no SDK member for it). Exempt, not failing. */
   | 'exempt';
 
@@ -71,7 +64,11 @@ export interface LivenessSample {
   positionDeltaMs: number | null;
   /** The provider's own belief about whether it is playing. */
   playing: boolean | null;
-  /** Host rAF ticks observed since the previous sample. Zero = host stalled. */
+  /**
+   * Host rAF ticks observed since the previous sample. Zero means the host
+   * loop did not tick (hidden tab, occluded window). Recorded as context —
+   * it never wins the verdict over a successful provider reading.
+   */
   hostTicks: number;
   /**
    * How many consecutive samples have now been non-advancing. Resets on any
@@ -159,10 +156,11 @@ export class LivenessObserver {
     const positionDeltaMs =
       positionMs !== null && this.lastPositionMs !== null ? positionMs - this.lastPositionMs : null;
 
-    const verdict = this.classify({ reading, hostTicks, positionDeltaMs });
+    const verdict = this.classify({ reading, positionDeltaMs });
 
-    // Only genuine provider non-advancement counts toward the threshold. A
-    // stalled host or an exempt adapter must never inflate it.
+    // Only provider-side misses count. A stalled host does not excuse a
+    // frozen playing:true reading — that is the 2026-07-06 Apple Music shape.
+    // Exempt adapters still never inflate the counter.
     if (
       verdict === 'not_advancing' ||
       verdict === 'provider_paused' ||
@@ -200,20 +198,22 @@ export class LivenessObserver {
   }
 
   /**
-   * Order matters here, and each rung rules out a cheaper explanation than the
-   * one below it: an adapter that cannot answer, then a provider that stopped
-   * answering, then a host loop that stalled (which would make *any* provider
-   * look frozen), then what the provider actually reports.
+   * Order matters here. An adapter that cannot answer is exempt; a rejected
+   * read is unresponsive. After that the provider reading wins, including
+   * when the host rAF loop recorded zero ticks — `hostTicks` stays on the
+   * sample as context, not as a verdict. `host_stalled` used to short-circuit
+   * here and discarded real SDK evidence (hidden-tab Apple Music advancing
+   * under a stalled host; the 2026-07-06 frozen playing:true stall). Every
+   * `record()` input is `null`, `'unresponsive'`, or a reading, so there is
+   * no remaining "no provider signal" case for that verdict.
    */
   private classify(input: {
     reading: LivenessReading | null | 'unresponsive';
-    hostTicks: number;
     positionDeltaMs: number | null;
   }): LivenessVerdict {
-    const { reading, hostTicks, positionDeltaMs } = input;
+    const { reading, positionDeltaMs } = input;
     if (reading === null) return 'exempt';
     if (reading === 'unresponsive') return 'unresponsive';
-    if (hostTicks === 0) return 'host_stalled';
     if (!reading.playing) return 'provider_paused';
     // No previous sample to compare against yet — not evidence of anything.
     if (positionDeltaMs === null) return 'advancing';
@@ -231,7 +231,6 @@ export class LivenessObserver {
       not_advancing: 0,
       provider_paused: 0,
       unresponsive: 0,
-      host_stalled: 0,
       exempt: 0,
     } satisfies Record<LivenessVerdict, number>;
     for (const sample of this.buffer) byVerdict[sample.verdict] += 1;

@@ -244,12 +244,15 @@ deployed 2026-08-28 as Worker `fc0eb9a9`):
   stops entirely in a backgrounded tab — which is where the 2026-07-06 Apple Music stall
   happened, and therefore the case most worth catching.
 
-**One verdict the original design did not have: `host_stalled`.** A backgrounded tab freezes
-the class clock and the provider alike, so non-advancement there is evidence of nothing. It is
-classified and counted separately, and can never reach the miss counter. This is not
-hypothetical — the first verification run recorded 3 straight `host_stalled` samples because
-the Chrome window was occluded, and without the distinction they would have read as provider
-death.
+**One verdict the original design did not have: `host_stalled`.** It was added so a
+backgrounded or occluded host (rAF records zero ticks) would not be counted as provider
+death. The first verification run recorded 3 straight `host_stalled` samples from an
+occluded Chrome window, not only a hidden tab. That short-circuit was later shown to be
+wrong: it discarded a successful provider reading before inspecting it. `hostTicks` remains
+on each sample as context. The winning verdict now comes from the provider reading (or
+from `unresponsive` / `exempt`). `host_stalled` is no longer a classify outcome — every
+`record()` input is `null`, `'unresponsive'`, or a reading, so there is no remaining "no
+provider signal" case for it.
 
 ### The measurement, and the number it produced
 
@@ -293,46 +296,53 @@ observer remained inert throughout.
 | **Spotify, competing Connect device** | 39 | Ritmo lost the active device after ~1.25 s; another household device became active, while Ritmo's cached reading remained `playing: true` and frozen |
 | **Spotify, healthy Ritmo device** | 29 plus an 8 s API cross-check | Observer reported 27 `not_advancing` and peak misses **16**, but Spotify's Web API showed the Ritmo device active and advanced **8,308 ms in ~8 s**; the owner heard uninterrupted audio |
 
-**The Spotify signal is invalid for steady playback.** `SpotifyAdapter.getLiveness()` returns
-the last `player_state_changed` payload. That event reports transport state changes; it is not a
-playhead timer. During healthy playback the cached position can remain unchanged for many polls,
-manufacturing consecutive misses. In the measured run it froze at 1,220 ms, later jumped to
-30,173 ms when another state event arrived, then froze again while Spotify's own API and audible
-output proved playback was advancing. Both a real Connect-device handoff and healthy playback
-therefore produce the same frozen local reading.
+**The Spotify signal on Worker `fc0eb9a9` was invalid for steady playback.** At that
+measurement, `SpotifyAdapter.getLiveness()` returned the last `player_state_changed`
+payload. That event reports transport state changes; it is not a playhead timer. During
+healthy playback the cached position could remain unchanged for many polls, manufacturing
+consecutive misses. In the measured run it froze at 1,220 ms, later jumped to 30,173 ms
+when another state event arrived, then froze again while Spotify's own API and audible
+output proved playback was advancing. Both a real Connect-device handoff and healthy
+playback therefore produced the same frozen local reading.
 
-Do **not** route Spotify liveness verdicts to `fail()` or adopt the candidate ≥3 threshold until
-the adapter reads current transport state (the SDK exposes `getCurrentState()`), focused tests
-cover steady playback and ownership changes, and the corrected signal is re-measured against a
-live Premium account. With the shipped adapter, ≥3 would falsely interrupt healthy Spotify audio
-after roughly 7.5 seconds.
+That stale-cache behaviour was the pre-[#399](https://github.com/steven-crosby/ritmofit-web/pull/399)
+adapter. **It is not current.** `#399` shipped `getCurrentState()` on every probe and treats
+`null` or a current-track URI different from the class track while the adapter owns started
+playback as an unresponsive local device. The URI check was added after Spotify Connect
+changed the active track independently of the class while continuing to play through the
+Ritmo Studio device; this is remote control of the active Connect device, not a device
+handoff. A separate explicit transfer to the iPhone and back exercised the device-handoff
+path.
 
-The local fix now reads `getCurrentState()` on every probe and treats `null` or a current-track
-URI different from the class track while the adapter owns started playback as an unresponsive
-local device. The URI check was added after Spotify Connect changed the active track independently
-of the class while continuing to play through the Ritmo Studio device; this is remote control of
-the active Connect device, not a device handoff. A separate explicit transfer to the iPhone and
-back exercised the device-handoff path.
+The corrected bundle was live-verified before merge (loaded into the authenticated
+production origin without deploying it). Healthy playback produced 14/14 `advancing`
+samples in the first run and 5/5 after a reset, with zero misses and audible music
+confirmed by the owner. Changing the active track from the iPhone while Ritmo remained the
+output device changed the observer from `advancing` to `unresponsive`; the subsequent
+remote-control / explicit-device-transfer sequence accumulated 93 `unresponsive` and 2
+`provider_paused` samples. The signal fix is therefore live-verified for healthy steady
+playback, Connect track replacement, and external pause. The observer remained inert as
+designed: Live did not react to any verdict.
 
-The corrected local bundle was then loaded into the authenticated production origin without
-deploying it. Healthy playback produced 14/14 `advancing` samples in the first run and 5/5 after a
-reset, with zero misses and audible music confirmed by the owner. Changing the active track from
-the iPhone while Ritmo remained the output device changed the observer from `advancing` to
-`unresponsive`; the subsequent remote-control / explicit-device-transfer sequence accumulated 93
-`unresponsive` and 2 `provider_paused` samples. The signal fix is therefore live-verified for
-healthy steady playback, Connect track replacement, and external pause. The observer remained
-inert as designed: Live did not react to any verdict.
+Do **not** route any liveness verdict to `fail()` from this observer. Alerting is still an
+owner decision; instrumentation stays recording-only.
 
 Do not make Spotify's arbitrary Connect queue the Live source of truth. The class track and its
 choreography remain authoritative; a mismatched provider track or external pause should eventually
 surface as an interruption with a recovery action that restores the scheduled class track.
 
-**The hidden-tab case remains a design blocker for alerting.** A hidden tab stops the host rAF
-loop, so `hostTicks === 0` classifies every provider reading as `host_stalled` before inspecting
-whether the provider is advancing. This correctly prevented 42 healthy Apple samples from
-becoming false misses. It also means a provider that actually dies while the host is stalled
-cannot increment the miss counter—the historical Apple Music stall that motivated this work
-occurred in a backgrounded tab. Decide how to distinguish those cases before alerting.
+**The hidden-tab short-circuit did not "prevent false misses."** The 42 Apple Music hidden-tab
+samples were classified `host_stalled` because `classify()` returned that verdict as soon as
+`hostTicks === 0`, without inspecting the reading. The table above already shows every one of
+those 42 readings was `playing: true` with a positive position delta — they would have been
+`advancing` if the provider had been inspected, so the short-circuit discarded healthy
+evidence rather than protecting the miss counter. The same short-circuit would have swallowed
+the motivating 2026-07-06 Apple Music stall (`playing: true`, frozen position, backgrounded
+tab) as `host_stalled` instead of `not_advancing`. Classify now inspects the provider reading
+regardless of host ticks: an advancing playhead is `advancing` (misses stay 0); a frozen
+`playing: true` is `not_advancing` and increments `consecutiveMisses`. `unresponsive` is
+still classified first and still counts as a miss. The observer remains inert — no `fail()`,
+no Live UI, no class-clock freeze.
 
 Two adjacent production findings need separate follow-up:
 
@@ -353,11 +363,15 @@ Two adjacent production findings need separate follow-up:
   canvas or canvas dependency anywhere in `apps/web`. Unchanged: unconfirmed, not closed.
 - **The liveness watchdog** — the observation half is implemented and now measured against
   SoundCloud, Apple Music, and Spotify (§2b and the 2026-08-31 live-provider measurement).
-  **Alerting is blocked**, not merely awaiting threshold selection: Spotify's shipped
-  `getLiveness()` signal falsely reports sustained non-advancement during healthy playback, and
-  the `host_stalled` classification cannot detect provider death while the host rAF loop is
-  stalled. Fix and live-verify both signal problems before reconsidering the candidate ≥3
-  threshold.
+  The two signal problems that previously blocked even considering a threshold are no
+  longer current: Spotify's stale `player_state_changed` cache was replaced by
+  `getCurrentState()` in [#399](https://github.com/steven-crosby/ritmofit-web/pull/399),
+  and `classify()` now inspects the provider reading even when the host rAF loop recorded
+  zero ticks (`host_stalled` is no longer a winning verdict). **Alerting is still not
+  wired** — the observer stays inert by owner decision (instrument first). Re-measure a
+  hidden-tab Apple run under the new classifier before treating the candidate ≥3
+  threshold as live-verified; the 42-sample row above is a record of the old short-circuit,
+  not of current classify.
 - **Runtime failure coverage** — SoundCloud's runtime-failure path was induced earlier. A real
   Spotify Connect-device handoff was observed on 2026-08-31, but it produced no SDK error event;
   only the inert liveness observer noticed the frozen cached state. Apple Music's adapter error
