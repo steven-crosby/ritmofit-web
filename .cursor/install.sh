@@ -13,6 +13,13 @@ corepack enable >/dev/null 2>&1 || true
 echo "==> Installing workspace dependencies"
 pnpm install --frozen-lockfile
 
+# Build the SPA so apps/web/dist exists. `wrangler dev` (pnpm dev:api) fails to
+# start otherwise because wrangler.toml's [assets] directory points at
+# ../web/dist — the Worker serves the SPA single-origin. This is source-derived
+# generation, so it belongs in install; it is safe to re-run.
+echo "==> Building web SPA (required by wrangler dev [assets])"
+pnpm --filter @ritmofit/web build
+
 # Local Worker secrets. .dev.vars is git-ignored; only BETTER_AUTH_SECRET is
 # required to boot. MOCK_PROVIDERS=true (already the template default) runs the
 # builder against a deterministic mock catalog with no third-party credentials.
