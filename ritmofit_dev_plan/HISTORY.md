@@ -10,6 +10,51 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-13 (PRs #412, #414, #415 — Studio Pulse Check remediation, batch 1) —
+> deployed (Worker `edaa62b0-8957-486c-b953-24eae2b0fd33`).** Main HEAD `38f8526`. Carries
+> three merged PRs from the same-day live UX audit ([Studio Pulse
+> Check](https://claude.ai/code/artifact/28aaf27a-434f-46c5-a163-f301c0ab2238)):
+>
+> - **PR #412 (the audit's P0):** the Class Builder's per-track Intensity picker
+>   (`IntensitySegmentedControl.tsx`, `.rf-zone-control` in `index.css`) rendered at 0px
+>   computed width at ordinary desktop widths, corrupting the "Zone N · Label" summary into
+>   overlapping unreadable text on every track. Fixed with an explicit `width: 100%` plus a
+>   new real-browser smoke assertion (`narrow-width.smoke.mjs`) guarding the regression.
+> - **PR #414 (AUTH-A11Y + OD-01):** redundant icon+color error/success cues and ember
+>   invalid-field borders on auth forms; one consistent password-length contract with help
+>   text between sign-up and reset; a labelled show/hide password toggle (new shared
+>   `PasswordField` component); focus now moves to the heading on sign-in/sign-up/forgot
+>   mode switches. Also removed the `rf-hero-glow` warm atmosphere from `Login.tsx` **and**
+>   `ResetPassword.tsx` (owner-resolved OD-01: auth stays cool-and-quiet).
+> - **PR #415 (SOURCE-ARTWORK):** a new shared `TrackArt` component replaces the bare
+>   music-note placeholder with a deterministic warm-gradient tile (copper/amber/ember
+>   family only, never cyan/plasma) keyed by BPM band or a stable title+artist hash — never
+>   by intensity, since Library rows must not infer class intensity before a track joins a
+>   class. Fixed 6 instances total (the audit named 2; grepping found 4 more in
+>   `Dashboard.tsx`, including the class-cover `ArtCollage` zero-art case).
+>
+> No schema, migration, or shared-contract change in any of the three. No remote D1 change.
+>
+> Rollback anchor: prior live `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7` (2026-09-13 #406).
+> Remote D1: **no migrations to apply** (checked before deploy). `BETA_ALLOWED_EMAILS`
+> present (name only). Full pre-deploy gate green on these exact bytes from the repository
+> root (format / typecheck / lint / design verify / theme-classes / unit / integration /
+> web build / openapi no-drift / contract-parity / audit:ci).
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` →
+> `200`, protected `classes` / `explore` / `teams` → `401`, all six security headers
+> present, mounted routes (`shares`, provider `playlists`, class `cover`) reached real
+> handlers (`401`, not `404`). Served entry `assets/index-qP8PwncH.js` confirmed by
+> **three consecutive** cache-busted fetches immediately after deploy (no propagation lag
+> observed this time). Live-verified in an authenticated Chrome session against production:
+> the Intensity picker renders correctly (full-width zone buttons, clean "Zone 2 · Push"
+> summary, no overlap) on the same 65-track class used to reproduce the bug during the
+> audit; no console errors. The disposition ledger
+> ([`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md))
+> tracks the remaining backlog slices (PROVIDER-TRUTH, DESTRUCTIVE-CONTROLS, BUILDER-A11Y,
+> ENERGY-RIBBON, LIVE-RUNTIME, LIVE-CONTROLS, RESPONSIVE-QA, PROD-HYGIENE) as not yet
+> scheduled.
+
 > **Session 2026-09-13 (PR #406 signup open-access copy fix) — deployed (Worker
 > `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7`).** Main HEAD `4031d5b`. Carries **PR #406**
 > (merge): the auth screen's eyebrow and left-panel footer were hardcoded to
