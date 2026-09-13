@@ -35,7 +35,18 @@ Pilates, and HIIT.
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
 - **Current operating focus (2026-09-13):** the launch gate is green and the app is live.
-  **PRs #401–#403, #406 are deployed** — Worker `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7` from
+  **PRs #412, #414, #415 are deployed** — Worker `edaa62b0-8957-486c-b953-24eae2b0fd33` from
+  main `38f8526`, the first remediation batch from the same-day [Studio Pulse
+  Check](https://claude.ai/code/artifact/28aaf27a-434f-46c5-a163-f301c0ab2238) live UX audit:
+  the Class Builder's Intensity picker no longer collapses to 0px width (#412, the audit's
+  P0); auth forms get redundant icon+color error cues, one password-length contract, a
+  show/hide toggle, mode-switch focus, and the sign-in heat glow removed per the resolved
+  OD-01 decision (#414); a shared `TrackArt` component replaces the bare music-note artwork
+  fallback in 6 places, not just the 2 the audit cited (#415). No schema, migration, or
+  shared-contract change across the three; no remote D1 change. Full disposition and the
+  remaining 8-slice backlog live in
+  [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
+  Prior deploy: **PRs #401–#403, #406** — Worker `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7` from
   main `4031d5b`. Playback-liveness `classify()` now lets provider transport win over a
   zero-tick host rAF loop instead of short-circuiting to a false `host_stalled` verdict
   (`host_stalled` removed from `LivenessVerdict`); hono bumped to `4.13.7` (patches three
@@ -70,8 +81,9 @@ Pilates, and HIIT.
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
   Music workspace via a shared provider-browse hook. **Production matches `main` after the
-  2026-09-13 #406 deploy** (Worker `c77ba5c9`). Prior production application code was the
-  2026-09-13 #401–#403 Worker `8a6318e4-1f32-4c47-8651-6cde7416b9ca` from main `37c437d`,
+  2026-09-13 #412/#414/#415 deploy** (Worker `edaa62b0`). Prior production application code
+  was the 2026-09-13 #406 Worker `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7` from main `4031d5b`,
+  and before that the 2026-09-13 #401–#403 Worker `8a6318e4-1f32-4c47-8651-6cde7416b9ca` from main `37c437d`,
   and before that the 2026-09-06 #399 Worker `5ae8b540-ffe6-45cc-98a8-c82e5c3caa31` from main
   `b340ddf`.
   Earlier trail (not current alignment; deployment checkout `dc998dd`, application source
