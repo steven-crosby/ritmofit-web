@@ -16,7 +16,9 @@ was skipped.
 ## Close depth
 
 **Light close (default):** git, PRs, local + remote branch hygiene, inbox/docs if anything
-new landed, secrets/blockers, final summary.
+new landed, secrets/blockers, final summary. If this session merged to `main` or deployed,
+still state main-vs-production align/ahead + Worker id (full evidence bar stays for full
+close / deploy path / when alignment is in doubt).
 
 **Full close:** add verification gates and a production reconcile. Use full close when this
 session changed code, contracts, schema, or deployment behavior *and* those checks have not
@@ -35,10 +37,12 @@ copy a shorter list here.
   unrelated work. If ownership or recovery is unclear, stop and ask for an explicit plan.
   Note branch, upstream sync, ahead/behind state, and whether `main` is current with
   `origin/main`.
-- [ ] Prune merged branches. Delete local feature branches already merged to `main`.
-  Delete remote branches whose PRs are already merged (`git branch -r --merged origin/main`,
-  plus remotes whose PRs show `MERGED` even if git does not see them as ancestors after a
-  squash). Leave unmerged branches alone and flag them.
+- [ ] Prune merged branches. Local: delete local feature branches already merged to `main`
+  without asking; leave unmerged alone and flag them. Remote: list candidate remote branches
+  (via `git branch -r --merged origin/main` and/or PRs showing `MERGED` after squash) and get
+  an explicit owner yes before deleting any remotes.
+- [ ] If close leaves the worktree off `main`, say so ("Left on branch X") and offer
+  checkout back to `main`.
 
 ## 2. PR hygiene
 
@@ -55,13 +59,20 @@ format checking or explain why heavier gates were not run. If code, contracts, s
 deployment behavior changed, run the full CI-equivalent gate from `AGENTS.md` ›
 "Verification, PRs, And Commits" (includes `theme-classes`).
 
-## 4. Deployment state (full close, or when production alignment is in doubt)
+## 4. Deployment state
+
+**When required:** If this session merged to `main` or deployed to production, always state
+align/ahead + Worker id — even on a light close. Full evidence (SPA three-hash settle,
+mounted-route smoke, etc.) stays for full close, the deploy path, or when production
+alignment is in doubt; light close can be lighter but must not stay silent after a
+merge/deploy.
 
 Skip if this session already deployed and smoked, unless a later merge put `main` ahead
 of production again.
 
 - [ ] Determine whether production appears aligned with `main`. Deploys are manual, so code
-  merged to `main` this session is not live until deployed.
+  merged to `main` this session is not live until deployed. On a light close after
+  merge/deploy, a brief align/ahead + Worker id note is enough.
 - [ ] Default to **not** deploying just because code merged this session. Ritmo Studio ships in
   deliberate batches, not once per merge (see `AGENTS.md` "Security And Deployment").
   Deploy now only for a batch the owner wants live, an urgent fix (prod bug / regression /
@@ -77,6 +88,11 @@ of production again.
 
 Skip rewriting a `HISTORY.md` / `DEVELOPMENT_PLAN.md` record this session already wrote.
 
+- [ ] After a production deploy this session: ensure `HISTORY.md` and the current-focus /
+  main-vs-production lines in `DEVELOPMENT_PLAN.md` are updated on a docs PR (or already on
+  `main`). Do not declare the session closed while that record is only local or only an
+  unmerged PR unless the owner explicitly parks it. Prefer Conventional Commit
+  `docs: record the #<pr-or-change> deploy (Worker <id>)`.
 - [ ] Drain `INBOX.md`: capture any breadcrumbs that surfaced this session, then route each
   open `- [ ]` item to its real home using the routing table in `INBOX.md`
   (decision → `decisions.md`, scope → `DEVELOPMENT_PLAN.md`/`milestones.md`,
@@ -88,9 +104,13 @@ Skip rewriting a `HISTORY.md` / `DEVELOPMENT_PLAN.md` record this session alread
 - [ ] Keep `AGENTS.md` limited to durable contributor rules; update it only when workflows,
   architecture boundaries, or canonical commands change.
 - [ ] Append dated deploy/build entries to `ritmofit_dev_plan/HISTORY.md` when something
-  shipped, deployed, or materially changed operational state. Use absolute dates.
-- [ ] Refresh the current-state summary in `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`, and
-  `ritmofit_dev_plan/milestones.md` if a milestone changed.
+  shipped, deployed, or materially changed operational state. Use absolute dates. Do this
+  first in the deploy-record sequence.
+- [ ] Then refresh current-focus / main-vs-production (and backlog if needed) in
+  `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`, and `ritmofit_dev_plan/milestones.md` if a
+  milestone changed.
+- [ ] Open (or confirm) the docs PR with those updates, then pause for merge before calling
+  the session closed — unless the owner explicitly parks the PR.
 - [ ] Track forward work in the most specific current-status doc. Use
   `ritmofit_dev_plan/web-ios-parity.md` only for owner-requested iOS handoff/refinement or explicit
   cross-surface contract/design notes; do not create parallel backlog lists.
@@ -118,8 +138,10 @@ Print a tight state report:
 - **PRs:** open count and disposition.
 - **Verification:** commands run and results; explicitly list skipped gates.
 - **Deployment:** whether production matches `main`, Worker version, and D1 migration state
-  when checked.
-- **Docs:** status/history/parity docs updated or intentionally unchanged.
+  when checked. After a merge or deploy this session, always include align/ahead + Worker id
+  (even on light close).
+- **Docs:** status/history/parity docs updated or intentionally unchanged; if a production
+  deploy happened, note whether the deploy-record PR is open, merged, or explicitly parked.
 - **Next session:** blockers first, then the highest-value follow-up.
 
 ## Quick reference
