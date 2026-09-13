@@ -34,11 +34,15 @@ Pilates, and HIIT.
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
-- **Current operating focus (2026-09-06):** the launch gate is green and the app is live.
-  **PR #399 is deployed** — Worker `5ae8b540-ffe6-45cc-98a8-c82e5c3caa31` from main
-  `b340ddf`. Spotify liveness now probes current SDK state (still observe-only: never
-  alert, never call `fail()`). No schema, migration, or shared-contract change; no
-  remote D1 change. The six 2026-07-24 design-audit implementation slices already landed
+- **Current operating focus (2026-09-13):** the launch gate is green and the app is live.
+  **PRs #401–#403 are deployed** — Worker `8a6318e4-1f32-4c47-8651-6cde7416b9ca` from main
+  `37c437d`. Playback-liveness `classify()` now lets provider transport win over a
+  zero-tick host rAF loop instead of short-circuiting to a false `host_stalled` verdict
+  (`host_stalled` removed from `LivenessVerdict`); hono bumped to `4.13.7` (patches three
+  moderate GHSAs) with an unused `better-auth`→`vitest` peer stripped; plus session-prompt
+  doc tightening. Observer remains inert (still observe, never alert, never call
+  `fail()`). No schema, migration, or shared-contract change; no remote D1 change. The six
+  2026-07-24 design-audit implementation slices already landed
   and shipped (2026-07-27); they are not current work. Remaining owner calls: the
   alerting half of playback liveness, and F-02 (D11 `createPattern`, still unconfirmed).
   Inbox empty. The product track remains the **D21 creator-workstation-shell
@@ -64,8 +68,8 @@ Pilates, and HIIT.
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
   Music workspace via a shared provider-browse hook. **Production matches `main` after the
-  2026-09-06 #399 deploy** (Worker `5ae8b540`). Prior production application code was the
-  2026-08-28 #395 Worker `fc0eb9a9-5255-4948-8753-3c5d46a5231f` from main `7eb013e`.
+  2026-09-13 #401–#403 deploy** (Worker `8a6318e4`). Prior production application code was the
+  2026-09-06 #399 Worker `5ae8b540-ffe6-45cc-98a8-c82e5c3caa31` from main `b340ddf`.
   Earlier trail (not current alignment; deployment checkout `dc998dd`, application source
   `68dfc27`, 2026-07-16): all-harden round 19 (#322–#324) is deployed in Worker
   `9d144446-bd89-4792-9fda-64220eb122b9`, serving SPA asset `assets/index-BoLBQItP.js`; there was no
@@ -263,11 +267,12 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-06):** **PR #399** (Spotify liveness reads
-current SDK state — still observe, never alert / never call `fail()`) is **deployed**.
-Production Worker `5ae8b540-ffe6-45cc-98a8-c82e5c3caa31` from main `b340ddf`. No schema,
-migration, or shared-contract change. The alerting half of liveness remains an owner
-decision; F-02 (D11 `createPattern`) stays unconfirmed. Inbox empty.
+**Current `main` vs production (2026-09-13):** **PRs #401–#403** (liveness `classify()`
+lets provider transport win over a stalled host rAF loop — still observe, never alert /
+never call `fail()`; hono 4.13.7 GHSA patch; session-prompt doc tightening) are
+**deployed**. Production Worker `8a6318e4-1f32-4c47-8651-6cde7416b9ca` from main
+`37c437d`. No schema, migration, or shared-contract change. The alerting half of liveness
+remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed. Inbox empty.
 
 - **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
 - **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —

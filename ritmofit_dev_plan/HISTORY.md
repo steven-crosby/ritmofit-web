@@ -10,6 +10,43 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-13 (PRs #401–#403 liveness provider-wins + hono audit fix + docs) —
+> deployed (Worker `8a6318e4-1f32-4c47-8651-6cde7416b9ca`).** Main HEAD `37c437d`. Carries
+> **PR #402** (merge, provider liveness wins over a stalled host rAF loop): `classify()`
+> no longer treats `hostTicks === 0` as a winning `host_stalled` verdict and instead
+> inspects the provider reading — a hidden host with an advancing playhead now classifies
+> `advancing`, a frozen `playing: true` reading classifies `not_advancing`; `host_stalled`
+> is removed from `LivenessVerdict` entirely. **PR #403** (merge, CI unblocker): bumps
+> `hono` `~4.12.34` → `~4.13.7` (patches three moderate GHSAs — `toSSG()`, `parseBody()`
+> dot-nesting, and fragment-aware query parsing) and strips the unused optional
+> `better-auth`→`vitest` peer in `.pnpmfile.cjs` (a workspace `vitest` override would break
+> `@cloudflare/vitest-pool-workers` 0.12.21's required vitest 2–3.x range and the per-test
+> D1 isolation the authz integration suite relies on). **PR #401** (docs only):
+> start-/close-session prompt refinements — checkout identity, orient modes, production
+> evidence bar, single recommended next action. The observer stays inert throughout —
+> still observe, never alert, never call `fail()`. **No schema, migration, or
+> shared-contract change. No remote D1 change.**
+>
+> Rollback anchor: prior live `5ae8b540-ffe6-45cc-98a8-c82e5c3caa31` (2026-09-06 #399).
+> Remote D1: **no migrations to apply** (checked before deploy). `BETA_ALLOWED_EMAILS`
+> present (name only). Full pre-deploy gate green on these exact bytes from the repository
+> root (format / typecheck / lint / design verify / theme-classes / unit / integration / web
+> build / openapi no-drift / contract-parity / audit:ci) — `audit:ci` confirms the hono/
+> vitest advisories are cleared. SPA built before the Worker deploy.
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` →
+> `200`, protected `classes` / `explore` / `teams` → `401`, all six security headers present,
+> and the mounted launch routes (shares, Spotify search, saved playlists, playlist import,
+> class tags, moves) reach their handlers as `401` rather than `404`. Cover serve
+> (`GET /api/v1/uploads/covers/smoke-missing.jpg`) reaches the real handler as JSON
+> `NOT_FOUND`, not an SPA miss. Served entry `assets/index-DTvRS9yt.js`: the first
+> cache-busted fetch still returned the previous entry, then settled by the second fetch,
+> confirmed by **two further consecutive** matches. Worker version independently confirmed
+> at 100% `8a6318e4`. F-06 Live danger token still ships:
+> `--rf-color-semantic-live-danger: #EF8572` and `--rf-color-primitive-ember-200: #EF8572`
+> on the served stylesheet. The alerting half of liveness remains an owner decision. F-02
+> (D11 `createPattern`) stays unconfirmed. Inbox empty.
+
 > **Session 2026-09-06 (PR #399 Spotify liveness current-state) — deployed (Worker
 > `5ae8b540-ffe6-45cc-98a8-c82e5c3caa31`).** Main HEAD `b340ddf`. Carries **PR #399**
 > (merge `b340ddf`): Spotify playback liveness now reads the SDK's *current* player state
