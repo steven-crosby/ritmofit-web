@@ -10,6 +10,28 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-13 (PR #406 signup open-access copy fix) — deployed (Worker
+> `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7`).** Main HEAD `4031d5b`. Carries **PR #406**
+> (merge): the auth screen's eyebrow and left-panel footer were hardcoded to
+> invitation-required copy regardless of access mode, contradicting the already-correct
+> heading/description when the API reports `access.mode: "open"`. Both now follow the
+> same `inviteOnly` flag as the rest of the screen (`Login.tsx` + new `Login.test.tsx`
+> coverage). No schema, migration, or shared-contract change. No remote D1 change.
+>
+> Rollback anchor: prior live `8a6318e4-1f32-4c47-8651-6cde7416b9ca` (2026-09-13
+> #401–#403). Remote D1: **no migrations to apply** (checked before deploy).
+> `BETA_ALLOWED_EMAILS` present (name only). Full pre-deploy gate green on these exact
+> bytes from the repository root (format / typecheck / lint / design verify /
+> theme-classes / unit / integration / web build / openapi no-drift / contract-parity /
+> audit:ci).
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health`
+> → `200`, protected `classes` / `explore` / `teams` → `401`, all six security headers
+> present. Served entry `assets/index-njApmPWl.js` confirmed by **five consecutive**
+> cache-busted fetches. Worker version independently confirmed at 100% `c77ba5c9`. The
+> alerting half of liveness remains an owner decision. F-02 (D11 `createPattern`) stays
+> unconfirmed. Inbox empty.
+
 > **Session 2026-09-13 (PRs #401–#403 liveness provider-wins + hono audit fix + docs) —
 > deployed (Worker `8a6318e4-1f32-4c47-8651-6cde7416b9ca`).** Main HEAD `37c437d`. Carries
 > **PR #402** (merge, provider liveness wins over a stalled host rAF loop): `classify()`
