@@ -94,8 +94,15 @@ describe('Login accessible labels', () => {
     expect(
       await screen.findByText('Private beta · New accounts require an invitation.'),
     ).toBeTruthy();
+    expect(
+      screen.getByText('Private beta · invited instructors only · provider-authorized playback'),
+    ).toBeTruthy();
     fireEvent.click(screen.getByText('Need an invited account? Sign up'));
+    expect(screen.getByText('Invitation required')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Use your invited email' })).toBeTruthy();
+    expect(
+      screen.getByText('Your name and email stay here if the invitation needs attention.'),
+    ).toBeTruthy();
   });
 
   it('makes no invitation claim where the gate reports signup is open', async () => {
@@ -111,9 +118,16 @@ describe('Login accessible labels', () => {
 
     expect(await screen.findByText('Need an account? Sign up')).toBeTruthy();
     expect(screen.queryByText('Private beta · New accounts require an invitation.')).toBeNull();
+    expect(
+      screen.queryByText('Private beta · invited instructors only · provider-authorized playback'),
+    ).toBeNull();
+    expect(screen.getByText('Provider-authorized playback')).toBeTruthy();
     fireEvent.click(screen.getByText('Need an account? Sign up'));
+    expect(screen.getByText('Create account', { selector: 'p' })).toBeTruthy();
+    expect(screen.queryByText('Invitation required')).toBeNull();
     expect(screen.getByRole('heading', { name: 'Create your account' })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Use your invited email' })).toBeNull();
+    expect(screen.getByText('Create your personal instructor workspace.')).toBeTruthy();
   });
 
   it('notifies the app after a successful sign-up', async () => {
