@@ -1,0 +1,20 @@
+{
+  "name": "Ritmo Studio (ritmofit-web)",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "api",
+      "command": "pnpm dev:api",
+      "description": "Hono/Cloudflare Worker + local D1 at http://localhost:8787 (wrangler dev)."
+    },
+    {
+      "name": "web",
+      "command": "pnpm dev:web",
+      "description": "React/Vite/Tailwind SPA at http://localhost:5173 (regenerates design tokens first)."
+    }
+  ],
+  "ports": [
+    { "name": "api", "port": 8787 },
+    { "name": "web", "port": 5173 }
+  ]
+}
