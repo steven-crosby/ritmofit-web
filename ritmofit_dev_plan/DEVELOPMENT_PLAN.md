@@ -292,11 +292,46 @@ shared-contract change. The alerting half of liveness remains an owner decision;
   track inspector, at ordinary desktop window width — reproduced live on real classes,
   independently confirmed twice. Root cause: `.rf-zone-control` (`index.css:130`,
   `container-type: inline-size`) never receives an explicit width from its ancestor, so its
-  `flex-1` children and the container query both collapse. Fix + full evidence:
+  `flex-1` children and the container query both collapse. The isolated fix is proposed in
+  [PR #412](https://github.com/steven-crosby/ritmofit-web/pull/412); it is not merged or deployed, so
+  production remains affected. Source evidence:
   [Studio Pulse Check](https://claude.ai/code/artifact/28aaf27a-434f-46c5-a163-f301c0ab2238)
-  (2026-09-13 live UI/UX audit). 21 other findings (P1–P3, mostly consistency gaps, plus two
-  doc-vs-code conflicts needing an owner call) are in the same report, not yet triaged into
-  this backlog — read the artifact before starting remediation.
+  (2026-09-13 live UI/UX audit).
+
+**Studio Pulse Check follow-up — triaged, not authorized for implementation:**
+
+The other 21 findings now have an authoritative disposition in
+[`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
+Nineteen map to the ten scoped slices below; two remain explicit owner decisions. The two
+out-of-scope/unverified audit claims were independently checked before disposition. This list is the
+planning queue; the ledger preserves the finding-by-finding evidence and acceptance boundaries.
+
+- **AUTH-A11Y (SPC-01–04):** redundant auth status cues, one password contract, reveal controls, and
+  announced mode transitions.
+- **PROVIDER-TRUTH (SPC-06, 08, 09):** correct expired-state tone in Dashboard headers, icon-system
+  state marks, and real backend signals before adding permission/provider-error states.
+- **SOURCE-ARTWORK (SPC-07):** replace bare music-note placeholders with the canonical artwork
+  fallback.
+- **DESTRUCTIVE-CONTROLS (SPC-10):** bring Dashboard class deletion onto the documented destructive
+  pattern.
+- **BUILDER-A11Y (SPC-11–13, 15):** restore focus, normalize mutation errors, and announce validation
+  and inline confirmations.
+- **ENERGY-RIBBON (SPC-14):** implement the documented placed-move refinement, or obtain a separate
+  owner decision before downgrading the docs.
+- **LIVE-RUNTIME (SPC-16, 18):** coalesce drag seeking and isolate animation-frame rendering without
+  changing provider-authoritative playback/liveness behavior.
+- **LIVE-CONTROLS (SPC-19):** align the disabled Start-class treatment with the documented state.
+- **RESPONSIVE-QA (SPC-20):** repair the stale broad smoke harness, resolve the independently observed
+  390px overflow, and complete viewport plus 200% zoom verification.
+- **PROD-HYGIENE (SPC-21):** inventory and prevent production fixtures; any deletion remains a separate
+  authorization.
+
+Open owner decisions:
+
+- **OD-01 / SPC-05 — sign-in warmth:** keep auth cool and quiet (recommended), or document the warm
+  heat glow as an explicit brand-front exception.
+- **OD-02 / SPC-17 — Live data hero:** keep cue-first hierarchy and update stale docs/comments
+  (recommended), or restore BPM as the documented 88px hero.
 
 **Non-blocking production verification:**
 
