@@ -50,6 +50,66 @@ async function checkNoOverflow(page, label) {
   else fail(`no-overflow:${label}`, `${px}px horizontal overflow`);
 }
 
+/**
+ * The intensity picker is a size container whose five flex children need a
+ * definite inline size. A widthless container can collapse to 0px in a real
+ * browser even though its content and accessibility tree still exist.
+ */
+async function checkIntensityControlLayout(page) {
+  const metrics = await page.evaluate(() => {
+    const controls = [...document.querySelectorAll('.rf-zone-control')].filter((control) => {
+      const inspector = control.closest('section[aria-label^="Track inspector"]');
+      const inspectorRect = inspector?.getBoundingClientRect();
+      return inspectorRect != null && inspectorRect.width > 0 && inspectorRect.height > 0;
+    });
+    return controls.map((control) => {
+      const rect = control.getBoundingClientRect();
+      const parentWidth = control.parentElement?.getBoundingClientRect().width ?? 0;
+      const groupWidth =
+        control.querySelector('[role="group"]')?.getBoundingClientRect().width ?? 0;
+      const summaryWidth = control.querySelector('p')?.getBoundingClientRect().width ?? 0;
+      const wordDisplays = [...control.querySelectorAll('.rf-zone-word')].map(
+        (word) => getComputedStyle(word).display,
+      );
+      return { width: rect.width, parentWidth, groupWidth, summaryWidth, wordDisplays };
+    });
+  });
+
+  if (metrics.length !== 1) {
+    fail('intensity-control:one-visible', `expected 1 visible control, saw ${metrics.length}`);
+    return;
+  }
+
+  const [metric] = metrics;
+  const fillsRow = metric.width > 0 && metric.width >= metric.parentWidth - 1;
+  const childrenHaveWidth = metric.groupWidth > 2 && metric.summaryWidth > 0;
+  if (fillsRow && childrenHaveWidth) {
+    pass(
+      'intensity-control:definite-width',
+      `control=${Math.round(metric.width)}px parent=${Math.round(metric.parentWidth)}px`,
+    );
+  } else {
+    fail(
+      'intensity-control:definite-width',
+      `control=${metric.width}px parent=${metric.parentWidth}px group=${metric.groupWidth}px summary=${metric.summaryWidth}px`,
+    );
+  }
+
+  const wordsHidden = metric.wordDisplays.every((display) => display === 'none');
+  const shouldHideWords = metric.width <= 319;
+  if (wordsHidden === shouldHideWords) {
+    pass(
+      'intensity-control:container-query',
+      `${Math.round(metric.width)}px container; words ${wordsHidden ? 'hidden' : 'shown'}`,
+    );
+  } else {
+    fail(
+      'intensity-control:container-query',
+      `${Math.round(metric.width)}px container; words unexpectedly ${wordsHidden ? 'hidden' : 'shown'}`,
+    );
+  }
+}
+
 /** Expand the manual-entry disclosure in the open Class workspace. */
 async function openManualEntry(page) {
   const summary = page.locator('details > summary', { hasText: 'Add manually' }).filter({
@@ -263,6 +323,7 @@ try {
     .click();
   await page.getByRole('button', { name: 'Add cue' }).waitFor({ timeout: 10000 });
   await checkNoOverflow(page, 'dashboard-inspector-open');
+  await checkIntensityControlLayout(page);
   await page.screenshot({ path: join(shotsDir, 'dashboard-inspector-open.png'), fullPage: true });
 
   // Phase 3 (alive at rest): the inspector opens on Essentials (intensity/BPM/duration/
@@ -297,7 +358,10 @@ try {
 
   // Return to the selected class before exercising its Live handoff.
   await page.getByRole('button', { name: 'Classes', exact: true }).click();
-  await page.getByRole('button', { name: /Run live/ }).first().waitFor({ timeout: 10000 });
+  await page
+    .getByRole('button', { name: /Run live/ })
+    .first()
+    .waitFor({ timeout: 10000 });
 
   // 6. Live at rest (alive at rest · phase 4): entering Live and passing preflight
   // without music lands on the at-rest prompter, which must LEAD with the affirmative
