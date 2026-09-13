@@ -302,7 +302,8 @@ shared-contract change. The alerting half of liveness remains an owner decision;
 
 The other 21 findings now have an authoritative disposition in
 [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
-Nineteen map to the ten scoped slices below; two remain explicit owner decisions. The two
+Nineteen map to the ten scoped slices below; two were explicit owner decisions and are now resolved.
+The two
 out-of-scope/unverified audit claims were independently checked before disposition. This list is the
 planning queue; the ledger preserves the finding-by-finding evidence and acceptance boundaries.
 
@@ -326,12 +327,12 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
 - **PROD-HYGIENE (SPC-21):** inventory and prevent production fixtures; any deletion remains a separate
   authorization.
 
-Open owner decisions:
+Resolved owner decisions (Steven, 2026-09-13):
 
-- **OD-01 / SPC-05 — sign-in warmth:** keep auth cool and quiet (recommended), or document the warm
-  heat glow as an explicit brand-front exception.
-- **OD-02 / SPC-17 — Live data hero:** keep cue-first hierarchy and update stale docs/comments
-  (recommended), or restore BPM as the documented 88px hero.
+- **OD-01 / SPC-05 — sign-in warmth:** auth stays cool and quiet; remove the heat glow and preserve
+  warmth for marketing and celebratory moments.
+- **OD-02 / SPC-17 — Live data hero:** the next cue stays the visual hero; BPM remains prominent but
+  subordinate, and stale design docs/code comments should be updated.
 
 **Non-blocking production verification:**
 

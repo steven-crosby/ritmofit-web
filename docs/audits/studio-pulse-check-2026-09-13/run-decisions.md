@@ -25,7 +25,7 @@ production remains affected until both happen.
 | Disposition | Count | IDs |
 | --- | ---: | --- |
 | Backlog | 19 | SPC-01–04, SPC-06–21 except SPC-17 |
-| Owner decision | 2 | SPC-05, SPC-17 |
+| Owner decision — resolved | 2 | SPC-05, SPC-17 |
 | Accept and drop | 0 whole findings | One incorrect subclaim in SPC-06 is dropped; see its row |
 
 The two findings originally flagged as out-of-scope and not independently re-verified were checked
@@ -40,7 +40,7 @@ consistency gap. SPC-06 is directionally correct, but its cited component and sa
 | SPC-02 | P2 | Auth | Password requirements are inconsistent: reset exposes a minimum while sign-up lacks the matching constraint/help. | **Backlog — AUTH-A11Y** | Define one password requirement in the shared validation path and expose the same hint, validation, and error copy on sign-up and reset. |
 | SPC-03 | P3 | Auth | Password fields have no reveal/conceal control. | **Backlog — AUTH-A11Y** | Add labelled, keyboard-operable toggles that preserve focus and work with password-manager/autofill behavior. |
 | SPC-04 | P3 | Auth | Switching auth modes changes the panel but does not move focus or announce the new heading. | **Backlog — AUTH-A11Y** | Focus the destination heading (or provide an equivalent announced transition) after an intentional mode switch; do not steal focus on initial render. |
-| SPC-05 | P2 | Auth | **Re-verified after the audit:** `Login.tsx` uses the warm `rf-hero-glow`, while the design principles classify sign-in as a cool-and-quiet working surface. | **Owner decision — OD-01** | Choose whether auth is a working surface and loses the warm glow, or a brand-front exception and the design principle is amended. Recommendation: keep auth cool and quiet. |
+| SPC-05 | P2 | Auth | **Re-verified after the audit:** `Login.tsx` uses the warm `rf-hero-glow`, while the design principles classify sign-in as a cool-and-quiet working surface. | **Owner decision — OD-01, resolved** | Auth remains a cool-and-quiet working surface. Remove the heat glow; warmth remains reserved for marketing and celebratory moments. Approved by Steven, 2026-09-13. |
 | SPC-06 | P2 | Music / Account | **Corrected evidence:** the Connections dialog already applies the expired-state caution tone and uses distinct glyphs. The actual gap is in Dashboard's Music and Account connection headers, which hard-code tertiary text for “Session expired.” | **Backlog — PROVIDER-TRUTH** | Use the centralized connection-state tone in both headers and cover it with state-matrix tests. Drop the report's same-glyph subclaim as already correct. |
 | SPC-07 | P2 | Music / Builder | `SourceList` and `ClassSummaryView` use a bare music-note character as missing-artwork fallback. | **Backlog — SOURCE-ARTWORK** | Replace the placeholder with the canonical artwork fallback/component, preserving accessible naming and provider/source context. |
 | SPC-08 | P2 | Provider states | Connection-state marks are literal Unicode characters rather than the established icon system. | **Backlog — PROVIDER-TRUTH** | Move the glyphs to the icon system with stable sizing, alignment, accessible labels, and color-independent state names. |
@@ -52,7 +52,7 @@ consistency gap. SPC-06 is directionally correct, but its cited component and sa
 | SPC-14 | P2 | Builder | The energy ribbon renders track baselines only. Code explicitly defers placed-move refinement while design docs describe the hybrid ribbon as current behavior. | **Backlog — ENERGY-RIBBON** | Implement placed-move refinement from the existing choreography data, then add visual/data-state coverage. If product no longer wants the hybrid model, resolve that as a separate owner decision and amend the docs instead. |
 | SPC-15 | P3 | Builder | Custom-move inline Delete → Yes/No confirmation does not move focus to the destructive confirmation. | **Backlog — BUILDER-A11Y** | Focus “Yes” when confirmation opens, return focus on “No,” and choose a stable successor after deletion. |
 | SPC-16 | P2 | Live | Timeline drag seeking calls the provider seek path on every pointer move. | **Backlog — LIVE-RUNTIME** | Separate preview position from provider commits; coalesce/throttle drag updates and commit on pointer-up/cancel, with keyboard seeking unchanged and tested. |
-| SPC-17 | P2 | Live | The documented 88px BPM data hero is no longer the visual hierarchy in code; cue content is dominant while comments/docs still call BPM the hero. | **Owner decision — OD-02** | Choose cue-first Live and update docs/comments, or restore BPM as the data hero. Recommendation: keep cue-first under teaching pressure and update the documentation. |
+| SPC-17 | P2 | Live | The documented 88px BPM data hero is no longer the visual hierarchy in code; cue content is dominant while comments/docs still call BPM the hero. | **Owner decision — OD-02, resolved** | Keep the next cue as Live's visual hero and BPM prominent but subordinate; update the stale design documentation and code comments. Approved by Steven, 2026-09-13. |
 | SPC-18 | P3 | Live | The virtual clock updates state on every animation frame at a level that re-renders the broad Live subtree. | **Backlog — LIVE-RUNTIME** | Isolate frame-rate state to the smallest timeline/readout boundary and profile before/after; preserve provider-authoritative playback and liveness behavior. |
 | SPC-19 | P3 | Live | Disabled “Start class” lacks the documented reduced-opacity treatment. | **Backlog — LIVE-CONTROLS** | Apply the canonical disabled appearance (including the documented opacity target) while preserving native disabled semantics and readable contrast. |
 | SPC-20 | Constraint | Responsive QA | The audit did not complete its sub-900px pass. The current broad narrow-width smoke is stale in several routes, and focused P0 checks also exposed a separate 10px overflow at 390px. | **Backlog — RESPONSIVE-QA** | Repair stale locators/fixtures, resolve the independently observed overflow, then run 1280/953/680/390/320 plus 200% zoom. Do not treat the focused P0 verification as a full responsive pass. |
@@ -76,14 +76,15 @@ exactly one slice.
 | RESPONSIVE-QA | SPC-20 | Narrow-width smoke and affected layouts | Stable automated coverage plus manual viewport/zoom evidence; no horizontal overflow in the tested surfaces. |
 | PROD-HYGIENE | SPC-21 | Operations/runbook and production fixture workflow | Fixtures are identifiable and prevented from contaminating real queues; deletion stays separately authorized. |
 
-## Open owner decisions
+## Resolved owner decisions
 
-Neither decision authorizes implementation until Steven records a choice.
+Steven approved both agent recommendations in chat on 2026-09-13. These resolutions define the
+implementation direction but do not authorize an implementation slice by themselves.
 
 | ID | Decision | Option A | Option B | Agent recommendation | Owner disposition / notes |
 | --- | --- | --- | --- | --- | --- |
-| OD-01 / SPC-05 | Is sign-in a cool working surface or a warm brand-front exception? | Remove the heat glow and preserve the cool-and-quiet principle. | Keep the glow and amend the principle to name auth as an exception. | **A** — sign-in is task-focused and should inherit the quiet shell. | Open |
-| OD-02 / SPC-17 | What is Live's primary data hero? | Keep cue-first hierarchy and update design docs plus stale code comments. | Restore BPM at the documented 88px hero scale. | **A** — the next teaching cue is more useful under pressure; BPM can remain prominent but subordinate. | Open |
+| OD-01 / SPC-05 | Is sign-in a cool working surface or a warm brand-front exception? | Remove the heat glow and preserve the cool-and-quiet principle. | Keep the glow and amend the principle to name auth as an exception. | **A** — sign-in is task-focused and should inherit the quiet shell. | **Resolved: A.** Approved by Steven, 2026-09-13. |
+| OD-02 / SPC-17 | What is Live's primary data hero? | Keep cue-first hierarchy and update design docs plus stale code comments. | Restore BPM at the documented 88px hero scale. | **A** — the next teaching cue is more useful under pressure; BPM can remain prominent but subordinate. | **Resolved: A.** Approved by Steven, 2026-09-13. |
 
 ## Authorization boundary
 
