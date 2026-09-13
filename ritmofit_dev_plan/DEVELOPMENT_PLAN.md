@@ -286,7 +286,17 @@ shared-contract change. The alerting half of liveness remains an owner decision;
 
 **Open production issues:**
 
-- _None currently tracked here._
+- **P0 — Class Builder Intensity picker collapses to an unreadable/unusable sliver in
+  production.** The per-track intensity segmented control (`IntensitySegmentedControl.tsx`)
+  and its "Zone N · Label" summary paragraph render at a computed width of 0px on every
+  track inspector, at ordinary desktop window width — reproduced live on real classes,
+  independently confirmed twice. Root cause: `.rf-zone-control` (`index.css:130`,
+  `container-type: inline-size`) never receives an explicit width from its ancestor, so its
+  `flex-1` children and the container query both collapse. Fix + full evidence:
+  [Studio Pulse Check](https://claude.ai/code/artifact/28aaf27a-434f-46c5-a163-f301c0ab2238)
+  (2026-09-13 live UI/UX audit). 21 other findings (P1–P3, mostly consistency gaps, plus two
+  doc-vs-code conflicts needing an owner call) are in the same report, not yet triaged into
+  this backlog — read the artifact before starting remediation.
 
 **Non-blocking production verification:**
 
