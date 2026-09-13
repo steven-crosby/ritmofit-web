@@ -6,7 +6,9 @@ date: 2026-09-13
 inspected_head: b6c5e1dd1ba824f5fa17436b424cd2a6e8e20162
 inspected_range: d2b7b4f7cd6db1522f99f960bec935509aaf9d79..b6c5e1dd1ba824f5fa17436b424cd2a6e8e20162
 completed: true
-prs: []
+prs:
+  - https://github.com/steven-crosby/ritmofit-web/pull/409
+  - https://github.com/steven-crosby/ritmofit-web/pull/410
 ---
 
 # command-brief — 2026-09-13
@@ -32,9 +34,9 @@ specialist prompt.** No evidence-backed dimension in the hour-commute table.
 - **Owner-only, not commute work:** decide playback-liveness alerting, and
   confirm or drop F-02 (D11 `createPattern`). _Plan, not new evidence._
 
-**2. Ready to review:** no product PRs. Report-only
-`cursor/daily-changed-code-sentinel-a304` (this brief’s sibling). Low risk,
-docs only; merge when convenient.
+**2. Ready to review:** no product PRs. Docs-only drafts: #409 (this brief)
+and #410 (sentinel report). Low risk; merge #410 first so the next sentinel
+starts at `b6c5e1d`.
 
 **3. Product position:** D21 workstation shell + provider playback are live;
 launch gate green. iOS is not waiting on a backend contract this run
