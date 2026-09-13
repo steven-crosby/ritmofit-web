@@ -20,6 +20,11 @@ overrides:
 # advisories (esbuild & vite dev servers, reached only via vitest/drizzle-kit) — none
 # reach the deployed Worker request handler or the browser bundle.
 #
+# GHSA-82fw-gwwq-j7x9 (vitest / @vitest/mocker path traversal, patched >=4.1.11)
+# is NOT ignored. better-auth's unused optional vitest peer is stripped in
+# `.pnpmfile.cjs` so vitest stays off the prod audit graph. A vitest 4 override
+# is unsafe here: pool-workers 0.12.21 requires vitest 2–3.x.
+#
 # Why these can't simply be upgraded away (investigated 2026-06-16):
 #   • The vite advisories (<=6.4.2) require removing vite 5 from the whole tree. The API
 #     pulls vite *only* via vitest, so it needs vitest 4 → @cloudflare/vitest-pool-workers
