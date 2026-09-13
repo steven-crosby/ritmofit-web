@@ -155,7 +155,9 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
           </div>
         </div>
         <p className="font-ui text-xs text-text-tertiary">
-          Private beta · invited instructors only · provider-authorized playback
+          {inviteOnly
+            ? 'Private beta · invited instructors only · provider-authorized playback'
+            : 'Provider-authorized playback'}
         </p>
       </section>
 
@@ -178,7 +180,9 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
               {mode === 'forgot'
                 ? 'Account recovery'
                 : mode === 'signup'
-                  ? 'Invitation required'
+                  ? inviteOnly
+                    ? 'Invitation required'
+                    : 'Create account'
                   : 'Sign in'}
             </p>
             <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-text-primary">
