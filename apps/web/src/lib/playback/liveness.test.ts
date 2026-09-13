@@ -82,19 +82,53 @@ describe('LivenessObserver classification', () => {
     expect(verdicts([null, null])).toEqual(['exempt', 'exempt']);
   });
 
-  it('never blames the provider when the host loop stalled too', () => {
-    // A backgrounded tab freezes rAF and the provider alike. Non-advancement
-    // here is evidence of nothing, and must not reach the miss counter.
+  it('treats a hidden host with an advancing provider as advancing', () => {
+    // Hidden tab / occluded window: rAF records zero ticks, but the SDK
+    // still reports a moving playhead. Provider transport wins.
     const { record } = makeObserver();
     record({ positionMs: 5_000, playing: true });
-    const stalled = record({ positionMs: 5_000, playing: true }, 0);
-    expect(stalled.verdict).toBe('host_stalled');
-    expect(stalled.consecutiveMisses).toBe(0);
+    const hidden = record({ positionMs: 7_500, playing: true }, 0);
+    expect(hidden.verdict).toBe('advancing');
+    expect(hidden.hostTicks).toBe(0);
+    expect(hidden.consecutiveMisses).toBe(0);
+  });
+
+  it('counts a frozen playing:true reading as a miss even when the host is stalled', () => {
+    // The 2026-07-06 Apple Music shape: backgrounded tab, playing:true,
+    // frozen position. Swallowing that as host_stalled hid the stall.
+    const { record } = makeObserver();
+    record({ positionMs: 5_000, playing: true });
+    const frozen = record({ positionMs: 5_000, playing: true }, 0);
+    expect(frozen.verdict).toBe('not_advancing');
+    expect(frozen.hostTicks).toBe(0);
+    expect(frozen.consecutiveMisses).toBe(1);
+  });
+
+  it('keeps unresponsive ahead of any host-tick context', () => {
+    const { record } = makeObserver();
+    record({ positionMs: 5_000, playing: true });
+    const rejected = record('unresponsive', 0);
+    expect(rejected.verdict).toBe('unresponsive');
+    expect(rejected.hostTicks).toBe(0);
+    expect(rejected.consecutiveMisses).toBe(1);
+  });
+
+  it('still counts provider_paused as a miss when the host recorded no ticks', () => {
+    const { record } = makeObserver();
+    record({ positionMs: 5_000, playing: true });
+    const paused = record({ positionMs: 5_000, playing: false }, 0);
+    expect(paused.verdict).toBe('provider_paused');
+    expect(paused.consecutiveMisses).toBe(1);
   });
 
   it('does not call the first sample of a track stalled for lack of a predecessor', () => {
     const { record } = makeObserver();
     expect(record({ positionMs: 0, playing: true }).verdict).toBe('advancing');
+    // First sample of a new track stays not-evidence even with a stalled host.
+    const firstHidden = record({ positionMs: 0, playing: true }, 0, 1);
+    expect(firstHidden.verdict).toBe('advancing');
+    expect(firstHidden.positionDeltaMs).toBeNull();
+    expect(firstHidden.consecutiveMisses).toBe(0);
   });
 });
 
