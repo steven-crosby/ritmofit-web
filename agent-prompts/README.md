@@ -98,6 +98,10 @@ read-only pass). No prompt ever merges, deploys, migrates the remote D1, or chan
   - `remote-prompts/daily/`:
     - `changed-code-sentinel` — primary remote agent; reviews only the new commit delta.
     - `command-brief` — turns the sentinel result into an actionable handoff for this repo.
+    - `hour-commute` — 60-minute variant: runs the sentinel + command-brief pair, then picks
+      up at most one specialist prompt only if the brief names a concrete signal, with a hard
+      stop and no busywork if it doesn't. For a remote background agent with a full hour
+      instead of just enough time for one run.
   - `remote-prompts/technical/` — code + design:
     - `stability`, `quality`, `design-system`, `security`, `performance`,
       `api-contract-parity`, `accessibility`, `test-coverage`, `dependency-freshness`,
@@ -118,7 +122,7 @@ including the planning briefs, whose pushed report is now their durable delivera
 
 | Prompt | Report? |
 |---|---|
-| `remote-prompts/daily/changed-code-sentinel`, `remote-prompts/daily/command-brief` | **Yes** |
+| `remote-prompts/daily/changed-code-sentinel`, `remote-prompts/daily/command-brief`, `remote-prompts/daily/hour-commute` | **Yes** (`hour-commute` via the prompts it runs) |
 | all `remote-prompts/technical/*` audits | **Yes** |
 | all `remote-prompts/planning/*` (`pr-triage`, `doc-drift`, `next-slice-planner`, `roadmap-sync`, `release-readiness`) | **Yes** |
 | `daily/start-session`, `daily/close-session` | No — interactive |
@@ -189,6 +193,8 @@ Think of the prompts as a small set of specialist teams, each with a clear owner
 - **I am stopping work:** use `daily/close-session`.
 - **I only have one unattended run:** use `remote-prompts/daily/changed-code-sentinel`; add
   `remote-prompts/daily/command-brief` when you want the summary before reviewing.
+- **I have closer to a full hour for one unattended run** (e.g. a remote background agent):
+  use `remote-prompts/daily/hour-commute`.
 - **Recent code changed and I want regression coverage:** use `remote-prompts/daily/changed-code-sentinel`.
 - **I need to choose the next product slice:** use `remote-prompts/planning/roadmap-sync`, then
   `remote-prompts/planning/next-slice-planner`.
