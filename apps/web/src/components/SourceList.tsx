@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { ClassTemplate, TrackSearchResult } from '@ritmofit/shared';
 import { formatDuration } from '../lib/class-summary.js';
 import { providerHandoffHref, providerLabel } from '../lib/providers.js';
+import { TrackArt } from './TrackArt.js';
 
 export const sourceCandidateKey = (candidate: TrackSearchResult) =>
   `${candidate.provider}:${candidate.providerTrackId}`;
@@ -92,22 +93,11 @@ export function SourceList({
                 />
               )}
 
-              {track.albumArtUrl ? (
-                <img
-                  src={track.albumArtUrl}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  className="h-11 w-11 shrink-0 rounded-card object-cover"
-                />
-              ) : (
-                <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised text-text-tertiary"
-                  aria-hidden
-                >
-                  ♪
-                </span>
-              )}
+              <TrackArt
+                url={track.albumArtUrl}
+                identity={`${track.title}:${track.artist}`}
+                size={44}
+              />
 
               {action.kind === 'selection' ? (
                 <button

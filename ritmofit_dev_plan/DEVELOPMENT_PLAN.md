@@ -312,8 +312,13 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   below in [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414) (not yet merged).
 - **PROVIDER-TRUTH (SPC-06, 08, 09):** correct expired-state tone in Dashboard headers, icon-system
   state marks, and real backend signals before adding permission/provider-error states.
-- **SOURCE-ARTWORK (SPC-07):** replace bare music-note placeholders with the canonical artwork
-  fallback.
+- **SOURCE-ARTWORK (SPC-07) — ✅ implemented, pending merge:** new shared `TrackArt` component
+  (deterministic warm-gradient tile keyed by BPM band, or a stable identity hash when BPM is
+  unknown — never intensity, since Library rows must not infer class intensity) replaces the bare
+  note glyph. The audit named 2 sites (`SourceList.tsx`, `ClassSummaryView.tsx`); `Dashboard.tsx`
+  turned out to have 4 more instances of the identical pattern (including the class-cover
+  `ArtCollage` zero-art case) that weren't cited — all 6 fixed together in
+  [PR #415](https://github.com/steven-crosby/ritmofit-web/pull/415) (not yet merged).
 - **DESTRUCTIVE-CONTROLS (SPC-10):** bring Dashboard class deletion onto the documented destructive
   pattern.
 - **BUILDER-A11Y (SPC-11–13, 15):** restore focus, normalize mutation errors, and announce validation

@@ -8,6 +8,7 @@ import { SEGMENT_META } from './SegmentBand.js';
 import { INTENSITY_LABEL } from './IntensityReadout.js';
 import { classReadiness } from '../lib/readiness.js';
 import { ClassPulse } from './ClassPulse.js';
+import { TrackArt } from './TrackArt.js';
 import { ClassReadinessSummary } from './ClassReadinessSummary.js';
 import { RecoveryState, StatusLabel } from './SharedState.js';
 
@@ -273,22 +274,12 @@ function TrackDetailRow({ entry, index }: { entry: RunPayloadTrackEntry; index: 
     <li className="flex flex-col gap-2 rounded-card bg-bg-base px-3 py-2">
       <div className="flex items-center gap-3">
         <span className="w-5 shrink-0 font-data text-xs text-text-tertiary">{index + 1}</span>
-        {track.albumArtUrl ? (
-          <img
-            src={track.albumArtUrl}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-11 w-11 shrink-0 rounded-card object-cover"
-          />
-        ) : (
-          <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-bg-raised text-text-tertiary"
-            aria-hidden
-          >
-            ♪
-          </span>
-        )}
+        <TrackArt
+          url={track.albumArtUrl}
+          identity={`${track.title}:${track.artist}`}
+          bpm={entry.displayBpm}
+          size={44}
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate font-ui text-sm font-semibold text-text-primary">{track.title}</p>
           <p className="truncate font-ui text-xs text-text-secondary">{track.artist}</p>
