@@ -80,6 +80,14 @@ read-only pass). No prompt ever merges, deploys, migrates the remote D1, or chan
   Runs are comparable because they bind to canonical `surface-ids.md` and build the deterministic
   `fixtures.md` data. Start at [`design-audit/README.md`](./design-audit/README.md). Not unattended remote
   maintenance — it needs a browser, a running local app, and an owner to say go.
+- `live-ux-deep-dive.md` — **interactive, production-facing** UI/UX assessment of the live
+  `ritmofit.studio` app via Claude-in-Chrome, judged against both the design canon and
+  general modern standards (WCAG 2.2, Core Web Vitals, current SaaS UX conventions). Asks
+  scope questions up front, forks one code-review agent per in-scope surface, does the live
+  browser pass itself, and publishes a Claude Artifact report — no PR, no committed report.
+  The production/interactive/modern-standards counterpart to
+  `remote-prompts/technical/design-system.md` (local/unattended/canon-only); the two don't
+  substitute for each other.
 - `browser-verification/` — a zero-dependency harness that measures the running app in real
   Chrome over the DevTools Protocol: contrast (AAA on Live), focus rings, horizontal overflow,
   and reduced motion. Tooling, not a prompt — use it to satisfy the "verify in a real browser"
