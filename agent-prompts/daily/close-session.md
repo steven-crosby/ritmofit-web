@@ -16,7 +16,9 @@ was skipped.
 ## Close depth
 
 **Light close (default):** git, PRs, local + remote branch hygiene, inbox/docs if anything
-new landed, secrets/blockers, final summary.
+new landed, secrets/blockers, final summary. If this session merged to `main` or deployed,
+still state main-vs-production align/ahead + Worker id (full evidence bar stays for full
+close / deploy path / when alignment is in doubt).
 
 **Full close:** add verification gates and a production reconcile. Use full close when this
 session changed code, contracts, schema, or deployment behavior *and* those checks have not
@@ -57,13 +59,20 @@ format checking or explain why heavier gates were not run. If code, contracts, s
 deployment behavior changed, run the full CI-equivalent gate from `AGENTS.md` ›
 "Verification, PRs, And Commits" (includes `theme-classes`).
 
-## 4. Deployment state (full close, or when production alignment is in doubt)
+## 4. Deployment state
+
+**When required:** If this session merged to `main` or deployed to production, always state
+align/ahead + Worker id — even on a light close. Full evidence (SPA three-hash settle,
+mounted-route smoke, etc.) stays for full close, the deploy path, or when production
+alignment is in doubt; light close can be lighter but must not stay silent after a
+merge/deploy.
 
 Skip if this session already deployed and smoked, unless a later merge put `main` ahead
 of production again.
 
 - [ ] Determine whether production appears aligned with `main`. Deploys are manual, so code
-  merged to `main` this session is not live until deployed.
+  merged to `main` this session is not live until deployed. On a light close after
+  merge/deploy, a brief align/ahead + Worker id note is enough.
 - [ ] Default to **not** deploying just because code merged this session. Ritmo Studio ships in
   deliberate batches, not once per merge (see `AGENTS.md` "Security And Deployment").
   Deploy now only for a batch the owner wants live, an urgent fix (prod bug / regression /
@@ -129,7 +138,8 @@ Print a tight state report:
 - **PRs:** open count and disposition.
 - **Verification:** commands run and results; explicitly list skipped gates.
 - **Deployment:** whether production matches `main`, Worker version, and D1 migration state
-  when checked.
+  when checked. After a merge or deploy this session, always include align/ahead + Worker id
+  (even on light close).
 - **Docs:** status/history/parity docs updated or intentionally unchanged; if a production
   deploy happened, note whether the deploy-record PR is open, merged, or explicitly parked.
 - **Next session:** blockers first, then the highest-value follow-up.
