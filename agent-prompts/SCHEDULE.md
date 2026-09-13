@@ -29,6 +29,11 @@ Run only step 1 when time is tight. Add step 2 when you want a single prioritize
 before looking at branches and PRs. These prompts are optional maintenance helpers, not the
 default personal-session path.
 
+Have closer to a full hour instead (typical for a remote background agent)? Use
+`remote-prompts/daily/hour-commute.md` in place of steps 1–2: it runs the same pair, then
+picks up at most one specialist prompt only if the brief names a concrete signal — never as
+busywork to fill the clock.
+
 ## Weekly rotation
 
 | Day | Primary run | Optional specialist | Use this day for |
@@ -69,6 +74,7 @@ Do not deploy from an unattended prompt. Deployment remains an explicit owner de
 | You are ending a personal work session | `daily/close-session.md` |
 | Recent commits need regression review | `remote-prompts/daily/changed-code-sentinel.md` |
 | You want a short current-state handoff | `remote-prompts/daily/command-brief.md` |
+| You have a full hour for one unattended run, not just enough for the sentinel | `remote-prompts/daily/hour-commute.md` |
 | App behavior seems broken, flaky, or crash-prone | `remote-prompts/technical/stability.md` |
 | App or Worker seems slow | `remote-prompts/technical/performance.md` |
 | Tests are thin around risky code | `remote-prompts/technical/test-coverage.md` |
