@@ -5,8 +5,8 @@ audit. It converts every finding into scoped backlog work, an explicit owner dec
 acceptable/drop outcome. The source report remains evidence, not the planning queue.
 
 The audit's P0 intensity-control collapse is tracked separately in
-[PR #412](https://github.com/steven-crosby/ritmofit-web/pull/412). That PR is not merged or deployed;
-production remains affected until both happen.
+[PR #412](https://github.com/steven-crosby/ritmofit-web/pull/412), now merged to `main`. It is not yet
+deployed; production remains affected until it ships.
 
 ## Run metadata
 
@@ -86,10 +86,23 @@ implementation direction but do not authorize an implementation slice by themsel
 | OD-01 / SPC-05 | Is sign-in a cool working surface or a warm brand-front exception? | Remove the heat glow and preserve the cool-and-quiet principle. | Keep the glow and amend the principle to name auth as an exception. | **A** — sign-in is task-focused and should inherit the quiet shell. | **Resolved: A.** Approved by Steven, 2026-09-13. |
 | OD-02 / SPC-17 | What is Live's primary data hero? | Keep cue-first hierarchy and update design docs plus stale code comments. | Restore BPM at the documented 88px hero scale. | **A** — the next teaching cue is more useful under pressure; BPM can remain prominent but subordinate. | **Resolved: A.** Approved by Steven, 2026-09-13. |
 
+## Implementation status
+
+| Slice / decision | Status | PR |
+| --- | --- | --- |
+| AUTH-A11Y (SPC-01–04) | Implemented, not merged | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) |
+| OD-01 / SPC-05 (sign-in warmth) | Implemented, not merged | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) — bundled with AUTH-A11Y since both touch `Login.tsx`/`ResetPassword.tsx` |
+
+PR #414 also found that `rf-hero-glow` (the class OD-01 removes) is used on two surfaces the audit and
+the decision never considered — `NotFound.tsx` and `ErrorBoundary.tsx`. Both were left unchanged:
+neither is "sign-in," and OD-01 only resolved the auth surface. Whether utility/exception pages should
+keep the warm treatment is an open question for a separate, explicit decision, not a rider on OD-01.
+
 ## Authorization boundary
 
 - This ledger and the planning entries are triage, not implementation authorization for the ten
   backlog slices.
-- PR #412 is the only code change produced by this session so far.
+- PR #412 (P0 fix, merged) and PR #414 (AUTH-A11Y + OD-01, not yet merged) are the only code changes
+  produced by this session so far. Neither is deployed as of this writing.
 - No merge, deploy, production-data deletion, schema change, or provider-contract change is authorized
   by this ledger.

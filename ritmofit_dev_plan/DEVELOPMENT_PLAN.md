@@ -307,8 +307,9 @@ The two
 out-of-scope/unverified audit claims were independently checked before disposition. This list is the
 planning queue; the ledger preserves the finding-by-finding evidence and acceptance boundaries.
 
-- **AUTH-A11Y (SPC-01–04):** redundant auth status cues, one password contract, reveal controls, and
-  announced mode transitions.
+- **AUTH-A11Y (SPC-01–04) — ✅ implemented, pending merge:** redundant auth status cues, one password
+  contract, reveal controls, and announced mode transitions. Bundled with the OD-01 implementation
+  below in [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414) (not yet merged).
 - **PROVIDER-TRUTH (SPC-06, 08, 09):** correct expired-state tone in Dashboard headers, icon-system
   state marks, and real backend signals before adding permission/provider-error states.
 - **SOURCE-ARTWORK (SPC-07):** replace bare music-note placeholders with the canonical artwork
@@ -329,8 +330,12 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
 
 Resolved owner decisions (Steven, 2026-09-13):
 
-- **OD-01 / SPC-05 — sign-in warmth:** auth stays cool and quiet; remove the heat glow and preserve
-  warmth for marketing and celebratory moments.
+- **OD-01 / SPC-05 — sign-in warmth — ✅ implemented, pending merge:** auth stays cool and quiet; the
+  heat glow is removed from `Login.tsx` and `ResetPassword.tsx` (both had it; only `Login.tsx` was
+  cited in the audit) in [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414). `NotFound.tsx`
+  and `ErrorBoundary.tsx` also use the same glow class and were deliberately left alone — they're not
+  "sign-in" and nobody decided about them; flagged for a separate owner call if warmth should be
+  removed there too.
 - **OD-02 / SPC-17 — Live data hero:** the next cue stays the visual hero; BPM remains prominent but
   subordinate, and stale design docs/code comments should be updated.
 

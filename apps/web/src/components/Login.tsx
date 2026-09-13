@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { authClient } from '../lib/auth-client.js';
 import { getAuthCapabilities } from '../lib/api.js';
 import { CreatorLoopProof } from './CreatorLoopProof.js';
+import { PasswordField } from './PasswordField.js';
 
 interface LoginProps {
   /** Acquisition intent selected on marketing. Defaults to returning-user sign-in. */
@@ -28,6 +29,7 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
   const [appleAvailability, setAppleAvailability] = useState<AppleAvailability>('checking');
   const [inviteOnly, setInviteOnly] = useState(true);
   const errorRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +84,12 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
     setMode(next);
     setError(null);
     setNotice(null);
+    // Announce the new panel to screen-reader users (Studio Pulse Check SPC-04)
+    // — an intentional mode switch, so it's fine to steal focus here, unlike
+    // on initial render. The heading element persists across the mode change
+    // (same position in the tree), so focusing the ref now is safe even
+    // though its text updates on the commit that follows.
+    headingRef.current?.focus();
   }
 
   async function signInWithApple() {
@@ -133,7 +141,7 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
   return (
     <main
       id="main-content"
-      className="rf-hero-glow grid min-h-screen bg-bg-base lg:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)]"
+      className="grid min-h-screen bg-bg-base lg:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)]"
     >
       <section className="order-2 flex min-w-0 flex-col justify-between gap-8 border-t border-border-subtle p-5 sm:p-8 lg:order-1 lg:border-t-0 lg:border-r lg:p-12">
         <div className="flex items-center gap-3">
@@ -185,7 +193,11 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
                     : 'Create account'
                   : 'Sign in'}
             </p>
-            <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-text-primary">
+            <h1
+              ref={headingRef}
+              tabIndex={-1}
+              className="mt-2 font-display text-3xl font-bold tracking-tight text-text-primary outline-none"
+            >
               {title}
             </h1>
             <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">{description}</p>
@@ -210,30 +222,32 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
               Email
               <input
                 id="login-email"
-                className="min-h-11 rounded-input border border-border bg-bg-sunken px-4 font-ui text-text-primary"
+                className={`min-h-11 rounded-input border bg-bg-sunken px-4 font-ui text-text-primary ${
+                  error ? 'border-state-danger' : 'border-border'
+                }`}
                 type="email"
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                aria-invalid={error ? true : undefined}
                 aria-describedby={error ? 'login-error' : undefined}
               />
             </label>
 
             {mode !== 'forgot' && (
-              <label className="flex flex-col gap-1.5 font-ui text-sm text-text-secondary">
-                Password
-                <input
-                  id="login-password"
-                  className="min-h-11 rounded-input border border-border bg-bg-sunken px-4 font-ui text-text-primary"
-                  type="password"
-                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  aria-describedby={error ? 'login-error' : undefined}
-                />
-              </label>
+              <PasswordField
+                id="login-password"
+                label="Password"
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                value={password}
+                onChange={setPassword}
+                required
+                minLength={mode === 'signup' ? 8 : undefined}
+                helpText={mode === 'signup' ? 'At least eight characters.' : undefined}
+                ariaDescribedBy={error ? 'login-error' : undefined}
+                invalid={!!error}
+              />
             )}
 
             {error && (
@@ -244,7 +258,12 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
                 role="alert"
                 className="rounded-control border border-state-danger/30 bg-state-danger/5 p-3 font-ui text-sm leading-5 text-state-danger outline-none"
               >
-                <strong className="block text-text-primary">Couldn’t continue</strong>
+                <strong className="block text-text-primary">
+                  <span aria-hidden className="mr-1.5">
+                    ⚠
+                  </span>
+                  Couldn’t continue
+                </strong>
                 <span>{error}</span>
                 <span className="mt-1 block text-xs text-text-secondary">
                   Your entered name and email are still in the form.
@@ -257,6 +276,9 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
                 role="status"
                 className="rounded-control border border-interactive/25 bg-interactive/5 p-3 font-ui text-sm text-text-primary"
               >
+                <span aria-hidden className="mr-1.5 text-interactive">
+                  ✓
+                </span>
                 {notice}
               </div>
             )}
