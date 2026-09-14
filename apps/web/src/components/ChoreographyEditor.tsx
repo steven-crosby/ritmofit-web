@@ -7,7 +7,7 @@
  * The run-payload's per-track cues/moves lack ids, so editing reads the real
  * `GET /class-tracks/:id/cues` + `/moves` (which carry ids).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   intensityValues,
   snapToBeat,
@@ -40,6 +40,19 @@ import { groupMovesByTemplate, moveOptionLabel } from '../lib/move-groups.js';
 import { formatTemplateLabel } from '../lib/class-summary.js';
 import { CustomMovesDialog } from './CustomMovesDialog.js';
 import { anchorFieldState, formatClockFromMs } from '../lib/duration.js';
+import { errMessage } from '../lib/errors.js';
+
+type RowMutationFocus = { kind: 'edit'; id: string } | { kind: 'add' };
+
+/** Prefer the next row, then the previous row, then the section's add control. */
+function focusAfterRowDelete<T extends { id: string }>(
+  rows: T[] | null,
+  id: string,
+): RowMutationFocus {
+  const index = rows?.findIndex((row) => row.id === id) ?? -1;
+  const successor = index >= 0 ? (rows?.[index + 1] ?? rows?.[index - 1]) : null;
+  return successor ? { kind: 'edit', id: successor.id } : { kind: 'add' };
+}
 
 /** "bar.beat" label for a track-relative anchor (e.g. "12.1"), or null without a tempo. */
 function beatLabel(anchorMs: number, bpm: number | null, beatAnchorMs: number): string | null {
@@ -263,15 +276,31 @@ export function CuesSection({
   const [editText, setEditText] = useState('');
   const [editAnchorClock, setEditAnchorClock] = useState('0:00');
   const [editColor, setEditColor] = useState<string | null>(null);
+  const editButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const addAnchorRef = useRef<HTMLInputElement>(null);
+  const editAnchorRef = useRef<HTMLInputElement>(null);
+  const [pendingFocus, setPendingFocus] = useState<RowMutationFocus | null>(null);
+  const validationId = useId();
 
   const addAnchor = anchorFieldState(anchorClock, durationMs);
   const editAnchor = anchorFieldState(editAnchorClock, durationMs);
+
+  useEffect(() => {
+    if (!pendingFocus) return;
+    const target =
+      pendingFocus.kind === 'edit'
+        ? editButtonRefs.current.get(pendingFocus.id)
+        : addAnchorRef.current;
+    if (!target) return;
+    target.focus();
+    setPendingFocus(null);
+  }, [pendingFocus, cues, editingId]);
 
   const load = useCallback(async () => {
     try {
       setCues(await listCues(classTrackId));
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not load cues. Try again.'));
     }
   }, [classTrackId]);
   useEffect(() => {
@@ -288,7 +317,11 @@ export function CuesSection({
 
   const saveEdit = async () => {
     const anchorMs = editAnchor.ms;
-    if (!editingId || !editText.trim() || anchorMs == null) return;
+    if (!editingId || !editText.trim() || anchorMs == null) {
+      if (anchorMs == null) editAnchorRef.current?.focus();
+      return;
+    }
+    const savedId = editingId;
     setBusy(true);
     setError(null);
     try {
@@ -301,9 +334,10 @@ export function CuesSection({
       });
       setEditingId(null);
       await load();
+      setPendingFocus({ kind: 'edit', id: savedId });
       onChanged?.();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not save the cue. Try again.'));
     } finally {
       setBusy(false);
     }
@@ -311,7 +345,10 @@ export function CuesSection({
 
   const add = async () => {
     const anchorMs = addAnchor.ms;
-    if (!text.trim() || anchorMs == null) return;
+    if (!text.trim() || anchorMs == null) {
+      if (anchorMs == null) addAnchorRef.current?.focus();
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -326,21 +363,23 @@ export function CuesSection({
       await load();
       onChanged?.();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not add the cue. Try again.'));
     } finally {
       setBusy(false);
     }
   };
 
   const remove = async (id: string) => {
+    const nextFocus = focusAfterRowDelete(cues, id);
     setBusy(true);
     setError(null);
     try {
       await deleteCue(id);
       await load();
+      setPendingFocus(nextFocus);
       onChanged?.();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not delete the cue. Try again.'));
     } finally {
       setBusy(false);
     }
@@ -358,6 +397,7 @@ export function CuesSection({
               className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2"
             >
               <input
+                ref={editAnchorRef}
                 className={anchorInputClass(editAnchor.invalid)}
                 type="text"
                 inputMode="numeric"
@@ -366,6 +406,7 @@ export function CuesSection({
                 onChange={(e) => setEditAnchorClock(e.target.value)}
                 aria-label="Cue time (m:ss)"
                 aria-invalid={editAnchor.invalid || undefined}
+                aria-describedby={editAnchor.message ? `${validationId}-edit-anchor` : undefined}
                 title="Cue time (m:ss)"
               />
               <input
@@ -379,17 +420,30 @@ export function CuesSection({
               <button
                 className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={saveEdit}
-                disabled={busy || !editText.trim() || editAnchor.ms == null}
+                disabled={busy || !editText.trim()}
               >
                 Save
               </button>
               <button
                 className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-text-tertiary disabled:opacity-40"
-                onClick={() => setEditingId(null)}
+                onClick={() => {
+                  const cancelledId = editingId;
+                  setEditingId(null);
+                  if (cancelledId) setPendingFocus({ kind: 'edit', id: cancelledId });
+                }}
                 disabled={busy}
               >
                 Cancel
               </button>
+              {editAnchor.message && (
+                <p
+                  id={`${validationId}-edit-anchor`}
+                  className="basis-full font-ui text-xs text-state-danger"
+                  role="alert"
+                >
+                  {editAnchor.message}
+                </p>
+              )}
             </li>
           ) : (
             <li
@@ -423,6 +477,10 @@ export function CuesSection({
                 {cue.text}
               </span>
               <button
+                ref={(node) => {
+                  if (node) editButtonRefs.current.set(cue.id, node);
+                  else editButtonRefs.current.delete(cue.id);
+                }}
                 className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={() => startEdit(cue)}
                 disabled={busy}
@@ -445,6 +503,7 @@ export function CuesSection({
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <input
+            ref={addAnchorRef}
             className={anchorInputClass(addAnchor.invalid)}
             type="text"
             inputMode="numeric"
@@ -453,6 +512,7 @@ export function CuesSection({
             onChange={(e) => setAnchorClock(e.target.value)}
             aria-label="Cue time (m:ss)"
             aria-invalid={addAnchor.invalid || undefined}
+            aria-describedby={addAnchor.message ? `${validationId}-add-anchor` : undefined}
             title="Cue time (m:ss)"
           />
           <input
@@ -464,20 +524,30 @@ export function CuesSection({
           <button
             className="min-h-11 shrink-0 rounded-control border border-interactive px-3 font-ui text-sm text-interactive disabled:opacity-40 sm:rounded-pill"
             onClick={add}
-            disabled={busy || !text.trim() || addAnchor.ms == null}
+            disabled={busy || !text.trim()}
           >
             Add cue
           </button>
         </div>
         {addAnchor.message && (
-          <p className="font-ui text-xs text-state-danger">{addAnchor.message}</p>
+          <p
+            id={`${validationId}-add-anchor`}
+            className="font-ui text-xs text-state-danger"
+            role="alert"
+          >
+            {addAnchor.message}
+          </p>
         )}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CueColorPicker value={color} onChange={setColor} />
           <SnapToggle canSnap={canSnap} snap={snap} onChange={setSnap} />
         </div>
       </div>
-      {error && <p className="font-ui text-xs text-state-danger">{error}</p>}
+      {error && (
+        <p className="font-ui text-xs text-state-danger" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -531,15 +601,31 @@ export function MovesSection({
   const [editCustom, setEditCustom] = useState('');
   const [editAnchorClock, setEditAnchorClock] = useState('0:00');
   const [editIntensity, setEditIntensity] = useState<Intensity | ''>('');
+  const editButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const addAnchorRef = useRef<HTMLInputElement>(null);
+  const editAnchorRef = useRef<HTMLInputElement>(null);
+  const [pendingFocus, setPendingFocus] = useState<RowMutationFocus | null>(null);
+  const validationId = useId();
 
   const addAnchor = anchorFieldState(anchorClock, durationMs);
   const editAnchor = anchorFieldState(editAnchorClock, durationMs);
+
+  useEffect(() => {
+    if (!pendingFocus) return;
+    const target =
+      pendingFocus.kind === 'edit'
+        ? editButtonRefs.current.get(pendingFocus.id)
+        : addAnchorRef.current;
+    if (!target) return;
+    target.focus();
+    setPendingFocus(null);
+  }, [pendingFocus, moves, editingId]);
 
   const load = useCallback(async () => {
     try {
       setMoves(await listPlacedMoves(classTrackId));
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not load moves. Try again.'));
     }
   }, [classTrackId]);
   useEffect(() => {
@@ -647,7 +733,10 @@ export function MovesSection({
     const sel = parseMovePick(pick);
     const needsName = sel.kind === 'custom' || sel.kind === 'new';
     const anchorMs = addAnchor.ms;
-    if ((needsName && !customName.trim()) || anchorMs == null) return;
+    if ((needsName && !customName.trim()) || anchorMs == null) {
+      if (anchorMs == null) addAnchorRef.current?.focus();
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -674,7 +763,7 @@ export function MovesSection({
       await load();
       onChanged?.();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not add the move. Try again.'));
     } finally {
       setBusy(false);
     }
@@ -694,7 +783,11 @@ export function MovesSection({
     if (!editingId) return;
     const sel = parseMovePick(editPick);
     const anchorMs = editAnchor.ms;
-    if ((sel.kind === 'custom' && !editCustom.trim()) || anchorMs == null) return;
+    if ((sel.kind === 'custom' && !editCustom.trim()) || anchorMs == null) {
+      if (anchorMs == null) editAnchorRef.current?.focus();
+      return;
+    }
+    const savedId = editingId;
     setBusy(true);
     setError(null);
     try {
@@ -707,23 +800,26 @@ export function MovesSection({
       });
       setEditingId(null);
       await load();
+      setPendingFocus({ kind: 'edit', id: savedId });
       onChanged?.();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not save the move. Try again.'));
     } finally {
       setBusy(false);
     }
   };
 
   const remove = async (id: string) => {
+    const nextFocus = focusAfterRowDelete(moves, id);
     setBusy(true);
     setError(null);
     try {
       await deletePlacedMove(id);
       await load();
+      setPendingFocus(nextFocus);
       onChanged?.();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not delete the move. Try again.'));
     } finally {
       setBusy(false);
     }
@@ -789,6 +885,7 @@ export function MovesSection({
               className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2"
             >
               <input
+                ref={editAnchorRef}
                 className={anchorInputClass(editAnchor.invalid)}
                 type="text"
                 inputMode="numeric"
@@ -797,6 +894,7 @@ export function MovesSection({
                 onChange={(e) => setEditAnchorClock(e.target.value)}
                 aria-label="Move time (m:ss)"
                 aria-invalid={editAnchor.invalid || undefined}
+                aria-describedby={editAnchor.message ? `${validationId}-edit-anchor` : undefined}
                 title="Move time (m:ss)"
               />
               <select
@@ -834,19 +932,30 @@ export function MovesSection({
               <button
                 className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={saveEdit}
-                disabled={
-                  busy || (editSel.kind === 'custom' && !editCustom.trim()) || editAnchor.ms == null
-                }
+                disabled={busy || (editSel.kind === 'custom' && !editCustom.trim())}
               >
                 Save
               </button>
               <button
                 className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-text-tertiary disabled:opacity-40"
-                onClick={() => setEditingId(null)}
+                onClick={() => {
+                  const cancelledId = editingId;
+                  setEditingId(null);
+                  if (cancelledId) setPendingFocus({ kind: 'edit', id: cancelledId });
+                }}
                 disabled={busy}
               >
                 Cancel
               </button>
+              {editAnchor.message && (
+                <p
+                  id={`${validationId}-edit-anchor`}
+                  className="basis-full font-ui text-xs text-state-danger"
+                  role="alert"
+                >
+                  {editAnchor.message}
+                </p>
+              )}
             </li>
           ) : (
             <li
@@ -879,6 +988,10 @@ export function MovesSection({
               )}
               {m.intensity && <IntensityReadout intensity={m.intensity} />}
               <button
+                ref={(node) => {
+                  if (node) editButtonRefs.current.set(m.id, node);
+                  else editButtonRefs.current.delete(m.id);
+                }}
                 className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={() => startEdit(m)}
                 disabled={busy}
@@ -900,6 +1013,7 @@ export function MovesSection({
       </ul>
       <div className="flex flex-wrap items-center gap-2">
         <input
+          ref={addAnchorRef}
           className={anchorInputClass(addAnchor.invalid)}
           type="text"
           inputMode="numeric"
@@ -908,6 +1022,7 @@ export function MovesSection({
           onChange={(e) => setAnchorClock(e.target.value)}
           aria-label="Move time (m:ss)"
           aria-invalid={addAnchor.invalid || undefined}
+          aria-describedby={addAnchor.message ? `${validationId}-add-anchor` : undefined}
           title="Move time (m:ss)"
         />
         {/* A native select sizes itself to its widest <option>, so carrying each
@@ -953,16 +1068,26 @@ export function MovesSection({
         <button
           className="min-h-11 shrink-0 rounded-control border border-interactive px-3 font-ui text-sm text-interactive disabled:opacity-40 sm:rounded-pill"
           onClick={add}
-          disabled={busy || (addNeedsName && !customName.trim()) || addAnchor.ms == null}
+          disabled={busy || (addNeedsName && !customName.trim())}
         >
           Add move
         </button>
         <SnapToggle canSnap={canSnap} snap={snap} onChange={setSnap} />
       </div>
       {addAnchor.message && (
-        <p className="font-ui text-xs text-state-danger">{addAnchor.message}</p>
+        <p
+          id={`${validationId}-add-anchor`}
+          className="font-ui text-xs text-state-danger"
+          role="alert"
+        >
+          {addAnchor.message}
+        </p>
       )}
-      {error && <p className="font-ui text-xs text-state-danger">{error}</p>}
+      {error && (
+        <p className="font-ui text-xs text-state-danger" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
