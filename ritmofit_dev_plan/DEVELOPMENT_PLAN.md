@@ -35,16 +35,22 @@ Pilates, and HIIT.
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
 - **Current operating focus (2026-09-13):** the launch gate is green and the app is live.
-  **PRs #412, #414, #415 are deployed** — Worker `edaa62b0-8957-486c-b953-24eae2b0fd33` from
-  main `38f8526`, the first remediation batch from the same-day [Studio Pulse
+  **PRs #420, #422 are deployed** — Worker `5d659102-3bff-4398-91ad-cdc1d165ccc1` from
+  main `dd625b5` (recorded in #423), the second Studio Pulse Check remediation batch:
+  LIVE-RUNTIME isolates Live rAF re-renders and throttles drag-seek (#420);
+  BUILDER-A11Y restores builder mutation focus, announces validation, and normalizes
+  mutation errors (#422). **PRs #412, #414, #415 are deployed** — Worker
+  `edaa62b0-8957-486c-b953-24eae2b0fd33` from main `38f8526` (recorded in #416), the first
+  remediation batch from the same-day [Studio Pulse
   Check](https://claude.ai/code/artifact/28aaf27a-434f-46c5-a163-f301c0ab2238) live UX audit:
   the Class Builder's Intensity picker no longer collapses to 0px width (#412, the audit's
   P0); auth forms get redundant icon+color error cues, one password-length contract, a
   show/hide toggle, mode-switch focus, and the sign-in heat glow removed per the resolved
   OD-01 decision (#414); a shared `TrackArt` component replaces the bare music-note artwork
   fallback in 6 places, not just the 2 the audit cited (#415). No schema, migration, or
-  shared-contract change across the three; no remote D1 change. Full disposition and the
-  remaining 8-slice backlog live in
+  shared-contract change across either batch; no remote D1 change. Full disposition and the
+  remaining backlog (ENERGY-RIBBON, LIVE-CONTROLS, RESPONSIVE-QA, PROD-HYGIENE, plus SPC-09)
+  live in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
   Prior deploy: **PRs #401–#403, #406** — Worker `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7` from
   main `4031d5b`. Playback-liveness `classify()` now lets provider transport win over a
@@ -298,16 +304,16 @@ shared-contract change. The alerting half of liveness remains an owner decision;
 
 **Open production issues:**
 
-- **P0 — Class Builder Intensity picker collapse — ✅ shipped.** The isolated fix in
-  [PR #412](https://github.com/steven-crosby/ritmofit-web/pull/412) is merged and deployed with
+- None from the Studio Pulse Check P0. The Class Builder Intensity picker collapse
+  ([PR #412](https://github.com/steven-crosby/ritmofit-web/pull/412)) is merged and deployed with
   AUTH-A11Y / OD-01 ([#414](https://github.com/steven-crosby/ritmofit-web/pull/414)) and
   SOURCE-ARTWORK ([#415](https://github.com/steven-crosby/ritmofit-web/pull/415)) as Worker
   `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
-  Source evidence:
-  [Studio Pulse Check](https://claude.ai/code/artifact/28aaf27a-434f-46c5-a163-f301c0ab2238)
-  (2026-09-13 live UI/UX audit).
+  Batch 2 — LIVE-RUNTIME ([#420](https://github.com/steven-crosby/ritmofit-web/pull/420)) and
+  BUILDER-A11Y ([#422](https://github.com/steven-crosby/ritmofit-web/pull/422)) — is deployed as
+  Worker `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
 
-**Studio Pulse Check follow-up — first batch shipped; remaining slices as authorized:**
+**Studio Pulse Check follow-up — batches 1 and 2 shipped; remaining slices as authorized:**
 
 The other 21 findings have an authoritative disposition in
 [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
@@ -320,10 +326,10 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   contract, reveal controls, and announced mode transitions. Bundled with the OD-01 implementation
   below in [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414); deployed as Worker
   `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
-- **PROVIDER-TRUTH (SPC-06, SPC-08) — ✅ implemented, pending merge:** Dashboard Music/Account
+- **PROVIDER-TRUTH (SPC-06, SPC-08) — ✅ merged:** Dashboard Music/Account
   headers use the centralized caution tone for “Session expired,” and connection-state marks
   move to the shared `ConnectionStateMark` icon system in
-  [PR #418](https://github.com/steven-crosby/ritmofit-web/pull/418) (not yet merged).
+  [PR #418](https://github.com/steven-crosby/ritmofit-web/pull/418). Not yet deployed.
   **SPC-09 remains backlog** — permission/provider-error still need a backend-signal design
   decision.
 - **SOURCE-ARTWORK (SPC-07) — ✅ shipped:** new shared `TrackArt` component
@@ -334,16 +340,20 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   `ArtCollage` zero-art case) that weren't cited — all 6 fixed together in
   [PR #415](https://github.com/steven-crosby/ritmofit-web/pull/415); deployed as Worker
   `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
-- **DESTRUCTIVE-CONTROLS (SPC-10) — ✅ implemented, pending merge:** Dashboard class deletion uses
+- **DESTRUCTIVE-CONTROLS (SPC-10) — ✅ merged:** Dashboard class deletion uses
   the documented destructive pattern (transparent fill, ember text, mandatory error icon) for both
   the initial and confirmation controls in
-  [PR #417](https://github.com/steven-crosby/ritmofit-web/pull/417) (not yet merged).
-- **BUILDER-A11Y (SPC-11–13, 15):** restore focus, normalize mutation errors, and announce validation
-  and inline confirmations.
+  [PR #417](https://github.com/steven-crosby/ritmofit-web/pull/417). Not yet deployed.
+- **BUILDER-A11Y (SPC-11–13, 15) — ✅ shipped:** restore focus, normalize mutation errors, and
+  announce validation and inline confirmations in
+  [PR #422](https://github.com/steven-crosby/ritmofit-web/pull/422); deployed as Worker
+  `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
 - **ENERGY-RIBBON (SPC-14):** implement the documented placed-move refinement, or obtain a separate
   owner decision before downgrading the docs.
-- **LIVE-RUNTIME (SPC-16, 18):** coalesce drag seeking and isolate animation-frame rendering without
-  changing provider-authoritative playback/liveness behavior.
+- **LIVE-RUNTIME (SPC-16, 18) — ✅ shipped:** coalesce drag seeking and isolate animation-frame
+  rendering without changing provider-authoritative playback/liveness behavior in
+  [PR #420](https://github.com/steven-crosby/ritmofit-web/pull/420); deployed as Worker
+  `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
 - **LIVE-CONTROLS (SPC-19):** align the disabled Start-class treatment with the documented state.
 - **RESPONSIVE-QA (SPC-20) — ✅ implemented, pending merge:** stale narrow-width smoke locators
   repaired, 390px intensity overflow and 320px tag-input overflow fixed, and

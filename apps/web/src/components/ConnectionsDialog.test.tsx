@@ -35,8 +35,9 @@ describe('ConnectionsDialog capability gating', () => {
     expect(await screen.findByRole('button', { name: 'Connect SoundCloud' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Connect Spotify' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Connect Apple Music' })).toBeTruthy();
-    // Each disconnected provider shows an explicit glyph+label status, not color alone.
+    // Each disconnected provider shows an explicit icon+label status, not color alone.
     expect(screen.getAllByText('Not connected').length).toBe(3);
+    expect(document.querySelectorAll('[data-connection-state="disconnected"]').length).toBe(3);
     // No provider is a catalog-only dead end anymore.
     expect(screen.queryByText('Catalog search only')).toBeNull();
   });
@@ -78,6 +79,20 @@ describe('ConnectionsDialog capability gating', () => {
     render(<ConnectionsDialog onClose={() => {}} oauthResult={{ error: 'state_expired' }} />);
 
     expect(await screen.findByText('Connection failed: state expired.')).toBeTruthy();
+  });
+});
+
+describe('ConnectionsDialog connection-state marks', () => {
+  it('renders Session expired on the caution channel with an icon, not tertiary text', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([{ ...connection('spotify'), expiresAt: 1 }]);
+
+    render(<ConnectionsDialog onClose={() => {}} />);
+
+    expect(await screen.findByText('Session expired')).toBeTruthy();
+    const mark = document.querySelector('[data-connection-state="expired"]');
+    expect(mark?.className).toContain('text-state-caution');
+    expect(mark?.className).not.toContain('text-text-tertiary');
+    expect(mark?.querySelector('svg[aria-hidden]')).toBeTruthy();
   });
 });
 

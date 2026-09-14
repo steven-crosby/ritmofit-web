@@ -17,6 +17,16 @@ function mockEmptyLibrary() {
   vi.mocked(api.listUserMoves).mockResolvedValue([]);
 }
 
+const placedMove = (id: string, name: string) =>
+  ({
+    id,
+    nameOverride: name,
+    moveId: null,
+    userMoveId: null,
+    anchorMs: 0,
+    intensity: null,
+  }) as Awaited<ReturnType<typeof api.listPlacedMoves>>[number];
+
 describe('MovesSection — Songs-by-move entry', () => {
   it('shows the in-builder trigger and invokes the callback', async () => {
     mockEmptyLibrary();
@@ -66,7 +76,7 @@ describe('MovesSection — m:ss anchor entry', () => {
     expect(onChanged).toHaveBeenCalledTimes(1);
   });
 
-  it('disables Add move on a malformed or out-of-range time', async () => {
+  it('blocks Add move on a malformed or out-of-range time and focuses the field', async () => {
     mockEmptyLibrary();
     render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
 
@@ -75,21 +85,98 @@ describe('MovesSection — m:ss anchor entry', () => {
       target: { value: 'Sprint' },
     });
 
+    time.focus();
     fireEvent.change(time, { target: { value: '90' } }); // raw seconds — no longer accepted
-    expect((screen.getByRole('button', { name: 'Add move' }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    const add = screen.getByRole('button', { name: 'Add move' }) as HTMLButtonElement;
+    expect(add.disabled).toBe(false);
     expect(screen.getByText('Use m:ss (e.g. 1:30).')).toBeTruthy();
+    const message = screen.getByRole('alert');
+    expect(time.getAttribute('aria-describedby')).toBe(message.id);
+    add.focus();
+    fireEvent.click(add);
+    expect(document.activeElement).toBe(time);
+    expect(api.placeMove).not.toHaveBeenCalled();
 
     fireEvent.change(time, { target: { value: '9:00' } }); // past the 4:00 track
-    expect((screen.getByRole('button', { name: 'Add move' }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    expect(add.disabled).toBe(false);
     expect(screen.getByText('Past the end (max 4:00).')).toBeTruthy();
 
     fireEvent.change(time, { target: { value: '0:00' } }); // the start is valid
-    expect((screen.getByRole('button', { name: 'Add move' }) as HTMLButtonElement).disabled).toBe(
-      false,
+    expect(add.disabled).toBe(false);
+  });
+});
+
+describe('MovesSection — keyboard focus restoration', () => {
+  it('returns focus to the invoking Edit control after cancel and save', async () => {
+    const first = placedMove('move-1', 'Sprint');
+    vi.mocked(api.listPlacedMoves).mockResolvedValue([first]);
+    vi.mocked(api.listMoves).mockResolvedValue([]);
+    vi.mocked(api.listUserMoves).mockResolvedValue([]);
+    vi.mocked(api.updatePlacedMove).mockResolvedValue(first);
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+
+    let edit = await screen.findByRole('button', { name: 'Edit move Sprint' });
+    edit.focus();
+    fireEvent.click(edit);
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    cancel.focus();
+    fireEvent.click(cancel);
+    await waitFor(() => expect(document.activeElement).toBe(edit));
+
+    fireEvent.click(edit);
+    const save = screen.getByRole('button', { name: 'Save' });
+    save.focus();
+    fireEvent.click(save);
+    await waitFor(() => {
+      edit = screen.getByRole('button', { name: 'Edit move Sprint' });
+      expect(document.activeElement).toBe(edit);
+    });
+  });
+
+  it('focuses the next row after delete, then the add control when the last row is deleted', async () => {
+    const first = placedMove('move-1', 'Sprint');
+    const second = placedMove('move-2', 'Recover');
+    vi.mocked(api.listPlacedMoves)
+      .mockResolvedValueOnce([first, second])
+      .mockResolvedValueOnce([second])
+      .mockResolvedValueOnce([]);
+    vi.mocked(api.listMoves).mockResolvedValue([]);
+    vi.mocked(api.listUserMoves).mockResolvedValue([]);
+    vi.mocked(api.deletePlacedMove).mockResolvedValue(undefined);
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+
+    const deleteFirst = await screen.findByRole('button', { name: 'Delete move Sprint' });
+    deleteFirst.focus();
+    fireEvent.click(deleteFirst);
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Edit move Recover' }),
+      ),
+    );
+
+    const deleteLast = screen.getByRole('button', { name: 'Delete move Recover' });
+    deleteLast.focus();
+    fireEvent.click(deleteLast);
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('textbox', { name: 'Move time (m:ss)' }),
+      ),
+    );
+  });
+
+  it('normalizes a non-Error mutation failure with local context', async () => {
+    const first = placedMove('move-1', 'Sprint');
+    vi.mocked(api.listPlacedMoves).mockResolvedValue([first]);
+    vi.mocked(api.listMoves).mockResolvedValue([]);
+    vi.mocked(api.listUserMoves).mockResolvedValue([]);
+    vi.mocked(api.updatePlacedMove).mockRejectedValue({ upstream: 'do not render' });
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit move Sprint' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Could not save the move. Try again.',
     );
   });
 });

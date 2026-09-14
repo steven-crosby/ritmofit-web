@@ -8,7 +8,9 @@ import {
   useRef,
   useState,
   Suspense,
+  type ButtonHTMLAttributes,
   type FormEvent,
+  type ReactNode,
 } from 'react';
 import {
   providerCapabilities,
@@ -56,6 +58,11 @@ import {
   updateMe,
 } from '../lib/api.js';
 import { authClient } from '../lib/auth-client.js';
+import {
+  ConnectionStateMark,
+  accountConnectionMark,
+  musicConnectionMark,
+} from './ConnectionStateMark.js';
 import { moveItem } from '../lib/reorder.js';
 import {
   avgBpm,
@@ -2030,16 +2037,7 @@ function MusicWorkspace({
               connectionsStatus === 'ready' ? 'verified' : 'unverified',
             );
             const selected = selectedProvider === provider;
-            const statusLabel =
-              connectionsStatus === 'loading'
-                ? 'Checking'
-                : connectionsStatus === 'error'
-                  ? 'Unverified'
-                  : connectionState === 'connected'
-                    ? 'Connected'
-                    : connectionState === 'expired'
-                      ? 'Session expired'
-                      : 'Catalog only';
+            const statusMark = musicConnectionMark(connectionsStatus, connectionState);
             return (
               <article
                 key={provider}
@@ -2059,18 +2057,11 @@ function MusicWorkspace({
                   <span className="shrink-0 font-ui text-sm font-semibold text-text-primary">
                     {providerLabel(provider)}
                   </span>
-                  <span className="shrink-0 font-data text-[10px] text-text-tertiary">
-                    <span aria-hidden>
-                      {connectionsStatus === 'error'
-                        ? '? '
-                        : connectionState === 'connected'
-                          ? '✓ '
-                          : connectionState === 'expired'
-                            ? '⧖ '
-                            : '○ '}
-                    </span>
-                    {statusLabel}
-                  </span>
+                  <ConnectionStateMark
+                    kind={statusMark.kind}
+                    label={statusMark.label}
+                    className="shrink-0 font-data text-[10px]"
+                  />
                 </button>
                 <ProviderCapabilityLedger provider={provider} truth={truth} compact />
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -3001,18 +2992,11 @@ function AccountWorkspace({
                 Date.now(),
                 connectionFreshness,
               );
-              const stateLabel =
-                connectionsStatus === 'loading'
-                  ? 'Checking status'
-                  : connectionsStatus === 'error'
-                    ? connection
-                      ? 'Last known · unverified'
-                      : 'Status unavailable'
-                    : truth.connectionState === 'connected'
-                      ? 'Connected'
-                      : truth.connectionState === 'expired'
-                        ? 'Session expired'
-                        : 'Not connected';
+              const statusMark = accountConnectionMark(
+                connectionsStatus,
+                truth.connectionState,
+                Boolean(connection),
+              );
               return (
                 <article
                   key={provider}
@@ -3029,20 +3013,11 @@ function AccountWorkspace({
                           : 'Provider audio and authorization remain with the music service.'}
                       </p>
                     </div>
-                    <span className="shrink-0 font-ui text-xs text-text-tertiary">
-                      <span aria-hidden="true">
-                        {connectionsStatus === 'ready'
-                          ? truth.connectionState === 'connected'
-                            ? '✓ '
-                            : truth.connectionState === 'expired'
-                              ? '⧖ '
-                              : '○ '
-                          : connectionsStatus === 'loading'
-                            ? '◌ '
-                            : '? '}
-                      </span>
-                      {stateLabel}
-                    </span>
+                    <ConnectionStateMark
+                      kind={statusMark.kind}
+                      label={statusMark.label}
+                      className="shrink-0 font-ui text-xs"
+                    />
                   </div>
                   <ProviderCapabilityLedger provider={provider} truth={truth} className="mt-3" />
                 </article>
@@ -4134,6 +4109,41 @@ function ClassWorkspace({
 }
 
 /**
+ * Canonical destructive control (05-components): transparent fill, no border,
+ * ember text, mandatory `error` icon. Hover tints ember; press depresses;
+ * disabled drops opacity and removes pointer. Color never carries meaning alone.
+ */
+function DestructiveErrorIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+    </svg>
+  );
+}
+
+const destructiveControlClass =
+  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control bg-transparent px-3 font-ui text-sm text-state-danger hover:bg-state-danger/10 active:translate-y-px rf-focus-ring disabled:pointer-events-none disabled:opacity-40 sm:px-4';
+
+function DestructiveControl({
+  children,
+  busy = false,
+  className = '',
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { busy?: boolean; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      {...props}
+      disabled={props.disabled || busy}
+      className={`${destructiveControlClass} ${className}`.trim()}
+    >
+      <DestructiveErrorIcon />
+      {busy ? '…' : children}
+    </button>
+  );
+}
+
+/**
  * The class header card (design system 09): title, the derived
  * summary stats (track count · assembled total · average BPM, all from the
  * run-payload — no new data), and the owner/run actions. Stats use label +
@@ -4394,15 +4404,16 @@ export function ClassHeaderCard({
           {isOwner &&
             (confirmingDelete ? (
               <span className="col-span-2 grid grid-cols-2 gap-1 sm:flex sm:items-center">
-                <button
-                  className="min-h-11 rounded-control bg-state-danger/15 px-3 font-ui text-sm font-semibold text-state-danger disabled:opacity-40 sm:rounded-pill"
+                <DestructiveControl
                   onClick={confirmDelete}
-                  disabled={deleting}
+                  busy={deleting}
+                  aria-label="Delete class"
                 >
-                  {deleting ? '…' : 'Delete class'}
-                </button>
+                  Delete class
+                </DestructiveControl>
                 <button
-                  className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary sm:rounded-pill"
+                  type="button"
+                  className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary disabled:opacity-40 sm:rounded-pill"
                   onClick={() => setConfirmingDelete(false)}
                   disabled={deleting}
                 >
@@ -4410,13 +4421,13 @@ export function ClassHeaderCard({
                 </button>
               </span>
             ) : (
-              <button
-                className="min-h-11 rounded-control border border-state-danger/50 px-3 font-ui text-sm text-state-danger sm:rounded-pill sm:px-4"
+              <DestructiveControl
                 onClick={() => setConfirmingDelete(true)}
                 title="Delete this class"
+                aria-label="Delete this class"
               >
                 Delete
-              </button>
+              </DestructiveControl>
             ))}
           <button
             className="order-first col-span-2 min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:order-none sm:col-span-auto sm:rounded-pill sm:px-4"
