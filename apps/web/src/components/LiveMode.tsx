@@ -6,10 +6,16 @@
  * ritmofit_dev_plan/provider-playback-implementation.md) — or prompter-only via
  * "Run without music", the pre-playback behavior.
  *
- * A single virtual clock (`elapsedMs`) drives everything: which track is live,
- * the current/next cue, the countdowns, the intensity readout, AND provider
- * playback — the rAF loop ticks the RuntimePlaybackCoordinator, so Ritmo Studio's
- * class timeline stays the master and provider SDKs follow. Playback failure is
+ * A single virtual clock drives everything: which track is live, the
+ * current/next cue, the countdowns, the intensity readout, the timeline
+ * playhead, AND provider playback — the rAF loop ticks the
+ * RuntimePlaybackCoordinator, so Ritmo Studio's class timeline stays the
+ * master and provider SDKs follow. The clock has two read tiers
+ * (`lib/use-virtual-clock.ts`, SPC-18): a throttled `elapsedMs` used here for
+ * cue selection and everything below (cue-boundary accuracy is all that's
+ * needed, not per-frame precision), and a raw store the timeline subscribes to
+ * directly so the playhead stays smooth without re-rendering this whole
+ * subtree every animation frame. Playback failure is
  * a serious recoverable alert (retry / handoff / continue without music), never
  * a silent skip; handoff links live only inside that recovery surface. Two
  * views: Cue-by-Cue (one big current cue + what's next) and Full List (the
@@ -39,6 +45,8 @@ import { LivenessObserver, publishLivenessInspector } from '../lib/playback/live
 import { PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { useWakeLock, type WakeLockStatus } from '../lib/use-wake-lock.js';
+import { useVirtualClock, type ClockStore } from '../lib/use-virtual-clock.js';
+import { createTrailingThrottle } from '../lib/trailing-throttle.js';
 import { ConnectionsDialog } from './ConnectionsDialog.js';
 import { ClassPulse } from './ClassPulse.js';
 import { IntensityReadout } from './IntensityReadout.js';
@@ -241,7 +249,23 @@ function LiveSectionBar({ section }: { section: LiveSection }) {
 }
 
 export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () => void }) {
-  const [elapsedMs, setElapsedMs] = useState(0);
+  // Two clock tiers (`lib/use-virtual-clock.ts`, SPC-18): `elapsedMs` is
+  // throttled (~200ms) and drives everything below; `clockStore` is the raw,
+  // frame-rate position handed to the timeline so it can subscribe directly
+  // without forcing this whole subtree to re-render every animation frame. The
+  // individual clock.* functions are destructured (not accessed as `clock.foo`)
+  // so their stable identities can sit in effect/callback dependency arrays
+  // without the wrapping object's own identity — which changes every render —
+  // causing spurious re-subscriptions.
+  const {
+    elapsedMs,
+    store: clockStore,
+    tick: clockTick,
+    startSegment: clockStartSegment,
+    endSegment: clockEndSegment,
+    seek: clockSeek,
+    previewSeek: clockPreviewSeek,
+  } = useVirtualClock(payload.class.totalDurationMs);
   const [playing, setPlaying] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [view, setView] = useState<View>('cue');
@@ -338,50 +362,73 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     [connections, payload],
   );
 
-  // Virtual clock: accumulate real time only while playing, via rAF.
-  const baseRef = useRef(0); // elapsed banked before the current play segment
-  const startRef = useRef(0); // performance.now() when the segment began
+  // Virtual clock: accumulate real time only while playing, via rAF. See
+  // `use-virtual-clock.ts` for the throttled-display / raw-store split (SPC-18).
   useEffect(() => {
     if (!playing) return;
-    startRef.current = performance.now();
+    clockStartSegment();
     let raf = 0;
-    const tick = () => {
-      const live = baseRef.current + (performance.now() - startRef.current);
-      const capped = Math.min(live, payload.class.totalDurationMs);
-      setElapsedMs(capped);
+    const loop = () => {
+      const capped = clockTick();
       // The class clock is master: each frame lets the playback coordinator
       // follow it (auto-advance, gap silence, end). Fire-and-forget — a frame
-      // is a poll, and the coordinator absorbs overlapping ticks itself.
+      // is a poll, and the coordinator absorbs overlapping ticks itself. This
+      // must keep firing every raw frame regardless of the display throttle —
+      // it's the liveness/auto-advance heartbeat, not a render concern.
       void coordinatorRef.current?.tick(capped);
       if (capped >= payload.class.totalDurationMs) {
-        baseRef.current = payload.class.totalDurationMs;
         setPlaying(false);
         return;
       }
-      raf = requestAnimationFrame(tick);
+      raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(tick);
+    raf = requestAnimationFrame(loop);
     return () => {
-      baseRef.current += performance.now() - startRef.current;
+      clockEndSegment();
       cancelAnimationFrame(raf);
     };
-  }, [playing, payload.class.totalDurationMs]);
+    // clockStartSegment/clockTick/clockEndSegment are stable for a given
+    // totalDurationMs (see use-virtual-clock.ts), so this only re-subscribes on
+    // an actual play/pause or duration change, exactly as before.
+  }, [playing, payload.class.totalDurationMs, clockStartSegment, clockTick, clockEndSegment]);
 
   // Keep the studio screen awake while the class is running, and surface whether
   // it's actually holding so the instructor isn't guessing (the transport chip).
   const wakeStatus = useWakeLock(playing);
 
-  const seek = (ms: number) => {
-    const clamped = Math.max(0, Math.min(ms, payload.class.totalDurationMs));
-    baseRef.current = clamped;
-    // Rebase the running segment to *now*, or a seek while playing would re-add the
-    // time already elapsed since play started (jumping the clock forward).
-    startRef.current = performance.now();
-    setElapsedMs(clamped);
+  // The provider seek call is a real network/SDK round trip — never fire it on
+  // every pointer-move of a drag (SPC-16). `commitThrottle` coalesces a burst
+  // of preview positions into the trailing one, at most once per window; `seek`
+  // always flushes it immediately, so a discrete jump (keyboard, tap, release)
+  // never waits behind a pending drag commit. Built once per mount (a ref, not
+  // state) so the window survives across renders.
+  const commitThrottleRef = useRef<ReturnType<typeof createTrailingThrottle<number>> | null>(null);
+  commitThrottleRef.current ??= createTrailingThrottle((ms) => {
     // Re-cue provider playback at the new position (no-op while paused — the
     // next resume enters at the clock position anyway).
-    void coordinatorRef.current?.seek(clamped);
-  };
+    void coordinatorRef.current?.seek(ms);
+  }, 200);
+
+  /** Discrete, immediate seek: keyboard, tap, row target, reset. Rebases the
+   * clock (both tiers) and commits the provider position right away. */
+  const seek = useCallback(
+    (ms: number) => {
+      const clamped = clockSeek(ms);
+      commitThrottleRef.current!.flush(clamped);
+    },
+    [clockSeek],
+  );
+
+  /** Continuous drag preview: cheap, high-frequency position update (writes
+   * only the raw clock tier — no LiveMode re-render), with the provider commit
+   * coalesced to a trailing throttle so a fast drag doesn't flood it. */
+  const seekPreview = useCallback(
+    (ms: number) => {
+      const clamped = clockPreviewSeek(ms);
+      commitThrottleRef.current!.call(clamped);
+    },
+    [clockPreviewSeek],
+  );
 
   /** Start hands-free: build the coordinator and begin playback at 0 (a user gesture). */
   const startClass = () => {
@@ -678,8 +725,9 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
           seek(0);
         }}
         payload={payload}
-        elapsedMs={elapsedMs}
-        onSeek={seek}
+        clock={clockStore}
+        onSeekPreview={seekPreview}
+        onSeekCommit={seek}
         playback={coordinatorRef.current ? playback : null}
         wakeStatus={wakeStatus}
         primaryButtonRef={primaryButtonRef}
@@ -1339,8 +1387,9 @@ function Transport({
   onToggle,
   onReset,
   payload,
-  elapsedMs,
-  onSeek,
+  clock,
+  onSeekPreview,
+  onSeekCommit,
   playback,
   wakeStatus,
   primaryButtonRef,
@@ -1349,8 +1398,11 @@ function Transport({
   onToggle: () => void;
   onReset: () => void;
   payload: RunPayload;
-  elapsedMs: number;
-  onSeek: (ms: number) => void;
+  /** The raw clock store, passed through to the timeline (SPC-18) — Transport
+   * itself doesn't read it, so it stays out of Transport's own re-render path. */
+  clock: ClockStore;
+  onSeekPreview: (ms: number) => void;
+  onSeekCommit: (ms: number) => void;
   /** Coordinator status while music runs; null in prompter-only mode. */
   playback: CoordinatorStatus | null;
   /** Whether the screen wake lock is holding — surfaced beside the player rail. */
@@ -1382,7 +1434,12 @@ function Transport({
         <WakeRail status={wakeStatus} />
       </div>
       <div className="col-span-full min-w-0 sm:col-span-1">
-        <LiveTimeline payload={payload} elapsedMs={elapsedMs} onSeek={onSeek} />
+        <LiveTimeline
+          payload={payload}
+          clock={clock}
+          onSeekPreview={onSeekPreview}
+          onSeekCommit={onSeekCommit}
+        />
       </div>
     </div>
   );
