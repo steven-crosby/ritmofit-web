@@ -225,6 +225,12 @@ CI is advisory and never deploys. Use small Conventional Commits, commonly scope
 link relevant issues, list verification, include screenshots for UI changes, and call out schema,
 migration, shared-contract, config, secret, and deployment impacts.
 
+Solo project, multiple AI tools (Codex, Claude Code, Cursor) across local and remote/ephemeral
+sessions on unscheduled time — `main` has to be the current source of truth between sessions, so a
+PR that is this session's own finished work with a green gate defaults to **merge at close, branch
+deleted** rather than sitting open. See `agent-prompts/daily/close-session.md` › "PR hygiene" for
+the one exception (genuinely unfinished work).
+
 ## Security And Deployment
 
 Never commit `.env`, `.dev.vars`, credentials, tokens, private keys, or production data dumps. Local
