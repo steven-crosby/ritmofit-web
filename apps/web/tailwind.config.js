@@ -2,11 +2,42 @@
 // Colors/spacing/type all reference the --rf-* custom properties generated from
 // ritmofit_design_system/tokens.json (see scripts/generate-tokens.mjs). Tokens
 // stay the single source of truth; this file only maps them into Tailwind.
+//
+// Tailwind 3 can only apply `/opacity` to colours it can parse as hex/rgb/hsl.
+// A bare `var(--rf-*)` fails that parse, so `bg-interactive/10` used to emit no
+// rule and fall through to `rgba(0,0,0,0)`. These resolvers keep the token var
+// as the colour and mix in the requested alpha via `color-mix` (already used in
+// index.css). Dark/light still resolve through the same --rf-* variables.
+
+function withTokenAlpha(value) {
+  if (typeof value === 'string') {
+    const match = value.match(/^var\((--[\w-]+)\)$/);
+    if (!match) return value;
+    const variable = match[1];
+    return ({ opacityValue }) => {
+      if (opacityValue === undefined || opacityValue === 1 || opacityValue === '1') {
+        return `var(${variable})`;
+      }
+      const percent =
+        typeof opacityValue === 'string' && opacityValue.includes('var(')
+          ? `calc(100% * ${opacityValue})`
+          : `${Number(opacityValue) * 100}%`;
+      return `color-mix(in srgb, var(${variable}) ${percent}, transparent)`;
+    };
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [key, withTokenAlpha(child)]),
+    );
+  }
+  return value;
+}
+
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
-      colors: {
+      colors: withTokenAlpha({
         bg: {
           base: 'var(--rf-color-semantic-bg-base)',
           raised: 'var(--rf-color-semantic-bg-raised)',
@@ -70,7 +101,7 @@ export default {
           recovery: 'var(--rf-color-segment-recovery)',
           cooldown: 'var(--rf-color-segment-cooldown)',
         },
-      },
+      }),
       fontFamily: {
         display: 'var(--rf-typography-family-display)',
         ui: 'var(--rf-typography-family-ui)',
