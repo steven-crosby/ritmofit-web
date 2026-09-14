@@ -319,8 +319,10 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
 - **PROVIDER-TRUTH (SPC-06, SPC-08) — ✅ implemented, pending merge:** Dashboard Music/Account
   headers use the centralized caution tone for “Session expired,” and connection-state marks
-  move to the shared `ConnectionStateMark` icon system. See this PR. **SPC-09 remains backlog**
-  — permission/provider-error still need a backend-signal design decision.
+  move to the shared `ConnectionStateMark` icon system in
+  [PR #418](https://github.com/steven-crosby/ritmofit-web/pull/418) (not yet merged).
+  **SPC-09 remains backlog** — permission/provider-error still need a backend-signal design
+  decision.
 - **SOURCE-ARTWORK (SPC-07) — ✅ shipped:** new shared `TrackArt` component
   (deterministic warm-gradient tile keyed by BPM band, or a stable identity hash when BPM is
   unknown — never intensity, since Library rows must not infer class intensity) replaces the bare
