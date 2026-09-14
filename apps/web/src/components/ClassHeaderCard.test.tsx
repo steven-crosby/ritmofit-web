@@ -192,3 +192,106 @@ describe('ClassHeaderCard rename', () => {
     expect(screen.queryByRole('button', { name: /rename class/i })).toBeNull();
   });
 });
+
+describe('ClassHeaderCard delete', () => {
+  it('uses the canonical destructive treatment for the initial and confirm controls', () => {
+    render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit />);
+
+    const initial = screen.getByRole('button', { name: 'Delete this class' });
+    expect(initial.className).toContain('bg-transparent');
+    expect(initial.className).toContain('text-state-danger');
+    expect(initial.className).toContain('hover:bg-state-danger/10');
+    expect(initial.className).not.toMatch(/(?:^|\s)border-state-danger/);
+    expect(initial.className).not.toMatch(/(?:^|\s)bg-state-danger\//);
+    expect(initial.querySelector('svg[aria-hidden]')).toBeTruthy();
+
+    fireEvent.click(initial);
+
+    const confirm = screen.getByRole('button', { name: 'Delete class' });
+    expect(confirm.className).toContain('bg-transparent');
+    expect(confirm.className).toContain('text-state-danger');
+    expect(confirm.className).toContain('hover:bg-state-danger/10');
+    expect(confirm.className).not.toMatch(/(?:^|\s)border-state-danger/);
+    expect(confirm.className).not.toMatch(/(?:^|\s)bg-state-danger\//);
+    expect(confirm.querySelector('svg[aria-hidden]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
+  });
+
+  it('cancels confirmation without deleting', () => {
+    render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit />);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete this class' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByRole('button', { name: 'Delete this class' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Delete class' })).toBeNull();
+    expect(api.deleteClass).not.toHaveBeenCalled();
+  });
+
+  it('deletes through deleteClass and reports busy plus failure', async () => {
+    const onDeleted = vi.fn();
+    const onError = vi.fn();
+    let resolveDelete!: (value: void) => void;
+    const inFlight = new Promise<void>((resolve) => {
+      resolveDelete = resolve;
+    });
+    vi.mocked(api.deleteClass).mockReturnValueOnce(inFlight);
+
+    render(
+      <ClassHeaderCard
+        {...baseProps}
+        cls={cls}
+        isOwner
+        canEdit
+        onDeleted={onDeleted}
+        onError={onError}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Delete this class' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete class' }));
+
+    expect(api.deleteClass).toHaveBeenCalledWith(cls.id);
+    const busyConfirm = screen.getByRole('button', { name: 'Delete class' });
+    expect(busyConfirm).toHaveProperty('disabled', true);
+    expect(busyConfirm.textContent).toContain('…');
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveProperty('disabled', true);
+
+    resolveDelete();
+    await waitFor(() => expect(onDeleted).toHaveBeenCalled());
+    expect(onError).toHaveBeenCalledWith(null);
+  });
+
+  it('keeps confirmation open and reports the error when delete fails', async () => {
+    const onDeleted = vi.fn();
+    const onError = vi.fn();
+    vi.mocked(api.deleteClass).mockRejectedValueOnce(new Error('still in a live set'));
+
+    render(
+      <ClassHeaderCard
+        {...baseProps}
+        cls={cls}
+        isOwner
+        canEdit
+        onDeleted={onDeleted}
+        onError={onError}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Delete this class' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete class' }));
+
+    await waitFor(() => expect(onError).toHaveBeenCalledWith('still in a live set'));
+    expect(onDeleted).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Delete class' })).toBeTruthy();
+  });
+
+  it('hides delete from non-owners', () => {
+    render(
+      <ClassHeaderCard
+        {...baseProps}
+        cls={{ ...cls, accessLevel: 'view' }}
+        isOwner={false}
+        canEdit={false}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /delete/i })).toBeNull();
+  });
+});

@@ -298,41 +298,39 @@ shared-contract change. The alerting half of liveness remains an owner decision;
 
 **Open production issues:**
 
-- **P0 — Class Builder Intensity picker collapses to an unreadable/unusable sliver in
-  production.** The per-track intensity segmented control (`IntensitySegmentedControl.tsx`)
-  and its "Zone N · Label" summary paragraph render at a computed width of 0px on every
-  track inspector, at ordinary desktop window width — reproduced live on real classes,
-  independently confirmed twice. Root cause: `.rf-zone-control` (`index.css:130`,
-  `container-type: inline-size`) never receives an explicit width from its ancestor, so its
-  `flex-1` children and the container query both collapse. The isolated fix is proposed in
-  [PR #412](https://github.com/steven-crosby/ritmofit-web/pull/412); it is not merged or deployed, so
-  production remains affected. Source evidence:
-  [Studio Pulse Check](https://claude.ai/code/artifact/28aaf27a-434f-46c5-a163-f301c0ab2238)
-  (2026-09-13 live UI/UX audit).
+- None from the Studio Pulse Check P0. The Class Builder Intensity picker collapse
+  ([PR #412](https://github.com/steven-crosby/ritmofit-web/pull/412)) is merged and deployed with
+  AUTH-A11Y / OD-01 ([#414](https://github.com/steven-crosby/ritmofit-web/pull/414)) and
+  SOURCE-ARTWORK ([#415](https://github.com/steven-crosby/ritmofit-web/pull/415)) as Worker
+  `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
 
-**Studio Pulse Check follow-up — triaged, not authorized for implementation:**
+**Studio Pulse Check follow-up — first batch shipped; remaining slices as authorized:**
 
-The other 21 findings now have an authoritative disposition in
+The other 21 findings have an authoritative disposition in
 [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
 Nineteen map to the ten scoped slices below; two were explicit owner decisions and are now resolved.
 The two
 out-of-scope/unverified audit claims were independently checked before disposition. This list is the
 planning queue; the ledger preserves the finding-by-finding evidence and acceptance boundaries.
 
-- **AUTH-A11Y (SPC-01–04) — ✅ implemented, pending merge:** redundant auth status cues, one password
+- **AUTH-A11Y (SPC-01–04) — ✅ shipped:** redundant auth status cues, one password
   contract, reveal controls, and announced mode transitions. Bundled with the OD-01 implementation
-  below in [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414) (not yet merged).
+  below in [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414); deployed as Worker
+  `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
 - **PROVIDER-TRUTH (SPC-06, 08, 09):** correct expired-state tone in Dashboard headers, icon-system
   state marks, and real backend signals before adding permission/provider-error states.
-- **SOURCE-ARTWORK (SPC-07) — ✅ implemented, pending merge:** new shared `TrackArt` component
+- **SOURCE-ARTWORK (SPC-07) — ✅ shipped:** new shared `TrackArt` component
   (deterministic warm-gradient tile keyed by BPM band, or a stable identity hash when BPM is
   unknown — never intensity, since Library rows must not infer class intensity) replaces the bare
   note glyph. The audit named 2 sites (`SourceList.tsx`, `ClassSummaryView.tsx`); `Dashboard.tsx`
   turned out to have 4 more instances of the identical pattern (including the class-cover
   `ArtCollage` zero-art case) that weren't cited — all 6 fixed together in
-  [PR #415](https://github.com/steven-crosby/ritmofit-web/pull/415) (not yet merged).
-- **DESTRUCTIVE-CONTROLS (SPC-10):** bring Dashboard class deletion onto the documented destructive
-  pattern.
+  [PR #415](https://github.com/steven-crosby/ritmofit-web/pull/415); deployed as Worker
+  `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
+- **DESTRUCTIVE-CONTROLS (SPC-10) — ✅ implemented, pending merge:** Dashboard class deletion uses
+  the documented destructive pattern (transparent fill, ember text, mandatory error icon) for both
+  the initial and confirmation controls in
+  [PR #417](https://github.com/steven-crosby/ritmofit-web/pull/417) (not yet merged).
 - **BUILDER-A11Y (SPC-11–13, 15):** restore focus, normalize mutation errors, and announce validation
   and inline confirmations.
 - **ENERGY-RIBBON (SPC-14):** implement the documented placed-move refinement, or obtain a separate
@@ -347,12 +345,13 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
 
 Resolved owner decisions (Steven, 2026-09-13):
 
-- **OD-01 / SPC-05 — sign-in warmth — ✅ implemented, pending merge:** auth stays cool and quiet; the
+- **OD-01 / SPC-05 — sign-in warmth — ✅ shipped:** auth stays cool and quiet; the
   heat glow is removed from `Login.tsx` and `ResetPassword.tsx` (both had it; only `Login.tsx` was
-  cited in the audit) in [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414). `NotFound.tsx`
-  and `ErrorBoundary.tsx` also use the same glow class and were deliberately left alone — they're not
-  "sign-in" and nobody decided about them; flagged for a separate owner call if warmth should be
-  removed there too.
+  cited in the audit) in [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414); deployed
+  as Worker `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
+  `NotFound.tsx` and `ErrorBoundary.tsx` also use the same glow class and were deliberately left
+  alone — they're not "sign-in" and nobody decided about them; flagged for a separate owner call if
+  warmth should be removed there too.
 - **OD-02 / SPC-17 — Live data hero:** the next cue stays the visual hero; BPM remains prominent but
   subordinate, and stale design docs/code comments should be updated.
 
