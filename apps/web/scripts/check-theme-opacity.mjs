@@ -58,6 +58,19 @@ const REQUIRED = [
     token: '--rf-color-semantic-interactive-default',
     alpha: 0.5,
   },
+  // Flat (non-DEFAULT-object) var() colours failed the same compile path.
+  {
+    cls: 'bg-peak/10',
+    property: 'background-color',
+    token: '--rf-color-semantic-peak-glow',
+    alpha: 0.1,
+  },
+  {
+    cls: 'bg-bg-base/70',
+    property: 'background-color',
+    token: '--rf-color-semantic-bg-base',
+    alpha: 0.7,
+  },
 ];
 
 const TRANSPARENT =
@@ -168,6 +181,7 @@ function brokenInteractiveColors() {
       hover: 'var(--rf-color-semantic-interactive-hover)',
     },
     peak: 'var(--rf-color-semantic-peak-glow)',
+    bg: { base: 'var(--rf-color-semantic-bg-base)' },
   };
 }
 
@@ -185,7 +199,9 @@ export async function selftestOpacity() {
 .bg-interactive\\/10 { background-color: rgb(0 0 0 / 0) }
 .bg-interactive\\/15 { background-color: rgb(0 0 0 / 0) }
 .border-interactive\\/15 { border-color: rgb(0 0 0 / 0) }
-.text-interactive\\/50 { color: rgb(0 0 0 / 0) }`;
+.text-interactive\\/50 { color: rgb(0 0 0 / 0) }
+.bg-peak\\/10 { background-color: rgb(0 0 0 / 0) }
+.bg-bg-base\\/70 { background-color: rgb(0 0 0 / 0) }`;
   cases.push({
     name: 'rejects zero-alpha generated declarations',
     ok: validateGeneratedOpacityCss(zeroAlphaCss).some((f) => f.includes('transparent')),
