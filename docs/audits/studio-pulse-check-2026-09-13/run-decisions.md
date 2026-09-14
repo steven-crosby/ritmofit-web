@@ -57,7 +57,7 @@ consistency gap. SPC-06 is directionally correct, but its cited component and sa
 | SPC-16 | P2 | Live | Timeline drag seeking calls the provider seek path on every pointer move. | **Backlog — LIVE-RUNTIME** | Separate preview position from provider commits; coalesce/throttle drag updates and commit on pointer-up/cancel, with keyboard seeking unchanged and tested. |
 | SPC-17 | P2 | Live | The documented 88px BPM data hero is no longer the visual hierarchy in code; cue content is dominant while comments/docs still call BPM the hero. | **Owner decision — OD-02, resolved** | Keep the next cue as Live's visual hero and BPM prominent but subordinate; update the stale design documentation and code comments. Approved by Steven, 2026-09-13. |
 | SPC-18 | P3 | Live | The virtual clock updates state on every animation frame at a level that re-renders the broad Live subtree. | **Backlog — LIVE-RUNTIME** | Isolate frame-rate state to the smallest timeline/readout boundary and profile before/after; preserve provider-authoritative playback and liveness behavior. |
-| SPC-19 | P3 | Live | Disabled “Start class” lacks the documented reduced-opacity treatment. | **Implemented — LIVE-CONTROLS** | Apply the canonical disabled appearance (including the documented opacity target) while preserving native disabled semantics and readable contrast. This PR; not yet merged. |
+| SPC-19 | P3 | Live | Disabled “Start class” lacks the documented reduced-opacity treatment. | **Implemented — LIVE-CONTROLS** | Apply the canonical disabled appearance (including the documented opacity target) while preserving native disabled semantics and readable contrast. [#425](https://github.com/steven-crosby/ritmofit-web/pull/425); not yet merged. |
 | SPC-20 | Constraint | Responsive QA | The audit did not complete its sub-900px pass. The current broad narrow-width smoke is stale in several routes, and focused P0 checks also exposed a separate 10px overflow at 390px. | **Backlog — RESPONSIVE-QA** | Repair stale locators/fixtures, resolve the independently observed overflow, then run 1280/953/680/390/320 plus 200% zoom. Do not treat the focused P0 verification as a full responsive pass. |
 | SPC-21 | P3 | Production data | A QA liveness-probe class is visible and top-ranked in the production account. | **Backlog — PROD-HYGIENE** | Inventory production fixtures, identify ownership, and add a cleanup/prevention runbook. Actual production deletion requires separate owner authorization and verification. |
 
@@ -103,7 +103,7 @@ implementation direction but do not authorize an implementation slice by themsel
 | PROVIDER-TRUTH (SPC-06, SPC-08) | Merged, not deployed | [#418](https://github.com/steven-crosby/ritmofit-web/pull/418) — expired tone + icon-system marks. SPC-09 stays backlog. |
 | RESPONSIVE-QA (SPC-20) | Merged, not deployed | [#419](https://github.com/steven-crosby/ritmofit-web/pull/419) — stale smoke locators, 390/320 overflow, 1280/953/680/390/320 + 200% zoom |
 | Semantic color opacity modifiers | Merged, not deployed | [#424](https://github.com/steven-crosby/ritmofit-web/pull/424) — not a Pulse Check slice; on `main` after the current production Worker |
-| LIVE-CONTROLS (SPC-19) | Implemented, not merged | This PR — disabled Live “Start class” uses native `disabled` plus the documented ~40% opacity |
+| LIVE-CONTROLS (SPC-19) | Implemented, not merged | [#425](https://github.com/steven-crosby/ritmofit-web/pull/425) — disabled Live “Start class” uses native `disabled` plus the documented ~40% opacity |
 
 PR #414 also found that `rf-hero-glow` (the class OD-01 removes) is used on two surfaces the audit and
 the decision never considered — `NotFound.tsx` and `ErrorBoundary.tsx`. Both were left unchanged:
@@ -122,7 +122,7 @@ keep the warm treatment is an open question for a separate, explicit decision, n
 - PR #418 (PROVIDER-TRUTH SPC-06 / SPC-08) is merged and not yet deployed.
 - PR #419 (RESPONSIVE-QA) is merged and not yet deployed.
 - PR #424 (semantic color opacity modifiers) is merged and not yet deployed.
-- LIVE-CONTROLS (SPC-19) is implemented in this PR and not yet merged.
+- LIVE-CONTROLS (SPC-19) is implemented in [PR #425](https://github.com/steven-crosby/ritmofit-web/pull/425) and not yet merged.
 - No merge, deploy, production-data deletion, schema change, or provider-contract change is authorized
   by this ledger. SPC-09 still needs a backend-signal design decision before any permission /
   provider-error UI. ENERGY-RIBBON still needs an owner implement-vs-docs call.

@@ -51,7 +51,7 @@ Pilates, and HIIT.
   shared-contract change across either batch; no remote D1 change. Full disposition and the
   remaining backlog (ENERGY-RIBBON, PROD-HYGIENE, plus SPC-09) live in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
-  LIVE-CONTROLS (SPC-19) is implemented in the current PR and not yet merged.
+  LIVE-CONTROLS (SPC-19) is implemented in [PR #425](https://github.com/steven-crosby/ritmofit-web/pull/425) and not yet merged.
   **On `main` and not deployed:** #417, #418, #419, and #424. Production is still
   Worker `5d659102` and does not match tip of `main`.
   Prior deploy: **PRs #401–#403, #406** — Worker `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7` from
@@ -357,7 +357,8 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   [PR #420](https://github.com/steven-crosby/ritmofit-web/pull/420); deployed as Worker
   `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
 - **LIVE-CONTROLS (SPC-19) — ✅ implemented, pending merge:** disabled Live “Start class”
-  uses native `disabled` plus the documented ~40% opacity (never color-only) in this PR.
+  uses native `disabled` plus the documented ~40% opacity (never color-only) in
+  [PR #425](https://github.com/steven-crosby/ritmofit-web/pull/425).
 - **RESPONSIVE-QA (SPC-20) — ✅ merged, not deployed:** stale narrow-width smoke locators
   repaired, 390px intensity overflow and 320px tag-input overflow fixed, and
   1280 / 953 / 680 / 390 / 320 plus 200% zoom verified (67/67) in
@@ -374,7 +375,7 @@ Resolved owner decisions (Steven, 2026-09-13):
   `NotFound.tsx` and `ErrorBoundary.tsx` also use the same glow class and were deliberately left
   alone — they're not "sign-in" and nobody decided about them; flagged for a separate owner call if
   warmth should be removed there too.
-- **OD-02 / SPC-17 — Live data hero — ✅ docs in this PR:** the next cue stays the visual
+- **OD-02 / SPC-17 — Live data hero — ✅ docs in #425:** the next cue stays the visual
   hero; BPM remains prominent but subordinate. Stale design docs and code comments that
   still called BPM the 88px screenshot hero are updated here; no Live hierarchy rewrite.
 
