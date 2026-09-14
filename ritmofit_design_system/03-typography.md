@@ -18,7 +18,7 @@ rhythm product, the numbers are part of the brand, so the data layer keeps a ded
 - **Data — Azeret Mono** (`"Azeret Mono", "SF Mono", ui-monospace, monospace`). **The hero face.** All
   numerals: BPM, timecodes, zones, durations, counts. Monospaced (so inherently tabular — digits never
   jitter as values change), with a precise, instrument-panel character that makes the tool feel like
-  gear. At the big sizes (`data-hero`, the Live BPM readout) it does the most brand work in the product.
+  gear. At the big sizes (`data-hero`, large Live numerals) it does the most brand work in the product.
 
 > Azeret Mono is open-source under the SIL OFL: self-host on web and bundle on iOS. Do not introduce
 > a fourth family casually.
@@ -38,7 +38,7 @@ px on web; iOS maps 1:1 to points. Tracking in em.
 | `body-strong` | 15 / 22     | 600    | 0        | Sora         | Emphasis in body                      |
 | `label`       | 13 / 16     | 500    | +0.01    | Sora         | Field labels, chips                   |
 | `caption`     | 11 / 14     | 500    | +0.04    | Sora         | Meta, units (uppercase)               |
-| `data-hero`   | 88 / 84     | 700    | -0.04    | Azeret Mono  | The Live BPM readout — the screenshot |
+| `data-hero`   | 88 / 84     | 700    | -0.04    | Azeret Mono  | Reserved large numeral; Live BPM is prominent but subordinate to the cue (OD-02) |
 | `data-lg`     | 28 / 30     | 600    | -0.03    | Azeret Mono  | Big BPM, timeline readouts            |
 | `data`        | 15 / 18     | 500    | -0.02    | Azeret Mono  | Inline BPM, timecodes, counts         |
 
@@ -51,8 +51,9 @@ px on web; iOS maps 1:1 to points. Tracking in em.
   that "this is a value you plan against."
 - **Dynamic Type (iOS) / browser zoom** must reflow cleanly — relative units on web, Dynamic Type
   categories on iOS (see [`07-accessibility.md`](./07-accessibility.md)).
-- **Live mode** leans on `data-hero` / `display` so it is readable across a room. A giant
-  tempo-locked Azeret Mono number is the emotional center of the screen.
+- **Live mode** leans on `display` for the cue — the visual hero — with a prominent but
+  subordinate Azeret Mono tempo. Do not treat the 88px `data-hero` BPM as the screenshot or
+  emotional center of the screen (OD-02 / SPC-17).
 - The marketing hero may use a scoped fluid display size up to 5.75rem. This exception never applies
   to Builder, Library, or ordinary product headings.
 

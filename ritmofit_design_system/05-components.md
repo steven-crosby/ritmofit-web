@@ -46,13 +46,14 @@ use the **Azeret Mono data face** with stepper affordances.
 
 ## BPM readout (the signature data component)
 
-The product's hero value. Three sizes, all Azeret Mono / tabular:
+A planning-critical value, not Live's visual hero. Three sizes, all Azeret Mono / tabular:
 
 - **Inline** (`data`) — in song rows and the editor.
-- **Large** (`data-lg`) — timeline header, section totals.
-- **Hero** (`data-hero`) — the Live HUD. In Live (and on the playing track) this is the surface that
-  **pulses on `--rf-beat`** (see [`10-rhythm-system.md`](./10-rhythm-system.md)). Everywhere else it is
-  static.
+- **Large** (`data-lg`) — timeline header, section totals, and Live's prominent-but-subordinate tempo.
+- **Hero** (`data-hero`) — reserved large numeral. Live's visual hero is the current/next cue
+  (OD-02 / SPC-17); do not restore an 88px BPM as the screenshot. In Live the tempo is still the
+  surface that **pulses on `--rf-beat`** (see [`10-rhythm-system.md`](./10-rhythm-system.md)).
+  Everywhere else it is static.
 
 Confirmed values render as plain data. Provisional values render with a leading `~`, an icon, and an
 explicit `auto` label on the caution channel; color only reinforces. Do not add a new token for this
@@ -267,6 +268,7 @@ on stage. All transport controls stay keyboard accessible and visibly focused.
 
 Shown before class start: each track resolves to a named connected provider (✓) or an unplayable
 verdict with its fix. The primary action (`Start class`) enables only when every track passes;
+when blocked it stays a native `disabled` control at the documented ~40% opacity (never color-only).
 `Run without music` (the prompter-only path) is always available and is a capability, not a fallback
 to provider handoff.
 

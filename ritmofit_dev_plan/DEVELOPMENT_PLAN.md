@@ -49,9 +49,11 @@ Pilates, and HIIT.
   OD-01 decision (#414); a shared `TrackArt` component replaces the bare music-note artwork
   fallback in 6 places, not just the 2 the audit cited (#415). No schema, migration, or
   shared-contract change across either batch; no remote D1 change. Full disposition and the
-  remaining backlog (ENERGY-RIBBON, LIVE-CONTROLS, RESPONSIVE-QA, PROD-HYGIENE, plus SPC-09)
-  live in
+  remaining backlog (ENERGY-RIBBON, PROD-HYGIENE, plus SPC-09) live in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
+  LIVE-CONTROLS (SPC-19) is implemented in the current PR and not yet merged.
+  **On `main` and not deployed:** #417, #418, #419, and #424. Production is still
+  Worker `5d659102` and does not match tip of `main`.
   Prior deploy: **PRs #401–#403, #406** — Worker `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7` from
   main `4031d5b`. Playback-liveness `classify()` now lets provider transport win over a
   zero-tick host rAF loop instead of short-circuiting to a false `host_stalled` verdict
@@ -64,7 +66,7 @@ Pilates, and HIIT.
   2026-07-24 design-audit implementation slices already landed
   and shipped (2026-07-27); they are not current work. Remaining owner calls: the
   alerting half of playback liveness, and F-02 (D11 `createPattern`, still unconfirmed).
-  Inbox empty. The product track remains the **D21 creator-workstation-shell
+  Inbox still holds the class-cover taste decision; leave it. The product track remains the **D21 creator-workstation-shell
   slice** — the first slice (Cycle/Pilates/HIIT templates,
   readiness + discovery resting state, provider shelves) is deployed; the **saved-playlist browsing
   sub-slice is now implemented and deployed (Worker `ded27a07`)** (new `GET
@@ -313,7 +315,7 @@ shared-contract change. The alerting half of liveness remains an owner decision;
   BUILDER-A11Y ([#422](https://github.com/steven-crosby/ritmofit-web/pull/422)) — is deployed as
   Worker `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
 
-**Studio Pulse Check follow-up — batches 1 and 2 shipped; remaining slices as authorized:**
+**Studio Pulse Check follow-up — batches 1 and 2 shipped; undeployed `main` work and remaining slices:**
 
 The other 21 findings have an authoritative disposition in
 [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
@@ -354,11 +356,12 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   rendering without changing provider-authoritative playback/liveness behavior in
   [PR #420](https://github.com/steven-crosby/ritmofit-web/pull/420); deployed as Worker
   `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
-- **LIVE-CONTROLS (SPC-19):** align the disabled Start-class treatment with the documented state.
-- **RESPONSIVE-QA (SPC-20) — ✅ implemented, pending merge:** stale narrow-width smoke locators
+- **LIVE-CONTROLS (SPC-19) — ✅ implemented, pending merge:** disabled Live “Start class”
+  uses native `disabled` plus the documented ~40% opacity (never color-only) in this PR.
+- **RESPONSIVE-QA (SPC-20) — ✅ merged, not deployed:** stale narrow-width smoke locators
   repaired, 390px intensity overflow and 320px tag-input overflow fixed, and
   1280 / 953 / 680 / 390 / 320 plus 200% zoom verified (67/67) in
-  [PR #419](https://github.com/steven-crosby/ritmofit-web/pull/419) (not yet merged).
+  [PR #419](https://github.com/steven-crosby/ritmofit-web/pull/419).
 - **PROD-HYGIENE (SPC-21):** inventory and prevent production fixtures; any deletion remains a separate
   authorization.
 
@@ -371,8 +374,9 @@ Resolved owner decisions (Steven, 2026-09-13):
   `NotFound.tsx` and `ErrorBoundary.tsx` also use the same glow class and were deliberately left
   alone — they're not "sign-in" and nobody decided about them; flagged for a separate owner call if
   warmth should be removed there too.
-- **OD-02 / SPC-17 — Live data hero:** the next cue stays the visual hero; BPM remains prominent but
-  subordinate, and stale design docs/code comments should be updated.
+- **OD-02 / SPC-17 — Live data hero — ✅ docs in this PR:** the next cue stays the visual
+  hero; BPM remains prominent but subordinate. Stale design docs and code comments that
+  still called BPM the 88px screenshot hero are updated here; no Live hierarchy rewrite.
 
 **Non-blocking production verification:**
 

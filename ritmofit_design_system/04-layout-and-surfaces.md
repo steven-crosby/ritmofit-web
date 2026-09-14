@@ -72,8 +72,9 @@ at all.
 - **Planning (web-primary):** timeline-first with a detail editor on the side. Main = the energy ribbon +
   class timeline + song list; right = the selected track's cues/moves/intensity editor. A creative
   workstation, not a multi-track DAW.
-- **Live (iOS-primary):** single-focus, huge `data-hero` type, glass HUD over minimal content, current
-  cue prominent, next cue queued, timecode + BPM always visible — and pulsing on the beat.
+- **Live (iOS-primary):** single-focus, glass HUD over minimal content, current cue as the visual
+  hero, next cue queued, timecode + prominent-but-subordinate BPM always visible — and pulsing on
+  the beat (OD-02).
 - **Search/discovery:** music-forward — artwork present but **bounded**; results scannable by
   title/artist/BPM. No tempo pulse here.
 - **Edit:** structured forms on solid surfaces, no glass, form-friendly spacing.
@@ -92,7 +93,7 @@ The mockup breakpoints (`mockups/theme.css`), each collapsing multi-column layou
 | 1180px    | Builder class rail becomes a compact toolbar and the work area narrows to main + inspector.              |
 | 900px     | Marketing / share / auth / Library / Builder / Live HUD go single-column; the app-header wraps and the nav becomes a full-width horizontal scroller. |
 | 680px     | Builder toolbar wraps to two rows; paired class actions remain two-up; remaining 2-ups collapse.         |
-| 480px     | Small-screen floor: the Live header wraps and the `data-hero` BPM stacks under the cue text so big type never fights a narrow column. |
+| 480px     | Small-screen floor: the Live header wraps and the tempo stacks under the cue text so type never fights a narrow column. |
 
 `html` sets `min-width: 320px` as the supported floor; touch targets stay ≥ 44×44pt and the focus ring is
 visible at every width.

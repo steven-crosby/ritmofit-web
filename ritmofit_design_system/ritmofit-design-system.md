@@ -639,7 +639,7 @@ native iOS UI face; SF Pro Text preserves native expression there.
 | body-strong |  15/22 |    600 |        0 | Sora         | list titles               |
 | label       |  13/16 |    500 |  +0.01em | Sora         | labels, chips             |
 | caption     |  11/14 |    500 |  +0.04em | Sora         | metadata, uppercase units |
-| data-hero   |  88/84 |    700 |  -0.04em | Azeret Mono  | Live BPM                  |
+| data-hero   |  88/84 |    700 |  -0.04em | Azeret Mono  | reserved large numeral; Live BPM is subordinate to the cue (OD-02) |
 | data-lg     |  28/30 |    600 |  -0.03em | Azeret Mono  | timeline readouts         |
 | data        |  15/18 |    500 |  -0.02em | Azeret Mono  | inline BPM/timecode       |
 
