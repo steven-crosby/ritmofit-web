@@ -191,6 +191,9 @@ describe('LiveMode preflight', () => {
     expect(exceptionRow?.className).not.toContain('shadow-card');
     const start = screen.getByRole('button', { name: 'Start class' });
     expect((start as HTMLButtonElement).disabled).toBe(true);
+    expect(start.className).toContain('disabled:opacity-40');
+    expect(start.className).toContain('disabled:pointer-events-none');
+    expect(start.className).not.toContain('text-text-tertiary');
     // The prompter path stays available.
     expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
   });
@@ -746,10 +749,10 @@ describe('eventCount', () => {
 describe('LiveMode tempo-forward HUD', () => {
   it('pairs the tempo with the cue as one focal object (no duplicate side-rail vitals)', async () => {
     await renderLive();
-    // The tempo is the data-hero screenshot numeral, paired with the cue — and the
-    // effort reads alongside it. getByText enforces a single occurrence, so it also
-    // locks the old standalone rail "Vitals" card as removed (folded into the focal
-    // footer), not rendered twice.
+    // Tempo is prominent but subordinate to the cue (OD-02 / SPC-17), paired in
+    // the focal footer with effort. getByText enforces a single occurrence, so it
+    // also locks the old standalone rail "Vitals" card as removed (folded into
+    // the focal footer), not rendered twice.
     expect(screen.getByText('124')).toBeTruthy();
     expect(screen.getByText('BPM')).toBeTruthy();
     expect(screen.getByText('Effort')).toBeTruthy();
