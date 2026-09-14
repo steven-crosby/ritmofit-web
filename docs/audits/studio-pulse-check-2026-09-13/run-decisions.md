@@ -96,7 +96,7 @@ implementation direction but do not authorize an implementation slice by themsel
 | AUTH-A11Y (SPC-01–04) | Merged and deployed | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) — Worker `edaa62b0`, recorded in [#416](https://github.com/steven-crosby/ritmofit-web/pull/416) |
 | OD-01 / SPC-05 (sign-in warmth) | Merged and deployed | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) — bundled with AUTH-A11Y since both touch `Login.tsx`/`ResetPassword.tsx` |
 | SOURCE-ARTWORK (SPC-07) | Merged and deployed | [#415](https://github.com/steven-crosby/ritmofit-web/pull/415) — also fixed 4 uncited instances of the same pattern found in `Dashboard.tsx`; Worker `edaa62b0`, recorded in [#416](https://github.com/steven-crosby/ritmofit-web/pull/416) |
-| DESTRUCTIVE-CONTROLS (SPC-10) | Implemented, not merged | See this PR |
+| DESTRUCTIVE-CONTROLS (SPC-10) | Implemented, not merged | [#417](https://github.com/steven-crosby/ritmofit-web/pull/417) |
 
 PR #414 also found that `rf-hero-glow` (the class OD-01 removes) is used on two surfaces the audit and
 the decision never considered — `NotFound.tsx` and `ErrorBoundary.tsx`. Both were left unchanged:

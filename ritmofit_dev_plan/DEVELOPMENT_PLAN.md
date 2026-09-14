@@ -329,7 +329,8 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
 - **DESTRUCTIVE-CONTROLS (SPC-10) — ✅ implemented, pending merge:** Dashboard class deletion uses
   the documented destructive pattern (transparent fill, ember text, mandatory error icon) for both
-  the initial and confirmation controls. See this PR.
+  the initial and confirmation controls in
+  [PR #417](https://github.com/steven-crosby/ritmofit-web/pull/417) (not yet merged).
 - **BUILDER-A11Y (SPC-11–13, 15):** restore focus, normalize mutation errors, and announce validation
   and inline confirmations.
 - **ENERGY-RIBBON (SPC-14):** implement the documented placed-move refinement, or obtain a separate
