@@ -73,6 +73,9 @@ export function IntensitySegmentedControl({
   return (
     // A container, not a viewport breakpoint: what decides whether the words fit
     // is the inspector's width, and the inspector is narrow at 1440px too.
+    // min-w-0 on the group and each flex-1 zone lets the five segments shrink
+    // below content width so a 390px inspector does not overflow (~10px was
+    // the independently observed SPC-20 failure).
     <div className="rf-zone-control">
       <div
         ref={groupRef}
@@ -80,7 +83,7 @@ export function IntensitySegmentedControl({
         aria-label={ariaLabel}
         aria-describedby={summaryId}
         onKeyDown={onKeyDown}
-        className="flex items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+        className="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
       >
         {intensityValues.map((v) => {
           const selected = value === v;
@@ -92,7 +95,7 @@ export function IntensitySegmentedControl({
               aria-pressed={selected}
               tabIndex={selected ? 0 : -1}
               onClick={() => onChange(v)}
-              className={`rf-focus-ring flex min-h-11 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors ${
+              className={`rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors ${
                 selected
                   ? 'border-b-interactive bg-bg-raised font-semibold text-text-primary'
                   : 'border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary'

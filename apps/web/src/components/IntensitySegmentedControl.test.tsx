@@ -94,6 +94,21 @@ describe('IntensitySegmentedControl', () => {
     }
   });
 
+  it('lets flex children shrink so five zones cannot overflow a 390px inspector', () => {
+    // Default `min-width: auto` on flex items kept each zone at its content
+    // width (~88px × 5 ≈ 440px) and overflowed the inspector by ~10px at 390.
+    const { container } = render(
+      <IntensitySegmentedControl value="mod" onChange={() => {}} ariaLabel="i" />,
+    );
+    expect(container.querySelector('.rf-zone-control')).toBeTruthy();
+    const group = container.querySelector('[role="group"]');
+    expect(group?.className).toContain('min-w-0');
+    for (const button of screen.getAllByRole('button')) {
+      expect(button.className).toContain('min-w-0');
+      expect(button.className).toContain('flex-1');
+    }
+  });
+
   it('never uses the copper primary as a selection fill', () => {
     // Copper is identity and the one primary action; spending it here made every
     // zone read as a call to action (P1-01).

@@ -4368,13 +4368,18 @@ export function ClassHeaderCard({
                 </span>
               ))}
               {canEdit && (
-                <form onSubmit={handleTagSubmit} className="flex flex-wrap gap-1 items-center">
+                <form
+                  onSubmit={handleTagSubmit}
+                  className="flex min-w-0 max-w-full flex-wrap items-center gap-1"
+                >
                   <input
                     type="text"
                     placeholder="Add tag…"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
-                    className="min-h-11 rounded-control border border-interactive/30 bg-bg-sunken px-2.5 font-ui text-xs text-text-primary sm:rounded-pill"
+                    // min-w-0 + max-w-full: the default input min-width overflowed
+                    // the class header by 7px at a 320px viewport.
+                    className="min-h-11 min-w-0 max-w-full rounded-control border border-interactive/30 bg-bg-sunken px-2.5 font-ui text-xs text-text-primary sm:rounded-pill"
                     maxLength={50}
                   />
                 </form>
