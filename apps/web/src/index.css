@@ -129,6 +129,8 @@
      and truncates — the row never wraps either way. */
   .rf-zone-control {
     width: 100%;
+    min-width: 0;
+    overflow: hidden;
     container-type: inline-size;
   }
   @container (max-width: 319px) {

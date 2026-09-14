@@ -326,10 +326,10 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   contract, reveal controls, and announced mode transitions. Bundled with the OD-01 implementation
   below in [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414); deployed as Worker
   `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
-- **PROVIDER-TRUTH (SPC-06, SPC-08) — ✅ implemented, pending merge:** Dashboard Music/Account
+- **PROVIDER-TRUTH (SPC-06, SPC-08) — ✅ merged:** Dashboard Music/Account
   headers use the centralized caution tone for “Session expired,” and connection-state marks
   move to the shared `ConnectionStateMark` icon system in
-  [PR #418](https://github.com/steven-crosby/ritmofit-web/pull/418) (not yet merged).
+  [PR #418](https://github.com/steven-crosby/ritmofit-web/pull/418). Not yet deployed.
   **SPC-09 remains backlog** — permission/provider-error still need a backend-signal design
   decision.
 - **SOURCE-ARTWORK (SPC-07) — ✅ shipped:** new shared `TrackArt` component
@@ -355,8 +355,10 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   [PR #420](https://github.com/steven-crosby/ritmofit-web/pull/420); deployed as Worker
   `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
 - **LIVE-CONTROLS (SPC-19):** align the disabled Start-class treatment with the documented state.
-- **RESPONSIVE-QA (SPC-20):** repair the stale broad smoke harness, resolve the independently observed
-  390px overflow, and complete viewport plus 200% zoom verification.
+- **RESPONSIVE-QA (SPC-20) — ✅ implemented, pending merge:** stale narrow-width smoke locators
+  repaired, 390px intensity overflow and 320px tag-input overflow fixed, and
+  1280 / 953 / 680 / 390 / 320 plus 200% zoom verified (67/67) in
+  [PR #419](https://github.com/steven-crosby/ritmofit-web/pull/419) (not yet merged).
 - **PROD-HYGIENE (SPC-21):** inventory and prevent production fixtures; any deletion remains a separate
   authorization.
 

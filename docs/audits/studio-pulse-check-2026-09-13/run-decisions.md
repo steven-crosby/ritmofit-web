@@ -99,7 +99,8 @@ implementation direction but do not authorize an implementation slice by themsel
 | LIVE-RUNTIME (SPC-16, SPC-18) | Merged and deployed | [#420](https://github.com/steven-crosby/ritmofit-web/pull/420) — Worker `5d659102`, recorded in [#423](https://github.com/steven-crosby/ritmofit-web/pull/423) |
 | BUILDER-A11Y (SPC-11–13, SPC-15) | Merged and deployed | [#422](https://github.com/steven-crosby/ritmofit-web/pull/422) — Worker `5d659102`, recorded in [#423](https://github.com/steven-crosby/ritmofit-web/pull/423) |
 | DESTRUCTIVE-CONTROLS (SPC-10) | Merged, not deployed | [#417](https://github.com/steven-crosby/ritmofit-web/pull/417) |
-| PROVIDER-TRUTH (SPC-06, SPC-08) | Implemented, not merged | [#418](https://github.com/steven-crosby/ritmofit-web/pull/418) — expired tone + icon-system marks. SPC-09 stays backlog. |
+| PROVIDER-TRUTH (SPC-06, SPC-08) | Merged, not deployed | [#418](https://github.com/steven-crosby/ritmofit-web/pull/418) — expired tone + icon-system marks. SPC-09 stays backlog. |
+| RESPONSIVE-QA (SPC-20) | Implemented, not merged | [#419](https://github.com/steven-crosby/ritmofit-web/pull/419) — stale smoke locators, 390/320 overflow, 1280/953/680/390/320 + 200% zoom |
 
 PR #414 also found that `rf-hero-glow` (the class OD-01 removes) is used on two surfaces the audit and
 the decision never considered — `NotFound.tsx` and `ErrorBoundary.tsx`. Both were left unchanged:
@@ -115,7 +116,8 @@ keep the warm treatment is an open question for a separate, explicit decision, n
 - PRs #420 (LIVE-RUNTIME) and #422 (BUILDER-A11Y) are merged and deployed as Worker `5d659102`
   (recorded in PR #423).
 - PR #417 (DESTRUCTIVE-CONTROLS) is merged and not yet deployed.
-- PR #418 (PROVIDER-TRUTH SPC-06 / SPC-08) is implemented and not yet merged.
+- PR #418 (PROVIDER-TRUTH SPC-06 / SPC-08) is merged and not yet deployed.
+- PR #419 (RESPONSIVE-QA) is implemented and not yet merged.
 - No merge, deploy, production-data deletion, schema change, or provider-contract change is authorized
   by this ledger. SPC-09 still needs a backend-signal design decision before any permission /
   provider-error UI.

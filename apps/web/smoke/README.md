@@ -1,20 +1,23 @@
 # Browser smokes
 
 Real-browser checks that jsdom component tests can't cover (no layout engine):
-horizontal overflow at a phone viewport and live modal focus management.
+horizontal overflow across launch viewports and live modal focus management.
 
 These are **not** part of `pnpm test` — they need the app running and a Playwright
 browser, so they're run on demand (e.g. before a UI-affecting deploy).
 
 ## narrow-width.smoke.mjs
 
-Signs up a throwaway mock-seam user at **390×844**, creates a class, adds a track,
-and opens the private-beta nav dialogs. Asserts:
+Signs up a throwaway mock-seam user, creates a class, adds tracks, and walks the
+primary destinations (Classes, Music, Account, Live). Asserts:
 
-- no horizontal overflow on login, the empty dashboard, the dashboard with a track,
-  and with each dialog open;
-- each dialog moves focus inside on open, marks `#root` `inert` + `aria-hidden`,
-  traps Tab, and returns focus to its trigger on Escape.
+- no horizontal overflow on marketing, login, the empty dashboard, the dashboard
+  with a track, the inspector, Music, Account, Live at rest, and the connections
+  dialog;
+- each checked dialog moves focus inside on open, marks `#root` `inert` +
+  `aria-hidden`, traps Tab, and returns focus to its trigger on Escape;
+- the same signed-in surfaces stay overflow-free at **1280 / 953 / 680 / 390 /
+  320** and at **200% zoom**.
 
 Exits non-zero on any failure. Screenshots (gitignored) land in `./shots/`. Set
 `SMOKE_DIAG=1` to print the elements responsible for any overflow.
