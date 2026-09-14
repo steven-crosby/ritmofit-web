@@ -844,15 +844,16 @@ function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void 
 }
 
 /**
- * The focal card's vitals footer: current effort + the tempo rendered as the
- * `data-hero` numeral (design system 03 §data-hero — 88px Azeret Mono, the
- * "screenshot" of the instrument). Pairing it with the cue makes the class's
- * energy state a single glanceable object rather than a card buried in a side
- * rail. The BPM readout carries the one on-beat pulse the rhythm system allows
- * (10 §1–2) — a single focal heartbeat while playing, needing a BPM to time the
- * beat and removed under reduced motion by CSS, so the giant cue stays steady.
- * A missing tempo is a readiness state stated on the caution channel, never
- * quiet metadata (audit P0 #3; rhythm-system §1a).
+ * The focal card's vitals footer: current effort + a prominent tempo numeral.
+ * The cue stays Live's visual hero (OD-02 / SPC-17); BPM is glanceable but
+ * subordinate — not the 88px `data-hero` "screenshot" the older type scale
+ * described. Pairing tempo with the cue makes the class's energy state one
+ * object rather than a card buried in a side rail. The BPM readout still
+ * carries the one on-beat pulse the rhythm system allows (10 §1–2) — a single
+ * heartbeat while playing, needing a BPM to time the beat and removed under
+ * reduced motion by CSS, so the cue stays steady. A missing tempo is a
+ * readiness state stated on the caution channel, never quiet metadata
+ * (audit P0 #3; rhythm-system §1a).
  */
 function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing: boolean }) {
   const pulse = playing && entry.displayBpm != null;
@@ -1103,8 +1104,8 @@ function CueByCue({
             </span>
           )}
         </div>
-        {/* Vitals footer — current effort + the tempo as the data-hero screenshot
-            numeral, paired with the cue instead of buried in a side rail. */}
+        {/* Vitals footer — current effort + prominent (not 88px-hero) tempo,
+            paired with the cue. Cue stays the visual hero (OD-02). */}
         <FocalVitals entry={entry} playing={playing} />
       </div>
 

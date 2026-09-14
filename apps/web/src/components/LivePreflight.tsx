@@ -20,6 +20,12 @@ import type {
 } from '../lib/playback/types.js';
 import { RecoveryState, StatusLabel } from './SharedState.js';
 
+/**
+ * Canonical disabled control (05-components): ~40% opacity and no pointer/hover.
+ * Color is never the only state signal — pair this with native `disabled`.
+ */
+export const DISABLED_CONTROL_CLASS = 'disabled:pointer-events-none disabled:opacity-40';
+
 const REASON_META: Record<UnplayableReason, { label: string; hint: string }> = {
   no_provider_ref: {
     label: 'No provider link',
@@ -190,7 +196,7 @@ export function LivePreflight({
                   Run without music
                 </button>
                 <button
-                  className="min-h-11 rounded-control border border-border-strong px-4 py-2 font-ui text-sm font-semibold text-text-tertiary rf-focus-ring sm:rounded-pill"
+                  className={`min-h-11 rounded-control border border-border-strong px-4 py-2 font-ui text-sm font-semibold text-text-secondary rf-focus-ring sm:rounded-pill ${DISABLED_CONTROL_CLASS}`}
                   onClick={onStart}
                   disabled
                 >

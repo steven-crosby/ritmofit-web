@@ -44,7 +44,7 @@ The pulse is **scarce on purpose.** It appears in exactly two places:
 
 | Surface                                                       | Treatment                                                                                | Intensity  |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------- |
-| **Live HUD** — the big `data-hero` BPM + the current-cue card | scale `1.0 → 1.06` + a soft luminance breath, one cycle per `--rf-beat`, `onBeat` easing | pronounced |
+| **Live HUD** — the current-cue card + prominent (not 88px-hero) BPM | scale `1.0 → 1.06` + a soft luminance breath, one cycle per `--rf-beat`, `onBeat` easing | pronounced |
 | **The currently-playing track** in the planning timeline      | scale `1.0 → 1.03` + a faint border-luminance breath on the play indicator               | subtle     |
 
 That's it. Two surfaces. The pulse is a _focus_ device — it marks "this is happening now, at this tempo"
