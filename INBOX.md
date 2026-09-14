@@ -51,6 +51,25 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 
 <!-- newest at top; one per line -->
 
+- [ ] (2026-09-13) `bg-interactive/<opacity>` renders fully transparent (confirmed via computed
+      style: `rgba(0,0,0,0)`, not a faint tint) even though the underlying token resolves fine —
+      `border-interactive/15` on the same element/file renders correctly, so it's specific to
+      background-color opacity variants, not the token itself. Root cause: `interactive` in
+      `apps/web/tailwind.config.js` is a `{ DEFAULT: 'var(--rf-color-semantic-interactive-...)' }`
+      object, not a flat color string; Tailwind's opacity-modifier codegen appears not to handle
+      that shape for every utility category. `theme-classes` (`scripts/check-theme-classes.mjs`)
+      does NOT catch this — it only validates the base color name exists, not that opacity variants
+      actually produce a non-transparent rule. First observed live: `LiveTimeline.tsx`'s "played
+      portion" progress fill (`bg-interactive/10`) is completely invisible — the Live Mode timeline
+      scrubber shows only the thin playhead line and track-number labels, no progress bar at all.
+      `bg-interactive/`, `text-interactive/`, and `border-interactive/` opacity variants appear in
+      ~20 components (`grep -rl "interactive/" apps/web/src`); only the one LiveTimeline instance
+      was actually verified broken — the others need checking, not assumed broken. Needs: (1) a
+      full sweep of `*-interactive/<n>` usages to see which actually render vs. silently vanish,
+      (2) a fix to the token definition or codegen so opacity modifiers work, (3) consider
+      extending `theme-classes` to catch a zero-alpha opacity variant the way it catches dead
+      color names. — #bug
+
 <!-- 2026-07-27: the two 2026-07-25 design-audit breadcrumbs were routed to
      docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md as F-01 (dead Tailwind
      color classes — the sweep found 12 uses across 5 files, not just AccountDialog) and F-02
