@@ -10,6 +10,36 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-13 (PRs #420, #422 — Studio Pulse Check remediation, batch 2) —
+> deployed (Worker `5d659102-3bff-4398-91ad-cdc1d165ccc1`).** Main HEAD `dd625b5`. Carries
+> two frontend-only audit slices plus the intervening documentation-only PR #421:
+>
+> - **PR #420 (LIVE-RUNTIME, SPC-16/SPC-18):** separates raw timeline animation from the
+>   throttled Live Mode display clock so the full Live subtree no longer re-renders every
+>   animation frame, and reduces drag-seek provider traffic to trailing commits while
+>   preserving immediate keyboard and pointer-release seeks.
+> - **PR #422 (BUILDER-A11Y, SPC-11/SPC-12/SPC-13/SPC-15):** restores deterministic
+>   keyboard focus after cue and move save/cancel/delete actions, manages custom-move
+>   confirmation focus, associates and announces validation errors, focuses the first
+>   invalid field, and normalizes mutation failures through the established error helper.
+>
+> No schema, migration, API, shared-contract, provider-playback, secret, or configuration
+> change. No remote D1 change. Rollback anchor: prior live
+> `edaa62b0-8957-486c-b953-24eae2b0fd33` (2026-09-13 #412/#414/#415). Remote D1:
+> **no migrations to apply** (checked before deploy). `BETA_ALLOWED_EMAILS` present (name
+> only). Full pre-deploy gate green on exact commit `dd625b5`: format, typecheck, lint,
+> design verify, theme classes, unit tests (770 web + 431 API + 30 music), 151 integration
+> tests, web build, OpenAPI no-drift, contract parity, and the accepted audit baseline.
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` and health → `200`;
+> protected `classes`, `explore`, and `teams` → `401`; all six security headers present;
+> mounted shares, Spotify search/playlists, class tags/moves, and cover routes reached JSON
+> handlers rather than the SPA fallback. Worker status confirmed 100% on `5d659102`.
+> Served entry `assets/index-Bm9AVXtk.js` matched the local build across **five consecutive**
+> cache-busted fetches. The two UI slices had passed real-Chrome verification against the
+> exact code before merge; no authenticated production data was mutated during deployment
+> verification.
+
 > **Session 2026-09-13 (PRs #412, #414, #415 — Studio Pulse Check remediation, batch 1) —
 > deployed (Worker `edaa62b0-8957-486c-b953-24eae2b0fd33`).** Main HEAD `38f8526`. Carries
 > three merged PRs from the same-day live UX audit ([Studio Pulse
