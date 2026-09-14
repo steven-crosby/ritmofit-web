@@ -1318,6 +1318,45 @@ describe('Dashboard class library states', () => {
   });
 });
 
+describe('Dashboard connection-state headers', () => {
+  const profile = {
+    id: 'me',
+    email: 'tester@example.com',
+    displayName: 'Tester',
+    imageUrl: null,
+    createdAt: 1,
+    updatedAt: 1,
+  } as const;
+
+  it('uses the caution tone for Session expired on Music and Account headers', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([{ ...spotifyConnection(), expiresAt: 1 }]);
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+
+    const musicExpired = await screen.findAllByText('Session expired');
+    expect(musicExpired.length).toBeGreaterThan(0);
+    expect(musicExpired.some((node) => node.closest('[data-connection-state="expired"]'))).toBe(
+      true,
+    );
+    const musicMark = document.querySelector('[data-connection-state="expired"]');
+    expect(musicMark?.className).toContain('text-state-caution');
+    expect(musicMark?.className).not.toContain('text-text-tertiary');
+    expect(musicMark?.querySelector('svg[aria-hidden]')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    const accountSection = document.getElementById('account-music-connections');
+    expect(accountSection).toBeTruthy();
+    const accountExpired = await within(accountSection!).findByText('Session expired');
+    const accountMark = accountExpired.closest('[data-connection-state="expired"]');
+    expect(accountMark?.className).toContain('text-state-caution');
+    expect(accountMark?.className).not.toContain('text-text-tertiary');
+    expect(accountMark?.querySelector('svg[aria-hidden]')).toBeTruthy();
+  });
+});
+
 describe('Dashboard Account status ledger', () => {
   const profile = {
     id: 'me',

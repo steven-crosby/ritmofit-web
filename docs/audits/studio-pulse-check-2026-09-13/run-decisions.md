@@ -96,7 +96,10 @@ implementation direction but do not authorize an implementation slice by themsel
 | AUTH-A11Y (SPC-01–04) | Merged and deployed | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) — Worker `edaa62b0`, recorded in [#416](https://github.com/steven-crosby/ritmofit-web/pull/416) |
 | OD-01 / SPC-05 (sign-in warmth) | Merged and deployed | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) — bundled with AUTH-A11Y since both touch `Login.tsx`/`ResetPassword.tsx` |
 | SOURCE-ARTWORK (SPC-07) | Merged and deployed | [#415](https://github.com/steven-crosby/ritmofit-web/pull/415) — also fixed 4 uncited instances of the same pattern found in `Dashboard.tsx`; Worker `edaa62b0`, recorded in [#416](https://github.com/steven-crosby/ritmofit-web/pull/416) |
-| DESTRUCTIVE-CONTROLS (SPC-10) | Implemented, not merged | [#417](https://github.com/steven-crosby/ritmofit-web/pull/417) |
+| LIVE-RUNTIME (SPC-16, SPC-18) | Merged and deployed | [#420](https://github.com/steven-crosby/ritmofit-web/pull/420) — Worker `5d659102`, recorded in [#423](https://github.com/steven-crosby/ritmofit-web/pull/423) |
+| BUILDER-A11Y (SPC-11–13, SPC-15) | Merged and deployed | [#422](https://github.com/steven-crosby/ritmofit-web/pull/422) — Worker `5d659102`, recorded in [#423](https://github.com/steven-crosby/ritmofit-web/pull/423) |
+| DESTRUCTIVE-CONTROLS (SPC-10) | Merged, not deployed | [#417](https://github.com/steven-crosby/ritmofit-web/pull/417) |
+| PROVIDER-TRUTH (SPC-06, SPC-08) | Implemented, not merged | [#418](https://github.com/steven-crosby/ritmofit-web/pull/418) — expired tone + icon-system marks. SPC-09 stays backlog. |
 
 PR #414 also found that `rf-hero-glow` (the class OD-01 removes) is used on two surfaces the audit and
 the decision never considered — `NotFound.tsx` and `ErrorBoundary.tsx`. Both were left unchanged:
@@ -109,5 +112,10 @@ keep the warm treatment is an open question for a separate, explicit decision, n
   backlog slices.
 - PRs #412 (P0), #414 (AUTH-A11Y + OD-01), and #415 (SOURCE-ARTWORK) are merged and deployed as
   Worker `edaa62b0` (recorded in PR #416).
+- PRs #420 (LIVE-RUNTIME) and #422 (BUILDER-A11Y) are merged and deployed as Worker `5d659102`
+  (recorded in PR #423).
+- PR #417 (DESTRUCTIVE-CONTROLS) is merged and not yet deployed.
+- PR #418 (PROVIDER-TRUTH SPC-06 / SPC-08) is implemented and not yet merged.
 - No merge, deploy, production-data deletion, schema change, or provider-contract change is authorized
-  by this ledger.
+  by this ledger. SPC-09 still needs a backend-signal design decision before any permission /
+  provider-error UI.

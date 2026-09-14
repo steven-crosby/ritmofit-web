@@ -6,10 +6,10 @@
  * mock seam links immediately. Disconnect forgets the tokens now and triggers the
  * 7-day metadata purge server-side — so it's a deliberate, confirmed action.
  *
- * State is encoded with glyph + label + text (never color alone, 05/11): each
- * provider shows an explicit status — ✓ Connected, ⧖ Session expired, ○ Not
- * connected, ◍ Catalog search only — paired with its recovery action (Connect /
- * Reconnect / Disconnect).
+ * State is encoded with icon + label + tone (never color alone, 05/11): each
+ * provider shows an explicit status via `ConnectionStateMark` — Connected,
+ * Session expired, Not connected, Catalog search only — paired with its
+ * recovery action (Connect / Reconnect / Disconnect).
  *
  * Only the four states derivable from `MusicConnectionView` (provider +
  * `expiresAt`) are shown; the canonical model's `permission` and `provider-error`
@@ -33,27 +33,11 @@ import {
   providerConnectionState,
   connectionHasSavedPlaylistScope,
   connectionHasPlaybackScope,
-  type ProviderConnectionState,
 } from '../lib/providers.js';
 import { Dialog } from './Dialog.js';
 import { DialogState } from './DialogState.js';
 import { ProviderCapabilityLedger } from './ProviderCapabilityLedger.js';
-
-/**
- * Presentation per state: a glyph and label carry the meaning; the tone maps to
- * the semantic channel (02) and only reinforces. `reconnecting` is the transient
- * in-flight state shown while a connect/reauth call is busy.
- */
-const STATE_META: Record<
-  ProviderConnectionState | 'reconnecting',
-  { glyph: string; label: string; tone: string }
-> = {
-  connected: { glyph: '✓', label: 'Connected', tone: 'text-state-positive' },
-  reconnecting: { glyph: '↻', label: 'Reconnecting…', tone: 'text-interactive' },
-  expired: { glyph: '⧖', label: 'Session expired', tone: 'text-state-caution' },
-  disconnected: { glyph: '○', label: 'Not connected', tone: 'text-text-tertiary' },
-  'catalog-only': { glyph: '◍', label: 'Catalog search only', tone: 'text-text-tertiary' },
-};
+import { ConnectionStateMark } from './ConnectionStateMark.js';
 
 export function ConnectionsDialog({
   onClose,
@@ -216,7 +200,11 @@ export function ConnectionsDialog({
             // row is mid-disconnect and keeps its Connected status (button says so).
             const showReconnecting =
               busy && (dataState === 'disconnected' || dataState === 'expired');
-            const meta = STATE_META[showReconnecting ? 'reconnecting' : dataState];
+            const markKind = !statusVerified
+              ? 'unverified'
+              : showReconnecting
+                ? 'reconnecting'
+                : dataState;
             const truth = providerCapabilityTruth(
               provider,
               connection,
@@ -227,7 +215,7 @@ export function ConnectionsDialog({
             // granted `streaming`) is a live token that still can't drive in-app
             // playback — Live preflight reports `playback_reauth_required` and tells
             // the instructor to "Reconnect Spotify for playback", but this row would
-            // otherwise show only "✓ Connected" with a Disconnect. Surface the fix
+            // otherwise show only "Connected" with a Disconnect. Surface the fix
             // the hint points at.
             const hasPlaybackScope = connectionHasPlaybackScope(provider, connection);
             const needsPlaybackReconnect = dataState === 'connected' && !hasPlaybackScope;
@@ -252,12 +240,11 @@ export function ConnectionsDialog({
                     <p className="font-ui text-sm font-semibold text-text-primary">
                       {providerLabel(provider)}
                     </p>
-                    <p
-                      className={`flex items-center gap-1.5 font-ui text-xs ${statusVerified ? meta.tone : 'text-text-tertiary'}`}
-                    >
-                      <span aria-hidden>{statusVerified ? meta.glyph : '?'}</span>
-                      <span>{statusVerified ? meta.label : 'Last known · unverified'}</span>
-                    </p>
+                    <ConnectionStateMark
+                      kind={markKind}
+                      label={statusVerified ? undefined : 'Last known · unverified'}
+                      className="font-ui text-xs"
+                    />
                   </div>
 
                   {dataState === 'catalog-only' ? (
