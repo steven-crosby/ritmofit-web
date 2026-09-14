@@ -20,6 +20,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { runOpacityCheck, selftestOpacity } from './check-theme-opacity.mjs';
 
 const WEB_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(WEB_ROOT, 'src');
@@ -52,7 +53,8 @@ const COLOUR_UTILITIES = {
 function validColourNames(colours) {
   const names = new Set();
   for (const [group, value] of Object.entries(colours)) {
-    if (typeof value === 'string') {
+    // Leaf resolvers (`({ opacityValue }) => ...`) are still one colour name.
+    if (typeof value === 'string' || typeof value === 'function') {
       names.add(group);
       continue;
     }
@@ -157,7 +159,8 @@ function selftest(theme) {
     cases.push({ cls, shouldFail: false, why: 'corrected form' });
   }
   for (const [group, value] of Object.entries(colours)) {
-    const key = typeof value === 'string' ? null : Object.keys(value)[0];
+    const key =
+      typeof value === 'string' || typeof value === 'function' ? null : Object.keys(value)[0];
     const name = !key ? group : key === 'DEFAULT' ? group : `${group}-${key}`;
     cases.push({ cls: `bg-${name}`, shouldFail: false, why: `derived from colors.${group}` });
     cases.push({ cls: `bg-${name}-nope`, shouldFail: true, why: `unknown key under ${group}` });
@@ -203,21 +206,25 @@ const theme = await loadTheme();
 
 if (process.argv.includes('--selftest')) {
   selftest(theme);
-  process.exit(0);
+  const opacityOk = await selftestOpacity();
+  process.exit(opacityOk ? 0 : 1);
 }
 
 const failures = scan(theme);
-if (failures.length === 0) {
+const opacityFailures = await runOpacityCheck();
+if (failures.length === 0 && opacityFailures.length === 0) {
   console.log(`✓ no dead colour utilities (${theme.valid.size} valid names from tailwind.config.js)`);
   process.exit(0);
 }
 
-console.error(`✗ ${failures.length} colour utilit${failures.length === 1 ? 'y' : 'ies'} Tailwind will not generate:\n`);
-for (const { file, line, cls, value } of failures) {
-  console.error(`  ${file}:${line}  ${cls}`);
-  console.error(`      "${value}" is not a colour in tailwind.config.js. Did you mean: ${nearest(value, theme.valid).join(', ')}?`);
+if (failures.length) {
+  console.error(`✗ ${failures.length} colour utilit${failures.length === 1 ? 'y' : 'ies'} Tailwind will not generate:\n`);
+  for (const { file, line, cls, value } of failures) {
+    console.error(`  ${file}:${line}  ${cls}`);
+    console.error(`      "${value}" is not a colour in tailwind.config.js. Did you mean: ${nearest(value, theme.valid).join(', ')}?`);
+  }
+  console.error(
+    `\nThese emit no CSS. A dead bg-* renders transparent; a dead border-* inherits preflight's #E5E7EB\nand looks deliberate. Fix the class, or add the key to ritmofit_design_system/tokens.json first.`,
+  );
 }
-console.error(
-  `\nThese emit no CSS. A dead bg-* renders transparent; a dead border-* inherits preflight's #E5E7EB\nand looks deliberate. Fix the class, or add the key to ritmofit_design_system/tokens.json first.`,
-);
 process.exit(1);
