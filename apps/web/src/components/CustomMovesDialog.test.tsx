@@ -97,3 +97,55 @@ describe('CustomMovesDialog — template + base-move editing', () => {
     expect(await screen.findByText('Sculpt · based on Climb')).toBeTruthy();
   });
 });
+
+describe('CustomMovesDialog — delete focus', () => {
+  it('focuses Yes, returns to Delete on No, and advances after deletion', async () => {
+    const first = userMove();
+    const second = userMove({ id: '00000000-0000-4000-8000-0000000000a2', name: 'My Sprint' });
+    vi.mocked(api.listUserMoves)
+      .mockResolvedValueOnce([first, second])
+      .mockResolvedValueOnce([second]);
+    vi.mocked(api.deleteUserMove).mockResolvedValue(undefined);
+    render(<CustomMovesDialog onClose={() => {}} onChanged={() => {}} />);
+
+    let remove = await screen.findByRole('button', { name: 'Delete My Climb' });
+    remove.focus();
+    fireEvent.click(remove);
+    const yes = screen.getByRole('button', { name: 'Confirm delete My Climb' });
+    await waitFor(() => expect(document.activeElement).toBe(yes));
+
+    const no = screen.getByRole('button', { name: 'No' });
+    no.focus();
+    fireEvent.click(no);
+    await waitFor(() => {
+      remove = screen.getByRole('button', { name: 'Delete My Climb' });
+      expect(document.activeElement).toBe(remove);
+    });
+
+    fireEvent.click(remove);
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Confirm delete My Climb' }),
+      ),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm delete My Climb' }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Delete My Sprint' })),
+    );
+  });
+
+  it('focuses the dialog close control after deleting its last move', async () => {
+    vi.mocked(api.listUserMoves).mockResolvedValueOnce([userMove()]).mockResolvedValueOnce([]);
+    vi.mocked(api.deleteUserMove).mockResolvedValue(undefined);
+    render(<CustomMovesDialog onClose={() => {}} onChanged={() => {}} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete My Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm delete My Climb' }));
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Close custom moves dialog' }),
+      ),
+    );
+  });
+});

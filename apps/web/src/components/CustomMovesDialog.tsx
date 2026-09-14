@@ -9,7 +9,7 @@
  * `onChanged` fires after any edit/delete so the caller can refresh the picker,
  * the placed-move rows, and the run-payload-derived views.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ClassTemplate, Move, UserMove } from '@ritmofit/shared';
 import { listMoves, listUserMoves, updateUserMove, deleteUserMove } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
@@ -49,6 +49,9 @@ export function CustomMovesDialog({
   // resolve a move's baseMoveId → name for display. Fetched with the user moves.
   const [globalMoves, setGlobalMoves] = useState<Move[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const deleteButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const [pendingDeleteFocus, setPendingDeleteFocus] = useState<{ id: string | null } | null>(null);
 
   const refresh = useCallback(async () => {
     setError(null);
@@ -72,6 +75,26 @@ export function CustomMovesDialog({
     onChanged();
   }, [refresh, onChanged]);
 
+  const afterDelete = useCallback(
+    async (deletedId: string) => {
+      const index = moves?.findIndex((move) => move.id === deletedId) ?? -1;
+      const successor = index >= 0 ? (moves?.[index + 1] ?? moves?.[index - 1]) : null;
+      await afterChange();
+      setPendingDeleteFocus({ id: successor?.id ?? null });
+    },
+    [afterChange, moves],
+  );
+
+  useEffect(() => {
+    if (!pendingDeleteFocus) return;
+    const target = pendingDeleteFocus.id
+      ? deleteButtonRefs.current.get(pendingDeleteFocus.id)
+      : closeButtonRef.current;
+    if (!target) return;
+    target.focus();
+    setPendingDeleteFocus(null);
+  }, [moves, pendingDeleteFocus]);
+
   return (
     <Dialog
       onClose={onClose}
@@ -86,6 +109,7 @@ export function CustomMovesDialog({
           </p>
         </div>
         <button
+          ref={closeButtonRef}
           className="rounded-pill px-2 py-1 font-ui text-sm text-text-tertiary hover:text-text-primary"
           onClick={onClose}
           aria-label="Close custom moves dialog"
@@ -114,7 +138,12 @@ export function CustomMovesDialog({
               move={m}
               globalMoves={globalMoves}
               onChanged={afterChange}
+              onDeleted={afterDelete}
               onError={setError}
+              registerDeleteButton={(node) => {
+                if (node) deleteButtonRefs.current.set(m.id, node);
+                else deleteButtonRefs.current.delete(m.id);
+              }}
             />
           ))}
         </ul>
@@ -127,12 +156,16 @@ function CustomMoveRow({
   move,
   globalMoves,
   onChanged,
+  onDeleted,
   onError,
+  registerDeleteButton,
 }: {
   move: UserMove;
   globalMoves: Move[];
   onChanged: () => Promise<void>;
+  onDeleted: (id: string) => Promise<void>;
   onError: (msg: string | null) => void;
+  registerDeleteButton: (node: HTMLButtonElement | null) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(move.name);
@@ -141,9 +174,20 @@ function CustomMoveRow({
   const [template, setTemplate] = useState<ClassTemplate | ''>(move.template ?? '');
   const [baseMoveId, setBaseMoveId] = useState<string>(move.baseMoveId ?? '');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
+  const confirmDeleteButtonRef = useRef<HTMLButtonElement>(null);
+  const [returnFocusAfterNo, setReturnFocusAfterNo] = useState(false);
   // useAsyncAction owns the in-flight flag + error capture, so `busy` always clears
   // (the old hand-rolled remove left it stuck true on success).
   const { busy, run } = useAsyncAction(onError);
+
+  useEffect(() => {
+    if (confirmingDelete) confirmDeleteButtonRef.current?.focus();
+    else if (returnFocusAfterNo) {
+      deleteButtonRef.current?.focus();
+      setReturnFocusAfterNo(false);
+    }
+  }, [confirmingDelete, returnFocusAfterNo]);
 
   const baseMove = move.baseMoveId
     ? (globalMoves.find((g) => g.id === move.baseMoveId) ?? null)
@@ -174,7 +218,7 @@ function CustomMoveRow({
   const remove = () =>
     void run(async () => {
       await deleteUserMove(move.id);
-      await onChanged();
+      await onDeleted(move.id);
     });
 
   if (editing) {
@@ -270,6 +314,7 @@ function CustomMoveRow({
         <>
           <span className="font-ui text-xs text-text-tertiary">Delete?</span>
           <button
+            ref={confirmDeleteButtonRef}
             className="rounded-pill px-2 py-1 font-ui text-xs text-state-danger disabled:opacity-40"
             onClick={remove}
             disabled={busy}
@@ -279,7 +324,10 @@ function CustomMoveRow({
           </button>
           <button
             className="rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary disabled:opacity-40"
-            onClick={() => setConfirmingDelete(false)}
+            onClick={() => {
+              setReturnFocusAfterNo(true);
+              setConfirmingDelete(false);
+            }}
             disabled={busy}
           >
             No
@@ -296,6 +344,10 @@ function CustomMoveRow({
             Edit
           </button>
           <button
+            ref={(node) => {
+              deleteButtonRef.current = node;
+              registerDeleteButton(node);
+            }}
             className="shrink-0 rounded-pill px-2 py-1 font-ui text-xs text-text-tertiary hover:text-state-danger disabled:opacity-40"
             onClick={() => setConfirmingDelete(true)}
             disabled={busy}
