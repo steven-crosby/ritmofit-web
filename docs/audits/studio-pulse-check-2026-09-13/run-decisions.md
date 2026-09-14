@@ -5,8 +5,10 @@ audit. It converts every finding into scoped backlog work, an explicit owner dec
 acceptable/drop outcome. The source report remains evidence, not the planning queue.
 
 The audit's P0 intensity-control collapse is tracked separately in
-[PR #412](https://github.com/steven-crosby/ritmofit-web/pull/412), now merged to `main`. It is not yet
-deployed; production remains affected until it ships.
+[PR #412](https://github.com/steven-crosby/ritmofit-web/pull/412), now merged to `main` and deployed
+with [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414) and
+[PR #415](https://github.com/steven-crosby/ritmofit-web/pull/415) as Worker `edaa62b0`
+(recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
 
 ## Run metadata
 
@@ -90,9 +92,12 @@ implementation direction but do not authorize an implementation slice by themsel
 
 | Slice / decision | Status | PR |
 | --- | --- | --- |
-| AUTH-A11Y (SPC-01–04) | Merged, not deployed | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) |
-| OD-01 / SPC-05 (sign-in warmth) | Merged, not deployed | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) — bundled with AUTH-A11Y since both touch `Login.tsx`/`ResetPassword.tsx` |
-| SOURCE-ARTWORK (SPC-07) | Implemented, not merged | [#415](https://github.com/steven-crosby/ritmofit-web/pull/415) — also fixed 4 uncited instances of the same pattern found in `Dashboard.tsx` |
+| P0 intensity collapse | Merged and deployed | [#412](https://github.com/steven-crosby/ritmofit-web/pull/412) — Worker `edaa62b0`, recorded in [#416](https://github.com/steven-crosby/ritmofit-web/pull/416) |
+| AUTH-A11Y (SPC-01–04) | Merged and deployed | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) — Worker `edaa62b0`, recorded in [#416](https://github.com/steven-crosby/ritmofit-web/pull/416) |
+| OD-01 / SPC-05 (sign-in warmth) | Merged and deployed | [#414](https://github.com/steven-crosby/ritmofit-web/pull/414) — bundled with AUTH-A11Y since both touch `Login.tsx`/`ResetPassword.tsx` |
+| SOURCE-ARTWORK (SPC-07) | Merged and deployed | [#415](https://github.com/steven-crosby/ritmofit-web/pull/415) — also fixed 4 uncited instances of the same pattern found in `Dashboard.tsx`; Worker `edaa62b0`, recorded in [#416](https://github.com/steven-crosby/ritmofit-web/pull/416) |
+| DESTRUCTIVE-CONTROLS (SPC-10) | Implemented, not merged | [#417](https://github.com/steven-crosby/ritmofit-web/pull/417) |
+| PROVIDER-TRUTH (SPC-06, SPC-08) | Implemented, not merged | See this PR — expired tone + icon-system marks. SPC-09 stays backlog. |
 
 PR #414 also found that `rf-hero-glow` (the class OD-01 removes) is used on two surfaces the audit and
 the decision never considered — `NotFound.tsx` and `ErrorBoundary.tsx`. Both were left unchanged:
@@ -101,9 +106,10 @@ keep the warm treatment is an open question for a separate, explicit decision, n
 
 ## Authorization boundary
 
-- This ledger and the planning entries are triage, not implementation authorization for the ten
+- This ledger and the planning entries are triage, not implementation authorization for the remaining
   backlog slices.
-- PR #412 (P0 fix) and PR #414 (AUTH-A11Y + OD-01) are merged; PR #415 (SOURCE-ARTWORK) is not yet
-  merged. None of the three is deployed as of this writing.
+- PRs #412 (P0), #414 (AUTH-A11Y + OD-01), and #415 (SOURCE-ARTWORK) are merged and deployed as
+  Worker `edaa62b0` (recorded in PR #416).
 - No merge, deploy, production-data deletion, schema change, or provider-contract change is authorized
-  by this ledger.
+  by this ledger. SPC-09 still needs a backend-signal design decision before any permission /
+  provider-error UI.

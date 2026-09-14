@@ -56,6 +56,11 @@ import {
   updateMe,
 } from '../lib/api.js';
 import { authClient } from '../lib/auth-client.js';
+import {
+  ConnectionStateMark,
+  accountConnectionMark,
+  musicConnectionMark,
+} from './ConnectionStateMark.js';
 import { moveItem } from '../lib/reorder.js';
 import {
   avgBpm,
@@ -2030,16 +2035,7 @@ function MusicWorkspace({
               connectionsStatus === 'ready' ? 'verified' : 'unverified',
             );
             const selected = selectedProvider === provider;
-            const statusLabel =
-              connectionsStatus === 'loading'
-                ? 'Checking'
-                : connectionsStatus === 'error'
-                  ? 'Unverified'
-                  : connectionState === 'connected'
-                    ? 'Connected'
-                    : connectionState === 'expired'
-                      ? 'Session expired'
-                      : 'Catalog only';
+            const statusMark = musicConnectionMark(connectionsStatus, connectionState);
             return (
               <article
                 key={provider}
@@ -2059,18 +2055,11 @@ function MusicWorkspace({
                   <span className="shrink-0 font-ui text-sm font-semibold text-text-primary">
                     {providerLabel(provider)}
                   </span>
-                  <span className="shrink-0 font-data text-[10px] text-text-tertiary">
-                    <span aria-hidden>
-                      {connectionsStatus === 'error'
-                        ? '? '
-                        : connectionState === 'connected'
-                          ? '✓ '
-                          : connectionState === 'expired'
-                            ? '⧖ '
-                            : '○ '}
-                    </span>
-                    {statusLabel}
-                  </span>
+                  <ConnectionStateMark
+                    kind={statusMark.kind}
+                    label={statusMark.label}
+                    className="shrink-0 font-data text-[10px]"
+                  />
                 </button>
                 <ProviderCapabilityLedger provider={provider} truth={truth} compact />
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -3001,18 +2990,11 @@ function AccountWorkspace({
                 Date.now(),
                 connectionFreshness,
               );
-              const stateLabel =
-                connectionsStatus === 'loading'
-                  ? 'Checking status'
-                  : connectionsStatus === 'error'
-                    ? connection
-                      ? 'Last known · unverified'
-                      : 'Status unavailable'
-                    : truth.connectionState === 'connected'
-                      ? 'Connected'
-                      : truth.connectionState === 'expired'
-                        ? 'Session expired'
-                        : 'Not connected';
+              const statusMark = accountConnectionMark(
+                connectionsStatus,
+                truth.connectionState,
+                Boolean(connection),
+              );
               return (
                 <article
                   key={provider}
@@ -3029,20 +3011,11 @@ function AccountWorkspace({
                           : 'Provider audio and authorization remain with the music service.'}
                       </p>
                     </div>
-                    <span className="shrink-0 font-ui text-xs text-text-tertiary">
-                      <span aria-hidden="true">
-                        {connectionsStatus === 'ready'
-                          ? truth.connectionState === 'connected'
-                            ? '✓ '
-                            : truth.connectionState === 'expired'
-                              ? '⧖ '
-                              : '○ '
-                          : connectionsStatus === 'loading'
-                            ? '◌ '
-                            : '? '}
-                      </span>
-                      {stateLabel}
-                    </span>
+                    <ConnectionStateMark
+                      kind={statusMark.kind}
+                      label={statusMark.label}
+                      className="shrink-0 font-ui text-xs"
+                    />
                   </div>
                   <ProviderCapabilityLedger provider={provider} truth={truth} className="mt-3" />
                 </article>
