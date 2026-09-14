@@ -13,6 +13,13 @@ Do not re-run work this session already finished (gates, deploy, docs record). I
 start-session never ran, still do this wrap — do not skip hygiene because orientation
 was skipped.
 
+Steven is the sole developer here and moves across multiple AI coding tools (Codex, Claude
+Code, Cursor) and between local and remote/ephemeral sessions on unscheduled time — `main`,
+not any one tool's session state, is what has to stay current so the next session (any tool,
+any environment) can trust it and answer "what's next." That's why PR hygiene below defaults
+to **merge**, not "leave open," for this session's own finished, green work — see the note
+there.
+
 ## Close depth
 
 **Light close (default):** git, PRs, local + remote branch hygiene, inbox/docs if anything
@@ -46,9 +53,22 @@ copy a shorter list here.
 
 ## 2. PR hygiene
 
-- [ ] `gh pr list --state open` — for each open PR decide with the owner: merge if it is
-  this session's finished work and checks are green, close if stale/superseded with a reason,
-  or leave if genuinely in progress. Goal: no surprise or orphaned PRs at close.
+- [ ] `gh pr list --state open` — for each open PR:
+  - **This session's own PR, finished, gate green:** default to merge (squash, delete branch
+    on merge — `gh pr merge <n> --squash --delete-branch`, undrafting first with `gh pr
+    ready <n>` if it's still a draft). State that you're merging and give a beat to object,
+    but don't leave it open "for review" as the default — a dangling open PR is exactly what
+    the owner's multi-tool/multi-session workflow needs *not* to happen (`main` has to be
+    current at every close). Confirming with the owner before merging still applies — this
+    isn't a silent auto-merge.
+  - **This session's own PR, genuinely unfinished (mid-task, gate not green):** the accepted
+    exception — leave it open/draft. Don't force a half-done change to look finished just to
+    merge it.
+  - **Not this session's work** (another lane/agent's PR, e.g. a parallel cloud-agent draft):
+    leave it alone — out of scope for this close regardless of its state.
+  - **Stale/superseded:** close with a reason.
+  Goal: no surprise or orphaned PRs at close, and nothing of this session's own finished work
+  left dangling on a branch.
 
 ## 3. Verification gates (full close only)
 
@@ -151,6 +171,8 @@ git status -sb
 git branch -vv
 git branch -r --merged origin/main
 gh pr list --state open
+gh pr ready <n>                              # undraft, if needed, before merging
+gh pr merge <n> --squash --delete-branch     # this session's own finished + green PR
 ```
 
 Gates: `AGENTS.md` › "Verification, PRs, And Commits".

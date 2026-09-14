@@ -9,10 +9,11 @@
  * music rules hold). The blocks/markers are decorative reinforcement here; the
  * slider's label + value text carry the meaning, so they are `aria-hidden`.
  */
-import { useRef, type KeyboardEvent, type PointerEvent } from 'react';
+import { useRef, useSyncExternalStore, type KeyboardEvent, type PointerEvent } from 'react';
 import { type RunPayload } from '@ritmofit/shared';
 import { computeTimeline } from './TimelineStrip.js';
 import { formatDuration } from '../lib/class-summary.js';
+import type { ClockStore } from '../lib/use-virtual-clock.js';
 
 /** Keyboard seek increments (ms): arrows nudge, PageUp/Down jump. */
 const STEP_MS = 5000;
@@ -55,15 +56,23 @@ export function keyboardSeekMs(key: string, currentMs: number, totalMs: number):
 
 export function LiveTimeline({
   payload,
-  elapsedMs,
-  onSeek,
+  clock,
+  onSeekPreview,
+  onSeekCommit,
 }: {
   payload: RunPayload;
-  elapsedMs: number;
-  onSeek: (ms: number) => void;
+  /** The raw, frame-rate clock (SPC-18): subscribing directly to it here —
+   * rather than receiving `elapsedMs` as a normal prop — is what keeps the
+   * 60fps playhead from re-rendering the rest of Live Mode. */
+  clock: ClockStore;
+  /** Cheap, high-frequency position update while dragging — no provider call. */
+  onSeekPreview: (ms: number) => void;
+  /** The authoritative seek: keyboard, tap, and drag release/cancel. */
+  onSeekCommit: (ms: number) => void;
 }) {
   const totalMs = payload.class.totalDurationMs;
   const trackRef = useRef<HTMLDivElement>(null);
+  const elapsedMs = useSyncExternalStore(clock.subscribe, clock.getSnapshot);
   const { blocks, markers } = computeTimeline(payload.tracks, totalMs);
   // Nothing positionable to scrub (no track has a usable duration). Live mode is
   // gated on durations upstream, so this is just a safe empty state — Play/Reset
@@ -72,26 +81,31 @@ export function LiveTimeline({
 
   const playheadPct = Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100));
 
-  const seekToClientX = (clientX: number) => {
+  const previewToClientX = (clientX: number) => {
     const rect = trackRef.current?.getBoundingClientRect();
     if (!rect || rect.width <= 0) return;
-    onSeek(fractionToMs((clientX - rect.left) / rect.width, totalMs));
+    onSeekPreview(fractionToMs((clientX - rect.left) / rect.width, totalMs));
   };
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture?.(e.pointerId);
-    seekToClientX(e.clientX);
+    previewToClientX(e.clientX);
   };
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     // Drag-seek only while a button is held (the captured pointer reports buttons).
     if (e.buttons === 0) return;
-    seekToClientX(e.clientX);
+    previewToClientX(e.clientX);
   };
+  // Release and cancel both commit the current preview position — a cancelled
+  // drag still ends coherent (the playhead and provider audio agree) rather
+  // than silently diverging from what's on screen.
+  const onPointerUp = () => onSeekCommit(elapsedMs);
+  const onPointerCancel = () => onSeekCommit(elapsedMs);
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const next = keyboardSeekMs(e.key, elapsedMs, totalMs);
     if (next === null) return;
     e.preventDefault();
-    onSeek(next);
+    onSeekCommit(next);
   };
 
   return (
@@ -106,6 +120,8 @@ export function LiveTimeline({
       aria-valuetext={`${formatDuration(elapsedMs)} of ${formatDuration(totalMs)}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
       onKeyDown={onKeyDown}
       className="relative h-11 w-full min-w-0 cursor-pointer touch-none rounded-card bg-bg-base rf-focus-ring"
     >

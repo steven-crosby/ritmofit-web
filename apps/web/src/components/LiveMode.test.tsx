@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { MusicConnectionView, RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
 import {
   connectAppleMusic,
@@ -895,6 +895,75 @@ describe('LiveMode timeline scrubber', () => {
     fireEvent.keyDown(slider, { key: 'ArrowRight' });
     expect(screen.getByText('0:05 / 3:00')).toBeTruthy();
     expect(slider.getAttribute('aria-valuenow')).toBe('5000');
+  });
+
+  it('drags the playhead through every move and only settles on release (SPC-16)', async () => {
+    await renderLive();
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180000,
+      left: 0,
+      right: 180000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    fireEvent.pointerDown(slider, { clientX: 30000, pointerId: 1 });
+    expect(slider.getAttribute('aria-valuenow')).toBe('30000');
+    fireEvent.pointerMove(slider, { clientX: 60000, buttons: 1 });
+    expect(slider.getAttribute('aria-valuenow')).toBe('60000');
+    fireEvent.pointerMove(slider, { clientX: 90000, buttons: 1 });
+    expect(slider.getAttribute('aria-valuenow')).toBe('90000');
+    // The header readout mirrors the same position once released.
+    fireEvent.pointerUp(slider);
+    expect(screen.getByText('1:30 / 3:00')).toBeTruthy();
+  });
+
+  it('keeps the timeline ticking every frame during playback (SPC-18)', async () => {
+    await renderLive();
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+      act(() => {
+        vi.advanceTimersByTime(16);
+      });
+      const afterOneFrame = Number(slider.getAttribute('aria-valuenow'));
+      expect(afterOneFrame).toBeGreaterThan(0);
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+      const afterMoreFrames = Number(slider.getAttribute('aria-valuenow'));
+      expect(afterMoreFrames).toBeGreaterThan(afterOneFrame);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('resumes from the exact pause position, not a stale throttled one (SPC-18 endSegment flush)', async () => {
+    await renderLive();
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      // Advance well under the ~200ms display-throttle window, then pause —
+      // without the endSegment flush, the throttled readout (and a resume)
+      // would be stuck at the last flush instead of this exact position.
+      act(() => {
+        vi.advanceTimersByTime(80);
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+      expect(screen.getByText('0:00 / 3:00')).toBeTruthy(); // fmt() rounds to whole seconds
+      const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+      const pausedAt = Number(slider.getAttribute('aria-valuenow'));
+      expect(pausedAt).toBeGreaterThanOrEqual(79);
+      expect(pausedAt).toBeLessThanOrEqual(81);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

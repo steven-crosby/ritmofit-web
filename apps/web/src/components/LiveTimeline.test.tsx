@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
+import type { ClockStore } from '../lib/use-virtual-clock.js';
 import { LiveTimeline, fractionToMs, keyboardSeekMs } from './LiveTimeline.js';
 
 afterEach(() => {
@@ -121,9 +122,41 @@ function stubRect(width: number, left = 0) {
   } as DOMRect);
 }
 
+/**
+ * A stateful `ClockStore` a test can drive directly, wired the same way
+ * `LiveMode` wires the real one: `onSeekPreview` pushes into the store so
+ * `LiveTimeline`'s own read of the current position (via `useSyncExternalStore`)
+ * — used for the pointer-up/cancel commit — reflects the last previewed spot,
+ * without needing to render all of `LiveMode` around it.
+ */
+function makeTestClock(initial: number) {
+  let value = initial;
+  const listeners = new Set<() => void>();
+  const store: ClockStore = {
+    subscribe: (onChange) => {
+      listeners.add(onChange);
+      return () => listeners.delete(onChange);
+    },
+    getSnapshot: () => value,
+  };
+  const setValue = (ms: number) => {
+    value = ms;
+    listeners.forEach((listener) => listener());
+  };
+  return { store, setValue };
+}
+
 describe('LiveTimeline', () => {
   it('exposes an accessible slider over the whole class', () => {
-    render(<LiveTimeline payload={makePayload()} elapsedMs={60000} onSeek={() => {}} />);
+    const clock = makeTestClock(60000);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={() => {}}
+        onSeekCommit={() => {}}
+      />,
+    );
     const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
     expect(slider.getAttribute('aria-valuemin')).toBe('0');
     expect(slider.getAttribute('aria-valuemax')).toBe('240000');
@@ -135,7 +168,15 @@ describe('LiveTimeline', () => {
   });
 
   it('renders a marker per cue and move', () => {
-    render(<LiveTimeline payload={makePayload()} elapsedMs={0} onSeek={() => {}} />);
+    const clock = makeTestClock(0);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={() => {}}
+        onSeekCommit={() => {}}
+      />,
+    );
     const slider = screen.getByRole('slider');
     const glyphs = slider.querySelectorAll('span[aria-hidden]');
     const markerText = Array.from(glyphs).map((g) => g.textContent);
@@ -147,38 +188,119 @@ describe('LiveTimeline', () => {
     const payload = makePayload();
     payload.tracks = [entry(0, null)];
     payload.class.totalDurationMs = 0;
+    const clock = makeTestClock(0);
     const { container } = render(
-      <LiveTimeline payload={payload} elapsedMs={0} onSeek={() => {}} />,
+      <LiveTimeline
+        payload={payload}
+        clock={clock.store}
+        onSeekPreview={() => {}}
+        onSeekCommit={() => {}}
+      />,
     );
     expect(container.querySelector('[role="slider"]')).toBeNull();
   });
 
-  it('seeks to the clicked position', () => {
-    const onSeek = vi.fn();
+  it('previews on every pointer move without committing', () => {
+    const clock = makeTestClock(0);
+    const onSeekPreview = vi.fn((ms: number) => clock.setValue(ms));
+    const onSeekCommit = vi.fn();
     stubRect(240);
-    render(<LiveTimeline payload={makePayload()} elapsedMs={0} onSeek={onSeek} />);
-    fireEvent.pointerDown(screen.getByRole('slider'), { clientX: 120, pointerId: 1 });
-    expect(onSeek).toHaveBeenCalledWith(120000); // 50% of 240000
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={onSeekPreview}
+        onSeekCommit={onSeekCommit}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    expect(onSeekPreview).toHaveBeenCalledWith(60000); // 25% of 240000
+    fireEvent.pointerMove(slider, { clientX: 120, buttons: 1 });
+    fireEvent.pointerMove(slider, { clientX: 180, buttons: 1 });
+    expect(onSeekPreview).toHaveBeenCalledTimes(3);
+    expect(onSeekPreview).toHaveBeenLastCalledWith(180000); // 75%
+    // The provider seek path is never called by the timeline itself during a
+    // drag — coalescing/throttling that call is the host's job (SPC-16).
+    expect(onSeekCommit).not.toHaveBeenCalled();
   });
 
-  it('drag-seeks only while a pointer button is held', () => {
-    const onSeek = vi.fn();
+  it('drag-previews only while a pointer button is held', () => {
+    const clock = makeTestClock(0);
+    const onSeekPreview = vi.fn((ms: number) => clock.setValue(ms));
     stubRect(240);
-    render(<LiveTimeline payload={makePayload()} elapsedMs={0} onSeek={onSeek} />);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={onSeekPreview}
+        onSeekCommit={() => {}}
+      />,
+    );
     const slider = screen.getByRole('slider');
     fireEvent.pointerMove(slider, { clientX: 60, buttons: 0 });
-    expect(onSeek).not.toHaveBeenCalled();
+    expect(onSeekPreview).not.toHaveBeenCalled();
     fireEvent.pointerMove(slider, { clientX: 60, buttons: 1 });
-    expect(onSeek).toHaveBeenCalledWith(60000); // 25% of 240000
+    expect(onSeekPreview).toHaveBeenCalledWith(60000); // 25% of 240000
   });
 
-  it('seeks with the keyboard', () => {
-    const onSeek = vi.fn();
-    render(<LiveTimeline payload={makePayload()} elapsedMs={10000} onSeek={onSeek} />);
+  it('commits the final previewed position on pointer up', () => {
+    const clock = makeTestClock(0);
+    const onSeekPreview = vi.fn((ms: number) => clock.setValue(ms));
+    const onSeekCommit = vi.fn();
+    stubRect(240);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={onSeekPreview}
+        onSeekCommit={onSeekCommit}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 180, buttons: 1 });
+    expect(onSeekCommit).not.toHaveBeenCalled();
+    fireEvent.pointerUp(slider);
+    expect(onSeekCommit).toHaveBeenCalledTimes(1);
+    expect(onSeekCommit).toHaveBeenCalledWith(180000); // 75% of 240000, the released position
+  });
+
+  it('a cancelled drag still commits a coherent position rather than reverting silently', () => {
+    const clock = makeTestClock(0);
+    const onSeekPreview = vi.fn((ms: number) => clock.setValue(ms));
+    const onSeekCommit = vi.fn();
+    stubRect(240);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={onSeekPreview}
+        onSeekCommit={onSeekCommit}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 96, buttons: 1 }); // 40% -> 96000
+    fireEvent.pointerCancel(slider);
+    expect(onSeekCommit).toHaveBeenCalledWith(96000);
+  });
+
+  it('seeks with the keyboard immediately, via commit', () => {
+    const clock = makeTestClock(10000);
+    const onSeekCommit = vi.fn();
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={() => {}}
+        onSeekCommit={onSeekCommit}
+      />,
+    );
     const slider = screen.getByRole('slider');
     fireEvent.keyDown(slider, { key: 'ArrowRight' });
-    expect(onSeek).toHaveBeenCalledWith(15000);
+    expect(onSeekCommit).toHaveBeenCalledWith(15000);
     fireEvent.keyDown(slider, { key: 'End' });
-    expect(onSeek).toHaveBeenCalledWith(240000);
+    expect(onSeekCommit).toHaveBeenCalledWith(240000);
   });
 });
