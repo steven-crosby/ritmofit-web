@@ -51,6 +51,29 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 
 <!-- newest at top; one per line -->
 
+- [ ] (2026-09-13) Class cover placeholder is a bare 📷 emoji (`Dashboard.tsx:4258-4271`, the
+      builder's 96×96 cover box, shown whenever `cls.coverImageUrl` is null) — owner dislikes it,
+      wants a derived cover instead, referencing Apple Music's "Playlists Made for You" style:
+      either bold title text over a gradient ("Chill", "New Music", "Heavy Rotation" — text is the
+      whole cover) or a plainer abstract-gradient/art tile with the title as a caption below it
+      ("Blossom", "Brain Food", "Bird Sounds" — closer to a plain swatch, no text on the art
+      itself). Owner hasn't picked between the two treatments yet — that's an open decision for
+      next session, not settled here.
+      There's already a reusable building block for exactly this: `TrackArt.tsx`'s
+      `gradientFor()`/`hashString()` — a deterministic warm-palette (copper/amber/ember only, per
+      `02-color-system.md` — cyan/plasma are reserved for interaction/peak, never decoration)
+      gradient keyed off BPM or a stable hash of an identity string, currently only used at 44px
+      for track-row art (via `ArtCollage`, itself plain-gradient-swatch, no text overlay). The
+      design-system doc (`ritmofit_design_system/05-components.md:97-103`, "Song row / track
+      card") already mandates "never fall back to a bare music-note placeholder on a signature
+      track surface" for tracks — the class cover is a different surface so not a strict
+      violation, but the same principle isn't extended there today, which is the gap.
+      Needs: (1) owner decision on text-on-gradient vs. plain-art+caption, (2) whether class covers
+      should get a bigger/richer variant of `TrackArt`'s gradient (larger size, maybe a
+      title-initial or icon) or reuse it as-is at 96px, (3) whether the small list-card `ArtCollage`
+      tile should also change for consistency or stay as the simpler small-swatch treatment. —
+      #idea
+
 - [ ] (2026-09-13) `bg-interactive/<opacity>` renders fully transparent (confirmed via computed
       style: `rgba(0,0,0,0)`, not a faint tint) even though the underlying token resolves fine —
       `border-interactive/15` on the same element/file renders correctly, so it's specific to
