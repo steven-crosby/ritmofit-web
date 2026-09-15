@@ -59,7 +59,7 @@ consistency gap. SPC-06 is directionally correct, but its cited component and sa
 | SPC-18 | P3 | Live | The virtual clock updates state on every animation frame at a level that re-renders the broad Live subtree. | **Backlog — LIVE-RUNTIME** | Isolate frame-rate state to the smallest timeline/readout boundary and profile before/after; preserve provider-authoritative playback and liveness behavior. |
 | SPC-19 | P3 | Live | Disabled “Start class” lacks the documented reduced-opacity treatment. | **Implemented — LIVE-CONTROLS** | Apply the canonical disabled appearance (including the documented opacity target) while preserving native disabled semantics and readable contrast. [#425](https://github.com/steven-crosby/ritmofit-web/pull/425); not yet merged. |
 | SPC-20 | Constraint | Responsive QA | The audit did not complete its sub-900px pass. The current broad narrow-width smoke is stale in several routes, and focused P0 checks also exposed a separate 10px overflow at 390px. | **Backlog — RESPONSIVE-QA** | Repair stale locators/fixtures, resolve the independently observed overflow, then run 1280/953/680/390/320 plus 200% zoom. Do not treat the focused P0 verification as a full responsive pass. |
-| SPC-21 | P3 | Production data | A QA liveness-probe class is visible and top-ranked in the production account. | **Backlog — PROD-HYGIENE** | Inventory production fixtures, identify ownership, and add a cleanup/prevention runbook. Actual production deletion requires separate owner authorization and verification. |
+| SPC-21 | P3 | Production data | A QA liveness-probe class is visible and top-ranked in the production account. | **Backlog — PROD-HYGIENE** | Inventory production fixtures, identify ownership, and add a cleanup/prevention runbook. Actual production deletion requires separate owner authorization and verification. Naming/tagging convention and cleanup steps are now in [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); the cited class itself is not yet re-identified or deleted — no session so far has had production access to do it. |
 
 ## Scoped backlog slices
 
@@ -77,7 +77,7 @@ exactly one slice.
 | LIVE-RUNTIME | SPC-16, SPC-18 | Live timeline/clock boundaries | Drag seek does not flood the provider; frame updates do not re-render the broad Live workspace. |
 | LIVE-CONTROLS | SPC-19 | Live preflight/start control | Disabled treatment matches the documented component state without harming contrast. |
 | RESPONSIVE-QA | SPC-20 | Narrow-width smoke and affected layouts | Stable automated coverage plus manual viewport/zoom evidence; no horizontal overflow in the tested surfaces. |
-| PROD-HYGIENE | SPC-21 | Operations/runbook and production fixture workflow | Fixtures are identifiable and prevented from contaminating real queues; deletion stays separately authorized. |
+| PROD-HYGIENE | SPC-21 | Operations/runbook and production fixture workflow | Fixtures are identifiable and prevented from contaminating real queues; deletion stays separately authorized. Convention and runbook in [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); current production inventory/deletion still pending owner-authorized access. |
 
 ## Resolved owner decisions
 
