@@ -25,16 +25,16 @@ authorize a deploy. Owner go-ahead is still required.
 
 ## Baseline
 
-| Item | Value |
-| --- | --- |
-| Inspected tree | `57950dd` (`57950dd62b71d6f99bbb89580e9b8a4678b41fb0`) — `main` tip after #425 |
-| Branch used for this note | `cursor/deploy-readiness-417-425-8f8e` (same tree as `57950dd`; docs-only commit on top) |
-| Production Worker (live) | `5d659102` / `5d659102-3bff-4398-91ad-cdc1d165ccc1` (owner baseline + `HISTORY.md` 2026-09-13 batch 2) |
-| Production application HEAD at that deploy | `dd625b5` (#422); docs record is #423 `77bb204` |
-| Rollback anchor if this batch ships | Worker `5d659102` (code-only rollback; no D1 change in this batch) |
-| Prior rollback behind current prod | `edaa62b0-8957-486c-b953-24eae2b0fd33` (#412/#414/#415) |
-| Local SPA entry from this tip's production build | `assets/index-BxFscIFx.js` (CSS `assets/index-BrfkNDA3.css`) |
-| Wrangler / remote D1 | **not queried** this hour (no `wrangler deploy`, no remote D1 list/apply, no secret changes) |
+| Item                                             | Value                                                                                                  |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| Inspected tree                                   | `57950dd` (`57950dd62b71d6f99bbb89580e9b8a4678b41fb0`) — `main` tip after #425                         |
+| Branch used for this note                        | `cursor/deploy-readiness-417-425-8f8e` (same tree as `57950dd`; docs-only commit on top)               |
+| Production Worker (live)                         | `5d659102` / `5d659102-3bff-4398-91ad-cdc1d165ccc1` (owner baseline + `HISTORY.md` 2026-09-13 batch 2) |
+| Production application HEAD at that deploy       | `dd625b5` (#422); docs record is #423 `77bb204`                                                        |
+| Rollback anchor if this batch ships              | Worker `5d659102` (code-only rollback; no D1 change in this batch)                                     |
+| Prior rollback behind current prod               | `edaa62b0-8957-486c-b953-24eae2b0fd33` (#412/#414/#415)                                                |
+| Local SPA entry from this tip's production build | `assets/index-BxFscIFx.js` (CSS `assets/index-BrfkNDA3.css`)                                           |
+| Wrangler / remote D1                             | **not queried** this hour (no `wrangler deploy`, no remote D1 list/apply, no secret changes)           |
 
 Production Worker ID is taken from the owner baseline and
 `ritmofit_dev_plan/HISTORY.md`. This run did not call `wrangler deployments status`.
@@ -45,13 +45,13 @@ Range verified: `77bb204..57950dd` (27 files, +1314/−281). Grep of that
 name-list for `migrations`, `schema`, `packages/shared`, `wrangler`, `.dev.vars`,
 `secret`, `openapi`, `package.json`, `pnpm-lock` returned **no hits**.
 
-| PR | Title | One-line WHAT | Schema / migration | Shared contract | Secret / config |
-| --- | --- | --- | --- | --- | --- |
-| [#417](https://github.com/steven-crosby/ritmofit-web/pull/417) | `fix(web): bring class deletion onto the destructive control pattern (SPC-10)` | Dashboard class delete uses the documented Destructive control (ember + error icon, no bordered/tinted bespoke buttons). | none | none | none |
-| [#418](https://github.com/steven-crosby/ritmofit-web/pull/418) | `fix(web): centralize connection-state tone and icons (SPC-06, SPC-08)` | Expired-session headers use caution tone; connection marks move to shared SVG `ConnectionStateMark`. | none | none | none |
-| [#419](https://github.com/steven-crosby/ritmofit-web/pull/419) | `fix(web): repair narrow-width smoke and 390px overflow (SPC-20)` | Narrow-width smoke locators repaired; intensity zone + tag input `min-w-0` so 390/320 no longer overflow. | none | none | none |
-| [#424](https://github.com/steven-crosby/ritmofit-web/pull/424) | `fix(web): restore semantic color opacity modifiers` | Semantic `var(--rf-*)` Tailwind colours now emit working `/opacity` utilities via `color-mix`. | none | none | none (Tailwind config / theme-class checker only) |
-| [#425](https://github.com/steven-crosby/ritmofit-web/pull/425) | `fix(web): restore disabled Start class opacity (SPC-19)` | Blocked Live preflight **Start class** gets native `disabled` + 40% opacity; OD-02 cue/BPM hierarchy is docs/comments only. | none | none | none |
+| PR                                                             | Title                                                                          | One-line WHAT                                                                                                               | Schema / migration | Shared contract | Secret / config                                   |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ------------------ | --------------- | ------------------------------------------------- |
+| [#417](https://github.com/steven-crosby/ritmofit-web/pull/417) | `fix(web): bring class deletion onto the destructive control pattern (SPC-10)` | Dashboard class delete uses the documented Destructive control (ember + error icon, no bordered/tinted bespoke buttons).    | none               | none            | none                                              |
+| [#418](https://github.com/steven-crosby/ritmofit-web/pull/418) | `fix(web): centralize connection-state tone and icons (SPC-06, SPC-08)`        | Expired-session headers use caution tone; connection marks move to shared SVG `ConnectionStateMark`.                        | none               | none            | none                                              |
+| [#419](https://github.com/steven-crosby/ritmofit-web/pull/419) | `fix(web): repair narrow-width smoke and 390px overflow (SPC-20)`              | Narrow-width smoke locators repaired; intensity zone + tag input `min-w-0` so 390/320 no longer overflow.                   | none               | none            | none                                              |
+| [#424](https://github.com/steven-crosby/ritmofit-web/pull/424) | `fix(web): restore semantic color opacity modifiers`                           | Semantic `var(--rf-*)` Tailwind colours now emit working `/opacity` utilities via `color-mix`.                              | none               | none            | none (Tailwind config / theme-class checker only) |
+| [#425](https://github.com/steven-crosby/ritmofit-web/pull/425) | `fix(web): restore disabled Start class opacity (SPC-19)`                      | Blocked Live preflight **Start class** gets native `disabled` + 40% opacity; OD-02 cue/BPM hierarchy is docs/comments only. | none               | none            | none                                              |
 
 Per-PR file confirmation (squash commits on `main`):
 
@@ -72,20 +72,20 @@ Full CI-equivalent gate from `AGENTS.md` / `deployment-runbook.md` Pre-deploy
 step 2, run on `57950dd` at 2026-09-15 15:56–15:59 UTC. Node `v22.14.0`,
 pnpm `11.4.0`. `pnpm install --frozen-lockfile` first (652 packages).
 
-| Step | Command | Result | Detail |
-| --- | --- | --- | --- |
-| 1 | `pnpm format:check` | **PASS** (6s) | All matched files Prettier-clean |
-| 2 | `pnpm -r typecheck` | **PASS** (13s) | shared, music, web, api — no type errors |
-| 3 | `pnpm lint` | **PASS** (6s) | `eslint .` clean |
-| 4 | `(cd ritmofit_design_system && npm run verify)` | **PASS** (2s) | tokens in sync; lint-tokens clean; contrast AA + Live AAA |
-| 5 | `pnpm --filter @ritmofit/web theme-classes` | **PASS** (12s) | 8 opacity declarations; 36 valid colour names |
-| 6 | `pnpm test` | **PASS** (40s) | web **793**; api **431**; music **30** |
-| 7 | `pnpm --filter @ritmofit/api test:integration` | **PASS** (37s) | **151** tests / 30 files |
-| 8 | `pnpm --filter @ritmofit/web build` | **PASS** (14s) | Vite 5.4.21; entry `index-BxFscIFx.js`; PWA precache 17 entries / 657.54 KiB |
-| 9 | `pnpm --filter @ritmofit/api openapi` | **PASS** (1s) | 54 schemas, 55 paths |
-| 10 | `git diff --exit-code apps/api/openapi/openapi.json` | **PASS** (0s) | no drift |
-| 11 | `pnpm --filter @ritmofit/api contract-parity` | **PASS** (2s) | no untracked iOS ↔ backend run-payload drift |
-| 12 | `pnpm audit:ci` | **PASS** (2s) | 2 prod-graph findings, both ignored (`1 low` + `1 moderate`) via documented `auditConfig.ignoreGhsas` (dev/build-only esbuild/vite; not Worker/SPA runtime) |
+| Step | Command                                              | Result         | Detail                                                                                                                                                      |
+| ---- | ---------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | `pnpm format:check`                                  | **PASS** (6s)  | All matched files Prettier-clean                                                                                                                            |
+| 2    | `pnpm -r typecheck`                                  | **PASS** (13s) | shared, music, web, api — no type errors                                                                                                                    |
+| 3    | `pnpm lint`                                          | **PASS** (6s)  | `eslint .` clean                                                                                                                                            |
+| 4    | `(cd ritmofit_design_system && npm run verify)`      | **PASS** (2s)  | tokens in sync; lint-tokens clean; contrast AA + Live AAA                                                                                                   |
+| 5    | `pnpm --filter @ritmofit/web theme-classes`          | **PASS** (12s) | 8 opacity declarations; 36 valid colour names                                                                                                               |
+| 6    | `pnpm test`                                          | **PASS** (40s) | web **793**; api **431**; music **30**                                                                                                                      |
+| 7    | `pnpm --filter @ritmofit/api test:integration`       | **PASS** (37s) | **151** tests / 30 files                                                                                                                                    |
+| 8    | `pnpm --filter @ritmofit/web build`                  | **PASS** (14s) | Vite 5.4.21; entry `index-BxFscIFx.js`; PWA precache 17 entries / 657.54 KiB                                                                                |
+| 9    | `pnpm --filter @ritmofit/api openapi`                | **PASS** (1s)  | 54 schemas, 55 paths                                                                                                                                        |
+| 10   | `git diff --exit-code apps/api/openapi/openapi.json` | **PASS** (0s)  | no drift                                                                                                                                                    |
+| 11   | `pnpm --filter @ritmofit/api contract-parity`        | **PASS** (2s)  | no untracked iOS ↔ backend run-payload drift                                                                                                                |
+| 12   | `pnpm audit:ci`                                      | **PASS** (2s)  | 2 prod-graph findings, both ignored (`1 low` + `1 moderate`) via documented `auditConfig.ignoreGhsas` (dev/build-only esbuild/vite; not Worker/SPA runtime) |
 
 **Overall: 12/12 PASS.** No gate was red. No speculative fix was attempted.
 
