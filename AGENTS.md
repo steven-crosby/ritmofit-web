@@ -44,6 +44,8 @@ find . -mindepth 1 -maxdepth 3 -type d -name ritmofit-ios -exec test -e '{}/.git
 - `ritmofit_dev_plan/decisions.md`: locked product and architecture decisions, including D20.
 - `ritmofit_dev_plan/conventions.md`: detailed naming, style, env, logging, CORS, and DB conventions.
 - `ritmofit_dev_plan/deployment-runbook.md`: production deploy, rollback, D1 recovery, and smoke tests.
+- `ritmofit_dev_plan/prod-fixture-hygiene.md`: naming/tagging convention and cleanup runbook for
+  verification classes created in the production account during live playback/liveness checks.
 - `agent-prompts/SCHEDULE.md`: prompt cadence; use `agent-prompts/daily/start-session.md` and
   `agent-prompts/daily/close-session.md` for interactive work blocks.
 - `README.md`: setup, local dev, and broad repo orientation.
