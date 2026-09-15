@@ -6,7 +6,8 @@ date: 2026-09-15
 inspected_head: 57950dd62b71d6f99bbb89580e9b8a4678b41fb0
 inspected_range: 77bb20422eaa5f3abcc97f9adcbb3a99c6b750f0..57950dd62b71d6f99bbb89580e9b8a4678b41fb0
 completed: true
-prs: []
+prs:
+  - https://github.com/steven-crosby/ritmofit-web/pull/427
 ---
 
 # deploy-readiness-batch-417-425 — 2026-09-15
