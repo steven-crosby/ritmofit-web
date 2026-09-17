@@ -8,7 +8,9 @@ The audit's P0 intensity-control collapse is tracked separately in
 [PR #412](https://github.com/steven-crosby/ritmofit-web/pull/412), now merged to `main` and deployed
 with [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414) and
 [PR #415](https://github.com/steven-crosby/ritmofit-web/pull/415) as Worker `edaa62b0`
-(recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
+(recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)). Later
+batches shipped as Worker `5d659102` (#420/#422, recorded in #423) and Worker
+`ad638215` (#417/#418/#419/#424/#425) from main `4ddddeb`.
 
 ## Run metadata
 
@@ -26,10 +28,13 @@ with [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414) and
 
 | Disposition | Count | IDs |
 | --- | ---: | --- |
-| Backlog | 18 | SPC-01–04, SPC-06–16, SPC-18, SPC-20–21 |
-| Implemented, not merged | 1 | SPC-19 |
+| Backlog (original triage) | 18 | SPC-01–04, SPC-06–16, SPC-18, SPC-20–21 |
 | Owner decision — resolved | 2 | SPC-05, SPC-17 |
 | Accept and drop | 0 whole findings | One incorrect subclaim in SPC-06 is dropped; see its row |
+
+SPC-19 is now merged and deployed with Worker `ad638215`. Live slice status is in
+Implementation status. Remaining owner-blocked work: ENERGY-RIBBON (SPC-14) and
+SPC-09. PROD-HYGIENE runbook is #426; live fixture delete is still owner-pending.
 
 The two findings originally flagged as out-of-scope and not independently re-verified were checked
 before disposition. SPC-05 is a real docs-versus-code conflict. SPC-10 is a real destructive-control
@@ -47,19 +52,19 @@ consistency gap. SPC-06 is directionally correct, but its cited component and sa
 | SPC-06 | P2 | Music / Account | **Corrected evidence:** the Connections dialog already applies the expired-state caution tone and uses distinct glyphs. The actual gap is in Dashboard's Music and Account connection headers, which hard-code tertiary text for “Session expired.” | **Backlog — PROVIDER-TRUTH** | Use the centralized connection-state tone in both headers and cover it with state-matrix tests. Drop the report's same-glyph subclaim as already correct. |
 | SPC-07 | P2 | Music / Builder | `SourceList` and `ClassSummaryView` use a bare music-note character as missing-artwork fallback. | **Backlog — SOURCE-ARTWORK** | Replace the placeholder with the canonical artwork fallback/component, preserving accessible naming and provider/source context. |
 | SPC-08 | P2 | Provider states | Connection-state marks are literal Unicode characters rather than the established icon system. | **Backlog — PROVIDER-TRUTH** | Move the glyphs to the icon system with stable sizing, alignment, accessible labels, and color-independent state names. |
-| SPC-09 | P3 | Provider states | UI models four of six documented states; permission and provider-error remain a code TODO because the backend does not expose distinct signals. | **Backlog — PROVIDER-TRUTH** | Define the missing API-to-UI signals before adding display states; keep unavailable, disconnected, expired, permission, and provider-error semantically distinct. This may require a shared-contract/API slice. |
+| SPC-09 | P3 | Provider states | UI models four of six documented states; permission and provider-error remain a code TODO because the backend does not expose distinct signals. | **Owner-blocked — PROVIDER-TRUTH** | Define the missing API-to-UI signals before adding display states; keep unavailable, disconnected, expired, permission, and provider-error semantically distinct. This may require a shared-contract/API slice. Stays owner-blocked after the 2026-09-17 `ad638215` deploy. |
 | SPC-10 | P2 | Classes | **Re-verified after the audit:** Dashboard class deletion uses bespoke bordered/tinted destructive buttons without the documented error icon. | **Backlog — DESTRUCTIVE-CONTROLS** | Adopt the canonical destructive treatment for initial and confirmation states, including icon, focus, busy/error behavior, and an automated interaction check. |
 | SPC-11 | P1 | Builder | Cue/move save, cancel, and delete flows do not consistently restore focus to the invoking control or a stable successor. | **Backlog — BUILDER-A11Y** | Add deterministic focus restoration for save/cancel/delete, including the deleted-last-item case, and regression tests for keyboard flows. |
 | SPC-12 | P2 | Builder | Choreography mutations surface raw `(e as Error).message` instead of the established `errMessage` normalization. | **Backlog — BUILDER-A11Y** | Route cue/move failures through the shared error vocabulary; retain actionable local context without leaking upstream text. |
 | SPC-13 | P2 | Builder | Cue/move validation errors are visible but are not reliably announced. | **Backlog — BUILDER-A11Y** | Associate field errors, move focus to the first invalid field when appropriate, and use an alert/live region without duplicate announcements. |
-| SPC-14 | P2 | Builder | The energy ribbon renders track baselines only. Code explicitly defers placed-move refinement while design docs describe the hybrid ribbon as current behavior. | **Backlog — ENERGY-RIBBON** | Implement placed-move refinement from the existing choreography data, then add visual/data-state coverage. If product no longer wants the hybrid model, resolve that as a separate owner decision and amend the docs instead. |
+| SPC-14 | P2 | Builder | The energy ribbon renders track baselines only. Code explicitly defers placed-move refinement while design docs describe the hybrid ribbon as current behavior. | **Owner-blocked — ENERGY-RIBBON** | Implement placed-move refinement from the existing choreography data, then add visual/data-state coverage. If product no longer wants the hybrid model, resolve that as a separate owner decision and amend the docs instead. Stays owner-blocked after the 2026-09-17 `ad638215` deploy. |
 | SPC-15 | P3 | Builder | Custom-move inline Delete → Yes/No confirmation does not move focus to the destructive confirmation. | **Backlog — BUILDER-A11Y** | Focus “Yes” when confirmation opens, return focus on “No,” and choose a stable successor after deletion. |
 | SPC-16 | P2 | Live | Timeline drag seeking calls the provider seek path on every pointer move. | **Backlog — LIVE-RUNTIME** | Separate preview position from provider commits; coalesce/throttle drag updates and commit on pointer-up/cancel, with keyboard seeking unchanged and tested. |
 | SPC-17 | P2 | Live | The documented 88px BPM data hero is no longer the visual hierarchy in code; cue content is dominant while comments/docs still call BPM the hero. | **Owner decision — OD-02, resolved** | Keep the next cue as Live's visual hero and BPM prominent but subordinate; update the stale design documentation and code comments. Approved by Steven, 2026-09-13. |
 | SPC-18 | P3 | Live | The virtual clock updates state on every animation frame at a level that re-renders the broad Live subtree. | **Backlog — LIVE-RUNTIME** | Isolate frame-rate state to the smallest timeline/readout boundary and profile before/after; preserve provider-authoritative playback and liveness behavior. |
-| SPC-19 | P3 | Live | Disabled “Start class” lacks the documented reduced-opacity treatment. | **Implemented — LIVE-CONTROLS** | Apply the canonical disabled appearance (including the documented opacity target) while preserving native disabled semantics and readable contrast. [#425](https://github.com/steven-crosby/ritmofit-web/pull/425); not yet merged. |
+| SPC-19 | P3 | Live | Disabled “Start class” lacks the documented reduced-opacity treatment. | **Merged and deployed — LIVE-CONTROLS** | Apply the canonical disabled appearance (including the documented opacity target) while preserving native disabled semantics and readable contrast. [#425](https://github.com/steven-crosby/ritmofit-web/pull/425); merged and deployed as Worker `ad638215` (2026-09-17). |
 | SPC-20 | Constraint | Responsive QA | The audit did not complete its sub-900px pass. The current broad narrow-width smoke is stale in several routes, and focused P0 checks also exposed a separate 10px overflow at 390px. | **Backlog — RESPONSIVE-QA** | Repair stale locators/fixtures, resolve the independently observed overflow, then run 1280/953/680/390/320 plus 200% zoom. Do not treat the focused P0 verification as a full responsive pass. |
-| SPC-21 | P3 | Production data | A QA liveness-probe class is visible and top-ranked in the production account. | **Backlog — PROD-HYGIENE** | Inventory production fixtures, identify ownership, and add a cleanup/prevention runbook. Actual production deletion requires separate owner authorization and verification. Naming/tagging convention and cleanup steps are now in [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); the cited class itself is not yet re-identified or deleted — no session so far has had production access to do it. |
+| SPC-21 | P3 | Production data | A QA liveness-probe class is visible and top-ranked in the production account. | **Backlog — PROD-HYGIENE** | Inventory production fixtures, identify ownership, and add a cleanup/prevention runbook. Actual production deletion requires separate owner authorization and verification. Naming/tagging convention and cleanup steps landed in [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426) / [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md). Live fixture delete is still owner-pending. |
 
 ## Scoped backlog slices
 
@@ -77,7 +82,7 @@ exactly one slice.
 | LIVE-RUNTIME | SPC-16, SPC-18 | Live timeline/clock boundaries | Drag seek does not flood the provider; frame updates do not re-render the broad Live workspace. |
 | LIVE-CONTROLS | SPC-19 | Live preflight/start control | Disabled treatment matches the documented component state without harming contrast. |
 | RESPONSIVE-QA | SPC-20 | Narrow-width smoke and affected layouts | Stable automated coverage plus manual viewport/zoom evidence; no horizontal overflow in the tested surfaces. |
-| PROD-HYGIENE | SPC-21 | Operations/runbook and production fixture workflow | Fixtures are identifiable and prevented from contaminating real queues; deletion stays separately authorized. Convention and runbook in [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); current production inventory/deletion still pending owner-authorized access. |
+| PROD-HYGIENE | SPC-21 | Operations/runbook and production fixture workflow | Fixtures are identifiable and prevented from contaminating real queues; deletion stays separately authorized. Convention and runbook landed in [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426) / [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); live fixture delete is still owner-pending. |
 
 ## Resolved owner decisions
 
@@ -99,11 +104,14 @@ implementation direction but do not authorize an implementation slice by themsel
 | SOURCE-ARTWORK (SPC-07) | Merged and deployed | [#415](https://github.com/steven-crosby/ritmofit-web/pull/415) — also fixed 4 uncited instances of the same pattern found in `Dashboard.tsx`; Worker `edaa62b0`, recorded in [#416](https://github.com/steven-crosby/ritmofit-web/pull/416) |
 | LIVE-RUNTIME (SPC-16, SPC-18) | Merged and deployed | [#420](https://github.com/steven-crosby/ritmofit-web/pull/420) — Worker `5d659102`, recorded in [#423](https://github.com/steven-crosby/ritmofit-web/pull/423) |
 | BUILDER-A11Y (SPC-11–13, SPC-15) | Merged and deployed | [#422](https://github.com/steven-crosby/ritmofit-web/pull/422) — Worker `5d659102`, recorded in [#423](https://github.com/steven-crosby/ritmofit-web/pull/423) |
-| DESTRUCTIVE-CONTROLS (SPC-10) | Merged, not deployed | [#417](https://github.com/steven-crosby/ritmofit-web/pull/417) |
-| PROVIDER-TRUTH (SPC-06, SPC-08) | Merged, not deployed | [#418](https://github.com/steven-crosby/ritmofit-web/pull/418) — expired tone + icon-system marks. SPC-09 stays backlog. |
-| RESPONSIVE-QA (SPC-20) | Merged, not deployed | [#419](https://github.com/steven-crosby/ritmofit-web/pull/419) — stale smoke locators, 390/320 overflow, 1280/953/680/390/320 + 200% zoom |
-| Semantic color opacity modifiers | Merged, not deployed | [#424](https://github.com/steven-crosby/ritmofit-web/pull/424) — not a Pulse Check slice; on `main` after the current production Worker |
-| LIVE-CONTROLS (SPC-19) | Implemented, not merged | [#425](https://github.com/steven-crosby/ritmofit-web/pull/425) — disabled Live “Start class” uses native `disabled` plus the documented ~40% opacity |
+| DESTRUCTIVE-CONTROLS (SPC-10) | Merged and deployed | [#417](https://github.com/steven-crosby/ritmofit-web/pull/417) — Worker `ad638215` (2026-09-17) |
+| PROVIDER-TRUTH (SPC-06, SPC-08) | Merged and deployed | [#418](https://github.com/steven-crosby/ritmofit-web/pull/418) — expired tone + icon-system marks. Worker `ad638215` (2026-09-17). SPC-09 stays owner-blocked. |
+| RESPONSIVE-QA (SPC-20) | Merged and deployed | [#419](https://github.com/steven-crosby/ritmofit-web/pull/419) — stale smoke locators, 390/320 overflow, 1280/953/680/390/320 + 200% zoom. Worker `ad638215` (2026-09-17) |
+| Semantic color opacity modifiers | Merged and deployed | [#424](https://github.com/steven-crosby/ritmofit-web/pull/424) — not a Pulse Check slice; Worker `ad638215` (2026-09-17) |
+| LIVE-CONTROLS (SPC-19) | Merged and deployed | [#425](https://github.com/steven-crosby/ritmofit-web/pull/425) — disabled Live “Start class” uses native `disabled` plus the documented ~40% opacity. Worker `ad638215` (2026-09-17) |
+| ENERGY-RIBBON (SPC-14) | Owner-blocked | Implement-vs-docs call still required; not in the 2026-09-17 product batch |
+| PROVIDER-TRUTH remaining (SPC-09) | Owner-blocked | Permission/provider-error still need a backend-signal design decision |
+| PROD-HYGIENE (SPC-21) | Runbook landed; live delete owner-pending | [#426](https://github.com/steven-crosby/ritmofit-web/pull/426) — convention and cleanup steps in [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); cited production fixture is not yet deleted |
 
 PR #414 also found that `rf-hero-glow` (the class OD-01 removes) is used on two surfaces the audit and
 the decision never considered — `NotFound.tsx` and `ErrorBoundary.tsx`. Both were left unchanged:
@@ -117,12 +125,14 @@ keep the warm treatment is an open question for a separate, explicit decision, n
 - PRs #412 (P0), #414 (AUTH-A11Y + OD-01), and #415 (SOURCE-ARTWORK) are merged and deployed as
   Worker `edaa62b0` (recorded in PR #416).
 - PRs #420 (LIVE-RUNTIME) and #422 (BUILDER-A11Y) are merged and deployed as Worker `5d659102`
-  (recorded in PR #423). Production remains this Worker; it does not match tip of `main`.
-- PR #417 (DESTRUCTIVE-CONTROLS) is merged and not yet deployed.
-- PR #418 (PROVIDER-TRUTH SPC-06 / SPC-08) is merged and not yet deployed.
-- PR #419 (RESPONSIVE-QA) is merged and not yet deployed.
-- PR #424 (semantic color opacity modifiers) is merged and not yet deployed.
-- LIVE-CONTROLS (SPC-19) is implemented in [PR #425](https://github.com/steven-crosby/ritmofit-web/pull/425) and not yet merged.
+  (recorded in PR #423).
+- PRs #417 (DESTRUCTIVE-CONTROLS), #418 (PROVIDER-TRUTH SPC-06 / SPC-08), #419
+  (RESPONSIVE-QA), #424 (semantic color opacity modifiers), and #425 (LIVE-CONTROLS)
+  are merged and deployed as Worker `ad638215` from main `4ddddeb` (2026-09-17).
+  Production matches this tip.
+- ENERGY-RIBBON (SPC-14) and SPC-09 stay owner-blocked.
+- PROD-HYGIENE: runbook [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426);
+  live fixture delete is still owner-pending.
 - No merge, deploy, production-data deletion, schema change, or provider-contract change is authorized
   by this ledger. SPC-09 still needs a backend-signal design decision before any permission /
   provider-error UI. ENERGY-RIBBON still needs an owner implement-vs-docs call.
