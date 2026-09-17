@@ -10,6 +10,46 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-17 (PRs #417, #418, #419, #424, #425 — Studio Pulse Check product
+> batch) — deployed (Worker `ad638215-6758-498c-8782-522e23a6d942`).** Main HEAD
+> `4ddddeb`. Owner deployed ritmofit-web production from Mac. Carries five product PRs
+> plus two documentation-only PRs already on this tip:
+>
+> - **PR #417 (DESTRUCTIVE-CONTROLS, SPC-10):** Dashboard class deletion uses the
+>   canonical destructive treatment (transparent fill, ember text, mandatory error
+>   icon) for initial and confirmation states.
+> - **PR #418 (PROVIDER-TRUTH, SPC-06/SPC-08):** Dashboard Music/Account headers use
+>   the centralized caution tone for “Session expired,” and connection-state marks
+>   move to the shared icon system. SPC-09 (permission/provider-error API signals)
+>   stays owner-blocked.
+> - **PR #419 (RESPONSIVE-QA, SPC-20):** repairs stale narrow-width smoke locators,
+>   fixes the 390px intensity overflow and 320px tag-input overflow, and verifies
+>   1280/953/680/390/320 plus 200% zoom.
+> - **PR #424 (semantic color opacity):** restores semantic color opacity modifiers
+>   so Tailwind `/opacity` utilities work on `var(--rf-*)` colors.
+> - **PR #425 (LIVE-CONTROLS, SPC-19):** disabled Live “Start class” uses native
+>   `disabled` plus the documented ~40% opacity.
+>
+> Tip also includes docs **PR #426** (PROD-HYGIENE runbook) and **PR #427**
+> (deploy-readiness note). Live fixture delete remains owner-pending. ENERGY-RIBBON
+> stays owner-blocked.
+>
+> No schema, migration, shared-contract, secret, or lockfile change. No remote D1
+> change. Rollback is Worker-only to prior live
+> `5d659102-3bff-4398-91ad-cdc1d165ccc1` (2026-09-13 #420/#422). Remote D1: **no
+> migrations to apply** (checked before deploy). `BETA_ALLOWED_EMAILS` present (name
+> only). Full AGENTS.md gate was 12/12 PASS on this SHA earlier the same day in
+> cloud; the Mac deploy rebuilt the SPA and wrangler-deployed.
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`,
+> `/api/v1/health` → `200`, protected `classes` / `explore` / `teams` → `401`, all
+> six security headers present (HSTS, CSP, Permissions-Policy, Referrer-Policy,
+> X-Content-Type-Options, X-Frame-Options), mounted `/api/v1/shares` and
+> `/api/v1/providers/spotify/playlists` → `401`. Worker status confirmed 100% on
+> `ad638215` via `wrangler deployments status`. Built + served SPA entry
+> `assets/index-BxFscIFx.js` (CSS `assets/index-BrfkNDA3.css`) — **three
+> consecutive** cache-busted fetches agreed.
+
 > **Session 2026-09-13 (PRs #420, #422 — Studio Pulse Check remediation, batch 2) —
 > deployed (Worker `5d659102-3bff-4398-91ad-cdc1d165ccc1`).** Main HEAD `dd625b5`. Carries
 > two frontend-only audit slices plus the intervening documentation-only PR #421:
