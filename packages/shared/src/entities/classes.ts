@@ -12,6 +12,7 @@ import {
   accessLevelSchema,
 } from '../enums.js';
 import { createTrackSchema } from './tracks.js';
+import { scaffoldRecipeIdSchema } from './class-plan-blocks.js';
 
 /** Maximum accepted custom class-cover size (5 MiB), shared by web and API validation. */
 export const MAX_CLASS_COVER_BYTES = 5 * 1024 * 1024;
@@ -37,6 +38,8 @@ export const classSchema = z.object({
   visibility: classVisibilitySchema,
   timelineMode: timelineModeSchema,
   targetDurationMs: timestampMsSchema.nullable(),
+  /** Immutable built-in recipe used to create this scaffold; null for empty/legacy classes. */
+  scaffoldRecipeId: scaffoldRecipeIdSchema.nullable(),
   featuredCategory: z.string().max(100).nullable(),
   coverImageUrl: z.string().url().max(1000).nullable(),
   tags: z.array(classTagSchema).max(MAX_CLASS_TAGS).default([]),
@@ -60,6 +63,8 @@ export const classTrackSchema = z.object({
   id: uuidSchema,
   classId: uuidSchema,
   trackId: uuidSchema,
+  /** Optional deterministic scaffold block that groups this real music placement. */
+  planBlockId: uuidSchema.nullable(),
   position: z.int().nonnegative(),
   intensity: intensitySchema,
   displayBpmOverride: z.int().positive().nullable(),
@@ -84,7 +89,7 @@ export type ClassTrack = z.infer<typeof classTrackSchema>;
  * Create a class. Server sets `id` / `ownerUserId` / timestamps; `status` defaults
  * `draft` and `visibility` defaults `private` (a class is never born public).
  */
-export const createClassSchema = classSchema
+const legacyCreateClassSchema = classSchema
   // `coverImageUrl` is written only by the `/classes/:id/cover` upload endpoint and
   // `tags` only by the `/classes/:id/tags` endpoints (tags aren't even a column on
   // `classes`), so neither belongs in the create/update JSON contract.
@@ -107,13 +112,48 @@ export const createClassSchema = classSchema
     timelineMode: true,
     featuredCategory: true,
   });
+
+/** Explicit empty creation. A discipline is required, but no scaffold rows are generated. */
+export const createEmptyClassSchema = legacyCreateClassSchema
+  .extend({
+    mode: z.literal('empty'),
+    template: classTemplateSchema,
+  })
+  .strict();
+
+/** Deterministic scaffold creation. The recipe derives template + target duration server-side. */
+export const createScaffoldClassSchema = z
+  .object({
+    mode: z.literal('scaffold'),
+    title: z.string().min(1).max(200),
+    description: z.string().max(2000).nullish(),
+    recipeId: scaffoldRecipeIdSchema,
+  })
+  .strict();
+
+const legacyCreateClassRequestSchema = legacyCreateClassSchema
+  .passthrough()
+  .refine((value) => !Object.prototype.hasOwnProperty.call(value, 'mode'), {
+    message: 'A mode-bearing create request must match the empty or scaffold contract.',
+  })
+  .transform((value) => legacyCreateClassSchema.parse(value));
+
+/**
+ * Class creation stays backward-compatible with existing clients. The legacy shape
+ * creates an empty class; explicit modes make new call sites unambiguous.
+ */
+export const createClassSchema = z.union([
+  createScaffoldClassSchema,
+  createEmptyClassSchema,
+  legacyCreateClassRequestSchema,
+]);
 export type CreateClass = z.infer<typeof createClassSchema>;
 
 /**
  * Patch a class — every mutable field optional. Ownership and ids are immutable.
  * `visibility` is how an owner publishes to / unpublishes from Explore (M4).
  */
-export const updateClassSchema = createClassSchema.partial();
+export const updateClassSchema = legacyCreateClassSchema.partial();
 export type UpdateClass = z.infer<typeof updateClassSchema>;
 
 /** A class plus the caller's effective access level — the shape of the single-class GET. */
@@ -200,8 +240,8 @@ const classTrackInputFields = z.object({
  * inline-create one. `position` and `startOffsetMs` are server-assigned.
  */
 export const addClassTrackSchema = z.union([
-  classTrackInputFields.extend({ trackId: uuidSchema }),
-  classTrackInputFields.extend({ track: createTrackSchema }),
+  classTrackInputFields.extend({ trackId: uuidSchema, planBlockId: uuidSchema.nullish() }),
+  classTrackInputFields.extend({ track: createTrackSchema, planBlockId: uuidSchema.nullish() }),
 ]);
 export type AddClassTrack = z.infer<typeof addClassTrackSchema>;
 

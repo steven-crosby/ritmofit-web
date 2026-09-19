@@ -12,6 +12,7 @@ describe('classDetailReducer', () => {
       id: '00000000-0000-4000-8000-000000000001',
       classId: '00000000-0000-4000-8000-000000000002',
       trackId: '00000000-0000-4000-8000-000000000003',
+      planBlockId: null,
       position: 0,
       intensity: 'mod',
       displayBpmOverride: null,

@@ -52,6 +52,7 @@ function makeClass(
     visibility: 'private',
     timelineMode: 'sequential',
     targetDurationMs: null,
+    scaffoldRecipeId: null,
     createdAt: classSeq,
     updatedAt: classSeq,
     lastOpenedAt: null,

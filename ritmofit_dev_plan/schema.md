@@ -93,6 +93,7 @@ Owned by exactly one user. No `team_id` — ownership is always a user; others g
 | featured_category | text | Nullable; **reserved** — column exists in code but is currently unused: featured/admin Explore curation is a deliberately deferred slice (see `decisions.md` → Explore, `web-launch-readiness.md`). Intended to mark a class for curated Explore rows once that ships |
 | cover_image_url | text | Nullable; custom uploaded R2 image URL |
 | target_duration_ms | int | Nullable; total planned class length |
+| scaffold_recipe_id | text enum(`cycle_30_v1`,`cycle_45_v1`,`cycle_60_v1`,`pilates_30_v1`,`pilates_45_v1`,`pilates_60_v1`,`hiit_30_v1`,`hiit_45_v1`,`hiit_60_v1`) | Nullable; identifies the versioned starter recipe used to create this class. It is provenance, not a live link: later plan edits do not change it. The API/shared schema enforces the enum; the nullable database column remains unconstrained so adding recipes does not require rebuilding `classes`. |
 | created_at / updated_at | int (ms) | |
 | last_opened_at | int (ms) | Nullable |
 
@@ -141,6 +142,33 @@ One row per provider for a track — what makes a track provider-agnostic.
 
 Unique on (`owner_user_id`, `provider`, `provider_track_id`).
 
+### `class_plan_blocks`
+The editable teaching plan for a class scaffold. A scaffold creates these blocks without placeholder
+tracks; instructors later assign real tracks to them. Blocks are class-owned through `class_id` and are
+ordered independently from the playlist so empty planned blocks remain representable.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | text (PK) | UUID |
+| class_id | text (FK → classes.id) | Cascades on class delete |
+| recipe_block_key | text | Nullable; stable provenance key within the starter recipe. It is not a global template reference |
+| position | int | Zero-based order within the class plan; unique with `class_id` |
+| segment_type | text enum(`warm_up`,`climb`,`sprint`,`recovery`,`cool_down`) | Nullable; populated only when the existing segment vocabulary describes the block honestly |
+| label | text | Instructor-facing block name |
+| target_duration_ms | int | Positive planned duration |
+| intensity | text enum(`none`,`easy`,`mod`,`hard`,`all_out`) | Starter recipes peak at `hard`; `all_out` remains an explicit instructor choice |
+| teaching_goal | text | Short coaching purpose |
+| movement_focus | text | Discipline-specific movement emphasis |
+| guidance_kind | text enum(`cycle`,`pilates`,`hiit`) | Discriminator for `guidance_json` |
+| guidance_json | text | JSON validated by the shared discipline-specific guidance schema before writes and after reads |
+| created_at / updated_at | int (ms) | |
+
+Indexes include `(class_id)` and unique `(class_id, position)`.
+
+> **Plan versus playlist:** plan blocks do not appear in the initial Live Mode run payload. The first
+> slice adds the editable planning domain and optional track assignment only; a later consumer slice may
+> add plan data to runtime payloads after Dashboard/Builder integration is proven.
+
 ### `class_tracks`
 A track's place *within* a class — a first-class item carrying choreography. Points at a `track` but
 holds the per-class context.
@@ -150,6 +178,7 @@ holds the per-class context.
 | id | text (PK) | UUID |
 | class_id | text (FK → classes.id) | |
 | track_id | text (FK → tracks.id) | |
+| plan_block_id | text (FK → class_plan_blocks.id) | Nullable; assigned teaching-plan block. `ON DELETE SET NULL`; API validation requires the block to belong to the same class |
 | position | int | Order within the class playlist |
 | intensity | text enum(`none`,`easy`,`mod`,`hard`,`all_out`) | Default `none` |
 | display_bpm_override | int | Nullable; class may show a different BPM than the track default |
@@ -393,6 +422,7 @@ classes 1───* class_tags
 classes 1───* class_sections
 users 1───* tracks                      (per-user library — decision D4)
 users 1───* user_moves *───0..1 moves
+classes 1───* class_plan_blocks 0..1───* class_tracks
 classes 1───* class_tracks *───1 tracks
 tracks 1───* track_provider_ids
 class_tracks 1───* cues
@@ -408,7 +438,8 @@ Define these in the Drizzle schema (step 3); D1/SQLite enforces FKs when `PRAGMA
 
 | Parent deleted | Child behavior |
 |---|---|
-| `classes` | **CASCADE** → `class_tracks` → their `cues` and `class_track_moves`; and the class's `shares`, `class_tags`, and `class_sections`. The `shares` arm is **app-enforced** (the class-delete route deletes matching rows) — `shares.resource_id` is polymorphic and carries no FK |
+| `classes` | **CASCADE** → `class_plan_blocks` and `class_tracks` → their `cues` and `class_track_moves`; and the class's `shares`, `class_tags`, and `class_sections`. The `shares` arm is **app-enforced** (the class-delete route deletes matching rows) — `shares.resource_id` is polymorphic and carries no FK |
+| `class_plan_blocks` | **SET NULL** on assigned `class_tracks.plan_block_id`; deleting a plan block never deletes a real track |
 | `class_tracks` | **CASCADE** → its `cues` and `class_track_moves` |
 | `tracks` | **RESTRICT** while referenced by any `class_track` (a track in use can't vanish from under a class); also cascades its `track_provider_ids` |
 | `teams` | **CASCADE** → `team_memberships` and any `shares` targeting the team |

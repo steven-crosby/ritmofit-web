@@ -37,6 +37,8 @@ import {
   shareResourceTypeValues,
   segmentTypeValues,
   timelineModeValues,
+  scaffoldRecipeIdValues,
+  planBlockGuidanceKindValues,
 } from '@ritmofit/shared';
 
 /**
@@ -120,6 +122,7 @@ export const classes = sqliteTable(
     title: text('title').notNull(),
     description: text('description'),
     template: text('template', { enum: classTemplateValues }),
+    scaffoldRecipeId: text('scaffold_recipe_id', { enum: scaffoldRecipeIdValues }),
     status: text('status', { enum: classStatusValues }).notNull().default('draft'),
     // Discovery visibility (M4), orthogonal to lifecycle `status`. Default private
     // so every existing/new class stays owner+shares-only until explicitly published.
@@ -201,6 +204,40 @@ export const trackProviderIds = sqliteTable(
   ],
 );
 
+/**
+ * Music-independent deterministic scaffold blocks. Planned duration and guidance
+ * remain stable while zero or more real class_tracks are assigned to each block.
+ */
+export const classPlanBlocks = sqliteTable(
+  'class_plan_blocks',
+  {
+    id: text('id').primaryKey(),
+    classId: text('class_id')
+      .notNull()
+      .references(() => classes.id, { onDelete: 'cascade' }),
+    recipeBlockKey: text('recipe_block_key'),
+    position: integer('position').notNull(),
+    segmentType: text('segment_type', { enum: segmentTypeValues }),
+    label: text('label').notNull(),
+    targetDurationMs: integer('target_duration_ms').notNull(),
+    intensity: text('intensity', { enum: intensityValues }).notNull(),
+    teachingGoal: text('teaching_goal').notNull(),
+    movementFocus: text('movement_focus').notNull(),
+    guidanceKind: text('guidance_kind', { enum: planBlockGuidanceKindValues }).notNull(),
+    guidanceJson: text('guidance_json').notNull(),
+    ...timestamps(),
+  },
+  (t) => [
+    enumCheck('class_plan_blocks_segment_type_check', t.segmentType, segmentTypeValues),
+    enumCheck('class_plan_blocks_intensity_check', t.intensity, intensityValues),
+    enumCheck('class_plan_blocks_guidance_kind_check', t.guidanceKind, planBlockGuidanceKindValues),
+    check('class_plan_blocks_position_check', sql`${t.position} >= 0`),
+    check('class_plan_blocks_target_duration_check', sql`${t.targetDurationMs} > 0`),
+    uniqueIndex('class_plan_blocks_class_position_unique').on(t.classId, t.position),
+    index('class_plan_blocks_class_id_idx').on(t.classId),
+  ],
+);
+
 export const classTracks = sqliteTable(
   'class_tracks',
   {
@@ -213,6 +250,9 @@ export const classTracks = sqliteTable(
     trackId: text('track_id')
       .notNull()
       .references(() => tracks.id, { onDelete: 'restrict' }),
+    planBlockId: text('plan_block_id').references(() => classPlanBlocks.id, {
+      onDelete: 'set null',
+    }),
     position: integer('position').notNull(),
     intensity: text('intensity', { enum: intensityValues }).notNull().default('none'),
     displayBpmOverride: integer('display_bpm_override'),
@@ -250,6 +290,7 @@ export const classTracks = sqliteTable(
     // Hot path: every class-detail load / run-payload assembly fetches a class's
     // tracks by class_id.
     index('class_tracks_class_id_idx').on(t.classId),
+    index('class_tracks_plan_block_id_idx').on(t.planBlockId),
   ],
 );
 
