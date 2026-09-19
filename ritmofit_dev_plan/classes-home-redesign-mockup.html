@@ -1,15 +1,9 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Classes Home — proposed (Ritmo Studio)</title>
-    <!--
-      Static, framework-free render of the page proposed in classes-home-redesign.md.
-      Colour, type, and radius come from the generated design tokens; fonts are the
-      repo's self-hosted woff2 files. Nothing here is wired to the API — it exists so
-      the proposal can be looked at rather than only read.
-    -->
+    <title>Classes Home — revised</title>
     <style>
       @font-face {
         font-family: 'Bricolage Grotesque';
@@ -29,633 +23,258 @@
         font-display: swap;
         src: url('../apps/web/public/fonts/azeret-mono-latin.woff2') format('woff2');
       }
-
       :root {
         color-scheme: dark;
-        --bg-base: #050403;
-        --bg-raised: #1a1712;
-        --bg-sunken: #12100c;
-        --bg-overlay: #241f18;
-        --text-primary: #fbf7f0;
-        --text-secondary: #c9beaa;
-        --text-tertiary: #9e927e;
-        --text-on-accent: #050403;
+        --bg: #050403;
+        --raised: #1a1712;
+        --text: #fbf7f0;
+        --secondary: #c9beaa;
+        --tertiary: #9e927e;
+        --ink: #050403;
         --brand: #e07e3c;
         --brand-strong: #c8682a;
-        --interactive: #3ac0d4;
+        --cyan: #3ac0d4;
         --caution: #f2b838;
-        --positive: #3ac0d4;
-        --border-subtle: rgba(251, 247, 240, 0.08);
-        --border-default: rgba(251, 247, 240, 0.14);
-        --radius-card: 16px;
-        --radius-control: 10px;
-        --radius-pill: 999px;
-        --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.42);
-        --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
-        --font-ui: 'Sora', system-ui, sans-serif;
-        --font-data: 'Azeret Mono', ui-monospace, monospace;
+        --border: rgba(251, 247, 240, 0.08);
+        --border-strong: rgba(251, 247, 240, 0.14);
+        --display: 'Bricolage Grotesque', system-ui, sans-serif;
+        --ui: 'Sora', system-ui, sans-serif;
+        --data: 'Azeret Mono', ui-monospace, monospace;
       }
-
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
       body {
         margin: 0;
-        background: var(--bg-base);
-        color: var(--text-primary);
-        font-family: var(--font-ui);
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--ui);
         -webkit-font-smoothing: antialiased;
       }
-
-      /* ---- top bar ---- */
-      .topbar {
+      header {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 12px;
         padding: 12px 24px;
-        border-bottom: 1px solid var(--border-subtle);
+        border-bottom: 1px solid var(--border);
         background: rgba(26, 23, 18, 0.72);
-        backdrop-filter: blur(14px);
       }
-      .brand-mark {
+      .mark {
         display: grid;
         place-items: center;
         width: 28px;
         height: 28px;
-        border-radius: var(--radius-pill);
+        border-radius: 999px;
         background: var(--brand);
-        color: var(--text-on-accent);
-        font-family: var(--font-display);
+        color: var(--ink);
+        font-family: var(--display);
         font-weight: 700;
-        font-size: 15px;
       }
-      .wordmark {
-        font-family: var(--font-display);
-        font-size: 20px;
-        font-weight: 700;
-        letter-spacing: -0.01em;
+      header h1 {
         margin: 0;
-        white-space: nowrap;
+        font-family: var(--display);
+        font-size: 20px;
+        letter-spacing: -0.01em;
       }
       nav {
         display: flex;
-        align-items: center;
-        gap: 6px;
+        gap: 4px;
         margin-left: auto;
-        min-width: 0;
-        overflow-x: auto;
+        align-items: center;
       }
-      nav a {
-        white-space: nowrap;
-      }
-      nav .who {
-        color: var(--text-secondary);
-        font-size: 14px;
-        margin-right: 10px;
-      }
-      nav a {
-        color: var(--text-secondary);
+      nav span, nav a {
+        color: var(--secondary);
         text-decoration: none;
         font-size: 14px;
         font-weight: 600;
-        padding: 10px 14px;
-        border-radius: var(--radius-pill);
+        padding: 10px 12px;
       }
       nav a[aria-current] {
-        color: var(--text-primary);
+        color: var(--text);
         text-decoration: underline;
-        text-decoration-color: var(--interactive);
+        text-decoration-color: var(--cyan);
         text-decoration-thickness: 2px;
         text-underline-offset: 8px;
       }
-
-      /* ---- page shell ---- */
-      .page {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 28px 24px 56px;
-      }
+      main { max-width: 880px; margin: 0 auto; padding: 32px 24px 64px; }
       .eyebrow {
-        font-family: var(--font-data);
+        margin: 0;
+        font-family: var(--data);
         font-size: 10px;
-        font-weight: 600;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--text-tertiary);
+        color: var(--tertiary);
+      }
+      .head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 8px;
+      }
+      .head h2 {
         margin: 0;
-      }
-      h1.page-title {
-        font-family: var(--font-display);
-        font-size: 40px;
-        line-height: 1.08;
-        font-weight: 700;
+        font-family: var(--display);
+        font-size: 34px;
+        line-height: 1.12;
         letter-spacing: -0.03em;
-        margin: 10px 0 0;
       }
-      p.page-sub {
-        margin: 10px 0 0;
-        max-width: 62ch;
-        font-size: 15px;
-        line-height: 1.5;
-        color: var(--text-secondary);
-      }
-
-      /* ---- start band ---- */
-      .start-band {
-        margin-top: 24px;
-        border: 1px solid var(--border-default);
-        border-radius: var(--radius-card);
-        background: linear-gradient(180deg, rgba(224, 126, 60, 0.09), rgba(224, 126, 60, 0.02));
-        padding: 20px;
-      }
-      .start-row {
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        flex-wrap: wrap;
-      }
-      .btn-primary {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        min-height: 52px;
-        padding: 0 24px;
-        border: 0;
-        border-radius: var(--radius-pill);
-        background: var(--brand);
-        color: var(--text-on-accent);
-        font-family: var(--font-ui);
-        font-size: 16px;
-        font-weight: 700;
-        cursor: pointer;
-        box-shadow: var(--shadow-card);
-      }
-      .btn-primary .glyph {
-        font-size: 13px;
-      }
-      .start-meta {
-        font-family: var(--font-data);
-        font-size: 12px;
-        color: var(--text-secondary);
-      }
-      .start-meta .dim {
-        color: var(--text-tertiary);
-      }
-      .start-secondary {
-        display: flex;
-        gap: 8px;
-        margin-top: 16px;
-        flex-wrap: wrap;
-      }
-      .btn-quiet {
+      .head p { margin: 8px 0 0; color: var(--secondary); font-size: 15px; }
+      .quiet {
         min-height: 44px;
         padding: 0 16px;
         border: 1px solid rgba(58, 192, 212, 0.45);
-        border-radius: var(--radius-pill);
+        border-radius: 999px;
         background: transparent;
-        color: var(--interactive);
-        font-family: var(--font-ui);
+        color: var(--cyan);
+        font-family: var(--ui);
         font-size: 14px;
         font-weight: 600;
-        cursor: pointer;
       }
-
-      /* ---- section headers ---- */
-      .section-head {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 16px;
-        margin: 36px 0 0;
-        flex-wrap: wrap;
-      }
-      .section-head h2 {
-        font-family: var(--font-display);
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        margin: 0;
-      }
-      .section-head .count {
-        font-family: var(--font-data);
-        font-size: 12px;
-        color: var(--text-tertiary);
-      }
-      .sortbox {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 12px;
-        color: var(--text-tertiary);
-      }
-      .sortbox .count {
-        padding-right: 8px;
-        border-right: 1px solid var(--border-subtle);
-      }
-      .sortbox select {
-        min-height: 36px;
-        padding: 0 10px;
-        border: 1px solid rgba(58, 192, 212, 0.3);
-        border-radius: var(--radius-pill);
-        background: var(--bg-base);
-        color: var(--text-primary);
-        font-family: var(--font-ui);
-        font-size: 13px;
-      }
-      .section-sub {
-        margin: 6px 0 0;
-        font-size: 14px;
-        color: var(--text-secondary);
-      }
-
-      /* ---- feature card ---- */
-      .feature {
-        margin-top: 14px;
-        border: 1px solid var(--border-default);
-        border-radius: var(--radius-card);
-        background: var(--bg-raised);
-        padding: 18px 20px;
-        box-shadow: var(--shadow-card);
-      }
-      .feature-top {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-      }
-      .feature h3 {
-        font-family: var(--font-display);
-        font-size: 24px;
-        font-weight: 600;
-        margin: 6px 0 0;
-        letter-spacing: -0.01em;
-      }
-      .meta {
-        font-family: var(--font-data);
-        font-size: 12px;
-        color: var(--text-tertiary);
-        margin: 6px 0 0;
-      }
-      .runtime {
-        font-family: var(--font-data);
-        font-size: 24px;
-        font-weight: 600;
-        letter-spacing: -0.03em;
-        white-space: nowrap;
-      }
-      .pulse {
-        display: flex;
-        align-items: flex-end;
-        gap: 4px;
-        height: 72px;
-        margin: 18px 0 0;
-      }
-      .pulse span {
-        flex: 1;
-        border-radius: 2px 2px 0 0;
-        background: var(--brand-strong);
-      }
-      .pulse.small {
-        height: 22px;
-        gap: 2px;
-        width: 92px;
-        margin: 0;
-        flex: 0 0 auto;
-      }
-      .feature-actions {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 16px;
-        flex-wrap: wrap;
-      }
-      .chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        font-size: 13px;
-        color: var(--text-secondary);
-        margin-right: auto;
-      }
-      .chip .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--caution);
-      }
-      .chip.ok .dot {
-        background: var(--positive);
-      }
-      .btn-step {
-        min-height: 44px;
-        padding: 0 18px;
-        border: 0;
-        border-radius: var(--radius-pill);
-        background: var(--brand);
-        color: var(--text-on-accent);
-        font-family: var(--font-ui);
-        font-size: 14px;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .btn-more {
-        min-width: 44px;
-        min-height: 44px;
-        border: 1px solid var(--border-default);
-        border-radius: var(--radius-pill);
-        background: transparent;
-        color: var(--text-secondary);
-        cursor: pointer;
-        font-size: 16px;
-      }
-
-      /* ---- compact rows ---- */
-      .rows {
-        list-style: none;
-        margin: 10px 0 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .rows li {
-        display: flex;
+      ol { list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+      li {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) auto auto auto;
         align-items: center;
         gap: 16px;
-        padding: 12px 16px;
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-control);
-        background: var(--bg-raised);
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--raised);
       }
-      .rows .title {
-        font-size: 15px;
-        font-weight: 600;
-        min-width: 0;
-        flex: 1 1 auto;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .rows .rowmeta {
-        font-family: var(--font-data);
-        font-size: 12px;
-        color: var(--text-tertiary);
-        white-space: nowrap;
-      }
-      .rows .status {
-        font-size: 12px;
-        color: var(--text-secondary);
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        white-space: nowrap;
-        min-width: 116px;
-      }
-      .rows .status .dot {
+      li.top { border-color: var(--border-strong); padding: 16px 18px; }
+      .name { font-weight: 600; font-size: 16px; }
+      .meta { margin-top: 3px; font-family: var(--data); font-size: 12px; color: var(--tertiary); }
+      .pulse { display: flex; align-items: flex-end; gap: 2px; width: 72px; height: 22px; }
+      .pulse i { flex: 1; border-radius: 1px 1px 0 0; background: var(--brand-strong); display: block; }
+      .status { font-size: 13px; color: var(--secondary); white-space: nowrap; }
+      .status b {
+        display: inline-block;
         width: 7px;
         height: 7px;
+        margin-right: 6px;
         border-radius: 50%;
         background: var(--caution);
       }
-      .rows .status.ok .dot {
-        background: var(--positive);
-      }
-      .rows .go {
-        color: var(--interactive);
-        font-size: 18px;
-      }
-
-      .showall {
-        display: block;
-        margin: 14px 0 0 auto;
+      .status.ok b { background: var(--cyan); }
+      .go {
         min-height: 44px;
         padding: 0 16px;
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-pill);
-        background: transparent;
-        color: var(--text-secondary);
-        font-family: var(--font-ui);
-        font-size: 13px;
-        cursor: pointer;
-      }
-
-      /* ---- all classes (collapsed tier 2) ---- */
-      .allclasses {
-        margin-top: 28px;
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-card);
-        background: rgba(18, 16, 12, 0.6);
-        padding: 14px 18px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .allclasses .label {
+        border: 0;
+        border-radius: 999px;
+        background: var(--brand);
+        color: var(--ink);
+        font-family: var(--ui);
+        font-weight: 700;
         font-size: 14px;
-        font-weight: 600;
-        color: var(--text-secondary);
       }
-      .allclasses .hint {
-        font-size: 12px;
-        color: var(--text-tertiary);
-        margin-left: auto;
+      .more {
+        min-width: 44px;
+        min-height: 44px;
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--secondary);
       }
-      .allclasses .caret {
-        color: var(--text-tertiary);
-        font-size: 12px;
-      }
-
-      .footnote {
-        margin: 34px 0 0;
+      .note {
+        margin-top: 28px;
         padding-top: 14px;
-        border-top: 1px solid var(--border-subtle);
-        font-size: 11px;
+        border-top: 1px solid var(--border);
+        color: var(--tertiary);
+        font-size: 12px;
         line-height: 1.6;
-        color: var(--text-tertiary);
       }
-
       @media (max-width: 700px) {
-        .topbar {
-          padding: 10px 16px;
-          gap: 10px;
+        header { padding: 10px 16px; }
+        nav span { display: none; }
+        main { padding: 20px 16px 48px; }
+        .head { flex-direction: column; align-items: stretch; }
+        .head h2 { font-size: 28px; }
+        .quiet { width: 100%; }
+        li, li.top {
+          grid-template-columns: 1fr auto;
+          gap: 10px 12px;
         }
-        .wordmark {
-          font-size: 17px;
-        }
-        nav .who {
-          display: none;
-        }
-        nav a {
-          padding: 10px;
-          font-size: 13px;
-        }
-        .page {
-          padding: 20px 16px 44px;
-        }
-        h1.page-title {
-          font-size: 30px;
-        }
-        .btn-primary {
-          width: 100%;
-          justify-content: center;
-        }
-        .start-meta {
-          width: 100%;
-        }
-        .rows li {
-          flex-wrap: wrap;
-          gap: 8px 12px;
-        }
-        .rows .status {
-          min-width: 0;
-        }
-        .pulse.small {
-          order: 5;
-        }
+        .pulse { display: none; }
+        .go, .more { grid-column: 1 / -1; }
+        .more { justify-self: start; }
       }
     </style>
   </head>
   <body>
-    <header class="topbar">
-      <span class="brand-mark" aria-hidden="true">R</span>
-      <h1 class="wordmark">Ritmo Studio</h1>
-      <nav aria-label="Primary">
-        <span class="who">Steven</span>
+    <header>
+      <span class="mark" aria-hidden="true">R</span>
+      <h1>Ritmo Studio</h1>
+      <nav>
+        <span>Steven</span>
         <a href="#" aria-current="page">Classes</a>
         <a href="#">Music</a>
         <a href="#">Live</a>
         <a href="#">Account</a>
       </nav>
     </header>
-
-    <main class="page">
+    <main>
       <p class="eyebrow">Classes</p>
-      <h1 class="page-title">Turn your music into a class.</h1>
-      <p class="page-sub">
-        Start from a playlist you already made — or pick up a class in progress.
-      </p>
-
-      <section class="start-band" aria-label="Start a class">
-        <div class="start-row">
-          <button class="btn-primary" type="button">
-            <span class="glyph" aria-hidden="true">▶</span> Start from a playlist
-          </button>
-          <span class="start-meta">
-            Spotify · SoundCloud · Apple&nbsp;Music <span class="dim">— 14 playlists ready</span>
-          </span>
-        </div>
-        <div class="start-secondary">
-          <button class="btn-quiet" type="button">From liked tracks</button>
-          <button class="btn-quiet" type="button">Blank class</button>
-        </div>
-      </section>
-
-      <div class="section-head">
+      <div class="head">
         <div>
-          <h2>Continue</h2>
-          <p class="section-sub">
-            Pick up where the energy left off.
-            <span style="color: var(--text-tertiary)"
-              >Ordered by ready to teach — closest to teachable first.</span
-            >
-          </p>
+          <h2>Pick up where the energy left off.</h2>
+          <p>Closest to teachable first.</p>
         </div>
-        <div class="sortbox">
-          <span class="count">6 classes</span>
-          <label for="sort">Sort</label>
-          <select id="sort">
-            <option>Ready to teach</option>
-            <option>Needs work</option>
-          </select>
-        </div>
+        <button class="quiet" type="button">Start a class</button>
       </div>
-      <article class="feature">
-        <div class="feature-top">
+      <ol>
+        <li class="top">
           <div>
-            <p class="eyebrow">Next up</p>
-            <h3>SoundCloud Test: Cool Down</h3>
-            <p class="meta">Pilates · 9 tracks</p>
+            <div class="name">SoundCloud Test: Cool Down</div>
+            <div class="meta">Pilates · 9 tracks · 7:58</div>
           </div>
-          <span class="runtime">7:58</span>
-        </div>
-        <div class="pulse" role="img" aria-label="Class shape: builds to a peak at two thirds, then eases down. Derived from track order and length.">
-          <span style="height: 22%"></span>
-          <span style="height: 34%"></span>
-          <span style="height: 46%"></span>
-          <span style="height: 58%"></span>
-          <span style="height: 72%"></span>
-          <span style="height: 88%"></span>
-          <span style="height: 100%"></span>
-          <span style="height: 74%"></span>
-          <span style="height: 52%"></span>
-          <span style="height: 38%"></span>
-          <span style="height: 26%"></span>
-        </div>
-        <div class="feature-actions">
-          <span class="chip"><span class="dot" aria-hidden="true"></span> Runnable · 2 to finish</span>
-          <button class="btn-step" type="button">Add the missing tempo</button>
-          <button class="btn-more" type="button" aria-label="More actions for SoundCloud Test: Cool Down">⋯</button>
-        </div>
-      </article>
-
-      <ul class="rows">
-        <li>
-          <span class="title">Latin riiide</span>
-          <span class="rowmeta">Cycle · 6 tracks · 5:11</span>
-          <span class="pulse small" role="img" aria-label="Class shape: steady build to a late peak.">
-            <span style="height: 30%"></span>
-            <span style="height: 52%"></span>
-            <span style="height: 74%"></span>
-            <span style="height: 96%"></span>
-            <span style="height: 60%"></span>
-            <span style="height: 40%"></span>
+          <span class="pulse" aria-hidden="true">
+            <i style="height: 30%"></i><i style="height: 48%"></i><i style="height: 70%"></i>
+            <i style="height: 100%"></i><i style="height: 62%"></i><i style="height: 36%"></i>
           </span>
-          <span class="status"><span class="dot" aria-hidden="true"></span> 2 to finish</span>
-          <span class="go" aria-hidden="true">›</span>
+          <span class="status"><b></b>Can run live · 2 left</span>
+          <button class="go" type="button">Add the missing tempo</button>
         </li>
         <li>
-          <span class="title">Ambient Chill</span>
-          <span class="rowmeta">Cycle · 65 tracks · 2:47:59</span>
-          <span class="pulse small" role="img" aria-label="Class shape: long even arc with a mid peak.">
-            <span style="height: 40%"></span>
-            <span style="height: 62%"></span>
-            <span style="height: 86%"></span>
-            <span style="height: 70%"></span>
-            <span style="height: 50%"></span>
-            <span style="height: 34%"></span>
+          <div>
+            <div class="name">Latin riiide</div>
+            <div class="meta">Cycle · 6 tracks · 5:11</div>
+          </div>
+          <span class="pulse" aria-hidden="true">
+            <i style="height: 40%"></i><i style="height: 66%"></i><i style="height: 100%"></i>
+            <i style="height: 70%"></i><i style="height: 44%"></i><i style="height: 28%"></i>
           </span>
-          <span class="status ok"><span class="dot" aria-hidden="true"></span> Ready to teach</span>
-          <span class="go" aria-hidden="true">›</span>
+          <span class="status"><b></b>2 left</span>
+          <button class="more" type="button" aria-label="More actions">⋯</button>
         </li>
         <li>
-          <span class="title">Spotify likes — Jackson Remix</span>
-          <span class="rowmeta">Cycle · 30 tracks · 1:49:33</span>
-          <span class="pulse small" role="img" aria-label="Class shape: early peak, long cool down.">
-            <span style="height: 56%"></span>
-            <span style="height: 88%"></span>
-            <span style="height: 66%"></span>
-            <span style="height: 44%"></span>
-            <span style="height: 32%"></span>
-            <span style="height: 24%"></span>
+          <div>
+            <div class="name">Ambient Chill</div>
+            <div class="meta">Cycle · 65 tracks · 2:47:59</div>
+          </div>
+          <span class="pulse" aria-hidden="true">
+            <i style="height: 50%"></i><i style="height: 78%"></i><i style="height: 100%"></i>
+            <i style="height: 80%"></i><i style="height: 55%"></i><i style="height: 34%"></i>
           </span>
-          <span class="status"><span class="dot" aria-hidden="true"></span> Score the arc</span>
-          <span class="go" aria-hidden="true">›</span>
+          <span class="status ok"><b></b>Ready to teach</span>
+          <button class="more" type="button" aria-label="More actions">⋯</button>
         </li>
-      </ul>
-      <button class="showall" type="button">Show all 6 classes ▾</button>
-
-      <section class="allclasses" aria-label="All classes">
-        <span class="caret" aria-hidden="true">▸</span>
-        <span class="label">All classes (6)</span>
-        <span class="hint">Search, sort, tags, and copy live here — opened on demand</span>
-      </section>
-
-      <p class="footnote">
-        Static mockup for <code>ritmofit_dev_plan/classes-home-redesign.md</code>. Colour, type, radius,
-        and fonts come from the real design tokens; the data is illustrative. Tier-2 detail
-        (<em>derived · confirm</em>, pulse coverage caption, the four-dimension readiness ledger, last
-        opened, copy/duplicate) sits one click away in the rehearsal view and the All classes section,
-        not on this page.
+        <li>
+          <div>
+            <div class="name">Spotify likes — Jackson Remix</div>
+            <div class="meta">Cycle · 30 tracks · 1:49:33</div>
+          </div>
+          <span class="pulse" aria-hidden="true">
+            <i style="height: 36%"></i><i style="height: 58%"></i><i style="height: 84%"></i>
+            <i style="height: 64%"></i><i style="height: 42%"></i><i style="height: 26%"></i>
+          </span>
+          <span class="status"><b></b>Score the arc</span>
+          <button class="more" type="button" aria-label="More actions">⋯</button>
+        </li>
+      </ol>
+      <p class="note">
+        Revised mockup for <code>classes-home-redesign.md</code>. Returning visit, four classes, one
+        list. The copper control is the top row's next step; starting a class is the quiet button.
+        Search, sort, and tags are absent because four classes do not need them. The first visit —
+        empty library, copper <em>Start a class</em> — is specified in the plan and is not this screen.
       </p>
     </main>
   </body>
