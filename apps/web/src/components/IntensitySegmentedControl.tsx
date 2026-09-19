@@ -20,7 +20,7 @@
  */
 import { useId, useRef } from 'react';
 import { intensityValues, type Intensity } from '@ritmofit/shared';
-import { INTENSITY_BARS, INTENSITY_LABEL } from './IntensityReadout.js';
+import { INTENSITY_BARS, INTENSITY_HINT, INTENSITY_LABEL } from './IntensityReadout.js';
 
 /** The 0–4 bar glyph — the non-colour, non-numeric channel. */
 function ZoneBars({ bars }: { bars: number }) {
@@ -117,8 +117,10 @@ export function IntensitySegmentedControl({
           );
         })}
       </div>
+      {/* Names the current pick as a pick ("Selected:"), and glosses the zone
+          word so the five buttons are not five codes. */}
       <p id={summaryId} className="mt-1 font-ui text-xs text-text-tertiary">
-        Zone {INTENSITY_BARS[value]} · {INTENSITY_LABEL[value]}
+        Selected: Z{INTENSITY_BARS[value]} {INTENSITY_LABEL[value]} — {INTENSITY_HINT[value]}
       </p>
     </div>
   );

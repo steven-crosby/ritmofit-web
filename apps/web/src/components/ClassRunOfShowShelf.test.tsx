@@ -39,21 +39,24 @@ function cls(index: number): ClassListItem {
   };
 }
 
+/**
+ * Two tracks on one effort with no scored placement — an *auto-shaped* class, so
+ * the card's Pulse carries the confirm affordance (a lone track can never form a
+ * derived arc; see `energy-arc.isUnshapedSequence`).
+ */
 function payload(title: string): RunPayload {
   return {
-    class: { title, totalDurationMs: 60_000 },
-    tracks: [
-      {
-        classTrackId: `${title}-track`,
-        position: 0,
-        intensity: 'hard',
-        track: { durationMs: 60_000 },
-        providerRefs: [],
-        cues: [],
-        moves: [],
-        displayBpm: null,
-      },
-    ],
+    class: { title, totalDurationMs: 120_000 },
+    tracks: [0, 1].map((position) => ({
+      classTrackId: `${title}-track-${position}`,
+      position,
+      intensity: 'hard',
+      track: { durationMs: 60_000 },
+      providerRefs: [],
+      cues: [],
+      moves: [],
+      displayBpm: null,
+    })),
   } as unknown as RunPayload;
 }
 
@@ -153,7 +156,7 @@ describe('ClassRunOfShowShelf', () => {
         onPreview={onPreview}
       />,
     );
-    fireEvent.click(await screen.findByRole('button', { name: /derived · confirm/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /auto-shape · mark reviewed/i }));
     // The primary names this class's actual gap — the fixture payload carries no
     // BPM — rather than a generic "continue" (P0-03).
     fireEvent.click(screen.getByRole('button', { name: 'Add the missing tempo — Class 1' }));

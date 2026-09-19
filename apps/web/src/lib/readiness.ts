@@ -86,6 +86,9 @@ export function classReadiness(payload: RunPayload): ClassReadiness {
           };
 
   // 2) TEMPO — display BPM drives the beat pulse + tempo identity (10-rhythm §1–2).
+  // The labels say "BPM", not "pulse": "pulse" is an animation in canon and the
+  // word already names the Class Pulse chart on the same screen, so spending it
+  // on the tempo gap made a reader guess which one was off.
   const missingBpm = tracks.filter((t) => t.displayBpm == null);
   const tempo: ReadinessDimension =
     // No tracks, or every track has a BPM → nothing to flag. An empty class's one
@@ -95,23 +98,23 @@ export function classReadiness(payload: RunPayload): ClassReadiness {
       ? {
           key: 'tempo',
           level: 'ready',
-          label: 'Tempo ready',
-          detail: 'Every track has a BPM — the beat pulse is on.',
+          label: 'BPM set on every track',
+          detail: 'Live can keep the beat.',
           tracks: [],
         }
       : missingBpm.length === count
         ? {
             key: 'tempo',
             level: 'attention',
-            label: 'Tempo missing — pulse off',
-            detail: 'Add BPM so the class keeps time.',
+            label: 'No BPM yet',
+            detail: 'Add BPM so the class keeps time — without it Live shows no beat.',
             tracks: missingBpm,
           }
         : {
             key: 'tempo',
             level: 'attention',
-            label: 'Tempo incomplete',
-            detail: `No beat pulse where BPM is missing (${plural(missingBpm.length, 'track')}).`,
+            label: `BPM missing on ${plural(missingBpm.length, 'track')}`,
+            detail: 'Add BPM so the class keeps time — those tracks run with no beat.',
             tracks: missingBpm,
           };
 
@@ -133,7 +136,7 @@ export function classReadiness(payload: RunPayload): ClassReadiness {
           key: 'choreography',
           level: 'attention',
           label: 'No cues or moves yet',
-          detail: 'Live runs as a bare prompter without them.',
+          detail: 'Live will show tracks and time only — nothing to call out.',
           tracks: [],
         };
 
@@ -145,22 +148,22 @@ export function classReadiness(payload: RunPayload): ClassReadiness {
           key: 'music',
           level: 'ready',
           label: 'Music ready',
-          detail: 'Every track has a provider to play in Live.',
+          detail: 'Every track is linked to a music service Live can play.',
           tracks: [],
         }
       : missingProvider.length === count
         ? {
             key: 'music',
             level: 'attention',
-            label: 'No music linked — prompter only',
-            detail: 'Add a provider link to play audio in Live.',
+            label: 'No music linked',
+            detail: 'Live will run on the clock with no audio. Link tracks to a music service.',
             tracks: missingProvider,
           }
         : {
             key: 'music',
             level: 'attention',
-            label: 'Music incomplete',
-            detail: `Some tracks run prompter-only (${plural(missingProvider.length, 'track')}).`,
+            label: `No music on ${plural(missingProvider.length, 'track')}`,
+            detail: 'Those tracks run silent in Live. Link them to a music service.',
             tracks: missingProvider,
           };
 

@@ -315,7 +315,7 @@ describe('LibraryRail card summary', () => {
       onDuplicate,
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Copy Copy me' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Duplicate Copy me' }));
     await waitFor(() => expect(onDuplicate).toHaveBeenCalledTimes(1));
     expect(onDuplicate.mock.calls[0]?.[0]?.id).toBe('00000000-0000-4000-8000-0000000000a4');
     expect(onOpen).not.toHaveBeenCalled();

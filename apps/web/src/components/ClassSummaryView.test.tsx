@@ -49,8 +49,22 @@ describe('ClassSummaryView', () => {
     expect(api.getRunPayload).toHaveBeenCalledTimes(2);
   });
 
-  it('surfaces controlled view-only Pulse confirmation', async () => {
-    vi.mocked(api.getRunPayload).mockResolvedValue(payload());
+  it('surfaces controlled view-only Pulse confirmation of an auto-shaped pulse', async () => {
+    // The confirmation belongs to a *derived* shape, so the fixture has to be one:
+    // uniform effort, no scored placement.
+    const autoShaped = {
+      ...payload(),
+      tracks: [0, 1].map((index) => ({
+        classTrackId: `00000000-0000-4000-8000-00000000000${index}`,
+        position: index,
+        displayBpm: 128,
+        intensity: 'mod',
+        track: { title: `Track ${index}`, artist: 'DJ Test', albumArtUrl: null, durationMs: 90000 },
+        moves: [],
+        cues: [],
+      })),
+    } as unknown as RunPayload;
+    vi.mocked(api.getRunPayload).mockResolvedValue(autoShaped);
     const onToggle = vi.fn();
 
     render(
@@ -63,7 +77,7 @@ describe('ClassSummaryView', () => {
       />,
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /confirmed for this view/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /auto-shape reviewed/i }));
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 

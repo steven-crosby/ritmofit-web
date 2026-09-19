@@ -253,6 +253,24 @@ describe('Dashboard class library states', () => {
     }
   });
 
+  it('folds the rail’s create/filter controls away once a class is open', async () => {
+    const ride = makeClass('Morning ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    renderDashboard();
+
+    const disclosure = await screen.findByText('New class, filters, and search');
+    expect(disclosure.closest('details')).toHaveProperty('open', true);
+
+    // Opening a class changes what the rail is for. The creation form belongs to
+    // picking a class, not to editing one.
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Morning ride/ }))[0]!);
+    await waitFor(() => expect(disclosure.closest('details')).toHaveProperty('open', false));
+    // ...and the rail names the card being edited, rather than leaving a ring to
+    // carry "what did I just click?".
+    expect(screen.getByText('Editing now')).toBeTruthy();
+  });
+
   it('shows a distinct error state when the class list fails to load, and retries', async () => {
     vi.mocked(api.listClasses).mockRejectedValueOnce(new Error('network down'));
 
@@ -964,7 +982,9 @@ describe('Dashboard class library states', () => {
     })) as HTMLButtonElement;
     await waitFor(() => expect(runBtn.disabled).toBe(false));
     expect(screen.getByRole('region', { name: 'Class Pulse' })).toBeTruthy();
-    expect(screen.getByText('◇ derived · confirm')).toBeTruthy();
+    // The queue's Pulse says where its shape came from instead of asking a
+    // read-only card to "confirm" anything.
+    expect(screen.getByText('from your track efforts')).toBeTruthy();
     // The mount already fetched the payload for readiness; isolate the run request.
     vi.mocked(api.getRunPayload).mockClear();
     fireEvent.click(runBtn);
@@ -1824,6 +1844,60 @@ describe('Dashboard track focus management', () => {
     expect(rowSelectButton('ct-1')?.getAttribute('aria-pressed')).toBe('true');
   });
 
+  it('says whether the inspector matches what is stored, and gates Save on a change', async () => {
+    installClassWithTracks('Draft state ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+    ]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateClassTrack).mockResolvedValue(makeClassTrack('ct-1', 0));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Draft state ride/ }));
+    await screen.findByRole('heading', { name: 'Draft state ride' });
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for First Light',
+    });
+    const saveButton = within(inspector).getByRole('button', {
+      name: 'Save',
+    }) as HTMLButtonElement;
+    // Nothing edited yet: the panel says so, and Save has nothing to commit.
+    expect(within(inspector).getByText('No changes to save.')).toBeTruthy();
+    expect(saveButton.disabled).toBe(true);
+
+    fireEvent.change(within(inspector).getByRole('textbox', { name: 'Creator notes' }), {
+      target: { value: 'Hold the climb.' },
+    });
+    expect(within(inspector).getByText(/unsaved changes/i)).toBeTruthy();
+    expect(saveButton.disabled).toBe(false);
+
+    fireEvent.click(saveButton);
+    expect(await within(inspector).findByText('Saved.')).toBeTruthy();
+    expect(saveButton.disabled).toBe(true);
+  });
+
+  it('explains the zone words and what an empty BPM box falls back to', async () => {
+    installClassWithTracks('Vocabulary ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+    ]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Vocabulary ride/ }));
+    await screen.findByRole('heading', { name: 'Vocabulary ride' });
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for First Light',
+    });
+    // Z0–Z4 are codes until the panel says what the selected one means.
+    expect(within(inspector).getByText(/Selected: Z2 Push — steady working effort/)).toBeTruthy();
+    // "Display BPM override" named a column; the help names the consequence of
+    // leaving the box empty (the fixture track resolves to 120 BPM).
+    expect(within(inspector).getByText(/Blank uses the track’s own 120 BPM/)).toBeTruthy();
+  });
+
   it('keeps a failed scoring save local, visible, and editable', async () => {
     installClassWithTracks('Save failure ride', [
       { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
@@ -1888,7 +1962,7 @@ describe('Dashboard track focus management', () => {
 
     // With no tracks left, focus moves to the (now focusable) inspector placeholder
     // rather than falling to <body>.
-    const placeholderText = await screen.findByText(/Select a track to edit its intensity/);
+    const placeholderText = await screen.findByText(/Click a track in the Track stack list/);
     const placeholder = placeholderText.parentElement as HTMLElement;
     await waitFor(() => {
       expect(document.activeElement).toBe(placeholder);

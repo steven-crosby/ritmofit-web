@@ -26,24 +26,56 @@ function payload(): RunPayload {
   } as unknown as RunPayload;
 }
 
+/** Every track on one effort and no scored moves — the auto-shaped case. */
+function unshapedPayload(): RunPayload {
+  return {
+    class: { totalDurationMs: 360_000 },
+    tracks: Array.from({ length: 6 }, (_, index) => ({
+      classTrackId: `t${index}`,
+      position: index,
+      intensity: 'hard',
+      track: { durationMs: 60_000 },
+    })),
+  } as unknown as RunPayload;
+}
+
 describe('ClassPulse', () => {
   it('names its derivation and describes sparse effort without color', () => {
     render(<ClassPulse payload={payload()} />);
-    expect(screen.getByText(/derived · confirm/i)).toBeTruthy();
+    expect(screen.getByText(/from your track efforts/i)).toBeTruthy();
     expect(screen.getByRole('img').getAttribute('aria-label')).toContain('unscored');
     expect(screen.getByText(/1 unscored effort/i)).toBeTruthy();
   });
 
-  it('offers explicit, controlled, presentational confirmation', () => {
+  it('explains the picture: axes in words, a time axis, and a colour key', () => {
+    render(<ClassPulse payload={payload()} />);
+    expect(
+      screen.getByText(/each block is a track — wider is longer, taller is harder/i),
+    ).toBeTruthy();
+    expect(screen.getByText(/0:00 start/i)).toBeTruthy();
+    expect(screen.getByText(/3:00 finish/i)).toBeTruthy();
+    expect(screen.getByText(/z1 build/i)).toBeTruthy();
+    expect(screen.getByText(/hatched = effort not set yet/i)).toBeTruthy();
+  });
+
+  it('offers explicit, controlled, presentational confirmation of an auto-shape', () => {
     const onConfirm = vi.fn();
-    const { rerender } = render(<ClassPulse payload={payload()} onConfirm={onConfirm} />);
-    fireEvent.click(screen.getByRole('button', { name: /derived · confirm/i }));
+    const { rerender } = render(<ClassPulse payload={unshapedPayload()} onConfirm={onConfirm} />);
+    fireEvent.click(screen.getByRole('button', { name: /auto-shape · mark reviewed/i }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
 
-    rerender(<ClassPulse payload={payload()} confirmed onConfirm={onConfirm} />);
+    rerender(<ClassPulse payload={unshapedPayload()} confirmed onConfirm={onConfirm} />);
     expect(
-      screen.getByRole('button', { name: /confirmed for this view/i }).getAttribute('aria-pressed'),
+      screen.getByRole('button', { name: /auto-shape reviewed/i }).getAttribute('aria-pressed'),
     ).toBe('true');
+  });
+
+  it('does not ask for confirmation of a shape the instructor scored', () => {
+    // The caution pill belongs to a guess. On an authored class it was a warning
+    // about the instructor's own scoring.
+    render(<ClassPulse payload={payload()} onConfirm={() => {}} />);
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.getByText(/from your track efforts/i)).toBeTruthy();
   });
 
   it('renders a truthful empty state without an image-shaped fake', () => {
@@ -59,17 +91,7 @@ describe('ClassPulse', () => {
   it('does not draw uniform bars when every track shares one effort (P0-07)', () => {
     // Six equal-length tracks, all "hard" — the Tuesday 6AM case. Canon
     // (10-rhythm-system §4) forbids the flat slab this used to draw.
-    const flat = {
-      ...payload(),
-      tracks: Array.from({ length: 6 }, (_, index) => ({
-        classTrackId: `t${index}`,
-        position: index,
-        intensity: 'hard',
-        track: { durationMs: 60_000 },
-      })),
-    } as unknown as RunPayload;
-
-    render(<ClassPulse payload={flat} />);
+    render(<ClassPulse payload={unshapedPayload()} />);
     const heights = Array.from(document.querySelectorAll('rect')).map((r) =>
       Number(r.getAttribute('height')),
     );

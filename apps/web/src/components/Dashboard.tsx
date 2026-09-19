@@ -422,6 +422,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const openClass = useCallback(
     async (cls: ClassWithAccess) => {
       setSelected(cls);
+      // Opening a class changes what the rail is for: the create/filter controls
+      // belong to choosing a class, not to editing one, so they fold away rather
+      // than sitting expanded above the list while the instructor works.
+      setCreatorOpen(false);
       await loadDetail(cls.id);
     },
     [loadDetail],
@@ -1279,6 +1283,13 @@ function ClassCard({
           <ArtCollage urls={cls.albumArtUrls} classTitle={cls.title} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-text-primary">{cls.title}</span>
+            {/* Which card you are working in, in a word. The selection ring alone
+                left "what did I just click?" to be inferred from a border. */}
+            {selected && (
+              <span className="mt-0.5 inline-flex rounded-pill bg-interactive/15 px-1.5 font-data text-[10px] uppercase tracking-wide text-interactive">
+                Editing now
+              </span>
+            )}
             <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-data text-xs text-text-tertiary">
               {templateLabel && (
                 <>
@@ -1322,11 +1333,13 @@ function ClassCard({
             type="button"
             onClick={() => void run(() => onDuplicate(cls))}
             disabled={busy}
-            aria-label={`Copy ${cls.title}`}
-            title="Save a copy"
+            // "Copy" read as copy-to-clipboard or copy-a-link. The action makes a
+            // second editable class, so the verb says that.
+            aria-label={`Duplicate ${cls.title}`}
+            title="Save an editable copy of this class"
             className="min-h-11 rounded-control px-3 hover:bg-bg-base hover:text-text-primary rf-focus-ring disabled:opacity-40 sm:min-h-8"
           >
-            {busy ? '…' : 'Copy'}
+            {busy ? '…' : 'Duplicate'}
           </button>
         </div>
       </div>
@@ -4096,10 +4109,16 @@ function ClassWorkspace({
           <div
             ref={inspectorPlaceholderRef}
             tabIndex={-1}
-            className="rounded-card border border-interactive/20 bg-bg-base p-5 outline-none rf-focus-ring"
+            className="flex flex-col gap-1 rounded-card border border-interactive/20 bg-bg-base p-5 outline-none rf-focus-ring"
           >
+            {/* An unnamed empty box asked the reader to work out both what the
+                panel is and where the tracks are. */}
+            <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+              Track inspector
+            </p>
             <p className="font-ui text-sm text-text-tertiary">
-              Select a track to edit its intensity, BPM, notes, cues, and moves.
+              Click a track in the Track stack list to edit its intensity, BPM, notes, cues, and
+              moves.
             </p>
           </div>
         )}
@@ -4478,7 +4497,9 @@ export function ClassHeaderCard({
             ) : (
               // No track carries a BPM yet — name the gap instead of silently dropping
               // the stat (design system 10 §1a). Caution channel; BPM never blocks a run.
-              <span className="font-semibold text-state-caution">add BPM · pulse off</span>
+              // This line is stats, so it states the gap; the readiness row directly
+              // below owns the action and the consequence.
+              <span className="font-semibold text-state-caution">no BPM set</span>
             )}
           </>
         )}
@@ -4865,6 +4886,24 @@ function TrackInspector({
   const [notes, setNotes] = useState(track.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Nothing in this panel commits until Save, so the panel has to say whether
+  // what is on screen is what is stored. Without it, picking a zone or typing a
+  // BPM produced no acknowledgement at all (canon 09 "Unsaved/unsynced").
+  const draft = JSON.stringify({
+    intensity,
+    bpm,
+    rpm,
+    holdCountVal,
+    duration,
+    clipStart,
+    clipEnd,
+    downbeat,
+    startAt,
+    notes,
+  });
+  const [savedDraft, setSavedDraft] = useState(draft);
+  const [justSaved, setJustSaved] = useState(false);
+  const dirty = draft !== savedDraft;
   // BPM lookup (the third-party tempo provider — never Spotify) fills the track's
   // base display BPM; the resolved row BPM is still override ?? base.
   const [bpmBusy, setBpmBusy] = useState(false);
@@ -4944,6 +4983,8 @@ function TrackInspector({
         ...(startOffsetMs !== undefined ? { startOffsetMs } : {}),
         notes: notes.trim() === '' ? null : notes.trim(),
       });
+      setSavedDraft(draft);
+      setJustSaved(true);
       onSaved();
     } catch (e) {
       setError((e as Error).message);
@@ -5003,19 +5044,19 @@ function TrackInspector({
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
               Intensity
             </span>
-            <div className="flex flex-wrap items-center gap-3">
-              <IntensitySegmentedControl
-                value={intensity}
-                onChange={setIntensity}
-                ariaLabel="Track intensity"
-              />
-              <IntensityReadout intensity={intensity} />
-            </div>
+            {/* The control prints the pick in zone number, bars, word and gloss;
+                the separate readout beside it repeated the same value in a third
+                notation, which read as a second, unexplained state. */}
+            <IntensitySegmentedControl
+              value={intensity}
+              onChange={setIntensity}
+              ariaLabel="Track intensity"
+            />
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Display BPM override
+              BPM for this class
             </span>
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -5023,6 +5064,7 @@ function TrackInspector({
                 min={1}
                 inputMode="numeric"
                 placeholder="—"
+                aria-describedby={`bpm-help-${track.id}`}
                 className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
                 value={bpm}
                 onChange={(e) => setBpm(e.target.value)}
@@ -5040,6 +5082,15 @@ function TrackInspector({
                 <span className="font-data text-xs text-text-tertiary">{bpmStatus}</span>
               )}
             </div>
+            {/* "Display BPM override" named the column, not the act. What the
+                reader needs is what happens if the box is left empty. */}
+            <span id={`bpm-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+              {bpm.trim() !== ''
+                ? 'Used instead of the track’s own BPM, in this class only. Clear it to go back.'
+                : displayBpm != null
+                  ? `Blank uses the track’s own ${displayBpm} BPM. Type a number to use a different one here.`
+                  : 'This track has no BPM yet. Type one, or use Look up BPM.'}
+            </span>
           </label>
 
           <label className="flex flex-col gap-1">
@@ -5062,7 +5113,7 @@ function TrackInspector({
 
           <fieldset className="flex flex-col gap-1">
             <legend className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Clip window
+              Clip window — play part of the track
             </legend>
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -5090,7 +5141,8 @@ function TrackInspector({
               />
             </div>
             <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-              Audition and run only this authored range. Blank start or end uses the track boundary.
+              Start and end as minutes:seconds, for example 0:30 and 2:15. Previews and Live play
+              only this part. Leave either blank to use the track’s own start or end.
             </span>
           </fieldset>
 
@@ -5211,11 +5263,33 @@ function TrackInspector({
 
           {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
 
+          {/* Whether the panel matches what is stored, said in words next to the
+              control that resolves it. Glyph + word, never colour alone (07). */}
+          <p
+            aria-live="polite"
+            className={`flex items-center gap-1.5 font-ui text-xs ${
+              dirty
+                ? 'text-state-caution'
+                : justSaved
+                  ? 'text-state-positive'
+                  : 'text-text-tertiary'
+            }`}
+          >
+            <span aria-hidden className="font-data leading-none">
+              {dirty ? '!' : justSaved ? '✓' : '·'}
+            </span>
+            {dirty
+              ? 'Unsaved changes — press Save to keep them.'
+              : justSaved
+                ? 'Saved.'
+                : 'No changes to save.'}
+          </p>
+
           <div className="flex items-center gap-2">
             <button
               className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:rounded-pill"
               onClick={save}
-              disabled={busy}
+              disabled={busy || !dirty}
             >
               Save
             </button>
