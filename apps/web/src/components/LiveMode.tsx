@@ -75,6 +75,15 @@ export interface TimelineEvent {
   bar: number | null;
 }
 
+export interface ChoreographyQueueItem {
+  event: TimelineEvent;
+  state: 'current' | 'upcoming';
+  /** Authored interval length, derived from the next anchor or track boundary. */
+  durationMs: number | null;
+  /** Only current choreography counts down; upcoming rows show their full interval. */
+  remainingMs: number | null;
+}
+
 /** Stable empty reference so a track-less / pre-roll frame doesn't churn memos. */
 const NO_EVENTS: TimelineEvent[] = [];
 
@@ -147,6 +156,33 @@ export function lastAtOrBefore(events: TimelineEvent[], t: number): number {
     }
   }
   return ans;
+}
+
+/**
+ * The glanceable run-of-show window for the active track. Durations stay derived
+ * from authored anchors: no second duration truth is persisted in the payload.
+ */
+export function choreographyQueueAt(
+  events: TimelineEvent[],
+  elapsedMs: number,
+  trackEndMs: number | null,
+  limit = 4,
+): ChoreographyQueueItem[] {
+  if (events.length === 0 || limit <= 0) return [];
+  const currentIndex = lastAtOrBefore(events, elapsedMs);
+  const firstIndex = Math.max(0, currentIndex);
+  return events.slice(firstIndex, firstIndex + limit).map((event, offset) => {
+    const index = firstIndex + offset;
+    const nextAtMs = events[index + 1]?.atMs ?? trackEndMs;
+    const endAtMs = nextAtMs == null ? null : Math.max(event.atMs, nextAtMs);
+    const isCurrent = index === currentIndex;
+    return {
+      event,
+      state: isCurrent ? 'current' : 'upcoming',
+      durationMs: endAtMs == null ? null : endAtMs - event.atMs,
+      remainingMs: isCurrent && endAtMs != null ? Math.max(0, endAtMs - elapsedMs) : null,
+    };
+  });
 }
 
 /** All cues + moves of a track as class-absolute events, time-ordered. */
@@ -692,6 +728,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             live={live}
             currentEvent={currentEvent}
             nextEvent={nextEvent}
+            events={events}
             elapsedMs={elapsedMs}
             trackEndMs={trackEndMs}
             trackHasDuration={trackDurationMs != null}
@@ -723,6 +760,15 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
           setHasStarted(false);
           void coordinatorRef.current?.pause();
           seek(0);
+        }}
+        liveIndex={liveIndex}
+        onPreviousTrack={() => {
+          if (liveIndex <= 0) return;
+          seek(payload.tracks[liveIndex - 1]?.startOffsetMs ?? 0);
+        }}
+        onNextTrack={() => {
+          if (liveIndex < 0 || liveIndex >= payload.tracks.length - 1) return;
+          seek(payload.tracks[liveIndex + 1]?.startOffsetMs ?? 0);
         }}
         payload={payload}
         clock={clockStore}
@@ -913,6 +959,7 @@ function CueByCue({
   live,
   currentEvent,
   nextEvent,
+  events,
   elapsedMs,
   trackEndMs,
   trackHasDuration,
@@ -929,6 +976,7 @@ function CueByCue({
   live: { entry: RunPayloadTrackEntry; index: number } | null;
   currentEvent: TimelineEvent | null;
   nextEvent: TimelineEvent | null;
+  events: TimelineEvent[];
   elapsedMs: number;
   trackEndMs: number;
   trackHasDuration: boolean;
@@ -1197,12 +1245,87 @@ function CueByCue({
           )}
         </div>
 
+        <ChoreographyQueue
+          events={events}
+          elapsedMs={elapsedMs}
+          trackEndMs={trackHasDuration ? trackEndMs : null}
+        />
+
         {/* The rail used to end in a large void below the track card. What belongs
             there is the rest of the run of show — read-only, no seek, so nothing
             here can be fumbled mid-class. Full seeking stays in the run-of-show
             view behind its own control. */}
         <UpNextTracks payload={payload} liveIndex={live.index} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Intent: give a moving instructor the next few authored actions at one glance
+ * without competing with the cue hero. Existing ink/bone/cyan tokens, quiet
+ * raised surfaces, Sora/Azeret typography, and the 4px grid keep this a compact
+ * performance instrument rather than a second player or an editable list.
+ */
+function ChoreographyQueue({
+  events,
+  elapsedMs,
+  trackEndMs,
+}: {
+  events: TimelineEvent[];
+  elapsedMs: number;
+  trackEndMs: number | null;
+}) {
+  const queue = choreographyQueueAt(events, elapsedMs, trackEndMs);
+  if (queue.length === 0) return null;
+  const hasCurrent = queue[0]?.state === 'current';
+
+  return (
+    <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+          Choreography queue
+        </p>
+        <p className="font-data text-[11px] text-text-tertiary">Current + next</p>
+      </div>
+      <ol className="mt-3 flex flex-col gap-1" aria-label="Choreography queue">
+        {queue.map(({ event, state, durationMs, remainingMs }, index) => {
+          const current = state === 'current';
+          const upcomingIndex = index - (hasCurrent ? 1 : 0);
+          const intervalMs = current ? remainingMs : durationMs;
+          return (
+            <li
+              key={`${event.kind}:${event.atMs}:${index}`}
+              aria-current={current ? 'step' : undefined}
+              className={`grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-control px-3 py-2 ${
+                current ? 'bg-interactive/10' : ''
+              }`}
+            >
+              <span
+                className={`font-data text-[10px] font-semibold uppercase tracking-wide ${
+                  current ? 'text-interactive' : 'text-text-tertiary'
+                }`}
+              >
+                {current ? 'Now' : upcomingIndex === 0 ? 'Next' : `+${upcomingIndex + 1}`}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate font-ui text-sm font-semibold text-text-secondary">
+                  {event.text}
+                </span>
+                <span className="block font-data text-[10px] uppercase tracking-wide text-text-tertiary">
+                  {event.kind}
+                </span>
+              </span>
+              <span
+                className="shrink-0 font-data text-xs text-text-tertiary"
+                aria-label={current ? 'Time remaining in current choreography' : 'Duration'}
+              >
+                {intervalMs == null ? '—' : `${fmt(intervalMs)}${current ? ' left' : ''}`}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }
@@ -1387,6 +1510,9 @@ function Transport({
   playing,
   onToggle,
   onReset,
+  liveIndex,
+  onPreviousTrack,
+  onNextTrack,
   payload,
   clock,
   onSeekPreview,
@@ -1398,6 +1524,9 @@ function Transport({
   playing: boolean;
   onToggle: () => void;
   onReset: () => void;
+  liveIndex: number;
+  onPreviousTrack: () => void;
+  onNextTrack: () => void;
   payload: RunPayload;
   /** The raw clock store, passed through to the timeline (SPC-18) — Transport
    * itself doesn't read it, so it stays out of Transport's own re-render path. */
@@ -1411,30 +1540,52 @@ function Transport({
   /** Focused when the class goes live so start never strands focus on <body>. */
   primaryButtonRef: RefObject<HTMLButtonElement>;
 }) {
+  const previousTrack = liveIndex > 0 ? payload.tracks[liveIndex - 1] : null;
+  const nextTrack = liveIndex >= 0 ? payload.tracks[liveIndex + 1] : null;
   return (
     <div
-      className="grid grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-3 border-t border-interactive/15 bg-bg-raised/70 px-4 py-3 sm:grid-cols-[auto_auto_minmax(0,auto)_minmax(12rem,1fr)] sm:gap-x-4 sm:px-6 sm:py-4"
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3 border-t border-interactive/15 bg-bg-raised/70 px-4 py-3 sm:grid-cols-[minmax(18rem,auto)_auto_minmax(0,1fr)] sm:gap-x-4 sm:px-6 sm:py-4"
       role="region"
       aria-label="Live transport"
     >
+      <div className="col-span-full grid min-w-0 grid-cols-3 gap-2 sm:col-span-1">
+        <button
+          className="min-h-11 rounded-control border border-interactive px-2 py-2 font-ui text-sm font-semibold text-interactive rf-focus-ring disabled:pointer-events-none disabled:opacity-40 sm:rounded-pill sm:px-4"
+          onClick={onPreviousTrack}
+          disabled={liveIndex <= 0}
+          aria-label={
+            previousTrack ? `Previous track, ${previousTrack.track.title}` : 'Previous track'
+          }
+        >
+          <span aria-hidden>← </span>Previous
+        </button>
+        <button
+          ref={primaryButtonRef}
+          className="min-h-11 rounded-control rf-btn-primary px-3 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill sm:px-6"
+          onClick={onToggle}
+        >
+          {playing ? 'Pause' : 'Play'}
+        </button>
+        <button
+          className="min-h-11 rounded-control border border-interactive px-2 py-2 font-ui text-sm font-semibold text-interactive rf-focus-ring disabled:pointer-events-none disabled:opacity-40 sm:rounded-pill sm:px-4"
+          onClick={onNextTrack}
+          disabled={liveIndex < 0 || liveIndex >= payload.tracks.length - 1}
+          aria-label={nextTrack ? `Next track, ${nextTrack.track.title}` : 'Next track'}
+        >
+          Next<span aria-hidden> →</span>
+        </button>
+      </div>
       <button
-        ref={primaryButtonRef}
-        className="min-h-11 rounded-pill rf-btn-primary px-5 py-2 font-ui font-semibold text-text-on-accent sm:px-6"
-        onClick={onToggle}
-      >
-        {playing ? 'Pause' : 'Play'}
-      </button>
-      <button
-        className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring"
+        className="min-h-11 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive rf-focus-ring sm:rounded-pill sm:px-4"
         onClick={onReset}
       >
         Reset
       </button>
-      <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1 sm:flex-nowrap sm:justify-start">
+      <div className="col-span-full flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 sm:col-span-1 sm:flex-nowrap sm:justify-start">
         <PlaybackRail status={playback} />
         <WakeRail status={wakeStatus} />
       </div>
-      <div className="col-span-full min-w-0 sm:col-span-1">
+      <div className="col-span-full min-w-0">
         <LiveTimeline
           payload={payload}
           clock={clock}

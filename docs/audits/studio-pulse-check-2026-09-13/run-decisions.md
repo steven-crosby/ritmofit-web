@@ -29,12 +29,13 @@ batches shipped as Worker `5d659102` (#420/#422, recorded in #423) and Worker
 | Disposition | Count | IDs |
 | --- | ---: | --- |
 | Backlog (original triage) | 18 | SPC-01–04, SPC-06–16, SPC-18, SPC-20–21 |
-| Owner decision — resolved | 2 | SPC-05, SPC-17 |
+| Owner decision — resolved | 3 | SPC-05, SPC-14, SPC-17 |
 | Accept and drop | 0 whole findings | One incorrect subclaim in SPC-06 is dropped; see its row |
 
 SPC-19 is now merged and deployed with Worker `ad638215`. Live slice status is in
-Implementation status. Remaining owner-blocked work: ENERGY-RIBBON (SPC-14) and
-SPC-09. PROD-HYGIENE runbook is #426; live fixture delete is still owner-pending.
+Implementation status. SPC-09 remains owner-blocked. ENERGY-RIBBON (SPC-14) is
+owner-resolved in favor of implementing the documented placed-move refinement; implementation
+remains pending. PROD-HYGIENE runbook is #426; live fixture delete is still owner-pending.
 
 The two findings originally flagged as out-of-scope and not independently re-verified were checked
 before disposition. SPC-05 is a real docs-versus-code conflict. SPC-10 is a real destructive-control
@@ -57,7 +58,7 @@ consistency gap. SPC-06 is directionally correct, but its cited component and sa
 | SPC-11 | P1 | Builder | Cue/move save, cancel, and delete flows do not consistently restore focus to the invoking control or a stable successor. | **Backlog — BUILDER-A11Y** | Add deterministic focus restoration for save/cancel/delete, including the deleted-last-item case, and regression tests for keyboard flows. |
 | SPC-12 | P2 | Builder | Choreography mutations surface raw `(e as Error).message` instead of the established `errMessage` normalization. | **Backlog — BUILDER-A11Y** | Route cue/move failures through the shared error vocabulary; retain actionable local context without leaking upstream text. |
 | SPC-13 | P2 | Builder | Cue/move validation errors are visible but are not reliably announced. | **Backlog — BUILDER-A11Y** | Associate field errors, move focus to the first invalid field when appropriate, and use an alert/live region without duplicate announcements. |
-| SPC-14 | P2 | Builder | The energy ribbon renders track baselines only. Code explicitly defers placed-move refinement while design docs describe the hybrid ribbon as current behavior. | **Owner-blocked — ENERGY-RIBBON** | Implement placed-move refinement from the existing choreography data, then add visual/data-state coverage. If product no longer wants the hybrid model, resolve that as a separate owner decision and amend the docs instead. Stays owner-blocked after the 2026-09-17 `ad638215` deploy. |
+| SPC-14 | P2 | Builder | The energy ribbon renders track baselines only. Code explicitly defers placed-move refinement while design docs describe the hybrid ribbon as current behavior. | **Owner decision — OD-03, resolved** | Implement placed-move refinement from the existing choreography data, then add visual/data-state coverage. Steven approved implementation over downgrading the docs on 2026-09-19. No schema change is implied. |
 | SPC-15 | P3 | Builder | Custom-move inline Delete → Yes/No confirmation does not move focus to the destructive confirmation. | **Backlog — BUILDER-A11Y** | Focus “Yes” when confirmation opens, return focus on “No,” and choose a stable successor after deletion. |
 | SPC-16 | P2 | Live | Timeline drag seeking calls the provider seek path on every pointer move. | **Backlog — LIVE-RUNTIME** | Separate preview position from provider commits; coalesce/throttle drag updates and commit on pointer-up/cancel, with keyboard seeking unchanged and tested. |
 | SPC-17 | P2 | Live | The documented 88px BPM data hero is no longer the visual hierarchy in code; cue content is dominant while comments/docs still call BPM the hero. | **Owner decision — OD-02, resolved** | Keep the next cue as Live's visual hero and BPM prominent but subordinate; update the stale design documentation and code comments. Approved by Steven, 2026-09-13. |
@@ -86,13 +87,14 @@ exactly one slice.
 
 ## Resolved owner decisions
 
-Steven approved both agent recommendations in chat on 2026-09-13. These resolutions define the
+Steven approved OD-01 and OD-02 on 2026-09-13, and OD-03 on 2026-09-19. These resolutions define the
 implementation direction but do not authorize an implementation slice by themselves.
 
 | ID | Decision | Option A | Option B | Agent recommendation | Owner disposition / notes |
 | --- | --- | --- | --- | --- | --- |
 | OD-01 / SPC-05 | Is sign-in a cool working surface or a warm brand-front exception? | Remove the heat glow and preserve the cool-and-quiet principle. | Keep the glow and amend the principle to name auth as an exception. | **A** — sign-in is task-focused and should inherit the quiet shell. | **Resolved: A.** Approved by Steven, 2026-09-13. |
 | OD-02 / SPC-17 | What is Live's primary data hero? | Keep cue-first hierarchy and update design docs plus stale code comments. | Restore BPM at the documented 88px hero scale. | **A** — the next teaching cue is more useful under pressure; BPM can remain prominent but subordinate. | **Resolved: A.** Approved by Steven, 2026-09-13. |
+| OD-03 / SPC-14 | Should the energy ribbon implement its documented placed-move refinement or should the docs be downgraded to track-only behavior? | Implement the hybrid curve from existing track and placed-move intensity data. | Amend the design system to make the track-only baseline canonical. | **A** — placed-move refinement makes the movement-first class shape real without a new schema. | **Resolved: A.** Approved by Steven, 2026-09-19. Implementation remains separately gated. |
 
 ## Implementation status
 
@@ -107,9 +109,10 @@ implementation direction but do not authorize an implementation slice by themsel
 | DESTRUCTIVE-CONTROLS (SPC-10) | Merged and deployed | [#417](https://github.com/steven-crosby/ritmofit-web/pull/417) — Worker `ad638215` (2026-09-17) |
 | PROVIDER-TRUTH (SPC-06, SPC-08) | Merged and deployed | [#418](https://github.com/steven-crosby/ritmofit-web/pull/418) — expired tone + icon-system marks. Worker `ad638215` (2026-09-17). SPC-09 stays owner-blocked. |
 | RESPONSIVE-QA (SPC-20) | Merged and deployed | [#419](https://github.com/steven-crosby/ritmofit-web/pull/419) — stale smoke locators, 390/320 overflow, 1280/953/680/390/320 + 200% zoom. Worker `ad638215` (2026-09-17) |
+| LIVE-RUN-OF-SHOW | Implemented locally; not submitted | 2026-09-19 StructClub minimum-parity slice: previous/next track controls plus a derived rolling choreography queue. The observed SoundCloud jump failure was isolated to one provider reference whose oEmbed lookup returns `404`; no coordinator patch. No commit, PR, merge, or deployment yet. |
 | Semantic color opacity modifiers | Merged and deployed | [#424](https://github.com/steven-crosby/ritmofit-web/pull/424) — not a Pulse Check slice; Worker `ad638215` (2026-09-17) |
 | LIVE-CONTROLS (SPC-19) | Merged and deployed | [#425](https://github.com/steven-crosby/ritmofit-web/pull/425) — disabled Live “Start class” uses native `disabled` plus the documented ~40% opacity. Worker `ad638215` (2026-09-17) |
-| ENERGY-RIBBON (SPC-14) | Owner-blocked | Implement-vs-docs call still required; not in the 2026-09-17 product batch |
+| ENERGY-RIBBON (SPC-14 / OD-03) | Direction approved; implementation pending | Implement the documented placed-move refinement from existing choreography data; no PR yet |
 | PROVIDER-TRUTH remaining (SPC-09) | Owner-blocked | Permission/provider-error still need a backend-signal design decision |
 | PROD-HYGIENE (SPC-21) | Runbook landed; live delete owner-pending | [#426](https://github.com/steven-crosby/ritmofit-web/pull/426) — convention and cleanup steps in [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); cited production fixture is not yet deleted |
 
@@ -130,9 +133,11 @@ keep the warm treatment is an open question for a separate, explicit decision, n
   (RESPONSIVE-QA), #424 (semantic color opacity modifiers), and #425 (LIVE-CONTROLS)
   are merged and deployed as Worker `ad638215` from main `4ddddeb` (2026-09-17).
   Production matches this tip.
-- ENERGY-RIBBON (SPC-14) and SPC-09 stay owner-blocked.
+- ENERGY-RIBBON (SPC-14 / OD-03) is resolved in favor of implementation; the code slice remains
+  separately gated. SPC-09 stays owner-blocked.
 - PROD-HYGIENE: runbook [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426);
   live fixture delete is still owner-pending.
 - No merge, deploy, production-data deletion, schema change, or provider-contract change is authorized
   by this ledger. SPC-09 still needs a backend-signal design decision before any permission /
-  provider-error UI. ENERGY-RIBBON still needs an owner implement-vs-docs call.
+  provider-error UI. ENERGY-RIBBON's direction is settled, but implementation still requires its own
+  scoped plan and execution gate.
