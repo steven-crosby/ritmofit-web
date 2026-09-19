@@ -2,16 +2,14 @@
 
 <!-- note (Codex, 2026-09-19): Captured the approved template-lane decisions, adversarial corrections, recipe review gate, and proposed expand-only data model before implementation. -->
 
-> **Status:** scaffold-domain implementation complete and locally verified on 2026-09-19. The owner
-> approved the plan, adversarial corrections, recipe content, and data model before application code and
-> migration work began. No push, PR, merge, remote migration, or deployment has been performed.
+> **Status:** PR A [#435](https://github.com/steven-crosby/ritmofit-web/pull/435) and PR B
+> [#436](https://github.com/steven-crosby/ritmofit-web/pull/436) shipped 2026-09-19. Remote D1
+> has `0019`. Production Worker `29a72e1c` from `b70ded1`. Later recipe/UI work should start
+> from current `main`, not the old planning branch.
 >
-> **Branch:** `cursor/class-template-planning-0756`
+> **Shipped from:** `main` at `b70ded1` (Worker `29a72e1c-0022-498f-b3ba-735a18c1985a`)
 >
-> **Baseline:** `main` at `d7df815`
->
-> **Dependencies:** builder PR
-> [#434](https://github.com/steven-crosby/ritmofit-web/pull/434) and Classes-home contract PR
+> **Still open:** Classes-home contract draft
 > [#433](https://github.com/steven-crosby/ritmofit-web/pull/433).
 
 This file is the tracked continuation point for deterministic class scaffolds. It replaces the prior
@@ -454,4 +452,6 @@ contract parity, and the production dependency audit. Because the intended OpenA
 uncommitted diff, the submission-only `git diff --exit-code` check was replaced locally with two
 regenerations and an unchanged SHA-256 hash; regeneration is idempotent.
 
-Remaining authority gates are separate: push/open PR A, merge, remote D1 migration, and deploy.
+PR A and PR B are merged and deployed. Remote D1 `0019` is applied. Layered
+timeline, drag/crop, ghosts, and Live run-payload expansion remain out of scope
+until separately approved.
