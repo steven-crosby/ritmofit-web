@@ -10,6 +10,40 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-19 (PR #429 — LIVE-RUN-OF-SHOW) — deployed (Worker
+> `3b39fac6-2c6e-420b-865b-ee67f9912c5c`).** Main HEAD `51a6ade` (docs #430 on the
+> same tip). Owner deployed ritmofit-web production from Mac. Carries the Live
+> run-of-show product PR plus the docs record already on this tip:
+>
+> - **PR #429 (LIVE-RUN-OF-SHOW):** explicit previous/next track controls and a
+>   read-only rolling choreography queue (current event plus the next three
+>   cues/moves). The observed SoundCloud manual-jump failure is isolated to one
+>   oEmbed-404 reference; no coordinator or adapter change.
+> - **PR #430:** docs record that #429 was on `main` before this deploy.
+>
+> No schema, migration, shared-contract, secret, or lockfile change. No remote D1
+> change. Rollback is Worker-only to prior live
+> `ad638215-6758-498c-8782-522e23a6d942` (2026-09-17 #417–#425). Remote D1: **no
+> migrations to apply** (checked before deploy). `BETA_ALLOWED_EMAILS` present
+> (name only). Full AGENTS.md gate was 12/12 PASS on this SHA locally before
+> deploy (format on tracked files; typecheck; lint; design verify; theme-classes;
+> unit tests; 151 integration tests; web build; OpenAPI no-drift; contract
+> parity; audit:ci).
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`,
+> `/api/v1/health` → `200`, protected `classes` / `explore` / `teams` → `401`,
+> all six security headers present (HSTS, CSP, Permissions-Policy,
+> Referrer-Policy, X-Content-Type-Options, X-Frame-Options), mounted
+> `/api/v1/shares`, Spotify search/playlists, and class tags/moves/cover →
+> `401`. Worker status confirmed 100% on `3b39fac6` via
+> `wrangler deployments status`. Built + served SPA entry
+> `assets/index-CL-T-XP_.js` (CSS `assets/index-BeDI8Azh.css`) — **three
+> consecutive** cache-busted fetches agreed on the first triple. Authenticated
+> Live Mode prev/next + queue click-through was not run from this session
+> (browser MCP unavailable). ENERGY-RIBBON direction remains approved;
+> implementation separately gated. SPC-09 remains owner-blocked. Live fixture
+> delete remains owner-pending.
+
 > **Session 2026-09-19 (PR #429 — LIVE-RUN-OF-SHOW) — merged, not deployed.** Main HEAD
 > `451964c`. Squash-merged to `main`; production remains Worker
 > `ad638215-6758-498c-8782-522e23a6d942` from the 2026-09-17 #417–#425 batch

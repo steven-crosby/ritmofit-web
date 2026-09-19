@@ -109,7 +109,7 @@ implementation direction but do not authorize an implementation slice by themsel
 | DESTRUCTIVE-CONTROLS (SPC-10) | Merged and deployed | [#417](https://github.com/steven-crosby/ritmofit-web/pull/417) — Worker `ad638215` (2026-09-17) |
 | PROVIDER-TRUTH (SPC-06, SPC-08) | Merged and deployed | [#418](https://github.com/steven-crosby/ritmofit-web/pull/418) — expired tone + icon-system marks. Worker `ad638215` (2026-09-17). SPC-09 stays owner-blocked. |
 | RESPONSIVE-QA (SPC-20) | Merged and deployed | [#419](https://github.com/steven-crosby/ritmofit-web/pull/419) — stale smoke locators, 390/320 overflow, 1280/953/680/390/320 + 200% zoom. Worker `ad638215` (2026-09-17) |
-| LIVE-RUN-OF-SHOW | On `main`; not deployed | [#429](https://github.com/steven-crosby/ritmofit-web/pull/429) — 2026-09-19 StructClub minimum-parity slice: previous/next track controls plus a derived rolling choreography queue. The observed SoundCloud jump failure was isolated to one provider reference whose oEmbed lookup returns `404`; no coordinator patch. Merge `451964c`; production remains Worker `ad638215`. |
+| LIVE-RUN-OF-SHOW | Merged and deployed | [#429](https://github.com/steven-crosby/ritmofit-web/pull/429) — 2026-09-19 StructClub minimum-parity slice: previous/next track controls plus a derived rolling choreography queue. The observed SoundCloud jump failure was isolated to one provider reference whose oEmbed lookup returns `404`; no coordinator patch. Worker `3b39fac6` from main `51a6ade`. |
 | Semantic color opacity modifiers | Merged and deployed | [#424](https://github.com/steven-crosby/ritmofit-web/pull/424) — not a Pulse Check slice; Worker `ad638215` (2026-09-17) |
 | LIVE-CONTROLS (SPC-19) | Merged and deployed | [#425](https://github.com/steven-crosby/ritmofit-web/pull/425) — disabled Live “Start class” uses native `disabled` plus the documented ~40% opacity. Worker `ad638215` (2026-09-17) |
 | ENERGY-RIBBON (SPC-14 / OD-03) | Direction approved; implementation pending | Implement the documented placed-move refinement from existing choreography data; no PR yet |
@@ -132,8 +132,9 @@ keep the warm treatment is an open question for a separate, explicit decision, n
 - PRs #417 (DESTRUCTIVE-CONTROLS), #418 (PROVIDER-TRUTH SPC-06 / SPC-08), #419
   (RESPONSIVE-QA), #424 (semantic color opacity modifiers), and #425 (LIVE-CONTROLS)
   are merged and deployed as Worker `ad638215` from main `4ddddeb` (2026-09-17).
-  Production remains this Worker.
-- PR #429 (LIVE-RUN-OF-SHOW) is on `main` (`451964c`) and is not deployed.
+  Production remains this Worker until the 2026-09-19 #429 deploy.
+- PR #429 (LIVE-RUN-OF-SHOW) is merged and deployed as Worker `3b39fac6` from main
+  `51a6ade` (2026-09-19). Production matches this tip.
 - ENERGY-RIBBON (SPC-14 / OD-03) is resolved in favor of implementation; the code slice remains
   separately gated. SPC-09 stays owner-blocked.
 - PROD-HYGIENE: runbook [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426);
