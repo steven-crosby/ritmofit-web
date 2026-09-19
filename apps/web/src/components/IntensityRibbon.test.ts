@@ -176,3 +176,86 @@ describe('computeRibbonShape (alive at rest)', () => {
     expect(shape.segments).toHaveLength(2);
   });
 });
+
+describe('computeRibbonSegments (placed-move refinement)', () => {
+  function withMove(base: Entry, intensity: Intensity, anchorMs: number): Entry {
+    return {
+      ...base,
+      moves: [
+        {
+          id: '20000000-0000-0000-0000-000000000001',
+          anchorMs,
+          intensity,
+          name: 'Sprint',
+          beat: null,
+          bar: null,
+        },
+      ],
+    };
+  }
+
+  it('keeps a track with no scored moves as one baseline block', () => {
+    const segs = computeRibbonSegments([entry('mod', 1000)], 1000);
+    expect(segs).toHaveLength(1);
+    expect(segs[0]).toMatchObject({ intensity: 'mod', x: 0, width: 1000 });
+  });
+
+  it('splits a track at a mid-track scored move (baseline, then hold)', () => {
+    const segs = computeRibbonSegments([withMove(entry('mod', 4000), 'hard', 1000)], 4000);
+    expect(segs.map((s) => s.intensity)).toEqual(['mod', 'hard']);
+    expect(segs.map((s) => s.width)).toEqual([250, 750]);
+    expect(segs.map((s) => s.x)).toEqual([0, 250]);
+    expect(segs.every((s) => s.classTrackId === '00000000-0000-0000-0000-000000000000')).toBe(true);
+  });
+
+  it('lets one track rise and fall without changing neighboring tracks', () => {
+    const segs = computeRibbonSegments(
+      [withMove(entry('easy', 2000, 0, 0), 'all_out', 1000), entry('mod', 2000, 1, 2000)],
+      4000,
+    );
+    expect(segs.map((s) => s.intensity)).toEqual(['easy', 'all_out', 'mod']);
+    expect(segs[2]).toMatchObject({ intensity: 'mod', x: 500, width: 500 });
+  });
+});
+
+describe('computeRibbonShape (placed-move refinement)', () => {
+  it('leaves provisional auto-shape when every track matches and moves are unscored', () => {
+    const tracks = [entry('mod', 1000, 0, 0), entry('mod', 1000, 1, 1000)].map((t) => ({
+      ...t,
+      moves: [
+        {
+          id: '20000000-0000-0000-0000-000000000001',
+          anchorMs: 0,
+          intensity: null,
+          name: 'Jog',
+          beat: null,
+          bar: null,
+        },
+      ],
+    }));
+    const shape = computeRibbonShape(tracks, 2000);
+    expect(shape.provisional).toBe(true);
+  });
+
+  it('treats a scored placed move as authored even when every track zone matches', () => {
+    const tracks = [
+      entry('mod', 1000, 0, 0),
+      {
+        ...entry('mod', 1000, 1, 1000),
+        moves: [
+          {
+            id: '20000000-0000-0000-0000-000000000001',
+            anchorMs: 500,
+            intensity: 'hard' as const,
+            name: 'Sprint',
+            beat: null,
+            bar: null,
+          },
+        ],
+      },
+    ];
+    const shape = computeRibbonShape(tracks, 2000);
+    expect(shape.provisional).toBe(false);
+    expect(shape.segments.map((s) => s.intensity)).toEqual(['mod', 'mod', 'hard']);
+  });
+});

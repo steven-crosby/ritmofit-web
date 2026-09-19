@@ -34,8 +34,8 @@ batches shipped as Worker `5d659102` (#420/#422, recorded in #423) and Worker
 
 SPC-19 is now merged and deployed with Worker `ad638215`. Live slice status is in
 Implementation status. SPC-09 remains owner-blocked. ENERGY-RIBBON (SPC-14) is
-owner-resolved in favor of implementing the documented placed-move refinement; implementation
-remains pending. PROD-HYGIENE runbook is #426; live fixture delete is still owner-pending.
+implemented locally (hybrid placed-move refinement; not submitted). PROD-HYGIENE
+runbook is #426; live fixture delete is still owner-pending.
 
 The two findings originally flagged as out-of-scope and not independently re-verified were checked
 before disposition. SPC-05 is a real docs-versus-code conflict. SPC-10 is a real destructive-control
@@ -112,7 +112,7 @@ implementation direction but do not authorize an implementation slice by themsel
 | LIVE-RUN-OF-SHOW | Merged and deployed | [#429](https://github.com/steven-crosby/ritmofit-web/pull/429) — 2026-09-19 StructClub minimum-parity slice: previous/next track controls plus a derived rolling choreography queue. The observed SoundCloud jump failure was isolated to one provider reference whose oEmbed lookup returns `404`; no coordinator patch. Worker `3b39fac6` from main `51a6ade`. |
 | Semantic color opacity modifiers | Merged and deployed | [#424](https://github.com/steven-crosby/ritmofit-web/pull/424) — not a Pulse Check slice; Worker `ad638215` (2026-09-17) |
 | LIVE-CONTROLS (SPC-19) | Merged and deployed | [#425](https://github.com/steven-crosby/ritmofit-web/pull/425) — disabled Live “Start class” uses native `disabled` plus the documented ~40% opacity. Worker `ad638215` (2026-09-17) |
-| ENERGY-RIBBON (SPC-14 / OD-03) | Direction approved; implementation pending | Implement the documented placed-move refinement from existing choreography data; no PR yet |
+| ENERGY-RIBBON (SPC-14 / OD-03) | Implemented locally; not submitted | Hybrid ribbon from existing track + placed-move intensity (`anchorMs` holds to the next scored move or track end). ClassPulse shares the same spans. No schema change. Segment banding still deferred. |
 | PROVIDER-TRUTH remaining (SPC-09) | Owner-blocked | Permission/provider-error still need a backend-signal design decision |
 | PROD-HYGIENE (SPC-21) | Runbook landed; live delete owner-pending | [#426](https://github.com/steven-crosby/ritmofit-web/pull/426) — convention and cleanup steps in [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); cited production fixture is not yet deleted |
 
@@ -135,11 +135,10 @@ keep the warm treatment is an open question for a separate, explicit decision, n
   Production remains this Worker until the 2026-09-19 #429 deploy.
 - PR #429 (LIVE-RUN-OF-SHOW) is merged and deployed as Worker `3b39fac6` from main
   `51a6ade` (2026-09-19). Production matches this tip.
-- ENERGY-RIBBON (SPC-14 / OD-03) is resolved in favor of implementation; the code slice remains
-  separately gated. SPC-09 stays owner-blocked.
+- ENERGY-RIBBON (SPC-14 / OD-03) is implemented locally (hybrid placed-move
+  refinement; not submitted). SPC-09 stays owner-blocked.
 - PROD-HYGIENE: runbook [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426);
   live fixture delete is still owner-pending.
 - No merge, deploy, production-data deletion, schema change, or provider-contract change is authorized
   by this ledger. SPC-09 still needs a backend-signal design decision before any permission /
-  provider-error UI. ENERGY-RIBBON's direction is settled, but implementation still requires its own
-  scoped plan and execution gate.
+  provider-error UI. ENERGY-RIBBON still requires its own PR, merge, and deploy gates.

@@ -42,10 +42,9 @@ Pilates, and HIIT.
   was isolated to one unembeddable reference (oEmbed 404); no coordinator patch.
   No schema, migration, shared-contract, secret, or lockfile change; no remote D1
   change. Rollback is Worker-only to `ad638215`. SPC-09 remains owner-blocked.
-  ENERGY-RIBBON's direction is resolved: Steven approved implementing the
-  documented placed-move refinement on 2026-09-19; the code slice is the next
-  product gate. PROD-HYGIENE runbook is in #426; live fixture delete is still
-  owner-pending.
+  ENERGY-RIBBON (SPC-14) is implemented locally (hybrid placed-move refinement;
+  not yet submitted). PROD-HYGIENE runbook is in #426; live fixture delete is
+  still owner-pending.
   Full disposition lives in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
   **Prior Pulse Check deploys:** batch 2 PRs #420, #422 — Worker
@@ -302,8 +301,8 @@ group-and-demote in the move library). All six implementation slices **already l
 migration, shared-contract, secret, or lockfile change; no remote D1 change.
 Rollback is Worker-only to `ad638215`. The alerting half of liveness remains an
 owner decision; F-02 (D11 `createPattern`) stays unconfirmed. Inbox still holds
-the class-cover taste decision; leave it. ENERGY-RIBBON is the next product
-slice.
+the class-cover taste decision; leave it. ENERGY-RIBBON is implemented locally
+and not yet submitted.
 
 - **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
 - **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
@@ -384,10 +383,11 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   announce validation and inline confirmations in
   [PR #422](https://github.com/steven-crosby/ritmofit-web/pull/422); deployed as Worker
   `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
-- **ENERGY-RIBBON (SPC-14) — direction approved, implementation pending:** implement the
-  documented hybrid ribbon: track intensity supplies the baseline and placed-move intensity refines
-  the curve at its anchors. Steven approved implementation over downgrading the docs on 2026-09-19;
-  the code slice still requires its own plan and implementation gate.
+- **ENERGY-RIBBON (SPC-14) — implemented locally; submission pending:** documented hybrid
+  ribbon — track intensity is the staircase baseline; placed-move intensity at `anchorMs` holds
+  until the next scored move or the track end. ClassPulse uses the same spans. No schema
+  change. Segment banding stays deferred. A scored placed move takes the class out of
+  provisional auto-shape. Steven approved the direction on 2026-09-19.
 - **LIVE-RUNTIME (SPC-16, 18) — ✅ shipped:** coalesce drag seeking and isolate animation-frame
   rendering without changing provider-authoritative playback/liveness behavior in
   [PR #420](https://github.com/steven-crosby/ritmofit-web/pull/420); deployed as Worker

@@ -9,23 +9,26 @@
  * pulse is rationed to Live + the currently-playing row and never appears here,
  * so this is the reduced-motion-safe way to read class shape (§6).
  *
- * Baseline ("staircase") version — one zone per track from `class_track.intensity`,
- * derived entirely from data already in the run-payload (no new schema). Intra-track
- * refinement from placed-move intensity, and segment banding, are deliberately
- * deferred (see the design docs).
+ * Hybrid staircase (`10-rhythm-system.md` §4): one zone per track from
+ * `class_track.intensity`, refined inside a track by placed-move intensity at
+ * `anchorMs` (hold until the next scored move or the track end). Segment banding
+ * stays deferred. No new schema.
  *
  * **Alive at rest** (design system principle 8; `05-components.md` §Provisional):
  * a class with tracks never shows a dead flat slab just because the instructor
  * hasn't authored a zone yet. When every track carries the same stored intensity
- * (an unshaped class), the ribbon draws a *derived provisional* warm-up → build →
- * peak → release arc from track order and length, marked with the provisional-state
- * contract (caution channel + glyph + `auto` label + the shape itself). Editing any
- * one track's intensity differentiates the class and flips the ribbon to the
- * authored shape. Derive, never invent: position/length only, no new schema.
+ * and no placed move is scored, the ribbon draws a *derived provisional*
+ * warm-up → build → peak → release arc from track order and length, marked with
+ * the provisional-state contract. Differentiating a track zone *or* scoring a
+ * placed move flips the ribbon to the authored shape.
  */
 import { type Intensity, type RunPayload } from '@ritmofit/shared';
 import { INTENSITY_LABEL } from './IntensityReadout.js';
-import { deriveProvisionalIntensity, isUnshapedSequence } from '../lib/energy-arc.js';
+import {
+  deriveProvisionalIntensity,
+  isUnshapedClass,
+  refineTrackSpans,
+} from '../lib/energy-arc.js';
 
 // Re-exported: the derivation moved to `lib/energy-arc.ts` so the ClassPulse shares
 // it (one class, one shape). Callers and tests that reached for it here still work.
@@ -66,13 +69,18 @@ export type RibbonShape = {
 
 type Entry = RunPayload['tracks'][number];
 
-/** Place + size one track's block for a given (authored or derived) intensity. */
-function segmentFor(entry: Entry, intensity: Intensity, totalDurationMs: number): RibbonSegment {
-  const dur = entry.track.durationMs ?? 0;
-  const x = ((entry.startOffsetMs ?? 0) / totalDurationMs) * VB_W;
-  const width = (dur / totalDurationMs) * VB_W;
+/** Place + size one hold (track baseline or move refinement) on the class timeline. */
+function segmentFor(
+  classTrackId: string,
+  startOffsetMs: number,
+  durationMs: number,
+  intensity: Intensity,
+  totalDurationMs: number,
+): RibbonSegment {
+  const x = (startOffsetMs / totalDurationMs) * VB_W;
+  const width = (durationMs / totalDurationMs) * VB_W;
   const top = VB_H - ZONE_HEIGHT[intensity] * VB_H;
-  return { x, width, top, intensity, classTrackId: entry.classTrackId };
+  return { x, width, top, intensity, classTrackId };
 }
 
 /**
@@ -89,8 +97,20 @@ export function computeRibbonSegments(
   if (totalDurationMs <= 0) return [];
   const segments: RibbonSegment[] = [];
   for (const t of tracks) {
-    if ((t.track.durationMs ?? 0) <= 0) continue;
-    segments.push(segmentFor(t, t.intensity, totalDurationMs));
+    const dur = t.track.durationMs ?? 0;
+    if (dur <= 0) continue;
+    const trackStart = t.startOffsetMs ?? 0;
+    for (const span of refineTrackSpans(t.classTrackId, dur, t.intensity, t.moves)) {
+      segments.push(
+        segmentFor(
+          t.classTrackId,
+          trackStart + span.startMs,
+          span.durationMs,
+          span.intensity,
+          totalDurationMs,
+        ),
+      );
+    }
   }
   return segments;
 }
@@ -103,7 +123,7 @@ function midpointFraction(entry: Entry, totalDurationMs: number): number {
 
 /** See `lib/energy-arc.ts` — shared with the ClassPulse so both derive one shape. */
 const isUnshaped = (drawable: Entry[]): boolean =>
-  isUnshapedSequence(drawable.map((t) => t.intensity));
+  isUnshapedClass(drawable.map((t) => ({ intensity: t.intensity, moves: t.moves })));
 
 /**
  * The ribbon's drawable shape. Authored intensities win; but when the class is
@@ -121,7 +141,9 @@ export function computeRibbonShape(
   }
   const segments = drawable.map((t) =>
     segmentFor(
-      t,
+      t.classTrackId,
+      t.startOffsetMs ?? 0,
+      t.track.durationMs ?? 0,
       deriveProvisionalIntensity(midpointFraction(t, totalDurationMs)),
       totalDurationMs,
     ),
