@@ -9,6 +9,12 @@
 >
 > Companion visual: [`classes-home-redesign-mockup.html`](./classes-home-redesign-mockup.html) — a static,
 > framework-free render of the proposed page using the real design tokens and fonts. Open it in a browser.
+>
+> **Superseded in part.** An owner review on 2026-09-19 reframed the target around two first-session
+> instructors and settled several decisions that this document predates — including the primary action.
+> Read [`class-scaffold-contract.md`](./class-scaffold-contract.md) first; where the two disagree, the
+> contract wins. This page is revised against that contract and against
+> [#434](https://github.com/steven-crosby/ritmofit-web/pull/434) before any slice is built.
 
 **Surface:** the authenticated landing page — `destination === 'classes'` with no class open. There is no
 `/classes` URL; `App.tsx` renders `Dashboard` at `/` and `Dashboard` defaults `destination` to `'classes'`.
