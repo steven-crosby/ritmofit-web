@@ -182,6 +182,7 @@ function installLocalStorage() {
 
 beforeEach(() => {
   installLocalStorage();
+  vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -223,7 +224,7 @@ describe('Dashboard class library states', () => {
     const shelf = await screen.findByRole('heading', {
       name: 'Pick up where the energy left off.',
     });
-    const creator = screen.getByLabelText('New class title');
+    const creator = screen.getByRole('button', { name: 'New class' });
     // The library must not be "a large preamble before the work" (canon 09): on a
     // phone this is one column, so document order is what the instructor scrolls.
     expect(shelf.compareDocumentPosition(creator) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -241,17 +242,43 @@ describe('Dashboard class library states', () => {
       const disclosure = await screen.findByText('New class, filters, and search');
       expect(disclosure.closest('details')).toHaveProperty('open', false);
 
-      // Creation stays one click away from the resting state, and reaching it must
-      // expand the disclosure first — focusing an input inside a closed `<details>`
-      // silently does nothing.
+      // Creation stays one click away from the resting state. The isolated dialog
+      // owns focus, so a closed rail disclosure cannot swallow the title field.
       fireEvent.click(screen.getByRole('button', { name: /Start Cycle, Pilates, or HIIT/ }));
       await waitFor(() =>
-        expect(document.activeElement).toBe(screen.getByLabelText('New class title')),
+        expect(document.activeElement).toBe(screen.getByLabelText('Class title')),
       );
-      expect(disclosure.closest('details')).toHaveProperty('open', true);
+      expect(screen.getByRole('dialog', { name: 'Create a class' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '45 min' }).getAttribute('aria-pressed')).toBe(
+        'true',
+      );
     } finally {
       window.matchMedia = realMatchMedia;
     }
+  });
+
+  it('creates a scaffold class from the isolated dialog', async () => {
+    const created = makeClass('Saturday ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.createClass).mockResolvedValue(
+      created as Awaited<ReturnType<typeof api.createClass>>,
+    );
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'New class' }));
+    fireEvent.change(screen.getByLabelText('Class title'), { target: { value: 'Saturday ride' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create class' }));
+
+    await waitFor(() =>
+      expect(api.createClass).toHaveBeenCalledWith({
+        mode: 'scaffold',
+        title: 'Saturday ride',
+        recipeId: 'cycle_45_v1',
+      }),
+    );
   });
 
   it('folds the rail’s create/filter controls away once a class is open', async () => {

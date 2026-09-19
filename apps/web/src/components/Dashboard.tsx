@@ -116,6 +116,8 @@ import { IntensityReadout } from './IntensityReadout.js';
 import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 import { ClassReadinessSummary } from './ClassReadinessSummary.js';
 import { TrackSearch } from './TrackSearch.js';
+import { CreateClassDialog } from './CreateClassDialog.js';
+import { ClassPlanBlocks } from './ClassPlanBlocks.js';
 import { SourceList, sourceCandidateKey } from './SourceList.js';
 import {
   consumeOnboardingVideoPending,
@@ -247,17 +249,11 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
    * sticky column and costs the centre nothing.
    */
   const [creatorOpen, setCreatorOpen] = useState(prefersWideWorkstation);
-  const [creatorFocusRequest, setCreatorFocusRequest] = useState(0);
-  // Opening the disclosure is a render, so the focus has to wait for the commit —
-  // focusing an element inside a closed `<details>` is silently a no-op.
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const focusClassCreator = useCallback(() => {
     setCreatorOpen(true);
-    setCreatorFocusRequest((request) => request + 1);
+    setCreateDialogOpen(true);
   }, []);
-  useEffect(() => {
-    if (creatorFocusRequest === 0) return;
-    document.getElementById('new-class-title')?.focus();
-  }, [creatorFocusRequest]);
 
   // Merge a page's tags into the known-tags set (only an unfiltered page widens
   // it; a filtered page only re-adds the active tag, which is harmless).
@@ -690,6 +686,16 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             }}
           />
         )}
+        {createDialogOpen && (
+          <CreateClassDialog
+            onClose={() => setCreateDialogOpen(false)}
+            onError={setError}
+            onCreated={async (cls) => {
+              await applyTagFilter(null);
+              await openClass({ ...cls, accessLevel: 'owner' });
+            }}
+          />
+        )}
         {playlistBrowse && (
           <PlaylistBrowserDialog
             provider={playlistBrowse.provider}
@@ -802,11 +808,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               activeTag={activeTag}
               onSelectTag={applyTagFilter}
               onError={setError}
-              onCreate={async (cls) => {
-                // A new class is untagged — clear any active filter so it's visible.
-                await applyTagFilter(null);
-                await openClass({ ...cls, accessLevel: 'owner' });
-              }}
+              onStartClass={focusClassCreator}
               onDuplicate={async (cls) => {
                 // Duplicate an owned class into the library, then refresh so the
                 // new class appears and open it for immediate editing.
@@ -988,7 +990,7 @@ export function LibraryRail({
   onCreatorOpenChange,
   onSelectTag,
   onError,
-  onCreate,
+  onStartClass,
   onDuplicate,
   onPreview,
   onOpen,
@@ -1012,7 +1014,7 @@ export function LibraryRail({
   /** Apply (or clear, with null) the server-side tag filter; reloads from page 1. */
   onSelectTag: (tag: string | null) => void;
   onError: (msg: string | null) => void;
-  onCreate: (cls: Awaited<ReturnType<typeof createClass>>) => void;
+  onStartClass: () => void;
   /** Duplicate an owned class into the library (resolves when done). */
   onDuplicate: (cls: ClassListItem) => Promise<void>;
   /** Open a read-only preview of the class (without entering the builder). */
@@ -1072,7 +1074,13 @@ export function LibraryRail({
           </span>
         </summary>
         <div className="flex flex-col gap-3 border-t border-border-subtle p-3">
-          <CreateClassForm onCreated={onCreate} onError={onError} />
+          <button
+            type="button"
+            onClick={onStartClass}
+            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+          >
+            New class
+          </button>
           {showTagFilter && (
             <TagFilter knownTags={knownTags} activeTag={activeTag} onSelectTag={onSelectTag} />
           )}
@@ -1451,91 +1459,6 @@ const CREATE_TEMPLATE_OPTIONS: ReadonlyArray<{ value: ClassTemplate | null; labe
   { value: 'sculpt', label: 'Pilates' },
   { value: 'hiit', label: 'HIIT' },
 ];
-
-function CreateClassForm({
-  onCreated,
-  onError,
-}: {
-  onCreated: (cls: Awaited<ReturnType<typeof createClass>>) => void;
-  onError: (msg: string | null) => void;
-}) {
-  const [title, setTitle] = useState('');
-  const [template, setTemplate] = useState<ClassTemplate | null>(null);
-  const { busy, run } = useAsyncAction(onError);
-  const canCreate = title.trim().length > 0 && template != null && !busy;
-  return (
-    <form
-      className="flex flex-col gap-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!title.trim() || template == null) return;
-        void run(async () => {
-          const cls = await createClass({ title: title.trim(), template });
-          setTitle('');
-          setTemplate(null);
-          onCreated(cls);
-        });
-      }}
-    >
-      <div className="flex min-w-0 gap-2">
-        <input
-          id="new-class-title"
-          className="min-h-11 min-w-0 flex-1 rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary sm:rounded-pill sm:px-4 sm:text-base"
-          placeholder="New class title"
-          aria-label="New class title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <button
-          disabled={!canCreate}
-          className="min-h-11 shrink-0 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50 sm:rounded-pill sm:px-4 sm:text-base"
-        >
-          {busy ? '…' : 'Add'}
-        </button>
-      </div>
-      {/* D21 create path: a new blank class must pick Cycle, Pilates, or HIIT. */}
-      <div
-        role="group"
-        aria-label="Class template required"
-        className="flex gap-1.5 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
-      >
-        {CREATE_TEMPLATE_OPTIONS.map(({ value, label }) => {
-          const selected = template === value;
-          return (
-            <button
-              key={label}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => setTemplate(value)}
-              className={`min-h-11 shrink-0 rounded-control border px-2.5 font-ui text-xs sm:min-h-8 sm:rounded-pill ${
-                selected
-                  ? 'border-interactive bg-interactive/15 text-text-primary'
-                  : 'border-interactive/30 text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-      {/* The creative path reads in instructor language. The stored-enum fact is
-          true and worth being able to find, so it moves into a disclosure rather
-          than being deleted (P2-02). */}
-      <p className="font-ui text-[11px] leading-4 text-text-tertiary">
-        Choose a discipline to start.
-      </p>
-      <details className="font-ui text-[11px] leading-4 text-text-tertiary">
-        <summary className="min-h-11 cursor-pointer py-3 rf-focus-ring sm:min-h-0 sm:py-0">
-          How disciplines are stored
-        </summary>
-        <p className="mt-1 leading-4">
-          Pilates classes are stored under Ritmo’s Sculpt contract. The name you see and teach stays
-          Pilates.
-        </p>
-      </details>
-    </form>
-  );
-}
 
 function retainConnectedProviderState<T>(
   state: Partial<Record<Provider, T>>,
@@ -3677,6 +3600,7 @@ function ClassWorkspace({
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
+  const [assigningPlanBlockId, setAssigningPlanBlockId] = useState<string | null>(null);
   // A cue/move marker click also asks the inspector to focus that row. The `nonce`
   // bumps on every marker click so re-clicking the same marker re-flashes.
   const [markerFocus, setMarkerFocus] = useState<{
@@ -3792,10 +3716,15 @@ function ClassWorkspace({
   }, [sourceOpen]);
 
   const focusTrackSources = () => setSourceOpen(true);
+  const chooseMusicForBlock = (planBlockId: string) => {
+    setAssigningPlanBlockId(planBlockId);
+    setSourceOpen(true);
+  };
 
   const toggleTrackSources = () => {
     if (sourceOpen) {
       setSourceOpen(false);
+      setAssigningPlanBlockId(null);
       requestAnimationFrame(() => trackSourceToggleRef.current?.focus());
       return;
     }
@@ -3911,6 +3840,16 @@ function ClassWorkspace({
           </Suspense>
         )}
 
+        <ClassPlanBlocks
+          classId={cls.id}
+          tracks={tracks}
+          payload={payload}
+          canEdit={canEdit}
+          assigningPlanBlockId={assigningPlanBlockId}
+          onChooseMusic={chooseMusicForBlock}
+          onSelectTrack={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
+        />
+
         <div
           ref={trackListRef}
           className="flex flex-col gap-2 rounded-card bg-bg-raised p-4 shadow-card"
@@ -3946,7 +3885,7 @@ function ClassWorkspace({
               )}
             </div>
           </div>
-          {tracks.length === 0 && (
+          {tracks.length === 0 && cls.scaffoldRecipeId == null && (
             <div className="rounded-card border border-border-subtle bg-bg-sunken p-4">
               <StatusLabel kind="empty" label="Empty run of show" />
               {/* This promised a ranking the layout does not provide — the four
@@ -4014,12 +3953,22 @@ function ClassWorkspace({
             id={sourcePanelId}
             ref={trackSourceRef}
             role="region"
-            aria-label={`Add music to ${cls.title}`}
+            aria-label={
+              assigningPlanBlockId
+                ? `Choose music for the selected plan block in ${cls.title}`
+                : `Add music to ${cls.title}`
+            }
             hidden={!sourceOpen}
             className="rounded-card border border-border-subtle bg-bg-sunken p-3 outline-none rf-focus-ring"
           >
+            {assigningPlanBlockId && (
+              <p className="mb-2 font-ui text-xs text-text-secondary">
+                New songs will join the selected teaching block.
+              </p>
+            )}
             <TrackSearch
               classId={cls.id}
+              planBlockId={assigningPlanBlockId}
               onAdded={(id) => {
                 if (id) {
                   setSelectedTrackId(id);
@@ -4038,6 +3987,7 @@ function ClassWorkspace({
               </summary>
               <AddTrackForm
                 classId={cls.id}
+                planBlockId={assigningPlanBlockId}
                 onAdded={(id) => {
                   if (id) {
                     setSelectedTrackId(id);
@@ -5430,10 +5380,12 @@ function TrackInspector({
 
 function AddTrackForm({
   classId,
+  planBlockId = null,
   onAdded,
   onError,
 }: {
   classId: string;
+  planBlockId?: string | null;
   onAdded: (classTrackId?: string) => void;
   onError: (msg: string | null) => void;
 }) {
@@ -5463,6 +5415,7 @@ function AddTrackForm({
               durationMs: parsedDuration,
             },
             intensity,
+            ...(planBlockId ? { planBlockId } : {}),
           });
           setTitle('');
           setArtist('');

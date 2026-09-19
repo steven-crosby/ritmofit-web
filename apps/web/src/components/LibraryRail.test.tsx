@@ -59,6 +59,7 @@ function renderRail(
     onOpen?: (cls: ClassListItem) => void;
     onRetry?: () => void;
     creatorOpen?: boolean;
+    onStartClass?: () => void;
   } = {},
 ) {
   const onLoadMore = vi.fn();
@@ -76,7 +77,7 @@ function renderRail(
       onCreatorOpenChange={() => {}}
       onSelectTag={options.onSelectTag ?? (() => {})}
       onError={() => {}}
-      onCreate={() => {}}
+      onStartClass={options.onStartClass ?? (() => {})}
       onDuplicate={options.onDuplicate ?? (() => Promise.resolve())}
       onPreview={options.onPreview ?? (() => {})}
       onOpen={options.onOpen ?? (() => {})}
@@ -339,22 +340,13 @@ describe('LibraryRail card summary', () => {
 });
 
 describe('LibraryRail create-class chooser', () => {
-  it('offers only the D21 templates and requires a selection', () => {
-    renderRail();
+  it('opens the isolated create dialog instead of inlining the form', () => {
+    const onStartClass = vi.fn();
+    renderRail({ onStartClass });
     expect(screen.queryByRole('button', { name: 'Blank' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Sculpt' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Tread' })).toBeNull();
-
-    const cycle = screen.getByRole('button', { name: 'Cycle' });
-    const pilates = screen.getByRole('button', { name: 'Pilates' });
-    const hiit = screen.getByRole('button', { name: 'HIIT' });
-    expect(cycle.getAttribute('aria-pressed')).toBe('false');
-    expect(pilates.getAttribute('aria-pressed')).toBe('false');
-    expect(hiit.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.getByRole('button', { name: 'Add' })).toHaveProperty('disabled', true);
-
-    fireEvent.click(hiit);
-    expect(hiit.getAttribute('aria-pressed')).toBe('true');
-    expect(cycle.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.queryByLabelText('New class title')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'New class' }));
+    expect(onStartClass).toHaveBeenCalledTimes(1);
   });
 });

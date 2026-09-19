@@ -147,9 +147,11 @@ export function classifyPlaylistDrillInError(
 
 export function TrackSearch({
   classId,
+  planBlockId = null,
   onAdded,
 }: {
   classId: string;
+  planBlockId?: string | null;
   onAdded: (classTrackId?: string) => void;
 }) {
   const [provider, setProvider] = useState<Provider>(DEFAULT_PROVIDER);
@@ -352,7 +354,11 @@ export function TrackSearch({
             if (newAdded.has(key)) return;
             try {
               const track = await importTrack(candidate.provider, candidate.providerTrackId);
-              await addTrack(classId, { trackId: track.id, intensity: 'mod' });
+              await addTrack(classId, {
+                trackId: track.id,
+                intensity: 'mod',
+                ...(planBlockId ? { planBlockId } : {}),
+              });
               newAdded.add(key);
               addedThisRun += 1;
             } catch {
@@ -377,7 +383,11 @@ export function TrackSearch({
     setError(null);
     try {
       const track = await importTrack(candidate.provider, candidate.providerTrackId);
-      const classTrack = await addTrack(classId, { trackId: track.id, intensity: 'mod' });
+      const classTrack = await addTrack(classId, {
+        trackId: track.id,
+        intensity: 'mod',
+        ...(planBlockId ? { planBlockId } : {}),
+      });
       setAddedKeys((prev) => new Set(prev).add(key));
       onAdded(classTrack.id);
     } catch (e) {

@@ -12,6 +12,8 @@ import type {
   ClassTrack,
   AddClassTrack,
   UpdateClassTrack,
+  ClassPlanBlock,
+  AssignClassTrackPlanBlock,
   Track,
   TrackSearchResult,
   TrackProviderId,
@@ -202,6 +204,15 @@ export const reorderTracks = (classId: string, classTrackIds: string[]) =>
   });
 export const getRunPayload = (classId: string) =>
   api<RunPayload>(`/classes/${classId}/run-payload`);
+
+/** Music-independent teaching plan for a class scaffold. */
+export const listClassPlanBlocks = (classId: string) =>
+  api<ClassPlanBlock[]>(`/classes/${classId}/plan-blocks`);
+export const assignClassTrackPlanBlock = (classTrackId: string, body: AssignClassTrackPlanBlock) =>
+  api<ClassTrack>(`/class-tracks/${classTrackId}/plan-block`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
 
 /** Same read-only projection, named separately so bounded Classes-shelf enrichment
  * remains an independently mockable consumer and cannot consume Builder/Live test
