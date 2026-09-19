@@ -152,7 +152,7 @@ export function ClassPulseView({
               ? `var(--rf-color-intensity-${segment.shapeEffort ?? segment.effort})`
               : `url(#${unscoredPatternId})`;
             return (
-              <g key={segment.classTrackId}>
+              <g key={`${segment.classTrackId}:${segment.startRatio}`}>
                 <rect
                   x={x}
                   y={96 - height}

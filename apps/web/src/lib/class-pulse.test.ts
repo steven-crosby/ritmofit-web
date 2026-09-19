@@ -135,4 +135,41 @@ describe('deriveClassPulse', () => {
     ]);
     expect(classPulseCoverageLabel(flat)).toMatch(/auto-shaped from track order and length/i);
   });
+
+  it('refines a track at a scored placed move and matches the ribbon hold', () => {
+    const model = deriveClassPulse([
+      input({
+        classTrackId: 'a',
+        order: 0,
+        durationMs: 40_000,
+        effort: 'easy',
+        moves: [{ anchorMs: 10_000, intensity: 'all_out' }],
+      }),
+      input({ classTrackId: 'b', order: 1, durationMs: 40_000, effort: 'mod' }),
+    ]);
+    expect(model.provisional).toBe(false);
+    expect(model.state).toBe('complete');
+    expect(model.coverage.drawableCount).toBe(2);
+    expect(model.segments.map((segment) => segment.shapeEffort)).toEqual([
+      'easy',
+      'all_out',
+      'mod',
+    ]);
+    expect(model.segments.map((segment) => segment.widthRatio)).toEqual([0.125, 0.375, 0.5]);
+  });
+
+  it('drops provisional auto-shape when the only authoring is a scored placed move', () => {
+    const model = deriveClassPulse([
+      input({ classTrackId: 'a', order: 0, effort: 'mod' }),
+      input({
+        classTrackId: 'b',
+        order: 1,
+        effort: 'mod',
+        moves: [{ anchorMs: 30_000, intensity: 'hard' }],
+      }),
+    ]);
+    expect(model.provisional).toBe(false);
+    expect(classPulseCoverageLabel(model)).not.toMatch(/auto-shaped/i);
+    expect(model.segments.some((segment) => segment.shapeEffort === 'hard')).toBe(true);
+  });
 });

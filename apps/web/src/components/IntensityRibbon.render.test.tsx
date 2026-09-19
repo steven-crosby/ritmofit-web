@@ -59,4 +59,34 @@ describe('IntensityRibbon — alive-at-rest provisional marking', () => {
     );
     expect(screen.queryByText('auto shape')).toBeNull();
   });
+
+  it('drops the badge when a scored placed move authors the shape', () => {
+    render(
+      <IntensityRibbon
+        payload={
+          {
+            class: { totalDurationMs: 360000 },
+            tracks: [
+              {
+                classTrackId: 'ct-0',
+                intensity: 'mod',
+                startOffsetMs: 0,
+                track: { title: 'Track 0', durationMs: 180000 },
+                moves: [],
+              },
+              {
+                classTrackId: 'ct-1',
+                intensity: 'mod',
+                startOffsetMs: 180000,
+                track: { title: 'Track 1', durationMs: 180000 },
+                moves: [{ id: 'm1', anchorMs: 60000, intensity: 'hard', name: 'Sprint' }],
+              },
+            ],
+          } as unknown as RunPayload
+        }
+      />,
+    );
+    expect(screen.queryByText('auto shape')).toBeNull();
+    expect(screen.getByRole('img').getAttribute('aria-label')).toContain('Attack');
+  });
 });

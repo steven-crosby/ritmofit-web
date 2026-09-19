@@ -1,8 +1,10 @@
 import type { Intensity, RunPayload } from '@ritmofit/shared';
 import {
   deriveProvisionalIntensity,
-  isUnshapedSequence,
+  isUnshapedClass,
   PROVISIONAL_ARC_CAPTION,
+  refineTrackSpans,
+  type PlacedMoveIntensity,
 } from './energy-arc.js';
 
 export type ClassPulseInput = {
@@ -10,6 +12,7 @@ export type ClassPulseInput = {
   order: number;
   durationMs: number | null;
   effort: Intensity | null;
+  moves?: readonly PlacedMoveIntensity[];
 };
 
 export type ClassPulseSegment = {
@@ -52,19 +55,18 @@ const SCORED_EFFORTS = new Set<Intensity>(['easy', 'mod', 'hard', 'all_out']);
 /**
  * Derive a Class Pulse from authored class structure only. Track order decides
  * sequence, valid positive durations decide width, and the stored class-track
- * effort decides height.
+ * effort plus placed-move intensity decide height (`10-rhythm-system.md` §4).
  *
  * One documented exception, and it is required rather than optional: when every
- * drawable track shares a single stored effort, the class is *unshaped* and the
- * height falls back to a derived warm-up → build → peak → release arc, flagged
- * `provisional` so the caller captions the assumption (`10-rhythm-system.md` §4 —
- * "alive at rest": a class with tracks never renders as a flat slab). The
- * derivation is shared with the `IntensityRibbon` via `lib/energy-arc.ts`, so both
- * views of a class agree on its shape.
+ * drawable track shares a single stored effort *and* no placed move is scored,
+ * the class is *unshaped* and the height falls back to a derived warm-up →
+ * build → peak → release arc, flagged `provisional` so the caller captions the
+ * assumption. The derivation is shared with the `IntensityRibbon` via
+ * `lib/energy-arc.ts`, so both views of a class agree on its shape.
  *
- * Everything else stays missing. Position and duration are the only inputs to the
- * derivation — never provider audio, and never a field that isn't already in the
- * run-payload.
+ * Everything else stays missing. Position, duration, track intensity, and
+ * placed-move intensity are the only inputs — never provider audio, and never a
+ * field that isn't already in the run-payload.
  */
 export function deriveClassPulse(inputs: readonly ClassPulseInput[]): ClassPulseModel {
   if (inputs.length === 0) {
@@ -118,39 +120,69 @@ export function deriveClassPulse(inputs: readonly ClassPulseInput[]): ClassPulse
           effortValid && effort != null && effort !== 'none'
             ? (effort as Exclude<Intensity, 'none'>)
             : null,
+        moves: input.moves ?? [],
       },
     ];
   });
 
   // An unshaped class carries one effort across every drawable track (unscored
   // counts as its own uniform value, so an entirely unscored class is unshaped
-  // too). A single differing zone means the instructor has authored a shape and
-  // the stored values win.
-  const provisional = isUnshapedSequence(drawable.map((segment) => segment.effort ?? 'none'));
+  // too) *and* has no scored placed-move intensity. A single differing zone or
+  // one scored placement means the instructor has authored a shape.
+  const provisional = isUnshapedClass(
+    drawable.map((segment) => ({
+      intensity: segment.effort ?? 'none',
+      moves: segment.moves,
+    })),
+  );
 
   const totalDurationMs = drawable.reduce((total, segment) => total + segment.durationMs, 0);
   let elapsedMs = 0;
-  const segments = drawable.map<ClassPulseSegment>((segment) => {
+  const segments = drawable.flatMap<ClassPulseSegment>((segment) => {
     const startRatio = elapsedMs / totalDurationMs;
     const widthRatio = segment.durationMs / totalDurationMs;
-    // The derived zone is keyed to the track's temporal midpoint, so a long track
-    // is placed on the arc by where it actually sits in the class rather than by
-    // its index — two classes with the same running order but different track
-    // lengths genuinely have different shapes.
     const derived = deriveProvisionalIntensity(startRatio + widthRatio / 2);
-    const result = {
-      classTrackId: segment.classTrackId,
-      startRatio,
-      widthRatio,
-      effort: segment.effort,
-      shapeEffort: provisional ? derived : segment.effort,
-    };
+
+    if (provisional) {
+      elapsedMs += segment.durationMs;
+      return [
+        {
+          classTrackId: segment.classTrackId,
+          startRatio,
+          widthRatio,
+          effort: segment.effort,
+          shapeEffort: derived,
+        },
+      ];
+    }
+
+    const spans = refineTrackSpans(
+      segment.classTrackId,
+      segment.durationMs,
+      segment.effort ?? 'none',
+      segment.moves,
+    );
+    const refined = spans.map<ClassPulseSegment>((span) => {
+      const effort =
+        span.intensity === 'none'
+          ? span.source === 'baseline'
+            ? segment.effort
+            : null
+          : (span.intensity as Exclude<Intensity, 'none'>);
+      return {
+        classTrackId: span.classTrackId,
+        startRatio: (elapsedMs + span.startMs) / totalDurationMs,
+        widthRatio: span.durationMs / totalDurationMs,
+        effort,
+        shapeEffort: effort,
+      };
+    });
     elapsedMs += segment.durationMs;
-    return result;
+    return refined;
   });
 
   const complete =
-    segments.length === inputs.length && scoredCount === inputs.length && invalidCount === 0;
+    drawable.length === inputs.length && scoredCount === inputs.length && invalidCount === 0;
 
   return {
     state: complete ? 'complete' : 'partial',
@@ -158,7 +190,7 @@ export function deriveClassPulse(inputs: readonly ClassPulseInput[]): ClassPulse
     segments,
     coverage: {
       trackCount: inputs.length,
-      drawableCount: segments.length,
+      drawableCount: drawable.length,
       scoredCount,
       missingDurationCount,
       unscoredCount,
@@ -174,6 +206,7 @@ export function classPulseFromPayload(payload: RunPayload): ClassPulseModel {
       order: Number.isFinite(entry.position) ? entry.position : index,
       durationMs: entry.track.durationMs,
       effort: entry.intensity,
+      moves: entry.moves,
     })),
   );
 }
