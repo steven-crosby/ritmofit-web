@@ -233,24 +233,12 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     tracks: TrackSearchResult[];
   } | null>(null);
   const [onboardingVideoOpen, setOnboardingVideoOpen] = useState(false);
-  // Presentational confirmation only. This set resets with the authenticated
-  // dashboard and is never written to storage or sent to the API.
-  const [confirmedPulseIds, setConfirmedPulseIds] = useState<Set<string>>(new Set());
   const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
     null,
   );
   const [error, setError] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<CollectionImportResult | null>(null);
   const [retryingImport, setRetryingImport] = useState(false);
-
-  const togglePulseConfirmation = useCallback((classId: string) => {
-    setConfirmedPulseIds((current) => {
-      const next = new Set(current);
-      if (next.has(classId)) next.delete(classId);
-      else next.add(classId);
-      return next;
-    });
-  }, []);
 
   /**
    * The rail's creation + filtering controls collapse behind one affordance so the
@@ -721,8 +709,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         {cardPreview && (
           <ClassSummaryView
             classId={cardPreview.id}
-            pulseConfirmed={confirmedPulseIds.has(cardPreview.id)}
-            onTogglePulseConfirmation={() => togglePulseConfirmation(cardPreview.id)}
             onClose={() => setCardPreview(null)}
             onOpenInBuilder={() => {
               const cls = cardPreview;
@@ -789,8 +775,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                   activeTag={activeTag}
                   status={listStatus}
                   libraryError={error}
-                  confirmedPulseIds={confirmedPulseIds}
-                  onTogglePulseConfirmation={togglePulseConfirmation}
                   onOpen={openClass}
                   onPreview={(cls) => setCardPreview(cls)}
                   onClearTag={() => void applyTagFilter(null)}
@@ -868,8 +852,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 onClassUpdated={applyClassUpdate}
                 onClassDeleted={handleClassDeleted}
                 onOpenSongsByMove={() => setSongsByMoveOpen(true)}
-                pulseConfirmed={confirmedPulseIds.has(selected.id)}
-                onTogglePulseConfirmation={() => togglePulseConfirmation(selected.id)}
                 onBackToClasses={() => {
                   setSelected(null);
                   dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
@@ -1755,8 +1737,6 @@ function WorkstationRestingState({
   activeTag,
   status,
   libraryError,
-  confirmedPulseIds,
-  onTogglePulseConfirmation,
   onOpen,
   onPreview,
   onClearTag,
@@ -1770,8 +1750,6 @@ function WorkstationRestingState({
   activeTag: string | null;
   status: ListStatus;
   libraryError: string | null;
-  confirmedPulseIds: ReadonlySet<string>;
-  onTogglePulseConfirmation: (classId: string) => void;
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
   onClearTag: () => void;
@@ -1784,15 +1762,7 @@ function WorkstationRestingState({
   const hasClasses = classes.length > 0;
 
   if (hasClasses) {
-    return (
-      <ClassRunOfShowShelf
-        classes={classes}
-        confirmedPulseIds={confirmedPulseIds}
-        onTogglePulseConfirmation={onTogglePulseConfirmation}
-        onOpen={onOpen}
-        onPreview={onPreview}
-      />
-    );
+    return <ClassRunOfShowShelf classes={classes} onOpen={onOpen} onPreview={onPreview} />;
   }
 
   if (status === 'loading') {
@@ -3676,8 +3646,6 @@ function ClassWorkspace({
   onClassUpdated,
   onClassDeleted,
   onOpenSongsByMove,
-  pulseConfirmed,
-  onTogglePulseConfirmation,
   onBackToClasses,
 }: {
   cls: ClassWithAccess;
@@ -3700,9 +3668,6 @@ function ClassWorkspace({
   onClassDeleted: (classId: string) => void;
   /** Open the Songs-by-Move dialog (the top-bar dialog, reused in the builder). */
   onOpenSongsByMove: () => void;
-  /** Presentational-only Class Pulse confirmation inherited from Slice 2. */
-  pulseConfirmed: boolean;
-  onTogglePulseConfirmation: () => void;
   /** Narrow-layout return path when the selected class is shown before the library. */
   onBackToClasses: () => void;
 }) {
@@ -3862,11 +3827,7 @@ function ClassWorkspace({
             the persistent class-shape instrument above the editable track score. */}
         {payload && payload.tracks.length > 0 && (
           <>
-            <ClassPulse
-              payload={payload}
-              confirmed={pulseConfirmed}
-              onConfirm={onTogglePulseConfirmation}
-            />
+            <ClassPulse payload={payload} />
             {timelineOpen && (
               <section
                 id={timelinePanelId}

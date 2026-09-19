@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
 import type { RunPayload } from '@ritmofit/shared';
 import { ClassPulse, ClassPulseView } from './ClassPulse.js';
 import { classPulseFromPayload } from '../lib/class-pulse.js';
@@ -68,24 +68,17 @@ describe('ClassPulse', () => {
     expect(screen.getByText(/z1 build/i)).toBeTruthy();
   });
 
-  it('offers explicit, controlled, presentational confirmation of an auto-shape', () => {
-    const onConfirm = vi.fn();
-    const { rerender } = render(<ClassPulse payload={unshapedPayload()} onConfirm={onConfirm} />);
-    fireEvent.click(screen.getByRole('button', { name: /auto-shape · mark reviewed/i }));
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-
-    rerender(<ClassPulse payload={unshapedPayload()} confirmed onConfirm={onConfirm} />);
-    expect(
-      screen.getByRole('button', { name: /auto-shape reviewed/i }).getAttribute('aria-pressed'),
-    ).toBe('true');
-  });
-
-  it('does not ask for confirmation of a shape the instructor scored', () => {
-    // The caution pill belongs to a guess. On an authored class it was a warning
-    // about the instructor's own scoring.
-    render(<ClassPulse payload={payload()} onConfirm={() => {}} />);
+  it('states where the shape came from, and offers no control that does nothing', () => {
+    // The old "derived · confirm" pill only relabelled itself for the session —
+    // no persistence, no effect. A guessed shape is a state, not a decision.
+    const { rerender } = render(<ClassPulse payload={unshapedPayload()} />);
+    expect(screen.getByText('◇ auto-shaped')).toBeTruthy();
+    expect(screen.getByText(/set a track’s intensity to refine/i)).toBeTruthy();
     expect(screen.queryByRole('button')).toBeNull();
+
+    rerender(<ClassPulse payload={payload()} />);
     expect(screen.getByText(/from track efforts/i)).toBeTruthy();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 
   it('renders a truthful empty state without an image-shaped fake', () => {

@@ -31,14 +31,10 @@ const EFFORT_ZONE_LABEL = {
 
 export function ClassPulse({
   payload,
-  confirmed = false,
-  onConfirm,
   compact = false,
   className = '',
 }: {
   payload: RunPayload;
-  confirmed?: boolean;
-  onConfirm?: () => void;
   compact?: boolean;
   className?: string;
 }) {
@@ -46,8 +42,6 @@ export function ClassPulse({
     <ClassPulseView
       model={classPulseFromPayload(payload)}
       totalDurationMs={payload.class.totalDurationMs}
-      confirmed={confirmed}
-      onConfirm={onConfirm}
       compact={compact}
       className={className}
     />
@@ -57,16 +51,12 @@ export function ClassPulse({
 export function ClassPulseView({
   model,
   totalDurationMs,
-  confirmed = false,
-  onConfirm,
   compact = false,
   className = '',
 }: {
   model: ClassPulseModel;
   /** Class runtime, for the time axis under the chart. Omitted = no axis. */
   totalDurationMs?: number;
-  confirmed?: boolean;
-  onConfirm?: () => void;
   compact?: boolean;
   className?: string;
 }) {
@@ -103,26 +93,17 @@ export function ClassPulseView({
         <span className="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">
           Class Pulse
         </span>
-        {/* The caution pill belongs to a *guessed* shape. On a class whose zones
-            the instructor scored, asking them to "confirm derived" was a warning
-            about nothing — the chart is simply their own scoring, so it says so
-            quietly instead. */}
+        {/* Where the shape came from, and nothing else. The old
+            "derived · confirm" pill was a control whose entire effect was to
+            relabel itself for the rest of the session: it saved nothing, it
+            changed nothing, and on a class the instructor had scored it was a
+            caution about their own work. Deleted rather than explained.
+            A *guessed* shape still has to say so (canon 10 §4) — as a state,
+            on the caution channel, with the caption carrying the refine step. */}
         {model.provisional ? (
-          onConfirm ? (
-            <button
-              type="button"
-              onClick={onConfirm}
-              aria-pressed={confirmed}
-              title="Marks that you've looked at the auto-shape. This is a note for this session — nothing is saved."
-              className="min-h-11 rounded-control border border-state-caution/45 px-3 font-data text-[10px] font-semibold uppercase tracking-wide text-state-caution hover:bg-state-caution/10 rf-focus-ring sm:min-h-8 sm:rounded-pill"
-            >
-              ◇ {confirmed ? 'auto-shape reviewed' : 'auto-shape · mark reviewed'}
-            </button>
-          ) : (
-            <span className="font-data text-[10px] font-semibold uppercase tracking-wide text-state-caution">
-              ◇ auto-shaped
-            </span>
-          )
+          <span className="font-data text-[10px] font-semibold uppercase tracking-wide text-state-caution">
+            ◇ auto-shaped
+          </span>
         ) : (
           <span className="font-data text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
             {/* Not "your": this view also renders on the signed-out marketing

@@ -383,9 +383,9 @@ try {
   await page.getByRole('button', { name: 'Add track' }).click();
   await page.getByText('Smoke Reprise').first().waitFor({ timeout: 10000 });
   // Class Pulse replaced the ribbon's "auto shape" badge. An unshaped class
-  // still names the derived shape: the pulse region + "auto-shape · mark reviewed".
+  // still names the derived shape: the pulse region + the "auto-shaped" state.
   const classPulse = page.getByRole('region', { name: 'Class Pulse' });
-  const derivedConfirm = page.getByRole('button', { name: /auto-shape · mark reviewed/ });
+  const derivedConfirm = classPulse.getByText("◇ auto-shaped");
   if (
     (await classPulse.isVisible().catch(() => false)) &&
     (await derivedConfirm.isVisible().catch(() => false))

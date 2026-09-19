@@ -27,8 +27,6 @@ export function ClassSummaryView({
   onClose,
   onCopied,
   onOpenInBuilder,
-  pulseConfirmed = false,
-  onTogglePulseConfirmation,
 }: {
   classId: string;
   onClose: () => void;
@@ -36,9 +34,6 @@ export function ClassSummaryView({
   onCopied?: (cls: ClassWithAccess) => void;
   /** Owned preview — open this class in the builder to edit it. */
   onOpenInBuilder?: () => void;
-  /** Ephemeral confirmation owned by the authenticated Dashboard session. */
-  pulseConfirmed?: boolean;
-  onTogglePulseConfirmation?: () => void;
 }) {
   const [payload, setPayload] = useState<RunPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -176,11 +171,7 @@ export function ClassSummaryView({
               <StatusLabel kind="error" label={error} />
             </div>
           )}
-          <ClassPulse
-            payload={payload}
-            confirmed={pulseConfirmed}
-            onConfirm={onTogglePulseConfirmation}
-          />
+          <ClassPulse payload={payload} />
 
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             {readiness && (
