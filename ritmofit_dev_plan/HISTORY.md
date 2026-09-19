@@ -10,6 +10,45 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-19 (PRs #432, #434, #435, #436 — ENERGY-RIBBON + class
+> scaffolds) — deployed (Worker `29a72e1c-0022-498f-b3ba-735a18c1985a`).**
+> Application source `b70ded1`. Deployed from this checkout after owner go.
+> Remote D1 applied `0019_keen_matthew_murdock.sql` (7 statements) before the
+> Worker deploy; post-apply list was clean. Carries four product PRs plus docs
+> #431 already on that tip:
+>
+> - **PR #432 (ENERGY-RIBBON, SPC-14):** track intensity is the staircase
+>   baseline; placed-move intensity at `anchorMs` holds until the next scored
+>   move or the track end. ClassPulse uses the same spans. No schema change.
+> - **PR #434:** class builder explains itself (copy/readiness, no scaffold UI).
+> - **PR #435 (scaffold API):** nine immutable recipes, expand-only `0019`
+>   (`class_plan_blocks`, nullable `classes.scaffold_recipe_id`, nullable
+>   `class_tracks.plan_block_id` with `ON DELETE SET NULL`), scaffold/empty
+>   create contract. Run-payload unchanged.
+> - **PR #436 (scaffold UI):** isolated create-class dialog (45 preselected,
+>   scaffold primary, quiet empty path) and planned-versus-actual plan blocks
+>   using existing music sourcing. Empty blocks are not Live tracks.
+>
+> Shared-contract change is additive (new create mode + plan-block DTOs). No
+> secret or lockfile change. Rollback is Worker-only to prior live
+> `3b39fac6-2c6e-420b-865b-ee67f9912c5c` (2026-09-19 #429); `0019` stays
+> applied and is compatible with that Worker. Main CI on `b70ded1` was green
+> (run 35473699855) before migrate/deploy.
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`,
+> `/api/v1/health` → `200`, protected `classes` / `explore` / `teams` /
+> `shares` / `plan-blocks` → `401`, all six security headers present (HSTS,
+> CSP, Permissions-Policy, Referrer-Policy, X-Content-Type-Options,
+> X-Frame-Options). Worker status confirmed 100% on `29a72e1c` via
+> `wrangler deployments status`. Built + served SPA entry
+> `assets/index-BdYKswiD.js` (CSS `assets/index-RLk4hLSc.css`) — **three
+> consecutive** cache-busted fetches agreed on the first triple. Signed-in
+> production scaffold create was not run this deploy; localhost QA of #436
+> already exercised create, assignment, Escape, 390/320, and reduced motion.
+> After this docs PR merges, `main` is one docs commit ahead of the deployed
+> application tip. Inbox class-cover taste decision remains open. Draft #433
+> (Classes home contract) is still open and was not part of this batch.
+
 > **Session 2026-09-19 (PR #429 — LIVE-RUN-OF-SHOW) — deployed (Worker
 > `3b39fac6-2c6e-420b-865b-ee67f9912c5c`).** Main HEAD `51a6ade` (docs #430 on the
 > same tip). Owner deployed ritmofit-web production from Mac. Carries the Live

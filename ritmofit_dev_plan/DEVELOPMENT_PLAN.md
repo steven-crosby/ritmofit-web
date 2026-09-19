@@ -35,16 +35,16 @@ Pilates, and HIIT.
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
 - **Current operating focus (2026-09-19):** the launch gate is green and the app is live.
-  **Production matches tip of `main`** (`51a6ade`). **PR #429 (LIVE-RUN-OF-SHOW) is
-  deployed** — Worker `3b39fac6-2c6e-420b-865b-ee67f9912c5c`, plus docs #430 on the
-  same tip. Previous/next track controls and a compact rolling choreography queue
-  are live beside the cue-first hero. The observed SoundCloud manual-jump failure
-  was isolated to one unembeddable reference (oEmbed 404); no coordinator patch.
-  No schema, migration, shared-contract, secret, or lockfile change; no remote D1
-  change. Rollback is Worker-only to `ad638215`. SPC-09 remains owner-blocked.
-  ENERGY-RIBBON (SPC-14) is in [#432](https://github.com/steven-crosby/ritmofit-web/pull/432)
-  (hybrid placed-move refinement; not merged). PROD-HYGIENE runbook is in #426;
-  live fixture delete is still owner-pending.
+  **Production matches application tip `b70ded1`** — Worker
+  `29a72e1c-0022-498f-b3ba-735a18c1985a`. Remote D1 has `0019`. After the
+  deploy-record docs PR, `main` is one docs commit ahead of that Worker.
+  **PRs #432 / #434 / #435 / #436 are deployed:** ENERGY-RIBBON plus
+  deterministic class scaffolds (expand-only `0019`, isolated create dialog,
+  planned-versus-actual blocks). Rollback is Worker-only to `3b39fac6`.
+  SPC-09 remains owner-blocked. PROD-HYGIENE runbook is in #426; live fixture
+  delete is still owner-pending. Draft
+  [#433](https://github.com/steven-crosby/ritmofit-web/pull/433) (Classes home
+  contract) is still open.
   Full disposition lives in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
   **Prior Pulse Check deploys:** batch 2 PRs #420, #422 — Worker
@@ -87,9 +87,10 @@ Pilates, and HIIT.
   browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook.   **Production matches `main`
-  after the 2026-09-19 #429 deploy** (Worker `3b39fac6`). Prior production
-  application code was the 2026-09-17 #417/#418/#419/#424/#425 Worker
+  Music workspace via a shared provider-browse hook.   **Production matches application source `b70ded1` after the 2026-09-19
+  #432/#434/#435/#436 deploy** (Worker `29a72e1c`). Prior production
+  application code was the 2026-09-19 #429 Worker `3b39fac6` from main
+  `51a6ade`, then the 2026-09-17 #417/#418/#419/#424/#425 Worker
   `ad638215-6758-498c-8782-522e23a6d942` from main `4ddddeb`, then the 2026-09-13
   #420/#422 Worker
   `5d659102-3bff-4398-91ad-cdc1d165ccc1` from main `dd625b5`, then the 2026-09-13
@@ -295,14 +296,14 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-19):** **production matches tip of `main`**
-(`51a6ade`). **PR #429 is deployed** — Worker
-`3b39fac6-2c6e-420b-865b-ee67f9912c5c`. Docs #430 is on the same tip. No schema,
-migration, shared-contract, secret, or lockfile change; no remote D1 change.
-Rollback is Worker-only to `ad638215`. The alerting half of liveness remains an
-owner decision; F-02 (D11 `createPattern`) stays unconfirmed. Inbox still holds
-the class-cover taste decision; leave it. ENERGY-RIBBON is in
-[#432](https://github.com/steven-crosby/ritmofit-web/pull/432).
+**Current `main` vs production (2026-09-19):** **production matches application
+source `b70ded1`** — Worker `29a72e1c-0022-498f-b3ba-735a18c1985a`. Remote D1
+has `0019`. After this docs PR, `main` is one docs commit ahead of that Worker.
+**PRs #432, #434, #435, #436 are deployed.** Shared-contract change is
+additive. Rollback is Worker-only to `3b39fac6`. The alerting half of liveness
+remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed. Inbox
+still holds the class-cover taste decision; leave it. Draft
+[#433](https://github.com/steven-crosby/ritmofit-web/pull/433) is still open.
 
 - **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
 - **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
@@ -324,9 +325,11 @@ the class-cover taste decision; leave it. ENERGY-RIBBON is in
   RESPONSIVE-QA ([#419](https://github.com/steven-crosby/ritmofit-web/pull/419)),
   semantic opacity ([#424](https://github.com/steven-crosby/ritmofit-web/pull/424)), and
   LIVE-CONTROLS ([#425](https://github.com/steven-crosby/ritmofit-web/pull/425)) — is
-  deployed as Worker `ad638215` from main `4ddddeb`. **LIVE-RUN-OF-SHOW
-  ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) is deployed as
-  Worker `3b39fac6` from main `51a6ade` (recorded in this session).**
+  deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
+  ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
+  Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
+  `29a72e1c` from `b70ded1` (#432 / #434 / #435 / #436, recorded in this
+  session).**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**
 
@@ -383,11 +386,12 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   announce validation and inline confirmations in
   [PR #422](https://github.com/steven-crosby/ritmofit-web/pull/422); deployed as Worker
   `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
-- **ENERGY-RIBBON (SPC-14) — in [#432](https://github.com/steven-crosby/ritmofit-web/pull/432); not merged:**
+- **ENERGY-RIBBON (SPC-14) — ✅ shipped ([#432](https://github.com/steven-crosby/ritmofit-web/pull/432); Worker `29a72e1c`):**
   documented hybrid ribbon — track intensity is the staircase baseline; placed-move intensity at
   `anchorMs` holds until the next scored move or the track end. ClassPulse uses the same spans. No
   schema change. Segment banding stays deferred. A scored placed move takes the class out of
-  provisional auto-shape. Steven approved the direction on 2026-09-19.
+  provisional auto-shape. Steven approved the direction on 2026-09-19. Deployed 2026-09-19 as
+  Worker `29a72e1c` from `b70ded1`.
 - **LIVE-RUNTIME (SPC-16, 18) — ✅ shipped:** coalesce drag seeking and isolate animation-frame
   rendering without changing provider-authoritative playback/liveness behavior in
   [PR #420](https://github.com/steven-crosby/ritmofit-web/pull/420); deployed as Worker
