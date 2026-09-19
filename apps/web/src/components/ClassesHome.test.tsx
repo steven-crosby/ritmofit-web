@@ -222,5 +222,12 @@ describe('ClassesHome', () => {
       />,
     );
     expect(await screen.findByRole('searchbox')).toBeTruthy();
+    expect(screen.getByLabelText('Filter classes by tag')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ready to teach' })).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('Sort'), { target: { value: 'title' } });
+    expect(screen.queryByRole('button', { name: 'Ready to teach' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Needs work' })).toBeNull();
+    expect(screen.getByText('Sorted by Title A–Z.')).toBeTruthy();
   });
 });

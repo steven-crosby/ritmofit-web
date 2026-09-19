@@ -14,6 +14,7 @@ import {
 import { formatDuration, formatTemplateLabel } from '../lib/class-summary.js';
 import { errorReference } from '../lib/error-reference.js';
 import {
+  CLASS_SORT_OPTIONS,
   DEFAULT_CLASS_SORT,
   libraryView,
   organizeClasses,
@@ -256,13 +257,14 @@ function ClassesHomeList({
     () => organizeClasses(classes, { query, sort: 'recently_updated' }),
     [classes, query],
   );
+  const usingManualSort = showOrganize && sort !== 'recently_updated';
   const visible = useMemo(() => {
     const stepFor = (cls: ClassListItem) => classNextStep(details[cls.id]);
-    if (showOrganize && sort !== 'recently_updated') {
+    if (usingManualSort) {
       return organizeClasses(searched, { query: '', sort });
     }
     return orderClassesBy(ordering, searched, stepFor);
-  }, [details, ordering, searched, showOrganize, sort]);
+  }, [details, ordering, searched, sort, usingManualSort]);
 
   const trimmedQuery = query.trim();
   const narrowed = trimmedQuery.length > 0 && visible.length !== classes.length;
@@ -284,7 +286,11 @@ function ClassesHomeList({
             Pick up where the energy left off.
           </h2>
           <p className="mt-2 max-w-prose font-ui text-sm leading-6 text-text-secondary">
-            {orderingSummary(ordering)}
+            {usingManualSort
+              ? `Sorted by ${
+                  CLASS_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? sort
+                }.`
+              : orderingSummary(ordering)}
           </p>
         </div>
         <button
@@ -296,32 +302,32 @@ function ClassesHomeList({
         </button>
       </div>
 
-      <div role="group" aria-label="Order classes by" className="mt-4 flex flex-wrap gap-2">
-        {CLASS_ORDERING_OPTIONS.map((option) => {
-          const active = option.value === ordering;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={active}
-              onClick={() => chooseOrdering(option.value)}
-              className={`min-h-11 rounded-control border px-4 font-ui text-sm font-semibold rf-focus-ring sm:rounded-pill ${
-                active
-                  ? 'border-interactive bg-interactive/15 text-text-primary'
-                  : 'border-border-subtle text-text-secondary hover:border-interactive/45 hover:text-text-primary'
-              }`}
-            >
-              {option.label}
-            </button>
-          );
-        })}
-      </div>
+      {!usingManualSort && (
+        <div role="group" aria-label="Order classes by" className="mt-4 flex flex-wrap gap-2">
+          {CLASS_ORDERING_OPTIONS.map((option) => {
+            const active = option.value === ordering;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => chooseOrdering(option.value)}
+                className={`min-h-11 rounded-control border px-4 font-ui text-sm font-semibold rf-focus-ring sm:rounded-pill ${
+                  active
+                    ? 'border-interactive bg-interactive/15 text-text-primary'
+                    : 'border-border-subtle text-text-secondary hover:border-interactive/45 hover:text-text-primary'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {showOrganize && (
         <div className="mt-4 flex flex-col gap-3">
-          {(knownTags.length > 0 || activeTag != null) && (
-            <TagFilter knownTags={knownTags} activeTag={activeTag} onSelectTag={onSelectTag} />
-          )}
+          <TagFilter knownTags={knownTags} activeTag={activeTag} onSelectTag={onSelectTag} />
           <LibraryOrganizeControls
             query={query}
             sort={sort}
@@ -464,7 +470,6 @@ function ClassHomeRow({
         <button
           type="button"
           aria-expanded={menuOpen}
-          aria-haspopup="menu"
           aria-label={`More actions — ${cls.title}`}
           onClick={() => setMenuOpen((open) => !open)}
           className="flex min-h-11 min-w-11 items-center justify-center rounded-control font-ui text-lg text-text-tertiary hover:text-text-primary rf-focus-ring"
