@@ -656,3 +656,40 @@ describe('TrackSearch provider readiness', () => {
     expect(await screen.findByText(/SoundCloud not connected — connect it/i)).toBeTruthy();
   });
 });
+
+describe('TrackSearch plan-block assignment', () => {
+  it('assigns a chosen song to the targeted plan block', async () => {
+    const result: TrackSearchResult = {
+      provider: 'soundcloud',
+      providerTrackId: 'tr-1',
+      providerUri: null,
+      title: 'Climb',
+      artist: 'Artist',
+      albumArtUrl: null,
+      durationMs: 180000,
+    };
+    vi.mocked(api.searchProvider).mockResolvedValue([result]);
+    vi.mocked(api.importTrack).mockResolvedValue({ id: 'track-1' } as Awaited<
+      ReturnType<typeof api.importTrack>
+    >);
+    vi.mocked(api.addTrack).mockResolvedValue(ADDED_CLASS_TRACK);
+
+    render(
+      <TrackSearch
+        classId="c1"
+        planBlockId="00000000-0000-4000-8000-0000000000b1"
+        onAdded={() => {}}
+      />,
+    );
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'climb' } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Climb by Artist' }));
+
+    await waitFor(() =>
+      expect(api.addTrack).toHaveBeenCalledWith('c1', {
+        trackId: 'track-1',
+        intensity: 'mod',
+        planBlockId: '00000000-0000-4000-8000-0000000000b1',
+      }),
+    );
+  });
+});
