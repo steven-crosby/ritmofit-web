@@ -35,19 +35,17 @@ Pilates, and HIIT.
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
 - **Current operating focus (2026-09-19):** the launch gate is green and the app is live.
-  **`main` is ahead of production.** Production remains the 2026-09-17
-  #417/#418/#419/#424/#425 batch — Worker `ad638215-6758-498c-8782-522e23a6d942` from
-  main `4ddddeb` (docs #426/#427/#428 already recorded that deploy). **PR #429
-  (LIVE-RUN-OF-SHOW) is on `main` (`451964c`) and is not deployed.** No schema,
-  migration, shared-contract, secret, or lockfile change; no remote D1 change.
-  Rollback for the still-live Worker is Worker-only to `5d659102`.
-  **LIVE-RUN-OF-SHOW is merged, not live:** previous/next track controls and a compact
-  rolling choreography queue beside the cue-first hero. The observed SoundCloud
-  manual-jump failure was isolated to one unembeddable reference (oEmbed 404); no
-  coordinator patch. SPC-09 remains owner-blocked. ENERGY-RIBBON's direction is
-  resolved: Steven approved implementing the documented placed-move refinement on
-  2026-09-19; the code slice is still separately gated. PROD-HYGIENE runbook is in
-  #426; live fixture delete is still owner-pending.
+  **Production matches tip of `main`** (`51a6ade`). **PR #429 (LIVE-RUN-OF-SHOW) is
+  deployed** — Worker `3b39fac6-2c6e-420b-865b-ee67f9912c5c`, plus docs #430 on the
+  same tip. Previous/next track controls and a compact rolling choreography queue
+  are live beside the cue-first hero. The observed SoundCloud manual-jump failure
+  was isolated to one unembeddable reference (oEmbed 404); no coordinator patch.
+  No schema, migration, shared-contract, secret, or lockfile change; no remote D1
+  change. Rollback is Worker-only to `ad638215`. SPC-09 remains owner-blocked.
+  ENERGY-RIBBON's direction is resolved: Steven approved implementing the
+  documented placed-move refinement on 2026-09-19; the code slice is the next
+  product gate. PROD-HYGIENE runbook is in #426; live fixture delete is still
+  owner-pending.
   Full disposition lives in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
   **Prior Pulse Check deploys:** batch 2 PRs #420, #422 — Worker
@@ -90,10 +88,11 @@ Pilates, and HIIT.
   browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook. **Production remains the
-  2026-09-17 #417/#418/#419/#424/#425 deploy** (Worker
-  `ad638215`); **`main` is ahead** with undeployed #429. Prior production
-  application code was the 2026-09-13 #420/#422 Worker
+  Music workspace via a shared provider-browse hook.   **Production matches `main`
+  after the 2026-09-19 #429 deploy** (Worker `3b39fac6`). Prior production
+  application code was the 2026-09-17 #417/#418/#419/#424/#425 Worker
+  `ad638215-6758-498c-8782-522e23a6d942` from main `4ddddeb`, then the 2026-09-13
+  #420/#422 Worker
   `5d659102-3bff-4398-91ad-cdc1d165ccc1` from main `dd625b5`, then the 2026-09-13
   #412/#414/#415 Worker `edaa62b0`, then the 2026-09-13 #406 Worker
   `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7` from main `4031d5b`,
@@ -297,15 +296,14 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-19):** **`main` is ahead of production.**
-Production remains Worker `ad638215-6758-498c-8782-522e23a6d942` (2026-09-17
-#417/#418/#419/#424/#425 from `4ddddeb`). **PR #429 (LIVE-RUN-OF-SHOW) is on
-`main` (`451964c`) and is not deployed.** Docs #426/#427/#428 already recorded the
-last deploy. No schema, migration, shared-contract, secret, or lockfile change;
-no remote D1 change. Rollback for the still-live Worker is Worker-only to
-`5d659102`. The alerting half of liveness remains an owner decision; F-02 (D11
-`createPattern`) stays unconfirmed. Inbox still holds the class-cover taste
-decision; leave it.
+**Current `main` vs production (2026-09-19):** **production matches tip of `main`**
+(`51a6ade`). **PR #429 is deployed** — Worker
+`3b39fac6-2c6e-420b-865b-ee67f9912c5c`. Docs #430 is on the same tip. No schema,
+migration, shared-contract, secret, or lockfile change; no remote D1 change.
+Rollback is Worker-only to `ad638215`. The alerting half of liveness remains an
+owner decision; F-02 (D11 `createPattern`) stays unconfirmed. Inbox still holds
+the class-cover taste decision; leave it. ENERGY-RIBBON is the next product
+slice.
 
 - **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
 - **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
@@ -328,8 +326,8 @@ decision; leave it.
   semantic opacity ([#424](https://github.com/steven-crosby/ritmofit-web/pull/424)), and
   LIVE-CONTROLS ([#425](https://github.com/steven-crosby/ritmofit-web/pull/425)) — is
   deployed as Worker `ad638215` from main `4ddddeb`. **LIVE-RUN-OF-SHOW
-  ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) is on `main` and
-  is not deployed.**
+  ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) is deployed as
+  Worker `3b39fac6` from main `51a6ade` (recorded in this session).**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**
 
@@ -341,7 +339,7 @@ The two
 out-of-scope/unverified audit claims were independently checked before disposition. This list is the
 planning queue; the ledger preserves the finding-by-finding evidence and acceptance boundaries.
 
-- **LIVE-RUN-OF-SHOW — ✅ on `main` ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)); not deployed:**
+- **LIVE-RUN-OF-SHOW — ✅ shipped ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429); Worker `3b39fac6`):**
   closes the minimum live-running gaps identified from Steven's 2026-09-19 StructClub recording and
   same-day production verification. First distinguish a dead/unembeddable SoundCloud reference from a
   coordinator or widget-transition defect: initial SoundCloud playback and automatic track advance
@@ -356,8 +354,8 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   the official-provider-only music constraints. Verified with 800 web tests, 151 integration tests,
   typecheck/lint/build/design-system/theme/contract/audit gates, and local browser checks at desktop,
   390px, and 320px; no Spotify playback was initialized. Steven approved this slice ahead of
-  ENERGY-RIBBON and approved its scoped implementation plan on 2026-09-19. Deployment remains a
-  separate gate.
+  ENERGY-RIBBON and approved its scoped implementation plan on 2026-09-19. Deployed 2026-09-19 as
+  Worker `3b39fac6` from main `51a6ade`.
 
 - **AUTH-A11Y (SPC-01–04) — ✅ shipped:** redundant auth status cues, one password
   contract, reveal controls, and announced mode transitions. Bundled with the OD-01 implementation
