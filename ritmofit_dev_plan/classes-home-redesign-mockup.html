@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Classes Home — revised</title>
+    <style>
+      @font-face {
+        font-family: 'Bricolage Grotesque';
+        font-weight: 200 800;
+        font-display: swap;
+        src: url('../apps/web/public/fonts/bricolage-grotesque-latin.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Sora';
+        font-weight: 400 800;
+        font-display: swap;
+        src: url('../apps/web/public/fonts/sora-latin.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Azeret Mono';
+        font-weight: 400 700;
+        font-display: swap;
+        src: url('../apps/web/public/fonts/azeret-mono-latin.woff2') format('woff2');
+      }
+      :root {
+        color-scheme: dark;
+        --bg: #050403;
+        --raised: #1a1712;
+        --text: #fbf7f0;
+        --secondary: #c9beaa;
+        --tertiary: #9e927e;
+        --ink: #050403;
+        --brand: #e07e3c;
+        --brand-strong: #c8682a;
+        --cyan: #3ac0d4;
+        --caution: #f2b838;
+        --border: rgba(251, 247, 240, 0.08);
+        --border-strong: rgba(251, 247, 240, 0.14);
+        --display: 'Bricolage Grotesque', system-ui, sans-serif;
+        --ui: 'Sora', system-ui, sans-serif;
+        --data: 'Azeret Mono', ui-monospace, monospace;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--ui);
+        -webkit-font-smoothing: antialiased;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 24px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(26, 23, 18, 0.72);
+      }
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        background: var(--brand);
+        color: var(--ink);
+        font-family: var(--display);
+        font-weight: 700;
+      }
+      header h1 {
+        margin: 0;
+        font-family: var(--display);
+        font-size: 20px;
+        letter-spacing: -0.01em;
+      }
+      nav {
+        display: flex;
+        gap: 4px;
+        margin-left: auto;
+        align-items: center;
+      }
+      nav span, nav a {
+        color: var(--secondary);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 10px 12px;
+      }
+      nav a[aria-current] {
+        color: var(--text);
+        text-decoration: underline;
+        text-decoration-color: var(--cyan);
+        text-decoration-thickness: 2px;
+        text-underline-offset: 8px;
+      }
+      main { max-width: 880px; margin: 0 auto; padding: 32px 24px 64px; }
+      .eyebrow {
+        margin: 0;
+        font-family: var(--data);
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--tertiary);
+      }
+      .head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 8px;
+      }
+      .head h2 {
+        margin: 0;
+        font-family: var(--display);
+        font-size: 34px;
+        line-height: 1.12;
+        letter-spacing: -0.03em;
+      }
+      .head p { margin: 8px 0 0; color: var(--secondary); font-size: 15px; }
+      .quiet {
+        min-height: 44px;
+        padding: 0 16px;
+        border: 1px solid rgba(58, 192, 212, 0.45);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--cyan);
+        font-family: var(--ui);
+        font-size: 14px;
+        font-weight: 600;
+      }
+      ol { list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+      li {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) auto auto auto;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--raised);
+      }
+      li.top { border-color: var(--border-strong); padding: 16px 18px; }
+      .name { font-weight: 600; font-size: 16px; }
+      .meta { margin-top: 3px; font-family: var(--data); font-size: 12px; color: var(--tertiary); }
+      .pulse { display: flex; align-items: flex-end; gap: 2px; width: 72px; height: 22px; }
+      .pulse i { flex: 1; border-radius: 1px 1px 0 0; background: var(--brand-strong); display: block; }
+      .status { font-size: 13px; color: var(--secondary); white-space: nowrap; }
+      .status b {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        margin-right: 6px;
+        border-radius: 50%;
+        background: var(--caution);
+      }
+      .status.ok b { background: var(--cyan); }
+      .go {
+        min-height: 44px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--brand);
+        color: var(--ink);
+        font-family: var(--ui);
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .more {
+        min-width: 44px;
+        min-height: 44px;
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--secondary);
+      }
+      .note {
+        margin-top: 28px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+        color: var(--tertiary);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      @media (max-width: 700px) {
+        header { padding: 10px 16px; }
+        nav span { display: none; }
+        main { padding: 20px 16px 48px; }
+        .head { flex-direction: column; align-items: stretch; }
+        .head h2 { font-size: 28px; }
+        .quiet { width: 100%; }
+        li, li.top {
+          grid-template-columns: 1fr auto;
+          gap: 10px 12px;
+        }
+        .pulse { display: none; }
+        .go, .more { grid-column: 1 / -1; }
+        .more { justify-self: start; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="mark" aria-hidden="true">R</span>
+      <h1>Ritmo Studio</h1>
+      <nav>
+        <span>Steven</span>
+        <a href="#" aria-current="page">Classes</a>
+        <a href="#">Music</a>
+        <a href="#">Live</a>
+        <a href="#">Account</a>
+      </nav>
+    </header>
+    <main>
+      <p class="eyebrow">Classes</p>
+      <div class="head">
+        <div>
+          <h2>Pick up where the energy left off.</h2>
+          <p>Closest to teachable first.</p>
+        </div>
+        <button class="quiet" type="button">Start a class</button>
+      </div>
+      <ol>
+        <li class="top">
+          <div>
+            <div class="name">SoundCloud Test: Cool Down</div>
+            <div class="meta">Pilates · 9 tracks · 7:58</div>
+          </div>
+          <span class="pulse" aria-hidden="true">
+            <i style="height: 30%"></i><i style="height: 48%"></i><i style="height: 70%"></i>
+            <i style="height: 100%"></i><i style="height: 62%"></i><i style="height: 36%"></i>
+          </span>
+          <span class="status"><b></b>Can run live · 2 left</span>
+          <button class="go" type="button">Add the missing tempo</button>
+        </li>
+        <li>
+          <div>
+            <div class="name">Latin riiide</div>
+            <div class="meta">Cycle · 6 tracks · 5:11</div>
+          </div>
+          <span class="pulse" aria-hidden="true">
+            <i style="height: 40%"></i><i style="height: 66%"></i><i style="height: 100%"></i>
+            <i style="height: 70%"></i><i style="height: 44%"></i><i style="height: 28%"></i>
+          </span>
+          <span class="status"><b></b>2 left</span>
+          <button class="more" type="button" aria-label="More actions">⋯</button>
+        </li>
+        <li>
+          <div>
+            <div class="name">Ambient Chill</div>
+            <div class="meta">Cycle · 65 tracks · 2:47:59</div>
+          </div>
+          <span class="pulse" aria-hidden="true">
+            <i style="height: 50%"></i><i style="height: 78%"></i><i style="height: 100%"></i>
+            <i style="height: 80%"></i><i style="height: 55%"></i><i style="height: 34%"></i>
+          </span>
+          <span class="status ok"><b></b>Ready to teach</span>
+          <button class="more" type="button" aria-label="More actions">⋯</button>
+        </li>
+        <li>
+          <div>
+            <div class="name">Spotify likes — Jackson Remix</div>
+            <div class="meta">Cycle · 30 tracks · 1:49:33</div>
+          </div>
+          <span class="pulse" aria-hidden="true">
+            <i style="height: 36%"></i><i style="height: 58%"></i><i style="height: 84%"></i>
+            <i style="height: 64%"></i><i style="height: 42%"></i><i style="height: 26%"></i>
+          </span>
+          <span class="status"><b></b>Score the arc</span>
+          <button class="more" type="button" aria-label="More actions">⋯</button>
+        </li>
+      </ol>
+      <p class="note">
+        Revised mockup for <code>classes-home-redesign.md</code>. Returning visit, four classes, one
+        list. The copper control is the top row's next step; starting a class is the quiet button.
+        Search, sort, and tags are absent because four classes do not need them. The first visit —
+        empty library, copper <em>Start a class</em> — is specified in the plan and is not this screen.
+      </p>
+    </main>
+  </body>
+</html>
