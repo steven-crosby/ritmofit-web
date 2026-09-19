@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { RunPayload } from '@ritmofit/shared';
 import { ClassSummaryView } from './ClassSummaryView.js';
 import * as api from '../lib/api.js';
@@ -49,22 +49,29 @@ describe('ClassSummaryView', () => {
     expect(api.getRunPayload).toHaveBeenCalledTimes(2);
   });
 
-  it('surfaces controlled view-only Pulse confirmation', async () => {
-    vi.mocked(api.getRunPayload).mockResolvedValue(payload());
-    const onToggle = vi.fn();
+  it('names an auto-shaped pulse as a state, with nothing to confirm', async () => {
+    // A read-only rehearsal view never had anything to confirm; it reports where
+    // the shape came from. Fixture is a derived shape: uniform effort, no scored
+    // placement.
+    const autoShaped = {
+      ...payload(),
+      tracks: [0, 1].map((index) => ({
+        classTrackId: `00000000-0000-4000-8000-00000000000${index}`,
+        position: index,
+        displayBpm: 128,
+        intensity: 'mod',
+        track: { title: `Track ${index}`, artist: 'DJ Test', albumArtUrl: null, durationMs: 90000 },
+        moves: [],
+        cues: [],
+      })),
+    } as unknown as RunPayload;
+    vi.mocked(api.getRunPayload).mockResolvedValue(autoShaped);
 
-    render(
-      <ClassSummaryView
-        classId="c1"
-        onClose={() => {}}
-        onCopied={() => {}}
-        pulseConfirmed
-        onTogglePulseConfirmation={onToggle}
-      />,
-    );
+    render(<ClassSummaryView classId="c1" onClose={() => {}} onCopied={() => {}} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /confirmed for this view/i }));
-    expect(onToggle).toHaveBeenCalledTimes(1);
+    const pulse = await screen.findByRole('region', { name: 'Class Pulse' });
+    expect(within(pulse).getByText('◇ auto-shaped')).toBeTruthy();
+    expect(within(pulse).queryByRole('button')).toBeNull();
   });
 
   it('renders songs, placed moves, cues, and section bands from the run-payload', async () => {

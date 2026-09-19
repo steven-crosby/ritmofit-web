@@ -35,7 +35,9 @@ describe('IntensitySegmentedControl', () => {
     const { container } = render(
       <IntensitySegmentedControl value="hard" onChange={() => {}} ariaLabel="i" />,
     );
-    const summary = screen.getByText(/Zone 3 · Attack/);
+    // It also glosses the zone word, so "Attack" is not a code the reader has to
+    // already know.
+    const summary = screen.getByText(/Selected: Z3 Attack — hard, near the limit/);
     expect(summary).toBeTruthy();
     const group = container.querySelector('[role="group"]');
     expect(group?.getAttribute('aria-describedby')).toBe(summary.getAttribute('id'));

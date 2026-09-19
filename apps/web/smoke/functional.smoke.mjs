@@ -47,13 +47,13 @@ async function openLogin(page) {
  * so the dashboard is interactive. No-op if it isn't shown (already dismissed).
  */
 async function dismissOnboarding(page) {
-  const dlg = page.getByRole('dialog', { name: 'New instructor tutorial video' });
+  const dlg = page.getByRole('dialog', { name: 'New instructor four-count tutorial' });
   try {
     await dlg.waitFor({ state: 'visible', timeout: 8000 });
   } catch {
     return;
   }
-  await page.getByRole('button', { name: 'Close tutorial video' }).click();
+  await page.getByRole('button', { name: 'Skip tutorial' }).click();
   await dlg.waitFor({ state: 'detached', timeout: 5000 });
 }
 
@@ -94,7 +94,9 @@ try {
     await page.getByText('Need an account? Sign up').click();
     await page.getByLabel('Name').fill('Smoke Tester');
     await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Password').fill(password);
+    // By id: the "Show password" control's accessible name also contains
+    // "password", so a label match is ambiguous (as in narrow-width.smoke.mjs).
+    await page.locator('#login-password').fill(password);
     await page.getByRole('button', { name: 'Create account' }).click();
     await dismissOnboarding(page);
     // The signed-in dashboard surfaces an Account button (sign-out lives inside it).
@@ -108,7 +110,7 @@ try {
   });
   await section('auth:signin', async () => {
     await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Password').fill(password);
+    await page.locator('#login-password').fill(password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     await page.getByRole('button', { name: 'Account', exact: true }).waitFor({ timeout: 10000 });
   });
@@ -211,7 +213,13 @@ try {
 
   // ── Rapid class-switch: no crash, correct header wins ───────────────────
   await section('rapid-switch', async () => {
+    // Opening a class folds the rail's create/filter controls away, so creating
+    // a second class from inside the builder reopens them first.
     const t = page.getByLabel('New class title');
+    if (!(await t.isVisible().catch(() => false))) {
+      await page.getByText('New class, filters, and search').click();
+      await t.waitFor({ state: 'visible', timeout: 10000 });
+    }
     await t.fill('Functional Smoke B');
     await t.press('Enter');
     await page

@@ -233,24 +233,12 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     tracks: TrackSearchResult[];
   } | null>(null);
   const [onboardingVideoOpen, setOnboardingVideoOpen] = useState(false);
-  // Presentational confirmation only. This set resets with the authenticated
-  // dashboard and is never written to storage or sent to the API.
-  const [confirmedPulseIds, setConfirmedPulseIds] = useState<Set<string>>(new Set());
   const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
     null,
   );
   const [error, setError] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<CollectionImportResult | null>(null);
   const [retryingImport, setRetryingImport] = useState(false);
-
-  const togglePulseConfirmation = useCallback((classId: string) => {
-    setConfirmedPulseIds((current) => {
-      const next = new Set(current);
-      if (next.has(classId)) next.delete(classId);
-      else next.add(classId);
-      return next;
-    });
-  }, []);
 
   /**
    * The rail's creation + filtering controls collapse behind one affordance so the
@@ -422,6 +410,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const openClass = useCallback(
     async (cls: ClassWithAccess) => {
       setSelected(cls);
+      // Opening a class changes what the rail is for: the create/filter controls
+      // belong to choosing a class, not to editing one, so they fold away rather
+      // than sitting expanded above the list while the instructor works.
+      setCreatorOpen(false);
       await loadDetail(cls.id);
     },
     [loadDetail],
@@ -717,8 +709,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         {cardPreview && (
           <ClassSummaryView
             classId={cardPreview.id}
-            pulseConfirmed={confirmedPulseIds.has(cardPreview.id)}
-            onTogglePulseConfirmation={() => togglePulseConfirmation(cardPreview.id)}
             onClose={() => setCardPreview(null)}
             onOpenInBuilder={() => {
               const cls = cardPreview;
@@ -785,8 +775,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                   activeTag={activeTag}
                   status={listStatus}
                   libraryError={error}
-                  confirmedPulseIds={confirmedPulseIds}
-                  onTogglePulseConfirmation={togglePulseConfirmation}
                   onOpen={openClass}
                   onPreview={(cls) => setCardPreview(cls)}
                   onClearTag={() => void applyTagFilter(null)}
@@ -820,8 +808,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 await openClass({ ...cls, accessLevel: 'owner' });
               }}
               onDuplicate={async (cls) => {
-                // "Save a copy" of an own/shared class into the caller's library, then
-                // refresh so the copy appears and open it for immediate editing.
+                // Duplicate an owned class into the library, then refresh so the
+                // new class appears and open it for immediate editing.
                 const copy = await copyClass(cls.id);
                 await applyTagFilter(null);
                 await refreshClasses();
@@ -864,8 +852,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 onClassUpdated={applyClassUpdate}
                 onClassDeleted={handleClassDeleted}
                 onOpenSongsByMove={() => setSongsByMoveOpen(true)}
-                pulseConfirmed={confirmedPulseIds.has(selected.id)}
-                onTogglePulseConfirmation={() => togglePulseConfirmation(selected.id)}
                 onBackToClasses={() => {
                   setSelected(null);
                   dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
@@ -1027,7 +1013,7 @@ export function LibraryRail({
   onSelectTag: (tag: string | null) => void;
   onError: (msg: string | null) => void;
   onCreate: (cls: Awaited<ReturnType<typeof createClass>>) => void;
-  /** "Save a copy" of a class into the caller's library (resolves when done). */
+  /** Duplicate an owned class into the library (resolves when done). */
   onDuplicate: (cls: ClassListItem) => Promise<void>;
   /** Open a read-only preview of the class (without entering the builder). */
   onPreview: (cls: ClassListItem) => void;
@@ -1239,9 +1225,10 @@ function LibraryOrganizeControls({
 /**
  * A single Library card (design system 11, tightened for music-forward queue):
  * bounded album-art collage, title, shape-first meta (template · track count · runtime),
- * quiet last-opened. Primary action is opening the card (main area). Copy/View are
- * deliberately quieter secondary actions in a compact footer (no dominating vertical
- * divider). The solo-first library is owner-only (D20), so no ownership chip is shown.
+ * quiet last-opened. Primary action is opening the card (main area). Duplicate and
+ * Rehearsal view are deliberately quieter secondary actions in a compact footer (no
+ * dominating vertical divider). The solo-first library is owner-only (D20), so no
+ * ownership chip is shown.
  * Independently focusable controls; ring for selection (never color alone).
  */
 function ClassCard({
@@ -1279,6 +1266,14 @@ function ClassCard({
           <ArtCollage urls={cls.albumArtUrls} classTitle={cls.title} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-text-primary">{cls.title}</span>
+            {/* Which card is open, in a word. "Editing now" overstated — selected
+                is not the same as a dirty inspector. The ring plus this name the
+                click; the workspace heading names the class. */}
+            {selected && (
+              <span className="mt-0.5 inline-flex rounded-pill bg-interactive/15 px-1.5 font-data text-[10px] uppercase tracking-wide text-interactive">
+                Open
+              </span>
+            )}
             <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-data text-xs text-text-tertiary">
               {templateLabel && (
                 <>
@@ -1322,11 +1317,13 @@ function ClassCard({
             type="button"
             onClick={() => void run(() => onDuplicate(cls))}
             disabled={busy}
-            aria-label={`Copy ${cls.title}`}
-            title="Save a copy"
+            // "Copy" read as copy-to-clipboard or copy-a-link. The action makes a
+            // second editable class, so the verb says that.
+            aria-label={`Duplicate ${cls.title}`}
+            title="Save an editable copy of this class"
             className="min-h-11 rounded-control px-3 hover:bg-bg-base hover:text-text-primary rf-focus-ring disabled:opacity-40 sm:min-h-8"
           >
-            {busy ? '…' : 'Copy'}
+            {busy ? '…' : 'Duplicate'}
           </button>
         </div>
       </div>
@@ -1742,8 +1739,6 @@ function WorkstationRestingState({
   activeTag,
   status,
   libraryError,
-  confirmedPulseIds,
-  onTogglePulseConfirmation,
   onOpen,
   onPreview,
   onClearTag,
@@ -1757,8 +1752,6 @@ function WorkstationRestingState({
   activeTag: string | null;
   status: ListStatus;
   libraryError: string | null;
-  confirmedPulseIds: ReadonlySet<string>;
-  onTogglePulseConfirmation: (classId: string) => void;
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
   onClearTag: () => void;
@@ -1771,15 +1764,7 @@ function WorkstationRestingState({
   const hasClasses = classes.length > 0;
 
   if (hasClasses) {
-    return (
-      <ClassRunOfShowShelf
-        classes={classes}
-        confirmedPulseIds={confirmedPulseIds}
-        onTogglePulseConfirmation={onTogglePulseConfirmation}
-        onOpen={onOpen}
-        onPreview={onPreview}
-      />
-    );
+    return <ClassRunOfShowShelf classes={classes} onOpen={onOpen} onPreview={onPreview} />;
   }
 
   if (status === 'loading') {
@@ -3663,8 +3648,6 @@ function ClassWorkspace({
   onClassUpdated,
   onClassDeleted,
   onOpenSongsByMove,
-  pulseConfirmed,
-  onTogglePulseConfirmation,
   onBackToClasses,
 }: {
   cls: ClassWithAccess;
@@ -3687,9 +3670,6 @@ function ClassWorkspace({
   onClassDeleted: (classId: string) => void;
   /** Open the Songs-by-Move dialog (the top-bar dialog, reused in the builder). */
   onOpenSongsByMove: () => void;
-  /** Presentational-only Class Pulse confirmation inherited from Slice 2. */
-  pulseConfirmed: boolean;
-  onTogglePulseConfirmation: () => void;
   /** Narrow-layout return path when the selected class is shown before the library. */
   onBackToClasses: () => void;
 }) {
@@ -3775,6 +3755,20 @@ function ClassWorkspace({
   const selectedTrack = tracks.find((t) => t.id === selectedTrackId) ?? null;
   const selectedEntry = payload?.tracks.find((e) => e.classTrackId === selectedTrackId) ?? null;
 
+  /**
+   * Readiness' choreography row is the one gap with no flagged track to jump
+   * to, so it hands the instructor the act instead: open the first track and
+   * put the caret in its cue box. The nonce re-arms the request when the track
+   * is already selected.
+   */
+  const [cueEntryRequest, setCueEntryRequest] = useState(0);
+  const startChoreography = () => {
+    const first = payload?.tracks[0]?.classTrackId ?? tracks[0]?.id ?? null;
+    if (!first) return;
+    setSelectedTrackId(first);
+    setCueEntryRequest((request) => request + 1);
+  };
+
   // Select a track from the timeline; a marker click also targets a cue/move row.
   const selectFromTimeline = (
     classTrackId: string,
@@ -3841,6 +3835,7 @@ function ClassWorkspace({
           onError={onError}
           onRun={onRun}
           onSelectTrack={setSelectedTrackId}
+          onStartChoreography={startChoreography}
           onClassUpdated={onClassUpdated}
           onDeleted={() => onClassDeleted(cls.id)}
         />
@@ -3849,11 +3844,7 @@ function ClassWorkspace({
             the persistent class-shape instrument above the editable track score. */}
         {payload && payload.tracks.length > 0 && (
           <>
-            <ClassPulse
-              payload={payload}
-              confirmed={pulseConfirmed}
-              onConfirm={onTogglePulseConfirmation}
-            />
+            <ClassPulse payload={payload} />
             {timelineOpen && (
               <section
                 id={timelinePanelId}
@@ -4077,6 +4068,7 @@ function ClassWorkspace({
               canEdit={canEdit}
               canPlaceFreely={isFree}
               focus={inspectorFocus}
+              startCueEntry={cueEntryRequest}
               onSaved={onTrackChanged}
               onChoreographyChanged={onChoreographyChanged}
               onRemoved={() => {
@@ -4096,10 +4088,16 @@ function ClassWorkspace({
           <div
             ref={inspectorPlaceholderRef}
             tabIndex={-1}
-            className="rounded-card border border-interactive/20 bg-bg-base p-5 outline-none rf-focus-ring"
+            className="flex flex-col gap-1 rounded-card border border-interactive/20 bg-bg-base p-5 outline-none rf-focus-ring"
           >
+            {/* An unnamed empty box asked the reader to work out both what the
+                panel is and where the tracks are. */}
+            <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+              Track inspector
+            </p>
             <p className="font-ui text-sm text-text-tertiary">
-              Select a track to edit its intensity, BPM, notes, cues, and moves.
+              Click a track in the Track stack list to edit its intensity, BPM, notes, cues, and
+              moves.
             </p>
           </div>
         )}
@@ -4159,6 +4157,7 @@ export function ClassHeaderCard({
   onError,
   onRun,
   onSelectTrack,
+  onStartChoreography,
   onClassUpdated,
   onDeleted,
 }: {
@@ -4171,6 +4170,8 @@ export function ClassHeaderCard({
   onError: (msg: string | null) => void;
   onRun: () => void;
   onSelectTrack: (classTrackId: string) => void;
+  /** Send the instructor to the first track's cue entry (readiness action). */
+  onStartChoreography: () => void;
   onClassUpdated: (cls: Class) => void;
   onDeleted: () => void;
 }) {
@@ -4478,7 +4479,9 @@ export function ClassHeaderCard({
             ) : (
               // No track carries a BPM yet — name the gap instead of silently dropping
               // the stat (design system 10 §1a). Caution channel; BPM never blocks a run.
-              <span className="font-semibold text-state-caution">add BPM · pulse off</span>
+              // This line is stats, so it states the gap; the readiness row directly
+              // below owns the action and the consequence.
+              <span className="font-semibold text-state-caution">no BPM set</span>
             )}
           </>
         )}
@@ -4491,6 +4494,7 @@ export function ClassHeaderCard({
           readiness={readiness}
           canEdit={canEdit}
           onSelectTrack={onSelectTrack}
+          onStartChoreography={onStartChoreography}
           compact
         />
       )}
@@ -4719,7 +4723,7 @@ function SongRow({
             // BPM is not a hard gate (only duration blocks Live), so it warns amber
             // rather than intensity-hard, and never claims a fabricated "~auto" value.
             <span className="shrink-0 font-ui text-xs font-semibold text-state-caution">
-              BPM needed
+              No BPM set
             </span>
           )}
           {entry.displayRpm != null && (
@@ -4814,6 +4818,7 @@ function TrackInspector({
   canEdit,
   canPlaceFreely,
   focus,
+  startCueEntry,
   onSaved,
   onChoreographyChanged,
   onRemoved,
@@ -4831,6 +4836,8 @@ function TrackInspector({
   canPlaceFreely: boolean;
   /** A marker click asking to focus a cue/move row on this track (or null). */
   focus: { kind: 'cue' | 'move'; id: string; anchorMs: number; nonce: number } | null;
+  /** Bumped when readiness sends the instructor here to write the first cue. */
+  startCueEntry: number;
   onSaved: () => void;
   onChoreographyChanged: () => void;
   onRemoved: () => void;
@@ -4865,10 +4872,92 @@ function TrackInspector({
   const [notes, setNotes] = useState(track.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Typed fields only. Scoring a zone is a discrete, always-valid choice, so it
+  // commits on click (see `chooseIntensity`) and reports next to its own
+  // control; this draft is the text the instructor has entered and not yet
+  // committed, which is what the Save line speaks about (canon 09
+  // "Unsaved/unsynced").
+  const draft = JSON.stringify({
+    bpm,
+    rpm,
+    holdCountVal,
+    duration,
+    clipStart,
+    clipEnd,
+    downbeat,
+    startAt,
+    notes,
+  });
+  const [savedDraft, setSavedDraft] = useState(draft);
+  const [justSaved, setJustSaved] = useState(false);
+  const dirty = draft !== savedDraft;
   // BPM lookup (the third-party tempo provider — never Spotify) fills the track's
   // base display BPM; the resolved row BPM is still override ?? base.
   const [bpmBusy, setBpmBusy] = useState(false);
   const [bpmStatus, setBpmStatus] = useState<string | null>(null);
+
+  /**
+   * Scoring a class is the act this panel exists for, and it used to cost three
+   * clicks a track: pick the zone, find Save, press it. A zone is a discrete
+   * choice that cannot be half-entered, so it commits itself.
+   *
+   * Debounced, because the segmented control's arrow keys move the selection as
+   * they travel — without this, walking Z0→Z4 would fire five writes. The
+   * pending write is flushed on unmount so selecting the next track never
+   * silently drops the zone just clicked.
+   */
+  const [zoneState, setZoneState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const savedIntensity = useRef<Intensity>(track.intensity);
+  const pendingIntensity = useRef<Intensity | null>(null);
+  const zoneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mounted = useRef(true);
+
+  const commitIntensity = async () => {
+    const next = pendingIntensity.current;
+    pendingIntensity.current = null;
+    if (next == null || next === savedIntensity.current) return;
+    if (mounted.current) {
+      setZoneState('saving');
+      setError(null);
+    }
+    try {
+      await updateClassTrack(track.id, { intensity: next });
+      savedIntensity.current = next;
+      if (mounted.current) setZoneState('saved');
+      onSaved();
+    } catch (e) {
+      // The write did not land, so the control must not keep claiming it did.
+      if (mounted.current) {
+        setIntensity(savedIntensity.current);
+        setZoneState('idle');
+        setError((e as Error).message);
+      }
+    }
+  };
+  // Held in a ref so the unmount flush and the timer both reach the current
+  // closure without the parent's inline callbacks re-arming the effect.
+  const commitIntensityRef = useRef(commitIntensity);
+  useEffect(() => {
+    commitIntensityRef.current = commitIntensity;
+  });
+  useEffect(() => {
+    // Re-armed on mount, not just cleared on unmount: StrictMode mounts, tears
+    // down, and remounts in development, and a flag that only ever goes false
+    // leaves every later write unable to report itself.
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (zoneTimer.current) clearTimeout(zoneTimer.current);
+      void commitIntensityRef.current();
+    };
+  }, []);
+
+  const chooseIntensity = (next: Intensity) => {
+    setIntensity(next);
+    pendingIntensity.current = next;
+    if (zoneTimer.current) clearTimeout(zoneTimer.current);
+    zoneTimer.current = setTimeout(() => void commitIntensityRef.current(), 400);
+  };
 
   const lookupTrackBpm = async () => {
     setBpmBusy(true);
@@ -4944,6 +5033,8 @@ function TrackInspector({
         ...(startOffsetMs !== undefined ? { startOffsetMs } : {}),
         notes: notes.trim() === '' ? null : notes.trim(),
       });
+      setSavedDraft(draft);
+      setJustSaved(true);
       onSaved();
     } catch (e) {
       setError((e as Error).message);
@@ -4962,6 +5053,20 @@ function TrackInspector({
       setError((e as Error).message);
       setBusy(false);
     }
+  };
+
+  /**
+   * Keyboard commits for the typed fields: Enter from any single-line field,
+   * ⌘/Ctrl+S anywhere in the field block. Scoped to that block rather than the
+   * whole panel so an Enter inside a cue or move row still belongs to that row.
+   * The notes textarea keeps Enter for newlines.
+   */
+  const commitFromKeyboard = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const saveShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's';
+    const enterInField = event.key === 'Enter' && event.target instanceof HTMLInputElement;
+    if (!saveShortcut && !enterInField) return;
+    event.preventDefault();
+    if (dirty && !busy) void save();
   };
 
   return (
@@ -4999,233 +5104,288 @@ function TrackInspector({
         </div>
       ) : (
         <>
-          <label className="flex flex-col gap-1">
-            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Intensity
-            </span>
-            <div className="flex flex-wrap items-center gap-3">
+          {/* `contents` keeps the panel's own vertical rhythm while giving the
+              typed fields one keyboard-commit scope. */}
+          <div className="contents" onKeyDown={commitFromKeyboard}>
+            <label className="flex flex-col gap-1">
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                  Intensity
+                </span>
+                {/* The zone commits on click, so it confirms itself here, beside
+                  the control — a confirmation six fields lower is a confirmation
+                  the eye never meets. */}
+                {zoneState !== 'idle' && (
+                  <span
+                    aria-live="polite"
+                    className={`font-ui text-xs ${
+                      zoneState === 'saved' ? 'text-state-positive' : 'text-text-tertiary'
+                    }`}
+                  >
+                    {zoneState === 'saved' ? '✓ Saved' : 'Saving…'}
+                  </span>
+                )}
+              </span>
+              {/* The control prints the pick in zone number, bars, word and gloss;
+                the separate readout beside it repeated the same value in a third
+                notation, which read as a second, unexplained state. */}
               <IntensitySegmentedControl
                 value={intensity}
-                onChange={setIntensity}
+                onChange={chooseIntensity}
                 ariaLabel="Track intensity"
               />
-              <IntensityReadout intensity={intensity} />
-            </div>
-          </label>
+            </label>
 
-          <label className="flex flex-col gap-1">
-            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Display BPM override
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="number"
-                min={1}
-                inputMode="numeric"
-                placeholder="—"
-                className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                value={bpm}
-                onChange={(e) => setBpm(e.target.value)}
-              />
-              {/* Auto-fill the track's base BPM from the tempo service (never Spotify). */}
-              <button
-                type="button"
-                onClick={lookupTrackBpm}
-                disabled={bpmBusy}
-                className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50 sm:rounded-pill"
-              >
-                {bpmBusy ? 'Looking up…' : 'Look up BPM'}
-              </button>
-              {bpmStatus && (
-                <span className="font-data text-xs text-text-tertiary">{bpmStatus}</span>
-              )}
-            </div>
-          </label>
+            <label className="flex flex-col gap-1">
+              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                BPM for this class
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  inputMode="numeric"
+                  placeholder="—"
+                  aria-describedby={`bpm-help-${track.id}`}
+                  className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                  value={bpm}
+                  onChange={(e) => setBpm(e.target.value)}
+                />
+                {/* Auto-fill the track's base BPM from the tempo service (never Spotify). */}
+                <button
+                  type="button"
+                  onClick={lookupTrackBpm}
+                  disabled={bpmBusy}
+                  className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50 sm:rounded-pill"
+                >
+                  {bpmBusy ? 'Looking up…' : 'Look up BPM'}
+                </button>
+                {bpmStatus && (
+                  <span className="font-data text-xs text-text-tertiary">{bpmStatus}</span>
+                )}
+              </div>
+              {/* "Display BPM override" named the column, not the act. What the
+                reader needs is what happens if the box is left empty. */}
+              <span id={`bpm-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+                {bpm.trim() !== ''
+                  ? 'Used instead of the track’s own BPM, in this class only. Clear it to go back.'
+                  : displayBpm != null
+                    ? `Blank uses the track’s own ${displayBpm} BPM. Type a number to use a different one here.`
+                    : 'This track has no BPM yet. Type one, or use Look up BPM.'}
+              </span>
+            </label>
 
-          <label className="flex flex-col gap-1">
-            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Duration
-            </span>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="m:ss"
-              aria-describedby={`duration-help-${track.id}`}
-              className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-            />
-            <span id={`duration-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-              Minutes:seconds. Used for this class timeline.
-            </span>
-          </label>
-
-          <fieldset className="flex flex-col gap-1">
-            <legend className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Clip window
-            </legend>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="start"
-                aria-label="Clip start (minutes:seconds)"
-                aria-describedby={`clip-help-${track.id}`}
-                className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                value={clipStart}
-                onChange={(e) => setClipStart(e.target.value)}
-              />
-              <span aria-hidden className="font-ui text-sm text-text-tertiary">
-                –
+            <label className="flex flex-col gap-1">
+              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                Duration
               </span>
               <input
                 type="text"
                 inputMode="numeric"
-                placeholder="end"
-                aria-label="Clip end (minutes:seconds)"
-                aria-describedby={`clip-help-${track.id}`}
-                className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                value={clipEnd}
-                onChange={(e) => setClipEnd(e.target.value)}
+                placeholder="m:ss"
+                aria-describedby={`duration-help-${track.id}`}
+                className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
               />
-            </div>
-            <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-              Audition and run only this authored range. Blank start or end uses the track boundary.
-            </span>
-          </fieldset>
+              <span id={`duration-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+                Minutes:seconds. Used for this class timeline.
+              </span>
+            </label>
 
-          <label className="flex flex-col gap-1">
-            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Creator notes
-            </span>
-            <textarea
-              aria-label="Creator notes"
-              rows={2}
-              className="min-h-20 resize-none rounded-card border border-interactive/30 bg-bg-sunken px-3 py-2 font-ui text-sm text-text-primary"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </label>
-
-          {/* Advanced — the long tail (cadence, holds, downbeat, placement),
-              collapsed by default so the common act reads as scoring the class, not
-              filling every field before the shape is visible (design system 09
-              §Inspector "score, don't fill"). Native <details>: the inputs stay
-              mounted, so the single Save below still commits them while collapsed. */}
-          <details>
-            <summary className="flex min-h-11 cursor-pointer items-center font-ui text-xs font-semibold uppercase tracking-wide text-interactive hover:text-interactive-hover rf-focus-ring">
-              Advanced timing and placement
-            </summary>
-            <div className="mt-3 flex flex-col gap-3">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <label className="flex flex-col gap-1">
-                  <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                    RPM
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    inputMode="numeric"
-                    placeholder="—"
-                    aria-describedby={`rpm-help-${track.id}`}
-                    className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                    value={rpm}
-                    onChange={(e) => setRpm(e.target.value)}
-                  />
-                  <span id={`rpm-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-                    Cadence — not derived from BPM
-                  </span>
-                </label>
-
-                <label className="flex flex-col gap-1">
-                  <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                    Holds
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    placeholder="—"
-                    aria-describedby={`holds-help-${track.id}`}
-                    className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                    value={holdCountVal}
-                    onChange={(e) => setHoldCountVal(e.target.value)}
-                  />
-                  <span
-                    id={`holds-help-${track.id}`}
-                    className="font-ui text-xs text-text-tertiary"
-                  >
-                    Hold count for this track
-                  </span>
-                </label>
-              </div>
-
-              <label className="flex flex-col gap-1">
-                <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                  Downbeat
+            <fieldset className="flex flex-col gap-1">
+              <legend className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                Clip window — play part of the track
+              </legend>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="start"
+                  aria-label="Clip start (minutes:seconds)"
+                  aria-describedby={`clip-help-${track.id}`}
+                  className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                  value={clipStart}
+                  onChange={(e) => setClipStart(e.target.value)}
+                />
+                <span aria-hidden className="font-ui text-sm text-text-tertiary">
+                  –
                 </span>
                 <input
                   type="text"
                   inputMode="numeric"
-                  placeholder="m:ss"
-                  aria-describedby={`downbeat-help-${track.id}`}
-                  className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                  value={downbeat}
-                  onChange={(e) => setDownbeat(e.target.value)}
+                  placeholder="end"
+                  aria-label="Clip end (minutes:seconds)"
+                  aria-describedby={`clip-help-${track.id}`}
+                  className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                  value={clipEnd}
+                  onChange={(e) => setClipEnd(e.target.value)}
                 />
-                <span
-                  id={`downbeat-help-${track.id}`}
-                  className="font-ui text-xs text-text-tertiary"
-                >
-                  {displayBpm
-                    ? `Where beat 1 lands. Sets the ${displayBpm} BPM grid for snapping (4/4).`
-                    : 'Set a BPM above to enable beat-snapping.'}
-                </span>
-              </label>
+              </div>
+              <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+                Start and end as minutes:seconds, for example 0:30 and 2:15. Previews and Live play
+                only this part. Leave either blank to use the track’s own start or end.
+              </span>
+            </fieldset>
 
-              {canPlaceFreely && (
+            <label className="flex flex-col gap-1">
+              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                Creator notes
+              </span>
+              <textarea
+                aria-label="Creator notes"
+                rows={2}
+                className="min-h-20 resize-none rounded-card border border-interactive/30 bg-bg-sunken px-3 py-2 font-ui text-sm text-text-primary"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </label>
+
+            {/* Advanced — the long tail (cadence, holds, downbeat, placement),
+              collapsed by default so the common act reads as scoring the class, not
+              filling every field before the shape is visible (design system 09
+              §Inspector "score, don't fill"). Native <details>: the inputs stay
+              mounted, so the single Save below still commits them while collapsed. */}
+            <details>
+              <summary className="flex min-h-11 cursor-pointer items-center font-ui text-xs font-semibold uppercase tracking-wide text-interactive hover:text-interactive-hover rf-focus-ring">
+                Advanced timing and placement
+              </summary>
+              <div className="mt-3 flex flex-col gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <label className="flex flex-col gap-1">
+                    <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                      RPM
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      inputMode="numeric"
+                      placeholder="—"
+                      aria-describedby={`rpm-help-${track.id}`}
+                      className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                      value={rpm}
+                      onChange={(e) => setRpm(e.target.value)}
+                    />
+                    <span
+                      id={`rpm-help-${track.id}`}
+                      className="font-ui text-xs text-text-tertiary"
+                    >
+                      Cadence — not derived from BPM
+                    </span>
+                  </label>
+
+                  <label className="flex flex-col gap-1">
+                    <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                      Holds
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      placeholder="—"
+                      aria-describedby={`holds-help-${track.id}`}
+                      className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                      value={holdCountVal}
+                      onChange={(e) => setHoldCountVal(e.target.value)}
+                    />
+                    <span
+                      id={`holds-help-${track.id}`}
+                      className="font-ui text-xs text-text-tertiary"
+                    >
+                      Hold count for this track
+                    </span>
+                  </label>
+                </div>
+
                 <label className="flex flex-col gap-1">
                   <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                    Start at
+                    Downbeat
                   </span>
                   <input
                     type="text"
                     inputMode="numeric"
                     placeholder="m:ss"
-                    aria-describedby={`startat-help-${track.id}`}
+                    aria-describedby={`downbeat-help-${track.id}`}
                     className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                    value={startAt}
-                    onChange={(e) => setStartAt(e.target.value)}
+                    value={downbeat}
+                    onChange={(e) => setDownbeat(e.target.value)}
                   />
                   <span
-                    id={`startat-help-${track.id}`}
+                    id={`downbeat-help-${track.id}`}
                     className="font-ui text-xs text-text-tertiary"
                   >
-                    Where this track starts on the class timeline. Gaps are allowed; overlaps are
-                    not.
+                    {displayBpm
+                      ? `Where beat 1 lands. Sets the ${displayBpm} BPM grid for snapping (4/4).`
+                      : 'Set a BPM above to enable beat-snapping.'}
                   </span>
                 </label>
-              )}
+
+                {canPlaceFreely && (
+                  <label className="flex flex-col gap-1">
+                    <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                      Start at
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="m:ss"
+                      aria-describedby={`startat-help-${track.id}`}
+                      className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                      value={startAt}
+                      onChange={(e) => setStartAt(e.target.value)}
+                    />
+                    <span
+                      id={`startat-help-${track.id}`}
+                      className="font-ui text-xs text-text-tertiary"
+                    >
+                      Where this track starts on the class timeline. Gaps are allowed; overlaps are
+                      not.
+                    </span>
+                  </label>
+                )}
+              </div>
+            </details>
+
+            {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
+
+            {/* Whether the panel matches what is stored, said in words next to the
+              control that resolves it. Glyph + word, never colour alone (07). */}
+            <p
+              aria-live="polite"
+              className={`flex items-center gap-1.5 font-ui text-xs ${
+                dirty
+                  ? 'text-state-caution'
+                  : justSaved
+                    ? 'text-state-positive'
+                    : 'text-text-tertiary'
+              }`}
+            >
+              <span aria-hidden className="font-data leading-none">
+                {dirty ? '!' : justSaved ? '✓' : '·'}
+              </span>
+              {dirty
+                ? 'Unsaved typing — press Save or Enter to keep it.'
+                : justSaved
+                  ? 'Saved.'
+                  : 'Nothing typed to save. Intensity saves as you pick it.'}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:rounded-pill"
+                onClick={save}
+                disabled={busy || !dirty}
+              >
+                Save
+              </button>
+              <button
+                className="ml-auto min-h-11 rounded-control border border-state-danger/50 px-4 font-ui text-sm text-state-danger disabled:opacity-40 sm:rounded-pill"
+                onClick={remove}
+                disabled={busy}
+              >
+                Remove track
+              </button>
             </div>
-          </details>
-
-          {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
-
-          <div className="flex items-center gap-2">
-            <button
-              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:rounded-pill"
-              onClick={save}
-              disabled={busy}
-            >
-              Save
-            </button>
-            <button
-              className="ml-auto min-h-11 rounded-control border border-state-danger/50 px-4 font-ui text-sm text-state-danger disabled:opacity-40 sm:rounded-pill"
-              onClick={remove}
-              disabled={busy}
-            >
-              Remove track
-            </button>
           </div>
 
           {/* Choreography anchored to this track — cues + placed moves. Lazy-loaded
@@ -5239,6 +5399,7 @@ function TrackInspector({
               durationMs={durationMs}
               bpm={displayBpm}
               beatAnchorMs={track.beatAnchorMs}
+              startEntryNonce={startCueEntry}
               focus={
                 focus?.kind === 'cue'
                   ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce }

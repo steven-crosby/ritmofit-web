@@ -40,14 +40,10 @@ function poolClasses(classes: readonly ClassListItem[]): ClassListItem[] {
 
 export function ClassRunOfShowShelf({
   classes,
-  confirmedPulseIds,
-  onTogglePulseConfirmation,
   onOpen,
   onPreview,
 }: {
   classes: ClassListItem[];
-  confirmedPulseIds: ReadonlySet<string>;
-  onTogglePulseConfirmation: (classId: string) => void;
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
 }) {
@@ -205,12 +201,7 @@ export function ClassRunOfShowShelf({
                     </p>
                   </div>
                 ) : (
-                  <ClassPulse
-                    payload={payload!}
-                    compact
-                    confirmed={confirmedPulseIds.has(cls.id)}
-                    onConfirm={() => onTogglePulseConfirmation(cls.id)}
-                  />
+                  <ClassPulse payload={payload!} compact />
                 )}
               </div>
 

@@ -152,6 +152,19 @@ Long-tail fields sit under a collapsed **Advanced** disclosure: cadence/RPM, hol
 downbeat, detailed notes, and provider/debug metadata. Advanced fields are still important; they are not
 the first impression. The common act should feel like scoring the class, not completing a record.
 
+Essentials carry their own plain-language help, because a field label names a column, not an act: the
+zone summary glosses the selected zone ("Selected: Z2 Push — steady working effort"), the BPM field
+says what an empty box falls back to, and the clip window says what a blank end means.
+
+**Commit by control type.** Scoring is the act the inspector exists for, so a **discrete choice that
+cannot be half-entered — the intensity zone — commits on the click** and confirms itself beside its
+own control (`Saving…` → `✓ Saved`); a failed write puts the stored zone back rather than leaving a
+value that never landed. **Typed fields** (BPM, duration, clip window, notes, the advanced tail) need
+validation and can move the class clock, so they commit deliberately: **Save**, **Enter** from any
+single-line field, or **⌘/Ctrl+S** within the field block. The panel states that typed status in
+words — `Nothing typed to save.` / `Unsaved typing` (caution) / `Saved.` — and Save stays disabled
+while there is nothing to commit. Never make the instructor visit a button to record a single click.
+
 ## Readiness — is the class ready to run?
 
 Before an instructor is on stage, the builder header answers one question plainly: **is this class ready
@@ -176,8 +189,19 @@ Rules:
 - Encode state by **glyph + word + severity, never color alone**: the label itself names the state
   ("set" / "missing" / "needed"). Warnings use the **caution channel only** — no new accent, and never
   plasma (see [`02-color-system.md`](./02-color-system.md), 10 §10).
+- **Say it in the instructor's words, and name the consequence.** Readiness copy may not lean on
+  internal shorthand: not "pulse off" (the **Class Pulse** chart sits on the same screen, so the word
+  points at the wrong object — say "Live shows no beat"), and not "bare prompter" / "prompter only"
+  (a mode the instructor has never been shown — say what Live will and won't do). The panel also
+  names what it is checking, and the click-to-fix chips are introduced as the job they do
+  ("Open to add BPM:", "Open to link music:", "Open to set length:") so the same track title
+  on two rows is two acts, not a duplicate chip. Any overflow is a real control, never a dead
+  count. Missing BPM uses the same words everywhere — "No BPM set" — in the header stats, the
+  readiness tempo row, and the track-stack chip.
 - Ready dimensions stay quiet (one line). Anything needing attention expands with its impact and
-  **click-to-fix track chips** that jump the inspector to the track that needs work.
+  **click-to-fix track chips** that jump the inspector to the track that needs work. Choreography
+  has no flagged track, so that row offers **Write the first cue** — it opens the first track
+  and puts the caret in its cue box.
 - Placement: in the class header, directly under the summary metrics — the first thing read after the
   title and the last check before Run live. Implemented as `ClassReadinessSummary` from the pure
   `readiness.ts` derivation.

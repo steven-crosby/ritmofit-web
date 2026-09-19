@@ -147,3 +147,17 @@ describe('CuesSection — keyboard focus restoration', () => {
     );
   });
 });
+
+describe('CuesSection — readiness first-cue handoff', () => {
+  it('puts the caret in the cue text field when readiness asks to start entry', async () => {
+    vi.mocked(api.listCues).mockResolvedValue([]);
+    const { rerender } = render(
+      <CuesSection classTrackId="ct-1" durationMs={240000} startEntryNonce={0} />,
+    );
+    const field = await screen.findByRole('textbox', { name: 'Cue text' });
+    expect(document.activeElement).not.toBe(field);
+
+    rerender(<CuesSection classTrackId="ct-1" durationMs={240000} startEntryNonce={1} />);
+    expect(document.activeElement).toBe(field);
+  });
+});

@@ -39,21 +39,24 @@ function cls(index: number): ClassListItem {
   };
 }
 
+/**
+ * Two tracks on one effort with no scored placement — an *auto-shaped* class, so
+ * the card's Pulse carries the confirm affordance (a lone track can never form a
+ * derived arc; see `energy-arc.isUnshapedSequence`).
+ */
 function payload(title: string): RunPayload {
   return {
-    class: { title, totalDurationMs: 60_000 },
-    tracks: [
-      {
-        classTrackId: `${title}-track`,
-        position: 0,
-        intensity: 'hard',
-        track: { durationMs: 60_000 },
-        providerRefs: [],
-        cues: [],
-        moves: [],
-        displayBpm: null,
-      },
-    ],
+    class: { title, totalDurationMs: 120_000 },
+    tracks: [0, 1].map((position) => ({
+      classTrackId: `${title}-track-${position}`,
+      position,
+      intensity: 'hard',
+      track: { durationMs: 60_000 },
+      providerRefs: [],
+      cues: [],
+      moves: [],
+      displayBpm: null,
+    })),
   } as unknown as RunPayload;
 }
 
@@ -88,8 +91,6 @@ describe('ClassRunOfShowShelf', () => {
     render(
       <ClassRunOfShowShelf
         classes={[1, 2, 3, 4].map(cls)}
-        confirmedPulseIds={new Set()}
-        onTogglePulseConfirmation={() => {}}
         onOpen={() => {}}
         onPreview={() => {}}
       />,
@@ -104,15 +105,7 @@ describe('ClassRunOfShowShelf', () => {
   it('bounds detail enrichment to the twelve most recent candidates', async () => {
     vi.mocked(api.getClassShelfPayload).mockImplementation(async (id: string) => payload(id));
     const many = Array.from({ length: 14 }, (_, index) => cls(index));
-    render(
-      <ClassRunOfShowShelf
-        classes={many}
-        confirmedPulseIds={new Set()}
-        onTogglePulseConfirmation={() => {}}
-        onOpen={() => {}}
-        onPreview={() => {}}
-      />,
-    );
+    render(<ClassRunOfShowShelf classes={many} onOpen={() => {}} onPreview={() => {}} />);
     await waitFor(() => expect(api.getClassShelfPayload).toHaveBeenCalledTimes(12));
     // Ranking reads a wider pool than it shows so a finished class that has not been
     // opened lately can still reach the top, but the pool is bounded: the two oldest
@@ -124,41 +117,25 @@ describe('ClassRunOfShowShelf', () => {
   it('keeps a failed detail distinct and retries without hiding the class', async () => {
     vi.mocked(api.getClassShelfPayload).mockRejectedValueOnce(new Error('offline'));
     vi.mocked(api.getClassShelfPayload).mockResolvedValue(payload('Class 1'));
-    render(
-      <ClassRunOfShowShelf
-        classes={[cls(1)]}
-        confirmedPulseIds={new Set()}
-        onTogglePulseConfirmation={() => {}}
-        onOpen={() => {}}
-        onPreview={() => {}}
-      />,
-    );
+    render(<ClassRunOfShowShelf classes={[cls(1)]} onOpen={() => {}} onPreview={() => {}} />);
     expect(await screen.findByText('Class details unavailable')).toBeTruthy();
     expect(screen.getByText('Class 1')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Retry details — Class 1' }));
     expect(await screen.findByRole('button', { name: 'Rehearsal view — Class 1' })).toBeTruthy();
   });
 
-  it('routes open, preview, and ephemeral confirmation through the owner', async () => {
+  it('routes open and preview through the owner, and states the shape without a control', async () => {
     vi.mocked(api.getClassShelfPayload).mockResolvedValue(payload('Class 1'));
     const onOpen = vi.fn();
     const onPreview = vi.fn();
-    const onToggle = vi.fn();
-    render(
-      <ClassRunOfShowShelf
-        classes={[cls(1)]}
-        confirmedPulseIds={new Set()}
-        onTogglePulseConfirmation={onToggle}
-        onOpen={onOpen}
-        onPreview={onPreview}
-      />,
-    );
-    fireEvent.click(await screen.findByRole('button', { name: /derived · confirm/i }));
+    render(<ClassRunOfShowShelf classes={[cls(1)]} onOpen={onOpen} onPreview={onPreview} />);
+    // A shelf card is for choosing a class, so its Pulse reports where the shape
+    // came from and every control on the card does something.
+    expect(await screen.findByText('◇ auto-shaped')).toBeTruthy();
     // The primary names this class's actual gap — the fixture payload carries no
     // BPM — rather than a generic "continue" (P0-03).
     fireEvent.click(screen.getByRole('button', { name: 'Add the missing tempo — Class 1' }));
     fireEvent.click(screen.getByRole('button', { name: 'Rehearsal view — Class 1' }));
-    expect(onToggle).toHaveBeenCalledWith(cls(1).id);
     expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ id: cls(1).id }));
     expect(onPreview).toHaveBeenCalledWith(expect.objectContaining({ id: cls(1).id }));
   });
@@ -166,13 +143,7 @@ describe('ClassRunOfShowShelf', () => {
   it('names the active ordering, defaults to ready to teach, and switches', async () => {
     vi.mocked(api.getClassShelfPayload).mockImplementation(async (id: string) => payload(id));
     render(
-      <ClassRunOfShowShelf
-        classes={[1, 2].map(cls)}
-        confirmedPulseIds={new Set()}
-        onTogglePulseConfirmation={() => {}}
-        onOpen={() => {}}
-        onPreview={() => {}}
-      />,
+      <ClassRunOfShowShelf classes={[1, 2].map(cls)} onOpen={() => {}} onPreview={() => {}} />,
     );
 
     expect(await screen.findByText(/Ordered by ready to teach/)).toBeTruthy();
@@ -197,8 +168,6 @@ describe('ClassRunOfShowShelf', () => {
     render(
       <ClassRunOfShowShelf
         classes={[finished, unfinished]}
-        confirmedPulseIds={new Set()}
-        onTogglePulseConfirmation={() => {}}
         onOpen={() => {}}
         onPreview={() => {}}
       />,

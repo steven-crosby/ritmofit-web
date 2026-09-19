@@ -33,6 +33,20 @@ export const INTENSITY_LABEL: Record<Intensity, string> = {
   all_out: 'All Out',
 };
 
+/**
+ * What each zone word means in effort terms. The zone vocabulary (D17) is exact
+ * but not self-explanatory — "Z2 · Push" tells an instructor which button is
+ * pressed, not how hard the track is meant to feel. Short enough to sit on the
+ * selection summary line.
+ */
+export const INTENSITY_HINT: Record<Intensity, string> = {
+  none: 'not scored yet',
+  easy: 'warm-up or recovery',
+  mod: 'steady working effort',
+  hard: 'hard, near the limit',
+  all_out: 'maximum effort, short',
+};
+
 export function IntensityReadout({ intensity }: { intensity: Intensity }) {
   const bars = INTENSITY_BARS[intensity];
   const label = INTENSITY_LABEL[intensity];

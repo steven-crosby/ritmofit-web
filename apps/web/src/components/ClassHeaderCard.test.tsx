@@ -60,6 +60,7 @@ describe('ClassHeaderCard Live readiness', () => {
         onError={() => {}}
         onRun={onRun}
         onSelectTrack={onSelectTrack}
+        onStartChoreography={() => {}}
         onClassUpdated={() => {}}
         onDeleted={() => {}}
       />,
@@ -71,7 +72,7 @@ describe('ClassHeaderCard Live readiness', () => {
     expect(onRun).not.toHaveBeenCalled();
 
     // This track is flagged by three dimensions (no duration, no BPM, no provider),
-    // so it shows as a fix-chip in each ("Fix duration on Unknown Length", …); any
+    // so it shows as a fix-chip in each ("Fix length on Unknown Length", …); any
     // chip jumps the inspector to it.
     fireEvent.click(screen.getAllByRole('button', { name: /Unknown Length/ })[0]!);
     expect(onSelectTrack).toHaveBeenCalledWith(missingEntry.classTrackId);
@@ -92,6 +93,7 @@ describe('ClassHeaderCard Live readiness', () => {
         onError={() => {}}
         onRun={() => {}}
         onSelectTrack={() => {}}
+        onStartChoreography={() => {}}
         onClassUpdated={() => {}}
         onDeleted={() => {}}
       />,
@@ -132,6 +134,7 @@ describe('ClassHeaderCard Live readiness', () => {
         onError={() => {}}
         onRun={() => {}}
         onSelectTrack={() => {}}
+        onStartChoreography={() => {}}
         onClassUpdated={() => {}}
         onDeleted={() => {}}
       />,
@@ -140,6 +143,33 @@ describe('ClassHeaderCard Live readiness', () => {
     const runButton = screen.getByRole('button', { name: /run live/i });
     expect(runButton).toHaveProperty('disabled', false);
     expect(runButton.getAttribute('aria-describedby')).toBeNull();
+  });
+
+  it('sends the instructor to write the first cue from the choreography row', () => {
+    const onStartChoreography = vi.fn();
+    const runnable = {
+      class: { totalDurationMs: 300_000 },
+      tracks: [{ ...missingEntry, track: { title: 'Ready', durationMs: 300_000 } }],
+    } as RunPayload;
+    render(
+      <ClassHeaderCard
+        cls={cls}
+        payload={runnable}
+        trackCount={1}
+        isOwner
+        canEdit
+        canRun
+        onError={() => {}}
+        onRun={() => {}}
+        onSelectTrack={() => {}}
+        onStartChoreography={onStartChoreography}
+        onClassUpdated={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Write the first cue' }));
+    expect(onStartChoreography).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -150,6 +180,7 @@ const baseProps = {
   onError: () => {},
   onRun: () => {},
   onSelectTrack: () => {},
+  onStartChoreography: () => {},
   onClassUpdated: () => {},
   onDeleted: () => {},
 };

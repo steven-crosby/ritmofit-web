@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
 import type { RunPayload } from '@ritmofit/shared';
-import { ClassPulse } from './ClassPulse.js';
+import { ClassPulse, ClassPulseView } from './ClassPulse.js';
+import { classPulseFromPayload } from '../lib/class-pulse.js';
 
 afterEach(cleanup);
 
@@ -26,24 +27,58 @@ function payload(): RunPayload {
   } as unknown as RunPayload;
 }
 
+/** Every track on one effort and no scored moves — the auto-shaped case. */
+function unshapedPayload(): RunPayload {
+  return {
+    class: { totalDurationMs: 360_000 },
+    tracks: Array.from({ length: 6 }, (_, index) => ({
+      classTrackId: `t${index}`,
+      position: index,
+      intensity: 'hard',
+      track: { durationMs: 60_000 },
+    })),
+  } as unknown as RunPayload;
+}
+
 describe('ClassPulse', () => {
   it('names its derivation and describes sparse effort without color', () => {
     render(<ClassPulse payload={payload()} />);
-    expect(screen.getByText(/derived · confirm/i)).toBeTruthy();
+    expect(screen.getByText(/from track efforts/i)).toBeTruthy();
     expect(screen.getByRole('img').getAttribute('aria-label')).toContain('unscored');
     expect(screen.getByText(/1 unscored effort/i)).toBeTruthy();
   });
 
-  it('offers explicit, controlled, presentational confirmation', () => {
-    const onConfirm = vi.fn();
-    const { rerender } = render(<ClassPulse payload={payload()} onConfirm={onConfirm} />);
-    fireEvent.click(screen.getByRole('button', { name: /derived · confirm/i }));
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-
-    rerender(<ClassPulse payload={payload()} confirmed onConfirm={onConfirm} />);
+  it('explains the picture: axes in words, a time axis, and a colour key', () => {
+    render(<ClassPulse payload={payload()} />);
     expect(
-      screen.getByRole('button', { name: /confirmed for this view/i }).getAttribute('aria-pressed'),
-    ).toBe('true');
+      screen.getByText(/each block is a track — wider is longer, taller is harder/i),
+    ).toBeTruthy();
+    expect(screen.getByText(/0:00 start/i)).toBeTruthy();
+    expect(screen.getByText(/3:00 finish/i)).toBeTruthy();
+    expect(screen.getByText(/z1 build/i)).toBeTruthy();
+    expect(screen.getByText(/hatched = effort not set yet/i)).toBeTruthy();
+  });
+
+  it('drops the time axis when the caller cannot supply a runtime', () => {
+    // `ClassPulseView` also renders on the marketing page from a bare model, and
+    // an axis whose end is the word "finish" labels nothing.
+    render(<ClassPulseView model={classPulseFromPayload(payload())} />);
+    expect(screen.queryByText(/0:00 start/i)).toBeNull();
+    expect(screen.queryByText('finish', { exact: true })).toBeNull();
+    expect(screen.getByText(/z1 build/i)).toBeTruthy();
+  });
+
+  it('states where the shape came from, and offers no control that does nothing', () => {
+    // The old "derived · confirm" pill only relabelled itself for the session —
+    // no persistence, no effect. A guessed shape is a state, not a decision.
+    const { rerender } = render(<ClassPulse payload={unshapedPayload()} />);
+    expect(screen.getByText('◇ auto-shaped')).toBeTruthy();
+    expect(screen.getByText(/set a track’s intensity to refine/i)).toBeTruthy();
+    expect(screen.queryByRole('button')).toBeNull();
+
+    rerender(<ClassPulse payload={payload()} />);
+    expect(screen.getByText(/from track efforts/i)).toBeTruthy();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 
   it('renders a truthful empty state without an image-shaped fake', () => {
@@ -59,17 +94,7 @@ describe('ClassPulse', () => {
   it('does not draw uniform bars when every track shares one effort (P0-07)', () => {
     // Six equal-length tracks, all "hard" — the Tuesday 6AM case. Canon
     // (10-rhythm-system §4) forbids the flat slab this used to draw.
-    const flat = {
-      ...payload(),
-      tracks: Array.from({ length: 6 }, (_, index) => ({
-        classTrackId: `t${index}`,
-        position: index,
-        intensity: 'hard',
-        track: { durationMs: 60_000 },
-      })),
-    } as unknown as RunPayload;
-
-    render(<ClassPulse payload={flat} />);
+    render(<ClassPulse payload={unshapedPayload()} />);
     const heights = Array.from(document.querySelectorAll('rect')).map((r) =>
       Number(r.getAttribute('height')),
     );

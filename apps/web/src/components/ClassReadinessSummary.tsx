@@ -15,7 +15,13 @@
  * Warnings use the caution channel only (design system 10 §Visual — amber for
  * readiness gaps, no new accent channel). Plasma/danger are never spent here.
  */
-import type { ClassReadiness, ReadinessKey, ReadinessLevel } from '../lib/readiness.js';
+import { useState } from 'react';
+import type {
+  ClassReadiness,
+  ReadinessDimension,
+  ReadinessKey,
+  ReadinessLevel,
+} from '../lib/readiness.js';
 
 const GLYPH: Record<ReadinessLevel, string> = {
   ready: '✓',
@@ -25,24 +31,44 @@ const GLYPH: Record<ReadinessLevel, string> = {
 
 /** Friendly noun per dimension, for an action-bearing fix-chip label. */
 const DIMENSION_NOUN: Record<ReadinessKey, string> = {
-  duration: 'duration',
-  tempo: 'tempo',
+  duration: 'length',
+  tempo: 'BPM',
   choreography: 'cues and moves',
   music: 'music',
 };
 
+/**
+ * Lead-in for the chip row. The same track can appear on tempo and music because
+ * those are two jobs — this names the job so "Solo" twice is not the same chip.
+ */
+const FIX_LEADIN: Record<ReadinessKey, string> = {
+  duration: 'Open to set length:',
+  tempo: 'Open to add BPM:',
+  choreography: 'Open to write cues:',
+  music: 'Open to link music:',
+};
+
+/**
+ * The status in plain words. "Runnable · 2 to finish" made the reader decode two
+ * pieces of jargon at once — whether "runnable" meant it *had* run, and what the
+ * count was counting.
+ */
 function headline(readiness: ClassReadiness): { text: string; tone: string } {
   if (!readiness.runnable) return { text: 'Not ready for Live', tone: 'text-state-caution' };
   if (readiness.fullyReady)
     return { text: 'Class shape ready · take it live', tone: 'text-state-positive' };
   const n = readiness.attentionCount;
-  return { text: `Runnable · ${n} to finish`, tone: 'text-text-secondary' };
+  return {
+    text: `Can run live · ${n} ${n === 1 ? 'thing' : 'things'} left`,
+    tone: 'text-text-secondary',
+  };
 }
 
 export function ClassReadinessSummary({
   readiness,
   canEdit,
   onSelectTrack,
+  onStartChoreography,
   compact = false,
 }: {
   readiness: ClassReadiness;
@@ -50,6 +76,13 @@ export function ClassReadinessSummary({
   compact?: boolean;
   /** Jump the inspector to a flagged track so the gap can be fixed in place. */
   onSelectTrack: (classTrackId: string) => void;
+  /**
+   * Open the first track's cue entry. Cues and moves have no flagged track to
+   * jump to, so without this the row could only describe the gap — and an
+   * instructor who has never planned a class cannot act on a description of
+   * something she has not seen yet.
+   */
+  onStartChoreography?: () => void;
 }) {
   const head = headline(readiness);
   return (
@@ -63,10 +96,15 @@ export function ClassReadinessSummary({
         </span>
         <span className={`font-data text-xs ${head.tone}`}>{head.text}</span>
       </div>
+      {/* The panel says what it is before it starts listing states. Four lines of
+          check/warn with no framing left the reader to infer both what was being
+          checked and who was doing the checking. */}
+      <p className="font-ui text-xs text-text-tertiary">
+        What Live needs from this class before you run it.
+      </p>
       <ul className="flex flex-col gap-1.5">
         {readiness.dimensions.map((d) => {
           const ready = d.level === 'ready';
-          const visibleTracks = compact ? d.tracks.slice(0, 2) : d.tracks;
           return (
             <li key={d.key} className="flex flex-col gap-1">
               <div className="flex items-baseline gap-2">
@@ -90,28 +128,22 @@ export function ClassReadinessSummary({
                   {!ready && <p className="font-ui text-xs text-text-tertiary">{d.detail}</p>}
                 </div>
               </div>
-              {canEdit && visibleTracks.length > 0 && (
-                <div className="ml-6 flex flex-wrap gap-1.5">
-                  {visibleTracks.map((t) => (
-                    <button
-                      key={t.classTrackId}
-                      type="button"
-                      // Action-bearing name so a screen-reader/keyboard user can tell
-                      // this fix-chip apart from the identically-titled track row, and
-                      // knows what it does. Keeps the visible title in the name
-                      // (label-in-name / voice control).
-                      aria-label={`Fix ${DIMENSION_NOUN[d.key]} on ${t.track.title}`}
-                      className="min-h-11 rounded-control border border-interactive/50 px-2.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
-                      onClick={() => onSelectTrack(t.classTrackId)}
-                    >
-                      {t.track.title}
-                    </button>
-                  ))}
-                  {compact && d.tracks.length > visibleTracks.length && (
-                    <span className="flex min-h-11 items-center font-data text-[10px] text-text-tertiary">
-                      +{d.tracks.length - visibleTracks.length} more
-                    </span>
-                  )}
+              {canEdit && d.tracks.length > 0 && (
+                <FixChips
+                  dimension={d}
+                  collapseAfter={compact ? 2 : null}
+                  onSelectTrack={onSelectTrack}
+                />
+              )}
+              {canEdit && !ready && d.key === 'choreography' && onStartChoreography && (
+                <div className="ml-6 flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={onStartChoreography}
+                    className="min-h-11 rounded-control border border-interactive/50 px-2.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
+                  >
+                    Write the first cue
+                  </button>
                 </div>
               )}
             </li>
@@ -119,5 +151,59 @@ export function ClassReadinessSummary({
         })}
       </ul>
     </section>
+  );
+}
+
+/**
+ * The click-to-fix chips for one dimension. A bare row of track titles read as
+ * labels, so it never said that clicking one opens that track in the inspector —
+ * the lead-in now names the action, and the overflow ("+7 more") is a real
+ * button that shows the rest instead of a dead count.
+ */
+function FixChips({
+  dimension,
+  collapseAfter,
+  onSelectTrack,
+}: {
+  dimension: ReadinessDimension;
+  /** Show at most this many chips until expanded; null shows all of them. */
+  collapseAfter: number | null;
+  onSelectTrack: (classTrackId: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const limit = collapseAfter == null || expanded ? dimension.tracks.length : collapseAfter;
+  const visible = dimension.tracks.slice(0, limit);
+  const hidden = dimension.tracks.length - visible.length;
+  const noun = DIMENSION_NOUN[dimension.key];
+  return (
+    <div className="ml-6 flex flex-wrap items-center gap-1.5">
+      <span className="font-ui text-xs text-text-tertiary">{FIX_LEADIN[dimension.key]}</span>
+      {visible.map((t) => (
+        <button
+          key={t.classTrackId}
+          type="button"
+          // Action-bearing name so a screen-reader/keyboard user can tell
+          // this fix-chip apart from the identically-titled track row, and
+          // knows what it does. Keeps the visible title in the name
+          // (label-in-name / voice control).
+          aria-label={`Fix ${noun} on ${t.track.title}`}
+          title={`Open ${t.track.title} in the track inspector`}
+          className="min-h-11 rounded-control border border-interactive/50 px-2.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
+          onClick={() => onSelectTrack(t.classTrackId)}
+        >
+          {t.track.title}
+        </button>
+      ))}
+      {hidden > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          aria-label={`Show ${hidden} more ${hidden === 1 ? 'track' : 'tracks'} to fix ${noun}`}
+          className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive underline underline-offset-2 hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
+        >
+          +{hidden} more
+        </button>
+      )}
+    </div>
   );
 }

@@ -73,7 +73,7 @@ describe('classReadiness — dimensions', () => {
     expect(duration.level).toBe('blocked');
     expect(duration.label).toMatch(/add a track/i);
     // The other three have nothing to assess yet, so they must not fire "attention"
-    // (they'd otherwise read "Tempo missing — pulse off" about zero tracks).
+    // (they'd otherwise read "No BPM set" about zero tracks).
     expect(r.dimensions.filter((d) => d.key !== 'duration').every((d) => d.level === 'ready')).toBe(
       true,
     );
@@ -84,15 +84,28 @@ describe('classReadiness — dimensions', () => {
   it('flags tempo off when no track has a BPM and incomplete when some do', () => {
     const allMissing = dim(payload(entry(), entry()), 'tempo');
     expect(allMissing.level).toBe('attention');
-    expect(allMissing.label).toMatch(/tempo missing — pulse off/i);
+    expect(allMissing.label).toMatch(/no bpm set/i);
     expect(allMissing.tracks).toHaveLength(2);
 
     const some = dim(payload(entry({ displayBpm: 120 }), entry()), 'tempo');
     expect(some.level).toBe('attention');
-    expect(some.label).toMatch(/tempo incomplete/i);
+    expect(some.label).toMatch(/bpm missing on 1 track/i);
     expect(some.tracks).toHaveLength(1);
 
     expect(dim(payload(entry({ displayBpm: 120 })), 'tempo').level).toBe('ready');
+  });
+
+  it('states tempo and choreography gaps without the "pulse"/"prompter" shorthand', () => {
+    // "pulse" names an animation in canon and the Class Pulse chart on the same
+    // screen; "bare prompter" named a mode the instructor has never seen. Both
+    // made the reader decode the warning before acting on it.
+    const p = payload(entry(), entry());
+    const words = classReadiness(p)
+      .dimensions.flatMap((d) => [d.label, d.detail])
+      .join(' ');
+    expect(words).not.toMatch(/pulse/i);
+    expect(words).not.toMatch(/prompter/i);
+    expect(dim(p, 'tempo').detail).toMatch(/add bpm so the class keeps time/i);
   });
 
   it('flags choreography until at least one cue or move is anchored', () => {
@@ -105,10 +118,11 @@ describe('classReadiness — dimensions', () => {
     ).toBe('ready');
   });
 
-  it('flags music as prompter-only until every track carries a provider ref', () => {
+  it('flags silent tracks until every track carries a provider ref', () => {
     const none = dim(payload(entry()), 'music');
     expect(none.level).toBe('attention');
-    expect(none.label).toMatch(/prompter only/i);
+    expect(none.label).toMatch(/no music linked/i);
+    expect(none.detail).toMatch(/no audio/i);
 
     const some = dim(
       payload(

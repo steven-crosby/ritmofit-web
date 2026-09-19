@@ -5,6 +5,7 @@ import {
   classPulseFromPayload,
   type ClassPulseModel,
 } from '../lib/class-pulse.js';
+import { formatDuration } from '../lib/class-summary.js';
 
 const HEIGHT: Record<NonNullable<ClassPulseModel['segments'][number]['effort']>, number> = {
   easy: 30,
@@ -20,24 +21,27 @@ const EFFORT_LABEL = {
   all_out: 'all out',
 } as const;
 
+/** Zone words, so the legend reads in the same vocabulary as the inspector. */
+const EFFORT_ZONE_LABEL = {
+  easy: 'Z1 Build',
+  mod: 'Z2 Push',
+  hard: 'Z3 Attack',
+  all_out: 'Z4 All Out',
+} as const;
+
 export function ClassPulse({
   payload,
-  confirmed = false,
-  onConfirm,
   compact = false,
   className = '',
 }: {
   payload: RunPayload;
-  confirmed?: boolean;
-  onConfirm?: () => void;
   compact?: boolean;
   className?: string;
 }) {
   return (
     <ClassPulseView
       model={classPulseFromPayload(payload)}
-      confirmed={confirmed}
-      onConfirm={onConfirm}
+      totalDurationMs={payload.class.totalDurationMs}
       compact={compact}
       className={className}
     />
@@ -46,14 +50,13 @@ export function ClassPulse({
 
 export function ClassPulseView({
   model,
-  confirmed = false,
-  onConfirm,
+  totalDurationMs,
   compact = false,
   className = '',
 }: {
   model: ClassPulseModel;
-  confirmed?: boolean;
-  onConfirm?: () => void;
+  /** Class runtime, for the time axis under the chart. Omitted = no axis. */
+  totalDurationMs?: number;
   compact?: boolean;
   className?: string;
 }) {
@@ -90,21 +93,34 @@ export function ClassPulseView({
         <span className="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">
           Class Pulse
         </span>
-        {onConfirm ? (
-          <button
-            type="button"
-            onClick={onConfirm}
-            aria-pressed={confirmed}
-            className="min-h-11 rounded-control border border-state-caution/45 px-3 font-data text-[10px] font-semibold uppercase tracking-wide text-state-caution hover:bg-state-caution/10 rf-focus-ring sm:min-h-8 sm:rounded-pill"
-          >
-            ◇ {confirmed ? 'derived · confirmed for this view' : 'derived · confirm'}
-          </button>
-        ) : (
+        {/* Where the shape came from, and nothing else. The old
+            "derived · confirm" pill was a control whose entire effect was to
+            relabel itself for the rest of the session: it saved nothing, it
+            changed nothing, and on a class the instructor had scored it was a
+            caution about their own work. Deleted rather than explained.
+            A *guessed* shape still has to say so (canon 10 §4) — as a state,
+            on the caution channel, with the caption carrying the refine step. */}
+        {model.provisional ? (
           <span className="font-data text-[10px] font-semibold uppercase tracking-wide text-state-caution">
-            ◇ derived · confirm
+            ◇ auto-shaped
+          </span>
+        ) : (
+          <span className="font-data text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
+            {/* Not "your": this view also renders on the signed-out marketing
+                page over a synthetic class nobody reading it authored. */}
+            {model.coverage.scoredCount > 0 ? 'from track efforts' : 'no effort scored yet'}
           </span>
         )}
       </div>
+      {/* What the picture is, in one line. The chart used to arrive unlabeled
+          between a readiness list and a track list, so its axes had to be
+          guessed. */}
+      {!compact && (
+        <p className="mt-1 font-ui text-xs text-text-secondary">
+          Effort over time, start to finish. Each block is a track — wider is longer, taller is
+          harder.
+        </p>
+      )}
 
       {/* The caption below is the ONE place `coverage` is printed. An empty pulse
           used to render it here as well, so the invitation appeared twice on every
@@ -179,7 +195,63 @@ export function ClassPulseView({
         </svg>
       )}
 
+      {/* The axis needs a real end time to mean anything — a bare "finish"
+          labels nothing. Callers that don't know the runtime get no axis. */}
+      {!compact && model.segments.length > 0 && totalDurationMs != null && (
+        <div
+          aria-hidden
+          className="mt-1 flex items-center justify-between font-data text-[10px] text-text-tertiary"
+        >
+          <span>0:00 start</span>
+          <span>{formatDuration(totalDurationMs)} finish</span>
+        </div>
+      )}
+
+      {!compact && model.segments.length > 0 && <PulseLegend model={model} />}
+
       <p className="mt-2 font-ui text-xs text-text-tertiary">{coverage}</p>
     </section>
+  );
+}
+
+/**
+ * The colour key. Height already carries the zone (canon 10 §4), so this exists
+ * to name the colours a reader sees rather than to encode anything: without it,
+ * four shades of copper and a hatch pattern are a picture with no caption.
+ */
+function PulseLegend({ model }: { model: ClassPulseModel }) {
+  const drawn = (['easy', 'mod', 'hard', 'all_out'] as const).filter((effort) =>
+    model.segments.some((segment) => (segment.shapeEffort ?? segment.effort) === effort),
+  );
+  const hasUnscored = model.segments.some((segment) => segment.effort == null);
+  if (drawn.length === 0 && !hasUnscored) return null;
+  return (
+    <ul className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-ui text-[10px] text-text-tertiary">
+      {drawn.map((effort) => (
+        <li key={effort} className="flex items-center gap-1">
+          <span
+            aria-hidden
+            className="h-2 w-2.5 rounded-[2px]"
+            style={{ backgroundColor: `var(--rf-color-intensity-${effort})`, opacity: 0.72 }}
+          />
+          {EFFORT_ZONE_LABEL[effort]}
+        </li>
+      ))}
+      {hasUnscored && (
+        <li className="flex items-center gap-1">
+          <span
+            aria-hidden
+            className="h-2 w-2.5 rounded-[2px]"
+            style={{
+              // Same 45° hatch the unscored bars are filled with, at legend scale.
+              backgroundImage:
+                'repeating-linear-gradient(45deg, transparent 0 2px, var(--rf-color-semantic-text-tertiary) 2px 3px)',
+              opacity: 0.6,
+            }}
+          />
+          Hatched = effort not set yet
+        </li>
+      )}
+    </ul>
   );
 }
