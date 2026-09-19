@@ -4847,11 +4847,12 @@ function TrackInspector({
   const [notes, setNotes] = useState(track.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Nothing in this panel commits until Save, so the panel has to say whether
-  // what is on screen is what is stored. Without it, picking a zone or typing a
-  // BPM produced no acknowledgement at all (canon 09 "Unsaved/unsynced").
+  // Typed fields only. Scoring a zone is a discrete, always-valid choice, so it
+  // commits on click (see `chooseIntensity`) and reports next to its own
+  // control; this draft is the text the instructor has entered and not yet
+  // committed, which is what the Save line speaks about (canon 09
+  // "Unsaved/unsynced").
   const draft = JSON.stringify({
-    intensity,
     bpm,
     rpm,
     holdCountVal,
@@ -4869,6 +4870,69 @@ function TrackInspector({
   // base display BPM; the resolved row BPM is still override ?? base.
   const [bpmBusy, setBpmBusy] = useState(false);
   const [bpmStatus, setBpmStatus] = useState<string | null>(null);
+
+  /**
+   * Scoring a class is the act this panel exists for, and it used to cost three
+   * clicks a track: pick the zone, find Save, press it. A zone is a discrete
+   * choice that cannot be half-entered, so it commits itself.
+   *
+   * Debounced, because the segmented control's arrow keys move the selection as
+   * they travel — without this, walking Z0→Z4 would fire five writes. The
+   * pending write is flushed on unmount so selecting the next track never
+   * silently drops the zone just clicked.
+   */
+  const [zoneState, setZoneState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const savedIntensity = useRef<Intensity>(track.intensity);
+  const pendingIntensity = useRef<Intensity | null>(null);
+  const zoneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mounted = useRef(true);
+
+  const commitIntensity = async () => {
+    const next = pendingIntensity.current;
+    pendingIntensity.current = null;
+    if (next == null || next === savedIntensity.current) return;
+    if (mounted.current) {
+      setZoneState('saving');
+      setError(null);
+    }
+    try {
+      await updateClassTrack(track.id, { intensity: next });
+      savedIntensity.current = next;
+      if (mounted.current) setZoneState('saved');
+      onSaved();
+    } catch (e) {
+      // The write did not land, so the control must not keep claiming it did.
+      if (mounted.current) {
+        setIntensity(savedIntensity.current);
+        setZoneState('idle');
+        setError((e as Error).message);
+      }
+    }
+  };
+  // Held in a ref so the unmount flush and the timer both reach the current
+  // closure without the parent's inline callbacks re-arming the effect.
+  const commitIntensityRef = useRef(commitIntensity);
+  useEffect(() => {
+    commitIntensityRef.current = commitIntensity;
+  });
+  useEffect(() => {
+    // Re-armed on mount, not just cleared on unmount: StrictMode mounts, tears
+    // down, and remounts in development, and a flag that only ever goes false
+    // leaves every later write unable to report itself.
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (zoneTimer.current) clearTimeout(zoneTimer.current);
+      void commitIntensityRef.current();
+    };
+  }, []);
+
+  const chooseIntensity = (next: Intensity) => {
+    setIntensity(next);
+    pendingIntensity.current = next;
+    if (zoneTimer.current) clearTimeout(zoneTimer.current);
+    zoneTimer.current = setTimeout(() => void commitIntensityRef.current(), 400);
+  };
 
   const lookupTrackBpm = async () => {
     setBpmBusy(true);
@@ -4966,6 +5030,20 @@ function TrackInspector({
     }
   };
 
+  /**
+   * Keyboard commits for the typed fields: Enter from any single-line field,
+   * ⌘/Ctrl+S anywhere in the field block. Scoped to that block rather than the
+   * whole panel so an Enter inside a cue or move row still belongs to that row.
+   * The notes textarea keeps Enter for newlines.
+   */
+  const commitFromKeyboard = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const saveShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's';
+    const enterInField = event.key === 'Enter' && event.target instanceof HTMLInputElement;
+    if (!saveShortcut && !enterInField) return;
+    event.preventDefault();
+    if (dirty && !busy) void save();
+  };
+
   return (
     <section
       ref={containerRef}
@@ -5001,266 +5079,288 @@ function TrackInspector({
         </div>
       ) : (
         <>
-          <label className="flex flex-col gap-1">
-            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Intensity
-            </span>
-            {/* The control prints the pick in zone number, bars, word and gloss;
+          {/* `contents` keeps the panel's own vertical rhythm while giving the
+              typed fields one keyboard-commit scope. */}
+          <div className="contents" onKeyDown={commitFromKeyboard}>
+            <label className="flex flex-col gap-1">
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                  Intensity
+                </span>
+                {/* The zone commits on click, so it confirms itself here, beside
+                  the control — a confirmation six fields lower is a confirmation
+                  the eye never meets. */}
+                {zoneState !== 'idle' && (
+                  <span
+                    aria-live="polite"
+                    className={`font-ui text-xs ${
+                      zoneState === 'saved' ? 'text-state-positive' : 'text-text-tertiary'
+                    }`}
+                  >
+                    {zoneState === 'saved' ? '✓ Saved' : 'Saving…'}
+                  </span>
+                )}
+              </span>
+              {/* The control prints the pick in zone number, bars, word and gloss;
                 the separate readout beside it repeated the same value in a third
                 notation, which read as a second, unexplained state. */}
-            <IntensitySegmentedControl
-              value={intensity}
-              onChange={setIntensity}
-              ariaLabel="Track intensity"
-            />
-          </label>
-
-          <label className="flex flex-col gap-1">
-            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              BPM for this class
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="number"
-                min={1}
-                inputMode="numeric"
-                placeholder="—"
-                aria-describedby={`bpm-help-${track.id}`}
-                className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                value={bpm}
-                onChange={(e) => setBpm(e.target.value)}
+              <IntensitySegmentedControl
+                value={intensity}
+                onChange={chooseIntensity}
+                ariaLabel="Track intensity"
               />
-              {/* Auto-fill the track's base BPM from the tempo service (never Spotify). */}
-              <button
-                type="button"
-                onClick={lookupTrackBpm}
-                disabled={bpmBusy}
-                className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50 sm:rounded-pill"
-              >
-                {bpmBusy ? 'Looking up…' : 'Look up BPM'}
-              </button>
-              {bpmStatus && (
-                <span className="font-data text-xs text-text-tertiary">{bpmStatus}</span>
-              )}
-            </div>
-            {/* "Display BPM override" named the column, not the act. What the
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                BPM for this class
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  inputMode="numeric"
+                  placeholder="—"
+                  aria-describedby={`bpm-help-${track.id}`}
+                  className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                  value={bpm}
+                  onChange={(e) => setBpm(e.target.value)}
+                />
+                {/* Auto-fill the track's base BPM from the tempo service (never Spotify). */}
+                <button
+                  type="button"
+                  onClick={lookupTrackBpm}
+                  disabled={bpmBusy}
+                  className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 disabled:opacity-50 sm:rounded-pill"
+                >
+                  {bpmBusy ? 'Looking up…' : 'Look up BPM'}
+                </button>
+                {bpmStatus && (
+                  <span className="font-data text-xs text-text-tertiary">{bpmStatus}</span>
+                )}
+              </div>
+              {/* "Display BPM override" named the column, not the act. What the
                 reader needs is what happens if the box is left empty. */}
-            <span id={`bpm-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-              {bpm.trim() !== ''
-                ? 'Used instead of the track’s own BPM, in this class only. Clear it to go back.'
-                : displayBpm != null
-                  ? `Blank uses the track’s own ${displayBpm} BPM. Type a number to use a different one here.`
-                  : 'This track has no BPM yet. Type one, or use Look up BPM.'}
-            </span>
-          </label>
+              <span id={`bpm-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+                {bpm.trim() !== ''
+                  ? 'Used instead of the track’s own BPM, in this class only. Clear it to go back.'
+                  : displayBpm != null
+                    ? `Blank uses the track’s own ${displayBpm} BPM. Type a number to use a different one here.`
+                    : 'This track has no BPM yet. Type one, or use Look up BPM.'}
+              </span>
+            </label>
 
-          <label className="flex flex-col gap-1">
-            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Duration
-            </span>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="m:ss"
-              aria-describedby={`duration-help-${track.id}`}
-              className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-            />
-            <span id={`duration-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-              Minutes:seconds. Used for this class timeline.
-            </span>
-          </label>
-
-          <fieldset className="flex flex-col gap-1">
-            <legend className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Clip window — play part of the track
-            </legend>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="start"
-                aria-label="Clip start (minutes:seconds)"
-                aria-describedby={`clip-help-${track.id}`}
-                className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                value={clipStart}
-                onChange={(e) => setClipStart(e.target.value)}
-              />
-              <span aria-hidden className="font-ui text-sm text-text-tertiary">
-                –
+            <label className="flex flex-col gap-1">
+              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                Duration
               </span>
               <input
                 type="text"
                 inputMode="numeric"
-                placeholder="end"
-                aria-label="Clip end (minutes:seconds)"
-                aria-describedby={`clip-help-${track.id}`}
-                className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                value={clipEnd}
-                onChange={(e) => setClipEnd(e.target.value)}
+                placeholder="m:ss"
+                aria-describedby={`duration-help-${track.id}`}
+                className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
               />
-            </div>
-            <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-              Start and end as minutes:seconds, for example 0:30 and 2:15. Previews and Live play
-              only this part. Leave either blank to use the track’s own start or end.
-            </span>
-          </fieldset>
+              <span id={`duration-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+                Minutes:seconds. Used for this class timeline.
+              </span>
+            </label>
 
-          <label className="flex flex-col gap-1">
-            <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-              Creator notes
-            </span>
-            <textarea
-              aria-label="Creator notes"
-              rows={2}
-              className="min-h-20 resize-none rounded-card border border-interactive/30 bg-bg-sunken px-3 py-2 font-ui text-sm text-text-primary"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </label>
-
-          {/* Advanced — the long tail (cadence, holds, downbeat, placement),
-              collapsed by default so the common act reads as scoring the class, not
-              filling every field before the shape is visible (design system 09
-              §Inspector "score, don't fill"). Native <details>: the inputs stay
-              mounted, so the single Save below still commits them while collapsed. */}
-          <details>
-            <summary className="flex min-h-11 cursor-pointer items-center font-ui text-xs font-semibold uppercase tracking-wide text-interactive hover:text-interactive-hover rf-focus-ring">
-              Advanced timing and placement
-            </summary>
-            <div className="mt-3 flex flex-col gap-3">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <label className="flex flex-col gap-1">
-                  <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                    RPM
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    inputMode="numeric"
-                    placeholder="—"
-                    aria-describedby={`rpm-help-${track.id}`}
-                    className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                    value={rpm}
-                    onChange={(e) => setRpm(e.target.value)}
-                  />
-                  <span id={`rpm-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-                    Cadence — not derived from BPM
-                  </span>
-                </label>
-
-                <label className="flex flex-col gap-1">
-                  <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                    Holds
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    placeholder="—"
-                    aria-describedby={`holds-help-${track.id}`}
-                    className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                    value={holdCountVal}
-                    onChange={(e) => setHoldCountVal(e.target.value)}
-                  />
-                  <span
-                    id={`holds-help-${track.id}`}
-                    className="font-ui text-xs text-text-tertiary"
-                  >
-                    Hold count for this track
-                  </span>
-                </label>
-              </div>
-
-              <label className="flex flex-col gap-1">
-                <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                  Downbeat
+            <fieldset className="flex flex-col gap-1">
+              <legend className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                Clip window — play part of the track
+              </legend>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="start"
+                  aria-label="Clip start (minutes:seconds)"
+                  aria-describedby={`clip-help-${track.id}`}
+                  className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                  value={clipStart}
+                  onChange={(e) => setClipStart(e.target.value)}
+                />
+                <span aria-hidden className="font-ui text-sm text-text-tertiary">
+                  –
                 </span>
                 <input
                   type="text"
                   inputMode="numeric"
-                  placeholder="m:ss"
-                  aria-describedby={`downbeat-help-${track.id}`}
-                  className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                  value={downbeat}
-                  onChange={(e) => setDownbeat(e.target.value)}
+                  placeholder="end"
+                  aria-label="Clip end (minutes:seconds)"
+                  aria-describedby={`clip-help-${track.id}`}
+                  className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                  value={clipEnd}
+                  onChange={(e) => setClipEnd(e.target.value)}
                 />
-                <span
-                  id={`downbeat-help-${track.id}`}
-                  className="font-ui text-xs text-text-tertiary"
-                >
-                  {displayBpm
-                    ? `Where beat 1 lands. Sets the ${displayBpm} BPM grid for snapping (4/4).`
-                    : 'Set a BPM above to enable beat-snapping.'}
-                </span>
-              </label>
+              </div>
+              <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
+                Start and end as minutes:seconds, for example 0:30 and 2:15. Previews and Live play
+                only this part. Leave either blank to use the track’s own start or end.
+              </span>
+            </fieldset>
 
-              {canPlaceFreely && (
+            <label className="flex flex-col gap-1">
+              <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                Creator notes
+              </span>
+              <textarea
+                aria-label="Creator notes"
+                rows={2}
+                className="min-h-20 resize-none rounded-card border border-interactive/30 bg-bg-sunken px-3 py-2 font-ui text-sm text-text-primary"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </label>
+
+            {/* Advanced — the long tail (cadence, holds, downbeat, placement),
+              collapsed by default so the common act reads as scoring the class, not
+              filling every field before the shape is visible (design system 09
+              §Inspector "score, don't fill"). Native <details>: the inputs stay
+              mounted, so the single Save below still commits them while collapsed. */}
+            <details>
+              <summary className="flex min-h-11 cursor-pointer items-center font-ui text-xs font-semibold uppercase tracking-wide text-interactive hover:text-interactive-hover rf-focus-ring">
+                Advanced timing and placement
+              </summary>
+              <div className="mt-3 flex flex-col gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <label className="flex flex-col gap-1">
+                    <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                      RPM
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      inputMode="numeric"
+                      placeholder="—"
+                      aria-describedby={`rpm-help-${track.id}`}
+                      className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                      value={rpm}
+                      onChange={(e) => setRpm(e.target.value)}
+                    />
+                    <span
+                      id={`rpm-help-${track.id}`}
+                      className="font-ui text-xs text-text-tertiary"
+                    >
+                      Cadence — not derived from BPM
+                    </span>
+                  </label>
+
+                  <label className="flex flex-col gap-1">
+                    <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                      Holds
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      placeholder="—"
+                      aria-describedby={`holds-help-${track.id}`}
+                      className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                      value={holdCountVal}
+                      onChange={(e) => setHoldCountVal(e.target.value)}
+                    />
+                    <span
+                      id={`holds-help-${track.id}`}
+                      className="font-ui text-xs text-text-tertiary"
+                    >
+                      Hold count for this track
+                    </span>
+                  </label>
+                </div>
+
                 <label className="flex flex-col gap-1">
                   <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                    Start at
+                    Downbeat
                   </span>
                   <input
                     type="text"
                     inputMode="numeric"
                     placeholder="m:ss"
-                    aria-describedby={`startat-help-${track.id}`}
+                    aria-describedby={`downbeat-help-${track.id}`}
                     className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
-                    value={startAt}
-                    onChange={(e) => setStartAt(e.target.value)}
+                    value={downbeat}
+                    onChange={(e) => setDownbeat(e.target.value)}
                   />
                   <span
-                    id={`startat-help-${track.id}`}
+                    id={`downbeat-help-${track.id}`}
                     className="font-ui text-xs text-text-tertiary"
                   >
-                    Where this track starts on the class timeline. Gaps are allowed; overlaps are
-                    not.
+                    {displayBpm
+                      ? `Where beat 1 lands. Sets the ${displayBpm} BPM grid for snapping (4/4).`
+                      : 'Set a BPM above to enable beat-snapping.'}
                   </span>
                 </label>
-              )}
-            </div>
-          </details>
 
-          {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
+                {canPlaceFreely && (
+                  <label className="flex flex-col gap-1">
+                    <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                      Start at
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="m:ss"
+                      aria-describedby={`startat-help-${track.id}`}
+                      className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                      value={startAt}
+                      onChange={(e) => setStartAt(e.target.value)}
+                    />
+                    <span
+                      id={`startat-help-${track.id}`}
+                      className="font-ui text-xs text-text-tertiary"
+                    >
+                      Where this track starts on the class timeline. Gaps are allowed; overlaps are
+                      not.
+                    </span>
+                  </label>
+                )}
+              </div>
+            </details>
 
-          {/* Whether the panel matches what is stored, said in words next to the
+            {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
+
+            {/* Whether the panel matches what is stored, said in words next to the
               control that resolves it. Glyph + word, never colour alone (07). */}
-          <p
-            aria-live="polite"
-            className={`flex items-center gap-1.5 font-ui text-xs ${
-              dirty
-                ? 'text-state-caution'
+            <p
+              aria-live="polite"
+              className={`flex items-center gap-1.5 font-ui text-xs ${
+                dirty
+                  ? 'text-state-caution'
+                  : justSaved
+                    ? 'text-state-positive'
+                    : 'text-text-tertiary'
+              }`}
+            >
+              <span aria-hidden className="font-data leading-none">
+                {dirty ? '!' : justSaved ? '✓' : '·'}
+              </span>
+              {dirty
+                ? 'Unsaved typing — press Save or Enter to keep it.'
                 : justSaved
-                  ? 'text-state-positive'
-                  : 'text-text-tertiary'
-            }`}
-          >
-            <span aria-hidden className="font-data leading-none">
-              {dirty ? '!' : justSaved ? '✓' : '·'}
-            </span>
-            {dirty
-              ? 'Unsaved changes — press Save to keep them.'
-              : justSaved
-                ? 'Saved.'
-                : 'No changes to save.'}
-          </p>
+                  ? 'Saved.'
+                  : 'Nothing typed to save. Intensity saves as you pick it.'}
+            </p>
 
-          <div className="flex items-center gap-2">
-            <button
-              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:rounded-pill"
-              onClick={save}
-              disabled={busy || !dirty}
-            >
-              Save
-            </button>
-            <button
-              className="ml-auto min-h-11 rounded-control border border-state-danger/50 px-4 font-ui text-sm text-state-danger disabled:opacity-40 sm:rounded-pill"
-              onClick={remove}
-              disabled={busy}
-            >
-              Remove track
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:rounded-pill"
+                onClick={save}
+                disabled={busy || !dirty}
+              >
+                Save
+              </button>
+              <button
+                className="ml-auto min-h-11 rounded-control border border-state-danger/50 px-4 font-ui text-sm text-state-danger disabled:opacity-40 sm:rounded-pill"
+                onClick={remove}
+                disabled={busy}
+              >
+                Remove track
+              </button>
+            </div>
           </div>
 
           {/* Choreography anchored to this track — cues + placed moves. Lazy-loaded

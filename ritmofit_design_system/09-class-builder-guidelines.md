@@ -154,9 +154,16 @@ the first impression. The common act should feel like scoring the class, not com
 
 Essentials carry their own plain-language help, because a field label names a column, not an act: the
 zone summary glosses the selected zone ("Selected: Z2 Push — steady working effort"), the BPM field
-says what an empty box falls back to, and the clip window says what a blank end means. The inspector
-commits on **Save**, so it states whether what is on screen is what is stored — `No changes to save.`
-/ `Unsaved changes` (caution) / `Saved.` — and Save stays disabled while there is nothing to commit.
+says what an empty box falls back to, and the clip window says what a blank end means.
+
+**Commit by control type.** Scoring is the act the inspector exists for, so a **discrete choice that
+cannot be half-entered — the intensity zone — commits on the click** and confirms itself beside its
+own control (`Saving…` → `✓ Saved`); a failed write puts the stored zone back rather than leaving a
+value that never landed. **Typed fields** (BPM, duration, clip window, notes, the advanced tail) need
+validation and can move the class clock, so they commit deliberately: **Save**, **Enter** from any
+single-line field, or **⌘/Ctrl+S** within the field block. The panel states that typed status in
+words — `Nothing typed to save.` / `Unsaved typing` (caution) / `Saved.` — and Save stays disabled
+while there is nothing to commit. Never make the instructor visit a button to record a single click.
 
 ## Readiness — is the class ready to run?
 

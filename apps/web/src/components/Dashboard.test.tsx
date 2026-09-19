@@ -1862,19 +1862,88 @@ describe('Dashboard track focus management', () => {
     const saveButton = within(inspector).getByRole('button', {
       name: 'Save',
     }) as HTMLButtonElement;
-    // Nothing edited yet: the panel says so, and Save has nothing to commit.
-    expect(within(inspector).getByText('No changes to save.')).toBeTruthy();
+    // Nothing typed yet: the panel says so, and Save has nothing to commit.
+    expect(within(inspector).getByText(/nothing typed to save/i)).toBeTruthy();
     expect(saveButton.disabled).toBe(true);
 
     fireEvent.change(within(inspector).getByRole('textbox', { name: 'Creator notes' }), {
       target: { value: 'Hold the climb.' },
     });
-    expect(within(inspector).getByText(/unsaved changes/i)).toBeTruthy();
+    expect(within(inspector).getByText(/unsaved typing/i)).toBeTruthy();
     expect(saveButton.disabled).toBe(false);
 
     fireEvent.click(saveButton);
     expect(await within(inspector).findByText('Saved.')).toBeTruthy();
     expect(saveButton.disabled).toBe(true);
+  });
+
+  it('commits a zone on the click, and typed fields on Enter', async () => {
+    installClassWithTracks('Scoring pass ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+    ]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateClassTrack).mockResolvedValue(makeClassTrack('ct-1', 0));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Scoring pass ride/ }));
+    await screen.findByRole('heading', { name: 'Scoring pass ride' });
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for First Light',
+    });
+
+    // Scoring is the act this panel exists for: one click, no trip to Save.
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Attack' }));
+    await waitFor(() =>
+      expect(api.updateClassTrack).toHaveBeenCalledWith('ct-1', { intensity: 'hard' }),
+    );
+    expect(await within(inspector).findByText('✓ Saved')).toBeTruthy();
+    // ...and it only sent the zone, so it can't commit half-typed text with it.
+    expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).toEqual({ intensity: 'hard' });
+
+    // Typed fields still commit deliberately — from the keyboard, not only the button.
+    vi.mocked(api.updateClassTrack).mockClear();
+    // BPM is the first number field; RPM and holds live under Advanced.
+    const bpm = within(inspector).getAllByRole('spinbutton')[0]!;
+    fireEvent.change(bpm, { target: { value: '128' } });
+    fireEvent.keyDown(bpm, { key: 'Enter' });
+    await waitFor(() =>
+      expect(api.updateClassTrack).toHaveBeenCalledWith(
+        'ct-1',
+        expect.objectContaining({ displayBpmOverride: 128 }),
+      ),
+    );
+    expect(await within(inspector).findByText('Saved.')).toBeTruthy();
+  });
+
+  it('puts a zone back when its write fails, instead of showing a value that did not land', async () => {
+    installClassWithTracks('Zone failure ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+    ]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateClassTrack).mockRejectedValue(new Error('zone save failed'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Zone failure ride/ }));
+    await screen.findByRole('heading', { name: 'Zone failure ride' });
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for First Light',
+    });
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Attack' }));
+
+    expect(await within(inspector).findByText('zone save failed')).toBeTruthy();
+    // Back to the stored zone (the fixture's 'mod' → Z2 Push), not the one that failed.
+    await waitFor(() =>
+      expect(
+        within(inspector).getByRole('button', { name: 'Push' }).getAttribute('aria-pressed'),
+      ).toBe('true'),
+    );
+    expect(
+      within(inspector).getByRole('button', { name: 'Attack' }).getAttribute('aria-pressed'),
+    ).toBe('false');
   });
 
   it('explains the zone words and what an empty BPM box falls back to', async () => {
