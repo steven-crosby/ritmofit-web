@@ -2,9 +2,12 @@
 
 <!-- note (Cursor, 2026-09-19): First draft, then revised the same day after an adversarial pass and an owner review. -->
 
-> **Status: revised plan. Not authorized to implement.** Implementation is a later lane, started only
-> after [#434](https://github.com/steven-crosby/ritmofit-web/pull/434) and
-> `cursor/class-template-planning-0756` have landed on `main`. This lane finishes as a document.
+> **Status: revised plan, rebased 2026-09-19 onto `e99e253`.** Not authorized to implement.
+> [#434](https://github.com/steven-crosby/ritmofit-web/pull/434),
+> [#435](https://github.com/steven-crosby/ritmofit-web/pull/435), and
+> [#436](https://github.com/steven-crosby/ritmofit-web/pull/436) are on `main` and in production
+> (Worker `29a72e1c`). This PR still finishes as a document. A later implementation lane starts from
+> `main` after this merges.
 >
 > Shared decisions live in [`class-scaffold-contract.md`](./class-scaffold-contract.md). Where the two
 > disagree, the contract wins. Companion visual:
@@ -25,7 +28,7 @@ The first draft's findings still hold. Its page does not. An adversarial pass an
 | --- | --- | --- |
 | `Continue` cards plus a collapsed `All classes` | **One ranked list.** Search, sort, and tags appear only once the library is too long to scan. | The draft's own headline finding was that the library renders twice. Collapsing the second copy did not fix it. |
 | Remove the rail, keep the shelf | Remove the shelf's *region*, keep its *ranking*, draw it as compact rows. The builder rail stays — [#434](https://github.com/steven-crosby/ritmofit-web/pull/434) already gave it a job (`Editing now`, folded create controls, `Duplicate`). | The shelf costs up to twelve `run-payload` fetches and blocks its order until all of them settle. The rail costs one `GET /classes`. |
-| `Start from a playlist` as the copper primary | **Provisional.** Recommended: `Start a class`, discipline first, music second, with `Start empty` as a quiet alternative. | A scaffold without music and a playlist without structure are two halves of one start, not two doors. Playlist-first strands the newly certified instructor, who does not own a class-ready playlist. The exact control waits on the template lane's create API. |
+| `Start from a playlist` as the copper primary | **`Start a class`**, discipline first, music second, quiet `Start empty`. | Shipped in `CreateClassDialog` (#436): 45 preselected, scaffold primary. This page should call that dialog, not invent a second create path. |
 | Four equal shelf cards, each with a copper button | One copper control on the page. On an empty library it is the start action. Once classes exist, it is the top row's next step and start becomes quiet. | `05-components.md`: one copper primary per surface. The draft had two. |
 | Move `derived · confirm` into the rehearsal view | **Dropped.** #434 deletes the control. A guessed shape stays marked `◇ auto-shaped`. | The pill saved nothing. Do not reintroduce it. |
 | Hero `Turn your music into a class.` | Recommended, not locked: while the library is empty, *Pick a discipline. Ritmo lays out the class. You bring the music.* Once classes exist, the heading quiets to `Pick up where the energy left off.` | Both target instructors arrive with an empty library, so the first-visit heading has to say what the page is for. A returning session does not need a value proposition. |
@@ -58,11 +61,9 @@ Pick a discipline. Ritmo lays out the class. You bring the music.
   Start empty                             ← quiet, for B
 ```
 
-`Start a class` opens the template lane's scaffold flow. Until that flow exists, this control cannot be
-built — which is why implementation waits. `Start empty` is the current `POST /classes` with a title and
-a discipline, moved out of the rail drawer into a dialog. It is the path `09-class-builder-guidelines.md`
-currently *requires*; offering it as the quiet option is an amendment to that page, recorded as F7 in
-the contract.
+`Start a class` opens the shipped `CreateClassDialog`. `Start empty` is the quiet path in that same
+dialog (`mode: "empty"`). `09-class-builder-guidelines.md` still says a new class starts from a
+template, not a blank — F7 is still an outstanding canon amendment, not a missing API.
 
 The four-up "your first class can start anywhere" grid goes away. Four equal doors was the audit's B1
 finding, and it fails Persona A, who needs one recommended start.
@@ -118,11 +119,11 @@ deferred until someone measures a 30-track import and finds it slow.
 | H2 | Empty state is the primary target | Decided, from the persona brief |
 | H3 | One copper control; it moves from start to the top row once classes exist | Decided here, from `05-components.md` |
 | H4 | Heading changes with library size | Recommended copy, not locked |
-| H5 | `Start a class` / discipline first / `Start empty` quiet | **Provisional** until the template lane's create API exists |
+| H5 | `Start a class` / discipline first / `Start empty` quiet | **Decided and shipped** in #436. This page should reuse `CreateClassDialog`. |
 | H6 | Organize controls hidden until 8 classes | Recommended threshold |
-| H7 | Shelf status copy follows the builder (`Can run live · N left`) | Decided here; check Live before editing |
+| H7 | Shelf status copy follows the builder (`Can run live · N left`) | Still open. `classNextStep` still says `Runnable · N to finish`; builder says `Can run live`. Check Live before editing. |
 | H8 | Do not reintroduce `derived · confirm` | Decided by #434 |
-| H9 | This lane does not implement. Next lane starts from `main` after the other two merge. | Decided by the owner, 2026-09-19 |
+| H9 | This PR does not implement. Next lane starts from `main` after this merges. | Still decided |
 
 ## 5. Slices for the implementation lane
 
@@ -130,16 +131,15 @@ Not this session. Ordered so each is shippable alone, and none starts before its
 
 | Slice | Does | Depends on | Files |
 | --- | --- | --- | --- |
-| 1 | Extract the resting Classes view out of `Dashboard.tsx` into `ClassesHome.tsx`. Behaviour unchanged. | #434 merged | `Dashboard.tsx`, new `ClassesHome.tsx`, `Dashboard.test.tsx` |
-| 2 | Replace rail + shelf with one ranked list. Compact rows, one copper verb on the top row, sparkline, overflow menu. | Slice 1 | `ClassesHome.tsx`, `ClassRunOfShowShelf.tsx` (deleted or reduced to the list), `ClassPulse.tsx` consumed as #434 ships it, `LibraryRail` untouched |
+| 1 | Extract the resting Classes view out of `Dashboard.tsx` into `ClassesHome.tsx`. Behaviour unchanged. | Current `main` | `Dashboard.tsx`, new `ClassesHome.tsx`, `Dashboard.test.tsx` |
+| 2 | Replace rail + shelf with one ranked list. Compact rows, one copper verb on the top row, sparkline, overflow menu. | Slice 1 | `ClassesHome.tsx`, `ClassRunOfShowShelf.tsx` (deleted or reduced to the list), `ClassPulse.tsx` as shipped, `LibraryRail` untouched in the builder |
 | 3 | Stop blocking rank on the full payload pool. Rows render from the list response; shape and verb fill in. | Slice 2 | `ClassesHome.tsx`. `class-ordering.ts` only if H7's copy change lands here. |
-| 4 | Empty state: one start action, one quiet empty-start, no four-up grid. | Template lane's scaffold create API for the primary. The quiet path can ship earlier against today's `POST /classes`. | `ClassesHome.tsx`, `CreateClassForm` |
+| 4 | Empty state: one start action, one quiet empty-start, no four-up grid. | Slice 1. Reuse `CreateClassDialog`; do not add a second create form. | `ClassesHome.tsx`, `CreateClassDialog.tsx` |
 | 5 | Reveal search, sort, and tags only past 8 classes. | Slice 2 | `library-state.ts` unchanged; the controls move, they are not rewritten |
 
-Explicitly not sliced: optimistic import, a cross-provider playlist picker, and any scaffold UI. The
-first is unmeasured. The second and third belong to the template lane and to
-[`class-scaffold-contract.md`](./class-scaffold-contract.md) F1, which blocks "drop a song into a
-pre-filled slot" until `trackId` can be patched.
+Explicitly not sliced: optimistic import, a cross-provider playlist picker, layered timeline, ghosts,
+or re-pointing an existing `class_track` at a new `trackId` (contract F1, still true, no longer
+blocking S2).
 
 ## 6. Verification, when it is built
 

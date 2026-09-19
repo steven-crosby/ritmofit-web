@@ -3,13 +3,13 @@
 <!-- note (Cursor, 2026-09-19): Written to carry owner decisions from the classes-home lane to the template and builder lanes. -->
 
 **Written by:** `cursor/classes-home-redesign-plan-0f64` ([#433](https://github.com/steven-crosby/ritmofit-web/pull/433))
-**Consumed by:** `cursor/class-template-planning-0756` and `cursor/clarify-class-builder-ui-7e9f`
-**Baseline:** `main` @ `d7df815`
+**Baseline (findings):** `main` @ `d7df815`
+**Rebased onto:** `main` @ `e99e253` (2026-09-19)
 
-> **Decisions here are the owner's; findings are verified against the code at that baseline.** Nothing
-> in it is authorized implementation. Its purpose is that three concurrent lanes do not each invent a
-> different answer to the same question — `AGENTS.md` requires shared surfaces to be frozen across
-> parallel lanes until coordinated, and none of these surfaces has been.
+> **#434, #435, and #436 shipped.** Production Worker `29a72e1c` has expand-only `0019`, nine recipes,
+> `CreateClassDialog`, and plan-block assignment. Findings F1–F12 were verified at `d7df815`; the
+> notes below mark which ones the shipped path closed. S4–S8 and O1–O4 remain future work. Nothing
+> here authorizes Classes-home implementation or a layered timeline.
 >
 > Modelled on `docs/audits/claude-design-audit-2026-07-24/shared-foundations-contract.md`.
 
@@ -56,20 +56,16 @@ freedom.
 
 Each checked against the code at `d7df815`. These are constraints, not opinions.
 
-**F1 — Binding music into a pre-filled slot is not expressible today. This blocks S2.**
-`updateClassTrackSchema` is `classTrackInputFields`, which covers intensity, BPM override, duration
-override, clip window, beat anchor, offset, notes, RPM, and hold count — and deliberately excludes
-`trackId`. A slot therefore cannot be re-pointed at a song. Delete-and-re-add is not equivalent:
-`cues` and `class_track_moves` hang off the `class_track` id, so it destroys the choreography the
-scaffold exists to provide. Fixing this is additive but needs real rules, because a replacement song
-has a different length and can invalidate the clip window or strand an anchor past its end.
+**F1 — Binding music into a pre-filled *track* slot is still not expressible. It no longer blocks S2.**
+`updateClassTrackSchema` still excludes `trackId`. A `class_track` still cannot be re-pointed at a
+song without delete-and-re-add, which would drop cues and moves. The shipped scaffold path does not
+need that: #435/#436 create empty `class_plan_blocks` and add *real* tracks with optional
+`planBlockId`. Replacing music on an already-choreographed track remains unsolved if a later lane
+wants it.
 
-**F2 — Placeholder slots are creatable today, at the cost of library pollution.**
-`class_tracks.track_id` is NOT NULL with a RESTRICT foreign key, so every slot needs a real `tracks`
-row. `addClassTrackSchema` is a union that already accepts an inline `{ track: createTrackSchema }`, so
-no schema change is required. But those rows are owner-scoped library entries, so a scaffold fills the
-instructor's track library with placeholder ghosts unless they are flagged and filtered from library
-views.
+**F2 — Placeholder tracks were the wrong fix; the shipped path does not create them.**
+`class_tracks.track_id` is still NOT NULL. #435 refused placeholder `tracks` rows. Empty plan blocks
+are not Live tracks and do not pollute the library. Leave F2 closed unless someone reopens ghosts.
 
 **F3 — An anchor-only cue cannot exist.** `cues.text` is `z.string().min(1).max(1000)`. There is no way
 to place a silent marker and hang ghost text off it, which is why S7 must be derived-and-rendered
@@ -122,11 +118,11 @@ scaffold states the requirement; the instructor still finds the song by ear.
 
 ## Lane ownership
 
-| Area | Lane |
+| Area | Status |
 | --- | --- |
-| Scaffold definition, suggested cue points, section re-anchoring (S4/F5), placeholder slots (F2), the bind operation (F1) | `class-template-planning` |
-| Timeline lanes, drag-to-place, edge-drag crop (S8/F9/F11), ghost markers (S7), placeholder cue text (S6) | `clarify-class-builder-ui` |
-| Start flow, and keeping readiness-driven ranking honest (F4) | `classes-home-redesign` |
+| Recipes, `0019`, scaffold/empty create, plan-block CRUD and assignment | Shipped (#435 / #436) |
+| Classes-home start flow and honest ranking (F4, H1–H9) | This PR — planning only |
+| Timeline lanes, drag-to-place, edge-drag crop (S8/F9/F11), ghost markers (S7), placeholder cue text (S6), track-anchored zones (S4/F5) | Not started; needs a new owner-approved lane |
 
 Accessibility applies to all three: placeholder text is never a label (`07-accessibility.md`), ghost
 markers need a text equivalent rather than existing only as faint marks, drag needs a keyboard path and
