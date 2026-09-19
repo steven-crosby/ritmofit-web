@@ -13,6 +13,7 @@ import { authorizeAppleMusic } from '../lib/musickit.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
 import type { PlaybackAdapter } from '../lib/playback/types.js';
 import {
+  choreographyQueueAt,
   eventCount,
   LiveMode,
   lastAtOrBefore,
@@ -512,14 +513,16 @@ describe('LiveMode playback failure', () => {
     await screen.findByRole('list', { name: 'Track playback check' });
     fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
     expect(await screen.findByRole('alert')).toBeTruthy();
-    expect(screen.getByText('Hands light. Hips lead.')).toBeTruthy();
-    expect(screen.getByLabelText('Bar and count 12.4')).toBeTruthy();
+    const focal = screen
+      .getByLabelText('Bar and count 12.4')
+      .closest('div[class*="min-h-"]') as HTMLElement;
+    expect(within(focal).getByText('Hands light. Hips lead.')).toBeTruthy();
     expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
     expect(screen.getByText(/Paused · Track 1 of 1/)).toBeTruthy();
     expect(screen.getByRole('alert')).toBeTruthy();
-    expect(screen.getByText('Hands light. Hips lead.')).toBeTruthy();
+    expect(within(focal).getByText('Hands light. Hips lead.')).toBeTruthy();
     expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
   });
 });
@@ -527,6 +530,7 @@ describe('LiveMode playback failure', () => {
 describe('LiveMode runtime composition', () => {
   const threeTrack = {
     ...payload,
+    class: { ...payload.class, totalDurationMs: 390000 },
     tracks: [
       {
         ...activeTrack,
@@ -556,7 +560,10 @@ describe('LiveMode runtime composition', () => {
     await renderLive(threeTrack);
     // The focal card carries the current cue AND what is coming, so the two are
     // read in one glance. The current cue keeps its own type scale.
-    const focal = screen.getByText('Settle in').closest('div[class*="min-h-"]') as HTMLElement;
+    const focal = screen
+      .getByLabelText('Bar and count 1.1')
+      .closest('div[class*="min-h-"]') as HTMLElement;
+    expect(within(focal).getByText('Settle in')).toBeTruthy();
     expect(within(focal).getByText('Next')).toBeTruthy();
     expect(within(focal).getByText('Climb now')).toBeTruthy();
     expect(within(focal).getByLabelText('Time to next cue')).toBeTruthy();
@@ -569,6 +576,73 @@ describe('LiveMode runtime composition', () => {
     expect(within(upNext).getByText('Third Track')).toBeTruthy();
     // Orientation only — nothing here can change the class mid-run.
     expect(within(upNext).queryByRole('button')).toBeNull();
+  });
+
+  it('shows a rolling current-and-upcoming choreography queue with derived intervals', async () => {
+    const choreographed = {
+      ...threeTrack,
+      tracks: [
+        {
+          ...threeTrack.tracks[0],
+          moves: [
+            {
+              id: 'm1',
+              anchorMs: 30000,
+              beat: 1,
+              bar: 9,
+              name: 'Stand and climb',
+              intensity: 'hard',
+            },
+          ],
+        },
+        ...threeTrack.tracks.slice(1),
+      ],
+    } as unknown as RunPayload;
+
+    await renderLive(choreographed);
+    const queue = screen.getByRole('list', { name: 'Choreography queue' });
+    const current = within(queue).getByText('Settle in').closest('li');
+    expect(current?.getAttribute('aria-current')).toBe('step');
+    expect(within(current as HTMLElement).getByText('0:30 left')).toBeTruthy();
+    expect(within(queue).getByText('Stand and climb')).toBeTruthy();
+    expect(within(queue).getByText('Climb now')).toBeTruthy();
+    expect(
+      within(queue)
+        .getAllByLabelText('Duration')
+        .map((node) => node.textContent),
+    ).toEqual(['0:30', '2:00']);
+  });
+
+  it('moves to the previous and next track from the primary transport', async () => {
+    await renderLive(threeTrack);
+    const previous = screen.getByRole('button', { name: 'Previous track' });
+    const next = screen.getByRole('button', { name: 'Next track, Second Track' });
+    expect((previous as HTMLButtonElement).disabled).toBe(true);
+    expect((next as HTMLButtonElement).disabled).toBe(false);
+
+    fireEvent.click(next);
+    expect(screen.getByText(/Ready · Track 2 of 3/)).toBeTruthy();
+    expect((previous as HTMLButtonElement).disabled).toBe(false);
+    expect(previous.getAttribute('aria-label')).toBe('Previous track, Active Track');
+    expect(next.getAttribute('aria-label')).toBe('Next track, Third Track');
+
+    fireEvent.click(next);
+    expect(screen.getByText(/Ready · Track 3 of 3/)).toBeTruthy();
+    expect((next as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(previous);
+    expect(screen.getByText(/Ready · Track 2 of 3/)).toBeTruthy();
+  });
+
+  it('moves to the next track while provider playback is running', async () => {
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    render(<LiveMode payload={threeTrack} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    expect(await screen.findByRole('button', { name: 'Pause' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next track, Second Track' }));
+    expect(screen.getByText(/Now teaching · Track 2 of 3/)).toBeTruthy();
   });
 
   it('prints no up-next shelf on the last track rather than an empty one', async () => {
@@ -726,6 +800,32 @@ describe('LiveMode sparse-data fallbacks', () => {
     expect(screen.getByText('Lead this track')).toBeTruthy();
     expect(screen.queryByText('No cue set')).toBeNull();
   });
+
+  it('does not invent a countdown for final choreography without a track duration', async () => {
+    const durationless = {
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          track: { ...activeTrack.track, durationMs: null },
+          cues: [
+            {
+              id: 'c-durationless',
+              anchorMs: 0,
+              beat: 1,
+              bar: 1,
+              text: 'Hold steady',
+              color: null,
+            },
+          ],
+        },
+      ],
+    } satisfies RunPayload;
+    await renderLive(durationless);
+
+    const remaining = screen.getByLabelText('Time remaining in current choreography');
+    expect(remaining.textContent).toBe('—');
+  });
 });
 
 describe('eventCount', () => {
@@ -743,6 +843,58 @@ describe('eventCount', () => {
     expect(eventCount({ ...base, beat: 4, bar: 12 })).toBe('12.4');
     expect(eventCount({ ...base, beat: 8 })).toBe('8');
     expect(eventCount(base)).toBeNull();
+  });
+});
+
+describe('choreographyQueueAt', () => {
+  const events: TimelineEvent[] = [
+    {
+      atMs: 10000,
+      kind: 'cue',
+      text: 'Prepare',
+      color: null,
+      intensity: null,
+      beat: 1,
+      bar: 1,
+    },
+    {
+      atMs: 30000,
+      kind: 'move',
+      text: 'Climb',
+      color: null,
+      intensity: 'hard',
+      beat: 1,
+      bar: 9,
+    },
+    {
+      atMs: 60000,
+      kind: 'cue',
+      text: 'Recover',
+      color: null,
+      intensity: null,
+      beat: 1,
+      bar: 17,
+    },
+  ];
+
+  it('shows upcoming choreography before the first anchor', () => {
+    expect(choreographyQueueAt(events, 0, 90000, 2)).toEqual([
+      { event: events[0], state: 'upcoming', durationMs: 20000, remainingMs: null },
+      { event: events[1], state: 'upcoming', durationMs: 30000, remainingMs: null },
+    ]);
+  });
+
+  it('counts down the current interval and limits the forward window', () => {
+    expect(choreographyQueueAt(events, 45000, 90000, 2)).toEqual([
+      { event: events[1], state: 'current', durationMs: 30000, remainingMs: 15000 },
+      { event: events[2], state: 'upcoming', durationMs: 30000, remainingMs: null },
+    ]);
+  });
+
+  it('does not invent a final interval when the track duration is unset', () => {
+    expect(choreographyQueueAt(events, 70000, null)).toEqual([
+      { event: events[2], state: 'current', durationMs: null, remainingMs: null },
+    ]);
   });
 });
 
@@ -890,7 +1042,7 @@ describe('LiveMode timeline scrubber', () => {
     // The transport scrubber replaces the old plain range input.
     const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
     const transport = screen.getByRole('region', { name: 'Live transport' });
-    expect(transport.className).toContain('grid-cols-[auto_auto_minmax(0,1fr)]');
+    expect(transport.className).toContain('grid-cols-[minmax(0,1fr)_auto]');
     expect(slider.parentElement?.className).toContain('col-span-full');
     expect(slider.parentElement?.className).toContain('min-w-0');
     // Clock starts at 0:00 / 3:00; a right-arrow nudges +5s.

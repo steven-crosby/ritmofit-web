@@ -41,9 +41,14 @@ Pilates, and HIIT.
   RESPONSIVE-QA (#419); semantic opacity (#424); LIVE-CONTROLS (#425). Tip also includes
   docs #426 (PROD-HYGIENE runbook) and #427 (deploy-readiness). No schema, migration,
   shared-contract, secret, or lockfile change; no remote D1 change. Rollback is
-  Worker-only to `5d659102`. Remaining owner-blocked Pulse Check work: ENERGY-RIBBON
-  and SPC-09. PROD-HYGIENE runbook is in #426; live fixture delete is still
-  owner-pending. Full disposition lives in
+  Worker-only to `5d659102`. **LIVE-RUN-OF-SHOW is implemented locally and awaiting submission**:
+  diagnose
+  the observed SoundCloud manual-jump failure, add explicit previous/next track controls,
+  and keep a compact rolling choreography queue visible beside the cue-first hero.
+  SPC-09 remains owner-blocked. ENERGY-RIBBON's direction is resolved and follows this
+  Live slice: Steven approved implementing the documented placed-move refinement on
+  2026-09-19. PROD-HYGIENE runbook is in #426; live fixture delete is still owner-pending.
+  Full disposition lives in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
   **Prior Pulse Check deploys:** batch 2 PRs #420, #422 — Worker
   `5d659102-3bff-4398-91ad-cdc1d165ccc1` from main `dd625b5` (recorded in #423);
@@ -322,14 +327,33 @@ owner decision; F-02 (D11 `createPattern`) stays unconfirmed. Inbox empty.
   LIVE-CONTROLS ([#425](https://github.com/steven-crosby/ritmofit-web/pull/425)) — is
   deployed as Worker `ad638215` from main `4ddddeb`.
 
-**Studio Pulse Check follow-up — batches 1–3 shipped; remaining owner-blocked slices:**
+**Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**
 
 The other 21 findings have an authoritative disposition in
 [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
-Nineteen map to the ten scoped slices below; two were explicit owner decisions and are now resolved.
+Nineteen map to the ten scoped slices below. Three owner decisions are now resolved: the two original
+decision findings plus SPC-14's later implement-versus-docs decision.
 The two
 out-of-scope/unverified audit claims were independently checked before disposition. This list is the
 planning queue; the ledger preserves the finding-by-finding evidence and acceptance boundaries.
+
+- **LIVE-RUN-OF-SHOW — ✅ implemented locally; submission pending:** closes the minimum live-running gaps identified from
+  Steven's 2026-09-19 StructClub recording and same-day production verification. First distinguish a
+  dead/unembeddable SoundCloud reference from a coordinator or widget-transition defect: initial
+  SoundCloud playback and automatic track advance succeeded, and SoundCloud's public oEmbed endpoint
+  returned `404` for the failed “CHOOSIN TEXAS…” reference while returning `200` for the other three
+  tracks in that class. No coordinator patch was warranted. The local implementation adds large,
+  keyboard-accessible previous/next **track** controls to the existing player rail and a compact
+  rolling choreography queue that keeps the current event plus three upcoming cues/moves and their
+  derived interval durations visible without displacing the cue-first hero. Intervals derive from
+  existing event anchors and the track boundary; there are no persisted duration fields or
+  run-payload changes.
+  Preserve preflight, prompter-only mode, recovery, wake lock, provider-authoritative playback, and
+  the official-provider-only music constraints. Verified with 800 web tests, 151 integration tests,
+  typecheck/lint/build/design-system/theme/contract/audit gates, and local browser checks at desktop,
+  390px, and 320px; no Spotify playback was initialized. Steven approved this slice ahead of
+  ENERGY-RIBBON and approved its scoped implementation plan on 2026-09-19. Commit, PR, merge, and
+  deployment remain separate gates.
 
 - **AUTH-A11Y (SPC-01–04) — ✅ shipped:** redundant auth status cues, one password
   contract, reveal controls, and announced mode transitions. Bundled with the OD-01 implementation
@@ -358,8 +382,10 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   announce validation and inline confirmations in
   [PR #422](https://github.com/steven-crosby/ritmofit-web/pull/422); deployed as Worker
   `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
-- **ENERGY-RIBBON (SPC-14) — owner-blocked:** implement the documented placed-move refinement, or
-  obtain a separate owner decision before downgrading the docs.
+- **ENERGY-RIBBON (SPC-14) — direction approved, implementation pending:** implement the
+  documented hybrid ribbon: track intensity supplies the baseline and placed-move intensity refines
+  the curve at its anchors. Steven approved implementation over downgrading the docs on 2026-09-19;
+  the code slice still requires its own plan and implementation gate.
 - **LIVE-RUNTIME (SPC-16, 18) — ✅ shipped:** coalesce drag seeking and isolate animation-frame
   rendering without changing provider-authoritative playback/liveness behavior in
   [PR #420](https://github.com/steven-crosby/ritmofit-web/pull/420); deployed as Worker
