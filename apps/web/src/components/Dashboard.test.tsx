@@ -984,7 +984,7 @@ describe('Dashboard class library states', () => {
     expect(screen.getByRole('region', { name: 'Class Pulse' })).toBeTruthy();
     // The queue's Pulse says where its shape came from instead of asking a
     // read-only card to "confirm" anything.
-    expect(screen.getByText('from your track efforts')).toBeTruthy();
+    expect(screen.getByText('from track efforts')).toBeTruthy();
     // The mount already fetched the payload for readiness; isolate the run request.
     vi.mocked(api.getRunPayload).mockClear();
     fireEvent.click(runBtn);

@@ -125,7 +125,9 @@ export function ClassPulseView({
           )
         ) : (
           <span className="font-data text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-            {model.coverage.scoredCount > 0 ? 'from your track efforts' : 'no effort scored yet'}
+            {/* Not "your": this view also renders on the signed-out marketing
+                page over a synthetic class nobody reading it authored. */}
+            {model.coverage.scoredCount > 0 ? 'from track efforts' : 'no effort scored yet'}
           </span>
         )}
       </div>
@@ -212,15 +214,15 @@ export function ClassPulseView({
         </svg>
       )}
 
-      {!compact && model.segments.length > 0 && (
+      {/* The axis needs a real end time to mean anything — a bare "finish"
+          labels nothing. Callers that don't know the runtime get no axis. */}
+      {!compact && model.segments.length > 0 && totalDurationMs != null && (
         <div
           aria-hidden
           className="mt-1 flex items-center justify-between font-data text-[10px] text-text-tertiary"
         >
           <span>0:00 start</span>
-          <span>
-            {totalDurationMs != null ? `${formatDuration(totalDurationMs)} finish` : 'finish'}
-          </span>
+          <span>{formatDuration(totalDurationMs)} finish</span>
         </div>
       )}
 

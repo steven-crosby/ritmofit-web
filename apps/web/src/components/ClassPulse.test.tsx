@@ -2,7 +2,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { RunPayload } from '@ritmofit/shared';
-import { ClassPulse } from './ClassPulse.js';
+import { ClassPulse, ClassPulseView } from './ClassPulse.js';
+import { classPulseFromPayload } from '../lib/class-pulse.js';
 
 afterEach(cleanup);
 
@@ -42,7 +43,7 @@ function unshapedPayload(): RunPayload {
 describe('ClassPulse', () => {
   it('names its derivation and describes sparse effort without color', () => {
     render(<ClassPulse payload={payload()} />);
-    expect(screen.getByText(/from your track efforts/i)).toBeTruthy();
+    expect(screen.getByText(/from track efforts/i)).toBeTruthy();
     expect(screen.getByRole('img').getAttribute('aria-label')).toContain('unscored');
     expect(screen.getByText(/1 unscored effort/i)).toBeTruthy();
   });
@@ -56,6 +57,15 @@ describe('ClassPulse', () => {
     expect(screen.getByText(/3:00 finish/i)).toBeTruthy();
     expect(screen.getByText(/z1 build/i)).toBeTruthy();
     expect(screen.getByText(/hatched = effort not set yet/i)).toBeTruthy();
+  });
+
+  it('drops the time axis when the caller cannot supply a runtime', () => {
+    // `ClassPulseView` also renders on the marketing page from a bare model, and
+    // an axis whose end is the word "finish" labels nothing.
+    render(<ClassPulseView model={classPulseFromPayload(payload())} />);
+    expect(screen.queryByText(/0:00 start/i)).toBeNull();
+    expect(screen.queryByText('finish', { exact: true })).toBeNull();
+    expect(screen.getByText(/z1 build/i)).toBeTruthy();
   });
 
   it('offers explicit, controlled, presentational confirmation of an auto-shape', () => {
@@ -75,7 +85,7 @@ describe('ClassPulse', () => {
     // about the instructor's own scoring.
     render(<ClassPulse payload={payload()} onConfirm={() => {}} />);
     expect(screen.queryByRole('button')).toBeNull();
-    expect(screen.getByText(/from your track efforts/i)).toBeTruthy();
+    expect(screen.getByText(/from track efforts/i)).toBeTruthy();
   });
 
   it('renders a truthful empty state without an image-shaped fake', () => {
