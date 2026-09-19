@@ -94,7 +94,6 @@ import { classDetailReducer, initialClassDetailState } from '../lib/class-detail
 import {
   libraryView,
   organizeClasses,
-  CLASS_SORT_OPTIONS,
   DEFAULT_CLASS_SORT,
   type ClassSortKey,
   type ListStatus,
@@ -124,7 +123,8 @@ import {
   markOnboardingVideoDismissed,
 } from '../lib/onboarding-video.js';
 import { OnboardingVideoDialog } from './OnboardingVideoDialog.js';
-import { ClassRunOfShowShelf } from './ClassRunOfShowShelf.js';
+import { ClassesHome } from './ClassesHome.js';
+import { LibraryOrganizeControls, TagFilter } from './LibraryOrganize.js';
 import { RecoveryState, StatusLabel } from './SharedState.js';
 import { ProviderCapabilityLedger } from './ProviderCapabilityLedger.js';
 import { TrackArt } from './TrackArt.js';
@@ -765,68 +765,44 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         )}
 
         {destination === 'classes' ? (
-          /* The 3-pane workstation (design system 09): library · class · inspector.
+          selected ? (
+            /* The 3-pane workstation (design system 09): library · class · inspector.
               Collapses to a single stacked column below xl so it stays usable on
               smaller laptops. The class workspace contributes the center + inspector
-              columns; the library is the first column. */
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start">
-            {/* Resting state first in the document so a phone meets a class, not a
-                creation form (P1-06 / canon 09: the archive "must not become a large
-                preamble before the work"). Explicit grid placement keeps the rail on
-                the left at xl, where reading order and column order can differ. */}
-            {!selected && (
-              <div className="min-w-0 xl:col-span-2 xl:col-start-2 xl:row-start-1">
-                <WorkstationRestingState
-                  classes={classes}
-                  activeTag={activeTag}
-                  status={listStatus}
-                  libraryError={error}
-                  onOpen={openClass}
-                  onPreview={(cls) => setCardPreview(cls)}
-                  onClearTag={() => void applyTagFilter(null)}
-                  onRetry={() => {
-                    setListStatus('loading');
-                    void refreshClasses();
-                  }}
-                  onStartMusic={() => setDestination('music')}
-                  onStartMovement={() => setSongsByMoveOpen(true)}
-                  onStartTemplate={focusClassCreator}
-                  onStartManual={focusClassCreator}
-                />
-              </div>
-            )}
-            <LibraryRail
-              className={selected ? 'hidden xl:flex' : undefined}
-              creatorOpen={creatorOpen}
-              onCreatorOpenChange={setCreatorOpen}
-              classes={classes}
-              status={listStatus}
-              hasMore={nextClassCursor !== null}
-              loadingMore={loadingMoreClasses}
-              selectedId={selected?.id ?? null}
-              knownTags={knownTags}
-              activeTag={activeTag}
-              onSelectTag={applyTagFilter}
-              onError={setError}
-              onStartClass={focusClassCreator}
-              onDuplicate={async (cls) => {
-                // Duplicate an owned class into the library, then refresh so the
-                // new class appears and open it for immediate editing.
-                const copy = await copyClass(cls.id);
-                await applyTagFilter(null);
-                await refreshClasses();
-                await openClass({ ...copy, accessLevel: 'owner' });
-              }}
-              onOpen={openClass}
-              onPreview={(cls) => setCardPreview(cls)}
-              onLoadMore={loadMoreClasses}
-              onRetry={() => {
-                setListStatus('loading');
-                void refreshClasses();
-              }}
-            />
+              columns; the library is the first column. The resting Classes home
+              hides this rail so the ranked list is the page. */
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start">
+              <LibraryRail
+                className="hidden xl:flex"
+                creatorOpen={creatorOpen}
+                onCreatorOpenChange={setCreatorOpen}
+                classes={classes}
+                status={listStatus}
+                hasMore={nextClassCursor !== null}
+                loadingMore={loadingMoreClasses}
+                selectedId={selected.id}
+                knownTags={knownTags}
+                activeTag={activeTag}
+                onSelectTag={applyTagFilter}
+                onError={setError}
+                onStartClass={focusClassCreator}
+                onDuplicate={async (cls) => {
+                  // Duplicate an owned class into the library, then refresh so the
+                  // new class appears and open it for immediate editing.
+                  const copy = await copyClass(cls.id);
+                  await applyTagFilter(null);
+                  await refreshClasses();
+                  await openClass({ ...copy, accessLevel: 'owner' });
+                }}
+                onOpen={openClass}
+                onPreview={(cls) => setCardPreview(cls)}
+                onLoadMore={loadMoreClasses}
+                onRetry={() => {
+                  setListStatus('loading');
+                  void refreshClasses();
+                }}
+              />
 
-            {selected && (
               <CompactClassChooser
                 classes={classes}
                 selectedId={selected.id}
@@ -836,48 +812,74 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                   dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
                 }}
               />
-            )}
 
-            {selected && detail.classId === selected.id && detail.status === 'ready' ? (
-              <ClassWorkspace
-                key={selected.id}
-                cls={selected}
-                tracks={detail.tracks}
-                payload={detail.payload}
-                onError={setError}
-                onTrackChanged={() => void loadDetail(selected.id, { silent: true })}
-                onTrackAdded={() => void loadDetail(selected.id, { silent: true })}
-                onChoreographyChanged={() => void loadDetail(selected.id, { silent: true })}
-                onReordered={() => void loadDetail(selected.id, { silent: true })}
-                onTrackRemoved={() => void loadDetail(selected.id, { silent: true })}
-                onRun={() => runClass(selected.id)}
-                onClassUpdated={applyClassUpdate}
-                onClassDeleted={handleClassDeleted}
-                onOpenSongsByMove={() => setSongsByMoveOpen(true)}
-                onBackToClasses={() => {
-                  setSelected(null);
-                  dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
-                }}
-              />
-            ) : selected && detail.classId === selected.id && detail.status === 'error' ? (
-              <section className="rounded-card bg-bg-raised p-8 shadow-card">
-                <p className="font-ui text-sm text-state-danger" role="alert">
-                  {detail.error}
-                </p>
-                <button
-                  type="button"
-                  className="mt-4 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
-                  onClick={() => void loadDetail(selected.id)}
-                >
-                  Retry class
-                </button>
-              </section>
-            ) : selected ? (
-              <section className="rounded-card bg-bg-raised p-8 shadow-card" aria-busy="true">
-                <p className="font-ui text-text-tertiary">Loading class…</p>
-              </section>
-            ) : null}
-          </div>
+              {detail.classId === selected.id && detail.status === 'ready' ? (
+                <ClassWorkspace
+                  key={selected.id}
+                  cls={selected}
+                  tracks={detail.tracks}
+                  payload={detail.payload}
+                  onError={setError}
+                  onTrackChanged={() => void loadDetail(selected.id, { silent: true })}
+                  onTrackAdded={() => void loadDetail(selected.id, { silent: true })}
+                  onChoreographyChanged={() => void loadDetail(selected.id, { silent: true })}
+                  onReordered={() => void loadDetail(selected.id, { silent: true })}
+                  onTrackRemoved={() => void loadDetail(selected.id, { silent: true })}
+                  onRun={() => runClass(selected.id)}
+                  onClassUpdated={applyClassUpdate}
+                  onClassDeleted={handleClassDeleted}
+                  onOpenSongsByMove={() => setSongsByMoveOpen(true)}
+                  onBackToClasses={() => {
+                    setSelected(null);
+                    dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
+                  }}
+                />
+              ) : detail.classId === selected.id && detail.status === 'error' ? (
+                <section className="rounded-card bg-bg-raised p-8 shadow-card">
+                  <p className="font-ui text-sm text-state-danger" role="alert">
+                    {detail.error}
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-4 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
+                    onClick={() => void loadDetail(selected.id)}
+                  >
+                    Retry class
+                  </button>
+                </section>
+              ) : (
+                <section className="rounded-card bg-bg-raised p-8 shadow-card" aria-busy="true">
+                  <p className="font-ui text-text-tertiary">Loading class…</p>
+                </section>
+              )}
+            </div>
+          ) : (
+            <ClassesHome
+              classes={classes}
+              status={listStatus}
+              libraryError={error}
+              activeTag={activeTag}
+              knownTags={knownTags}
+              hasMore={nextClassCursor !== null}
+              loadingMore={loadingMoreClasses}
+              onOpen={openClass}
+              onPreview={(cls) => setCardPreview(cls)}
+              onDuplicate={async (cls) => {
+                const copy = await copyClass(cls.id);
+                await applyTagFilter(null);
+                await refreshClasses();
+                await openClass({ ...copy, accessLevel: 'owner' });
+              }}
+              onSelectTag={applyTagFilter}
+              onClearTag={() => void applyTagFilter(null)}
+              onRetry={() => {
+                setListStatus('loading');
+                void refreshClasses();
+              }}
+              onLoadMore={loadMoreClasses}
+              onStartClass={focusClassCreator}
+            />
+          )
         ) : destination === 'music' ? (
           <MusicWorkspace
             connectionRevision={connectionRevision}
@@ -1164,73 +1166,6 @@ export function LibraryRail({
 }
 
 /**
- * Search + sort controls for the loaded class library. Both are labeled and
- * keyboard-reachable; the search clears with an inline button (shown only when
- * there's text) and the sort is a native `<select>` so it stays fully accessible.
- * These organize the already-loaded page set only — they don't refetch.
- */
-function LibraryOrganizeControls({
-  query,
-  sort,
-  onQueryChange,
-  onSortChange,
-}: {
-  query: string;
-  sort: ClassSortKey;
-  onQueryChange: (value: string) => void;
-  onSortChange: (value: ClassSortKey) => void;
-}) {
-  const sortId = 'library-sort';
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="relative">
-        {/* type="text" (not "search") so we own the single clear affordance below
-            rather than doubling it with WebKit's native search-field clear button. */}
-        <input
-          type="text"
-          role="searchbox"
-          className="min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base pl-3 pr-12 font-ui text-xs text-text-primary sm:min-h-8 sm:rounded-pill sm:pr-9"
-          placeholder="Search loaded classes…"
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          aria-label="Search loaded classes by title or type"
-        />
-        {query.trim() && (
-          <button
-            type="button"
-            onClick={() => onQueryChange('')}
-            aria-label="Clear search"
-            className="absolute right-0 top-1/2 min-h-11 min-w-11 -translate-y-1/2 rounded-control font-ui text-xs text-text-tertiary hover:text-text-primary sm:right-1 sm:min-h-8 sm:min-w-8 sm:rounded-full"
-          >
-            ✕
-          </button>
-        )}
-      </div>
-      <div className="flex items-center gap-1.5">
-        <label
-          htmlFor={sortId}
-          className="font-ui text-[10px] uppercase tracking-wide text-text-tertiary"
-        >
-          Sort
-        </label>
-        <select
-          id={sortId}
-          className="min-h-11 min-w-0 flex-1 rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-xs text-text-primary sm:min-h-8 sm:rounded-pill"
-          value={sort}
-          onChange={(e) => onSortChange(e.target.value as ClassSortKey)}
-        >
-          {CLASS_SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
-}
-
-/**
  * A single Library card (design system 11, tightened for music-forward queue):
  * bounded album-art collage, title, shape-first meta (template · track count · runtime),
  * quiet last-opened. Primary action is opening the card (main area). Duplicate and
@@ -1377,76 +1312,6 @@ function ArtCollage({ urls, classTitle }: { urls: string[]; classTitle: string }
         />
       ))}
     </span>
-  );
-}
-
-/**
- * Server-side tag (theme) search. The active filter shows as a removable chip;
- * `knownTags` render as quick-fill pills; the input reaches any tag — including
- * ones not on a loaded page — and is normalized (trim + lowercase) to match how
- * the server stores tags.
- */
-function TagFilter({
-  knownTags,
-  activeTag,
-  onSelectTag,
-}: {
-  knownTags: string[];
-  activeTag: string | null;
-  onSelectTag: (tag: string | null) => void;
-}) {
-  const [input, setInput] = useState('');
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    const tag = input.trim().toLowerCase();
-    if (!tag) return;
-    setInput('');
-    onSelectTag(tag);
-  };
-  return (
-    <div className="flex flex-col gap-1.5 pb-1">
-      <form className="flex gap-1.5" onSubmit={submit}>
-        <input
-          className="min-w-0 flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 py-1 font-ui text-xs text-text-primary"
-          placeholder="Filter by tag…"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          aria-label="Filter classes by tag"
-        />
-        {input.trim() && (
-          <button
-            type="submit"
-            className="rounded-pill border border-interactive px-3 py-1 font-ui text-xs text-interactive"
-          >
-            Filter
-          </button>
-        )}
-      </form>
-      <div className="flex flex-wrap gap-1.5">
-        {activeTag && (
-          <button
-            type="button"
-            onClick={() => onSelectTag(null)}
-            className="min-h-11 rounded-control border border-interactive bg-interactive px-2 font-ui text-xs text-bg-base sm:min-h-8 sm:rounded-pill"
-            aria-label={`Clear tag filter ${activeTag}`}
-          >
-            #{activeTag} ×
-          </button>
-        )}
-        {knownTags
-          .filter((t) => t !== activeTag)
-          .map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => onSelectTag(tag)}
-              className="min-h-11 rounded-control border border-interactive/30 bg-bg-base px-2 font-ui text-xs text-text-secondary hover:text-text-primary sm:min-h-8 sm:rounded-pill"
-            >
-              #{tag}
-            </button>
-          ))}
-      </div>
-    </div>
   );
 }
 
@@ -1652,186 +1517,6 @@ function ProviderConnectionsLoadState({
         Try again
       </button>
     </div>
-  );
-}
-
-/** Classes landing state: the loaded library becomes a bounded run-of-show shelf;
- * fresh, filtered-empty, loading, and unavailable remain distinct. */
-function WorkstationRestingState({
-  classes,
-  activeTag,
-  status,
-  libraryError,
-  onOpen,
-  onPreview,
-  onClearTag,
-  onRetry,
-  onStartMusic,
-  onStartMovement,
-  onStartTemplate,
-  onStartManual,
-}: {
-  classes: ClassListItem[];
-  activeTag: string | null;
-  status: ListStatus;
-  libraryError: string | null;
-  onOpen: (cls: ClassListItem) => void;
-  onPreview: (cls: ClassListItem) => void;
-  onClearTag: () => void;
-  onRetry: () => void;
-  onStartMusic: () => void;
-  onStartMovement: () => void;
-  onStartTemplate: () => void;
-  onStartManual: () => void;
-}) {
-  const hasClasses = classes.length > 0;
-
-  if (hasClasses) {
-    return <ClassRunOfShowShelf classes={classes} onOpen={onOpen} onPreview={onPreview} />;
-  }
-
-  if (status === 'loading') {
-    return (
-      <section
-        className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-5 sm:p-6 xl:col-span-2"
-        role="status"
-        aria-live="polite"
-        aria-busy="true"
-      >
-        <StatusLabel kind="loading" label="Loading your class library" />
-        <h2 className="mt-3 font-display text-2xl font-semibold text-text-primary">
-          Reading your next run of show…
-        </h2>
-        <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
-          Ritmo is checking classes before it suggests a next step.
-        </p>
-        <div aria-hidden="true" className="mt-5 grid gap-3 sm:grid-cols-2">
-          <span className="h-32 rounded-card bg-bg-sunken" />
-          <span className="h-32 rounded-card bg-bg-sunken" />
-        </div>
-      </section>
-    );
-  }
-
-  if (status === 'error') {
-    return (
-      <div className="min-w-0 xl:col-span-2">
-        <RecoveryState
-          kind="unavailable"
-          role="alert"
-          statusLabel="Class library unavailable"
-          title="Your library is temporarily unavailable."
-          // The upstream message never reaches the instructor; a stable code does,
-          // so the same failure always reads the same way (P1-05).
-          event={`Ritmo could not read the class list. This is not an empty account. Reference ${errorReference(
-            'CLS',
-            libraryError,
-          )}.`}
-          safety="No class was removed. A new draft remains a separate, safe starting point."
-          primaryAction={
-            <button
-              type="button"
-              onClick={onRetry}
-              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
-            >
-              Try the library again
-            </button>
-          }
-          secondaryAction={
-            <button
-              type="button"
-              onClick={onStartTemplate}
-              className="min-h-11 rounded-control border border-interactive/50 px-4 font-ui text-sm font-semibold text-interactive sm:rounded-pill"
-            >
-              Start a new draft
-            </button>
-          }
-        />
-      </div>
-    );
-  }
-
-  if (activeTag) {
-    return (
-      <section className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-5 sm:p-6 xl:col-span-2">
-        <StatusLabel kind="empty" label={`No classes tagged #${activeTag}`} />
-        <h2 className="mt-3 font-display text-2xl font-semibold text-text-primary">
-          This filter has no run of show yet.
-        </h2>
-        <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
-          Clear the filter to return to your loaded classes. Nothing was removed.
-        </p>
-        <button
-          type="button"
-          onClick={onClearTag}
-          className="mt-4 min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
-        >
-          Clear #{activeTag} filter
-        </button>
-      </section>
-    );
-  }
-
-  const starts = [
-    {
-      eyebrow: 'Music first',
-      title: 'Find a track or source',
-      detail: 'Browse provider catalogs and carry the choice into a class.',
-      action: onStartMusic,
-    },
-    {
-      eyebrow: 'Template first',
-      title: 'Start Cycle, Pilates, or HIIT',
-      detail: 'Name the class and choose its discipline before filling it in.',
-      action: onStartTemplate,
-    },
-    {
-      eyebrow: 'Movement first',
-      title: 'Start with a move',
-      detail: 'Reuse a song–movement pairing you already teach.',
-      action: onStartMovement,
-    },
-    {
-      eyebrow: 'Manual first',
-      title: 'Start from memory',
-      detail: 'Create the class, then enter title, artist, duration, and effort yourself.',
-      action: onStartManual,
-    },
-  ];
-
-  return (
-    <section className="min-w-0 xl:col-span-2">
-      <div className="rounded-card border border-border-subtle bg-bg-raised p-5 sm:p-6">
-        <p className="rf-eyebrow">First workspace</p>
-        <h2 className="mt-2 text-balance font-display text-3xl font-bold tracking-[-0.03em] text-text-primary sm:text-5xl">
-          Your first class can start anywhere.
-        </h2>
-        <p className="mt-3 max-w-prose font-ui text-sm leading-6 text-text-secondary sm:text-base">
-          Bring music, a template, a movement idea, or a manual track. Ritmo will help shape the run
-          of show.
-        </p>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          {starts.map((start) => (
-            <button
-              key={start.eyebrow}
-              type="button"
-              onClick={start.action}
-              className="min-h-32 rounded-card border border-border-subtle bg-bg-sunken p-4 text-left hover:border-interactive/50 rf-focus-ring"
-            >
-              <span className="font-data text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
-                {start.eyebrow}
-              </span>
-              <span className="mt-2 block font-display text-lg font-semibold text-text-primary">
-                {start.title}
-              </span>
-              <span className="mt-2 block font-ui text-sm leading-5 text-text-secondary">
-                {start.detail}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </section>
   );
 }
 

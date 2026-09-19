@@ -32,10 +32,12 @@ const EFFORT_ZONE_LABEL = {
 export function ClassPulse({
   payload,
   compact = false,
+  variant = 'card',
   className = '',
 }: {
   payload: RunPayload;
   compact?: boolean;
+  variant?: 'card' | 'sparkline';
   className?: string;
 }) {
   return (
@@ -43,6 +45,7 @@ export function ClassPulse({
       model={classPulseFromPayload(payload)}
       totalDurationMs={payload.class.totalDurationMs}
       compact={compact}
+      variant={variant}
       className={className}
     />
   );
@@ -52,12 +55,14 @@ export function ClassPulseView({
   model,
   totalDurationMs,
   compact = false,
+  variant = 'card',
   className = '',
 }: {
   model: ClassPulseModel;
   /** Class runtime, for the time axis under the chart. Omitted = no axis. */
   totalDurationMs?: number;
   compact?: boolean;
+  variant?: 'card' | 'sparkline';
   className?: string;
 }) {
   const unscoredPatternId = `class-pulse-unscored-${useId().replaceAll(':', '')}`;
@@ -83,6 +88,17 @@ export function ClassPulseView({
             ? 'auto-shaped from track order and length'
             : 'derived from track order, duration, and effort'
         }: ${effortArc}. ${coverage}`;
+
+  if (variant === 'sparkline') {
+    return (
+      <PulseChart
+        model={model}
+        accessibleLabel={accessibleLabel}
+        unscoredPatternId={unscoredPatternId}
+        className={`block h-8 w-28 ${className}`}
+      />
+    );
+  }
 
   return (
     <section
@@ -132,67 +148,12 @@ export function ClassPulseView({
           className={`flex items-center justify-center ${compact ? 'min-h-16' : 'min-h-24'}`}
         />
       ) : (
-        <svg
-          role="img"
-          aria-label={accessibleLabel}
-          viewBox="0 0 1000 100"
-          preserveAspectRatio="none"
+        <PulseChart
+          model={model}
+          accessibleLabel={accessibleLabel}
+          unscoredPatternId={unscoredPatternId}
           className={`mt-3 block w-full ${compact ? 'h-16' : 'h-24 sm:h-28'}`}
-        >
-          <defs>
-            <pattern id={unscoredPatternId} width="12" height="12" patternUnits="userSpaceOnUse">
-              <path
-                d="M-3 3 L3 -3 M0 12 L12 0 M9 15 L15 9"
-                stroke="var(--rf-color-semantic-text-tertiary)"
-                strokeWidth="2"
-                opacity="0.35"
-              />
-            </pattern>
-          </defs>
-          <line
-            x1="0"
-            x2="1000"
-            y1="96"
-            y2="96"
-            stroke="var(--rf-color-semantic-border-default)"
-            strokeWidth="2"
-          />
-          {model.segments.map((segment) => {
-            // Height comes from the shape (derived on an unshaped class), fill from
-            // the stored effort. Splitting them is what lets an entirely unscored
-            // class show a real arc while every bar stays honestly hatched.
-            const height = segment.shapeEffort ? HEIGHT[segment.shapeEffort] : 18;
-            const x = segment.startRatio * 1000;
-            const width = Math.max(1, segment.widthRatio * 1000);
-            const color = segment.effort
-              ? `var(--rf-color-intensity-${segment.shapeEffort ?? segment.effort})`
-              : `url(#${unscoredPatternId})`;
-            return (
-              <g key={`${segment.classTrackId}:${segment.startRatio}`}>
-                <rect
-                  x={x}
-                  y={96 - height}
-                  width={width}
-                  height={height}
-                  fill={color}
-                  opacity="0.72"
-                />
-                <line
-                  x1={x}
-                  x2={x + width}
-                  y1={96 - height}
-                  y2={96 - height}
-                  stroke={
-                    segment.effort
-                      ? `var(--rf-color-intensity-${segment.shapeEffort ?? segment.effort})`
-                      : 'var(--rf-color-semantic-text-tertiary)'
-                  }
-                  strokeWidth="3"
-                />
-              </g>
-            );
-          })}
-        </svg>
+        />
       )}
 
       {/* The axis needs a real end time to mean anything — a bare "finish"
@@ -211,6 +172,78 @@ export function ClassPulseView({
 
       <p className="mt-2 font-ui text-xs text-text-tertiary">{coverage}</p>
     </section>
+  );
+}
+
+function PulseChart({
+  model,
+  accessibleLabel,
+  unscoredPatternId,
+  className,
+}: {
+  model: ClassPulseModel;
+  accessibleLabel: string;
+  unscoredPatternId: string;
+  className: string;
+}) {
+  if (model.segments.length === 0) {
+    return <div aria-hidden className={className} />;
+  }
+  return (
+    <svg
+      role="img"
+      aria-label={accessibleLabel}
+      viewBox="0 0 1000 100"
+      preserveAspectRatio="none"
+      className={className}
+    >
+      <defs>
+        <pattern id={unscoredPatternId} width="12" height="12" patternUnits="userSpaceOnUse">
+          <path
+            d="M-3 3 L3 -3 M0 12 L12 0 M9 15 L15 9"
+            stroke="var(--rf-color-semantic-text-tertiary)"
+            strokeWidth="2"
+            opacity="0.35"
+          />
+        </pattern>
+      </defs>
+      <line
+        x1="0"
+        x2="1000"
+        y1="96"
+        y2="96"
+        stroke="var(--rf-color-semantic-border-default)"
+        strokeWidth="2"
+      />
+      {model.segments.map((segment) => {
+        // Height comes from the shape (derived on an unshaped class), fill from
+        // the stored effort. Splitting them is what lets an entirely unscored
+        // class show a real arc while every bar stays honestly hatched.
+        const height = segment.shapeEffort ? HEIGHT[segment.shapeEffort] : 18;
+        const x = segment.startRatio * 1000;
+        const width = Math.max(1, segment.widthRatio * 1000);
+        const color = segment.effort
+          ? `var(--rf-color-intensity-${segment.shapeEffort ?? segment.effort})`
+          : `url(#${unscoredPatternId})`;
+        return (
+          <g key={`${segment.classTrackId}:${segment.startRatio}`}>
+            <rect x={x} y={96 - height} width={width} height={height} fill={color} opacity="0.72" />
+            <line
+              x1={x}
+              x2={x + width}
+              y1={96 - height}
+              y2={96 - height}
+              stroke={
+                segment.effort
+                  ? `var(--rf-color-intensity-${segment.shapeEffort ?? segment.effort})`
+                  : 'var(--rf-color-semantic-text-tertiary)'
+              }
+              strokeWidth="3"
+            />
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 

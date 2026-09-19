@@ -117,9 +117,11 @@ try {
 
   // ── Class lifecycle: create + open + add a track ────────────────────────
   await section('class:create', async () => {
-    const t = page.getByLabel('New class title');
+    await page.getByRole('button', { name: 'Start a class' }).click();
+    const t = page.getByLabel('Class title');
     await t.fill('Functional Smoke A');
-    await t.press('Enter');
+    await page.getByRole('button', { name: 'Cycle', exact: true }).click();
+    await page.getByRole('button', { name: 'Create class' }).click();
     // .first() targets the row toggle; the row's View/Copy actions share the title.
     await page
       .getByRole('button', { name: /Functional Smoke A/ })
@@ -215,13 +217,18 @@ try {
   await section('rapid-switch', async () => {
     // Opening a class folds the rail's create/filter controls away, so creating
     // a second class from inside the builder reopens them first.
-    const t = page.getByLabel('New class title');
+    const t = page.getByLabel('Class title');
     if (!(await t.isVisible().catch(() => false))) {
-      await page.getByText('New class, filters, and search').click();
+      const disclosure = page.getByText('New class, filters, and search');
+      if (await disclosure.isVisible().catch(() => false)) {
+        await disclosure.click();
+      }
+      await page.getByRole('button', { name: 'New class' }).click();
       await t.waitFor({ state: 'visible', timeout: 10000 });
     }
     await t.fill('Functional Smoke B');
-    await t.press('Enter');
+    await page.getByRole('button', { name: 'Cycle', exact: true }).click();
+    await page.getByRole('button', { name: 'Create class' }).click();
     await page
       .getByRole('button', { name: /Functional Smoke B/ })
       .first()

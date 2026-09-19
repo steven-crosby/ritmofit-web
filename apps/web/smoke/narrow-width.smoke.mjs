@@ -335,23 +335,16 @@ try {
   await checkNoOverflow(page, 'dashboard-empty');
   await page.screenshot({ path: join(shotsDir, 'dashboard-empty.png') });
 
-  // 3. Create a class and open it. On a phone the create form lives inside a
-  // collapsed "New class, filters, and search" disclosure (wide workstations
-  // start it open). The empty resting state also offers "Start Cycle, Pilates,
-  // or HIIT", which opens that disclosure before focusing the title.
-  const startTemplate = page.getByRole('button', { name: /Start Cycle, Pilates, or HIIT/ });
-  if (await startTemplate.isVisible().catch(() => false)) {
-    await startTemplate.click();
-  } else {
-    await page.getByText('New class, filters, and search').click();
-  }
-  const titleInput = page.getByLabel('New class title');
+  // 3. Create a class and open it. The empty Classes home offers copper
+  // "Start a class", which opens the isolated create dialog.
+  await page.getByRole('button', { name: 'Start a class' }).click();
+  const titleInput = page.getByLabel('Class title');
   await titleInput.waitFor({ state: 'visible', timeout: 10000 });
   await titleInput.fill('Narrow Width Smoke');
   // Class type is intentionally explicit; a smoke path must make the same
   // deliberate choice an instructor makes before the create action unlocks.
   await page.getByRole('button', { name: 'Cycle', exact: true }).click();
-  await titleInput.press('Enter');
+  await page.getByRole('button', { name: 'Create class' }).click();
   // The class row exposes a toggle plus View/Copy actions whose aria-labels also
   // contain the title; .first() targets the row toggle (first in DOM order).
   const classBtn = page.getByRole('button', { name: /Narrow Width Smoke/ }).first();
