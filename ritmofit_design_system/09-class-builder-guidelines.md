@@ -152,6 +152,12 @@ Long-tail fields sit under a collapsed **Advanced** disclosure: cadence/RPM, hol
 downbeat, detailed notes, and provider/debug metadata. Advanced fields are still important; they are not
 the first impression. The common act should feel like scoring the class, not completing a record.
 
+Essentials carry their own plain-language help, because a field label names a column, not an act: the
+zone summary glosses the selected zone ("Selected: Z2 Push — steady working effort"), the BPM field
+says what an empty box falls back to, and the clip window says what a blank end means. The inspector
+commits on **Save**, so it states whether what is on screen is what is stored — `No changes to save.`
+/ `Unsaved changes` (caution) / `Saved.` — and Save stays disabled while there is nothing to commit.
+
 ## Readiness — is the class ready to run?
 
 Before an instructor is on stage, the builder header answers one question plainly: **is this class ready
@@ -176,6 +182,12 @@ Rules:
 - Encode state by **glyph + word + severity, never color alone**: the label itself names the state
   ("set" / "missing" / "needed"). Warnings use the **caution channel only** — no new accent, and never
   plasma (see [`02-color-system.md`](./02-color-system.md), 10 §10).
+- **Say it in the instructor's words, and name the consequence.** Readiness copy may not lean on
+  internal shorthand: not "pulse off" (the **Class Pulse** chart sits on the same screen, so the word
+  points at the wrong object — say "Live shows no beat"), and not "bare prompter" / "prompter only"
+  (a mode the instructor has never been shown — say what Live will and won't do). The panel also
+  names what it is checking, and the click-to-fix chips are introduced as an action ("Open to fix:")
+  so a row of track titles doesn't read as labels. Any overflow is a real control, never a dead count.
 - Ready dimensions stay quiet (one line). Anything needing attention expands with its impact and
   **click-to-fix track chips** that jump the inspector to the track that needs work.
 - Placement: in the class header, directly under the summary metrics — the first thing read after the

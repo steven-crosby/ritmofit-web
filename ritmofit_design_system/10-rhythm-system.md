@@ -32,7 +32,10 @@ confirmed BPM; a provisional BPM can populate rows, averages, and the Live at-re
 be visibly refinable before the instructor relies on it.
 
 If no tempo value exists at all, the pulse is simply off (exactly as under reduced motion, §6), timers
-and cues stay fully legible, and the fix ("Add BPM so the class keeps time") is one tap away. Missing or
+and cues stay fully legible, and the fix ("Add BPM so the class keeps time") is one tap away. Say that
+in the instructor's words — "pulse" is this document's term for the beat animation and also names the
+**Class Pulse** chart, so instructor-facing tempo copy states the effect ("Live shows no beat") rather
+than borrowing the word. Missing or
 provisional tempo is **surfaced as readiness**, never buried as small print — in the builder as the tempo
 dimension of the readiness panel, and in Live as supporting status under an affirmative ready state.
 Tempo warnings never block a run on their own; only missing durations do that. Never obtain BPM from

@@ -383,9 +383,9 @@ try {
   await page.getByRole('button', { name: 'Add track' }).click();
   await page.getByText('Smoke Reprise').first().waitFor({ timeout: 10000 });
   // Class Pulse replaced the ribbon's "auto shape" badge. An unshaped class
-  // still names the derived shape: the pulse region + "derived · confirm".
+  // still names the derived shape: the pulse region + "auto-shape · mark reviewed".
   const classPulse = page.getByRole('region', { name: 'Class Pulse' });
-  const derivedConfirm = page.getByRole('button', { name: /derived · confirm/ });
+  const derivedConfirm = page.getByRole('button', { name: /auto-shape · mark reviewed/ });
   if (
     (await classPulse.isVisible().catch(() => false)) &&
     (await derivedConfirm.isVisible().catch(() => false))
@@ -402,7 +402,7 @@ try {
   const bpmNeededCount = await page.getByText('BPM needed', { exact: true }).count();
   if (bpmNeededCount >= 2) pass('missing-bpm:row-chips', `${bpmNeededCount} chips`);
   else fail('missing-bpm:row-chips', `expected ≥2 "BPM needed" chips, saw ${bpmNeededCount}`);
-  const bpmSummary = page.getByText('add BPM · pulse off', { exact: true });
+  const bpmSummary = page.getByText('no BPM set', { exact: true });
   if (await bpmSummary.isVisible().catch(() => false)) pass('missing-bpm:summary-hint');
   else fail('missing-bpm:summary-hint', 'header summary did not name the missing BPM');
 
