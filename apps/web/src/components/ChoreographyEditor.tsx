@@ -252,6 +252,7 @@ export function CuesSection({
   bpm = null,
   beatAnchorMs = 0,
   focus = null,
+  startEntryNonce = 0,
   onChanged,
 }: {
   classTrackId: string;
@@ -260,6 +261,12 @@ export function CuesSection({
   bpm?: number | null;
   beatAnchorMs?: number;
   focus?: RowFocus;
+  /**
+   * Bumped when readiness sends the instructor here to write their first cue:
+   * bring the entry row into view and put the caret in it. A nonce rather than a
+   * boolean so asking twice works.
+   */
+  startEntryNonce?: number;
   /** Refresh run-payload-derived readiness and timeline after cue mutations. */
   onChanged?: () => void;
 }) {
@@ -278,12 +285,24 @@ export function CuesSection({
   const [editColor, setEditColor] = useState<string | null>(null);
   const editButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const addAnchorRef = useRef<HTMLInputElement>(null);
+  const addTextRef = useRef<HTMLInputElement>(null);
   const editAnchorRef = useRef<HTMLInputElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
   const [pendingFocus, setPendingFocus] = useState<RowMutationFocus | null>(null);
   const validationId = useId();
 
   const addAnchor = anchorFieldState(anchorClock, durationMs);
   const editAnchor = anchorFieldState(editAnchorClock, durationMs);
+
+  // Instant scroll, not smooth: this also has to land under
+  // `prefers-reduced-motion`, and the arrival is the point, not the travel.
+  useEffect(() => {
+    if (startEntryNonce <= 0) return;
+    // Optional: jsdom has no scrollIntoView, and reduced-motion still needs
+    // the caret to land without a travel animation.
+    sectionRef.current?.scrollIntoView?.({ block: 'center' });
+    addTextRef.current?.focus();
+  }, [startEntryNonce]);
 
   useEffect(() => {
     if (!pendingFocus) return;
@@ -386,7 +405,7 @@ export function CuesSection({
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div ref={sectionRef} className="flex flex-col gap-2">
       <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Cues</span>
       <ul className="flex flex-col gap-1">
         {cues?.length === 0 && <li className="font-ui text-xs text-text-tertiary">No cues yet.</li>}
@@ -516,8 +535,12 @@ export function CuesSection({
             title="Cue time (m:ss)"
           />
           <input
+            ref={addTextRef}
             className={`min-w-0 flex-1 ${fieldClass}`}
             placeholder="Cue text"
+            // A placeholder is not a label: it leaves the field unnamed once
+            // typing starts, and unnamed to assistive tech throughout.
+            aria-label="Cue text"
             value={text}
             onChange={(e) => setText(e.target.value)}
           />

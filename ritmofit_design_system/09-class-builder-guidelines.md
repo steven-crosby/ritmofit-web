@@ -193,10 +193,15 @@ Rules:
   internal shorthand: not "pulse off" (the **Class Pulse** chart sits on the same screen, so the word
   points at the wrong object — say "Live shows no beat"), and not "bare prompter" / "prompter only"
   (a mode the instructor has never been shown — say what Live will and won't do). The panel also
-  names what it is checking, and the click-to-fix chips are introduced as an action ("Open to fix:")
-  so a row of track titles doesn't read as labels. Any overflow is a real control, never a dead count.
+  names what it is checking, and the click-to-fix chips are introduced as the job they do
+  ("Open to add BPM:", "Open to link music:", "Open to set length:") so the same track title
+  on two rows is two acts, not a duplicate chip. Any overflow is a real control, never a dead
+  count. Missing BPM uses the same words everywhere — "No BPM set" — in the header stats, the
+  readiness tempo row, and the track-stack chip.
 - Ready dimensions stay quiet (one line). Anything needing attention expands with its impact and
-  **click-to-fix track chips** that jump the inspector to the track that needs work.
+  **click-to-fix track chips** that jump the inspector to the track that needs work. Choreography
+  has no flagged track, so that row offers **Write the first cue** — it opens the first track
+  and puts the caret in its cue box.
 - Placement: in the class header, directly under the summary metrics — the first thing read after the
   title and the last check before Run live. Implemented as `ClassReadinessSummary` from the pure
   `readiness.ts` derivation.

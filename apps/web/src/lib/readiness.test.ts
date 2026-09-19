@@ -73,7 +73,7 @@ describe('classReadiness — dimensions', () => {
     expect(duration.level).toBe('blocked');
     expect(duration.label).toMatch(/add a track/i);
     // The other three have nothing to assess yet, so they must not fire "attention"
-    // (they'd otherwise read "No BPM yet" about zero tracks).
+    // (they'd otherwise read "No BPM set" about zero tracks).
     expect(r.dimensions.filter((d) => d.key !== 'duration').every((d) => d.level === 'ready')).toBe(
       true,
     );
@@ -84,7 +84,7 @@ describe('classReadiness — dimensions', () => {
   it('flags tempo off when no track has a BPM and incomplete when some do', () => {
     const allMissing = dim(payload(entry(), entry()), 'tempo');
     expect(allMissing.level).toBe('attention');
-    expect(allMissing.label).toMatch(/no bpm yet/i);
+    expect(allMissing.label).toMatch(/no bpm set/i);
     expect(allMissing.tracks).toHaveLength(2);
 
     const some = dim(payload(entry({ displayBpm: 120 }), entry()), 'tempo');

@@ -808,8 +808,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 await openClass({ ...cls, accessLevel: 'owner' });
               }}
               onDuplicate={async (cls) => {
-                // "Save a copy" of an own/shared class into the caller's library, then
-                // refresh so the copy appears and open it for immediate editing.
+                // Duplicate an owned class into the library, then refresh so the
+                // new class appears and open it for immediate editing.
                 const copy = await copyClass(cls.id);
                 await applyTagFilter(null);
                 await refreshClasses();
@@ -1013,7 +1013,7 @@ export function LibraryRail({
   onSelectTag: (tag: string | null) => void;
   onError: (msg: string | null) => void;
   onCreate: (cls: Awaited<ReturnType<typeof createClass>>) => void;
-  /** "Save a copy" of a class into the caller's library (resolves when done). */
+  /** Duplicate an owned class into the library (resolves when done). */
   onDuplicate: (cls: ClassListItem) => Promise<void>;
   /** Open a read-only preview of the class (without entering the builder). */
   onPreview: (cls: ClassListItem) => void;
@@ -1225,9 +1225,10 @@ function LibraryOrganizeControls({
 /**
  * A single Library card (design system 11, tightened for music-forward queue):
  * bounded album-art collage, title, shape-first meta (template · track count · runtime),
- * quiet last-opened. Primary action is opening the card (main area). Copy/View are
- * deliberately quieter secondary actions in a compact footer (no dominating vertical
- * divider). The solo-first library is owner-only (D20), so no ownership chip is shown.
+ * quiet last-opened. Primary action is opening the card (main area). Duplicate and
+ * Rehearsal view are deliberately quieter secondary actions in a compact footer (no
+ * dominating vertical divider). The solo-first library is owner-only (D20), so no
+ * ownership chip is shown.
  * Independently focusable controls; ring for selection (never color alone).
  */
 function ClassCard({
@@ -1265,11 +1266,12 @@ function ClassCard({
           <ArtCollage urls={cls.albumArtUrls} classTitle={cls.title} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-text-primary">{cls.title}</span>
-            {/* Which card you are working in, in a word. The selection ring alone
-                left "what did I just click?" to be inferred from a border. */}
+            {/* Which card is open, in a word. "Editing now" overstated — selected
+                is not the same as a dirty inspector. The ring plus this name the
+                click; the workspace heading names the class. */}
             {selected && (
               <span className="mt-0.5 inline-flex rounded-pill bg-interactive/15 px-1.5 font-data text-[10px] uppercase tracking-wide text-interactive">
-                Editing now
+                Open
               </span>
             )}
             <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-data text-xs text-text-tertiary">
@@ -3753,6 +3755,20 @@ function ClassWorkspace({
   const selectedTrack = tracks.find((t) => t.id === selectedTrackId) ?? null;
   const selectedEntry = payload?.tracks.find((e) => e.classTrackId === selectedTrackId) ?? null;
 
+  /**
+   * Readiness' choreography row is the one gap with no flagged track to jump
+   * to, so it hands the instructor the act instead: open the first track and
+   * put the caret in its cue box. The nonce re-arms the request when the track
+   * is already selected.
+   */
+  const [cueEntryRequest, setCueEntryRequest] = useState(0);
+  const startChoreography = () => {
+    const first = payload?.tracks[0]?.classTrackId ?? tracks[0]?.id ?? null;
+    if (!first) return;
+    setSelectedTrackId(first);
+    setCueEntryRequest((request) => request + 1);
+  };
+
   // Select a track from the timeline; a marker click also targets a cue/move row.
   const selectFromTimeline = (
     classTrackId: string,
@@ -3819,6 +3835,7 @@ function ClassWorkspace({
           onError={onError}
           onRun={onRun}
           onSelectTrack={setSelectedTrackId}
+          onStartChoreography={startChoreography}
           onClassUpdated={onClassUpdated}
           onDeleted={() => onClassDeleted(cls.id)}
         />
@@ -4051,6 +4068,7 @@ function ClassWorkspace({
               canEdit={canEdit}
               canPlaceFreely={isFree}
               focus={inspectorFocus}
+              startCueEntry={cueEntryRequest}
               onSaved={onTrackChanged}
               onChoreographyChanged={onChoreographyChanged}
               onRemoved={() => {
@@ -4139,6 +4157,7 @@ export function ClassHeaderCard({
   onError,
   onRun,
   onSelectTrack,
+  onStartChoreography,
   onClassUpdated,
   onDeleted,
 }: {
@@ -4151,6 +4170,8 @@ export function ClassHeaderCard({
   onError: (msg: string | null) => void;
   onRun: () => void;
   onSelectTrack: (classTrackId: string) => void;
+  /** Send the instructor to the first track's cue entry (readiness action). */
+  onStartChoreography: () => void;
   onClassUpdated: (cls: Class) => void;
   onDeleted: () => void;
 }) {
@@ -4473,6 +4494,7 @@ export function ClassHeaderCard({
           readiness={readiness}
           canEdit={canEdit}
           onSelectTrack={onSelectTrack}
+          onStartChoreography={onStartChoreography}
           compact
         />
       )}
@@ -4701,7 +4723,7 @@ function SongRow({
             // BPM is not a hard gate (only duration blocks Live), so it warns amber
             // rather than intensity-hard, and never claims a fabricated "~auto" value.
             <span className="shrink-0 font-ui text-xs font-semibold text-state-caution">
-              BPM needed
+              No BPM set
             </span>
           )}
           {entry.displayRpm != null && (
@@ -4796,6 +4818,7 @@ function TrackInspector({
   canEdit,
   canPlaceFreely,
   focus,
+  startCueEntry,
   onSaved,
   onChoreographyChanged,
   onRemoved,
@@ -4813,6 +4836,8 @@ function TrackInspector({
   canPlaceFreely: boolean;
   /** A marker click asking to focus a cue/move row on this track (or null). */
   focus: { kind: 'cue' | 'move'; id: string; anchorMs: number; nonce: number } | null;
+  /** Bumped when readiness sends the instructor here to write the first cue. */
+  startCueEntry: number;
   onSaved: () => void;
   onChoreographyChanged: () => void;
   onRemoved: () => void;
@@ -5374,6 +5399,7 @@ function TrackInspector({
               durationMs={durationMs}
               bpm={displayBpm}
               beatAnchorMs={track.beatAnchorMs}
+              startEntryNonce={startCueEntry}
               focus={
                 focus?.kind === 'cue'
                   ? { id: focus.id, anchorMs: focus.anchorMs, nonce: focus.nonce }

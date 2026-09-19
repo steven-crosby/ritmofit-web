@@ -106,7 +106,7 @@ export function classReadiness(payload: RunPayload): ClassReadiness {
         ? {
             key: 'tempo',
             level: 'attention',
-            label: 'No BPM yet',
+            label: 'No BPM set',
             detail: 'Add BPM so the class keeps time — without it Live shows no beat.',
             tracks: missingBpm,
           }

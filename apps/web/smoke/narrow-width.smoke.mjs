@@ -112,7 +112,10 @@ async function checkIntensityControlLayout(page, suffix = '') {
   });
 
   if (metrics.length !== 1) {
-    fail(`intensity-control:one-visible${tag}`, `expected 1 visible control, saw ${metrics.length}`);
+    fail(
+      `intensity-control:one-visible${tag}`,
+      `expected 1 visible control, saw ${metrics.length}`,
+    );
     return;
   }
 
@@ -385,23 +388,26 @@ try {
   // Class Pulse replaced the ribbon's "auto shape" badge. An unshaped class
   // still names the derived shape: the pulse region + the "auto-shaped" state.
   const classPulse = page.getByRole('region', { name: 'Class Pulse' });
-  const derivedConfirm = classPulse.getByText("◇ auto-shaped");
+  const derivedConfirm = classPulse.getByText('◇ auto-shaped');
   if (
     (await classPulse.isVisible().catch(() => false)) &&
     (await derivedConfirm.isVisible().catch(() => false))
   ) {
     pass('provisional-shape:class-pulse');
   } else {
-    fail('provisional-shape:class-pulse', 'Class Pulse derived-shape cue missing on an unshaped 2-track class');
+    fail(
+      'provisional-shape:class-pulse',
+      'Class Pulse derived-shape cue missing on an unshaped 2-track class',
+    );
   }
   await page.screenshot({ path: join(shotsDir, 'provisional-shape-390.png'), fullPage: true });
 
   // Phase 2 (alive at rest): a missing BPM is named in place, never silent. Both
-  // manual tracks have no BPM, so each row shows a "BPM needed" chip and the header
-  // summary names it instead of dropping the avg-BPM stat (design system 10 §1a).
-  const bpmNeededCount = await page.getByText('BPM needed', { exact: true }).count();
+  // manual tracks have no BPM, so each row and the header use the same "No BPM set"
+  // words instead of dropping the avg-BPM stat (design system 10 §1a).
+  const bpmNeededCount = await page.getByText('No BPM set', { exact: true }).count();
   if (bpmNeededCount >= 2) pass('missing-bpm:row-chips', `${bpmNeededCount} chips`);
-  else fail('missing-bpm:row-chips', `expected ≥2 "BPM needed" chips, saw ${bpmNeededCount}`);
+  else fail('missing-bpm:row-chips', `expected ≥2 "No BPM set" chips, saw ${bpmNeededCount}`);
   const bpmSummary = page.getByText('no BPM set', { exact: true });
   if (await bpmSummary.isVisible().catch(() => false)) pass('missing-bpm:summary-hint');
   else fail('missing-bpm:summary-hint', 'header summary did not name the missing BPM');
@@ -516,7 +522,6 @@ try {
       fullPage: true,
     });
   }
-
 } catch (err) {
   fail('harness', err.message);
   await page.screenshot({ path: join(shotsDir, 'failure.png') }).catch(() => {});

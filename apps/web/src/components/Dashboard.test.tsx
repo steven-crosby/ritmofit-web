@@ -268,7 +268,7 @@ describe('Dashboard class library states', () => {
     await waitFor(() => expect(disclosure.closest('details')).toHaveProperty('open', false));
     // ...and the rail names the card being edited, rather than leaving a ring to
     // carry "what did I just click?".
-    expect(screen.getByText('Editing now')).toBeTruthy();
+    expect(screen.getByText('Open')).toBeTruthy();
   });
 
   it('shows a distinct error state when the class list fails to load, and retries', async () => {
@@ -2063,5 +2063,25 @@ describe('Dashboard track focus management', () => {
       expect(document.activeElement).toBe(rowSelectButton('ct-added'));
     });
     expect(document.activeElement).not.toBe(document.body);
+  });
+
+  it('opens the first track’s cue box from readiness Write the first cue', async () => {
+    installClassWithTracks('Cue handoff ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+      { classTrackId: 'ct-2', durationMs: 180000, title: 'Second Song' },
+    ]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Cue handoff ride/ }));
+    await screen.findByRole('heading', { name: 'Cue handoff ride' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Write the first cue' }));
+
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for First Light',
+    });
+    const cueField = await within(inspector).findByRole('textbox', { name: 'Cue text' });
+    await waitFor(() => expect(document.activeElement).toBe(cueField));
   });
 });

@@ -31,10 +31,21 @@ const GLYPH: Record<ReadinessLevel, string> = {
 
 /** Friendly noun per dimension, for an action-bearing fix-chip label. */
 const DIMENSION_NOUN: Record<ReadinessKey, string> = {
-  duration: 'duration',
-  tempo: 'tempo',
+  duration: 'length',
+  tempo: 'BPM',
   choreography: 'cues and moves',
   music: 'music',
+};
+
+/**
+ * Lead-in for the chip row. The same track can appear on tempo and music because
+ * those are two jobs — this names the job so "Solo" twice is not the same chip.
+ */
+const FIX_LEADIN: Record<ReadinessKey, string> = {
+  duration: 'Open to set length:',
+  tempo: 'Open to add BPM:',
+  choreography: 'Open to write cues:',
+  music: 'Open to link music:',
 };
 
 /**
@@ -57,6 +68,7 @@ export function ClassReadinessSummary({
   readiness,
   canEdit,
   onSelectTrack,
+  onStartChoreography,
   compact = false,
 }: {
   readiness: ClassReadiness;
@@ -64,6 +76,13 @@ export function ClassReadinessSummary({
   compact?: boolean;
   /** Jump the inspector to a flagged track so the gap can be fixed in place. */
   onSelectTrack: (classTrackId: string) => void;
+  /**
+   * Open the first track's cue entry. Cues and moves have no flagged track to
+   * jump to, so without this the row could only describe the gap — and an
+   * instructor who has never planned a class cannot act on a description of
+   * something she has not seen yet.
+   */
+  onStartChoreography?: () => void;
 }) {
   const head = headline(readiness);
   return (
@@ -116,6 +135,17 @@ export function ClassReadinessSummary({
                   onSelectTrack={onSelectTrack}
                 />
               )}
+              {canEdit && !ready && d.key === 'choreography' && onStartChoreography && (
+                <div className="ml-6 flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={onStartChoreography}
+                    className="min-h-11 rounded-control border border-interactive/50 px-2.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
+                  >
+                    Write the first cue
+                  </button>
+                </div>
+              )}
             </li>
           );
         })}
@@ -147,7 +177,7 @@ function FixChips({
   const noun = DIMENSION_NOUN[dimension.key];
   return (
     <div className="ml-6 flex flex-wrap items-center gap-1.5">
-      <span className="font-ui text-xs text-text-tertiary">Open to fix:</span>
+      <span className="font-ui text-xs text-text-tertiary">{FIX_LEADIN[dimension.key]}</span>
       {visible.map((t) => (
         <button
           key={t.classTrackId}
@@ -168,7 +198,7 @@ function FixChips({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          aria-label={`Show ${hidden} more ${noun} ${hidden === 1 ? 'track' : 'tracks'} to fix`}
+          aria-label={`Show ${hidden} more ${hidden === 1 ? 'track' : 'tracks'} to fix ${noun}`}
           className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive underline underline-offset-2 hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
         >
           +{hidden} more

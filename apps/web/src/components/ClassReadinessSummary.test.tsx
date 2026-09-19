@@ -53,17 +53,18 @@ describe('ClassReadinessSummary', () => {
     render(<ClassReadinessSummary readiness={readiness} canEdit onSelectTrack={onSelectTrack} />);
 
     expect(screen.getByText(/can run live · 3 things left/i)).toBeTruthy();
-    expect(screen.getByText(/no bpm yet/i)).toBeTruthy();
+    expect(screen.getByText(/no bpm set/i)).toBeTruthy();
     expect(screen.getByText(/no music linked/i)).toBeTruthy();
     expect(screen.queryByText(/blocks live/i)).toBeNull();
     // The panel names what it is checking before it lists states.
     expect(screen.getByText(/what live needs from this class/i)).toBeTruthy();
 
     // Chips carry an action-bearing accessible name (distinct from the track row,
-    // and telling a screen-reader user what the chip does), under a lead-in that
-    // says clicking one opens that track.
-    expect(screen.getAllByText(/open to fix:/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Fix tempo on Solo' })).toBeTruthy();
+    // and telling a screen-reader user what the chip does). Tempo and music both
+    // flag this track — the lead-in names the job so the same title is two acts.
+    expect(screen.getByText(/open to add bpm:/i)).toBeTruthy();
+    expect(screen.getByText(/open to link music:/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Fix BPM on Solo' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Fix music on Solo' })).toBeTruthy();
 
     // The tempo + music dimensions both flag this track — clicking a chip selects it.
@@ -84,9 +85,42 @@ describe('ClassReadinessSummary', () => {
     );
 
     // Compact shows two chips per dimension; the rest sit behind a real control.
-    expect(screen.queryByRole('button', { name: 'Fix tempo on Three' })).toBeNull();
-    fireEvent.click(screen.getAllByRole('button', { name: /show 1 more tempo track to fix/i })[0]!);
-    expect(screen.getByRole('button', { name: 'Fix tempo on Three' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Fix BPM on Three' })).toBeNull();
+    fireEvent.click(screen.getAllByRole('button', { name: /show 1 more track to fix bpm/i })[0]!);
+    expect(screen.getByRole('button', { name: 'Fix BPM on Three' })).toBeTruthy();
+  });
+
+  it('offers a first-cue action when choreography is the gap', () => {
+    const onStartChoreography = vi.fn();
+    const readiness = classReadiness(
+      payload(entry({ track: { title: 'Opener', durationMs: 200000 } })),
+    );
+    render(
+      <ClassReadinessSummary
+        readiness={readiness}
+        canEdit
+        onSelectTrack={() => {}}
+        onStartChoreography={onStartChoreography}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Write the first cue' }));
+    expect(onStartChoreography).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the first-cue action from viewers who cannot edit', () => {
+    const readiness = classReadiness(
+      payload(entry({ track: { title: 'Opener', durationMs: 200000 } })),
+    );
+    render(
+      <ClassReadinessSummary
+        readiness={readiness}
+        canEdit={false}
+        onSelectTrack={() => {}}
+        onStartChoreography={() => {}}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Write the first cue' })).toBeNull();
   });
 
   it('hides fix chips from viewers who cannot edit', () => {
