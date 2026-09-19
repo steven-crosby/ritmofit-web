@@ -52,7 +52,7 @@ schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/classes` | List classes the user can see: owned ∪ shared-directly ∪ shared-via-team. Indicates each class's highest effective access level. Web callers use `?limit=&cursor=` keyset pagination ordered by `updatedAt DESC, id DESC`; the opaque next cursor is returned in `X-RitmoFit-Next-Cursor`. Under D20, the current web UI filters this to the caller's own personal library. |
-| POST | `/classes` | Create a class (owner = caller). |
+| POST | `/classes` | Create a class (owner = caller). `{ mode: "scaffold", title, recipeId }` atomically materializes one of the nine versioned recipes and derives its discipline/target duration; `{ mode: "empty", title, template }` creates no plan blocks. The legacy body remains accepted as empty creation. |
 | GET | `/classes/:id` | Fetch one class (owner or any share). |
 | PATCH | `/classes/:id` | Update class fields (edit access). Setting `visibility` (`private`/`public`) is the dormant M4 publish/Explore mechanism; do not surface it in the current solo-first web product. |
 | DELETE | `/classes/:id` | Delete (owner only). |
@@ -61,15 +61,29 @@ schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 | POST | `/classes/:id/tags` | Add a lowercase class tag. |
 | DELETE | `/classes/:id/tags/:tag` | Remove a class tag. |
 
+## Class plan blocks
+
+Plan blocks are music-independent authoring structure. They keep planned duration separate from actual
+track playback duration and are deliberately absent from the initial Live run payload.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/classes/:id/plan-blocks` | List blocks in planned order (view access). |
+| POST | `/classes/:id/plan-blocks` | Append an instructor-authored block whose discipline guidance matches the class template (edit access). |
+| PATCH | `/plan-blocks/:id` | Update block content or planned duration without changing music playback windows (edit access). |
+| POST | `/classes/:id/plan-blocks/reorder` | Replace block order with a complete permutation (edit access). |
+| DELETE | `/plan-blocks/:id` | Delete an empty block. A block with assigned tracks returns `409` until those tracks are moved or detached. |
+
 ## Tracks within a class
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/classes/:id/tracks` | Add a track to a class → creates a `class_track`. Body references an existing `track` or creates one. Edit access. |
+| POST | `/classes/:id/tracks` | Add a track to a class → creates a `class_track`. Body references an existing `track` or creates one and may name a same-class `planBlockId`. Edit access. |
 | GET | `/classes/:id/tracks` | List `class_tracks` in `position` order, with cues + moves. |
 | PATCH | `/class-tracks/:id` | Update intensity, bpm/RPM/count overrides, trim/beat anchors, start offset, notes. |
+| PATCH | `/class-tracks/:id/plan-block` | Assign the real track to a same-class plan block or detach it with `null`. Sequential classes regroup tracks by block; free classes reject an assignment that would interleave blocks. |
 | DELETE | `/class-tracks/:id` | Remove a track from the class. |
-| POST | `/classes/:id/tracks/reorder` | Reorder `class_tracks` (accepts the new ordered list of ids). |
+| POST | `/classes/:id/tracks/reorder` | Reorder `class_tracks` (accepts the new ordered list of ids). Assigned block groups must remain contiguous and follow plan-block order. |
 | POST | `/class-tracks/:id/copy` | Copy this class_track **with its cues/moves** into a target class (D7). |
 
 ## Cues

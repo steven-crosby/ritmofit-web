@@ -10,6 +10,7 @@ import {
   updateClassTrackSchema,
   reorderClassTracksSchema,
   copyClassTrackSchema,
+  assignClassTrackPlanBlockSchema,
 } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
@@ -33,6 +34,7 @@ import {
   trackProviderIds,
   cues,
   classTrackMoves,
+  classPlanBlocks,
 } from '../db/schema.js';
 import {
   resolveClipWindow,
@@ -41,6 +43,7 @@ import {
   clipWindowInverted,
 } from '../lib/duration.js';
 import { touchClassUpdatedAt } from '../lib/class-recency.js';
+import { isTrackPlanOrderValid, orderTrackIdsByPlan } from '../lib/plan-block-ordering.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
 classTrackRoutes.use('*', requireSession);
@@ -134,6 +137,17 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
   const me = c.get('userId');
   await requireAccess(db, me, classId, 'edit');
   const body = addClassTrackSchema.parse(await c.req.json());
+  const planBlockId = body.planBlockId ?? null;
+  if (planBlockId) {
+    const block = await db
+      .select({ classId: classPlanBlocks.classId })
+      .from(classPlanBlocks)
+      .where(eq(classPlanBlocks.id, planBlockId))
+      .get();
+    if (!block || block.classId !== classId) {
+      throw new AccessError(404, 'NOT_FOUND', 'Not found.');
+    }
+  }
 
   let trackId: string;
   let inlineTrack: typeof tracks.$inferInsert | null = null;
@@ -192,14 +206,15 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
     throw new HttpError(422, 'VALIDATION_ERROR', invertedError);
   }
 
-  // Inline creation is part of the add-track operation, so do not persist its
-  // library row until every request-level guard above has accepted the placement.
-  if (inlineTrack) await db.insert(tracks).values(inlineTrack);
-
   const existing = await db
-    .select({ id: classTracks.id })
+    .select({
+      id: classTracks.id,
+      position: classTracks.position,
+      planBlockId: classTracks.planBlockId,
+    })
     .from(classTracks)
     .where(eq(classTracks.classId, classId))
+    .orderBy(classTracks.position)
     .all();
 
   // Free mode authors offsets, so a new track lands right after the current material
@@ -209,10 +224,32 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
 
   const now = Date.now();
   const id = crypto.randomUUID();
+  const blockRows = planBlockId
+    ? await db
+        .select({ id: classPlanBlocks.id, position: classPlanBlocks.position })
+        .from(classPlanBlocks)
+        .where(eq(classPlanBlocks.classId, classId))
+        .all()
+    : [];
+  const blockPositions = new Map(blockRows.map((block) => [block.id, block.position]));
+  const projected = [...existing, { id, position: existing.length, planBlockId }];
+  const plannedOrder = planBlockId ? orderTrackIdsByPlan(projected, blockPositions) : undefined;
+  if (mode === 'free' && planBlockId && !isTrackPlanOrderValid(projected, blockPositions)) {
+    throw new HttpError(
+      409,
+      'CONFLICT',
+      'This free-timeline placement would interleave plan blocks. Move the track on the timeline first.',
+    );
+  }
+
+  // Inline creation is part of the add-track operation, so do not persist its
+  // library row until every request-level guard above has accepted the placement.
+  if (inlineTrack) await db.insert(tracks).values(inlineTrack);
   await db.insert(classTracks).values({
     id,
     classId,
     trackId,
+    planBlockId,
     position: existing.length,
     intensity: body.intensity ?? 'none',
     displayBpmOverride: body.displayBpmOverride ?? null,
@@ -227,11 +264,68 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
     createdAt: now,
     updatedAt: now,
   });
-  await resequence(db, classId);
+  await resequence(db, classId, plannedOrder);
   await touchClassUpdatedAt(db, classId);
 
   const row = await db.select().from(classTracks).where(eq(classTracks.id, id)).get();
   return c.json(serializeClassTrack(row!), 201);
+});
+
+/** PATCH /class-tracks/:id/plan-block — move real music into/out of a plan block. */
+classTrackRoutes.patch('/class-tracks/:id/plan-block', async (c) => {
+  const db = createDb(c.env);
+  const id = c.req.param('id');
+  const { classId } = await requireClassTrackAccess(db, c.get('userId'), id, 'edit');
+  const { planBlockId } = assignClassTrackPlanBlockSchema.parse(await c.req.json());
+
+  if (planBlockId) {
+    const block = await db
+      .select({ classId: classPlanBlocks.classId })
+      .from(classPlanBlocks)
+      .where(eq(classPlanBlocks.id, planBlockId))
+      .get();
+    if (!block || block.classId !== classId) {
+      throw new AccessError(404, 'NOT_FOUND', 'Not found.');
+    }
+  }
+
+  const [trackRows, blockRows] = await Promise.all([
+    db
+      .select({
+        id: classTracks.id,
+        position: classTracks.position,
+        planBlockId: classTracks.planBlockId,
+      })
+      .from(classTracks)
+      .where(eq(classTracks.classId, classId))
+      .orderBy(classTracks.position)
+      .all(),
+    db
+      .select({ id: classPlanBlocks.id, position: classPlanBlocks.position })
+      .from(classPlanBlocks)
+      .where(eq(classPlanBlocks.classId, classId))
+      .all(),
+  ]);
+  const projected = trackRows.map((track) => (track.id === id ? { ...track, planBlockId } : track));
+  const blockPositions = new Map(blockRows.map((block) => [block.id, block.position]));
+  const plannedOrder = orderTrackIdsByPlan(projected, blockPositions);
+  const mode = await timelineModeOf(db, classId);
+  if (mode === 'free' && !isTrackPlanOrderValid(projected, blockPositions)) {
+    throw new HttpError(
+      409,
+      'CONFLICT',
+      'This assignment would interleave plan blocks on the free timeline.',
+    );
+  }
+
+  await db
+    .update(classTracks)
+    .set({ planBlockId, updatedAt: Date.now() })
+    .where(eq(classTracks.id, id));
+  await resequence(db, classId, mode === 'sequential' ? plannedOrder : undefined);
+  await touchClassUpdatedAt(db, classId);
+  const row = await db.select().from(classTracks).where(eq(classTracks.id, id)).get();
+  return c.json(serializeClassTrack(row!));
 });
 
 /** GET /classes/:id/tracks — class_tracks in position order (view access). */
@@ -268,7 +362,11 @@ classTrackRoutes.post('/classes/:id/tracks/reorder', async (c) => {
   const { classTrackIds } = reorderClassTracksSchema.parse(await c.req.json());
 
   const current = await db
-    .select({ id: classTracks.id })
+    .select({
+      id: classTracks.id,
+      position: classTracks.position,
+      planBlockId: classTracks.planBlockId,
+    })
     .from(classTracks)
     .where(eq(classTracks.classId, classId))
     .all();
@@ -283,6 +381,23 @@ classTrackRoutes.post('/classes/:id/tracks/reorder', async (c) => {
       422,
       'VALIDATION_ERROR',
       "classTrackIds must be exactly this class's class_tracks, with no duplicates.",
+    );
+  }
+
+  const blockRows = await db
+    .select({ id: classPlanBlocks.id, position: classPlanBlocks.position })
+    .from(classPlanBlocks)
+    .where(eq(classPlanBlocks.classId, classId))
+    .all();
+  const requestedTracks = classTrackIds.map((id, position) => ({
+    ...current.find((track) => track.id === id)!,
+    position,
+  }));
+  if (!isTrackPlanOrderValid(requestedTracks, new Map(blockRows.map((b) => [b.id, b.position])))) {
+    throw new HttpError(
+      409,
+      'CONFLICT',
+      'Tracks assigned to a plan block must remain contiguous and follow plan-block order.',
     );
   }
 
@@ -410,6 +525,40 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
           'VALIDATION_ERROR',
           'That start time would overlap another track. Leave a gap or move the other track.',
         );
+      }
+      if (touchesOffset) {
+        const [trackRows, blockRows] = await Promise.all([
+          db
+            .select({
+              id: classTracks.id,
+              position: classTracks.position,
+              planBlockId: classTracks.planBlockId,
+              startOffsetMs: classTracks.startOffsetMs,
+            })
+            .from(classTracks)
+            .where(eq(classTracks.classId, classId))
+            .all(),
+          db
+            .select({ id: classPlanBlocks.id, position: classPlanBlocks.position })
+            .from(classPlanBlocks)
+            .where(eq(classPlanBlocks.classId, classId))
+            .all(),
+        ]);
+        const projected = trackRows
+          .map((track) => ({
+            ...track,
+            startOffsetMs: track.id === id ? mergedOffset : (track.startOffsetMs ?? 0),
+          }))
+          .sort((a, b) => a.startOffsetMs - b.startOffsetMs || a.position - b.position)
+          .map((track, position) => ({ ...track, position }));
+        const blockPositions = new Map(blockRows.map((block) => [block.id, block.position]));
+        if (!isTrackPlanOrderValid(projected, blockPositions)) {
+          throw new HttpError(
+            409,
+            'CONFLICT',
+            'This timeline move would interleave tracks assigned to different plan blocks.',
+          );
+        }
       }
     }
   }
@@ -606,6 +755,9 @@ classTrackRoutes.post('/class-tracks/:id/copy', async (c) => {
       id: newId,
       classId: targetClassId,
       trackId: resolvedTrackId,
+      // A block belongs to the source class. Single-track copy is deliberately
+      // unassigned unless a future explicit destination contract names a block.
+      planBlockId: null,
       position: targetExisting.length,
       startOffsetMs: copyStartOffsetMs,
       createdAt: now,

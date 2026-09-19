@@ -11,6 +11,7 @@ import {
   cueSchema,
   classTrackMoveSchema,
   classSectionSchema,
+  classPlanBlockSchema,
   moveSchema,
   userMoveSchema,
   songByMoveSchema,
@@ -32,6 +33,7 @@ import {
   type Cue,
   type ClassTrackMove,
   type ClassSection,
+  type ClassPlanBlock,
   type Move,
   type UserMove,
   type SongByMove,
@@ -45,6 +47,7 @@ import type {
   cues,
   classTrackMoves,
   classSections,
+  classPlanBlocks,
   moves,
   userMoves,
   tracks,
@@ -59,6 +62,7 @@ type ClassTrackRow = typeof classTracks.$inferSelect;
 type CueRow = typeof cues.$inferSelect;
 type ClassTrackMoveRow = typeof classTrackMoves.$inferSelect;
 type ClassSectionRow = typeof classSections.$inferSelect;
+type ClassPlanBlockRow = typeof classPlanBlocks.$inferSelect;
 type MoveRow = typeof moves.$inferSelect;
 type UserMoveRow = typeof userMoves.$inferSelect;
 
@@ -85,6 +89,14 @@ export function serializeClassTrackMove(row: ClassTrackMoveRow): ClassTrackMove 
 /** Map a `class_sections` row to the shared `ClassSection`. */
 export function serializeClassSection(row: ClassSectionRow): ClassSection {
   return classSectionSchema.parse(row);
+}
+
+/** Parse stored guidance JSON and map a `class_plan_blocks` row to the shared contract. */
+export function serializeClassPlanBlock(row: ClassPlanBlockRow): ClassPlanBlock {
+  return classPlanBlockSchema.parse({
+    ...row,
+    guidance: JSON.parse(row.guidanceJson) as unknown,
+  });
 }
 
 /** Map a `moves` row to the shared `Move`. */

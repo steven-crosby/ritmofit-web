@@ -25,6 +25,7 @@ function makeClass(overrides: Partial<ClassListItem> = {}): ClassListItem {
     totalDurationMs: 0,
     albumArtUrls: [],
     ...overrides,
+    scaffoldRecipeId: overrides.scaffoldRecipeId ?? null,
   };
 }
 

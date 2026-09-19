@@ -26,6 +26,7 @@ function makeItem(over: Partial<ClassListItem> & { id: string; title: string }):
     totalDurationMs: 0,
     albumArtUrls: [],
     ...over,
+    scaffoldRecipeId: over.scaffoldRecipeId ?? null,
   };
 }
 

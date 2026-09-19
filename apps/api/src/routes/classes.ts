@@ -29,6 +29,7 @@ import { assembleRunPayload } from '../lib/run-payload.js';
 import { decodeClassListCursor, encodeClassListCursor } from '../lib/class-list-pagination.js';
 import { resequence, seedFreeOffsets } from '../lib/sequencing.js';
 import { deleteClassCover } from '../lib/class-cover.js';
+import { generateScaffold } from '../lib/class-scaffold-recipes.js';
 import {
   resolveTrackForClassCopy,
   refsToClone,
@@ -46,6 +47,7 @@ import {
   classSections,
   userMoves,
   classTags,
+  classPlanBlocks,
 } from '../db/schema.js';
 
 export const classRoutes = new Hono<AppEnv>();
@@ -65,23 +67,60 @@ classRoutes.post('/', async (c) => {
   const body = createClassSchema.parse(await c.req.json());
   const db = createDb(c.env);
   const now = Date.now();
+  const scaffold =
+    'mode' in body && body.mode === 'scaffold' ? generateScaffold(body.recipeId) : null;
+  const legacy = scaffold ? null : body;
   const row = {
     id: crypto.randomUUID(),
     ownerUserId: c.get('userId'),
     title: body.title,
     description: body.description ?? null,
-    template: body.template ?? null,
-    status: body.status ?? 'draft',
-    visibility: body.visibility ?? 'private',
-    timelineMode: body.timelineMode ?? 'sequential',
-    targetDurationMs: body.targetDurationMs ?? null,
-    featuredCategory: body.featuredCategory ?? null,
+    template:
+      scaffold?.template ?? (legacy && 'template' in legacy ? (legacy.template ?? null) : null),
+    scaffoldRecipeId: scaffold?.recipeId ?? null,
+    status: legacy && 'status' in legacy ? (legacy.status ?? 'draft') : ('draft' as const),
+    visibility:
+      legacy && 'visibility' in legacy ? (legacy.visibility ?? 'private') : ('private' as const),
+    timelineMode:
+      legacy && 'timelineMode' in legacy
+        ? (legacy.timelineMode ?? 'sequential')
+        : ('sequential' as const),
+    targetDurationMs:
+      scaffold?.targetDurationMs ??
+      (legacy && 'targetDurationMs' in legacy ? (legacy.targetDurationMs ?? null) : null),
+    featuredCategory:
+      legacy && 'featuredCategory' in legacy ? (legacy.featuredCategory ?? null) : null,
     coverImageUrl: null,
     createdAt: now,
     updatedAt: now,
     lastOpenedAt: null,
   };
-  await db.insert(classes).values(row);
+  if (scaffold) {
+    const statements = [
+      db.insert(classes).values(row),
+      ...scaffold.blocks.map((block) =>
+        db.insert(classPlanBlocks).values({
+          id: crypto.randomUUID(),
+          classId: row.id,
+          recipeBlockKey: block.recipeBlockKey,
+          position: block.position,
+          segmentType: block.segmentType,
+          label: block.label,
+          targetDurationMs: block.targetDurationMs,
+          intensity: block.intensity,
+          teachingGoal: block.teachingGoal,
+          movementFocus: block.movementFocus,
+          guidanceKind: block.guidance.kind,
+          guidanceJson: JSON.stringify(block.guidance),
+          createdAt: now,
+          updatedAt: now,
+        }),
+      ),
+    ];
+    await db.batch(statements as unknown as Parameters<typeof db.batch>[0]);
+  } else {
+    await db.insert(classes).values(row);
+  }
   return c.json(serializeClass({ ...row, tags: [] }), 201);
 });
 
@@ -153,39 +192,44 @@ classRoutes.post('/:id/copy', async (c) => {
   // Fetch everything the copy needs up front (no per-track round-trips). Sections
   // anchor on the class (no class_track FK), so they're fetched by class id and in
   // start order — the copy must carry the instructor's segment/energy plan too.
-  const [sourceCues, sourceMoves, sourceTracks, srcRefs, ownedKeyRows, sourceSections] =
-    await Promise.all([
-      ctIds.length ? db.select().from(cues).where(inArray(cues.classTrackId, ctIds)).all() : [],
-      ctIds.length
-        ? db
-            .select()
-            .from(classTrackMoves)
-            .where(inArray(classTrackMoves.classTrackId, ctIds))
-            .all()
-        : [],
-      trackIds.length ? db.select().from(tracks).where(inArray(tracks.id, trackIds)).all() : [],
-      trackIds.length
-        ? db
-            .select()
-            .from(trackProviderIds)
-            .where(inArray(trackProviderIds.trackId, trackIds))
-            .all()
-        : [],
-      db
-        .select({
-          provider: trackProviderIds.provider,
-          providerTrackId: trackProviderIds.providerTrackId,
-        })
-        .from(trackProviderIds)
-        .where(eq(trackProviderIds.ownerUserId, me))
-        .all(),
-      db
-        .select()
-        .from(classSections)
-        .where(eq(classSections.classId, sourceClassId))
-        .orderBy(classSections.startOffsetMs)
-        .all(),
-    ]);
+  const [
+    sourceCues,
+    sourceMoves,
+    sourceTracks,
+    srcRefs,
+    ownedKeyRows,
+    sourceSections,
+    sourcePlanBlocks,
+  ] = await Promise.all([
+    ctIds.length ? db.select().from(cues).where(inArray(cues.classTrackId, ctIds)).all() : [],
+    ctIds.length
+      ? db.select().from(classTrackMoves).where(inArray(classTrackMoves.classTrackId, ctIds)).all()
+      : [],
+    trackIds.length ? db.select().from(tracks).where(inArray(tracks.id, trackIds)).all() : [],
+    trackIds.length
+      ? db.select().from(trackProviderIds).where(inArray(trackProviderIds.trackId, trackIds)).all()
+      : [],
+    db
+      .select({
+        provider: trackProviderIds.provider,
+        providerTrackId: trackProviderIds.providerTrackId,
+      })
+      .from(trackProviderIds)
+      .where(eq(trackProviderIds.ownerUserId, me))
+      .all(),
+    db
+      .select()
+      .from(classSections)
+      .where(eq(classSections.classId, sourceClassId))
+      .orderBy(classSections.startOffsetMs)
+      .all(),
+    db
+      .select()
+      .from(classPlanBlocks)
+      .where(eq(classPlanBlocks.classId, sourceClassId))
+      .orderBy(classPlanBlocks.position)
+      .all(),
+  ]);
 
   const trackById = new Map(sourceTracks.map((t) => [t.id, t]));
   const refsByTrack = new Map<string, typeof srcRefs>();
@@ -223,6 +267,7 @@ classRoutes.post('/:id/copy', async (c) => {
       title: body.title ?? `Copy of ${sourceClass.title}`,
       description: sourceClass.description,
       template: sourceClass.template,
+      scaffoldRecipeId: sourceClass.scaffoldRecipeId,
       status: 'draft',
       visibility: 'private',
       timelineMode: sourceClass.timelineMode,
@@ -234,6 +279,21 @@ classRoutes.post('/:id/copy', async (c) => {
       lastOpenedAt: null,
     }),
   ];
+
+  const planBlockIdMap = new Map<string, string>();
+  for (const block of sourcePlanBlocks) {
+    const newBlockId = crypto.randomUUID();
+    planBlockIdMap.set(block.id, newBlockId);
+    statements.push(
+      db.insert(classPlanBlocks).values({
+        ...block,
+        id: newBlockId,
+        classId: newClassId,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    );
+  }
 
   const trackMemo = new Map<string, string>();
   sourceCTs.forEach((ct, index) => {
@@ -277,6 +337,7 @@ classRoutes.post('/:id/copy', async (c) => {
         id: newCTId,
         classId: newClassId,
         trackId: resolvedTrackId,
+        planBlockId: ct.planBlockId ? (planBlockIdMap.get(ct.planBlockId) ?? null) : null,
         position: index,
         // Free mode: offsets are the instructor's authored layout — carry them so the
         // copy keeps its gaps (the trailing resequence never rewrites free offsets).

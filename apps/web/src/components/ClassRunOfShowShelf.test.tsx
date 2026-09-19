@@ -26,6 +26,7 @@ function cls(index: number): ClassListItem {
     visibility: 'private',
     timelineMode: 'sequential',
     targetDurationMs: null,
+    scaffoldRecipeId: null,
     featuredCategory: null,
     coverImageUrl: null,
     tags: [],

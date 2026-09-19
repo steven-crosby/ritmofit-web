@@ -27,6 +27,11 @@ import {
   createClassSchema,
   updateClassSchema,
   copyClassSchema,
+  classPlanBlockSchema,
+  createClassPlanBlockSchema,
+  updateClassPlanBlockSchema,
+  reorderClassPlanBlocksSchema,
+  assignClassTrackPlanBlockSchema,
   classTrackSchema,
   addClassTrackSchema,
   updateClassTrackSchema,
@@ -84,6 +89,11 @@ const named: Record<string, z.ZodType> = {
   CreateClass: createClassSchema,
   UpdateClass: updateClassSchema,
   CopyClass: copyClassSchema,
+  ClassPlanBlock: classPlanBlockSchema,
+  CreateClassPlanBlock: createClassPlanBlockSchema,
+  UpdateClassPlanBlock: updateClassPlanBlockSchema,
+  ReorderClassPlanBlocks: reorderClassPlanBlocksSchema,
+  AssignClassTrackPlanBlock: assignClassTrackPlanBlockSchema,
   ClassTrack: classTrackSchema,
   AddClassTrack: addClassTrackSchema,
   UpdateClassTrack: updateClassTrackSchema,
@@ -432,6 +442,38 @@ const doc = {
         responses: { '201': jsonResp('ClassTrack', 'Added') },
       },
     },
+    '/classes/{id}/plan-blocks': {
+      parameters: [idParam],
+      get: {
+        summary: 'List music-independent class plan blocks in planned order',
+        responses: { '200': arrayResp('ClassPlanBlock', 'Class plan blocks') },
+      },
+      post: {
+        summary: 'Append an instructor-authored plan block',
+        requestBody: jsonBody('CreateClassPlanBlock'),
+        responses: { '201': jsonResp('ClassPlanBlock', 'Created') },
+      },
+    },
+    '/classes/{id}/plan-blocks/reorder': {
+      parameters: [idParam],
+      post: {
+        summary: 'Reorder all class plan blocks',
+        requestBody: jsonBody('ReorderClassPlanBlocks'),
+        responses: { '200': arrayResp('ClassPlanBlock', 'New order') },
+      },
+    },
+    '/plan-blocks/{id}': {
+      parameters: [idParam],
+      patch: {
+        summary: 'Update a class plan block',
+        requestBody: jsonBody('UpdateClassPlanBlock'),
+        responses: { '200': jsonResp('ClassPlanBlock', 'Updated') },
+      },
+      delete: {
+        summary: 'Delete an empty class plan block',
+        responses: { '204': { description: 'Deleted' } },
+      },
+    },
     '/classes/{id}/tracks/reorder': {
       parameters: [idParam],
       post: {
@@ -455,6 +497,14 @@ const doc = {
         summary: 'Copy a class_track with its cues/moves',
         requestBody: jsonBody('CopyClassTrack'),
         responses: { '201': jsonResp('ClassTrack', 'Copy') },
+      },
+    },
+    '/class-tracks/{id}/plan-block': {
+      parameters: [idParam],
+      patch: {
+        summary: 'Assign or detach a class_track plan block',
+        requestBody: jsonBody('AssignClassTrackPlanBlock'),
+        responses: { '200': jsonResp('ClassTrack', 'Updated') },
       },
     },
     '/class-tracks/{id}/cues': {

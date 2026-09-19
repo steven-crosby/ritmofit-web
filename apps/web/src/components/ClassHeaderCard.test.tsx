@@ -22,6 +22,7 @@ const cls = {
   visibility: 'private',
   timelineMode: 'sequential',
   targetDurationMs: null,
+  scaffoldRecipeId: null,
   createdAt: 1,
   updatedAt: 1,
   lastOpenedAt: null,

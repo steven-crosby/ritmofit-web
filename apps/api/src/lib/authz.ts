@@ -34,6 +34,7 @@ import {
   cues,
   classTrackMoves,
   classSections,
+  classPlanBlocks,
   shares,
   teamMemberships,
 } from '../db/schema.js';
@@ -163,6 +164,17 @@ interface VisibleClassRow {
   title: string;
   description: string | null;
   template: 'cycle' | 'hiit' | 'sculpt' | 'tread' | null;
+  scaffoldRecipeId:
+    | 'cycle_30_v1'
+    | 'cycle_45_v1'
+    | 'cycle_60_v1'
+    | 'pilates_30_v1'
+    | 'pilates_45_v1'
+    | 'pilates_60_v1'
+    | 'hiit_30_v1'
+    | 'hiit_45_v1'
+    | 'hiit_60_v1'
+    | null;
   status: 'draft' | 'ready' | 'archived';
   visibility: 'private' | 'public';
   timelineMode: 'sequential' | 'free';
@@ -236,6 +248,7 @@ export async function listVisibleClasses(
       c.title,
       c.description,
       c.template,
+      c.scaffold_recipe_id as scaffoldRecipeId,
       c.status,
       c.visibility,
       c.timeline_mode as timelineMode,
@@ -400,6 +413,23 @@ export async function requireSectionAccess(
     .select({ classId: classSections.classId })
     .from(classSections)
     .where(eq(classSections.id, sectionId))
+    .get();
+  if (!row) throw new AccessError(404, 'NOT_FOUND', 'Not found.');
+  const level = await requireAccess(db, userId, row.classId, minLevel);
+  return { classId: row.classId, level };
+}
+
+/** Resolve `class_plan_block → class` and enforce class-scoped access. */
+export async function requirePlanBlockAccess(
+  db: Db,
+  userId: string,
+  planBlockId: string,
+  minLevel: MinAccessLevel,
+): Promise<{ classId: string; level: AccessLevel }> {
+  const row = await db
+    .select({ classId: classPlanBlocks.classId })
+    .from(classPlanBlocks)
+    .where(eq(classPlanBlocks.id, planBlockId))
     .get();
   if (!row) throw new AccessError(404, 'NOT_FOUND', 'Not found.');
   const level = await requireAccess(db, userId, row.classId, minLevel);
