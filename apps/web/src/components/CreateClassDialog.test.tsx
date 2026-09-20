@@ -57,13 +57,17 @@ describe('CreateClassDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create class' }));
 
     expect(
-      await screen.findByText(/Pick a discipline — it decides the blocks Ritmo lays out\./),
+      await screen.findByText(
+        /Pick a discipline — it names the movement language and the class clock\./,
+      ),
     ).toBeTruthy();
     expect(api.createClass).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
     expect(
-      screen.queryByText(/Pick a discipline — it decides the blocks Ritmo lays out\./),
+      screen.queryByText(
+        /Pick a discipline — it names the movement language and the class clock\./,
+      ),
     ).toBeNull();
   });
 
@@ -113,5 +117,55 @@ describe('CreateClassDialog', () => {
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(api.createClass).not.toHaveBeenCalled();
+  });
+
+  it('leads with the empty path when that is what was asked for', async () => {
+    vi.mocked(api.createClass).mockResolvedValue({ id: 'empty-2' } as Class);
+    const root = document.createElement('div');
+    root.id = 'root';
+    document.body.appendChild(root);
+    render(
+      <CreateClassDialog mode="empty" onClose={vi.fn()} onCreated={vi.fn()} onError={vi.fn()} />,
+    );
+
+    // The panel answers the question the instructor actually asked.
+    expect(screen.getByRole('heading', { name: 'Start with an empty class' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Create empty class' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Use a teaching plan instead' })).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('Class title'), { target: { value: 'Blank Cycle' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create empty class' }));
+
+    await waitFor(() =>
+      expect(api.createClass).toHaveBeenCalledWith({
+        mode: 'empty',
+        title: 'Blank Cycle',
+        template: 'cycle',
+        targetDurationMs: 45 * 60_000,
+      }),
+    );
+  });
+
+  it('still offers the scaffold from the empty panel', async () => {
+    vi.mocked(api.createClass).mockResolvedValue({ id: 'scaffold-2' } as Class);
+    const root = document.createElement('div');
+    root.id = 'root';
+    document.body.appendChild(root);
+    render(
+      <CreateClassDialog mode="empty" onClose={vi.fn()} onCreated={vi.fn()} onError={vi.fn()} />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Class title'), { target: { value: 'Planned Cycle' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use a teaching plan instead' }));
+
+    await waitFor(() =>
+      expect(api.createClass).toHaveBeenCalledWith({
+        mode: 'scaffold',
+        title: 'Planned Cycle',
+        recipeId: 'cycle_45_v1',
+      }),
+    );
   });
 });

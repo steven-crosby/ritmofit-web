@@ -1,3 +1,4 @@
+import type { CreateClassMode } from './CreateClassDialog.js';
 import { useEffect, useMemo, useState } from 'react';
 import type { ClassListItem } from '@ritmofit/shared';
 import { getClassShelfPayload } from '../lib/api.js';
@@ -60,7 +61,7 @@ export function ClassesHome({
   onClearTag: () => void;
   onRetry: () => void;
   onLoadMore: () => void;
-  onStartClass: () => void;
+  onStartClass: (mode?: CreateClassMode) => void;
 }) {
   const view = libraryView(status, classes.length);
 
@@ -112,7 +113,7 @@ export function ClassesHome({
           secondaryAction={
             <button
               type="button"
-              onClick={onStartClass}
+              onClick={() => onStartClass()}
               className="min-h-11 rounded-control border border-interactive/50 px-4 font-ui text-sm font-semibold text-interactive sm:rounded-pill"
             >
               Start a new draft
@@ -154,14 +155,14 @@ export function ClassesHome({
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
           <button
             type="button"
-            onClick={onStartClass}
+            onClick={() => onStartClass()}
             className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring sm:rounded-pill"
           >
             Start a class
           </button>
           <button
             type="button"
-            onClick={onStartClass}
+            onClick={() => onStartClass('empty')}
             className="min-h-11 rounded-control px-3 font-ui text-sm text-text-tertiary hover:text-text-secondary rf-focus-ring"
           >
             Start empty
@@ -211,7 +212,7 @@ function ClassesHomeList({
   onDuplicate: (cls: ClassListItem) => Promise<void>;
   onSelectTag: (tag: string | null) => void;
   onLoadMore: () => void;
-  onStartClass: () => void;
+  onStartClass: (mode?: CreateClassMode) => void;
 }) {
   const showOrganize = classes.length > ORGANIZE_THRESHOLD;
   const [query, setQuery] = useState('');
@@ -295,7 +296,7 @@ function ClassesHomeList({
         </div>
         <button
           type="button"
-          onClick={onStartClass}
+          onClick={() => onStartClass()}
           className="min-h-11 shrink-0 rounded-control px-4 font-ui text-sm font-semibold text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
         >
           Start a class

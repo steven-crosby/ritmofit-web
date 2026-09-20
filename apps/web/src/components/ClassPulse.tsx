@@ -133,7 +133,7 @@ export function ClassPulseView({
           guessed. */}
       {!compact && (
         <p className="mt-1 font-ui text-xs text-text-secondary">
-          Effort over time, start to finish. Each block is a track — wider is longer, taller is
+          Effort over time, start to finish. Each bar is a track — wider is longer, taller is
           harder.
         </p>
       )}

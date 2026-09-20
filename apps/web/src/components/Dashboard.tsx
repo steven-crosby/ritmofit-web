@@ -115,7 +115,7 @@ import { IntensityReadout } from './IntensityReadout.js';
 import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 import { ClassReadinessSummary } from './ClassReadinessSummary.js';
 import { TrackSearch } from './TrackSearch.js';
-import { CreateClassDialog } from './CreateClassDialog.js';
+import { CreateClassDialog, type CreateClassMode } from './CreateClassDialog.js';
 import { ClassPlanBlocks, planBlockOptionLabel, type PlanBlockTarget } from './ClassPlanBlocks.js';
 import { SourceList, sourceCandidateKey } from './SourceList.js';
 import {
@@ -249,10 +249,11 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
    * sticky column and costs the centre nothing.
    */
   const [creatorOpen, setCreatorOpen] = useState(prefersWideWorkstation);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const focusClassCreator = useCallback(() => {
+  const [createDialogMode, setCreateDialogMode] = useState<CreateClassMode | null>(null);
+  const createDialogOpen = createDialogMode != null;
+  const focusClassCreator = useCallback((mode: CreateClassMode = 'scaffold') => {
     setCreatorOpen(true);
-    setCreateDialogOpen(true);
+    setCreateDialogMode(mode);
   }, []);
 
   // Merge a page's tags into the known-tags set (only an unfiltered page widens
@@ -688,7 +689,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         )}
         {createDialogOpen && (
           <CreateClassDialog
-            onClose={() => setCreateDialogOpen(false)}
+            mode={createDialogMode ?? 'scaffold'}
+            onClose={() => setCreateDialogMode(null)}
             onError={setError}
             onCreated={async (cls) => {
               await applyTagFilter(null);

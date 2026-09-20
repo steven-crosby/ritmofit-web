@@ -20,15 +20,25 @@ import { Dialog } from './Dialog.js';
 
 const MINUTE_MS = 60_000;
 
+/**
+ * Which path the instructor asked for. The dialog serves both, and leads with
+ * the one she chose — a button labelled "Start empty" that opens a panel headed
+ * "Start from a teaching plan" answers a question she did not ask.
+ */
+export type CreateClassMode = 'scaffold' | 'empty';
+
 export function CreateClassDialog({
+  mode: initialMode = 'scaffold',
   onClose,
   onCreated,
   onError,
 }: {
+  mode?: CreateClassMode;
   onClose: () => void;
   onCreated: (cls: Class) => void;
   onError: (msg: string | null) => void;
 }) {
+  const emptyFirst = initialMode === 'empty';
   const titleRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
   const [discipline, setDiscipline] = useState<ScaffoldDiscipline | null>(null);
@@ -82,10 +92,12 @@ export function CreateClassDialog({
         <div>
           <p className="rf-eyebrow">New class</p>
           <h2 className="mt-1 font-display text-lg font-semibold text-text-primary">
-            Start from a teaching plan
+            {emptyFirst ? 'Start with an empty class' : 'Start from a teaching plan'}
           </h2>
           <p className="mt-1 font-ui text-sm leading-5 text-text-secondary">
-            Ritmo lays out the blocks. You add the music.
+            {emptyFirst
+              ? 'No blocks — you build the run of show yourself.'
+              : 'Ritmo lays out the blocks. You add the music.'}
           </p>
         </div>
         <button
@@ -105,7 +117,7 @@ export function CreateClassDialog({
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
-          create('scaffold');
+          create(initialMode);
         }}
       >
         <div className="flex flex-col gap-1.5">
@@ -216,8 +228,11 @@ export function CreateClassDialog({
         >
           {missing === 'discipline' ? (
             <>
-              <span aria-hidden>! </span>Pick a discipline — it decides the blocks Ritmo lays out.
+              <span aria-hidden>! </span>Pick a discipline — it names the movement language and the
+              class clock.
             </>
+          ) : emptyFirst ? (
+            `Creates an empty ${duration}-minute class. The discipline sets its movement language.`
           ) : discipline ? (
             `Creates ${SCAFFOLD_BLOCK_COUNT} editable blocks totaling ${duration} minutes.`
           ) : (
@@ -231,15 +246,15 @@ export function CreateClassDialog({
             disabled={busy}
             className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 motion-reduce:transition-none"
           >
-            {busy ? 'Creating…' : 'Create class'}
+            {busy ? 'Creating…' : emptyFirst ? 'Create empty class' : 'Create class'}
           </button>
           <button
             type="button"
             disabled={busy}
-            onClick={() => create('empty')}
+            onClick={() => create(emptyFirst ? 'scaffold' : 'empty')}
             className="min-h-11 rounded-control px-3 font-ui text-sm text-text-tertiary hover:text-text-secondary disabled:opacity-40 rf-focus-ring"
           >
-            Start empty instead
+            {emptyFirst ? 'Use a teaching plan instead' : 'Start empty instead'}
           </button>
         </div>
       </form>
