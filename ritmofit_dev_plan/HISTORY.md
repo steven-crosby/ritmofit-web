@@ -10,6 +10,39 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-19 (PR #438 — Classes home) — deployed (Worker
+> `b4a99062-8f11-4e2a-ab57-7d147b2ed109`).** Application source `54c3bf7`.
+> Deployed from this checkout after owner go. No remote D1 change (`0019`
+> already applied; `wrangler d1 migrations list` reported nothing to apply).
+> Carries the Classes-home implementation plus docs already on that tip:
+>
+> - **PR #438:** resting Classes is one readiness-ranked list (`ClassesHome`).
+>   Copper stays on the top row; ranking updates as payloads arrive; H7 uses
+>   `Can run live` / `Can run live · N left`; search, sort, and tags appear
+>   only past eight loaded classes. Manual sort hides the readiness toggles.
+>   The library rail stays in the builder. No schema, migration, secret, or
+>   shared-contract change.
+>
+> Rollback is Worker-only to prior live
+> `29a72e1c-0022-498f-b3ba-735a18c1985a` (2026-09-19 #432–#436). Local
+> pre-deploy gate was green after one flake retry of
+> `CustomMovesDialog.test.tsx` (passed on rerun; #438 CI was already green).
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`,
+> `/api/v1/health` → `200`, protected `classes` / `explore` / `teams` /
+> `shares` / `plan-blocks` → `401`, all six security headers present (HSTS,
+> CSP, Permissions-Policy, Referrer-Policy, X-Content-Type-Options,
+> X-Frame-Options). Worker status confirmed 100% on `b4a99062` via
+> `wrangler deployments status`. Built + served SPA entry
+> `assets/index-CZoX8_-x.js` (CSS `assets/index-_Eebt8hH.css`) — **three
+> consecutive** cache-busted fetches agreed on the first triple. Production
+> bundle contains the new Classes-home copy. Signed-in production click-through
+> was not run this deploy (browser MCP unavailable); localhost QA of #438
+> already exercised the populated list, create dialog, builder rail, and
+> 390/320 overflow. After this docs PR merges, `main` is one docs commit
+> ahead of the deployed application tip. Inbox class-cover taste decision
+> remains open.
+
 > **Session 2026-09-19 (PRs #432, #434, #435, #436 — ENERGY-RIBBON + class
 > scaffolds) — deployed (Worker `29a72e1c-0022-498f-b3ba-735a18c1985a`).**
 > Application source `b70ded1`. Deployed from this checkout after owner go.
