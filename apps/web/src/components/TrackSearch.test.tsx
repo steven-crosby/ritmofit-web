@@ -8,7 +8,12 @@ import {
   type Provider,
   type TrackSearchResult,
 } from '@ritmofit/shared';
-import { TrackSearch, browseAnnouncement, classifyPlaylistDrillInError } from './TrackSearch.js';
+import {
+  TrackSearch,
+  browseAnnouncement,
+  classifyPlaylistDrillInError,
+  classifyProviderLibraryError,
+} from './TrackSearch.js';
 import * as api from '../lib/api.js';
 
 vi.mock('../lib/api.js');
@@ -608,6 +613,16 @@ describe('classifyPlaylistDrillInError (unit)', () => {
   });
 });
 
+describe('classifyProviderLibraryError (unit)', () => {
+  it('uses stable authorization codes and keeps generic failures retryable', () => {
+    expect(classifyProviderLibraryError('Provider denied this request.', 'REAUTH_REQUIRED')).toBe(
+      'reauth',
+    );
+    expect(classifyProviderLibraryError('No account.', 'NOT_CONNECTED')).toBe('reauth');
+    expect(classifyProviderLibraryError('SoundCloud is unavailable.')).toBe('generic');
+  });
+});
+
 describe('TrackSearch result artwork', () => {
   it('lazy-loads and async-decodes non-critical album thumbnails', async () => {
     const result: TrackSearchResult = {
@@ -635,25 +650,102 @@ describe('TrackSearch result artwork', () => {
 });
 
 describe('TrackSearch provider readiness', () => {
-  it('warns proactively when the selected provider session is expired', async () => {
+  it('uses the centralized caution mark and recovery action for an expired session', async () => {
+    const onOpenConnections = vi.fn();
     vi.mocked(api.listConnections).mockResolvedValue([soundcloudConnection(1)]); // expired (1970)
-    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    render(<TrackSearch classId="c1" onAdded={() => {}} onOpenConnections={onOpenConnections} />);
     // Default provider is SoundCloud → expired, before any search is attempted.
-    expect(
-      await screen.findByText(/SoundCloud session expired — reconnect in Connections/i),
-    ).toBeTruthy();
+    expect(await screen.findByText('Session expired')).toBeTruthy();
+    expect(document.querySelector('[data-connection-state="expired"]')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
+    expect(onOpenConnections).toHaveBeenCalledTimes(1);
   });
 
   it('confirms a connected provider', async () => {
     vi.mocked(api.listConnections).mockResolvedValue([soundcloudConnection(null)]); // no expiry
     render(<TrackSearch classId="c1" onAdded={() => {}} />);
-    expect(await screen.findByText(/SoundCloud connected/i)).toBeTruthy();
+    expect(await screen.findByText('Connected')).toBeTruthy();
+    expect(await screen.findByText(/SoundCloud library is available/i)).toBeTruthy();
   });
 
-  it('shows a neutral not-connected hint when the account is absent', async () => {
+  it('shows catalog-only truth when the account is absent', async () => {
     vi.mocked(api.listConnections).mockResolvedValue([]);
     render(<TrackSearch classId="c1" onAdded={() => {}} />);
-    expect(await screen.findByText(/SoundCloud not connected — connect it/i)).toBeTruthy();
+    expect(await screen.findByText('Catalog only')).toBeTruthy();
+    expect(await screen.findByText(/catalog search works without an account/i)).toBeTruthy();
+  });
+
+  it('refreshes connection truth after the centralized dialog changes it', async () => {
+    vi.mocked(api.listConnections)
+      .mockResolvedValueOnce([soundcloudConnection(1)])
+      .mockResolvedValueOnce([soundcloudConnection(null)]);
+    const { rerender } = render(
+      <TrackSearch
+        classId="c1"
+        connectionRevision={0}
+        onAdded={() => {}}
+        onOpenConnections={() => {}}
+      />,
+    );
+    expect(await screen.findByText('Session expired')).toBeTruthy();
+
+    rerender(
+      <TrackSearch
+        classId="c1"
+        connectionRevision={1}
+        onAdded={() => {}}
+        onOpenConnections={() => {}}
+      />,
+    );
+    expect(await screen.findByText('Connected')).toBeTruthy();
+    expect(api.listConnections).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('TrackSearch SoundCloud library expiry', () => {
+  it('surfaces an expired likes fetch as caution with a real reconnect path', async () => {
+    const onOpenConnections = vi.fn();
+    vi.mocked(api.listConnections).mockResolvedValue([soundcloudConnection(null)]);
+    vi.mocked(api.listLikes).mockRejectedValue(new Error('Reconnect your SoundCloud account.'));
+
+    render(<TrackSearch classId="c1" onAdded={() => {}} onOpenConnections={onOpenConnections} />);
+    fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Session expired/i);
+    expect(alert.textContent).toMatch(/Reconnect your SoundCloud account/i);
+    expect(alert.className).toContain('text-state-caution');
+    fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
+    expect(onOpenConnections).toHaveBeenCalledTimes(1);
+  });
+
+  it('surfaces an expired saved-playlist fetch as caution instead of a broken panel', async () => {
+    const onOpenConnections = vi.fn();
+    vi.mocked(api.listConnections).mockResolvedValue([soundcloudConnection(null)]);
+    vi.mocked(api.listPlaylists).mockRejectedValue(new Error('Reconnect your SoundCloud account.'));
+
+    render(<TrackSearch classId="c1" onAdded={() => {}} onOpenConnections={onOpenConnections} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Session expired/i);
+    expect(alert.className).toContain('text-state-caution');
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
+    expect(onOpenConnections).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps catalog search working when SoundCloud library authorization is expired', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([soundcloudConnection(1)]);
+    vi.mocked(api.searchProvider).mockResolvedValue([staleResult]);
+    render(<TrackSearch classId="c1" onAdded={() => {}} onOpenConnections={() => {}} />);
+    await screen.findByText('Session expired');
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'house' } });
+
+    expect(await screen.findByText('Stale Track')).toBeTruthy();
+    expect(api.searchProvider).toHaveBeenCalledWith('soundcloud', 'house');
+    expect(api.listLikes).not.toHaveBeenCalled();
   });
 });
 

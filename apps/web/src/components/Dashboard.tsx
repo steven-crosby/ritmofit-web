@@ -829,6 +829,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                   onClassUpdated={applyClassUpdate}
                   onClassDeleted={handleClassDeleted}
                   onOpenSongsByMove={() => setSongsByMoveOpen(true)}
+                  onOpenConnections={() => setConnectionsOpen(true)}
+                  connectionRevision={connectionRevision}
                   onBackToClasses={() => {
                     setSelected(null);
                     dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
@@ -3256,6 +3258,8 @@ function ClassWorkspace({
   onClassUpdated,
   onClassDeleted,
   onOpenSongsByMove,
+  onOpenConnections,
+  connectionRevision,
   onBackToClasses,
 }: {
   cls: ClassWithAccess;
@@ -3278,6 +3282,10 @@ function ClassWorkspace({
   onClassDeleted: (classId: string) => void;
   /** Open the Songs-by-Move dialog (the top-bar dialog, reused in the builder). */
   onOpenSongsByMove: () => void;
+  /** Open centralized provider recovery without leaving the class builder. */
+  onOpenConnections: () => void;
+  /** Refresh picker connection truth after the recovery dialog changes it. */
+  connectionRevision: number;
   /** Narrow-layout return path when the selected class is shown before the library. */
   onBackToClasses: () => void;
 }) {
@@ -3654,6 +3662,8 @@ function ClassWorkspace({
             <TrackSearch
               classId={cls.id}
               planBlockId={assigningPlanBlockId}
+              onOpenConnections={onOpenConnections}
+              connectionRevision={connectionRevision}
               onAdded={(id) => {
                 if (id) {
                   setSelectedTrackId(id);
