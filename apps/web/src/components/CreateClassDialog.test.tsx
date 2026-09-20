@@ -30,7 +30,41 @@ describe('CreateClassDialog', () => {
     expect(screen.getByRole('button', { name: '45 min' }).getAttribute('aria-pressed')).toBe(
       'true',
     );
-    expect(screen.getByRole('button', { name: 'Create class' })).toHaveProperty('disabled', true);
+    // The submit stays operable so a click always answers, and so it stays in
+    // the keyboard tab order — a disabled button is skipped entirely.
+    expect(screen.getByRole('button', { name: 'Create class' })).toHaveProperty('disabled', false);
+  });
+
+  it('names the missing title instead of dead-ending, and recovers on typing', async () => {
+    renderDialog();
+    fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create class' }));
+
+    expect(await screen.findByText(/Name the class so you can find it again\./)).toBeTruthy();
+    const title = screen.getByLabelText('Class title');
+    expect(title.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(title);
+    expect(api.createClass).not.toHaveBeenCalled();
+
+    fireEvent.change(title, { target: { value: 'Saturday ride' } });
+    expect(screen.queryByText(/Name the class so you can find it again\./)).toBeNull();
+    expect(title.getAttribute('aria-invalid')).toBe('false');
+  });
+
+  it('names the missing discipline instead of dead-ending', async () => {
+    renderDialog();
+    fireEvent.change(screen.getByLabelText('Class title'), { target: { value: 'Saturday ride' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create class' }));
+
+    expect(
+      await screen.findByText(/Pick a discipline — it decides the blocks Ritmo lays out\./),
+    ).toBeTruthy();
+    expect(api.createClass).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
+    expect(
+      screen.queryByText(/Pick a discipline — it decides the blocks Ritmo lays out\./),
+    ).toBeNull();
   });
 
   it('creates a scaffold from discipline and duration', async () => {

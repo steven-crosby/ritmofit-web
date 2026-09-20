@@ -76,6 +76,7 @@ describe('ClassPlanBlocks', () => {
         assigningPlanBlockId={null}
         onChooseMusic={onChooseMusic}
         onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
       />,
     );
     expect(screen.getByText('Loading teaching plan')).toBeTruthy();
@@ -84,8 +85,14 @@ describe('ClassPlanBlocks', () => {
     expect(await screen.findByRole('heading', { name: 'Arrive on the bike' })).toBeTruthy();
     expect(screen.getByText(/Planned 4:00/)).toBeTruthy();
     expect(screen.getByText(/4:00 under/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Choose music' }));
-    expect(onChooseMusic).toHaveBeenCalledWith(block.id);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Choose music for Block 1 · Arrive on the bike' }),
+    );
+    expect(onChooseMusic).toHaveBeenCalledWith({
+      id: block.id,
+      label: block.label,
+      position: block.position,
+    });
   });
 
   it('renders populated music and the planned-versus-actual difference', async () => {
@@ -108,6 +115,7 @@ describe('ClassPlanBlocks', () => {
         assigningPlanBlockId={null}
         onChooseMusic={() => {}}
         onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
       />,
     );
 
@@ -115,7 +123,9 @@ describe('ClassPlanBlocks', () => {
     expect(screen.getByText(/Planned 4:00/)).toBeTruthy();
     expect(screen.getByText(/Music 3:00/)).toBeTruthy();
     expect(screen.getByText(/1:00 under/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Add another song' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Add another song to Block 1 · Arrive on the bike' }),
+    ).toBeTruthy();
   });
 
   it('retries after a failed load', async () => {
@@ -131,6 +141,7 @@ describe('ClassPlanBlocks', () => {
         assigningPlanBlockId={null}
         onChooseMusic={() => {}}
         onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
       />,
     );
 
@@ -150,9 +161,157 @@ describe('ClassPlanBlocks', () => {
         assigningPlanBlockId={null}
         onChooseMusic={() => {}}
         onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
       />,
     );
     await waitFor(() => expect(api.listClassPlanBlocks).toHaveBeenCalled());
     expect(container.firstChild).toBeNull();
+  });
+
+  it('moves an assigned song to another block through the existing assign endpoint', async () => {
+    const second: ClassPlanBlock = {
+      ...block,
+      id: '00000000-0000-4000-8000-0000000000b2',
+      position: 1,
+      label: 'Build the base',
+    };
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block, second]);
+    vi.mocked(api.assignClassTrackPlanBlock).mockResolvedValue({} as ClassTrack);
+    const onTracksChanged = vi.fn();
+    const payload = {
+      tracks: [
+        {
+          classTrackId: assignedTrack().id,
+          track: { title: 'Warmup', artist: 'Artist', durationMs: 180_000 },
+        },
+      ],
+    } as RunPayload;
+
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[assignedTrack()]}
+        payload={payload}
+        canEdit
+        assigningPlanBlockId={null}
+        onChooseMusic={() => {}}
+        onSelectTrack={() => {}}
+        onTracksChanged={onTracksChanged}
+      />,
+    );
+
+    const select = await screen.findByRole('combobox', {
+      name: 'Teaching block for Warmup — Artist',
+    });
+    expect((select as HTMLSelectElement).value).toBe(block.id);
+    fireEvent.change(select, { target: { value: second.id } });
+
+    await waitFor(() =>
+      expect(api.assignClassTrackPlanBlock).toHaveBeenCalledWith(assignedTrack().id, {
+        planBlockId: second.id,
+      }),
+    );
+    await waitFor(() => expect(onTracksChanged).toHaveBeenCalled());
+  });
+
+  it('offers a block for an unassigned song instead of only naming the problem', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
+    vi.mocked(api.assignClassTrackPlanBlock).mockResolvedValue({} as ClassTrack);
+    const floating: ClassTrack = { ...assignedTrack(), planBlockId: null };
+    const payload = {
+      tracks: [
+        {
+          classTrackId: floating.id,
+          track: { title: 'Floating', artist: 'Fixture', durationMs: 180_000 },
+        },
+      ],
+    } as RunPayload;
+
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[floating]}
+        payload={payload}
+        canEdit
+        assigningPlanBlockId={null}
+        onChooseMusic={() => {}}
+        onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
+      />,
+    );
+
+    expect(await screen.findByText(/is not in a plan block yet/)).toBeTruthy();
+    const select = screen.getByRole('combobox', { name: 'Teaching block for Floating — Fixture' });
+    expect((select as HTMLSelectElement).value).toBe('');
+    fireEvent.change(select, { target: { value: block.id } });
+
+    await waitFor(() =>
+      expect(api.assignClassTrackPlanBlock).toHaveBeenCalledWith(floating.id, {
+        planBlockId: block.id,
+      }),
+    );
+  });
+
+  it('reports a failed move without losing the song', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
+    vi.mocked(api.assignClassTrackPlanBlock).mockRejectedValue(new Error('offline'));
+    const floating: ClassTrack = { ...assignedTrack(), planBlockId: null };
+    const payload = {
+      tracks: [
+        {
+          classTrackId: floating.id,
+          track: { title: 'Floating', artist: 'Fixture', durationMs: 180_000 },
+        },
+      ],
+    } as RunPayload;
+
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[floating]}
+        payload={payload}
+        canEdit
+        assigningPlanBlockId={null}
+        onChooseMusic={() => {}}
+        onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
+      />,
+    );
+
+    const select = await screen.findByRole('combobox', {
+      name: 'Teaching block for Floating — Fixture',
+    });
+    fireEvent.change(select, { target: { value: block.id } });
+
+    expect(await screen.findByText('Couldn’t move this song')).toBeTruthy();
+    expect(screen.getByText('Floating — Fixture')).toBeTruthy();
+  });
+
+  it('hides the move control when the class is read-only', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
+    const payload = {
+      tracks: [
+        {
+          classTrackId: assignedTrack().id,
+          track: { title: 'Warmup', artist: 'Artist', durationMs: 180_000 },
+        },
+      ],
+    } as RunPayload;
+
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[assignedTrack()]}
+        payload={payload}
+        canEdit={false}
+        assigningPlanBlockId={null}
+        onChooseMusic={() => {}}
+        onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
+      />,
+    );
+
+    expect(await screen.findByText('Warmup — Artist')).toBeTruthy();
+    expect(screen.queryByRole('combobox')).toBeNull();
   });
 });

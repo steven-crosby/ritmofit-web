@@ -12,6 +12,12 @@ type ImportAction = {
   addedKeys: ReadonlySet<string>;
   busyKey: string | null;
   bulkBusy: boolean;
+  /**
+   * What an already-added row says. `addedKeys` is class-scoped, so when the
+   * destination is a single plan block "Added" would answer a question the
+   * instructor is not asking. Defaults to the class-scoped wording.
+   */
+  addedLabel?: string;
   onAdd: (candidate: TrackSearchResult) => void;
 };
 
@@ -151,13 +157,19 @@ export function SourceList({
                   disabled={busy || bulkBusy || added}
                   aria-busy={busy || bulkBusy}
                   aria-label={
-                    added ? `${track.title} added` : `Add ${track.title} by ${track.artist}`
+                    added
+                      ? `${track.title} — ${action.addedLabel ?? 'already added'}`
+                      : `Add ${track.title} by ${track.artist}`
                   }
                   className={`min-h-11 shrink-0 rounded-pill px-3 font-ui text-xs font-semibold rf-focus-ring disabled:opacity-60 ${
                     added ? 'bg-bg-raised text-text-tertiary' : 'rf-btn-primary text-text-on-accent'
                   }`}
                 >
-                  {added ? 'Added ✓' : busy || bulkBusy ? 'Adding…' : 'Add'}
+                  {added
+                    ? `${action.addedLabel ?? 'Added'} ✓`
+                    : busy || bulkBusy
+                      ? 'Adding…'
+                      : 'Add'}
                 </button>
               )}
             </li>

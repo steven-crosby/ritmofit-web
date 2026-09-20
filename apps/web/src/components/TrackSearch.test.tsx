@@ -478,7 +478,7 @@ describe('TrackSearch saved-playlists drill-in', () => {
       'Added 1 of 2 tracks. 1 couldn’t be added — retry the remaining track.',
     );
     expect(partial.closest('[role="status"]')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Song One added' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Song One — already added' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add Song Two by Artist Two' })).toBeTruthy();
     expect(onAdded).toHaveBeenCalledTimes(1);
 

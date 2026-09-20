@@ -34,11 +34,24 @@ export function CreateClassDialog({
   const [discipline, setDiscipline] = useState<ScaffoldDiscipline | null>(null);
   const [duration, setDuration] = useState<ScaffoldDuration>(DEFAULT_SCAFFOLD_DURATION);
   const { busy, run } = useAsyncAction(onError);
+  const [missing, setMissing] = useState<'title' | 'discipline' | null>(null);
   const trimmed = title.trim();
-  const canSubmit = trimmed.length > 0 && discipline != null && !busy;
 
+  // The buttons stay operable so a click always answers. A disabled submit is
+  // both a dead end (nothing happens, nothing is said) and invisible to the
+  // keyboard, because a disabled button leaves the tab order entirely.
   const create = (mode: 'scaffold' | 'empty') => {
-    if (!trimmed || discipline == null) return;
+    if (busy) return;
+    if (!trimmed) {
+      setMissing('title');
+      titleRef.current?.focus();
+      return;
+    }
+    if (discipline == null) {
+      setMissing('discipline');
+      return;
+    }
+    setMissing(null);
     void run(async () => {
       const cls =
         mode === 'scaffold'
@@ -72,7 +85,7 @@ export function CreateClassDialog({
             Start from a teaching plan
           </h2>
           <p className="mt-1 font-ui text-sm leading-5 text-text-secondary">
-            Nine deterministic recipes. Music stays empty until you choose it.
+            Ritmo lays out the blocks. You add the music.
           </p>
         </div>
         <button
@@ -87,28 +100,63 @@ export function CreateClassDialog({
 
       <form
         className="flex flex-col gap-4"
+        // The dialog owns its own validation copy and focus placement, so the
+        // native bubble must not pre-empt it (and silently swallow the submit).
+        noValidate
         onSubmit={(event) => {
           event.preventDefault();
           create('scaffold');
         }}
       >
-        <label className="flex flex-col gap-1.5">
-          <span className="font-ui text-xs font-semibold text-text-secondary">Class title</span>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="new-class-title"
+            className="font-ui text-xs font-semibold text-text-secondary"
+          >
+            Class title
+          </label>
           <input
             ref={titleRef}
             id="new-class-title"
-            className="min-h-11 rounded-control border border-border bg-bg-sunken px-3 font-ui text-sm text-text-primary rf-focus-ring"
+            className={`min-h-11 rounded-control border bg-bg-sunken px-3 font-ui text-sm text-text-primary rf-focus-ring ${
+              missing === 'title' ? 'border-state-danger' : 'border-border'
+            }`}
             placeholder="Saturday ride"
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            onChange={(event) => {
+              setTitle(event.target.value);
+              if (missing === 'title') setMissing(null);
+            }}
+            required
+            aria-required="true"
+            aria-invalid={missing === 'title'}
+            aria-describedby="new-class-title-help"
             maxLength={200}
             autoComplete="off"
           />
-        </label>
+          {missing === 'title' ? (
+            <span
+              id="new-class-title-help"
+              role="alert"
+              className="flex items-center gap-1 font-ui text-xs text-state-danger"
+            >
+              <span aria-hidden>!</span> Name the class so you can find it again.
+            </span>
+          ) : (
+            <span id="new-class-title-help" className="font-ui text-xs text-text-tertiary">
+              Needed — you can rename it later.
+            </span>
+          )}
+        </div>
 
         <fieldset className="flex flex-col gap-1.5">
           <legend className="font-ui text-xs font-semibold text-text-secondary">Discipline</legend>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Class discipline">
+          <div
+            className="flex flex-wrap gap-1.5"
+            role="group"
+            aria-label="Class discipline"
+            aria-describedby="new-class-scaffold-summary"
+          >
             {SCAFFOLD_DISCIPLINES.map(({ value, label }) => {
               const selected = discipline === value;
               return (
@@ -116,7 +164,10 @@ export function CreateClassDialog({
                   key={value}
                   type="button"
                   aria-pressed={selected}
-                  onClick={() => setDiscipline(value)}
+                  onClick={() => {
+                    setDiscipline(value);
+                    if (missing === 'discipline') setMissing(null);
+                  }}
                   className={`min-h-11 rounded-pill border px-3 font-ui text-sm rf-focus-ring ${
                     selected
                       ? 'border-interactive bg-interactive/15 font-semibold text-text-primary'
@@ -156,23 +207,35 @@ export function CreateClassDialog({
           </div>
         </fieldset>
 
-        <p className="font-ui text-sm leading-5 text-text-secondary">
-          {discipline
-            ? `Creates ${SCAFFOLD_BLOCK_COUNT} editable blocks totaling ${duration} minutes.`
-            : 'Choose a discipline to preview the scaffold.'}
+        <p
+          id="new-class-scaffold-summary"
+          role={missing === 'discipline' ? 'alert' : undefined}
+          className={`font-ui text-sm leading-5 ${
+            missing === 'discipline' ? 'text-state-danger' : 'text-text-secondary'
+          }`}
+        >
+          {missing === 'discipline' ? (
+            <>
+              <span aria-hidden>! </span>Pick a discipline — it decides the blocks Ritmo lays out.
+            </>
+          ) : discipline ? (
+            `Creates ${SCAFFOLD_BLOCK_COUNT} editable blocks totaling ${duration} minutes.`
+          ) : (
+            'Choose a discipline to preview the scaffold.'
+          )}
         </p>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <button
             type="submit"
-            disabled={!canSubmit}
+            disabled={busy}
             className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 motion-reduce:transition-none"
           >
             {busy ? 'Creating…' : 'Create class'}
           </button>
           <button
             type="button"
-            disabled={!canSubmit}
+            disabled={busy}
             onClick={() => create('empty')}
             className="min-h-11 rounded-control px-3 font-ui text-sm text-text-tertiary hover:text-text-secondary disabled:opacity-40 rf-focus-ring"
           >
