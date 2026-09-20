@@ -9,7 +9,7 @@
  *
  * Both read the same per-class next step, so a card's primary verb and its rank
  * can never disagree. The derivation is pure and lives here rather than in a
- * component because Classes (`ClassRunOfShowShelf`) and Live (`LiveWorkspace`)
+ * component because Classes (`ClassesHome`) and Live (`LiveWorkspace`)
  * must rank identically — a class that leads on Classes leads in the Live queue.
  *
  * No schema change: every input is derived from the run-payload, and the chosen
@@ -175,7 +175,7 @@ export function classNextStep(state: ClassDetailState | undefined): ClassNextSte
     return known(3, {
       eyebrow: 'Refine before teaching',
       action,
-      detail: `Runnable · ${readiness.attentionCount} to finish`,
+      detail: `Can run live · ${readiness.attentionCount} left`,
       teachable: false,
     });
   }
@@ -183,7 +183,7 @@ export function classNextStep(state: ClassDetailState | undefined): ClassNextSte
   return known(4, {
     eyebrow: 'Ready to teach',
     action: 'Open class',
-    detail: 'Runnable',
+    detail: 'Can run live',
     teachable: true,
   });
 }

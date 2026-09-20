@@ -59,6 +59,11 @@ describe('classNextStep', () => {
     expect(classNextStep(emptyDraft).teachable).toBe(false);
   });
 
+  it('uses Can run live for the teachable status line', () => {
+    expect(classNextStep(teachable).detail).toBe('Can run live');
+    expect(classNextStep(noTempo).detail).toBe('Can run live · 1 left');
+  });
+
   it('mirrors the two orderings across every known state', () => {
     for (const state of [teachable, noTempo, noChoreography, noDuration, emptyDraft]) {
       const step = classNextStep(state);
