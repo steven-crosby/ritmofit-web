@@ -210,7 +210,13 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
   return (
     <section
       aria-label={`Track preview for ${entry.track.title}`}
-      className={`sticky bottom-2 z-20 flex min-w-0 flex-col gap-3 rounded-card border bg-bg-raised p-3 shadow-overlay sm:p-4 ${
+      // Sticky only where there is a side column for it to sit in. Below the
+      // three-column grid the builder stacks into one column (canon 09: mobile
+      // recomposes, it does not compress), and a bottom-pinned panel there
+      // floats over whatever is behind it — at 390px a tall preview (a track
+      // with no provider link carries the recovery block) covered `Run live`
+      // at scroll-top, which is the P0 "no overlapping controls" gate.
+      className={`z-20 flex min-w-0 flex-col gap-3 rounded-card border bg-bg-raised p-3 shadow-overlay sm:p-4 xl:sticky xl:bottom-2 ${
         status.kind === 'error' ? 'border-state-caution/55' : 'border-border-strong'
       }`}
     >
