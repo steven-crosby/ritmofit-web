@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ClassPulseInput } from './class-pulse.js';
 import { classPulseCoverageLabel, deriveClassPulse } from './class-pulse.js';
+import { HOLD_UNTIL_NEXT_FIXTURE } from './energy-hold.fixture.js';
 
 const input = (overrides: Partial<ClassPulseInput> = {}): ClassPulseInput => ({
   classTrackId: 'track-1',
@@ -156,6 +157,28 @@ describe('deriveClassPulse', () => {
       'mod',
     ]);
     expect(model.segments.map((segment) => segment.widthRatio)).toEqual([0.125, 0.375, 0.5]);
+  });
+
+  it('uses the ribbon spans for baseline and multiple hold-until-next moves', () => {
+    const fixture = HOLD_UNTIL_NEXT_FIXTURE;
+    const model = deriveClassPulse([
+      input({
+        durationMs: fixture.durationMs,
+        effort: fixture.baseline,
+        moves: fixture.moves,
+      }),
+    ]);
+
+    expect(model.provisional).toBe(false);
+    expect(model.segments.map((segment) => segment.shapeEffort)).toEqual(
+      fixture.expectedIntensities,
+    );
+    expect(model.segments.map((segment) => segment.startRatio)).toEqual(
+      fixture.expectedStartRatios,
+    );
+    expect(model.segments.map((segment) => segment.widthRatio)).toEqual(
+      fixture.expectedWidthRatios,
+    );
   });
 
   it('drops provisional auto-shape when the only authoring is a scored placed move', () => {

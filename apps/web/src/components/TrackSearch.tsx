@@ -36,6 +36,7 @@ import {
   providerLabel,
   providerPlaylistHref,
 } from '../lib/providers.js';
+import { ConnectionStateMark, musicConnectionMark } from './ConnectionStateMark.js';
 import { SourceList, sourceCandidateKey } from './SourceList.js';
 
 /** A stable key for a candidate (provider + provider track id). */
@@ -121,9 +122,9 @@ export function browseAnnouncement(input: {
 
 /**
  * Classify a saved-playlist drill-in failure so an *expected limitation* reads
- * differently from a *broken load*. The API client (`../lib/api.ts`) surfaces only
- * `error.message` — it drops `error.code` — so we branch on the message text. These
- * strings are the source of truth in the backend; see
+ * differently from a *broken load*. Stable API codes lead when available; message
+ * matching preserves the same treatment for plain `Error` values and older clients.
+ * These strings are the source of truth in the backend; see
  * `apps/api/src/lib/music/user-playlists.ts`:
  *   - 403 PROVIDER_FORBIDDEN → "<Provider> only allows opening playlists you own or
  *     collaborate on."                                    → 'forbidden' (retry can't help)
@@ -134,25 +135,33 @@ export function browseAnnouncement(input: {
  * The reauth match is case-insensitive so the capitalized NOT_CONNECTED string
  * ("Connect your …") classifies as reauth rather than falling through to generic.
  */
+export function classifyProviderLibraryError(message: string, code?: string): 'reauth' | 'generic' {
+  if (code === 'REAUTH_REQUIRED' || code === 'NOT_CONNECTED') return 'reauth';
+  if (/^(re)?connect your /i.test(message)) return 'reauth';
+  return 'generic';
+}
+
 export function classifyPlaylistDrillInError(
   message: string,
   code?: string,
 ): 'forbidden' | 'reauth' | 'generic' {
   if (code === 'PROVIDER_FORBIDDEN') return 'forbidden';
-  if (code === 'REAUTH_REQUIRED' || code === 'NOT_CONNECTED') return 'reauth';
   if (/own or collaborate on/i.test(message)) return 'forbidden';
-  if (/^(re)?connect your /i.test(message)) return 'reauth';
-  return 'generic';
+  return classifyProviderLibraryError(message, code);
 }
 
 export function TrackSearch({
   classId,
   planBlockId = null,
   onAdded,
+  onOpenConnections,
+  connectionRevision = 0,
 }: {
   classId: string;
   planBlockId?: string | null;
   onAdded: (classTrackId?: string) => void;
+  onOpenConnections?: () => void;
+  connectionRevision?: number;
 }) {
   const [provider, setProvider] = useState<Provider>(DEFAULT_PROVIDER);
   const [mode, setMode] = useState<Mode>('search');
@@ -160,7 +169,7 @@ export function TrackSearch({
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [playlistErrorCode, setPlaylistErrorCode] = useState<string | undefined>();
+  const [libraryErrorCode, setLibraryErrorCode] = useState<string | undefined>();
   // Per-candidate import state: which key is busy, and which keys were added.
   const [importingKey, setImportingKey] = useState<string | null>(null);
   const [addedKeys, setAddedKeys] = useState<Set<string>>(new Set());
@@ -182,11 +191,15 @@ export function TrackSearch({
   // reflects an expired/absent account *before* a failed likes fetch (audit #7,
   // cross-surface provider coherence). Best-effort: a failed fetch just hides it.
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
+  // A library endpoint can discover token expiry before the connection summary
+  // refreshes. Keep that provider on expired truth until reconnect/reload verifies it.
+  const [libraryReauthProvider, setLibraryReauthProvider] = useState<Provider | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'loading' | 'ready' | 'error'>(
     'loading',
   );
   useEffect(() => {
     let alive = true;
+    setLibraryReauthProvider(null);
     void (async () => {
       try {
         const c = await listConnections();
@@ -202,17 +215,19 @@ export function TrackSearch({
     return () => {
       alive = false;
     };
-  }, []);
-  const connectionState = connections
-    ? providerConnectionState(
-        provider,
-        connections.find((c) => c.provider === provider),
-        Date.now(),
-      )
-    : null;
+  }, [connectionRevision]);
+  const connection = connections?.find((row) => row.provider === provider);
+  const effectiveConnection =
+    connection && libraryReauthProvider === provider ? { ...connection, expiresAt: 0 } : connection;
+  const connectionState =
+    libraryReauthProvider === provider
+      ? 'expired'
+      : connections
+        ? providerConnectionState(provider, effectiveConnection, Date.now())
+        : null;
   const providerTruth = providerCapabilityTruth(
     provider,
-    connections?.find((c) => c.provider === provider),
+    effectiveConnection,
     Date.now(),
     connectionStatus === 'ready'
       ? 'verified'
@@ -220,6 +235,7 @@ export function TrackSearch({
         ? 'checking'
         : 'unverified',
   );
+  const connectionMark = musicConnectionMark(connectionStatus, connectionState ?? 'disconnected');
 
   // "My likes" reads the caller's connected account; only providers with a
   // per-user integration support it. Catalog search stays available for all.
@@ -247,6 +263,7 @@ export function TrackSearch({
       setResults(null);
       setSearching(false);
       setError(null);
+      setLibraryErrorCode(undefined);
       return;
     }
     // Don't fire modes the provider cannot serve; reset effect switches to search.
@@ -262,15 +279,29 @@ export function TrackSearch({
         if (id === reqId.current) {
           setResults(found);
           setError(null);
+          setLibraryErrorCode(undefined);
+          if (mode === 'likes') {
+            setLibraryReauthProvider((current) => (current === provider ? null : current));
+          }
         }
       } catch (e) {
         if (id === reqId.current) {
+          const message = (e as Error).message;
+          const code = mode === 'likes' && e instanceof ApiError ? e.code : undefined;
+          const reauth =
+            mode === 'likes' && classifyProviderLibraryError(message, code) === 'reauth';
           setResults(null);
           setError(
-            mode === 'likes'
-              ? `Couldn’t load your ${providerLabel(provider)} likes — connect the account first (Connections).`
-              : (e as Error).message,
+            reauth
+              ? message
+              : mode === 'likes'
+                ? `Couldn’t load your ${providerLabel(provider)} likes.`
+                : message,
           );
+          setLibraryErrorCode(code);
+          if (reauth) {
+            setLibraryReauthProvider(provider);
+          }
         }
       } finally {
         if (id === reqId.current) setSearching(false);
@@ -295,16 +326,25 @@ export function TrackSearch({
     setBulkImportAttempted(false);
     setLoadingSavedPlaylists(true);
     setError(null);
+    setLibraryErrorCode(undefined);
     let alive = true;
     void (async () => {
       try {
         const rows = await listPlaylists(provider);
         if (!alive) return;
         setSavedPlaylists(rows);
-      } catch {
+        setLibraryReauthProvider((current) => (current === provider ? null : current));
+      } catch (e) {
         if (!alive) return;
+        const message = (e as Error).message;
+        const code = e instanceof ApiError ? e.code : undefined;
+        const reauth = classifyProviderLibraryError(message, code) === 'reauth';
         setSavedPlaylists(null);
-        setError(`Couldn’t load your ${providerLabel(provider)} playlists — reconnect if needed.`);
+        setError(reauth ? message : `Couldn’t load your ${providerLabel(provider)} playlists.`);
+        setLibraryErrorCode(code);
+        if (reauth) {
+          setLibraryReauthProvider(provider);
+        }
       } finally {
         if (alive) setLoadingSavedPlaylists(false);
       }
@@ -318,15 +358,21 @@ export function TrackSearch({
     setSelectedPlaylist(playlist);
     setSearching(true);
     setError(null);
-    setPlaylistErrorCode(undefined);
+    setLibraryErrorCode(undefined);
     setResults(null);
     setAddedKeys(new Set());
     setBulkImportAttempted(false);
     try {
       setResults(await listPlaylistTracks(provider, playlist.playlistId));
+      setLibraryReauthProvider((current) => (current === provider ? null : current));
     } catch (e) {
+      const message = (e as Error).message;
+      const code = e instanceof ApiError ? e.code : undefined;
       setError((e as Error).message);
-      setPlaylistErrorCode(e instanceof ApiError ? e.code : undefined);
+      setLibraryErrorCode(code);
+      if (classifyProviderLibraryError(message, code) === 'reauth') {
+        setLibraryReauthProvider(provider);
+      }
       setResults(null);
     } finally {
       setSearching(false);
@@ -455,7 +501,7 @@ export function TrackSearch({
   // load failure reads as danger with a retry. All keep role="alert" (announced on
   // the user's Open click). See classifyPlaylistDrillInError.
   const renderDrillInError = (selected: ProviderPlaylistSummary, message: string) => {
-    const kind = classifyPlaylistDrillInError(message, playlistErrorCode);
+    const kind = classifyPlaylistDrillInError(message, libraryErrorCode);
     if (kind === 'generic') {
       return (
         <p role="alert" className="flex flex-col gap-1 font-ui text-sm text-state-danger">
@@ -471,21 +517,36 @@ export function TrackSearch({
       );
     }
     return (
-      <p role="alert" className="flex items-start gap-1.5 font-ui text-sm text-state-caution">
-        <span aria-hidden className="pt-0.5">
-          ⊘
+      <div
+        role="alert"
+        className="flex flex-col items-start gap-2 font-ui text-sm text-state-caution"
+      >
+        <span className="flex items-start gap-1.5">
+          <span aria-hidden className="pt-0.5">
+            ⊘
+          </span>
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span>{message}</span>
+            {kind === 'forbidden' && (
+              <span className="text-text-tertiary">
+                Open one of your own playlists, or add it under Import Playlist URL instead.
+              </span>
+            )}
+          </span>
         </span>
-        <span className="flex min-w-0 flex-col gap-0.5">
-          <span>{message}</span>
-          {kind === 'forbidden' && (
-            <span className="text-text-tertiary">
-              Open one of your own playlists, or add it under Import Playlist URL instead.
-            </span>
-          )}
-        </span>
-      </p>
+      </div>
     );
   };
+
+  const renderLibraryReauth = (message: string) => (
+    <div
+      role="alert"
+      className="flex flex-col items-start gap-2 rounded-control border border-state-caution/35 bg-state-caution/10 p-3 font-ui text-sm text-state-caution"
+    >
+      <ConnectionStateMark kind="expired" label="Session expired" />
+      <span>{message}</span>
+    </div>
+  );
 
   return (
     <div className="flex flex-col gap-2 border-t border-interactive/20 pt-4">
@@ -513,50 +574,29 @@ export function TrackSearch({
         })}
       </div>
 
-      {/* Provider readiness — glyph + label, never color alone (05/11). A quiet
-          positive when connected; the caution channel when the session expired
-          (the one that needs action); a neutral hint when simply not connected,
-          since catalog search still works without an account. */}
-      {connectionStatus === 'error' ? (
-        <p role="status" className="flex items-center gap-1.5 font-ui text-xs text-text-tertiary">
-          <span aria-hidden>?</span>
-          <span>
-            {providerLabel(provider)} account status is unavailable. Catalog search still works.
-          </span>
-        </p>
-      ) : connectionState && connectionState !== 'catalog-only' ? (
-        <p role="status" className="flex items-center gap-1.5 font-ui text-xs">
-          {connectionState === 'connected' ? (
-            <>
-              <span aria-hidden className="text-state-positive">
-                ✓
-              </span>
-              <span className="text-text-tertiary">
-                {providerLabel(provider)} connected — your likes are searchable
-              </span>
-            </>
-          ) : connectionState === 'expired' ? (
-            <>
-              <span aria-hidden className="text-state-caution">
-                ⊘
-              </span>
-              <span className="text-state-caution">
-                {providerLabel(provider)} session expired — reconnect in Connections to search your
-                library
-              </span>
-            </>
-          ) : (
-            <>
-              <span aria-hidden className="text-text-tertiary">
-                ○
-              </span>
-              <span className="text-text-tertiary">
-                {providerLabel(provider)} not connected — connect it to search your likes
-              </span>
-            </>
-          )}
-        </p>
-      ) : null}
+      {/* Provider readiness uses the same mark vocabulary as Music, Account, and
+          Connections. Catalog remains available independently of account state. */}
+      <div role="status" className="flex flex-wrap items-center gap-x-2 gap-y-1 font-ui text-xs">
+        <ConnectionStateMark kind={connectionMark.kind} label={connectionMark.label} />
+        <span className="text-text-tertiary">
+          {connectionStatus === 'error'
+            ? `${providerLabel(provider)} account status is unavailable. Catalog search still works.`
+            : connectionState === 'connected'
+              ? `${providerLabel(provider)} library is available.`
+              : connectionState === 'expired'
+                ? `Reconnect ${providerLabel(provider)} to browse your library. Catalog search still works.`
+                : `${providerLabel(provider)} catalog search works without an account.`}
+        </span>
+        {connectionState === 'expired' && onOpenConnections && (
+          <button
+            type="button"
+            onClick={onOpenConnections}
+            className="min-h-11 rounded-pill border border-state-caution/40 px-3 font-ui text-xs font-semibold text-state-caution rf-focus-ring"
+          >
+            Manage connections
+          </button>
+        )}
+      </div>
 
       <div
         className="grid gap-1 rounded-card border border-interactive/10 bg-bg-base p-2 sm:grid-cols-3"
@@ -750,11 +790,15 @@ export function TrackSearch({
 
       {/* Saved-playlists renders its own contextual error (index load vs drill-in),
           so suppress the generic alert there to avoid a duplicate announcement. */}
-      {error && mode !== 'saved_playlists' && (
-        <p role="alert" className="font-ui text-sm text-state-danger">
-          {error}
-        </p>
-      )}
+      {error &&
+        mode !== 'saved_playlists' &&
+        (mode === 'likes' && classifyProviderLibraryError(error, libraryErrorCode) === 'reauth' ? (
+          renderLibraryReauth(error)
+        ) : (
+          <p role="alert" className="font-ui text-sm text-state-danger">
+            {error}
+          </p>
+        ))}
 
       {/* Always-mounted live region: mirrors the browse outcome (incl. result
           count) to assistive tech, since the visible labels below aren't live. */}
@@ -775,6 +819,10 @@ export function TrackSearch({
           <p className="font-ui text-xs text-text-tertiary">
             Loading your {providerLabel(provider)} playlists…
           </p>
+        ) : savedPlaylists === null &&
+          error &&
+          classifyProviderLibraryError(error, libraryErrorCode) === 'reauth' ? (
+          renderLibraryReauth(error)
         ) : savedPlaylists === null ? (
           <p role="alert" className="flex flex-col gap-1 font-ui text-sm text-state-danger">
             <span>{error ?? `Couldn’t load your ${providerLabel(provider)} playlists.`}</span>
