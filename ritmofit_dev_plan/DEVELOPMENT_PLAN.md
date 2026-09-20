@@ -29,6 +29,9 @@ Pilates, and HIIT.
   playback windows, readiness, and Live Mode. Provider libraries are the raw material and class-building
   is the creative layer on top. The app should feel *familiar before it feels specialized*: browse, listen,
   and inspect playlists, then convert curiosity into a class — no single forced creation flow.
+- **Simple. Stupid. Swift. (D23):** the first instructor-facing comprehension test. Prefer the defensible
+  workflow that makes the instructor think least about the software, within the correctness boundaries in
+  [`design principle 0`](../ritmofit_design_system/01-design-principles.md).
 - **Private-beta release boundary (D22):** v1 is invite-only and non-monetized for a small instructor
   cohort. Official provider SDK/widget playback remains available alongside a first-class
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use

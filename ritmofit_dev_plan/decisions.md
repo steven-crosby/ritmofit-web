@@ -533,6 +533,34 @@ native iOS parity, and growth infrastructure do not delay this beta.
 
 ---
 
+## D23 — Simple. Stupid. Swift. takes priority in instructor-facing UX decisions  **[Resolved 2026-09-20]**
+
+**Decision:** Ritmo Studio's instructor-facing surfaces are judged first by whether the instructor has to
+think about the software. The principle is **Simple. Stupid. Swift.**: she should always know where she
+is, what matters right now, what she can do next, and what just happened — with as little interpretation,
+reading, configuration, and navigation as practical. The six-question test and ordered fix ladder are
+canonical in [`01-design-principles.md` §0](../ritmofit_design_system/01-design-principles.md); D23 adopts
+them without modification.
+
+**Why:** the existing principles describe desirable visual and product qualities but do not establish a
+first-pass comprehension test or an ordered response to confusion. D23 supplies both.
+
+**Scope and guardrails:** apply the principle to instructor working surfaces while preserving the
+campaign register and correctness floors defined in canonical §0. Serve both new instructors and
+instructors with established workflows through progressive disclosure.
+
+**Trade-off accepted:** this principle is a licence to delete. Applied carelessly it can strip affordances
+an experienced instructor depends on, or flatten the "creative instrument" character the product is built
+on (§2). Canonical §0 supplies the guardrails; changes made under this principle still go through the
+normal plan gate and real-browser verification.
+
+**Canon location:** [`../ritmofit_design_system/01-design-principles.md` §0](../ritmofit_design_system/01-design-principles.md).
+The consolidated design-system summary is
+[`../ritmofit_design_system/ritmofit-design-system.md` §3.0](../ritmofit_design_system/ritmofit-design-system.md).
+The applying prompt pack is [`../agent-prompts/instructor-ux/`](../agent-prompts/instructor-ux/).
+
+---
+
 ## Deferred from M1
 
 - **Segments / class sections.** *(Deferred from M1; **shipped later**.)* In M1 segments were a design

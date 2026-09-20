@@ -141,6 +141,14 @@ Implementation should prefer choices that make the workflow feel like creative d
 
 ## 3. Non-negotiable design principles
 
+### 3.0 Simple. Stupid. Swift.
+
+The first instructor-facing comprehension test. Unnecessary uncertainty about location, meaning,
+available actions, the next step, or the result of an action is a defect. Apply the questions, fix
+ladder, register boundary, and correctness floors in
+[`01-design-principles.md` §0](./01-design-principles.md). Product decision:
+[`D23`](../ritmofit_dev_plan/decisions.md).
+
 ### 3.1 Built for creating, not consuming
 
 Spotify makes listening effortless. Ritmo Studio makes authoring rhythm-driven classes effortless.
