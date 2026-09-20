@@ -41,6 +41,12 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+function browseStatus(): HTMLElement {
+  const status = document.querySelector<HTMLElement>('p.sr-only[role="status"]');
+  if (!status) throw new Error('Browse status region was not rendered');
+  return status;
+}
+
 const staleResult: TrackSearchResult = {
   provider: 'soundcloud',
   providerTrackId: 't1',
@@ -119,18 +125,17 @@ describe('TrackSearch browse announcement (aria-live)', () => {
     vi.mocked(api.searchProvider).mockResolvedValue(houseResults);
     render(<TrackSearch classId="c1" onAdded={() => {}} />);
 
-    // No provider connection is mocked, so the only role="status" is the browse
-    // summary. Idle → nothing announced.
-    expect(screen.getByRole('status').textContent).toBe('');
+    // The dedicated browse live region stays separate from connection status.
+    expect(browseStatus().textContent).toBe('');
 
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'house' } });
 
     // During the debounced fetch the region announces the in-flight state…
-    await waitFor(() => expect(screen.getByRole('status').textContent).toMatch(/searching/i));
+    await waitFor(() => expect(browseStatus().textContent).toMatch(/searching/i));
     // …and once it settles, the *count* — the information a sighted user reads
     // from the list but AT otherwise never hears.
     await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toBe('2 results for "house" on SoundCloud.'),
+      expect(browseStatus().textContent).toBe('2 results for "house" on SoundCloud.'),
     );
   });
 
@@ -141,9 +146,9 @@ describe('TrackSearch browse announcement (aria-live)', () => {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'zzz' } });
 
     // Mid-fetch it must NOT read "No results" — that keys on a settled empty array.
-    await waitFor(() => expect(screen.getByRole('status').textContent).toMatch(/searching/i));
+    await waitFor(() => expect(browseStatus().textContent).toMatch(/searching/i));
     await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toBe('No results for "zzz" on SoundCloud.'),
+      expect(browseStatus().textContent).toBe('No results for "zzz" on SoundCloud.'),
     );
   });
 });

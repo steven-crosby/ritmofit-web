@@ -219,9 +219,12 @@ export function TrackSearch({
   const connection = connections?.find((row) => row.provider === provider);
   const effectiveConnection =
     connection && libraryReauthProvider === provider ? { ...connection, expiresAt: 0 } : connection;
-  const connectionState = connections
-    ? providerConnectionState(provider, effectiveConnection, Date.now())
-    : null;
+  const connectionState =
+    libraryReauthProvider === provider
+      ? 'expired'
+      : connections
+        ? providerConnectionState(provider, effectiveConnection, Date.now())
+        : null;
   const providerTruth = providerCapabilityTruth(
     provider,
     effectiveConnection,
@@ -285,10 +288,18 @@ export function TrackSearch({
         if (id === reqId.current) {
           const message = (e as Error).message;
           const code = mode === 'likes' && e instanceof ApiError ? e.code : undefined;
+          const reauth =
+            mode === 'likes' && classifyProviderLibraryError(message, code) === 'reauth';
           setResults(null);
-          setError(message);
+          setError(
+            reauth
+              ? message
+              : mode === 'likes'
+                ? `Couldn’t load your ${providerLabel(provider)} likes.`
+                : message,
+          );
           setLibraryErrorCode(code);
-          if (mode === 'likes' && classifyProviderLibraryError(message, code) === 'reauth') {
+          if (reauth) {
             setLibraryReauthProvider(provider);
           }
         }
@@ -327,10 +338,11 @@ export function TrackSearch({
         if (!alive) return;
         const message = (e as Error).message;
         const code = e instanceof ApiError ? e.code : undefined;
+        const reauth = classifyProviderLibraryError(message, code) === 'reauth';
         setSavedPlaylists(null);
-        setError(message);
+        setError(reauth ? message : `Couldn’t load your ${providerLabel(provider)} playlists.`);
         setLibraryErrorCode(code);
-        if (classifyProviderLibraryError(message, code) === 'reauth') {
+        if (reauth) {
           setLibraryReauthProvider(provider);
         }
       } finally {
@@ -522,15 +534,6 @@ export function TrackSearch({
             )}
           </span>
         </span>
-        {kind === 'reauth' && onOpenConnections && (
-          <button
-            type="button"
-            onClick={onOpenConnections}
-            className="min-h-11 rounded-pill border border-state-caution/50 px-3 font-ui text-xs font-semibold text-state-caution rf-focus-ring"
-          >
-            Manage connections
-          </button>
-        )}
       </div>
     );
   };
@@ -542,15 +545,6 @@ export function TrackSearch({
     >
       <ConnectionStateMark kind="expired" label="Session expired" />
       <span>{message}</span>
-      {onOpenConnections && (
-        <button
-          type="button"
-          onClick={onOpenConnections}
-          className="min-h-11 rounded-pill border border-state-caution/50 px-3 font-ui text-xs font-semibold text-state-caution rf-focus-ring"
-        >
-          Manage connections
-        </button>
-      )}
     </div>
   );
 
