@@ -344,7 +344,9 @@ try {
   // Class type is intentionally explicit; a smoke path must make the same
   // deliberate choice an instructor makes before the create action unlocks.
   await page.getByRole('button', { name: 'Cycle', exact: true }).click();
-  await page.getByRole('button', { name: 'Create class' }).click();
+  // `exact` matters: the dialog's close button is labelled "Close create class
+  // dialog", which substring-matches "Create class" and trips strict mode.
+  await page.getByRole('button', { name: 'Create class', exact: true }).click();
   // The class row exposes a toggle plus View/Copy actions whose aria-labels also
   // contain the title; .first() targets the row toggle (first in DOM order).
   const classBtn = page.getByRole('button', { name: /Narrow Width Smoke/ }).first();
