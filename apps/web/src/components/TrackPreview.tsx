@@ -192,7 +192,13 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
         availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
       })
     : null;
-  const isClipped = entry.clipStartMs > 0 || entry.track.durationMs != null;
+  // What the run payload can honestly support. `track.durationMs` is already the
+  // CLIPPED length and the payload carries no `clipEndMs`, so an end-only trim is
+  // indistinguishable from an untrimmed track here — which is exactly why this
+  // line must not claim authorship either way (principle 8: derive, never invent).
+  // A start trim is knowable, so it is named.
+  const hasLength = entry.track.durationMs != null;
+  const trimmedStart = entry.clipStartMs > 0;
   const providerName =
     status.kind === 'preparing' ||
     status.kind === 'awaiting_authorization' ||
@@ -255,8 +261,13 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
             {totalMs != null ? ` / ${formatClock(totalMs)}` : ''}
           </p>
           <p className="mt-1 font-data text-[0.7rem] text-text-tertiary">
-            Clip {formatWindow(playbackWindow.startMs, playbackWindow.endMs)} · Track{' '}
-            {entry.position + 1}
+            {hasLength
+              ? `${trimmedStart ? 'Trimmed · plays' : 'Plays'} ${formatWindow(
+                  playbackWindow.startMs,
+                  playbackWindow.endMs,
+                )}`
+              : 'Length not set'}{' '}
+            · Track {entry.position + 1}
           </p>
         </div>
 
@@ -321,10 +332,6 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
             )}
           </div>
         </div>
-      )}
-
-      {selection?.status === 'playable' && !isClipped && (
-        <p className="font-ui text-xs text-text-tertiary">Preview starts at the track boundary.</p>
       )}
     </section>
   );

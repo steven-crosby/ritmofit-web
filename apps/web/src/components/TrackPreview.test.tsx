@@ -273,3 +273,37 @@ describe('TrackPreview provider_not_playable resolve (unchanged lead-in)', () =>
     expect(screen.getByRole('button', { name: /Find on Spotify/i })).toBeTruthy();
   });
 });
+
+/**
+ * The preview line used to read "Clip 0:00–3:00" on a track nobody had trimmed,
+ * presenting a derived default as an authored one (principle 8: derive, never
+ * invent). `track.durationMs` in the run payload is already the CLIPPED length
+ * and the payload carries no `clipEndMs`, so an end-only trim cannot be told
+ * apart from an untrimmed track here — which is why the line states what will
+ * play rather than claiming authorship. A start trim IS knowable, so it is named.
+ */
+describe('TrackPreview playback-window honesty', () => {
+  it('states what will play, without claiming a clip the instructor never set', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    render(<TrackPreview entry={spotifyEntry} />);
+
+    expect(await screen.findByText(/Plays 0:00–3:00/)).toBeTruthy();
+    expect(screen.queryByText(/Clip 0:00/)).toBeNull();
+    expect(screen.queryByText(/Trimmed/)).toBeNull();
+  });
+
+  it('names a start trim, which the run payload can actually prove', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    render(<TrackPreview entry={{ ...spotifyEntry, clipStartMs: 25_000 }} />);
+
+    expect(await screen.findByText(/Trimmed · plays 0:25–3:25/)).toBeTruthy();
+  });
+
+  it('says the length is missing rather than printing a 0:00–0:00 window', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    render(<TrackPreview entry={{ ...spotifyEntry, track: { ...baseTrack, durationMs: null } }} />);
+
+    expect(await screen.findByText(/Length not set/)).toBeTruthy();
+    expect(screen.queryByText(/0:00–0:00/)).toBeNull();
+  });
+});
