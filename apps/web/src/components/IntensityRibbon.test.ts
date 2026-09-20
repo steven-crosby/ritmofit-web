@@ -5,6 +5,7 @@ import {
   computeRibbonShape,
   deriveProvisionalIntensity,
 } from './IntensityRibbon.js';
+import { HOLD_UNTIL_NEXT_FIXTURE } from '../lib/energy-hold.fixture.js';
 
 type Entry = RunPayload['tracks'][number];
 
@@ -215,6 +216,27 @@ describe('computeRibbonSegments (placed-move refinement)', () => {
     );
     expect(segs.map((s) => s.intensity)).toEqual(['easy', 'all_out', 'mod']);
     expect(segs[2]).toMatchObject({ intensity: 'mod', x: 500, width: 500 });
+  });
+
+  it('holds each scored move until the next scored move or track end', () => {
+    const fixture = HOLD_UNTIL_NEXT_FIXTURE;
+    const track: Entry = {
+      ...entry(fixture.baseline, fixture.durationMs),
+      moves: fixture.moves.map((move, index) => ({
+        id: `20000000-0000-0000-0000-00000000000${index}`,
+        anchorMs: move.anchorMs,
+        intensity: move.intensity,
+        name: `Move ${index + 1}`,
+        beat: null,
+        bar: null,
+      })),
+    };
+
+    const segments = computeRibbonSegments([track], fixture.durationMs);
+
+    expect(segments.map((segment) => segment.intensity)).toEqual(fixture.expectedIntensities);
+    expect(segments.map((segment) => segment.x / 1000)).toEqual(fixture.expectedStartRatios);
+    expect(segments.map((segment) => segment.width / 1000)).toEqual(fixture.expectedWidthRatios);
   });
 });
 
