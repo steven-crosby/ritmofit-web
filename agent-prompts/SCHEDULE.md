@@ -90,6 +90,9 @@ Do not deploy from an unattended prompt. Deployment remains an explicit owner de
 | You need an actionable implementation slice | `remote-prompts/planning/next-slice-planner.md` |
 | Docs may no longer match reality | `remote-prompts/planning/doc-drift.md` |
 | You want a full-product design audit and proposed redesign preview | `design-audit/README.md` (owner-initiated, attended, one deliverable folder) |
+| The instructor class-creation journey feels confusing or slow | `instructor-ux/01-build-pass.md` (attended, local, ships one slice) |
+| A creation-journey slice just landed and you want it challenged | `instructor-ux/02-challenge-pass.md` (attended, local, report-only) |
+| You want a UI/UX assessment of the **live** site against modern standards | `live-ux-deep-dive.md` (attended, production, report-only) |
 | You are preparing to ship | `remote-prompts/planning/release-readiness.md` |
 | You need to clear open maintenance PRs | `remote-prompts/planning/pr-triage.md` |
 | You are starting interactive coding | `daily/start-session.md` |
@@ -103,6 +106,10 @@ Do not deploy from an unattended prompt. Deployment remains an explicit owner de
   specialist runs.
 - Do not let unattended prompts make schema, auth, migration, visual redesign, deployment, or
   product-scope decisions. Those become report-only recommendations.
+- `instructor-ux/` is not on a cadence. Run `01-build-pass.md` when the creation journey is the actual
+  concern, then run `02-challenge-pass.md` once after the slice lands — in a fresh session and, when
+  practical, with a different model to reduce self-review bias. It is a post-change challenge, not a
+  recurring sweep.
 - `design-audit/` is not on a cadence. Run it when a full-product design pass is genuinely wanted — it is
   attended, takes hours, and each run adds a permanent folder to `docs/audits/`. Prefer
   `remote-prompts/technical/design-system.md` for routine drift checks.

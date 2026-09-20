@@ -1,6 +1,51 @@
 # 01 — Design Principles
 
-Eight principles. If a design choice doesn't serve one of these, cut it.
+Principle 0 is the first instructor-facing comprehension test; eight principles follow it. When two
+otherwise-correct workflow treatments are defensible, choose the one that makes the instructor think
+less about the software.
+
+## 0. Simple. Stupid. Swift. — the standing test
+
+Ritmo Studio helps an instructor understand where she is, what matters right now, what she can do next,
+and what just happened — with as little interpretation, reading, configuration, and navigation as
+practical.
+
+At every meaningful screen and state, test whether a reasonable instructor could ask:
+
+1. Why am I seeing this right now?
+2. How do I use this?
+3. What do these words mean?
+4. What does this visual or icon mean?
+5. What should I do next?
+6. What did I just click, and what changed?
+
+Unnecessary uncertainty about any of the six is a **defect**, not a documentation gap.
+
+**Do not answer a failure with explanatory copy.** Work down this ladder and stop at the first rung
+that resolves it:
+
+1. Remove what is unnecessary.
+2. Simplify the interaction or the hierarchy.
+3. Use familiar language and affordances.
+4. Make state and consequence visible.
+5. Reveal additional explanation or detail only on demand.
+
+Helper text is rung 5, not the default fix.
+
+### Where it yields
+
+Apply this test on instructor working surfaces. Campaign treatments still follow principle 6. This test
+never relaxes principles 3, 4, or 8, accessibility, schema-honest labels, or the music constraints;
+those are correctness floors.
+
+### Both instructors
+
+Serve both new instructors and instructors with established workflows: reveal only what the current task
+needs while keeping advanced control available on demand.
+
+Product decision: [`D23`](../ritmofit_dev_plan/decisions.md).
+
+---
 
 ## 1. Built for creating, not consuming
 
@@ -103,6 +148,9 @@ When choices conflict, use this order:
 3. Ritmo Studio color, typography, and rhythm rules.
 4. Platform-native behavior.
 5. Reference-brand resemblance.
+
+Within (1): when two creator-workflow options are both defensible, the one that makes the instructor
+think less about the software wins (principle 0).
 
 The desired result is not "Spotify for fitness" or "Material with glass." It is a Ritmo Studio
 instrument: warm, precise, movement-first, and unmistakably for instructors who build the class.

@@ -80,6 +80,15 @@ read-only pass). No prompt ever merges, deploys, migrates the remote D1, or chan
   Runs are comparable because they bind to canonical `surface-ids.md` and build the deterministic
   `fixtures.md` data. Start at [`design-audit/README.md`](./design-audit/README.md). Not unattended remote
   maintenance — it needs a browser, a running local app, and an owner to say go.
+- `instructor-ux/` — the **creation-journey UX pack**: two attended, local-only passes that judge the
+  instructor class-creation journey (create → scaffold vs empty → Builder → plan blocks → assign
+  music → planned vs actual → playback windows → next step) against one product principle,
+  *Simple. Stupid. Swift.* `01-build-pass.md` diagnoses, gates a plan with the owner, ships one
+  slice as a PR, and publishes a conversation-owned findings report; `02-challenge-pass.md` is
+  **report-only** and runs afterwards in a fresh session to try to prove the journey still fails.
+  Both inherit `instructor-ux/00-frame.md` (principle, personas, scope, fixtures, verification floor).
+  Runs against local `dev:web`/`dev:api` on seeded D1 — never production, because it creates and
+  deletes real classes. Start at [`instructor-ux/README.md`](./instructor-ux/README.md).
 - `live-ux-deep-dive.md` — **interactive, production-facing** UI/UX assessment of the live
   `ritmofit.studio` app via Claude-in-Chrome, judged against both the design canon and
   general modern standards (WCAG 2.2, Core Web Vitals, current SaaS UX conventions). Asks
