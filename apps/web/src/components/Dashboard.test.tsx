@@ -2175,7 +2175,7 @@ describe('Dashboard plan-first next step', () => {
     expect(screen.getByRole('button', { name: 'Close music' })).toBeTruthy();
   });
 
-  it('keeps Pulse below the plan after the first assign and scrolls the updated block', async () => {
+  it('stays on the next empty block after the first assign and keeps Pulse off', async () => {
     const ride = { ...makeClass('Mid-build ride'), scaffoldRecipeId: 'cycle_45_v1' as const };
     const assigned = { ...makeClassTrack('ct-1', 0), planBlockId: firstBlock.id };
     vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
@@ -2209,11 +2209,11 @@ describe('Dashboard plan-first next step', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: /^Mid-build ride$/ }));
     await screen.findByRole('heading', { name: 'Mid-build ride' });
-    expect(await screen.findByText('Block 2 still needs music')).toBeTruthy();
-
-    const plan = screen.getByRole('heading', { name: 'Planned blocks' });
-    const pulse = screen.getByLabelText('Class Pulse');
-    expect(plan.compareDocumentPosition(pulse) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((await screen.findAllByText('Block 2 still needs music')).length).toBeGreaterThanOrEqual(
+      1,
+    );
+    expect(screen.queryByLabelText('Class Pulse')).toBeNull();
+    expect(screen.getByRole('button', { name: /run live/i })).toHaveProperty('disabled', true);
     expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Choose music for Block 2 · Climb' }));
@@ -2222,9 +2222,11 @@ describe('Dashboard plan-first next step', () => {
     fireEvent.click(await within(picker).findByRole('button', { name: 'Add Instinct by Artist' }));
 
     await waitFor(() => expect(api.addTrack).toHaveBeenCalled());
-    await waitFor(() => {
-      expect(scrollIntoView.mock.calls.length).toBeGreaterThan(0);
-    });
+    expect(screen.getByLabelText('Track destination').textContent).toMatch(/Block 2 · Climb/);
+    expect(screen.getByRole('button', { name: 'Instinct — Added' })).toBeTruthy();
+    expect(screen.queryByLabelText('Class Pulse')).toBeNull();
+    expect(screen.getByText('Track inspector')).toBeTruthy();
     expect(document.getElementById(`plan-block-card-${secondBlock.id}`)).toBeTruthy();
+    expect(scrollIntoView).toHaveBeenCalled();
   });
 });

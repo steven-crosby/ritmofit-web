@@ -79,7 +79,8 @@ describe('creationNextStep', () => {
     );
     expect(step.action).toBe('Add music to the plan');
     expect(step.detail).toBe('Block 1 still needs music');
-    expect(step.workRank).toBe(0);
+    expect(step.workRank).toBe(1);
+    expect(step.teachRank).toBe(3);
     expect(classNextStep(ready(payloadTracks as unknown as RunPayload['tracks'])).action).toBe(
       'Add the missing tempo',
     );
@@ -106,5 +107,15 @@ describe('creationNextStep', () => {
       },
     );
     expect(step.action).toBe('Add the missing tempo');
+  });
+
+  it('ranks an unfinished plan closer to teachable than an empty draft', () => {
+    const empty = creationNextStep({ scaffoldRecipeId: null, trackCount: 0 }, ready());
+    const plan = creationNextStep({ scaffoldRecipeId: 'cycle_45_v1', trackCount: 1 }, ready(), {
+      blocks: [block(blockId, 0, 360_000), block(otherBlockId, 1, 360_000)],
+      tracks: [track('00000000-0000-4000-8000-0000000000a2', otherBlockId)],
+    });
+    expect(plan.teachRank).toBeLessThan(empty.teachRank);
+    expect(empty.workRank).toBeLessThan(plan.workRank);
   });
 });

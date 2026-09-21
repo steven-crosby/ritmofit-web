@@ -197,18 +197,32 @@ describe('browseAnnouncement (unit)', () => {
 });
 
 describe('TrackSearch destination', () => {
-  it('names the block in search and Current class in playlist-import mode', () => {
+  it('names the block and hides playlist import when dest is a plan block', () => {
     render(
-      <TrackSearch classId="c1" destinationLabel="Block 3 · Seated climb" onAdded={() => {}} />,
+      <TrackSearch
+        classId="c1"
+        planBlockId="00000000-0000-4000-8000-0000000000b1"
+        destinationLabel="Block 3 · Seated climb"
+        onAdded={() => {}}
+      />,
     );
     expect(screen.getByLabelText('Track destination').textContent).toMatch(
       /Block 3 · Seated climb/,
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    expect(screen.queryByRole('button', { name: 'Import Playlist URL' })).toBeNull();
+    expect(screen.getByLabelText('Track destination').textContent).toMatch(
+      /Block 3 · Seated climb/,
+    );
+    expect(screen.getByLabelText('Track destination').textContent).not.toMatch(/Current class/);
+  });
+
+  it('keeps Import Playlist URL when dest is the class', () => {
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
     fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
     expect(screen.getByLabelText('Track destination').textContent).toMatch(/Current class/);
-    expect(screen.getByLabelText('Track destination').textContent).not.toMatch(/Block 3/);
   });
 });
 
@@ -494,7 +508,7 @@ describe('TrackSearch saved-playlists drill-in', () => {
       'Added 1 of 2 tracks. 1 couldn’t be added — retry the remaining track.',
     );
     expect(partial.closest('[role="status"]')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Song One — already added' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Song One — Added' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add Song Two by Artist Two' })).toBeTruthy();
     expect(onAdded).toHaveBeenCalledTimes(1);
 
@@ -805,10 +819,8 @@ describe('TrackSearch plan-block assignment', () => {
         planBlockId: '00000000-0000-4000-8000-0000000000b1',
       }),
     );
-    expect(await screen.findByRole('button', { name: 'Climb — In Block 3' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Climb — In Block 3' }).textContent).toMatch(
-      /In Block 3/,
-    );
-    expect(screen.queryByRole('button', { name: /In class/ })).toBeNull();
+    expect(await screen.findByRole('button', { name: 'Climb — Added' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Climb — Added' }).textContent).toMatch(/Added/);
+    expect(screen.queryByRole('button', { name: /In Block/ })).toBeNull();
   });
 });

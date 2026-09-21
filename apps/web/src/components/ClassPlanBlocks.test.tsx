@@ -128,6 +128,42 @@ describe('ClassPlanBlocks', () => {
     ).toBeTruthy();
   });
 
+  it('keeps dest on the same block when adding another song', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
+    const onChooseMusic = vi.fn();
+    const payload = {
+      tracks: [
+        {
+          classTrackId: assignedTrack().id,
+          track: { title: 'Warmup', artist: 'Artist', durationMs: 180_000 },
+        },
+      ],
+    } as RunPayload;
+
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[assignedTrack()]}
+        payload={payload}
+        canEdit
+        assigningPlanBlockId={null}
+        onChooseMusic={onChooseMusic}
+        onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Add another song to Block 1 · Arrive on the bike',
+      }),
+    );
+    expect(onChooseMusic).toHaveBeenCalledWith(
+      { id: block.id, label: block.label, position: block.position },
+      { stay: true },
+    );
+  });
+
   it('retries after a failed load', async () => {
     vi.mocked(api.listClassPlanBlocks)
       .mockRejectedValueOnce(new Error('plan down'))

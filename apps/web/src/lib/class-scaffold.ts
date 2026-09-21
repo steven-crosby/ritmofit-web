@@ -130,6 +130,26 @@ export function planNextStep(
   return null;
 }
 
+/**
+ * First empty block in plan order. `skipBlockId` is the block a song just
+ * landed in — treat it as no longer empty even if the payload has not
+ * refreshed yet.
+ */
+export function nextEmptyPlanBlock(
+  blocks: readonly ClassPlanBlock[],
+  tracks: readonly ClassTrack[],
+  payload: RunPayload | null,
+  skipBlockId?: string | null,
+): ClassPlanBlock | null {
+  return (
+    [...blocks]
+      .sort((a, b) => a.position - b.position)
+      .find(
+        (block) => block.id !== skipBlockId && planBlockActualMs(block.id, tracks, payload) === 0,
+      ) ?? null
+  );
+}
+
 export function guidanceSummary(block: ClassPlanBlock): string {
   const { guidance } = block;
   if (guidance.kind === 'cycle') {

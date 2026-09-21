@@ -15,6 +15,7 @@ import {
 import {
   providerCapabilities,
   type Class,
+  type ClassPlanBlock,
   type ClassWithAccess,
   type ClassListItem,
   type ClassTemplate,
@@ -88,6 +89,7 @@ import {
   type ClassOrdering,
 } from '../lib/class-ordering.js';
 import { summarizeQueue } from '../lib/live-readiness.js';
+import { nextEmptyPlanBlock } from '../lib/class-scaffold.js';
 import { errMessage } from '../lib/errors.js';
 import { errorReference } from '../lib/error-reference.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
@@ -3297,7 +3299,9 @@ function ClassWorkspace({
   const [sourceOpen, setSourceOpen] = useState(false);
   const [assigningPlanBlock, setAssigningPlanBlock] = useState<PlanBlockTarget | null>(null);
   const assigningPlanBlockId = assigningPlanBlock?.id ?? null;
+  const [assignStay, setAssignStay] = useState(false);
   const [planLead, setPlanLead] = useState<string | null>(null);
+  const [planBlocks, setPlanBlocks] = useState<ClassPlanBlock[]>([]);
   const [hasPlanBlocks, setHasPlanBlocks] = useState(cls.scaffoldRecipeId != null);
   // A cue/move marker click also asks the inspector to focus that row. The `nonce`
   // bumps on every marker click so re-clicking the same marker re-flashes.
@@ -3417,18 +3421,58 @@ function ClassWorkspace({
       'input:not([type="hidden"]), button, summary',
     );
     if (assigningPlanBlock) {
-      // The job is adding a song. If dest + picker cannot both fit, picker wins.
-      target?.focus({ preventScroll: true });
+      // The job is adding a song. Search is the work; dest is already named.
+      const search =
+        trackSourceRef.current?.querySelector<HTMLInputElement>('input[type="search"]');
+      (search ?? target)?.focus({ preventScroll: true });
       trackSourceRef.current?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
       return;
     }
     target?.focus();
   }, [sourceOpen, assigningPlanBlock]);
 
+  const focusPickerSearch = () => {
+    requestAnimationFrame(() => {
+      const search =
+        trackSourceRef.current?.querySelector<HTMLInputElement>('input[type="search"]');
+      search?.focus({ preventScroll: true });
+      trackSourceRef.current?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    });
+  };
   const focusTrackSources = () => setSourceOpen(true);
-  const chooseMusicForBlock = (block: PlanBlockTarget) => {
+  const chooseMusicForBlock = (block: PlanBlockTarget, options?: { stay?: boolean }) => {
     setAssigningPlanBlock(block);
+    setAssignStay(Boolean(options?.stay));
     setSourceOpen(true);
+  };
+  const continuePlanAfterAdd = () => {
+    if (!assignStay && assigningPlanBlock) {
+      const next = nextEmptyPlanBlock(planBlocks, tracks, payload, assigningPlanBlock.id);
+      if (next) {
+        setAssigningPlanBlock({
+          id: next.id,
+          label: next.label,
+          position: next.position,
+        });
+      }
+    }
+    focusPickerSearch();
+  };
+  const handleMusicAdded = (id?: string) => {
+    if (assigningPlanBlock) {
+      if (id) onTrackAdded(id);
+      else onTrackChanged();
+      continuePlanAfterAdd();
+      return;
+    }
+    if (id) {
+      setSelectedTrackId(id);
+      setPendingRowFocus(id);
+      onTrackAdded(id);
+    } else {
+      onTrackChanged();
+    }
+    revealAssignedBlock(assigningPlanBlockId);
   };
   const revealAssignedBlock = (blockId: string | null) => {
     if (!blockId) return;
@@ -3479,7 +3523,7 @@ function ClassWorkspace({
           trackCount={payload?.tracks.length ?? tracks.length}
           isOwner={isOwner}
           canEdit={canEdit}
-          canRun={payload != null && canRunPayload(payload)}
+          canRun={payload != null && canRunPayload(payload) && !planLead}
           onError={onError}
           onRun={onRun}
           onSelectTrack={setSelectedTrackId}
@@ -3512,14 +3556,8 @@ function ClassWorkspace({
           onTracksChanged={onTrackChanged}
           onPlanNextStep={setPlanLead}
           onHasPlanBlocks={setHasPlanBlocks}
+          onPlanBlocks={setPlanBlocks}
         />
-
-        {payload && payload.tracks.length > 0 && planLead && <ClassPulse payload={payload} />}
-        {selectedEntry && planLead && (
-          <Suspense fallback={null}>
-            <TrackPreview entry={selectedEntry} />
-          </Suspense>
-        )}
         {payload && payload.tracks.length > 0 && timelineOpen && (
           <section
             id={timelinePanelId}
@@ -3699,16 +3737,7 @@ function ClassWorkspace({
               }
               onOpenConnections={onOpenConnections}
               connectionRevision={connectionRevision}
-              onAdded={(id) => {
-                if (id) {
-                  setSelectedTrackId(id);
-                  setPendingRowFocus(id);
-                  onTrackAdded(id);
-                } else {
-                  onTrackChanged();
-                }
-                revealAssignedBlock(assigningPlanBlockId);
-              }}
+              onAdded={handleMusicAdded}
             />
             {/* Manual entry stays available but de-emphasized (search/import is the
                 primary path; 09). For a track a provider can't return, or no creds. */}
@@ -3719,16 +3748,7 @@ function ClassWorkspace({
               <AddTrackForm
                 classId={cls.id}
                 planBlockId={assigningPlanBlockId}
-                onAdded={(id) => {
-                  if (id) {
-                    setSelectedTrackId(id);
-                    setPendingRowFocus(id);
-                    onTrackAdded(id);
-                  } else {
-                    onTrackChanged();
-                  }
-                  revealAssignedBlock(assigningPlanBlockId);
-                }}
+                onAdded={handleMusicAdded}
                 onError={onError}
               />
             </details>
@@ -3878,7 +3898,8 @@ export function ClassHeaderCard({
   // "a track without a length". Especially matters for an empty class, where the
   // readiness panel isn't shown and the greyed button is the only signal.
   const runBlockedId = `run-blocked-${cls.id}`;
-  const runBlockedReason = canRun
+  const runEnabled = canRun && !planLead;
+  const runBlockedReason = runEnabled
     ? null
     : planLead
       ? planLead
@@ -4124,9 +4145,9 @@ export function ClassHeaderCard({
                 : 'order-first col-span-2 min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:order-none sm:col-span-auto sm:rounded-pill sm:px-4'
             }
             onClick={onRun}
-            disabled={!canRun}
+            disabled={!runEnabled}
             aria-describedby={runBlockedReason ? runBlockedId : undefined}
-            title={canRun ? 'Run this class live' : undefined}
+            title={runEnabled ? 'Run this class live' : undefined}
           >
             ▶ Run live
           </button>

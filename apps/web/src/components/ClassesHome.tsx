@@ -460,11 +460,12 @@ function ClassHomeRow({
       : detail?.status === 'error'
         ? 'unavailable'
         : 'loading';
+  const showAction = isTop || step.eyebrow === 'Fill the plan';
 
   return (
     <li
       className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 py-4 ${
-        isTop
+        showAction
           ? 'md:grid-cols-[minmax(0,1fr)_7.5rem_auto_auto_auto]'
           : 'md:grid-cols-[minmax(0,1fr)_7.5rem_auto_auto]'
       }`}
@@ -490,7 +491,7 @@ function ClassHomeRow({
 
       <StatusLabel kind={statusKind} label={step.detail} />
 
-      {isTop && (
+      {showAction && (
         <button
           type="button"
           onClick={() => onOpen(cls)}
