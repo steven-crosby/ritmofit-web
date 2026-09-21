@@ -51,7 +51,7 @@ describe('ClassPulse', () => {
   it('explains the picture: axes in words, a time axis, and a colour key', () => {
     render(<ClassPulse payload={payload()} />);
     expect(
-      screen.getByText(/each block is a track — wider is longer, taller is harder/i),
+      screen.getByText(/each bar is a track — wider is longer, taller is harder/i),
     ).toBeTruthy();
     expect(screen.getByText(/0:00 start/i)).toBeTruthy();
     expect(screen.getByText(/3:00 finish/i)).toBeTruthy();

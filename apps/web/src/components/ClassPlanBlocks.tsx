@@ -1,10 +1,15 @@
 /**
  * Basic Builder rendering for music-independent plan blocks. Empty blocks stay
  * visible as teaching structure; they never become Live tracks.
+ *
+ * Assignment is block-scoped end to end: `onChooseMusic` hands the caller the
+ * whole block so the picker can name its real destination, and every song row
+ * carries the control that moves it between blocks (or out of the plan), so a
+ * misplaced song is a correction rather than a delete-and-re-add.
  */
 import { useEffect, useState } from 'react';
 import type { ClassPlanBlock, ClassTrack, RunPayload } from '@ritmofit/shared';
-import { listClassPlanBlocks } from '../lib/api.js';
+import { assignClassTrackPlanBlock, listClassPlanBlocks } from '../lib/api.js';
 import {
   guidanceSummary,
   planBlockActualMs,
@@ -19,6 +24,18 @@ import { IntensityReadout } from './IntensityReadout.js';
 import { PendingList } from './PendingList.js';
 import { StatusLabel } from './SharedState.js';
 
+/** What the picker needs to state where a song is about to land. */
+export type PlanBlockTarget = { id: string; label: string; position: number };
+
+export const planBlockOptionLabel = (block: { label: string; position: number }) =>
+  `Block ${block.position + 1} · ${block.label}`;
+
+/** Title for a class track, preferring the resolved payload entry. */
+function trackTitle(track: ClassTrack, payload: RunPayload | null): string {
+  const entry = payload?.tracks.find((row) => row.classTrackId === track.id);
+  return entry ? `${entry.track.title} — ${entry.track.artist}` : `Song ${track.position + 1}`;
+}
+
 export function ClassPlanBlocks({
   classId,
   tracks,
@@ -27,14 +44,16 @@ export function ClassPlanBlocks({
   assigningPlanBlockId,
   onChooseMusic,
   onSelectTrack,
+  onTracksChanged,
 }: {
   classId: string;
   tracks: ClassTrack[];
   payload: RunPayload | null;
   canEdit: boolean;
   assigningPlanBlockId: string | null;
-  onChooseMusic: (planBlockId: string) => void;
+  onChooseMusic: (block: PlanBlockTarget) => void;
   onSelectTrack: (classTrackId: string) => void;
+  onTracksChanged: () => void;
 }) {
   const [blocks, setBlocks] = useState<ClassPlanBlock[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +112,7 @@ export function ClassPlanBlocks({
           Planned blocks
         </h3>
         <p className="mt-1 font-ui text-sm leading-5 text-text-secondary">
-          Planned time is the recipe. Music duration is whatever you actually add.
+          Planned time is the target. Music duration is whatever you actually add.
         </p>
       </div>
       <ol className="flex flex-col gap-2">
@@ -101,12 +120,16 @@ export function ClassPlanBlocks({
           <PlanBlockCard
             key={block.id}
             block={block}
+            blocks={blocks}
             tracks={tracks}
             payload={payload}
             canEdit={canEdit}
             assigning={assigningPlanBlockId === block.id}
-            onChooseMusic={() => onChooseMusic(block.id)}
+            onChooseMusic={() =>
+              onChooseMusic({ id: block.id, label: block.label, position: block.position })
+            }
             onSelectTrack={onSelectTrack}
+            onTracksChanged={onTracksChanged}
           />
         ))}
       </ol>
@@ -115,9 +138,30 @@ export function ClassPlanBlocks({
           <StatusLabel kind="empty" label="Unassigned music" />
           <p className="mt-1 font-ui text-sm text-text-secondary">
             {unassigned.length === 1
-              ? '1 song is not in a plan block yet.'
-              : `${unassigned.length} songs are not in a plan block yet.`}
+              ? '1 song is not in a plan block yet. Put it in one to give it a place in the class.'
+              : `${unassigned.length} songs are not in a plan block yet. Put them in one to give them a place in the class.`}
           </p>
+          <ul className="mt-2 flex flex-col gap-2">
+            {unassigned.map((track) => (
+              <li key={track.id} className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => onSelectTrack(track.id)}
+                  className="flex min-h-11 w-full items-center justify-between gap-2 rounded-control px-2 text-left font-ui text-sm text-text-primary rf-focus-ring hover:bg-bg-raised"
+                >
+                  <span className="min-w-0 truncate">{trackTitle(track, payload)}</span>
+                </button>
+                {canEdit && (
+                  <PlanBlockAssignSelect
+                    track={track}
+                    title={trackTitle(track, payload)}
+                    blocks={blocks}
+                    onTracksChanged={onTracksChanged}
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </section>
@@ -126,26 +170,31 @@ export function ClassPlanBlocks({
 
 function PlanBlockCard({
   block,
+  blocks,
   tracks,
   payload,
   canEdit,
   assigning,
   onChooseMusic,
   onSelectTrack,
+  onTracksChanged,
 }: {
   block: ClassPlanBlock;
+  blocks: ClassPlanBlock[];
   tracks: ClassTrack[];
   payload: RunPayload | null;
   canEdit: boolean;
   assigning: boolean;
   onChooseMusic: () => void;
   onSelectTrack: (classTrackId: string) => void;
+  onTracksChanged: () => void;
 }) {
   const assigned = tracksForPlanBlock(block.id, tracks);
   const actualMs = planBlockActualMs(block.id, tracks, payload);
   const fit = planBlockFit(block.targetDurationMs, actualMs);
   const fitText = planFitLabel(fit.fit, formatDuration(Math.abs(fit.deltaMs)));
   const empty = assigned.length === 0;
+  const blockName = planBlockOptionLabel(block);
 
   return (
     <li
@@ -185,6 +234,7 @@ function PlanBlockCard({
             <button
               type="button"
               onClick={onChooseMusic}
+              aria-label={`Choose music for ${blockName}`}
               className="mt-2 min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
             >
               Choose music
@@ -196,7 +246,7 @@ function PlanBlockCard({
           {assigned.map((track) => {
             const entry = payload?.tracks.find((row) => row.classTrackId === track.id);
             return (
-              <li key={track.id}>
+              <li key={track.id} className="flex flex-col gap-1">
                 <button
                   type="button"
                   onClick={() => onSelectTrack(track.id)}
@@ -211,6 +261,14 @@ function PlanBlockCard({
                     {entry?.track.durationMs != null ? formatDuration(entry.track.durationMs) : '—'}
                   </span>
                 </button>
+                {canEdit && (
+                  <PlanBlockAssignSelect
+                    track={track}
+                    title={trackTitle(track, payload)}
+                    blocks={blocks}
+                    onTracksChanged={onTracksChanged}
+                  />
+                )}
               </li>
             );
           })}
@@ -219,6 +277,7 @@ function PlanBlockCard({
               <button
                 type="button"
                 onClick={onChooseMusic}
+                aria-label={`Add another song to ${blockName}`}
                 className="min-h-11 rounded-control px-2 font-ui text-sm font-semibold text-interactive rf-focus-ring"
               >
                 Add another song
@@ -228,5 +287,75 @@ function PlanBlockCard({
         </ul>
       )}
     </li>
+  );
+}
+
+/**
+ * The move control. `PATCH /class-tracks/:id/plan-block` already existed and
+ * already had a client binding; only the control was missing, so a song that
+ * landed in the wrong block had to be deleted and re-added.
+ */
+function PlanBlockAssignSelect({
+  track,
+  title,
+  blocks,
+  onTracksChanged,
+}: {
+  track: ClassTrack;
+  title: string;
+  blocks: ClassPlanBlock[];
+  onTracksChanged: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const selectId = `plan-block-for-${track.id}`;
+
+  const move = (value: string) => {
+    const planBlockId = value === '' ? null : value;
+    if (planBlockId === (track.planBlockId ?? null)) return;
+    setBusy(true);
+    setError(null);
+    void (async () => {
+      try {
+        await assignClassTrackPlanBlock(track.id, { planBlockId });
+        onTracksChanged();
+      } catch (e) {
+        setError(errMessage(e));
+      } finally {
+        setBusy(false);
+      }
+    })();
+  };
+
+  return (
+    <div className="flex flex-col gap-1 px-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor={selectId} className="font-ui text-xs text-text-tertiary">
+          Teaching block
+        </label>
+        <select
+          id={selectId}
+          value={track.planBlockId ?? ''}
+          disabled={busy}
+          aria-label={`Teaching block for ${title}`}
+          onChange={(event) => move(event.target.value)}
+          className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-bg-sunken px-2 font-ui text-xs text-text-primary rf-focus-ring disabled:opacity-40"
+        >
+          <option value="">Not in a block</option>
+          {blocks.map((block) => (
+            <option key={block.id} value={block.id}>
+              {planBlockOptionLabel(block)}
+            </option>
+          ))}
+        </select>
+        {busy && <StatusLabel kind="loading" label="Moving" />}
+      </div>
+      {error && (
+        <div role="alert" className="flex flex-col gap-1">
+          <StatusLabel kind="error" label="Couldn’t move this song" />
+          <p className="font-ui text-xs text-text-secondary">{error}</p>
+        </div>
+      )}
+    </div>
   );
 }

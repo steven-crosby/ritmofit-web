@@ -115,8 +115,8 @@ import { IntensityReadout } from './IntensityReadout.js';
 import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 import { ClassReadinessSummary } from './ClassReadinessSummary.js';
 import { TrackSearch } from './TrackSearch.js';
-import { CreateClassDialog } from './CreateClassDialog.js';
-import { ClassPlanBlocks } from './ClassPlanBlocks.js';
+import { CreateClassDialog, type CreateClassMode } from './CreateClassDialog.js';
+import { ClassPlanBlocks, planBlockOptionLabel, type PlanBlockTarget } from './ClassPlanBlocks.js';
 import { SourceList, sourceCandidateKey } from './SourceList.js';
 import {
   consumeOnboardingVideoPending,
@@ -249,10 +249,11 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
    * sticky column and costs the centre nothing.
    */
   const [creatorOpen, setCreatorOpen] = useState(prefersWideWorkstation);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const focusClassCreator = useCallback(() => {
+  const [createDialogMode, setCreateDialogMode] = useState<CreateClassMode | null>(null);
+  const createDialogOpen = createDialogMode != null;
+  const focusClassCreator = useCallback((mode: CreateClassMode = 'scaffold') => {
     setCreatorOpen(true);
-    setCreateDialogOpen(true);
+    setCreateDialogMode(mode);
   }, []);
 
   // Merge a page's tags into the known-tags set (only an unfiltered page widens
@@ -688,7 +689,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         )}
         {createDialogOpen && (
           <CreateClassDialog
-            onClose={() => setCreateDialogOpen(false)}
+            mode={createDialogMode ?? 'scaffold'}
+            onClose={() => setCreateDialogMode(null)}
             onError={setError}
             onCreated={async (cls) => {
               await applyTagFilter(null);
@@ -3293,7 +3295,8 @@ function ClassWorkspace({
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
-  const [assigningPlanBlockId, setAssigningPlanBlockId] = useState<string | null>(null);
+  const [assigningPlanBlock, setAssigningPlanBlock] = useState<PlanBlockTarget | null>(null);
+  const assigningPlanBlockId = assigningPlanBlock?.id ?? null;
   // A cue/move marker click also asks the inspector to focus that row. The `nonce`
   // bumps on every marker click so re-clicking the same marker re-flashes.
   const [markerFocus, setMarkerFocus] = useState<{
@@ -3409,15 +3412,15 @@ function ClassWorkspace({
   }, [sourceOpen]);
 
   const focusTrackSources = () => setSourceOpen(true);
-  const chooseMusicForBlock = (planBlockId: string) => {
-    setAssigningPlanBlockId(planBlockId);
+  const chooseMusicForBlock = (block: PlanBlockTarget) => {
+    setAssigningPlanBlock(block);
     setSourceOpen(true);
   };
 
   const toggleTrackSources = () => {
     if (sourceOpen) {
       setSourceOpen(false);
-      setAssigningPlanBlockId(null);
+      setAssigningPlanBlock(null);
       requestAnimationFrame(() => trackSourceToggleRef.current?.focus());
       return;
     }
@@ -3541,6 +3544,7 @@ function ClassWorkspace({
           assigningPlanBlockId={assigningPlanBlockId}
           onChooseMusic={chooseMusicForBlock}
           onSelectTrack={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
+          onTracksChanged={onTrackChanged}
         />
 
         <div
@@ -3587,8 +3591,8 @@ function ClassWorkspace({
                 Start this class any way you like.
               </h3>
               <p className="mt-1 font-ui text-sm leading-5 text-text-secondary">
-                All four routes add to this class. Pulse stays empty until real duration and effort
-                data exists.
+                All four routes add to this class. The class shape appears once songs have a length
+                and an effort.
               </p>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <button
@@ -3647,21 +3651,19 @@ function ClassWorkspace({
             ref={trackSourceRef}
             role="region"
             aria-label={
-              assigningPlanBlockId
-                ? `Choose music for the selected plan block in ${cls.title}`
+              assigningPlanBlock
+                ? `Choose music for ${planBlockOptionLabel(assigningPlanBlock)} in ${cls.title}`
                 : `Add music to ${cls.title}`
             }
             hidden={!sourceOpen}
             className="rounded-card border border-border-subtle bg-bg-sunken p-3 outline-none rf-focus-ring"
           >
-            {assigningPlanBlockId && (
-              <p className="mb-2 font-ui text-xs text-text-secondary">
-                New songs will join the selected teaching block.
-              </p>
-            )}
             <TrackSearch
               classId={cls.id}
               planBlockId={assigningPlanBlockId}
+              destinationLabel={
+                assigningPlanBlock ? planBlockOptionLabel(assigningPlanBlock) : null
+              }
               onOpenConnections={onOpenConnections}
               connectionRevision={connectionRevision}
               onAdded={(id) => {

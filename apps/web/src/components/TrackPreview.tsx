@@ -192,7 +192,13 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
         availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
       })
     : null;
-  const isClipped = entry.clipStartMs > 0 || entry.track.durationMs != null;
+  // What the run payload can honestly support. `track.durationMs` is already the
+  // CLIPPED length and the payload carries no `clipEndMs`, so an end-only trim is
+  // indistinguishable from an untrimmed track here — which is exactly why this
+  // line must not claim authorship either way (principle 8: derive, never invent).
+  // A start trim is knowable, so it is named.
+  const hasLength = entry.track.durationMs != null;
+  const trimmedStart = entry.clipStartMs > 0;
   const providerName =
     status.kind === 'preparing' ||
     status.kind === 'awaiting_authorization' ||
@@ -210,7 +216,13 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
   return (
     <section
       aria-label={`Track preview for ${entry.track.title}`}
-      className={`sticky bottom-2 z-20 flex min-w-0 flex-col gap-3 rounded-card border bg-bg-raised p-3 shadow-overlay sm:p-4 ${
+      // Sticky only where there is a side column for it to sit in. Below the
+      // three-column grid the builder stacks into one column (canon 09: mobile
+      // recomposes, it does not compress), and a bottom-pinned panel there
+      // floats over whatever is behind it — at 390px a tall preview (a track
+      // with no provider link carries the recovery block) covered `Run live`
+      // at scroll-top, which is the P0 "no overlapping controls" gate.
+      className={`z-20 flex min-w-0 flex-col gap-3 rounded-card border bg-bg-raised p-3 shadow-overlay sm:p-4 xl:sticky xl:bottom-2 ${
         status.kind === 'error' ? 'border-state-caution/55' : 'border-border-strong'
       }`}
     >
@@ -249,8 +261,13 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
             {totalMs != null ? ` / ${formatClock(totalMs)}` : ''}
           </p>
           <p className="mt-1 font-data text-[0.7rem] text-text-tertiary">
-            Clip {formatWindow(playbackWindow.startMs, playbackWindow.endMs)} · Track{' '}
-            {entry.position + 1}
+            {hasLength
+              ? `${trimmedStart ? 'Trimmed · plays' : 'Plays'} ${formatWindow(
+                  playbackWindow.startMs,
+                  playbackWindow.endMs,
+                )}`
+              : 'Length not set'}{' '}
+            · Track {entry.position + 1}
           </p>
         </div>
 
@@ -315,10 +332,6 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
             )}
           </div>
         </div>
-      )}
-
-      {selection?.status === 'playable' && !isClipped && (
-        <p className="font-ui text-xs text-text-tertiary">Preview starts at the track boundary.</p>
       )}
     </section>
   );

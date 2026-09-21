@@ -283,6 +283,41 @@ async function openInspector(page) {
   await page.getByRole('button', { name: 'Add cue' }).waitFor({ timeout: 10000 });
 }
 
+/**
+ * No overlapping controls (canon 09 P0 gate). Overflow checks cannot see this:
+ * a bottom-pinned panel can sit *over* the primary action without widening the
+ * page at all. A tall selected-track preview (a track with no provider link
+ * carries the recovery block) covered `Run live` at 390px scroll-top, so this
+ * hit-tests the button's own centre and fails if anything else answers.
+ */
+async function checkPrimaryActionReachable(page, suffix) {
+  const tag = `primary-action-reachable:${suffix}`;
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(250);
+  const verdict = await page.evaluate(() => {
+    const run = [...document.querySelectorAll('button')].find((b) => /Run live/.test(b.textContent));
+    if (!run) return { state: 'missing' };
+    const r = run.getBoundingClientRect();
+    if (r.bottom <= 0 || r.top >= window.innerHeight) return { state: 'offscreen' };
+    // Probe the centre of the VISIBLE part: a button whose geometric centre
+    // sits past the fold makes elementFromPoint return null, which is a
+    // measurement artefact, not an occlusion.
+    const x = Math.min(Math.max(r.left + r.width / 2, 1), window.innerWidth - 1);
+    const top = Math.max(r.top, 0);
+    const bottom = Math.min(r.bottom, window.innerHeight);
+    const y = Math.min(Math.max((top + bottom) / 2, 1), window.innerHeight - 1);
+    const hit = document.elementFromPoint(x, y);
+    if (hit === run || run.contains(hit)) return { state: 'ok' };
+    if (!hit) return { state: 'offscreen' };
+    const label = hit.getAttribute('aria-label') ?? hit.tagName;
+    return { state: 'occluded', by: label };
+  });
+  if (verdict.state === 'ok') pass(tag, 'hit-testable at scroll-top');
+  else if (verdict.state === 'offscreen') pass(tag, 'not on screen at scroll-top');
+  else if (verdict.state === 'missing') fail(tag, 'Run live not found');
+  else fail(tag, `occluded by ${verdict.by}`);
+}
+
 async function checkSignedInSurfaces(page, suffix) {
   await goToClassesWithTrack(page);
   await checkNoOverflow(page, `dashboard-with-track:${suffix}`);
@@ -290,6 +325,7 @@ async function checkSignedInSurfaces(page, suffix) {
   await openInspector(page);
   await checkNoOverflow(page, `dashboard-inspector-open:${suffix}`);
   await checkIntensityControlLayout(page, suffix);
+  await checkPrimaryActionReachable(page, suffix);
 
   await page.getByRole('button', { name: 'Music', exact: true }).click();
   await page.getByRole('heading', { name: /Browse music, then shape it into class/ }).waitFor({
@@ -344,7 +380,9 @@ try {
   // Class type is intentionally explicit; a smoke path must make the same
   // deliberate choice an instructor makes before the create action unlocks.
   await page.getByRole('button', { name: 'Cycle', exact: true }).click();
-  await page.getByRole('button', { name: 'Create class' }).click();
+  // `exact` matters: the dialog's close button is labelled "Close create class
+  // dialog", which substring-matches "Create class" and trips strict mode.
+  await page.getByRole('button', { name: 'Create class', exact: true }).click();
   // The class row exposes a toggle plus View/Copy actions whose aria-labels also
   // contain the title; .first() targets the row toggle (first in DOM order).
   const classBtn = page.getByRole('button', { name: /Narrow Width Smoke/ }).first();

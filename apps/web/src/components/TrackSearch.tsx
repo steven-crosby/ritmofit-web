@@ -153,12 +153,19 @@ export function classifyPlaylistDrillInError(
 export function TrackSearch({
   classId,
   planBlockId = null,
+  destinationLabel = null,
   onAdded,
   onOpenConnections,
   connectionRevision = 0,
 }: {
   classId: string;
   planBlockId?: string | null;
+  /**
+   * Where an added song actually lands. Builder passes the plan block when the
+   * picker was opened from one; everywhere else this stays null and the
+   * destination is the class, as before.
+   */
+  destinationLabel?: string | null;
   onAdded: (classTrackId?: string) => void;
   onOpenConnections?: () => void;
   connectionRevision?: number;
@@ -491,6 +498,9 @@ export function TrackSearch({
         addedKeys,
         busyKey: importingKey,
         bulkBusy: importingAllFromPlaylist,
+        // Block-scoped destination: the row is already in the CLASS, which is a
+        // different fact from "already in this block".
+        addedLabel: destinationLabel ? 'In class' : undefined,
         onAdd: (candidate) => void add(candidate),
       }}
     />
@@ -675,7 +685,9 @@ export function TrackSearch({
           Destination
         </span>
         <span className="min-w-0 text-right font-ui text-xs text-text-secondary">
-          <strong className="font-semibold text-text-primary">Current class</strong>
+          <strong className="font-semibold text-text-primary">
+            {destinationLabel ?? 'Current class'}
+          </strong>
           {addedKeys.size > 0 && ` · ${addedKeys.size} added this session`}
         </span>
       </aside>
