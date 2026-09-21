@@ -44,6 +44,23 @@ describe('ClassReadinessSummary', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 
+  it('leads with the planning next step instead of Can run live', () => {
+    const readiness = classReadiness(
+      payload(entry({ classTrackId: 'ct-9', track: { title: 'Solo', durationMs: 200000 } })),
+    );
+    render(
+      <ClassReadinessSummary
+        readiness={readiness}
+        canEdit
+        planLead="4 blocks still need music"
+        onSelectTrack={() => {}}
+      />,
+    );
+    expect(screen.getByText('4 blocks still need music')).toBeTruthy();
+    expect(screen.queryByText(/can run live/i)).toBeNull();
+    expect(screen.getByText(/no bpm set/i)).toBeTruthy();
+  });
+
   it('surfaces soft gaps without blocking, and jumps to a flagged track', () => {
     const onSelectTrack = vi.fn();
     // Duration set (runnable) but no BPM / cues / provider link.

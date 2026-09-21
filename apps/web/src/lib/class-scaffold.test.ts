@@ -6,6 +6,7 @@ import {
   planBlockActualMs,
   planBlockFit,
   planFitLabel,
+  planNextStep,
   scaffoldRecipeId,
   tracksForPlanBlock,
   unassignedClassTracks,
@@ -89,6 +90,52 @@ describe('plan-block grouping and duration', () => {
     expect(planFitLabel('on_plan', '0:00')).toBe('On plan');
     expect(planFitLabel('under', '3:00')).toBe('3:00 under');
     expect(planFitLabel('over', '1:00')).toBe('1:00 over');
+  });
+});
+
+describe('planNextStep', () => {
+  const block = (id: string, position: number, targetMs: number): ClassPlanBlock =>
+    ({
+      id,
+      position,
+      targetDurationMs: targetMs,
+    }) as ClassPlanBlock;
+
+  it('leads with unassigned, then overflow, then empty blocks', () => {
+    const blocks = [block(blockId, 0, 360_000), block(otherBlockId, 1, 360_000)];
+    const payload = {
+      tracks: [
+        { classTrackId: '00000000-0000-4000-8000-0000000000a1', track: { durationMs: 180_000 } },
+        { classTrackId: '00000000-0000-4000-8000-0000000000a2', track: { durationMs: 480_000 } },
+      ],
+    } as RunPayload;
+
+    expect(
+      planNextStep(blocks, [track('00000000-0000-4000-8000-0000000000a3', null)], payload),
+    ).toBe('1 song is not in a plan block');
+    expect(
+      planNextStep(
+        blocks,
+        [
+          track('00000000-0000-4000-8000-0000000000a1', blockId),
+          track('00000000-0000-4000-8000-0000000000a2', otherBlockId),
+        ],
+        payload,
+      ),
+    ).toBe('Block 2 is 2:00 over');
+    expect(planNextStep(blocks, [], null)).toBe('2 blocks still need music');
+  });
+
+  it('stays quiet when every block has music and none overflow', () => {
+    const blocks = [block(blockId, 0, 360_000)];
+    const payload = {
+      tracks: [
+        { classTrackId: '00000000-0000-4000-8000-0000000000a1', track: { durationMs: 180_000 } },
+      ],
+    } as RunPayload;
+    expect(
+      planNextStep(blocks, [track('00000000-0000-4000-8000-0000000000a1', blockId)], payload),
+    ).toBe(null);
   });
 });
 

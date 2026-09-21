@@ -196,6 +196,22 @@ describe('browseAnnouncement (unit)', () => {
   });
 });
 
+describe('TrackSearch destination', () => {
+  it('names the block in search and Current class in playlist-import mode', () => {
+    render(
+      <TrackSearch classId="c1" destinationLabel="Block 3 · Seated climb" onAdded={() => {}} />,
+    );
+    expect(screen.getByLabelText('Track destination').textContent).toMatch(
+      /Block 3 · Seated climb/,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+    expect(screen.getByLabelText('Track destination').textContent).toMatch(/Current class/);
+    expect(screen.getByLabelText('Track destination').textContent).not.toMatch(/Block 3/);
+  });
+});
+
 describe('TrackSearch playlist-import provider gating', () => {
   const PROVIDER_LABELS: Record<Provider, string> = {
     soundcloud: 'SoundCloud',

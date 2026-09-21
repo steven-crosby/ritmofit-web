@@ -7,7 +7,7 @@
  * carries the control that moves it between blocks (or out of the plan), so a
  * misplaced song is a correction rather than a delete-and-re-add.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import type { ClassPlanBlock, ClassTrack, RunPayload } from '@ritmofit/shared';
 import { assignClassTrackPlanBlock, listClassPlanBlocks } from '../lib/api.js';
 import {
@@ -15,6 +15,7 @@ import {
   planBlockActualMs,
   planBlockFit,
   planFitLabel,
+  planNextStep,
   tracksForPlanBlock,
   unassignedClassTracks,
 } from '../lib/class-scaffold.js';
@@ -45,6 +46,7 @@ export function ClassPlanBlocks({
   onChooseMusic,
   onSelectTrack,
   onTracksChanged,
+  onPlanNextStep,
 }: {
   classId: string;
   tracks: ClassTrack[];
@@ -54,10 +56,20 @@ export function ClassPlanBlocks({
   onChooseMusic: (block: PlanBlockTarget) => void;
   onSelectTrack: (classTrackId: string) => void;
   onTracksChanged: () => void;
+  onPlanNextStep?: (label: string | null) => void;
 }) {
   const [blocks, setBlocks] = useState<ClassPlanBlock[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [moveIntent, setMoveIntent] = useState<{
+    trackId: string;
+    planBlockId: string | null;
+  } | null>(null);
+  const visibleTracks = moveIntent
+    ? tracks.map((track) =>
+        track.id === moveIntent.trackId ? { ...track, planBlockId: moveIntent.planBlockId } : track,
+      )
+    : tracks;
 
   useEffect(() => {
     let alive = true;
@@ -78,6 +90,27 @@ export function ClassPlanBlocks({
       alive = false;
     };
   }, [classId, reloadKey]);
+
+  useEffect(() => {
+    if (blocks == null) return;
+    onPlanNextStep?.(planNextStep(blocks, visibleTracks, payload));
+  }, [blocks, visibleTracks, payload, onPlanNextStep]);
+
+  useEffect(() => () => onPlanNextStep?.(null), [classId, onPlanNextStep]);
+
+  useEffect(() => {
+    if (!moveIntent) return;
+    const track = tracks.find((row) => row.id === moveIntent.trackId);
+    if (track && (track.planBlockId ?? null) === moveIntent.planBlockId) {
+      setMoveIntent(null);
+    }
+  }, [tracks, moveIntent]);
+
+  useLayoutEffect(() => {
+    if (!moveIntent) return;
+    const el = document.getElementById(`plan-block-for-${moveIntent.trackId}`);
+    if (el instanceof HTMLSelectElement) el.focus();
+  }, [visibleTracks, moveIntent]);
 
   if (blocks == null) {
     return (
@@ -102,7 +135,7 @@ export function ClassPlanBlocks({
 
   if (blocks.length === 0) return null;
 
-  const unassigned = unassignedClassTracks(tracks);
+  const unassigned = unassignedClassTracks(visibleTracks);
 
   return (
     <section className="flex flex-col gap-3 rounded-card bg-bg-raised p-4 shadow-card">
@@ -121,7 +154,7 @@ export function ClassPlanBlocks({
             key={block.id}
             block={block}
             blocks={blocks}
-            tracks={tracks}
+            tracks={visibleTracks}
             payload={payload}
             canEdit={canEdit}
             assigning={assigningPlanBlockId === block.id}
@@ -130,6 +163,7 @@ export function ClassPlanBlocks({
             }
             onSelectTrack={onSelectTrack}
             onTracksChanged={onTracksChanged}
+            onMoved={(trackId, planBlockId) => setMoveIntent({ trackId, planBlockId })}
           />
         ))}
       </ol>
@@ -157,6 +191,7 @@ export function ClassPlanBlocks({
                     title={trackTitle(track, payload)}
                     blocks={blocks}
                     onTracksChanged={onTracksChanged}
+                    onMoved={(trackId, planBlockId) => setMoveIntent({ trackId, planBlockId })}
                   />
                 )}
               </li>
@@ -178,6 +213,7 @@ function PlanBlockCard({
   onChooseMusic,
   onSelectTrack,
   onTracksChanged,
+  onMoved,
 }: {
   block: ClassPlanBlock;
   blocks: ClassPlanBlock[];
@@ -188,6 +224,7 @@ function PlanBlockCard({
   onChooseMusic: () => void;
   onSelectTrack: (classTrackId: string) => void;
   onTracksChanged: () => void;
+  onMoved: (classTrackId: string, planBlockId: string | null) => void;
 }) {
   const assigned = tracksForPlanBlock(block.id, tracks);
   const actualMs = planBlockActualMs(block.id, tracks, payload);
@@ -198,6 +235,7 @@ function PlanBlockCard({
 
   return (
     <li
+      id={`plan-block-card-${block.id}`}
       className={`flex flex-col gap-2 rounded-card border p-3 motion-reduce:transition-none ${
         assigning ? 'border-interactive bg-interactive/10' : 'border-border-subtle bg-bg-base'
       }`}
@@ -267,6 +305,7 @@ function PlanBlockCard({
                     title={trackTitle(track, payload)}
                     blocks={blocks}
                     onTracksChanged={onTracksChanged}
+                    onMoved={onMoved}
                   />
                 )}
               </li>
@@ -300,11 +339,13 @@ function PlanBlockAssignSelect({
   title,
   blocks,
   onTracksChanged,
+  onMoved,
 }: {
   track: ClassTrack;
   title: string;
   blocks: ClassPlanBlock[];
   onTracksChanged: () => void;
+  onMoved: (classTrackId: string, planBlockId: string | null) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -318,6 +359,7 @@ function PlanBlockAssignSelect({
     void (async () => {
       try {
         await assignClassTrackPlanBlock(track.id, { planBlockId });
+        onMoved(track.id, planBlockId);
         onTracksChanged();
       } catch (e) {
         setError(errMessage(e));

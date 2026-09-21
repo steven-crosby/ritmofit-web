@@ -187,18 +187,16 @@ describe('ClassPlanBlocks', () => {
       ],
     } as RunPayload;
 
-    render(
-      <ClassPlanBlocks
-        classId={block.classId}
-        tracks={[assignedTrack()]}
-        payload={payload}
-        canEdit
-        assigningPlanBlockId={null}
-        onChooseMusic={() => {}}
-        onSelectTrack={() => {}}
-        onTracksChanged={onTracksChanged}
-      />,
-    );
+    const props = {
+      classId: block.classId,
+      payload,
+      canEdit: true,
+      assigningPlanBlockId: null,
+      onChooseMusic: () => {},
+      onSelectTrack: () => {},
+      onTracksChanged,
+    };
+    const { rerender } = render(<ClassPlanBlocks {...props} tracks={[assignedTrack()]} />);
 
     const select = await screen.findByRole('combobox', {
       name: 'Teaching block for Warmup — Artist',
@@ -212,6 +210,17 @@ describe('ClassPlanBlocks', () => {
       }),
     );
     await waitFor(() => expect(onTracksChanged).toHaveBeenCalled());
+    const moved = screen.getByRole('combobox', {
+      name: 'Teaching block for Warmup — Artist',
+    });
+    expect((moved as HTMLSelectElement).value).toBe(second.id);
+    expect(document.activeElement).toBe(moved);
+    rerender(
+      <ClassPlanBlocks {...props} tracks={[{ ...assignedTrack(), planBlockId: second.id }]} />,
+    );
+    expect(document.activeElement).toBe(
+      screen.getByRole('combobox', { name: 'Teaching block for Warmup — Artist' }),
+    );
   });
 
   it('offers a block for an unassigned song instead of only naming the problem', async () => {
@@ -227,18 +236,16 @@ describe('ClassPlanBlocks', () => {
       ],
     } as RunPayload;
 
-    render(
-      <ClassPlanBlocks
-        classId={block.classId}
-        tracks={[floating]}
-        payload={payload}
-        canEdit
-        assigningPlanBlockId={null}
-        onChooseMusic={() => {}}
-        onSelectTrack={() => {}}
-        onTracksChanged={() => {}}
-      />,
-    );
+    const props = {
+      classId: block.classId,
+      payload,
+      canEdit: true,
+      assigningPlanBlockId: null,
+      onChooseMusic: () => {},
+      onSelectTrack: () => {},
+      onTracksChanged: () => {},
+    };
+    const { rerender } = render(<ClassPlanBlocks {...props} tracks={[floating]} />);
 
     expect(await screen.findByText(/is not in a plan block yet/)).toBeTruthy();
     const select = screen.getByRole('combobox', { name: 'Teaching block for Floating — Fixture' });
@@ -249,6 +256,15 @@ describe('ClassPlanBlocks', () => {
       expect(api.assignClassTrackPlanBlock).toHaveBeenCalledWith(floating.id, {
         planBlockId: block.id,
       }),
+    );
+    const moved = screen.getByRole('combobox', {
+      name: 'Teaching block for Floating — Fixture',
+    });
+    expect((moved as HTMLSelectElement).value).toBe(block.id);
+    expect(document.activeElement).toBe(moved);
+    rerender(<ClassPlanBlocks {...props} tracks={[{ ...floating, planBlockId: block.id }]} />);
+    expect(document.activeElement).toBe(
+      screen.getByRole('combobox', { name: 'Teaching block for Floating — Fixture' }),
     );
   });
 
@@ -285,6 +301,25 @@ describe('ClassPlanBlocks', () => {
 
     expect(await screen.findByText('Couldn’t move this song')).toBeTruthy();
     expect(screen.getByText('Floating — Fixture')).toBeTruthy();
+  });
+
+  it('reports the planning next step once blocks load', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
+    const onPlanNextStep = vi.fn();
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[]}
+        payload={null}
+        canEdit
+        assigningPlanBlockId={null}
+        onChooseMusic={() => {}}
+        onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
+        onPlanNextStep={onPlanNextStep}
+      />,
+    );
+    await waitFor(() => expect(onPlanNextStep).toHaveBeenCalledWith('Block 1 still needs music'));
   });
 
   it('hides the move control when the class is read-only', async () => {

@@ -3297,6 +3297,7 @@ function ClassWorkspace({
   const [sourceOpen, setSourceOpen] = useState(false);
   const [assigningPlanBlock, setAssigningPlanBlock] = useState<PlanBlockTarget | null>(null);
   const assigningPlanBlockId = assigningPlanBlock?.id ?? null;
+  const [planLead, setPlanLead] = useState<string | null>(null);
   // A cue/move marker click also asks the inspector to focus that row. The `nonce`
   // bumps on every marker click so re-clicking the same marker re-flashes.
   const [markerFocus, setMarkerFocus] = useState<{
@@ -3406,10 +3407,20 @@ function ClassWorkspace({
 
   useLayoutEffect(() => {
     if (!sourceOpen) return;
-    trackSourceRef.current
-      ?.querySelector<HTMLElement>('input:not([type="hidden"]), button, summary')
-      ?.focus();
-  }, [sourceOpen]);
+    const target = trackSourceRef.current?.querySelector<HTMLElement>(
+      'input:not([type="hidden"]), button, summary',
+    );
+    if (!target) return;
+    if (assigningPlanBlock) {
+      // Focusing the picker below the plan would scroll the clicked block away.
+      target.focus({ preventScroll: true });
+      document
+        .getElementById(`plan-block-card-${assigningPlanBlock.id}`)
+        ?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+      return;
+    }
+    target.focus();
+  }, [sourceOpen, assigningPlanBlock]);
 
   const focusTrackSources = () => setSourceOpen(true);
   const chooseMusicForBlock = (block: PlanBlockTarget) => {
@@ -3463,6 +3474,7 @@ function ClassWorkspace({
           onStartChoreography={startChoreography}
           onClassUpdated={onClassUpdated}
           onDeleted={() => onClassDeleted(cls.id)}
+          planLead={planLead}
         />
 
         {/* Slice 2 owns this derived presentation. Builder consumes it unchanged as
@@ -3545,6 +3557,7 @@ function ClassWorkspace({
           onChooseMusic={chooseMusicForBlock}
           onSelectTrack={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
           onTracksChanged={onTrackChanged}
+          onPlanNextStep={setPlanLead}
         />
 
         <div
@@ -3807,6 +3820,7 @@ export function ClassHeaderCard({
   onStartChoreography,
   onClassUpdated,
   onDeleted,
+  planLead = null,
 }: {
   cls: ClassWithAccess;
   payload: RunPayload | null;
@@ -3821,6 +3835,8 @@ export function ClassHeaderCard({
   onStartChoreography: () => void;
   onClassUpdated: (cls: Class) => void;
   onDeleted: () => void;
+  /** Plan-block next step, shown ahead of Live-readiness when the class can already run. */
+  planLead?: string | null;
 }) {
   const { run } = useAsyncAction(onError);
   const { busy: deleting, run: runDelete } = useAsyncAction(onError);
@@ -4142,6 +4158,7 @@ export function ClassHeaderCard({
           canEdit={canEdit}
           onSelectTrack={onSelectTrack}
           onStartChoreography={onStartChoreography}
+          planLead={planLead}
           compact
         />
       )}
