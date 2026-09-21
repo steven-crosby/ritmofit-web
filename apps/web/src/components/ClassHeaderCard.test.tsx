@@ -139,6 +139,34 @@ describe('ClassHeaderCard Live readiness', () => {
     expect(document.getElementById(describedBy!)?.textContent).toMatch(/7 blocks still need music/);
   });
 
+  it('keeps Run live disabled when the payload can run but the plan is unfinished', () => {
+    const onRun = vi.fn();
+    const runnable = {
+      class: { totalDurationMs: 180_000 },
+      tracks: [{ ...missingEntry, track: { title: 'Baianá', durationMs: 180_000 } }],
+    } as RunPayload;
+    render(
+      <ClassHeaderCard
+        {...baseProps}
+        cls={cls}
+        payload={runnable}
+        trackCount={1}
+        isOwner
+        canEdit
+        canRun
+        planLead="6 blocks still need music"
+        onRun={onRun}
+      />,
+    );
+
+    const runButton = screen.getByRole('button', { name: /run live/i });
+    expect(runButton).toHaveProperty('disabled', true);
+    expect(runButton.className).not.toMatch(/rf-btn-primary/);
+    fireEvent.click(runButton);
+    expect(onRun).not.toHaveBeenCalled();
+    expect(screen.getAllByText('6 blocks still need music').length).toBeGreaterThanOrEqual(1);
+  });
+
   it('drops the blocked-reason association once the class can run', () => {
     const runnable = {
       class: { totalDurationMs: 300_000 },

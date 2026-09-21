@@ -49,6 +49,7 @@ export function ClassPlanBlocks({
   onTracksChanged,
   onPlanNextStep,
   onHasPlanBlocks,
+  onPlanBlocks,
 }: {
   classId: string;
   tracks: ClassTrack[];
@@ -57,11 +58,12 @@ export function ClassPlanBlocks({
   assigningPlanBlockId: string | null;
   /** After a 0-track scaffold lands, put focus on the first Choose music. */
   focusFirstChoose?: boolean;
-  onChooseMusic: (block: PlanBlockTarget) => void;
+  onChooseMusic: (block: PlanBlockTarget, options?: { stay?: boolean }) => void;
   onSelectTrack: (classTrackId: string) => void;
   onTracksChanged: () => void;
   onPlanNextStep?: (label: string | null) => void;
   onHasPlanBlocks?: (hasBlocks: boolean) => void;
+  onPlanBlocks?: (blocks: ClassPlanBlock[]) => void;
 }) {
   const [blocks, setBlocks] = useState<ClassPlanBlock[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +102,8 @@ export function ClassPlanBlocks({
     if (blocks == null) return;
     onPlanNextStep?.(planNextStep(blocks, visibleTracks, payload));
     onHasPlanBlocks?.(blocks.length > 0);
-  }, [blocks, visibleTracks, payload, onPlanNextStep, onHasPlanBlocks]);
+    onPlanBlocks?.(blocks);
+  }, [blocks, visibleTracks, payload, onPlanNextStep, onHasPlanBlocks, onPlanBlocks]);
 
   useEffect(() => () => onPlanNextStep?.(null), [classId, onPlanNextStep]);
 
@@ -173,9 +176,11 @@ export function ClassPlanBlocks({
             payload={payload}
             canEdit={canEdit}
             assigning={assigningPlanBlockId === block.id}
-            onChooseMusic={() =>
-              onChooseMusic({ id: block.id, label: block.label, position: block.position })
-            }
+            onChooseMusic={(options) => {
+              const target = { id: block.id, label: block.label, position: block.position };
+              if (options) onChooseMusic(target, options);
+              else onChooseMusic(target);
+            }}
             onSelectTrack={onSelectTrack}
             onTracksChanged={onTracksChanged}
             onMoved={(trackId, planBlockId) => setMoveIntent({ trackId, planBlockId })}
@@ -236,7 +241,7 @@ function PlanBlockCard({
   payload: RunPayload | null;
   canEdit: boolean;
   assigning: boolean;
-  onChooseMusic: () => void;
+  onChooseMusic: (options?: { stay?: boolean }) => void;
   onSelectTrack: (classTrackId: string) => void;
   onTracksChanged: () => void;
   onMoved: (classTrackId: string, planBlockId: string | null) => void;
@@ -286,7 +291,7 @@ function PlanBlockCard({
           {canEdit && (
             <button
               type="button"
-              onClick={onChooseMusic}
+              onClick={() => onChooseMusic()}
               aria-label={`Choose music for ${blockName}`}
               className="mt-2 min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
             >
@@ -330,7 +335,7 @@ function PlanBlockCard({
             <li>
               <button
                 type="button"
-                onClick={onChooseMusic}
+                onClick={() => onChooseMusic({ stay: true })}
                 aria-label={`Add another song to ${blockName}`}
                 className="min-h-11 rounded-control px-2 font-ui text-sm font-semibold text-interactive rf-focus-ring"
               >

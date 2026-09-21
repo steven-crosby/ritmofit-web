@@ -6,6 +6,7 @@ import {
   planBlockActualMs,
   planBlockFit,
   planFitLabel,
+  nextEmptyPlanBlock,
   planNextStep,
   scaffoldRecipeId,
   tracksForPlanBlock,
@@ -139,6 +140,34 @@ describe('planNextStep', () => {
     expect(
       planNextStep(blocks, [track('00000000-0000-4000-8000-0000000000a1', blockId)], payload),
     ).toBe(null);
+  });
+});
+
+describe('nextEmptyPlanBlock', () => {
+  const block = (id: string, position: number, targetMs: number): ClassPlanBlock =>
+    ({
+      id,
+      position,
+      targetDurationMs: targetMs,
+    }) as ClassPlanBlock;
+
+  it('returns the first empty block and can skip the one just filled', () => {
+    const first = block(blockId, 0, 360_000);
+    const second = block(otherBlockId, 1, 360_000);
+    const blocks = [second, first];
+    expect(nextEmptyPlanBlock(blocks, [], null)?.id).toBe(blockId);
+    expect(nextEmptyPlanBlock(blocks, [], null, blockId)?.id).toBe(otherBlockId);
+    expect(
+      nextEmptyPlanBlock(blocks, [track('00000000-0000-4000-8000-0000000000a1', blockId)], {
+        tracks: [
+          {
+            classTrackId: '00000000-0000-4000-8000-0000000000a1',
+            track: { durationMs: 180_000 },
+          },
+        ],
+      } as RunPayload)?.id,
+    ).toBe(otherBlockId);
+    expect(nextEmptyPlanBlock([first], [track(blockId, blockId)], null, blockId)).toBeNull();
   });
 });
 

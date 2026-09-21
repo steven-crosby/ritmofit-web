@@ -308,11 +308,61 @@ describe('ClassesHome', () => {
     expect(await screen.findByRole('button', { name: 'Open class — Finished class' })).toBeTruthy();
     expect(await screen.findByText('Block 2 still needs music')).toBeTruthy();
     expect(
+      await screen.findByRole('button', { name: 'Add music to the plan — UXF mid-build' }),
+    ).toBeTruthy();
+    expect(
       screen.queryByRole('button', { name: 'Add the missing tempo — UXF mid-build' }),
     ).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'More actions — UXF mid-build' }));
     expect(screen.getByRole('button', { name: 'Rehearsal view — UXF mid-build' })).toBeTruthy();
     expect(api.listClassPlanBlocks).toHaveBeenCalledWith(midBuild.id);
     expect(api.listClassPlanBlocks).not.toHaveBeenCalledWith(finished.id);
+  });
+
+  it('ranks an unfinished plan above an empty draft and keeps a mid-build verb', async () => {
+    const empty = cls(1, {
+      title: 'UXF-2 empty',
+      trackCount: 0,
+      totalDurationMs: 0,
+      updatedAt: 9,
+    });
+    const midBuild = cls(2, {
+      title: 'UXF-1 mid-build',
+      scaffoldRecipeId: 'cycle_45_v1',
+      trackCount: 1,
+      updatedAt: 1,
+    });
+    vi.mocked(api.getClassShelfPayload).mockImplementation(async (id: string) =>
+      id === midBuild.id
+        ? ({
+            class: { title: midBuild.title, totalDurationMs: 180_000 },
+            tracks: [{ classTrackId: 't1', track: { durationMs: 180_000 } }],
+          } as unknown as RunPayload)
+        : ({
+            class: { title: empty.title, totalDurationMs: 0 },
+            tracks: [],
+          } as unknown as RunPayload),
+    );
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([
+      { id: 'b1', position: 0, targetDurationMs: 360_000 } as ClassPlanBlock,
+      { id: 'b2', position: 1, targetDurationMs: 360_000 } as ClassPlanBlock,
+    ]);
+    vi.mocked(api.listClassTracks).mockResolvedValue([
+      { id: 't1', planBlockId: 'b1' } as ClassTrack,
+    ]);
+    renderHome([empty, midBuild]);
+
+    expect(
+      await screen.findByRole('button', { name: 'Add music to the plan — UXF-1 mid-build' }),
+    ).toBeTruthy();
+    expect(screen.getByText('Block 2 still needs music')).toBeTruthy();
+    expect(screen.getByText('Empty draft')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Add the first track — UXF-2 empty' })).toBeNull();
+
+    const midTitle = screen.getByRole('button', { name: 'UXF-1 mid-build' });
+    const emptyTitle = screen.getByRole('button', { name: 'UXF-2 empty' });
+    expect(midTitle.compareDocumentPosition(emptyTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
   });
 });

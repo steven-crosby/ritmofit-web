@@ -19,9 +19,12 @@ export type CreationClassRef = {
 };
 
 function planWork(action: string, detail: string): ClassNextStep {
+  // One step more finished than an empty draft (work 0 / teach 4), so Ready to
+  // teach ranks a mid-build scaffold above a blank class. Needs work still
+  // puts empty drafts first.
   return {
-    workRank: 0,
-    teachRank: 4,
+    workRank: 1,
+    teachRank: 3,
     eyebrow: 'Fill the plan',
     action,
     detail,

@@ -254,9 +254,9 @@ export function TrackSearch({
   // search so we never fire a request that would 501.
   useEffect(() => {
     if (mode === 'likes' && !canUseLikes) setMode('search');
-    if (mode === 'playlist' && !canImportPlaylist) setMode('search');
+    if (mode === 'playlist' && (!canImportPlaylist || planBlockId)) setMode('search');
     if (mode === 'saved_playlists' && !canBrowseSavedPlaylists) setMode('search');
-  }, [mode, canUseLikes, canImportPlaylist, canBrowseSavedPlaylists]);
+  }, [mode, canUseLikes, canImportPlaylist, canBrowseSavedPlaylists, planBlockId]);
 
   // Fetch results on (mode, provider, query). Search debounces and clears on an
   // empty query; "My likes" fetches the caller's liked tracks (spends their token).
@@ -498,11 +498,7 @@ export function TrackSearch({
         addedKeys,
         busyKey: importingKey,
         bulkBusy: importingAllFromPlaylist,
-        // Block-scoped destination: the row is already in the CLASS, which is a
-        // different fact from "already in this block".
-        addedLabel: destinationLabel
-          ? `In ${destinationLabel.split(' · ')[0] ?? destinationLabel}`
-          : undefined,
+        addedLabel: 'Added',
         onAdd: (candidate) => void add(candidate),
       }}
     />
@@ -650,7 +646,7 @@ export function TrackSearch({
           .filter(
             (m) =>
               (m !== 'likes' || canUseLikes) &&
-              (m !== 'playlist' || canImportPlaylist) &&
+              (m !== 'playlist' || (canImportPlaylist && !planBlockId)) &&
               (m !== 'saved_playlists' || canBrowseSavedPlaylists),
           )
           .map((m) => {
@@ -688,7 +684,7 @@ export function TrackSearch({
         </span>
         <span className="min-w-0 text-right font-ui text-xs text-text-secondary">
           <strong className="font-semibold text-text-primary">
-            {mode === 'playlist' ? 'Current class' : (destinationLabel ?? 'Current class')}
+            {destinationLabel ?? 'Current class'}
           </strong>
           {addedKeys.size > 0 && ` · ${addedKeys.size} added this session`}
         </span>
