@@ -1,10 +1,9 @@
 import type { CreateClassMode } from './CreateClassDialog.js';
 import { useEffect, useMemo, useState } from 'react';
 import type { ClassListItem } from '@ritmofit/shared';
-import { getClassShelfPayload } from '../lib/api.js';
+import { getClassShelfPayload, listClassPlanBlocks, listClassTracks } from '../lib/api.js';
 import {
   CLASS_ORDERING_OPTIONS,
-  classNextStep,
   orderClassesBy,
   orderingSummary,
   readStoredOrdering,
@@ -12,6 +11,7 @@ import {
   type ClassDetailState,
   type ClassOrdering,
 } from '../lib/class-ordering.js';
+import { creationNextStep, type CreationPlanContext } from '../lib/creation-next-step.js';
 import { formatDuration, formatTemplateLabel } from '../lib/class-summary.js';
 import { errorReference } from '../lib/error-reference.js';
 import {
@@ -218,6 +218,7 @@ function ClassesHomeList({
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<ClassSortKey>(DEFAULT_CLASS_SORT);
   const [details, setDetails] = useState<Record<string, ClassDetailState>>({});
+  const [plans, setPlans] = useState<Record<string, CreationPlanContext | null>>({});
   const [retryRevision, setRetryRevision] = useState(0);
   const [ordering, setOrdering] = useState<ClassOrdering>(readStoredOrdering);
 
@@ -226,6 +227,7 @@ function ClassesHomeList({
   useEffect(() => {
     let active = true;
     setDetails(Object.fromEntries(classes.map((cls) => [cls.id, { status: 'loading' }])));
+    setPlans({});
     const queue = [...classes];
 
     const worker = async () => {
@@ -239,6 +241,25 @@ function ClassesHomeList({
           }
           if (!active) return;
           setDetails((current) => ({ ...current, [cls.id]: { status: 'ready', payload } }));
+          if (cls.scaffoldRecipeId) {
+            try {
+              const [blocks, tracks] = await Promise.all([
+                listClassPlanBlocks(cls.id),
+                listClassTracks(cls.id),
+              ]);
+              if (!active) return;
+              setPlans((current) => ({
+                ...current,
+                [cls.id]: {
+                  blocks: Array.isArray(blocks) ? blocks : [],
+                  tracks: Array.isArray(tracks) ? tracks : [],
+                },
+              }));
+            } catch {
+              if (!active) return;
+              setPlans((current) => ({ ...current, [cls.id]: null }));
+            }
+          }
         } catch {
           if (!active) return;
           setDetails((current) => ({ ...current, [cls.id]: { status: 'error' } }));
@@ -260,12 +281,13 @@ function ClassesHomeList({
   );
   const usingManualSort = showOrganize && sort !== 'recently_updated';
   const visible = useMemo(() => {
-    const stepFor = (cls: ClassListItem) => classNextStep(details[cls.id]);
+    const stepFor = (item: ClassListItem) =>
+      creationNextStep(item, details[item.id], plans[item.id]);
     if (usingManualSort) {
       return organizeClasses(searched, { query: '', sort });
     }
     return orderClassesBy(ordering, searched, stepFor);
-  }, [details, ordering, searched, sort, usingManualSort]);
+  }, [details, plans, ordering, searched, sort, usingManualSort]);
 
   const trimmedQuery = query.trim();
   const narrowed = trimmedQuery.length > 0 && visible.length !== classes.length;
@@ -372,6 +394,7 @@ function ClassesHomeList({
               key={cls.id}
               cls={cls}
               detail={details[cls.id]}
+              plan={plans[cls.id]}
               isTop={index === 0}
               onOpen={onOpen}
               onPreview={onPreview}
@@ -401,6 +424,7 @@ function ClassesHomeList({
 function ClassHomeRow({
   cls,
   detail,
+  plan,
   isTop,
   onOpen,
   onPreview,
@@ -409,6 +433,7 @@ function ClassHomeRow({
 }: {
   cls: ClassListItem;
   detail: ClassDetailState | undefined;
+  plan: CreationPlanContext | null | undefined;
   isTop: boolean;
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
@@ -416,7 +441,7 @@ function ClassHomeRow({
   onRetryDetails: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const step = classNextStep(detail);
+  const step = creationNextStep(cls, detail, plan);
   const payload = detail?.status === 'ready' ? detail.payload : null;
   const template = formatTemplateLabel(cls.template);
   const tracksLabel = `${cls.trackCount} ${cls.trackCount === 1 ? 'track' : 'tracks'}`;

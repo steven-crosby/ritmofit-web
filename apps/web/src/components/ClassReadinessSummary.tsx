@@ -57,8 +57,8 @@ function headline(
   readiness: ClassReadiness,
   planLead?: string | null,
 ): { text: string; tone: string } {
-  if (!readiness.runnable) return { text: 'Not ready for Live', tone: 'text-state-caution' };
   if (planLead) return { text: planLead, tone: 'text-state-caution' };
+  if (!readiness.runnable) return { text: 'Not ready for Live', tone: 'text-state-caution' };
   if (readiness.fullyReady)
     return { text: 'Class shape ready · take it live', tone: 'text-state-positive' };
   const n = readiness.attentionCount;
@@ -69,14 +69,14 @@ function headline(
 }
 
 export function ClassReadinessSummary({
-  readiness,
+  readiness = null,
   canEdit,
   onSelectTrack,
   onStartChoreography,
   planLead = null,
   compact = false,
 }: {
-  readiness: ClassReadiness;
+  readiness?: ClassReadiness | null;
   canEdit: boolean;
   compact?: boolean;
   /** Planning next step when the class has blocks. Leads the Live headline. */
@@ -91,72 +91,91 @@ export function ClassReadinessSummary({
    */
   onStartChoreography?: () => void;
 }) {
+  if (planLead && !readiness) {
+    return (
+      <section
+        aria-label="Class next step"
+        className="flex flex-col gap-2 rounded-card border border-interactive/15 bg-bg-base p-3"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+            Next step
+          </span>
+          <span className="font-data text-xs text-state-caution">{planLead}</span>
+        </div>
+      </section>
+    );
+  }
+  if (!readiness) return null;
+
   const head = headline(readiness, planLead);
+  const hideLiveBody = Boolean(planLead);
   return (
     <section
-      aria-label="Class readiness"
+      aria-label={hideLiveBody ? 'Class next step' : 'Class readiness'}
       className="flex flex-col gap-2 rounded-card border border-interactive/15 bg-bg-base p-3"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-          Readiness
+          {hideLiveBody ? 'Next step' : 'Readiness'}
         </span>
         <span className={`font-data text-xs ${head.tone}`}>{head.text}</span>
       </div>
-      {/* The panel says what it is before it starts listing states. Four lines of
-          check/warn with no framing left the reader to infer both what was being
-          checked and who was doing the checking. */}
-      <p className="font-ui text-xs text-text-tertiary">
-        What Live needs from this class before you run it.
-      </p>
-      <ul className="flex flex-col gap-1.5">
-        {readiness.dimensions.map((d) => {
-          const ready = d.level === 'ready';
-          return (
-            <li key={d.key} className="flex flex-col gap-1">
-              <div className="flex items-baseline gap-2">
-                <span
-                  aria-hidden
-                  className={`font-data text-sm leading-5 ${ready ? 'text-state-positive' : 'text-state-caution'}`}
-                >
-                  {GLYPH[d.level]}
-                </span>
-                <div className="min-w-0">
-                  <p
-                    className={`font-ui text-sm ${ready ? 'text-text-secondary' : 'font-semibold text-text-primary'}`}
+      {!hideLiveBody && (
+        <p className="font-ui text-xs text-text-tertiary">
+          What Live needs from this class before you run it.
+        </p>
+      )}
+      {!hideLiveBody && (
+        <ul className="flex flex-col gap-1.5">
+          {readiness.dimensions.map((d) => {
+            const ready = d.level === 'ready';
+            return (
+              <li key={d.key} className="flex flex-col gap-1">
+                <div className="flex items-baseline gap-2">
+                  <span
+                    aria-hidden
+                    className={`font-data text-sm leading-5 ${ready ? 'text-state-positive' : 'text-state-caution'}`}
                   >
-                    {d.label}
-                    {d.level === 'blocked' && (
-                      <span className="ml-2 whitespace-nowrap rounded-pill bg-state-caution/15 px-1.5 py-0.5 font-data text-[10px] uppercase tracking-wide text-state-caution">
-                        Blocks Live
-                      </span>
-                    )}
-                  </p>
-                  {!ready && <p className="font-ui text-xs text-text-tertiary">{d.detail}</p>}
+                    {GLYPH[d.level]}
+                  </span>
+                  <div className="min-w-0">
+                    <p
+                      className={`font-ui text-sm ${ready ? 'text-text-secondary' : 'font-semibold text-text-primary'}`}
+                    >
+                      {d.label}
+                      {d.level === 'blocked' && (
+                        <span className="ml-2 whitespace-nowrap rounded-pill bg-state-caution/15 px-1.5 py-0.5 font-data text-[10px] uppercase tracking-wide text-state-caution">
+                          Blocks Live
+                        </span>
+                      )}
+                    </p>
+                    {!ready && <p className="font-ui text-xs text-text-tertiary">{d.detail}</p>}
+                  </div>
                 </div>
-              </div>
-              {canEdit && d.tracks.length > 0 && (
-                <FixChips
-                  dimension={d}
-                  collapseAfter={compact ? 2 : null}
-                  onSelectTrack={onSelectTrack}
-                />
-              )}
-              {canEdit && !ready && d.key === 'choreography' && onStartChoreography && (
-                <div className="ml-6 flex flex-wrap items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={onStartChoreography}
-                    className="min-h-11 rounded-control border border-interactive/50 px-2.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
-                  >
-                    Write the first cue
-                  </button>
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                {canEdit && d.tracks.length > 0 && (
+                  <FixChips
+                    dimension={d}
+                    collapseAfter={compact ? 2 : null}
+                    onSelectTrack={onSelectTrack}
+                  />
+                )}
+                {canEdit && !ready && d.key === 'choreography' && onStartChoreography && (
+                  <div className="ml-6 flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={onStartChoreography}
+                      className="min-h-11 rounded-control border border-interactive/50 px-2.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
+                    >
+                      Write the first cue
+                    </button>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }

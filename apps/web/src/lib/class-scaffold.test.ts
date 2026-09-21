@@ -101,7 +101,7 @@ describe('planNextStep', () => {
       targetDurationMs: targetMs,
     }) as ClassPlanBlock;
 
-  it('leads with unassigned, then overflow, then empty blocks', () => {
+  it('leads with unassigned, then empty blocks, then overflow', () => {
     const blocks = [block(blockId, 0, 360_000), block(otherBlockId, 1, 360_000)];
     const payload = {
       tracks: [
@@ -113,6 +113,9 @@ describe('planNextStep', () => {
     expect(
       planNextStep(blocks, [track('00000000-0000-4000-8000-0000000000a3', null)], payload),
     ).toBe('1 song is not in a plan block');
+    expect(
+      planNextStep(blocks, [track('00000000-0000-4000-8000-0000000000a2', otherBlockId)], payload),
+    ).toBe('Block 1 still needs music');
     expect(
       planNextStep(
         blocks,

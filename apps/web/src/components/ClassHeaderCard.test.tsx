@@ -119,6 +119,26 @@ describe('ClassHeaderCard Live readiness', () => {
     expect(document.getElementById(describedBy!)?.textContent).toMatch(/add a track to run/i);
   });
 
+  it('lets an unfinished plan speak at 0 tracks and quiets Run live', () => {
+    render(
+      <ClassHeaderCard
+        {...baseProps}
+        cls={cls}
+        isOwner
+        canEdit
+        planLead="7 blocks still need music"
+      />,
+    );
+
+    expect(screen.getAllByText('7 blocks still need music').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByLabelText('Class next step')).toBeTruthy();
+    expect(screen.queryByText(/what live needs from this class/i)).toBeNull();
+    const runButton = screen.getByRole('button', { name: /run live/i });
+    expect(runButton.className).not.toMatch(/rf-btn-primary/);
+    const describedBy = runButton.getAttribute('aria-describedby');
+    expect(document.getElementById(describedBy!)?.textContent).toMatch(/7 blocks still need music/);
+  });
+
   it('drops the blocked-reason association once the class can run', () => {
     const runnable = {
       class: { totalDurationMs: 300_000 },

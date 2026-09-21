@@ -3298,6 +3298,7 @@ function ClassWorkspace({
   const [assigningPlanBlock, setAssigningPlanBlock] = useState<PlanBlockTarget | null>(null);
   const assigningPlanBlockId = assigningPlanBlock?.id ?? null;
   const [planLead, setPlanLead] = useState<string | null>(null);
+  const [hasPlanBlocks, setHasPlanBlocks] = useState(cls.scaffoldRecipeId != null);
   // A cue/move marker click also asks the inspector to focus that row. The `nonce`
   // bumps on every marker click so re-clicking the same marker re-flashes.
   const [markerFocus, setMarkerFocus] = useState<{
@@ -3310,6 +3311,11 @@ function ClassWorkspace({
   const isOwner = cls.accessLevel === 'owner';
   const canEdit = cls.accessLevel === 'owner' || cls.accessLevel === 'edit';
   const isFree = cls.timelineMode === 'free';
+  const showStackAddMusic = canEdit && cls.scaffoldRecipeId == null && !hasPlanBlocks;
+
+  useEffect(() => {
+    setHasPlanBlocks(cls.scaffoldRecipeId != null);
+  }, [cls.id, cls.scaffoldRecipeId]);
 
   // Focus return after removing a track: the inspector (holding the focused "Remove
   // track" button) unmounts on removal, so focus would fall to <body> and a keyboard
@@ -3410,22 +3416,28 @@ function ClassWorkspace({
     const target = trackSourceRef.current?.querySelector<HTMLElement>(
       'input:not([type="hidden"]), button, summary',
     );
-    if (!target) return;
     if (assigningPlanBlock) {
-      // Focusing the picker below the plan would scroll the clicked block away.
-      target.focus({ preventScroll: true });
-      document
-        .getElementById(`plan-block-card-${assigningPlanBlock.id}`)
-        ?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+      // The job is adding a song. If dest + picker cannot both fit, picker wins.
+      target?.focus({ preventScroll: true });
+      trackSourceRef.current?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
       return;
     }
-    target.focus();
+    target?.focus();
   }, [sourceOpen, assigningPlanBlock]);
 
   const focusTrackSources = () => setSourceOpen(true);
   const chooseMusicForBlock = (block: PlanBlockTarget) => {
     setAssigningPlanBlock(block);
     setSourceOpen(true);
+  };
+  const revealAssignedBlock = (blockId: string | null) => {
+    if (!blockId) return;
+    requestAnimationFrame(() => {
+      document.getElementById(`plan-block-card-${blockId}`)?.scrollIntoView({
+        block: 'nearest',
+        behavior: 'auto',
+      });
+    });
   };
 
   const toggleTrackSources = () => {
@@ -3478,71 +3490,11 @@ function ClassWorkspace({
         />
 
         {/* Slice 2 owns this derived presentation. Builder consumes it unchanged as
-            the persistent class-shape instrument above the editable track score. */}
-        {payload && payload.tracks.length > 0 && (
-          <>
-            <ClassPulse payload={payload} />
-            {timelineOpen && (
-              <section
-                id={timelinePanelId}
-                role="region"
-                aria-label="Timeline precision"
-                className="flex flex-col gap-3 rounded-card border border-border-subtle bg-bg-raised p-4 sm:p-5"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="rf-eyebrow">Placement focus</p>
-                    <h3 className="mt-1 font-display text-lg font-semibold text-text-primary">
-                      {isFree ? 'Free placement · gaps allowed' : 'Back-to-back timeline'}
-                    </h3>
-                  </div>
-                  {canEdit && (
-                    <button
-                      type="button"
-                      onClick={toggleTimelineMode}
-                      className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-xs font-semibold text-interactive rf-focus-ring"
-                    >
-                      {isFree ? 'Switch to back-to-back' : 'Switch to free placement'}
-                    </button>
-                  )}
-                </div>
-                <div className="min-w-0 overflow-x-auto rounded-card bg-bg-sunken p-3">
-                  <TimelineStrip
-                    payload={payload}
-                    selectedTrackId={selectedTrackId}
-                    onSelectTrack={selectFromTimeline}
-                    onMoveMarker={
-                      canEdit
-                        ? async (marker, anchorMs) => {
-                            if (marker.kind === 'cue') await updateCue(marker.id, { anchorMs });
-                            else await updatePlacedMove(marker.id, { anchorMs });
-                            onTrackChanged();
-                          }
-                        : undefined
-                    }
-                    onMoveTrack={
-                      canEdit && isFree
-                        ? async (classTrackId, startOffsetMs) => {
-                            await updateClassTrack(classTrackId, { startOffsetMs });
-                            onTrackChanged();
-                          }
-                        : undefined
-                    }
-                  />
-                </div>
-                <SegmentBand
-                  classId={cls.id}
-                  totalDurationMs={payload.class.totalDurationMs}
-                  canEdit={canEdit}
-                  trackStartsMs={payload.tracks.map((t) => t.startOffsetMs ?? 0)}
-                  onChanged={onTrackChanged}
-                />
-              </section>
-            )}
-          </>
-        )}
+            the persistent class-shape instrument above the editable track score.
+            While the plan is unfinished, keep Pulse/Preview off the first rest. */}
+        {payload && payload.tracks.length > 0 && !planLead && <ClassPulse payload={payload} />}
 
-        {selectedEntry && (
+        {selectedEntry && !planLead && (
           <Suspense fallback={null}>
             <TrackPreview entry={selectedEntry} />
           </Suspense>
@@ -3554,11 +3506,77 @@ function ClassWorkspace({
           payload={payload}
           canEdit={canEdit}
           assigningPlanBlockId={assigningPlanBlockId}
+          focusFirstChoose={tracks.length === 0}
           onChooseMusic={chooseMusicForBlock}
           onSelectTrack={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
           onTracksChanged={onTrackChanged}
           onPlanNextStep={setPlanLead}
+          onHasPlanBlocks={setHasPlanBlocks}
         />
+
+        {payload && payload.tracks.length > 0 && planLead && <ClassPulse payload={payload} />}
+        {selectedEntry && planLead && (
+          <Suspense fallback={null}>
+            <TrackPreview entry={selectedEntry} />
+          </Suspense>
+        )}
+        {payload && payload.tracks.length > 0 && timelineOpen && (
+          <section
+            id={timelinePanelId}
+            role="region"
+            aria-label="Timeline precision"
+            className="flex flex-col gap-3 rounded-card border border-border-subtle bg-bg-raised p-4 sm:p-5"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="rf-eyebrow">Placement focus</p>
+                <h3 className="mt-1 font-display text-lg font-semibold text-text-primary">
+                  {isFree ? 'Free placement · gaps allowed' : 'Back-to-back timeline'}
+                </h3>
+              </div>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={toggleTimelineMode}
+                  className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-xs font-semibold text-interactive rf-focus-ring"
+                >
+                  {isFree ? 'Switch to back-to-back' : 'Switch to free placement'}
+                </button>
+              )}
+            </div>
+            <div className="min-w-0 overflow-x-auto rounded-card bg-bg-sunken p-3">
+              <TimelineStrip
+                payload={payload}
+                selectedTrackId={selectedTrackId}
+                onSelectTrack={selectFromTimeline}
+                onMoveMarker={
+                  canEdit
+                    ? async (marker, anchorMs) => {
+                        if (marker.kind === 'cue') await updateCue(marker.id, { anchorMs });
+                        else await updatePlacedMove(marker.id, { anchorMs });
+                        onTrackChanged();
+                      }
+                    : undefined
+                }
+                onMoveTrack={
+                  canEdit && isFree
+                    ? async (classTrackId, startOffsetMs) => {
+                        await updateClassTrack(classTrackId, { startOffsetMs });
+                        onTrackChanged();
+                      }
+                    : undefined
+                }
+              />
+            </div>
+            <SegmentBand
+              classId={cls.id}
+              totalDurationMs={payload.class.totalDurationMs}
+              canEdit={canEdit}
+              trackStartsMs={payload.tracks.map((t) => t.startOffsetMs ?? 0)}
+              onChanged={onTrackChanged}
+            />
+          </section>
+        )}
 
         <div
           ref={trackListRef}
@@ -3572,16 +3590,18 @@ function ClassWorkspace({
               </h3>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button
-                ref={trackSourceToggleRef}
-                type="button"
-                onClick={toggleTrackSources}
-                aria-expanded={sourceOpen}
-                aria-controls={sourcePanelId}
-                className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
-              >
-                {sourceOpen ? 'Close music' : 'Add music'}
-              </button>
+              {(showStackAddMusic || sourceOpen) && (
+                <button
+                  ref={trackSourceToggleRef}
+                  type="button"
+                  onClick={toggleTrackSources}
+                  aria-expanded={sourceOpen}
+                  aria-controls={sourcePanelId}
+                  className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+                >
+                  {sourceOpen ? 'Close music' : 'Add music'}
+                </button>
+              )}
               {payload && payload.tracks.length > 0 && (
                 <button
                   type="button"
@@ -3687,6 +3707,7 @@ function ClassWorkspace({
                 } else {
                   onTrackChanged();
                 }
+                revealAssignedBlock(assigningPlanBlockId);
               }}
             />
             {/* Manual entry stays available but de-emphasized (search/import is the
@@ -3706,6 +3727,7 @@ function ClassWorkspace({
                   } else {
                     onTrackChanged();
                   }
+                  revealAssignedBlock(assigningPlanBlockId);
                 }}
                 onError={onError}
               />
@@ -3858,9 +3880,11 @@ export function ClassHeaderCard({
   const runBlockedId = `run-blocked-${cls.id}`;
   const runBlockedReason = canRun
     ? null
-    : trackCount === 0
-      ? 'Add a track to run this class.'
-      : 'Give every track a length to run.';
+    : planLead
+      ? planLead
+      : trackCount === 0
+        ? 'Add a track to run this class.'
+        : 'Give every track a length to run.';
 
   const startRename = () => {
     setTitleDraft(cls.title);
@@ -4094,7 +4118,11 @@ export function ClassHeaderCard({
               </DestructiveControl>
             ))}
           <button
-            className="order-first col-span-2 min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:order-none sm:col-span-auto sm:rounded-pill sm:px-4"
+            className={
+              planLead
+                ? 'order-first col-span-2 min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-text-secondary disabled:opacity-40 sm:order-none sm:col-span-auto sm:rounded-pill sm:px-4'
+                : 'order-first col-span-2 min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:order-none sm:col-span-auto sm:rounded-pill sm:px-4'
+            }
             onClick={onRun}
             disabled={!canRun}
             aria-describedby={runBlockedReason ? runBlockedId : undefined}
@@ -4149,12 +4177,11 @@ export function ClassHeaderCard({
           </>
         )}
       </div>
-      {/* Readiness — duration/tempo/cues-moves/music, derived from the run-payload
-          and surfaced before Live (P0 #2). Shown once the class has tracks; an
-          empty class already prompts to add one below the ribbon. */}
-      {readiness && trackCount > 0 && (
+      {/* Plan next step can speak at 0 tracks. Live readiness waits until there
+          are tracks — and collapses again while the plan is still unfinished. */}
+      {(planLead || (readiness && trackCount > 0)) && (
         <ClassReadinessSummary
-          readiness={readiness}
+          readiness={readiness && trackCount > 0 ? readiness : null}
           canEdit={canEdit}
           onSelectTrack={onSelectTrack}
           onStartChoreography={onStartChoreography}

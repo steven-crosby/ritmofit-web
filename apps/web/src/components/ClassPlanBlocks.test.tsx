@@ -349,4 +349,29 @@ describe('ClassPlanBlocks', () => {
     expect(await screen.findByText('Warmup — Artist')).toBeTruthy();
     expect(screen.queryByRole('combobox')).toBeNull();
   });
+
+  it('focuses the first Choose music on an empty scaffold', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
+    const onHasPlanBlocks = vi.fn();
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[]}
+        payload={null}
+        canEdit
+        assigningPlanBlockId={null}
+        focusFirstChoose
+        onChooseMusic={() => {}}
+        onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
+        onHasPlanBlocks={onHasPlanBlocks}
+      />,
+    );
+
+    const choose = await screen.findByRole('button', {
+      name: 'Choose music for Block 1 · Arrive on the bike',
+    });
+    await waitFor(() => expect(document.activeElement).toBe(choose));
+    expect(onHasPlanBlocks).toHaveBeenCalledWith(true);
+  });
 });

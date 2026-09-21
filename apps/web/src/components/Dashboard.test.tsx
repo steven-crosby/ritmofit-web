@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type {
+  ClassPlanBlock,
   ClassTrack,
   ClassWithAccess,
   ClassListItem,
@@ -2102,5 +2103,128 @@ describe('Dashboard track focus management', () => {
     });
     const cueField = await within(inspector).findByRole('textbox', { name: 'Cue text' });
     await waitFor(() => expect(document.activeElement).toBe(cueField));
+  });
+});
+
+const planBlock = (id: string, position: number, label: string): ClassPlanBlock => ({
+  id,
+  classId: 'class-1',
+  recipeBlockKey: `cycle_${position}`,
+  position,
+  segmentType: 'climb',
+  label,
+  targetDurationMs: 360_000,
+  intensity: 'mod',
+  teachingGoal: 'Goal',
+  movementFocus: 'Focus',
+  guidance: {
+    kind: 'cycle',
+    posture: 'seated',
+    cadenceMinRpm: 80,
+    cadenceMaxRpm: 95,
+    rpeMin: 4,
+    rpeMax: 6,
+  },
+  createdAt: 1,
+  updatedAt: 1,
+});
+
+describe('Dashboard plan-first next step', () => {
+  const firstBlock = planBlock('00000000-0000-4000-8000-0000000000b1', 0, 'Arrive');
+  const secondBlock = planBlock('00000000-0000-4000-8000-0000000000b2', 1, 'Climb');
+  const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+
+  afterEach(() => {
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+  });
+
+  it('leads a 0-track scaffold with the plan, not Live chrome or stack Add music', async () => {
+    const ride = { ...makeClass('Plan ride'), scaffoldRecipeId: 'cycle_45_v1' as const };
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(liveRunPayload([]));
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([firstBlock, secondBlock]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.getClassShelfPayload).mockResolvedValue(liveRunPayload([]));
+    const scrollIntoView = vi.fn();
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Plan ride$/ }));
+    await screen.findByRole('heading', { name: 'Plan ride' });
+
+    const choose = await screen.findByRole('button', {
+      name: 'Choose music for Block 1 · Arrive',
+    });
+    await waitFor(() => expect(document.activeElement).toBe(choose));
+    expect(screen.getAllByText('2 blocks still need music').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
+    expect(screen.queryByText(/Start this class any way you like/)).toBeNull();
+    expect(screen.queryByText(/What Live needs from this class/)).toBeNull();
+    expect(screen.queryByLabelText('Class Pulse')).toBeNull();
+    expect(screen.getByRole('button', { name: /run live/i }).className).not.toMatch(
+      /rf-btn-primary/,
+    );
+
+    fireEvent.click(choose);
+    expect(
+      await screen.findByRole('region', { name: /Choose music for Block 1 · Arrive/ }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Track destination').textContent).toMatch(/Block 1 · Arrive/);
+    expect(scrollIntoView).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Close music' })).toBeTruthy();
+  });
+
+  it('keeps Pulse below the plan after the first assign and scrolls the updated block', async () => {
+    const ride = { ...makeClass('Mid-build ride'), scaffoldRecipeId: 'cycle_45_v1' as const };
+    const assigned = { ...makeClassTrack('ct-1', 0), planBlockId: firstBlock.id };
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([assigned]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([{ classTrackId: 'ct-1', durationMs: 180_000, title: 'Baianá' }]),
+    );
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([firstBlock, secondBlock]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.searchProvider).mockResolvedValue([
+      {
+        provider: 'soundcloud',
+        providerTrackId: 'tr-1',
+        providerUri: null,
+        title: 'Instinct',
+        artist: 'Artist',
+        albumArtUrl: null,
+        durationMs: 240_000,
+      },
+    ]);
+    vi.mocked(api.importTrack).mockResolvedValue({ id: 'track-added' } as Awaited<
+      ReturnType<typeof api.importTrack>
+    >);
+    vi.mocked(api.addTrack).mockResolvedValue({
+      ...makeClassTrack('ct-added', 1),
+      planBlockId: secondBlock.id,
+    });
+    const scrollIntoView = vi.fn();
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Mid-build ride$/ }));
+    await screen.findByRole('heading', { name: 'Mid-build ride' });
+    expect(await screen.findByText('Block 2 still needs music')).toBeTruthy();
+
+    const plan = screen.getByRole('heading', { name: 'Planned blocks' });
+    const pulse = screen.getByLabelText('Class Pulse');
+    expect(plan.compareDocumentPosition(pulse) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose music for Block 2 · Climb' }));
+    const picker = await screen.findByRole('region', { name: /Choose music for Block 2 · Climb/ });
+    fireEvent.change(within(picker).getByRole('searchbox'), { target: { value: 'instinct' } });
+    fireEvent.click(await within(picker).findByRole('button', { name: 'Add Instinct by Artist' }));
+
+    await waitFor(() => expect(api.addTrack).toHaveBeenCalled());
+    await waitFor(() => {
+      expect(scrollIntoView.mock.calls.length).toBeGreaterThan(0);
+    });
+    expect(document.getElementById(`plan-block-card-${secondBlock.id}`)).toBeTruthy();
   });
 });
