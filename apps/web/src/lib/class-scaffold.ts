@@ -10,6 +10,7 @@ import type {
   RunPayload,
   ScaffoldRecipeId,
 } from '@ritmofit/shared';
+import { formatDuration } from './class-summary.js';
 
 export const SCAFFOLD_DISCIPLINES = [
   { value: 'cycle', label: 'Cycle' },
@@ -86,6 +87,43 @@ export function planFitLabel(fit: PlanFit, formattedDelta: string): string {
   if (fit === 'on_plan') return 'On plan';
   if (fit === 'under') return `${formattedDelta} under`;
   return `${formattedDelta} over`;
+}
+
+/**
+ * The planning next step, when a class has plan blocks. Live readiness answers a
+ * different question (can the class run); this names empty / over / unassigned
+ * so "Can run live" is not the first thing she reads mid-build.
+ * Underfill is the normal mid-build state and does not lead.
+ */
+export function planNextStep(
+  blocks: readonly ClassPlanBlock[],
+  tracks: readonly ClassTrack[],
+  payload: RunPayload | null,
+): string | null {
+  if (blocks.length === 0) return null;
+
+  const unassigned = unassignedClassTracks(tracks);
+  if (unassigned.length === 1) return '1 song is not in a plan block';
+  if (unassigned.length > 1) return `${unassigned.length} songs are not in a plan block`;
+
+  const fits = blocks.map((block) => ({
+    block,
+    ...planBlockFit(block.targetDurationMs, planBlockActualMs(block.id, tracks, payload)),
+  }));
+  const over = fits.filter((row) => row.fit === 'over').sort((a, b) => b.deltaMs - a.deltaMs);
+  if (over.length === 1) {
+    const row = over[0]!;
+    return `Block ${row.block.position + 1} is ${formatDuration(row.deltaMs)} over`;
+  }
+  if (over.length > 1) return `${over.length} blocks are over their planned time`;
+
+  const empty = fits.filter((row) => row.actualMs === 0);
+  if (empty.length === 1) {
+    return `Block ${empty[0]!.block.position + 1} still needs music`;
+  }
+  if (empty.length > 1) return `${empty.length} blocks still need music`;
+
+  return null;
 }
 
 export function guidanceSummary(block: ClassPlanBlock): string {

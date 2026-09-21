@@ -82,7 +82,7 @@ function renderHome(
     hasMore?: boolean;
     onOpen?: (cls: ClassListItem) => void;
     onPreview?: (cls: ClassListItem) => void;
-    onStartClass?: () => void;
+    onStartClass?: (mode?: 'scaffold' | 'empty') => void;
   } = {},
 ) {
   return render(
@@ -118,6 +118,8 @@ describe('ClassesHome', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start a class' }));
     fireEvent.click(screen.getByRole('button', { name: 'Start empty' }));
     expect(onStartClass).toHaveBeenCalledTimes(2);
+    expect(onStartClass).toHaveBeenNthCalledWith(1);
+    expect(onStartClass).toHaveBeenNthCalledWith(2, 'empty');
     expect(screen.queryByRole('button', { name: /Start Cycle, Pilates, or HIIT/ })).toBeNull();
   });
 
@@ -171,6 +173,15 @@ describe('ClassesHome', () => {
     ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'More actions — Class 1' }));
     expect(screen.getByRole('button', { name: 'Rehearsal view — Class 1' })).toBeTruthy();
+  });
+
+  it('keeps Start empty on the list home', async () => {
+    vi.mocked(api.getClassShelfPayload).mockResolvedValue(payload('Class 1'));
+    const onStartClass = vi.fn();
+    renderHome([cls(1)], { onStartClass });
+    await screen.findByRole('heading', { name: 'Pick up where the energy left off.' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start empty' }));
+    expect(onStartClass).toHaveBeenCalledWith('empty');
   });
 
   it('puts the copper verb on the top row only', async () => {

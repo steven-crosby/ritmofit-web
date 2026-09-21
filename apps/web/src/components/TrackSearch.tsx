@@ -686,7 +686,7 @@ export function TrackSearch({
         </span>
         <span className="min-w-0 text-right font-ui text-xs text-text-secondary">
           <strong className="font-semibold text-text-primary">
-            {destinationLabel ?? 'Current class'}
+            {mode === 'playlist' ? 'Current class' : (destinationLabel ?? 'Current class')}
           </strong>
           {addedKeys.size > 0 && ` · ${addedKeys.size} added this session`}
         </span>

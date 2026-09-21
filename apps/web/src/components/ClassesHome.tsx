@@ -294,13 +294,22 @@ function ClassesHomeList({
               : orderingSummary(ordering)}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => onStartClass()}
-          className="min-h-11 shrink-0 rounded-control px-4 font-ui text-sm font-semibold text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
-        >
-          Start a class
-        </button>
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            onClick={() => onStartClass()}
+            className="min-h-11 rounded-control px-4 font-ui text-sm font-semibold text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
+          >
+            Start a class
+          </button>
+          <button
+            type="button"
+            onClick={() => onStartClass('empty')}
+            className="min-h-11 rounded-control px-3 font-ui text-sm text-text-tertiary hover:text-text-secondary rf-focus-ring"
+          >
+            Start empty
+          </button>
+        </div>
       </div>
 
       {!usingManualSort && (

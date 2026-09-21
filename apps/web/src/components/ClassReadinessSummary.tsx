@@ -53,8 +53,12 @@ const FIX_LEADIN: Record<ReadinessKey, string> = {
  * pieces of jargon at once — whether "runnable" meant it *had* run, and what the
  * count was counting.
  */
-function headline(readiness: ClassReadiness): { text: string; tone: string } {
+function headline(
+  readiness: ClassReadiness,
+  planLead?: string | null,
+): { text: string; tone: string } {
   if (!readiness.runnable) return { text: 'Not ready for Live', tone: 'text-state-caution' };
+  if (planLead) return { text: planLead, tone: 'text-state-caution' };
   if (readiness.fullyReady)
     return { text: 'Class shape ready · take it live', tone: 'text-state-positive' };
   const n = readiness.attentionCount;
@@ -69,11 +73,14 @@ export function ClassReadinessSummary({
   canEdit,
   onSelectTrack,
   onStartChoreography,
+  planLead = null,
   compact = false,
 }: {
   readiness: ClassReadiness;
   canEdit: boolean;
   compact?: boolean;
+  /** Planning next step when the class has blocks. Leads the Live headline. */
+  planLead?: string | null;
   /** Jump the inspector to a flagged track so the gap can be fixed in place. */
   onSelectTrack: (classTrackId: string) => void;
   /**
@@ -84,7 +91,7 @@ export function ClassReadinessSummary({
    */
   onStartChoreography?: () => void;
 }) {
-  const head = headline(readiness);
+  const head = headline(readiness, planLead);
   return (
     <section
       aria-label="Class readiness"

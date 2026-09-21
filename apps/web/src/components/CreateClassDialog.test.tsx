@@ -102,6 +102,10 @@ describe('CreateClassDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'HIIT' }));
     fireEvent.click(screen.getByRole('button', { name: 'Start empty instead' }));
 
+    expect(api.createClass).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', { name: 'Start with an empty class' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Create empty class' }));
+
     await waitFor(() =>
       expect(api.createClass).toHaveBeenCalledWith({
         mode: 'empty',
@@ -159,6 +163,10 @@ describe('CreateClassDialog', () => {
     fireEvent.change(screen.getByLabelText('Class title'), { target: { value: 'Planned Cycle' } });
     fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
     fireEvent.click(screen.getByRole('button', { name: 'Use a teaching plan instead' }));
+
+    expect(api.createClass).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', { name: 'Start from a teaching plan' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Create class' }));
 
     await waitFor(() =>
       expect(api.createClass).toHaveBeenCalledWith({

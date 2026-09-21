@@ -22,8 +22,8 @@ const MINUTE_MS = 60_000;
 
 /**
  * Which path the instructor asked for. The dialog serves both, and leads with
- * the one she chose — a button labelled "Start empty" that opens a panel headed
- * "Start from a teaching plan" answers a question she did not ask.
+ * the one she chose. Switching paths changes the panel — it does not submit
+ * while the heading still describes the other path.
  */
 export type CreateClassMode = 'scaffold' | 'empty';
 
@@ -38,7 +38,8 @@ export function CreateClassDialog({
   onCreated: (cls: Class) => void;
   onError: (msg: string | null) => void;
 }) {
-  const emptyFirst = initialMode === 'empty';
+  const [mode, setMode] = useState<CreateClassMode>(initialMode);
+  const emptyFirst = mode === 'empty';
   const titleRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
   const [discipline, setDiscipline] = useState<ScaffoldDiscipline | null>(null);
@@ -117,7 +118,7 @@ export function CreateClassDialog({
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
-          create(initialMode);
+          create(mode);
         }}
       >
         <div className="flex flex-col gap-1.5">
@@ -251,7 +252,7 @@ export function CreateClassDialog({
           <button
             type="button"
             disabled={busy}
-            onClick={() => create(emptyFirst ? 'scaffold' : 'empty')}
+            onClick={() => setMode(emptyFirst ? 'scaffold' : 'empty')}
             className="min-h-11 rounded-control px-3 font-ui text-sm text-text-tertiary hover:text-text-secondary disabled:opacity-40 rf-focus-ring"
           >
             {emptyFirst ? 'Use a teaching plan instead' : 'Start empty instead'}
