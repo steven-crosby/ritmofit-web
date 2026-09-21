@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ClassPlanBlock, ClassTrack, RunPayload } from '@ritmofit/shared';
 import { ClassPlanBlocks } from './ClassPlanBlocks.js';
 import * as api from '../lib/api.js';
@@ -409,5 +409,41 @@ describe('ClassPlanBlocks', () => {
     });
     await waitFor(() => expect(document.activeElement).toBe(choose));
     expect(onHasPlanBlocks).toHaveBeenCalledWith(true);
+  });
+
+  it('hosts the open picker on the dest card and turns Choose music into Close', async () => {
+    const second: ClassPlanBlock = {
+      ...block,
+      id: '00000000-0000-4000-8000-0000000000b2',
+      position: 1,
+      label: 'Climb',
+    };
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block, second]);
+    const onCloseMusic = vi.fn();
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[]}
+        payload={null}
+        canEdit
+        assigningPlanBlockId={block.id}
+        musicPicker={<div>Picker for dest</div>}
+        onChooseMusic={() => {}}
+        onCloseMusic={onCloseMusic}
+        onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
+      />,
+    );
+
+    const destCard = await waitFor(() => {
+      const card = document.getElementById(`plan-block-card-${block.id}`);
+      expect(card?.textContent).toMatch(/Picker for dest/);
+      return card!;
+    });
+    expect(document.getElementById(`plan-block-card-${second.id}`)?.textContent).not.toMatch(
+      /Picker for dest/,
+    );
+    fireEvent.click(within(destCard).getByRole('button', { name: 'Close music' }));
+    expect(onCloseMusic).toHaveBeenCalled();
   });
 });

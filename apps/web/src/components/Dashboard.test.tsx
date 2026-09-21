@@ -2167,12 +2167,20 @@ describe('Dashboard plan-first next step', () => {
     );
 
     fireEvent.click(choose);
-    expect(
-      await screen.findByRole('region', { name: /Choose music for Block 1 · Arrive/ }),
-    ).toBeTruthy();
-    expect(screen.getByLabelText('Track destination').textContent).toMatch(/Block 1 · Arrive/);
+    const destCard = document.getElementById(`plan-block-card-${firstBlock.id}`);
+    expect(destCard).not.toBeNull();
+    const picker = await within(destCard as HTMLElement).findByRole('region', {
+      name: /Choose music for Block 1 · Arrive/,
+    });
+    expect(within(picker).getByLabelText('Track destination').textContent).toMatch(
+      /Block 1 · Arrive/,
+    );
     expect(scrollIntoView).toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Close music' })).toBeTruthy();
+    expect(
+      within(destCard as HTMLElement).getByRole('button', { name: 'Close music' }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
+    expect(destCard?.contains(picker)).toBe(true);
   });
 
   it('stays on the next empty block after the first assign and keeps Pulse off', async () => {
@@ -2217,16 +2225,24 @@ describe('Dashboard plan-first next step', () => {
     expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Choose music for Block 2 · Climb' }));
-    const picker = await screen.findByRole('region', { name: /Choose music for Block 2 · Climb/ });
+    const destCard = document.getElementById(`plan-block-card-${secondBlock.id}`);
+    expect(destCard).not.toBeNull();
+    const picker = await within(destCard as HTMLElement).findByRole('region', {
+      name: /Choose music for Block 2 · Climb/,
+    });
     fireEvent.change(within(picker).getByRole('searchbox'), { target: { value: 'instinct' } });
     fireEvent.click(await within(picker).findByRole('button', { name: 'Add Instinct by Artist' }));
 
     await waitFor(() => expect(api.addTrack).toHaveBeenCalled());
-    expect(screen.getByLabelText('Track destination').textContent).toMatch(/Block 2 · Climb/);
-    expect(screen.getByRole('button', { name: 'Instinct — Added' })).toBeTruthy();
+    expect(within(destCard as HTMLElement).getByLabelText('Track destination').textContent).toMatch(
+      /Block 2 · Climb/,
+    );
+    expect(within(picker).getByRole('button', { name: 'Instinct — Added' })).toBeTruthy();
     expect(screen.queryByLabelText('Class Pulse')).toBeNull();
     expect(screen.getByText('Track inspector')).toBeTruthy();
-    expect(document.getElementById(`plan-block-card-${secondBlock.id}`)).toBeTruthy();
+    expect(document.getElementById(`plan-block-card-${secondBlock.id}`)?.contains(picker)).toBe(
+      true,
+    );
     expect(scrollIntoView).toHaveBeenCalled();
   });
 });

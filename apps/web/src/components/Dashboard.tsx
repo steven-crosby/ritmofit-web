@@ -11,6 +11,7 @@ import {
   type ButtonHTMLAttributes,
   type FormEvent,
   type ReactNode,
+  type Ref,
 } from 'react';
 import {
   providerCapabilities,
@@ -3415,6 +3416,13 @@ function ClassWorkspace({
       ? markerFocus
       : null;
 
+  const revealPlanDest = (blockId: string) => {
+    document.getElementById(`plan-block-card-${blockId}`)?.scrollIntoView({
+      block: 'nearest',
+      behavior: 'auto',
+    });
+  };
+
   useLayoutEffect(() => {
     if (!sourceOpen) return;
     const target = trackSourceRef.current?.querySelector<HTMLElement>(
@@ -3425,17 +3433,22 @@ function ClassWorkspace({
       const search =
         trackSourceRef.current?.querySelector<HTMLInputElement>('input[type="search"]');
       (search ?? target)?.focus({ preventScroll: true });
-      trackSourceRef.current?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+      revealPlanDest(assigningPlanBlock.id);
       return;
     }
     target?.focus();
   }, [sourceOpen, assigningPlanBlock]);
 
-  const focusPickerSearch = () => {
+  const focusPickerSearch = (blockId?: string) => {
     requestAnimationFrame(() => {
       const search =
         trackSourceRef.current?.querySelector<HTMLInputElement>('input[type="search"]');
       search?.focus({ preventScroll: true });
+      const destId = blockId ?? assigningPlanBlock?.id;
+      if (destId) {
+        revealPlanDest(destId);
+        return;
+      }
       trackSourceRef.current?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
     });
   };
@@ -3445,7 +3458,15 @@ function ClassWorkspace({
     setAssignStay(Boolean(options?.stay));
     setSourceOpen(true);
   };
+  const closeMusicSources = () => {
+    const closingPlanDest = assigningPlanBlock != null;
+    setSourceOpen(false);
+    setAssigningPlanBlock(null);
+    if (closingPlanDest) return;
+    requestAnimationFrame(() => trackSourceToggleRef.current?.focus());
+  };
   const continuePlanAfterAdd = () => {
+    let destId = assigningPlanBlock?.id;
     if (!assignStay && assigningPlanBlock) {
       const next = nextEmptyPlanBlock(planBlocks, tracks, payload, assigningPlanBlock.id);
       if (next) {
@@ -3454,9 +3475,10 @@ function ClassWorkspace({
           label: next.label,
           position: next.position,
         });
+        destId = next.id;
       }
     }
-    focusPickerSearch();
+    focusPickerSearch(destId);
   };
   const handleMusicAdded = (id?: string) => {
     if (assigningPlanBlock) {
@@ -3486,9 +3508,7 @@ function ClassWorkspace({
 
   const toggleTrackSources = () => {
     if (sourceOpen) {
-      setSourceOpen(false);
-      setAssigningPlanBlock(null);
-      requestAnimationFrame(() => trackSourceToggleRef.current?.focus());
+      closeMusicSources();
       return;
     }
     setSourceOpen(true);
@@ -3552,6 +3572,23 @@ function ClassWorkspace({
           assigningPlanBlockId={assigningPlanBlockId}
           focusFirstChoose={tracks.length === 0}
           onChooseMusic={chooseMusicForBlock}
+          onCloseMusic={closeMusicSources}
+          musicPicker={
+            sourceOpen && assigningPlanBlock ? (
+              <BuilderMusicPicker
+                classId={cls.id}
+                classTitle={cls.title}
+                assigningPlanBlock={assigningPlanBlock}
+                sourcePanelId={sourcePanelId}
+                trackSourceRef={trackSourceRef}
+                manualEntryRef={manualEntryRef}
+                connectionRevision={connectionRevision}
+                onOpenConnections={onOpenConnections}
+                onAdded={handleMusicAdded}
+                onError={onError}
+              />
+            ) : null
+          }
           onSelectTrack={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
           onTracksChanged={onTrackChanged}
           onPlanNextStep={setPlanLead}
@@ -3628,7 +3665,7 @@ function ClassWorkspace({
               </h3>
             </div>
             <div className="flex flex-wrap gap-2">
-              {(showStackAddMusic || sourceOpen) && (
+              {(showStackAddMusic || (sourceOpen && !assigningPlanBlock)) && (
                 <button
                   ref={trackSourceToggleRef}
                   type="button"
@@ -3717,42 +3754,20 @@ function ClassWorkspace({
                 ))}
               </ol>
             ))}
-          <section
-            id={sourcePanelId}
-            ref={trackSourceRef}
-            role="region"
-            aria-label={
-              assigningPlanBlock
-                ? `Choose music for ${planBlockOptionLabel(assigningPlanBlock)} in ${cls.title}`
-                : `Add music to ${cls.title}`
-            }
-            hidden={!sourceOpen}
-            className="rounded-card border border-border-subtle bg-bg-sunken p-3 outline-none rf-focus-ring"
-          >
-            <TrackSearch
+          {sourceOpen && !assigningPlanBlock ? (
+            <BuilderMusicPicker
               classId={cls.id}
-              planBlockId={assigningPlanBlockId}
-              destinationLabel={
-                assigningPlanBlock ? planBlockOptionLabel(assigningPlanBlock) : null
-              }
-              onOpenConnections={onOpenConnections}
+              classTitle={cls.title}
+              assigningPlanBlock={null}
+              sourcePanelId={sourcePanelId}
+              trackSourceRef={trackSourceRef}
+              manualEntryRef={manualEntryRef}
               connectionRevision={connectionRevision}
+              onOpenConnections={onOpenConnections}
               onAdded={handleMusicAdded}
+              onError={onError}
             />
-            {/* Manual entry stays available but de-emphasized (search/import is the
-                primary path; 09). For a track a provider can't return, or no creds. */}
-            <details ref={manualEntryRef} className="mt-3 border-t border-border-subtle pt-3">
-              <summary className="flex min-h-11 cursor-pointer items-center font-ui text-xs font-semibold text-text-secondary hover:text-text-primary">
-                Add manually
-              </summary>
-              <AddTrackForm
-                classId={cls.id}
-                planBlockId={assigningPlanBlockId}
-                onAdded={handleMusicAdded}
-                onError={onError}
-              />
-            </details>
-          </section>
+          ) : null}
         </div>
       </section>
 
@@ -5136,6 +5151,66 @@ function TrackInspector({
           </Suspense>
         </>
       )}
+    </section>
+  );
+}
+
+function BuilderMusicPicker({
+  classId,
+  classTitle,
+  assigningPlanBlock,
+  sourcePanelId,
+  trackSourceRef,
+  manualEntryRef,
+  connectionRevision,
+  onOpenConnections,
+  onAdded,
+  onError,
+}: {
+  classId: string;
+  classTitle: string;
+  assigningPlanBlock: PlanBlockTarget | null;
+  sourcePanelId: string;
+  trackSourceRef: Ref<HTMLElement>;
+  manualEntryRef: Ref<HTMLDetailsElement>;
+  connectionRevision: number;
+  onOpenConnections: () => void;
+  onAdded: (classTrackId?: string) => void;
+  onError: (msg: string | null) => void;
+}) {
+  return (
+    <section
+      id={sourcePanelId}
+      ref={trackSourceRef}
+      role="region"
+      aria-label={
+        assigningPlanBlock
+          ? `Choose music for ${planBlockOptionLabel(assigningPlanBlock)} in ${classTitle}`
+          : `Add music to ${classTitle}`
+      }
+      className="rounded-card border border-border-subtle bg-bg-sunken p-3 outline-none rf-focus-ring"
+    >
+      <TrackSearch
+        classId={classId}
+        planBlockId={assigningPlanBlock?.id ?? null}
+        destinationLabel={assigningPlanBlock ? planBlockOptionLabel(assigningPlanBlock) : null}
+        onOpenConnections={onOpenConnections}
+        connectionRevision={connectionRevision}
+        onAdded={onAdded}
+      />
+      {/* Manual entry stays available but de-emphasized (search/import is the
+          primary path; 09). For a track a provider can't return, or no creds. */}
+      <details ref={manualEntryRef} className="mt-3 border-t border-border-subtle pt-3">
+        <summary className="flex min-h-11 cursor-pointer items-center font-ui text-xs font-semibold text-text-secondary hover:text-text-primary">
+          Add manually
+        </summary>
+        <AddTrackForm
+          classId={classId}
+          planBlockId={assigningPlanBlock?.id ?? null}
+          onAdded={onAdded}
+          onError={onError}
+        />
+      </details>
     </section>
   );
 }
