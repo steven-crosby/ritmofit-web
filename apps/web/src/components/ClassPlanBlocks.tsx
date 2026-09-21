@@ -3,11 +3,12 @@
  * visible as teaching structure; they never become Live tracks.
  *
  * Assignment is block-scoped end to end: `onChooseMusic` hands the caller the
- * whole block so the picker can name its real destination, and every song row
- * carries the control that moves it between blocks (or out of the plan), so a
- * misplaced song is a correction rather than a delete-and-re-add.
+ * whole block so the picker can name its real destination, the dest card hosts
+ * the picker so add and overflow stay on the block she acted on, and every
+ * song row carries the control that moves it between blocks (or out of the
+ * plan), so a misplaced song is a correction rather than a delete-and-re-add.
  */
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 import type { ClassPlanBlock, ClassTrack, RunPayload } from '@ritmofit/shared';
 import { assignClassTrackPlanBlock, listClassPlanBlocks } from '../lib/api.js';
 import {
@@ -44,7 +45,9 @@ export function ClassPlanBlocks({
   canEdit,
   assigningPlanBlockId,
   focusFirstChoose = false,
+  musicPicker = null,
   onChooseMusic,
+  onCloseMusic,
   onSelectTrack,
   onTracksChanged,
   onPlanNextStep,
@@ -58,7 +61,10 @@ export function ClassPlanBlocks({
   assigningPlanBlockId: string | null;
   /** After a 0-track scaffold lands, put focus on the first Choose music. */
   focusFirstChoose?: boolean;
+  /** Open picker for the dest block — rendered on that card, not under the stack. */
+  musicPicker?: ReactNode;
   onChooseMusic: (block: PlanBlockTarget, options?: { stay?: boolean }) => void;
+  onCloseMusic?: () => void;
   onSelectTrack: (classTrackId: string) => void;
   onTracksChanged: () => void;
   onPlanNextStep?: (label: string | null) => void;
@@ -176,11 +182,13 @@ export function ClassPlanBlocks({
             payload={payload}
             canEdit={canEdit}
             assigning={assigningPlanBlockId === block.id}
+            musicPicker={assigningPlanBlockId === block.id ? musicPicker : null}
             onChooseMusic={(options) => {
               const target = { id: block.id, label: block.label, position: block.position };
               if (options) onChooseMusic(target, options);
               else onChooseMusic(target);
             }}
+            onCloseMusic={onCloseMusic}
             onSelectTrack={onSelectTrack}
             onTracksChanged={onTracksChanged}
             onMoved={(trackId, planBlockId) => setMoveIntent({ trackId, planBlockId })}
@@ -230,7 +238,9 @@ function PlanBlockCard({
   payload,
   canEdit,
   assigning,
+  musicPicker,
   onChooseMusic,
+  onCloseMusic,
   onSelectTrack,
   onTracksChanged,
   onMoved,
@@ -241,7 +251,9 @@ function PlanBlockCard({
   payload: RunPayload | null;
   canEdit: boolean;
   assigning: boolean;
+  musicPicker: ReactNode;
   onChooseMusic: (options?: { stay?: boolean }) => void;
+  onCloseMusic?: () => void;
   onSelectTrack: (classTrackId: string) => void;
   onTracksChanged: () => void;
   onMoved: (classTrackId: string, planBlockId: string | null) => void;
@@ -252,6 +264,7 @@ function PlanBlockCard({
   const fitText = planFitLabel(fit.fit, formatDuration(Math.abs(fit.deltaMs)));
   const empty = assigned.length === 0;
   const blockName = planBlockOptionLabel(block);
+  const destOpen = assigning && musicPicker != null;
 
   return (
     <li
@@ -291,11 +304,12 @@ function PlanBlockCard({
           {canEdit && (
             <button
               type="button"
-              onClick={() => onChooseMusic()}
-              aria-label={`Choose music for ${blockName}`}
+              onClick={() => (destOpen ? onCloseMusic?.() : onChooseMusic())}
+              aria-expanded={destOpen}
+              aria-label={destOpen ? 'Close music' : `Choose music for ${blockName}`}
               className="mt-2 min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
             >
-              Choose music
+              {destOpen ? 'Close music' : 'Choose music'}
             </button>
           )}
         </div>
@@ -335,16 +349,18 @@ function PlanBlockCard({
             <li>
               <button
                 type="button"
-                onClick={() => onChooseMusic({ stay: true })}
-                aria-label={`Add another song to ${blockName}`}
+                onClick={() => (destOpen ? onCloseMusic?.() : onChooseMusic({ stay: true }))}
+                aria-expanded={destOpen}
+                aria-label={destOpen ? 'Close music' : `Add another song to ${blockName}`}
                 className="min-h-11 rounded-control px-2 font-ui text-sm font-semibold text-interactive rf-focus-ring"
               >
-                Add another song
+                {destOpen ? 'Close music' : 'Add another song'}
               </button>
             </li>
           )}
         </ul>
       )}
+      {destOpen ? musicPicker : null}
     </li>
   );
 }
