@@ -94,6 +94,9 @@ export function planFitLabel(fit: PlanFit, formattedDelta: string): string {
  * different question (can the class run); this names empty / over / unassigned
  * so "Can run live" is not the first thing she reads mid-build.
  * Underfill is the normal mid-build state and does not lead.
+ * Unassigned songs are a placement mistake and lead first. While any block is
+ * still empty, filling it leads — overflow stays on the card and must not steal
+ * the fill job.
  */
 export function planNextStep(
   blocks: readonly ClassPlanBlock[],
@@ -110,18 +113,19 @@ export function planNextStep(
     block,
     ...planBlockFit(block.targetDurationMs, planBlockActualMs(block.id, tracks, payload)),
   }));
-  const over = fits.filter((row) => row.fit === 'over').sort((a, b) => b.deltaMs - a.deltaMs);
-  if (over.length === 1) {
-    const row = over[0]!;
-    return `Block ${row.block.position + 1} is ${formatDuration(row.deltaMs)} over`;
-  }
-  if (over.length > 1) return `${over.length} blocks are over their planned time`;
 
   const empty = fits.filter((row) => row.actualMs === 0);
   if (empty.length === 1) {
     return `Block ${empty[0]!.block.position + 1} still needs music`;
   }
   if (empty.length > 1) return `${empty.length} blocks still need music`;
+
+  const over = fits.filter((row) => row.fit === 'over').sort((a, b) => b.deltaMs - a.deltaMs);
+  if (over.length === 1) {
+    const row = over[0]!;
+    return `Block ${row.block.position + 1} is ${formatDuration(row.deltaMs)} over`;
+  }
+  if (over.length > 1) return `${over.length} blocks are over their planned time`;
 
   return null;
 }

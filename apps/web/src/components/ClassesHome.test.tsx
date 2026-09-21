@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { ClassListItem, RunPayload } from '@ritmofit/shared';
+import type { ClassListItem, ClassPlanBlock, ClassTrack, RunPayload } from '@ritmofit/shared';
 import { ClassesHome, ORGANIZE_THRESHOLD } from './ClassesHome.js';
 import * as api from '../lib/api.js';
 
@@ -240,5 +240,79 @@ describe('ClassesHome', () => {
     expect(screen.queryByRole('button', { name: 'Ready to teach' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Needs work' })).toBeNull();
     expect(screen.getByText('Sorted by Title A–Z.')).toBeTruthy();
+  });
+
+  it('names a 0-track scaffold as plan work, not an empty draft', async () => {
+    vi.mocked(api.getClassShelfPayload).mockResolvedValue(payload('UXF-1'));
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([
+      { id: 'b1', position: 0, targetDurationMs: 360_000 } as ClassPlanBlock,
+    ]);
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    renderHome([
+      cls(1, {
+        title: 'UXF-1',
+        trackCount: 0,
+        totalDurationMs: 0,
+        scaffoldRecipeId: 'cycle_45_v1',
+      }),
+    ]);
+
+    expect(
+      await screen.findByRole('button', { name: 'Add music to the plan — UXF-1' }),
+    ).toBeTruthy();
+    expect(await screen.findByText('Block 1 still needs music')).toBeTruthy();
+    expect(screen.queryByText('Empty draft')).toBeNull();
+    expect(api.listClassPlanBlocks).toHaveBeenCalledWith(cls(1).id);
+    expect(api.listClassTracks).toHaveBeenCalledWith(cls(1).id);
+  });
+
+  it('leaves a true empty class on Add the first track', async () => {
+    vi.mocked(api.getClassShelfPayload).mockResolvedValue({
+      class: { title: 'Empty HIIT', totalDurationMs: 0 },
+      tracks: [],
+    } as unknown as RunPayload);
+    renderHome([cls(1, { title: 'Empty HIIT', trackCount: 0, totalDurationMs: 0 })]);
+
+    expect(
+      await screen.findByRole('button', { name: 'Add the first track — Empty HIIT' }),
+    ).toBeTruthy();
+    expect(screen.getByText('Empty draft')).toBeTruthy();
+    expect(api.listClassPlanBlocks).not.toHaveBeenCalled();
+    expect(api.listClassTracks).not.toHaveBeenCalled();
+  });
+
+  it('keeps a mid-build scaffold on the plan instead of Add the missing tempo', async () => {
+    const blockId = '00000000-0000-4000-8000-0000000000b1';
+    const emptyId = '00000000-0000-4000-8000-0000000000b2';
+    vi.mocked(api.getClassShelfPayload).mockImplementation(async (id: string) =>
+      id.endsWith('1') ? readyPayload() : payload('mid-build'),
+    );
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([
+      { id: blockId, position: 0, targetDurationMs: 360_000 } as ClassPlanBlock,
+      { id: emptyId, position: 1, targetDurationMs: 360_000 } as ClassPlanBlock,
+    ]);
+    vi.mocked(api.listClassTracks).mockResolvedValue([
+      {
+        id: 'mid-build-track-0',
+        planBlockId: blockId,
+      } as ClassTrack,
+    ]);
+    const finished = { ...cls(1), title: 'Finished class' };
+    const midBuild = cls(2, {
+      title: 'UXF mid-build',
+      scaffoldRecipeId: 'cycle_45_v1',
+      trackCount: 2,
+    });
+    renderHome([finished, midBuild]);
+
+    expect(await screen.findByRole('button', { name: 'Open class — Finished class' })).toBeTruthy();
+    expect(await screen.findByText('Block 2 still needs music')).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'Add the missing tempo — UXF mid-build' }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'More actions — UXF mid-build' }));
+    expect(screen.getByRole('button', { name: 'Rehearsal view — UXF mid-build' })).toBeTruthy();
+    expect(api.listClassPlanBlocks).toHaveBeenCalledWith(midBuild.id);
+    expect(api.listClassPlanBlocks).not.toHaveBeenCalledWith(finished.id);
   });
 });

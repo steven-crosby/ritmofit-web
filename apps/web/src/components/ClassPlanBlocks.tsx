@@ -43,20 +43,25 @@ export function ClassPlanBlocks({
   payload,
   canEdit,
   assigningPlanBlockId,
+  focusFirstChoose = false,
   onChooseMusic,
   onSelectTrack,
   onTracksChanged,
   onPlanNextStep,
+  onHasPlanBlocks,
 }: {
   classId: string;
   tracks: ClassTrack[];
   payload: RunPayload | null;
   canEdit: boolean;
   assigningPlanBlockId: string | null;
+  /** After a 0-track scaffold lands, put focus on the first Choose music. */
+  focusFirstChoose?: boolean;
   onChooseMusic: (block: PlanBlockTarget) => void;
   onSelectTrack: (classTrackId: string) => void;
   onTracksChanged: () => void;
   onPlanNextStep?: (label: string | null) => void;
+  onHasPlanBlocks?: (hasBlocks: boolean) => void;
 }) {
   const [blocks, setBlocks] = useState<ClassPlanBlock[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -94,9 +99,19 @@ export function ClassPlanBlocks({
   useEffect(() => {
     if (blocks == null) return;
     onPlanNextStep?.(planNextStep(blocks, visibleTracks, payload));
-  }, [blocks, visibleTracks, payload, onPlanNextStep]);
+    onHasPlanBlocks?.(blocks.length > 0);
+  }, [blocks, visibleTracks, payload, onPlanNextStep, onHasPlanBlocks]);
 
   useEffect(() => () => onPlanNextStep?.(null), [classId, onPlanNextStep]);
+
+  useLayoutEffect(() => {
+    if (!focusFirstChoose || !canEdit || !blocks?.length || tracks.length > 0) return;
+    const firstBlock = [...blocks].sort((a, b) => a.position - b.position)[0]!;
+    const first = document.querySelector<HTMLButtonElement>(
+      `#plan-block-card-${firstBlock.id} button[aria-label^="Choose music"]`,
+    );
+    first?.focus();
+  }, [focusFirstChoose, canEdit, blocks, tracks.length, classId]);
 
   useEffect(() => {
     if (!moveIntent) return;

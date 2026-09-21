@@ -791,6 +791,7 @@ describe('TrackSearch plan-block assignment', () => {
       <TrackSearch
         classId="c1"
         planBlockId="00000000-0000-4000-8000-0000000000b1"
+        destinationLabel="Block 3 · Seated climb"
         onAdded={() => {}}
       />,
     );
@@ -804,5 +805,10 @@ describe('TrackSearch plan-block assignment', () => {
         planBlockId: '00000000-0000-4000-8000-0000000000b1',
       }),
     );
+    expect(await screen.findByRole('button', { name: 'Climb — In Block 3' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Climb — In Block 3' }).textContent).toMatch(
+      /In Block 3/,
+    );
+    expect(screen.queryByRole('button', { name: /In class/ })).toBeNull();
   });
 });

@@ -8,9 +8,8 @@
  *     this module existed ("the next creative step, then readiness and recency").
  *
  * Both read the same per-class next step, so a card's primary verb and its rank
- * can never disagree. The derivation is pure and lives here rather than in a
- * component because Classes (`ClassesHome`) and Live (`LiveWorkspace`)
- * must rank identically — a class that leads on Classes leads in the Live queue.
+ * can never disagree. Live (`LiveWorkspace`) uses this helper. Classes home uses
+ * `creationNextStep` so an unfinished teaching plan can outrank Live refinements.
  *
  * No schema change: every input is derived from the run-payload, and the chosen
  * ordering is session state (see `readStoredOrdering`), never a persisted field.

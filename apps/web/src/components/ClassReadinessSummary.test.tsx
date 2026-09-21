@@ -58,7 +58,24 @@ describe('ClassReadinessSummary', () => {
     );
     expect(screen.getByText('4 blocks still need music')).toBeTruthy();
     expect(screen.queryByText(/can run live/i)).toBeNull();
-    expect(screen.getByText(/no bpm set/i)).toBeTruthy();
+    expect(screen.queryByText(/what live needs from this class/i)).toBeNull();
+    expect(screen.queryByText(/no bpm set/i)).toBeNull();
+    expect(screen.getByLabelText('Class next step')).toBeTruthy();
+  });
+
+  it('shows a plan-only next step when there are no tracks yet', () => {
+    render(
+      <ClassReadinessSummary
+        readiness={null}
+        canEdit
+        planLead="7 blocks still need music"
+        onSelectTrack={() => {}}
+      />,
+    );
+    expect(screen.getByLabelText('Class next step')).toBeTruthy();
+    expect(screen.getByText('7 blocks still need music')).toBeTruthy();
+    expect(screen.queryByText(/what live needs/i)).toBeNull();
+    expect(screen.queryByText(/durations set/i)).toBeNull();
   });
 
   it('surfaces soft gaps without blocking, and jumps to a flagged track', () => {

@@ -500,7 +500,9 @@ export function TrackSearch({
         bulkBusy: importingAllFromPlaylist,
         // Block-scoped destination: the row is already in the CLASS, which is a
         // different fact from "already in this block".
-        addedLabel: destinationLabel ? 'In class' : undefined,
+        addedLabel: destinationLabel
+          ? `In ${destinationLabel.split(' · ')[0] ?? destinationLabel}`
+          : undefined,
         onAdd: (candidate) => void add(candidate),
       }}
     />
