@@ -91,12 +91,25 @@ export function ClassPulseView({
 
   if (variant === 'sparkline') {
     return (
-      <PulseChart
-        model={model}
-        accessibleLabel={accessibleLabel}
-        unscoredPatternId={unscoredPatternId}
-        className={`block h-8 w-28 ${className}`}
-      />
+      <span className={`flex w-28 flex-col items-end ${className}`}>
+        <PulseChart
+          model={model}
+          accessibleLabel={accessibleLabel}
+          unscoredPatternId={unscoredPatternId}
+          className="block h-8 w-28"
+        />
+        {model.provisional && (
+          // The chart's accessible name already says it is auto-shaped. Sighted
+          // instructors need the same truth at the point of use, without adding
+          // another focus stop or repeating the state to assistive technology.
+          <span
+            aria-hidden
+            className="font-data text-[10px] font-semibold uppercase leading-3 tracking-wide text-state-caution"
+          >
+            ◇ auto
+          </span>
+        )}
+      </span>
     );
   }
 

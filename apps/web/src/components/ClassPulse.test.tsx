@@ -81,6 +81,21 @@ describe('ClassPulse', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 
+  it('visibly marks a provisional sparkline without duplicating its accessible name', () => {
+    const { rerender } = render(<ClassPulse payload={unshapedPayload()} variant="sparkline" />);
+
+    const chart = screen.getByRole('img');
+    expect(chart.getAttribute('aria-label')).toContain('auto-shaped from track order and length');
+    expect(screen.getByText('◇ auto').getAttribute('aria-hidden')).not.toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
+
+    rerender(<ClassPulse payload={payload()} variant="sparkline" />);
+    expect(screen.queryByText('◇ auto')).toBeNull();
+    expect(screen.getByRole('img').getAttribute('aria-label')).toContain(
+      'derived from track order, duration, and effort',
+    );
+  });
+
   it('renders a truthful empty state without an image-shaped fake', () => {
     const empty = { ...payload(), tracks: [] } as RunPayload;
     render(<ClassPulse payload={empty} />);

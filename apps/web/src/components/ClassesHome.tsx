@@ -485,7 +485,7 @@ function ClassHomeRow({
         {payload ? (
           <ClassPulse payload={payload} variant="sparkline" />
         ) : (
-          <span aria-hidden className="block h-8 w-28 rounded-control bg-bg-sunken" />
+          <span aria-hidden className="block h-11 w-28 rounded-control bg-bg-sunken" />
         )}
       </span>
 
