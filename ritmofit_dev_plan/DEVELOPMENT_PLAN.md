@@ -37,16 +37,17 @@ Pilates, and HIIT.
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
-- **Current operating focus (2026-09-19):** the launch gate is green and the app is live.
-  **Production matches application tip `54c3bf7`** — Worker
-  `b4a99062-8f11-4e2a-ab57-7d147b2ed109`. Remote D1 has `0019` (unchanged).
-  After the deploy-record docs PR, `main` is one docs commit ahead of that
-  Worker. **PR #438 is deployed:** Classes home is one readiness-ranked list
-  (copper on the top row, incremental ranking, H7 `Can run live` copy,
-  organize controls only past eight). Rollback is Worker-only to `29a72e1c`.
-  SPC-09 remains owner-blocked. PROD-HYGIENE runbook is in #426; live fixture
-  delete is still owner-pending. Inbox class-cover taste decision remains open.
-  Full disposition lives in
+- **Current operating focus (2026-09-23):** the launch gate is green and the app is live.
+  **Production matches application tip `c2dbd75`** — Worker
+  `b4ac663d-9cdd-42b4-bbbb-9750b19a132e` (SPA `assets/index-CSepK95F.js`).
+  Remote D1 has `0019` (unchanged). After docs PR #451, `main` tip `3c1ef69`
+  is one docs commit ahead of that Worker (expected). **PR #450 is live:**
+  Track length shows `baseDurationMs` (not clipped); notes-only inspector
+  save does not invent an override. Rollback is Worker-only to
+  `4f5cfb73-901f-4377-96cd-bea0583972f0`. Signed-in Track length smoke is
+  still owner-pending. SPC-09 remains owner-blocked. PROD-HYGIENE runbook
+  is in #426; live fixture delete is still owner-pending. Inbox class-cover
+  taste decision remains open. Full disposition lives in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
   **Prior Pulse Check deploys:** batch 2 PRs #420, #422 — Worker
   `5d659102-3bff-4398-91ad-cdc1d165ccc1` from main `dd625b5` (recorded in #423);
@@ -88,10 +89,13 @@ Pilates, and HIIT.
   browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook.   **Production matches application source `54c3bf7` after the 2026-09-19
-  #438 Classes-home deploy** (Worker `b4a99062`). Prior production
-  application code was the 2026-09-19 #429 Worker `3b39fac6` from main
-  `51a6ade`, then the 2026-09-17 #417/#418/#419/#424/#425 Worker
+  Music workspace via a shared provider-browse hook.   **Production matches application source `c2dbd75` after the 2026-09-23
+  #450 deploy** (Worker `b4ac663d`; SPA `assets/index-CSepK95F.js`). `main`
+  tip `3c1ef69` is docs-ahead via #451. Prior production application code
+  was the 2026-09-23 #440/#443–#448 Worker `4f5cfb73` from `c5531a0`, then
+  the 2026-09-19 #438 Classes-home Worker `b4a99062` from `54c3bf7`, then
+  the 2026-09-19 #429 Worker `3b39fac6` from main `51a6ade`, then the
+  2026-09-17 #417/#418/#419/#424/#425 Worker
   `ad638215-6758-498c-8782-522e23a6d942` from main `4ddddeb`, then the 2026-09-13
   #420/#422 Worker
   `5d659102-3bff-4398-91ad-cdc1d165ccc1` from main `dd625b5`, then the 2026-09-13
@@ -297,12 +301,13 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-19):** **production matches application
-source `54c3bf7`** — Worker `b4a99062-8f11-4e2a-ab57-7d147b2ed109`. Remote D1
-has `0019` (unchanged). After this docs PR, `main` is one docs commit ahead of
-that Worker. **PR #438 is deployed** on top of the earlier #432/#434/#435/#436
-scaffold batch. No schema or shared-contract change. Rollback is Worker-only
-to `29a72e1c`. The alerting half of liveness remains an owner decision; F-02
+**Current `main` vs production (2026-09-23):** **production matches application
+tip `c2dbd75` (#450)** — live Worker `b4ac663d-9cdd-42b4-bbbb-9750b19a132e`,
+SPA `assets/index-CSepK95F.js`. Remote D1 has `0019` (unchanged). `main` tip
+`3c1ef69` is docs-ahead of production via #451 (expected after deploy-record).
+No schema or shared-contract change. Rollback is Worker-only to
+`4f5cfb73-901f-4377-96cd-bea0583972f0`. Signed-in Track length smoke still
+owner-pending. The alerting half of liveness remains an owner decision; F-02
 (D11 `createPattern`) stays unconfirmed. Inbox still holds the class-cover
 taste decision; leave it.
 
