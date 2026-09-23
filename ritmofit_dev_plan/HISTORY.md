@@ -41,6 +41,12 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 > (no safe signed-in browser session available to the deploy agent).
 > After this docs PR merges, `main` is one docs commit ahead of the
 > deployed application tip.
+>
+> **Signed-in Track length smoke PASS (2026-09-23):** class QA smoke
+> 2026-09-19 / track Baby cool down; base Track length 3:29; temp clip
+> 0:30–2:30 effective 2:00; Track length stayed 3:29; notes-only save no
+> invented override; clip+smoke note restored. Clears the owner-pending
+> signed-in click-through left open at #450 deploy.
 
 
 > **Session 2026-09-23 (PRs #440, #443–#448 — plan-block UX + SoundCloud picker + pulse labels) — deployed (Worker

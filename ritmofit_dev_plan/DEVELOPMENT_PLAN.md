@@ -40,12 +40,14 @@ Pilates, and HIIT.
 - **Current operating focus (2026-09-23):** the launch gate is green and the app is live.
   **Production matches application tip `c2dbd75`** — Worker
   `b4ac663d-9cdd-42b4-bbbb-9750b19a132e` (SPA `assets/index-CSepK95F.js`).
-  Remote D1 has `0019` (unchanged). After docs PR #451, `main` tip `3c1ef69`
-  is one docs commit ahead of that Worker (expected). **PR #450 is live:**
+  Remote D1 has `0019` (unchanged). After docs PR #452, `main` tip `5393d6b`
+  is docs-ahead of that Worker (expected). **PR #450 is live:**
   Track length shows `baseDurationMs` (not clipped); notes-only inspector
   save does not invent an override. Rollback is Worker-only to
-  `4f5cfb73-901f-4377-96cd-bea0583972f0`. Signed-in Track length smoke is
-  still owner-pending. SPC-09 remains owner-blocked. PROD-HYGIENE runbook
+  `4f5cfb73-901f-4377-96cd-bea0583972f0`. **Signed-in Track length smoke
+  PASS (2026-09-23)** — class QA smoke 2026-09-19 / track Baby cool down;
+  base 3:29 stayed 3:29 under temp clip 0:30–2:30; notes-only save no
+  invented override. SPC-09 remains owner-blocked. PROD-HYGIENE runbook
   is in #426; live fixture delete is still owner-pending. Inbox class-cover
   taste decision remains open. Full disposition lives in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
@@ -91,7 +93,8 @@ Pilates, and HIIT.
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
   Music workspace via a shared provider-browse hook.   **Production matches application source `c2dbd75` after the 2026-09-23
   #450 deploy** (Worker `b4ac663d`; SPA `assets/index-CSepK95F.js`). `main`
-  tip `3c1ef69` is docs-ahead via #451. Prior production application code
+  tip `5393d6b` is docs-ahead via #452. Signed-in Track length smoke PASS
+  2026-09-23. Prior production application code
   was the 2026-09-23 #440/#443–#448 Worker `4f5cfb73` from `c5531a0`, then
   the 2026-09-19 #438 Classes-home Worker `b4a99062` from `54c3bf7`, then
   the 2026-09-19 #429 Worker `3b39fac6` from main `51a6ade`, then the
@@ -304,12 +307,12 @@ group-and-demote in the move library). All six implementation slices **already l
 **Current `main` vs production (2026-09-23):** **production matches application
 tip `c2dbd75` (#450)** — live Worker `b4ac663d-9cdd-42b4-bbbb-9750b19a132e`,
 SPA `assets/index-CSepK95F.js`. Remote D1 has `0019` (unchanged). `main` tip
-`3c1ef69` is docs-ahead of production via #451 (expected after deploy-record).
+`5393d6b` is docs-ahead of production via #452 (expected after deploy-record).
 No schema or shared-contract change. Rollback is Worker-only to
-`4f5cfb73-901f-4377-96cd-bea0583972f0`. Signed-in Track length smoke still
-owner-pending. The alerting half of liveness remains an owner decision; F-02
-(D11 `createPattern`) stays unconfirmed. Inbox still holds the class-cover
-taste decision; leave it.
+`4f5cfb73-901f-4377-96cd-bea0583972f0`. **Signed-in Track length smoke PASS
+(2026-09-23)** — no longer owner-pending. The alerting half of liveness
+remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
+Inbox still holds the class-cover taste decision; leave it.
 
 - **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
 - **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
