@@ -10,6 +10,40 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-23 (PRs #440, #443–#448 — plan-block UX + SoundCloud picker + pulse labels) — deployed (Worker
+> `4f5cfb73-901f-4377-96cd-bea0583972f0`).** Application source `c5531a0`.
+> Deployed from this checkout after owner go. No remote D1 change (`0019`
+> already applied; `wrangler d1 migrations list` reported nothing to apply).
+> Carries product/docs already on that tip that were not on prior live
+> Worker `b4a99062` (#438 / `54c3bf7`):
+>
+> - **PR #439:** docs — record the #438 deploy (Worker `b4a99062`).
+> - **PR #440:** harden SoundCloud library expiry in the music picker.
+> - **PR #442:** docs — Simple Stupid Swift UX principle and prompt pack.
+> - **PR #443:** name the plan block a song is going into, and let it move.
+> - **PR #444:** lead with the plan's next step; empty is a real start.
+> - **PR #445:** lead class creation with the unfinished plan.
+> - **PR #446:** stay on the unfinished plan after the first assign.
+> - **PR #447:** put the music picker on the dest plan card.
+> - **PR #448:** label provisional class pulse sparklines.
+>
+> **#441** (`docs: audit creation journey simplicity`) remains open and is
+> not on this tip. No schema, migration, secret, or shared-contract change.
+> Rollback is Worker-only to prior live
+> `b4a99062-8f11-4e2a-ab57-7d147b2ed109` (2026-09-20 #438). Local
+> pre-deploy gate was green (`GATE_EXIT=0`; no flake retry).
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`,
+> `/api/v1/health` → `200`, protected `classes` / `explore` / `teams` /
+> `shares` / `plan-blocks` → `401`, all six security headers present (HSTS,
+> CSP, Permissions-Policy, Referrer-Policy, X-Content-Type-Options,
+> X-Frame-Options). Worker status confirmed 100% on `4f5cfb73` via
+> `wrangler deployments status`. Built + served SPA entry
+> `assets/index-BfJbu2jd.js` (CSS `assets/index-DM6csDfB.css`) — **three
+> consecutive** cache-busted fetches agreed on the first triple. Signed-in
+> production click-through was not run this deploy. After this docs PR
+> merges, `main` is one docs commit ahead of the deployed application tip.
+
 > **Session 2026-09-19 (PR #438 — Classes home) — deployed (Worker
 > `b4a99062-8f11-4e2a-ab57-7d147b2ed109`).** Application source `54c3bf7`.
 > Deployed from this checkout after owner go. No remote D1 change (`0019`
