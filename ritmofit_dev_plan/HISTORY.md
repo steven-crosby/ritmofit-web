@@ -10,6 +10,39 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-23 (PR #450 — baseDurationMs + Track length inspector save) — deployed (Worker
+> `b4ac663d-9cdd-42b4-bbbb-9750b19a132e`).** Application source `c2dbd75`.
+> Deployed from this checkout after owner go (adversarial review of #450).
+> No remote D1 change (`wrangler d1 migrations list` reported nothing to
+> apply). No secret change (`BETA_ALLOWED_EMAILS` confirmed present by name).
+> Carries the #450 product fix already on that tip (prior live Worker
+> `4f5cfb73` / application tip `c5531a0` plus docs #449):
+>
+> - **PR #450:** `baseDurationMs` + Track length inspector save — Track
+>   length shows the base (not clipped) duration; notes-only save does not
+>   invent an override.
+>
+> No schema, migration, secret, or shared-contract change. Rollback is
+> Worker-only to prior live `4f5cfb73-901f-4377-96cd-bea0583972f0`
+> (2026-09-23 #440/#443–#448). Local pre-deploy: clean `main` at
+> `c2dbd75`; `pnpm --filter @ritmofit/web build` green (CI already green
+> on the merge). Full local gate suite not re-run; minimum deploy gates
+> satisfied.
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`,
+> `/api/v1/health` → `200`, protected `classes` / `explore` / `teams` →
+> `401`, all six security headers present (HSTS, CSP, Permissions-Policy,
+> Referrer-Policy, X-Content-Type-Options, X-Frame-Options). Worker status
+> confirmed 100% on `b4ac663d` via `wrangler deployments status`. Built +
+> served SPA entry `assets/index-CSepK95F.js` (CSS
+> `assets/index-DM6csDfB.css`) — **three consecutive** cache-busted
+> fetches agreed on the first triple. Signed-in production click-through
+> (clipped-track length + notes-only save) was not run this deploy
+> (no safe signed-in browser session available to the deploy agent).
+> After this docs PR merges, `main` is one docs commit ahead of the
+> deployed application tip.
+
+
 > **Session 2026-09-23 (PRs #440, #443–#448 — plan-block UX + SoundCloud picker + pulse labels) — deployed (Worker
 > `4f5cfb73-901f-4377-96cd-bea0583972f0`).** Application source `c5531a0`.
 > Deployed from this checkout after owner go. No remote D1 change (`0019`
