@@ -54,6 +54,7 @@ const activeTrack = {
     title: 'Active Track',
     artist: 'Instructor',
     durationMs: 180000,
+    baseDurationMs: 180000,
     albumArtUrl: null,
   },
   providerRefs: [

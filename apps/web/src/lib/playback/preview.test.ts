@@ -27,6 +27,7 @@ function makeEntry(overrides?: Partial<RunPayloadTrackEntry>): RunPayloadTrackEn
       title: 'Baiana',
       artist: 'Bakermat',
       durationMs: 120_000,
+      baseDurationMs: 120_000,
       albumArtUrl: null,
     },
     providerRefs: [{ provider: 'soundcloud', providerTrackId: '123', providerUri: null }],
@@ -233,7 +234,14 @@ describe('PreviewPlaybackController', () => {
     const { controller } = harness();
     await controller.play(
       makeEntry({
-        track: { id: 't', title: 'x', artist: 'y', durationMs: null, albumArtUrl: null },
+        track: {
+          id: 't',
+          title: 'x',
+          artist: 'y',
+          durationMs: null,
+          baseDurationMs: null,
+          albumArtUrl: null,
+        },
       }),
     );
     await controller.tick(10_000_000);

@@ -29,6 +29,7 @@ function makeEntry(id: string, title: string): RunPayloadTrackEntry {
       title,
       artist: 'Artist',
       durationMs: 200_000,
+      baseDurationMs: 200_000,
       albumArtUrl: null,
     },
     providerRefs: [],

@@ -35,6 +35,7 @@ function entry(
       title: `Track ${position}`,
       artist: 'Tester',
       durationMs,
+      baseDurationMs: durationMs,
       albumArtUrl: null,
     },
     providerRefs: [],

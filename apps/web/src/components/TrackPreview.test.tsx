@@ -58,6 +58,7 @@ const baseTrack = {
   title: 'Legacy Grant',
   artist: 'The Scopes',
   durationMs: 180_000,
+  baseDurationMs: 180_000,
   albumArtUrl: null,
 };
 

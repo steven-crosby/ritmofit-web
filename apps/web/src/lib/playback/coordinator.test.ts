@@ -36,6 +36,7 @@ function makeEntry(overrides: {
       title: overrides.title ?? 'Track',
       artist: 'Artist',
       durationMs: overrides.durationMs === undefined ? 180_000 : overrides.durationMs,
+      baseDurationMs: overrides.durationMs === undefined ? 180_000 : overrides.durationMs,
       albumArtUrl: null,
     },
     providerRefs: providers.map((provider) => ({

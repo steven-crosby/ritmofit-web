@@ -31,6 +31,7 @@ function makeEntry(overrides?: {
       title: 'Baiana',
       artist: 'Bakermat',
       durationMs: 180_000,
+      baseDurationMs: 180_000,
       albumArtUrl: null,
     },
     providerRefs:

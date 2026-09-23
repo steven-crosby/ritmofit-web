@@ -80,6 +80,7 @@ function liveRunPayload(
   tracks: Array<{
     classTrackId: string;
     durationMs: number | null;
+    baseDurationMs?: number | null;
     title?: string;
     providerRefs?: unknown[];
     displayBpm?: number | null;
@@ -112,6 +113,7 @@ function liveRunPayload(
         title: t.title ?? `Track ${index}`,
         artist: 'Artist',
         durationMs: t.durationMs,
+        baseDurationMs: t.baseDurationMs === undefined ? t.durationMs : t.baseDurationMs,
         albumArtUrl: null,
         displayBpm: null,
       },
@@ -124,7 +126,11 @@ function liveRunPayload(
 /** A persisted class-track whose id matches the run-payload `classTrackId`, so the
  *  inspector's selection/removal resolves against it. Only the fields the inspector
  *  reads need to be real; the rest are cast through `unknown`. */
-function makeClassTrack(id: string, position: number): ClassTrack {
+function makeClassTrack(
+  id: string,
+  position: number,
+  over: Partial<Pick<ClassTrack, 'clipStartMs' | 'clipEndMs' | 'durationMsOverride'>> = {},
+): ClassTrack {
   return {
     id,
     classId: 'class-1',
@@ -134,9 +140,9 @@ function makeClassTrack(id: string, position: number): ClassTrack {
     displayBpmOverride: null,
     displayRpm: null,
     holdCount: null,
-    durationMsOverride: null,
-    clipStartMs: null,
-    clipEndMs: null,
+    durationMsOverride: over.durationMsOverride ?? null,
+    clipStartMs: over.clipStartMs ?? 0,
+    clipEndMs: over.clipEndMs ?? null,
     beatAnchorMs: null,
     startOffsetMs: null,
     notes: null,
@@ -1168,6 +1174,7 @@ describe('Dashboard class library states', () => {
             title: 'Ready Track',
             artist: 'Artist',
             durationMs: 1800000,
+            baseDurationMs: 1800000,
             albumArtUrl: null,
           },
           cues: [],
@@ -1741,7 +1748,15 @@ describe('Dashboard class detail', () => {
 });
 
 describe('Dashboard track focus management', () => {
-  type TrackSpec = { classTrackId: string; durationMs: number; title: string };
+  type TrackSpec = {
+    classTrackId: string;
+    durationMs: number;
+    title: string;
+    baseDurationMs?: number;
+    clipStartMs?: number;
+    clipEndMs?: number | null;
+    durationMsOverride?: number | null;
+  };
 
   /** Wire the class-list + detail mocks around a mutable spec so a removal (which
    *  triggers a silent detail reload) resolves against the reduced track set. */
@@ -1750,7 +1765,13 @@ describe('Dashboard track focus management', () => {
     let spec = [...initial];
     vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
     vi.mocked(api.listClassTracks).mockImplementation(async () =>
-      spec.map((s, i) => makeClassTrack(s.classTrackId, i)),
+      spec.map((s, i) =>
+        makeClassTrack(s.classTrackId, i, {
+          clipStartMs: s.clipStartMs,
+          clipEndMs: s.clipEndMs,
+          durationMsOverride: s.durationMsOverride,
+        }),
+      ),
     );
     vi.mocked(api.getRunPayload).mockImplementation(async () =>
       liveRunPayload(spec.map((s) => ({ ...s, displayBpm: 120 }))),
@@ -1895,6 +1916,135 @@ describe('Dashboard track focus management', () => {
     fireEvent.click(saveButton);
     expect(await within(inspector).findByText('Saved.')).toBeTruthy();
     expect(saveButton.disabled).toBe(true);
+  });
+
+  it('seeds Track length from baseDurationMs and omits durationMsOverride when untouched', async () => {
+    installClassWithTracks('Clip window ride', [
+      {
+        classTrackId: 'ct-1',
+        durationMs: 365000,
+        baseDurationMs: 420000,
+        title: 'Seven Minute Song',
+        clipStartMs: 25000,
+        clipEndMs: 390000,
+      },
+    ]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateClassTrack).mockResolvedValue(
+      makeClassTrack('ct-1', 0, { clipStartMs: 25000, clipEndMs: 390000 }),
+    );
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Clip window ride/ }));
+    await screen.findByRole('heading', { name: 'Clip window ride' });
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for Seven Minute Song',
+    });
+    const lengthField = within(inspector).getByRole('textbox', { name: /Track length/ });
+    expect((lengthField as HTMLInputElement).value).toBe('7:00');
+    expect(
+      (within(inspector).getByLabelText('Clip start (minutes:seconds)') as HTMLInputElement).value,
+    ).toBe('0:25');
+    expect(
+      (within(inspector).getByLabelText('Clip end (minutes:seconds)') as HTMLInputElement).value,
+    ).toBe('6:30');
+
+    fireEvent.change(within(inspector).getByRole('textbox', { name: 'Creator notes' }), {
+      target: { value: 'Check the climb cue.' },
+    });
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(api.updateClassTrack).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).toEqual({
+      intensity: 'mod',
+      displayBpmOverride: null,
+      displayRpm: null,
+      holdCount: null,
+      clipStartMs: 25000,
+      clipEndMs: 390000,
+      beatAnchorMs: 0,
+      notes: 'Check the climb cue.',
+    });
+    expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).not.toHaveProperty(
+      'durationMsOverride',
+    );
+  });
+
+  it('omits durationMsOverride on an untouched save even when the source duration is not a round second', async () => {
+    // Real provider durations (Spotify/Apple Music/SoundCloud) are rarely exact
+    // seconds. The "Track length" field only expresses m:ss, so an untouched save
+    // must compare at the same rounded granularity or it manufactures an override.
+    installClassWithTracks('Odd duration ride', [
+      {
+        classTrackId: 'ct-1',
+        durationMs: 419980,
+        baseDurationMs: 419980,
+        title: 'Odd Duration Song',
+      },
+    ]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateClassTrack).mockResolvedValue(makeClassTrack('ct-1', 0));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Odd duration ride/ }));
+    await screen.findByRole('heading', { name: 'Odd duration ride' });
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for Odd Duration Song',
+    });
+    const lengthField = within(inspector).getByRole('textbox', { name: /Track length/ });
+    expect((lengthField as HTMLInputElement).value).toBe('6:59');
+
+    fireEvent.change(within(inspector).getByRole('textbox', { name: 'Creator notes' }), {
+      target: { value: 'Check the climb cue.' },
+    });
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(api.updateClassTrack).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).not.toHaveProperty(
+      'durationMsOverride',
+    );
+  });
+
+  it('sends durationMsOverride only when Track length is intentionally changed', async () => {
+    installClassWithTracks('Length edit ride', [
+      {
+        classTrackId: 'ct-1',
+        durationMs: 365000,
+        baseDurationMs: 420000,
+        title: 'Seven Minute Song',
+        clipStartMs: 25000,
+        clipEndMs: 390000,
+      },
+    ]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateClassTrack).mockResolvedValue(
+      makeClassTrack('ct-1', 0, {
+        clipStartMs: 25000,
+        clipEndMs: 390000,
+        durationMsOverride: 360000,
+      }),
+    );
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Length edit ride/ }));
+    await screen.findByRole('heading', { name: 'Length edit ride' });
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for Seven Minute Song',
+    });
+    fireEvent.change(within(inspector).getByRole('textbox', { name: /Track length/ }), {
+      target: { value: '6:00' },
+    });
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(api.updateClassTrack).toHaveBeenCalledWith(
+        'ct-1',
+        expect.objectContaining({ durationMsOverride: 360000 }),
+      ),
+    );
   });
 
   it('commits a zone on the click, and typed fields on Enter', async () => {

@@ -3,8 +3,21 @@ import {
   clipStartBeyondTrack,
   clipWindowInverted,
   effectiveDurationMs,
+  resolveBaseDurationMs,
   resolveClipWindow,
 } from './duration.js';
+
+describe('resolveBaseDurationMs', () => {
+  it('uses the class-specific override when present', () => {
+    expect(resolveBaseDurationMs(180000, 210000)).toBe(210000);
+    expect(resolveBaseDurationMs(null, 210000)).toBe(210000);
+  });
+
+  it('falls back to the library duration', () => {
+    expect(resolveBaseDurationMs(180000, null)).toBe(180000);
+    expect(resolveBaseDurationMs(null, null)).toBeNull();
+  });
+});
 
 describe('effectiveDurationMs', () => {
   it('uses the class-specific override when present', () => {
