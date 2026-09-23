@@ -252,6 +252,7 @@ class-authorized through `POST /classes/:id/cover`.
         "title": "Baianá",
         "artist": "Bakermat",
         "durationMs": 180000,
+        "baseDurationMs": 180000,
         "albumArtUrl": "…"
       },
       "providerRefs": [
@@ -277,7 +278,9 @@ class-authorized through `POST /classes/:id/cover`.
 > carries that same stable **`id`** (D21), so two bands sharing a `type` are individually
 > addressable / deep-linkable.
 > Per-track **`clipStartMs`** + **`beatAnchorMs`** (trimming + beat-snapping) and derived **`beat`/`bar`**
-> on cues *and* moves; per-track **`displayRpm`** and **`holdCount`**. With trimming, cue/move `anchorMs` are **re-based to the clip start** (so the live
+> on cues *and* moves; per-track **`displayRpm`** and **`holdCount`**. Per-track nested
+> **`track.baseDurationMs`** (resolved length before clipping; `durationMs` stays the
+> already-clipped effective length). With trimming, cue/move `anchorMs` are **re-based to the clip start** (so the live
 > timeline lines up); `beat`/`bar` are derived from the original track-relative anchor + BPM + downbeat
 > (4/4), null without a tempo or before bar 1. Top-level **`class.timelineMode`** (`sequential` | `free`):
 > in `free` mode `startOffsetMs` is author-set with gaps, and `totalDurationMs` is the latest track end —
@@ -290,9 +293,10 @@ contract — one fetch so the iOS app isn't composing the live view from a dozen
 - **`displayBpm`** = `class_track.display_bpm_override ?? track.display_bpm` (the override wins; may be
   `null` if neither is set — BPM is optional/manual or from a permitted tempo provider).
 - **`displayRpm` / `holdCount`** are emitted from the per-class track fields and may be `null`.
+- **`track.baseDurationMs`** = `class_track.duration_ms_override ?? track.duration_ms` (resolved
+  length before clipping; may be `null` when neither is known). Additive to v1.
 - **`track.durationMs`** = the effective played duration:
-  `min(clipEndMs ?? baseDurationMs, baseDurationMs) - clipStartMs`, where
-  `baseDurationMs = class_track.duration_ms_override ?? track.duration_ms`. Live mode must not start
+  `min(clipEndMs ?? baseDurationMs, baseDurationMs) - clipStartMs`. Live mode must not start
   while any entry is null.
 - **move `name`** = `move.name ?? user_move.name ?? class_track_move.name_override` (resolve the library
   reference; fall back to the freeform name). Exactly one source is set per placement.

@@ -77,6 +77,7 @@ function entry(position: number, durationMs: number | null, cues: Cue[] = [], mo
       title: `Track ${position}`,
       artist: 'Tester',
       durationMs,
+      baseDurationMs: durationMs,
       albumArtUrl: null,
     },
     providerRefs: [],

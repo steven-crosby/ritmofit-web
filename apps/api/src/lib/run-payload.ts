@@ -4,7 +4,8 @@
  * just builds the projection with batched queries (no N+1) and the server-side
  * field resolutions the clients depend on (api.md):
  *   - displayBpm = class_track.display_bpm_override ?? track.display_bpm
- *   - durationMs = class_track.duration_ms_override ?? track.duration_ms
+ *   - baseDurationMs = class_track.duration_ms_override ?? track.duration_ms
+ *   - durationMs = effective clipped length of that base (clip start/end applied)
  *   - move name  = move.name ?? user_move.name ?? class_track_move.name_override
  *   - tracks in position order; the timeline (startOffsetMs + class totalDurationMs)
  *     is recomputed here (M3 hardening) so it is authoritative even if a persisted
@@ -30,7 +31,7 @@ import {
 } from '../db/schema.js';
 import type { Db } from './db.js';
 import { computeSequence } from './sequencing.js';
-import { effectiveDurationMs } from './duration.js';
+import { effectiveDurationMs, resolveBaseDurationMs } from './duration.js';
 
 /**
  * Resolve a placement's display name. The placement invariant guarantees a source
@@ -197,6 +198,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
     },
     tracks: cts.map((ct) => {
       const track = trackById.get(ct.trackId)!;
+      const baseDurationMs = resolveBaseDurationMs(track.durationMs, ct.durationMsOverride);
       const durationMs = effectiveDurationMs(
         track.durationMs,
         ct.durationMsOverride,
@@ -230,6 +232,7 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
           title: track.title,
           artist: track.artist,
           durationMs,
+          baseDurationMs,
           albumArtUrl: track.albumArtUrl,
         },
         providerRefs: (providersByTrack.get(ct.trackId) ?? []).map((p) => ({

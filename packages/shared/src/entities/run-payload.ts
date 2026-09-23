@@ -32,11 +32,11 @@ const runPayloadClassSchema = z.object({
   timelineMode: timelineModeSchema,
   /**
    * The actual assembled timeline length: the sum of each class-track's effective
-   * duration (`durationMsOverride ?? track.durationMs`; null contributes 0).
-   * Server-derived at assembly so the live interval timer has an authoritative
-   * total without summing client-side. 0 for an empty class. M3 hardening — the
-   * timeline is recomputed at read time, so it is correct even if a persisted
-   * `startOffsetMs` ever drifts.
+   * (already-clipped) duration. Null lengths contribute 0. Server-derived at
+   * assembly so the live interval timer has an authoritative total without
+   * summing client-side. 0 for an empty class. M3 hardening — the timeline is
+   * recomputed at read time, so it is correct even if a persisted `startOffsetMs`
+   * ever drifts.
    */
   totalDurationMs: z.int().nonnegative(),
 });
@@ -45,8 +45,19 @@ const runPayloadTrackSchema = z.object({
   id: uuidSchema,
   title: z.string().min(1),
   artist: z.string().min(1),
-  /** Effective duration for this class placement (class override wins). */
+  /**
+   * Effective duration for this class placement after the playback window:
+   * `min(clipEndMs ?? baseDurationMs, baseDurationMs) − clipStartMs`.
+   * Live, timeline, and plan-fit consumers must keep reading this field.
+   */
   durationMs: z.int().positive().nullable(),
+  /**
+   * Resolved track length before clipping (`durationMsOverride ?? source duration`).
+   * Additive to v1 — the Builder inspector edits this value; `durationMs` stays
+   * the already-clipped effective length. Null when neither source nor override
+   * is known.
+   */
+  baseDurationMs: z.int().positive().nullable(),
   albumArtUrl: z.url().nullable(),
 });
 

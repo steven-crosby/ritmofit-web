@@ -136,6 +136,9 @@ nonisolated extension RunPayload {
         let title: String
         let artist: String
         let durationMs: Int?
+        /// Resolved track length before the playback window (`durationMsOverride ?? source`).
+        /// Additive to v1. Distinct from `durationMs`, which is the already-clipped effective length.
+        let baseDurationMs: Int?
         let albumArtUrl: String?
     }
 

@@ -5,6 +5,14 @@ export interface ClipWindow {
   endMs: number | null;
 }
 
+/** Resolved track length for a placement, before the clip window is applied. */
+export function resolveBaseDurationMs(
+  trackDurationMs: number | null,
+  durationMsOverride: number | null,
+): number | null {
+  return durationMsOverride ?? trackDurationMs;
+}
+
 /**
  * Resolve the effective playback window for one class-track placement. The window
  * is `[startMs, endMs)` in **track-relative** ms, bounded by the resolved base
@@ -17,7 +25,7 @@ export function resolveClipWindow(
   clipStartMs: number | null = 0,
   clipEndMs: number | null = null,
 ): ClipWindow {
-  const base = durationMsOverride ?? trackDurationMs; // null = unknown length
+  const base = resolveBaseDurationMs(trackDurationMs, durationMsOverride); // null = unknown length
   const startMs = clipStartMs ?? 0;
   const rawEnd = clipEndMs ?? base;
   const endMs = rawEnd == null ? null : base == null ? rawEnd : Math.min(rawEnd, base);
@@ -60,7 +68,7 @@ export function clipStartBeyondTrack(
   durationMsOverride: number | null,
   clipStartMs: number | null = 0,
 ): string | null {
-  const base = durationMsOverride ?? trackDurationMs;
+  const base = resolveBaseDurationMs(trackDurationMs, durationMsOverride);
   if (base == null) return null;
   const startMs = clipStartMs ?? 0;
   if (startMs >= base) {

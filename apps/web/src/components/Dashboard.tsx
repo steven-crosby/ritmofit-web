@@ -3780,6 +3780,7 @@ function ClassWorkspace({
               track={selectedTrack}
               title={selectedEntry?.track.title ?? 'Track'}
               durationMs={selectedEntry?.track.durationMs ?? null}
+              baseDurationMs={selectedEntry?.track.baseDurationMs ?? null}
               displayBpm={selectedEntry?.displayBpm ?? null}
               template={cls.template}
               canEdit={canEdit}
@@ -4540,6 +4541,7 @@ function TrackInspector({
   track,
   title,
   durationMs,
+  baseDurationMs,
   displayBpm,
   template,
   canEdit,
@@ -4554,6 +4556,8 @@ function TrackInspector({
   track: ClassTrack;
   title: string;
   durationMs: number | null;
+  /** Resolved track length before clipping — the editable Track length field. */
+  baseDurationMs: number | null;
   /** Resolved BPM (override ?? base) — drives beat-snapping in the choreography editor. */
   displayBpm: number | null;
   /** The class's discipline, so the move picker leads with its own moves (P1-04). */
@@ -4579,7 +4583,7 @@ function TrackInspector({
   const [bpm, setBpm] = useState(track.displayBpmOverride?.toString() ?? '');
   const [rpm, setRpm] = useState(track.displayRpm?.toString() ?? '');
   const [holdCountVal, setHoldCountVal] = useState(track.holdCount?.toString() ?? '');
-  const [duration, setDuration] = useState(formatDurationInput(durationMs));
+  const [duration, setDuration] = useState(formatDurationInput(baseDurationMs));
   // Trim window (m:ss, track-relative). Empty start = from the beginning (0);
   // empty end = to the track's end (null).
   const [clipStart, setClipStart] = useState(
@@ -4711,6 +4715,11 @@ function TrackInspector({
       setError('Enter a positive duration as minutes:seconds, for example 3:45.');
       return;
     }
+    // The field only expresses whole seconds, so compare against baseDurationMs
+    // rounded the same way — otherwise a real (sub-second) source duration never
+    // round-trips equal and every "untouched" save manufactures an override.
+    const roundedBaseDurationMs =
+      baseDurationMs == null ? null : parseDurationInput(formatDurationInput(baseDurationMs));
     // Clip start: blank = 0 (from the beginning). Clip end: blank = null (to the end).
     const clipStartMs = clipStart.trim() === '' ? 0 : parseDurationInput(clipStart);
     if (clipStartMs == null) {
@@ -4753,7 +4762,7 @@ function TrackInspector({
         displayBpmOverride: trimmedBpm === '' ? null : Number(trimmedBpm),
         displayRpm: trimmedRpm === '' ? null : Number(trimmedRpm),
         holdCount: trimmedHolds === '' ? null : Number(trimmedHolds),
-        durationMsOverride: parsedDuration,
+        ...(parsedDuration !== roundedBaseDurationMs ? { durationMsOverride: parsedDuration } : {}),
         clipStartMs,
         clipEndMs,
         beatAnchorMs,
@@ -4904,7 +4913,7 @@ function TrackInspector({
 
             <label className="flex flex-col gap-1">
               <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-                Duration
+                Track length
               </span>
               <input
                 type="text"
@@ -4916,7 +4925,7 @@ function TrackInspector({
                 onChange={(e) => setDuration(e.target.value)}
               />
               <span id={`duration-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
-                Minutes:seconds. Used for this class timeline.
+                Minutes:seconds.
               </span>
             </label>
 
