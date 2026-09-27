@@ -304,15 +304,19 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-27):** **production matches application
-tip `734dd7a` (#454)** — live Worker `eb41ded4-ba0a-44df-8a0d-bae52e28be9d`,
-SPA `assets/index-C5MSP26E.js`. Remote D1 has `0019` (unchanged). After this
-deploy-record PR merges, `main` is docs-ahead of production (expected). No
-schema or shared-contract change. Rollback is Worker-only to
-`b4ac663d-9cdd-42b4-bbbb-9750b19a132e`. #454 shipped the derived class cover
-(title on the art). **Owner-pending:** a signed-in production look at a
-class with no cover. The alerting half of liveness remains an owner
-decision; F-02 (D11 `createPattern`) stays unconfirmed.
+**Current `main` vs production (2026-09-27, later):** **production matches
+application tip `7eebc00` (#456)** — live Worker
+`3561b1ba-a854-48cd-9e5f-519a02092ef5`, SPA `assets/index-D5zicKh0.js`. Remote
+D1 has `0019` (unchanged). After this deploy-record PR merges, `main` is
+docs-ahead of production (expected). No schema or shared-contract change.
+Rollback is Worker-only to `eb41ded4-ba0a-44df-8a0d-bae52e28be9d`. #456 keeps
+derived-cover title words whole (120px cover from `sm` up, three balanced
+lines); the #454 signed-in no-cover check is **done** (it found the mid-word
+split #456 fixed). **Open:** phones keep the 96px/two-line cover, so most
+"Day Theme Type" titles clamp there until the builder header is restacked for
+phones (then 120px/three lines — never three lines at 96px, 2.97:1). The
+alerting half of liveness remains an owner decision; F-02 (D11
+`createPattern`) stays unconfirmed.
 
 - **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
 - **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
@@ -337,7 +341,7 @@ decision; F-02 (D11 `createPattern`) stays unconfirmed.
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `eb41ded4` from `734dd7a` (#454); see "Current `main` vs production" above
+  `3561b1ba` from `7eebc00` (#456); see "Current `main` vs production" above
   for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**
