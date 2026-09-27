@@ -10,6 +10,42 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-27 (PR #456 — class cover title words stay whole) — deployed (Worker
+> `3561b1ba-a854-48cd-9e5f-519a02092ef5`).** Application source `7eebc00`.
+> Deployed from this checkout after owner go. No remote D1 change
+> (`wrangler d1 migrations list --remote` reported nothing to apply). No
+> secret change (`BETA_ALLOWED_EMAILS` confirmed present by name).
+>
+> - **PR #456:** the #454 signed-in production check found the derived cover
+>   splitting words mid-word ("Saturda / y Ride": bold 19px in an 80px box
+>   fits ~7 letters). Fix: -0.025em tracking, 6px padding, builder cover
+>   120px from `sm` up (uploaded `<img>` matches), `text-balance`, and three
+>   lines from `sm` up. A 630-title "Day Theme Type + emoji" matrix renders
+>   whole at 120px; phones stay 96px/two lines (three would be 2.97:1).
+>   `hyphens: auto` was tried and dropped — Chromium won't hyphenate
+>   capitalized words.
+>
+> No schema, migration, secret, or shared-contract change. Rollback is
+> Worker-only to prior live `eb41ded4-ba0a-44df-8a0d-bae52e28be9d`.
+> Pre-deploy: merged tree `7eebc00` is identical to the CI-green PR head
+> `15d3b57`; the full local gate ran green on `main` at `7eebc00`; SPA
+> rebuilt from `main` before deploy.
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`,
+> `/api/v1/health` → `200`, protected `classes` / `explore` / `teams` →
+> `401`, all six security headers present. Mounted routes unauthenticated:
+> class shares, playlist import, class cover upload, tags, provider search,
+> provider track import → `401`; cover serving → handler `404 Image not
+> found`. (Provider search returned a clean `401`; the one-off `400` noted
+> after the #454 deploy did not recur.) Worker status 100% on `3561b1ba`.
+> Built + served SPA entry `assets/index-D5zicKh0.js` (CSS
+> `assets/index-DkHa6k5P.css`) — **three consecutive** cache-busted fetches
+> agreed on the first triple. **Signed-in production check PASS:** the
+> owner's Chrome took the PWA "Reload now" prompt onto `index-D5zicKh0.js`;
+> Saturday Ride (no cover) renders "Saturday / Ride" on a 120px tile,
+> three-line clamp, balanced, not clipped. This also closes the #454
+> owner-pending no-cover look.
+
 > **Session 2026-09-27 (PR #454 — derived class cover with the title on the art) — deployed (Worker
 > `eb41ded4-ba0a-44df-8a0d-bae52e28be9d`).** Application source `734dd7a`.
 > Deployed from this checkout after owner go. No remote D1 change
