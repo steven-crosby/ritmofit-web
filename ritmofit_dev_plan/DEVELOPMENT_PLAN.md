@@ -69,7 +69,7 @@ Pilates, and HIIT.
   2026-07-24 design-audit implementation slices already landed
   and shipped (2026-07-27); they are not current work. Remaining owner calls: the
   alerting half of playback liveness, and F-02 (D11 `createPattern`, still unconfirmed).
-  The class-cover decision is resolved (title-on-art, #454, undeployed). The product track remains the **D21 creator-workstation-shell
+  The class-cover decision is resolved (title-on-art, #454, deployed 2026-09-27). The product track remains the **D21 creator-workstation-shell
   slice** — the first slice (Cycle/Pilates/HIIT templates,
   readiness + discovery resting state, provider shelves) is deployed; the **saved-playlist browsing
   sub-slice is now implemented and deployed (Worker `ded27a07`)** (new `GET
@@ -304,18 +304,15 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-23):** **production matches application
-tip `c2dbd75` (#450)** — live Worker `b4ac663d-9cdd-42b4-bbbb-9750b19a132e`,
-SPA `assets/index-CSepK95F.js`. Remote D1 has `0019` (unchanged). `main` tip
-`5393d6b` is docs-ahead of production via #452 (expected after deploy-record).
-No schema or shared-contract change. Rollback is Worker-only to
-`4f5cfb73-901f-4377-96cd-bea0583972f0`. **Signed-in Track length smoke PASS
-(2026-09-23)** — no longer owner-pending. The alerting half of liveness
-remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
-**Undeployed on `main` after [#454](https://github.com/steven-crosby/ritmofit-web/pull/454)
-(2026-09-27):** derived class cover — the builder's 📷 placeholder becomes the class's
-warm gradient with its title in ink (owner chose title-on-art); web-only, no schema or
-contract change. Batch it with the next deploy.
+**Current `main` vs production (2026-09-27):** **production matches application
+tip `734dd7a` (#454)** — live Worker `eb41ded4-ba0a-44df-8a0d-bae52e28be9d`,
+SPA `assets/index-C5MSP26E.js`. Remote D1 has `0019` (unchanged). After this
+deploy-record PR merges, `main` is docs-ahead of production (expected). No
+schema or shared-contract change. Rollback is Worker-only to
+`b4ac663d-9cdd-42b4-bbbb-9750b19a132e`. #454 shipped the derived class cover
+(title on the art). **Owner-pending:** a signed-in production look at a
+class with no cover. The alerting half of liveness remains an owner
+decision; F-02 (D11 `createPattern`) stays unconfirmed.
 
 - **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
 - **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
@@ -340,7 +337,7 @@ contract change. Batch it with the next deploy.
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `b4ac663d` from `c2dbd75` (#450); see "Current `main` vs production" above
+  `eb41ded4` from `734dd7a` (#454); see "Current `main` vs production" above
   for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**
