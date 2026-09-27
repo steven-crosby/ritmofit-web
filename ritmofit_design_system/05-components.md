@@ -102,6 +102,10 @@ The signature list item. **Low noise** (see [`09-class-builder-guidelines.md`](.
 - Small album art (44pt, `control` radius) — a creative trigger, not a focal point.
   Real art wins; otherwise use a derived rhythmic tile keyed to known BPM/energy. Never fall back to a
   bare music-note placeholder on a signature track surface.
+  The same rule covers class covers: with no uploaded cover, the builder shows the derived tile keyed
+  to the class id with the class title set on the art — ink (`text/on-accent`), bold, top-left, at most
+  two lines (white fails contrast on the light stops). The class list card's 44px zero-art tile uses
+  the same key but stays plain: a title is unreadable at that size and sits beside it anyway.
 - Title (`body-strong`) + artist (`body`, secondary).
 - **BPM** in `data` (Azeret Mono), visually weighted — the planning-critical value.
 - Drag grip for reorder; intensity indicator (zone bars) when assigned.

@@ -130,7 +130,7 @@ import { ClassesHome } from './ClassesHome.js';
 import { LibraryOrganizeControls, TagFilter } from './LibraryOrganize.js';
 import { RecoveryState, StatusLabel } from './SharedState.js';
 import { ProviderCapabilityLedger } from './ProviderCapabilityLedger.js';
-import { TrackArt } from './TrackArt.js';
+import { ClassCoverArt, TrackArt } from './TrackArt.js';
 
 // Code-split the heavy, interaction-gated surfaces into their own chunks so the
 // initial builder paint doesn't ship Live mode, the choreography editor, or the
@@ -1213,7 +1213,7 @@ function ClassCard({
           aria-pressed={selected}
           className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left font-ui rf-focus-ring"
         >
-          <ArtCollage urls={cls.albumArtUrls} classTitle={cls.title} />
+          <ArtCollage urls={cls.albumArtUrls} classId={cls.id} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-text-primary">{cls.title}</span>
             {/* Which card is open, in a word. "Editing now" overstated — selected
@@ -1284,13 +1284,13 @@ function ClassCard({
 /**
  * The track-art collage (design system 11: "small bounded artwork"). A bounded 44px
  * tile: one image when there's a single art, a 2×2 mosaic for several, and a derived
- * tile keyed to the class's own title when it has no track art yet (05-components.md
- * — never a bare note glyph). Purely decorative — the title carries the meaning — so
- * images are empty-alt and the container is aria-hidden.
+ * tile keyed to the class's id when it has no track art yet — the same tile the builder
+ * cover uses (05-components.md — never a bare note glyph). Purely decorative — the title
+ * carries the meaning — so images are empty-alt and the container is aria-hidden.
  */
-function ArtCollage({ urls, classTitle }: { urls: string[]; classTitle: string }) {
+function ArtCollage({ urls, classId }: { urls: string[]; classId: string }) {
   if (urls.length === 0) {
-    return <TrackArt url={null} identity={classTitle} size={44} />;
+    return <TrackArt url={null} identity={classId} size={44} />;
   }
   if (urls.length === 1) {
     return (
@@ -3998,11 +3998,10 @@ export function ClassHeaderCard({
                 className="h-24 w-24 rounded-card object-cover border border-interactive/20"
               />
             ) : (
-              <div className="flex h-24 w-24 items-center justify-center rounded-card border border-dashed border-interactive/40 bg-bg-base text-text-tertiary">
-                <span className="text-2xl" aria-hidden>
-                  📷
-                </span>
-              </div>
+              // Derived cover: the class's gradient with its title on the art — same
+              // identity key as the list card's ArtCollage, so a class keeps one cover
+              // across surfaces and renames. Never a bare placeholder glyph.
+              <ClassCoverArt classId={cls.id} title={cls.title} />
             )}
             {isOwner && (
               <>

@@ -375,3 +375,47 @@ describe('ClassHeaderCard delete', () => {
     expect(screen.queryByRole('button', { name: /delete/i })).toBeNull();
   });
 });
+
+describe('ClassHeaderCard cover', () => {
+  const renderHeader = (overrides: Partial<ClassWithAccess> = {}) =>
+    render(
+      <ClassHeaderCard
+        cls={{ ...cls, ...overrides }}
+        payload={payload}
+        trackCount={1}
+        isOwner
+        canEdit
+        canRun={false}
+        onError={() => {}}
+        onRun={() => {}}
+        onSelectTrack={() => {}}
+        onStartChoreography={() => {}}
+        onClassUpdated={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
+
+  it('derives a titled art tile instead of a placeholder glyph when there is no cover', () => {
+    const { container } = renderHeader();
+    expect(container.textContent).not.toContain('📷');
+    expect(screen.queryByAltText('Class Cover')).toBeNull();
+    const tile = container.querySelector<HTMLElement>('span[aria-hidden][style*="gradient"]');
+    expect(tile?.textContent).toBe('Monday Ride');
+    // Stable per class, not per title: a rename keeps the same gradient, new text.
+    const before = tile?.getAttribute('style');
+    cleanup();
+    const renamed = renderHeader({ title: 'Renamed Ride' }).container.querySelector(
+      'span[aria-hidden][style*="gradient"]',
+    );
+    expect(renamed?.getAttribute('style')).toBe(before);
+    expect(renamed?.textContent).toBe('Renamed Ride');
+  });
+
+  it('real cover art wins over the derived tile', () => {
+    const { container } = renderHeader({ coverImageUrl: 'https://example.com/c.jpg' });
+    expect(screen.getByAltText('Class Cover').getAttribute('src')).toBe(
+      'https://example.com/c.jpg',
+    );
+    expect(container.querySelector('span[aria-hidden][style*="gradient"]')).toBeNull();
+  });
+});
