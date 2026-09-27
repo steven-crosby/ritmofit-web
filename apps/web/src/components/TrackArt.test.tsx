@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { TrackArt } from './TrackArt.js';
+import { ClassCoverArt, TrackArt } from './TrackArt.js';
 
 afterEach(() => {
   cleanup();
@@ -52,5 +52,32 @@ describe('TrackArt', () => {
     const tile = container.querySelector('[aria-hidden]');
     expect(tile?.hasAttribute('aria-label')).toBe(false);
     expect(tile?.getAttribute('role')).toBeNull();
+  });
+});
+
+describe('ClassCoverArt', () => {
+  it('sets the title on the art in ink and stays decorative', () => {
+    const { container } = render(<ClassCoverArt classId="class-1" title="Monday Ride" />);
+    const tile = container.firstElementChild;
+    expect(tile?.getAttribute('aria-hidden')).not.toBeNull();
+    expect(tile?.hasAttribute('aria-label')).toBe(false);
+    const text = tile?.firstElementChild;
+    expect(text?.textContent).toBe('Monday Ride');
+    // White fails contrast on the light stops; ink is the text-on-copper rule.
+    expect(text?.className).toContain('text-text-on-accent');
+    expect(text?.className).toContain('line-clamp-2');
+    // A flex tile stretches the clamped text to full height and a third line shows
+    // (seen in the browser); the tile must stay a plain block.
+    expect(tile?.className).toMatch(/\bblock\b/);
+    expect(tile?.className).not.toMatch(/\bflex\b/);
+  });
+
+  it('uses the same gradient as the plain tile keyed by the same class id', () => {
+    const cover = render(<ClassCoverArt classId="class-1" title="Anything" />);
+    const tile = render(<TrackArt url={null} identity="class-1" size={44} />);
+    const bg = (el: Element | null) => (el as HTMLElement | null)?.style.background;
+    expect(bg(cover.container.firstElementChild)).toBe(bg(tile.container.firstElementChild));
+    cover.unmount();
+    tile.unmount();
   });
 });

@@ -69,7 +69,7 @@ Pilates, and HIIT.
   2026-07-24 design-audit implementation slices already landed
   and shipped (2026-07-27); they are not current work. Remaining owner calls: the
   alerting half of playback liveness, and F-02 (D11 `createPattern`, still unconfirmed).
-  Inbox still holds the class-cover taste decision; leave it. The product track remains the **D21 creator-workstation-shell
+  The class-cover decision is resolved (title-on-art, #454, undeployed). The product track remains the **D21 creator-workstation-shell
   slice** — the first slice (Cycle/Pilates/HIIT templates,
   readiness + discovery resting state, provider shelves) is deployed; the **saved-playlist browsing
   sub-slice is now implemented and deployed (Worker `ded27a07`)** (new `GET
@@ -312,7 +312,10 @@ No schema or shared-contract change. Rollback is Worker-only to
 `4f5cfb73-901f-4377-96cd-bea0583972f0`. **Signed-in Track length smoke PASS
 (2026-09-23)** — no longer owner-pending. The alerting half of liveness
 remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
-Inbox still holds the class-cover taste decision; leave it.
+**Undeployed on `main` after [#454](https://github.com/steven-crosby/ritmofit-web/pull/454)
+(2026-09-27):** derived class cover — the builder's 📷 placeholder becomes the class's
+warm gradient with its title in ink (owner chose title-on-art); web-only, no schema or
+contract change. Batch it with the next deploy.
 
 - **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
 - **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
@@ -337,8 +340,8 @@ Inbox still holds the class-cover taste decision; leave it.
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `29a72e1c` from `b70ded1` (#432 / #434 / #435 / #436, recorded in this
-  session).**
+  `b4ac663d` from `c2dbd75` (#450); see "Current `main` vs production" above
+  for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**
 

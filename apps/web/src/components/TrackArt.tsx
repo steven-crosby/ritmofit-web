@@ -85,3 +85,32 @@ export function TrackArt({
     />
   );
 }
+
+/**
+ * Derived class cover (Apple Music "Made for You" style): the class's own gradient
+ * with its title set on the art. Keyed by class id, so it matches the list card's
+ * zero-art tile and survives renames.
+ *
+ * Text is ink (`text-on-accent`) — the design system's text-on-copper rule — because
+ * white fails on every light gradient stop. It sits top-left (the light end of the
+ * 135° gradient), bold at 19px (WCAG "large text", 3:1), clamped to two lines: the
+ * worst pixel under that box is ~3.4:1 on the darkest pair; most of it is far higher.
+ * Only for cover sizes — at 44px a title is unreadable, so list tiles stay plain.
+ *
+ * Decorative: the visible class heading beside it names the class, so the whole
+ * tile stays `aria-hidden` and adds no accessible name.
+ */
+export function ClassCoverArt({ classId, title }: { classId: string; title: string }) {
+  const [from, to] = gradientFor(classId);
+  return (
+    <span
+      aria-hidden
+      style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
+      className="block h-24 w-24 shrink-0 rounded-card p-2"
+    >
+      <span className="line-clamp-2 break-words font-display text-[19px] font-bold leading-[1.1] text-text-on-accent [overflow-wrap:anywhere]">
+        {title}
+      </span>
+    </span>
+  );
+}
