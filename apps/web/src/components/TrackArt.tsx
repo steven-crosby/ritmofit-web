@@ -97,6 +97,14 @@ export function TrackArt({
  * worst pixel under that box is ~3.4:1 on the darkest pair; most of it is far higher.
  * Only for cover sizes — at 44px a title is unreadable, so list tiles stay plain.
  *
+ * Sized so ordinary title words fit whole: at 120px (sm+) with 6px padding and
+ * -0.025em tracking the text box is 108px, which holds "Wednesday" (~105px). Phones
+ * keep 96px (84px box: "Saturday" fits, "Wednesday" doesn't) because the larger tile
+ * squeezes the truncating class heading beside it. The font can't shrink instead —
+ * below 18.67px bold it stops being large text and fails contrast.
+ * Chromium won't hyphenate capitalized words, so `hyphens` doesn't help here;
+ * `overflow-wrap:anywhere` only catches longer outliers.
+ *
  * Decorative: the visible class heading beside it names the class, so the whole
  * tile stays `aria-hidden` and adds no accessible name.
  */
@@ -106,9 +114,9 @@ export function ClassCoverArt({ classId, title }: { classId: string; title: stri
     <span
       aria-hidden
       style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
-      className="block h-24 w-24 shrink-0 rounded-card p-2"
+      className="block h-24 w-24 shrink-0 rounded-card p-1.5 sm:h-[120px] sm:w-[120px]"
     >
-      <span className="line-clamp-2 break-words font-display text-[19px] font-bold leading-[1.1] text-text-on-accent [overflow-wrap:anywhere]">
+      <span className="line-clamp-2 break-words font-display text-[19px] font-bold leading-[1.1] tracking-[-0.025em] text-text-on-accent [overflow-wrap:anywhere]">
         {title}
       </span>
     </span>

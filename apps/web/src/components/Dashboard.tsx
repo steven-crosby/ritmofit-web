@@ -3995,7 +3995,7 @@ export function ClassHeaderCard({
                 src={cls.coverImageUrl}
                 alt="Class Cover"
                 fetchPriority="high"
-                className="h-24 w-24 rounded-card object-cover border border-interactive/20"
+                className="h-24 w-24 rounded-card object-cover sm:h-[120px] sm:w-[120px] border border-interactive/20"
               />
             ) : (
               // Derived cover: the class's gradient with its title on the art — same
