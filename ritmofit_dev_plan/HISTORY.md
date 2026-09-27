@@ -10,6 +10,37 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-27 (PR #454 — derived class cover with the title on the art) — deployed (Worker
+> `eb41ded4-ba0a-44df-8a0d-bae52e28be9d`).** Application source `734dd7a`.
+> Deployed from this checkout after owner go. No remote D1 change
+> (`wrangler d1 migrations list --remote` reported nothing to apply). No
+> secret change (`BETA_ALLOWED_EMAILS` confirmed present by name).
+>
+> - **PR #454:** classes without an uploaded cover show `ClassCoverArt` (the
+>   class's warm gradient with its title in ink, bold 19px, top-left, two
+>   lines) instead of a bare 📷; the list card's zero-art tile is keyed by
+>   class id too. Also drained the class-cover breadcrumb and fixed a stale
+>   Worker id in `DEVELOPMENT_PLAN.md`.
+>
+> No schema, migration, secret, or shared-contract change. Rollback is
+> Worker-only to prior live `b4ac663d-9cdd-42b4-bbbb-9750b19a132e`.
+> Pre-deploy: merged tree `734dd7a` is identical to the CI-green PR head
+> `14c1491`; the full local gate ran on `b2fddda` (code-identical; the later
+> commit is docs only); SPA rebuilt from `main` before deploy.
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`,
+> `/api/v1/health` → `200`, protected `classes` / `explore` / `teams` →
+> `401`, all six security headers present. Mounted routes unauthenticated:
+> class shares, playlist import, class cover upload, tags → `401`. Provider
+> search returned `400` once in the smoke loop (body `UNAUTHORIZED`), then
+> `401` on four immediate re-checks — not reproduced, noted rather than
+> explained. Worker status 100% on `eb41ded4`. Built + served SPA entry
+> `assets/index-C5MSP26E.js` (CSS `assets/index-0w9wfAuz.css`) — **three
+> consecutive** cache-busted fetches agreed on the first triple.
+> **Owner-pending:** signed-in production look at a class with no cover
+> (titled tile, light and dark, ~320px); the deploy agent had no signed-in
+> production session. Local browser QA covered this before merge.
+
 > **Session 2026-09-23 (PR #450 — baseDurationMs + Track length inspector save) — deployed (Worker
 > `b4ac663d-9cdd-42b4-bbbb-9750b19a132e`).** Application source `c2dbd75`.
 > Deployed from this checkout after owner go (adversarial review of #450).
