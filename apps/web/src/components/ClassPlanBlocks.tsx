@@ -33,11 +33,11 @@ import {
   classTargetGap,
   classTargetGapLabel,
   formatPlannedDurationInput,
-  guidanceSummary,
   hiitIntervalMismatch,
   hiitIntervalTotalMs,
   parsePlannedDuration,
   planBlockActualMs,
+  planBlockDetailLine,
   planBlockFit,
   planFitLabel,
   planNextStep,
@@ -359,9 +359,7 @@ function PlanBlockCard({
         <IntensityReadout intensity={block.intensity} />
       </div>
       <p className="font-ui text-sm leading-5 text-text-secondary">{block.teachingGoal}</p>
-      <p className="font-ui text-xs leading-4 text-text-tertiary">
-        {block.movementFocus} · {guidanceSummary(block)}
-      </p>
+      <p className="font-ui text-xs leading-4 text-text-tertiary">{planBlockDetailLine(block)}</p>
       <p className="font-data text-xs text-text-secondary">
         Planned {formatDuration(block.targetDurationMs)}
         {fit && (

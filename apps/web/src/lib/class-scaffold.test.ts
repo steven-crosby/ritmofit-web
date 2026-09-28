@@ -11,6 +11,7 @@ import {
   planTotalMs,
   guidanceSummary,
   planBlockActualMs,
+  planBlockDetailLine,
   planBlockFit,
   planFitLabel,
   nextEmptyPlanBlock,
@@ -209,9 +210,68 @@ describe('guidanceSummary', () => {
     } as ClassPlanBlock;
 
     expect(guidanceSummary(cycle)).toBe('Seated · 80–95 rpm · RPE 2–3');
-    expect(guidanceSummary(pilates)).toBe('Mat · Band');
-    expect(guidanceSummary(hiit)).toContain('30/30');
-    expect(guidanceSummary(hiit)).toContain('6 rounds');
+    expect(guidanceSummary(pilates)).toBe('Optional band');
+    expect(guidanceSummary(hiit)).toBe('30/30 · 6 rounds');
+  });
+
+  it('says mixed posture plainly — the peak is not a seated block', () => {
+    const block = {
+      guidance: {
+        kind: 'cycle',
+        posture: 'mixed',
+        cadenceMinRpm: 85,
+        cadenceMaxRpm: 105,
+        rpeMin: 8,
+        rpeMax: 9,
+      },
+    } as ClassPlanBlock;
+    expect(guidanceSummary(block)).toBe('Mixed · 85–105 rpm · RPE 8–9');
+  });
+
+  it('marks Pilates props optional and leaves the mat implied', () => {
+    const block = (optionalEquipment: string[]) =>
+      ({ guidance: { kind: 'pilates', optionalEquipment } }) as ClassPlanBlock;
+    expect(guidanceSummary(block(['mat']))).toBe('');
+    expect(guidanceSummary(block(['mat', 'light_weights']))).toBe('Optional light weights');
+  });
+
+  it('never repeats the HIIT focus that the card already shows', () => {
+    const focus = 'Unilateral legs, upper body, trunk, and locomotion.';
+    const timed = {
+      movementFocus: focus,
+      guidance: {
+        kind: 'hiit',
+        workMs: 30_000,
+        recoveryMs: 30_000,
+        rounds: 9,
+        sequenceFocus: focus,
+        equipment: 'dumbbells_optional',
+      },
+    } as ClassPlanBlock;
+    const continuous = {
+      movementFocus: 'Walk, breathe, and review the next sequence.',
+      guidance: {
+        kind: 'hiit',
+        workMs: null,
+        recoveryMs: null,
+        rounds: null,
+        sequenceFocus: 'Walk, breathe, and review the next sequence.',
+        equipment: 'bodyweight',
+      },
+    } as ClassPlanBlock;
+
+    expect(planBlockDetailLine(timed)).toBe(`${focus} · 30/30 · 9 rounds · Optional dumbbells`);
+    expect(planBlockDetailLine(continuous)).toBe(
+      'Walk, breathe, and review the next sequence. · Continuous',
+    );
+  });
+
+  it('drops the separator when a block has no extra guidance', () => {
+    const matOnly = {
+      movementFocus: 'Breath with neutral alignment.',
+      guidance: { kind: 'pilates', optionalEquipment: ['mat'] },
+    } as ClassPlanBlock;
+    expect(planBlockDetailLine(matOnly)).toBe('Breath with neutral alignment.');
   });
 });
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { Class } from '@ritmofit/shared';
 import { CreateClassDialog } from './CreateClassDialog.js';
 import * as api from '../lib/api.js';
@@ -92,6 +92,33 @@ describe('CreateClassDialog', () => {
     );
     expect(onCreated).toHaveBeenCalledWith(created);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('previews the exact blocks the chosen recipe will create', () => {
+    renderDialog();
+    expect(screen.queryByRole('list', { name: 'Teaching plan preview' })).toBeNull();
+    expect(screen.getByText('Choose a discipline to see the plan.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
+    const preview = screen.getByRole('list', { name: 'Teaching plan preview' });
+    const rows = within(preview).getAllByRole('listitem');
+    expect(rows).toHaveLength(7);
+    expect(rows[5]!.textContent).toContain('Peak effort');
+    expect(rows[5]!.textContent).toContain('7 min');
+    expect(within(rows[5]!).getByLabelText('Intensity Attack')).toBeTruthy();
+    expect(screen.getByText('Creates 7 editable blocks totaling 45 minutes.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '30 min' }));
+    const shorter = within(screen.getByRole('list', { name: 'Teaching plan preview' }));
+    expect(shorter.getAllByRole('listitem')[5]!.textContent).toContain('4 min');
+  });
+
+  it('shows no plan preview on the empty path', () => {
+    render(
+      <CreateClassDialog mode="empty" onClose={vi.fn()} onCreated={vi.fn()} onError={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'HIIT' }));
+    expect(screen.queryByRole('list', { name: 'Teaching plan preview' })).toBeNull();
   });
 
   it('keeps the empty path quiet and explicit', async () => {

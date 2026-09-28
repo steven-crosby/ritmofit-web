@@ -1,5 +1,6 @@
 # Deterministic class scaffolds — implementation handoff
 
+<!-- note (Claude Code, 2026-09-28): #433 status fixed; recipe tables moved to shared for the create-dialog preview. -->
 <!-- note (Codex, 2026-09-19): Captured the approved template-lane decisions, adversarial corrections, recipe review gate, and proposed expand-only data model before implementation. -->
 
 > **Status:** PR A [#435](https://github.com/steven-crosby/ritmofit-web/pull/435) and PR B
@@ -9,8 +10,11 @@
 >
 > **Shipped from:** `main` at `b70ded1` (Worker `29a72e1c-0022-498f-b3ba-735a18c1985a`)
 >
-> **Still open:** Classes-home contract draft
-> [#433](https://github.com/steven-crosby/ritmofit-web/pull/433).
+> The Classes-home contract draft [#433](https://github.com/steven-crosby/ritmofit-web/pull/433)
+> merged 2026-09-19.
+>
+> **Recipe source:** `packages/shared/src/scaffold-recipes.ts` (moved from `apps/api` 2026-09-28)
+> so the create dialog previews exactly the blocks the API persists.
 
 This file is the tracked continuation point for deterministic class scaffolds. It replaces the prior
 chat-only handoff. Where the earlier planning conversation conflicts with the newer cross-lane contract

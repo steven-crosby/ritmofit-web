@@ -14,6 +14,7 @@ import {
   createClassSchema,
   updateClassSchema,
   copyClassSchema,
+  generateScaffold,
   type ClassWithAccess,
   type ClassListItem,
 } from '@ritmofit/shared';
@@ -29,7 +30,6 @@ import { assembleRunPayload } from '../lib/run-payload.js';
 import { decodeClassListCursor, encodeClassListCursor } from '../lib/class-list-pagination.js';
 import { resequence, seedFreeOffsets } from '../lib/sequencing.js';
 import { deleteClassCover } from '../lib/class-cover.js';
-import { generateScaffold } from '../lib/class-scaffold-recipes.js';
 import {
   resolveTrackForClassCopy,
   refsToClone,
