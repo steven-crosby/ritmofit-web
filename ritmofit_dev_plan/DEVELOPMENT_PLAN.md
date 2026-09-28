@@ -37,19 +37,15 @@ Pilates, and HIIT.
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
-- **Current operating focus (2026-09-23):** the launch gate is green and the app is live.
-  **Production matches application tip `c2dbd75`** — Worker
-  `b4ac663d-9cdd-42b4-bbbb-9750b19a132e` (SPA `assets/index-CSepK95F.js`).
-  Remote D1 has `0019` (unchanged). After docs PR #452, `main` tip `5393d6b`
-  is docs-ahead of that Worker (expected). **PR #450 is live:**
-  Track length shows `baseDurationMs` (not clipped); notes-only inspector
-  save does not invent an override. Rollback is Worker-only to
-  `4f5cfb73-901f-4377-96cd-bea0583972f0`. **Signed-in Track length smoke
-  PASS (2026-09-23)** — class QA smoke 2026-09-19 / track Baby cool down;
-  base 3:29 stayed 3:29 under temp clip 0:30–2:30; notes-only save no
-  invented override. SPC-09 remains owner-blocked. PROD-HYGIENE runbook
-  is in #426; live fixture delete is still owner-pending. Inbox class-cover
-  taste decision remains open. Full disposition lives in
+- **Current operating focus (2026-09-27):** the launch gate is green and the app is live.
+  `main` includes application tip `2c88f85`, ahead of production application tip `7eebc00` (#456):
+  PRs #458–#461 are merged and not deployed. The live Worker is
+  `3561b1ba-a854-48cd-9e5f-519a02092ef5`. The next class-template slice is
+  the block editor: preserve the fixed class target and independent HIIT rounds
+  when planned block time changes, and show their gaps. See
+  [`class-template-handoff.md`](./class-template-handoff.md) for the settled rules.
+  SPC-09 remains owner-blocked. PROD-HYGIENE runbook is in #426; live fixture
+  delete is still owner-pending. Full Pulse Check disposition lives in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
   **Prior Pulse Check deploys:** batch 2 PRs #420, #422 — Worker
   `5d659102-3bff-4398-91ad-cdc1d165ccc1` from main `dd625b5` (recorded in #423);
@@ -91,11 +87,9 @@ Pilates, and HIIT.
   browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
   in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
   (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook.   **Production matches application source `c2dbd75` after the 2026-09-23
-  #450 deploy** (Worker `b4ac663d`; SPA `assets/index-CSepK95F.js`). `main`
-  tip `5393d6b` is docs-ahead via #452. Signed-in Track length smoke PASS
-  2026-09-23. Prior production application code
-  was the 2026-09-23 #440/#443–#448 Worker `4f5cfb73` from `c5531a0`, then
+  Music workspace via a shared provider-browse hook. Earlier production application code
+  included the 2026-09-23 #450 Worker `b4ac663d` from `c2dbd75`, preceded by
+  the 2026-09-23 #440/#443–#448 Worker `4f5cfb73` from `c5531a0`, then
   the 2026-09-19 #438 Classes-home Worker `b4a99062` from `54c3bf7`, then
   the 2026-09-19 #429 Worker `3b39fac6` from main `51a6ade`, then the
   2026-09-17 #417/#418/#419/#424/#425 Worker
@@ -304,19 +298,17 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-27, later):** **production matches
-application tip `7eebc00` (#456)** — live Worker
-`3561b1ba-a854-48cd-9e5f-519a02092ef5`, SPA `assets/index-D5zicKh0.js`. Remote
-D1 has `0019` (unchanged). After this deploy-record PR merges, `main` is
-docs-ahead of production (expected). No schema or shared-contract change.
-Rollback is Worker-only to `eb41ded4-ba0a-44df-8a0d-bae52e28be9d`. #456 keeps
-derived-cover title words whole (120px cover from `sm` up, three balanced
-lines); the #454 signed-in no-cover check is **done** (it found the mid-word
-split #456 fixed). **Open:** phones keep the 96px/two-line cover, so most
-"Day Theme Type" titles clamp there until the builder header is restacked for
-phones (then 120px/three lines — never three lines at 96px, 2.97:1). The
-alerting half of liveness remains an owner decision; F-02 (D11
-`createPattern`) stays unconfirmed.
+**Current `main` vs production (2026-09-27, light close):** `main` includes application
+tip `2c88f85`, ahead of production application tip `7eebc00` (#456). The live Worker is
+`3561b1ba-a854-48cd-9e5f-519a02092ef5` (checked at close). The last
+verified SPA entry was `assets/index-D5zicKh0.js`; remote D1 migration `0019`
+was confirmed at the #456 deploy. SPA and D1 were not rechecked at this light
+close. PRs #458–#461 are merged but not deployed; they change web UI and
+planning documentation, with no schema or shared-contract change. #460 fixes
+the phone cover layout noted after #456. The next class-template work is the
+block editor and its planned-time mismatch warnings, as specified in
+[`class-template-handoff.md`](./class-template-handoff.md). The alerting half of
+liveness remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
 
 - **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
 - **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
