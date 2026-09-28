@@ -83,7 +83,11 @@ export function SourceList({
           return (
             <li
               key={key}
-              className={`flex min-w-0 items-center gap-2 rounded-card px-2 py-1.5 sm:gap-3 ${
+              className={`min-w-0 gap-2 rounded-card px-2 py-1.5 sm:gap-3 ${
+                action.kind === 'import'
+                  ? 'grid grid-cols-[44px_minmax(0,1fr)] sm:flex sm:items-center'
+                  : 'flex items-center'
+              } ${
                 selected
                   ? 'border border-interactive/35 bg-interactive/10'
                   : 'border border-transparent bg-bg-base'
@@ -121,7 +125,7 @@ export function SourceList({
                   </span>
                 </button>
               ) : (
-                <div className="min-w-0 flex-1">
+                <div className="col-start-2 min-w-0 flex-1">
                   <p className="truncate font-ui text-sm font-semibold text-text-primary">
                     {track.title}
                   </p>
@@ -129,7 +133,13 @@ export function SourceList({
                 </div>
               )}
 
-              <div className="flex shrink-0 flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+              <div
+                className={`flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3 ${
+                  action.kind === 'import'
+                    ? 'col-start-2 items-start sm:shrink-0'
+                    : 'shrink-0 items-end'
+                }`}
+              >
                 {track.durationMs != null && (
                   <span className="font-data text-xs text-text-tertiary">
                     {formatDuration(track.durationMs)}
@@ -161,7 +171,7 @@ export function SourceList({
                       ? `${track.title} — ${action.addedLabel ?? 'already added'}`
                       : `Add ${track.title} by ${track.artist}`
                   }
-                  className={`min-h-11 shrink-0 rounded-pill px-3 font-ui text-xs font-semibold rf-focus-ring disabled:opacity-60 ${
+                  className={`col-start-2 min-h-11 justify-self-start rounded-pill px-3 font-ui text-xs font-semibold rf-focus-ring disabled:opacity-60 sm:shrink-0 ${
                     added ? 'bg-bg-raised text-text-tertiary' : 'rf-btn-primary text-text-on-accent'
                   }`}
                 >
