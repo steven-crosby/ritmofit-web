@@ -44,6 +44,8 @@ renamed or overloaded with recipe identity. Pilates continues to display as Pila
 5. A plan block can contain zero, one, or many real songs.
 6. Planned block duration and actual assembled music duration remain separate. Underfill and overflow
    are visible; neither silently rewrites the other.
+   After editing blocks, the class's chosen target length stays fixed; show the difference between that
+   target and the sum of planned blocks instead of silently changing either value.
 7. The explicitly empty path remains available. Existing copy-class and Songs-by-Move flows remain
    exempt from scaffold creation.
 8. A scaffold is fully editable after creation, but applying a different recipe wholesale is not
@@ -198,6 +200,9 @@ An empty block has planned geometry but no playback geometry. It never enters Li
 - HIIT is bodyweight-first; dumbbells are optional substitutions.
 - HIIT work blocks use one beginner-readable 30-second work / 30-second recovery-transition pattern in
   v1. Instructors may edit it after creation.
+- HIIT rounds stay independent of planned block duration after an edit. If rounds multiplied by the work
+  and recovery intervals differ from planned time, the editor shows both totals and a mismatch warning;
+  neither value silently rewrites the other.
 - Cool-down/release blocks do not use `all_out` intensity.
 
 ## 7. Cycle recipes
@@ -379,6 +384,8 @@ from Live, and invisible to readiness counts.
 - Deleting the last song leaves the plan block intact and empty.
 - Moving a song between blocks preserves its crop, cues, moves, and provider references.
 - Resizing a block changes planned time only.
+- Editing planned time does not change the class target length or HIIT interval rounds. The editor shows
+  the class-target gap and any HIIT interval mismatch when they arise.
 - Cropping a song changes actual time only.
 - Empty blocks never appear as synthetic tracks in Live.
 - Class copy creates new block IDs and remaps copied class-tracks to them.
