@@ -95,23 +95,22 @@ export function TrackArt({
  * white fails on every light gradient stop. It sits top-left (the light end of the
  * 135° gradient), bold at 19px (WCAG "large text", 3:1). Worst case at the text
  * box's far corner on the darkest pair (ember-300 -> copper-700): 3.57:1 for two
- * lines at 120px, 3.22:1 for three; most of the box is far higher. Three lines at
- * 96px would be 2.97:1, so phones stay at two.
+ * lines at 120px, 3.22:1 for three; most of the box is far higher.
  * Only for cover sizes — at 44px a title is unreadable, so list tiles stay plain.
  *
- * Sized so ordinary title words fit whole: at 120px (sm+) with 6px padding and
- * -0.025em tracking the text box is 108px, which holds "Wednesday" (~105px). Phones
- * keep 96px (84px box: "Saturday" fits, "Wednesday" doesn't) because the larger tile
- * squeezes the truncating class heading beside it. The font can't shrink instead —
- * below 18.67px bold it stops being large text and fails contrast.
+ * Sized so ordinary title words fit whole: at 120px with 6px padding and
+ * -0.025em tracking the text box is 108px, which holds "Wednesday" (~105px).
+ * The builder header stacks on phones so the tile does not squeeze the heading.
+ * The font can't shrink instead — below 18.67px bold it stops being large text
+ * and fails contrast.
  * Chromium won't hyphenate capitalized words, so `hyphens` doesn't help here;
  * `overflow-wrap:anywhere` only catches longer outliers.
  *
  * Titles typically run "Day Theme Type + emoji" ("Wednesday Reggaeton Pilates 🔥💃"):
- * at 108px these need up to three lines, so sm+ clamps at three and every such title
+ * at 108px these need up to three lines, so the tile clamps at three and every such title
  * shows whole. `text-balance` evens the lines instead of leaving an orphaned emoji.
  *
- * Decorative: the visible class heading beside it names the class, so the whole
+ * Decorative: the visible class heading outside it names the class, so the whole
  * tile stays `aria-hidden` and adds no accessible name.
  */
 export function ClassCoverArt({ classId, title }: { classId: string; title: string }) {
@@ -120,9 +119,9 @@ export function ClassCoverArt({ classId, title }: { classId: string; title: stri
     <span
       aria-hidden
       style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
-      className="block h-24 w-24 shrink-0 rounded-card p-1.5 sm:h-[120px] sm:w-[120px]"
+      className="block h-[120px] w-[120px] shrink-0 rounded-card p-1.5"
     >
-      <span className="line-clamp-2 text-balance break-words font-display text-[19px] font-bold leading-[1.1] tracking-[-0.025em] text-text-on-accent [overflow-wrap:anywhere] sm:line-clamp-3">
+      <span className="line-clamp-3 text-balance break-words font-display text-[19px] font-bold leading-[1.1] tracking-[-0.025em] text-text-on-accent [overflow-wrap:anywhere]">
         {title}
       </span>
     </span>

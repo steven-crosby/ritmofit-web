@@ -295,7 +295,9 @@ async function checkPrimaryActionReachable(page, suffix) {
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(250);
   const verdict = await page.evaluate(() => {
-    const run = [...document.querySelectorAll('button')].find((b) => /Run live/.test(b.textContent));
+    const run = [...document.querySelectorAll('button')].find((b) =>
+      /Run live/.test(b.textContent),
+    );
     if (!run) return { state: 'missing' };
     const r = run.getBoundingClientRect();
     if (r.bottom <= 0 || r.top >= window.innerHeight) return { state: 'offscreen' };
@@ -318,8 +320,47 @@ async function checkPrimaryActionReachable(page, suffix) {
   else fail(tag, `occluded by ${verdict.by}`);
 }
 
+async function checkBuilderCoverLayout(page, viewport) {
+  const layout = await page.evaluate(() => {
+    const cover = [...document.querySelectorAll('span[aria-hidden]')].find(
+      (el) =>
+        el.textContent?.trim() === 'Narrow Width Smoke' &&
+        el.style.background.includes('linear-gradient'),
+    );
+    const heading = [...document.querySelectorAll('h2')].find(
+      (el) => el.textContent?.trim() === 'Narrow Width Smoke',
+    );
+    if (!cover || !heading) return null;
+    const art = cover.getBoundingClientRect();
+    const title = heading.getBoundingClientRect();
+    return {
+      artWidth: art.width,
+      artHeight: art.height,
+      artRight: art.right,
+      artBottom: art.bottom,
+      titleLeft: title.left,
+      titleTop: title.top,
+    };
+  });
+  const tag = `builder-cover:${viewport.label}`;
+  if (!layout) return fail(tag, 'cover or heading missing');
+  const fullSize = Math.abs(layout.artWidth - 120) < 1 && Math.abs(layout.artHeight - 120) < 1;
+  const placed =
+    viewport.width < 640
+      ? layout.titleTop >= layout.artBottom
+      : layout.titleLeft >= layout.artRight;
+  if (fullSize && placed) pass(tag, '120px cover; title has its own space');
+  else
+    fail(
+      tag,
+      `cover ${Math.round(layout.artWidth)}×${Math.round(layout.artHeight)}px; title overlaps cover`,
+    );
+}
+
 async function checkSignedInSurfaces(page, suffix) {
   await goToClassesWithTrack(page);
+  const viewport = VIEWPORTS.find((item) => item.label === suffix);
+  if (viewport) await checkBuilderCoverLayout(page, viewport);
   await checkNoOverflow(page, `dashboard-with-track:${suffix}`);
 
   await openInspector(page);
