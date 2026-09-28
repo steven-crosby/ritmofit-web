@@ -83,8 +83,9 @@ describe('ClassPlanBlocks', () => {
 
     pending.resolve([block]);
     expect(await screen.findByRole('heading', { name: 'Arrive on the bike' })).toBeTruthy();
-    expect(screen.getByText(/Planned 4:00/)).toBeTruthy();
-    expect(screen.getByText(/4:00 under/)).toBeTruthy();
+    expect(screen.getByText('Planned 4:00')).toBeTruthy();
+    expect(screen.getByText('No music yet')).toBeTruthy();
+    expect(screen.queryByText(/under|over|Music 0:00/)).toBeNull();
     fireEvent.click(
       screen.getByRole('button', { name: 'Choose music for Block 1 · Arrive on the bike' }),
     );
@@ -93,6 +94,40 @@ describe('ClassPlanBlocks', () => {
       label: block.label,
       position: block.position,
     });
+  });
+
+  it('waits for the current music time before comparing an assigned track with the plan', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
+    const props = {
+      classId: block.classId,
+      tracks: [assignedTrack()],
+      payload: null as RunPayload | null,
+      canEdit: true,
+      assigningPlanBlockId: null,
+      onChooseMusic: () => {},
+      onSelectTrack: () => {},
+      onTracksChanged: () => {},
+    };
+    const { rerender } = render(<ClassPlanBlocks {...props} />);
+
+    expect(await screen.findByText('Planned 4:00')).toBeTruthy();
+    expect(screen.queryByText(/under|over|Music 0:00/)).toBeNull();
+
+    rerender(<ClassPlanBlocks {...props} payload={{ tracks: [] } as unknown as RunPayload} />);
+    expect(screen.getByText('Planned 4:00')).toBeTruthy();
+    expect(screen.queryByText(/under|over|Music 0:00/)).toBeNull();
+
+    const payload = {
+      tracks: [
+        {
+          classTrackId: assignedTrack().id,
+          track: { title: 'Warmup', artist: 'Artist', durationMs: 180_000 },
+        },
+      ],
+    } as RunPayload;
+    rerender(<ClassPlanBlocks {...props} payload={payload} />);
+    expect(screen.getByText(/Music 3:00/)).toBeTruthy();
+    expect(screen.getByText(/1:00 under/)).toBeTruthy();
   });
 
   it('renders populated music and the planned-versus-actual difference', async () => {

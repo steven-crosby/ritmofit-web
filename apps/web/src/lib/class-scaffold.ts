@@ -114,7 +114,7 @@ export function planNextStep(
     ...planBlockFit(block.targetDurationMs, planBlockActualMs(block.id, tracks, payload)),
   }));
 
-  const empty = fits.filter((row) => row.actualMs === 0);
+  const empty = fits.filter((row) => tracksForPlanBlock(row.block.id, tracks).length === 0);
   if (empty.length === 1) {
     return `Block ${empty[0]!.block.position + 1} still needs music`;
   }
@@ -131,21 +131,20 @@ export function planNextStep(
 }
 
 /**
- * First empty block in plan order. `skipBlockId` is the block a song just
- * landed in — treat it as no longer empty even if the payload has not
- * refreshed yet.
+ * First block without assigned music in plan order. `skipBlockId` is the block
+ * a song just landed in, before the track list has refreshed.
  */
 export function nextEmptyPlanBlock(
   blocks: readonly ClassPlanBlock[],
   tracks: readonly ClassTrack[],
-  payload: RunPayload | null,
+  _payload: RunPayload | null,
   skipBlockId?: string | null,
 ): ClassPlanBlock | null {
   return (
     [...blocks]
       .sort((a, b) => a.position - b.position)
       .find(
-        (block) => block.id !== skipBlockId && planBlockActualMs(block.id, tracks, payload) === 0,
+        (block) => block.id !== skipBlockId && tracksForPlanBlock(block.id, tracks).length === 0,
       ) ?? null
   );
 }
