@@ -273,6 +273,25 @@ describe('Dashboard class library states', () => {
     );
   });
 
+  it('focuses Add music after creating an empty class', async () => {
+    const created = makeClass('Blank ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.createClass).mockResolvedValue(
+      created as Awaited<ReturnType<typeof api.createClass>>,
+    );
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Start empty' }));
+    fireEvent.change(screen.getByLabelText('Class title'), { target: { value: 'Blank ride' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create empty class' }));
+
+    const addMusic = await screen.findByRole('button', { name: 'Add music' });
+    await waitFor(() => expect(document.activeElement).toBe(addMusic));
+  });
+
   it('folds the rail’s create/filter controls away once a class is open', async () => {
     const ride = makeClass('Morning ride');
     vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
@@ -344,6 +363,29 @@ describe('Dashboard class library states', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
 
     expect(await screen.findByRole('dialog', { name: 'Music connections' })).toBeTruthy();
+  });
+
+  it('retries a Music catalog outage without changing the query', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.searchProvider)
+      .mockRejectedValueOnce(new Error('Failed to fetch'))
+      .mockResolvedValueOnce([]);
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const search = screen.getByRole('searchbox', { name: 'Search SoundCloud catalog' });
+    fireEvent.change(search, { target: { value: 'climb' } });
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /Couldn’t search SoundCloud right now/,
+    );
+    expect(screen.queryByText('Failed to fetch')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() => expect(api.searchProvider).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('No matches yet.')).toBeTruthy();
+    expect((search as HTMLInputElement).value).toBe('climb');
   });
 
   it('searches, selects in instructor order, and starts a class from Music', async () => {
@@ -1913,8 +1955,10 @@ describe('Dashboard track focus management', () => {
     expect(within(inspector).getByText(/unsaved typing/i)).toBeTruthy();
     expect(saveButton.disabled).toBe(false);
 
+    saveButton.focus();
     fireEvent.click(saveButton);
-    expect(await within(inspector).findByText('Saved.')).toBeTruthy();
+    const savedStatus = await within(inspector).findByText('Saved.');
+    expect(document.activeElement).toBe(savedStatus);
     expect(saveButton.disabled).toBe(true);
   });
 

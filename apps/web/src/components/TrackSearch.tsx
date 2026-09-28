@@ -175,6 +175,7 @@ export function TrackSearch({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [searchRetryKey, setSearchRetryKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [libraryErrorCode, setLibraryErrorCode] = useState<string | undefined>();
   // Per-candidate import state: which key is busy, and which keys were added.
@@ -278,7 +279,9 @@ export function TrackSearch({
     if (mode === 'saved_playlists' && !canBrowseSavedPlaylists) return;
     if (mode === 'saved_playlists') return;
     const id = ++reqId.current;
+    if (mode === 'search') setResults(null);
     setSearching(true);
+    setError(null);
     const run = async () => {
       try {
         const found =
@@ -303,7 +306,7 @@ export function TrackSearch({
               ? message
               : mode === 'likes'
                 ? `Couldn’t load your ${providerLabel(provider)} likes.`
-                : message,
+                : `Couldn’t search ${providerLabel(provider)} right now. Try again.`,
           );
           setLibraryErrorCode(code);
           if (reauth) {
@@ -323,7 +326,7 @@ export function TrackSearch({
       const t = setTimeout(run, 300);
       return () => clearTimeout(t);
     }
-  }, [mode, query, provider, canUseLikes, canBrowseSavedPlaylists]);
+  }, [mode, query, provider, canUseLikes, canBrowseSavedPlaylists, searchRetryKey]);
 
   useEffect(() => {
     if (mode !== 'saved_playlists') return;
@@ -805,9 +808,20 @@ export function TrackSearch({
         (mode === 'likes' && classifyProviderLibraryError(error, libraryErrorCode) === 'reauth' ? (
           renderLibraryReauth(error)
         ) : (
-          <p role="alert" className="font-ui text-sm text-state-danger">
-            {error}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p role="alert" className="font-ui text-sm text-state-danger">
+              {error}
+            </p>
+            {mode === 'search' && (
+              <button
+                type="button"
+                onClick={() => setSearchRetryKey((key) => key + 1)}
+                className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+              >
+                Try again
+              </button>
+            )}
+          </div>
         ))}
 
       {/* Always-mounted live region: mirrors the browse outcome (incl. result
