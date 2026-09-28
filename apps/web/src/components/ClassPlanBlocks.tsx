@@ -8,15 +8,40 @@
  * song row carries the control that moves it between blocks (or out of the
  * plan), so a misplaced song is a correction rather than a delete-and-re-add.
  */
-import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
-import type { ClassPlanBlock, ClassTrack, RunPayload } from '@ritmofit/shared';
-import { assignClassTrackPlanBlock, listClassPlanBlocks } from '../lib/api.js';
 import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
+import {
+  MAX_DURATION_MS,
+  type ClassPlanBlock,
+  type ClassTrack,
+  type RunPayload,
+  type UpdateClassPlanBlock,
+} from '@ritmofit/shared';
+import {
+  assignClassTrackPlanBlock,
+  listClassPlanBlocks,
+  updateClassPlanBlock,
+} from '../lib/api.js';
+import {
+  classTargetGap,
+  classTargetGapLabel,
+  formatPlannedDurationInput,
   guidanceSummary,
+  hiitIntervalMismatch,
+  hiitIntervalTotalMs,
+  parsePlannedDuration,
   planBlockActualMs,
   planBlockFit,
   planFitLabel,
   planNextStep,
+  planTotalMs,
   tracksForPlanBlock,
   unassignedClassTracks,
 } from '../lib/class-scaffold.js';
@@ -40,6 +65,7 @@ function trackTitle(track: ClassTrack, payload: RunPayload | null): string {
 
 export function ClassPlanBlocks({
   classId,
+  targetDurationMs = null,
   tracks,
   payload,
   canEdit,
@@ -55,6 +81,8 @@ export function ClassPlanBlocks({
   onPlanBlocks,
 }: {
   classId: string;
+  /** The class's chosen length. Block edits never change it; the header shows the gap. */
+  targetDurationMs?: number | null;
   tracks: ClassTrack[];
   payload: RunPayload | null;
   canEdit: boolean;
@@ -113,8 +141,14 @@ export function ClassPlanBlocks({
 
   useEffect(() => () => onPlanNextStep?.(null), [classId, onPlanNextStep]);
 
+  // Once per landing (load, class switch, or back to zero songs) — not on every
+  // block edit, or a planned-time save would steal focus from its Edit button.
+  const choseFocusRef = useRef(false);
   useLayoutEffect(() => {
+    if (blocks == null || tracks.length > 0) choseFocusRef.current = false;
     if (!focusFirstChoose || !canEdit || !blocks?.length || tracks.length > 0) return;
+    if (choseFocusRef.current) return;
+    choseFocusRef.current = true;
     const firstBlock = [...blocks].sort((a, b) => a.position - b.position)[0]!;
     const first = document.querySelector<HTMLButtonElement>(
       `#plan-block-card-${firstBlock.id} button[aria-label^="Choose music"]`,
@@ -160,6 +194,8 @@ export function ClassPlanBlocks({
   if (blocks.length === 0) return null;
 
   const unassigned = unassignedClassTracks(visibleTracks);
+  const plannedMs = planTotalMs(blocks);
+  const targetGap = classTargetGap(targetDurationMs, plannedMs);
 
   return (
     <section className="flex flex-col gap-3 rounded-card bg-bg-raised p-4 shadow-card">
@@ -170,6 +206,23 @@ export function ClassPlanBlocks({
         </h3>
         <p className="mt-1 font-ui text-sm leading-5 text-text-secondary">
           Planned time is the target. Music duration is whatever you actually add.
+        </p>
+        <p className="mt-2 flex flex-wrap gap-x-2 font-data text-xs text-text-secondary">
+          {targetDurationMs != null && <span>Class target {formatDuration(targetDurationMs)}</span>}
+          {targetDurationMs != null && <span aria-hidden="true">·</span>}
+          <span>Blocks total {formatDuration(plannedMs)}</span>
+          {targetGap && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span
+                className={
+                  targetGap.fit === 'on_plan' ? 'text-text-secondary' : 'text-state-caution'
+                }
+              >
+                {classTargetGapLabel(targetGap.fit, formatDuration(Math.abs(targetGap.deltaMs)))}
+              </span>
+            </>
+          )}
         </p>
       </div>
       <ol className="flex flex-col gap-2">
@@ -192,6 +245,9 @@ export function ClassPlanBlocks({
             onSelectTrack={onSelectTrack}
             onTracksChanged={onTracksChanged}
             onMoved={(trackId, planBlockId) => setMoveIntent({ trackId, planBlockId })}
+            onSaved={(saved) =>
+              setBlocks((rows) => rows?.map((row) => (row.id === saved.id ? saved : row)) ?? rows)
+            }
           />
         ))}
       </ol>
@@ -244,6 +300,7 @@ function PlanBlockCard({
   onSelectTrack,
   onTracksChanged,
   onMoved,
+  onSaved,
 }: {
   block: ClassPlanBlock;
   blocks: ClassPlanBlock[];
@@ -257,7 +314,21 @@ function PlanBlockCard({
   onSelectTrack: (classTrackId: string) => void;
   onTracksChanged: () => void;
   onMoved: (classTrackId: string, planBlockId: string | null) => void;
+  onSaved: (block: ClassPlanBlock) => void;
 }) {
+  const [editingTime, setEditingTime] = useState(false);
+  const editTimeRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef(false);
+  useLayoutEffect(() => {
+    if (editingTime || !returnFocusRef.current) return;
+    returnFocusRef.current = false;
+    editTimeRef.current?.focus();
+  }, [editingTime]);
+  const closeEditor = () => {
+    returnFocusRef.current = true;
+    setEditingTime(false);
+  };
+  const intervalMismatch = hiitIntervalMismatch(block.guidance, block.targetDurationMs);
   const assigned = tracksForPlanBlock(block.id, tracks);
   const empty = assigned.length === 0;
   const showMusicFit =
@@ -310,6 +381,31 @@ function PlanBlockCard({
           </>
         )}
       </p>
+      {intervalMismatch && !editingTime && <IntervalMismatch mismatch={intervalMismatch} />}
+      {canEdit &&
+        (editingTime ? (
+          <PlanBlockTimeEditor
+            block={block}
+            blockName={blockName}
+            onSaved={(saved) => {
+              onSaved(saved);
+              closeEditor();
+            }}
+            onCancel={closeEditor}
+          />
+        ) : (
+          <div>
+            <button
+              ref={editTimeRef}
+              type="button"
+              onClick={() => setEditingTime(true)}
+              aria-label={`Edit planned time for ${blockName}`}
+              className="min-h-11 rounded-control px-2 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+            >
+              Edit time
+            </button>
+          </div>
+        ))}
       {empty ? (
         <div className="rounded-control border border-dashed border-border-subtle bg-bg-sunken px-3 py-2">
           <StatusLabel kind="empty" label="No music yet" />
@@ -447,5 +543,283 @@ function PlanBlockAssignSelect({
         </div>
       )}
     </div>
+  );
+}
+
+function IntervalMismatch({ mismatch }: { mismatch: { intervalMs: number; plannedMs: number } }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <StatusLabel kind="unavailable" label="Intervals don’t match planned time" />
+      <p className="font-data text-xs text-text-secondary">
+        Intervals {formatDuration(mismatch.intervalMs)} · Planned{' '}
+        {formatDuration(mismatch.plannedMs)}
+      </p>
+    </div>
+  );
+}
+
+const MAX_INTERVAL_SECONDS = MAX_DURATION_MS / 1000;
+
+/** Whole number in [min, max], or null. Rejects decimals, blanks, and signs. */
+function parseWhole(text: string, min: number, max: number): number | null {
+  if (!/^\d+$/.test(text.trim())) return null;
+  const value = Number(text.trim());
+  return value >= min && value <= max ? value : null;
+}
+
+type TimeField = 'duration' | 'rounds' | 'work' | 'recovery';
+
+/**
+ * Inline planned-time editor. Saves only what changed: block time and HIIT
+ * interval guidance are independent, and neither is rewritten to match the
+ * other or the class target. Enter saves; Escape cancels.
+ */
+function PlanBlockTimeEditor({
+  block,
+  blockName,
+  onSaved,
+  onCancel,
+}: {
+  block: ClassPlanBlock;
+  blockName: string;
+  onSaved: (block: ClassPlanBlock) => void;
+  onCancel: () => void;
+}) {
+  const idBase = useId();
+  const hiit =
+    block.guidance.kind === 'hiit' && hiitIntervalTotalMs(block.guidance) != null
+      ? block.guidance
+      : null;
+  const [duration, setDuration] = useState(formatPlannedDurationInput(block.targetDurationMs));
+  const [rounds, setRounds] = useState(hiit ? String(hiit.rounds) : '');
+  const [work, setWork] = useState(hiit ? String(hiit.workMs! / 1000) : '');
+  const [recovery, setRecovery] = useState(hiit ? String(hiit.recoveryMs! / 1000) : '');
+  const [attempted, setAttempted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const durationRef = useRef<HTMLInputElement>(null);
+  const roundsRef = useRef<HTMLInputElement>(null);
+  const workRef = useRef<HTMLInputElement>(null);
+  const recoveryRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    durationRef.current?.focus();
+    durationRef.current?.select();
+  }, []);
+
+  const plannedMs = parsePlannedDuration(duration);
+  const roundsValue = hiit ? parseWhole(rounds, 1, 100) : null;
+  const workValue = hiit ? parseWhole(work, 1, MAX_INTERVAL_SECONDS) : null;
+  const recoveryValue = hiit ? parseWhole(recovery, 1, MAX_INTERVAL_SECONDS) : null;
+  const invalid: Record<TimeField, boolean> = {
+    duration: plannedMs == null,
+    rounds: hiit != null && roundsValue == null,
+    work: hiit != null && workValue == null,
+    recovery: hiit != null && recoveryValue == null,
+  };
+  const draftGuidance =
+    hiit && roundsValue != null && workValue != null && recoveryValue != null
+      ? { ...hiit, rounds: roundsValue, workMs: workValue * 1000, recoveryMs: recoveryValue * 1000 }
+      : null;
+  const draftMismatch =
+    draftGuidance && plannedMs != null ? hiitIntervalMismatch(draftGuidance, plannedMs) : null;
+
+  const step = (deltaMs: number) => {
+    const base = plannedMs ?? block.targetDurationMs;
+    const next = Math.min(MAX_DURATION_MS, Math.max(60_000, base + deltaMs));
+    setDuration(formatPlannedDurationInput(next));
+  };
+
+  const submit = () => {
+    if (saving) return;
+    setAttempted(true);
+    const refs: Record<TimeField, RefObject<HTMLInputElement>> = {
+      duration: durationRef,
+      rounds: roundsRef,
+      work: workRef,
+      recovery: recoveryRef,
+    };
+    const firstInvalid = (Object.keys(invalid) as TimeField[]).find((field) => invalid[field]);
+    if (firstInvalid) {
+      refs[firstInvalid].current?.focus();
+      return;
+    }
+    const body: UpdateClassPlanBlock = {};
+    if (plannedMs !== block.targetDurationMs) body.targetDurationMs = plannedMs!;
+    if (
+      hiit &&
+      draftGuidance &&
+      (draftGuidance.rounds !== hiit.rounds ||
+        draftGuidance.workMs !== hiit.workMs ||
+        draftGuidance.recoveryMs !== hiit.recoveryMs)
+    ) {
+      body.guidance = draftGuidance;
+    }
+    if (Object.keys(body).length === 0) {
+      onCancel();
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    void (async () => {
+      try {
+        onSaved(await updateClassPlanBlock(block.id, body));
+      } catch (e) {
+        setError(errMessage(e));
+        setSaving(false);
+      }
+    })();
+  };
+
+  const fieldId = (field: TimeField) => `${idBase}-${field}`;
+  const helpId = (field: TimeField) => `${idBase}-${field}-help`;
+  const inputClass = (field: TimeField) =>
+    `min-h-11 w-20 rounded-control border bg-bg-sunken px-2 font-data text-sm text-text-primary rf-focus-ring disabled:opacity-40 ${
+      attempted && invalid[field] ? 'border-state-danger' : 'border-border'
+    }`;
+  const fieldError = (field: TimeField, message: string) =>
+    attempted && invalid[field] ? (
+      <span
+        id={helpId(field)}
+        className="flex items-center gap-1 font-ui text-xs text-state-danger"
+      >
+        <span aria-hidden>!</span> {message}
+      </span>
+    ) : null;
+  const numberField = (
+    field: Exclude<TimeField, 'duration'>,
+    label: string,
+    value: string,
+    setValue: (value: string) => void,
+    ref: RefObject<HTMLInputElement>,
+    message: string,
+  ) => (
+    <div className="flex min-w-0 flex-col gap-1">
+      <label htmlFor={fieldId(field)} className="font-ui text-xs font-semibold text-text-secondary">
+        {label}
+      </label>
+      <input
+        ref={ref}
+        id={fieldId(field)}
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        value={value}
+        disabled={saving}
+        aria-invalid={attempted && invalid[field]}
+        aria-describedby={attempted && invalid[field] ? helpId(field) : undefined}
+        onChange={(event) => setValue(event.target.value)}
+        className={inputClass(field)}
+      />
+      {fieldError(field, message)}
+    </div>
+  );
+
+  return (
+    <form
+      aria-label={`Planned time for ${blockName}`}
+      className="flex flex-col gap-3 rounded-control border border-border-subtle bg-bg-sunken p-3"
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        submit();
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || saving) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onCancel();
+      }}
+    >
+      <div className="flex min-w-0 flex-col gap-1">
+        <label
+          htmlFor={fieldId('duration')}
+          className="font-ui text-xs font-semibold text-text-secondary"
+        >
+          Planned time (m:ss)
+        </label>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={saving || (plannedMs ?? block.targetDurationMs) <= 60_000}
+            onClick={() => step(-60_000)}
+            aria-label="One minute less"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-control border border-border font-data text-sm text-text-primary rf-focus-ring disabled:opacity-40"
+          >
+            −
+          </button>
+          <input
+            ref={durationRef}
+            id={fieldId('duration')}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={duration}
+            disabled={saving}
+            aria-invalid={attempted && invalid.duration}
+            aria-describedby={helpId('duration')}
+            onChange={(event) => setDuration(event.target.value)}
+            className={inputClass('duration')}
+          />
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => step(60_000)}
+            aria-label="One minute more"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-control border border-border font-data text-sm text-text-primary rf-focus-ring disabled:opacity-40"
+          >
+            +
+          </button>
+        </div>
+        {fieldError('duration', 'Use minutes and seconds, like 6:30.') ?? (
+          <span id={helpId('duration')} className="font-ui text-xs text-text-tertiary">
+            Changes this block only. The class target stays the same.
+          </span>
+        )}
+      </div>
+      {hiit && (
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="mb-2 font-ui text-xs font-semibold uppercase tracking-wide text-text-tertiary">
+            Intervals
+          </legend>
+          <div className="flex flex-wrap gap-3">
+            {numberField('rounds', 'Rounds', rounds, setRounds, roundsRef, 'Use 1–100.')}
+            {numberField('work', 'Work (s)', work, setWork, workRef, 'Use whole seconds.')}
+            {numberField(
+              'recovery',
+              'Recovery (s)',
+              recovery,
+              setRecovery,
+              recoveryRef,
+              'Use whole seconds.',
+            )}
+          </div>
+        </fieldset>
+      )}
+      {draftMismatch && <IntervalMismatch mismatch={draftMismatch} />}
+      {error && (
+        <div role="alert" className="flex flex-col gap-1">
+          <StatusLabel kind="error" label="Couldn’t save planned time" />
+          <p className="font-ui text-xs text-text-secondary">{error}</p>
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 motion-reduce:transition-none"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={onCancel}
+          className="min-h-11 rounded-control px-3 font-ui text-sm text-text-tertiary hover:text-text-secondary disabled:opacity-40 rf-focus-ring"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }

@@ -5,7 +5,7 @@
  */
 import { beforeAll, describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
-import { authed, signUpUser, type TestUser } from './helpers.js';
+import { authed, signUpUser, verifyUserEmail, type TestUser } from './helpers.js';
 
 interface ClassView {
   id: string;
@@ -293,5 +293,156 @@ describe('class plan blocks and deterministic scaffolds (integration)', () => {
       }),
     });
     expect(invertedBlocks.status).toBe(409);
+  });
+});
+
+describe('PATCH /plan-blocks/:id keeps planned time, class target, and HIIT rounds independent', () => {
+  interface HiitGuidance {
+    kind: 'hiit';
+    workMs: number | null;
+    recoveryMs: number | null;
+    rounds: number | null;
+    sequenceFocus: string;
+    equipment: string;
+  }
+  type HiitBlockView = Omit<BlockView, 'guidance'> & { guidance: HiitGuidance };
+
+  let owner: TestUser;
+  let viewer: TestUser;
+  let stranger: TestUser;
+  let classId: string;
+  let circuit: HiitBlockView;
+
+  const readClass = async () =>
+    (await (await authed(owner.cookie)(`/api/v1/classes/${classId}`)).json()) as ClassView;
+  const readBlock = async (id: string) =>
+    (
+      (await (
+        await authed(owner.cookie)(`/api/v1/classes/${classId}/plan-blocks`)
+      ).json()) as HiitBlockView[]
+    ).find((row) => row.id === id)!;
+
+  beforeAll(async () => {
+    owner = await signUpUser();
+    viewer = await signUpUser();
+    await verifyUserEmail(viewer.userId);
+    stranger = await signUpUser();
+    const created = await authed(owner.cookie)('/api/v1/classes', {
+      method: 'POST',
+      body: JSON.stringify({ mode: 'scaffold', title: 'Editable HIIT', recipeId: 'hiit_45_v1' }),
+    });
+    expect(created.status).toBe(201);
+    classId = ((await created.json()) as ClassView).id;
+    const rows = (await (
+      await authed(owner.cookie)(`/api/v1/classes/${classId}/plan-blocks`)
+    ).json()) as HiitBlockView[];
+    circuit = rows.find((row) => row.label === 'Circuit A')!;
+    expect(circuit).toMatchObject({
+      targetDurationMs: 9 * 60_000,
+      guidance: { rounds: 9, workMs: 30_000, recoveryMs: 30_000 },
+    });
+
+    const share = await authed(owner.cookie)('/api/v1/shares', {
+      method: 'POST',
+      body: JSON.stringify({
+        resourceId: classId,
+        targetUserId: viewer.userId,
+        permission: 'view',
+      }),
+    });
+    expect(share.status).toBe(201);
+  });
+
+  it('changes planned time only: class target and HIIT rounds stay put', async () => {
+    const res = await authed(owner.cookie)(`/api/v1/plan-blocks/${circuit.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ targetDurationMs: 10 * 60_000 }),
+    });
+    expect(res.status).toBe(200);
+    const saved = (await res.json()) as HiitBlockView;
+    expect(saved.targetDurationMs).toBe(10 * 60_000);
+    expect(saved.guidance).toEqual(circuit.guidance);
+    expect((await readClass()).targetDurationMs).toBe(45 * 60_000);
+  });
+
+  it('changes HIIT guidance only: planned time and class target stay put', async () => {
+    // Storage rolls back per test, so set a non-recipe time here first.
+    const resized = await authed(owner.cookie)(`/api/v1/plan-blocks/${circuit.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ targetDurationMs: 10 * 60_000 }),
+    });
+    expect(resized.status).toBe(200);
+    const guidance = { ...circuit.guidance, rounds: 12 };
+    const res = await authed(owner.cookie)(`/api/v1/plan-blocks/${circuit.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ guidance }),
+    });
+    expect(res.status).toBe(200);
+    const saved = await readBlock(circuit.id);
+    expect(saved.guidance).toEqual(guidance);
+    expect(saved.targetDurationMs).toBe(10 * 60_000);
+    expect((await readClass()).targetDurationMs).toBe(45 * 60_000);
+  });
+
+  it('rejects view-only (403) and hidden (404) callers without writing', async () => {
+    const before = await readBlock(circuit.id);
+    const asViewer = await authed(viewer.cookie)(`/api/v1/plan-blocks/${circuit.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ targetDurationMs: 60_000 }),
+    });
+    expect(asViewer.status).toBe(403);
+    const asStranger = await authed(stranger.cookie)(`/api/v1/plan-blocks/${circuit.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ targetDurationMs: 60_000 }),
+    });
+    expect(asStranger.status).toBe(404);
+    expect((await readBlock(circuit.id)).targetDurationMs).toBe(before.targetDurationMs);
+  });
+
+  it('rejects mismatched discipline guidance and out-of-range time', async () => {
+    const api = authed(owner.cookie);
+    const wrongKind = await api(`/api/v1/plan-blocks/${circuit.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ guidance: { kind: 'pilates', optionalEquipment: [] } }),
+    });
+    expect(wrongKind.status).toBe(422);
+    for (const targetDurationMs of [0, -1, 24 * 60 * 60 * 1000 + 1, 1.5]) {
+      const bad = await api(`/api/v1/plan-blocks/${circuit.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ targetDurationMs }),
+      });
+      expect(bad.status).toBeGreaterThanOrEqual(400);
+      expect(bad.status).toBeLessThan(500);
+    }
+    expect(await readBlock(circuit.id)).toEqual(circuit);
+  });
+
+  it('does not move free-mode track offsets when planned time changes', async () => {
+    const api = authed(owner.cookie);
+    const added = await api(`/api/v1/classes/${classId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        track: { title: 'Free anchor', artist: 'Test artist', durationMs: 60_000 },
+        planBlockId: circuit.id,
+      }),
+    });
+    expect(added.status).toBe(201);
+    const switched = await api(`/api/v1/classes/${classId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ timelineMode: 'free' }),
+    });
+    expect(switched.status).toBe(200);
+    const readTracks = async () =>
+      (await (await api(`/api/v1/classes/${classId}/tracks`)).json()) as (ClassTrackView & {
+        startOffsetMs: number;
+      })[];
+    const before = await readTracks();
+
+    const res = await api(`/api/v1/plan-blocks/${circuit.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ targetDurationMs: 3 * 60_000 }),
+    });
+    expect(res.status).toBe(200);
+    expect(await readTracks()).toEqual(before);
   });
 });

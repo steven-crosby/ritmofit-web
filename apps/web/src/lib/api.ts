@@ -14,6 +14,7 @@ import type {
   UpdateClassTrack,
   ClassPlanBlock,
   AssignClassTrackPlanBlock,
+  UpdateClassPlanBlock,
   Track,
   TrackSearchResult,
   TrackProviderId,
@@ -208,6 +209,12 @@ export const getRunPayload = (classId: string) =>
 /** Music-independent teaching plan for a class scaffold. */
 export const listClassPlanBlocks = (classId: string) =>
   api<ClassPlanBlock[]>(`/classes/${classId}/plan-blocks`);
+/** Edit planned structure only. The class target and music duration are untouched. */
+export const updateClassPlanBlock = (planBlockId: string, body: UpdateClassPlanBlock) =>
+  api<ClassPlanBlock>(`/plan-blocks/${planBlockId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
 export const assignClassTrackPlanBlock = (classTrackId: string, body: AssignClassTrackPlanBlock) =>
   api<ClassTrack>(`/class-tracks/${classTrackId}/plan-block`, {
     method: 'PATCH',
