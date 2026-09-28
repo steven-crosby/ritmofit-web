@@ -63,6 +63,25 @@ afterEach(() => {
 });
 
 describe('TrackSearch stale-result guard', () => {
+  it('retries a failed catalog search without changing the query', async () => {
+    vi.mocked(api.searchProvider)
+      .mockRejectedValueOnce(new Error('Failed to fetch'))
+      .mockResolvedValueOnce([staleResult]);
+
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'house' } });
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /Couldn’t search SoundCloud right now/,
+    );
+    expect(screen.queryByText('Failed to fetch')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() => expect(api.searchProvider).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('Stale Track')).toBeTruthy();
+    expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('house');
+  });
+
   it('does not let a search cleared mid-flight flash stale results under a new query', async () => {
     const first = deferred<TrackSearchResult[]>();
     const second = deferred<TrackSearchResult[]>(); // intentionally never resolves

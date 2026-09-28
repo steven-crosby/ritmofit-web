@@ -206,6 +206,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const activeTagRef = useRef<string | null>(null);
   const [knownTags, setKnownTags] = useState<string[]>([]);
   const [selected, setSelected] = useState<ClassWithAccess | null>(null);
+  const [newEmptyClassId, setNewEmptyClassId] = useState<string | null>(null);
   const [detail, dispatchDetail] = useReducer(classDetailReducer, initialClassDetailState);
   const detailRequestId = useRef(0);
   const [live, setLive] = useState<RunPayload | null>(null);
@@ -696,6 +697,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             onClose={() => setCreateDialogMode(null)}
             onError={setError}
             onCreated={async (cls) => {
+              if (cls.scaffoldRecipeId == null) setNewEmptyClassId(cls.id);
               await applyTagFilter(null);
               await openClass({ ...cls, accessLevel: 'owner' });
             }}
@@ -836,6 +838,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                   onOpenSongsByMove={() => setSongsByMoveOpen(true)}
                   onOpenConnections={() => setConnectionsOpen(true)}
                   connectionRevision={connectionRevision}
+                  focusAddMusic={newEmptyClassId === selected.id}
+                  onFocusedAddMusic={() => setNewEmptyClassId(null)}
                   onBackToClasses={() => {
                     setSelected(null);
                     dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
@@ -1560,6 +1564,7 @@ function MusicWorkspace({
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchRetryKey, setSearchRetryKey] = useState(0);
   const [selectedTracks, setSelectedTracks] = useState<TrackSearchResult[]>([]);
   const [classTitle, setClassTitle] = useState('New music class');
   const [template, setTemplate] = useState<ClassTemplate>('cycle');
@@ -1584,15 +1589,19 @@ function MusicWorkspace({
         .then((tracks) => {
           if (id === requestId.current) setResults(tracks);
         })
-        .catch((error: unknown) => {
-          if (id === requestId.current) setSearchError((error as Error).message);
+        .catch(() => {
+          if (id === requestId.current) {
+            setSearchError(
+              `Couldn’t search ${providerLabel(selectedProvider)} right now. Try again.`,
+            );
+          }
         })
         .finally(() => {
           if (id === requestId.current) setSearching(false);
         });
     }, 300);
     return () => window.clearTimeout(timeout);
-  }, [selectedProvider, query]);
+  }, [selectedProvider, query, searchRetryKey]);
 
   const selectedKeys = useMemo(
     () => new Set(selectedTracks.map(sourceCandidateKey)),
@@ -1762,9 +1771,20 @@ function MusicWorkspace({
           </p>
 
           {searchError && (
-            <p role="alert" className="mt-3 font-ui text-sm text-state-danger">
-              {searchError}
-            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <p role="alert" className="font-ui text-sm text-state-danger">
+                {searchError}
+              </p>
+              {results === null && query.trim() !== '' && (
+                <button
+                  type="button"
+                  onClick={() => setSearchRetryKey((key) => key + 1)}
+                  className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+                >
+                  Try again
+                </button>
+              )}
+            </div>
           )}
 
           {query.trim() === '' ? (
@@ -3265,6 +3285,8 @@ function ClassWorkspace({
   onOpenSongsByMove,
   onOpenConnections,
   connectionRevision,
+  focusAddMusic,
+  onFocusedAddMusic,
   onBackToClasses,
 }: {
   cls: ClassWithAccess;
@@ -3291,6 +3313,9 @@ function ClassWorkspace({
   onOpenConnections: () => void;
   /** Refresh picker connection truth after the recovery dialog changes it. */
   connectionRevision: number;
+  /** A newly created empty class should land on its first useful action. */
+  focusAddMusic: boolean;
+  onFocusedAddMusic: () => void;
   /** Narrow-layout return path when the selected class is shown before the library. */
   onBackToClasses: () => void;
 }) {
@@ -3333,6 +3358,13 @@ function ClassWorkspace({
   const trackSourceToggleRef = useRef<HTMLButtonElement | null>(null);
   const manualEntryRef = useRef<HTMLDetailsElement | null>(null);
   const inspectorPlaceholderRef = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    if (!focusAddMusic || !showStackAddMusic || tracks.length !== 0) return;
+    const addMusic = trackSourceToggleRef.current;
+    if (!addMusic) return;
+    addMusic.focus();
+    onFocusedAddMusic();
+  }, [focusAddMusic, showStackAddMusic, tracks.length, onFocusedAddMusic]);
   const [pendingRowFocus, setPendingRowFocus] = useState<string | 'placeholder' | null>(null);
   useLayoutEffect(() => {
     if (pendingRowFocus === null) return;
@@ -4620,6 +4652,8 @@ function TrackInspector({
   });
   const [savedDraft, setSavedDraft] = useState(draft);
   const [justSaved, setJustSaved] = useState(false);
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
+  const saveStatusRef = useRef<HTMLParagraphElement>(null);
   const dirty = draft !== savedDraft;
   // BPM lookup (the third-party tempo provider — never Spotify) fills the track's
   // base display BPM; the resolved row BPM is still override ?? base.
@@ -4750,6 +4784,9 @@ function TrackInspector({
       }
       startOffsetMs = parsed;
     }
+    // Save disables as soon as the request starts. Move focus to its nearby
+    // status first, so a button-initiated save does not strand focus on <body>.
+    if (document.activeElement === saveButtonRef.current) saveStatusRef.current?.focus();
     setBusy(true);
     setError(null);
     try {
@@ -5086,8 +5123,10 @@ function TrackInspector({
             {/* Whether the panel matches what is stored, said in words next to the
               control that resolves it. Glyph + word, never colour alone (07). */}
             <p
+              ref={saveStatusRef}
+              tabIndex={-1}
               aria-live="polite"
-              className={`flex items-center gap-1.5 font-ui text-xs ${
+              className={`flex items-center gap-1.5 font-ui text-xs outline-none rf-focus-ring ${
                 dirty
                   ? 'text-state-caution'
                   : justSaved
@@ -5107,6 +5146,7 @@ function TrackInspector({
 
             <div className="flex items-center gap-2">
               <button
+                ref={saveButtonRef}
                 className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:rounded-pill"
                 onClick={save}
                 disabled={busy || !dirty}
