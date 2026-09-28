@@ -10,6 +10,41 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-28 (PRs #458–#461, #463 — builder UI batch and plan-block
+> time editor) — deployed (Worker `79056d05-853e-46ea-9922-1d562c131325`).**
+> Application source `87bf79d`. Deployed from this checkout after owner go.
+> No remote D1 change (`wrangler d1 migrations list --remote` reported nothing
+> to apply; latest local migration remains `0019`). No secret change
+> (`BETA_ALLOWED_EMAILS` confirmed present by name).
+>
+> - **#458:** music source rows fit narrow builder pickers.
+> - **#459:** plan fit waits for music timing to resolve.
+> - **#460:** class cover stays readable on phones.
+> - **#461:** builder focus restore and catalog retry.
+> - **#463:** inline plan-block editor for planned time and HIIT
+>   rounds/work/recovery. The class target never changes; the plan header shows
+>   class target, blocks total, and the gap; HIIT blocks show both totals when
+>   intervals and planned time disagree. Saves send only the changed field via
+>   the existing `PATCH /plan-blocks/:id`, which gains its first integration
+>   coverage. Also fixes the #436 first-Choose-music autofocus re-firing on
+>   every block update and stealing focus after a save.
+>
+> No schema, migration, secret, shared-contract, OpenAPI, or run-payload change.
+> Rollback is Worker-only to prior live `3561b1ba-a854-48cd-9e5f-519a02092ef5`.
+> Pre-deploy: merged tree `87bf79d` is identical to the CI-green PR head
+> `748ab31`, on which the full local gate ran green; SPA rebuilt from `main`
+> before deploy.
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`,
+> `/api/v1/health` → `200`, protected `classes` / `explore` / `teams` → `401`,
+> `GET`/`PATCH /plan-blocks/:id` → `401`, all six security headers present.
+> Mounted routes unauthenticated: shares, playlist import, class cover upload,
+> tag add/remove, provider search, provider track import → `401`; cover
+> serving (`/uploads/covers/:filename`) → handler `404 Image not found`. SPA
+> entry `assets/index-BmQ_JqQW.js` matched the build on three consecutive
+> cache-busted fetches. Worker status 100% on `79056d05`. The editor was not
+> exercised against production data; local browser QA covered it before merge.
+
 > **Session 2026-09-27 (PR #456 — class cover title words stay whole) — deployed (Worker
 > `3561b1ba-a854-48cd-9e5f-519a02092ef5`).** Application source `7eebc00`.
 > Deployed from this checkout after owner go. No remote D1 change

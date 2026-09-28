@@ -37,10 +37,10 @@ Pilates, and HIIT.
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
-- **Current operating focus (2026-09-27):** the launch gate is green and the app is live.
-  `main` includes application tip `2c88f85`, ahead of production application tip `7eebc00` (#456):
-  PRs #458–#461 and #463 are merged and not deployed. The live Worker is
-  `3561b1ba-a854-48cd-9e5f-519a02092ef5`. The block editor's first slice (#463)
+- **Current operating focus (2026-09-28):** the launch gate is green and the app is live.
+  Production matches `main` application tip `87bf79d`: PRs #458–#461 and #463 deployed
+  2026-09-28 as Worker `79056d05-853e-46ea-9922-1d562c131325` (no remote D1 change;
+  see [`HISTORY.md`](./HISTORY.md)). The block editor's first slice (#463)
   edits planned block time and HIIT rounds/intervals inline, keeps the class
   target fixed, and shows the target gap and any HIIT mismatch. Label,
   intensity, goal/focus, and add/delete/reorder editing remain open. See
