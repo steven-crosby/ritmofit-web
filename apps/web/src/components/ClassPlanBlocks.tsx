@@ -259,10 +259,17 @@ function PlanBlockCard({
   onMoved: (classTrackId: string, planBlockId: string | null) => void;
 }) {
   const assigned = tracksForPlanBlock(block.id, tracks);
-  const actualMs = planBlockActualMs(block.id, tracks, payload);
-  const fit = planBlockFit(block.targetDurationMs, actualMs);
-  const fitText = planFitLabel(fit.fit, formatDuration(Math.abs(fit.deltaMs)));
   const empty = assigned.length === 0;
+  const showMusicFit =
+    !empty &&
+    assigned.every((track) =>
+      payload?.tracks.some(
+        (entry) => entry.classTrackId === track.id && entry.track.durationMs != null,
+      ),
+    );
+  const actualMs = showMusicFit ? planBlockActualMs(block.id, tracks, payload) : 0;
+  const fit = showMusicFit ? planBlockFit(block.targetDurationMs, actualMs) : null;
+  const fitText = fit ? planFitLabel(fit.fit, formatDuration(Math.abs(fit.deltaMs))) : null;
   const blockName = planBlockOptionLabel(block);
   const destOpen = assigning && musicPicker != null;
 
@@ -285,18 +292,23 @@ function PlanBlockCard({
         {block.movementFocus} · {guidanceSummary(block)}
       </p>
       <p className="font-data text-xs text-text-secondary">
-        Planned {formatDuration(block.targetDurationMs)} · Music {formatDuration(actualMs)} ·{' '}
-        <span
-          className={
-            fit.fit === 'on_plan'
-              ? 'text-text-secondary'
-              : fit.fit === 'over'
-                ? 'text-state-caution'
-                : 'text-text-tertiary'
-          }
-        >
-          {fitText}
-        </span>
+        Planned {formatDuration(block.targetDurationMs)}
+        {fit && (
+          <>
+            {' · '}Music {formatDuration(actualMs)} ·{' '}
+            <span
+              className={
+                fit.fit === 'on_plan'
+                  ? 'text-text-secondary'
+                  : fit.fit === 'over'
+                    ? 'text-state-caution'
+                    : 'text-text-tertiary'
+              }
+            >
+              {fitText}
+            </span>
+          </>
+        )}
       </p>
       {empty ? (
         <div className="rounded-control border border-dashed border-border-subtle bg-bg-sunken px-3 py-2">

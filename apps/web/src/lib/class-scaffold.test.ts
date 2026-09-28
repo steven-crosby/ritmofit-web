@@ -140,6 +140,9 @@ describe('planNextStep', () => {
     expect(
       planNextStep(blocks, [track('00000000-0000-4000-8000-0000000000a1', blockId)], payload),
     ).toBe(null);
+    expect(
+      planNextStep(blocks, [track('00000000-0000-4000-8000-0000000000a1', blockId)], null),
+    ).toBe(null);
   });
 });
 
@@ -168,6 +171,7 @@ describe('nextEmptyPlanBlock', () => {
       } as RunPayload)?.id,
     ).toBe(otherBlockId);
     expect(nextEmptyPlanBlock([first], [track(blockId, blockId)], null, blockId)).toBeNull();
+    expect(nextEmptyPlanBlock(blocks, [track(blockId, blockId)], null)?.id).toBe(otherBlockId);
   });
 });
 
