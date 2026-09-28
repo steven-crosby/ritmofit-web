@@ -3,12 +3,11 @@
  * stays available as a quiet alternative. Playlist, likes, copy, and
  * Songs-by-Move keep their existing empty/legacy create calls.
  */
-import { useRef, useState } from 'react';
-import type { Class } from '@ritmofit/shared';
+import { useMemo, useRef, useState } from 'react';
+import { generateScaffold, type Class } from '@ritmofit/shared';
 import { createClass } from '../lib/api.js';
 import {
   DEFAULT_SCAFFOLD_DURATION,
-  SCAFFOLD_BLOCK_COUNT,
   SCAFFOLD_DISCIPLINES,
   SCAFFOLD_DURATIONS,
   scaffoldRecipeId,
@@ -17,6 +16,7 @@ import {
 } from '../lib/class-scaffold.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import { Dialog } from './Dialog.js';
+import { INTENSITY_LABEL, IntensityReadout } from './IntensityReadout.js';
 
 const MINUTE_MS = 60_000;
 
@@ -47,6 +47,15 @@ export function CreateClassDialog({
   const { busy, run } = useAsyncAction(onError);
   const [missing, setMissing] = useState<'title' | 'discipline' | null>(null);
   const trimmed = title.trim();
+  // The recipe cannot be swapped after creation, so show exactly what it will
+  // create — the same generator the API persists from.
+  const preview = useMemo(
+    () =>
+      !emptyFirst && discipline != null
+        ? generateScaffold(scaffoldRecipeId(discipline, duration)).blocks
+        : null,
+    [emptyFirst, discipline, duration],
+  );
 
   // The buttons stay operable so a click always answers. A disabled submit is
   // both a dead end (nothing happens, nothing is said) and invisible to the
@@ -234,12 +243,42 @@ export function CreateClassDialog({
             </>
           ) : emptyFirst ? (
             `Creates an empty ${duration}-minute class. The discipline sets its movement language.`
-          ) : discipline ? (
-            `Creates ${SCAFFOLD_BLOCK_COUNT} editable blocks totaling ${duration} minutes.`
+          ) : preview ? (
+            `Creates ${preview.length} editable blocks totaling ${duration} minutes.`
           ) : (
-            'Choose a discipline to preview the scaffold.'
+            'Choose a discipline to see the plan.'
           )}
         </p>
+
+        {preview && (
+          <ol
+            aria-label="Teaching plan preview"
+            className="flex flex-col divide-y divide-border-subtle rounded-card border border-border-subtle bg-bg-sunken"
+          >
+            {preview.map((block) => (
+              <li
+                key={block.recipeBlockKey}
+                className="flex min-h-9 items-center gap-2 px-3 py-1.5 font-ui text-sm"
+              >
+                <span className="w-4 shrink-0 font-data text-xs text-text-tertiary">
+                  {block.position + 1}
+                </span>
+                <span className="min-w-0 flex-1 break-words text-text-primary">{block.label}</span>
+                <span className="shrink-0 font-data text-xs text-text-secondary">
+                  {block.targetDurationMs / MINUTE_MS} min
+                </span>
+                {/* Phones keep the zone word (the non-color encoding) and drop the
+                    bars so block names stay whole at 320px. */}
+                <span className="w-14 shrink-0 font-data text-xs uppercase tracking-wide text-text-secondary sm:hidden">
+                  {INTENSITY_LABEL[block.intensity]}
+                </span>
+                <span className="hidden w-20 shrink-0 sm:inline-flex">
+                  <IntensityReadout intensity={block.intensity} />
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <button

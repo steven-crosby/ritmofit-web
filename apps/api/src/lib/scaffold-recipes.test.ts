@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { scaffoldRecipeIdValues } from '@ritmofit/shared';
-import { generateScaffold } from './class-scaffold-recipes.js';
+import { generateScaffold, scaffoldRecipeIdValues } from '@ritmofit/shared';
 
 describe('generateScaffold', () => {
   it.each(scaffoldRecipeIdValues)(

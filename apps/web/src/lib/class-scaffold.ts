@@ -22,7 +22,6 @@ export const SCAFFOLD_DISCIPLINES = [
 
 export const SCAFFOLD_DURATIONS = [30, 45, 60] as const;
 export const DEFAULT_SCAFFOLD_DURATION = 45;
-export const SCAFFOLD_BLOCK_COUNT = 7;
 
 export type ScaffoldDiscipline = (typeof SCAFFOLD_DISCIPLINES)[number]['value'];
 export type ScaffoldDuration = (typeof SCAFFOLD_DURATIONS)[number];
@@ -220,27 +219,35 @@ export function nextEmptyPlanBlock(
   );
 }
 
+/**
+ * Discipline-specific structure for a block card, read beside `movementFocus`.
+ * Says only what the focus line does not: HIIT sequence focus repeats the
+ * movement focus, and a mat is a given in mat Pilates. Equipment beyond that is
+ * always optional. Empty when there is nothing to add.
+ */
 export function guidanceSummary(block: ClassPlanBlock): string {
   const { guidance } = block;
   if (guidance.kind === 'cycle') {
-    const posture = guidance.posture === 'mixed' ? 'Seated/mixed' : capitalize(guidance.posture);
-    return `${posture} · ${guidance.cadenceMinRpm}–${guidance.cadenceMaxRpm} rpm · RPE ${guidance.rpeMin}–${guidance.rpeMax}`;
+    return `${capitalize(guidance.posture)} · ${guidance.cadenceMinRpm}–${guidance.cadenceMaxRpm} rpm · RPE ${guidance.rpeMin}–${guidance.rpeMax}`;
   }
   if (guidance.kind === 'pilates') {
-    if (guidance.optionalEquipment.length === 0) return 'Mat';
-    return guidance.optionalEquipment.map(pilatesEquipmentLabel).join(' · ');
+    return guidance.optionalEquipment
+      .filter((value) => value !== 'mat')
+      .map((value) => (value === 'light_weights' ? 'Optional light weights' : 'Optional band'))
+      .join(' · ');
   }
   const interval =
     guidance.workMs != null && guidance.recoveryMs != null
       ? `${guidance.workMs / 1000}/${guidance.recoveryMs / 1000}`
       : 'Continuous';
   const rounds = guidance.rounds != null ? ` · ${guidance.rounds} rounds` : '';
-  return `${interval}${rounds} · ${guidance.sequenceFocus}`;
+  const equipment = guidance.equipment === 'dumbbells_optional' ? ' · Optional dumbbells' : '';
+  return `${interval}${rounds}${equipment}`;
 }
 
-function pilatesEquipmentLabel(value: 'mat' | 'band' | 'light_weights'): string {
-  if (value === 'light_weights') return 'Light weights';
-  return capitalize(value);
+/** The block card's secondary line: movement focus plus any structure it lacks. */
+export function planBlockDetailLine(block: ClassPlanBlock): string {
+  return [block.movementFocus, guidanceSummary(block)].filter(Boolean).join(' · ');
 }
 
 function capitalize(value: string): string {

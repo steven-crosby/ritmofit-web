@@ -3,14 +3,15 @@
  *
  * These are creation recipes, not live templates: generation materializes every
  * block into the class, so later recipe versions cannot rewrite existing work.
+ * They live in shared so the API persists exactly what the create dialog previews.
  */
+import type { ClassTemplate } from './enums.js';
 import {
   scaffoldPlanBlockSchema,
   scaffoldRecipeIdSchema,
-  type ClassTemplate,
   type ScaffoldPlanBlock,
   type ScaffoldRecipeId,
-} from '@ritmofit/shared';
+} from './entities/class-plan-blocks.js';
 
 const MINUTE_MS = 60_000;
 

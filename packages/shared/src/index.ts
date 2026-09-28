@@ -19,6 +19,7 @@ export * from './beat.js';
 export * from './entities/identity.js';
 export * from './entities/classes.js';
 export * from './entities/class-plan-blocks.js';
+export * from './scaffold-recipes.js';
 export * from './entities/tracks.js';
 export * from './entities/moves.js';
 export * from './entities/choreography.js';
