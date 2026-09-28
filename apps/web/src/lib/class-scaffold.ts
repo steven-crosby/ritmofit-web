@@ -139,6 +139,21 @@ export function hiitIntervalMismatch(
 }
 
 /**
+ * HIIT guidance carries its own copy of the movement focus (`sequenceFocus`),
+ * which recipes set to the same text. Keep the copy in step when the focus is
+ * edited so stored guidance never silently goes stale. Returns the input object
+ * unchanged when there is nothing to sync.
+ */
+export function syncHiitSequenceFocus(
+  guidance: ClassPlanBlockGuidance,
+  movementFocus: string | undefined,
+): ClassPlanBlockGuidance {
+  if (guidance.kind !== 'hiit' || movementFocus == null) return guidance;
+  if (guidance.sequenceFocus === movementFocus) return guidance;
+  return { ...guidance, sequenceFocus: movementFocus };
+}
+
+/**
  * Parse an instructor-typed planned duration: `m:ss` or whole minutes (`12`).
  * Returns null for anything that is not a positive, bounded duration.
  */

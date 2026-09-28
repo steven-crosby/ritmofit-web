@@ -488,7 +488,7 @@ describe('ClassPlanBlocks', () => {
   });
 });
 
-describe('ClassPlanBlocks planned-time editor', () => {
+describe('ClassPlanBlocks block editor', () => {
   const hiitBlock: ClassPlanBlock = {
     ...block,
     id: '00000000-0000-4000-8000-0000000000b3',
@@ -539,7 +539,7 @@ describe('ClassPlanBlocks planned-time editor', () => {
     expect(screen.getByText('1:00 over target')).toBeTruthy();
     expect(screen.getByText('Intervals don’t match planned time')).toBeTruthy();
     expect(screen.getByText('Intervals 9:00 · Planned 10:00')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Edit planned time/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Edit Block/ })).toBeNull();
   });
 
   it('omits the gap when the class has no target', async () => {
@@ -553,13 +553,14 @@ describe('ClassPlanBlocks planned-time editor', () => {
     vi.mocked(api.updateClassPlanBlock).mockReturnValue(pending.promise);
     renderBlocks([block], { targetDurationMs: 240_000 });
     const edit = await screen.findByRole('button', {
-      name: 'Edit planned time for Block 1 · Arrive on the bike',
+      name: 'Edit Block 1 · Arrive on the bike',
     });
     expect(screen.getByText('On target')).toBeTruthy();
     fireEvent.click(edit);
 
+    // The editor opens on the first field, the block name.
+    expect(document.activeElement).toBe(screen.getByLabelText('Block name'));
     const input = screen.getByLabelText('Planned time (m:ss)') as HTMLInputElement;
-    expect(document.activeElement).toBe(input);
     expect(input.value).toBe('4:00');
     fireEvent.click(screen.getByRole('button', { name: 'One minute more' }));
     expect(input.value).toBe('5:00');
@@ -572,7 +573,7 @@ describe('ClassPlanBlocks planned-time editor', () => {
 
     pending.resolve({ ...block, targetDurationMs: 300_000 });
     const reopened = await screen.findByRole('button', {
-      name: 'Edit planned time for Block 1 · Arrive on the bike',
+      name: 'Edit Block 1 · Arrive on the bike',
     });
     await waitFor(() => expect(document.activeElement).toBe(reopened));
     expect(screen.getByText('Planned 5:00')).toBeTruthy();
@@ -588,13 +589,11 @@ describe('ClassPlanBlocks planned-time editor', () => {
       }),
     );
     renderBlocks([hiitBlock]);
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Edit planned time for Block 1 · Circuit A' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Block 1 · Circuit A' }));
     expect(screen.queryByText('Intervals don’t match planned time')).toBeNull();
     fireEvent.change(screen.getByLabelText('Rounds'), { target: { value: '10' } });
     expect(screen.getByText('Intervals 10:00 · Planned 9:00')).toBeTruthy();
-    fireEvent.submit(screen.getByRole('form', { name: 'Planned time for Block 1 · Circuit A' }));
+    fireEvent.submit(screen.getByRole('form', { name: 'Editing Block 1 · Circuit A' }));
 
     expect(api.updateClassPlanBlock).toHaveBeenCalledWith(hiitBlock.id, {
       guidance: { ...hiitBlock.guidance, rounds: 10 },
@@ -607,13 +606,13 @@ describe('ClassPlanBlocks planned-time editor', () => {
   it('keeps the draft and announces a failed save', async () => {
     vi.mocked(api.updateClassPlanBlock).mockRejectedValue(new Error('Network down'));
     renderBlocks([block]);
-    fireEvent.click(await screen.findByRole('button', { name: /Edit planned time/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Edit Block/ }));
     const input = screen.getByLabelText('Planned time (m:ss)') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '6:30' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Couldn’t save planned time/);
+    expect(alert.textContent).toMatch(/Couldn’t save the block/);
     expect(alert.textContent).toMatch(/Network down/);
     expect(input.value).toBe('6:30');
     expect(input.disabled).toBe(false);
@@ -624,7 +623,7 @@ describe('ClassPlanBlocks planned-time editor', () => {
 
   it('rejects an invalid duration without calling the API', async () => {
     renderBlocks([block]);
-    fireEvent.click(await screen.findByRole('button', { name: /Edit planned time/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Edit Block/ }));
     const input = screen.getByLabelText('Planned time (m:ss)') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '0:00' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -637,13 +636,13 @@ describe('ClassPlanBlocks planned-time editor', () => {
 
   it('cancels on Escape or an unchanged save without calling the API', async () => {
     renderBlocks([block]);
-    const edit = await screen.findByRole('button', { name: /Edit planned time/ });
+    const edit = await screen.findByRole('button', { name: /^Edit Block/ });
     fireEvent.click(edit);
     const input = screen.getByLabelText('Planned time (m:ss)');
     fireEvent.change(input, { target: { value: '9:00' } });
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(screen.queryByRole('form')).toBeNull();
-    const reopened = screen.getByRole('button', { name: /Edit planned time/ });
+    const reopened = screen.getByRole('button', { name: /^Edit Block/ });
     expect(document.activeElement).toBe(reopened);
     expect(screen.getByText('Planned 4:00')).toBeTruthy();
 
@@ -653,7 +652,94 @@ describe('ClassPlanBlocks planned-time editor', () => {
     expect(api.updateClassPlanBlock).not.toHaveBeenCalled();
   });
 
-  it('keeps focus on Edit time after a save on an empty scaffold that auto-focused Choose music', async () => {
+  it('saves each teaching field alone, trimmed, and only when it changed', async () => {
+    vi.mocked(api.updateClassPlanBlock).mockImplementation(
+      async (_id: string, body: UpdateClassPlanBlock) => ({ ...block, ...body }) as ClassPlanBlock,
+    );
+    renderBlocks([block]);
+    const open = async () =>
+      fireEvent.click(await screen.findByRole('button', { name: /^Edit Block 1 · / }));
+
+    await open();
+    fireEvent.change(screen.getByLabelText('Block name'), { target: { value: '  Easy spin ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(api.updateClassPlanBlock).toHaveBeenLastCalledWith(block.id, { label: 'Easy spin' });
+    expect(await screen.findByRole('heading', { name: 'Easy spin' })).toBeTruthy();
+
+    await open();
+    fireEvent.change(screen.getByLabelText('Teaching goal'), {
+      target: { value: 'Settle in and set the ride.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(api.updateClassPlanBlock).toHaveBeenLastCalledWith(block.id, {
+      teachingGoal: 'Settle in and set the ride.',
+    });
+    expect(await screen.findByText('Settle in and set the ride.')).toBeTruthy();
+
+    await open();
+    fireEvent.change(screen.getByLabelText('Movement focus'), {
+      target: { value: 'Light legs.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    // Cycle guidance has no focus copy, so no guidance is sent.
+    expect(api.updateClassPlanBlock).toHaveBeenLastCalledWith(block.id, {
+      movementFocus: 'Light legs.',
+    });
+    expect(api.updateClassPlanBlock).toHaveBeenCalledTimes(3);
+  });
+
+  it('raises a block to All Out, which starter recipes never prefill', async () => {
+    vi.mocked(api.updateClassPlanBlock).mockResolvedValue({ ...hiitBlock, intensity: 'all_out' });
+    renderBlocks([hiitBlock]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Block 1 · Circuit A' }));
+    const group = screen.getByRole('group', { name: 'Intensity for Block 1 · Circuit A' });
+    fireEvent.click(within(group).getByRole('button', { name: 'All Out' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(api.updateClassPlanBlock).toHaveBeenCalledWith(hiitBlock.id, { intensity: 'all_out' });
+    expect(await screen.findByLabelText('Intensity All Out')).toBeTruthy();
+  });
+
+  it('keeps the HIIT focus copy in step with an edited movement focus', async () => {
+    vi.mocked(api.updateClassPlanBlock).mockResolvedValue(hiitBlock);
+    renderBlocks([hiitBlock]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Block 1 · Circuit A' }));
+    fireEvent.change(screen.getByLabelText('Movement focus'), {
+      target: { value: 'Squat, push, trunk.' },
+    });
+    fireEvent.change(screen.getByLabelText('Rounds'), { target: { value: '8' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    // One request: the focus, and guidance carrying both the interval edit and
+    // the synced focus copy.
+    expect(api.updateClassPlanBlock).toHaveBeenCalledWith(hiitBlock.id, {
+      movementFocus: 'Squat, push, trunk.',
+      guidance: { ...hiitBlock.guidance, rounds: 8, sequenceFocus: 'Squat, push, trunk.' },
+    });
+  });
+
+  it('blocks a blank name or goal and focuses the first one', async () => {
+    renderBlocks([block]);
+    fireEvent.click(await screen.findByRole('button', { name: /^Edit Block/ }));
+    const name = screen.getByLabelText('Block name');
+    const goal = screen.getByLabelText('Teaching goal');
+    fireEvent.change(goal, { target: { value: '   ' } });
+    fireEvent.change(name, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(api.updateClassPlanBlock).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(name);
+    expect(name.getAttribute('aria-invalid')).toBe('true');
+    expect(goal.getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByText(/Name the block/)).toBeTruthy();
+
+    fireEvent.change(name, { target: { value: 'Arrive' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(api.updateClassPlanBlock).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(goal);
+  });
+
+  it('keeps focus on Edit block after a save on an empty scaffold that auto-focused Choose music', async () => {
     vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
     vi.mocked(api.updateClassPlanBlock).mockResolvedValue({ ...block, targetDurationMs: 300_000 });
     render(
@@ -672,15 +758,13 @@ describe('ClassPlanBlocks planned-time editor', () => {
     const choose = await screen.findByRole('button', { name: /Choose music for Block 1/ });
     await waitFor(() => expect(document.activeElement).toBe(choose));
 
-    fireEvent.click(screen.getByRole('button', { name: /Edit planned time/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Edit Block/ }));
     fireEvent.change(screen.getByLabelText('Planned time (m:ss)'), { target: { value: '5:00' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('Planned 5:00')).toBeTruthy();
     await waitFor(() =>
-      expect(document.activeElement).toBe(
-        screen.getByRole('button', { name: /Edit planned time/ }),
-      ),
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: /^Edit Block/ })),
     );
   });
 });

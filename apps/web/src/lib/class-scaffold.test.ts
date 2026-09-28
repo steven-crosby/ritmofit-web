@@ -17,6 +17,7 @@ import {
   nextEmptyPlanBlock,
   planNextStep,
   scaffoldRecipeId,
+  syncHiitSequenceFocus,
   tracksForPlanBlock,
   unassignedClassTracks,
 } from './class-scaffold.js';
@@ -339,5 +340,37 @@ describe('planned time editing helpers', () => {
     expect(formatPlannedDurationInput(390_000)).toBe('6:30');
     expect(formatPlannedDurationInput(5_400_000)).toBe('90:00');
     expect(parsePlannedDuration(formatPlannedDurationInput(5_400_000))).toBe(5_400_000);
+  });
+});
+
+describe('syncHiitSequenceFocus', () => {
+  const hiit = {
+    kind: 'hiit' as const,
+    workMs: null,
+    recoveryMs: null,
+    rounds: null,
+    sequenceFocus: 'Walk and breathe.',
+    equipment: 'bodyweight' as const,
+  };
+
+  it('copies an edited focus into HIIT guidance', () => {
+    expect(syncHiitSequenceFocus(hiit, 'Walk, breathe, reset.')).toEqual({
+      ...hiit,
+      sequenceFocus: 'Walk, breathe, reset.',
+    });
+  });
+
+  it('returns the same object when there is nothing to sync', () => {
+    const cycle = {
+      kind: 'cycle' as const,
+      posture: 'seated' as const,
+      cadenceMinRpm: 80,
+      cadenceMaxRpm: 95,
+      rpeMin: 2,
+      rpeMax: 3,
+    };
+    expect(syncHiitSequenceFocus(hiit, undefined)).toBe(hiit);
+    expect(syncHiitSequenceFocus(hiit, 'Walk and breathe.')).toBe(hiit);
+    expect(syncHiitSequenceFocus(cycle, 'Anything.')).toBe(cycle);
   });
 });
