@@ -39,10 +39,11 @@ Pilates, and HIIT.
   monetization, or meaningful scale.
 - **Current operating focus (2026-09-27):** the launch gate is green and the app is live.
   `main` includes application tip `2c88f85`, ahead of production application tip `7eebc00` (#456):
-  PRs #458–#461 are merged and not deployed. The live Worker is
-  `3561b1ba-a854-48cd-9e5f-519a02092ef5`. The next class-template slice is
-  the block editor: preserve the fixed class target and independent HIIT rounds
-  when planned block time changes, and show their gaps. See
+  PRs #458–#461 and #463 are merged and not deployed. The live Worker is
+  `3561b1ba-a854-48cd-9e5f-519a02092ef5`. The block editor's first slice (#463)
+  edits planned block time and HIIT rounds/intervals inline, keeps the class
+  target fixed, and shows the target gap and any HIIT mismatch. Label,
+  intensity, goal/focus, and add/delete/reorder editing remain open. See
   [`class-template-handoff.md`](./class-template-handoff.md) for the settled rules.
   SPC-09 remains owner-blocked. PROD-HYGIENE runbook is in #426; live fixture
   delete is still owner-pending. Full Pulse Check disposition lives in
