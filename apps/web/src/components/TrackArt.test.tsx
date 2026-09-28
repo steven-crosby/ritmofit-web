@@ -65,10 +65,9 @@ describe('ClassCoverArt', () => {
     expect(text?.textContent).toBe('Monday Ride');
     // White fails contrast on the light stops; ink is the text-on-copper rule.
     expect(text?.className).toContain('text-text-on-accent');
-    expect(text?.className).toContain('line-clamp-2');
-    // "Day Theme Type + emoji" titles need three lines at the 120px (sm+) cover;
-    // phones stay at two because a third line there falls below 3:1 contrast.
-    expect(text?.className).toContain('sm:line-clamp-3');
+    expect(text?.className).toContain('line-clamp-3');
+    expect(tile?.className).toContain('h-[120px]');
+    expect(tile?.className).toContain('w-[120px]');
     // A flex tile stretches the clamped text to full height and a third line shows
     // (seen in the browser); the tile must stay a plain block.
     expect(tile?.className).toMatch(/\bblock\b/);

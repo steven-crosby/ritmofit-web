@@ -3984,10 +3984,10 @@ export function ClassHeaderCard({
   return (
     <div className="flex flex-col gap-3 rounded-card bg-bg-raised p-5 shadow-card">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-2">
-        {/* min-w on sm+ reserves a readable title width so the (non-shrinking) actions
-            wrap below instead of squeezing the truncating title to zero width in the
-            narrow center column. min-w-0 at base keeps the stacked mobile layout safe. */}
-        <div className="flex flex-1 items-start gap-4 min-w-0 sm:min-w-[20rem]">
+        {/* On phones, put the cover above the title so both can use their full width.
+            On sm+, reserve a readable title width beside the cover so actions wrap
+            instead of squeezing the truncating heading to zero width. */}
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-4 sm:min-w-[20rem] sm:flex-row">
           {/* Cover image area */}
           <div className="relative shrink-0 flex flex-col items-center">
             {cls.coverImageUrl ? (
@@ -3995,7 +3995,7 @@ export function ClassHeaderCard({
                 src={cls.coverImageUrl}
                 alt="Class Cover"
                 fetchPriority="high"
-                className="h-24 w-24 rounded-card object-cover sm:h-[120px] sm:w-[120px] border border-interactive/20"
+                className="h-[120px] w-[120px] rounded-card object-cover border border-interactive/20"
               />
             ) : (
               // Derived cover: the class's gradient with its title on the art — same
@@ -4023,7 +4023,7 @@ export function ClassHeaderCard({
               </>
             )}
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 w-full flex-1 sm:w-auto">
             {editingTitle ? (
               <form
                 className="flex flex-wrap items-center gap-2"
