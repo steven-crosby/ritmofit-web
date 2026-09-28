@@ -3598,6 +3598,7 @@ function ClassWorkspace({
 
         <ClassPlanBlocks
           classId={cls.id}
+          targetDurationMs={cls.targetDurationMs}
           tracks={tracks}
           payload={payload}
           canEdit={canEdit}

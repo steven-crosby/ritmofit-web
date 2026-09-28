@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { ClassPlanBlock, ClassTrack, RunPayload } from '@ritmofit/shared';
 import {
+  classTargetGap,
+  classTargetGapLabel,
   DEFAULT_SCAFFOLD_DURATION,
+  formatPlannedDurationInput,
+  hiitIntervalMismatch,
+  hiitIntervalTotalMs,
+  parsePlannedDuration,
+  planTotalMs,
   guidanceSummary,
   planBlockActualMs,
   planBlockFit,
@@ -205,5 +212,72 @@ describe('guidanceSummary', () => {
     expect(guidanceSummary(pilates)).toBe('Mat · Band');
     expect(guidanceSummary(hiit)).toContain('30/30');
     expect(guidanceSummary(hiit)).toContain('6 rounds');
+  });
+});
+
+describe('planned time editing helpers', () => {
+  const hiit = {
+    kind: 'hiit' as const,
+    workMs: 30_000,
+    recoveryMs: 30_000,
+    rounds: 9,
+    sequenceFocus: 'Lower body, upper body, locomotion, trunk.',
+    equipment: 'bodyweight' as const,
+  };
+
+  it('sums planned block time independently of the class target', () => {
+    const blocks = [
+      { targetDurationMs: 360_000 },
+      { targetDurationMs: 540_000 },
+    ] as ClassPlanBlock[];
+    expect(planTotalMs(blocks)).toBe(900_000);
+    expect(planTotalMs([])).toBe(0);
+  });
+
+  it('reports the class-target gap in both directions, and none without a target', () => {
+    expect(classTargetGap(null, 900_000)).toBeNull();
+    expect(classTargetGap(2_700_000, 2_700_000)).toEqual({ deltaMs: 0, fit: 'on_plan' });
+    expect(classTargetGap(2_700_000, 2_820_000)).toEqual({ deltaMs: 120_000, fit: 'over' });
+    expect(classTargetGap(2_700_000, 2_640_000)).toEqual({ deltaMs: -60_000, fit: 'under' });
+    expect(classTargetGapLabel('on_plan', '0:00')).toBe('On target');
+    expect(classTargetGapLabel('over', '2:00')).toBe('2:00 over target');
+    expect(classTargetGapLabel('under', '1:00')).toBe('1:00 under target');
+  });
+
+  it('totals timed HIIT intervals and ignores continuous or non-HIIT guidance', () => {
+    expect(hiitIntervalTotalMs(hiit)).toBe(540_000);
+    expect(hiitIntervalTotalMs({ ...hiit, rounds: null, workMs: null, recoveryMs: null })).toBe(
+      null,
+    );
+    expect(hiitIntervalTotalMs({ kind: 'pilates', optionalEquipment: [] })).toBeNull();
+  });
+
+  it('flags a HIIT mismatch with both totals and never when they agree', () => {
+    expect(hiitIntervalMismatch(hiit, 540_000)).toBeNull();
+    expect(hiitIntervalMismatch(hiit, 600_000)).toEqual({
+      intervalMs: 540_000,
+      plannedMs: 600_000,
+    });
+    expect(hiitIntervalMismatch({ ...hiit, rounds: 10 }, 540_000)).toEqual({
+      intervalMs: 600_000,
+      plannedMs: 540_000,
+    });
+  });
+
+  it('parses m:ss and whole minutes, rejecting zero, junk, and out-of-range values', () => {
+    expect(parsePlannedDuration('6:30')).toBe(390_000);
+    expect(parsePlannedDuration(' 12 ')).toBe(720_000);
+    expect(parsePlannedDuration('0:45')).toBe(45_000);
+    expect(parsePlannedDuration('90:00')).toBe(5_400_000);
+    for (const bad of ['', '0', '0:00', '6:60', '6:5', '-1', '1.5', 'abc', '1441']) {
+      expect(parsePlannedDuration(bad)).toBeNull();
+    }
+    expect(parsePlannedDuration('1440')).toBe(86_400_000);
+  });
+
+  it('formats the field value as minutes and seconds, even past an hour', () => {
+    expect(formatPlannedDurationInput(390_000)).toBe('6:30');
+    expect(formatPlannedDurationInput(5_400_000)).toBe('90:00');
+    expect(parsePlannedDuration(formatPlannedDurationInput(5_400_000))).toBe(5_400_000);
   });
 });
