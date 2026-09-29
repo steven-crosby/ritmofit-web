@@ -48,10 +48,11 @@ function track(id: string, planBlockId: string | null): ClassTrack {
 }
 
 describe('scaffoldRecipeId', () => {
-  it('maps discipline and duration onto the immutable v1 recipes', () => {
-    expect(scaffoldRecipeId('cycle', 30)).toBe('cycle_30_v1');
+  it('maps discipline and duration onto the current recipe versions', () => {
+    expect(scaffoldRecipeId('cycle', 30)).toBe('cycle_30_v2');
     expect(scaffoldRecipeId('sculpt', DEFAULT_SCAFFOLD_DURATION)).toBe('pilates_45_v1');
-    expect(scaffoldRecipeId('hiit', 60)).toBe('hiit_60_v1');
+    expect(scaffoldRecipeId('hiit', 60)).toBe('hiit_60_v2');
+    expect(scaffoldRecipeId('hiit', 30)).toBe('hiit_30_v1');
   });
 });
 

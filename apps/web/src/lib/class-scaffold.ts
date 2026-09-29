@@ -4,6 +4,7 @@
  * share one mapping without reading the API recipe tables.
  */
 import {
+  CURRENT_SCAFFOLD_RECIPES,
   MAX_DURATION_MS,
   type ClassPlanBlock,
   type ClassPlanBlockGuidance,
@@ -41,7 +42,7 @@ export function scaffoldRecipeId(
   discipline: ScaffoldDiscipline,
   duration: ScaffoldDuration,
 ): ScaffoldRecipeId {
-  return `${RECIPE_PREFIX[discipline]}_${duration}_v1`;
+  return CURRENT_SCAFFOLD_RECIPES[RECIPE_PREFIX[discipline]][duration];
 }
 
 export function tracksForPlanBlock(blockId: string, tracks: readonly ClassTrack[]): ClassTrack[] {

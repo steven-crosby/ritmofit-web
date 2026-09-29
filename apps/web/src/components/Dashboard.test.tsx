@@ -268,7 +268,7 @@ describe('Dashboard class library states', () => {
       expect(api.createClass).toHaveBeenCalledWith({
         mode: 'scaffold',
         title: 'Saturday ride',
-        recipeId: 'cycle_45_v1',
+        recipeId: 'cycle_45_v2',
       }),
     );
   });

@@ -18,9 +18,25 @@ export const scaffoldRecipeIdValues = [
   'hiit_30_v1',
   'hiit_45_v1',
   'hiit_60_v1',
+  // v2 (2026-09-28): distinct Cycle peak; fixed 4-minute HIIT finisher. Append-only.
+  'cycle_30_v2',
+  'cycle_45_v2',
+  'cycle_60_v2',
+  'hiit_45_v2',
+  'hiit_60_v2',
 ] as const;
 export const scaffoldRecipeIdSchema = z.enum(scaffoldRecipeIdValues);
 export type ScaffoldRecipeId = z.infer<typeof scaffoldRecipeIdSchema>;
+
+export type ScaffoldRecipeFamily = 'cycle' | 'pilates' | 'hiit';
+export type ScaffoldRecipeDuration = 30 | 45 | 60;
+
+/** The recipe new classes receive; older ids stay valid for existing classes and clients. */
+export const CURRENT_SCAFFOLD_RECIPES = {
+  cycle: { 30: 'cycle_30_v2', 45: 'cycle_45_v2', 60: 'cycle_60_v2' },
+  pilates: { 30: 'pilates_30_v1', 45: 'pilates_45_v1', 60: 'pilates_60_v1' },
+  hiit: { 30: 'hiit_30_v1', 45: 'hiit_45_v2', 60: 'hiit_60_v2' },
+} as const satisfies Record<ScaffoldRecipeFamily, Record<ScaffoldRecipeDuration, ScaffoldRecipeId>>;
 
 export const planBlockGuidanceKindValues = ['cycle', 'pilates', 'hiit'] as const;
 export const planBlockGuidanceKindSchema = z.enum(planBlockGuidanceKindValues);

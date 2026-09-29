@@ -102,15 +102,29 @@ describe('CreateClassDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
     const preview = screen.getByRole('list', { name: 'Teaching plan preview' });
     const rows = within(preview).getAllByRole('listitem');
-    expect(rows).toHaveLength(7);
-    expect(rows[5]!.textContent).toContain('Peak effort');
-    expect(rows[5]!.textContent).toContain('7 min');
-    expect(within(rows[5]!).getByLabelText('Intensity Attack')).toBeTruthy();
-    expect(screen.getByText('Creates 7 editable blocks totaling 45 minutes.')).toBeTruthy();
+    expect(rows).toHaveLength(8);
+    expect(rows[5]!.textContent).toContain('Recover before the peak');
+    expect(within(rows[5]!).getByLabelText('Intensity Build')).toBeTruthy();
+    expect(rows[6]!.textContent).toContain('Peak effort');
+    expect(rows[6]!.textContent).toContain('5 min');
+    expect(within(rows[6]!).getByLabelText('Intensity Attack')).toBeTruthy();
+    expect(screen.getByText('Creates 8 editable blocks totaling 45 minutes.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: '30 min' }));
     const shorter = within(screen.getByRole('list', { name: 'Teaching plan preview' }));
-    expect(shorter.getAllByRole('listitem')[5]!.textContent).toContain('4 min');
+    expect(shorter.getAllByRole('listitem')[6]!.textContent).toContain('3 min');
+  });
+
+  it('previews a four-minute HIIT finisher at 60 minutes', () => {
+    renderDialog();
+    fireEvent.click(screen.getByRole('button', { name: 'HIIT' }));
+    fireEvent.click(screen.getByRole('button', { name: '60 min' }));
+    const rows = within(screen.getByRole('list', { name: 'Teaching plan preview' })).getAllByRole(
+      'listitem',
+    );
+    expect(rows).toHaveLength(7);
+    expect(rows[5]!.textContent).toContain('Finisher');
+    expect(rows[5]!.textContent).toContain('4 min');
   });
 
   it('shows no plan preview on the empty path', () => {
@@ -199,7 +213,7 @@ describe('CreateClassDialog', () => {
       expect(api.createClass).toHaveBeenCalledWith({
         mode: 'scaffold',
         title: 'Planned Cycle',
-        recipeId: 'cycle_45_v1',
+        recipeId: 'cycle_45_v2',
       }),
     );
   });

@@ -75,6 +75,42 @@ describe('class plan blocks and deterministic scaffolds (integration)', () => {
     expect(liveBody).not.toHaveProperty('planBlocks');
   });
 
+  it('creates, lists, and copies a v2 recipe with its recovery valley before the peak', async () => {
+    const api = authed(owner.cookie);
+    const created = await api('/api/v1/classes', {
+      method: 'POST',
+      body: JSON.stringify({ mode: 'scaffold', title: 'v2 ride', recipeId: 'cycle_45_v2' }),
+    });
+    expect(created.status).toBe(201);
+    const cls = (await created.json()) as ClassView;
+    expect(cls).toMatchObject({ targetDurationMs: 45 * 60_000, scaffoldRecipeId: 'cycle_45_v2' });
+
+    const v2Blocks = (await (
+      await api(`/api/v1/classes/${cls.id}/plan-blocks`)
+    ).json()) as BlockView[];
+    expect(v2Blocks.map((block) => block.label)).toEqual([
+      'Arrive on the bike',
+      'Build the base',
+      'Seated climb',
+      'Speed control',
+      'Standing climb',
+      'Recover before the peak',
+      'Peak effort',
+      'Return and release',
+    ]);
+    expect(v2Blocks.reduce((sum, block) => sum + block.targetDurationMs, 0)).toBe(45 * 60_000);
+
+    const listed = (await (await api('/api/v1/classes')).json()) as ClassView[];
+    expect(listed.find((row) => row.id === cls.id)?.scaffoldRecipeId).toBe('cycle_45_v2');
+
+    const copy = await api(`/api/v1/classes/${cls.id}/copy`, {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Copied v2 ride' }),
+    });
+    expect(copy.status).toBe(201);
+    expect(((await copy.json()) as ClassView).scaffoldRecipeId).toBe('cycle_45_v2');
+  });
+
   it('preserves legacy empty creation and rejects contradictory scaffold input', async () => {
     const api = authed(owner.cookie);
     const legacy = await api('/api/v1/classes', {

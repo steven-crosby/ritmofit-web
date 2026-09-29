@@ -23,6 +23,7 @@ import {
   type AccessLevel,
   type ClassListCursor,
   type ClassListItem,
+  type ScaffoldRecipeId,
   type SharePermission,
   type ClassVisibility,
   type TimelineMode,
@@ -164,17 +165,7 @@ interface VisibleClassRow {
   title: string;
   description: string | null;
   template: 'cycle' | 'hiit' | 'sculpt' | 'tread' | null;
-  scaffoldRecipeId:
-    | 'cycle_30_v1'
-    | 'cycle_45_v1'
-    | 'cycle_60_v1'
-    | 'pilates_30_v1'
-    | 'pilates_45_v1'
-    | 'pilates_60_v1'
-    | 'hiit_30_v1'
-    | 'hiit_45_v1'
-    | 'hiit_60_v1'
-    | null;
+  scaffoldRecipeId: ScaffoldRecipeId | null;
   status: 'draft' | 'ready' | 'archived';
   visibility: 'private' | 'public';
   timelineMode: 'sequential' | 'free';
