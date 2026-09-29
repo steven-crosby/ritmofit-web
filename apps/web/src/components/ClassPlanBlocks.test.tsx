@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import type {
   ClassPlanBlock,
   ClassTrack,
+  CreateClassPlanBlock,
   RunPayload,
   UpdateClassPlanBlock,
 } from '@ritmofit/shared';
@@ -485,6 +486,383 @@ describe('ClassPlanBlocks', () => {
     );
     fireEvent.click(within(destCard).getByRole('button', { name: 'Close music' }));
     expect(onCloseMusic).toHaveBeenCalled();
+  });
+});
+
+describe('scaffold block management', () => {
+  const second: ClassPlanBlock = {
+    ...block,
+    id: '00000000-0000-4000-8000-0000000000b2',
+    position: 1,
+    label: 'Build the base',
+  };
+
+  const renderScaffold = (
+    recipeId: 'cycle_45_v1' | 'pilates_45_v1' | 'hiit_45_v1',
+    options: { tracks?: ClassTrack[]; canEdit?: boolean; onTracksChanged?: () => void } = {},
+  ) =>
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        scaffoldRecipeId={recipeId}
+        targetDurationMs={600_000}
+        tracks={options.tracks ?? []}
+        payload={null}
+        canEdit={options.canEdit ?? true}
+        assigningPlanBlockId={null}
+        onChooseMusic={() => {}}
+        onSelectTrack={() => {}}
+        onTracksChanged={options.onTracksChanged ?? (() => {})}
+      />,
+    );
+
+  const fillCommon = (name: string) => {
+    fireEvent.change(screen.getByLabelText('Block name'), { target: { value: name } });
+    fireEvent.change(screen.getByLabelText('Teaching goal'), {
+      target: { value: 'Teach the next movement.' },
+    });
+    fireEvent.change(screen.getByLabelText('Movement focus'), {
+      target: { value: 'Strong posture.' },
+    });
+    fireEvent.change(screen.getByLabelText('Planned time (m:ss)'), {
+      target: { value: '5:00' },
+    });
+  };
+
+  afterEach(() => vi.clearAllMocks());
+
+  it('authors a Cycle block, validates its ranges, and keeps the class target fixed', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
+    vi.mocked(api.createClassPlanBlock).mockImplementation(
+      async (_classId: string, body: CreateClassPlanBlock) => ({
+        ...block,
+        ...body,
+        id: second.id,
+        position: 1,
+        recipeBlockKey: null,
+      }),
+    );
+    renderScaffold('cycle_45_v1');
+    fireEvent.click(await screen.findByRole('button', { name: 'Add block' }));
+    expect(document.activeElement).toBe(screen.getByLabelText('Block name'));
+    expect((screen.getByLabelText('Posture') as HTMLSelectElement).value).toBe('seated');
+    fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
+    expect(screen.getByLabelText('Block name').getAttribute('aria-invalid')).toBe('true');
+    expect(api.createClassPlanBlock).not.toHaveBeenCalled();
+
+    fillCommon('Peak climb');
+    fireEvent.change(screen.getByLabelText('Posture'), { target: { value: 'standing' } });
+    fireEvent.change(screen.getByLabelText('Cadence min (RPM)'), { target: { value: '90' } });
+    fireEvent.change(screen.getByLabelText('Cadence max (RPM)'), { target: { value: '80' } });
+    fireEvent.change(screen.getByLabelText('Effort min (RPE)'), { target: { value: '7' } });
+    fireEvent.change(screen.getByLabelText('Effort max (RPE)'), { target: { value: '8' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
+    expect(document.activeElement).toBe(screen.getByLabelText('Cadence max (RPM)'));
+    expect(api.createClassPlanBlock).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText('Cadence max (RPM)'), { target: { value: '100' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
+    expect(api.createClassPlanBlock).toHaveBeenCalledWith(block.classId, {
+      segmentType: null,
+      label: 'Peak climb',
+      targetDurationMs: 300_000,
+      intensity: 'mod',
+      teachingGoal: 'Teach the next movement.',
+      movementFocus: 'Strong posture.',
+      guidance: {
+        kind: 'cycle',
+        posture: 'standing',
+        cadenceMinRpm: 90,
+        cadenceMaxRpm: 100,
+        rpeMin: 7,
+        rpeMax: 8,
+      },
+    });
+    const edit = await screen.findByRole('button', { name: 'Edit Block 2 · Peak climb' });
+    await waitFor(() => expect(document.activeElement).toBe(edit));
+    expect(screen.getByText('Class target 10:00')).toBeTruthy();
+    expect(screen.getByText('Blocks total 9:00')).toBeTruthy();
+  });
+
+  it('recovers an empty Pilates scaffold and lets the authored equipment be edited', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
+    let saved: ClassPlanBlock | null = null;
+    vi.mocked(api.createClassPlanBlock).mockImplementation(
+      async (_classId: string, body: CreateClassPlanBlock) => {
+        saved = { ...block, ...body, recipeBlockKey: null };
+        return saved;
+      },
+    );
+    vi.mocked(api.updateClassPlanBlock).mockImplementation(
+      async (_id: string, body: UpdateClassPlanBlock) => {
+        saved = { ...saved!, ...body };
+        return saved;
+      },
+    );
+    renderScaffold('pilates_45_v1');
+    expect(await screen.findByText('No teaching blocks yet')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
+    fillCommon('Core balance');
+    fireEvent.click(screen.getByLabelText('Band'));
+    fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
+    expect(api.createClassPlanBlock).toHaveBeenCalledWith(block.classId, {
+      segmentType: null,
+      label: 'Core balance',
+      targetDurationMs: 300_000,
+      intensity: 'mod',
+      teachingGoal: 'Teach the next movement.',
+      movementFocus: 'Strong posture.',
+      guidance: { kind: 'pilates', optionalEquipment: ['band'] },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Block 1 · Core balance' }));
+    fireEvent.click(screen.getByLabelText('Mat'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(api.updateClassPlanBlock).toHaveBeenCalledWith(block.id, {
+      guidance: { kind: 'pilates', optionalEquipment: ['band', 'mat'] },
+    });
+  });
+
+  it('adds a continuous HIIT block and can edit it into timed rounds without changing planned time', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
+    let saved: ClassPlanBlock | null = null;
+    vi.mocked(api.createClassPlanBlock).mockImplementation(
+      async (_classId: string, body: CreateClassPlanBlock) => {
+        saved = { ...block, ...body, recipeBlockKey: null };
+        return saved;
+      },
+    );
+    vi.mocked(api.updateClassPlanBlock).mockImplementation(
+      async (_id: string, body: UpdateClassPlanBlock) => {
+        saved = { ...saved!, ...body };
+        return saved;
+      },
+    );
+    renderScaffold('hiit_45_v1');
+    fireEvent.click(await screen.findByRole('button', { name: 'Add block' }));
+    fillCommon('Circuit');
+    expect((screen.getByLabelText('Timed rounds') as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
+    expect(api.createClassPlanBlock).toHaveBeenCalledWith(block.classId, {
+      segmentType: null,
+      label: 'Circuit',
+      targetDurationMs: 300_000,
+      intensity: 'mod',
+      teachingGoal: 'Teach the next movement.',
+      movementFocus: 'Strong posture.',
+      guidance: {
+        kind: 'hiit',
+        rounds: null,
+        workMs: null,
+        recoveryMs: null,
+        sequenceFocus: 'Strong posture.',
+        equipment: 'bodyweight',
+      },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Block 1 · Circuit' }));
+    fireEvent.click(screen.getByLabelText('Timed rounds'));
+    fireEvent.change(screen.getByLabelText('Rounds'), { target: { value: '6' } });
+    fireEvent.change(screen.getByLabelText('Work (s)'), { target: { value: '30' } });
+    fireEvent.change(screen.getByLabelText('Recovery (s)'), { target: { value: '30' } });
+    fireEvent.change(screen.getByLabelText('Equipment'), {
+      target: { value: 'dumbbells_optional' },
+    });
+    expect(screen.getByText('Intervals 6:00 · Planned 5:00')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(api.updateClassPlanBlock).toHaveBeenCalledWith(block.id, {
+      guidance: {
+        kind: 'hiit',
+        rounds: 6,
+        workMs: 30_000,
+        recoveryMs: 30_000,
+        sequenceFocus: 'Strong posture.',
+        equipment: 'dumbbells_optional',
+      },
+    });
+    expect(await screen.findByText('Intervals 6:00 · Planned 5:00')).toBeTruthy();
+    expect(screen.getByText('Planned 5:00')).toBeTruthy();
+  });
+
+  it('keeps the add draft after a failed save', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
+    vi.mocked(api.createClassPlanBlock).mockRejectedValue(new Error('Network down'));
+    renderScaffold('pilates_45_v1');
+    fireEvent.click(await screen.findByRole('button', { name: 'Add block' }));
+    fillCommon('Balance');
+    fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
+    expect(await screen.findByText('Couldn’t add the block')).toBeTruthy();
+    expect((screen.getByLabelText('Block name') as HTMLInputElement).value).toBe('Balance');
+    expect((screen.getByRole('button', { name: 'Add block' }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
+  it('reorders with keyboard-usable buttons and refreshes tracks after the server confirms', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block, second]);
+    const pending = deferred<ClassPlanBlock[]>();
+    vi.mocked(api.reorderClassPlanBlocks).mockReturnValue(pending.promise);
+    const onTracksChanged = vi.fn();
+    renderScaffold('cycle_45_v1', { onTracksChanged });
+    const move = await screen.findByRole('button', {
+      name: 'Move Block 1 · Arrive on the bike later',
+    });
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Move Block 1 · Arrive on the bike earlier',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    move.focus();
+    fireEvent.click(move);
+    expect(api.reorderClassPlanBlocks).toHaveBeenCalledWith(block.classId, {
+      planBlockIds: [second.id, block.id],
+    });
+    expect(document.querySelector('ol')?.textContent?.indexOf('Build the base')).toBeLessThan(
+      document.querySelector('ol')?.textContent?.indexOf('Arrive on the bike') ?? 0,
+    );
+    expect(onTracksChanged).not.toHaveBeenCalled();
+    pending.resolve([
+      { ...second, position: 0 },
+      { ...block, position: 1 },
+    ]);
+    await waitFor(() => expect(onTracksChanged).toHaveBeenCalledOnce());
+    expect(screen.getByRole('status').textContent).toContain('moved to block 2');
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Edit Block 2 · Arrive on the bike' }),
+    );
+  });
+
+  it('restores block order and explains a free-timeline conflict', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block, second]);
+    vi.mocked(api.reorderClassPlanBlocks).mockRejectedValue(
+      Object.assign(new Error('conflict'), { status: 409 }),
+    );
+    renderScaffold('cycle_45_v1');
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Move Block 1 · Arrive on the bike later' }),
+    );
+    expect(await screen.findByText(/current music order prevents that move/)).toBeTruthy();
+    expect(screen.getByText('Block 1')).toBeTruthy();
+    expect(document.querySelector('ol')?.textContent?.indexOf('Arrive on the bike')).toBeLessThan(
+      document.querySelector('ol')?.textContent?.indexOf('Build the base') ?? 0,
+    );
+  });
+
+  it('requires song relocation before deleting an occupied block', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
+    renderScaffold('cycle_45_v1', { tracks: [assignedTrack()] });
+    expect(await screen.findByText(/move each song with its Teaching block selector/)).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'Delete Block 1 · Arrive on the bike' }),
+    ).toBeNull();
+  });
+
+  it('confirms empty deletion, reloads positions, and restores focus to the next block', async () => {
+    vi.mocked(api.listClassPlanBlocks)
+      .mockResolvedValueOnce([block, second])
+      .mockResolvedValueOnce([{ ...second, position: 0 }]);
+    vi.mocked(api.deleteClassPlanBlock).mockResolvedValue();
+    renderScaffold('cycle_45_v1');
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Delete Block 1 · Arrive on the bike' }),
+    );
+    const group = screen.getByRole('group', { name: 'Delete Block 1 · Arrive on the bike' });
+    expect(document.activeElement).toBe(
+      within(group).getByRole('button', { name: 'Delete block' }),
+    );
+    fireEvent.click(within(group).getByRole('button', { name: 'Delete block' }));
+    expect(api.deleteClassPlanBlock).toHaveBeenCalledWith(block.id);
+    const edit = await screen.findByRole('button', { name: 'Edit Block 1 · Build the base' });
+    await waitFor(() => expect(document.activeElement).toBe(edit));
+  });
+
+  it('keeps Add block available after the last empty block is deleted', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValueOnce([block]).mockResolvedValueOnce([]);
+    vi.mocked(api.deleteClassPlanBlock).mockResolvedValue();
+    renderScaffold('cycle_45_v1');
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Delete Block 1 · Arrive on the bike' }),
+    );
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Delete Block 1 · Arrive on the bike' })).getByRole(
+        'button',
+        { name: 'Delete block' },
+      ),
+    );
+    expect(await screen.findByText('No teaching blocks yet')).toBeTruthy();
+    const add = screen.getByRole('button', { name: 'Add block' });
+    await waitFor(() => expect(document.activeElement).toBe(add));
+  });
+
+  it('holds other plan changes while a delete is pending', async () => {
+    vi.mocked(api.listClassPlanBlocks)
+      .mockResolvedValueOnce([block, second])
+      .mockResolvedValueOnce([{ ...second, position: 0 }]);
+    const pending = deferred<void>();
+    vi.mocked(api.deleteClassPlanBlock).mockReturnValue(pending.promise);
+    renderScaffold('cycle_45_v1');
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Delete Block 1 · Arrive on the bike' }),
+    );
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Delete Block 1 · Arrive on the bike' })).getByRole(
+        'button',
+        { name: 'Delete block' },
+      ),
+    );
+    expect((screen.getByRole('button', { name: 'Add block' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Move Block 2 · Build the base earlier',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    pending.resolve();
+    expect(
+      await screen.findByRole('button', { name: 'Edit Block 1 · Build the base' }),
+    ).toBeTruthy();
+  });
+
+  it('keeps the block when a concurrent song assignment makes deletion conflict', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
+    vi.mocked(api.deleteClassPlanBlock).mockRejectedValue(
+      Object.assign(new Error('occupied'), { status: 409 }),
+    );
+    const onTracksChanged = vi.fn();
+    renderScaffold('cycle_45_v1', { onTracksChanged });
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Delete Block 1 · Arrive on the bike' }),
+    );
+    fireEvent.click(
+      screen
+        .getByRole('group', { name: 'Delete Block 1 · Arrive on the bike' })
+        .querySelector('button')!,
+    );
+    expect(await screen.findByText(/Music was assigned to this block/)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Arrive on the bike' })).toBeTruthy();
+    expect(onTracksChanged).toHaveBeenCalledOnce();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Edit Block 1 · Arrive on the bike' }),
+    );
+  });
+
+  it('hides management controls without edit access', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block, second]);
+    renderScaffold('cycle_45_v1', { canEdit: false });
+    expect(await screen.findByRole('heading', { name: 'Arrive on the bike' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Add block' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Move Block/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Delete Block/ })).toBeNull();
+  });
+
+  it('shows an accurate empty state to a read-only scaffold viewer', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
+    renderScaffold('cycle_45_v1', { canEdit: false });
+    expect(await screen.findByText('This class has no teaching blocks.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Add block' })).toBeNull();
   });
 });
 

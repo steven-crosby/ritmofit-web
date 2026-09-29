@@ -14,6 +14,8 @@ import type {
   UpdateClassTrack,
   ClassPlanBlock,
   AssignClassTrackPlanBlock,
+  CreateClassPlanBlock,
+  ReorderClassPlanBlocks,
   UpdateClassPlanBlock,
   Track,
   TrackSearchResult,
@@ -209,12 +211,27 @@ export const getRunPayload = (classId: string) =>
 /** Music-independent teaching plan for a class scaffold. */
 export const listClassPlanBlocks = (classId: string) =>
   api<ClassPlanBlock[]>(`/classes/${classId}/plan-blocks`);
+/** Append an instructor-authored teaching block. */
+export const createClassPlanBlock = (classId: string, body: CreateClassPlanBlock) =>
+  api<ClassPlanBlock>(`/classes/${classId}/plan-blocks`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 /** Edit planned structure only. The class target and music duration are untouched. */
 export const updateClassPlanBlock = (planBlockId: string, body: UpdateClassPlanBlock) =>
   api<ClassPlanBlock>(`/plan-blocks/${planBlockId}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
   });
+/** Send the complete block order; the server applies the timeline guard. */
+export const reorderClassPlanBlocks = (classId: string, body: ReorderClassPlanBlocks) =>
+  api<ClassPlanBlock[]>(`/classes/${classId}/plan-blocks/reorder`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+/** Only empty teaching blocks can be deleted. */
+export const deleteClassPlanBlock = (planBlockId: string) =>
+  api<void>(`/plan-blocks/${planBlockId}`, { method: 'DELETE' });
 export const assignClassTrackPlanBlock = (classTrackId: string, body: AssignClassTrackPlanBlock) =>
   api<ClassTrack>(`/class-tracks/${classTrackId}/plan-block`, {
     method: 'PATCH',
