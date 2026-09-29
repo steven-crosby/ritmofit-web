@@ -21,6 +21,7 @@ import {
   MAX_DURATION_MS,
   type ClassPlanBlock,
   type ClassTrack,
+  type Intensity,
   type RunPayload,
   type UpdateClassPlanBlock,
 } from '@ritmofit/shared';
@@ -42,12 +43,14 @@ import {
   planFitLabel,
   planNextStep,
   planTotalMs,
+  syncHiitSequenceFocus,
   tracksForPlanBlock,
   unassignedClassTracks,
 } from '../lib/class-scaffold.js';
 import { formatDuration } from '../lib/class-summary.js';
 import { errMessage } from '../lib/errors.js';
 import { IntensityReadout } from './IntensityReadout.js';
+import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 import { PendingList } from './PendingList.js';
 import { StatusLabel } from './SharedState.js';
 
@@ -316,17 +319,17 @@ function PlanBlockCard({
   onMoved: (classTrackId: string, planBlockId: string | null) => void;
   onSaved: (block: ClassPlanBlock) => void;
 }) {
-  const [editingTime, setEditingTime] = useState(false);
-  const editTimeRef = useRef<HTMLButtonElement>(null);
+  const [editing, setEditing] = useState(false);
+  const editRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef(false);
   useLayoutEffect(() => {
-    if (editingTime || !returnFocusRef.current) return;
+    if (editing || !returnFocusRef.current) return;
     returnFocusRef.current = false;
-    editTimeRef.current?.focus();
-  }, [editingTime]);
+    editRef.current?.focus();
+  }, [editing]);
   const closeEditor = () => {
     returnFocusRef.current = true;
-    setEditingTime(false);
+    setEditing(false);
   };
   const intervalMismatch = hiitIntervalMismatch(block.guidance, block.targetDurationMs);
   const assigned = tracksForPlanBlock(block.id, tracks);
@@ -379,10 +382,10 @@ function PlanBlockCard({
           </>
         )}
       </p>
-      {intervalMismatch && !editingTime && <IntervalMismatch mismatch={intervalMismatch} />}
+      {intervalMismatch && !editing && <IntervalMismatch mismatch={intervalMismatch} />}
       {canEdit &&
-        (editingTime ? (
-          <PlanBlockTimeEditor
+        (editing ? (
+          <PlanBlockEditor
             block={block}
             blockName={blockName}
             onSaved={(saved) => {
@@ -394,13 +397,13 @@ function PlanBlockCard({
         ) : (
           <div>
             <button
-              ref={editTimeRef}
+              ref={editRef}
               type="button"
-              onClick={() => setEditingTime(true)}
-              aria-label={`Edit planned time for ${blockName}`}
+              onClick={() => setEditing(true)}
+              aria-label={`Edit ${blockName}`}
               className="min-h-11 rounded-control px-2 font-ui text-sm font-semibold text-interactive rf-focus-ring"
             >
-              Edit time
+              Edit block
             </button>
           </div>
         ))}
@@ -565,14 +568,18 @@ function parseWhole(text: string, min: number, max: number): number | null {
   return value >= min && value <= max ? value : null;
 }
 
+type EditField = 'label' | 'teachingGoal' | 'movementFocus' | TimeField;
 type TimeField = 'duration' | 'rounds' | 'work' | 'recovery';
 
+const LABEL_MAX = 100;
+const TEXT_MAX = 500;
+
 /**
- * Inline planned-time editor. Saves only what changed: block time and HIIT
- * interval guidance are independent, and neither is rewritten to match the
- * other or the class target. Enter saves; Escape cancels.
+ * Inline block editor. Saves only what changed. Planned time and HIIT interval
+ * guidance stay independent: neither is rewritten to match the other or the
+ * class target. Enter in a single-line field saves; Escape cancels.
  */
-function PlanBlockTimeEditor({
+function PlanBlockEditor({
   block,
   blockName,
   onSaved,
@@ -588,6 +595,10 @@ function PlanBlockTimeEditor({
     block.guidance.kind === 'hiit' && hiitIntervalTotalMs(block.guidance) != null
       ? block.guidance
       : null;
+  const [label, setLabel] = useState(block.label);
+  const [intensity, setIntensity] = useState<Intensity>(block.intensity);
+  const [teachingGoal, setTeachingGoal] = useState(block.teachingGoal);
+  const [movementFocus, setMovementFocus] = useState(block.movementFocus);
   const [duration, setDuration] = useState(formatPlannedDurationInput(block.targetDurationMs));
   const [rounds, setRounds] = useState(hiit ? String(hiit.rounds) : '');
   const [work, setWork] = useState(hiit ? String(hiit.workMs! / 1000) : '');
@@ -595,21 +606,27 @@ function PlanBlockTimeEditor({
   const [attempted, setAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const labelRef = useRef<HTMLInputElement>(null);
+  const goalRef = useRef<HTMLTextAreaElement>(null);
+  const focusRef = useRef<HTMLTextAreaElement>(null);
   const durationRef = useRef<HTMLInputElement>(null);
   const roundsRef = useRef<HTMLInputElement>(null);
   const workRef = useRef<HTMLInputElement>(null);
   const recoveryRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    durationRef.current?.focus();
-    durationRef.current?.select();
+    labelRef.current?.focus();
+    labelRef.current?.select();
   }, []);
 
   const plannedMs = parsePlannedDuration(duration);
   const roundsValue = hiit ? parseWhole(rounds, 1, 100) : null;
   const workValue = hiit ? parseWhole(work, 1, MAX_INTERVAL_SECONDS) : null;
   const recoveryValue = hiit ? parseWhole(recovery, 1, MAX_INTERVAL_SECONDS) : null;
-  const invalid: Record<TimeField, boolean> = {
+  const invalid: Record<EditField, boolean> = {
+    label: label.trim() === '',
+    teachingGoal: teachingGoal.trim() === '',
+    movementFocus: movementFocus.trim() === '',
     duration: plannedMs == null,
     rounds: hiit != null && roundsValue == null,
     work: hiit != null && workValue == null,
@@ -631,28 +648,40 @@ function PlanBlockTimeEditor({
   const submit = () => {
     if (saving) return;
     setAttempted(true);
-    const refs: Record<TimeField, RefObject<HTMLInputElement>> = {
+    const refs: Record<EditField, RefObject<HTMLInputElement | HTMLTextAreaElement>> = {
+      label: labelRef,
+      teachingGoal: goalRef,
+      movementFocus: focusRef,
       duration: durationRef,
       rounds: roundsRef,
       work: workRef,
       recovery: recoveryRef,
     };
-    const firstInvalid = (Object.keys(invalid) as TimeField[]).find((field) => invalid[field]);
+    const firstInvalid = (Object.keys(invalid) as EditField[]).find((field) => invalid[field]);
     if (firstInvalid) {
       refs[firstInvalid].current?.focus();
       return;
     }
     const body: UpdateClassPlanBlock = {};
+    const nextLabel = label.trim();
+    const nextGoal = teachingGoal.trim();
+    const nextFocus = movementFocus.trim();
+    if (nextLabel !== block.label) body.label = nextLabel;
+    if (intensity !== block.intensity) body.intensity = intensity;
+    if (nextGoal !== block.teachingGoal) body.teachingGoal = nextGoal;
+    if (nextFocus !== block.movementFocus) body.movementFocus = nextFocus;
     if (plannedMs !== block.targetDurationMs) body.targetDurationMs = plannedMs!;
-    if (
-      hiit &&
-      draftGuidance &&
+    const intervalsChanged =
+      hiit != null &&
+      draftGuidance != null &&
       (draftGuidance.rounds !== hiit.rounds ||
         draftGuidance.workMs !== hiit.workMs ||
-        draftGuidance.recoveryMs !== hiit.recoveryMs)
-    ) {
-      body.guidance = draftGuidance;
-    }
+        draftGuidance.recoveryMs !== hiit.recoveryMs);
+    const guidance = syncHiitSequenceFocus(
+      intervalsChanged ? draftGuidance! : block.guidance,
+      body.movementFocus,
+    );
+    if (guidance !== block.guidance) body.guidance = guidance;
     if (Object.keys(body).length === 0) {
       onCancel();
       return;
@@ -669,14 +698,15 @@ function PlanBlockTimeEditor({
     })();
   };
 
-  const fieldId = (field: TimeField) => `${idBase}-${field}`;
-  const helpId = (field: TimeField) => `${idBase}-${field}-help`;
+  const fieldId = (field: EditField) => `${idBase}-${field}`;
+  const helpId = (field: EditField) => `${idBase}-${field}-help`;
+  const showInvalid = (field: EditField) => attempted && invalid[field];
+  const borderClass = (field: EditField) =>
+    showInvalid(field) ? 'border-state-danger' : 'border-border';
   const inputClass = (field: TimeField) =>
-    `min-h-11 w-20 rounded-control border bg-bg-sunken px-2 font-data text-sm text-text-primary rf-focus-ring disabled:opacity-40 ${
-      attempted && invalid[field] ? 'border-state-danger' : 'border-border'
-    }`;
-  const fieldError = (field: TimeField, message: string) =>
-    attempted && invalid[field] ? (
+    `min-h-11 w-20 rounded-control border bg-bg-sunken px-2 font-data text-sm text-text-primary rf-focus-ring disabled:opacity-40 ${borderClass(field)}`;
+  const fieldError = (field: EditField, message: string) =>
+    showInvalid(field) ? (
       <span
         id={helpId(field)}
         className="flex items-center gap-1 font-ui text-xs text-state-danger"
@@ -684,18 +714,46 @@ function PlanBlockTimeEditor({
         <span aria-hidden>!</span> {message}
       </span>
     ) : null;
+  const fieldLabel = (field: EditField, text: string) => (
+    <label htmlFor={fieldId(field)} className="font-ui text-xs font-semibold text-text-secondary">
+      {text}
+    </label>
+  );
+  const textArea = (
+    field: 'teachingGoal' | 'movementFocus',
+    text: string,
+    value: string,
+    setValue: (value: string) => void,
+    ref: RefObject<HTMLTextAreaElement>,
+  ) => (
+    <div className="flex min-w-0 flex-col gap-1">
+      {fieldLabel(field, text)}
+      <textarea
+        ref={ref}
+        id={fieldId(field)}
+        // Three rows hold a recipe goal whole at 320px; longer text scrolls.
+        rows={3}
+        maxLength={TEXT_MAX}
+        value={value}
+        disabled={saving}
+        aria-invalid={showInvalid(field)}
+        aria-describedby={showInvalid(field) ? helpId(field) : undefined}
+        onChange={(event) => setValue(event.target.value)}
+        className={`w-full min-w-0 resize-y rounded-control border bg-bg-sunken px-3 py-2 font-ui text-sm leading-5 text-text-primary rf-focus-ring disabled:opacity-40 ${borderClass(field)}`}
+      />
+      {fieldError(field, `Add a ${text.toLowerCase()}, or cancel to keep the current one.`)}
+    </div>
+  );
   const numberField = (
     field: Exclude<TimeField, 'duration'>,
-    label: string,
+    text: string,
     value: string,
     setValue: (value: string) => void,
     ref: RefObject<HTMLInputElement>,
     message: string,
   ) => (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={fieldId(field)} className="font-ui text-xs font-semibold text-text-secondary">
-        {label}
-      </label>
+      {fieldLabel(field, text)}
       <input
         ref={ref}
         id={fieldId(field)}
@@ -704,8 +762,8 @@ function PlanBlockTimeEditor({
         autoComplete="off"
         value={value}
         disabled={saving}
-        aria-invalid={attempted && invalid[field]}
-        aria-describedby={attempted && invalid[field] ? helpId(field) : undefined}
+        aria-invalid={showInvalid(field)}
+        aria-describedby={showInvalid(field) ? helpId(field) : undefined}
         onChange={(event) => setValue(event.target.value)}
         className={inputClass(field)}
       />
@@ -715,8 +773,8 @@ function PlanBlockTimeEditor({
 
   return (
     <form
-      aria-label={`Planned time for ${blockName}`}
-      className="flex flex-col gap-3 rounded-control border border-border-subtle bg-bg-sunken p-3"
+      aria-label={`Editing ${blockName}`}
+      className="flex min-w-0 flex-col gap-3 rounded-control border border-border-subtle bg-bg-sunken p-3"
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
@@ -730,12 +788,35 @@ function PlanBlockTimeEditor({
       }}
     >
       <div className="flex min-w-0 flex-col gap-1">
-        <label
-          htmlFor={fieldId('duration')}
-          className="font-ui text-xs font-semibold text-text-secondary"
-        >
-          Planned time (m:ss)
-        </label>
+        {fieldLabel('label', 'Block name')}
+        <input
+          ref={labelRef}
+          id={fieldId('label')}
+          type="text"
+          autoComplete="off"
+          maxLength={LABEL_MAX}
+          value={label}
+          disabled={saving}
+          aria-invalid={showInvalid('label')}
+          aria-describedby={showInvalid('label') ? helpId('label') : undefined}
+          onChange={(event) => setLabel(event.target.value)}
+          className={`min-h-11 w-full min-w-0 rounded-control border bg-bg-sunken px-3 font-ui text-sm text-text-primary rf-focus-ring disabled:opacity-40 ${borderClass('label')}`}
+        />
+        {fieldError('label', 'Name the block, or cancel to keep the current name.')}
+      </div>
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="font-ui text-xs font-semibold text-text-secondary">Intensity</span>
+        <IntensitySegmentedControl
+          value={intensity}
+          onChange={setIntensity}
+          ariaLabel={`Intensity for ${blockName}`}
+          disabled={saving}
+        />
+      </div>
+      {textArea('teachingGoal', 'Teaching goal', teachingGoal, setTeachingGoal, goalRef)}
+      {textArea('movementFocus', 'Movement focus', movementFocus, setMovementFocus, focusRef)}
+      <div className="flex min-w-0 flex-col gap-1">
+        {fieldLabel('duration', 'Planned time (m:ss)')}
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -754,7 +835,7 @@ function PlanBlockTimeEditor({
             autoComplete="off"
             value={duration}
             disabled={saving}
-            aria-invalid={attempted && invalid.duration}
+            aria-invalid={showInvalid('duration')}
             aria-describedby={helpId('duration')}
             onChange={(event) => setDuration(event.target.value)}
             className={inputClass('duration')}
@@ -797,7 +878,7 @@ function PlanBlockTimeEditor({
       {draftMismatch && <IntervalMismatch mismatch={draftMismatch} />}
       {error && (
         <div role="alert" className="flex flex-col gap-1">
-          <StatusLabel kind="error" label="Couldn’t save planned time" />
+          <StatusLabel kind="error" label="Couldn’t save the block" />
           <p className="font-ui text-xs text-text-secondary">{error}</p>
         </div>
       )}
