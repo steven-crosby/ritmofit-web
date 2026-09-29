@@ -10,6 +10,36 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-28 (PR #468 — scaffold plan-block management) — deployed
+> (Worker `90b7c40f-6e16-4798-be88-ca7a4606362a`).** Application source
+> `7c69bb4`. Deployed from clean `main` after owner go. Remote D1 had no pending
+> migrations (latest local migration `0019`). No secret change;
+> `BETA_ALLOWED_EMAILS` was confirmed present by name.
+>
+> - **#468:** scaffold classes can append Cycle, Pilates, and HIIT teaching blocks,
+>   edit authored guidance, move blocks with keyboard-accessible buttons, and delete
+>   empty blocks with inline confirmation. A zero-block scaffold can add again.
+>   Review fixes preserve partial HIIT timing, refresh the block list after creation,
+>   hold music assignment during structural changes, and guard reorder/delete against
+>   concurrent assignment.
+>
+> No schema, migration, secret, route, OpenAPI, or iOS contract change. Rollback is
+> Worker-only to prior live `962f7935-2726-43f1-b277-c4daa1626da7`.
+> Pre-deploy: merged `main` tree `7c69bb4` matched CI-green PR head `37a08a3`;
+> the full local gate passed again on `main`, and the SPA was built there before deploy.
+> Local browser QA exercised add/reorder and inline delete cancellation on a throwaway
+> scaffold at desktop, 390 px, and 320 px, including reduced motion.
+>
+> Post-deploy smoke on `https://ritmofit.studio`: SPA `/` and `/api/v1/health`
+> returned `200`; protected classes, explore, teams, plan-block create/reorder/delete,
+> shares, playlist import, cover upload, tags, and provider search/import returned
+> `401` unauthenticated. Cover serving reached its `404 Image not found` handler.
+> All six security headers were present. The SPA entry
+> `assets/index-QqMbE-wS.js` matched the build on three consecutive cache-busted
+> fetches; Worker status was 100% on `90b7c40f`. Production class data was not
+> modified for this smoke, and the authenticated Builder flow was not exercised
+> against production.
+>
 > **Session 2026-09-28 (PR #465 — create-dialog recipe preview and block guidance cleanup) —
 > deployed (Worker `962f7935-2726-43f1-b277-c4daa1626da7`).** Application source `2d14515`.
 > Deployed from this checkout after owner go. No remote D1 change

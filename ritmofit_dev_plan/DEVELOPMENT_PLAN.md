@@ -38,16 +38,15 @@ Pilates, and HIIT.
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
 - **Current operating focus (2026-09-28):** the launch gate is green and the app is live.
-  Production serves application tip `2d14515`, while `main` is at `6db34e4` after
-  the merge of PR #467. PR #465 deployed 2026-09-28 as
-  Worker `962f7935-2726-43f1-b277-c4daa1626da7` (no remote D1 change; see
-  [`HISTORY.md`](./HISTORY.md)). #465 previews a recipe's exact blocks in the create
-  dialog and cleans up block guidance text. Recipe content review (Cycle peak not
+  Production serves merged `main` application tip `7c69bb4` from PR #468 as Worker
+  `90b7c40f-6e16-4798-be88-ca7a4606362a`; remote D1 has no pending migrations
+  (see [`HISTORY.md`](./HISTORY.md)). #465 previews a recipe's exact blocks in the
+  create dialog and cleans up block guidance text. Recipe content review (Cycle peak not
   distinguishable from the blocks before it; 7–9 min HIIT "finisher" at 45/60) is an
   owner call that needs `*_v2` recipe IDs. The block editor's first slice (#463)
   edits planned block time and HIIT rounds/intervals inline, keeps the class
   target fixed, and shows the target gap and any HIIT mismatch. PR #467 added
-  label, intensity, goal, and focus editing. PR #468 completes scaffold-block
+  label, intensity, goal, and focus editing. Deployed PR #468 completes scaffold-block
   add, reorder, and empty-block delete. See
   [`class-template-handoff.md`](./class-template-handoff.md) for the settled rules.
   SPC-09 remains owner-blocked. PROD-HYGIENE runbook is in #426; live fixture
@@ -304,13 +303,13 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-28, after the #467 merge):** `main` is at
-`6db34e4`; production still serves the #465 application tip `2d14515`. The live
-Worker `962f7935-2726-43f1-b277-c4daa1626da7` was at 100%, and the SPA entry
-`assets/index-CuEjmewJ.js` appeared on three consecutive cache-busted fetches.
-Remote D1 was not rechecked for this status refresh; the #465 deploy record reported
-nothing to apply (latest migration `0019`). Label, intensity, goal, and focus editing
-landed in #467; PR #468 completes scaffold-block add, reorder, and empty-block delete.
+**Current `main` vs production (2026-09-28, after the #468 deploy):** `main` and
+production serve application tip `7c69bb4`. Worker
+`90b7c40f-6e16-4798-be88-ca7a4606362a` is at 100%, and the SPA entry
+`assets/index-QqMbE-wS.js` appeared on three consecutive cache-busted fetches.
+Remote D1 has no pending migrations (latest local migration `0019`). Label,
+intensity, goal, and focus editing landed in #467; #468 deployed scaffold-block
+add, reorder, and empty-block delete.
 See [`class-template-handoff.md`](./class-template-handoff.md). The alerting
 half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
 
@@ -337,7 +336,7 @@ half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unc
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `962f7935` from `2d14515` (#465); see "Current `main` vs production" above
+  `90b7c40f` from `7c69bb4` (#468); see "Current `main` vs production" above
   for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**
