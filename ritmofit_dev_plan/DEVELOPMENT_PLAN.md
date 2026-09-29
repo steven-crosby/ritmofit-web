@@ -38,11 +38,11 @@ Pilates, and HIIT.
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
 - **Current operating focus (2026-09-28):** the launch gate is green and the app is live.
-  Production serves merged `main` application tip `7c69bb4` from PR #468 as Worker
-  `90b7c40f-6e16-4798-be88-ca7a4606362a`; remote D1 has no pending migrations
+  Production serves merged `main` application tip `c81bc73` from PR #470 as Worker
+  `dd9a27e9-e891-41a8-b5cf-d1438f65fcad`; remote D1 has no pending migrations
   (see [`HISTORY.md`](./HISTORY.md)). #465 previews a recipe's exact blocks in the
   create dialog and cleans up block guidance text. The recipe content review is resolved
-  on `main` (not yet deployed): new classes get `cycle_*_v2` (easy valley before a shorter
+  and deployed (#470): new classes get `cycle_*_v2` (easy valley before a shorter
   peak) and `hiit_45_v2`/`hiit_60_v2` (4-minute finisher at every length); v1 recipes are
   frozen by a snapshot test. The block editor's first slice (#463)
   edits planned block time and HIIT rounds/intervals inline, keeps the class
@@ -304,13 +304,15 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-28, after the #468 deploy):** `main` and
-production serve application tip `7c69bb4`. Worker
-`90b7c40f-6e16-4798-be88-ca7a4606362a` is at 100%, and the SPA entry
-`assets/index-QqMbE-wS.js` appeared on three consecutive cache-busted fetches.
-Remote D1 has no pending migrations (latest local migration `0019`). Label,
-intensity, goal, and focus editing landed in #467; #468 deployed scaffold-block
-add, reorder, and empty-block delete.
+**Current `main` vs production (2026-09-28, after the #470 deploy):** `main` and
+production serve application tip `c81bc73`. Worker
+`dd9a27e9-e891-41a8-b5cf-d1438f65fcad` is at 100%, and the SPA entry
+`assets/index-DAkmIV8y.js` appeared on five consecutive cache-busted fetches.
+Remote D1 has no pending migrations (latest local migration `0019`). #470 deployed
+the v2 Cycle/HIIT recipes; an authenticated production acceptance pass covered #468
+block add/reorder/delete and the v2 Cycle 45 content, and its `[QA]` class was deleted
+(see [`HISTORY.md`](./HISTORY.md)). A Worker rollback below `dd9a27e9` is unsafe once
+any v2-recipe class exists.
 See [`class-template-handoff.md`](./class-template-handoff.md). The alerting
 half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
 
@@ -337,7 +339,7 @@ half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unc
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `90b7c40f` from `7c69bb4` (#468); see "Current `main` vs production" above
+  `dd9a27e9` from `c81bc73` (#470); see "Current `main` vs production" above
   for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**

@@ -10,6 +10,43 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-28 (PR #470 — v2 Cycle and HIIT scaffold recipes) — deployed
+> (Worker `dd9a27e9-e891-41a8-b5cf-d1438f65fcad`).** Application source `c81bc73`.
+> Deployed from clean `main` after owner go. Remote D1 had no pending migrations
+> (latest `0019`). No secret change; `BETA_ALLOWED_EMAILS` confirmed present by name.
+>
+> - **#470:** new classes get `cycle_{30,45,60}_v2` (Speed control → `mod`; an easy
+>   "Recover before the peak" block precedes a shorter peak) and `hiit_{45,60}_v2`
+>   (4-minute finisher at every length). Pilates and `hiit_30` stay v1. v1 content
+>   is pinned by a snapshot test. No migration (`scaffold_recipe_id` is unconstrained
+>   text); the OpenAPI `scaffoldRecipeId` enum grew; run payload unchanged.
+>
+> **Rollback hazard:** `serializeClass` parses rows with `classSchema`, so a Worker
+> older than `dd9a27e9` fails on any class storing a v2 id. At the end of this session
+> no v2 class exists in production (the QA class below was deleted), so rollback to
+> `90b7c40f-6e16-4798-be88-ca7a4606362a` is currently safe; once instructors create v2
+> classes, recovery is forward-fix only.
+>
+> Pre-deploy: merged `main` tree `c81bc73` was identical to CI-green PR head
+> `7b7ce3f`; the full local gate passed again on `main`; SPA built before deploy.
+> Post-deploy smoke: `/` and `/api/v1/health` `200`; classes, explore, teams `401`
+> unauthenticated; six security headers present; SPA entry `assets/index-DAkmIV8y.js`
+> matched the build on five consecutive cache-busted fetches; Worker 100% on `dd9a27e9`.
+>
+> **Authenticated production acceptance (#468 + #470), owner-approved, owner signed in:**
+> created `[QA] #468 + v2 recipes` (id `27ca8ca8-a548-42d8-91b1-62f7df4b4ff9`, Cycle 45)
+> and tagged it `qa-fixture` immediately. Its eight persisted blocks matched the
+> `cycle_45_v2` table. Add block appended block 9, kept the class target at 45:00, and
+> showed "2:00 over target". Keyboard Move earlier persisted (server positions and the
+> UI after reload). Empty-block delete: inline confirm, Cancel kept the block and
+> restored focus, confirm deleted it, positions compacted, and the plan read "On target".
+> No horizontal overflow at 390 px; no console errors; all API calls 2xx. Anomaly: the
+> block `DELETE` returned `204` but Chromium logged it `net::ERR_ABORTED`; the delete
+> took effect, so this looks like the client dropping an empty 204 body, not a failure.
+> The QA class was then deleted through the UI Delete path (direct fetch now `404`).
+> The non-empty-block delete guard was not exercised in production (it needs a provider
+> track); it is covered by integration tests.
+
 > **Session 2026-09-28 (PR #468 — scaffold plan-block management) — deployed
 > (Worker `90b7c40f-6e16-4798-be88-ca7a4606362a`).** Application source
 > `7c69bb4`. Deployed from clean `main` after owner go. Remote D1 had no pending
