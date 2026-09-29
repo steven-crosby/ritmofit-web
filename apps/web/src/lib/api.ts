@@ -105,7 +105,11 @@ async function apiResponse(path: string, init?: RequestInit): Promise<Response> 
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await apiResponse(path, init);
-  if (res.status === 204) return undefined as T;
+  if (res.status === 204) {
+    // Drain the empty body; an unread response is logged by Chromium as net::ERR_ABORTED.
+    await res.text();
+    return undefined as T;
+  }
   return (await res.json()) as T;
 }
 
