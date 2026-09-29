@@ -33,10 +33,10 @@ batches shipped as Worker `5d659102` (#420/#422, recorded in #423) and Worker
 | Accept and drop | 0 whole findings | One incorrect subclaim in SPC-06 is dropped; see its row |
 
 SPC-19 is now merged and deployed with Worker `ad638215`. Live slice status is in
-Implementation status. SPC-09 remains owner-blocked. ENERGY-RIBBON (SPC-14) is
+Implementation status. SPC-09 is the owner's next planning objective (2026-09-28). ENERGY-RIBBON (SPC-14) is
 in [#432](https://github.com/steven-crosby/ritmofit-web/pull/432) (hybrid placed-move
-refinement; not merged). PROD-HYGIENE runbook is #426; live fixture delete is still
-owner-pending.
+refinement; not merged). PROD-HYGIENE runbook is #426; live fixtures were deleted
+2026-09-28 with owner authorization.
 
 The two findings originally flagged as out-of-scope and not independently re-verified were checked
 before disposition. SPC-05 is a real docs-versus-code conflict. SPC-10 is a real destructive-control
@@ -66,7 +66,7 @@ consistency gap. SPC-06 is directionally correct, but its cited component and sa
 | SPC-18 | P3 | Live | The virtual clock updates state on every animation frame at a level that re-renders the broad Live subtree. | **Backlog — LIVE-RUNTIME** | Isolate frame-rate state to the smallest timeline/readout boundary and profile before/after; preserve provider-authoritative playback and liveness behavior. |
 | SPC-19 | P3 | Live | Disabled “Start class” lacks the documented reduced-opacity treatment. | **Merged and deployed — LIVE-CONTROLS** | Apply the canonical disabled appearance (including the documented opacity target) while preserving native disabled semantics and readable contrast. [#425](https://github.com/steven-crosby/ritmofit-web/pull/425); merged and deployed as Worker `ad638215` (2026-09-17). |
 | SPC-20 | Constraint | Responsive QA | The audit did not complete its sub-900px pass. The current broad narrow-width smoke is stale in several routes, and focused P0 checks also exposed a separate 10px overflow at 390px. | **Backlog — RESPONSIVE-QA** | Repair stale locators/fixtures, resolve the independently observed overflow, then run 1280/953/680/390/320 plus 200% zoom. Do not treat the focused P0 verification as a full responsive pass. |
-| SPC-21 | P3 | Production data | A QA liveness-probe class is visible and top-ranked in the production account. | **Backlog — PROD-HYGIENE** | Inventory production fixtures, identify ownership, and add a cleanup/prevention runbook. Actual production deletion requires separate owner authorization and verification. Naming/tagging convention and cleanup steps landed in [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426) / [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md). Live fixture delete is still owner-pending. |
+| SPC-21 | P3 | Production data | A QA liveness-probe class is visible and top-ranked in the production account. | **Backlog — PROD-HYGIENE** | Inventory production fixtures, identify ownership, and add a cleanup/prevention runbook. Actual production deletion requires separate owner authorization and verification. Naming/tagging convention and cleanup steps landed in [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426) / [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md). Live fixtures deleted 2026-09-28 with owner authorization (four classes; `HISTORY.md`). |
 
 ## Scoped backlog slices
 
@@ -84,7 +84,7 @@ exactly one slice.
 | LIVE-RUNTIME | SPC-16, SPC-18 | Live timeline/clock boundaries | Drag seek does not flood the provider; frame updates do not re-render the broad Live workspace. |
 | LIVE-CONTROLS | SPC-19 | Live preflight/start control | Disabled treatment matches the documented component state without harming contrast. |
 | RESPONSIVE-QA | SPC-20 | Narrow-width smoke and affected layouts | Stable automated coverage plus manual viewport/zoom evidence; no horizontal overflow in the tested surfaces. |
-| PROD-HYGIENE | SPC-21 | Operations/runbook and production fixture workflow | Fixtures are identifiable and prevented from contaminating real queues; deletion stays separately authorized. Convention and runbook landed in [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426) / [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); live fixture delete is still owner-pending. |
+| PROD-HYGIENE | SPC-21 | Operations/runbook and production fixture workflow | Fixtures are identifiable and prevented from contaminating real queues; deletion stays separately authorized. Convention and runbook landed in [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426) / [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); live fixtures deleted 2026-09-28 with owner authorization. |
 
 ## Resolved owner decisions
 
@@ -115,7 +115,7 @@ implementation direction but do not authorize an implementation slice by themsel
 | LIVE-CONTROLS (SPC-19) | Merged and deployed | [#425](https://github.com/steven-crosby/ritmofit-web/pull/425) — disabled Live “Start class” uses native `disabled` plus the documented ~40% opacity. Worker `ad638215` (2026-09-17) |
 | ENERGY-RIBBON (SPC-14 / OD-03) | In [#432](https://github.com/steven-crosby/ritmofit-web/pull/432); not merged | Hybrid ribbon from existing track + placed-move intensity (`anchorMs` holds to the next scored move or track end). ClassPulse shares the same spans. No schema change. Segment banding still deferred. |
 | PROVIDER-TRUTH remaining (SPC-09) | Owner-blocked | Permission/provider-error still need a backend-signal design decision |
-| PROD-HYGIENE (SPC-21) | Runbook landed; live delete owner-pending | [#426](https://github.com/steven-crosby/ritmofit-web/pull/426) — convention and cleanup steps in [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); cited production fixture is not yet deleted |
+| PROD-HYGIENE (SPC-21) | Done | [#426](https://github.com/steven-crosby/ritmofit-web/pull/426) — convention and cleanup steps in [`prod-fixture-hygiene.md`](../../ritmofit_dev_plan/prod-fixture-hygiene.md); the cited liveness-probe class and three other owner-confirmed fixtures were tagged and deleted 2026-09-28 |
 
 PR #414 also found that `rf-hero-glow` (the class OD-01 removes) is used on two surfaces the audit and
 the decision never considered — `NotFound.tsx` and `ErrorBoundary.tsx`. Both were left unchanged:
@@ -137,9 +137,9 @@ keep the warm treatment is an open question for a separate, explicit decision, n
 - PR #429 (LIVE-RUN-OF-SHOW) is merged and deployed as Worker `3b39fac6` from main
   `51a6ade` (2026-09-19). Production matches this tip.
 - ENERGY-RIBBON (SPC-14 / OD-03) is in [#432](https://github.com/steven-crosby/ritmofit-web/pull/432)
-  (hybrid placed-move refinement; not merged). SPC-09 stays owner-blocked.
+  (hybrid placed-move refinement; not merged). SPC-09 is the next planning objective (2026-09-28).
 - PROD-HYGIENE: runbook [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426);
-  live fixture delete is still owner-pending.
+  live fixtures deleted 2026-09-28 with owner authorization.
 - No merge, deploy, production-data deletion, schema change, or provider-contract change is authorized
   by this ledger. SPC-09 still needs a backend-signal design decision before any permission /
   provider-error UI. ENERGY-RIBBON still requires its own PR, merge, and deploy gates.

@@ -188,5 +188,10 @@ keep this list only for later iOS refinement context.
 
 ## Open follow-on (not gating)
 
+**Scaffold recipe IDs grow over time (2026-09-28, #470).** `scaffoldRecipeId` is an append-only enum:
+v2 IDs (`cycle_{30,45,60}_v2`, `hiit_{45,60}_v2`) now exist alongside v1. Any iOS decoder must treat
+unknown recipe IDs as opaque strings (or decode leniently) rather than failing class decoding. Not
+verified against the iOS code; check before iOS consumes `ClassDTO.scaffoldRecipeId`.
+
 **iPad as a first-class iOS target.** The principle currently leans on web to cover iPad (the iOS app is
 iPhone-only). A deliberate decision later — revisit when iPad usage is evidenced.

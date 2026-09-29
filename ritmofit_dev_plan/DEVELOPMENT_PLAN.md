@@ -50,8 +50,10 @@ Pilates, and HIIT.
   label, intensity, goal, and focus editing. Deployed PR #468 completes scaffold-block
   add, reorder, and empty-block delete. See
   [`class-template-handoff.md`](./class-template-handoff.md) for the settled rules.
-  SPC-09 remains owner-blocked. PROD-HYGIENE runbook is in #426; live fixture
-  delete is still owner-pending. Full Pulse Check disposition lives in
+  **SPC-09 is the next planning objective** (owner, 2026-09-28): design the API signals
+  that separate permission from provider-error before adding those UI states.
+  PROD-HYGIENE is complete: four owner-confirmed fixtures were tagged and deleted
+  2026-09-28 (see [`HISTORY.md`](./HISTORY.md)). Full Pulse Check disposition lives in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
   **Prior Pulse Check deploys:** batch 2 PRs #420, #422 — Worker
   `5d659102-3bff-4398-91ad-cdc1d165ccc1` from main `dd625b5` (recorded in #423);
@@ -378,8 +380,8 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   headers use the centralized caution tone for “Session expired,” and connection-state marks
   move to the shared `ConnectionStateMark` icon system in
   [PR #418](https://github.com/steven-crosby/ritmofit-web/pull/418); deployed as Worker
-  `ad638215`. **SPC-09 remains owner-blocked** — permission/provider-error still need a
-  backend-signal design decision.
+  `ad638215`. **SPC-09 is the next planning objective (owner, 2026-09-28)** —
+  permission/provider-error still need a backend-signal design before UI work.
 - **SOURCE-ARTWORK (SPC-07) — ✅ shipped:** new shared `TrackArt` component
   (deterministic warm-gradient tile keyed by BPM band, or a stable identity hash when BPM is
   unknown — never intensity, since Library rows must not infer class intensity) replaces the bare
@@ -421,8 +423,8 @@ planning queue; the ledger preserves the finding-by-finding evidence and accepta
   deployed as Worker `ad638215`.
 - **PROD-HYGIENE (SPC-21):** runbook landed in
   [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426)
-  ([`prod-fixture-hygiene.md`](./prod-fixture-hygiene.md)). Live fixture delete is still
-  owner-pending.
+  ([`prod-fixture-hygiene.md`](./prod-fixture-hygiene.md)). ✅ Live fixtures deleted
+  2026-09-28 with owner authorization (four classes; see [`HISTORY.md`](./HISTORY.md)).
 
 Resolved owner decisions (Steven, 2026-09-13):
 

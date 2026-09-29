@@ -35,7 +35,14 @@ Two mechanisms, both already in the product — no schema change:
 Apply both at creation time, not after the fact — a probe class is easy to tag while you're still the
 one who just made it, and easy to lose track of once other real classes accumulate around it.
 
-## Inventory (current state — not run by this session)
+## Inventory
+
+**2026-09-28 cleanup (owner-authorized):** four owner-confirmed fixtures were tagged `qa-fixture` and
+then deleted — `QA smoke 2026-09-19`, `Spotify likesLiveness probe - Spotify` (the SPC-21 class),
+`SoundCloud Test: Cool Down`, and `Saturday Ride`. Details are in `HISTORY.md`. The notes below
+describe how to inventory next time.
+
+### How to inventory (original note)
 
 This session has no production D1 or API credentials, so it cannot enumerate what's in the production
 account today. The specific class SPC-21 cites has not been re-identified here. To inventory it:

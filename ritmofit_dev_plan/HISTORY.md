@@ -10,6 +10,24 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-28 — production fixture cleanup (SPC-21 / PROD-HYGIENE).** No deploy.
+> The owner confirmed each class as test data in chat. Following `prod-fixture-hygiene.md`,
+> each was tagged `qa-fixture` first, re-checked for the tag, then deleted with
+> `DELETE /api/v1/classes/:id` from the owner's signed-in session (`204`; a follow-up
+> `GET` returned `404`). Class deletion cascades to tracks, cues, moves, tags, and sections.
+>
+> | Class | Id | Created | Content |
+> | --- | --- | --- | --- |
+> | QA smoke 2026-09-19 | `f6f6c698-afba-42ea-86db-4ac2f5c889e4` | 2026-09-20 | Cycle scaffold `cycle_45_v1`, 1 track |
+> | Spotify likesLiveness probe - Spotify | `d246553c-b39b-4a20-9ca8-f6c94faa9215` | 2026-09-01 | Cycle, 30 tracks (the SPC-21 class) |
+> | SoundCloud Test: Cool Down | `6002d279-75e7-4631-b0eb-ed3df92dcb7c` | 2026-09-19 | Pilates, 9 tracks |
+> | Saturday Ride | `18fc9f47-4c31-45d2-83d2-6452fa8b643a` | 2026-09-23 | Pilates scaffold `pilates_45_v1`, 0 tracks |
+>
+> Three real classes remain in the account. Recovery, if ever needed, is D1 time travel
+> (`deployment-runbook.md`); these deletions happened after the #470 deploy on 2026-09-28.
+> Same session, owner decisions: SPC-09 becomes the next planning objective; the v2
+> recipe-ID iOS decode risk is tracked in `web-ios-parity.md`.
+
 > **Session 2026-09-28 (PR #470 — v2 Cycle and HIIT scaffold recipes) — deployed
 > (Worker `dd9a27e9-e891-41a8-b5cf-d1438f65fcad`).** Application source `c81bc73`.
 > Deployed from clean `main` after owner go. Remote D1 had no pending migrations
