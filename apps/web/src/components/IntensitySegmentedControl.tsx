@@ -41,10 +41,12 @@ export function IntensitySegmentedControl({
   value,
   onChange,
   ariaLabel,
+  disabled = false,
 }: {
   value: Intensity;
   onChange: (value: Intensity) => void;
   ariaLabel: string;
+  disabled?: boolean;
 }) {
   const summaryId = useId();
   const groupRef = useRef<HTMLDivElement>(null);
@@ -53,6 +55,7 @@ export function IntensitySegmentedControl({
   // the keyboard behaviour a radiogroup would have given us, kept while moving to
   // the `aria-pressed` semantics canon asks for.
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (disabled) return;
     const delta =
       event.key === 'ArrowRight' || event.key === 'ArrowDown'
         ? 1
@@ -94,8 +97,9 @@ export function IntensitySegmentedControl({
               data-zone={v}
               aria-pressed={selected}
               tabIndex={selected ? 0 : -1}
+              disabled={disabled}
               onClick={() => onChange(v)}
-              className={`rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors ${
+              className={`rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 ${
                 selected
                   ? 'border-b-interactive bg-bg-raised font-semibold text-text-primary'
                   : 'border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary'

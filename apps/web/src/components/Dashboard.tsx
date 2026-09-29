@@ -3328,6 +3328,9 @@ function ClassWorkspace({
   const [assignStay, setAssignStay] = useState(false);
   const [planLead, setPlanLead] = useState<string | null>(null);
   const [planBlocks, setPlanBlocks] = useState<ClassPlanBlock[]>([]);
+  const currentAssigningPlanBlock = assigningPlanBlock
+    ? (planBlocks.find((block) => block.id === assigningPlanBlock.id) ?? assigningPlanBlock)
+    : null;
   const [hasPlanBlocks, setHasPlanBlocks] = useState(cls.scaffoldRecipeId != null);
   // A cue/move marker click also asks the inspector to focus that row. The `nonce`
   // bumps on every marker click so re-clicking the same marker re-flashes.
@@ -3611,7 +3614,7 @@ function ClassWorkspace({
               <BuilderMusicPicker
                 classId={cls.id}
                 classTitle={cls.title}
-                assigningPlanBlock={assigningPlanBlock}
+                assigningPlanBlock={currentAssigningPlanBlock}
                 sourcePanelId={sourcePanelId}
                 trackSourceRef={trackSourceRef}
                 manualEntryRef={manualEntryRef}

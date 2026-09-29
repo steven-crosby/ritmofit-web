@@ -570,6 +570,13 @@ describe('ClassPlanBlocks block editor', () => {
     const saving = screen.getByRole('button', { name: 'Saving…' }) as HTMLButtonElement;
     expect(saving.disabled).toBe(true);
     expect(input.disabled).toBe(true);
+    const intensity = screen.getByRole('group', {
+      name: 'Intensity for Block 1 · Arrive on the bike',
+    });
+    expect(within(intensity).getByRole('button', { name: 'All Out' })).toHaveProperty(
+      'disabled',
+      true,
+    );
 
     pending.resolve({ ...block, targetDurationMs: 300_000 });
     const reopened = await screen.findByRole('button', {

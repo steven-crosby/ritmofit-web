@@ -2377,6 +2377,45 @@ describe('Dashboard plan-first next step', () => {
     expect(destCard?.contains(picker)).toBe(true);
   });
 
+  it('updates an open music picker destination when its block is renamed', async () => {
+    const ride = { ...makeClass('Plan ride'), scaffoldRecipeId: 'cycle_45_v1' as const };
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(liveRunPayload([]));
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([firstBlock, secondBlock]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateClassPlanBlock).mockResolvedValue({
+      ...firstBlock,
+      label: 'Cadence climb',
+    });
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Plan ride$/ }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Choose music for Block 1 · Arrive' }),
+    );
+    expect(
+      await screen.findByRole('region', { name: /Choose music for Block 1 · Arrive/ }),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Block 1 · Arrive' }));
+    fireEvent.change(screen.getByLabelText('Block name'), {
+      target: { value: 'Cadence climb' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(api.updateClassPlanBlock).toHaveBeenCalledWith(firstBlock.id, {
+      label: 'Cadence climb',
+    });
+    const picker = await screen.findByRole('region', {
+      name: /Choose music for Block 1 · Cadence climb/,
+    });
+    expect(within(picker).getByLabelText('Track destination').textContent).toMatch(
+      /Block 1 · Cadence climb/,
+    );
+  });
+
   it('stays on the next empty block after the first assign and keeps Pulse off', async () => {
     const ride = { ...makeClass('Mid-build ride'), scaffoldRecipeId: 'cycle_45_v1' as const };
     const assigned = { ...makeClassTrack('ct-1', 0), planBlockId: firstBlock.id };

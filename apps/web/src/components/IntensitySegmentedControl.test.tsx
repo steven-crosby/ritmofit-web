@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 
 afterEach(() => {
@@ -65,6 +65,18 @@ describe('IntensitySegmentedControl', () => {
     render(<IntensitySegmentedControl value="none" onChange={onChange} ariaLabel="i" />);
     fireEvent.click(screen.getByRole('button', { name: 'Attack' }));
     expect(onChange).toHaveBeenCalledWith('hard');
+  });
+
+  it('disables every zone and ignores arrow keys during a save', () => {
+    const onChange = vi.fn();
+    render(<IntensitySegmentedControl value="mod" onChange={onChange} ariaLabel="i" disabled />);
+    const group = screen.getByRole('group', { name: 'i' });
+    for (const button of within(group).getAllByRole('button')) {
+      expect(button).toHaveProperty('disabled', true);
+    }
+    fireEvent.click(within(group).getByRole('button', { name: 'All Out' }));
+    fireEvent.keyDown(group, { key: 'ArrowRight' });
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('moves selection with the arrow keys and wraps', () => {

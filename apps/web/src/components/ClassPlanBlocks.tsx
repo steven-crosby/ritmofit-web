@@ -810,6 +810,7 @@ function PlanBlockEditor({
           value={intensity}
           onChange={setIntensity}
           ariaLabel={`Intensity for ${blockName}`}
+          disabled={saving}
         />
       </div>
       {textArea('teachingGoal', 'Teaching goal', teachingGoal, setTeachingGoal, goalRef)}
