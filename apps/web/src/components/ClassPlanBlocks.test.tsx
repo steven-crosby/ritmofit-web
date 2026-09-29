@@ -499,7 +499,12 @@ describe('scaffold block management', () => {
 
   const renderScaffold = (
     recipeId: 'cycle_45_v1' | 'pilates_45_v1' | 'hiit_45_v1',
-    options: { tracks?: ClassTrack[]; canEdit?: boolean; onTracksChanged?: () => void } = {},
+    options: {
+      tracks?: ClassTrack[];
+      canEdit?: boolean;
+      onTracksChanged?: () => void;
+      assigningPlanBlockId?: string | null;
+    } = {},
   ) =>
     render(
       <ClassPlanBlocks
@@ -509,7 +514,7 @@ describe('scaffold block management', () => {
         tracks={options.tracks ?? []}
         payload={null}
         canEdit={options.canEdit ?? true}
-        assigningPlanBlockId={null}
+        assigningPlanBlockId={options.assigningPlanBlockId ?? null}
         onChooseMusic={() => {}}
         onSelectTrack={() => {}}
         onTracksChanged={options.onTracksChanged ?? (() => {})}
@@ -532,15 +537,21 @@ describe('scaffold block management', () => {
   afterEach(() => vi.clearAllMocks());
 
   it('authors a Cycle block, validates its ranges, and keeps the class target fixed', async () => {
-    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block]);
+    let created: ClassPlanBlock | null = null;
+    vi.mocked(api.listClassPlanBlocks).mockImplementation(async () =>
+      created ? [block, created] : [block],
+    );
     vi.mocked(api.createClassPlanBlock).mockImplementation(
-      async (_classId: string, body: CreateClassPlanBlock) => ({
-        ...block,
-        ...body,
-        id: second.id,
-        position: 1,
-        recipeBlockKey: null,
-      }),
+      async (_classId: string, body: CreateClassPlanBlock) => {
+        created = {
+          ...block,
+          ...body,
+          id: second.id,
+          position: 1,
+          recipeBlockKey: null,
+        };
+        return created;
+      },
     );
     renderScaffold('cycle_45_v1');
     fireEvent.click(await screen.findByRole('button', { name: 'Add block' }));
@@ -585,8 +596,8 @@ describe('scaffold block management', () => {
   });
 
   it('recovers an empty Pilates scaffold and lets the authored equipment be edited', async () => {
-    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
     let saved: ClassPlanBlock | null = null;
+    vi.mocked(api.listClassPlanBlocks).mockImplementation(async () => (saved ? [saved] : []));
     vi.mocked(api.createClassPlanBlock).mockImplementation(
       async (_classId: string, body: CreateClassPlanBlock) => {
         saved = { ...block, ...body, recipeBlockKey: null };
@@ -623,8 +634,8 @@ describe('scaffold block management', () => {
   });
 
   it('adds a continuous HIIT block and can edit it into timed rounds without changing planned time', async () => {
-    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
     let saved: ClassPlanBlock | null = null;
+    vi.mocked(api.listClassPlanBlocks).mockImplementation(async () => (saved ? [saved] : []));
     vi.mocked(api.createClassPlanBlock).mockImplementation(
       async (_classId: string, body: CreateClassPlanBlock) => {
         saved = { ...block, ...body, recipeBlockKey: null };
@@ -696,6 +707,27 @@ describe('scaffold block management', () => {
     );
   });
 
+  it('refreshes the full block list after another tab changed it before add', async () => {
+    const fromAnotherTab = {
+      ...second,
+      id: '00000000-0000-4000-8000-0000000000b4',
+      label: 'Other tab',
+      position: 1,
+    };
+    const created = { ...second, label: 'New ending', position: 2 };
+    vi.mocked(api.listClassPlanBlocks)
+      .mockResolvedValueOnce([block])
+      .mockResolvedValueOnce([block, fromAnotherTab, created]);
+    vi.mocked(api.createClassPlanBlock).mockResolvedValue(created);
+    renderScaffold('pilates_45_v1');
+    fireEvent.click(await screen.findByRole('button', { name: 'Add block' }));
+    fillCommon('New ending');
+    fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
+    expect(await screen.findByRole('heading', { name: 'Other tab' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'New ending' })).toBeTruthy();
+    expect(api.listClassPlanBlocks).toHaveBeenCalledTimes(2);
+  });
+
   it('reorders with keyboard-usable buttons and refreshes tracks after the server confirms', async () => {
     vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block, second]);
     const pending = deferred<ClassPlanBlock[]>();
@@ -714,6 +746,13 @@ describe('scaffold block management', () => {
     ).toBe(true);
     move.focus();
     fireEvent.click(move);
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Choose music for Block 2 · Arrive on the bike',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
     expect(api.reorderClassPlanBlocks).toHaveBeenCalledWith(block.classId, {
       planBlockIds: [second.id, block.id],
     });
@@ -824,6 +863,51 @@ describe('scaffold block management', () => {
     expect(
       await screen.findByRole('button', { name: 'Edit Block 1 · Build the base' }),
     ).toBeTruthy();
+  });
+
+  it('holds structural changes while a song assignment is pending', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block, second]);
+    const pending = deferred<ClassTrack>();
+    vi.mocked(api.assignClassTrackPlanBlock).mockReturnValue(pending.promise);
+    renderScaffold('cycle_45_v1', { tracks: [assignedTrack()] });
+    const select = await screen.findByRole('combobox', { name: 'Teaching block for Song 1' });
+    fireEvent.change(select, { target: { value: second.id } });
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Move Block 1 · Arrive on the bike later',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    expect((screen.getByRole('button', { name: 'Add block' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    pending.resolve({ ...assignedTrack(), planBlockId: second.id });
+    await waitFor(() =>
+      expect(
+        (
+          screen.getByRole('button', {
+            name: 'Move Block 1 · Arrive on the bike later',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(false),
+    );
+  });
+
+  it('holds structural changes while a music picker targets a block', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([block, second]);
+    renderScaffold('cycle_45_v1', { assigningPlanBlockId: block.id });
+    expect(await screen.findByRole('heading', { name: 'Arrive on the bike' })).toBeTruthy();
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Move Block 1 · Arrive on the bike later',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    expect((screen.getByRole('button', { name: 'Add block' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
   });
 
   it('keeps the block when a concurrent song assignment makes deletion conflict', async () => {
@@ -986,6 +1070,29 @@ describe('ClassPlanBlocks block editor', () => {
     expect(await screen.findByText('Intervals 10:00 · Planned 9:00')).toBeTruthy();
     expect(screen.getByText('Planned 9:00')).toBeTruthy();
     expect(screen.queryByRole('form')).toBeNull();
+  });
+
+  it('preserves valid partial HIIT timing when editing the name', async () => {
+    const partial: ClassPlanBlock = {
+      ...hiitBlock,
+      guidance: {
+        kind: 'hiit',
+        workMs: 30_000,
+        recoveryMs: 30_000,
+        rounds: null,
+        sequenceFocus: 'Lower body, upper body, locomotion, trunk.',
+        equipment: 'bodyweight',
+      },
+    };
+    vi.mocked(api.updateClassPlanBlock).mockResolvedValue({ ...partial, label: 'Circuit start' });
+    renderBlocks([partial]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Block 1 · Circuit A' }));
+    expect((screen.getByLabelText('Timed rounds') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText('Rounds') as HTMLInputElement).value).toBe('');
+    fireEvent.change(screen.getByLabelText('Block name'), { target: { value: 'Circuit start' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(api.updateClassPlanBlock).toHaveBeenCalledWith(partial.id, { label: 'Circuit start' });
+    expect(await screen.findByRole('heading', { name: 'Circuit start' })).toBeTruthy();
   });
 
   it('keeps the draft and announces a failed save', async () => {

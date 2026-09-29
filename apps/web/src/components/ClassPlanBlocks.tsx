@@ -45,7 +45,6 @@ import {
   classTargetGapLabel,
   formatPlannedDurationInput,
   hiitIntervalMismatch,
-  hiitIntervalTotalMs,
   parsePlannedDuration,
   planBlockActualMs,
   planBlockDetailLine,
@@ -126,6 +125,7 @@ export function ClassPlanBlocks({
   const [adding, setAdding] = useState(false);
   const [orderBusy, setOrderBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [assignmentCount, setAssignmentCount] = useState(0);
   const [actionError, setActionError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const addButtonRef = useRef<HTMLButtonElement>(null);
@@ -205,7 +205,8 @@ export function ClassPlanBlocks({
   }, [adding, blocks]);
 
   const moveBlock = async (index: number, delta: -1 | 1) => {
-    if (!blocks || orderBusy || deleteBusy || adding) return;
+    if (!blocks || orderBusy || deleteBusy || adding || assignmentCount || assigningPlanBlockId)
+      return;
     const next = [...blocks];
     const [moved] = next.splice(index, 1);
     if (!moved) return;
@@ -236,6 +237,9 @@ export function ClassPlanBlocks({
   };
 
   const removeBlock = async (id: string) => {
+    if (orderBusy || deleteBusy || adding || assignmentCount || assigningPlanBlockId) {
+      throw new Error('Finish the current music or plan change before deleting this block.');
+    }
     setDeleteBusy(true);
     setActionError(null);
     try {
@@ -307,6 +311,11 @@ export function ClassPlanBlocks({
         ? 'hiit'
         : null;
   const canManage = canEdit && guidanceKind != null;
+  const structuralBusy = orderBusy || deleteBusy;
+  const manageBusy =
+    structuralBusy || adding || assignmentCount > 0 || assigningPlanBlockId != null;
+  const assignmentChanged = (busy: boolean) =>
+    setAssignmentCount((count) => Math.max(0, count + (busy ? 1 : -1)));
 
   const unassigned = unassignedClassTracks(visibleTracks);
   const plannedMs = planTotalMs(blocks);
@@ -369,7 +378,9 @@ export function ClassPlanBlocks({
             payload={payload}
             canEdit={canEdit}
             canManage={canManage}
-            manageBusy={orderBusy || deleteBusy || adding}
+            manageBusy={manageBusy}
+            structuralBusy={structuralBusy}
+            onAssignmentBusyChange={assignmentChanged}
             canMoveEarlier={index > 0}
             canMoveLater={index < blocks.length - 1}
             onMoveEarlier={() => void moveBlock(index, -1)}
@@ -399,10 +410,17 @@ export function ClassPlanBlocks({
             classId={classId}
             guidanceKind={guidanceKind}
             blockName="new block"
-            onSaved={(saved) => {
+            onSaved={async (saved) => {
               setActionError(null);
               focusAfterMutationRef.current = saved.id;
-              setBlocks((rows) => [...(rows ?? []), saved]);
+              try {
+                setBlocks(await listClassPlanBlocks(classId));
+              } catch {
+                setBlocks((rows) => [...(rows ?? []), saved]);
+                setError(
+                  'The block was added, but the plan could not be refreshed. Reload before moving blocks.',
+                );
+              }
               setAdding(false);
               setAnnouncement(`${saved.label} added as block ${saved.position + 1}.`);
             }}
@@ -415,7 +433,7 @@ export function ClassPlanBlocks({
           <button
             ref={addButtonRef}
             type="button"
-            disabled={orderBusy || deleteBusy}
+            disabled={manageBusy}
             onClick={() => {
               setActionError(null);
               setAdding(true);
@@ -448,6 +466,8 @@ export function ClassPlanBlocks({
                     track={track}
                     title={trackTitle(track, payload)}
                     blocks={blocks}
+                    disabled={structuralBusy}
+                    onBusyChange={assignmentChanged}
                     onTracksChanged={onTracksChanged}
                     onMoved={(trackId, planBlockId) => setMoveIntent({ trackId, planBlockId })}
                   />
@@ -469,6 +489,8 @@ function PlanBlockCard({
   canEdit,
   canManage,
   manageBusy,
+  structuralBusy,
+  onAssignmentBusyChange,
   canMoveEarlier,
   canMoveLater,
   onMoveEarlier,
@@ -490,6 +512,8 @@ function PlanBlockCard({
   canEdit: boolean;
   canManage: boolean;
   manageBusy: boolean;
+  structuralBusy: boolean;
+  onAssignmentBusyChange: (busy: boolean) => void;
   canMoveEarlier: boolean;
   canMoveLater: boolean;
   onMoveEarlier: () => void;
@@ -707,6 +731,7 @@ function PlanBlockCard({
           {canEdit && (
             <button
               type="button"
+              disabled={structuralBusy}
               onClick={() => (destOpen ? onCloseMusic?.() : onChooseMusic())}
               aria-expanded={destOpen}
               aria-label={destOpen ? 'Close music' : `Choose music for ${blockName}`}
@@ -741,6 +766,8 @@ function PlanBlockCard({
                     track={track}
                     title={trackTitle(track, payload)}
                     blocks={blocks}
+                    disabled={structuralBusy}
+                    onBusyChange={onAssignmentBusyChange}
                     onTracksChanged={onTracksChanged}
                     onMoved={onMoved}
                   />
@@ -752,6 +779,7 @@ function PlanBlockCard({
             <li>
               <button
                 type="button"
+                disabled={structuralBusy}
                 onClick={() => (destOpen ? onCloseMusic?.() : onChooseMusic({ stay: true }))}
                 aria-expanded={destOpen}
                 aria-label={destOpen ? 'Close music' : `Add another song to ${blockName}`}
@@ -777,12 +805,16 @@ function PlanBlockAssignSelect({
   track,
   title,
   blocks,
+  disabled,
+  onBusyChange,
   onTracksChanged,
   onMoved,
 }: {
   track: ClassTrack;
   title: string;
   blocks: ClassPlanBlock[];
+  disabled: boolean;
+  onBusyChange: (busy: boolean) => void;
   onTracksChanged: () => void;
   onMoved: (classTrackId: string, planBlockId: string | null) => void;
 }) {
@@ -791,9 +823,11 @@ function PlanBlockAssignSelect({
   const selectId = `plan-block-for-${track.id}`;
 
   const move = (value: string) => {
+    if (disabled || busy) return;
     const planBlockId = value === '' ? null : value;
     if (planBlockId === (track.planBlockId ?? null)) return;
     setBusy(true);
+    onBusyChange(true);
     setError(null);
     void (async () => {
       try {
@@ -804,6 +838,7 @@ function PlanBlockAssignSelect({
         setError(errMessage(e));
       } finally {
         setBusy(false);
+        onBusyChange(false);
       }
     })();
   };
@@ -817,7 +852,7 @@ function PlanBlockAssignSelect({
         <select
           id={selectId}
           value={track.planBlockId ?? ''}
-          disabled={busy}
+          disabled={busy || disabled}
           aria-label={`Teaching block for ${title}`}
           onChange={(event) => move(event.target.value)}
           className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-bg-sunken px-2 font-ui text-xs text-text-primary rf-focus-ring disabled:opacity-40"
@@ -921,7 +956,7 @@ function PlanBlockEditor({
   classId: string;
   guidanceKind: ClassPlanBlockGuidance['kind'];
   blockName: string;
-  onSaved: (block: ClassPlanBlock) => void;
+  onSaved: (block: ClassPlanBlock) => void | Promise<void>;
   onCancel: () => void;
 }) {
   const idBase = useId();
@@ -935,8 +970,10 @@ function PlanBlockEditor({
     block ? formatPlannedDurationInput(block.targetDurationMs) : '',
   );
   const [timed, setTimed] = useState(
-    initialHiit != null && hiitIntervalTotalMs(initialHiit) != null,
+    initialHiit != null &&
+      (initialHiit.rounds != null || initialHiit.workMs != null || initialHiit.recoveryMs != null),
   );
+  const [timingTouched, setTimingTouched] = useState(false);
   const [rounds, setRounds] = useState(initialHiit?.rounds?.toString() ?? '');
   const [work, setWork] = useState(initialHiit?.workMs ? String(initialHiit.workMs / 1000) : '');
   const [recovery, setRecovery] = useState(
@@ -989,6 +1026,7 @@ function PlanBlockEditor({
     guidanceKind === 'hiit' && timed ? parseWhole(work, 1, MAX_INTERVAL_SECONDS) : null;
   const recoveryValue =
     guidanceKind === 'hiit' && timed ? parseWhole(recovery, 1, MAX_INTERVAL_SECONDS) : null;
+  const preserveHiitTiming = block != null && initialHiit != null && !timingTouched;
   const cadenceMinValue = guidanceKind === 'cycle' ? parseWhole(cadenceMin, 1, 300) : null;
   const cadenceMaxValue = guidanceKind === 'cycle' ? parseWhole(cadenceMax, 1, 300) : null;
   const rpeMinValue = guidanceKind === 'cycle' ? parseWhole(rpeMin, 1, 10) : null;
@@ -998,9 +1036,9 @@ function PlanBlockEditor({
     teachingGoal: teachingGoal.trim() === '',
     movementFocus: movementFocus.trim() === '',
     duration: plannedMs == null,
-    rounds: guidanceKind === 'hiit' && timed && roundsValue == null,
-    work: guidanceKind === 'hiit' && timed && workValue == null,
-    recovery: guidanceKind === 'hiit' && timed && recoveryValue == null,
+    rounds: guidanceKind === 'hiit' && timed && !preserveHiitTiming && roundsValue == null,
+    work: guidanceKind === 'hiit' && timed && !preserveHiitTiming && workValue == null,
+    recovery: guidanceKind === 'hiit' && timed && !preserveHiitTiming && recoveryValue == null,
     cadenceMin: guidanceKind === 'cycle' && cadenceMinValue == null,
     cadenceMax:
       guidanceKind === 'cycle' &&
@@ -1032,13 +1070,19 @@ function PlanBlockEditor({
     draftGuidance = { kind: 'pilates', optionalEquipment };
   } else if (
     guidanceKind === 'hiit' &&
-    (!timed || (roundsValue != null && workValue != null && recoveryValue != null))
+    (!timed ||
+      preserveHiitTiming ||
+      (roundsValue != null && workValue != null && recoveryValue != null))
   ) {
     draftGuidance = {
       kind: 'hiit',
-      rounds: timed ? roundsValue : null,
-      workMs: timed ? workValue! * 1000 : null,
-      recoveryMs: timed ? recoveryValue! * 1000 : null,
+      rounds: preserveHiitTiming ? initialHiit.rounds : timed ? roundsValue : null,
+      workMs: preserveHiitTiming ? initialHiit.workMs : timed ? workValue! * 1000 : null,
+      recoveryMs: preserveHiitTiming
+        ? initialHiit.recoveryMs
+        : timed
+          ? recoveryValue! * 1000
+          : null,
       sequenceFocus: initialHiit?.sequenceFocus ?? movementFocus.trim(),
       equipment: hiitEquipment,
     };
@@ -1094,7 +1138,7 @@ function PlanBlockEditor({
       setError(null);
       void (async () => {
         try {
-          onSaved(await updateClassPlanBlock(block.id, body));
+          await onSaved(await updateClassPlanBlock(block.id, body));
         } catch (e) {
           setError(errMessage(e));
           setSaving(false);
@@ -1114,7 +1158,7 @@ function PlanBlockEditor({
       setError(null);
       void (async () => {
         try {
-          onSaved(await createClassPlanBlock(classId, body));
+          await onSaved(await createClassPlanBlock(classId, body));
         } catch (e) {
           setError(errMessage(e));
           setSaving(false);
@@ -1397,20 +1441,46 @@ function PlanBlockEditor({
               type="checkbox"
               checked={timed}
               disabled={saving}
-              onChange={(event) => setTimed(event.target.checked)}
+              onChange={(event) => {
+                setTimed(event.target.checked);
+                setTimingTouched(true);
+              }}
               className="rf-focus-ring"
             />
             Timed rounds
           </label>
           {timed && (
             <div className="flex flex-wrap gap-3">
-              {numberField('rounds', 'Rounds', rounds, setRounds, roundsRef, 'Use 1–100.')}
-              {numberField('work', 'Work (s)', work, setWork, workRef, 'Use whole seconds.')}
+              {numberField(
+                'rounds',
+                'Rounds',
+                rounds,
+                (value) => {
+                  setRounds(value);
+                  setTimingTouched(true);
+                },
+                roundsRef,
+                'Use 1–100.',
+              )}
+              {numberField(
+                'work',
+                'Work (s)',
+                work,
+                (value) => {
+                  setWork(value);
+                  setTimingTouched(true);
+                },
+                workRef,
+                'Use whole seconds.',
+              )}
               {numberField(
                 'recovery',
                 'Recovery (s)',
                 recovery,
-                setRecovery,
+                (value) => {
+                  setRecovery(value);
+                  setTimingTouched(true);
+                },
                 recoveryRef,
                 'Use whole seconds.',
               )}

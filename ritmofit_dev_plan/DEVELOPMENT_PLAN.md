@@ -47,7 +47,8 @@ Pilates, and HIIT.
   owner call that needs `*_v2` recipe IDs. The block editor's first slice (#463)
   edits planned block time and HIIT rounds/intervals inline, keeps the class
   target fixed, and shows the target gap and any HIIT mismatch. PR #467 added
-  label, intensity, goal, and focus editing; add/delete/reorder remain open. See
+  label, intensity, goal, and focus editing. PR #468 completes scaffold-block
+  add, reorder, and empty-block delete. See
   [`class-template-handoff.md`](./class-template-handoff.md) for the settled rules.
   SPC-09 remains owner-blocked. PROD-HYGIENE runbook is in #426; live fixture
   delete is still owner-pending. Full Pulse Check disposition lives in
@@ -308,8 +309,8 @@ group-and-demote in the move library). All six implementation slices **already l
 Worker `962f7935-2726-43f1-b277-c4daa1626da7` was at 100%, and the SPA entry
 `assets/index-CuEjmewJ.js` appeared on three consecutive cache-busted fetches.
 Remote D1 was not rechecked for this status refresh; the #465 deploy record reported
-nothing to apply (latest migration `0019`). The next class-template work is block
-add/delete/reorder; label, intensity, goal, and focus editing landed in #467.
+nothing to apply (latest migration `0019`). Label, intensity, goal, and focus editing
+landed in #467; PR #468 completes scaffold-block add, reorder, and empty-block delete.
 See [`class-template-handoff.md`](./class-template-handoff.md). The alerting
 half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
 

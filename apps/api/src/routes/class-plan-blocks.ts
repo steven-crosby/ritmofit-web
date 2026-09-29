@@ -5,7 +5,7 @@
  * optionally point at one block for playback grouping.
  */
 import { Hono } from 'hono';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, gte, sql } from 'drizzle-orm';
 import {
   classPlanBlockGuidanceSchema,
   createClassPlanBlockSchema,
@@ -148,7 +148,7 @@ classPlanBlockRoutes.post('/classes/:id/plan-blocks/reorder', async (c) => {
   await requireAccess(db, c.get('userId'), classId, 'edit');
   const { planBlockIds } = reorderClassPlanBlocksSchema.parse(await c.req.json());
   const current = await db
-    .select({ id: classPlanBlocks.id })
+    .select({ id: classPlanBlocks.id, position: classPlanBlocks.position })
     .from(classPlanBlocks)
     .where(eq(classPlanBlocks.classId, classId))
     .all();
@@ -188,21 +188,54 @@ classPlanBlockRoutes.post('/classes/:id/plan-blocks/reorder', async (c) => {
 
   const now = Date.now();
   const shift = current.length + 1;
+  // Guard the read-then-write decision against assignments or another block edit
+  // from a second tab. D1 batch commits the guard and block positions together.
+  const blockSnapshot = JSON.stringify(
+    [...current].sort((a, b) => a.id.localeCompare(b.id)).map((row) => [row.id, row.position]),
+  );
+  const trackSnapshot = JSON.stringify(
+    [...trackRows]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((row) => [row.id, row.position, row.planBlockId]),
+  );
   const statements = [
     db
       .update(classPlanBlocks)
       .set({ position: sql`${classPlanBlocks.position} + ${shift}`, updatedAt: now })
-      .where(eq(classPlanBlocks.classId, classId)),
+      .where(
+        sql`${classPlanBlocks.classId} = ${classId}
+        AND (SELECT COALESCE(json_group_array(json_array(id, position)), '[]')
+          FROM (SELECT id, position FROM class_plan_blocks WHERE class_id = ${classId} ORDER BY id))
+          = ${blockSnapshot}
+        AND (SELECT COALESCE(json_group_array(json_array(id, position, plan_block_id)), '[]')
+          FROM (SELECT id, position, plan_block_id FROM class_tracks WHERE class_id = ${classId} ORDER BY id))
+          = ${trackSnapshot}
+        AND (SELECT timeline_mode FROM classes WHERE id = ${classId}) = ${mode}`,
+      )
+      .returning({ id: classPlanBlocks.id }),
     ...planBlockIds.map((id, position) =>
       db
         .update(classPlanBlocks)
         .set({ position, updatedAt: now })
-        .where(eq(classPlanBlocks.id, id)),
+        .where(and(eq(classPlanBlocks.id, id), gte(classPlanBlocks.position, shift))),
     ),
   ];
-  await db.batch(statements as unknown as Parameters<typeof db.batch>[0]);
+  const [shifted] = await db.batch(statements as unknown as Parameters<typeof db.batch>[0]);
+  if (!Array.isArray(shifted) || shifted.length !== current.length) {
+    throw new HttpError(409, 'CONFLICT', 'The plan changed. Refresh and try the move again.');
+  }
   if (mode === 'sequential' && trackRows.length > 0) {
-    await resequence(db, classId, orderTrackIdsByPlan(trackRows, requestedPositions));
+    const latestTracks = await db
+      .select({
+        id: classTracks.id,
+        position: classTracks.position,
+        planBlockId: classTracks.planBlockId,
+      })
+      .from(classTracks)
+      .where(eq(classTracks.classId, classId))
+      .orderBy(classTracks.position)
+      .all();
+    await resequence(db, classId, orderTrackIdsByPlan(latestTracks, requestedPositions));
   }
   await touchClassUpdatedAt(db, classId);
   const rows = await db
@@ -232,7 +265,22 @@ classPlanBlockRoutes.delete('/plan-blocks/:id', async (c) => {
     );
   }
 
-  await db.delete(classPlanBlocks).where(eq(classPlanBlocks.id, id));
+  // Keep the empty-only rule in the DELETE statement: an assignment committed
+  // after the read above must not be silently nulled by the FK's ON DELETE action.
+  const deleted = await db
+    .delete(classPlanBlocks)
+    .where(
+      sql`${classPlanBlocks.id} = ${id}
+      AND NOT EXISTS (SELECT 1 FROM class_tracks WHERE plan_block_id = ${id})`,
+    )
+    .returning({ id: classPlanBlocks.id });
+  if (deleted.length === 0) {
+    throw new HttpError(
+      409,
+      'CONFLICT',
+      'Move or remove this block’s tracks before deleting the block.',
+    );
+  }
   const remaining = await db
     .select({ id: classPlanBlocks.id })
     .from(classPlanBlocks)
