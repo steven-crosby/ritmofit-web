@@ -2554,7 +2554,12 @@
                   "pilates_60_v1",
                   "hiit_30_v1",
                   "hiit_45_v1",
-                  "hiit_60_v1"
+                  "hiit_60_v1",
+                  "cycle_30_v2",
+                  "cycle_45_v2",
+                  "cycle_60_v2",
+                  "hiit_45_v2",
+                  "hiit_60_v2"
                 ]
               },
               {
@@ -2730,7 +2735,12 @@
                   "pilates_60_v1",
                   "hiit_30_v1",
                   "hiit_45_v1",
-                  "hiit_60_v1"
+                  "hiit_60_v1",
+                  "cycle_30_v2",
+                  "cycle_45_v2",
+                  "cycle_60_v2",
+                  "hiit_45_v2",
+                  "hiit_60_v2"
                 ]
               },
               {
@@ -2916,7 +2926,12 @@
                   "pilates_60_v1",
                   "hiit_30_v1",
                   "hiit_45_v1",
-                  "hiit_60_v1"
+                  "hiit_60_v1",
+                  "cycle_30_v2",
+                  "cycle_45_v2",
+                  "cycle_60_v2",
+                  "hiit_45_v2",
+                  "hiit_60_v2"
                 ]
               },
               {
@@ -3123,7 +3138,12 @@
                   "pilates_60_v1",
                   "hiit_30_v1",
                   "hiit_45_v1",
-                  "hiit_60_v1"
+                  "hiit_60_v1",
+                  "cycle_30_v2",
+                  "cycle_45_v2",
+                  "cycle_60_v2",
+                  "hiit_45_v2",
+                  "hiit_60_v2"
                 ]
               },
               {
@@ -3255,7 +3275,12 @@
                   "pilates_60_v1",
                   "hiit_30_v1",
                   "hiit_45_v1",
-                  "hiit_60_v1"
+                  "hiit_60_v1",
+                  "cycle_30_v2",
+                  "cycle_45_v2",
+                  "cycle_60_v2",
+                  "hiit_45_v2",
+                  "hiit_60_v2"
                 ]
               }
             },

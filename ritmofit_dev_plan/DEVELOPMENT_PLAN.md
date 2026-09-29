@@ -41,9 +41,10 @@ Pilates, and HIIT.
   Production serves merged `main` application tip `7c69bb4` from PR #468 as Worker
   `90b7c40f-6e16-4798-be88-ca7a4606362a`; remote D1 has no pending migrations
   (see [`HISTORY.md`](./HISTORY.md)). #465 previews a recipe's exact blocks in the
-  create dialog and cleans up block guidance text. Recipe content review (Cycle peak not
-  distinguishable from the blocks before it; 7–9 min HIIT "finisher" at 45/60) is an
-  owner call that needs `*_v2` recipe IDs. The block editor's first slice (#463)
+  create dialog and cleans up block guidance text. The recipe content review is resolved
+  on `main` (not yet deployed): new classes get `cycle_*_v2` (easy valley before a shorter
+  peak) and `hiit_45_v2`/`hiit_60_v2` (4-minute finisher at every length); v1 recipes are
+  frozen by a snapshot test. The block editor's first slice (#463)
   edits planned block time and HIIT rounds/intervals inline, keeps the class
   target fixed, and shows the target gap and any HIIT mismatch. PR #467 added
   label, intensity, goal, and focus editing. Deployed PR #468 completes scaffold-block

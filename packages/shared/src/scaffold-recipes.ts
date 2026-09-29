@@ -27,7 +27,7 @@ export interface GeneratedScaffold {
   blocks: ScaffoldPlanBlock[];
 }
 
-const cycleBlocks: BaseBlock[] = [
+const cycleBlocksV1: BaseBlock[] = [
   {
     recipeBlockKey: 'cycle_arrive',
     minutes: { 30: 4, 45: 6, 60: 8 },
@@ -149,7 +149,7 @@ const cycleBlocks: BaseBlock[] = [
   },
 ];
 
-const pilatesBlocks: BaseBlock[] = [
+const pilatesBlocksV1: BaseBlock[] = [
   {
     recipeBlockKey: 'pilates_arrive',
     minutes: { 30: 4, 45: 6, 60: 8 },
@@ -222,7 +222,7 @@ const pilatesBlocks: BaseBlock[] = [
   },
 ];
 
-const hiitBlocks: BaseBlock[] = [
+const hiitBlocksV1: BaseBlock[] = [
   {
     recipeBlockKey: 'hiit_prep',
     minutes: { 30: 4, 45: 6, 60: 8 },
@@ -344,23 +344,95 @@ const hiitBlocks: BaseBlock[] = [
   },
 ];
 
+/** Derive a later recipe version from frozen v1 blocks; v1 tables themselves never change. */
+function reviseBlocks(
+  base: readonly BaseBlock[],
+  revisions: Record<string, Partial<BaseBlock>>,
+): BaseBlock[] {
+  return base.map((block) => {
+    const revision = block.recipeBlockKey ? revisions[block.recipeBlockKey] : undefined;
+    return revision ? { ...block, ...revision } : block;
+  });
+}
+
+/**
+ * Cycle v2: Speed control becomes cadence skill rather than load, and an easy valley sits
+ * directly before a shorter peak so the peak reads as the ride's one clear contrast.
+ */
+const cycleBlocksV2: BaseBlock[] = (() => {
+  const revised = reviseBlocks(cycleBlocksV1, {
+    cycle_seated_climb: { minutes: { 30: 5, 45: 7, 60: 9 } },
+    cycle_speed_control: {
+      minutes: { 30: 3, 45: 5, 60: 7 },
+      intensity: 'mod',
+      guidance: {
+        kind: 'cycle',
+        posture: 'seated',
+        cadenceMinRpm: 95,
+        cadenceMaxRpm: 110,
+        rpeMin: 5,
+        rpeMax: 6,
+      },
+    },
+    cycle_peak: { minutes: { 30: 3, 45: 5, 60: 6 } },
+  });
+  const recover: BaseBlock = {
+    recipeBlockKey: 'cycle_recover',
+    minutes: { 30: 2, 45: 3, 60: 4 },
+    segmentType: 'recovery',
+    label: 'Recover before the peak',
+    intensity: 'easy',
+    teachingGoal: 'Bring breathing down so the peak lands as a clear contrast.',
+    movementFocus: 'Easy spin and reset form before the final effort.',
+    guidance: {
+      kind: 'cycle',
+      posture: 'seated',
+      cadenceMinRpm: 80,
+      cadenceMaxRpm: 95,
+      rpeMin: 2,
+      rpeMax: 3,
+    },
+  };
+  const peakIndex = revised.findIndex((block) => block.recipeBlockKey === 'cycle_peak');
+  return [...revised.slice(0, peakIndex), recover, ...revised.slice(peakIndex)];
+})();
+
+/**
+ * HIIT v2: the finisher is the same bounded four minutes at every length; longer classes
+ * spend the extra time on the main circuits and the cool-down.
+ */
+const hiitBlocksV2: BaseBlock[] = reviseBlocks(hiitBlocksV1, {
+  hiit_circuit_a: { minutes: { 30: 6, 45: 10, 60: 14 } },
+  hiit_circuit_b: { minutes: { 30: 6, 45: 10, 60: 14 } },
+  hiit_finisher: { minutes: { 30: 4, 45: 4, 60: 4 } },
+  hiit_cool_down: { minutes: { 30: 4, 45: 7, 60: 9 } },
+});
+
+const recipeBlocks: Record<'cycle' | 'pilates' | 'hiit', Record<string, BaseBlock[]>> = {
+  cycle: { v1: cycleBlocksV1, v2: cycleBlocksV2 },
+  pilates: { v1: pilatesBlocksV1 },
+  hiit: { v1: hiitBlocksV1, v2: hiitBlocksV2 },
+};
+
 function parseRecipeId(recipeId: ScaffoldRecipeId): {
   family: 'cycle' | 'pilates' | 'hiit';
   duration: Duration;
+  version: string;
 } {
   scaffoldRecipeIdSchema.parse(recipeId);
-  const [family, rawDuration] = recipeId.split('_');
+  const [family, rawDuration, version] = recipeId.split('_');
   return {
     family: family as 'cycle' | 'pilates' | 'hiit',
     duration: Number(rawDuration) as Duration,
+    version: version!,
   };
 }
 
 /** Materialize one immutable recipe into validated, persistence-ready plan blocks. */
 export function generateScaffold(recipeId: ScaffoldRecipeId): GeneratedScaffold {
-  const { family, duration } = parseRecipeId(recipeId);
-  const source =
-    family === 'cycle' ? cycleBlocks : family === 'pilates' ? pilatesBlocks : hiitBlocks;
+  const { family, duration, version } = parseRecipeId(recipeId);
+  const source = recipeBlocks[family][version];
+  if (!source) throw new Error(`Recipe ${recipeId} has no block table.`);
   const template: ClassTemplate = family === 'pilates' ? 'sculpt' : family;
 
   const blocks = source.map((block, position) => {

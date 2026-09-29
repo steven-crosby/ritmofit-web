@@ -1,5 +1,6 @@
 # Deterministic class scaffolds — implementation handoff
 
+<!-- note (Claude Code, 2026-09-28): added v2 Cycle/HIIT recipes (owner decisions Q1 B, Q2 H1, Q3 changed-only); v1 frozen by snapshot test. -->
 <!-- note (Claude Code, 2026-09-28): #433 status fixed; recipe tables moved to shared for the create-dialog preview. -->
 <!-- note (Codex, 2026-09-19): Captured the approved template-lane decisions, adversarial corrections, recipe review gate, and proposed expand-only data model before implementation. -->
 
@@ -39,7 +40,8 @@ renamed or overloaded with recipe identity. Pilates continues to display as Pila
 ## 2. Settled behavior
 
 1. Ship nine immutable recipes: Cycle, mat Pilates, and calisthenics-first HIIT at 30, 45, and 60
-   minutes. Forty-five minutes is preselected in the creation UI.
+   minutes. Forty-five minutes is preselected in the creation UI. Content fixes ship as new
+   immutable versions (§5); the nine v1 recipes never change.
 2. Persist the scaffold's block order, labels, target durations, intensity, teaching goals, movement
    focus, and discipline-specific structural guidance.
 3. Do not persist example cues, ghost markers, or suggested moves as real choreography.
@@ -126,7 +128,16 @@ Recipe IDs are immutable strings:
 cycle_30_v1       cycle_45_v1       cycle_60_v1
 pilates_30_v1     pilates_45_v1     pilates_60_v1
 hiit_30_v1        hiit_45_v1        hiit_60_v1
+
+cycle_30_v2       cycle_45_v2       cycle_60_v2      (2026-09-28)
+                  hiit_45_v2        hiit_60_v2       (2026-09-28)
 ```
+
+The ID list is append-only. `CURRENT_SCAFFOLD_RECIPES` in `packages/shared` names the recipe new
+classes receive for each discipline and length; every older ID stays valid for existing classes,
+copies, and older clients. v1 content is pinned by a snapshot test
+(`apps/api/src/lib/scaffold-recipes.test.ts`) — a diff there is a regression, never an update.
+Current: Cycle v2 at all lengths, Pilates v1, HIIT v1 at 30 and v2 at 45/60.
 
 Creation is a discriminated contract:
 
@@ -259,6 +270,28 @@ Uses the same seven blocks and guidance as `cycle_30_v1`, with target minutes:
 
 Total: **60 minutes**.
 
+### Cycle v2 — `cycle_30_v2`, `cycle_45_v2`, `cycle_60_v2`
+
+Owner review (2026-09-28): in v1, Speed control, Standing climb, and Peak effort are three adjacent
+`hard` blocks and the peak differs by one RPE point, so the one clear peak is not visible. v2 turns
+Speed control into cadence skill rather than load and adds an easy valley directly before a
+shorter peak. Unlisted guidance is unchanged from v1.
+
+| # | Block | Type | Intensity | RPE | 30 | 45 | 60 |
+| --- | --- | --- | --- | --- | ---: | ---: | ---: |
+| 1 | Arrive on the bike | `warm_up` | `easy` | 2–3 | 4 | 6 | 8 |
+| 2 | Build the base | `climb` | `mod` | 4–5 | 4 | 6 | 8 |
+| 3 | Seated climb | `climb` | `mod` | 5–6 | 5 | 7 | 9 |
+| 4 | Speed control | `sprint` | `mod` | 5–6 | 3 | 5 | 7 |
+| 5 | Standing climb | `climb` | `hard` | 7–8 | 5 | 7 | 10 |
+| 6 | Recover before the peak | `recovery` | `easy` | 2–3 | 2 | 3 | 4 |
+| 7 | Peak effort | `sprint` | `hard` | 8–9 | 3 | 5 | 6 |
+| 8 | Return and release | `cool_down` | `easy` | 1–3 | 4 | 6 | 8 |
+
+Totals: **30 / 45 / 60 minutes**. Recover before the peak (`cycle_recover`): seated, 80–95 rpm;
+goal "Bring breathing down so the peak lands as a clear contrast."; focus "Easy spin and reset
+form before the final effort." No block prefills `all_out`.
+
 ## 8. Pilates recipes
 
 Pilates recipes are mat-based. A band or light weights may be suggested as optional equipment; no block
@@ -362,6 +395,24 @@ Uses the same seven blocks, pattern, and guidance as `hiit_30_v1`:
 
 Total: **60 minutes**.
 
+### HIIT v2 — `hiit_45_v2`, `hiit_60_v2`
+
+Owner review (2026-09-28): a 7–9 minute block contradicts the Finisher's goal of "one short,
+clearly bounded peak". v2 makes the Finisher four 30/30 rounds at every length and gives the
+freed time to the main circuits and the cool-down. `hiit_30_v1` already matches and stays current.
+
+| Block | 45 v2 | 60 v2 | Rounds (45 / 60) |
+| --- | ---: | ---: | ---: |
+| Movement prep | 6 | 8 | — |
+| Pattern practice | 5 | 7 | 5 / 7 |
+| Circuit A | 10 | 14 | 10 / 14 |
+| Reset | 3 | 4 | — |
+| Circuit B | 10 | 14 | 10 / 14 |
+| Finisher | 4 | 4 | 4 / 4 |
+| Cool down | 7 | 9 | — |
+
+Totals: **45 / 60 minutes**.
+
 Optional dumbbells may substitute for a compatible bodyweight strength pattern, but the generated class
 does not require them.
 
@@ -436,7 +487,8 @@ Begins only after #434 merges and this lane rebases onto the resulting `main`:
 
 ## 14. Verification contract
 
-- Pure tests for all nine recipe IDs, block contents, immutable IDs, and exact totals.
+- Pure tests for every recipe ID, block contents, immutable IDs, and exact totals; v1 content
+  pinned by snapshot.
 - Schema rejection for contradictory recipe/template/duration inputs.
 - Atomic create success and rollback.
 - Class/block authorization and hidden-resource 404 behavior.
