@@ -19,23 +19,32 @@ import {
 } from 'react';
 import {
   MAX_DURATION_MS,
+  cyclePostureValues,
+  hiitEquipmentValues,
+  pilatesEquipmentValues,
   type ClassPlanBlock,
+  type ClassPlanBlockGuidance,
   type ClassTrack,
+  type CreateClassPlanBlock,
   type Intensity,
   type RunPayload,
+  type ScaffoldRecipeId,
   type UpdateClassPlanBlock,
 } from '@ritmofit/shared';
 import {
   assignClassTrackPlanBlock,
+  createClassPlanBlock,
+  deleteClassPlanBlock,
   listClassPlanBlocks,
+  reorderClassPlanBlocks,
   updateClassPlanBlock,
 } from '../lib/api.js';
+import { ApiError } from '../lib/api.js';
 import {
   classTargetGap,
   classTargetGapLabel,
   formatPlannedDurationInput,
   hiitIntervalMismatch,
-  hiitIntervalTotalMs,
   parsePlannedDuration,
   planBlockActualMs,
   planBlockDetailLine,
@@ -60,6 +69,11 @@ export type PlanBlockTarget = { id: string; label: string; position: number };
 export const planBlockOptionLabel = (block: { label: string; position: number }) =>
   `Block ${block.position + 1} · ${block.label}`;
 
+const isConflict = (error: unknown): boolean =>
+  error instanceof ApiError
+    ? error.status === 409
+    : typeof error === 'object' && error !== null && 'status' in error && error.status === 409;
+
 /** Title for a class track, preferring the resolved payload entry. */
 function trackTitle(track: ClassTrack, payload: RunPayload | null): string {
   const entry = payload?.tracks.find((row) => row.classTrackId === track.id);
@@ -68,6 +82,7 @@ function trackTitle(track: ClassTrack, payload: RunPayload | null): string {
 
 export function ClassPlanBlocks({
   classId,
+  scaffoldRecipeId = null,
   targetDurationMs = null,
   tracks,
   payload,
@@ -84,6 +99,8 @@ export function ClassPlanBlocks({
   onPlanBlocks,
 }: {
   classId: string;
+  /** Only scaffold classes gain add, reorder, and delete controls. */
+  scaffoldRecipeId?: ScaffoldRecipeId | null;
   /** The class's chosen length. Block edits never change it; the header shows the gap. */
   targetDurationMs?: number | null;
   tracks: ClassTrack[];
@@ -105,6 +122,15 @@ export function ClassPlanBlocks({
   const [blocks, setBlocks] = useState<ClassPlanBlock[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [adding, setAdding] = useState(false);
+  const [orderBusy, setOrderBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [assignmentCount, setAssignmentCount] = useState(0);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState('');
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const addReturnFocusRef = useRef(false);
+  const focusAfterMutationRef = useRef<string | 'add' | null>(null);
   const [moveIntent, setMoveIntent] = useState<{
     trackId: string;
     planBlockId: string | null;
@@ -133,7 +159,7 @@ export function ClassPlanBlocks({
     return () => {
       alive = false;
     };
-  }, [classId, reloadKey]);
+  }, [classId, scaffoldRecipeId, reloadKey]);
 
   useEffect(() => {
     if (blocks == null) return;
@@ -150,6 +176,7 @@ export function ClassPlanBlocks({
   useLayoutEffect(() => {
     if (blocks == null || tracks.length > 0) choseFocusRef.current = false;
     if (!focusFirstChoose || !canEdit || !blocks?.length || tracks.length > 0) return;
+    if (focusAfterMutationRef.current) return;
     if (choseFocusRef.current) return;
     choseFocusRef.current = true;
     const firstBlock = [...blocks].sort((a, b) => a.position - b.position)[0]!;
@@ -158,6 +185,86 @@ export function ClassPlanBlocks({
     );
     first?.focus();
   }, [focusFirstChoose, canEdit, blocks, tracks.length, classId]);
+
+  useLayoutEffect(() => {
+    if (adding || blocks == null) return;
+    const target = focusAfterMutationRef.current;
+    if (target) {
+      focusAfterMutationRef.current = null;
+      if (target === 'add') addButtonRef.current?.focus();
+      else
+        document
+          .querySelector<HTMLButtonElement>(
+            `#plan-block-card-${target} button[aria-label^="Edit Block"]`,
+          )
+          ?.focus();
+    } else if (addReturnFocusRef.current) {
+      addReturnFocusRef.current = false;
+      addButtonRef.current?.focus();
+    }
+  }, [adding, blocks]);
+
+  const moveBlock = async (index: number, delta: -1 | 1) => {
+    if (!blocks || orderBusy || deleteBusy || adding || assignmentCount || assigningPlanBlockId)
+      return;
+    const next = [...blocks];
+    const [moved] = next.splice(index, 1);
+    if (!moved) return;
+    next.splice(index + delta, 0, moved);
+    const previous = blocks;
+    setActionError(null);
+    setOrderBusy(true);
+    focusAfterMutationRef.current = moved.id;
+    setBlocks(next.map((block, position) => ({ ...block, position })));
+    try {
+      const saved = await reorderClassPlanBlocks(classId, {
+        planBlockIds: next.map((row) => row.id),
+      });
+      setBlocks(saved);
+      setAnnouncement(`${moved.label} moved to block ${index + delta + 1}.`);
+      onTracksChanged();
+    } catch (e) {
+      focusAfterMutationRef.current = moved.id;
+      setBlocks(previous);
+      setActionError(
+        isConflict(e)
+          ? 'The current music order prevents that move on the free timeline. Move the songs first, then try again.'
+          : errMessage(e),
+      );
+    } finally {
+      setOrderBusy(false);
+    }
+  };
+
+  const removeBlock = async (id: string) => {
+    if (orderBusy || deleteBusy || adding || assignmentCount || assigningPlanBlockId) {
+      throw new Error('Finish the current music or plan change before deleting this block.');
+    }
+    setDeleteBusy(true);
+    setActionError(null);
+    try {
+      await deleteClassPlanBlock(id);
+      if (assigningPlanBlockId === id) onCloseMusic?.();
+      let remaining: ClassPlanBlock[];
+      try {
+        remaining = await listClassPlanBlocks(classId);
+      } catch {
+        remaining = (blocks ?? [])
+          .filter((row) => row.id !== id)
+          .map((row, position) => ({ ...row, position }));
+        setActionError(
+          'The block was deleted, but the plan could not be refreshed. Reload to check its order.',
+        );
+      }
+      const removedPosition = blocks?.findIndex((row) => row.id === id) ?? 0;
+      focusAfterMutationRef.current =
+        remaining[removedPosition]?.id ?? remaining.at(-1)?.id ?? 'add';
+      setBlocks(remaining);
+      setAnnouncement('Empty block deleted.');
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!moveIntent) return;
@@ -194,7 +301,21 @@ export function ClassPlanBlocks({
     );
   }
 
-  if (blocks.length === 0) return null;
+  if (blocks.length === 0 && scaffoldRecipeId == null) return null;
+
+  const guidanceKind: ClassPlanBlockGuidance['kind'] | null = scaffoldRecipeId?.startsWith('cycle')
+    ? 'cycle'
+    : scaffoldRecipeId?.startsWith('pilates')
+      ? 'pilates'
+      : scaffoldRecipeId?.startsWith('hiit')
+        ? 'hiit'
+        : null;
+  const canManage = canEdit && guidanceKind != null;
+  const structuralBusy = orderBusy || deleteBusy;
+  const manageBusy =
+    structuralBusy || adding || assignmentCount > 0 || assigningPlanBlockId != null;
+  const assignmentChanged = (busy: boolean) =>
+    setAssignmentCount((count) => Math.max(0, count + (busy ? 1 : -1)));
 
   const unassigned = unassignedClassTracks(visibleTracks);
   const plannedMs = planTotalMs(blocks);
@@ -228,8 +349,27 @@ export function ClassPlanBlocks({
           )}
         </p>
       </div>
+      <p className="sr-only" role="status" aria-live="polite">
+        {announcement}
+      </p>
+      {actionError && (
+        <div role="alert" className="flex flex-col gap-1">
+          <StatusLabel kind="error" label="Teaching plan needs attention" />
+          <p className="font-ui text-xs text-text-secondary">{actionError}</p>
+        </div>
+      )}
+      {blocks.length === 0 && (
+        <div className="rounded-control border border-dashed border-border-subtle bg-bg-sunken p-3">
+          <StatusLabel kind="empty" label="No teaching blocks yet" />
+          <p className="mt-1 font-ui text-sm text-text-secondary">
+            {canManage
+              ? 'Add a block to rebuild this class’s teaching plan.'
+              : 'This class has no teaching blocks.'}
+          </p>
+        </div>
+      )}
       <ol className="flex flex-col gap-2">
-        {blocks.map((block) => (
+        {blocks.map((block, index) => (
           <PlanBlockCard
             key={block.id}
             block={block}
@@ -237,6 +377,15 @@ export function ClassPlanBlocks({
             tracks={visibleTracks}
             payload={payload}
             canEdit={canEdit}
+            canManage={canManage}
+            manageBusy={manageBusy}
+            structuralBusy={structuralBusy}
+            onAssignmentBusyChange={assignmentChanged}
+            canMoveEarlier={index > 0}
+            canMoveLater={index < blocks.length - 1}
+            onMoveEarlier={() => void moveBlock(index, -1)}
+            onMoveLater={() => void moveBlock(index, 1)}
+            onDelete={() => removeBlock(block.id)}
             assigning={assigningPlanBlockId === block.id}
             musicPicker={assigningPlanBlockId === block.id ? musicPicker : null}
             onChooseMusic={(options) => {
@@ -254,6 +403,46 @@ export function ClassPlanBlocks({
           />
         ))}
       </ol>
+      {canManage &&
+        (adding ? (
+          <PlanBlockEditor
+            block={null}
+            classId={classId}
+            guidanceKind={guidanceKind}
+            blockName="new block"
+            onSaved={async (saved) => {
+              setActionError(null);
+              focusAfterMutationRef.current = saved.id;
+              try {
+                setBlocks(await listClassPlanBlocks(classId));
+              } catch {
+                setBlocks((rows) => [...(rows ?? []), saved]);
+                setError(
+                  'The block was added, but the plan could not be refreshed. Reload before moving blocks.',
+                );
+              }
+              setAdding(false);
+              setAnnouncement(`${saved.label} added as block ${saved.position + 1}.`);
+            }}
+            onCancel={() => {
+              addReturnFocusRef.current = true;
+              setAdding(false);
+            }}
+          />
+        ) : (
+          <button
+            ref={addButtonRef}
+            type="button"
+            disabled={manageBusy}
+            onClick={() => {
+              setActionError(null);
+              setAdding(true);
+            }}
+            className="min-h-11 self-start rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring disabled:opacity-40"
+          >
+            Add block
+          </button>
+        ))}
       {unassigned.length > 0 && (
         <div className="rounded-card border border-border-subtle bg-bg-sunken p-3">
           <StatusLabel kind="empty" label="Unassigned music" />
@@ -277,6 +466,8 @@ export function ClassPlanBlocks({
                     track={track}
                     title={trackTitle(track, payload)}
                     blocks={blocks}
+                    disabled={structuralBusy}
+                    onBusyChange={assignmentChanged}
                     onTracksChanged={onTracksChanged}
                     onMoved={(trackId, planBlockId) => setMoveIntent({ trackId, planBlockId })}
                   />
@@ -296,6 +487,15 @@ function PlanBlockCard({
   tracks,
   payload,
   canEdit,
+  canManage,
+  manageBusy,
+  structuralBusy,
+  onAssignmentBusyChange,
+  canMoveEarlier,
+  canMoveLater,
+  onMoveEarlier,
+  onMoveLater,
+  onDelete,
   assigning,
   musicPicker,
   onChooseMusic,
@@ -310,6 +510,15 @@ function PlanBlockCard({
   tracks: ClassTrack[];
   payload: RunPayload | null;
   canEdit: boolean;
+  canManage: boolean;
+  manageBusy: boolean;
+  structuralBusy: boolean;
+  onAssignmentBusyChange: (busy: boolean) => void;
+  canMoveEarlier: boolean;
+  canMoveLater: boolean;
+  onMoveEarlier: () => void;
+  onMoveLater: () => void;
+  onDelete: () => Promise<void>;
   assigning: boolean;
   musicPicker: ReactNode;
   onChooseMusic: (options?: { stay?: boolean }) => void;
@@ -320,13 +529,26 @@ function PlanBlockCard({
   onSaved: (block: ClassPlanBlock) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const editRef = useRef<HTMLButtonElement>(null);
+  const deleteRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const deleteReturnFocusRef = useRef(false);
   const returnFocusRef = useRef(false);
   useLayoutEffect(() => {
     if (editing || !returnFocusRef.current) return;
     returnFocusRef.current = false;
     editRef.current?.focus();
   }, [editing]);
+  useLayoutEffect(() => {
+    if (confirmDelete) confirmRef.current?.focus();
+    else if (deleteReturnFocusRef.current) {
+      deleteReturnFocusRef.current = false;
+      deleteRef.current?.focus();
+    }
+  }, [confirmDelete]);
   const closeEditor = () => {
     returnFocusRef.current = true;
     setEditing(false);
@@ -387,6 +609,8 @@ function PlanBlockCard({
         (editing ? (
           <PlanBlockEditor
             block={block}
+            classId={block.classId}
+            guidanceKind={block.guidance.kind}
             blockName={blockName}
             onSaved={(saved) => {
               onSaved(saved);
@@ -407,12 +631,107 @@ function PlanBlockCard({
             </button>
           </div>
         ))}
+      {canManage && !editing && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-2">
+          <button
+            type="button"
+            disabled={!canMoveEarlier || manageBusy || deleting || confirmDelete}
+            onClick={onMoveEarlier}
+            aria-label={`Move ${blockName} earlier`}
+            className="min-h-11 rounded-control border border-border px-3 font-ui text-xs text-text-secondary rf-focus-ring disabled:opacity-40"
+          >
+            Move earlier
+          </button>
+          <button
+            type="button"
+            disabled={!canMoveLater || manageBusy || deleting || confirmDelete}
+            onClick={onMoveLater}
+            aria-label={`Move ${blockName} later`}
+            className="min-h-11 rounded-control border border-border px-3 font-ui text-xs text-text-secondary rf-focus-ring disabled:opacity-40"
+          >
+            Move later
+          </button>
+          {empty ? (
+            confirmDelete ? (
+              <div
+                className="flex w-full flex-wrap items-center gap-2"
+                role="group"
+                aria-label={`Delete ${blockName}`}
+              >
+                <span className="font-ui text-xs text-text-secondary">
+                  Delete this empty block?
+                </span>
+                <button
+                  ref={confirmRef}
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => {
+                    setDeleting(true);
+                    setDeleteError(null);
+                    void onDelete().catch((e) => {
+                      const conflict = isConflict(e);
+                      setDeleteError(
+                        conflict
+                          ? 'Music was assigned to this block. Move or detach its songs, then try again.'
+                          : errMessage(e),
+                      );
+                      if (conflict) {
+                        setConfirmDelete(false);
+                        editRef.current?.focus();
+                        onTracksChanged();
+                      }
+                      setDeleting(false);
+                    });
+                  }}
+                  className="min-h-11 rounded-control border border-state-danger px-3 font-ui text-xs font-semibold text-state-danger rf-focus-ring disabled:opacity-40"
+                >
+                  {deleting ? 'Deleting…' : 'Delete block'}
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => {
+                    deleteReturnFocusRef.current = true;
+                    setConfirmDelete(false);
+                    setDeleteError(null);
+                  }}
+                  className="min-h-11 rounded-control px-3 font-ui text-xs text-text-secondary rf-focus-ring disabled:opacity-40"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                ref={deleteRef}
+                type="button"
+                disabled={manageBusy}
+                onClick={() => setConfirmDelete(true)}
+                aria-label={`Delete ${blockName}`}
+                className="min-h-11 rounded-control px-3 font-ui text-xs text-state-danger rf-focus-ring disabled:opacity-40"
+              >
+                Delete block
+              </button>
+            )
+          ) : (
+            <p className="w-full font-ui text-xs text-text-tertiary">
+              To delete this block, move each song with its Teaching block selector or choose “Not
+              in a block” first.
+            </p>
+          )}
+          {deleteError && (
+            <p role="alert" className="w-full font-ui text-xs text-state-danger">
+              {deleteError}
+            </p>
+          )}
+        </div>
+      )}
       {empty ? (
         <div className="rounded-control border border-dashed border-border-subtle bg-bg-sunken px-3 py-2">
           <StatusLabel kind="empty" label="No music yet" />
           {canEdit && (
             <button
               type="button"
+              disabled={structuralBusy}
               onClick={() => (destOpen ? onCloseMusic?.() : onChooseMusic())}
               aria-expanded={destOpen}
               aria-label={destOpen ? 'Close music' : `Choose music for ${blockName}`}
@@ -447,6 +766,8 @@ function PlanBlockCard({
                     track={track}
                     title={trackTitle(track, payload)}
                     blocks={blocks}
+                    disabled={structuralBusy}
+                    onBusyChange={onAssignmentBusyChange}
                     onTracksChanged={onTracksChanged}
                     onMoved={onMoved}
                   />
@@ -458,6 +779,7 @@ function PlanBlockCard({
             <li>
               <button
                 type="button"
+                disabled={structuralBusy}
                 onClick={() => (destOpen ? onCloseMusic?.() : onChooseMusic({ stay: true }))}
                 aria-expanded={destOpen}
                 aria-label={destOpen ? 'Close music' : `Add another song to ${blockName}`}
@@ -483,12 +805,16 @@ function PlanBlockAssignSelect({
   track,
   title,
   blocks,
+  disabled,
+  onBusyChange,
   onTracksChanged,
   onMoved,
 }: {
   track: ClassTrack;
   title: string;
   blocks: ClassPlanBlock[];
+  disabled: boolean;
+  onBusyChange: (busy: boolean) => void;
   onTracksChanged: () => void;
   onMoved: (classTrackId: string, planBlockId: string | null) => void;
 }) {
@@ -497,9 +823,11 @@ function PlanBlockAssignSelect({
   const selectId = `plan-block-for-${track.id}`;
 
   const move = (value: string) => {
+    if (disabled || busy) return;
     const planBlockId = value === '' ? null : value;
     if (planBlockId === (track.planBlockId ?? null)) return;
     setBusy(true);
+    onBusyChange(true);
     setError(null);
     void (async () => {
       try {
@@ -510,6 +838,7 @@ function PlanBlockAssignSelect({
         setError(errMessage(e));
       } finally {
         setBusy(false);
+        onBusyChange(false);
       }
     })();
   };
@@ -523,7 +852,7 @@ function PlanBlockAssignSelect({
         <select
           id={selectId}
           value={track.planBlockId ?? ''}
-          disabled={busy}
+          disabled={busy || disabled}
           aria-label={`Teaching block for ${title}`}
           onChange={(event) => move(event.target.value)}
           className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-bg-sunken px-2 font-ui text-xs text-text-primary rf-focus-ring disabled:opacity-40"
@@ -568,41 +897,109 @@ function parseWhole(text: string, min: number, max: number): number | null {
   return value >= min && value <= max ? value : null;
 }
 
-type EditField = 'label' | 'teachingGoal' | 'movementFocus' | TimeField;
-type TimeField = 'duration' | 'rounds' | 'work' | 'recovery';
+function sameGuidance(a: ClassPlanBlockGuidance, b: ClassPlanBlockGuidance): boolean {
+  if (a.kind !== b.kind) return false;
+  if (a.kind === 'cycle' && b.kind === 'cycle') {
+    return (
+      a.posture === b.posture &&
+      a.cadenceMinRpm === b.cadenceMinRpm &&
+      a.cadenceMaxRpm === b.cadenceMaxRpm &&
+      a.rpeMin === b.rpeMin &&
+      a.rpeMax === b.rpeMax
+    );
+  }
+  if (a.kind === 'pilates' && b.kind === 'pilates') {
+    return (
+      a.optionalEquipment.length === b.optionalEquipment.length &&
+      a.optionalEquipment.every((item) => b.optionalEquipment.includes(item))
+    );
+  }
+  if (a.kind === 'hiit' && b.kind === 'hiit') {
+    return (
+      a.workMs === b.workMs &&
+      a.recoveryMs === b.recoveryMs &&
+      a.rounds === b.rounds &&
+      a.sequenceFocus === b.sequenceFocus &&
+      a.equipment === b.equipment
+    );
+  }
+  return false;
+}
+
+type NumericField =
+  | 'duration'
+  | 'rounds'
+  | 'work'
+  | 'recovery'
+  | 'cadenceMin'
+  | 'cadenceMax'
+  | 'rpeMin'
+  | 'rpeMax';
+type EditField = 'label' | 'teachingGoal' | 'movementFocus' | NumericField;
 
 const LABEL_MAX = 100;
 const TEXT_MAX = 500;
 
 /**
- * Inline block editor. Saves only what changed. Planned time and HIIT interval
- * guidance stay independent: neither is rewritten to match the other or the
- * class target. Enter in a single-line field saves; Escape cancels.
+ * Shared add/edit form. Edits save only what changed. Planned time and HIIT
+ * intervals stay independent of each other and of the class target.
  */
 function PlanBlockEditor({
   block,
+  classId,
+  guidanceKind,
   blockName,
   onSaved,
   onCancel,
 }: {
-  block: ClassPlanBlock;
+  block: ClassPlanBlock | null;
+  classId: string;
+  guidanceKind: ClassPlanBlockGuidance['kind'];
   blockName: string;
-  onSaved: (block: ClassPlanBlock) => void;
+  onSaved: (block: ClassPlanBlock) => void | Promise<void>;
   onCancel: () => void;
 }) {
   const idBase = useId();
-  const hiit =
-    block.guidance.kind === 'hiit' && hiitIntervalTotalMs(block.guidance) != null
-      ? block.guidance
-      : null;
-  const [label, setLabel] = useState(block.label);
-  const [intensity, setIntensity] = useState<Intensity>(block.intensity);
-  const [teachingGoal, setTeachingGoal] = useState(block.teachingGoal);
-  const [movementFocus, setMovementFocus] = useState(block.movementFocus);
-  const [duration, setDuration] = useState(formatPlannedDurationInput(block.targetDurationMs));
-  const [rounds, setRounds] = useState(hiit ? String(hiit.rounds) : '');
-  const [work, setWork] = useState(hiit ? String(hiit.workMs! / 1000) : '');
-  const [recovery, setRecovery] = useState(hiit ? String(hiit.recoveryMs! / 1000) : '');
+  const initialGuidance = block?.guidance;
+  const initialHiit = initialGuidance?.kind === 'hiit' ? initialGuidance : null;
+  const [label, setLabel] = useState(block?.label ?? '');
+  const [intensity, setIntensity] = useState<Intensity>(block?.intensity ?? 'mod');
+  const [teachingGoal, setTeachingGoal] = useState(block?.teachingGoal ?? '');
+  const [movementFocus, setMovementFocus] = useState(block?.movementFocus ?? '');
+  const [duration, setDuration] = useState(
+    block ? formatPlannedDurationInput(block.targetDurationMs) : '',
+  );
+  const [timed, setTimed] = useState(
+    initialHiit != null &&
+      (initialHiit.rounds != null || initialHiit.workMs != null || initialHiit.recoveryMs != null),
+  );
+  const [timingTouched, setTimingTouched] = useState(false);
+  const [rounds, setRounds] = useState(initialHiit?.rounds?.toString() ?? '');
+  const [work, setWork] = useState(initialHiit?.workMs ? String(initialHiit.workMs / 1000) : '');
+  const [recovery, setRecovery] = useState(
+    initialHiit?.recoveryMs ? String(initialHiit.recoveryMs / 1000) : '',
+  );
+  const [posture, setPosture] = useState<(typeof cyclePostureValues)[number]>(
+    initialGuidance?.kind === 'cycle' ? initialGuidance.posture : 'seated',
+  );
+  const [cadenceMin, setCadenceMin] = useState(
+    initialGuidance?.kind === 'cycle' ? String(initialGuidance.cadenceMinRpm) : '',
+  );
+  const [cadenceMax, setCadenceMax] = useState(
+    initialGuidance?.kind === 'cycle' ? String(initialGuidance.cadenceMaxRpm) : '',
+  );
+  const [rpeMin, setRpeMin] = useState(
+    initialGuidance?.kind === 'cycle' ? String(initialGuidance.rpeMin) : '',
+  );
+  const [rpeMax, setRpeMax] = useState(
+    initialGuidance?.kind === 'cycle' ? String(initialGuidance.rpeMax) : '',
+  );
+  const [optionalEquipment, setOptionalEquipment] = useState<
+    (typeof pilatesEquipmentValues)[number][]
+  >(initialGuidance?.kind === 'pilates' ? initialGuidance.optionalEquipment : []);
+  const [hiitEquipment, setHiitEquipment] = useState<(typeof hiitEquipmentValues)[number]>(
+    initialHiit?.equipment ?? 'bodyweight',
+  );
   const [attempted, setAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -613,34 +1010,88 @@ function PlanBlockEditor({
   const roundsRef = useRef<HTMLInputElement>(null);
   const workRef = useRef<HTMLInputElement>(null);
   const recoveryRef = useRef<HTMLInputElement>(null);
+  const cadenceMinRef = useRef<HTMLInputElement>(null);
+  const cadenceMaxRef = useRef<HTMLInputElement>(null);
+  const rpeMinRef = useRef<HTMLInputElement>(null);
+  const rpeMaxRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     labelRef.current?.focus();
-    labelRef.current?.select();
+    if (block) labelRef.current?.select();
   }, []);
 
   const plannedMs = parsePlannedDuration(duration);
-  const roundsValue = hiit ? parseWhole(rounds, 1, 100) : null;
-  const workValue = hiit ? parseWhole(work, 1, MAX_INTERVAL_SECONDS) : null;
-  const recoveryValue = hiit ? parseWhole(recovery, 1, MAX_INTERVAL_SECONDS) : null;
+  const roundsValue = guidanceKind === 'hiit' && timed ? parseWhole(rounds, 1, 100) : null;
+  const workValue =
+    guidanceKind === 'hiit' && timed ? parseWhole(work, 1, MAX_INTERVAL_SECONDS) : null;
+  const recoveryValue =
+    guidanceKind === 'hiit' && timed ? parseWhole(recovery, 1, MAX_INTERVAL_SECONDS) : null;
+  const preserveHiitTiming = block != null && initialHiit != null && !timingTouched;
+  const cadenceMinValue = guidanceKind === 'cycle' ? parseWhole(cadenceMin, 1, 300) : null;
+  const cadenceMaxValue = guidanceKind === 'cycle' ? parseWhole(cadenceMax, 1, 300) : null;
+  const rpeMinValue = guidanceKind === 'cycle' ? parseWhole(rpeMin, 1, 10) : null;
+  const rpeMaxValue = guidanceKind === 'cycle' ? parseWhole(rpeMax, 1, 10) : null;
   const invalid: Record<EditField, boolean> = {
     label: label.trim() === '',
     teachingGoal: teachingGoal.trim() === '',
     movementFocus: movementFocus.trim() === '',
     duration: plannedMs == null,
-    rounds: hiit != null && roundsValue == null,
-    work: hiit != null && workValue == null,
-    recovery: hiit != null && recoveryValue == null,
+    rounds: guidanceKind === 'hiit' && timed && !preserveHiitTiming && roundsValue == null,
+    work: guidanceKind === 'hiit' && timed && !preserveHiitTiming && workValue == null,
+    recovery: guidanceKind === 'hiit' && timed && !preserveHiitTiming && recoveryValue == null,
+    cadenceMin: guidanceKind === 'cycle' && cadenceMinValue == null,
+    cadenceMax:
+      guidanceKind === 'cycle' &&
+      (cadenceMaxValue == null || (cadenceMinValue != null && cadenceMinValue > cadenceMaxValue)),
+    rpeMin: guidanceKind === 'cycle' && rpeMinValue == null,
+    rpeMax:
+      guidanceKind === 'cycle' &&
+      (rpeMaxValue == null || (rpeMinValue != null && rpeMinValue > rpeMaxValue)),
   };
-  const draftGuidance =
-    hiit && roundsValue != null && workValue != null && recoveryValue != null
-      ? { ...hiit, rounds: roundsValue, workMs: workValue * 1000, recoveryMs: recoveryValue * 1000 }
-      : null;
+  let draftGuidance: ClassPlanBlockGuidance | null = null;
+  if (
+    guidanceKind === 'cycle' &&
+    cadenceMinValue != null &&
+    cadenceMaxValue != null &&
+    rpeMinValue != null &&
+    rpeMaxValue != null &&
+    !invalid.cadenceMax &&
+    !invalid.rpeMax
+  ) {
+    draftGuidance = {
+      kind: 'cycle',
+      posture,
+      cadenceMinRpm: cadenceMinValue,
+      cadenceMaxRpm: cadenceMaxValue,
+      rpeMin: rpeMinValue,
+      rpeMax: rpeMaxValue,
+    };
+  } else if (guidanceKind === 'pilates') {
+    draftGuidance = { kind: 'pilates', optionalEquipment };
+  } else if (
+    guidanceKind === 'hiit' &&
+    (!timed ||
+      preserveHiitTiming ||
+      (roundsValue != null && workValue != null && recoveryValue != null))
+  ) {
+    draftGuidance = {
+      kind: 'hiit',
+      rounds: preserveHiitTiming ? initialHiit.rounds : timed ? roundsValue : null,
+      workMs: preserveHiitTiming ? initialHiit.workMs : timed ? workValue! * 1000 : null,
+      recoveryMs: preserveHiitTiming
+        ? initialHiit.recoveryMs
+        : timed
+          ? recoveryValue! * 1000
+          : null,
+      sequenceFocus: initialHiit?.sequenceFocus ?? movementFocus.trim(),
+      equipment: hiitEquipment,
+    };
+  }
   const draftMismatch =
     draftGuidance && plannedMs != null ? hiitIntervalMismatch(draftGuidance, plannedMs) : null;
 
   const step = (deltaMs: number) => {
-    const base = plannedMs ?? block.targetDurationMs;
+    const base = plannedMs ?? block?.targetDurationMs ?? 0;
     const next = Math.min(MAX_DURATION_MS, Math.max(60_000, base + deltaMs));
     setDuration(formatPlannedDurationInput(next));
   };
@@ -656,46 +1107,64 @@ function PlanBlockEditor({
       rounds: roundsRef,
       work: workRef,
       recovery: recoveryRef,
+      cadenceMin: cadenceMinRef,
+      cadenceMax: cadenceMaxRef,
+      rpeMin: rpeMinRef,
+      rpeMax: rpeMaxRef,
     };
     const firstInvalid = (Object.keys(invalid) as EditField[]).find((field) => invalid[field]);
     if (firstInvalid) {
       refs[firstInvalid].current?.focus();
       return;
     }
-    const body: UpdateClassPlanBlock = {};
+    if (!draftGuidance || plannedMs == null) return;
     const nextLabel = label.trim();
     const nextGoal = teachingGoal.trim();
     const nextFocus = movementFocus.trim();
-    if (nextLabel !== block.label) body.label = nextLabel;
-    if (intensity !== block.intensity) body.intensity = intensity;
-    if (nextGoal !== block.teachingGoal) body.teachingGoal = nextGoal;
-    if (nextFocus !== block.movementFocus) body.movementFocus = nextFocus;
-    if (plannedMs !== block.targetDurationMs) body.targetDurationMs = plannedMs!;
-    const intervalsChanged =
-      hiit != null &&
-      draftGuidance != null &&
-      (draftGuidance.rounds !== hiit.rounds ||
-        draftGuidance.workMs !== hiit.workMs ||
-        draftGuidance.recoveryMs !== hiit.recoveryMs);
-    const guidance = syncHiitSequenceFocus(
-      intervalsChanged ? draftGuidance! : block.guidance,
-      body.movementFocus,
-    );
-    if (guidance !== block.guidance) body.guidance = guidance;
-    if (Object.keys(body).length === 0) {
-      onCancel();
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    void (async () => {
-      try {
-        onSaved(await updateClassPlanBlock(block.id, body));
-      } catch (e) {
-        setError(errMessage(e));
-        setSaving(false);
+    if (block) {
+      const body: UpdateClassPlanBlock = {};
+      if (nextLabel !== block.label) body.label = nextLabel;
+      if (intensity !== block.intensity) body.intensity = intensity;
+      if (nextGoal !== block.teachingGoal) body.teachingGoal = nextGoal;
+      if (nextFocus !== block.movementFocus) body.movementFocus = nextFocus;
+      if (plannedMs !== block.targetDurationMs) body.targetDurationMs = plannedMs;
+      const guidance = syncHiitSequenceFocus(draftGuidance, body.movementFocus);
+      if (!sameGuidance(guidance, block.guidance)) body.guidance = guidance;
+      if (Object.keys(body).length === 0) {
+        onCancel();
+        return;
       }
-    })();
+      setSaving(true);
+      setError(null);
+      void (async () => {
+        try {
+          await onSaved(await updateClassPlanBlock(block.id, body));
+        } catch (e) {
+          setError(errMessage(e));
+          setSaving(false);
+        }
+      })();
+    } else {
+      const body: CreateClassPlanBlock = {
+        segmentType: null,
+        label: nextLabel,
+        targetDurationMs: plannedMs,
+        intensity,
+        teachingGoal: nextGoal,
+        movementFocus: nextFocus,
+        guidance: syncHiitSequenceFocus(draftGuidance, nextFocus),
+      };
+      setSaving(true);
+      setError(null);
+      void (async () => {
+        try {
+          await onSaved(await createClassPlanBlock(classId, body));
+        } catch (e) {
+          setError(errMessage(e));
+          setSaving(false);
+        }
+      })();
+    }
   };
 
   const fieldId = (field: EditField) => `${idBase}-${field}`;
@@ -703,7 +1172,7 @@ function PlanBlockEditor({
   const showInvalid = (field: EditField) => attempted && invalid[field];
   const borderClass = (field: EditField) =>
     showInvalid(field) ? 'border-state-danger' : 'border-border';
-  const inputClass = (field: TimeField) =>
+  const inputClass = (field: NumericField) =>
     `min-h-11 w-20 rounded-control border bg-bg-sunken px-2 font-data text-sm text-text-primary rf-focus-ring disabled:opacity-40 ${borderClass(field)}`;
   const fieldError = (field: EditField, message: string) =>
     showInvalid(field) ? (
@@ -745,7 +1214,7 @@ function PlanBlockEditor({
     </div>
   );
   const numberField = (
-    field: Exclude<TimeField, 'duration'>,
+    field: Exclude<NumericField, 'duration'>,
     text: string,
     value: string,
     setValue: (value: string) => void,
@@ -773,7 +1242,7 @@ function PlanBlockEditor({
 
   return (
     <form
-      aria-label={`Editing ${blockName}`}
+      aria-label={block ? `Editing ${blockName}` : 'Adding a block'}
       className="flex min-w-0 flex-col gap-3 rounded-control border border-border-subtle bg-bg-sunken p-3"
       noValidate
       onSubmit={(event) => {
@@ -802,7 +1271,7 @@ function PlanBlockEditor({
           onChange={(event) => setLabel(event.target.value)}
           className={`min-h-11 w-full min-w-0 rounded-control border bg-bg-sunken px-3 font-ui text-sm text-text-primary rf-focus-ring disabled:opacity-40 ${borderClass('label')}`}
         />
-        {fieldError('label', 'Name the block, or cancel to keep the current name.')}
+        {fieldError('label', 'Name the block before saving.')}
       </div>
       <div className="flex min-w-0 flex-col gap-1">
         <span className="font-ui text-xs font-semibold text-text-secondary">Intensity</span>
@@ -820,7 +1289,7 @@ function PlanBlockEditor({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            disabled={saving || (plannedMs ?? block.targetDurationMs) <= 60_000}
+            disabled={saving || (plannedMs ?? block?.targetDurationMs ?? 0) <= 60_000}
             onClick={() => step(-60_000)}
             aria-label="One minute less"
             className="flex min-h-11 min-w-11 items-center justify-center rounded-control border border-border font-data text-sm text-text-primary rf-focus-ring disabled:opacity-40"
@@ -856,29 +1325,176 @@ function PlanBlockEditor({
           </span>
         )}
       </div>
-      {hiit && (
+      {guidanceKind === 'cycle' && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="font-ui text-xs font-semibold uppercase tracking-wide text-text-tertiary">
+            Cycle guidance
+          </legend>
+          <div className="flex min-w-0 flex-col gap-1">
+            <label
+              htmlFor={`${idBase}-posture`}
+              className="font-ui text-xs font-semibold text-text-secondary"
+            >
+              Posture
+            </label>
+            <select
+              id={`${idBase}-posture`}
+              value={posture}
+              disabled={saving}
+              onChange={(event) => setPosture(event.target.value as typeof posture)}
+              className="min-h-11 w-full rounded-control border border-border bg-bg-sunken px-3 font-ui text-sm text-text-primary rf-focus-ring disabled:opacity-40"
+            >
+              {cyclePostureValues.map((value) => (
+                <option key={value} value={value}>
+                  {value[0]!.toUpperCase() + value.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {numberField(
+              'cadenceMin',
+              'Cadence min (RPM)',
+              cadenceMin,
+              setCadenceMin,
+              cadenceMinRef,
+              'Use 1–300 RPM.',
+            )}
+            {numberField(
+              'cadenceMax',
+              'Cadence max (RPM)',
+              cadenceMax,
+              setCadenceMax,
+              cadenceMaxRef,
+              'Use 1–300 RPM, at least the minimum.',
+            )}
+            {numberField('rpeMin', 'Effort min (RPE)', rpeMin, setRpeMin, rpeMinRef, 'Use 1–10.')}
+            {numberField(
+              'rpeMax',
+              'Effort max (RPE)',
+              rpeMax,
+              setRpeMax,
+              rpeMaxRef,
+              'Use 1–10, at least the minimum.',
+            )}
+          </div>
+        </fieldset>
+      )}
+      {guidanceKind === 'pilates' && (
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="font-ui text-xs font-semibold uppercase tracking-wide text-text-tertiary">
+            Optional equipment
+          </legend>
+          {pilatesEquipmentValues.map((item) => (
+            <label
+              key={item}
+              className="flex min-h-11 items-center gap-2 font-ui text-sm text-text-secondary"
+            >
+              <input
+                type="checkbox"
+                checked={optionalEquipment.includes(item)}
+                disabled={saving}
+                onChange={(event) =>
+                  setOptionalEquipment((current) =>
+                    event.target.checked
+                      ? [...current, item]
+                      : current.filter((value) => value !== item),
+                  )
+                }
+                className="rf-focus-ring"
+              />
+              {item === 'light_weights' ? 'Light weights' : item[0]!.toUpperCase() + item.slice(1)}
+            </label>
+          ))}
+        </fieldset>
+      )}
+      {guidanceKind === 'hiit' && (
+        <div className="flex min-w-0 flex-col gap-1">
+          <label
+            htmlFor={`${idBase}-equipment`}
+            className="font-ui text-xs font-semibold text-text-secondary"
+          >
+            Equipment
+          </label>
+          <select
+            id={`${idBase}-equipment`}
+            value={hiitEquipment}
+            disabled={saving}
+            onChange={(event) => setHiitEquipment(event.target.value as typeof hiitEquipment)}
+            className="min-h-11 w-full rounded-control border border-border bg-bg-sunken px-3 font-ui text-sm text-text-primary rf-focus-ring disabled:opacity-40"
+          >
+            {hiitEquipmentValues.map((item) => (
+              <option key={item} value={item}>
+                {item === 'bodyweight' ? 'Bodyweight' : 'Dumbbells optional'}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {guidanceKind === 'hiit' && (
         <fieldset className="flex flex-col gap-1.5">
           <legend className="mb-2 font-ui text-xs font-semibold uppercase tracking-wide text-text-tertiary">
             Intervals
           </legend>
-          <div className="flex flex-wrap gap-3">
-            {numberField('rounds', 'Rounds', rounds, setRounds, roundsRef, 'Use 1–100.')}
-            {numberField('work', 'Work (s)', work, setWork, workRef, 'Use whole seconds.')}
-            {numberField(
-              'recovery',
-              'Recovery (s)',
-              recovery,
-              setRecovery,
-              recoveryRef,
-              'Use whole seconds.',
-            )}
-          </div>
+          <label className="flex min-h-11 items-center gap-2 font-ui text-sm text-text-secondary">
+            <input
+              type="checkbox"
+              checked={timed}
+              disabled={saving}
+              onChange={(event) => {
+                setTimed(event.target.checked);
+                setTimingTouched(true);
+              }}
+              className="rf-focus-ring"
+            />
+            Timed rounds
+          </label>
+          {timed && (
+            <div className="flex flex-wrap gap-3">
+              {numberField(
+                'rounds',
+                'Rounds',
+                rounds,
+                (value) => {
+                  setRounds(value);
+                  setTimingTouched(true);
+                },
+                roundsRef,
+                'Use 1–100.',
+              )}
+              {numberField(
+                'work',
+                'Work (s)',
+                work,
+                (value) => {
+                  setWork(value);
+                  setTimingTouched(true);
+                },
+                workRef,
+                'Use whole seconds.',
+              )}
+              {numberField(
+                'recovery',
+                'Recovery (s)',
+                recovery,
+                (value) => {
+                  setRecovery(value);
+                  setTimingTouched(true);
+                },
+                recoveryRef,
+                'Use whole seconds.',
+              )}
+            </div>
+          )}
         </fieldset>
       )}
       {draftMismatch && <IntervalMismatch mismatch={draftMismatch} />}
       {error && (
         <div role="alert" className="flex flex-col gap-1">
-          <StatusLabel kind="error" label="Couldn’t save the block" />
+          <StatusLabel
+            kind="error"
+            label={block ? 'Couldn’t save the block' : 'Couldn’t add the block'}
+          />
           <p className="font-ui text-xs text-text-secondary">{error}</p>
         </div>
       )}
@@ -888,7 +1504,7 @@ function PlanBlockEditor({
           disabled={saving}
           className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 motion-reduce:transition-none"
         >
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? 'Saving…' : block ? 'Save' : 'Add block'}
         </button>
         <button
           type="button"

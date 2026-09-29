@@ -3601,6 +3601,7 @@ function ClassWorkspace({
 
         <ClassPlanBlocks
           classId={cls.id}
+          scaffoldRecipeId={cls.scaffoldRecipeId}
           targetDurationMs={cls.targetDurationMs}
           tracks={tracks}
           payload={payload}
