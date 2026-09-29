@@ -38,9 +38,12 @@ Pilates, and HIIT.
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
 - **Current operating focus (2026-09-28):** the launch gate is green and the app is live.
-  Production matches `main` application tip `87bf79d`: PRs #458–#461 and #463 deployed
-  2026-09-28 as Worker `79056d05-853e-46ea-9922-1d562c131325` (no remote D1 change;
-  see [`HISTORY.md`](./HISTORY.md)). The block editor's first slice (#463)
+  Production matches `main` application tip `2d14515`: PR #465 deployed 2026-09-28 as
+  Worker `962f7935-2726-43f1-b277-c4daa1626da7` (no remote D1 change; see
+  [`HISTORY.md`](./HISTORY.md)). #465 previews a recipe's exact blocks in the create
+  dialog and cleans up block guidance text. Recipe content review (Cycle peak not
+  distinguishable from the blocks before it; 7–9 min HIIT "finisher" at 45/60) is an
+  owner call that needs `*_v2` recipe IDs. The block editor's first slice (#463)
   edits planned block time and HIIT rounds/intervals inline, keeps the class
   target fixed, and shows the target gap and any HIIT mismatch. Label,
   intensity, goal/focus, and add/delete/reorder editing remain open. See
@@ -299,17 +302,13 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-27, light close):** `main` includes application
-tip `2c88f85`, ahead of production application tip `7eebc00` (#456). The live Worker is
-`3561b1ba-a854-48cd-9e5f-519a02092ef5` (checked at close). The last
-verified SPA entry was `assets/index-D5zicKh0.js`; remote D1 migration `0019`
-was confirmed at the #456 deploy. SPA and D1 were not rechecked at this light
-close. PRs #458–#461 are merged but not deployed; they change web UI and
-planning documentation, with no schema or shared-contract change. #460 fixes
-the phone cover layout noted after #456. The next class-template work is the
-block editor and its planned-time mismatch warnings, as specified in
-[`class-template-handoff.md`](./class-template-handoff.md). The alerting half of
-liveness remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
+**Current `main` vs production (2026-09-28, after the #465 deploy):** production matches
+`main` application tip `2d14515`. The live Worker is `962f7935-2726-43f1-b277-c4daa1626da7`;
+the SPA entry `assets/index-CuEjmewJ.js` matched the build on three consecutive cache-busted
+fetches, and remote D1 has nothing to apply (latest migration `0019`). The next
+class-template work is the rest of the block editor (label, intensity, goal/focus,
+add/delete/reorder) per [`class-template-handoff.md`](./class-template-handoff.md). The alerting
+half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
 
 - **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
 - **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
@@ -334,7 +333,7 @@ liveness remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `3561b1ba` from `7eebc00` (#456); see "Current `main` vs production" above
+  `962f7935` from `2d14515` (#465); see "Current `main` vs production" above
   for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**

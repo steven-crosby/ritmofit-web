@@ -10,6 +10,33 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-28 (PR #465 — create-dialog recipe preview and block guidance cleanup) —
+> deployed (Worker `962f7935-2726-43f1-b277-c4daa1626da7`).** Application source `2d14515`.
+> Deployed from this checkout after owner go. No remote D1 change
+> (`wrangler d1 migrations list --remote` reported nothing to apply; latest migration `0019`).
+> No secret change (`BETA_ALLOWED_EMAILS` confirmed present by name).
+>
+> - **#465:** from a review of the nine scaffold recipes against the new-instructor and
+>   experienced-instructor lenses. The create dialog lists the exact blocks a recipe will create
+>   (label, minutes, intensity) before commit, because a recipe cannot be swapped afterwards.
+>   Recipe tables moved unchanged from `apps/api` to `packages/shared/src/scaffold-recipes.ts`,
+>   so the preview and the API use one generator. Block guidance no longer repeats the HIIT
+>   focus text, shows Cycle `mixed` posture as "Mixed" (was "Seated/mixed"), and marks
+>   Pilates/HIIT props optional.
+>
+> No schema, migration, secret, route, OpenAPI, or run-payload change; recipe IDs unchanged.
+> Rollback is Worker-only to prior live `79056d05-853e-46ea-9922-1d562c131325`.
+> Pre-deploy: merged tree `2d14515` is identical to the CI-green PR head `4996475`, on which the
+> full local gate ran green; SPA rebuilt from `main` before deploy.
+>
+> Post-deploy smoke on live `https://ritmofit.studio`: SPA `/` → `200`, `/api/v1/health` →
+> `200`, protected `classes` / `explore` / `teams` → `401`, all six security headers present.
+> Mounted routes unauthenticated: scaffold `POST /classes`, `GET /classes/:id/plan-blocks`,
+> `PATCH /plan-blocks/:id`, playlist import, provider search, provider track import → `401`;
+> cover serving → handler `404 Image not found`. SPA entry `assets/index-CuEjmewJ.js` matched the
+> build on three consecutive cache-busted fetches. Worker status 100% on `962f7935`. The preview
+> was not exercised against production data; local browser QA covered it before merge.
+
 > **Session 2026-09-28 (PRs #458–#461, #463 — builder UI batch and plan-block
 > time editor) — deployed (Worker `79056d05-853e-46ea-9922-1d562c131325`).**
 > Application source `87bf79d`. Deployed from this checkout after owner go.
