@@ -38,8 +38,8 @@ Pilates, and HIIT.
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
 - **Current operating focus (2026-09-28):** the launch gate is green and the app is live.
-  Production serves merged `main` application tip `c81bc73` from PR #470 as Worker
-  `dd9a27e9-e891-41a8-b5cf-d1438f65fcad`; remote D1 has no pending migrations
+  Production serves merged `main` application tip `70a733d` from PR #473 as Worker
+  `18aa93dd-8695-4791-a6dd-f0e031e28c75`; remote D1 has no pending migrations
   (see [`HISTORY.md`](./HISTORY.md)). #465 previews a recipe's exact blocks in the
   create dialog and cleans up block guidance text. The recipe content review is resolved
   and deployed (#470): new classes get `cycle_*_v2` (easy valley before a shorter
@@ -306,10 +306,11 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-28, after the #470 deploy):** `main` and
-production serve application tip `c81bc73`. Worker
-`dd9a27e9-e891-41a8-b5cf-d1438f65fcad` is at 100%, and the SPA entry
-`assets/index-DAkmIV8y.js` appeared on five consecutive cache-busted fetches.
+**Current `main` vs production (2026-09-28, after the #473 deploy):** `main` and
+production serve application tip `70a733d`. Worker
+`18aa93dd-8695-4791-a6dd-f0e031e28c75` is at 100%, and the SPA entry
+`assets/index-vAXMRElW.js` appeared on eight consecutive cache-busted fetches. #473
+drains empty `204` bodies in the web API client.
 Remote D1 has no pending migrations (latest local migration `0019`). #470 deployed
 the v2 Cycle/HIIT recipes; an authenticated production acceptance pass covered #468
 block add/reorder/delete and the v2 Cycle 45 content, and its `[QA]` class was deleted
@@ -341,7 +342,7 @@ half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unc
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `dd9a27e9` from `c81bc73` (#470); see "Current `main` vs production" above
+  `18aa93dd` from `70a733d` (#473); see "Current `main` vs production" above
   for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**

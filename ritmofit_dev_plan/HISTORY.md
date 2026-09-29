@@ -10,6 +10,24 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-09-28 (PR #473 — drain empty 204 bodies in the web API client) — deployed
+> (Worker `18aa93dd-8695-4791-a6dd-f0e031e28c75`).** Application source `70a733d`. Deployed
+> from clean `main` after owner go. No remote D1 change (nothing to apply; latest `0019`). No
+> secret change; `BETA_ALLOWED_EMAILS` confirmed present by name.
+>
+> - **#473:** `api()` now reads the empty body of a `204` before returning, so Chromium stops
+>   logging successful deletes as `net::ERR_ABORTED` (cause confirmed with a local double
+>   toggle). Return value unchanged. Web-only; no API, schema, OpenAPI, or iOS change.
+>
+> Pre-deploy: `main` tree `70a733d` was identical to CI-green PR head `de1a956`; the full local
+> gate passed again on `main`; SPA built before deploy. Post-deploy smoke: `/` and
+> `/api/v1/health` `200`; classes, explore, teams `401` unauthenticated; six security headers
+> present. SPA entry `assets/index-vAXMRElW.js`: the first five cache-busted fetches returned
+> four new and one old (`index-DAkmIV8y.js`) during edge propagation, then eight consecutive
+> fetches all returned the new entry. The live bundle contains the 204 drain. Worker 100% on
+> `18aa93dd`. Rollback is Worker-only to `dd9a27e9-e891-41a8-b5cf-d1438f65fcad` (same v2 recipe
+> support, so no recipe-ID rollback hazard between these two).
+
 > **Session 2026-09-28 — production fixture cleanup (SPC-21 / PROD-HYGIENE).** No deploy.
 > The owner confirmed each class as test data in chat. Following `prod-fixture-hygiene.md`,
 > each was tagged `qa-fixture` first, re-checked for the tag, then deleted with
