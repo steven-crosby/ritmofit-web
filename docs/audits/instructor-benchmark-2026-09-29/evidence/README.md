@@ -35,9 +35,12 @@ The recording is a mat/barre-style class (64–68 BPM), not spin.
 ### What the Struct Club evidence shows
 
 - **Moves are timed segments.** Each move has a duration (15s, 31s…) plus its own BPM and
-  intensity. Live counts down the current segment and lists the next ones across song changes. Ritmo
-  models point-in-time cues and moves and derives the gaps between them. The two are equivalent for
-  a queue, but Ritmo has no explicit move duration.
+  intensity. Live counts down the current segment and lists the next ones across song changes.
+  Ritmo's queue is only a per-track approximation. It stores point-in-time cues and moves, and its
+  Live queue works out each item's length as the gap to the next cue or move, or to the end of the
+  track. It covers only the active track (`eventsFor` and `choreographyQueueAt` in
+  `apps/web/src/components/LiveMode.tsx`), so authored move durations don't exist and the queue
+  doesn't continue across songs. This is a benchmark gap.
 - **Cue + note already exists in Struct Club Live.** In frame 05, the note is shown as a sentence
   under the card. Her complaint is that editing notes is clunky, not that Live can't show them.
 - **Her intensity words are None / Easy / Mod / Hard / All Out.** These are Ritmo's stored enum
