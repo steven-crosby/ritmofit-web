@@ -21,7 +21,7 @@ for spin, portrait on the handlebars; iPad for Pilates and HIIT).
 
 | File | Source | Shows |
 | --- | --- | --- |
-| `01-move-ending-queue.jpg` | Recording, 0:00 | Live: "Left Leg Lead" at 1s left. Queue of moves with per-move BPM and duration. |
+| `01-move-ending-queue.jpg` | Recording, 0:00 | Live: "Left Leg Lead" at 1s left, intensity "Open". Queue of moves with per-move BPM and duration. |
 | `02-press-tap-progress-fill.jpg` | Recording, 0:18 | The move card fills left to right as a progress bar. The countdown is in seconds. |
 | `03-recover-block-start.jpg` | Recording, 0:27 | Start of a "Recover" move (15s). |
 | `04-song-change-next-move.jpg` | Recording, 0:33 | Song change. The queue runs straight across songs, and BPM changes per move (64 / 128). |
@@ -43,8 +43,13 @@ The recording is a mat/barre-style class (64–68 BPM), not spin.
   doesn't continue across songs. This is a benchmark gap.
 - **Cue + note already exists in Struct Club Live.** In frame 05, the note is shown as a sentence
   under the card. Her complaint is that editing notes is clunky, not that Live can't show them.
-- **Her intensity words are None / Easy / Mod / Hard / All Out.** These are Ritmo's stored enum
-  values. Ritmo Live shows the D17 display labels instead (Build / Push / Attack / All Out).
+- **Intensity: the editor's choices and what Live shows don't match.**
+  - The editor offers None / Easy / Mod / Hard / All Out (frame 07). These match Ritmo's stored enum
+    values. Ritmo Live shows the D17 display labels instead (Build / Push / Attack / All Out).
+  - Struct Club Live shows "Easy" in the June screenshot (frame 05).
+  - In every recording frame (01–04), Live shows **"Open"**, which isn't one of the editor's choices.
+  - Unresolved: whether "Open" is how Struct Club displays None, or a separate state. Ask her before
+    any exercise-step or intensity-vocabulary contract treats "Open" as equal to None.
 - **Not seen anywhere:** a beats-remaining count. Every countdown in these frames is in seconds.
   Confirm with her where she sees beats before building that must-keep.
 
