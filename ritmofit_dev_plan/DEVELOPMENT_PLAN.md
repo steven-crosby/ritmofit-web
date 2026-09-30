@@ -277,6 +277,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`music-providers.md`](./music-providers.md) | The three hard constraints; BPM/playback strategy |
 | [`provider-playback-implementation.md`](./provider-playback-implementation.md) | As-built player architecture: all three provider adapters (SoundCloud, Apple Music, Spotify) live-verified; Live Mode preflight/auto-advance and Builder preview wired |
 | [`editing-granularity-scoping.md`](./editing-granularity-scoping.md) | As-built record of trim / beat-snap / free-placement; the granularity boundary (D13) and open follow-ups |
+| [`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) | Owner-approved class-building UX direction: simple run of show, optional precision score, timed exercise steps, rehearsal/Live test, and open contract decisions |
 | [`milestones.md`](./milestones.md) | Milestone breakdown, M1 build order, acceptance criteria |
 | [`web-launch-readiness.md`](./web-launch-readiness.md) | Completed web launch gate, verification plan, and live deferrals |
 | [`deployment-runbook.md`](./deployment-runbook.md) | Production deploy + rollback/recovery procedure, secrets matrix, smoke checks |
@@ -298,6 +299,12 @@ playback for all three providers shipped 2026-07-06. Historical
 web launch deferrals remain in [`web-launch-readiness.md`](./web-launch-readiness.md); the old
 cross-surface parity record remains in [`web-ios-parity.md`](./web-ios-parity.md), but it is not the
 current planning queue.
+
+**Class-building design direction:** The owner-approved
+[`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) sets the target for a
+simple run of show with optional precision editing and named timed exercise steps in rehearsal/Live.
+Its first proposed slice is a 20-minute HIIT interaction prototype and contract proposal; it does not
+change the current recipe catalog or authorize implementation.
 
 **Design-audit implementation (2026-07-24) — landed, not current work:**
 
