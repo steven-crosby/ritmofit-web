@@ -306,6 +306,31 @@ simple run of show with optional precision editing and named timed exercise step
 Its first proposed slice is a 20-minute HIIT interaction prototype and contract proposal; it does not
 change the current recipe catalog or authorize implementation.
 
+**Instructor benchmark (2026-09-29):** A benchmark of Ritmo's builder and Live against a Fitness+
+trainer's workflow and Struct Club, for the owner's household instructor. She teaches in person:
+Live on an iPhone for spin (portrait on the handlebars, glance-only, Apple Music over Bluetooth to
+the studio) and on an iPad for Pilates/HIIT, with classes built on a laptop. Scope is
+instructor-only. The evidence and findings are in
+[`docs/audits/instructor-benchmark-2026-09-29/evidence/`](../docs/audits/instructor-benchmark-2026-09-29/evidence/README.md);
+the full report is the owner's private artifact. This is findings only. It feeds the blueprint's
+prototype and authorizes no implementation. Open before any slice:
+
+- Verify Apple Music playback from web Live on a real iPhone for a full class: Bluetooth output,
+  screen locked and unlocked, one notification during playback. MusicKit on the Web docs don't
+  address iOS Safari. The result decides whether the phone surface is web Live or native iOS Live
+  (which has no playback today).
+- Ask the instructor what Struct Club's Live "Open" intensity means, and where she sees a
+  beats-remaining count. None of her Struct Club evidence shows one.
+- Ranked gaps in web Live and the builder:
+  - (P0) a portrait-first glance screen. Landscape shows no cue text, and a long cue hides Next and
+    its countdown.
+  - (P0) a class that finishes hands-free. One playback error stops music until someone taps.
+  - (P1) cue plus a per-cue note. This is a schema change.
+  - (P1) a beats-to-next-cue count. Beat 1 can only be set to a whole second today.
+  - (P1) builder speed: mark a cue at the playhead, copy a routine between songs.
+  - (P1) a real rehearse mode.
+  - (P2) discipline-specific effort words in Live.
+
 **Design-audit implementation (2026-07-24) — landed, not current work:**
 
 The `claude` design-audit run is delivered and **owner-approved**: 18 backlog items disposition
