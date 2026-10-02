@@ -41,11 +41,13 @@ export type SpotifyPlayerEvent =
   | 'initialization_error'
   | 'authentication_error'
   | 'account_error'
-  | 'playback_error';
+  | 'playback_error'
+  | 'autoplay_failed';
 
 /** The slice of `Spotify.Player` Ritmo Studio drives (official SDK shape). */
 export interface SpotifyPlayer {
   connect(): Promise<boolean>;
+  activateElement(): Promise<void>;
   disconnect(): void;
   getCurrentState(): Promise<SpotifyPlayerState | null>;
   pause(): Promise<void>;
@@ -54,7 +56,12 @@ export interface SpotifyPlayer {
   addListener(event: 'ready' | 'not_ready', cb: (payload: { device_id: string }) => void): void;
   addListener(event: 'player_state_changed', cb: (state: SpotifyPlayerState | null) => void): void;
   addListener(
-    event: 'initialization_error' | 'authentication_error' | 'account_error' | 'playback_error',
+    event:
+      | 'initialization_error'
+      | 'authentication_error'
+      | 'account_error'
+      | 'playback_error'
+      | 'autoplay_failed',
     cb: (payload: { message: string }) => void,
   ): void;
   /**
@@ -232,4 +239,20 @@ export async function startSpotifyTrack(args: {
   if (!res.ok && res.status !== 202 && res.status !== 204) {
     throw new Error(`Spotify could not start the track (${res.status}).`);
   }
+}
+
+const activatedPlayers = new WeakSet<SpotifyPlayer>();
+/** Called synchronously by a visible browser-activation button. Never starts a song. */
+export function activateSpotifyPlayback(player: SpotifyPlayer): Promise<void> {
+  invalidateSpotifyActivation(player);
+  const activation = player.activateElement();
+  return activation.then(() => {
+    activatedPlayers.add(player);
+  });
+}
+export function isSpotifyPlaybackActivated(player: SpotifyPlayer): boolean {
+  return activatedPlayers.has(player);
+}
+export function invalidateSpotifyActivation(player: SpotifyPlayer): void {
+  activatedPlayers.delete(player);
 }

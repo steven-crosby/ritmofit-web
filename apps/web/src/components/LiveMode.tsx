@@ -6,16 +6,10 @@
  * ritmofit_dev_plan/provider-playback-implementation.md) — or prompter-only via
  * "Run without music", the pre-playback behavior.
  *
- * A single virtual clock drives everything: which track is live, the
- * current/next cue, the countdowns, the intensity readout, the timeline
- * playhead, AND provider playback — the rAF loop ticks the
- * RuntimePlaybackCoordinator, so Ritmo Studio's class timeline stays the
- * master and provider SDKs follow. The clock has two read tiers
- * (`lib/use-virtual-clock.ts`, SPC-18): a throttled `elapsedMs` used here for
- * cue selection and everything below (cue-boundary accuracy is all that's
- * needed, not per-frame precision), and a raw store the timeline subscribes to
- * directly so the playhead stays smooth without re-rendering this whole
- * subtree every animation frame. Playback failure is
+ * A single position store drives cues, countdowns, and the timeline. During
+ * songs, official provider transport owns position. Only deliberate silence
+ * gaps and explicit prompter-only runs accumulate host time. Preparation or
+ * unverified playback holds teaching position. Playback failure is
  * a serious recoverable alert (retry / handoff / continue without music), never
  * a silent skip; handoff links live only inside that recovery surface. Two
  * views: Cue-by-Cue (one big current cue + what's next) and Full List (the
@@ -37,12 +31,18 @@ import type {
   RunPayloadTrackEntry,
   Intensity,
   SegmentType,
+  Provider,
 } from '@ritmofit/shared';
+import { useSpotifyActivation } from '../lib/use-spotify-activation.js';
+import { SpotifyActivationAction } from './SpotifyActivationAction.js';
+import { useProviderConnect } from '../lib/use-provider-connect.js';
+import type { MusicKitInstance } from '../lib/musickit.js';
+import { ProviderConnectAction } from './ProviderConnectAction.js';
 import { listConnections } from '../lib/api.js';
 import { preflightPayload } from '../lib/playback/coordinator.js';
 import { RuntimePlaybackCoordinator, type CoordinatorStatus } from '../lib/playback/runtime.js';
 import { LivenessObserver, publishLivenessInspector } from '../lib/playback/liveness.js';
-import { PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
+import { LIVE_PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { useWakeLock, type WakeLockStatus } from '../lib/use-wake-lock.js';
 import { useVirtualClock, type ClockStore } from '../lib/use-virtual-clock.js';
@@ -53,7 +53,7 @@ import { IntensityReadout } from './IntensityReadout.js';
 import { LivePreflight } from './LivePreflight.js';
 import { LiveTimeline } from './LiveTimeline.js';
 import { SEGMENT_META, SegmentIcon } from './SegmentBand.js';
-import { RecoveryState, StatusLabel } from './SharedState.js';
+import { StatusLabel } from './SharedState.js';
 
 type View = 'cue' | 'list';
 
@@ -284,7 +284,19 @@ function LiveSectionBar({ section }: { section: LiveSection }) {
   );
 }
 
-export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () => void }) {
+export function LiveMode({
+  payload,
+  onExit,
+  beforeConnectionRedirect,
+  connectionResult,
+  onConnectionResultDismissed,
+}: {
+  payload: RunPayload;
+  onExit: () => void;
+  beforeConnectionRedirect?: (provider: Provider) => void;
+  connectionResult?: { connected?: string; error?: string } | null;
+  onConnectionResultDismissed?: () => void;
+}) {
   // Two clock tiers (`lib/use-virtual-clock.ts`, SPC-18): `elapsedMs` is
   // throttled (~200ms) and drives everything below; `clockStore` is the raw,
   // frame-rate position handed to the timeline so it can subscribe directly
@@ -297,6 +309,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     elapsedMs,
     store: clockStore,
     tick: clockTick,
+    syncPosition: clockSyncPosition,
     startSegment: clockStartSegment,
     endSegment: clockEndSegment,
     seek: clockSeek,
@@ -312,7 +325,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   );
   const [connections, setConnections] = useState<MusicConnectionView[] | null>(null);
   const [connectionsError, setConnectionsError] = useState<string | null>(null);
-  const [connectionsOpen, setConnectionsOpen] = useState(false);
+  const [connectionsOpen, setConnectionsOpen] = useState(!!connectionResult);
   // Connection truth can change inside the recovery dialog. Re-enter the unknown
   // state for every refresh so preflight fails closed, and accept only the newest
   // completion so a late request cannot restore stale playback readiness.
@@ -355,6 +368,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   // Release the provider SDK/widget when the instructor exits Live Mode.
   useEffect(
     () => () => {
+      commitThrottleRef.current?.cancel();
       coordinatorRef.current?.destroy();
     },
     [],
@@ -398,19 +412,41 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     [connections, payload],
   );
 
-  // Virtual clock: accumulate real time only while playing, via rAF. See
+  const requiresApple = !!preflight?.tracks.some(
+    (track) => track.selection.status === 'playable' && track.selection.provider === 'apple_music',
+  );
+  const appleBrowser = useRef<MusicKitInstance | null>(null);
+  const [appleAuthorized, setAppleAuthorized] = useState(false);
+  const browserConnect = useProviderConnect({
+    onPrepared: (instance) => {
+      appleBrowser.current = instance;
+      setAppleAuthorized(instance.isAuthorized);
+      return instance.isAuthorized;
+    },
+    onConnected: async () => {
+      setAppleAuthorized(appleBrowser.current?.isAuthorized === true);
+      await refreshConnections();
+    },
+  });
+  const requiresSpotify = !!preflight?.tracks.some(
+    (track) => track.selection.status === 'playable' && track.selection.provider === 'spotify',
+  );
+  const spotifyActivation = useSpotifyActivation();
+  const browserAuthorizationReady =
+    (!requiresApple || appleAuthorized) && (!requiresSpotify || spotifyActivation.isReady());
+
+  // Virtual time is reserved for prompter-only runs and deliberate gaps. See
   // `use-virtual-clock.ts` for the throttled-display / raw-store split (SPC-18).
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || (coordinatorRef.current && playback.kind !== 'silence')) return;
     clockStartSegment();
     let raf = 0;
     const loop = () => {
-      const capped = clockTick();
-      // The class clock is master: each frame lets the playback coordinator
-      // follow it (auto-advance, gap silence, end). Fire-and-forget — a frame
-      // is a poll, and the coordinator absorbs overlapping ticks itself. This
-      // must keep firing every raw frame regardless of the display throttle —
-      // it's the liveness/auto-advance heartbeat, not a render concern.
+      const capped = clockTick(
+        playback.kind === 'silence' ? playback.untilMs : payload.class.totalDurationMs,
+      );
+      // Only intentional gaps use host time in music mode. Cap at the next
+      // song's boundary so asynchronous preparation cannot advance teaching.
       void coordinatorRef.current?.tick(capped);
       if (capped >= payload.class.totalDurationMs) {
         setPlaying(false);
@@ -426,11 +462,21 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     // clockStartSegment/clockTick/clockEndSegment are stable for a given
     // totalDurationMs (see use-virtual-clock.ts), so this only re-subscribes on
     // an actual play/pause or duration change, exactly as before.
-  }, [playing, payload.class.totalDurationMs, clockStartSegment, clockTick, clockEndSegment]);
+  }, [
+    playing,
+    playback.kind,
+    playback.kind === 'silence' ? playback.untilMs : null,
+    payload.class.totalDurationMs,
+    clockStartSegment,
+    clockTick,
+    clockEndSegment,
+  ]);
 
   // Keep the studio screen awake while the class is running, and surface whether
   // it's actually holding so the instructor isn't guessing (the transport chip).
-  const wakeStatus = useWakeLock(playing);
+  const wakeStatus = useWakeLock(
+    hasStarted && (playing || (!!coordinatorRef.current && playback.kind === 'error')),
+  );
 
   // The provider seek call is a real network/SDK round trip — never fire it on
   // every pointer-move of a drag (SPC-16). `commitThrottle` coalesces a burst
@@ -442,7 +488,13 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   commitThrottleRef.current ??= createTrailingThrottle((ms) => {
     // Re-cue provider playback at the new position (no-op while paused — the
     // next resume enters at the clock position anyway).
-    void coordinatorRef.current?.seek(ms);
+    const coordinator = coordinatorRef.current;
+    if (coordinator?.getStatus().kind === 'error') {
+      setPlaying(true);
+      void coordinator.resume(ms);
+    } else {
+      void coordinator?.seek(ms);
+    }
   }, 200);
 
   /** Discrete, immediate seek: keyboard, tap, row target, reset. Rebases the
@@ -467,7 +519,7 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   );
 
   /** Start hands-free: build the coordinator and begin playback at 0 (a user gesture). */
-  const startClass = () => {
+  const buildCoordinator = () => {
     // Observation only — it records what the provider reports and never acts on
     // it, so it cannot interrupt a class that is playing fine. Built per run so
     // each class gets its own buffer, and published for inspection afterwards
@@ -476,15 +528,35 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     publishLivenessInspector(liveness);
     const coordinator = new RuntimePlaybackCoordinator(payload, connections ?? [], {
       now: Date.now(),
-      adapters: PLAYBACK_ADAPTERS,
+      adapters: LIVE_PLAYBACK_ADAPTERS,
       availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
       liveness,
+      onPosition: clockSyncPosition,
       onStatus: (next) => {
         setPlayback(next);
-        if (next.kind === 'error') setPlaybackFailure(next.error.message);
+        if (next.kind === 'error') {
+          setPlaybackFailure(next.error.message);
+          setPlaying(false);
+          clockSeek(clockStore.getSnapshot());
+        }
+        if (['paused', 'ended', 'idle', 'silence'].includes(next.kind))
+          clockSeek(clockStore.getSnapshot());
+        if (next.kind === 'ended') setPlaying(false);
         if (next.kind === 'playing') setPlaybackFailure(null);
       },
     });
+    return coordinator;
+  };
+
+  const startClass = () => {
+    if (!preflight?.ok) return;
+    if (requiresApple && !appleBrowser.current?.isAuthorized) {
+      setAppleAuthorized(false);
+      return;
+    }
+    if (requiresSpotify && !spotifyActivation.isReady()) return;
+    browserConnect.cancel();
+    const coordinator = buildCoordinator();
     coordinatorRef.current = coordinator;
     setPhase('live');
     setHasStarted(true);
@@ -495,8 +567,12 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   const togglePlay = () => {
     const next = !playing;
     const coordinator = coordinatorRef.current;
+    if (coordinator?.getStatus().kind === 'error') {
+      retryPlayback();
+      return;
+    }
     if (coordinator) {
-      if (next) void coordinator.resume(elapsedMs);
+      if (next) void coordinator.resume(clockStore.getSnapshot());
       else void coordinator.pause();
     }
     if (next) setHasStarted(true);
@@ -507,15 +583,23 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
   const retryPlayback = () => {
     setHasStarted(true);
     if (!playing) setPlaying(true);
-    void coordinatorRef.current?.resume(elapsedMs);
+    const held = clockStore.getSnapshot();
+    coordinatorRef.current?.destroy();
+    const coordinator = buildCoordinator();
+    coordinatorRef.current = coordinator;
+    setPlaybackFailure(null);
+    void coordinator.resume(held);
   };
 
   /** Abandon playback but keep the class running (prompter + timers stay live). */
   const continueWithoutMusic = () => {
+    commitThrottleRef.current?.cancel();
     coordinatorRef.current?.destroy();
     coordinatorRef.current = null;
     setPlayback({ kind: 'idle' });
     setPlaybackFailure(null);
+    setHasStarted(true);
+    setPlaying(true);
   };
 
   // Flatten + sort each track's cues/moves once per payload, not on every animation
@@ -632,7 +716,20 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
     // it changes in lockstep with the key, so the closure is never stale.
   }, [announcementKey]);
 
-  const runState = ended ? 'Complete' : playing ? 'Now teaching' : !hasStarted ? 'Ready' : 'Paused';
+  const musicBlocked =
+    !!coordinatorRef.current &&
+    hasStarted &&
+    ['idle', 'preparing', 'awaiting_authorization', 'buffering', 'error'].includes(playback.kind);
+  const teachingPlaying = playing && !musicBlocked;
+  const runState = ended
+    ? 'Complete'
+    : musicBlocked
+      ? 'Teaching paused · waiting for music'
+      : teachingPlaying
+        ? 'Now teaching'
+        : !hasStarted
+          ? 'Ready'
+          : 'Paused';
 
   // Live runs on bg-live (ink-950, darker than bg-base) for maximum AAA contrast
   // in a dim studio — and stays dark in both themes (02/04-layout).
@@ -661,14 +758,50 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             preflight={preflight}
             connectionsError={connectionsError}
             onRetryConnections={() => void refreshConnections()}
-            onManageConnections={() => setConnectionsOpen(true)}
+            onManageConnections={() => {
+              browserConnect.cancel();
+              setConnectionsOpen(true);
+            }}
             onStart={startClass}
-            onRunWithoutMusic={() => setPhase('live')}
+            browserAuthorizationReady={browserAuthorizationReady}
+            browserAuthorization={
+              <>
+                {requiresSpotify && <SpotifyActivationAction flow={spotifyActivation} />}
+                {requiresApple ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="font-ui text-sm text-text-secondary" role="status">
+                      {appleAuthorized
+                        ? 'Apple Music authorized in this browser. Playback availability is still unverified.'
+                        : 'Apple Music needs a browser authorization check before Start. This check does not play music.'}
+                    </p>
+                    <ProviderConnectAction
+                      provider="apple_music"
+                      label={
+                        appleAuthorized
+                          ? 'Recheck Apple Music authorization'
+                          : 'Check Apple Music authorization'
+                      }
+                      flow={browserConnect}
+                    />
+                  </div>
+                ) : null}
+              </>
+            }
+            onRunWithoutMusic={() => {
+              browserConnect.cancel();
+              spotifyActivation.cancel();
+              setPhase('live');
+            }}
           />
         </div>
         {connectionsOpen && (
           <ConnectionsDialog
-            onClose={() => setConnectionsOpen(false)}
+            beforeRedirect={beforeConnectionRedirect}
+            oauthResult={connectionResult}
+            onClose={() => {
+              setConnectionsOpen(false);
+              onConnectionResultDismissed?.();
+            }}
             onConnectionsChanged={() => void refreshConnections()}
           />
         )}
@@ -733,13 +866,10 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
             trackEndMs={trackEndMs}
             trackHasDuration={trackDurationMs != null}
             classTotalMs={payload.class.totalDurationMs}
-            playing={playing}
+            playing={teachingPlaying}
+            holding={musicBlocked || !!playbackFailure}
             hasStarted={hasStarted}
             gap={gap}
-            playbackError={playbackFailure}
-            onRetryPlayback={retryPlayback}
-            onContinueWithoutMusic={continueWithoutMusic}
-            onManageConnections={() => setConnectionsOpen(true)}
           />
         ) : (
           <FullList
@@ -752,14 +882,85 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
         )}
       </div>
 
+      {(musicBlocked || playbackFailure) && (
+        <section
+          role={playbackFailure ? 'alert' : 'status'}
+          className="shrink-0 border-t border-state-caution/30 bg-bg-raised px-4 py-3 sm:px-6"
+        >
+          <h2 className="font-ui text-sm font-semibold text-text-primary">
+            {playbackFailure ? 'Playback stopped' : 'Waiting for music'}
+          </h2>
+          <p className="mt-1 font-ui text-xs text-text-secondary">
+            {playbackFailure ??
+              (playback.kind === 'awaiting_authorization'
+                ? 'Complete the provider authorization to continue.'
+                : 'Provider playback has not confirmed progress.')}
+          </p>
+          <p className="mt-1 font-ui text-xs text-state-caution">Teaching position is held.</p>
+          {requiresSpotify && playbackFailure && !spotifyActivation.isReady() && (
+            <SpotifyActivationAction flow={spotifyActivation} recovery />
+          )}
+          <div className="mt-2 grid grid-cols-2 gap-1 sm:flex sm:flex-wrap">
+            {playbackFailure && (
+              <button
+                type="button"
+                onClick={retryPlayback}
+                className="min-h-11 rounded-control border border-interactive/40 px-2 font-ui text-xs text-interactive rf-focus-ring"
+              >
+                Retry playback
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={continueWithoutMusic}
+              className="min-h-11 rounded-control border border-interactive/40 px-2 font-ui text-xs text-interactive rf-focus-ring"
+            >
+              Continue without music
+            </button>
+            <button
+              type="button"
+              onClick={() => setConnectionsOpen(true)}
+              className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
+            >
+              Manage music connection
+            </button>
+            {liveIndex >= 0 && liveIndex < payload.tracks.length - 1 && (
+              <button
+                type="button"
+                onClick={() => seek(payload.tracks[liveIndex + 1]!.startOffsetMs ?? 0)}
+                className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
+              >
+                Skip track
+              </button>
+            )}
+          </div>
+          {playbackFailure &&
+            live &&
+            live.entry.providerRefs.some((ref) =>
+              providerHandoffHref(ref.provider, ref.providerUri),
+            ) && (
+              <details className="mt-1">
+                <summary className="min-h-11 cursor-pointer rounded-control py-3 font-ui text-xs text-text-secondary rf-focus-ring">
+                  Open in music app
+                </summary>
+                <ProviderHandoffLinks entry={live.entry} />
+              </details>
+            )}
+        </section>
+      )}
       <Transport
         playing={playing}
+        musicBlocked={musicBlocked}
         onToggle={togglePlay}
         onReset={() => {
           setPlaying(false);
           setHasStarted(false);
-          void coordinatorRef.current?.pause();
-          seek(0);
+          coordinatorRef.current?.destroy();
+          if (coordinatorRef.current) coordinatorRef.current = buildCoordinator();
+          setPlayback({ kind: 'paused' });
+          setPlaybackFailure(null);
+          commitThrottleRef.current?.cancel();
+          clockSeek(0);
         }}
         liveIndex={liveIndex}
         onPreviousTrack={() => {
@@ -780,7 +981,12 @@ export function LiveMode({ payload, onExit }: { payload: RunPayload; onExit: () 
       />
       {connectionsOpen && (
         <ConnectionsDialog
-          onClose={() => setConnectionsOpen(false)}
+          beforeRedirect={beforeConnectionRedirect}
+          oauthResult={connectionResult}
+          onClose={() => {
+            setConnectionsOpen(false);
+            onConnectionResultDismissed?.();
+          }}
           onConnectionsChanged={() => void refreshConnections()}
         />
       )}
@@ -805,6 +1011,9 @@ function PlaybackRail({ status }: { status: CoordinatorStatus | null }) {
         break;
       case 'awaiting_authorization':
         text = `Waiting for ${providerLabel(status.provider)} authorization…`;
+        break;
+      case 'buffering':
+        text = `Waiting for ${providerLabel(status.provider)} playback…`;
         break;
       case 'playing':
         text = providerLabel(status.provider);
@@ -965,12 +1174,9 @@ function CueByCue({
   trackHasDuration,
   classTotalMs,
   playing,
+  holding,
   hasStarted,
   gap,
-  playbackError,
-  onRetryPlayback,
-  onContinueWithoutMusic,
-  onManageConnections,
 }: {
   payload: RunPayload;
   live: { entry: RunPayloadTrackEntry; index: number } | null;
@@ -982,13 +1188,10 @@ function CueByCue({
   trackHasDuration: boolean;
   classTotalMs: number;
   playing: boolean;
+  holding: boolean;
   hasStarted: boolean;
   /** Free-mode silence between tracks: a countdown to the next track. */
   gap: { untilMs: number; nextTitle: string | null } | null;
-  playbackError: string | null;
-  onRetryPlayback: () => void;
-  onContinueWithoutMusic: () => void;
-  onManageConnections: () => void;
 }) {
   if (!live) {
     return (
@@ -1070,7 +1273,7 @@ function CueByCue({
             <>
               {count && (
                 <p
-                  className="relative mt-5 font-data text-[clamp(3.5rem,9vw,7rem)] font-bold leading-none tracking-[-0.05em] text-text-primary"
+                  className={`relative mt-5 font-data font-bold leading-none tracking-[-0.05em] text-text-primary ${holding ? 'text-2xl sm:text-[clamp(3.5rem,9vw,7rem)]' : 'text-[clamp(3.5rem,9vw,7rem)]'}`}
                   aria-label={
                     currentEvent.bar == null ? `Count ${count}` : `Bar and count ${count}`
                   }
@@ -1080,7 +1283,7 @@ function CueByCue({
               )}
               <p
                 key={currentEvent.text}
-                className={`relative mt-3 break-words font-display text-[clamp(2.75rem,7vw,5.5rem)] font-semibold leading-[0.95] text-text-primary ${
+                className={`relative mt-3 break-words font-display ${holding ? 'text-2xl sm:text-[clamp(2.75rem,7vw,5.5rem)]' : 'text-[clamp(2.75rem,7vw,5.5rem)]'} font-semibold leading-[0.95] text-text-primary ${
                   isAllOut ? 'rf-drop-in' : ''
                 }`}
                 style={currentEvent.color ? { color: currentEvent.color } : undefined}
@@ -1184,44 +1387,6 @@ function CueByCue({
             </p>
           </div>
         </div>
-
-        {playbackError && (
-          <RecoveryState
-            kind="error"
-            role="alert"
-            compact
-            title="Playback stopped"
-            event={playbackError}
-            safety="Your current cue and class clock are still running."
-            statusLabel="Music interrupted"
-            className="border-state-danger/35"
-            primaryAction={
-              <button
-                className="min-h-11 rounded-control rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
-                onClick={onContinueWithoutMusic}
-              >
-                Continue without music
-              </button>
-            }
-            secondaryAction={
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive rf-focus-ring sm:rounded-pill"
-                  onClick={onRetryPlayback}
-                >
-                  Retry playback
-                </button>
-                <button
-                  className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive rf-focus-ring sm:rounded-pill"
-                  onClick={onManageConnections}
-                >
-                  Manage connections
-                </button>
-                <ProviderHandoffLinks entry={entry} />
-              </div>
-            }
-          />
-        )}
 
         {/* Track identity (+ any instructor notes). Provider handoff links left
             this card for the playback-failure recovery surface (D19). */}
@@ -1508,6 +1673,7 @@ function FullList({
 
 function Transport({
   playing,
+  musicBlocked,
   onToggle,
   onReset,
   liveIndex,
@@ -1522,6 +1688,7 @@ function Transport({
   primaryButtonRef,
 }: {
   playing: boolean;
+  musicBlocked: boolean;
   onToggle: () => void;
   onReset: () => void;
   liveIndex: number;
@@ -1563,8 +1730,15 @@ function Transport({
           ref={primaryButtonRef}
           className="min-h-11 rounded-control rf-btn-primary px-3 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill sm:px-6"
           onClick={onToggle}
+          aria-label={playing && musicBlocked ? 'Pause preparation' : undefined}
         >
-          {playing ? 'Pause' : 'Play'}
+          {playing
+            ? musicBlocked
+              ? 'Pause start'
+              : 'Pause'
+            : playback?.kind === 'error'
+              ? 'Retry music'
+              : 'Play'}
         </button>
         <button
           className="min-h-11 rounded-control border border-interactive px-2 py-2 font-ui text-sm font-semibold text-interactive rf-focus-ring disabled:pointer-events-none disabled:opacity-40 sm:rounded-pill sm:px-4"

@@ -24,7 +24,8 @@ export interface VirtualClock {
   elapsedMs: number;
   /** Advance the clock from the host's rAF loop; call once per raw frame while
    * playing. Returns the capped elapsed ms for the caller's own end check. */
-  tick: () => number;
+  tick: (ceilingMs?: number) => number;
+  syncPosition: (ms: number) => void;
   /** Bookkeeping for the start of a play segment (host calls once when `playing`
    * becomes true). */
   startSegment: () => void;
@@ -75,7 +76,7 @@ export function useVirtualClock(totalMs: number): VirtualClock {
     (ms: number) => {
       rawRef.current = ms;
       notify();
-      if (ms - displayedRef.current >= DISPLAY_THROTTLE_MS) {
+      if (Math.abs(ms - displayedRef.current) >= DISPLAY_THROTTLE_MS) {
         displayedRef.current = ms;
         setElapsedMs(ms);
       }
@@ -83,20 +84,33 @@ export function useVirtualClock(totalMs: number): VirtualClock {
     [notify],
   );
 
-  const tick = useCallback(() => {
-    const live = baseRef.current + (performance.now() - startRef.current);
-    const capped = Math.min(live, totalMs);
-    publish(capped);
-    if (capped >= totalMs) baseRef.current = totalMs;
-    return capped;
-  }, [totalMs, publish]);
+  const tick = useCallback(
+    (ceilingMs = totalMs) => {
+      const live = baseRef.current + (performance.now() - startRef.current);
+      const capped = Math.min(live, totalMs, ceilingMs);
+      publish(capped);
+      if (capped >= totalMs) baseRef.current = totalMs;
+      return capped;
+    },
+    [totalMs, publish],
+  );
+
+  const syncPosition = useCallback(
+    (ms: number) => {
+      const capped = Math.max(0, Math.min(ms, totalMs));
+      baseRef.current = capped;
+      startRef.current = performance.now();
+      publish(capped);
+    },
+    [totalMs, publish],
+  );
 
   const startSegment = useCallback(() => {
     startRef.current = performance.now();
   }, []);
 
   const endSegment = useCallback(() => {
-    baseRef.current += performance.now() - startRef.current;
+    baseRef.current = rawRef.current;
     const exact = Math.min(baseRef.current, totalMs);
     displayedRef.current = exact;
     setElapsedMs(exact);
@@ -128,5 +142,5 @@ export function useVirtualClock(totalMs: number): VirtualClock {
     [totalMs, notify],
   );
 
-  return { store, elapsedMs, tick, startSegment, endSegment, seek, previewSeek };
+  return { store, elapsedMs, tick, syncPosition, startSegment, endSegment, seek, previewSeek };
 }

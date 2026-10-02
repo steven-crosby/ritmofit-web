@@ -78,8 +78,21 @@ playback metadata, add it deliberately to shared contracts and OpenAPI; do not o
 ### Mixed-provider classes are allowed
 
 A class may contain tracks from SoundCloud, Apple Music, and Spotify. Live Mode must not assume one
-provider queue for the whole class. Instead, Ritmo Studio is the master timeline and each track is a
-provider-specific playback job.
+provider queue for the whole class. Each track is a provider-specific playback job. Ritmo owns the
+score and saved windows; [D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30)
+now makes actual provider playback authoritative for teaching progression inside songs. Preparation,
+authorization waits, stalls, and failures hold position; only the instructor can choose the independent
+prompter clock. Declared free-timeline gaps retain scheduled silence/countdowns.
+
+<!-- note (Codex, 2026-09-30): Phase 1B implements D24 locally; real-device release acceptance remains pending. -->
+
+Live now subscribes to normalized official provider transport, with 250ms position reads and adapter/job
+identity guards. Song position advances only on confirmed provider progress. Preparation, unknown
+transport, pause/buffering, and failure hold teaching position; a 10-second loss of progress surfaces
+recovery. Early finish requires source endpoint evidence and becomes a duration mismatch when short.
+Host time is reserved for declared gaps and the instructor's explicit music-off choice. This is local
+implementation evidence; audible iPhone/Bluetooth/background acceptance remains pending under the
+[phased workflow plan](./music-led-instructor-workflow-plan.md).
 
 Provider selection for each track:
 
@@ -90,9 +103,11 @@ Provider selection for each track:
 Keep the fallback deterministic. If no user-defined provider priority exists yet, use the product's
 current provider order unless design/product changes it.
 
-### Live Mode is hands-free after start
+### Live Mode targets hands-free playback after start
 
-Once class starts, the instructor should not have to touch Ritmo Studio. Live Mode must:
+Preflight checks stored connections, provider references, and durations; these do not prove audible playback or future track availability. Live checks required Apple Music browser authorization before Start, including Apple tracks later in a mixed-provider class, with consent behind a fresh explicit tap and no hidden song probe. Start rechecks authorization; the Live Apple adapter fails with recovery if it expires rather than opening consent during a transition. Builder preview retains consent on its explicit play action. Required Spotify tracks also gate Start on explicit browser activation after device preparation. Autoplay failure invalidates activation and exposes an Enable Spotify playback recovery action. Subscriptions, track availability, and output remain runtime/device checks.
+
+Once playback is confirmed, the instructor should not have to touch Ritmo Studio unless recovery is needed. Live Mode must:
 
 - preflight every track before class start;
 - start the first track at its playback-window start;
@@ -121,8 +136,9 @@ Add the web playback layer under `apps/web/src/lib/playback/`:
   translation, and static class preflight. **(built)**
 - `runtime.ts`: the runtime coordinator (`RuntimePlaybackCoordinator`) — segment resolution over the
   class timeline, auto-advance, gap handling, mid-track entry after seek, pause/resume, and
-  recoverable-error surfacing. Host-clock driven: Live Mode's rAF loop calls `tick(elapsedMs)`; the
-  coordinator never runs its own timer, and the class timeline stays master. **(built)**
+  recoverable-error surfacing. Live subscribes to provider-confirmed position during songs; its rAF
+  loop drives only declared gaps and prompter-only runs. Runtime polls official transport with one read
+  in flight and scopes results/events to a job epoch. **(Phase 1B built locally; device verification pending)**
 - `soundcloud-adapter.ts`: official SoundCloud Widget API. **(built — live-verified 2026-07-06:
   Live Mode playback + pause/resume on prod after the `w.soundcloud.com` CSP hotfix, Worker `5072dd3b`)**
 - `apple-music-adapter.ts`: MusicKit JS (v3) playback on the shared page instance, building on
@@ -136,7 +152,7 @@ Add the web playback layer under `apps/web/src/lib/playback/`:
   never drift on playability. **(built + Spotify registered 2026-07-06 after prod live verification)**
 - `preview.ts`: the Builder preview controller (`PreviewPlaybackController`) — drives ONE adapter for the
   selected track, manual only. Deliberately not the runtime coordinator: single-track, no whole-class
-  preflight, and no auto-advance (structurally — there is no next track). Same host-clock model as Live
+  preflight, and no auto-advance (structurally — there is no next track). The preview retains its independent host-clock model
   Mode (`tick(previewElapsedMs)`), stopping at the clip-window end so preview honors the saved range.
   **(built)**
 - `spotify-adapter.ts`: Spotify Web Playback SDK / Connect playback. **(built + registered —

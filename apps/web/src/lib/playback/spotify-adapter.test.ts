@@ -1,3 +1,4 @@
+import { activateSpotifyPlayback, isSpotifyPlaybackActivated } from '../spotify-playback.js';
 import { describe, expect, it, vi } from 'vitest';
 import type { RunPayloadTrackEntry } from '@ritmofit/shared';
 import type { SpotifyPlayback, SpotifyPlayer, SpotifyPlayerState } from '../spotify-playback.js';
@@ -220,7 +221,7 @@ describe('SpotifyAdapter', () => {
     await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
     await adapter.play();
 
-    player.emit('player_state_changed', state({ paused: false, position: 100_000 }));
+    player.emit('player_state_changed', state({ paused: false, position: 179_500 }));
     expect(onFinish).not.toHaveBeenCalled();
     player.emit('player_state_changed', state({ paused: true, position: 0 }));
     expect(onFinish).toHaveBeenCalledTimes(1);
@@ -288,6 +289,16 @@ describe('SpotifyAdapter', () => {
 });
 
 describe('SpotifyAdapter getLiveness', () => {
+  it('normalizes the completed Spotify track from SDK duration when its position resets', async () => {
+    const player = new FakePlayer();
+    const adapter = new SpotifyAdapter({}, makeHost(player).host);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+    await adapter.play();
+    player.emit('player_state_changed', state({ paused: false, position: 174500 }));
+    player.emit('player_state_changed', state({ paused: true, position: 0, duration: 175000 }));
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 175000, state: 'ended' });
+    adapter.destroy();
+  });
   it('reads the current SDK state instead of a stale transition event', async () => {
     const player = new FakePlayer();
     const adapter = new SpotifyAdapter({}, makeHost(player).host);
@@ -373,4 +384,91 @@ describe('SpotifyAdapter getLiveness', () => {
     await second.play();
     await expect(first.getLiveness()).resolves.toBeNull();
   });
+});
+
+describe('adversarial Spotify regressions', () => {
+  it('does not turn a blocked start or an early paused-at-zero snapshot into completion', async () => {
+    const player = new FakePlayer();
+    const onFinish = vi.fn();
+    const { host } = makeHost(player);
+    const adapter = new SpotifyAdapter({ onFinish }, host);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+    await adapter.play();
+    player.emit('player_state_changed', state({ paused: true, position: 0 }));
+    expect(onFinish).not.toHaveBeenCalled();
+    player.emit('player_state_changed', state({ paused: false, position: 1000 }));
+    player.emit('player_state_changed', state({ paused: true, position: 0 }));
+    expect(onFinish).not.toHaveBeenCalled();
+    expect((await adapter.getTransport()).state).toBe('paused');
+    adapter.destroy();
+  });
+  it('stops a cancelled late start and refuses a replacement until it settles', async () => {
+    const player = new FakePlayer();
+    let resolve!: () => void;
+    const pending = new Promise<void>((done) => {
+      resolve = done;
+    });
+    const { host } = makeHost(player);
+    host.startTrack = () => pending;
+    const adapter = new SpotifyAdapter({}, host);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+    const start = adapter.play();
+    const cancelled = expect(start).rejects.toThrow('cancelled');
+    adapter.destroy();
+    expect(player.calls).toContain('pause');
+    await expect(adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 })).rejects.toThrow(
+      'still finishing',
+    );
+    const replacement = new SpotifyAdapter({}, host);
+    await expect(replacement.prepare(makeEntry(), { startMs: 0, endMs: 180000 })).rejects.toThrow(
+      'still finishing',
+    );
+    resolve();
+    await cancelled;
+    expect(player.calls.filter((call) => call === 'pause')).toHaveLength(2);
+    host.startTrack = async () => {};
+    await replacement.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+    await replacement.play();
+    replacement.destroy();
+  });
+  it('reports blocked autoplay and invalidates the browser activation', async () => {
+    const player = new FakePlayer();
+    const onError = vi.fn();
+    const { host } = makeHost(player);
+    const adapter = new SpotifyAdapter({ onError }, host);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+    await adapter.play();
+    player.emit('autoplay_failed');
+    expect(onError).toHaveBeenCalledWith({
+      message: expect.stringContaining('Enable Spotify playback'),
+    });
+    adapter.destroy();
+  });
+});
+
+it('requires activation in Live and makes autoplay failure require a fresh tap', async () => {
+  const player = new FakePlayer();
+  const activateElement = vi.fn().mockResolvedValue(undefined);
+  Object.assign(player, { activateElement });
+  const typed = player as unknown as SpotifyPlayer;
+  const { host } = makeHost(player);
+  const adapter = new SpotifyAdapter({}, { ...host, requireActivation: true });
+  await expect(adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 })).rejects.toThrow(
+    'Enable Spotify',
+  );
+  const activation = activateSpotifyPlayback(typed);
+  expect(activateElement).toHaveBeenCalledOnce();
+  await activation;
+  await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+  await adapter.play();
+  player.emit('autoplay_failed');
+  expect(isSpotifyPlaybackActivated(typed)).toBe(false);
+  adapter.destroy();
+  const retry = new SpotifyAdapter({}, { ...host, requireActivation: true });
+  await expect(retry.prepare(makeEntry(), { startMs: 0, endMs: 180000 })).rejects.toThrow(
+    'Enable Spotify',
+  );
+  await activateSpotifyPlayback(typed);
+  await retry.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+  retry.destroy();
 });

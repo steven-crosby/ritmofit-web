@@ -18,14 +18,9 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { type MusicConnectionView, type Provider } from '@ritmofit/shared';
-import {
-  listConnections,
-  connectProvider,
-  disconnectProvider,
-  getAppleMusicConfig,
-  connectAppleMusic,
-} from '../lib/api.js';
-import { authorizeAppleMusic } from '../lib/musickit.js';
+import { listConnections, disconnectProvider } from '../lib/api.js';
+import { useProviderConnect } from '../lib/use-provider-connect.js';
+import { ProviderConnectAction } from './ProviderConnectAction.js';
 import {
   PROVIDER_ORDER,
   providerLabel,
@@ -43,9 +38,11 @@ export function ConnectionsDialog({
   onClose,
   oauthResult,
   onConnectionsChanged,
+  beforeRedirect,
 }: {
   onClose: () => void;
   onConnectionsChanged?: () => void;
+  beforeRedirect?: (provider: Provider) => void;
   /** The provider OAuth round-trip result, parsed from the return URL by the dashboard. */
   oauthResult?: { connected?: string; error?: string } | null;
 }) {
@@ -86,36 +83,17 @@ export function ConnectionsDialog({
 
   const connectionByProvider = new Map((connections ?? []).map((c) => [c.provider, c]));
 
-  const connect = async (provider: Provider) => {
-    setBusyProvider(provider);
-    setError(null);
-    try {
-      // Apple Music has no redirect OAuth: MusicKit JS authorizes in the browser
-      // and hands back a Music-User-Token we post to the server. It connects in
-      // place (no full-page redirect), so refresh + show the same success notice.
-      if (provider === 'apple_music') {
-        const config = await getAppleMusicConfig();
-        const token = await authorizeAppleMusic(config);
-        await connectAppleMusic(token);
-        await refresh();
-        onConnectionsChanged?.();
-        setNotice(`Connected to ${providerLabel(provider)}.`);
-        return;
-      }
-      const res = await connectProvider(provider);
-      if (res.authorizeUrl) {
-        // Live flow: hand off to the provider's consent screen.
-        window.location.href = res.authorizeUrl;
-        return;
-      }
-      await refresh(); // mock seam connected immediately
+  const flow = useProviderConnect({
+    onConnected: async (signal) => {
+      const rows = await listConnections();
+      if (signal.aborted) return;
+      setConnections(rows);
+      setStatusVerified(true);
+      setNotice('Music connection refreshed.');
       onConnectionsChanged?.();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusyProvider(null);
-    }
-  };
+    },
+    beforeRedirect,
+  });
 
   const disconnect = async (provider: Provider) => {
     setBusyProvider(provider);
@@ -136,10 +114,10 @@ export function ConnectionsDialog({
     <Dialog
       onClose={onClose}
       label="Music connections"
-      panelClassName="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-panel bg-bg-raised p-6 shadow-lifted"
+      panelClassName="flex min-w-0 max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-panel bg-bg-raised p-4 shadow-lifted sm:p-6"
     >
-      <header className="flex items-start justify-between gap-3">
-        <div>
+      <header className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
           <h2 className="font-display text-lg font-semibold text-text-primary">
             Music connections
           </h2>
@@ -192,14 +170,18 @@ export function ConnectionsDialog({
       ) : (
         <ul className="flex flex-col gap-2">
           {PROVIDER_ORDER.map((provider) => {
-            const busy = busyProvider === provider;
+            const busy =
+              busyProvider !== null ||
+              (!!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready');
             const connection = connectionByProvider.get(provider);
             const dataState = providerConnectionState(provider, connection, Date.now());
             // The only busy action from a disconnected/expired row is a (re)connect,
             // so surface that as the transient reconnecting state; a busy connected
             // row is mid-disconnect and keeps its Connected status (button says so).
             const showReconnecting =
-              busy && (dataState === 'disconnected' || dataState === 'expired');
+              flow.operation?.provider === provider &&
+              busy &&
+              (dataState === 'disconnected' || dataState === 'expired');
             const markKind = !statusVerified
               ? 'unverified'
               : showReconnecting
@@ -235,9 +217,9 @@ export function ConnectionsDialog({
                 key={provider}
                 className="flex flex-col gap-2 rounded-card bg-bg-base px-3 py-2.5"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-ui text-sm font-semibold text-text-primary">
+                    <p className="break-words font-ui text-sm font-semibold text-text-primary">
                       {providerLabel(provider)}
                     </p>
                     <ConnectionStateMark
@@ -277,37 +259,19 @@ export function ConnectionsDialog({
                       <button
                         type="button"
                         onClick={() => setConfirming(provider)}
+                        disabled={busy}
                         aria-label={`Disconnect ${providerLabel(provider)}`}
                         className="min-h-11 shrink-0 rounded-pill border border-interactive/40 px-3 font-ui text-xs text-text-secondary hover:text-text-primary rf-focus-ring"
                       >
                         Disconnect {providerLabel(provider)}
                       </button>
                     )
-                  ) : dataState === 'expired' ? (
-                    // Recovery action for an expired link — re-auth via the connect flow.
-                    <button
-                      type="button"
-                      onClick={() => connect(provider)}
-                      disabled={busy}
-                      aria-label={`Reconnect ${providerLabel(provider)}`}
-                      className="min-h-11 shrink-0 rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive rf-focus-ring disabled:opacity-50"
-                    >
-                      {busy
-                        ? `Reconnecting ${providerLabel(provider)}…`
-                        : `Reconnect ${providerLabel(provider)}`}
-                    </button>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => connect(provider)}
-                      disabled={busy}
-                      aria-label={`Connect ${providerLabel(provider)}`}
-                      className="min-h-11 shrink-0 rounded-pill border border-interactive/50 px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring disabled:opacity-50"
-                    >
-                      {busy
-                        ? `Connecting ${providerLabel(provider)}…`
-                        : `Connect ${providerLabel(provider)}`}
-                    </button>
+                    <ProviderConnectAction
+                      provider={provider}
+                      label={`${dataState === 'expired' ? 'Reconnect' : 'Connect'} ${providerLabel(provider)}`}
+                      flow={flow}
+                    />
                   )}
                 </div>
 
@@ -322,16 +286,11 @@ export function ConnectionsDialog({
                         mode.
                       </span>
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => connect(provider)}
-                      disabled={busy}
-                      aria-label={`Reconnect ${providerLabel(provider)} for playback`}
-                      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring disabled:opacity-50"
-                    >
-                      <span aria-hidden>↻</span>
-                      {busy ? 'Reconnecting…' : 'Reconnect for playback'}
-                    </button>
+                    <ProviderConnectAction
+                      provider={provider}
+                      label={`Reconnect ${providerLabel(provider)} for playback`}
+                      flow={flow}
+                    />
                   </div>
                 )}
 
@@ -343,16 +302,11 @@ export function ConnectionsDialog({
                         Connected for library access. Reconnect to browse saved playlists.
                       </span>
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => connect(provider)}
-                      disabled={busy}
-                      aria-label={`Reconnect ${providerLabel(provider)} to browse playlists`}
-                      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-pill border border-interactive px-3 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring disabled:opacity-50"
-                    >
-                      <span aria-hidden>↻</span>
-                      {busy ? 'Reconnecting…' : 'Reconnect to browse playlists'}
-                    </button>
+                    <ProviderConnectAction
+                      provider={provider}
+                      label={`Reconnect ${providerLabel(provider)} to browse playlists`}
+                      flow={flow}
+                    />
                   </div>
                 )}
               </li>

@@ -15,6 +15,32 @@ function advancePerfNow(ms: number) {
 }
 
 describe('useVirtualClock', () => {
+  it('publishes provider position without banking time while it is held', () => {
+    const { result } = renderHook(() => useVirtualClock(TOTAL_MS));
+    act(() => result.current.syncPosition(5000));
+    advancePerfNow(20000);
+    expect(result.current.store.getSnapshot()).toBe(5000);
+    act(() => result.current.startSegment());
+    advancePerfNow(250);
+    act(() => {
+      result.current.tick();
+    });
+    expect(result.current.store.getSnapshot()).toBe(5250);
+  });
+  it('caps deliberate gaps at their next-song boundary and freezes the published frame', () => {
+    const { result } = renderHook(() => useVirtualClock(TOTAL_MS));
+    act(() => {
+      result.current.seek(5000);
+      result.current.startSegment();
+    });
+    advancePerfNow(20000);
+    act(() => {
+      result.current.tick(10000);
+      result.current.endSegment();
+    });
+    expect(result.current.store.getSnapshot()).toBe(10000);
+    expect(result.current.elapsedMs).toBe(10000);
+  });
   it('starts at zero on both tiers', () => {
     const { result } = renderHook(() => useVirtualClock(TOTAL_MS));
     expect(result.current.elapsedMs).toBe(0);

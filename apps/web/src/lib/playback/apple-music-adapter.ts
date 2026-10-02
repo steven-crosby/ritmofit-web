@@ -1,3 +1,4 @@
+import type { TransportReading, TransportState } from './types.js';
 /**
  * Apple Music playback adapter — wraps MusicKit on the Web (v3) behind the
  * `PlaybackAdapter` contract. MusicKit is a page-level singleton that owns the
@@ -25,6 +26,7 @@
 import type { AppleMusicClientConfig, RunPayloadTrackEntry } from '@ritmofit/shared';
 import { getAppleMusicConfig } from '../api.js';
 import {
+  configureMusicKit,
   loadMusicKit,
   type MusicKitGlobal,
   type MusicKitInstance,
@@ -48,7 +50,6 @@ const DEFAULT_PREPARE_TIMEOUT_MS = 20_000;
  * error path (which also lets the coordinator tear the orphaned adapter down).
  */
 const DEFAULT_AUTHORIZE_TIMEOUT_MS = 60_000;
-const APP_META = { name: 'Ritmo Studio', build: '1.0.0' };
 
 const msToSeconds = (ms: number): number => ms / 1000;
 
@@ -61,6 +62,7 @@ const msToSeconds = (ms: number): number => ms / 1000;
  * module global — so it stays correct if a page ever holds more than one instance
  * and never leaks across teardown.
  */
+const pendingPlays = new WeakSet<MusicKitInstance>();
 const transportOwners = new WeakMap<MusicKitInstance, AppleMusicAdapter>();
 
 /**
@@ -88,6 +90,8 @@ export interface AppleMusicAdapterHost {
   loadConfig?: () => Promise<AppleMusicClientConfig>;
   prepareTimeoutMs?: number;
   authorizeTimeoutMs?: number;
+  /** Live requires visible preflight consent; preview retains its explicit play consent. */
+  requirePreauthorization?: boolean;
 }
 
 export class AppleMusicAdapter implements PlaybackAdapter {
@@ -100,6 +104,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   private cueSeconds = 0;
   private cueDirty = false;
   private started = false;
+  private starting = false;
   private destroyed = false;
   private trackTitle = '';
   private queueGeneration: number | null = null;
@@ -107,6 +112,9 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   // One bound handler pair for this adapter's life, so removeEventListener in
   // destroy() matches the addEventListener in prepare().
   private readonly onStateChange = (event: MusicKitPlaybackEvent): void => {
+    if (this.started && transportOwners.get(this.requireInstance()) === this) {
+      this.events.onTransportState?.(this.transportState(event.state));
+    }
     // Only a genuine end-of-track while we are the playing owner is a finish. A
     // single-song queue also reports `completed`/`ended` when WE stop or tear
     // down (started is cleared first), which must not misfire onFinish.
@@ -134,6 +142,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
    * rejects so preflight/start can surface it instead of hanging the class.
    */
   async prepare(entry: RunPayloadTrackEntry, window: PlaybackWindow): Promise<PlaybackReady> {
+    if (this.starting) throw new Error('Apple Music is still finishing a previous play request.');
     const ref = entry.providerRefs.find((candidate) => candidate.provider === 'apple_music');
     if (!ref) {
       throw new Error(`"${entry.track.title}" has no Apple Music reference.`);
@@ -158,12 +167,21 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     // session) so we skip a redundant configure + token fetch.
     const instance = music.getInstance() ?? (await this.configure(music));
     if (this.destroyed) return;
+    if (pendingPlays.has(instance))
+      throw new Error(
+        'Apple Music is still finishing a cancelled play request. Retry after it finishes, or reload.',
+      );
 
     // Lazy authorize (the chosen posture): the first prepared track's play
     // gesture also covers Apple's consent surface, and an already-authorized
     // browser resolves immediately. The stored Music-User-Token is server-only
     // and never returned to the client, so the SDK re-establishes it here.
     if (!instance.isAuthorized) {
+      if (this.host.requirePreauthorization) {
+        throw new Error(
+          'Apple Music needs browser authorization. Open Manage music connection and authorize Apple Music before retrying.',
+        );
+      }
       // Signal the waiting state so the coordinator surfaces a cancellable
       // "waiting for authorization" instead of a frozen `preparing`, and bound
       // the un-cancellable consent with a generous timeout: a blocked/abandoned
@@ -190,11 +208,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
 
   private async configure(music: MusicKitGlobal): Promise<MusicKitInstance> {
     const config = await (this.host.loadConfig ?? getAppleMusicConfig)();
-    return music.configure({
-      developerToken: config.developerToken,
-      app: APP_META,
-      ...(config.storefront ? { storefrontId: config.storefront } : {}),
-    });
+    return configureMusicKit(music, config);
   }
 
   async play(): Promise<void> {
@@ -210,11 +224,28 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       );
       this.cueDirty = false;
     }
-    await instance.play();
-    // Claim the shared transport: from here until stop/teardown, only this
-    // adapter may stop the singleton (see transportOwners).
+    if (this.destroyed) throw new Error('Apple Music play was cancelled.');
+    if (pendingPlays.has(instance))
+      throw new Error('Apple Music is still finishing a previous play request.');
+    this.starting = true;
+    pendingPlays.add(instance);
     transportOwners.set(instance, this);
-    this.started = true;
+    try {
+      await instance.play();
+      if (this.destroyed) throw new Error('Apple Music play was cancelled.');
+      this.started = true;
+    } finally {
+      if (this.destroyed && transportOwners.get(instance) === this) {
+        try {
+          await instance.stop();
+        } catch {
+          /* Provider teardown is best-effort. */
+        }
+        if (transportOwners.get(instance) === this) transportOwners.delete(instance);
+      }
+      pendingPlays.delete(instance);
+      this.starting = false;
+    }
   }
 
   async pause(): Promise<void> {
@@ -236,6 +267,35 @@ export class AppleMusicAdapter implements PlaybackAdapter {
    * the instance is exempt, since inventing a verdict is the failure mode the
    * F-05 "0 tracks" bug was made of.
    */
+  private transportState(state = this.instance?.playbackState): TransportState {
+    const states = this.music?.PlaybackStates;
+    if (!states || state == null) return 'unknown';
+    if (state === states.playing) return 'playing';
+    if (state === states.completed || state === states.ended) return 'ended';
+    if (state === states.paused || state === states.stopped) return 'paused';
+    if (
+      state === states.stalled ||
+      state === states.waiting ||
+      state === states.loading ||
+      state === states.seeking
+    )
+      return 'buffering';
+    return 'unknown';
+  }
+  async getTransport(): Promise<TransportReading> {
+    const reading = await this.getLiveness();
+    const state = this.transportState();
+    const duration = this.instance?.currentPlaybackDuration;
+    return {
+      state: reading ? state : 'unknown',
+      positionMs: reading
+        ? state === 'ended' && typeof duration === 'number'
+          ? Math.round(duration * 1000)
+          : reading.positionMs
+        : null,
+    };
+  }
+
   async getLiveness(): Promise<LivenessReading | null> {
     const instance = this.instance;
     const states = this.music?.PlaybackStates;
@@ -290,8 +350,8 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         // the ownership check keeps both cases correct without tearing the
         // singleton down.
         if (transportOwners.get(instance) === this) {
-          transportOwners.delete(instance);
-          void instance.stop();
+          if (!pendingPlays.has(instance)) transportOwners.delete(instance);
+          void instance.stop().catch(() => {});
         }
       } catch {
         // Best-effort teardown — the next setQueue/play supersedes any audio.
@@ -371,3 +431,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
 
 /** Registry entry for the runtime coordinator. */
 export const appleMusicAdapterFactory: AdapterFactory = (events) => new AppleMusicAdapter(events);
+
+/** Live never opens provider consent from an unattended track transition. */
+export const preauthorizedAppleMusicAdapterFactory: AdapterFactory = (events) =>
+  new AppleMusicAdapter(events, { requirePreauthorization: true });

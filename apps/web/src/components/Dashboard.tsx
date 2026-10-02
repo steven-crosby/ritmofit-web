@@ -59,6 +59,9 @@ import {
   getMe,
   updateMe,
 } from '../lib/api.js';
+import { useProviderConnect } from '../lib/use-provider-connect.js';
+import { ProviderConnectAction } from './ProviderConnectAction.js';
+import { consumeConnectionReturn, rememberConnectionReturn } from '../lib/connection-return.js';
 import { authClient } from '../lib/auth-client.js';
 import {
   ConnectionStateMark,
@@ -324,19 +327,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     if (consumeOnboardingVideoPending()) setOnboardingVideoOpen(true);
   }, []);
 
-  // A provider OAuth round-trip returns the browser to "/?connected=…" or
-  // "/?error=…". Open the connections dialog with that result, then strip the
-  // query so a refresh or back-nav doesn't replay it.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const connected = params.get('connected');
-    const errorReason = params.get('error');
-    if (!connected && !errorReason) return;
-    setOauthResult({ connected: connected ?? undefined, error: errorReason ?? undefined });
-    setConnectionsOpen(true);
-    window.history.replaceState(null, '', window.location.pathname);
-  }, []);
-
   useEffect(() => {
     if (destination === 'classes' && selected) {
       document.title = `${selected.title} - Ritmo Studio`;
@@ -419,6 +409,36 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     },
     [loadDetail],
   );
+
+  // A provider OAuth round-trip returns the browser to "/?connected=…" or
+  // "/?error=…". Open the connections dialog with that result, then strip the
+  // query so a refresh or back-nav doesn't replay it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('connected');
+    const errorReason = params.get('error');
+    if (!connected && !errorReason) return;
+    const validProvider = PROVIDER_ORDER.find((provider) => provider === connected);
+    const origin = consumeConnectionReturn(userId, validProvider);
+    if (origin) {
+      setDestination(origin.destination);
+      if (origin.classId) {
+        void getClass(origin.classId)
+          .then((cls) => {
+            void openClass(cls);
+            if (origin.destination === 'live') {
+              void getRunPayload(cls.id)
+                .then(setLive)
+                .catch(() => setDestination('classes'));
+            }
+          })
+          .catch(() => setDestination('classes'));
+      }
+    }
+    setOauthResult({ connected: validProvider, error: errorReason ?? undefined });
+    setConnectionsOpen(true);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, [userId, openClass]);
 
   // Start a new class seeded from a previously choreographed song (Songs by Move):
   // create a blank class, then copy that class_track — with its cues and placed
@@ -603,7 +623,23 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     return (
       <ErrorBoundary resetLabel="Exit live mode" onReset={exitLive}>
         <Suspense fallback={<LoadingScreen />}>
-          <LiveMode payload={live} onExit={exitLive} />
+          <LiveMode
+            payload={live}
+            onExit={exitLive}
+            connectionResult={oauthResult}
+            onConnectionResultDismissed={() => {
+              setOauthResult(null);
+              setConnectionsOpen(false);
+            }}
+            beforeConnectionRedirect={(provider) =>
+              rememberConnectionReturn({
+                userId,
+                destination: 'live',
+                classId: live.class.id,
+                provider,
+              })
+            }
+          />
         </Suspense>
       </ErrorBoundary>
     );
@@ -669,6 +705,14 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         {connectionsOpen && (
           <ConnectionsDialog
             oauthResult={oauthResult}
+            beforeRedirect={(provider) =>
+              rememberConnectionReturn({
+                userId,
+                destination,
+                classId: selected?.id,
+                provider,
+              })
+            }
             onConnectionsChanged={() => setConnectionRevision((revision) => revision + 1)}
             onClose={() => {
               setConnectionsOpen(false);
@@ -893,6 +937,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           )
         ) : destination === 'music' ? (
           <MusicWorkspace
+            userId={userId}
             connectionRevision={connectionRevision}
             onOpenConnections={() => setConnectionsOpen(true)}
             onBrowsePlaylists={(provider, playlists) => setPlaylistBrowse({ provider, playlists })}
@@ -1532,12 +1577,14 @@ function ProviderConnectionsLoadState({
 }
 
 function MusicWorkspace({
+  userId,
   connectionRevision,
   onOpenConnections,
   onBrowsePlaylists,
   onBrowseLikes,
   onCreateClass,
 }: {
+  userId: string;
   connectionRevision: number;
   onOpenConnections: () => void;
   onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
@@ -1559,6 +1606,11 @@ function MusicWorkspace({
     likesLoading,
     likesError,
   } = useProviderBrowseState(connectionRevision);
+  const flow = useProviderConnect({
+    onConnected: retryConnections,
+    beforeRedirect: (provider) =>
+      rememberConnectionReturn({ userId, destination: 'music', provider }),
+  });
   const [selectedProvider, setSelectedProvider] = useState<Provider>(PROVIDER_ORDER[0]!);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
@@ -1635,7 +1687,7 @@ function MusicWorkspace({
     <section className="grid w-full min-w-0 gap-5 xl:grid-cols-[260px_minmax(0,1fr)] xl:items-start">
       <aside className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-4 xl:sticky xl:top-6">
         <p className="rf-eyebrow">Sources</p>
-        <div className="mt-3 flex min-w-0 gap-2 overflow-x-auto pb-1 xl:grid xl:overflow-visible xl:pb-0">
+        <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-3 xl:grid-cols-1">
           {PROVIDER_ORDER.map((provider) => {
             const connection = connections.find((row) => row.provider === provider);
             const connectionState = providerConnectionState(provider, connection, Date.now());
@@ -1645,12 +1697,15 @@ function MusicWorkspace({
               Date.now(),
               connectionsStatus === 'ready' ? 'verified' : 'unverified',
             );
+            if (likesError[provider] || playlistsError[provider]) {
+              truth.library = { state: 'unverified', label: 'Library unavailable · retry' };
+            }
             const selected = selectedProvider === provider;
             const statusMark = musicConnectionMark(connectionsStatus, connectionState);
             return (
               <article
                 key={provider}
-                className={`min-w-[236px] shrink-0 rounded-control border p-2 xl:min-w-0 ${
+                className={`min-w-0 rounded-control border p-2 ${
                   selected
                     ? 'border-interactive/50 bg-interactive/10'
                     : 'border-border-subtle bg-bg-base'
@@ -1660,7 +1715,10 @@ function MusicWorkspace({
                   type="button"
                   aria-label={`Browse ${providerLabel(provider)} catalog`}
                   aria-pressed={selected}
-                  onClick={() => setSelectedProvider(provider)}
+                  onClick={() => {
+                    if (flow.operation && flow.operation.provider !== provider) flow.cancel();
+                    setSelectedProvider(provider);
+                  }}
                   className="flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-control px-1 text-left rf-focus-ring"
                 >
                   <span className="shrink-0 font-ui text-sm font-semibold text-text-primary">
@@ -1673,6 +1731,36 @@ function MusicWorkspace({
                   />
                 </button>
                 <ProviderCapabilityLedger provider={provider} truth={truth} compact />
+                {(connectionState === 'disconnected' || connectionState === 'expired') && (
+                  <div className="mt-2">
+                    <ProviderConnectAction
+                      provider={provider}
+                      label={`${connectionState === 'expired' ? 'Reconnect' : 'Connect'} ${providerLabel(provider)}`}
+                      flow={flow}
+                    />
+                  </div>
+                )}
+                {connectionState === 'connected' && (
+                  <button
+                    type="button"
+                    onClick={onOpenConnections}
+                    disabled={
+                      !!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready'
+                    }
+                    className="mt-2 min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
+                  >
+                    Manage {providerLabel(provider)} connection
+                  </button>
+                )}
+                {(likesError[provider] || playlistsError[provider]) && (
+                  <button
+                    type="button"
+                    onClick={retryConnections}
+                    className="mt-2 min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
+                  >
+                    Retry {providerLabel(provider)} library
+                  </button>
+                )}
                 <div className="mt-1 flex flex-wrap gap-1">
                   {likes[provider]?.length ? (
                     <button
@@ -1723,7 +1811,8 @@ function MusicWorkspace({
         <button
           type="button"
           onClick={onOpenConnections}
-          className="mt-3 min-h-11 w-full rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring"
+          disabled={!!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready'}
+          className="mt-3 min-h-11 w-full rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring disabled:opacity-50"
         >
           Manage connections
         </button>

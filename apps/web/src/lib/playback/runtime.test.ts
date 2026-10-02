@@ -1,3 +1,5 @@
+import { SpotifyAdapter } from './spotify-adapter.js';
+import type { SpotifyPlayer } from '../spotify-playback.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Provider, RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
 import type { ConnectionLike } from './coordinator.js';
@@ -829,5 +831,288 @@ describe('RuntimePlaybackCoordinator liveness observation', () => {
     expect((created[0] as LivenessAdapter).livenessCalls).toBe(0);
     expect(vi.getTimerCount()).toBe(0);
     coordinator.destroy();
+  });
+});
+
+describe('music-led runtime authority', () => {
+  const owned: RuntimePlaybackCoordinator[] = [];
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    owned.splice(0).forEach((coordinator) => coordinator.destroy());
+    vi.useRealTimers();
+  });
+  function musicRun(entries = [makeEntry({})]) {
+    const created: FakeAdapter[] = [];
+    const positions: number[] = [];
+    let reading: import('./types.js').TransportReading = { positionMs: 0, state: 'playing' };
+    const read = vi.fn(async () => reading);
+    const coordinator = new RuntimePlaybackCoordinator(
+      makePayload(entries),
+      connections('soundcloud', 'apple_music'),
+      {
+        now: NOW,
+        adapters: {
+          apple_music: (events) => {
+            const adapter = new FakeAdapter('apple_music', events);
+            Object.assign(adapter, { getTransport: read });
+            created.push(adapter);
+            return adapter;
+          },
+          soundcloud: (events) => {
+            const adapter = new FakeAdapter('soundcloud', events);
+            Object.assign(adapter, { getTransport: read });
+            created.push(adapter);
+            return adapter;
+          },
+        },
+        onPosition: (ms) => positions.push(ms),
+      },
+    );
+    owned.push(coordinator);
+    return {
+      coordinator,
+      created,
+      positions,
+      read,
+      report: (value: typeof reading) => {
+        reading = value;
+      },
+    };
+  }
+  it('does not advance from play resolution, host ticks, or unchanged provider position', async () => {
+    const run = musicRun();
+    await run.coordinator.start();
+    await run.coordinator.tick(80_000);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(run.positions).toEqual([]);
+    expect(run.coordinator.getStatus().kind).toBe('buffering');
+    run.report({ positionMs: 2_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([2_000]);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(run.positions).toEqual([2_000]);
+  });
+  it('holds on unexpected pause, then reconciles actual position without host wall time', async () => {
+    const run = musicRun();
+    await run.coordinator.start();
+    run.report({ positionMs: 5_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    run.report({ positionMs: 15_000, state: 'paused' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([5_000]);
+    expect(run.coordinator.getStatus().kind).toBe('buffering');
+    vi.setSystemTime(Date.now() + 60_000);
+    run.report({ positionMs: 6_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([5_000, 6_000]);
+    expect(run.coordinator.getStatus().kind).toBe('playing');
+  });
+  it('uses clip-relative positions and stops at the saved window before a deliberate gap', async () => {
+    const run = musicRun([
+      makeEntry({ durationMs: 10_000, clipStartMs: 30_000 }),
+      makeEntry({ classTrackId: 'next', startOffsetMs: 15_000 }),
+    ]);
+    await run.coordinator.start();
+    run.report({ positionMs: 32_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([2_000]);
+    run.report({ positionMs: 41_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions.at(-1)).toBe(10_000);
+    expect(run.coordinator.getStatus()).toEqual({ kind: 'silence', nextIndex: 1, untilMs: 15_000 });
+    expect(run.created[0]!.calls).toContain('stop');
+    await run.coordinator.tick(15_000);
+    expect(run.created).toHaveLength(2);
+    expect(run.coordinator.getStatus().kind).toBe('buffering');
+  });
+  it('holds a SoundCloud to Apple Music transition until the next provider confirms progress', async () => {
+    const run = musicRun([
+      makeEntry({ durationMs: 10000 }),
+      makeEntry({ classTrackId: 'apple', providers: ['apple_music'], startOffsetMs: 10000 }),
+    ]);
+    await run.coordinator.start();
+    run.report({ positionMs: 10000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.created[0]!.calls).toContain('stop');
+    expect(run.created[1]!.provider).toBe('apple_music');
+    expect(run.coordinator.getStatus()).toMatchObject({
+      kind: 'buffering',
+      provider: 'apple_music',
+    });
+    expect(run.positions).toEqual([10000]);
+    run.report({ positionMs: 5000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([10000, 15000]);
+  });
+  it('holds unknown telemetry and surfaces a recoverable timeout', async () => {
+    const run = musicRun();
+    run.report({ positionMs: null, state: 'unknown' });
+    await run.coordinator.start();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(run.positions).toEqual([]);
+    expect(run.coordinator.getStatus().kind).toBe('error');
+    expect(run.created[0]!.calls).toContain('destroy');
+  });
+  it('keeps one position read in flight and rejects late data after a hung read', async () => {
+    const run = musicRun();
+    let finish!: (reading: import('./types.js').TransportReading) => void;
+    run.read.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await run.coordinator.start();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(run.read).toHaveBeenCalledTimes(1);
+    expect(run.coordinator.getStatus().kind).toBe('error');
+    finish({ positionMs: 90_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(run.positions).toEqual([]);
+  });
+  it('a newer provider Pause event wins over an in-flight playing snapshot', async () => {
+    const run = musicRun();
+    let finish!: (reading: import('./types.js').TransportReading) => void;
+    run.read.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await run.coordinator.start();
+    await vi.advanceTimersByTimeAsync(250);
+    run.created[0]!.events.onTransportState?.('paused');
+    finish({ positionMs: 8000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(run.positions).toEqual([]);
+    expect(run.coordinator.getStatus().kind).toBe('buffering');
+  });
+  it('holds early finish as a duration mismatch instead of running in silence', async () => {
+    const run = musicRun();
+    await run.coordinator.start();
+    run.report({ positionMs: 30_000, state: 'ended' });
+    run.created[0]!.events.onFinish?.();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(run.coordinator.getStatus().kind).toBe('error');
+    expect(run.positions).toEqual([]);
+  });
+  it('finishes from the provider endpoint even when the host loop did not tick', async () => {
+    const run = musicRun([makeEntry({ durationMs: 10_000 })]);
+    await run.coordinator.start();
+    run.report({ positionMs: 10_000, state: 'ended' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([10_000]);
+    expect(run.coordinator.getStatus().kind).toBe('ended');
+  });
+  it('ignores superseded reads and events after seeking to a new track', async () => {
+    const run = musicRun([
+      makeEntry({ durationMs: 10_000 }),
+      makeEntry({ classTrackId: 'next', startOffsetMs: 10_000 }),
+    ]);
+    let finish!: (reading: import('./types.js').TransportReading) => void;
+    run.read.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await run.coordinator.start();
+    await vi.advanceTimersByTimeAsync(250);
+    const old = run.created[0]!;
+    await run.coordinator.seek(10_000);
+    finish({ positionMs: 9_000, state: 'playing' });
+    old.events.onFinish?.();
+    old.events.onError?.({ message: 'stale error' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(run.positions).toEqual([]);
+    expect(run.coordinator.getStatus()).toMatchObject({ kind: 'buffering', index: 1 });
+  });
+  it('manual Pause blocks late progress and resume waits for fresh confirmation at the held position', async () => {
+    const run = musicRun();
+    await run.coordinator.start();
+    run.report({ positionMs: 5_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    await run.coordinator.pause();
+    run.report({ positionMs: 90_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(run.positions).toEqual([5_000]);
+    await run.coordinator.resume(5_000);
+    expect(run.created[1]!.calls).toContain('seek:5000');
+    expect(run.coordinator.getStatus().kind).toBe('buffering');
+  });
+  it('bounds preparation and destroys an adapter whose prepare never settles', async () => {
+    let adapter!: FakeAdapter;
+    const positions = vi.fn();
+    const coordinator = new RuntimePlaybackCoordinator(makePayload([makeEntry({})]), [], {
+      now: NOW,
+      adapters: {
+        soundcloud: (events) => {
+          adapter = new FakeAdapter('soundcloud', events);
+          adapter.deferPrepare = true;
+          return adapter;
+        },
+      },
+      onPosition: positions,
+    });
+    owned.push(coordinator);
+    const started = coordinator.start();
+    await vi.advanceTimersByTimeAsync(20_000);
+    await started;
+    expect(coordinator.getStatus().kind).toBe('error');
+    expect(adapter.calls).toContain('destroy');
+    adapter.finishPrepare();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(adapter.calls).not.toContain('play');
+    expect(positions).not.toHaveBeenCalled();
+  });
+});
+
+describe('real adapter boundary regression', () => {
+  it('holds the teaching clock when Spotify starts paused at zero without any progress', async () => {
+    vi.useFakeTimers();
+    let stateChanged!: (value: unknown) => void;
+    const snapshot = {
+      paused: true,
+      position: 0,
+      duration: 180000,
+      track_window: { current_track: { uri: 'spotify:track:spotify-id' } },
+    };
+    const player = {
+      addListener: (name: string, cb: (value: unknown) => void) => {
+        if (name === 'player_state_changed') stateChanged = cb;
+      },
+      removeListener: () => {},
+      pause: async () => {},
+      getCurrentState: async () => snapshot,
+    } as unknown as SpotifyPlayer;
+    const positions = vi.fn();
+    const coordinator = new RuntimePlaybackCoordinator(
+      makePayload([makeEntry({ providers: ['spotify'] })]),
+      connections('spotify'),
+      {
+        now: NOW,
+        onPosition: positions,
+        adapters: {
+          spotify: (events) =>
+            new SpotifyAdapter(events, {
+              getPlayback: async () => ({ player, deviceId: 'qa' }),
+              startTrack: async () => {},
+            }),
+        },
+      },
+    );
+    try {
+      await coordinator.start();
+      stateChanged(snapshot);
+      await vi.advanceTimersByTimeAsync(250);
+      expect(positions).not.toHaveBeenCalled();
+      expect(coordinator.getStatus().kind).toBe('buffering');
+      await vi.advanceTimersByTimeAsync(10000);
+      expect(positions).not.toHaveBeenCalled();
+      expect(coordinator.getStatus().kind).toBe('error');
+    } finally {
+      coordinator.destroy();
+      vi.useRealTimers();
+    }
   });
 });

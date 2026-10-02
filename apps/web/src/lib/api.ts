@@ -273,19 +273,20 @@ export const importTrack = (provider: Provider, providerTrackId: string) =>
 /** The caller's provider connections (token blobs stripped server-side). */
 export const listConnections = () => api<MusicConnectionView[]>('/providers/connections');
 /** Start a connection. Mock seam connects immediately; live returns an authorizeUrl. */
-export const connectProvider = (provider: Provider) =>
-  api<ConnectProviderResponse>(`/providers/${provider}/connect`, { method: 'POST' });
+export const connectProvider = (provider: Provider, signal?: AbortSignal) =>
+  api<ConnectProviderResponse>(`/providers/${provider}/connect`, { method: 'POST', signal });
 /** Disconnect — forgets tokens now; enqueues the 7-day metadata purge server-side. */
 export const disconnectProvider = (provider: Provider) =>
   api<void>(`/providers/${provider}/connection`, { method: 'DELETE' });
 /** The Apple Music developer token MusicKit JS needs to configure in the browser. */
-export const getAppleMusicConfig = () =>
-  api<AppleMusicClientConfig>('/providers/apple_music/config');
+export const getAppleMusicConfig = (signal?: AbortSignal) =>
+  api<AppleMusicClientConfig>('/providers/apple_music/config', { signal });
 /** Store the Music-User-Token MusicKit returned after the user authorized. */
-export const connectAppleMusic = (musicUserToken: string) =>
+export const connectAppleMusic = (musicUserToken: string, signal?: AbortSignal) =>
   api<void>('/providers/apple_music/connection', {
     method: 'POST',
     body: JSON.stringify({ musicUserToken }),
+    signal,
   });
 
 /**

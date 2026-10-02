@@ -300,6 +300,15 @@ web launch deferrals remain in [`web-launch-readiness.md`](./web-launch-readines
 cross-surface parity record remains in [`web-ios-parity.md`](./web-ios-parity.md), but it is not the
 current planning queue.
 
+**Music-led implementation planning (2026-09-30):** [D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30)
+records the owner's decision: music drives class creation and instruction until the instructor
+explicitly chooses otherwise. Real-iPhone recordings exposed connection friction and silent Apple
+Music preparation while teaching time advanced. The [phased workflow plan](./music-led-instructor-workflow-plan.md)
+proposes connection/playback reliability and honest readiness first, mobile teaching/editing clarity
+next, then Builder speed/rehearsal and timed exercise steps. Phase 1 implementation is authorized, starting with 1A;
+release remains separately gated. SPC-09 remains open; replacing it as the next implementation focus
+is approved for Phase 1. Connection recovery (1A), the music-authoritative Live clock (1B), and truthful preflight with explicit Apple browser authorization (1C) are implemented but not deployed. Real-device audible playback and interruption acceptance remain. Later phases await approval.
+
 **Class-building design direction:** The owner-approved
 [`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) sets the target for a
 simple run of show with optional precision editing and named timed exercise steps in rehearsal/Live.
