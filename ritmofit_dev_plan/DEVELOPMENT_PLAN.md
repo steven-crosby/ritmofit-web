@@ -347,10 +347,14 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-09-28, after the #473 deploy):** `main` and
-production serve application tip `70a733d`. Worker
-`18aa93dd-8695-4791-a6dd-f0e031e28c75` is at 100%, and the SPA entry
-`assets/index-vAXMRElW.js` appeared on eight consecutive cache-busted fetches. #473
+**Current `main` vs production (2026-10-02, after the #478 merge):** `main` is ahead of
+production. `main` carries music-led Phase 1 (`48bfd11`, #478), which is not deployed and
+has no real-device playback acceptance; do not deploy it without the owner's explicit go.
+The scenarios to run are in
+[`docs/audits/music-led-phase-1-acceptance/`](../docs/audits/music-led-phase-1-acceptance/README.md).
+Production still serves application tip `70a733d` (#473, deployed 2026-09-28): on
+2026-10-02 Worker `18aa93dd-8695-4791-a6dd-f0e031e28c75` was at 100% and the SPA entry
+`assets/index-vAXMRElW.js` appeared on three consecutive cache-busted fetches. #473
 drains empty `204` bodies in the web API client.
 Remote D1 has no pending migrations (latest local migration `0019`). #470 deployed
 the v2 Cycle/HIIT recipes; an authenticated production acceptance pass covered #468
