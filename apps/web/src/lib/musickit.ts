@@ -18,7 +18,7 @@ const MUSICKIT_SRC = 'https://js-cdn.music.apple.com/musickit/v3/musickit.js';
 
 /**
  * The slice of the MusicKit on the Web (v3) surface Ritmo Studio drives. Two callers
- * share it: the connect flow (`authorizeAppleMusic`) needs only `configure` +
+ * share it: the connect flow (`prepareAppleMusic`) needs `configure` +
  * `authorize`; the playback adapter (`playback/apple-music-adapter.ts`) also
  * drives the queue and transport. MusicKit is a page-level singleton
  * (`getInstance`), so every track's adapter remote-controls the same instance —
@@ -51,6 +51,7 @@ export interface MusicKitInstance {
    * from observation rather than treated as dead.
    */
   readonly currentPlaybackTime?: number;
+  readonly currentPlaybackDuration?: number;
   readonly playbackState?: number;
 }
 
@@ -118,37 +119,77 @@ export function loadMusicKit(): Promise<MusicKitGlobal> {
   if (loadPromise) return loadPromise;
 
   loadPromise = new Promise<MusicKitGlobal>((resolve, reject) => {
-    const settle = () => {
-      if (window.MusicKit) resolve(window.MusicKit);
-      else reject(new Error('Apple MusicKit failed to initialize.'));
-    };
-    // MusicKit v3 fires `musickitloaded` on document once its global is ready.
-    document.addEventListener('musickitloaded', settle, { once: true });
-
     const script = document.createElement('script');
+    const cleanup = () => {
+      clearTimeout(timer);
+      document.removeEventListener('musickitloaded', settle);
+      script.onerror = null;
+    };
+    const fail = (message: string) => {
+      cleanup();
+      script.remove();
+      loadPromise = null;
+      reject(new Error(message));
+    };
+    const settle = () => {
+      if (!window.MusicKit) return fail('Apple MusicKit failed to initialize.');
+      cleanup();
+      resolve(window.MusicKit);
+    };
+    document.addEventListener('musickitloaded', settle, { once: true });
     script.src = MUSICKIT_SRC;
     script.async = true;
-    script.onerror = () => {
-      loadPromise = null; // allow a retry after a transient load failure
-      reject(new Error('Could not load Apple MusicKit.'));
-    };
+    script.onerror = () => fail('Could not load Apple MusicKit. Try again.');
+    const timer = setTimeout(() => fail('Apple MusicKit did not load. Try again.'), 20_000);
     document.head.appendChild(script);
   });
   return loadPromise;
 }
 
-/**
- * Load + configure MusicKit and prompt the user to authorize, returning the
- * Music-User-Token. Rejects if the user cancels or the library can't load.
- */
-export async function authorizeAppleMusic(config: AppleMusicClientConfig): Promise<string> {
-  const MusicKit = await loadMusicKit();
-  const instance = await MusicKit.configure({
-    developerToken: config.developerToken,
-    app: { name: 'Ritmo Studio', build: '1.0.0' },
-    ...(config.storefront ? { storefrontId: config.storefront } : {}),
+let configuration: Promise<MusicKitInstance> | null = null;
+
+/** Keep the underlying SDK operation serialized even after a caller's UI deadline. */
+export async function configureMusicKit(
+  music: MusicKitGlobal,
+  config: AppleMusicClientConfig,
+): Promise<MusicKitInstance> {
+  if (!configuration) {
+    const existing = music.getInstance();
+    if (existing) return existing;
+    const pending = Promise.resolve().then(() =>
+      music.configure({
+        developerToken: config.developerToken,
+        app: { name: 'Ritmo Studio', build: '1.0.0' },
+        ...(config.storefront ? { storefrontId: config.storefront } : {}),
+      }),
+    );
+    configuration = pending;
+    void pending
+      .finally(() => {
+        if (configuration === pending) configuration = null;
+      })
+      .catch(() => {});
+  }
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<MusicKitInstance>((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            'Apple Music configuration is still pending. Retry after it finishes, or reload if it remains stuck.',
+          ),
+        ),
+      20_000,
+    );
   });
-  const token = await instance.authorize();
-  if (!token) throw new Error('Apple Music authorization was cancelled.');
-  return token;
+  try {
+    return await Promise.race([configuration, timeout]);
+  } finally {
+    clearTimeout(timer!);
+  }
+}
+
+/** Prepare without queuing music; consent belongs to a subsequent explicit tap. */
+export async function prepareAppleMusic(config: AppleMusicClientConfig): Promise<MusicKitInstance> {
+  return configureMusicKit(await loadMusicKit(), config);
 }

@@ -1,3 +1,4 @@
+import type { TransportReading } from './types.js';
 /**
  * Spotify playback adapter — wraps the official Web Playback SDK behind the
  * `PlaybackAdapter` contract. Spotify owns the audio stream, the Premium
@@ -23,6 +24,8 @@
 import type { RunPayloadTrackEntry } from '@ritmofit/shared';
 import {
   getSpotifyPlayback,
+  isSpotifyPlaybackActivated,
+  invalidateSpotifyActivation,
   startSpotifyTrack,
   type SpotifyPlayback,
   type SpotifyPlaybackHost,
@@ -48,6 +51,7 @@ const DEFAULT_START_TIMEOUT_MS = 20_000;
  * superseded adapter never silences (or reports errors for) the newer adapter's
  * track. Keyed by the player instance via a WeakMap so it never leaks.
  */
+const pendingStarts = new WeakSet<SpotifyPlayer>();
 const transportOwners = new WeakMap<SpotifyPlayer, SpotifyAdapter>();
 
 /** The Spotify track URI to play: prefer a stored `spotify:track:` uri, else build one. */
@@ -62,6 +66,7 @@ export interface SpotifyAdapterHost extends SpotifyPlaybackHost {
   getPlayback?: (host?: SpotifyPlaybackHost) => Promise<SpotifyPlayback>;
   startTrack?: typeof startSpotifyTrack;
   startTimeoutMs?: number;
+  requireActivation?: boolean;
 }
 
 export class SpotifyAdapter implements PlaybackAdapter {
@@ -73,22 +78,44 @@ export class SpotifyAdapter implements PlaybackAdapter {
   /** Position the next start() will seed via the Connect API; see seek(). */
   private cueMs = 0;
   private started = false;
+  private starting = false;
   private destroyed = false;
   private trackTitle = '';
   /** Finish detection: a track ends by transitioning from playing → paused@0. */
   private wasPlaying = false;
+  private lastPlayingPosition = 0;
+  private finishedPosition: number | null = null;
+  private autoplayBlocked = false;
 
   private readonly onStateChange = (state: SpotifyPlayerState | null): void => {
-    if (!this.started || !state) return;
+    if (!this.started || !this.player || transportOwners.get(this.player) !== this) return;
+    if (!state) {
+      this.events.onTransportState?.('unknown');
+      return;
+    }
+    if (state.track_window.current_track?.uri !== this.uri) {
+      this.events.onTransportState?.('unknown');
+      return;
+    }
+    this.events.onTransportState?.(state.paused ? 'paused' : 'playing');
     if (!state.paused) {
-      this.wasPlaying = true;
+      this.finishedPosition = null;
+      if (state.position > this.lastPlayingPosition) this.wasPlaying = true;
+      this.lastPlayingPosition = state.position;
       return;
     }
     // Paused at position 0 after having played = the single-uri track ended (we
-    // never queue a next track, so Spotify stops rather than advancing). Advisory:
-    // the class clock stays master, this just yields the one early-silence finish.
-    if (this.wasPlaying && state.position === 0) {
+    // never queue a next track). Retain SDK duration because the playhead resets;
+    // the coordinator compares this endpoint with the saved playback window.
+    if (
+      this.wasPlaying &&
+      state.position === 0 &&
+      Number.isFinite(state.duration) &&
+      state.duration > 0 &&
+      this.lastPlayingPosition >= state.duration - 1_000
+    ) {
       this.wasPlaying = false;
+      this.finishedPosition = state.duration;
       this.events.onFinish?.();
     }
   };
@@ -97,6 +124,13 @@ export class SpotifyAdapter implements PlaybackAdapter {
   };
   private readonly onAccountError = (): void => {
     this.surfaceError('Spotify playback requires an active Premium account.');
+  };
+  private readonly onAutoplayFailed = (): void => {
+    this.autoplayBlocked = true;
+    if (this.player) invalidateSpotifyActivation(this.player);
+    this.surfaceError(
+      'Spotify playback was blocked by this browser. Enable Spotify playback, then Retry.',
+    );
   };
   private readonly onPlaybackError = (): void => {
     this.surfaceError(`Spotify playback failed for "${this.trackTitle}".`);
@@ -114,6 +148,7 @@ export class SpotifyAdapter implements PlaybackAdapter {
    * rejects so preflight/start surfaces it instead of hanging the class.
    */
   async prepare(entry: RunPayloadTrackEntry, window: PlaybackWindow): Promise<PlaybackReady> {
+    if (this.starting) throw new Error('Spotify is still finishing a previous start request.');
     const ref = entry.providerRefs.find((candidate) => candidate.provider === 'spotify');
     if (!ref) {
       throw new Error(`"${entry.track.title}" has no Spotify reference.`);
@@ -126,9 +161,18 @@ export class SpotifyAdapter implements PlaybackAdapter {
     this.uri = spotifyTrackUri(ref);
     this.windowStartMs = window.startMs;
     this.cueMs = window.startMs;
+    this.lastPlayingPosition = window.startMs;
+    this.finishedPosition = null;
+    this.autoplayBlocked = false;
 
     const playback = await (this.host.getPlayback ?? getSpotifyPlayback)(this.host);
     if (this.destroyed) throw new Error('Spotify player was torn down while loading.');
+    if (pendingStarts.has(playback.player))
+      throw new Error(
+        'Spotify is still finishing a cancelled start request. Retry after it finishes, or reload.',
+      );
+    if (this.host.requireActivation && !isSpotifyPlaybackActivated(playback.player))
+      throw new Error('Enable Spotify playback in this browser before retrying.');
     this.player = playback.player;
     this.deviceId = playback.deviceId;
 
@@ -136,6 +180,7 @@ export class SpotifyAdapter implements PlaybackAdapter {
     this.player.addListener('authentication_error', this.onAuthError);
     this.player.addListener('account_error', this.onAccountError);
     this.player.addListener('playback_error', this.onPlaybackError);
+    this.player.addListener('autoplay_failed', this.onAutoplayFailed);
 
     return { provider: 'spotify', classTrackId: entry.classTrackId };
   }
@@ -149,14 +194,41 @@ export class SpotifyAdapter implements PlaybackAdapter {
     }
     // First play: select the track on our device at the clip position via the
     // Connect Web API (the SDK has no load-a-track method).
+    if (pendingStarts.has(player))
+      throw new Error('Spotify is still finishing a previous start request.');
+    this.starting = true;
+    pendingStarts.add(player);
+    transportOwners.set(player, this);
+    // Keep the lease until the underlying command settles, even if the UI times out.
+    let command: Promise<void>;
+    try {
+      command = (this.host.startTrack ?? startSpotifyTrack)({
+        deviceId: this.deviceId,
+        uri: this.uri,
+        positionMs: this.cueMs,
+        host: this.host,
+      });
+    } catch (cause) {
+      this.starting = false;
+      pendingStarts.delete(player);
+      if (transportOwners.get(player) === this) transportOwners.delete(player);
+      throw cause;
+    }
+    const start = command.finally(async () => {
+      if (this.destroyed && transportOwners.get(player) === this) {
+        try {
+          await player.pause();
+        } catch {
+          /* Provider teardown is best-effort. */
+        }
+        if (transportOwners.get(player) === this) transportOwners.delete(player);
+      }
+      pendingStarts.delete(player);
+      this.starting = false;
+    });
     try {
       await this.withTimeout(
-        (this.host.startTrack ?? startSpotifyTrack)({
-          deviceId: this.deviceId,
-          uri: this.uri,
-          positionMs: this.cueMs,
-          host: this.host,
-        }),
+        start,
         this.host.startTimeoutMs ?? DEFAULT_START_TIMEOUT_MS,
         `The Spotify player timed out starting "${this.trackTitle}".`,
       );
@@ -166,11 +238,13 @@ export class SpotifyAdapter implements PlaybackAdapter {
       }
       throw err;
     }
-    // Claim the shared transport: only this adapter may now stop it or report its
-    // runtime errors, until stop/teardown.
-    transportOwners.set(player, this);
+    // A fulfilled start request permits polling; it is not playback-progress evidence.
+    if (this.destroyed) throw new Error('Spotify start was cancelled.');
+    if (this.autoplayBlocked)
+      throw new Error(
+        'Spotify playback was blocked by this browser. Enable Spotify playback, then Retry.',
+      );
     this.started = true;
-    this.wasPlaying = true;
   }
 
   async pause(): Promise<void> {
@@ -189,6 +263,21 @@ export class SpotifyAdapter implements PlaybackAdapter {
    * device took over). Reject so the observer records that as unresponsive
    * rather than exempting a real loss.
    */
+  async getTransport(): Promise<TransportReading> {
+    if (
+      this.finishedPosition != null &&
+      this.player &&
+      transportOwners.get(this.player) === this &&
+      !this.destroyed
+    ) {
+      return { positionMs: this.finishedPosition, state: 'ended' };
+    }
+    const reading = await this.getLiveness();
+    return reading
+      ? { positionMs: reading.positionMs, state: reading.playing ? 'playing' : 'paused' }
+      : { positionMs: null, state: 'unknown' };
+  }
+
   async getLiveness(): Promise<LivenessReading | null> {
     if (this.destroyed || !this.started || !this.player) return null;
     const player = this.player;
@@ -201,6 +290,10 @@ export class SpotifyAdapter implements PlaybackAdapter {
     }
     if (state.track_window.current_track?.uri !== this.uri) {
       throw new Error('Spotify Web Playback SDK is no longer playing the class track.');
+    }
+    if (!state.paused) {
+      if (state.position > this.lastPlayingPosition) this.wasPlaying = true;
+      this.lastPlayingPosition = state.position;
     }
     return { positionMs: state.position, playing: !state.paused };
   }
@@ -236,8 +329,8 @@ export class SpotifyAdapter implements PlaybackAdapter {
       // adapter must not stop the newer adapter's track. Never disconnect the
       // singleton device; the next track reuses it.
       if (transportOwners.get(player) === this) {
-        transportOwners.delete(player);
-        void player.pause();
+        if (!pendingStarts.has(player)) transportOwners.delete(player);
+        void player.pause().catch(() => {});
       }
     }
     this.player = null;
@@ -271,6 +364,7 @@ export class SpotifyAdapter implements PlaybackAdapter {
       player.removeListener('authentication_error', this.onAuthError as (p?: unknown) => void);
       player.removeListener('account_error', this.onAccountError as (p?: unknown) => void);
       player.removeListener('playback_error', this.onPlaybackError as (p?: unknown) => void);
+      player.removeListener('autoplay_failed', this.onAutoplayFailed as (p?: unknown) => void);
     } catch {
       // Best-effort — a superseding start/prepare overrides any stray listener.
     }

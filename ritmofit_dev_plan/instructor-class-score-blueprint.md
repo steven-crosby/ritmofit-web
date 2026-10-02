@@ -10,6 +10,17 @@ An instructor can build a polished, precisely timed class and teach from it live
 
 Steven's 20-minute Apple Fitness+ workout is a benchmark for the **instructor's run of show**: named exercises, an Easy/Hard state, a countdown, music alignment, and continuous spoken coaching. Ritmo's scope is authoring, rehearsal, and a glanceable Live teaching surface. This brief does not call for video capture, editing, distribution, or a consumer video player. The instructor supplies the coaching; Ritmo helps plan and cue it.
 
+## Music-led authority
+
+<!-- note (Codex, 2026-09-30): Applies approved D24 and links the phased roadmap; does not authorize implementation. -->
+
+[D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30)
+sets the authority: music drives creation and instruction until the instructor explicitly chooses
+otherwise. In music-backed rehearsal/Live, preparation, authorization waits, stalls, and failures hold
+teaching position; Continue without music explicitly selects the prompter clock. Intentional timeline
+gaps remain scheduled silence. See the [phased implementation plan](./music-led-instructor-workflow-plan.md)
+for connection/playback reliability first, mobile clarity next, then rehearsal and timed-step contracts.
+
 ## The editing grammar
 
 | Class element | Instructor meaning | Precision when needed |

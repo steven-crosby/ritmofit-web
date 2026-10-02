@@ -57,6 +57,7 @@ class FakeInstance implements MusicKitInstance {
   /** Transport status for liveness reads; undefined = MusicKit has not set it. */
   currentPlaybackTime: number | undefined = undefined;
   playbackState: number | undefined = undefined;
+  playBehavior: () => Promise<void> = () => Promise.resolve();
   setQueueBehavior: () => Promise<unknown> = () => Promise.resolve();
   authorizeBehavior: () => Promise<string> = () => Promise.resolve('music-user-token');
   private listeners = new Map<string, Array<(event: MusicKitPlaybackEvent) => void>>();
@@ -75,7 +76,7 @@ class FakeInstance implements MusicKitInstance {
   }
   play(): Promise<void> {
     this.calls.push('play');
-    return Promise.resolve();
+    return this.playBehavior();
   }
   pause(): Promise<void> {
     this.calls.push('pause');
@@ -419,6 +420,19 @@ describe('AppleMusicAdapter', () => {
 });
 
 describe('AppleMusicAdapter getLiveness', () => {
+  it('normalizes Apple pause and the source endpoint without treating reset position as progress', async () => {
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    instance.currentPlaybackTime = 42;
+    instance.playbackState = STATES.paused;
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 42000, state: 'paused' });
+    Object.assign(instance, { currentPlaybackDuration: 180 });
+    instance.currentPlaybackTime = 0;
+    instance.playbackState = STATES.ended;
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 180000, state: 'ended' });
+    adapter.destroy();
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: null, state: 'unknown' });
+  });
   async function playing(instance: FakeInstance) {
     const { adapter } = makeAdapter(instance);
     await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 });
@@ -469,5 +483,53 @@ describe('AppleMusicAdapter getLiveness', () => {
     const second = await playing(instance);
     await expect(first.getLiveness()).resolves.toBeNull();
     await expect(second.getLiveness()).resolves.not.toBeNull();
+  });
+});
+
+describe('Live preauthorization', () => {
+  it('fails closed without opening consent or queuing audio when browser authorization expires', async () => {
+    const instance = new FakeInstance(false);
+    const music = { getInstance: () => instance } as unknown as MusicKitGlobal;
+    const adapter = new AppleMusicAdapter(
+      {},
+      {
+        loadMusicKit: async () => music,
+        requirePreauthorization: true,
+      },
+    );
+    await expect(adapter.prepare(makeEntry(), { startMs: 0, endMs: 180_000 })).rejects.toThrow(
+      'needs browser authorization',
+    );
+    expect(instance.calls).toEqual([]);
+  });
+});
+
+describe('adversarial Apple play cancellation', () => {
+  it('stops a cancelled late play and refuses a replacement until it settles', async () => {
+    const instance = new FakeInstance();
+    const pending = deferred<void>();
+    instance.playBehavior = () => pending.promise;
+    const { music } = makeMusicKit(instance, { preconfigured: true });
+    const host = { loadMusicKit: async () => music };
+    const adapter = new AppleMusicAdapter({}, host);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+    const play = adapter.play();
+    const cancelled = expect(play).rejects.toThrow('cancelled');
+    adapter.destroy();
+    expect(instance.calls).toContain('stop');
+    await expect(adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 })).rejects.toThrow(
+      'still finishing',
+    );
+    const replacement = new AppleMusicAdapter({}, host);
+    await expect(replacement.prepare(makeEntry(), { startMs: 0, endMs: 180000 })).rejects.toThrow(
+      'still finishing',
+    );
+    pending.resolve();
+    await cancelled;
+    expect(instance.calls.filter((call) => call === 'stop')).toHaveLength(2);
+    instance.playBehavior = async () => {};
+    await replacement.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+    await replacement.play();
+    replacement.destroy();
   });
 });

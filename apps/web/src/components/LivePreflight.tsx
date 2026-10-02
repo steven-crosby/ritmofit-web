@@ -1,17 +1,5 @@
-/**
- * The playback preflight screen shown before class start (provider-playback
- * plan: "Live Mode is hands-free after start"). Every track is resolved to a
- * connected, playable provider *before* the instructor is on stage; failures
- * name the exact track and the fix, so nothing surprises them mid-class.
- *
- * Verdicts are glyph + label (never color alone, design system 05/11): ✓ plays
- * on a named provider, ⊘ cannot — with an inline recovery hint. Unplayable
- * verdicts use the caution channel (pre-class and fixable, unlike a runtime
- * playback failure, which is a danger-channel alert in the transport). Running
- * the prompter without music stays available: it is the existing capability,
- * not a provider-handoff fallback.
- */
-import { useState } from 'react';
+/** Static track checks and browser consent precede Live; neither proves audible playback. */
+import { type ReactNode } from 'react';
 import { providerLabel } from '../lib/providers.js';
 import type {
   PreflightResult,
@@ -56,7 +44,7 @@ function Verdict({ result }: { result: PreflightTrackResult }) {
         <span aria-hidden className="text-state-positive">
           ✓
         </span>
-        Plays on {providerLabel(result.selection.provider)}
+        Selected: {providerLabel(result.selection.provider)}
       </span>
     );
   }
@@ -79,9 +67,13 @@ export function LivePreflight({
   onManageConnections,
   onStart,
   onRunWithoutMusic,
+  browserAuthorizationReady = true,
+  browserAuthorization,
 }: {
   /** Null while the provider connections are still loading. */
   preflight: PreflightResult | null;
+  browserAuthorizationReady?: boolean;
+  browserAuthorization?: ReactNode;
   /** Connections fetch failure — playback can't be verified, prompter still can run. */
   connectionsError: string | null;
   onRetryConnections: () => void;
@@ -93,16 +85,6 @@ export function LivePreflight({
   onRunWithoutMusic: () => void;
 }) {
   const unplayableCount = preflight?.unplayable.length ?? 0;
-  // Keep the trigger mounted after an in-dialog fix makes preflight pass so the
-  // dialog can return keyboard focus to the control that opened it.
-  const [connectionsVisited, setConnectionsVisited] = useState(false);
-  const hasConnectionFix = preflight?.unplayable.some(
-    (result) =>
-      result.selection.status === 'unplayable' &&
-      (result.selection.reason === 'no_connected_provider' ||
-        result.selection.reason === 'playback_reauth_required'),
-  );
-  const canManageConnections = connectionsVisited || hasConnectionFix;
   const trackCount = preflight?.tracks.length ?? 0;
   const passingCount = trackCount - unplayableCount;
   const playableTracks = preflight?.tracks.filter(
@@ -121,18 +103,20 @@ export function LivePreflight({
     : preflight == null
       ? {
           label: 'Checking readiness',
-          detail: 'Verifying every track against its connected music provider.',
+          detail: 'Checking stored connections, provider links, and track durations.',
           tone: 'text-text-secondary',
         }
       : preflight.ok
         ? {
-            label: 'Live ready',
-            detail: `All ${trackCount} ${trackCount === 1 ? 'track can' : 'tracks can'} play hands-free.`,
-            tone: 'text-state-positive',
+            label: browserAuthorizationReady
+              ? 'Track checks passed'
+              : 'Browser authorization needed',
+            detail: `Provider links and durations checked for ${trackCount} ${trackCount === 1 ? 'track' : 'tracks'}. Playback availability and audible output are unverified.`,
+            tone: browserAuthorizationReady ? 'text-state-positive' : 'text-state-caution',
           }
         : {
             label: 'Blocked',
-            detail: `${unplayableCount} ${unplayableCount === 1 ? 'track needs' : 'tracks need'} a fix before hands-free playback.`,
+            detail: `${unplayableCount} ${unplayableCount === 1 ? 'track needs' : 'tracks need'} a fix before starting with music.`,
             tone: 'text-state-caution',
           };
   return (
@@ -140,7 +124,7 @@ export function LivePreflight({
       <section className="rounded-card border border-border-subtle bg-bg-raised/70 p-5 sm:p-6">
         <StatusLabel
           kind={
-            connectionsError || (preflight != null && !preflight.ok)
+            connectionsError || (preflight != null && (!preflight.ok || !browserAuthorizationReady))
               ? 'unavailable'
               : preflight == null
                 ? 'loading'
@@ -158,7 +142,7 @@ export function LivePreflight({
             >
               {preflight == null
                 ? verdict.label
-                : `${passingCount} ${passingCount === 1 ? 'track ready' : 'tracks ready'} · ${unplayableCount} ${unplayableCount === 1 ? 'needs a decision' : 'need a decision'}`}
+                : `${passingCount} ${passingCount === 1 ? 'track checked' : 'tracks checked'} · ${unplayableCount} ${unplayableCount === 1 ? 'needs a decision' : 'need a decision'}`}
             </h2>
             <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
               {verdict.detail}
@@ -172,41 +156,24 @@ export function LivePreflight({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            {preflight?.ok ? (
-              <>
-                <button
-                  className="min-h-11 rounded-control rf-btn-primary px-6 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill"
-                  onClick={onStart}
-                >
-                  Start class
-                </button>
-                <button
-                  className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
-                  onClick={onRunWithoutMusic}
-                >
-                  Run without music
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  className="min-h-11 rounded-control rf-btn-primary px-6 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill"
-                  onClick={onRunWithoutMusic}
-                >
-                  Run without music
-                </button>
-                <button
-                  className={`min-h-11 rounded-control border border-border-strong px-4 py-2 font-ui text-sm font-semibold text-text-secondary rf-focus-ring sm:rounded-pill ${DISABLED_CONTROL_CLASS}`}
-                  onClick={onStart}
-                  disabled
-                >
-                  Start class
-                </button>
-              </>
-            )}
+            <button
+              className={`min-h-11 rounded-control px-6 py-2 font-ui font-semibold rf-focus-ring sm:rounded-pill ${DISABLED_CONTROL_CLASS} ${preflight?.ok && !connectionsError && browserAuthorizationReady ? 'rf-btn-primary text-text-on-accent' : 'border border-border-strong text-text-secondary'}`}
+              onClick={onStart}
+              disabled={!preflight?.ok || !!connectionsError || !browserAuthorizationReady}
+            >
+              Start class
+            </button>
+            <button
+              className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
+              onClick={onRunWithoutMusic}
+            >
+              Run without music
+            </button>
           </div>
         </div>
       </section>
+
+      {browserAuthorization}
 
       {connectionsError ? (
         <RecoveryState
@@ -231,7 +198,10 @@ export function LivePreflight({
         </p>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2" role="list" aria-label="Track playback check">
-          <PreflightGroup title="Playback ready" results={playableTracks ?? []} />
+          <PreflightGroup
+            title="Provider links and durations checked"
+            results={playableTracks ?? []}
+          />
           <PreflightGroup
             title="Fix or choose prompter-only"
             results={unplayableTracks ?? []}
@@ -240,29 +210,35 @@ export function LivePreflight({
         </div>
       )}
 
-      {preflight != null && passingCount > 0 && !preflight.ok && (
-        <p className="px-1 font-ui text-xs text-text-tertiary">
-          {passingCount} {passingCount === 1 ? 'track passes' : 'tracks pass'} playback checks.
+      {preflight?.ok && (
+        <p className="px-1 font-ui text-sm leading-6 text-text-secondary">
+          Start prepares the first track. The teaching clock waits for confirmed playback progress.
+          Later tracks may still need recovery. Check your volume and audio output when music
+          starts. Browser playback permission and each track’s availability may still require
+          recovery when playback starts.
         </p>
       )}
 
-      {canManageConnections && (
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
-            onClick={() => {
-              setConnectionsVisited(true);
-              onManageConnections();
-            }}
-          >
-            Manage connections
-          </button>
-        </div>
+      {preflight != null && passingCount > 0 && !preflight.ok && (
+        <p className="px-1 font-ui text-xs text-text-tertiary">
+          {passingCount} {passingCount === 1 ? 'track passes' : 'tracks pass'} track checks.
+        </p>
       )}
-      {canManageConnections && (
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
+          onClick={() => {
+            onManageConnections();
+          }}
+        >
+          Manage connections
+        </button>
+      </div>
+      {preflight != null && (
         <p className="font-ui text-xs text-text-tertiary">
           Apple Music connects here without leaving preflight. Spotify and SoundCloud authorization
-          open a provider page; when you return, reopen this class in Live.
+          open a provider page; returning restores this class’s preflight without starting playback.
         </p>
       )}
     </div>

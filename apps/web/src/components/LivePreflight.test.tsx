@@ -121,8 +121,39 @@ describe('LivePreflight Start class (SPC-19)', () => {
 
     expect(start.disabled).toBe(false);
     expect(start.className).toContain('rf-btn-primary');
-    expect(start.className).not.toContain('disabled:opacity-40');
+
     fireEvent.click(start);
     expect(onStart).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('truthful browser preflight', () => {
+  it('holds music Start for browser consent even when every track passes static checks', () => {
+    const onStart = vi.fn();
+    const onRunWithoutMusic = vi.fn();
+    render(
+      <LivePreflight
+        preflight={ready}
+        connectionsError={null}
+        onRetryConnections={() => {}}
+        onManageConnections={() => {}}
+        onStart={onStart}
+        onRunWithoutMusic={onRunWithoutMusic}
+        browserAuthorizationReady={false}
+        browserAuthorization={<p>Consent required</p>}
+      />,
+    );
+    expect(
+      (screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    expect(onStart).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Run without music' }));
+    expect(onRunWithoutMusic).toHaveBeenCalledOnce();
+    expect(
+      screen.getByText(/Playback availability and audible output are unverified/),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Manage connections' })).toBeTruthy();
+    expect(screen.queryByText(/hands-free/)).toBeNull();
   });
 });

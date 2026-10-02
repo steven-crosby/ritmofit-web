@@ -60,6 +60,8 @@ export interface PlaybackAdapter {
    *                      strongest silent-death signal we get
    */
   getLiveness?(): Promise<LivenessReading | null>;
+  /** Operational transport truth; unknown never permits teaching-time advance. */
+  getTransport?(): Promise<TransportReading>;
 }
 
 /**
@@ -67,16 +69,20 @@ export interface PlaybackAdapter {
  * (same frame as `seek`), and `playing` is the provider's own belief about
  * whether audio is running — not ours.
  */
+export type TransportState = 'playing' | 'paused' | 'buffering' | 'ended' | 'unknown';
+export interface TransportReading {
+  positionMs: number | null;
+  state: TransportState;
+}
+
 export interface LivenessReading {
   positionMs: number;
   playing: boolean;
 }
 
 /**
- * Events an adapter pushes back up to the coordinator. The class clock stays
- * the master timeline, so these are advisory: `finish` means the provider
- * stream ended before our window did (stale duration, region-shortened track),
- * which the coordinator treats as early silence — not as a timeline jump.
+ * Provider events are scoped to one adapter job. State events hold teaching
+ * immediately; FINISH requires provider endpoint evidence before advancing.
  */
 export interface AdapterEvents {
   onFinish?(): void;
@@ -90,6 +96,7 @@ export interface AdapterEvents {
    * (→ playing) or rejecting (→ recoverable error, incl. the consent timeout).
    */
   onAwaitingAuthorization?(): void;
+  onTransportState?(state: TransportState): void;
 }
 
 /**

@@ -387,6 +387,14 @@ class AnsweringWidget extends FakeWidget {
 }
 
 describe('SoundCloudAdapter getLiveness', () => {
+  it('normalizes a finished widget from its reported duration rather than its reset playhead', async () => {
+    const widget = new AnsweringWidget();
+    Object.assign(widget, { getDuration: (callback: (ms: number) => void) => callback(175000) });
+    const { adapter } = await prepared(widget);
+    widget.emit('finish');
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 175000, state: 'ended' });
+    adapter.destroy();
+  });
   async function prepared(widget?: FakeWidget) {
     const widgets: FakeWidget[] = [];
     const construct = (iframe: HTMLIFrameElement) => {

@@ -561,6 +561,38 @@ The applying prompt pack is [`../agent-prompts/instructor-ux/`](../agent-prompts
 
 ---
 
+## D24 — Music drives creation and instruction until the instructor chooses otherwise **[Resolved 2026-09-30]**
+
+<!-- note (Codex, 2026-09-30): Records Steven's explicit product decision and clock/override approval. -->
+
+**Decision:** Music drives class creation and instruction until the instructor explicitly chooses
+otherwise. Provider libraries and songs are the creative substrate. The assembled music timeline
+positions teaching events; planned teaching duration remains an independent intention. Show mismatches
+rather than silently retiming plans, songs, or choreography.
+
+**Live authority:** While using in-app music, actual provider playback drives teaching progression.
+Preparation, authorization waits, buffering, stalls, and playback failure hold the teaching position.
+Do not advance the class through unavailable music or silently switch to a virtual clock. The
+instructor may explicitly choose **Continue without music** (or **Run without music** before start),
+which uses the prompter's own clock. Deliberately authored gaps retain their explicit silence/countdown
+semantics; unexpected silence is not an authored gap.
+
+**Truth and recovery:** Stored connection, catalog/library access, current-browser playback
+authorization, and actual transport are separate capabilities. Preflight must not promise hands-free
+playback from connection metadata alone. Preserve position and expose recovery where the instructor
+can act; the instructor owns retry, skip, and the choice to abandon music.
+
+**Refines:** D19/D21 and the earlier host-clock-master implementation posture. Ritmo still owns the
+score, playback windows, and choreography; providers own audio and transport. This is approved product
+canon, not a claim that current code implements it. The existing observational liveness probe does not
+become an alerting controller merely because this decision exists.
+
+**Implementation:** [Music-led instructor workflow plan](./music-led-instructor-workflow-plan.md).
+Official authorized playback only, existing music constraints, D20 community deferrals, and separate
+implementation/release approvals remain in effect.
+
+---
+
 ## Deferred from M1
 
 - **Segments / class sections.** *(Deferred from M1; **shipped later**.)* In M1 segments were a design

@@ -1,3 +1,4 @@
+import type { TransportReading } from './types.js';
 /**
  * SoundCloud playback adapter — wraps the official SoundCloud Widget API
  * (`https://w.soundcloud.com/player/api.js`) behind the `PlaybackAdapter`
@@ -48,6 +49,7 @@ export interface SoundCloudWidget {
    * widget build may not provide them — an adapter that cannot read position is
    * exempt from liveness observation, not broken.
    */
+  getDuration?(callback: (durationMs: number) => void): void;
   getPosition?(callback: (positionMs: number) => void): void;
   isPaused?(callback: (paused: boolean) => void): void;
 }
@@ -144,6 +146,7 @@ export class SoundCloudAdapter implements PlaybackAdapter {
   readonly provider = 'soundcloud' as const;
   private iframe: HTMLIFrameElement | null = null;
   private widget: SoundCloudWidget | null = null;
+  private finished = false;
   private eventNames: SoundCloudWidgetApi['Events'] | null = null;
   private windowStartMs = 0;
   private trackTitle = '';
@@ -221,7 +224,12 @@ export class SoundCloudAdapter implements PlaybackAdapter {
         clearTimeout(timeout);
         resolve();
       });
-      widget.bind(api.Events.PLAY, () => this.resolvePendingPlay());
+      widget.bind(api.Events.PLAY, () => {
+        this.finished = false;
+        this.resolvePendingPlay();
+        this.events.onTransportState?.('playing');
+      });
+      widget.bind(api.Events.PAUSE, () => this.events.onTransportState?.('paused'));
       // One ERROR listener for the widget's whole life: a load-phase error
       // rejects prepare; an error while play() awaits acknowledgement rejects
       // that command; a later playback-phase error flows to the coordinator.
@@ -242,7 +250,10 @@ export class SoundCloudAdapter implements PlaybackAdapter {
           message: `SoundCloud playback failed for "${entry.track.title}".`,
         });
       });
-      widget.bind(api.Events.FINISH, () => this.events.onFinish?.());
+      widget.bind(api.Events.FINISH, () => {
+        this.finished = true;
+        this.events.onFinish?.();
+      });
     });
 
     if (this.destroyed) throw new Error('SoundCloud player was torn down while loading.');
@@ -302,6 +313,20 @@ export class SoundCloudAdapter implements PlaybackAdapter {
    * it. The tradeoff is real and accepted: a pause-and-resume entirely between
    * two polls stays invisible. This exists to catch sustained death, not blips.
    */
+  async getTransport(): Promise<TransportReading> {
+    const reading = await this.getLiveness();
+    if (!reading) return { state: 'unknown', positionMs: null };
+    const duration = this.finished && this.widget?.getDuration;
+    const positionMs = duration
+      ? await this.askWidget<number>(
+          duration.bind(this.widget),
+          this.host.livenessTimeoutMs ?? DEFAULT_LIVENESS_TIMEOUT_MS,
+          'its duration',
+        )
+      : reading.positionMs;
+    return { positionMs, state: this.finished ? 'ended' : reading.playing ? 'playing' : 'paused' };
+  }
+
   async getLiveness(): Promise<LivenessReading | null> {
     const widget = this.widget;
     if (!widget || this.destroyed) return null;

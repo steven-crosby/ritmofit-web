@@ -12,6 +12,17 @@ function fakeNow() {
 }
 
 describe('createTrailingThrottle', () => {
+  it('cancels a pending seek without issuing another provider command', () => {
+    const clock = fakeNow();
+    const fn = vi.fn();
+    const throttle = createTrailingThrottle(fn, 200, clock.now);
+    throttle.call(1);
+    clock.advance(10);
+    throttle.call(2);
+    throttle.cancel();
+    vi.advanceTimersByTime(1000);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
   it('fires the first call immediately (leading edge, quiet window)', () => {
     const clock = fakeNow();
     const fn = vi.fn();

@@ -9,9 +9,12 @@
  * registry, so the two surfaces never drift on which providers are playable.
  */
 import type { Provider } from '@ritmofit/shared';
-import { appleMusicAdapterFactory } from './apple-music-adapter.js';
+import {
+  appleMusicAdapterFactory,
+  preauthorizedAppleMusicAdapterFactory,
+} from './apple-music-adapter.js';
 import { soundcloudAdapterFactory } from './soundcloud-adapter.js';
-import { spotifyAdapterFactory } from './spotify-adapter.js';
+import { SpotifyAdapter, spotifyAdapterFactory } from './spotify-adapter.js';
 import type { AdapterRegistry } from './types.js';
 
 export const PLAYBACK_ADAPTERS: AdapterRegistry = {
@@ -26,3 +29,10 @@ export const PLAYBACK_ADAPTERS: AdapterRegistry = {
  * playback candidate iff it has an adapter here.
  */
 export const PLAYBACK_ADAPTER_PROVIDERS = Object.keys(PLAYBACK_ADAPTERS) as Provider[];
+
+/** Same deterministic providers, with Apple consent completed before Live starts. */
+export const LIVE_PLAYBACK_ADAPTERS: AdapterRegistry = {
+  ...PLAYBACK_ADAPTERS,
+  apple_music: preauthorizedAppleMusicAdapterFactory,
+  spotify: (events) => new SpotifyAdapter(events, { requireActivation: true }),
+};

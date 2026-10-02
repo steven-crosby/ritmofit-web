@@ -1,3 +1,4 @@
+import { getSpotifyPlayback } from '../lib/spotify-playback.js';
 // @vitest-environment jsdom
 import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,7 +10,7 @@ import {
   getAppleMusicConfig,
   listConnections,
 } from '../lib/api.js';
-import { authorizeAppleMusic } from '../lib/musickit.js';
+import { prepareAppleMusic } from '../lib/musickit.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
 import type { PlaybackAdapter } from '../lib/playback/types.js';
 import {
@@ -30,7 +31,11 @@ vi.mock('../lib/api.js', () => ({
   connectAppleMusic: vi.fn(),
 }));
 vi.mock('../lib/musickit.js', () => ({
-  authorizeAppleMusic: vi.fn(),
+  prepareAppleMusic: vi.fn(),
+}));
+vi.mock('../lib/spotify-playback.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/spotify-playback.js')>()),
+  getSpotifyPlayback: vi.fn(),
 }));
 vi.mock('../lib/playback/soundcloud-adapter.js', () => ({
   soundcloudAdapterFactory: vi.fn(),
@@ -121,13 +126,19 @@ function deferred<T>() {
 
 /** A playback adapter whose prepare resolves immediately (widget stubbed out). */
 function workingAdapter(): PlaybackAdapter {
+  let positionMs = 0;
   return {
     provider: 'soundcloud',
-    prepare: (entry) =>
-      Promise.resolve({ provider: 'soundcloud' as const, classTrackId: entry.classTrackId }),
+    prepare: (entry, window) => {
+      positionMs = window.startMs;
+      return Promise.resolve({ provider: 'soundcloud' as const, classTrackId: entry.classTrackId });
+    },
+    getTransport: async () => ({ positionMs: ++positionMs, state: 'playing' }),
     play: () => Promise.resolve(),
     pause: () => Promise.resolve(),
-    seek: () => Promise.resolve(),
+    seek: async (ms) => {
+      positionMs = ms;
+    },
     stop: () => Promise.resolve(),
     destroy: () => {},
   };
@@ -138,7 +149,12 @@ beforeEach(() => {
   vi.mocked(getAppleMusicConfig)
     .mockReset()
     .mockResolvedValue({ developerToken: 'developer-token', storefront: null });
-  vi.mocked(authorizeAppleMusic).mockReset().mockResolvedValue('music-user-token');
+  vi.mocked(prepareAppleMusic)
+    .mockReset()
+    .mockResolvedValue({
+      isAuthorized: true,
+      authorize: vi.fn().mockResolvedValue('music-user-token'),
+    } as unknown as Awaited<ReturnType<typeof prepareAppleMusic>>);
   vi.mocked(connectAppleMusic).mockReset().mockResolvedValue(undefined);
   vi.mocked(disconnectProvider).mockReset().mockResolvedValue(undefined);
   vi.mocked(soundcloudAdapterFactory)
@@ -160,6 +176,23 @@ async function renderLive(p: RunPayload = payload) {
 }
 
 describe('LiveMode preflight', () => {
+  it('shows a returned connection failure at preflight without starting playback', async () => {
+    const dismissed = vi.fn();
+    render(
+      <LiveMode
+        payload={payload}
+        onExit={() => {}}
+        connectionResult={{ error: 'access_denied' }}
+        onConnectionResultDismissed={dismissed}
+      />,
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Music connections' });
+    expect(await within(dialog).findByText('Connection failed: access denied.')).toBeTruthy();
+    expect(soundcloudAdapterFactory).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
+    expect(dismissed).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
+  });
   it('lists per-track verdicts and blocks hands-free start when a track cannot play', async () => {
     // Apple Music needs an authorized user; with no connection this track can't
     // play (unlike SoundCloud, whose public Widget needs no connection).
@@ -180,9 +213,9 @@ describe('LiveMode preflight', () => {
     expect(within(list).getByText('No connected provider can play this')).toBeTruthy();
     expect(screen.getByText('Blocked')).toBeTruthy();
     expect(
-      screen.getByRole('heading', { name: '0 tracks ready · 1 needs a decision' }),
+      screen.getByRole('heading', { name: '0 tracks checked · 1 needs a decision' }),
     ).toBeTruthy();
-    expect(screen.getByText('1 track needs a fix before hands-free playback.')).toBeTruthy();
+    expect(screen.getByText('1 track needs a fix before starting with music.')).toBeTruthy();
     expect(
       screen.getByText(
         'Prompter-only is ready now. Music can be fixed before the run or left off deliberately.',
@@ -211,10 +244,16 @@ describe('LiveMode preflight', () => {
     } satisfies RunPayloadTrackEntry;
     render(<LiveMode payload={{ ...payload, tracks: [soundcloudOnly] }} onExit={() => {}} />);
     const list = await screen.findByRole('list', { name: 'Track playback check' });
-    expect(within(list).getByText('Plays on SoundCloud')).toBeTruthy();
-    expect(screen.getByText('Live ready')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: '1 track ready · 0 need a decision' })).toBeTruthy();
-    expect(screen.getByText('All 1 track can play hands-free.')).toBeTruthy();
+    expect(within(list).getByText('Selected: SoundCloud')).toBeTruthy();
+    expect(screen.getByText('Track checks passed')).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: '1 track checked · 0 need a decision' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Provider links and durations checked for 1 track. Playback availability and audible output are unverified.',
+      ),
+    ).toBeTruthy();
     const passingRow = within(list).getByText('Active Track').closest('li');
     expect(passingRow?.className).toContain('py-3');
     expect(passingRow?.className).not.toContain('shadow-card');
@@ -226,7 +265,7 @@ describe('LiveMode preflight', () => {
     vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
     render(<LiveMode payload={payload} onExit={() => {}} />);
     const list = await screen.findByRole('list', { name: 'Track playback check' });
-    expect(within(list).getByText('Plays on SoundCloud')).toBeTruthy();
+    expect(within(list).getByText('Selected: SoundCloud')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
     // Start = begin the class: the clock runs (Pause offered) and the player
@@ -261,7 +300,7 @@ describe('LiveMode preflight', () => {
     expect(screen.getByText(/has not marked any provider disconnected/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Retry check' }));
     const list = await screen.findByRole('list', { name: 'Track playback check' });
-    expect(within(list).getByText('Plays on SoundCloud')).toBeTruthy();
+    expect(within(list).getByText('Selected: SoundCloud')).toBeTruthy();
   });
 
   it('opens connection recovery in place and refreshes preflight after Apple Music connects', async () => {
@@ -294,8 +333,15 @@ describe('LiveMode preflight', () => {
     const appleRow = within(dialog).getByText('Apple Music').closest('li');
     expect(appleRow).not.toBeNull();
     fireEvent.click(within(appleRow!).getByRole('button', { name: 'Connect Apple Music' }));
+    fireEvent.click(
+      await within(appleRow!).findByRole('button', { name: 'Authorize Apple Music' }),
+    );
 
-    expect(await screen.findByText('Plays on Apple Music')).toBeTruthy();
+    expect(await screen.findByText('Selected: Apple Music')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Check Apple Music authorization' }));
+    await screen.findByText(
+      'Apple Music authorized in this browser. Playback availability is still unverified.',
+    );
     expect(
       (screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement).disabled,
     ).toBe(false);
@@ -336,7 +382,10 @@ describe('LiveMode preflight', () => {
     let dialog = await screen.findByRole('dialog', { name: 'Music connections' });
     let appleRow = within(dialog).getByText('Apple Music').closest('li');
     fireEvent.click(within(appleRow!).getByRole('button', { name: 'Connect Apple Music' }));
-    expect(await screen.findByText('Plays on Apple Music')).toBeTruthy();
+    fireEvent.click(
+      await within(appleRow!).findByRole('button', { name: 'Authorize Apple Music' }),
+    );
+    expect(await screen.findByText('Selected: Apple Music')).toBeTruthy();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
 
     manage.focus();
@@ -379,7 +428,7 @@ describe('LiveMode preflight', () => {
     expect(await screen.findByRole('list', { name: 'Track playback check' })).toBeTruthy();
 
     stale.resolve([appleMusicConnection]);
-    await waitFor(() => expect(screen.queryByText('Plays on Apple Music')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Selected: Apple Music')).toBeNull());
   });
 
   it('ignores a late failure from an invalidated connection request', async () => {
@@ -402,12 +451,12 @@ describe('LiveMode preflight', () => {
     await waitFor(() => expect(screen.queryByText(/stale failure/)).toBeNull());
   });
 
-  it('does not offer connection recovery for builder-only preflight failures', async () => {
+  it('retains music management alongside builder-only preflight failures', async () => {
     const noProvider = { ...activeTrack, providerRefs: [] } satisfies RunPayloadTrackEntry;
     render(<LiveMode payload={{ ...payload, tracks: [noProvider] }} onExit={() => {}} />);
 
     expect(await screen.findByText('No provider link')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Manage connections' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Manage connections' })).toBeTruthy();
   });
 });
 
@@ -450,6 +499,52 @@ describe('LiveMode focus management', () => {
 });
 
 describe('LiveMode playback failure', () => {
+  it('holds silent music in both views and advances only after explicitly continuing without music', async () => {
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => ({
+      ...workingAdapter(),
+      getTransport: async () => ({ positionMs: null, state: 'unknown' }),
+    }));
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000);
+      });
+      expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Pause preparation' })).toBeTruthy();
+      fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+      expect(screen.getByRole('heading', { name: 'Waiting for music' })).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: 'Continue without music' }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1200);
+      });
+      expect(screen.getByText('0:01 / 3:00')).toBeTruthy();
+      expect(screen.getByText('Music off')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it('manual Pause during preparation prevents late playback from restarting the run', async () => {
+    const pending = deferred<{ provider: 'soundcloud'; classTrackId: string }>();
+    const play = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => ({
+      ...workingAdapter(),
+      prepare: () => pending.promise,
+      play,
+    }));
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pause preparation' }));
+    await act(async () => {
+      pending.resolve({ provider: 'soundcloud', classTrackId: activeTrack.classTrackId });
+    });
+    expect(play).not.toHaveBeenCalled();
+    expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
+    expect(screen.getByText(/Paused · Track 1 of 1/)).toBeTruthy();
+  });
   it('halts into a recoverable alert with retry, handoff, and prompter-only options', async () => {
     vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
     vi.mocked(soundcloudAdapterFactory).mockImplementation(
@@ -465,11 +560,12 @@ describe('LiveMode playback failure', () => {
     const alert = await screen.findByRole('alert');
     expect(within(alert).getByRole('heading', { name: 'Playback stopped' })).toBeTruthy();
     expect(within(alert).getByText('widget failed')).toBeTruthy();
-    expect(within(alert).getByText(/cue and class clock are still running/)).toBeTruthy();
+    expect(within(alert).getByText('Teaching position is held.')).toBeTruthy();
     expect(within(alert).getByRole('button', { name: 'Retry playback' })).toBeTruthy();
 
     // Handoff links live ONLY here (recovery surface), and only trusted URIs:
     // the track's soundcloud ref is a javascript: URI and must not render.
+    fireEvent.click(within(alert).getByText('Open in music app'));
     const spotify = within(alert).getByRole('link', { name: 'Open Active Track in Spotify' });
     expect(spotify.getAttribute('href')).toBe('spotify:track:4cOdK2wGLETKBW3PvgPWqT');
     expect(
@@ -520,8 +616,8 @@ describe('LiveMode playback failure', () => {
     expect(within(focal).getByText('Hands light. Hips lead.')).toBeTruthy();
     expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
-    expect(screen.getByText(/Paused · Track 1 of 1/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Retry music' })).toBeTruthy();
+    expect(screen.getByText(/Teaching paused · waiting for music/)).toBeTruthy();
     expect(screen.getByRole('alert')).toBeTruthy();
     expect(within(focal).getByText('Hands light. Hips lead.')).toBeTruthy();
     expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
@@ -643,7 +739,8 @@ describe('LiveMode runtime composition', () => {
     expect(await screen.findByRole('button', { name: 'Pause' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next track, Second Track' }));
-    expect(screen.getByText(/Now teaching · Track 2 of 3/)).toBeTruthy();
+    expect(screen.getByText(/Teaching paused · waiting for music · Track 2 of 3/)).toBeTruthy();
+    expect(await screen.findByText(/Now teaching · Track 2 of 3/)).toBeTruthy();
   });
 
   it('prints no up-next shelf on the last track rather than an empty one', async () => {
@@ -1296,4 +1393,99 @@ describe('lastAtOrBefore', () => {
   it('handles an empty event list', () => {
     expect(lastAtOrBefore([], 0)).toBe(-1);
   });
+});
+
+describe('Live browser authorization gate', () => {
+  it('checks Apple consent before even a later mixed-provider track, and rejects expiry on Start', async () => {
+    const apple = {
+      ...activeTrack,
+      classTrackId: 'later-apple',
+      position: 1,
+      startOffsetMs: 180000,
+      providerRefs: [
+        { provider: 'apple_music' as const, providerTrackId: 'apple-id', providerUri: null },
+      ],
+    };
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection, appleMusicConnection]);
+    const instance = {
+      isAuthorized: false,
+      authorize: vi.fn(async () => {
+        instance.isAuthorized = true;
+        return 'music-user-token';
+      }),
+    };
+    vi.mocked(prepareAppleMusic).mockResolvedValue(
+      instance as unknown as Awaited<ReturnType<typeof prepareAppleMusic>>,
+    );
+    render(
+      <LiveMode
+        payload={{
+          ...payload,
+          tracks: [activeTrack, apple],
+          class: { ...payload.class, totalDurationMs: 360000 },
+        }}
+        onExit={() => {}}
+      />,
+    );
+    await screen.findByText('Selected: Apple Music');
+    const start = screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement;
+    expect(start.disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Check Apple Music authorization' }));
+    const consent = await screen.findByRole('button', { name: 'Authorize Apple Music' });
+    expect(instance.authorize).not.toHaveBeenCalled();
+    expect(soundcloudAdapterFactory).not.toHaveBeenCalled();
+    fireEvent.click(consent);
+    expect(instance.authorize).toHaveBeenCalledOnce();
+    await waitFor(() => expect(start.disabled).toBe(false));
+    instance.isAuthorized = false;
+    fireEvent.click(start);
+    expect(soundcloudAdapterFactory).not.toHaveBeenCalled();
+    expect(
+      (screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Run without music' }));
+    expect(await screen.findByRole('button', { name: 'Play' })).toBeTruthy();
+  });
+});
+
+it('requires an explicit Spotify activation tap before starting a mixed-provider class', async () => {
+  const spotify = {
+    ...activeTrack,
+    classTrackId: 'later-spotify',
+    position: 1,
+    startOffsetMs: 180000,
+    providerRefs: [
+      { provider: 'spotify' as const, providerTrackId: 'spotify-id', providerUri: null },
+    ],
+  };
+  vi.mocked(listConnections).mockResolvedValue([
+    { ...soundcloudConnection, provider: 'spotify', scope: 'streaming' },
+  ]);
+  const activateElement = vi.fn().mockResolvedValue(undefined);
+  const player = {
+    activateElement,
+  } as unknown as import('../lib/spotify-playback.js').SpotifyPlayer;
+  vi.mocked(getSpotifyPlayback).mockResolvedValue({ player, deviceId: 'qa' });
+  render(
+    <LiveMode
+      payload={{
+        ...payload,
+        tracks: [activeTrack, spotify],
+        class: { ...payload.class, totalDurationMs: 360000 },
+      }}
+      onExit={() => {}}
+    />,
+  );
+  await screen.findByText('Selected: Spotify');
+  const start = screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement;
+  expect(start.disabled).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: 'Prepare Spotify playback' }));
+  const enable = await screen.findByRole('button', { name: 'Enable Spotify playback' });
+  expect(activateElement).not.toHaveBeenCalled();
+  expect(soundcloudAdapterFactory).not.toHaveBeenCalled();
+  fireEvent.click(enable);
+  expect(activateElement).toHaveBeenCalledOnce();
+  await waitFor(() => expect(start.disabled).toBe(false));
+  fireEvent.click(start);
+  await waitFor(() => expect(soundcloudAdapterFactory).toHaveBeenCalledOnce());
 });

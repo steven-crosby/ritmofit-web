@@ -780,7 +780,9 @@ describe('Dashboard class library states', () => {
         screen.queryByRole('button', { name: 'Connect this provider to browse liked tracks.' }),
       ).toBeNull();
     });
-    expect(screen.getByRole('button', { name: 'Connect Spotify' })).toBeTruthy();
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Connect Spotify' }),
+    ).toBeTruthy();
   });
 
   it('keeps last-known shelves when a connection refresh fails without authoritative truth', async () => {

@@ -7,6 +7,7 @@
 export interface TrailingThrottle<T> {
   call: (value: T) => void;
   flush: (value: T) => void;
+  cancel: () => void;
 }
 
 export function createTrailingThrottle<T>(
@@ -43,5 +44,5 @@ export function createTrailingThrottle<T>(
     }, waitMs - elapsed);
   };
 
-  return { call, flush };
+  return { call, flush, cancel: clearPending };
 }
