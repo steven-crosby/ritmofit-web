@@ -46,7 +46,7 @@ Local automated gates and synthetic Chrome viewport checks support the implement
 - The owner approved branch, gate, commit, push, and PR. Phase 1 (1A, 1B, 1C) is one commit on `fix/music-led-live-reliability`, cut from `origin/main` at `8496099` (the 2026-10-01 base `f2c435c` plus #477, a Cursor cloud install script). The branch name drops the proposed `codex/` prefix. The three slices share `LiveMode.tsx`, `runtime.ts`, and the adapters, so they ship as one commit with the PR described per slice.
 - The full CI-equivalent gate was rerun on that base before the commit and passed: 997 web, 466 API unit, 30 music, and 171 API integration tests, plus format, types, lint, design-system and theme checks, SPA build, OpenAPI no-drift, contract parity, and audit.
 - Production is unchanged: Worker `18aa93dd-8695-4791-a6dd-f0e031e28c75` at 100% and SPA entry `assets/index-vAXMRElW.js` on three consecutive cache-busted fetches. Phase 1 is not deployed.
-- Merge, any test or production deployment, and real-device acceptance remain separate owner approvals. The acceptance list in the 2026-10-01 checkpoint still stands in full.
+- The owner approved the merge later on 2026-10-02: #478 is squash-merged to `main` as `48bfd11`, so `main` is ahead of production. Any test or production deployment and real-device acceptance remain separate owner approvals. The acceptance list in the 2026-10-01 checkpoint still stands in full; the scenario record to fill in is [`docs/audits/music-led-phase-1-acceptance/`](../docs/audits/music-led-phase-1-acceptance/README.md).
 
 ## Phase 1 — Reliable connections and music-led Live
 
