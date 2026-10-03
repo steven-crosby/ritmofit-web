@@ -10,6 +10,40 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-10-02 (PR #478 — music-led Phase 1) — deployed (Worker
+> `e4744ca1-11b0-4ad6-9382-ef8ad6f9b0a5`).** Application source `48bfd11`, deployed from clean
+> `main` `71c6fc2` after owner go. Web-only; no API, schema, OpenAPI, or contract change. No remote
+> D1 change (nothing to apply; latest `0019`). No secret change; `BETA_ALLOWED_EMAILS` confirmed
+> present by name.
+>
+> - **#478:** connection recovery (1A), Live teaching position driven by confirmed provider
+>   playback (1B), and preflight that gates Start on explicit Apple Music / Spotify browser
+>   authorization (1C). #479 added the acceptance record.
+> - **Test deployment before release:** an undeployed version of the production Worker
+>   (`87526f68`, alias `phase1-test`, auth URL overridden to its preview address) served the same
+>   build against production D1. `d393a47b` was a throwaway upload used to learn the address.
+>   Neither ever took production traffic. **Never promote `87526f68`**: its auth is bound to the
+>   preview address.
+> - **Acceptance (details in `docs/audits/music-led-phase-1-acceptance/`):** Apple Music played
+>   audibly on the owner's Mac (Chrome) on the test build; Live held at `0:00` while the player
+>   loaded, then tracked the song's position, and Pause/Resume stopped and restarted both. On the
+>   owner's iPhone (Safari), Apple Music failed or hung on the test build and stalled on
+>   authorization on the old production build, so that is not a Phase 1 regression. Spotify returned
+>   `403` ("user is not registered for this application"); Spotify is tabled by owner decision.
+>   SoundCloud never played in a hidden or embedded browser window, in either build.
+> - **Incident, same day:** production returned Cloudflare `503` pages for Apple Music playlists and
+>   email sign-in. Worker logs showed `exceededCpu` ("Worker exceeded CPU time limit") on 5 of 6
+>   playlist requests. The owner upgraded the account to Workers Paid; afterwards 6 of 6 playlist
+>   requests and a Chrome sign-in succeeded, with no `exceededCpu` or `5xx` in the log.
+>
+> Pre-deploy: the full local gate passed on `main` `71c6fc2` (997 web, 466 API, 30 music, 171
+> integration tests; build, OpenAPI no-drift, contract parity, audit). The built SPA entry matched
+> the tested preview build. Post-deploy smoke: `/` and `/api/v1/health` `200`; classes, explore,
+> teams, and provider routes `401` unauthenticated; six security headers present. SPA entry
+> `assets/index-C3NTdD-N.js` on five consecutive cache-busted fetches, and the served
+> `LiveMode` chunk contains the Phase 1 hold/recovery text. Worker 100% on `e4744ca1`. Rollback is
+> Worker-only to `18aa93dd-8695-4791-a6dd-f0e031e28c75`.
+
 > **Session 2026-09-28 (PR #473 — drain empty 204 bodies in the web API client) — deployed
 > (Worker `18aa93dd-8695-4791-a6dd-f0e031e28c75`).** Application source `70a733d`. Deployed
 > from clean `main` after owner go. No remote D1 change (nothing to apply; latest `0019`). No

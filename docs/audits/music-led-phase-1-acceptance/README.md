@@ -4,9 +4,26 @@
 
 Acceptance record for Phase 1 of the
 [music-led instructor workflow plan](../../../ritmofit_dev_plan/music-led-instructor-workflow-plan.md)
-(D24). Code landed on `main` as `48bfd11` (#478) on 2026-10-02. **Nothing below has been run.**
-Until it is, no claim about iPhone playback is supported, and `main` should not deploy to production
-without the owner's explicit go.
+(D24). Code landed on `main` as `48bfd11` (#478) on 2026-10-02 and deployed the same day as Worker
+`e4744ca1` on the owner's go. The scenario tables below have not been filled in yet; the first
+round of results is summarized here.
+
+## Results — 2026-10-02
+
+<!-- note (Claude, 2026-10-02): First-round results from the test deployment and owner devices. -->
+
+Test build: `phase1-test` preview version `87526f68` of the production Worker, SPA entry
+`assets/index-C3NTdD-N.js`, production D1. The same build is now live.
+
+| Device / browser | Provider | Result |
+| --- | --- | --- |
+| Mac, Chrome (window visible) | Apple Music | **Pass.** Start stayed locked until Apple authorization. After Start, Live held at `0:00` for about 2.5 s while the player loaded, then followed the song's position second for second. Pause stopped both at `0:24`; Resume restarted both. The owner heard the music. |
+| iPhone, Safari | Apple Music | **Fail (audio).** First Start: "Apple Music playback failed". Retry and Skip hung on "still finishing a previous queue request". A fresh Start showed an iOS "Playback Error" alert. Teaching position held throughout and recovery stayed visible. The old production build also stalled on "Waiting for Apple Music authorization…" on the same phone, so this is not a Phase 1 regression. The Music app was playing another song at the same time; that has not been ruled out as the cause. |
+| Mac, Chrome and the in-app browser | Spotify | **Blocked.** Preflight gating worked (Prepare, then Enable, then Start). On Start, Spotify returned `403`: the connected Spotify account is not registered on the Spotify developer app. Spotify is tabled by owner decision; its rows below stay open. |
+| Mac, Chrome (hidden window) and the in-app browser | SoundCloud | **Inconclusive.** The widget loaded the track and stayed paused at position 0; the teaching position held and recovery appeared after the stall. The old build behaved the same in the hidden window (while still labelling playback as SoundCloud), so this points at the browser environment. No visible-window SoundCloud run yet. |
+
+The `[QA] Phase 1 Spotify playback` fixture class created for this testing was deleted by the owner
+on 2026-10-02 along with other classes.
 
 Keep this record sanitized: no tokens, cookies, headers, authentication codes, raw recordings, or
 personal screens. Recordings stay outside git.
