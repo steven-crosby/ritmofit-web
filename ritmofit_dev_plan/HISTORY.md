@@ -42,6 +42,7 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 > A controlled Chrome network failure discarded a real 201 import response after
 > commit; reload exposed saved confirmation and replay retained all 10 original
 > placement IDs without duplication. Interception was cleared after the test.
+> [Screenshot of the controlled uncertain-import state](../docs/audits/playlist-import-release-2026-10-02/uncertain-import.jpg).
 > Two manual timed cues and a creator note persisted in the empty Pilates fixture
 > and appeared in Live. Both disciplines passed prompter-only Start, Pause/Resume,
 > next-song transition, keyboard seek, and accelerated completion. These are not
