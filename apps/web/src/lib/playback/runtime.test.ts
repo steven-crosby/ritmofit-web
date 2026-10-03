@@ -1004,6 +1004,80 @@ describe('music-led runtime authority', () => {
     expect(run.positions).toEqual([10_000]);
     expect(run.coordinator.getStatus().kind).toBe('ended');
   });
+  // Production 2026-10-03: saved Apple catalog duration 223,398 ms, while
+  // MusicKit reported its ended endpoint as a whole 223 seconds.
+  it('advances when the provider endpoint is a subsecond short of the saved window', async () => {
+    const run = musicRun([
+      makeEntry({ durationMs: 223_398, providers: ['apple_music'] }),
+      makeEntry({ classTrackId: 'next', providers: ['apple_music'], startOffsetMs: 223_398 }),
+    ]);
+    await run.coordinator.start();
+    run.report({ positionMs: 223_000, state: 'ended' });
+    run.created[0]!.events.onFinish?.();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(run.positions).toEqual([223_398]);
+    expect(run.created).toHaveLength(2);
+    expect(run.coordinator.getStatus()).toMatchObject({ kind: 'buffering', index: 1 });
+    // The next track still waits for its own provider progress.
+    run.report({ positionMs: 0, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(run.positions).toEqual([223_398]);
+    run.report({ positionMs: 2_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([223_398, 225_398]);
+  });
+  it('ends the class when the final track ends a subsecond short of the saved window', async () => {
+    const run = musicRun([makeEntry({ durationMs: 223_398 })]);
+    await run.coordinator.start();
+    run.report({ positionMs: 223_000, state: 'ended' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([223_398]);
+    expect(run.coordinator.getStatus().kind).toBe('ended');
+  });
+  it('accepts a subsecond-short endpoint against a clipped window', async () => {
+    const run = musicRun([makeEntry({ durationMs: 10_400, clipStartMs: 30_000 })]);
+    await run.coordinator.start();
+    run.report({ positionMs: 40_000, state: 'ended' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([10_400]);
+    expect(run.coordinator.getStatus().kind).toBe('ended');
+  });
+  it('still holds an endpoint a full second short of the saved window', async () => {
+    const run = musicRun([
+      makeEntry({ durationMs: 223_398 }),
+      makeEntry({ classTrackId: 'next', startOffsetMs: 223_398 }),
+    ]);
+    await run.coordinator.start();
+    run.report({ positionMs: 222_398, state: 'ended' });
+    run.created[0]!.events.onFinish?.();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(run.coordinator.getStatus().kind).toBe('error');
+    expect(run.positions).toEqual([]);
+    expect(run.created).toHaveLength(1);
+  });
+  it('does not round a still-playing position up to the window end', async () => {
+    const run = musicRun([
+      makeEntry({ durationMs: 223_398 }),
+      makeEntry({ classTrackId: 'next', startOffsetMs: 223_398 }),
+    ]);
+    await run.coordinator.start();
+    run.report({ positionMs: 223_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([223_000]);
+    expect(run.created).toHaveLength(1);
+    expect(run.coordinator.getStatus()).toMatchObject({ kind: 'playing', index: 0 });
+  });
+  it('holds again when a retry meets the same genuinely early end', async () => {
+    const run = musicRun([makeEntry({ durationMs: 223_398 })]);
+    await run.coordinator.start();
+    run.report({ positionMs: 30_000, state: 'ended' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.coordinator.getStatus().kind).toBe('error');
+    await run.coordinator.resume(0);
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.coordinator.getStatus().kind).toBe('error');
+    expect(run.positions).toEqual([]);
+  });
   it('ignores superseded reads and events after seeking to a new track', async () => {
     const run = musicRun([
       makeEntry({ durationMs: 10_000 }),

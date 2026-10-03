@@ -95,6 +95,15 @@ export type CoordinatorStatus =
 /** Slow on purpose: "has it been dead for seconds", not frame-accurate sync. */
 const DEFAULT_LIVENESS_INTERVAL_MS = 2_500;
 
+/**
+ * How far short of the saved window a finished stream may report its endpoint
+ * and still count as reaching it. Strictly under one second: MusicKit reports
+ * its duration in whole seconds (223 s for a 223,398 ms catalog track), so an
+ * honest shortfall never reaches a full second. Anything at or beyond it is a
+ * real duration mismatch and holds the teaching position.
+ */
+const ENDPOINT_TOLERANCE_MS = 1_000;
+
 export interface RuntimeCoordinatorOptions extends SelectionOptions {
   adapters: AdapterRegistry;
   onStatus?: (status: CoordinatorStatus) => void;
@@ -549,13 +558,19 @@ export class RuntimePlaybackCoordinator {
       // A read begun before FINISH can still describe the final playing frame.
       if (this.finishedJob === job && !finishedWhenReadBegan && reading.state !== 'ended') return;
       const window = playbackWindowFor(job.entry);
-      const position = reading.positionMs;
+      const finished = this.finishedJob === job || reading.state === 'ended';
+      // Saved durations are millisecond-precise; a provider can report its own
+      // endpoint in whole seconds. Only a finished stream is reconciled.
+      const position =
+        finished &&
+        reading.positionMs != null &&
+        reading.positionMs < window.endMs &&
+        window.endMs - reading.positionMs < ENDPOINT_TOLERANCE_MS
+          ? window.endMs
+          : reading.positionMs;
       if (position == null || !Number.isFinite(position)) {
         this.setStatus({ kind: 'buffering', index: job.index, provider: job.provider });
-      } else if (
-        (this.finishedJob === job || reading.state === 'ended') &&
-        position < window.endMs
-      ) {
+      } else if (finished && position < window.endMs) {
         this.transportFailure(
           job,
           'Music ended before the saved playback window. Check its duration or skip this track.',
