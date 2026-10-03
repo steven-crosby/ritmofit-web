@@ -10,6 +10,63 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-10-02 (PR #481 — ordered playlist import and recovery) — deployed
+> (Worker `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`).** Application source
+> `d026f5992b8c2181b262259e5d9acf84e7745364`; owner authorized commit, PR, merge,
+> migration, deployment, and desktop Apple Music verification in this session.
+> Remote D1 migration `0020_secret_zaladane.sql` applied before code; subsequent
+> migration check reported nothing pending. No secret/configuration changes.
+>
+> Playlist occurrences resolve concurrently but commit in source order through a
+> guarded D1 batch. Durable receipts recover ambiguous playlist responses without
+> duplicate placements. Single-song adds share the atomic guard and discard their
+> non-replayable receipts in the batch. Recovery reconciles current membership,
+> preserves instructor arrangements through an explicit append-remaining action,
+> and ignores stale playlist responses and destination callbacks.
+>
+> Validation: CI passed for PR head `02a9efb`; merged main has the identical tree.
+> The full local gate passed again on merged main: 1,513 unit/component tests and
+> 184 migrated D1 integration tests, plus formatting, types, lint, design/theme,
+> build, OpenAPI, contract parity, and dependency audit. Main CI also passed.
+> Review identified a stale success callback and redundant single-add receipt
+> retention; both were fixed with regressions before merge.
+>
+> Post-deploy: Worker serves 100%; three consecutive cache-busted SPA fetches and
+> the updated Chrome document matched `assets/index-68EE379w.js`. SPA/health/entry
+> asset returned 200, classes/explore/teams returned 401 unauthenticated, and all
+> six documented security headers were present. Chrome's offered update was accepted.
+>
+> Authenticated production smoke used only the 10-song `Ritmo Apple Music Test`
+> playlist. Music-to-class and Classes-to-empty-class both passed for Cycle and
+> Pilates: 10 unique placement IDs, positions 0–9, and the exact source sequence.
+> A controlled Chrome network failure discarded a real 201 import response after
+> commit; reload exposed saved confirmation and replay retained all 10 original
+> placement IDs without duplication. Interception was cleared after the test.
+> Two manual timed cues and a creator note persisted in the empty Pilates fixture
+> and appeared in Live. Both disciplines passed prompter-only Start, Pause/Resume,
+> next-song transition, keyboard seek, and accelerated completion. These are not
+> uninterrupted audible class runs. Apple Music playback was blocked by Apple's
+> browser sign-in; audible playback and uninterrupted provider runs remain unverified.
+>
+> Existing product gaps remain: playlist creation generates no teaching blocks,
+> cues, or notes; Music creation remains on Music, and the chooser track count can
+> lag until reload. No automatic teaching builder, class-size cap, iPhone, Spotify,
+> or HIIT work was included.
+>
+> Fresh fixtures were named `[QA]` and tagged `qa-fixture` immediately. They remain
+> for owner review; deletion was not authorized. Source playlists and existing
+> instructor classes were preserved.
+>
+> | Fixture | Class ID |
+> | --- | --- |
+> | [QA] #481 Music Cycle | `a1dac274-197b-4696-a649-d16fb24a620f` |
+> | [QA] #481 Empty Pilates | `da1aec6e-f5b0-4066-8d45-2853558be233` |
+> | [QA] #481 Music Pilates | `05f546c7-ffe7-4827-ba2e-cbd526d9dc03` |
+> | [QA] #481 Empty Cycle | `3402a289-b570-4e7c-a6a9-4c996b28383a` |
+>
+> Prior live Worker for code rollback: `e4744ca1-11b0-4ad6-9382-ef8ad6f9b0a5`.
+> Migration 0020 is additive; Worker rollback leaves its receipt table in place.
+
 > **Session 2026-09-28 (PR #473 — drain empty 204 bodies in the web API client) — deployed
 > (Worker `18aa93dd-8695-4791-a6dd-f0e031e28c75`).** Application source `70a733d`. Deployed
 > from clean `main` after owner go. No remote D1 change (nothing to apply; latest `0019`). No
