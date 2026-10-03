@@ -229,15 +229,19 @@ it('discards a playlist response after the destination class changes', async () 
 
 it.each(['unmount', 'class change'])(
   'does not notify the old destination after %s',
-  async (change) => {
+  async (change: string) => {
     let finish!: (value: ClassTrack[]) => void;
     const pending = new Promise<ClassTrack[]>((resolve) => {
       finish = resolve;
     });
-    vi.mocked(api.importClassTracks).mockImplementationOnce(async (_classId, body) => {
-      rows = body.placements.map((p, position) => ({ ...p, position, updatedAt: 1 }) as ClassTrack);
-      return pending;
-    });
+    vi.mocked(api.importClassTracks).mockImplementationOnce(
+      async (_classId: string, body: ImportClassTracks) => {
+        rows = body.placements.map(
+          (p, position) => ({ ...p, position, updatedAt: 1 }) as ClassTrack,
+        );
+        return pending;
+      },
+    );
     const oldAdded = vi.fn();
     const newAdded = vi.fn();
     const view = render(<TrackSearch classId="c1" onAdded={oldAdded} />);
