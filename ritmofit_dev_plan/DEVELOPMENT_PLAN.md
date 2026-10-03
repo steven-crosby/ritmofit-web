@@ -307,7 +307,18 @@ Music preparation while teaching time advanced. The [phased workflow plan](./mus
 proposes connection/playback reliability and honest readiness first, mobile teaching/editing clarity
 next, then Builder speed/rehearsal and timed exercise steps. Phase 1 implementation is authorized, starting with 1A;
 release remains separately gated. SPC-09 remains open; replacing it as the next implementation focus
-is approved for Phase 1. Connection recovery (1A), the music-authoritative Live clock (1B), and truthful preflight with explicit Apple browser authorization (1C) are implemented but not deployed. Real-device audible playback and interruption acceptance remain. Later phases await approval.
+is approved for Phase 1. Connection recovery (1A), the music-authoritative Live clock (1B), and truthful preflight with explicit Apple browser authorization (1C) are deployed (#478, Worker `e4744ca1`, 2026-10-02). Apple Music played audibly on the owner's Mac with Live following the provider clock; on the owner's iPhone, Apple Music in Safari failed or hung in both the old and new builds (see the [acceptance record](../docs/audits/music-led-phase-1-acceptance/README.md)). Later phases await approval.
+
+**Spotify tabled (owner decision, 2026-10-02):** Spotify work and Spotify acceptance testing are
+paused until UI/UX and Live playback with Apple Music are completed and hardened. Spotify stays
+connected in the product but is not a release gate, and no Spotify-specific readiness claim should
+be made meanwhile. Known open item when it resumes: the connected Spotify account is rejected by the
+Spotify developer app ("The user is not registered for this application"), so every Spotify Web API
+call returns `403`.
+
+**Next focus:** Apple Music Live playback on the iPhone (web Safari). Phase 1 holds the teaching
+position and shows recovery correctly there, but no audible playback has been achieved. The result
+decides whether the phone surface stays web Live or needs native iOS playback.
 
 **Class-building design direction:** The owner-approved
 [`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) sets the target for a
@@ -347,15 +358,13 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-10-02, after the #478 merge):** `main` is ahead of
-production. `main` carries music-led Phase 1 (`48bfd11`, #478), which is not deployed and
-has no real-device playback acceptance; do not deploy it without the owner's explicit go.
-The scenarios to run are in
-[`docs/audits/music-led-phase-1-acceptance/`](../docs/audits/music-led-phase-1-acceptance/README.md).
-Production still serves application tip `70a733d` (#473, deployed 2026-09-28): on
-2026-10-02 Worker `18aa93dd-8695-4791-a6dd-f0e031e28c75` was at 100% and the SPA entry
-`assets/index-vAXMRElW.js` appeared on three consecutive cache-busted fetches. #473
-drains empty `204` bodies in the web API client.
+**Current `main` vs production (2026-10-02, after the Phase 1 deploy):** production serves
+application tip `48bfd11` (#478, music-led Phase 1) from `main` `71c6fc2`. Worker
+`e4744ca1-11b0-4ad6-9382-ef8ad6f9b0a5` is at 100%, and the SPA entry
+`assets/index-C3NTdD-N.js` appeared on five consecutive cache-busted fetches. Rollback is
+Worker-only to `18aa93dd-8695-4791-a6dd-f0e031e28c75` (no schema change between them).
+The Cloudflare account moved to Workers Paid on 2026-10-02 after Free-plan CPU limits broke
+sign-in and Apple Music playlists (see [`HISTORY.md`](./HISTORY.md)).
 Remote D1 has no pending migrations (latest local migration `0019`). #470 deployed
 the v2 Cycle/HIIT recipes; an authenticated production acceptance pass covered #468
 block add/reorder/delete and the v2 Cycle 45 content, and its `[QA]` class was deleted
@@ -387,7 +396,7 @@ half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unc
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `18aa93dd` from `70a733d` (#473); see "Current `main` vs production" above
+  `e4744ca1` from `48bfd11` (#478); see "Current `main` vs production" above
   for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**

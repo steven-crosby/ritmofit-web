@@ -48,6 +48,15 @@ Local automated gates and synthetic Chrome viewport checks support the implement
 - Production is unchanged: Worker `18aa93dd-8695-4791-a6dd-f0e031e28c75` at 100% and SPA entry `assets/index-vAXMRElW.js` on three consecutive cache-busted fetches. Phase 1 is not deployed.
 - The owner approved the merge later on 2026-10-02: #478 is squash-merged to `main` as `48bfd11`, so `main` is ahead of production. Any test or production deployment and real-device acceptance remain separate owner approvals. The acceptance list in the 2026-10-01 checkpoint still stands in full; the scenario record to fill in is [`docs/audits/music-led-phase-1-acceptance/`](../docs/audits/music-led-phase-1-acceptance/README.md).
 
+## Release checkpoint — 2026-10-02
+
+<!-- note (Claude, 2026-10-02): Records the Phase 1 deploy, device results, and the owner's Spotify decision. -->
+
+- Phase 1 is deployed: Worker `e4744ca1` from `main` `71c6fc2` (application `48bfd11`). Details are in `HISTORY.md`.
+- Apple Music on the owner's Mac (Chrome, test build): audible, held at `0:00` while loading, then followed the song's position; Pause/Resume stayed in step.
+- Apple Music on the owner's iPhone (Safari): no audible playback in either build. On the test build the first Start failed, Retry hung on "still finishing a previous queue request", and a fresh Start showed an iOS "Playback Error" alert. The Music app was playing another song at the same time, which is one untested explanation. The teaching position held throughout.
+- Owner decision: Spotify is tabled until UI/UX and Live playback with Apple Music are completed and hardened. The next focus is Apple Music Live playback on the iPhone.
+
 ## Phase 1 — Reliable connections and music-led Live
 
 Deliver narrow slices in the order below. Phase 1 is frontend/runtime work using existing API contracts; no migration, new endpoint, or run-payload change is proposed. If diagnosis establishes a backend/token defect, stop with a separate scoped proposal before changing auth/provider APIs.
