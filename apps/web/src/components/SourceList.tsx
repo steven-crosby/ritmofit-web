@@ -18,7 +18,8 @@ type ImportAction = {
    * instructor is not asking. Defaults to the class-scoped wording.
    */
   addedLabel?: string;
-  onAdd: (candidate: TrackSearchResult) => void;
+  keyFor?: (candidate: TrackSearchResult, index: number) => string;
+  onAdd: (candidate: TrackSearchResult, index: number) => void;
 };
 
 type SelectionAction = {
@@ -66,8 +67,11 @@ export function SourceList({
       }`}
     >
       <ul aria-label={ariaLabel} className="flex min-w-0 flex-col gap-1.5">
-        {tracks.map((track) => {
-          const key = sourceCandidateKey(track);
+        {tracks.map((track, index) => {
+          const key =
+            action.kind === 'import' && action.keyFor
+              ? action.keyFor(track, index)
+              : sourceCandidateKey(track);
           const sourceHref = providerHandoffHref(track.provider, track.providerUri);
           const selected = action.kind === 'selection' && action.selectedKeys.has(key);
           const added = action.kind === 'import' && action.addedKeys.has(key);
@@ -82,7 +86,7 @@ export function SourceList({
 
           return (
             <li
-              key={key}
+              key={`${key}:${index}`}
               className={`min-w-0 gap-2 rounded-card px-2 py-1.5 sm:gap-3 ${
                 action.kind === 'import'
                   ? 'grid grid-cols-[44px_minmax(0,1fr)] sm:flex sm:items-center'
@@ -163,7 +167,7 @@ export function SourceList({
               {action.kind === 'import' && (
                 <button
                   type="button"
-                  onClick={() => action.onAdd(track)}
+                  onClick={() => action.onAdd(track, index)}
                   disabled={busy || bulkBusy || added}
                   aria-busy={busy || bulkBusy}
                   aria-label={

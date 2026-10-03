@@ -216,6 +216,26 @@ holds the per-class context.
 > The `duration_ms_override` lets a class editor correct timing without mutating another user's private
 > library track.
 
+### `class_track_import_operations`
+
+Durable receipts for `POST /classes/:id/tracks/import`. An operation ID identifies
+one exact ordered commit, not a playlist or a distinct song. Receipts cascade with
+the class; they contain class placement metadata only, never provider credentials or audio.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | text PK | Client-generated operation UUID; reuse only with the exact same request |
+| class_id | text FK | Class being edited; CASCADE on class deletion |
+| request_hash | text | SHA-256 of the parsed request; rejects reuse for different requests |
+| writer_token | text | Per-request UUID; only the winning batch may apply layout writes |
+| snapshot_valid | int | CHECK = 1; computed inside the batch to reject stale class/library/block snapshots |
+| result_json | text | Original serialized class-track result; replay does not overwrite subsequent edits |
+| created_at | int (ms) | Commit timestamp |
+
+The receipt, occurrence inserts, layout updates, and class recency update commit in
+one D1 batch. Snapshot rejection or any insert failure rolls back the entire batch.
+Occurrence IDs remain distinct even when their library `track_id` is the same.
+
 ### `class_tags`
 Simple "Google Keep" style tagging system for classes. Used to search historical classes (e.g., "Songs by Move" or thematic searches).
 

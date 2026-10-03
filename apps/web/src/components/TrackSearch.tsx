@@ -11,6 +11,15 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import {
+  createOrderedImport,
+  restoreOrderedImport,
+  reconcileOrderedImport,
+  preserveImportArrangement,
+  pendingOrderedImports,
+  runOrderedImport,
+  type OrderedImportSession,
+} from '../lib/ordered-import.js';
+import {
   providerCapabilities,
   type MusicConnectionView,
   type ProviderPlaylistSummary,
@@ -181,10 +190,23 @@ export function TrackSearch({
   // Per-candidate import state: which key is busy, and which keys were added.
   const [importingKey, setImportingKey] = useState<string | null>(null);
   const [addedKeys, setAddedKeys] = useState<Set<string>>(new Set());
+  const playlistImport = useRef<OrderedImportSession | null>(null);
+  const playlistGeneration = useRef(0);
+  const mounted = useRef(true);
+  const playlistContext = `${classId}:${planBlockId ?? 'class'}:${provider}:${mode}`;
+  const activePlaylistContext = useRef(playlistContext);
+  if (activePlaylistContext.current !== playlistContext) {
+    activePlaylistContext.current = playlistContext;
+    playlistGeneration.current++;
+    playlistImport.current = null;
+  }
+  const importBusy = useRef(false);
   const [playlistUrl, setPlaylistUrl] = useState('');
   const [importingPlaylist, setImportingPlaylist] = useState(false);
   const [savedPlaylists, setSavedPlaylists] = useState<ProviderPlaylistSummary[] | null>(null);
   const [selectedPlaylist, setSelectedPlaylist] = useState<ProviderPlaylistSummary | null>(null);
+  const pendingPrefix = `ritmo-import:${classId}:${planBlockId ?? 'class'}:${provider}:`;
+  const [pendingImports, setPendingImports] = useState<OrderedImportSession[]>([]);
   const [loadingSavedPlaylists, setLoadingSavedPlaylists] = useState(false);
   const [importingAllFromPlaylist, setImportingAllFromPlaylist] = useState(false);
   // Once a bulk add has run, keep its outcome beside the playlist instead of
@@ -205,6 +227,24 @@ export function TrackSearch({
   const [connectionStatus, setConnectionStatus] = useState<'loading' | 'ready' | 'error'>(
     'loading',
   );
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      playlistGeneration.current++;
+    };
+  }, []);
+  useEffect(() => {
+    setPendingImports(pendingOrderedImports(pendingPrefix));
+  }, [pendingPrefix, mode]);
+  useEffect(() => {
+    setSelectedPlaylist(null);
+    setResults(null);
+    setAddedKeys(new Set());
+    setSearching(false);
+    setBulkImportAttempted(false);
+    setError(null);
+  }, [classId, planBlockId]);
   useEffect(() => {
     let alive = true;
     setLibraryReauthProvider(null);
@@ -365,6 +405,10 @@ export function TrackSearch({
   }, [mode, provider, canBrowseSavedPlaylists, reloadKey]);
 
   const openSavedPlaylist = async (playlist: ProviderPlaylistSummary) => {
+    const generation = ++playlistGeneration.current;
+    const isCurrent = () => mounted.current && generation === playlistGeneration.current;
+    const storageKey = `ritmo-import:${classId}:${planBlockId ?? 'class'}:${provider}:${playlist.playlistId}`;
+    playlistImport.current = null;
     setSelectedPlaylist(playlist);
     setSearching(true);
     setError(null);
@@ -373,9 +417,32 @@ export function TrackSearch({
     setAddedKeys(new Set());
     setBulkImportAttempted(false);
     try {
-      setResults(await listPlaylistTracks(provider, playlist.playlistId));
+      const saved = restoreOrderedImport(storageKey);
+      if (saved?.pending) {
+        // Confirm the original operation from its saved intent, independently of
+        // provider availability. Never silently resolve additional songs here.
+        await reconcileOrderedImport(classId, saved);
+        if (!isCurrent()) return;
+        playlistImport.current = saved;
+        setAddedKeys(new Set(saved.entries.filter((e) => e.added).map((e) => e.id)));
+        setResults(saved.entries.map((e) => e.candidate));
+        return;
+      }
+      const candidates = await listPlaylistTracks(provider, playlist.playlistId);
+      const session = createOrderedImport(candidates, storageKey);
+      session.sourcePlaylist = playlist;
+      if (session.started) await reconcileOrderedImport(classId, session);
+      if (!isCurrent()) return;
+      playlistImport.current = session;
+      setAddedKeys(new Set(playlistImport.current.entries.filter((e) => e.added).map((e) => e.id)));
+      setResults(playlistImport.current.entries.map((e) => e.candidate));
+      if (playlistImport.current.sourceChanged)
+        setError(
+          'This playlist changed after the import started. Showing the original songs so you can retry that import safely.',
+        );
       setLibraryReauthProvider((current) => (current === provider ? null : current));
     } catch (e) {
+      if (!isCurrent()) return;
       const message = (e as Error).message;
       const code = e instanceof ApiError ? e.code : undefined;
       setError((e as Error).message);
@@ -385,55 +452,49 @@ export function TrackSearch({
       }
       setResults(null);
     } finally {
-      setSearching(false);
+      if (isCurrent()) setSearching(false);
+    }
+  };
+
+  const importPlaylistOccurrences = async (selectedIds?: Set<string>, confirmOnly = false) => {
+    if (importBusy.current || !playlistImport.current) return;
+    importBusy.current = true;
+    setImportingAllFromPlaylist(true);
+    if (!selectedIds) setBulkImportAttempted(true);
+    setError(null);
+    const session = playlistImport.current;
+    const generation = playlistGeneration.current;
+    const before = session.entries.filter((e) => e.added).length;
+    try {
+      const outcome = await runOrderedImport(classId, session, selectedIds, planBlockId, {
+        confirmOnly,
+      });
+      if (mounted.current && generation === playlistGeneration.current) {
+        setError(outcome.error);
+        setAddedKeys(new Set(session.entries.filter((e) => e.added).map((e) => e.id)));
+      }
+      if (mounted.current && activePlaylistContext.current === playlistContext)
+        setPendingImports(pendingOrderedImports(pendingPrefix));
+      const added = session.entries.filter((e) => e.added);
+      if (added.length > before)
+        onAdded(selectedIds ? added.find((e) => selectedIds.has(e.id))?.id : undefined);
+    } finally {
+      importBusy.current = false;
+      if (mounted.current) setImportingAllFromPlaylist(false);
     }
   };
 
   const importAll = async () => {
-    if (!results || results.length === 0 || importingKey !== null || importingAllFromPlaylist)
-      return;
-    const remaining = results.filter((candidate) => !addedKeys.has(candidateKey(candidate)));
-    if (remaining.length === 0) return;
-    setImportingAllFromPlaylist(true);
-    setBulkImportAttempted(true);
-    setError(null);
-    const CONCURRENCY = 4;
-    const pending = [...remaining];
-    const newAdded = new Set(addedKeys);
-    let addedThisRun = 0;
-    try {
-      while (pending.length > 0) {
-        const batch = pending.splice(0, CONCURRENCY);
-        await Promise.all(
-          batch.map(async (candidate) => {
-            const key = candidateKey(candidate);
-            if (newAdded.has(key)) return;
-            try {
-              const track = await importTrack(candidate.provider, candidate.providerTrackId);
-              await addTrack(classId, {
-                trackId: track.id,
-                intensity: 'mod',
-                ...(planBlockId ? { planBlockId } : {}),
-              });
-              newAdded.add(key);
-              addedThisRun += 1;
-            } catch {
-              // Best-effort: a single failing track doesn't abort the batch.
-            }
-          }),
-        );
-      }
-      setAddedKeys(newAdded);
-      if (addedThisRun > 0) onAdded();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setImportingAllFromPlaylist(false);
-    }
+    if (!results?.length || importingKey !== null || importingAllFromPlaylist) return;
+    await importPlaylistOccurrences();
   };
 
-  const add = async (candidate: TrackSearchResult) => {
-    if (importingAllFromPlaylist) return;
+  const add = async (candidate: TrackSearchResult, index: number) => {
+    if (importBusy.current || importingAllFromPlaylist) return;
+    if (selectedPlaylist && playlistImport.current?.entries[index]) {
+      await importPlaylistOccurrences(new Set([playlistImport.current.entries[index].id]));
+      return;
+    }
     const key = candidateKey(candidate);
     setImportingKey(key);
     setError(null);
@@ -481,14 +542,22 @@ export function TrackSearch({
   });
   const playlistTrackCount = results?.length ?? 0;
   const addedPlaylistTrackCount =
-    results?.filter((candidate) => addedKeys.has(candidateKey(candidate))).length ?? 0;
+    results?.filter((candidate, index) =>
+      addedKeys.has(
+        selectedPlaylist
+          ? (playlistImport.current?.entries[index]?.id ?? candidateKey(candidate))
+          : candidateKey(candidate),
+      ),
+    ).length ?? 0;
   const remainingPlaylistTrackCount = playlistTrackCount - addedPlaylistTrackCount;
 
   const bulkImportOutcome =
-    bulkImportAttempted && playlistTrackCount > 0
+    bulkImportAttempted && !importingAllFromPlaylist && playlistTrackCount > 0
       ? remainingPlaylistTrackCount === 0
         ? `Added all ${playlistTrackCount} ${playlistTrackCount === 1 ? 'track' : 'tracks'}.`
-        : `Added ${addedPlaylistTrackCount} of ${playlistTrackCount} tracks. ${remainingPlaylistTrackCount} couldn’t be added — retry the remaining ${remainingPlaylistTrackCount === 1 ? 'track' : 'tracks'}.`
+        : playlistImport.current?.pending
+          ? `Added ${addedPlaylistTrackCount} of ${playlistTrackCount} tracks. We couldn’t confirm whether the remaining tracks were added. Retry to confirm this import.`
+          : `Added ${addedPlaylistTrackCount} of ${playlistTrackCount} tracks. ${remainingPlaylistTrackCount} couldn’t be added — retry the remaining ${remainingPlaylistTrackCount === 1 ? 'track' : 'tracks'}.`
       : null;
 
   // Catalog, likes, and playlist drill-in all consume the same source-list rows
@@ -499,10 +568,14 @@ export function TrackSearch({
       action={{
         kind: 'import',
         addedKeys,
+        keyFor: selectedPlaylist
+          ? (candidate, index) =>
+              playlistImport.current?.entries[index]?.id ?? candidateKey(candidate)
+          : undefined,
         busyKey: importingKey,
         bulkBusy: importingAllFromPlaylist,
         addedLabel: 'Added',
-        onAdd: (candidate) => void add(candidate),
+        onAdd: (candidate, index) => void add(candidate, index),
       }}
     />
   );
@@ -693,13 +766,51 @@ export function TrackSearch({
         </span>
       </aside>
 
+      {mode === 'saved_playlists' && !selectedPlaylist && pendingImports.length > 0 && (
+        <div
+          role="status"
+          className="rounded-control border border-state-caution/40 p-3 font-ui text-xs text-text-secondary"
+        >
+          <p>
+            You have an unconfirmed playlist import. Review it even if the playlist is no longer
+            available.
+          </p>
+          {pendingImports.map((session) => {
+            const playlist = session.sourcePlaylist ?? {
+              provider,
+              playlistId: session.storageKey!.slice(pendingPrefix.length),
+              name: 'Previous playlist',
+              providerUri: null,
+              ownerName: null,
+              trackCount: session.entries.length,
+              coverImageUrl: null,
+            };
+            return (
+              <button
+                key={session.storageKey}
+                type="button"
+                onClick={() => void openSavedPlaylist(playlist)}
+                className="mt-2 min-h-11 rounded-pill border border-interactive/30 px-3 rf-focus-ring"
+              >
+                Review unconfirmed import from {playlist.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {mode === 'saved_playlists' && selectedPlaylist && (
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => {
+              playlistGeneration.current++;
+              playlistImport.current = null;
               setSelectedPlaylist(null);
               setResults(null);
+              setAddedKeys(new Set());
+              setError(null);
+              setSearching(false);
               setBulkImportAttempted(false);
             }}
             className="min-h-11 rounded-pill border border-interactive/30 px-3 font-ui text-xs text-text-secondary hover:text-text-primary"
@@ -741,6 +852,59 @@ export function TrackSearch({
           )}
         </div>
       )}
+
+      {mode === 'saved_playlists' && selectedPlaylist && playlistImport.current?.pending && (
+        <div
+          role="status"
+          className="rounded-control border border-state-caution/40 p-3 font-ui text-xs text-text-secondary"
+        >
+          <p>An earlier import is unconfirmed. Confirm it before adding more songs.</p>
+          <button
+            type="button"
+            disabled={importingAllFromPlaylist}
+            onClick={() => void importPlaylistOccurrences(new Set(), true)}
+            className="mt-2 min-h-11 rounded-pill rf-btn-primary px-3 rf-focus-ring"
+          >
+            Confirm previous import
+          </button>
+        </div>
+      )}
+
+      {mode === 'saved_playlists' &&
+        selectedPlaylist &&
+        playlistImport.current?.entries.some((e) => e.removed) && (
+          <p role="status" className="font-ui text-xs text-text-secondary">
+            Some previously added songs were removed from this class. Use Add or Retry to add them
+            again.
+          </p>
+        )}
+
+      {mode === 'saved_playlists' &&
+        selectedPlaylist &&
+        playlistImport.current?.needsRecovery &&
+        !playlistImport.current.pending && (
+          <div
+            role="status"
+            className="rounded-control border border-state-caution/40 p-3 font-ui text-xs text-text-secondary"
+          >
+            <p>
+              Your class order changed. Keep your arrangement and add the remaining songs at the
+              end.
+            </p>
+            <button
+              type="button"
+              disabled={importingAllFromPlaylist}
+              onClick={() => {
+                if (!playlistImport.current) return;
+                preserveImportArrangement(playlistImport.current);
+                void importPlaylistOccurrences();
+              }}
+              className="mt-2 min-h-11 rounded-pill rf-btn-primary px-3 rf-focus-ring"
+            >
+              Add remaining songs at end
+            </button>
+          </div>
+        )}
 
       {mode === 'saved_playlists' && selectedPlaylist && bulkImportOutcome && (
         <p
