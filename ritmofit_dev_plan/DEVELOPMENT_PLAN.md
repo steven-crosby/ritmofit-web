@@ -37,10 +37,16 @@ Pilates, and HIIT.
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
-- **Current operating focus (2026-09-28):** the launch gate is green and the app is live.
-  Production serves merged `main` application tip `70a733d` from PR #473 as Worker
-  `18aa93dd-8695-4791-a6dd-f0e031e28c75`; remote D1 has no pending migrations
-  (see [`HISTORY.md`](./HISTORY.md)). #465 previews a recipe's exact blocks in the
+- **Current operating focus (2026-10-02):** playlist-to-class correctness is released (#481).
+  Production serves application source `d026f5992b8c2181b262259e5d9acf84e7745364`
+  as Worker `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`, with SPA entry
+  `assets/index-68EE379w.js`; remote D1 is migrated through `0020` with nothing pending.
+  Desktop Apple Music imports preserve the ten-song source order through both entry
+  points for Cycle/Pilates; uncertain-response recovery and prompter-only transport
+  passed. Audible/uninterrupted playback remains blocked by Apple browser sign-in.
+  The next product gap is an editable playlist-based teaching draft with generic cues
+  and notes; current imports generate no teaching content. See [`HISTORY.md`](./HISTORY.md).
+  Earlier #465 previews a recipe's exact blocks in the
   create dialog and cleans up block guidance text. The recipe content review is resolved
   and deployed (#470): new classes get `cycle_*_v2` (easy valley before a shorter
   peak) and `hiit_45_v2`/`hiit_60_v2` (4-minute finisher at every length); v1 recipes are
@@ -50,8 +56,8 @@ Pilates, and HIIT.
   label, intensity, goal, and focus editing. Deployed PR #468 completes scaffold-block
   add, reorder, and empty-block delete. See
   [`class-template-handoff.md`](./class-template-handoff.md) for the settled rules.
-  **SPC-09 is the next planning objective** (owner, 2026-09-28): design the API signals
-  that separate permission from provider-error before adding those UI states.
+  **SPC-09 remains pending:** design the API signals that separate permission from
+  provider-error before adding those UI states.
   PROD-HYGIENE is complete: four owner-confirmed fixtures were tagged and deleted
   2026-09-28 (see [`HISTORY.md`](./HISTORY.md)). Full Pulse Check disposition lives in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
@@ -347,20 +353,29 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-10-02, after the #478 merge):** `main` is ahead of
-production. `main` carries music-led Phase 1 (`48bfd11`, #478), which is not deployed and
-has no real-device playback acceptance; do not deploy it without the owner's explicit go.
-The scenarios to run are in
+**Current application release (2026-10-02, after #481):** production application code
+matches merged `d026f5992b8c2181b262259e5d9acf84e7745364`. This includes music-led
+Phase 1 (#478) and ordered playlist-import correctness/recovery (#481). Worker
+`b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03` serves 100%; SPA entry
+`assets/index-68EE379w.js` matched three consecutive cache-busted fetches and the
+updated Chrome document. Remote D1 has no pending migrations through `0020`.
+
+CI and the full local gate passed on the deployed source. Desktop Apple Music
+imports passed for Cycle/Pilates through Music and Classes-to-empty-class. A
+controlled response-loss test recovered the original ten placements after reload,
+and both disciplines passed prompter-only transport mechanics with accelerated
+completion. Apple browser sign-in blocks audible and uninterrupted provider
+acceptance; no iPhone, Spotify, or HIIT testing was performed this session. These
+smokes do not establish universally reliable playback. The Phase 1 acceptance
+scenarios remain in
 [`docs/audits/music-led-phase-1-acceptance/`](../docs/audits/music-led-phase-1-acceptance/README.md).
-Production still serves application tip `70a733d` (#473, deployed 2026-09-28): on
-2026-10-02 Worker `18aa93dd-8695-4791-a6dd-f0e031e28c75` was at 100% and the SPA entry
-`assets/index-vAXMRElW.js` appeared on three consecutive cache-busted fetches. #473
-drains empty `204` bodies in the web API client.
-Remote D1 has no pending migrations (latest local migration `0019`). #470 deployed
-the v2 Cycle/HIIT recipes; an authenticated production acceptance pass covered #468
-block add/reorder/delete and the v2 Cycle 45 content, and its `[QA]` class was deleted
-(see [`HISTORY.md`](./HISTORY.md)). A Worker rollback below `dd9a27e9` is unsafe once
-any v2-recipe class exists.
+
+The playlist-based automatic teaching draft remains a product gap: source order is
+preserved, but imports create no exercise blocks, generic cues, or notes. Four fresh
+`qa-fixture` classes remain for review, with IDs in [`HISTORY.md`](./HISTORY.md).
+#470's v2 recipes remain deployed; a Worker rollback below `dd9a27e9` is unsafe once
+any v2-recipe class exists. The prior live Worker for this additive-migration
+release was `e4744ca1-11b0-4ad6-9382-ef8ad6f9b0a5`.
 See [`class-template-handoff.md`](./class-template-handoff.md). The alerting
 half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
 
@@ -387,7 +402,7 @@ half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unc
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `18aa93dd` from `70a733d` (#473); see "Current `main` vs production" above
+  `b74e4fe2` from `d026f59` (#481); see "Current application release" above
   for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**
