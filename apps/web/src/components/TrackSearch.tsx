@@ -476,7 +476,11 @@ export function TrackSearch({
       if (mounted.current && activePlaylistContext.current === playlistContext)
         setPendingImports(pendingOrderedImports(pendingPrefix));
       const added = session.entries.filter((e) => e.added);
-      if (added.length > before)
+      if (
+        added.length > before &&
+        mounted.current &&
+        activePlaylistContext.current === playlistContext
+      )
         onAdded(selectedIds ? added.find((e) => selectedIds.has(e.id))?.id : undefined);
     } finally {
       importBusy.current = false;

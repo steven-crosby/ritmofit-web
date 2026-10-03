@@ -226,3 +226,36 @@ it('discards a playlist response after the destination class changes', async () 
   expect(screen.queryByRole('button', { name: /Import all/ })).toBeNull();
   expect(api.importClassTracks).not.toHaveBeenCalled();
 });
+
+it.each(['unmount', 'class change'])(
+  'does not notify the old destination after %s',
+  async (change) => {
+    let finish!: (value: ClassTrack[]) => void;
+    const pending = new Promise<ClassTrack[]>((resolve) => {
+      finish = resolve;
+    });
+    vi.mocked(api.importClassTracks).mockImplementationOnce(async (_classId, body) => {
+      rows = body.placements.map((p, position) => ({ ...p, position, updatedAt: 1 }) as ClassTrack);
+      return pending;
+    });
+    const oldAdded = vi.fn();
+    const newAdded = vi.fn();
+    const view = render(<TrackSearch classId="c1" onAdded={oldAdded} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+    await screen.findByText('Alpha');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Open' })[0]!);
+    await screen.findAllByText('One');
+    fireEvent.click(screen.getByRole('button', { name: /Import all 3 tracks/ }));
+    await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
+    if (change === 'unmount') view.unmount();
+    else view.rerender(<TrackSearch classId="c2" onAdded={newAdded} />);
+    await act(async () => {
+      finish(rows);
+      await pending;
+    });
+    expect(rows).toHaveLength(3);
+    expect(oldAdded).not.toHaveBeenCalled();
+    expect(newAdded).not.toHaveBeenCalled();
+  },
+);

@@ -235,6 +235,8 @@ the class; they contain class placement metadata only, never provider credential
 The receipt, occurrence inserts, layout updates, and class recency update commit in
 one D1 batch. Snapshot rejection or any insert failure rolls back the entire batch.
 Occurrence IDs remain distinct even when their library `track_id` is the same.
+Single-song adds use the same guard but delete their non-replayable receipt at the
+end of that batch; only client-replayable playlist operations retain durable receipts.
 
 ### `class_tags`
 Simple "Google Keep" style tagging system for classes. Used to search historical classes (e.g., "Songs by Move" or thematic searches).

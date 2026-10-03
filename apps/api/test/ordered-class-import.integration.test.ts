@@ -301,6 +301,11 @@ describe('ordered class import (mounted Worker + migrated D1)', () => {
       body: JSON.stringify({ trackId: b }),
     });
     expect((await list(id)).map((row) => row.startOffsetMs)).toEqual([0, 20000]);
+    expect(
+      await env.DB.prepare('SELECT id FROM class_track_import_operations WHERE class_id = ?')
+        .bind(id)
+        .first(),
+    ).toBeNull();
   });
 
   it('enforces class/library/block access and complete occurrence permutations', async () => {

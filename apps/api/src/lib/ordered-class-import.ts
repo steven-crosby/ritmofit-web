@@ -293,6 +293,15 @@ export async function commitOrderedClassImport(
     const query = db.insert(tracks).values(addition.inlineTrack).toSQL();
     statements.unshift(env.DB.prepare(query.sql).bind(...query.params));
   }
+  if (addition) {
+    // Single adds cannot replay their server-generated operation ID. Retain the
+    // writer guard only for this batch, rather than accumulating class snapshots.
+    statements.push(
+      env.DB.prepare(
+        'DELETE FROM class_track_import_operations WHERE id = ? AND writer_token = ?',
+      ).bind(body.operationId, token),
+    );
+  }
   try {
     await env.DB.batch(statements);
   } catch (error) {
@@ -307,5 +316,5 @@ export async function commitOrderedClassImport(
       throw conflict();
     throw error;
   }
-  return (await readReceipt())!;
+  return addition ? result : (await readReceipt())!;
 }
