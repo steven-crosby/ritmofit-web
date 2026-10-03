@@ -4,6 +4,19 @@
 
 **Status:** owner-approved product direction; interaction and data contracts remain to be validated. This extends [D20/D21/D23](./decisions.md), the settled Final Cut Pro semantics in the [class scaffold contract](./class-scaffold-contract.md), and the [class-builder guidelines](../ritmofit_design_system/09-class-builder-guidelines.md).
 
+**Current planning entry (2026-10-03):** use the
+[playlist-to-class-to-Live audit and restart guide](../docs/audits/playlist-to-live-2026-10-03/NEXT_SESSION.md)
+for the next development plan. The immediate scope is desktop Apple Music and
+Cycle/Pilates: repair the observed natural-transition and Live reflow defects,
+then plan an editable playlist-derived teaching draft and coherent creation flow.
+The agreed beginner default is one song per exercise block, with first/last songs
+as warm-up/cooldown and generic discipline cues/notes. This default does not change
+the general zero/one/many-song plan-block grammar below or require the proposed
+exercise-step entity. Existing song notes/cues already have shared and Live
+contracts. HIIT, iPhone testing, and the broader precision-score roadmap remain
+outside this immediate audit follow-up. No new implementation or schema decision
+is authorized by this checkpoint.
+
 ## Outcome
 
 An instructor can build a polished, precisely timed class and teach from it live without becoming a video editor or audio engineer. The ceiling should approach Final Cut Pro's **granularity, flexibility, and creative freedom for arranging a class**. The first screen should satisfy D23's **Simple. Stupid. Swift.** test: where am I, what matters now, what can I do next, and what just happened?

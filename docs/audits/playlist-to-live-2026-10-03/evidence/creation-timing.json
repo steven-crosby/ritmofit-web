@@ -1,0 +1,6 @@
+{
+  "scope": "Agent-paced, start through first post-import capture; includes QA tagging and inspection. Not human benchmark.",
+  "cycleSeconds": 68.11,
+  "pilatesSeconds": 72.636,
+  "priorMusicAndEmptyTimings": "unverified: prior interactions lack a retained elapsed timer; their functional evidence is reused."
+}

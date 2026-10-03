@@ -37,15 +37,21 @@ Pilates, and HIIT.
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
-- **Current operating focus (2026-10-02):** playlist-to-class correctness is released (#481).
+- **Current operating focus (2026-10-03):** playlist-to-class correctness is released (#481).
   Production serves application source `d026f5992b8c2181b262259e5d9acf84e7745364`
   as Worker `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`, with SPA entry
   `assets/index-68EE379w.js`; remote D1 is migrated through `0020` with nothing pending.
   Desktop Apple Music imports preserve the ten-song source order through both entry
   points for Cycle/Pilates; uncertain-response recovery and prompter-only transport
-  passed. Audible/uninterrupted playback remains blocked by Apple browser sign-in.
-  The next product gap is an editable playlist-based teaching draft with generic cues
-  and notes; current imports generate no teaching content. See [`HISTORY.md`](./HISTORY.md).
+  passed. Apple browser sign-in is now resolved. Natural first-song transitions fail
+  in both Cycle and Pilates; SDK duration precision is a strong causal hypothesis,
+  pending a regression-backed fix. Audible playback remains unverified. The completed
+  desktop audit also found hidden Live content at 200% zoom, no playlist-derived
+  teaching draft, incompatible template/import flows, and rejected explicit zero
+  clip anchors. Start the next session in Plan Mode with the
+  [audit and restart guide](../docs/audits/playlist-to-live-2026-10-03/NEXT_SESSION.md).
+  Implementation, contract choices, and the proposed 15-song cap require an approved
+  development plan. See [`HISTORY.md`](./HISTORY.md).
   Earlier #465 previews a recipe's exact blocks in the
   create dialog and cleans up block guidance text. The recipe content review is resolved
   and deployed (#470): new classes get `cycle_*_v2` (easy valley before a shorter
@@ -353,7 +359,7 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current application release (2026-10-02, after #481):** production application code
+**Current application release (rechecked 2026-10-03, after #481):** production application code
 matches merged `d026f5992b8c2181b262259e5d9acf84e7745364`. This includes music-led
 Phase 1 (#478) and ordered playlist-import correctness/recovery (#481). Worker
 `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03` serves 100%; SPA entry
@@ -364,15 +370,21 @@ CI and the full local gate passed on the deployed source. Desktop Apple Music
 imports passed for Cycle/Pilates through Music and Classes-to-empty-class. A
 controlled response-loss test recovered the original ten placements after reload,
 and both disciplines passed prompter-only transport mechanics with accelerated
-completion. Apple browser sign-in blocks audible and uninterrupted provider
-acceptance; no iPhone, Spotify, or HIIT testing was performed this session. These
-smokes do not establish universally reliable playback. The Phase 1 acceptance
+completion. The October 3 desktop audit resolved browser sign-in and observed
+provider transport progress, pause/resume, seek/skip, manual notes/cues, and recovery.
+Both natural first-song transitions failed at 3:43 with “Music ended before the saved
+playback window.” Full uninterrupted completion is blocked by that defect; audible
+output remains unverified. No iPhone, Spotify, or HIIT testing was performed in this
+audit. These smokes do not establish universally reliable playback. The Phase 1 acceptance
 scenarios remain in
 [`docs/audits/music-led-phase-1-acceptance/`](../docs/audits/music-led-phase-1-acceptance/README.md).
 
 The playlist-based automatic teaching draft remains a product gap: source order is
-preserved, but imports create no exercise blocks, generic cues, or notes. Four fresh
-`qa-fixture` classes remain for review, with IDs in [`HISTORY.md`](./HISTORY.md).
+preserved, but imports create no exercise blocks, generic cues, or notes. The Classes
+template path imports all songs into its first fixed block and leaves empty blocks
+that disable Run Live. Six tagged QA fixtures remain for review; IDs, screenshots,
+scenario verdicts, and the ranked fix sequence are in the
+[desktop audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md).
 #470's v2 recipes remain deployed; a Worker rollback below `dd9a27e9` is unsafe once
 any v2-recipe class exists. The prior live Worker for this additive-migration
 release was `e4744ca1-11b0-4ad6-9382-ef8ad6f9b0a5`.

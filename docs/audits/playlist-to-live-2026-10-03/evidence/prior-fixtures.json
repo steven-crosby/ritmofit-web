@@ -1,0 +1,138 @@
+[
+  {
+    "count": 10,
+    "id": "a1dac274-197b-4696-a649-d16fb24a620f",
+    "ids": [
+      "b4389697-498c-4b9e-b37f-5bb10ed814ec",
+      "b52b190e-ff41-4a86-b15c-9585e3aa224b",
+      "0959b2fd-cfe1-4e4b-b98d-275ad2db63b8",
+      "92c0c501-a7df-49ca-aaab-ddd8fbbbc690",
+      "4639efaa-eaab-4937-97bd-f64a8b9af64e",
+      "f8a8675e-c15a-4060-91ce-00ec13cac8f6",
+      "62c368c8-1d0f-4a46-8b83-be97cce18939",
+      "cfbeeccc-5810-4633-9c64-f29e3581a86a",
+      "bb22e9f2-e1af-4ae2-a2bf-2a338c00e508",
+      "2095c154-822c-4d49-a203-e104d029f2a8"
+    ],
+    "positions": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "tags": ["qa-fixture"],
+    "template": "cycle",
+    "title": "[QA] #481 Music Cycle",
+    "titles": [
+      "Abracadabra",
+      "Bad Romance",
+      "Die With A Smile",
+      "Telephone (feat. Beyoncé)",
+      "Born This Way",
+      "RUNWAY",
+      "Poker Face",
+      "The Dead Dance",
+      "The Edge of Glory",
+      "Rain On Me"
+    ],
+    "uniqueIds": 10,
+    "noteLengths": 0
+  },
+  {
+    "count": 10,
+    "id": "da1aec6e-f5b0-4066-8d45-2853558be233",
+    "ids": [
+      "a094ed51-769f-4318-a2a1-92af9d6e2403",
+      "66f62189-99a2-4a10-b360-e66b0ad6530d",
+      "a08d51db-7246-4863-9694-3b51ac6a79fe",
+      "28e803f1-41f9-4466-9493-37d136d23261",
+      "93ac7eef-ec74-4c5c-b093-9eaaa0496117",
+      "d08a24c4-1098-4cee-b411-1a20c5c75a5e",
+      "1c8f7af7-f15e-4835-adaa-c3384b8466df",
+      "c2655fcd-0c98-402d-9fee-9752e05fff95",
+      "0ae27bfa-891b-4b57-b203-f229e6613406",
+      "12adf84c-f3ce-4a67-822d-2d3181db34de"
+    ],
+    "positions": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "tags": ["qa-fixture"],
+    "template": "sculpt",
+    "title": "[QA] #481 Empty Pilates",
+    "titles": [
+      "Abracadabra",
+      "Bad Romance",
+      "Die With A Smile",
+      "Telephone (feat. Beyoncé)",
+      "Born This Way",
+      "RUNWAY",
+      "Poker Face",
+      "The Dead Dance",
+      "The Edge of Glory",
+      "Rain On Me"
+    ],
+    "uniqueIds": 10,
+    "noteLengths": 69
+  },
+  {
+    "count": 10,
+    "id": "05f546c7-ffe7-4827-ba2e-cbd526d9dc03",
+    "ids": [
+      "9db4495e-3eaf-4745-b59b-0ed1fcf9ee46",
+      "b6c8d817-b762-4a57-a08f-080b3c5c7bc5",
+      "7d15266e-c633-4963-998a-873596477da9",
+      "5cbaf8d7-497e-420f-9a2e-7574db1960af",
+      "da3407aa-1efc-421a-b1a6-d18df27f4943",
+      "ee4b0e2c-0b42-4315-ba22-1d8b44676841",
+      "f360cb3d-06de-4c6a-81be-f0c3f73418a9",
+      "62accd70-fc9a-4bb6-8f83-91baed0ec518",
+      "74c4f474-50d3-4af3-9d86-f203e08acbf8",
+      "8e76344e-0fbe-40d4-b9e8-db3c4965dbfd"
+    ],
+    "positions": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "tags": ["qa-fixture"],
+    "template": "sculpt",
+    "title": "[QA] #481 Music Pilates",
+    "titles": [
+      "Abracadabra",
+      "Bad Romance",
+      "Die With A Smile",
+      "Telephone (feat. Beyoncé)",
+      "Born This Way",
+      "RUNWAY",
+      "Poker Face",
+      "The Dead Dance",
+      "The Edge of Glory",
+      "Rain On Me"
+    ],
+    "uniqueIds": 10,
+    "noteLengths": 0
+  },
+  {
+    "count": 10,
+    "id": "3402a289-b570-4e7c-a6a9-4c996b28383a",
+    "ids": [
+      "e1b80c90-b040-4a15-80cc-b776b833f47d",
+      "288e0b82-58b7-4a3e-813d-946d07788f35",
+      "87233327-53a4-4f8c-8ea3-e927bf0bda0b",
+      "daf9da17-8646-405f-ac59-73c2ed025e92",
+      "ce68e6ac-2f55-49be-b579-6079d7a73a9a",
+      "0c50bddd-87fc-4d02-afb9-44b775ab3365",
+      "d791c3e8-bf40-456c-8260-ada3c19191c1",
+      "bebd8422-f1e1-4760-b655-9f847ce8f501",
+      "6bbb93db-24d6-4557-8b42-76802882232a",
+      "6ceb5f24-15d4-4b44-8937-1bb2ac2dbe62"
+    ],
+    "positions": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "tags": ["qa-fixture"],
+    "template": "cycle",
+    "title": "[QA] #481 Empty Cycle",
+    "titles": [
+      "Abracadabra",
+      "Bad Romance",
+      "Die With A Smile",
+      "Telephone (feat. Beyoncé)",
+      "Born This Way",
+      "RUNWAY",
+      "Poker Face",
+      "The Dead Dance",
+      "The Edge of Glory",
+      "Rain On Me"
+    ],
+    "uniqueIds": 10,
+    "noteLengths": 0
+  }
+]
