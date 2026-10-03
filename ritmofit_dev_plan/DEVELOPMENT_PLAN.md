@@ -318,7 +318,12 @@ call returns `403`.
 
 **Next focus:** Apple Music Live playback on the iPhone (web Safari). Phase 1 holds the teaching
 position and shows recovery correctly there, but no audible playback has been achieved. The result
-decides whether the phone surface stays web Live or needs native iOS playback.
+decides whether the phone surface stays web Live or needs native iOS playback. Start the next
+session here, cheapest check first: (1) fully close the iOS Music app, reload `ritmofit.studio`
+(now Phase 1), and run the Apple Music Test class; (2) if it still fails, cable the iPhone to the
+Mac and read Safari Web Inspector's console and network for the MusicKit error during Start and
+Retry; (3) then decide whether the web adapter can be fixed (for example, starting playback
+inside the Start tap) or the phone needs a native iOS playback plan.
 
 **Class-building design direction:** The owner-approved
 [`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) sets the target for a
