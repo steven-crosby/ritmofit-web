@@ -10,6 +10,52 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-10-03 — playlist-to-class-to-Live desktop audit completed; no deployment.**
+> Production Chrome / Apple Music, beginner and experienced Cycle/Pilates, using
+> only the ten-song `Ritmo Apple Music Test` playlist. Browser sign-in completed.
+> The [audit report](../docs/audits/playlist-to-live-2026-10-03/coverage.md) records
+> scenario verdicts, screenshots, reproduction steps, and contract implications;
+> the [next-session guide](../docs/audits/playlist-to-live-2026-10-03/NEXT_SESSION.md)
+> routes a Plan Mode development plan. Completing the audit does not mean the
+> desired product experience passed.
+>
+> Beginner flows fail the desired teaching-draft experience: imports generate no
+> song cues/notes; fixed templates put all ten songs in Block 1, leaving empty
+> blocks that disable Run Live. Experienced empty-class authoring works with
+> optional choreography, manual notes, timed cues, precise edits, and reload
+> persistence. Music-backed Start, provider progress, Pause/Resume, seek/skip, and
+> explicit prompter recovery were observed. Both disciplines fail the first
+> natural song boundary at 3:43. Saved 223,398 ms versus SDK duration 223 seconds
+> is strong causal evidence for precision mismatch, not a verified implemented
+> fix. No full uninterrupted class passed; audible output remains unverified.
+> Live at real desktop 200% zoom hides the teaching region; long cues overwhelm
+> Cue-by-Cue. Explicit `0:00` clip start is rejected while blank start works.
+>
+> Read-only close reconcile at 17:11 UTC: Worker
+> `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03` serves 100%; three consecutive cache-busted
+> SPA responses matched `assets/index-68EE379w.js`. SPA entry/health returned 200,
+> classes/explore/teams returned 401 unauthenticated, and six security headers
+> were present. Remote D1 reports no pending migrations through repository level
+> `0020`. Application source remains `d026f5992b8c2181b262259e5d9acf84e7745364`;
+> local/fetched main `aa128e8` contains later documentation. No application code,
+> shared contract, schema, configuration, migration, or deployment changed here.
+>
+> Six `qa-fixture` classes remain at the owner's instruction; no deletion. Two
+> fresh fixtures: `[QA] Goal Template Cycle` (`8a8dcf22-0b20-48ec-a84a-4f13d10ebe85`)
+> and `[QA] Goal Template Pilates` (`975a0152-3bc8-4a79-a812-dee80a148164`). The four
+> #481 fixtures listed below were reused. Only QA fixtures were modified; source
+> playlists and existing instructor content were preserved. Temporary clipping
+> was restored; manual test notes/cues remain. No iPhone, Spotify, HIIT, or large
+> playlist imports were tested. The 15-song cap is a proposal, not a locked rule.
+>
+> Full close prepares documentation and curated QA evidence for publication.
+> Raw scoped API/automation snapshots were reduced to field summaries after a
+> hash-verified local backup. Git publication/merge remain separate owner actions.
+> Documentation formatting, diff whitespace, evidence parsing/hash/integrity,
+> relative links, and scoped credential-pattern checks passed. The matching
+> deployed application gate was not repeated for this docs-only close.
+> Unrelated `.claude/` work and pre-existing conflicting docs PR #480 were preserved.
+
 > **Session 2026-10-02 (PR #481 — ordered playlist import and recovery) — deployed
 > (Worker `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`).** Application source
 > `d026f5992b8c2181b262259e5d9acf84e7745364`; owner authorized commit, PR, merge,

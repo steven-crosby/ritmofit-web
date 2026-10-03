@@ -4,6 +4,27 @@
 
 **Status:** owner approved Phase 1 implementation on September 30, starting with 1A. D24 is approved product canon. Later phases remain proposals. This plan sequences the September 29 instructor benchmark and class-score blueprint with September 30 real-iPhone findings. It supersedes SPC-09 as the recommended next session focus, subject to owner approval; SPC-09 remains open and informs capability/error signals.
 
+## Current planning checkpoint — 2026-10-03
+
+Phase 1 and #481 import correctness are deployed. The
+[desktop Apple Music audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md)
+resolved browser sign-in, then reproduced a natural first-song boundary failure
+for both Cycle and Pilates. Provider progress is observed; audible success and
+full uninterrupted completion are not established. Saved 223,398 ms versus SDK
+duration 223 seconds motivates bounded boundary reconciliation. Preserve D24's
+held teaching position for genuinely early endings, stalls, and errors; choose
+the precision rule through code inspection and regressions, not a blanket bypass.
+
+The [next-session guide](../docs/audits/playlist-to-live-2026-10-03/NEXT_SESSION.md)
+routes a Plan Mode review of five findings: natural transition, Live zoom/long
+text, absent playlist teaching draft, incompatible creation structures, and
+explicit zero anchors. Desktop Cycle/Pilates is the immediate scope; broader
+iPhone/Spotify acceptance and later phases below remain pending. Existing
+notes/cues can support basic coaching; safe regeneration and any block projection
+or atomic draft API require an explicit design decision before implementation.
+This dated checkpoint supersedes historical sign-in-blocker statements for the
+October 3 desktop session without changing earlier evidence records.
+
 ## Goal and evidence
 
 An instructor can connect a music service, select and arrange music, and teach from a readable Live surface with honest playback readiness. Music drives creation and instruction until the instructor explicitly chooses otherwise ([D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30)).

@@ -1,0 +1,659 @@
+[
+  {
+    "id": "8a8dcf22-0b20-48ec-a84a-4f13d10ebe85",
+    "title": "[QA] Goal Template Cycle",
+    "tags": ["qa-fixture"],
+    "template": "cycle",
+    "targetDurationMs": 2700000,
+    "totalDurationMs": 2390720,
+    "planBlockCount": 8,
+    "tracks": [
+      {
+        "placementId": "e175bcb9-70d8-4b36-a8e9-91f86ced94a4",
+        "position": 0,
+        "title": "Abracadabra",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 223398,
+        "effectiveDurationMs": 223398,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "3531a530-d2bd-4d78-9232-26559da2ad87",
+        "position": 1,
+        "title": "Bad Romance",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 294504,
+        "effectiveDurationMs": 294504,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "5795779c-7709-45dd-bed5-d3c6cf7a7407",
+        "position": 2,
+        "title": "Die With A Smile",
+        "artist": "Lady Gaga & Bruno Mars",
+        "sourceDurationMs": 251668,
+        "effectiveDurationMs": 251668,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "870e6d73-3678-41ab-9afd-6830cb13dd83",
+        "position": 3,
+        "title": "Telephone (feat. Beyoncé)",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 220537,
+        "effectiveDurationMs": 220537,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "ef53f5b8-62f6-4cb4-9eac-c3533ab97846",
+        "position": 4,
+        "title": "Born This Way",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 260258,
+        "effectiveDurationMs": 260258,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "5c8c6ed3-3040-4a04-8c7b-f7ee8f2192b8",
+        "position": 5,
+        "title": "RUNWAY",
+        "artist": "Lady Gaga & Doechii",
+        "sourceDurationMs": 171010,
+        "effectiveDurationMs": 171010,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "12ac4240-25db-4ad0-8874-b40f145c0bf1",
+        "position": 6,
+        "title": "Poker Face",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 237078,
+        "effectiveDurationMs": 237078,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "41c28598-1c38-4e13-97ad-3a17440ad834",
+        "position": 7,
+        "title": "The Dead Dance",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 228519,
+        "effectiveDurationMs": 228519,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "963f56a2-1e0c-4d27-842f-399d00bb409b",
+        "position": 8,
+        "title": "The Edge of Glory",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 321545,
+        "effectiveDurationMs": 321545,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "d6c40cab-4858-46b0-baa4-4c35e6b5ea50",
+        "position": 9,
+        "title": "Rain On Me",
+        "artist": "Lady Gaga & Ariana Grande",
+        "sourceDurationMs": 182203,
+        "effectiveDurationMs": 182203,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      }
+    ],
+    "blocks": [
+      {
+        "id": "c954958d-fe03-4471-ad43-9e853c977e32",
+        "position": 0,
+        "label": "Arrive on the bike",
+        "targetDurationMs": 360000,
+        "guidancePresent": true
+      },
+      {
+        "id": "81e7c53f-74b4-4903-9a89-a93f8da58cfb",
+        "position": 1,
+        "label": "Build the base",
+        "targetDurationMs": 360000,
+        "guidancePresent": true
+      },
+      {
+        "id": "e342fe5b-6d68-4531-9c11-81b4fce6a561",
+        "position": 2,
+        "label": "Seated climb",
+        "targetDurationMs": 420000,
+        "guidancePresent": true
+      },
+      {
+        "id": "bb750fdb-ee2e-4fdf-83e5-658fad56cf15",
+        "position": 3,
+        "label": "Speed control",
+        "targetDurationMs": 300000,
+        "guidancePresent": true
+      },
+      {
+        "id": "b89aab45-c03d-4881-ab22-7967ff840112",
+        "position": 4,
+        "label": "Standing climb",
+        "targetDurationMs": 420000,
+        "guidancePresent": true
+      },
+      {
+        "id": "f4dce1cd-4093-4cc2-91cd-1ef08a289ea9",
+        "position": 5,
+        "label": "Recover before the peak",
+        "targetDurationMs": 180000,
+        "guidancePresent": true
+      },
+      {
+        "id": "b5554104-a60d-4177-865d-727e9a490cfb",
+        "position": 6,
+        "label": "Peak effort",
+        "targetDurationMs": 300000,
+        "guidancePresent": true
+      },
+      {
+        "id": "fd9b6be0-6d6b-4c3b-a15b-53f09a061bc8",
+        "position": 7,
+        "label": "Return and release",
+        "targetDurationMs": 360000,
+        "guidancePresent": true
+      }
+    ]
+  },
+  {
+    "id": "975a0152-3bc8-4a79-a812-dee80a148164",
+    "title": "[QA] Goal Template Pilates",
+    "tags": ["qa-fixture"],
+    "template": "sculpt",
+    "targetDurationMs": 2700000,
+    "totalDurationMs": 2390720,
+    "planBlockCount": 7,
+    "tracks": [
+      {
+        "placementId": "9c998583-051f-44bc-8433-0850587bea95",
+        "position": 0,
+        "title": "Abracadabra",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 223398,
+        "effectiveDurationMs": 223398,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "76b1c430-9d41-42aa-b77e-d647e4384617",
+        "position": 1,
+        "title": "Bad Romance",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 294504,
+        "effectiveDurationMs": 294504,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "f75e6e7c-bcfc-45a7-a23b-b61d2dd9461b",
+        "position": 2,
+        "title": "Die With A Smile",
+        "artist": "Lady Gaga & Bruno Mars",
+        "sourceDurationMs": 251668,
+        "effectiveDurationMs": 251668,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "d050c1d0-dadb-4d2c-a655-ece6098c0a02",
+        "position": 3,
+        "title": "Telephone (feat. Beyoncé)",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 220537,
+        "effectiveDurationMs": 220537,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "9221d028-26bb-4aff-b5c3-59bacb0bb7ef",
+        "position": 4,
+        "title": "Born This Way",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 260258,
+        "effectiveDurationMs": 260258,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "8b69c529-b18d-4fc6-a013-d96be8ae83ab",
+        "position": 5,
+        "title": "RUNWAY",
+        "artist": "Lady Gaga & Doechii",
+        "sourceDurationMs": 171010,
+        "effectiveDurationMs": 171010,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "40679d21-4078-488b-84ad-ffca4011607e",
+        "position": 6,
+        "title": "Poker Face",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 237078,
+        "effectiveDurationMs": 237078,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "56a33e47-4be0-4264-b740-1089b2d79447",
+        "position": 7,
+        "title": "The Dead Dance",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 228519,
+        "effectiveDurationMs": 228519,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "d29d3bf8-f42f-4181-8013-191972a3b3a8",
+        "position": 8,
+        "title": "The Edge of Glory",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 321545,
+        "effectiveDurationMs": 321545,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "f4046337-93db-490d-86de-1428ddaaea78",
+        "position": 9,
+        "title": "Rain On Me",
+        "artist": "Lady Gaga & Ariana Grande",
+        "sourceDurationMs": 182203,
+        "effectiveDurationMs": 182203,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      }
+    ],
+    "blocks": [
+      {
+        "id": "077d9df5-0b95-4ffa-882f-9780f06b7c48",
+        "position": 0,
+        "label": "Arrive and breathe",
+        "targetDurationMs": 360000,
+        "guidancePresent": true
+      },
+      {
+        "id": "74b01f6a-003e-4009-8ae8-a84b431e0a0c",
+        "position": 1,
+        "label": "Mobilize",
+        "targetDurationMs": 360000,
+        "guidancePresent": true
+      },
+      {
+        "id": "f59adcb0-aa91-4273-8c5a-042c07e7e8cb",
+        "position": 2,
+        "label": "Center and stabilize",
+        "targetDurationMs": 420000,
+        "guidancePresent": true
+      },
+      {
+        "id": "71663d74-65d9-44ff-9ba3-33a3402f9ec8",
+        "position": 3,
+        "label": "Lower-body strength",
+        "targetDurationMs": 420000,
+        "guidancePresent": true
+      },
+      {
+        "id": "e8cfa8ff-f8fe-4cf1-bb04-38f9bbc27259",
+        "position": 4,
+        "label": "Upper-body posture",
+        "targetDurationMs": 360000,
+        "guidancePresent": true
+      },
+      {
+        "id": "98ec706f-07dd-40ee-8f7b-34e1b7bac0f6",
+        "position": 5,
+        "label": "Integrated flow",
+        "targetDurationMs": 420000,
+        "guidancePresent": true
+      },
+      {
+        "id": "f8908b24-4350-4c02-a962-0dad551ec804",
+        "position": 6,
+        "label": "Release",
+        "targetDurationMs": 360000,
+        "guidancePresent": true
+      }
+    ]
+  },
+  {
+    "id": "3402a289-b570-4e7c-a6a9-4c996b28383a",
+    "title": "[QA] #481 Empty Cycle",
+    "tags": ["qa-fixture"],
+    "template": "cycle",
+    "targetDurationMs": 2700000,
+    "totalDurationMs": 2390720,
+    "planBlockCount": 0,
+    "tracks": [
+      {
+        "placementId": "e1b80c90-b040-4a15-80cc-b776b833f47d",
+        "position": 0,
+        "title": "Abracadabra",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 223398,
+        "effectiveDurationMs": 223398,
+        "clipStartMs": 0,
+        "noteLength": 662,
+        "cues": [
+          {
+            "id": "6bbacbfc-c32d-43a1-8ab0-a1218918ce99",
+            "anchorMs": 0,
+            "textLength": 480
+          },
+          {
+            "id": "ef9564b9-d65f-45e0-abb2-08ced31951ad",
+            "anchorMs": 17000,
+            "textLength": 66
+          }
+        ],
+        "moveCount": 0
+      },
+      {
+        "placementId": "288e0b82-58b7-4a3e-813d-946d07788f35",
+        "position": 1,
+        "title": "Bad Romance",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 294504,
+        "effectiveDurationMs": 294504,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "87233327-53a4-4f8c-8ea3-e927bf0bda0b",
+        "position": 2,
+        "title": "Die With A Smile",
+        "artist": "Lady Gaga & Bruno Mars",
+        "sourceDurationMs": 251668,
+        "effectiveDurationMs": 251668,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "daf9da17-8646-405f-ac59-73c2ed025e92",
+        "position": 3,
+        "title": "Telephone (feat. Beyoncé)",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 220537,
+        "effectiveDurationMs": 220537,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "ce68e6ac-2f55-49be-b579-6079d7a73a9a",
+        "position": 4,
+        "title": "Born This Way",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 260258,
+        "effectiveDurationMs": 260258,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "0c50bddd-87fc-4d02-afb9-44b775ab3365",
+        "position": 5,
+        "title": "RUNWAY",
+        "artist": "Lady Gaga & Doechii",
+        "sourceDurationMs": 171010,
+        "effectiveDurationMs": 171010,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "d791c3e8-bf40-456c-8260-ada3c19191c1",
+        "position": 6,
+        "title": "Poker Face",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 237078,
+        "effectiveDurationMs": 237078,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "bebd8422-f1e1-4760-b655-9f847ce8f501",
+        "position": 7,
+        "title": "The Dead Dance",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 228519,
+        "effectiveDurationMs": 228519,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "6bbb93db-24d6-4557-8b42-76802882232a",
+        "position": 8,
+        "title": "The Edge of Glory",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 321545,
+        "effectiveDurationMs": 321545,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "6ceb5f24-15d4-4b44-8937-1bb2ac2dbe62",
+        "position": 9,
+        "title": "Rain On Me",
+        "artist": "Lady Gaga & Ariana Grande",
+        "sourceDurationMs": 182203,
+        "effectiveDurationMs": 182203,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      }
+    ],
+    "blocks": []
+  },
+  {
+    "id": "da1aec6e-f5b0-4066-8d45-2853558be233",
+    "title": "[QA] #481 Empty Pilates",
+    "tags": ["qa-fixture"],
+    "template": "sculpt",
+    "targetDurationMs": 2700000,
+    "totalDurationMs": 2390720,
+    "planBlockCount": 0,
+    "tracks": [
+      {
+        "placementId": "a094ed51-769f-4318-a2a1-92af9d6e2403",
+        "position": 0,
+        "title": "Abracadabra",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 223398,
+        "effectiveDurationMs": 223398,
+        "clipStartMs": 0,
+        "noteLength": 69,
+        "cues": [
+          {
+            "id": "ba05ccd3-dc25-4427-91d1-96971b29d96c",
+            "anchorMs": 0,
+            "textLength": 37
+          },
+          {
+            "id": "cc929714-51b9-40d4-afbd-6a23cf23e01b",
+            "anchorMs": 16000,
+            "textLength": 48
+          }
+        ],
+        "moveCount": 0
+      },
+      {
+        "placementId": "66f62189-99a2-4a10-b360-e66b0ad6530d",
+        "position": 1,
+        "title": "Bad Romance",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 294504,
+        "effectiveDurationMs": 294504,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "a08d51db-7246-4863-9694-3b51ac6a79fe",
+        "position": 2,
+        "title": "Die With A Smile",
+        "artist": "Lady Gaga & Bruno Mars",
+        "sourceDurationMs": 251668,
+        "effectiveDurationMs": 251668,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "28e803f1-41f9-4466-9493-37d136d23261",
+        "position": 3,
+        "title": "Telephone (feat. Beyoncé)",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 220537,
+        "effectiveDurationMs": 220537,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "93ac7eef-ec74-4c5c-b093-9eaaa0496117",
+        "position": 4,
+        "title": "Born This Way",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 260258,
+        "effectiveDurationMs": 260258,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "d08a24c4-1098-4cee-b411-1a20c5c75a5e",
+        "position": 5,
+        "title": "RUNWAY",
+        "artist": "Lady Gaga & Doechii",
+        "sourceDurationMs": 171010,
+        "effectiveDurationMs": 171010,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "1c8f7af7-f15e-4835-adaa-c3384b8466df",
+        "position": 6,
+        "title": "Poker Face",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 237078,
+        "effectiveDurationMs": 237078,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "c2655fcd-0c98-402d-9fee-9752e05fff95",
+        "position": 7,
+        "title": "The Dead Dance",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 228519,
+        "effectiveDurationMs": 228519,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "0ae27bfa-891b-4b57-b203-f229e6613406",
+        "position": 8,
+        "title": "The Edge of Glory",
+        "artist": "Lady Gaga",
+        "sourceDurationMs": 321545,
+        "effectiveDurationMs": 321545,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      },
+      {
+        "placementId": "12adf84c-f3ce-4a67-822d-2d3181db34de",
+        "position": 9,
+        "title": "Rain On Me",
+        "artist": "Lady Gaga & Ariana Grande",
+        "sourceDurationMs": 182203,
+        "effectiveDurationMs": 182203,
+        "clipStartMs": 0,
+        "noteLength": 0,
+        "cues": [],
+        "moveCount": 0
+      }
+    ],
+    "blocks": []
+  }
+]

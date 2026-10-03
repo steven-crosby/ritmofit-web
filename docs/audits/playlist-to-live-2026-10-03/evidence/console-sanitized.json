@@ -1,0 +1,8 @@
+{
+  "capturedErrorCount": 48,
+  "extensionContextErrorCount": 48,
+  "appOrProviderErrors": [],
+  "summary": "All captured messages were extension-context invalidation errors; full extension stack traces omitted. UI playback failures are retained separately.",
+  "captureStart": "2026-10-03T16:41:44.524Z",
+  "captureEnd": "2026-10-03T16:51:48.432Z"
+}
