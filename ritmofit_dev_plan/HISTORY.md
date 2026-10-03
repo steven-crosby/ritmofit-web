@@ -10,6 +10,42 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-10-03 (PR #484 — natural song-end precision) — deployed
+> (Worker `1ae3e216-89a6-4bbd-aec0-38f01bc600ff`); production playback acceptance
+> NOT yet run.** Application source `49ca56662fee109859e6a419ad166ff40a581506`; owner
+> authorized merge and deploy. Rollback target: Worker
+> `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`. No schema, migration, API, shared-contract,
+> OpenAPI, config, or secret change; remote D1 reported no migrations to apply.
+>
+> The fix addresses audit finding 1. The saved playback window is millisecond-precise
+> (223,398 ms) while the Apple adapter reports MusicKit's ended endpoint from a
+> whole-second duration (223 s), so the runtime's strict comparison read every natural
+> end as an early finish. In `apps/web/src/lib/playback/runtime.ts`, a finished stream
+> less than 1,000 ms short of the saved window now counts as reaching it and reports
+> the window end, so the class advances; a shortfall of 1,000 ms or more still errors
+> and holds the teaching position (D24). The rule applies to every provider. Three new
+> regression tests failed before the change and pass after; guard tests cover the
+> 1,000 ms boundary, a still-playing position, and retry into a genuinely early end.
+>
+> Verification: CI green on #484; the full local gate passed on the branch and again
+> on `main` before deploy. Post-deploy, SPA entry `assets/index-93-j7jyw.js` matched
+> three consecutive cache-busted fetches (rechecked 20:22 UTC); SPA and health returned
+> 200; classes/explore/teams returned 401 unauthenticated; six security headers present.
+>
+> **Not verified:** no real-provider playback ran on this release. The Claude Code
+> browser pane reached Live preflight for `[QA] #481 Empty Cycle` on the new build
+> (after accepting the update prompt), but that browser has no Apple Music
+> authorization and Start stayed disabled. The natural first-song transition, full
+> uninterrupted classes, and audible output all remain unverified in production. The
+> whole-second MusicKit duration rests on the one audit capture.
+>
+> Also this session: the audit and its planning-doc updates were published unchanged
+> as #483. The Classes list showed `[QA]` classes beyond the six the audit recorded
+> (`[QA] Ritmo Playlist Pilates`, `[QA] Ritmo Playlist Cycle`, `[QA] Audit Experienced
+> Pilates`, `[QA] Audit Experienced Cycle`); none were modified or deleted. PR #480
+> remains open and conflicting; it holds the only record of the #478 deploy entry and
+> the owner's "Spotify tabled" decision.
+
 > **Session 2026-10-03 — playlist-to-class-to-Live desktop audit completed; no deployment.**
 > Production Chrome / Apple Music, beginner and experienced Cycle/Pilates, using
 > only the ten-song `Ritmo Apple Music Test` playlist. Browser sign-in completed.

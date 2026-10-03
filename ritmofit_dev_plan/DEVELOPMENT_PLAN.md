@@ -37,15 +37,17 @@ Pilates, and HIIT.
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
-- **Current operating focus (2026-10-03):** playlist-to-class correctness is released (#481).
-  Production serves application source `d026f5992b8c2181b262259e5d9acf84e7745364`
-  as Worker `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`, with SPA entry
-  `assets/index-68EE379w.js`; remote D1 is migrated through `0020` with nothing pending.
-  Desktop Apple Music imports preserve the ten-song source order through both entry
-  points for Cycle/Pilates; uncertain-response recovery and prompter-only transport
-  passed. Apple browser sign-in is now resolved. Natural first-song transitions fail
-  in both Cycle and Pilates; SDK duration precision is a strong causal hypothesis,
-  pending a regression-backed fix. Audible playback remains unverified. The completed
+- **Current operating focus (2026-10-03):** the natural song-end fix (#484) is deployed
+  but **not yet accepted in a real browser**. Production serves application source
+  `49ca56662fee109859e6a419ad166ff40a581506` as Worker
+  `1ae3e216-89a6-4bbd-aec0-38f01bc600ff`, with SPA entry `assets/index-93-j7jyw.js`;
+  remote D1 has nothing pending. The audit found natural first-song transitions failing
+  in both Cycle and Pilates; #484 accepts a finished provider endpoint less than
+  1,000 ms short of the saved window, proven by regression tests only. **Next step:**
+  in a browser with Apple Music authorization, let song 1 end naturally and confirm
+  song 2 starts and is audible, then run one full natural class per discipline.
+  Audible playback remains unverified. Desktop Apple Music imports preserve the
+  ten-song source order through both entry points for Cycle/Pilates (#481). The completed
   desktop audit also found hidden Live content at 200% zoom, no playlist-derived
   teaching draft, incompatible template/import flows, and rejected explicit zero
   clip anchors. Start the next session in Plan Mode with the
@@ -359,12 +361,15 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current application release (rechecked 2026-10-03, after #481):** production application code
-matches merged `d026f5992b8c2181b262259e5d9acf84e7745364`. This includes music-led
-Phase 1 (#478) and ordered playlist-import correctness/recovery (#481). Worker
-`b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03` serves 100%; SPA entry
-`assets/index-68EE379w.js` matched three consecutive cache-busted fetches and the
-updated Chrome document. Remote D1 has no pending migrations through `0020`.
+**Current application release (2026-10-03, after #484):** production application code
+matches merged `49ca56662fee109859e6a419ad166ff40a581506`. This includes music-led
+Phase 1 (#478), ordered playlist-import correctness/recovery (#481), and the natural
+song-end precision fix (#484). Worker `1ae3e216-89a6-4bbd-aec0-38f01bc600ff` serves
+100%; SPA entry `assets/index-93-j7jyw.js` matched three consecutive cache-busted
+fetches. Remote D1 has no pending migrations. The prior Worker, and the rollback
+target, is `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`. #484 has **no real-provider
+playback verification yet**; the statements below describe the #481 release and the
+audit that preceded the fix.
 
 CI and the full local gate passed on the deployed source. Desktop Apple Music
 imports passed for Cycle/Pilates through Music and Classes-to-empty-class. A
@@ -414,7 +419,7 @@ half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unc
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `b74e4fe2` from `d026f59` (#481); see "Current application release" above
+  `1ae3e216` from `49ca566` (#484); see "Current application release" above
   for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**
