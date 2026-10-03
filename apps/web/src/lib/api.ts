@@ -11,6 +11,7 @@ import type {
   ExploreClass,
   ClassTrack,
   AddClassTrack,
+  ImportClassTracks,
   UpdateClassTrack,
   ClassPlanBlock,
   AssignClassTrackPlanBlock,
@@ -193,6 +194,11 @@ export const copyClass = (classId: string, title?: string) =>
 export const listClassTracks = (classId: string) => api<ClassTrack[]>(`/classes/${classId}/tracks`);
 export const addTrack = (classId: string, body: AddClassTrack) =>
   api<ClassTrack>(`/classes/${classId}/tracks`, { method: 'POST', body: JSON.stringify(body) });
+export const importClassTracks = (classId: string, body: ImportClassTracks) =>
+  api<ClassTrack[]>(`/classes/${classId}/tracks/import`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 export const updateClassTrack = (classTrackId: string, body: UpdateClassTrack) =>
   api<ClassTrack>(`/class-tracks/${classTrackId}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const deleteClassTrack = (classTrackId: string) =>

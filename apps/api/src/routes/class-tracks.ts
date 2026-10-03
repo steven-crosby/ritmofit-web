@@ -7,6 +7,7 @@ import { Hono } from 'hono';
 import { and, eq, gte, inArray, lt, notExists, or, sql } from 'drizzle-orm';
 import {
   addClassTrackSchema,
+  importClassTracksSchema,
   updateClassTrackSchema,
   reorderClassTracksSchema,
   copyClassTrackSchema,
@@ -43,6 +44,7 @@ import {
   clipWindowInverted,
 } from '../lib/duration.js';
 import { touchClassUpdatedAt } from '../lib/class-recency.js';
+import { commitOrderedClassImport } from '../lib/ordered-class-import.js';
 import { isTrackPlanOrderValid, orderTrackIdsByPlan } from '../lib/plan-block-ordering.js';
 
 export const classTrackRoutes = new Hono<AppEnv>();
@@ -131,6 +133,13 @@ export async function throwClipWindowWriteConflict(
  * references an existing track the caller owns, or inline-creates one (owner =
  * caller). Appends at the end; position/offset are server-derived via resequence.
  */
+classTrackRoutes.post('/classes/:id/tracks/import', async (c) => {
+  const classId = c.req.param('id');
+  await requireAccess(createDb(c.env), c.get('userId'), classId, 'edit');
+  const body = importClassTracksSchema.parse(await c.req.json());
+  return c.json(await commitOrderedClassImport(c.env, classId, c.get('userId'), body), 201);
+});
+
 classTrackRoutes.post('/classes/:id/tracks', async (c) => {
   const db = createDb(c.env);
   const classId = c.req.param('id');
@@ -211,64 +220,30 @@ classTrackRoutes.post('/classes/:id/tracks', async (c) => {
       id: classTracks.id,
       position: classTracks.position,
       planBlockId: classTracks.planBlockId,
+      updatedAt: classTracks.updatedAt,
     })
     .from(classTracks)
     .where(eq(classTracks.classId, classId))
     .orderBy(classTracks.position)
     .all();
 
-  // Free mode authors offsets, so a new track lands right after the current material
-  // (resequence won't set it); sequential leaves it null for resequence to derive.
-  const mode = await timelineModeOf(db, classId);
-  const startOffsetMs = mode === 'free' ? await freeAppendOffsetMs(db, classId) : null;
-
-  const now = Date.now();
+  // Both single-song adds and playlist commits share a guarded atomic layout write.
+  // A stale add must fail before inserting either a placement or an inline song.
   const id = crypto.randomUUID();
-  const blockRows = planBlockId
-    ? await db
-        .select({ id: classPlanBlocks.id, position: classPlanBlocks.position })
-        .from(classPlanBlocks)
-        .where(eq(classPlanBlocks.classId, classId))
-        .all()
-    : [];
-  const blockPositions = new Map(blockRows.map((block) => [block.id, block.position]));
-  const projected = [...existing, { id, position: existing.length, planBlockId }];
-  const plannedOrder = planBlockId ? orderTrackIdsByPlan(projected, blockPositions) : undefined;
-  if (mode === 'free' && planBlockId && !isTrackPlanOrderValid(projected, blockPositions)) {
-    throw new HttpError(
-      409,
-      'CONFLICT',
-      'This free-timeline placement would interleave plan blocks. Move the track on the timeline first.',
-    );
-  }
-
-  // Inline creation is part of the add-track operation, so do not persist its
-  // library row until every request-level guard above has accepted the placement.
-  if (inlineTrack) await db.insert(tracks).values(inlineTrack);
-  await db.insert(classTracks).values({
-    id,
+  const result = await commitOrderedClassImport(
+    c.env,
     classId,
-    trackId,
-    planBlockId,
-    position: existing.length,
-    intensity: body.intensity ?? 'none',
-    displayBpmOverride: body.displayBpmOverride ?? null,
-    durationMsOverride: body.durationMsOverride ?? null,
-    clipStartMs: body.clipStartMs ?? 0,
-    clipEndMs: body.clipEndMs ?? null,
-    beatAnchorMs: body.beatAnchorMs ?? 0,
-    startOffsetMs,
-    notes: body.notes ?? null,
-    displayRpm: body.displayRpm ?? null,
-    holdCount: body.holdCount ?? null,
-    createdAt: now,
-    updatedAt: now,
-  });
-  await resequence(db, classId, plannedOrder);
-  await touchClassUpdatedAt(db, classId);
-
-  const row = await db.select().from(classTracks).where(eq(classTracks.id, id)).get();
-  return c.json(serializeClassTrack(row!), 201);
+    me,
+    {
+      operationId: crypto.randomUUID(),
+      expectedTracks: existing.map(({ id, position, updatedAt }) => ({ id, position, updatedAt })),
+      placements: [{ id, trackId }],
+      orderedIds: [...existing.map((row) => row.id), id],
+      planBlockId,
+    },
+    { fields: body, inlineTrack },
+  );
+  return c.json(result.find((row) => row.id === id)!, 201);
 });
 
 /** PATCH /class-tracks/:id/plan-block — move real music into/out of a plan block. */

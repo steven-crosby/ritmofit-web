@@ -59,6 +59,8 @@ const staleResult: TrackSearchResult = {
 
 afterEach(() => {
   cleanup();
+  sessionStorage.clear();
+  vi.clearAllMocks();
   vi.restoreAllMocks();
 });
 
@@ -343,6 +345,29 @@ const ADDED_CLASS_TRACK = {
 
 describe('TrackSearch saved-playlists drill-in', () => {
   beforeEach(() => {
+    let committed: Awaited<ReturnType<typeof api.listClassTracks>> = [];
+    vi.mocked(api.listClassTracks).mockImplementation(async () => committed);
+    vi.mocked(api.importClassTracks).mockImplementation(
+      async (_classId: string, body: Parameters<typeof api.importClassTracks>[1]) => {
+        for (const placement of body.placements)
+          if (!committed.some((r) => r.id === placement.id))
+            committed.push({
+              ...ADDED_CLASS_TRACK,
+              ...placement,
+              planBlockId: body.planBlockId ?? null,
+              clipStartMs: 0,
+              clipEndMs: null,
+              beatAnchorMs: 0,
+              displayRpm: null,
+              holdCount: null,
+            });
+        committed = body.orderedIds.map((id, position) => ({
+          ...committed.find((r) => r.id === id)!,
+          position,
+        }));
+        return committed;
+      },
+    );
     vi.mocked(api.listPlaylists).mockResolvedValue([
       {
         provider: 'spotify',
@@ -363,7 +388,7 @@ describe('TrackSearch saved-playlists drill-in', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
     expect(await screen.findByText('Warmup Ride')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
-    expect(await screen.findByText('Song One')).toBeTruthy();
+    expect((await screen.findAllByText('Song One')).length).toBeGreaterThan(0);
   }
 
   it('opens a saved playlist and loads its track preview list', async () => {
@@ -403,6 +428,8 @@ describe('TrackSearch saved-playlists drill-in', () => {
       name: 'Add Song One by Artist One',
     }) as HTMLButtonElement;
     expect(individualAdd.disabled).toBe(true);
+    expect(screen.queryByText(/couldn’t be added/)).toBeNull();
+    expect(screen.queryByText(/Added all/)).toBeNull();
     fireEvent.click(individualAdd);
     expect(api.importTrack).toHaveBeenCalledTimes(2);
 
@@ -410,7 +437,7 @@ describe('TrackSearch saved-playlists drill-in', () => {
       pendingImport.resolve(IMPORTED_TRACK);
       await pendingImport.promise;
     });
-    await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
   });
 
   it('locks bulk import while an individual add is pending', async () => {
@@ -433,10 +460,10 @@ describe('TrackSearch saved-playlists drill-in', () => {
       pendingImport.resolve(IMPORTED_TRACK);
       await pendingImport.promise;
     });
-    await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
   });
 
-  it('import-all calls importTrack + addTrack for every track and calls onAdded', async () => {
+  it('import-all commits every source occurrence in one ordered operation and calls onAdded', async () => {
     const onAdded = vi.fn();
     render(<TrackSearch classId="c1" onAdded={onAdded} />);
     fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
@@ -468,11 +495,11 @@ describe('TrackSearch saved-playlists drill-in', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
-    expect(await screen.findByText('Song One')).toBeTruthy();
+    expect((await screen.findAllByText('Song One')).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }));
     await waitFor(() => expect(api.importTrack).toHaveBeenCalledTimes(2));
-    expect(api.addTrack).toHaveBeenCalledTimes(2);
+    expect(api.importClassTracks).toHaveBeenCalledTimes(1);
     expect(onAdded).toHaveBeenCalledTimes(1);
     expect(await screen.findByText('Added all 2 tracks.')).toBeTruthy();
     const complete = screen.getByRole('button', {
@@ -519,7 +546,7 @@ describe('TrackSearch saved-playlists drill-in', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
     expect(await screen.findByText('Warmup Ride')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
-    expect(await screen.findByText('Song One')).toBeTruthy();
+    expect((await screen.findAllByText('Song One')).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }));
 
@@ -558,6 +585,43 @@ describe('TrackSearch saved-playlists drill-in', () => {
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
+  });
+
+  it('describes an ambiguous commit as unconfirmed and replays it without importing again', async () => {
+    vi.mocked(api.importTrack).mockResolvedValue(IMPORTED_TRACK);
+    vi.mocked(api.importClassTracks).mockRejectedValueOnce(new TypeError('response lost'));
+    await openPlaylistDrillIn();
+    fireEvent.click(screen.getByRole('button', { name: /Import all 2 tracks/ }));
+    await screen.findByText(/We couldn’t confirm whether the remaining tracks were added/);
+    expect(screen.queryByText(/couldn’t be added/)).toBeNull();
+    const original = vi.mocked(api.importClassTracks).mock.calls[0]![1];
+    fireEvent.click(screen.getByRole('button', { name: /Import all 2 tracks/ }));
+    await screen.findByText('Added all 2 tracks.');
+    expect(api.importTrack).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(api.importClassTracks).mock.calls[1]![1]).toEqual(original);
+  });
+
+  it('renders repeated playlist songs as independently added occurrences', async () => {
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([
+      PLAYLIST_TRACKS[0]!,
+      PLAYLIST_TRACKS[1]!,
+      PLAYLIST_TRACKS[0]!,
+    ]);
+    vi.mocked(api.importTrack).mockResolvedValue(IMPORTED_TRACK);
+    await openPlaylistDrillIn();
+    const adds = screen.getAllByRole('button', { name: 'Add Song One by Artist One' });
+    expect(adds.length).toBe(2);
+    fireEvent.click(adds[0]!);
+    await screen.findByRole('button', { name: 'Song One — Added' });
+    expect(screen.getAllByRole('button', { name: 'Add Song One by Artist One' }).length).toBe(1);
+    expect(screen.queryByText(/couldn’t be added/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Retry 2 remaining tracks/ }));
+    await screen.findByText('Added all 3 tracks.');
+    const placements = vi
+      .mocked(api.importClassTracks)
+      .mock.calls.flatMap((call: Parameters<typeof api.importClassTracks>) => call[1].placements);
+    expect(new Set(placements.map((p: { id: string }) => p.id)).size).toBe(3);
+    expect(placements.length).toBe(3);
   });
 
   it('navigating back clears the drill-in track list', async () => {
@@ -605,7 +669,7 @@ describe('TrackSearch saved-playlists drill-in', () => {
     expect(await screen.findByText('Spotify is not configured.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /try again/i }));
 
-    expect(await screen.findByText('Song One')).toBeTruthy();
+    expect((await screen.findAllByText('Song One')).length).toBeGreaterThan(0);
     expect(api.listPlaylistTracks).toHaveBeenCalledTimes(2);
   });
 

@@ -54,11 +54,16 @@ import {
   listLikes,
   listPlaylists,
   listPlaylistTracks,
-  importTrack,
   searchProvider,
   getMe,
   updateMe,
 } from '../lib/api.js';
+import {
+  createOrderedImport,
+  preserveImportArrangement,
+  runOrderedImport,
+  type OrderedImportSession,
+} from '../lib/ordered-import.js';
 import { useProviderConnect } from '../lib/use-provider-connect.js';
 import { ProviderConnectAction } from './ProviderConnectAction.js';
 import { consumeConnectionReturn, rememberConnectionReturn } from '../lib/connection-return.js';
@@ -171,6 +176,7 @@ interface CollectionImportResult {
   imported: number;
   total: number;
   failed: TrackSearchResult[];
+  session: OrderedImportSession;
 }
 
 /**
@@ -509,29 +515,17 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   );
 
   const importCollectionTracks = useCallback(
-    async (classId: string, candidates: TrackSearchResult[]) => {
-      const failed: TrackSearchResult[] = [];
-      const CONCURRENCY = 4;
-      const pending = [...candidates];
-      while (pending.length > 0) {
-        const batch = pending.splice(0, CONCURRENCY);
-        const results = await Promise.allSettled(
-          batch.map(async (candidate) => {
-            const track = await importTrack(candidate.provider, candidate.providerTrackId);
-            await addTrack(classId, { trackId: track.id, intensity: 'mod' });
-          }),
-        );
-        results.forEach((result, index) => {
-          if (result.status === 'rejected' && batch[index]) failed.push(batch[index]);
-        });
-      }
-      return failed;
+    async (classId: string, session: OrderedImportSession, confirmOnly = false) => {
+      const result = await runOrderedImport(classId, session, undefined, undefined, {
+        confirmOnly,
+      });
+      setError(result.error);
+      return session.entries.filter((e) => !e.added).map((e) => e.candidate);
     },
     [],
   );
 
-  /** Fetch source material before creating the destination class. A partial import
-   * remains recoverable against the same class id, so retry can never duplicate it. */
+  /** Keep source occurrences through partial resolution and ambiguous commits. */
   const handleCreateClassFromPlaylist = useCallback(
     async (
       provider: Provider,
@@ -547,13 +541,27 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       }
       const cls = await createClass({ title: playlistName, template });
       await applyTagFilter(null);
-      const failed = await importCollectionTracks(cls.id, tracks);
+      const session = createOrderedImport(
+        tracks,
+        `ritmo-import:${cls.id}:class:${provider}:${playlistId}`,
+      );
+      session.sourcePlaylist = {
+        provider,
+        playlistId,
+        name: playlistName,
+        providerUri: null,
+        ownerName: null,
+        trackCount: tracks.length,
+        coverImageUrl: null,
+      };
+      const failed = await importCollectionTracks(cls.id, session);
       setImportResult({
         classId: cls.id,
         classTitle: cls.title,
         imported: tracks.length - failed.length,
         total: tracks.length,
         failed,
+        session,
       });
       setPlaylistBrowse(null);
       await openClass({ ...cls, accessLevel: 'owner' });
@@ -571,47 +579,43 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     async (tracks: TrackSearchResult[], title: string, template: ClassTemplate) => {
       const cls = await createClass({ title, template });
       await applyTagFilter(null);
-      // These tracks have an instructor-authored selection order. Import them
-      // serially so API completion timing cannot reshuffle the new class.
-      const failed: TrackSearchResult[] = [];
-      for (const candidate of tracks) {
-        try {
-          const track = await importTrack(candidate.provider, candidate.providerTrackId);
-          await addTrack(cls.id, { trackId: track.id, intensity: 'mod' });
-        } catch {
-          failed.push(candidate);
-        }
-      }
+      const session = createOrderedImport(tracks);
+      const failed = await importCollectionTracks(cls.id, session);
       setImportResult({
         classId: cls.id,
         classTitle: cls.title,
         imported: tracks.length - failed.length,
         total: tracks.length,
         failed,
+        session,
       });
       setLikesBrowse(null);
       setDestination('classes');
       await openClass({ ...cls, accessLevel: 'owner' });
     },
-    [applyTagFilter, openClass],
+    [applyTagFilter, importCollectionTracks, openClass],
   );
 
   const retryFailedImport = useCallback(async () => {
     if (!importResult || importResult.failed.length === 0 || retryingImport) return;
     setRetryingImport(true);
+    const detailGeneration = detailRequestId.current;
     try {
-      const attempted = importResult.failed.length;
-      const failed = await importCollectionTracks(importResult.classId, importResult.failed);
+      const failed = await importCollectionTracks(
+        importResult.classId,
+        importResult.session,
+        !!importResult.session.pending,
+      );
       setImportResult((current) =>
-        current
+        current?.session === importResult.session
           ? {
               ...current,
-              imported: current.imported + attempted - failed.length,
+              imported: current.total - failed.length,
               failed,
             }
-          : null,
+          : current,
       );
-      if (selected?.id === importResult.classId) {
+      if (selected?.id === importResult.classId && detailRequestId.current === detailGeneration) {
         await loadDetail(importResult.classId, { silent: true });
       }
     } finally {
@@ -791,18 +795,32 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             }`}
           >
             <p className="min-w-0 flex-1">
-              {importResult.failed.length > 0
-                ? `${importResult.imported} of ${importResult.total} tracks imported into ${importResult.classTitle}. ${importResult.failed.length} still need attention.`
-                : `All ${importResult.total} tracks imported into ${importResult.classTitle}.`}
+              {importResult.session.pending
+                ? `The import into ${importResult.classTitle} is unconfirmed. Confirm the previous import before adding more songs.`
+                : importResult.session.needsRecovery
+                  ? 'Your class order changed. Keep your arrangement and add the remaining songs at the end.'
+                  : importResult.failed.length > 0
+                    ? `${importResult.imported} of ${importResult.total} tracks imported into ${importResult.classTitle}. ${importResult.failed.length} still need attention.`
+                    : `All ${importResult.total} tracks imported into ${importResult.classTitle}.`}
             </p>
             {importResult.failed.length > 0 && (
               <button
                 type="button"
                 disabled={retryingImport}
-                onClick={() => void retryFailedImport()}
+                onClick={() => {
+                  if (importResult.session.needsRecovery && !importResult.session.pending)
+                    preserveImportArrangement(importResult.session);
+                  void retryFailedImport();
+                }}
                 className="min-h-11 rounded-control bg-interactive px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-50 sm:min-h-9 sm:rounded-pill"
               >
-                {retryingImport ? 'Retrying…' : `Retry ${importResult.failed.length} failed`}
+                {retryingImport
+                  ? 'Retrying…'
+                  : importResult.session.pending
+                    ? 'Confirm previous import'
+                    : importResult.session.needsRecovery
+                      ? 'Add remaining songs at end'
+                      : `Retry ${importResult.failed.length} failed`}
               </button>
             )}
             <button

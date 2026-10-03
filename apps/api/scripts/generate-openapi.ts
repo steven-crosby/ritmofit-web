@@ -34,6 +34,7 @@ import {
   assignClassTrackPlanBlockSchema,
   classTrackSchema,
   addClassTrackSchema,
+  importClassTracksSchema,
   updateClassTrackSchema,
   reorderClassTracksSchema,
   copyClassTrackSchema,
@@ -96,6 +97,7 @@ const named: Record<string, z.ZodType> = {
   AssignClassTrackPlanBlock: assignClassTrackPlanBlockSchema,
   ClassTrack: classTrackSchema,
   AddClassTrack: addClassTrackSchema,
+  ImportClassTracks: importClassTracksSchema,
   UpdateClassTrack: updateClassTrackSchema,
   ReorderClassTracks: reorderClassTracksSchema,
   CopyClassTrack: copyClassTrackSchema,
@@ -439,7 +441,21 @@ const doc = {
       post: {
         summary: 'Add a track (reference or inline-create)',
         requestBody: jsonBody('AddClassTrack'),
-        responses: { '201': jsonResp('ClassTrack', 'Added') },
+        responses: {
+          '201': jsonResp('ClassTrack', 'Added'),
+          '409': { description: 'Class layout changed during add; refresh and retry' },
+        },
+      },
+    },
+    '/classes/{id}/tracks/import': {
+      parameters: [idParam],
+      post: {
+        summary: 'Atomically commit ordered playlist occurrences; replay operationId safely',
+        requestBody: jsonBody('ImportClassTracks'),
+        responses: {
+          '201': arrayResp('ClassTrack', 'Committed class order'),
+          '409': { description: 'Stale snapshot or reused operation ID; standard error envelope' },
+        },
       },
     },
     '/classes/{id}/plan-blocks': {
