@@ -37,10 +37,24 @@ Pilates, and HIIT.
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
-- **Current operating focus (2026-09-28):** the launch gate is green and the app is live.
-  Production serves merged `main` application tip `70a733d` from PR #473 as Worker
-  `18aa93dd-8695-4791-a6dd-f0e031e28c75`; remote D1 has no pending migrations
-  (see [`HISTORY.md`](./HISTORY.md)). #465 previews a recipe's exact blocks in the
+- **Current operating focus (2026-10-03):** the natural song-end fix (#484) is deployed
+  but **not yet accepted in a real browser**. Production serves application source
+  `49ca56662fee109859e6a419ad166ff40a581506` as Worker
+  `1ae3e216-89a6-4bbd-aec0-38f01bc600ff`, with SPA entry `assets/index-93-j7jyw.js`;
+  remote D1 has nothing pending. The audit found natural first-song transitions failing
+  in both Cycle and Pilates; #484 accepts a finished provider endpoint less than
+  1,000 ms short of the saved window, proven by regression tests only. **Next step:**
+  in a browser with Apple Music authorization, let song 1 end naturally and confirm
+  song 2 starts and is audible, then run one full natural class per discipline.
+  Audible playback remains unverified. Desktop Apple Music imports preserve the
+  ten-song source order through both entry points for Cycle/Pilates (#481). The completed
+  desktop audit also found hidden Live content at 200% zoom, no playlist-derived
+  teaching draft, incompatible template/import flows, and rejected explicit zero
+  clip anchors. Start the next session in Plan Mode with the
+  [audit and restart guide](../docs/audits/playlist-to-live-2026-10-03/NEXT_SESSION.md).
+  Implementation, contract choices, and the proposed 15-song cap require an approved
+  development plan. See [`HISTORY.md`](./HISTORY.md).
+  Earlier #465 previews a recipe's exact blocks in the
   create dialog and cleans up block guidance text. The recipe content review is resolved
   and deployed (#470): new classes get `cycle_*_v2` (easy valley before a shorter
   peak) and `hiit_45_v2`/`hiit_60_v2` (4-minute finisher at every length); v1 recipes are
@@ -50,8 +64,8 @@ Pilates, and HIIT.
   label, intensity, goal, and focus editing. Deployed PR #468 completes scaffold-block
   add, reorder, and empty-block delete. See
   [`class-template-handoff.md`](./class-template-handoff.md) for the settled rules.
-  **SPC-09 is the next planning objective** (owner, 2026-09-28): design the API signals
-  that separate permission from provider-error before adding those UI states.
+  **SPC-09 remains pending:** design the API signals that separate permission from
+  provider-error before adding those UI states.
   PROD-HYGIENE is complete: four owner-confirmed fixtures were tagged and deleted
   2026-09-28 (see [`HISTORY.md`](./HISTORY.md)). Full Pulse Check disposition lives in
   [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
@@ -292,6 +306,8 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 ## Backlog / Open Items
 
+**Live zoom checkpoint (2026-10-04):** #486 merged as `eeec377add5294850a78334ef120374f26f23e14`; its full local gate and exact-commit CI passed. The fix keeps teaching, current/Next guidance, compact timecode, transport, view/Exit controls, and recovery reachable in short viewports. Regression coverage includes asynchronous readiness focus and waiting recovery. Local browser fixtures passed at 600×304 and 320×304 CSS pixels. It is **not deployed**; actual Chrome 200% zoom and production acceptance remain. Run-live readiness, teaching-draft policy, and playback behavior are unchanged.
+
 Forward work lives in the solo creator loop. The **creator-workstation-shell slice (D21)** — discovery
 shelves, liked/saved cards, playlist browsing, Cycle/Pilates/HIIT template narrowing, and the unified
 Classes / Music / Live / Account navigation — **shipped 2026-07-07 (Worker `9d0a5710`)**. Provider-authorized
@@ -307,7 +323,7 @@ Music preparation while teaching time advanced. The [phased workflow plan](./mus
 proposes connection/playback reliability and honest readiness first, mobile teaching/editing clarity
 next, then Builder speed/rehearsal and timed exercise steps. Phase 1 implementation is authorized, starting with 1A;
 release remains separately gated. SPC-09 remains open; replacing it as the next implementation focus
-is approved for Phase 1. Connection recovery (1A), the music-authoritative Live clock (1B), and truthful preflight with explicit Apple browser authorization (1C) are deployed (#478, Worker `e4744ca1`, 2026-10-02). Apple Music played audibly on the owner's Mac with Live following the provider clock; on the owner's iPhone, Apple Music in Safari failed or hung in both the old and new builds (see the [acceptance record](../docs/audits/music-led-phase-1-acceptance/README.md)). Later phases await approval.
+is approved for Phase 1. Connection recovery (1A), the music-authoritative Live clock (1B), and truthful preflight with explicit Apple browser authorization (1C) were deployed on 2026-10-02 (#478, Worker `e4744ca1`). The dated first-round results are in the [acceptance record](../docs/audits/music-led-phase-1-acceptance/README.md): Apple Music was audible on the owner’s Mac test build, while iPhone Safari failed or hung. These observations do not establish acceptance of the current #484 release. Real-device audible playback and interruption acceptance remain. Later phases await approval.
 
 **Spotify tabled (owner decision, 2026-10-02):** Spotify work and Spotify acceptance testing are
 paused until UI/UX and Live playback with Apple Music are completed and hardened. Spotify stays
@@ -316,14 +332,11 @@ be made meanwhile. Known open item when it resumes: the connected Spotify accoun
 Spotify developer app ("The user is not registered for this application"), so every Spotify Web API
 call returns `403`.
 
-**Next focus:** Apple Music Live playback on the iPhone (web Safari). Phase 1 holds the teaching
-position and shows recovery correctly there, but no audible playback has been achieved. The result
-decides whether the phone surface stays web Live or needs native iOS playback. Start the next
-session here, cheapest check first: (1) fully close the iOS Music app, reload `ritmofit.studio`
-(now Phase 1), and run the Apple Music Test class; (2) if it still fails, cable the iPhone to the
-Mac and read Safari Web Inspector's console and network for the MusicKit error during Start and
-Retry; (3) then decide whether the web adapter can be fixed (for example, starting playback
-inside the Start tap) or the phone needs a native iOS playback plan.
+**Earlier iPhone investigation handoff (2026-10-02):** the proposed first check was to
+fully close the iOS Music app, reload Ritmo, and retry the Apple Music class. If the failure
+persists, use Safari Web Inspector to capture the MusicKit error at Start and Retry before
+choosing a web-adapter fix or native iOS playback plan. This remains unresolved; the October 3
+desktop audit and current focus above determine the next session’s immediate scope.
 
 **Class-building design direction:** The owner-approved
 [`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) sets the target for a
@@ -363,18 +376,38 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current `main` vs production (2026-10-02, after the Phase 1 deploy):** production serves
-application tip `48bfd11` (#478, music-led Phase 1) from `main` `71c6fc2`. Worker
-`e4744ca1-11b0-4ad6-9382-ef8ad6f9b0a5` is at 100%, and the SPA entry
-`assets/index-C3NTdD-N.js` appeared on five consecutive cache-busted fetches. Rollback is
-Worker-only to `18aa93dd-8695-4791-a6dd-f0e031e28c75` (no schema change between them).
-The Cloudflare account moved to Workers Paid on 2026-10-02 after Free-plan CPU limits broke
-sign-in and Apple Music playlists (see [`HISTORY.md`](./HISTORY.md)).
-Remote D1 has no pending migrations (latest local migration `0019`). #470 deployed
-the v2 Cycle/HIIT recipes; an authenticated production acceptance pass covered #468
-block add/reorder/delete and the v2 Cycle 45 content, and its `[QA]` class was deleted
-(see [`HISTORY.md`](./HISTORY.md)). A Worker rollback below `dd9a27e9` is unsafe once
-any v2-recipe class exists.
+**Current application release (2026-10-03, after #484):** production application code
+matches merged `49ca56662fee109859e6a419ad166ff40a581506`. This includes music-led
+Phase 1 (#478), ordered playlist-import correctness/recovery (#481), and the natural
+song-end precision fix (#484). Worker `1ae3e216-89a6-4bbd-aec0-38f01bc600ff` serves
+100%; SPA entry `assets/index-93-j7jyw.js` matched three consecutive cache-busted
+fetches. Remote D1 has no pending migrations. The prior Worker, and the rollback
+target, is `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`. #484 has **no real-provider
+playback verification yet**; the statements below describe the #481 release and the
+audit that preceded the fix.
+
+CI and the full local gate passed on the deployed source. Desktop Apple Music
+imports passed for Cycle/Pilates through Music and Classes-to-empty-class. A
+controlled response-loss test recovered the original ten placements after reload,
+and both disciplines passed prompter-only transport mechanics with accelerated
+completion. The October 3 desktop audit resolved browser sign-in and observed
+provider transport progress, pause/resume, seek/skip, manual notes/cues, and recovery.
+Both natural first-song transitions failed at 3:43 with “Music ended before the saved
+playback window.” Full uninterrupted completion is blocked by that defect; audible
+output remains unverified. No iPhone, Spotify, or HIIT testing was performed in this
+audit. These smokes do not establish universally reliable playback. The Phase 1 acceptance
+scenarios remain in
+[`docs/audits/music-led-phase-1-acceptance/`](../docs/audits/music-led-phase-1-acceptance/README.md).
+
+The playlist-based automatic teaching draft remains a product gap: source order is
+preserved, but imports create no exercise blocks, generic cues, or notes. The Classes
+template path imports all songs into its first fixed block and leaves empty blocks
+that disable Run Live. Six tagged QA fixtures remain for review; IDs, screenshots,
+scenario verdicts, and the ranked fix sequence are in the
+[desktop audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md).
+#470's v2 recipes remain deployed; a Worker rollback below `dd9a27e9` is unsafe once
+any v2-recipe class exists. The prior live Worker for this additive-migration
+release was `e4744ca1-11b0-4ad6-9382-ef8ad6f9b0a5`.
 See [`class-template-handoff.md`](./class-template-handoff.md). The alerting
 half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
 
@@ -401,7 +434,7 @@ half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unc
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `e4744ca1` from `48bfd11` (#478); see "Current `main` vs production" above
+  `1ae3e216` from `49ca566` (#484); see "Current application release" above
   for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**

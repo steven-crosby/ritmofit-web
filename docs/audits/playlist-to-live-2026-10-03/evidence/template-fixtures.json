@@ -1,0 +1,14 @@
+[
+  {
+    "id": "975a0152-3bc8-4a79-a812-dee80a148164",
+    "tags": ["qa-fixture"],
+    "template": "sculpt",
+    "title": "[QA] Goal Template Pilates"
+  },
+  {
+    "id": "8a8dcf22-0b20-48ec-a84a-4f13d10ebe85",
+    "tags": ["qa-fixture"],
+    "template": "cycle",
+    "title": "[QA] Goal Template Cycle"
+  }
+]

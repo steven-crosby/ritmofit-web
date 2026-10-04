@@ -4,6 +4,27 @@
 
 **Status:** owner approved Phase 1 implementation on September 30, starting with 1A. D24 is approved product canon. Later phases remain proposals. This plan sequences the September 29 instructor benchmark and class-score blueprint with September 30 real-iPhone findings. It supersedes SPC-09 as the recommended next session focus, subject to owner approval; SPC-09 remains open and informs capability/error signals.
 
+## Current planning checkpoint — 2026-10-03
+
+Phase 1 and #481 import correctness are deployed. The
+[desktop Apple Music audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md)
+resolved browser sign-in, then reproduced a natural first-song boundary failure
+for both Cycle and Pilates. Provider progress is observed; audible success and
+full uninterrupted completion are not established. Saved 223,398 ms versus SDK
+duration 223 seconds motivates bounded boundary reconciliation. Preserve D24's
+held teaching position for genuinely early endings, stalls, and errors; choose
+the precision rule through code inspection and regressions, not a blanket bypass.
+
+The [next-session guide](../docs/audits/playlist-to-live-2026-10-03/NEXT_SESSION.md)
+routes a Plan Mode review of five findings: natural transition, Live zoom/long
+text, absent playlist teaching draft, incompatible creation structures, and
+explicit zero anchors. Desktop Cycle/Pilates is the immediate scope; broader
+iPhone/Spotify acceptance and later phases below remain pending. Existing
+notes/cues can support basic coaching; safe regeneration and any block projection
+or atomic draft API require an explicit design decision before implementation.
+This dated checkpoint supersedes historical sign-in-blocker statements for the
+October 3 desktop session without changing earlier evidence records.
+
 ## Goal and evidence
 
 An instructor can connect a music service, select and arrange music, and teach from a readable Live surface with honest playback readiness. Music drives creation and instruction until the instructor explicitly chooses otherwise ([D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30)).
@@ -55,7 +76,7 @@ Local automated gates and synthetic Chrome viewport checks support the implement
 - Phase 1 is deployed: Worker `e4744ca1` from `main` `71c6fc2` (application `48bfd11`). Details are in `HISTORY.md`.
 - Apple Music on the owner's Mac (Chrome, test build): audible, held at `0:00` while loading, then followed the song's position; Pause/Resume stayed in step.
 - Apple Music on the owner's iPhone (Safari): no audible playback in either build. On the test build the first Start failed, Retry hung on "still finishing a previous queue request", and a fresh Start showed an iOS "Playback Error" alert. The Music app was playing another song at the same time, which is one untested explanation. The teaching position held throughout.
-- Owner decision: Spotify is tabled until UI/UX and Live playback with Apple Music are completed and hardened. The next focus is Apple Music Live playback on the iPhone.
+- Owner decision: Spotify is tabled until UI/UX and Live playback with Apple Music are completed and hardened. At that checkpoint, the proposed next focus was Apple Music Live playback on the iPhone. The October 3 desktop audit superseded that immediate scope; follow `DEVELOPMENT_PLAN.md` for the current desktop Apple Music priority.
 
 ## Phase 1 — Reliable connections and music-led Live
 

@@ -1,0 +1,33 @@
+{
+  "class": {
+    "id": "3402a289-b570-4e7c-a6a9-4c996b28383a",
+    "targetDurationMs": 2700000,
+    "template": "cycle",
+    "timelineMode": "sequential",
+    "title": "[QA] #481 Empty Cycle",
+    "totalDurationMs": 2197322
+  },
+  "firstTrack": {
+    "placementId": "e1b80c90-b040-4a15-80cc-b776b833f47d",
+    "position": 0,
+    "title": "Abracadabra",
+    "artist": "Lady Gaga",
+    "sourceDurationMs": 223398,
+    "effectiveDurationMs": 30000,
+    "clipStartMs": 0,
+    "noteLength": 662,
+    "cues": [
+      {
+        "id": "6bbacbfc-c32d-43a1-8ab0-a1218918ce99",
+        "anchorMs": 0,
+        "textLength": 480
+      },
+      {
+        "id": "ef9564b9-d65f-45e0-abb2-08ced31951ad",
+        "anchorMs": 17000,
+        "textLength": 66
+      }
+    ],
+    "moveCount": 0
+  }
+}

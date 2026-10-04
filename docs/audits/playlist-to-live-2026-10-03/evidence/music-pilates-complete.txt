@@ -1,0 +1,4 @@
+Scoped completion observation: [QA] #481 Music Pilates, class 05f546c7-ffe7-4827-ba2e-cbd526d9dc03.
+End/seek accelerated the class to Track 10 and Complete at 39:51; playback displayed ended.
+Fresh native accessibility/DOM checks resolved the cached Complete/Waiting contradiction.
+This is accelerated completion, not an uninterrupted natural or audibly confirmed run.

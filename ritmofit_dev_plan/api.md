@@ -317,3 +317,37 @@ contract — one fetch so the iOS app isn't composing the live view from a dozen
   See `authorization.md` for the access predicate and pagination shape.
 - Choreography endpoints (`cues`, `moves`) inherit the parent class's access level via the
   `cue/move → class_track → class` chain, resolved by the authz helper.
+
+### Ordered playlist placement import
+
+`POST /classes/:id/tracks/import` requires edit access and consumes shared
+`ImportClassTracks`: `operationId`, an `expectedTracks` snapshot (`id`, `position`,
+`updatedAt`), resolved `placements` (`id`, `trackId`), a complete `orderedIds`
+permutation, and optional `planBlockId`. Each occurrence has a stable placement
+UUID; repeated songs may reference the same library track. Up to 100 resolved
+placements may be committed in one request; this is not a class-size policy.
+
+The server atomically commits the occurrence rows and complete layout, preserving
+plan-block grouping and instructor notes/cues. The response is 201 with the
+serialized class tracks. Replay the exact operation after an ambiguous response;
+a stored receipt returns its original result without replaying writes. A different
+body with the same operation ID, or a stale class snapshot, returns 409. After a
+definitive conflict, refresh the class and use a fresh operation ID with the same
+occurrence IDs. Foreign library tracks or blocks retain hidden-resource 404 behavior.
+
+Sequential offsets are derived from effective durations. Free timelines preserve
+existing authored offsets: new placements append or fit available gaps, and an
+import that would overlap or reorder existing free placements returns 409. No Live
+DTO changes. Apply migration 0020 before deploying clients that use this endpoint.
+
+Single-song `POST /classes/:id/tracks` uses the same guarded transaction. A stale
+add returns 409 without inserting a placement or an inline library track; refresh
+and retry. Existing per-song context and clip-window duration semantics are retained.
+
+The web client retains uncertain operations in session storage for the current tab.
+Saved playlists exposes those operations even if the provider playlist is unavailable;
+confirmation replays the exact request without resolving more provider songs. Cached
+completion is reconciled against current class placement IDs. If an instructor changed
+the arrangement during a partial import, the explicit "Add remaining songs at end"
+action preserves existing order, notes, and cues instead of restoring playlist order.
+Storage loss or closing the browser tab is outside this recovery guarantee.

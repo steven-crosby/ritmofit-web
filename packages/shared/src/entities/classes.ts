@@ -245,6 +245,22 @@ export const addClassTrackSchema = z.union([
 ]);
 export type AddClassTrack = z.infer<typeof addClassTrackSchema>;
 
+/** Ordered playlist placements. IDs identify occurrences, not distinct library songs.
+ * Reuse operationId and the exact body after an ambiguous response. A new attempt
+ * uses a fresh snapshot and operationId, retaining the same occurrence IDs.
+ */
+export const importClassTracksSchema = z.object({
+  operationId: uuidSchema,
+  expectedTracks: z.array(classTrackSchema.pick({ id: true, position: true, updatedAt: true })),
+  placements: z
+    .array(z.object({ id: uuidSchema, trackId: uuidSchema }))
+    .min(1)
+    .max(100),
+  orderedIds: z.array(uuidSchema),
+  planBlockId: uuidSchema.nullish(),
+});
+export type ImportClassTracks = z.infer<typeof importClassTracksSchema>;
+
 /** Patch a class_track. `startOffsetMs` / `position` are server-derived, so not here. */
 export const updateClassTrackSchema = classTrackInputFields;
 export type UpdateClassTrack = z.infer<typeof updateClassTrackSchema>;

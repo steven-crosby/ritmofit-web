@@ -294,6 +294,28 @@ export const classTracks = sqliteTable(
   ],
 );
 
+/** Atomic import receipts: a winning writer alone may apply its batch. The
+ * CHECK rolls back the entire batch if its class snapshot became stale.
+ */
+export const classTrackImportOperations = sqliteTable(
+  'class_track_import_operations',
+  {
+    id: text('id').primaryKey(),
+    classId: text('class_id')
+      .notNull()
+      .references(() => classes.id, { onDelete: 'cascade' }),
+    requestHash: text('request_hash').notNull(),
+    writerToken: text('writer_token').notNull(),
+    snapshotValid: integer('snapshot_valid').notNull(),
+    resultJson: text('result_json').notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [
+    check('class_track_import_snapshot_check', sql`${t.snapshotValid} = 1`),
+    index('class_track_import_operations_class_id_idx').on(t.classId),
+  ],
+);
+
 export const classTags = sqliteTable(
   'class_tags',
   {

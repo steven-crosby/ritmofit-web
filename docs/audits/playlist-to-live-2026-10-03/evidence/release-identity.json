@@ -1,0 +1,17 @@
+{
+  "checked_at_utc": "2026-10-03T16:44:31Z",
+  "deployment_id": "7e6129af-1a41-423d-825a-45e6ca9f8099",
+  "versions": [
+    {
+      "version_id": "b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03",
+      "percentage": 100
+    }
+  ],
+  "spa_matches": [
+    "assets/index-68EE379w.js",
+    "assets/index-68EE379w.js",
+    "assets/index-68EE379w.js"
+  ],
+  "browser_spa": "assets/index-68EE379w.js",
+  "source_from_prior_release_record": "d026f5992b8c2181b262259e5d9acf84e7745364"
+}

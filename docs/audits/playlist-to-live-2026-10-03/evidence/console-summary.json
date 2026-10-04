@@ -1,0 +1,6 @@
+{
+  "capturedErrorCount": 48,
+  "extensionContextErrors": 48,
+  "appOrProviderErrors": [],
+  "note": "Console capture is bounded; extension failures are excluded from product findings. Playback failures were shown in the app UI."
+}

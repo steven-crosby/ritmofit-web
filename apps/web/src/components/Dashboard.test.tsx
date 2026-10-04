@@ -189,6 +189,28 @@ function installLocalStorage() {
 
 beforeEach(() => {
   installLocalStorage();
+  const committed = new Map<string, ClassTrack[]>();
+  vi.mocked(api.importClassTracks).mockImplementation(
+    async (classId: string, body: Parameters<typeof api.importClassTracks>[1]) => {
+      const rows = committed.get(classId) ?? [];
+      for (const placement of body.placements)
+        if (!rows.some((r) => r.id === placement.id))
+          rows.push({
+            ...makeClassTrack(placement.id, rows.length),
+            classId,
+            trackId: placement.trackId,
+          });
+      const ordered = body.orderedIds.map((id, position) => ({
+        ...rows.find((r) => r.id === id)!,
+        position,
+      }));
+      committed.set(classId, ordered);
+      vi.mocked(api.listClassTracks).mockImplementation(
+        async (id: string) => committed.get(id) ?? [],
+      );
+      return ordered;
+    },
+  );
   vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
 });
 
@@ -436,7 +458,7 @@ describe('Dashboard class library states', () => {
     expect(screen.getByText(/2 selected/).textContent).toContain('2 selected');
     fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
 
-    await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
     expect(api.createClass).toHaveBeenCalledWith({
       title: 'New music class',
       template: 'cycle',
@@ -727,7 +749,71 @@ describe('Dashboard class library states', () => {
     fireEvent.click(retry);
     expect(await screen.findByText(/All 2 tracks imported/)).toBeTruthy();
     expect(api.createClass).toHaveBeenCalledTimes(1);
-    expect(api.addTrack).toHaveBeenCalledTimes(2);
+    expect(api.importClassTracks).toHaveBeenCalledTimes(2);
+  });
+
+  it('describes a response-lost Music playlist import as unconfirmed and confirms its exact operation', async () => {
+    const tracks = ['One', 'Two'].map((title) => ({
+      provider: 'apple_music' as const,
+      providerTrackId: title,
+      providerUri: null,
+      title,
+      artist: 'QA',
+      albumArtUrl: null,
+      durationMs: 180000,
+    }));
+    const created = makeClass('Unconfirmed draft') as Awaited<ReturnType<typeof api.createClass>>;
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...spotifyConnection(), provider: 'apple_music' },
+    ]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'apple_music',
+        playlistId: 'local-retry',
+        providerUri: null,
+        name: 'Unconfirmed draft',
+        ownerName: 'QA',
+        trackCount: 2,
+        coverImageUrl: null,
+      },
+    ]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue(tracks);
+    vi.mocked(api.createClass).mockResolvedValue(created);
+    vi.mocked(api.importTrack).mockImplementation(
+      async (_provider: Provider, id: string) =>
+        ({ id: `imported-${id}` }) as Awaited<ReturnType<typeof api.importTrack>>,
+    );
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    const server = vi.mocked(api.importClassTracks).getMockImplementation()!;
+    let receipt: ClassTrack[] = [];
+    vi.mocked(api.importClassTracks)
+      .mockImplementationOnce(
+        async (classId: string, body: Parameters<typeof api.importClassTracks>[1]) => {
+          receipt = await server(classId, body);
+          throw new TypeError('response lost');
+        },
+      )
+      .mockImplementationOnce(async () => receipt);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Browse saved playlists on Apple Music' }),
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Unconfirmed draft' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Start class from Unconfirmed draft' }),
+    );
+    const confirmation = await screen.findByRole('button', { name: 'Confirm previous import' });
+    expect(screen.getByText(/The import into Unconfirmed draft is unconfirmed/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Retry.*failed/ })).toBeNull();
+    const original = structuredClone(vi.mocked(api.importClassTracks).mock.calls[0]![1]);
+    fireEvent.click(confirmation);
+    await screen.findByText('All 2 tracks imported into Unconfirmed draft.');
+    expect(vi.mocked(api.importClassTracks).mock.calls[1]![1]).toEqual(original);
+    expect(api.importTrack).toHaveBeenCalledTimes(2);
+    expect(api.createClass).toHaveBeenCalledTimes(1);
   });
 
   it('removes stale Music browse controls after a provider disconnects', async () => {
@@ -937,7 +1023,7 @@ describe('Dashboard class library states', () => {
     });
     expect(vi.mocked(api.importTrack)).toHaveBeenCalledWith('spotify', 'tr-1');
     expect(vi.mocked(api.importTrack)).toHaveBeenCalledWith('spotify', 'tr-2');
-    expect(vi.mocked(api.addTrack)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(api.importClassTracks)).toHaveBeenCalledTimes(1);
   });
 
   it('omits the redundant ownership chip on library cards (solo-first library is owner-only)', async () => {

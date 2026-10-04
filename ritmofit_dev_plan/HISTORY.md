@@ -10,6 +10,146 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-10-03 (PR #484 — natural song-end precision) — deployed
+> (Worker `1ae3e216-89a6-4bbd-aec0-38f01bc600ff`); production playback acceptance
+> NOT yet run.** Application source `49ca56662fee109859e6a419ad166ff40a581506`; owner
+> authorized merge and deploy. Rollback target: Worker
+> `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`. No schema, migration, API, shared-contract,
+> OpenAPI, config, or secret change; remote D1 reported no migrations to apply.
+>
+> The fix addresses audit finding 1. The saved playback window is millisecond-precise
+> (223,398 ms) while the Apple adapter reports MusicKit's ended endpoint from a
+> whole-second duration (223 s), so the runtime's strict comparison read every natural
+> end as an early finish. In `apps/web/src/lib/playback/runtime.ts`, a finished stream
+> less than 1,000 ms short of the saved window now counts as reaching it and reports
+> the window end, so the class advances; a shortfall of 1,000 ms or more still errors
+> and holds the teaching position (D24). The rule applies to every provider. Three new
+> regression tests failed before the change and pass after; guard tests cover the
+> 1,000 ms boundary, a still-playing position, and retry into a genuinely early end.
+>
+> Verification: CI green on #484; the full local gate passed on the branch and again
+> on `main` before deploy. Post-deploy, SPA entry `assets/index-93-j7jyw.js` matched
+> three consecutive cache-busted fetches (rechecked 20:22 UTC); SPA and health returned
+> 200; classes/explore/teams returned 401 unauthenticated; six security headers present.
+>
+> **Not verified:** no real-provider playback ran on this release. The Claude Code
+> browser pane reached Live preflight for `[QA] #481 Empty Cycle` on the new build
+> (after accepting the update prompt), but that browser has no Apple Music
+> authorization and Start stayed disabled. The natural first-song transition, full
+> uninterrupted classes, and audible output all remain unverified in production. The
+> whole-second MusicKit duration rests on the one audit capture.
+>
+> Also this session: the audit and its planning-doc updates were published unchanged
+> as #483. The Classes list showed `[QA]` classes beyond the six the audit recorded
+> (`[QA] Ritmo Playlist Pilates`, `[QA] Ritmo Playlist Cycle`, `[QA] Audit Experienced
+> Pilates`, `[QA] Audit Experienced Cycle`); none were modified or deleted. PR #480
+> remains open and conflicting; it holds the only record of the #478 deploy entry and
+> the owner's "Spotify tabled" decision.
+
+> **Session 2026-10-03 — playlist-to-class-to-Live desktop audit completed; no deployment.**
+> Production Chrome / Apple Music, beginner and experienced Cycle/Pilates, using
+> only the ten-song `Ritmo Apple Music Test` playlist. Browser sign-in completed.
+> The [audit report](../docs/audits/playlist-to-live-2026-10-03/coverage.md) records
+> scenario verdicts, screenshots, reproduction steps, and contract implications;
+> the [next-session guide](../docs/audits/playlist-to-live-2026-10-03/NEXT_SESSION.md)
+> routes a Plan Mode development plan. Completing the audit does not mean the
+> desired product experience passed.
+>
+> Beginner flows fail the desired teaching-draft experience: imports generate no
+> song cues/notes; fixed templates put all ten songs in Block 1, leaving empty
+> blocks that disable Run Live. Experienced empty-class authoring works with
+> optional choreography, manual notes, timed cues, precise edits, and reload
+> persistence. Music-backed Start, provider progress, Pause/Resume, seek/skip, and
+> explicit prompter recovery were observed. Both disciplines fail the first
+> natural song boundary at 3:43. Saved 223,398 ms versus SDK duration 223 seconds
+> is strong causal evidence for precision mismatch, not a verified implemented
+> fix. No full uninterrupted class passed; audible output remains unverified.
+> Live at real desktop 200% zoom hides the teaching region; long cues overwhelm
+> Cue-by-Cue. Explicit `0:00` clip start is rejected while blank start works.
+>
+> Read-only close reconcile at 17:11 UTC: Worker
+> `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03` serves 100%; three consecutive cache-busted
+> SPA responses matched `assets/index-68EE379w.js`. SPA entry/health returned 200,
+> classes/explore/teams returned 401 unauthenticated, and six security headers
+> were present. Remote D1 reports no pending migrations through repository level
+> `0020`. Application source remains `d026f5992b8c2181b262259e5d9acf84e7745364`;
+> local/fetched main `aa128e8` contains later documentation. No application code,
+> shared contract, schema, configuration, migration, or deployment changed here.
+>
+> Six `qa-fixture` classes remain at the owner's instruction; no deletion. Two
+> fresh fixtures: `[QA] Goal Template Cycle` (`8a8dcf22-0b20-48ec-a84a-4f13d10ebe85`)
+> and `[QA] Goal Template Pilates` (`975a0152-3bc8-4a79-a812-dee80a148164`). The four
+> #481 fixtures listed below were reused. Only QA fixtures were modified; source
+> playlists and existing instructor content were preserved. Temporary clipping
+> was restored; manual test notes/cues remain. No iPhone, Spotify, HIIT, or large
+> playlist imports were tested. The 15-song cap is a proposal, not a locked rule.
+>
+> Full close prepares documentation and curated QA evidence for publication.
+> Raw scoped API/automation snapshots were reduced to field summaries after a
+> hash-verified local backup. Git publication/merge remain separate owner actions.
+> Documentation formatting, diff whitespace, evidence parsing/hash/integrity,
+> relative links, and scoped credential-pattern checks passed. The matching
+> deployed application gate was not repeated for this docs-only close.
+> Unrelated `.claude/` work and pre-existing conflicting docs PR #480 were preserved.
+
+> **Session 2026-10-02 (PR #481 — ordered playlist import and recovery) — deployed
+> (Worker `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`).** Application source
+> `d026f5992b8c2181b262259e5d9acf84e7745364`; owner authorized commit, PR, merge,
+> migration, deployment, and desktop Apple Music verification in this session.
+> Remote D1 migration `0020_secret_zaladane.sql` applied before code; subsequent
+> migration check reported nothing pending. No secret/configuration changes.
+>
+> Playlist occurrences resolve concurrently but commit in source order through a
+> guarded D1 batch. Durable receipts recover ambiguous playlist responses without
+> duplicate placements. Single-song adds share the atomic guard and discard their
+> non-replayable receipts in the batch. Recovery reconciles current membership,
+> preserves instructor arrangements through an explicit append-remaining action,
+> and ignores stale playlist responses and destination callbacks.
+>
+> Validation: CI passed for PR head `02a9efb`; merged main has the identical tree.
+> The full local gate passed again on merged main: 1,513 unit/component tests and
+> 184 migrated D1 integration tests, plus formatting, types, lint, design/theme,
+> build, OpenAPI, contract parity, and dependency audit. Main CI also passed.
+> Review identified a stale success callback and redundant single-add receipt
+> retention; both were fixed with regressions before merge.
+>
+> Post-deploy: Worker serves 100%; three consecutive cache-busted SPA fetches and
+> the updated Chrome document matched `assets/index-68EE379w.js`. SPA/health/entry
+> asset returned 200, classes/explore/teams returned 401 unauthenticated, and all
+> six documented security headers were present. Chrome's offered update was accepted.
+>
+> Authenticated production smoke used only the 10-song `Ritmo Apple Music Test`
+> playlist. Music-to-class and Classes-to-empty-class both passed for Cycle and
+> Pilates: 10 unique placement IDs, positions 0–9, and the exact source sequence.
+> A controlled Chrome network failure discarded a real 201 import response after
+> commit; reload exposed saved confirmation and replay retained all 10 original
+> placement IDs without duplication. Interception was cleared after the test.
+> [Screenshot of the controlled uncertain-import state](../docs/audits/playlist-import-release-2026-10-02/uncertain-import.jpg).
+> Two manual timed cues and a creator note persisted in the empty Pilates fixture
+> and appeared in Live. Both disciplines passed prompter-only Start, Pause/Resume,
+> next-song transition, keyboard seek, and accelerated completion. These are not
+> uninterrupted audible class runs. Apple Music playback was blocked by Apple's
+> browser sign-in; audible playback and uninterrupted provider runs remain unverified.
+>
+> Existing product gaps remain: playlist creation generates no teaching blocks,
+> cues, or notes; Music creation remains on Music, and the chooser track count can
+> lag until reload. No automatic teaching builder, class-size cap, iPhone, Spotify,
+> or HIIT work was included.
+>
+> Fresh fixtures were named `[QA]` and tagged `qa-fixture` immediately. They remain
+> for owner review; deletion was not authorized. Source playlists and existing
+> instructor classes were preserved.
+>
+> | Fixture | Class ID |
+> | --- | --- |
+> | [QA] #481 Music Cycle | `a1dac274-197b-4696-a649-d16fb24a620f` |
+> | [QA] #481 Empty Pilates | `da1aec6e-f5b0-4066-8d45-2853558be233` |
+> | [QA] #481 Music Pilates | `05f546c7-ffe7-4827-ba2e-cbd526d9dc03` |
+> | [QA] #481 Empty Cycle | `3402a289-b570-4e7c-a6a9-4c996b28383a` |
+>
+> Prior live Worker for code rollback: `e4744ca1-11b0-4ad6-9382-ef8ad6f9b0a5`.
+> Migration 0020 is additive; Worker rollback leaves its receipt table in place.
+
 > **Session 2026-10-02 (PR #478 — music-led Phase 1) — deployed (Worker
 > `e4744ca1-11b0-4ad6-9382-ef8ad6f9b0a5`).** Application source `48bfd11`, deployed from clean
 > `main` `71c6fc2` after owner go. Web-only; no API, schema, OpenAPI, or contract change. No remote
