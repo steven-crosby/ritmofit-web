@@ -10,6 +10,53 @@ chronological record (PRs, Worker version ids, migration steps, per-slice detail
 
 ## From DEVELOPMENT_PLAN.md — dated deploy log
 
+> **Session 2026-10-04 — PR #486 Live zoom fix deployed; #485/#480 documentation reconciled.**
+> Released source `efd542b88552d29c94d7b0edad484f29f244d20c`, Worker
+> `1053f665-ebf1-4d8c-be40-16ddfdea908f` at 100%, SPA `assets/index-B8JJicuF.js`.
+> Application code matches #486 merge `eeec377add5294850a78334ef120374f26f23e14`;
+> the subsequent #485/#480 merges are documentation only. Owner approved docs reconciliation,
+> branch cleanup, deployment, and production verification. Rollback Worker:
+> `1ae3e216-89a6-4bbd-aec0-38f01bc600ff`. No API, schema, migration, shared-contract,
+> OpenAPI, configuration, or secret change. Remote D1 had no pending migrations before/after;
+> the beta allowlist secret was confirmed by name only.
+>
+> Verification: all 12 canonical local gate checks passed on the released source,
+> including 1,528 unit and 184 integration tests. Both reconciled docs PRs passed fresh
+> CI before squash merge. Three consecutive cache-busted SPA fetches matched the build;
+> health/SPA returned 200, protected and mounted routes returned 401, six security headers
+> were present. The production update prompt activated the matching entry in Chrome.
+>
+> **Production UI:** Chrome's own zoom control confirmed 200%; a 1200×608 viewport
+> measured 600×304 CSS pixels. Current and Next remained readable with a long cue;
+> compact timecode, transport, view/Exit controls, waiting recovery, and real failure recovery stayed reachable.
+> Full List retained the complete cue, scrolled to the final song with header/dock visible,
+> and keyboard Exit returned to Builder. Provider preparation held teaching time at zero
+> and exposed recovery actions before confirming real Apple Music progress.
+>
+> **Provider acceptance: FAIL at the first natural boundary.** With no agent pause, seek,
+> skip, or retry during the run, Apple Music advanced through Abracadabra, then stopped at
+> displayed `3:43`: "Music ended before the saved playback window. Check its duration or
+> skip this track." Track 2 did not start. Teaching time held and all four recovery actions
+> remained visible at 200% zoom. The saved run payload confirmed first-track duration
+> `223398` ms, clip start `0`, and next-track offset `223398` ms. The actual provider
+> finished state/position/duration reading was not captured, so the root cause remains
+> unverified; #484's tolerance did not prevent this observed failure. No playback source
+> was edited and no artificial network failure was introduced. Full natural Cycle/Pilates
+> classes and audible acceptance remain unverified; no listening confirmation was received.
+> Spotify remains paused; no iPhone, HIIT, teaching-draft, or readiness work was performed.
+>
+> One new production fixture was created for this pass: `[QA] Live zoom acceptance 2026-10-04 Cycle`,
+> ID `bc488d5c-7dc5-4414-a7d2-4ef26601deae`, tagged `qa-fixture` immediately. The ten-song
+> `Ritmo Apple Music Test` order was imported unchanged; two manual regression cues were added
+> only to this fixture (long cue at 0:00, Next at 1:30). This is manual QA preparation, not a
+> generated teaching-draft pass. The fixture remains for owner review; none were deleted.
+>
+> Cleanup: a verified complete-history Git bundle preserves the exact deleted branch tips.
+> Deleted merged branches for #481/#482/#486/#485/#480 and the two corrupt Cursor branches;
+> the corrupt branches were never checked out or merged. No force push or remote change.
+> Unrelated `.claude/launch.json` was preserved. Historical device results and Spotify pause
+> from #480 were retained while newer release facts and desktop scope took precedence.
+
 > **Session 2026-10-03 (PR #484 — natural song-end precision) — deployed
 > (Worker `1ae3e216-89a6-4bbd-aec0-38f01bc600ff`); production playback acceptance
 > NOT yet run.** Application source `49ca56662fee109859e6a419ad166ff40a581506`; owner
