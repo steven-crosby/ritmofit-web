@@ -323,7 +323,20 @@ Music preparation while teaching time advanced. The [phased workflow plan](./mus
 proposes connection/playback reliability and honest readiness first, mobile teaching/editing clarity
 next, then Builder speed/rehearsal and timed exercise steps. Phase 1 implementation is authorized, starting with 1A;
 release remains separately gated. SPC-09 remains open; replacing it as the next implementation focus
-is approved for Phase 1. Connection recovery (1A), the music-authoritative Live clock (1B), and truthful preflight with explicit Apple browser authorization (1C) are implemented but not deployed. Real-device audible playback and interruption acceptance remain. Later phases await approval.
+is approved for Phase 1. Connection recovery (1A), the music-authoritative Live clock (1B), and truthful preflight with explicit Apple browser authorization (1C) were deployed on 2026-10-02 (#478, Worker `e4744ca1`). The dated first-round results are in the [acceptance record](../docs/audits/music-led-phase-1-acceptance/README.md): Apple Music was audible on the owner’s Mac test build, while iPhone Safari failed or hung. These observations do not establish acceptance of the current #484 release. Real-device audible playback and interruption acceptance remain. Later phases await approval.
+
+**Spotify tabled (owner decision, 2026-10-02):** Spotify work and Spotify acceptance testing are
+paused until UI/UX and Live playback with Apple Music are completed and hardened. Spotify stays
+connected in the product but is not a release gate, and no Spotify-specific readiness claim should
+be made meanwhile. Known open item when it resumes: the connected Spotify account is rejected by the
+Spotify developer app ("The user is not registered for this application"), so every Spotify Web API
+call returns `403`.
+
+**Earlier iPhone investigation handoff (2026-10-02):** the proposed first check was to
+fully close the iOS Music app, reload Ritmo, and retry the Apple Music class. If the failure
+persists, use Safari Web Inspector to capture the MusicKit error at Start and Retry before
+choosing a web-adapter fix or native iOS playback plan. This remains unresolved; the October 3
+desktop audit and current focus above determine the next session’s immediate scope.
 
 **Class-building design direction:** The owner-approved
 [`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) sets the target for a
