@@ -12,7 +12,7 @@ import {
 } from '../lib/api.js';
 import { prepareAppleMusic } from '../lib/musickit.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
-import type { PlaybackAdapter } from '../lib/playback/types.js';
+import type { AdapterEvents, PlaybackAdapter } from '../lib/playback/types.js';
 import {
   choreographyQueueAt,
   eventCount,
@@ -495,6 +495,81 @@ describe('LiveMode focus management', () => {
     // on the preflight phase, so it never races the transport-focus effect here.
     render(<LiveMode payload={{ ...payload, tracks: [] }} onExit={() => {}} />);
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Play' }));
+  });
+
+  it('reveals teaching on entry and recovery on a new failure without stealing focus on updates', async () => {
+    const originalScroll = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView');
+    const revealed: HTMLElement[] = [];
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: function (this: HTMLElement) {
+        revealed.push(this);
+      },
+    });
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    let fail: NonNullable<AdapterEvents['onError']> = () => {};
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation((events: AdapterEvents) => {
+      fail = (error) => events.onError?.(error);
+      return workingAdapter();
+    });
+    try {
+      render(<LiveMode payload={payload} onExit={() => {}} />);
+      await screen.findByRole('list', { name: 'Track playback check' });
+      fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+      await screen.findByRole('button', { name: 'Pause' });
+      const teaching = document.querySelector('[data-live-region="teaching"]');
+      expect(revealed.at(-1)).toBe(teaching);
+      expect(focus).toHaveBeenLastCalledWith({ preventScroll: true });
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Pause' }));
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+      fireEvent.click(screen.getByRole('button', { name: 'More controls' }));
+      act(() => fail({ message: 'Lost playback during teaching' }));
+      const recovery = await screen.findByRole('alert', { name: 'Playback recovery' });
+      expect(revealed.at(-1)).toBe(recovery);
+      expect(document.activeElement).toBe(recovery);
+      expect(
+        screen.getByRole('button', { name: 'More controls' }).getAttribute('aria-expanded'),
+      ).toBe('false');
+      const manage = within(recovery).getByRole('button', { name: 'Manage music connection' });
+      manage.focus();
+      const revealCount = revealed.length;
+      act(() => fail({ message: 'A second provider status update' }));
+      expect(document.activeElement).toBe(manage);
+      expect(revealed).toHaveLength(revealCount);
+
+      fireEvent.click(within(recovery).getByRole('button', { name: 'Continue without music' }));
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(revealed.at(-1)).toBe(teaching);
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Pause' }));
+    } finally {
+      focus.mockRestore();
+      if (originalScroll) {
+        Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', originalScroll);
+      } else {
+        Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+      }
+    }
+  });
+
+  it('keeps secondary transport controls operable after switching to Full List', async () => {
+    await renderLive();
+    fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+    const more = screen.getByRole('button', { name: 'More controls' });
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(more);
+    const less = screen.getByRole('button', { name: 'Less controls' });
+    expect(less.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy();
+    expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
+    fireEvent.click(less);
+    expect(
+      screen.getByRole('button', { name: 'More controls' }).getAttribute('aria-expanded'),
+    ).toBe('false');
   });
 });
 
@@ -1232,7 +1307,7 @@ describe('LiveMode timeline scrubber', () => {
     // The transport scrubber replaces the old plain range input.
     const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
     const transport = screen.getByRole('region', { name: 'Live transport' });
-    expect(transport.className).toContain('grid-cols-[minmax(0,1fr)_auto]');
+    expect(transport.contains(slider)).toBe(true);
     expect(slider.parentElement?.className).toContain('col-span-full');
     expect(slider.parentElement?.className).toContain('min-w-0');
     // Clock starts at 0:00 / 3:00; a right-arrow nudges +5s.

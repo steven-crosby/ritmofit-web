@@ -339,10 +339,11 @@ export function LiveMode({
   // playback failure). The coordinator is imperative on purpose: the rAF clock
   // drives it, and React state only mirrors its status for display.
   const coordinatorRef = useRef<RuntimePlaybackCoordinator | null>(null);
-  // Focus targets for the full-screen takeover (see the focus effects below): the
-  // preflight class-title heading, and the transport's primary Play/Pause control.
+  // Keep entry controls visible while revealing teaching or urgent recovery.
   const headingRef = useRef<HTMLHeadingElement>(null);
   const primaryButtonRef = useRef<HTMLButtonElement>(null);
+  const teachingRef = useRef<HTMLDivElement>(null);
+  const recoveryRef = useRef<HTMLElement>(null);
 
   const refreshConnections = useCallback(async () => {
     const requestId = ++connectionsRequestId.current;
@@ -392,13 +393,19 @@ export function LiveMode({
     if (phase === 'preflight') headingRef.current?.focus();
   }, []);
 
-  // When the class goes live — Start class, Run without music, or an empty class that
-  // skips preflight straight to 'live' — move focus to the transport's primary control
-  // (Play/Pause), the instructor's next action, instead of stranding it on <body>
-  // after the preflight button unmounts.
+  // The dock stays visible, so focusing its primary control must not scroll past
+  // teaching. Reveal a new failure once; clock/status updates must not steal focus.
+  const hasPlaybackFailure = playbackFailure != null;
   useEffect(() => {
-    if (phase === 'live') primaryButtonRef.current?.focus();
-  }, [phase]);
+    if (phase !== 'live' || connectionsOpen) return;
+    if (hasPlaybackFailure) {
+      recoveryRef.current?.scrollIntoView?.({ block: 'start' });
+      recoveryRef.current?.focus({ preventScroll: true });
+    } else {
+      teachingRef.current?.scrollIntoView?.({ block: 'start' });
+      primaryButtonRef.current?.focus({ preventScroll: true });
+    }
+  }, [phase, hasPlaybackFailure, connectionsOpen]);
 
   // Static preflight against the providers the player can actually drive.
   const preflight = useMemo(
@@ -814,8 +821,8 @@ export function LiveMode({
     // slot collapses that slot to clientHeight 0 when 200% zoom (600×304 CSS
     // pixels) makes the header and transport taller than the viewport, and a
     // zero-height box cannot scroll. The column grows with its content instead,
-    // so cue, recovery, and transport stay reachable. Short classes still pin
-    // transport to the bottom via min-h-full + flex-1.
+    // so teaching stays reachable. The compact dock follows either view without
+    // forcing instructors through every Full List row to pause or change tracks.
     <div className="fixed inset-0 z-50 overflow-y-auto bg-bg-live">
       <div className="flex min-h-full flex-col">
         {/* The advancing cue, spoken for screen readers — the prompter's core function.
@@ -861,38 +868,13 @@ export function LiveMode({
 
         {section && <LiveSectionBar section={section} />}
 
-        <div data-live-region="teaching" className="flex flex-1 flex-col">
-          {view === 'cue' ? (
-            <CueByCue
-              payload={payload}
-              live={live}
-              currentEvent={currentEvent}
-              nextEvent={nextEvent}
-              events={events}
-              elapsedMs={elapsedMs}
-              trackEndMs={trackEndMs}
-              trackHasDuration={trackDurationMs != null}
-              classTotalMs={payload.class.totalDurationMs}
-              playing={teachingPlaying}
-              holding={musicBlocked || !!playbackFailure}
-              hasStarted={hasStarted}
-              gap={gap}
-            />
-          ) : (
-            <FullList
-              payload={payload}
-              eventsByTrack={eventsByTrack}
-              liveIndex={liveIndex}
-              elapsedMs={elapsedMs}
-              onSeek={seek}
-            />
-          )}
-        </div>
-
         {(musicBlocked || playbackFailure) && (
           <section
+            ref={recoveryRef}
+            tabIndex={-1}
+            aria-label="Playback recovery"
             role={playbackFailure ? 'alert' : 'status'}
-            className="shrink-0 border-t border-state-caution/30 bg-bg-raised px-4 py-3 sm:px-6"
+            className="shrink-0 border-t border-state-caution/30 bg-bg-raised px-4 py-3 rf-focus-ring sm:px-6 [@media(max-height:480px)]:max-h-[calc(100dvh-5rem)] [@media(max-height:480px)]:overflow-y-auto"
           >
             <h2 className="font-ui text-sm font-semibold text-text-primary">
               {playbackFailure ? 'Playback stopped' : 'Waiting for music'}
@@ -955,9 +937,37 @@ export function LiveMode({
               )}
           </section>
         )}
+        <div ref={teachingRef} data-live-region="teaching" className="flex flex-1 flex-col">
+          {view === 'cue' ? (
+            <CueByCue
+              payload={payload}
+              live={live}
+              currentEvent={currentEvent}
+              nextEvent={nextEvent}
+              events={events}
+              elapsedMs={elapsedMs}
+              trackEndMs={trackEndMs}
+              trackHasDuration={trackDurationMs != null}
+              classTotalMs={payload.class.totalDurationMs}
+              playing={teachingPlaying}
+              holding={musicBlocked || !!playbackFailure}
+              hasStarted={hasStarted}
+              gap={gap}
+            />
+          ) : (
+            <FullList
+              payload={payload}
+              eventsByTrack={eventsByTrack}
+              liveIndex={liveIndex}
+              elapsedMs={elapsedMs}
+              onSeek={seek}
+            />
+          )}
+        </div>
         <Transport
           playing={playing}
           musicBlocked={musicBlocked}
+          hasPlaybackFailure={hasPlaybackFailure}
           onToggle={togglePlay}
           onReset={() => {
             setPlaying(false);
@@ -1255,12 +1265,12 @@ function CueByCue({
   const showReadyHero = !hasStarted && elapsedMs === 0 && currentEvent == null;
   const count = eventCount(currentEvent);
   return (
-    <div className="flex min-h-full flex-col gap-4 p-4 sm:p-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:p-8">
+    <div className="flex min-h-full flex-col gap-4 p-4 sm:p-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:p-8 [@media(max-height:480px)]:p-2">
       {/* LEFT — the focal cue: the one thing the instructor reads across the room.
           Carries the All-Out drop; otherwise it holds still so it's always legible. */}
       <div
         data-live-region="focal"
-        className="relative flex min-h-[42vh] flex-col overflow-hidden rounded-card bg-bg-raised p-4 shadow-card sm:p-8 lg:col-span-3 lg:min-h-0"
+        className="relative flex min-h-[42vh] flex-col overflow-hidden rounded-card bg-bg-raised p-4 shadow-card sm:p-8 lg:col-span-3 lg:min-h-0 [@media(max-height:480px)]:p-2"
       >
         {/* The drop's plasma bloom — keyed on the cue so it replays per advance. */}
         {isAllOut && currentEvent && (
@@ -1284,7 +1294,7 @@ function CueByCue({
             <>
               {count && (
                 <p
-                  className={`relative mt-5 shrink-0 font-data font-bold leading-none tracking-[-0.05em] text-text-primary ${holding ? 'text-2xl sm:text-[clamp(3.5rem,9vw,7rem)]' : 'text-[clamp(3.5rem,9vw,7rem)]'}`}
+                  className={`relative mt-5 shrink-0 font-data font-bold leading-none tracking-[-0.05em] text-text-primary [@media(max-height:480px)]:mt-1 ${holding ? 'text-2xl sm:text-[clamp(3.5rem,9vw,7rem)]' : 'text-[clamp(3.5rem,9vw,7rem)]'}`}
                   aria-label={
                     currentEvent.bar == null ? `Count ${count}` : `Bar and count ${count}`
                   }
@@ -1294,7 +1304,7 @@ function CueByCue({
               )}
               <p
                 key={currentEvent.text}
-                className={`relative mt-3 line-clamp-2 shrink-0 break-words font-display ${holding ? 'text-2xl sm:text-[clamp(2.75rem,7vw,5.5rem)]' : 'text-[clamp(2.75rem,7vw,5.5rem)]'} font-semibold leading-[0.95] text-text-primary ${
+                className={`relative mt-3 line-clamp-2 shrink-0 break-words font-display [@media(max-height:480px)]:mt-2 ${holding ? 'text-2xl sm:text-[clamp(2.75rem,7vw,5.5rem)]' : 'text-[clamp(2.75rem,7vw,5.5rem)]'} font-semibold leading-[0.95] text-text-primary ${
                   isAllOut ? 'rf-drop-in' : ''
                 }`}
                 style={currentEvent.color ? { color: currentEvent.color } : undefined}
@@ -1349,7 +1359,7 @@ function CueByCue({
             Next below the teaching card at a short viewport; the assertive
             announcement and Full List keep the full string. The flex-1 cue block
             still centres short cues. */}
-        <div className="relative mt-4 flex min-w-0 shrink-0 items-baseline gap-3 border-t border-interactive/15 pt-3 sm:mt-6 sm:pt-4">
+        <div className="relative mt-4 flex min-w-0 shrink-0 items-baseline gap-3 border-t border-interactive/15 pt-3 sm:mt-6 sm:pt-4 [@media(max-height:480px)]:mt-2 [@media(max-height:480px)]:pt-2">
           <p className="shrink-0 font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
             Next
           </p>
@@ -1684,6 +1694,7 @@ function FullList({
 function Transport({
   playing,
   musicBlocked,
+  hasPlaybackFailure,
   onToggle,
   onReset,
   liveIndex,
@@ -1699,6 +1710,7 @@ function Transport({
 }: {
   playing: boolean;
   musicBlocked: boolean;
+  hasPlaybackFailure: boolean;
   onToggle: () => void;
   onReset: () => void;
   liveIndex: number;
@@ -1717,15 +1729,20 @@ function Transport({
   /** Focused when the class goes live so start never strands focus on <body>. */
   primaryButtonRef: RefObject<HTMLButtonElement>;
 }) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  // A newly stopped track takes priority over an expanded short-screen dock.
+  useEffect(() => {
+    if (hasPlaybackFailure) setMoreOpen(false);
+  }, [hasPlaybackFailure]);
   const previousTrack = liveIndex > 0 ? payload.tracks[liveIndex - 1] : null;
   const nextTrack = liveIndex >= 0 ? payload.tracks[liveIndex + 1] : null;
   return (
     <div
-      className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3 border-t border-interactive/15 bg-bg-raised/70 px-4 py-3 sm:grid-cols-[minmax(18rem,auto)_auto_minmax(0,1fr)] sm:gap-x-4 sm:px-6 sm:py-4"
+      className="sticky bottom-0 z-10 shrink-0 border-t border-interactive/15 bg-bg-raised px-4 py-3 sm:px-6 sm:py-4 [@media(max-height:480px)]:py-3"
       role="region"
       aria-label="Live transport"
     >
-      <div className="col-span-full grid min-w-0 grid-cols-3 gap-2 sm:col-span-1">
+      <div className="grid min-w-0 grid-cols-3 gap-2 [@media(max-height:480px)]:grid-cols-4">
         <button
           className="min-h-11 rounded-control border border-interactive px-2 py-2 font-ui text-sm font-semibold text-interactive rf-focus-ring disabled:pointer-events-none disabled:opacity-40 sm:rounded-pill sm:px-4"
           onClick={onPreviousTrack}
@@ -1734,11 +1751,12 @@ function Transport({
             previousTrack ? `Previous track, ${previousTrack.track.title}` : 'Previous track'
           }
         >
-          <span aria-hidden>← </span>Previous
+          <span aria-hidden>← </span>
+          <span className="[@media(max-height:480px)_and_(max-width:390px)]:hidden">Previous</span>
         </button>
         <button
           ref={primaryButtonRef}
-          className="min-h-11 rounded-control rf-btn-primary px-3 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill sm:px-6"
+          className="min-h-11 rounded-control rf-btn-primary px-3 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill sm:px-6 [@media(max-height:480px)]:px-2"
           onClick={onToggle}
           aria-label={playing && musicBlocked ? 'Pause preparation' : undefined}
         >
@@ -1756,26 +1774,42 @@ function Transport({
           disabled={liveIndex < 0 || liveIndex >= payload.tracks.length - 1}
           aria-label={nextTrack ? `Next track, ${nextTrack.track.title}` : 'Next track'}
         >
-          Next<span aria-hidden> →</span>
+          <span className="[@media(max-height:480px)_and_(max-width:390px)]:hidden">Next</span>
+          <span aria-hidden> →</span>
+        </button>
+        <button
+          type="button"
+          aria-expanded={moreOpen}
+          aria-controls="live-transport-more"
+          aria-label={moreOpen ? 'Less controls' : 'More controls'}
+          onClick={() => setMoreOpen((open) => !open)}
+          className="hidden min-h-11 rounded-control border border-interactive px-2 py-2 font-ui text-xs text-interactive rf-focus-ring [@media(max-height:480px)]:block"
+        >
+          {moreOpen ? 'Less' : 'More'}
         </button>
       </div>
-      <button
-        className="min-h-11 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive rf-focus-ring sm:rounded-pill sm:px-4"
-        onClick={onReset}
+      <div
+        id="live-transport-more"
+        className={`mt-3 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 [@media(max-height:480px)]:max-h-[calc(100dvh-10rem)] [@media(max-height:480px)]:overflow-y-auto ${moreOpen ? '' : '[@media(max-height:480px)]:hidden'}`}
       >
-        Reset
-      </button>
-      <div className="col-span-full flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 sm:col-span-1 sm:flex-nowrap sm:justify-start">
-        <PlaybackRail status={playback} />
-        <WakeRail status={wakeStatus} />
-      </div>
-      <div className="col-span-full min-w-0">
-        <LiveTimeline
-          payload={payload}
-          clock={clock}
-          onSeekPreview={onSeekPreview}
-          onSeekCommit={onSeekCommit}
-        />
+        <button
+          className="min-h-11 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive rf-focus-ring sm:rounded-pill sm:px-4"
+          onClick={onReset}
+        >
+          Reset
+        </button>
+        <div className="col-span-full flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 sm:col-span-1 sm:flex-nowrap sm:justify-start">
+          <PlaybackRail status={playback} />
+          <WakeRail status={wakeStatus} />
+        </div>
+        <div className="col-span-full min-w-0">
+          <LiveTimeline
+            payload={payload}
+            clock={clock}
+            onSeekPreview={onSeekPreview}
+            onSeekCommit={onSeekCommit}
+          />
+        </div>
       </div>
     </div>
   );
