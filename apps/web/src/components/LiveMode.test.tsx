@@ -523,7 +523,18 @@ describe('LiveMode focus management', () => {
       expect(focus).toHaveBeenLastCalledWith({ preventScroll: true });
       expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Pause' }));
 
-      fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+      const fullList = screen.getByRole('tab', { name: 'Full List' });
+      fullList.focus();
+      fireEvent.click(fullList);
+      expect(revealed.at(-1)).toBe(teaching);
+      expect(document.activeElement).toBe(fullList);
+      const cueView = screen.getByRole('tab', { name: 'Cue-by-Cue' });
+      cueView.focus();
+      fireEvent.click(cueView);
+      expect(revealed.at(-1)).toBe(teaching);
+      expect(document.activeElement).toBe(cueView);
+      fullList.focus();
+      fireEvent.click(fullList);
       fireEvent.click(screen.getByRole('button', { name: 'More controls' }));
       act(() => fail({ message: 'Lost playback during teaching' }));
       const recovery = await screen.findByRole('alert', { name: 'Playback recovery' });
@@ -570,6 +581,71 @@ describe('LiveMode focus management', () => {
     expect(
       screen.getByRole('button', { name: 'More controls' }).getAttribute('aria-expanded'),
     ).toBe('false');
+  });
+
+  it('focuses waiting recovery and restores the music-dialog trigger while preparation is pending', async () => {
+    const pending = deferred<{ provider: 'soundcloud'; classTrackId: string }>();
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => ({
+      ...workingAdapter(),
+      prepare: () => pending.promise,
+    }));
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    const recovery = screen.getByRole('status', { name: 'Playback recovery' });
+    expect(document.activeElement).toBe(recovery);
+    expect(within(recovery).getByRole('button', { name: 'Continue without music' })).toBeTruthy();
+    const manage = within(recovery).getByRole('button', { name: 'Manage music connection' });
+    manage.focus();
+    fireEvent.click(manage);
+    const dialog = await screen.findByRole('dialog', { name: 'Music connections' });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
+    expect(document.activeElement).toBe(manage);
+    expect(screen.getByRole('status', { name: 'Playback recovery' })).toBe(recovery);
+  });
+
+  it('keeps focus in the music dialog when playback confirms and falls back if its trigger disappears', async () => {
+    const pending = deferred<{ provider: 'soundcloud'; classTrackId: string }>();
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => ({
+      ...workingAdapter(),
+      prepare: () => pending.promise,
+    }));
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    const manage = screen.getByRole('button', { name: 'Manage music connection' });
+    manage.focus();
+    fireEvent.click(manage);
+    const dialog = await screen.findByRole('dialog', { name: 'Music connections' });
+    await act(async () => {
+      pending.resolve({ provider: 'soundcloud', classTrackId: activeTrack.classTrackId });
+    });
+    await screen.findByRole('button', { name: /^Pause$/ });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(manage.isConnected).toBe(false);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /^Pause$/ }));
+  });
+
+  it('retains the music-dialog trigger after closing failure recovery from Full List', async () => {
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => ({
+      ...workingAdapter(),
+      prepare: () => Promise.reject(new Error('widget failed')),
+    }));
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+    const manage = screen.getByRole('button', { name: 'Manage music connection' });
+    manage.focus();
+    fireEvent.click(manage);
+    const dialog = await screen.findByRole('dialog', { name: 'Music connections' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
+    expect(document.activeElement).toBe(manage);
   });
 });
 
