@@ -108,23 +108,20 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   private destroyed = false;
   private trackTitle = '';
   private queueGeneration: number | null = null;
+  private lastPositionMs: number | null = null;
+  private finishedReading: TransportReading | null = null;
 
   // One bound handler pair for this adapter's life, so removeEventListener in
   // destroy() matches the addEventListener in prepare().
   private readonly onStateChange = (event: MusicKitPlaybackEvent): void => {
-    if (this.started && transportOwners.get(this.requireInstance()) === this) {
-      this.events.onTransportState?.(this.transportState(event.state));
-    }
-    // Only a genuine end-of-track while we are the playing owner is a finish. A
-    // single-song queue also reports `completed`/`ended` when WE stop or tear
-    // down (started is cleared first), which must not misfire onFinish.
-    if (!this.started) return;
-    const states = this.music?.PlaybackStates;
-    // Treat `ended` like `completed` so a stale/region-shortened stream still
-    // yields the one advisory finish.
-    if (states && (event.state === states.completed || event.state === states.ended)) {
-      this.events.onFinish?.();
-    }
+    if (!this.started || !this.instance || transportOwners.get(this.instance) !== this) return;
+    const state = this.transportState(event.state);
+    // Capture before notifying the runtime: MusicKit clears time and duration
+    // during single-song teardown (paused -> seeking -> ended -> completed).
+    this.captureTransport(state);
+    this.events.onTransportState?.(state);
+    // stop()/destroy() clear started before their own teardown events.
+    if (state === 'ended') this.events.onFinish?.();
   };
   private readonly onPlaybackError = (): void => {
     this.events.onError?.({ message: `Apple Music playback failed for "${this.trackTitle}".` });
@@ -149,6 +146,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     }
     this.destroyed = false;
     this.started = false;
+    this.clearEndpoint();
     this.trackTitle = entry.track.title;
     this.songId = ref.providerTrackId;
     this.windowStartSeconds = msToSeconds(window.startMs);
@@ -228,6 +226,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     if (pendingPlays.has(instance))
       throw new Error('Apple Music is still finishing a previous play request.');
     this.starting = true;
+    this.clearEndpoint();
     pendingPlays.add(instance);
     transportOwners.set(instance, this);
     try {
@@ -283,17 +282,38 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     return 'unknown';
   }
   async getTransport(): Promise<TransportReading> {
-    const reading = await this.getLiveness();
-    const state = this.transportState();
-    const duration = this.instance?.currentPlaybackDuration;
-    return {
-      state: reading ? state : 'unknown',
-      positionMs: reading
-        ? state === 'ended' && typeof duration === 'number'
-          ? Math.round(duration * 1000)
-          : reading.positionMs
-        : null,
-    };
+    // Read state and position together, without yielding between SDK reads.
+    return this.captureTransport(this.transportState());
+  }
+
+  private captureTransport(state: TransportState): TransportReading {
+    const instance = this.instance;
+    if (!instance || this.destroyed || !this.started || transportOwners.get(instance) !== this)
+      return { state: 'unknown', positionMs: null };
+    if (this.finishedReading) return this.finishedReading;
+
+    const seconds = instance.currentPlaybackTime;
+    const positionMs =
+      typeof seconds === 'number' && Number.isFinite(seconds) && seconds >= 0
+        ? Math.round(seconds * 1000)
+        : null;
+    if (state === 'ended') {
+      // Duration is not proof of reaching the endpoint. Retain the latest
+      // observed playhead through MusicKit's reset; never invent a full-song end.
+      this.finishedReading = {
+        state,
+        positionMs: positionMs != null && positionMs > 0 ? positionMs : this.lastPositionMs,
+      };
+      return this.finishedReading;
+    }
+    if ((state === 'playing' || state === 'paused') && positionMs != null)
+      this.lastPositionMs = positionMs;
+    return { state, positionMs };
+  }
+
+  private clearEndpoint(): void {
+    this.lastPositionMs = null;
+    this.finishedReading = null;
   }
 
   async getLiveness(): Promise<LivenessReading | null> {
@@ -312,6 +332,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
 
   async seek(providerMs: number): Promise<void> {
     const instance = this.requireInstance();
+    this.clearEndpoint();
     const seconds = msToSeconds(providerMs);
     if (this.started) {
       await instance.seekToTime(seconds);
@@ -328,6 +349,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     // Clear started (so a stop-induced completed/ended is not read as a finish)
     // and release transport ownership before halting.
     this.started = false;
+    this.clearEndpoint();
     if (transportOwners.get(instance) === this) transportOwners.delete(instance);
     await instance.stop();
     this.cueSeconds = this.windowStartSeconds;
@@ -337,6 +359,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   destroy(): void {
     this.destroyed = true;
     this.started = false;
+    this.clearEndpoint();
     const instance = this.instance;
     const music = this.music;
     if (instance && music) {
