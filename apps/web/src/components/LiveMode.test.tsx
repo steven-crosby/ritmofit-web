@@ -612,7 +612,7 @@ describe('LiveMode playback failure', () => {
     expect(await screen.findByRole('alert')).toBeTruthy();
     const focal = screen
       .getByLabelText('Bar and count 12.4')
-      .closest('div[class*="min-h-"]') as HTMLElement;
+      .closest('[data-live-region="focal"]') as HTMLElement;
     expect(within(focal).getByText('Hands light. Hips lead.')).toBeTruthy();
     expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
 
@@ -621,6 +621,42 @@ describe('LiveMode playback failure', () => {
     expect(screen.getByRole('alert')).toBeTruthy();
     expect(within(focal).getByText('Hands light. Hips lead.')).toBeTruthy();
     expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
+  });
+
+  it('keeps recovery actions in the scrolling shell when another track can be skipped', async () => {
+    const twoTracks = {
+      ...payload,
+      class: { ...payload.class, totalDurationMs: 300000 },
+      tracks: [
+        activeTrack,
+        {
+          ...activeTrack,
+          classTrackId: '00000000-0000-4000-8000-0000000000b2',
+          position: 1,
+          startOffsetMs: 180000,
+          track: { ...activeTrack.track, id: 'tr-skip', title: 'Second Track', durationMs: 120000 },
+        },
+      ],
+    } satisfies RunPayload;
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(
+      (): PlaybackAdapter => ({
+        ...workingAdapter(),
+        prepare: () => Promise.reject(new Error('widget failed')),
+      }),
+    );
+    render(<LiveMode payload={twoTracks} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+
+    const alert = await screen.findByRole('alert');
+    const shell = document.querySelector('div.fixed.inset-0') as HTMLElement;
+    expect(shell.className).toContain('overflow-y-auto');
+    expect(shell.contains(alert)).toBe(true);
+    expect(within(alert).getByRole('button', { name: 'Retry playback' })).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'Continue without music' })).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'Skip track' })).toBeTruthy();
+    expect(shell.contains(screen.getByRole('region', { name: 'Live transport' }))).toBe(true);
   });
 });
 
@@ -659,11 +695,67 @@ describe('LiveMode runtime composition', () => {
     // read in one glance. The current cue keeps its own type scale.
     const focal = screen
       .getByLabelText('Bar and count 1.1')
-      .closest('div[class*="min-h-"]') as HTMLElement;
+      .closest('[data-live-region="focal"]') as HTMLElement;
     expect(within(focal).getByText('Settle in')).toBeTruthy();
     expect(within(focal).getByText('Next')).toBeTruthy();
     expect(within(focal).getByText('Climb now')).toBeTruthy();
     expect(within(focal).getByLabelText('Time to next cue')).toBeTruthy();
+  });
+
+  it('clamps a long cue inside the focal card and scrolls the live shell', async () => {
+    const long = 'Hold the climb and breathe through the resistance.'.repeat(8);
+    const scripted = {
+      ...threeTrack,
+      tracks: [
+        {
+          ...threeTrack.tracks[0],
+          cues: [
+            { id: 'c-long', anchorMs: 0, beat: 1, bar: 1, text: long, color: null },
+            { id: 'c-next', anchorMs: 60000, beat: 1, bar: 2, text: 'Recover now', color: null },
+          ],
+        },
+        ...threeTrack.tracks.slice(1),
+      ],
+    } as unknown as RunPayload;
+    await renderLive(scripted);
+
+    const cue = screen.getAllByText(long).find((node) => node.classList.contains('line-clamp-2'));
+    if (!(cue instanceof HTMLElement)) throw new Error('clamped cue missing');
+    const focal = cue.closest('[data-live-region="focal"]') as HTMLElement;
+    expect(focal.contains(cue)).toBe(true);
+    expect(within(focal).getByText('Next')).toBeTruthy();
+    expect(within(focal).getByText('Recover now')).toBeTruthy();
+    expect(within(focal).getByLabelText('Time to next cue')).toBeTruthy();
+    // Next sits outside the clamped paragraph, so the full cue cannot push it
+    // out of the card by growing that paragraph.
+    expect(cue.contains(within(focal).getByText('Next'))).toBe(false);
+    expect(cue.classList.contains('shrink-0')).toBe(true);
+    expect(cue.parentElement?.contains(within(focal).getByText('Next'))).toBe(false);
+
+    const shell = document.querySelector('div.fixed.inset-0') as HTMLElement;
+    expect(shell.className).toContain('overflow-y-auto');
+    expect(shell.className).not.toContain('flex-col');
+    const teaching = shell.querySelector('[data-live-region="teaching"]') as HTMLElement;
+    expect(teaching.className).toContain('flex-1');
+    expect(teaching.className).not.toContain('min-h-0');
+    expect(teaching.className).not.toContain('overflow-auto');
+    expect(shell.contains(screen.getByRole('region', { name: 'Live transport' }))).toBe(true);
+    expect(shell.contains(screen.getByRole('button', { name: 'Previous track' }))).toBe(true);
+    expect(shell.contains(screen.getByRole('button', { name: 'Play' }))).toBe(true);
+    expect(shell.contains(screen.getByRole('button', { name: /Next track/ }))).toBe(true);
+
+    await waitFor(() => {
+      expect(
+        Array.from(document.querySelectorAll('[aria-live="assertive"]')).some((node) =>
+          node.textContent?.includes(long),
+        ),
+      ).toBe(true);
+    });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+    const listed = screen.getByText(long);
+    expect(listed.className).not.toContain('line-clamp');
+    expect(listed.textContent).toBe(long);
   });
 
   it('spends the rail tail on the rest of the run of show, read-only', async () => {
