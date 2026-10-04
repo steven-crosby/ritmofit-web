@@ -37,23 +37,27 @@ Pilates, and HIIT.
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
-- **Current operating focus (2026-10-03):** the natural song-end fix (#484) is deployed
-  but **not yet accepted in a real browser**. Production serves application source
-  `49ca56662fee109859e6a419ad166ff40a581506` as Worker
-  `1ae3e216-89a6-4bbd-aec0-38f01bc600ff`, with SPA entry `assets/index-93-j7jyw.js`;
-  remote D1 has nothing pending. The audit found natural first-song transitions failing
-  in both Cycle and Pilates; #484 accepts a finished provider endpoint less than
-  1,000 ms short of the saved window, proven by regression tests only. **Next step:**
-  in a browser with Apple Music authorization, let song 1 end naturally and confirm
-  song 2 starts and is audible, then run one full natural class per discipline.
-  Audible playback remains unverified. Desktop Apple Music imports preserve the
-  ten-song source order through both entry points for Cycle/Pilates (#481). The completed
-  desktop audit also found hidden Live content at 200% zoom, no playlist-derived
-  teaching draft, incompatible template/import flows, and rejected explicit zero
-  clip anchors. Start the next session in Plan Mode with the
-  [audit and restart guide](../docs/audits/playlist-to-live-2026-10-03/NEXT_SESSION.md).
-  Implementation, contract choices, and the proposed 15-song cap require an approved
-  development plan. See [`HISTORY.md`](./HISTORY.md).
+- **Current operating focus (2026-10-04):** the Live zoom fix (#486) and natural
+  song-end precision fix (#484) are deployed. Released source is
+  `efd542b88552d29c94d7b0edad484f29f244d20c`, Worker
+  `1053f665-ebf1-4d8c-be40-16ddfdea908f`, SPA entry `assets/index-B8JJicuF.js`;
+  remote D1 has no pending migrations. Production Chrome at actual 200% zoom
+  measured 600×304 CSS pixels: current/Next guidance, compact timecode, transport,
+  view/Exit controls, and waiting recovery remained reachable. Full List retained
+  the entire manually authored long QA cue and kept controls visible at its bottom.
+  The natural Apple Music first-song transition **failed again at 3:43** in the
+  fresh Cycle QA fixture: music ended before the saved playback window. Teaching
+  time held and failure recovery remained visible. Full uninterrupted Cycle/Pilates
+  classes and audible acceptance remain unverified. Spotify testing
+  stays paused; iPhone and HIIT testing remain outside this desktop follow-up.
+  **Next step:** capture the Apple adapter’s final state/position/duration and
+  finish-event ordering, propose a regression-backed boundary fix without weakening
+  genuine early-end protection, then repeat natural desktop playback acceptance.
+  The later product decision is the editable playlist-derived teaching draft and Classes/Music creation
+  policy using the [audit and restart guide](../docs/audits/playlist-to-live-2026-10-03/NEXT_SESSION.md).
+  Empty blocks still disable Run live. No teaching-draft implementation, readiness
+  change, schema/API choice, or 15-song cap is authorized by this release.
+  See [`HISTORY.md`](./HISTORY.md).
   Earlier #465 previews a recipe's exact blocks in the
   create dialog and cleans up block guidance text. The recipe content review is resolved
   and deployed (#470): new classes get `cycle_*_v2` (easy valley before a shorter
@@ -306,7 +310,14 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 ## Backlog / Open Items
 
-**Live zoom checkpoint (2026-10-04):** #486 merged as `eeec377add5294850a78334ef120374f26f23e14`; its full local gate and exact-commit CI passed. The fix keeps teaching, current/Next guidance, compact timecode, transport, view/Exit controls, and recovery reachable in short viewports. Regression coverage includes asynchronous readiness focus and waiting recovery. Local browser fixtures passed at 600×304 and 320×304 CSS pixels. It is **not deployed**; actual Chrome 200% zoom and production acceptance remain. Run-live readiness, teaching-draft policy, and playback behavior are unchanged.
+**Live zoom checkpoint (2026-10-04):** #486 merged as `eeec377add5294850a78334ef120374f26f23e14`
+and shipped in Worker `1053f665`. The full local gate and exact-commit CI passed. Production
+Chrome at actual 200% zoom (600×304 CSS pixels) passed cue/Next visibility, compact timecode,
+Full List text retention and bottom scrolling, persistent transport/view/Exit controls,
+keyboard Exit, waiting recovery, and a real natural-boundary failure panel. Local fixtures also passed at 320×304 CSS pixels and
+cover asynchronous readiness focus and failure recovery. This does not establish phone or
+full-class provider acceptance. Run-live readiness, teaching-draft policy, and playback
+behavior are unchanged by #486.
 
 Forward work lives in the solo creator loop. The **creator-workstation-shell slice (D21)** — discovery
 shelves, liked/saved cards, playlist browsing, Cycle/Pilates/HIIT template narrowing, and the unified
@@ -323,7 +334,7 @@ Music preparation while teaching time advanced. The [phased workflow plan](./mus
 proposes connection/playback reliability and honest readiness first, mobile teaching/editing clarity
 next, then Builder speed/rehearsal and timed exercise steps. Phase 1 implementation is authorized, starting with 1A;
 release remains separately gated. SPC-09 remains open; replacing it as the next implementation focus
-is approved for Phase 1. Connection recovery (1A), the music-authoritative Live clock (1B), and truthful preflight with explicit Apple browser authorization (1C) were deployed on 2026-10-02 (#478, Worker `e4744ca1`). The dated first-round results are in the [acceptance record](../docs/audits/music-led-phase-1-acceptance/README.md): Apple Music was audible on the owner’s Mac test build, while iPhone Safari failed or hung. These observations do not establish acceptance of the current #484 release. Real-device audible playback and interruption acceptance remain. Later phases await approval.
+is approved for Phase 1. Connection recovery (1A), the music-authoritative Live clock (1B), and truthful preflight with explicit Apple browser authorization (1C) were deployed on 2026-10-02 (#478, Worker `e4744ca1`). The dated first-round results are in the [acceptance record](../docs/audits/music-led-phase-1-acceptance/README.md): Apple Music was audible on the owner’s Mac test build, while iPhone Safari failed or hung. These observations do not establish acceptance of the October 4 release (#486). Real-device audible playback and interruption acceptance remain. Later phases await approval.
 
 **Spotify tabled (owner decision, 2026-10-02):** Spotify work and Spotify acceptance testing are
 paused until UI/UX and Live playback with Apple Music are completed and hardened. Spotify stays
@@ -376,18 +387,21 @@ The `claude` design-audit run is delivered and **owner-approved**: 18 backlog it
 group-and-demote in the move library). All six implementation slices **already landed** (PRs
 #370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
 
-**Current application release (2026-10-03, after #484):** production application code
-matches merged `49ca56662fee109859e6a419ad166ff40a581506`. This includes music-led
-Phase 1 (#478), ordered playlist-import correctness/recovery (#481), and the natural
-song-end precision fix (#484). Worker `1ae3e216-89a6-4bbd-aec0-38f01bc600ff` serves
-100%; SPA entry `assets/index-93-j7jyw.js` matched three consecutive cache-busted
-fetches. Remote D1 has no pending migrations. The prior Worker, and the rollback
-target, is `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`. #484 has **no real-provider
-playback verification yet**; the statements below describe the #481 release and the
-audit that preceded the fix.
+**Current application release (2026-10-04, after #486):** production serves released
+source `efd542b88552d29c94d7b0edad484f29f244d20c`. Application code is unchanged from
+merged `eeec377add5294850a78334ef120374f26f23e14`; the later #485/#480 merges contain
+only documentation. This includes Phase 1 (#478), ordered playlist-import recovery
+(#481), natural song-end precision (#484), and reachable Live teaching at 200% zoom (#486).
+Worker `1053f665-ebf1-4d8c-be40-16ddfdea908f` serves 100%; SPA entry
+`assets/index-B8JJicuF.js` matched three consecutive cache-busted fetches and the updated
+Chrome document. Remote D1 has no pending migrations. Rollback target:
+`1ae3e216-89a6-4bbd-aec0-38f01bc600ff`. All 12 local gate checks passed on the released
+source (1,528 unit tests and 184 integration tests). The paragraphs below retain the
+#481 verification and the October 3 audit that preceded #484/#486; their failures
+must not be presented as a test of the newly released build.
 
-CI and the full local gate passed on the deployed source. Desktop Apple Music
-imports passed for Cycle/Pilates through Music and Classes-to-empty-class. A
+**Historical #481 and October 3 audit evidence:** CI and the full local gate
+passed on that release. Desktop Apple Music imports passed for Cycle/Pilates through Music and Classes-to-empty-class. A
 controlled response-loss test recovered the original ten placements after reload,
 and both disciplines passed prompter-only transport mechanics with accelerated
 completion. The October 3 desktop audit resolved browser sign-in and observed
@@ -434,7 +448,7 @@ half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unc
   deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
   ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
   Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `1ae3e216` from `49ca566` (#484); see "Current application release" above
+  `1053f665` from `efd542b` (#486); see "Current application release" above
   for the live state.**
 
 **Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**
