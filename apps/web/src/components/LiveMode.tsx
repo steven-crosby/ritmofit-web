@@ -19,6 +19,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -264,12 +265,16 @@ function LiveSectionBar({ section }: { section: LiveSection }) {
   // on this text-bearing element would mask the countdown from AT. Matches the
   // IntensityReadout pattern: icon decorative (aria-hidden), text carries meaning.
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-interactive/15 px-6 py-2">
+    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-interactive/15 px-6 py-2 [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-0">
       <span className="flex min-w-0 items-center gap-2">
-        <span aria-hidden style={{ color: meta.tint }}>
+        <span
+          aria-hidden
+          style={{ color: meta.tint }}
+          className="[@media(max-height:480px)]:hidden"
+        >
           <SegmentIcon type={section.type} />
         </span>
-        <span className="truncate font-ui text-sm font-semibold text-text-secondary">
+        <span className="truncate font-ui text-sm font-semibold text-text-secondary [@media(max-height:480px)]:text-xs">
           <span className="sr-only">Current section: </span>
           {meta.label}
         </span>
@@ -339,10 +344,16 @@ export function LiveMode({
   // playback failure). The coordinator is imperative on purpose: the rAF clock
   // drives it, and React state only mirrors its status for display.
   const coordinatorRef = useRef<RuntimePlaybackCoordinator | null>(null);
-  // Focus targets for the full-screen takeover (see the focus effects below): the
-  // preflight class-title heading, and the transport's primary Play/Pause control.
+  // Keep entry controls visible while revealing teaching or urgent recovery.
   const headingRef = useRef<HTMLHeadingElement>(null);
   const primaryButtonRef = useRef<HTMLButtonElement>(null);
+  const teachingRef = useRef<HTMLDivElement>(null);
+  const recoveryRef = useRef<HTMLElement>(null);
+  const liveShellRef = useRef<HTMLDivElement>(null);
+  const liveHeaderRef = useRef<HTMLDivElement>(null);
+  const transportRef = useRef<HTMLDivElement>(null);
+  const previousConnectionsOpen = useRef(connectionsOpen);
+  const previousView = useRef(view);
 
   const refreshConnections = useCallback(async () => {
     const requestId = ++connectionsRequestId.current;
@@ -392,13 +403,7 @@ export function LiveMode({
     if (phase === 'preflight') headingRef.current?.focus();
   }, []);
 
-  // When the class goes live — Start class, Run without music, or an empty class that
-  // skips preflight straight to 'live' — move focus to the transport's primary control
-  // (Play/Pause), the instructor's next action, instead of stranding it on <body>
-  // after the preflight button unmounts.
-  useEffect(() => {
-    if (phase === 'live') primaryButtonRef.current?.focus();
-  }, [phase]);
+  const hasPlaybackFailure = playbackFailure != null;
 
   // Static preflight against the providers the player can actually drive.
   const preflight = useMemo(
@@ -721,6 +726,54 @@ export function LiveMode({
     hasStarted &&
     ['idle', 'preparing', 'awaiting_authorization', 'buffering', 'error'].includes(playback.kind);
   const teachingPlaying = playing && !musicBlocked;
+  const previousMusicBlocked = useRef(musicBlocked);
+  // Account for actual chrome height, including wrapped status and section text.
+  // Scroll-to/focus and the recovery scrollport then share the same visible bounds.
+  useLayoutEffect(() => {
+    const shell = liveShellRef.current;
+    const header = liveHeaderRef.current;
+    const transport = transportRef.current;
+    if (!shell || !header || !transport) return;
+    const measure = () => {
+      shell.style.setProperty('--live-top-height', `${header.offsetHeight}px`);
+      shell.style.setProperty('--live-bottom-height', `${transport.offsetHeight}px`);
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    observer.observe(transport);
+    return () => observer.disconnect();
+  }, [phase]);
+
+  // Reveal entry and newly blocked playback, not every status update. Dialog
+  // cleanup owns trigger restoration; only place focus if that trigger is gone.
+  useEffect(() => {
+    const dialogWasOpen = previousConnectionsOpen.current;
+    const becameReady = previousMusicBlocked.current && !musicBlocked;
+    previousMusicBlocked.current = musicBlocked;
+    const viewChanged = previousView.current !== view;
+    previousView.current = view;
+    previousConnectionsOpen.current = connectionsOpen;
+    if (phase !== 'live' || connectionsOpen) return;
+    const needsRecovery = musicBlocked || hasPlaybackFailure;
+    if (
+      (dialogWasOpen || (becameReady && !needsRecovery)) &&
+      document.activeElement !== document.body &&
+      liveShellRef.current?.contains(document.activeElement)
+    ) {
+      return;
+    }
+    const target = needsRecovery ? recoveryRef.current : teachingRef.current;
+    target?.scrollIntoView?.({ block: 'start' });
+    // Switching views reveals their content while the selected tab retains focus.
+    if (viewChanged) return;
+    if (needsRecovery) {
+      recoveryRef.current?.focus({ preventScroll: true });
+    } else {
+      primaryButtonRef.current?.focus({ preventScroll: true });
+    }
+  }, [phase, musicBlocked, hasPlaybackFailure, connectionsOpen, view]);
   const runState = ended
     ? 'Complete'
     : musicBlocked
@@ -810,186 +863,215 @@ export function LiveMode({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg-live">
-      {/* The advancing cue, spoken for screen readers — the prompter's core function.
+    // The shell is the scrollport. A fixed flex column with a min-h-0 teaching
+    // slot collapses that slot to clientHeight 0 when 200% zoom (600×304 CSS
+    // pixels) makes the header and transport taller than the viewport, and a
+    // zero-height box cannot scroll. The column grows with its content instead,
+    // so teaching stays reachable. The compact dock follows either view without
+    // forcing instructors through every Full List row to pause or change tracks.
+    <div
+      ref={liveShellRef}
+      className="fixed inset-0 z-50 overflow-y-auto bg-bg-live scroll-pt-[var(--live-top-height,0px)] scroll-pb-[var(--live-bottom-height,0px)]"
+    >
+      <div className="flex min-h-full flex-col">
+        {/* The advancing cue, spoken for screen readers — the prompter's core function.
           Visually hidden; the Cue-by-Cue card carries the same content on screen. Two
           assertive regions ping-pong (see `announced` above): the cue is written to one
           and the other cleared, so a verbatim-repeated cue still re-announces (a single
           region would stay unchanged and stay silent). Only one slot holds text at a
           time; the empty one is silent. */}
-      <p className="sr-only" aria-live="assertive" aria-atomic="true">
-        {announced.slot === 0 ? announced.text : ''}
-      </p>
-      <p className="sr-only" aria-live="assertive" aria-atomic="true">
-        {announced.slot === 1 ? announced.text : ''}
-      </p>
-      {/* Section/energy-arc transitions, announced politely so they don't cut off
+        <p className="sr-only" aria-live="assertive" aria-atomic="true">
+          {announced.slot === 0 ? announced.text : ''}
+        </p>
+        <p className="sr-only" aria-live="assertive" aria-atomic="true">
+          {announced.slot === 1 ? announced.text : ''}
+        </p>
+        {/* Section/energy-arc transitions, announced politely so they don't cut off
           the cue above. The visible band (LiveSectionBar) carries this on screen. */}
-      <p className="sr-only" aria-live="polite" aria-atomic="true">
-        {sectionAnnouncement}
-      </p>
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-interactive/20 px-4 py-3 sm:px-6">
-        <div className="min-w-0">
-          <p className="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-            {runState}
-            {live ? ` · Track ${live.index + 1} of ${payload.tracks.length}` : ''}
-          </p>
-          <h1 className="font-display text-lg font-semibold text-text-primary">
-            {payload.class.title}
-          </h1>
-          <p className="font-data text-xs text-text-tertiary">
-            {fmt(elapsedMs)} / {fmt(payload.class.totalDurationMs)}
-          </p>
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          {sectionAnnouncement}
+        </p>
+        <div ref={liveHeaderRef} className="sticky top-0 z-20 shrink-0 bg-bg-live">
+          <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-interactive/20 px-4 py-3 sm:px-6 [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-0.5">
+            <div className="min-w-0 [@media(max-height:480px)]:sr-only">
+              <p className="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+                {runState}
+                {live ? ` · Track ${live.index + 1} of ${payload.tracks.length}` : ''}
+              </p>
+              <h1 className="font-display text-lg font-semibold text-text-primary">
+                {payload.class.title}
+              </h1>
+              <p className="font-data text-xs text-text-tertiary">
+                {fmt(elapsedMs)} / {fmt(payload.class.totalDurationMs)}
+              </p>
+            </div>
+            <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end [@media(max-height:480px)_and_(max-width:390px)]:gap-1">
+              <ViewToggle view={view} setView={setView} />
+              {/* The full metadata remains available to AT; short screens retain
+                  its timecode visually without adding height to the control bar. */}
+              <p
+                aria-hidden="true"
+                className="hidden shrink-0 text-center font-data text-[10px] leading-tight text-text-tertiary [@media(max-height:480px)]:block"
+              >
+                <span className="block [@media(min-width:480px)]:inline">{fmt(elapsedMs)}</span>
+                <span className="block [@media(min-width:480px)]:inline">
+                  {' / '}
+                  {fmt(payload.class.totalDurationMs)}
+                </span>
+              </p>
+              <button
+                className="min-h-11 shrink-0 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive rf-focus-ring sm:rounded-pill"
+                onClick={onExit}
+              >
+                Exit
+              </button>
+            </div>
+          </header>
+
+          {section && <LiveSectionBar section={section} />}
         </div>
-        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
-          <ViewToggle view={view} setView={setView} />
-          <button
-            className="min-h-11 shrink-0 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive rf-focus-ring sm:rounded-pill"
-            onClick={onExit}
+
+        {(musicBlocked || playbackFailure) && (
+          <section
+            ref={recoveryRef}
+            tabIndex={-1}
+            aria-label="Playback recovery"
+            role={playbackFailure ? 'alert' : 'status'}
+            className="shrink-0 border-t border-state-caution/30 bg-bg-raised px-4 py-3 rf-focus-ring sm:px-6 [@media(max-height:480px)]:max-h-[calc(100dvh-var(--live-top-height,0px)-var(--live-bottom-height,0px))] [@media(max-height:480px)]:overflow-y-auto [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-2"
           >
-            Exit
-          </button>
+            <h2 className="font-ui text-sm font-semibold text-text-primary">
+              {playbackFailure ? 'Playback stopped' : 'Waiting for music'}
+            </h2>
+            <p className="mt-1 font-ui text-xs text-text-secondary">
+              {playbackFailure ??
+                (playback.kind === 'awaiting_authorization'
+                  ? 'Complete the provider authorization to continue.'
+                  : 'Provider playback has not confirmed progress.')}
+            </p>
+            <p className="mt-1 font-ui text-xs text-state-caution">Teaching position is held.</p>
+            {requiresSpotify && playbackFailure && !spotifyActivation.isReady() && (
+              <SpotifyActivationAction flow={spotifyActivation} recovery />
+            )}
+            <div className="mt-2 grid grid-cols-2 gap-1 sm:flex sm:flex-wrap [@media(max-height:480px)]:mt-1 [@media(max-height:480px)_and_(min-width:480px)]:grid-cols-4">
+              {playbackFailure && (
+                <button
+                  type="button"
+                  onClick={retryPlayback}
+                  className="min-h-11 rounded-control border border-interactive/40 px-2 font-ui text-xs text-interactive rf-focus-ring"
+                >
+                  Retry playback
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={continueWithoutMusic}
+                className="min-h-11 rounded-control border border-interactive/40 px-2 font-ui text-xs text-interactive rf-focus-ring"
+              >
+                Continue without music
+              </button>
+              <button
+                type="button"
+                onClick={() => setConnectionsOpen(true)}
+                className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
+              >
+                Manage music connection
+              </button>
+              {liveIndex >= 0 && liveIndex < payload.tracks.length - 1 && (
+                <button
+                  type="button"
+                  onClick={() => seek(payload.tracks[liveIndex + 1]!.startOffsetMs ?? 0)}
+                  className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
+                >
+                  Skip track
+                </button>
+              )}
+            </div>
+            {playbackFailure &&
+              live &&
+              live.entry.providerRefs.some((ref) =>
+                providerHandoffHref(ref.provider, ref.providerUri),
+              ) && (
+                <details className="mt-1">
+                  <summary className="min-h-11 cursor-pointer rounded-control py-3 font-ui text-xs text-text-secondary rf-focus-ring">
+                    Open in music app
+                  </summary>
+                  <ProviderHandoffLinks entry={live.entry} />
+                </details>
+              )}
+          </section>
+        )}
+        <div ref={teachingRef} data-live-region="teaching" className="flex flex-1 flex-col">
+          {view === 'cue' ? (
+            <CueByCue
+              payload={payload}
+              live={live}
+              currentEvent={currentEvent}
+              nextEvent={nextEvent}
+              events={events}
+              elapsedMs={elapsedMs}
+              trackEndMs={trackEndMs}
+              trackHasDuration={trackDurationMs != null}
+              classTotalMs={payload.class.totalDurationMs}
+              playing={teachingPlaying}
+              holding={musicBlocked || !!playbackFailure}
+              hasStarted={hasStarted}
+              gap={gap}
+            />
+          ) : (
+            <FullList
+              payload={payload}
+              eventsByTrack={eventsByTrack}
+              liveIndex={liveIndex}
+              elapsedMs={elapsedMs}
+              onSeek={seek}
+            />
+          )}
         </div>
-      </header>
-
-      {section && <LiveSectionBar section={section} />}
-
-      <div className="min-h-0 flex-1 overflow-auto">
-        {view === 'cue' ? (
-          <CueByCue
-            payload={payload}
-            live={live}
-            currentEvent={currentEvent}
-            nextEvent={nextEvent}
-            events={events}
-            elapsedMs={elapsedMs}
-            trackEndMs={trackEndMs}
-            trackHasDuration={trackDurationMs != null}
-            classTotalMs={payload.class.totalDurationMs}
-            playing={teachingPlaying}
-            holding={musicBlocked || !!playbackFailure}
-            hasStarted={hasStarted}
-            gap={gap}
-          />
-        ) : (
-          <FullList
-            payload={payload}
-            eventsByTrack={eventsByTrack}
-            liveIndex={liveIndex}
-            elapsedMs={elapsedMs}
-            onSeek={seek}
+        <Transport
+          playing={playing}
+          musicBlocked={musicBlocked}
+          hasPlaybackFailure={hasPlaybackFailure}
+          transportRef={transportRef}
+          onToggle={togglePlay}
+          onReset={() => {
+            setPlaying(false);
+            setHasStarted(false);
+            coordinatorRef.current?.destroy();
+            if (coordinatorRef.current) coordinatorRef.current = buildCoordinator();
+            setPlayback({ kind: 'paused' });
+            setPlaybackFailure(null);
+            commitThrottleRef.current?.cancel();
+            clockSeek(0);
+          }}
+          liveIndex={liveIndex}
+          onPreviousTrack={() => {
+            if (liveIndex <= 0) return;
+            seek(payload.tracks[liveIndex - 1]?.startOffsetMs ?? 0);
+          }}
+          onNextTrack={() => {
+            if (liveIndex < 0 || liveIndex >= payload.tracks.length - 1) return;
+            seek(payload.tracks[liveIndex + 1]?.startOffsetMs ?? 0);
+          }}
+          payload={payload}
+          clock={clockStore}
+          onSeekPreview={seekPreview}
+          onSeekCommit={seek}
+          playback={coordinatorRef.current ? playback : null}
+          wakeStatus={wakeStatus}
+          primaryButtonRef={primaryButtonRef}
+        />
+        {connectionsOpen && (
+          <ConnectionsDialog
+            beforeRedirect={beforeConnectionRedirect}
+            oauthResult={connectionResult}
+            onClose={() => {
+              setConnectionsOpen(false);
+              onConnectionResultDismissed?.();
+            }}
+            onConnectionsChanged={() => void refreshConnections()}
           />
         )}
       </div>
-
-      {(musicBlocked || playbackFailure) && (
-        <section
-          role={playbackFailure ? 'alert' : 'status'}
-          className="shrink-0 border-t border-state-caution/30 bg-bg-raised px-4 py-3 sm:px-6"
-        >
-          <h2 className="font-ui text-sm font-semibold text-text-primary">
-            {playbackFailure ? 'Playback stopped' : 'Waiting for music'}
-          </h2>
-          <p className="mt-1 font-ui text-xs text-text-secondary">
-            {playbackFailure ??
-              (playback.kind === 'awaiting_authorization'
-                ? 'Complete the provider authorization to continue.'
-                : 'Provider playback has not confirmed progress.')}
-          </p>
-          <p className="mt-1 font-ui text-xs text-state-caution">Teaching position is held.</p>
-          {requiresSpotify && playbackFailure && !spotifyActivation.isReady() && (
-            <SpotifyActivationAction flow={spotifyActivation} recovery />
-          )}
-          <div className="mt-2 grid grid-cols-2 gap-1 sm:flex sm:flex-wrap">
-            {playbackFailure && (
-              <button
-                type="button"
-                onClick={retryPlayback}
-                className="min-h-11 rounded-control border border-interactive/40 px-2 font-ui text-xs text-interactive rf-focus-ring"
-              >
-                Retry playback
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={continueWithoutMusic}
-              className="min-h-11 rounded-control border border-interactive/40 px-2 font-ui text-xs text-interactive rf-focus-ring"
-            >
-              Continue without music
-            </button>
-            <button
-              type="button"
-              onClick={() => setConnectionsOpen(true)}
-              className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
-            >
-              Manage music connection
-            </button>
-            {liveIndex >= 0 && liveIndex < payload.tracks.length - 1 && (
-              <button
-                type="button"
-                onClick={() => seek(payload.tracks[liveIndex + 1]!.startOffsetMs ?? 0)}
-                className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
-              >
-                Skip track
-              </button>
-            )}
-          </div>
-          {playbackFailure &&
-            live &&
-            live.entry.providerRefs.some((ref) =>
-              providerHandoffHref(ref.provider, ref.providerUri),
-            ) && (
-              <details className="mt-1">
-                <summary className="min-h-11 cursor-pointer rounded-control py-3 font-ui text-xs text-text-secondary rf-focus-ring">
-                  Open in music app
-                </summary>
-                <ProviderHandoffLinks entry={live.entry} />
-              </details>
-            )}
-        </section>
-      )}
-      <Transport
-        playing={playing}
-        musicBlocked={musicBlocked}
-        onToggle={togglePlay}
-        onReset={() => {
-          setPlaying(false);
-          setHasStarted(false);
-          coordinatorRef.current?.destroy();
-          if (coordinatorRef.current) coordinatorRef.current = buildCoordinator();
-          setPlayback({ kind: 'paused' });
-          setPlaybackFailure(null);
-          commitThrottleRef.current?.cancel();
-          clockSeek(0);
-        }}
-        liveIndex={liveIndex}
-        onPreviousTrack={() => {
-          if (liveIndex <= 0) return;
-          seek(payload.tracks[liveIndex - 1]?.startOffsetMs ?? 0);
-        }}
-        onNextTrack={() => {
-          if (liveIndex < 0 || liveIndex >= payload.tracks.length - 1) return;
-          seek(payload.tracks[liveIndex + 1]?.startOffsetMs ?? 0);
-        }}
-        payload={payload}
-        clock={clockStore}
-        onSeekPreview={seekPreview}
-        onSeekCommit={seek}
-        playback={coordinatorRef.current ? playback : null}
-        wakeStatus={wakeStatus}
-        primaryButtonRef={primaryButtonRef}
-      />
-      {connectionsOpen && (
-        <ConnectionsDialog
-          beforeRedirect={beforeConnectionRedirect}
-          oauthResult={connectionResult}
-          onClose={() => {
-            setConnectionsOpen(false);
-            onConnectionResultDismissed?.();
-          }}
-          onConnectionsChanged={() => void refreshConnections()}
-        />
-      )}
     </div>
   );
 }
@@ -1077,7 +1159,7 @@ function WakeRail({ status }: { status: WakeLockStatus }) {
 function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void }) {
   return (
     <div
-      className="flex rounded-pill border border-interactive/30 p-0.5"
+      className="flex rounded-pill border border-interactive/30 p-0.5 [@media(max-height:480px)]:p-0"
       role="tablist"
       aria-label="Prompter view"
     >
@@ -1113,7 +1195,7 @@ function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void 
 function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing: boolean }) {
   const pulse = playing && entry.displayBpm != null;
   return (
-    <div className="relative mt-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-t border-interactive/10 pt-4">
+    <div className="relative mt-4 flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 border-t border-interactive/10 pt-3 sm:mt-6 sm:pt-4">
       <div className="flex flex-col gap-1.5">
         <span className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
           Effort
@@ -1247,10 +1329,13 @@ function CueByCue({
   const showReadyHero = !hasStarted && elapsedMs === 0 && currentEvent == null;
   const count = eventCount(currentEvent);
   return (
-    <div className="flex min-h-full flex-col gap-4 p-4 sm:p-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:p-8">
+    <div className="flex min-h-full flex-col gap-4 p-4 sm:p-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:p-8 [@media(max-height:480px)]:p-1">
       {/* LEFT — the focal cue: the one thing the instructor reads across the room.
           Carries the All-Out drop; otherwise it holds still so it's always legible. */}
-      <div className="relative flex min-h-[42vh] flex-col overflow-hidden rounded-card bg-bg-raised p-6 shadow-card sm:p-8 lg:col-span-3 lg:min-h-0">
+      <div
+        data-live-region="focal"
+        className="relative flex min-h-[42vh] flex-col overflow-hidden rounded-card bg-bg-raised p-4 shadow-card sm:p-8 lg:col-span-3 lg:min-h-0 [@media(max-height:480px)]:p-1"
+      >
         {/* The drop's plasma bloom — keyed on the cue so it replays per advance. */}
         {isAllOut && currentEvent && (
           <span
@@ -1261,8 +1346,8 @@ function CueByCue({
         )}
         {/* The cue itself holds the center; the vitals footer pins to the bottom so
             the tempo numeral and the cue read as one state-object. */}
-        <div className="relative flex flex-1 flex-col justify-center">
-          <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
+        <div className="relative flex flex-1 flex-col justify-[safe_center]">
+          <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary [@media(max-height:480px)]:leading-none">
             {showReadyHero
               ? 'First action'
               : currentEvent?.kind === 'move'
@@ -1271,25 +1356,27 @@ function CueByCue({
           </p>
           {currentEvent ? (
             <>
-              {count && (
+              <div className="contents [@media(max-height:480px)]:flex [@media(max-height:480px)]:items-start [@media(max-height:480px)]:gap-2">
+                {count && (
+                  <p
+                    className={`relative mt-5 shrink-0 font-data font-bold leading-none tracking-[-0.05em] text-text-primary [@media(max-height:480px)]:mt-1 ${holding ? 'text-2xl sm:text-[clamp(3.5rem,9vw,7rem)]' : 'text-[clamp(3.5rem,9vw,7rem)]'}`}
+                    aria-label={
+                      currentEvent.bar == null ? `Count ${count}` : `Bar and count ${count}`
+                    }
+                  >
+                    {count}
+                  </p>
+                )}
                 <p
-                  className={`relative mt-5 font-data font-bold leading-none tracking-[-0.05em] text-text-primary ${holding ? 'text-2xl sm:text-[clamp(3.5rem,9vw,7rem)]' : 'text-[clamp(3.5rem,9vw,7rem)]'}`}
-                  aria-label={
-                    currentEvent.bar == null ? `Count ${count}` : `Bar and count ${count}`
-                  }
+                  key={currentEvent.text}
+                  className={`relative mt-3 line-clamp-2 shrink-0 break-words font-display [@media(max-height:480px)]:mt-1 [@media(max-height:480px)]:min-w-0 [@media(max-height:480px)]:flex-1 ${holding ? 'text-2xl sm:text-[clamp(2.75rem,7vw,5.5rem)]' : 'text-[clamp(2.75rem,7vw,5.5rem)]'} font-semibold leading-[0.95] text-text-primary ${
+                    isAllOut ? 'rf-drop-in' : ''
+                  }`}
+                  style={currentEvent.color ? { color: currentEvent.color } : undefined}
                 >
-                  {count}
+                  {currentEvent.text}
                 </p>
-              )}
-              <p
-                key={currentEvent.text}
-                className={`relative mt-3 break-words font-display ${holding ? 'text-2xl sm:text-[clamp(2.75rem,7vw,5.5rem)]' : 'text-[clamp(2.75rem,7vw,5.5rem)]'} font-semibold leading-[0.95] text-text-primary ${
-                  isAllOut ? 'rf-drop-in' : ''
-                }`}
-                style={currentEvent.color ? { color: currentEvent.color } : undefined}
-              >
-                {currentEvent.text}
-              </p>
+              </div>
               {currentEvent.kind === 'move' && currentEvent.intensity && (
                 <div className="relative mt-5">
                   <IntensityReadout intensity={currentEvent.intensity} />
@@ -1334,12 +1421,11 @@ function CueByCue({
           )}
         </div>
         {/* What is coming, in the hero card rather than across the room in the
-            rail. The audit measured ~550px of this card's 780px as void above and
-            below three short lines; this spends part of it on the one thing an
-            instructor looks for next. It sits *below* the focal cue and above the
-            vitals, so neither the current cue nor the BPM numeral gives up a pixel
-            — the flex-1 cue block still centres at its own type sizes. */}
-        <div className="relative mt-6 flex min-w-0 items-baseline gap-3 border-t border-interactive/15 pt-4">
+            rail. The current cue clamps to two lines so a long cue cannot push
+            Next below the teaching card at a short viewport; the assertive
+            announcement and Full List keep the full string. The flex-1 cue block
+            still centres short cues. */}
+        <div className="relative mt-4 flex min-w-0 shrink-0 items-baseline gap-3 border-t border-interactive/15 pt-3 sm:mt-6 sm:pt-4 [@media(max-height:480px)]:mt-1 [@media(max-height:480px)]:pt-1">
           <p className="shrink-0 font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
             Next
           </p>
@@ -1674,6 +1760,7 @@ function FullList({
 function Transport({
   playing,
   musicBlocked,
+  hasPlaybackFailure,
   onToggle,
   onReset,
   liveIndex,
@@ -1686,9 +1773,11 @@ function Transport({
   playback,
   wakeStatus,
   primaryButtonRef,
+  transportRef,
 }: {
   playing: boolean;
   musicBlocked: boolean;
+  hasPlaybackFailure: boolean;
   onToggle: () => void;
   onReset: () => void;
   liveIndex: number;
@@ -1706,16 +1795,23 @@ function Transport({
   wakeStatus: WakeLockStatus;
   /** Focused when the class goes live so start never strands focus on <body>. */
   primaryButtonRef: RefObject<HTMLButtonElement>;
+  transportRef: RefObject<HTMLDivElement>;
 }) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  // A newly stopped track takes priority over an expanded short-screen dock.
+  useEffect(() => {
+    if (musicBlocked || hasPlaybackFailure) setMoreOpen(false);
+  }, [musicBlocked, hasPlaybackFailure]);
   const previousTrack = liveIndex > 0 ? payload.tracks[liveIndex - 1] : null;
   const nextTrack = liveIndex >= 0 ? payload.tracks[liveIndex + 1] : null;
   return (
     <div
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3 border-t border-interactive/15 bg-bg-raised/70 px-4 py-3 sm:grid-cols-[minmax(18rem,auto)_auto_minmax(0,1fr)] sm:gap-x-4 sm:px-6 sm:py-4"
+      ref={transportRef}
+      className="sticky bottom-0 z-10 shrink-0 border-t border-interactive/15 bg-bg-raised px-4 py-3 sm:px-6 sm:py-4 [@media(max-height:480px)]:py-2"
       role="region"
       aria-label="Live transport"
     >
-      <div className="col-span-full grid min-w-0 grid-cols-3 gap-2 sm:col-span-1">
+      <div className="grid min-w-0 grid-cols-3 gap-2 [@media(max-height:480px)]:grid-cols-4">
         <button
           className="min-h-11 rounded-control border border-interactive px-2 py-2 font-ui text-sm font-semibold text-interactive rf-focus-ring disabled:pointer-events-none disabled:opacity-40 sm:rounded-pill sm:px-4"
           onClick={onPreviousTrack}
@@ -1724,11 +1820,12 @@ function Transport({
             previousTrack ? `Previous track, ${previousTrack.track.title}` : 'Previous track'
           }
         >
-          <span aria-hidden>← </span>Previous
+          <span aria-hidden>← </span>
+          <span className="[@media(max-height:480px)_and_(max-width:390px)]:hidden">Previous</span>
         </button>
         <button
           ref={primaryButtonRef}
-          className="min-h-11 rounded-control rf-btn-primary px-3 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill sm:px-6"
+          className="min-h-11 rounded-control rf-btn-primary px-3 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill sm:px-6 [@media(max-height:480px)]:px-2"
           onClick={onToggle}
           aria-label={playing && musicBlocked ? 'Pause preparation' : undefined}
         >
@@ -1746,26 +1843,42 @@ function Transport({
           disabled={liveIndex < 0 || liveIndex >= payload.tracks.length - 1}
           aria-label={nextTrack ? `Next track, ${nextTrack.track.title}` : 'Next track'}
         >
-          Next<span aria-hidden> →</span>
+          <span className="[@media(max-height:480px)_and_(max-width:390px)]:hidden">Next</span>
+          <span aria-hidden> →</span>
+        </button>
+        <button
+          type="button"
+          aria-expanded={moreOpen}
+          aria-controls="live-transport-more"
+          aria-label={moreOpen ? 'Less controls' : 'More controls'}
+          onClick={() => setMoreOpen((open) => !open)}
+          className="hidden min-h-11 rounded-control border border-interactive px-2 py-2 font-ui text-xs text-interactive rf-focus-ring [@media(max-height:480px)]:block"
+        >
+          {moreOpen ? 'Less' : 'More'}
         </button>
       </div>
-      <button
-        className="min-h-11 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive rf-focus-ring sm:rounded-pill sm:px-4"
-        onClick={onReset}
-      >
-        Reset
-      </button>
-      <div className="col-span-full flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 sm:col-span-1 sm:flex-nowrap sm:justify-start">
+      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         <PlaybackRail status={playback} />
         <WakeRail status={wakeStatus} />
       </div>
-      <div className="col-span-full min-w-0">
-        <LiveTimeline
-          payload={payload}
-          clock={clock}
-          onSeekPreview={onSeekPreview}
-          onSeekCommit={onSeekCommit}
-        />
+      <div
+        id="live-transport-more"
+        className={`mt-3 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 [@media(max-height:480px)]:max-h-[calc(100dvh-var(--live-top-height,0px)-6rem)] [@media(max-height:480px)]:overflow-y-auto ${moreOpen ? '' : '[@media(max-height:480px)]:hidden'}`}
+      >
+        <button
+          className="min-h-11 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive rf-focus-ring sm:rounded-pill sm:px-4"
+          onClick={onReset}
+        >
+          Reset
+        </button>
+        <div className="col-span-full min-w-0">
+          <LiveTimeline
+            payload={payload}
+            clock={clock}
+            onSeekPreview={onSeekPreview}
+            onSeekCommit={onSeekCommit}
+          />
+        </div>
       </div>
     </div>
   );

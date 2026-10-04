@@ -12,7 +12,7 @@ import {
 } from '../lib/api.js';
 import { prepareAppleMusic } from '../lib/musickit.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
-import type { PlaybackAdapter } from '../lib/playback/types.js';
+import type { AdapterEvents, PlaybackAdapter } from '../lib/playback/types.js';
 import {
   choreographyQueueAt,
   eventCount,
@@ -496,6 +496,183 @@ describe('LiveMode focus management', () => {
     render(<LiveMode payload={{ ...payload, tracks: [] }} onExit={() => {}} />);
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Play' }));
   });
+
+  it('reveals teaching on entry and recovery on a new failure without stealing focus on updates', async () => {
+    const originalScroll = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView');
+    const revealed: HTMLElement[] = [];
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: function (this: HTMLElement) {
+        revealed.push(this);
+      },
+    });
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    let fail: NonNullable<AdapterEvents['onError']> = () => {};
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation((events: AdapterEvents) => {
+      fail = (error) => events.onError?.(error);
+      return workingAdapter();
+    });
+    try {
+      render(<LiveMode payload={payload} onExit={() => {}} />);
+      await screen.findByRole('list', { name: 'Track playback check' });
+      fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+      await screen.findByRole('button', { name: 'Pause' });
+      const teaching = document.querySelector('[data-live-region="teaching"]');
+      expect(revealed.at(-1)).toBe(teaching);
+      expect(focus).toHaveBeenLastCalledWith({ preventScroll: true });
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Pause' }));
+
+      const fullList = screen.getByRole('tab', { name: 'Full List' });
+      fullList.focus();
+      fireEvent.click(fullList);
+      expect(revealed.at(-1)).toBe(teaching);
+      expect(document.activeElement).toBe(fullList);
+      const cueView = screen.getByRole('tab', { name: 'Cue-by-Cue' });
+      cueView.focus();
+      fireEvent.click(cueView);
+      expect(revealed.at(-1)).toBe(teaching);
+      expect(document.activeElement).toBe(cueView);
+      fullList.focus();
+      fireEvent.click(fullList);
+      fireEvent.click(screen.getByRole('button', { name: 'More controls' }));
+      act(() => fail({ message: 'Lost playback during teaching' }));
+      const recovery = await screen.findByRole('alert', { name: 'Playback recovery' });
+      expect(revealed.at(-1)).toBe(recovery);
+      expect(document.activeElement).toBe(recovery);
+      expect(
+        screen.getByRole('button', { name: 'More controls' }).getAttribute('aria-expanded'),
+      ).toBe('false');
+      const manage = within(recovery).getByRole('button', { name: 'Manage music connection' });
+      manage.focus();
+      const revealCount = revealed.length;
+      act(() => fail({ message: 'A second provider status update' }));
+      expect(document.activeElement).toBe(manage);
+      expect(revealed).toHaveLength(revealCount);
+
+      fireEvent.click(within(recovery).getByRole('button', { name: 'Continue without music' }));
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(revealed.at(-1)).toBe(teaching);
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Pause' }));
+    } finally {
+      focus.mockRestore();
+      if (originalScroll) {
+        Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', originalScroll);
+      } else {
+        Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+      }
+    }
+  });
+
+  it('keeps secondary transport controls operable after switching to Full List', async () => {
+    await renderLive();
+    fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+    const more = screen.getByRole('button', { name: 'More controls' });
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(more);
+    const less = screen.getByRole('button', { name: 'Less controls' });
+    expect(less.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy();
+    expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
+    fireEvent.click(less);
+    expect(
+      screen.getByRole('button', { name: 'More controls' }).getAttribute('aria-expanded'),
+    ).toBe('false');
+  });
+
+  it('focuses waiting recovery and restores the music-dialog trigger while preparation is pending', async () => {
+    const pending = deferred<{ provider: 'soundcloud'; classTrackId: string }>();
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => ({
+      ...workingAdapter(),
+      prepare: () => pending.promise,
+    }));
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    const recovery = screen.getByRole('status', { name: 'Playback recovery' });
+    expect(document.activeElement).toBe(recovery);
+    expect(within(recovery).getByRole('button', { name: 'Continue without music' })).toBeTruthy();
+    const manage = within(recovery).getByRole('button', { name: 'Manage music connection' });
+    manage.focus();
+    fireEvent.click(manage);
+    const dialog = await screen.findByRole('dialog', { name: 'Music connections' });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
+    expect(document.activeElement).toBe(manage);
+    expect(screen.getByRole('status', { name: 'Playback recovery' })).toBe(recovery);
+  });
+
+  it.each(['Full List', 'Pause preparation'])(
+    'retains focus on %s when asynchronous preparation becomes ready',
+    async (controlName: string) => {
+      const pending = deferred<{ provider: 'soundcloud'; classTrackId: string }>();
+      vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+      vi.mocked(soundcloudAdapterFactory).mockImplementation(() => ({
+        ...workingAdapter(),
+        prepare: () => pending.promise,
+      }));
+      render(<LiveMode payload={payload} onExit={() => {}} />);
+      await screen.findByRole('list', { name: 'Track playback check' });
+      fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+      const control = screen.getByRole(controlName === 'Full List' ? 'tab' : 'button', {
+        name: controlName,
+      });
+      control.focus();
+      if (controlName === 'Full List') fireEvent.click(control);
+      await act(async () => {
+        pending.resolve({ provider: 'soundcloud', classTrackId: activeTrack.classTrackId });
+      });
+      await screen.findByRole('button', { name: /^Pause$/ });
+      expect(document.activeElement).toBe(control);
+      if (controlName === 'Full List') expect(control.getAttribute('aria-selected')).toBe('true');
+    },
+  );
+
+  it('keeps focus in the music dialog when playback confirms and falls back if its trigger disappears', async () => {
+    const pending = deferred<{ provider: 'soundcloud'; classTrackId: string }>();
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => ({
+      ...workingAdapter(),
+      prepare: () => pending.promise,
+    }));
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    const manage = screen.getByRole('button', { name: 'Manage music connection' });
+    manage.focus();
+    fireEvent.click(manage);
+    const dialog = await screen.findByRole('dialog', { name: 'Music connections' });
+    await act(async () => {
+      pending.resolve({ provider: 'soundcloud', classTrackId: activeTrack.classTrackId });
+    });
+    await screen.findByRole('button', { name: /^Pause$/ });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(manage.isConnected).toBe(false);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /^Pause$/ }));
+  });
+
+  it('retains the music-dialog trigger after closing failure recovery from Full List', async () => {
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => ({
+      ...workingAdapter(),
+      prepare: () => Promise.reject(new Error('widget failed')),
+    }));
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+    const manage = screen.getByRole('button', { name: 'Manage music connection' });
+    manage.focus();
+    fireEvent.click(manage);
+    const dialog = await screen.findByRole('dialog', { name: 'Music connections' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
+    expect(document.activeElement).toBe(manage);
+  });
 });
 
 describe('LiveMode playback failure', () => {
@@ -612,7 +789,7 @@ describe('LiveMode playback failure', () => {
     expect(await screen.findByRole('alert')).toBeTruthy();
     const focal = screen
       .getByLabelText('Bar and count 12.4')
-      .closest('div[class*="min-h-"]') as HTMLElement;
+      .closest('[data-live-region="focal"]') as HTMLElement;
     expect(within(focal).getByText('Hands light. Hips lead.')).toBeTruthy();
     expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
 
@@ -621,6 +798,42 @@ describe('LiveMode playback failure', () => {
     expect(screen.getByRole('alert')).toBeTruthy();
     expect(within(focal).getByText('Hands light. Hips lead.')).toBeTruthy();
     expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
+  });
+
+  it('keeps recovery actions in the scrolling shell when another track can be skipped', async () => {
+    const twoTracks = {
+      ...payload,
+      class: { ...payload.class, totalDurationMs: 300000 },
+      tracks: [
+        activeTrack,
+        {
+          ...activeTrack,
+          classTrackId: '00000000-0000-4000-8000-0000000000b2',
+          position: 1,
+          startOffsetMs: 180000,
+          track: { ...activeTrack.track, id: 'tr-skip', title: 'Second Track', durationMs: 120000 },
+        },
+      ],
+    } satisfies RunPayload;
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(
+      (): PlaybackAdapter => ({
+        ...workingAdapter(),
+        prepare: () => Promise.reject(new Error('widget failed')),
+      }),
+    );
+    render(<LiveMode payload={twoTracks} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+
+    const alert = await screen.findByRole('alert');
+    const shell = document.querySelector('div.fixed.inset-0') as HTMLElement;
+    expect(shell.className).toContain('overflow-y-auto');
+    expect(shell.contains(alert)).toBe(true);
+    expect(within(alert).getByRole('button', { name: 'Retry playback' })).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'Continue without music' })).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'Skip track' })).toBeTruthy();
+    expect(shell.contains(screen.getByRole('region', { name: 'Live transport' }))).toBe(true);
   });
 });
 
@@ -659,11 +872,67 @@ describe('LiveMode runtime composition', () => {
     // read in one glance. The current cue keeps its own type scale.
     const focal = screen
       .getByLabelText('Bar and count 1.1')
-      .closest('div[class*="min-h-"]') as HTMLElement;
+      .closest('[data-live-region="focal"]') as HTMLElement;
     expect(within(focal).getByText('Settle in')).toBeTruthy();
     expect(within(focal).getByText('Next')).toBeTruthy();
     expect(within(focal).getByText('Climb now')).toBeTruthy();
     expect(within(focal).getByLabelText('Time to next cue')).toBeTruthy();
+  });
+
+  it('clamps a long cue inside the focal card and scrolls the live shell', async () => {
+    const long = 'Hold the climb and breathe through the resistance.'.repeat(8);
+    const scripted = {
+      ...threeTrack,
+      tracks: [
+        {
+          ...threeTrack.tracks[0],
+          cues: [
+            { id: 'c-long', anchorMs: 0, beat: 1, bar: 1, text: long, color: null },
+            { id: 'c-next', anchorMs: 60000, beat: 1, bar: 2, text: 'Recover now', color: null },
+          ],
+        },
+        ...threeTrack.tracks.slice(1),
+      ],
+    } as unknown as RunPayload;
+    await renderLive(scripted);
+
+    const cue = screen.getAllByText(long).find((node) => node.classList.contains('line-clamp-2'));
+    if (!(cue instanceof HTMLElement)) throw new Error('clamped cue missing');
+    const focal = cue.closest('[data-live-region="focal"]') as HTMLElement;
+    expect(focal.contains(cue)).toBe(true);
+    expect(within(focal).getByText('Next')).toBeTruthy();
+    expect(within(focal).getByText('Recover now')).toBeTruthy();
+    expect(within(focal).getByLabelText('Time to next cue')).toBeTruthy();
+    // Next sits outside the clamped paragraph, so the full cue cannot push it
+    // out of the card by growing that paragraph.
+    expect(cue.contains(within(focal).getByText('Next'))).toBe(false);
+    expect(cue.classList.contains('shrink-0')).toBe(true);
+    expect(cue.parentElement?.contains(within(focal).getByText('Next'))).toBe(false);
+
+    const shell = document.querySelector('div.fixed.inset-0') as HTMLElement;
+    expect(shell.className).toContain('overflow-y-auto');
+    expect(shell.className).not.toContain('flex-col');
+    const teaching = shell.querySelector('[data-live-region="teaching"]') as HTMLElement;
+    expect(teaching.className).toContain('flex-1');
+    expect(teaching.className).not.toContain('min-h-0');
+    expect(teaching.className).not.toContain('overflow-auto');
+    expect(shell.contains(screen.getByRole('region', { name: 'Live transport' }))).toBe(true);
+    expect(shell.contains(screen.getByRole('button', { name: 'Previous track' }))).toBe(true);
+    expect(shell.contains(screen.getByRole('button', { name: 'Play' }))).toBe(true);
+    expect(shell.contains(screen.getByRole('button', { name: /Next track/ }))).toBe(true);
+
+    await waitFor(() => {
+      expect(
+        Array.from(document.querySelectorAll('[aria-live="assertive"]')).some((node) =>
+          node.textContent?.includes(long),
+        ),
+      ).toBe(true);
+    });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+    const listed = screen.getByText(long);
+    expect(listed.className).not.toContain('line-clamp');
+    expect(listed.textContent).toBe(long);
   });
 
   it('spends the rail tail on the rest of the run of show, read-only', async () => {
@@ -1140,7 +1409,7 @@ describe('LiveMode timeline scrubber', () => {
     // The transport scrubber replaces the old plain range input.
     const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
     const transport = screen.getByRole('region', { name: 'Live transport' });
-    expect(transport.className).toContain('grid-cols-[minmax(0,1fr)_auto]');
+    expect(transport.contains(slider)).toBe(true);
     expect(slider.parentElement?.className).toContain('col-span-full');
     expect(slider.parentElement?.className).toContain('min-w-0');
     // Clock starts at 0:00 / 3:00; a right-arrow nudges +5s.
