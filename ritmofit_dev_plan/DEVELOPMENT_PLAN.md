@@ -306,6 +306,8 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 ## Backlog / Open Items
 
+**Live zoom checkpoint (2026-10-04):** #486 merged as `eeec377add5294850a78334ef120374f26f23e14`; its full local gate and exact-commit CI passed. The fix keeps teaching, current/Next guidance, compact timecode, transport, view/Exit controls, and recovery reachable in short viewports. Regression coverage includes asynchronous readiness focus and waiting recovery. Local browser fixtures passed at 600×304 and 320×304 CSS pixels. It is **not deployed**; actual Chrome 200% zoom and production acceptance remain. Run-live readiness, teaching-draft policy, and playback behavior are unchanged.
+
 Forward work lives in the solo creator loop. The **creator-workstation-shell slice (D21)** — discovery
 shelves, liked/saved cards, playlist browsing, Cycle/Pilates/HIIT template narrowing, and the unified
 Classes / Music / Live / Account navigation — **shipped 2026-07-07 (Worker `9d0a5710`)**. Provider-authorized
