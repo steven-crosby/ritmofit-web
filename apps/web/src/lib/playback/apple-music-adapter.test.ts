@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import type { RunPayloadTrackEntry } from '@ritmofit/shared';
+import { describe, expect, it, vi } from 'vitest';
+import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
 import type {
   MusicKitGlobal,
   MusicKitInstance,
@@ -8,6 +8,7 @@ import type {
 } from '../musickit.js';
 import { AppleMusicAdapter } from './apple-music-adapter.js';
 import type { AdapterEvents } from './types.js';
+import { RuntimePlaybackCoordinator } from './runtime.js';
 
 function makeEntry(overrides?: { providerTrackId?: string; refs?: [] }): RunPayloadTrackEntry {
   return {
@@ -48,7 +49,7 @@ const EVENTS = {
   mediaPlaybackError: 'mediaPlaybackError',
 };
 // Distinct numeric codes; only `completed`/`ended` should trigger onFinish.
-const STATES = { playing: 2, paused: 3, ended: 5, completed: 10 };
+const STATES = { playing: 2, paused: 3, stopped: 4, ended: 5, seeking: 6, completed: 10 };
 
 /** A scriptable stand-in for the MusicKit page singleton. */
 class FakeInstance implements MusicKitInstance {
@@ -57,6 +58,7 @@ class FakeInstance implements MusicKitInstance {
   /** Transport status for liveness reads; undefined = MusicKit has not set it. */
   currentPlaybackTime: number | undefined = undefined;
   playbackState: number | undefined = undefined;
+  currentPlaybackDuration: number | undefined = undefined;
   playBehavior: () => Promise<void> = () => Promise.resolve();
   setQueueBehavior: () => Promise<unknown> = () => Promise.resolve();
   authorizeBehavior: () => Promise<string> = () => Promise.resolve('music-user-token');
@@ -426,7 +428,10 @@ describe('AppleMusicAdapter getLiveness', () => {
     instance.currentPlaybackTime = 42;
     instance.playbackState = STATES.paused;
     await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 42000, state: 'paused' });
-    Object.assign(instance, { currentPlaybackDuration: 180 });
+    instance.currentPlaybackDuration = 180;
+    // Observe the endpoint before MusicKit clears its queue.
+    instance.currentPlaybackTime = 180;
+    await adapter.getTransport();
     instance.currentPlaybackTime = 0;
     instance.playbackState = STATES.ended;
     await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 180000, state: 'ended' });
@@ -439,6 +444,90 @@ describe('AppleMusicAdapter getLiveness', () => {
     await adapter.play();
     return adapter;
   }
+
+  it('latches the observed endpoint through MusicKit natural queue teardown', async () => {
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    instance.currentPlaybackDuration = 223;
+    instance.currentPlaybackTime = 223;
+    instance.playbackState = STATES.paused;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.paused });
+    instance.currentPlaybackTime = 0;
+    instance.playbackState = STATES.seeking;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.seeking });
+    instance.currentPlaybackDuration = 0;
+    instance.playbackState = STATES.ended;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.ended });
+    instance.playbackState = STATES.stopped;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.stopped });
+    instance.playbackState = STATES.completed;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.completed });
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 223_000, state: 'ended' });
+    adapter.destroy();
+  });
+
+  it('does not substitute the full source duration for a genuinely early endpoint', async () => {
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    instance.currentPlaybackDuration = 180;
+    instance.currentPlaybackTime = 30;
+    instance.playbackState = STATES.ended;
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 30_000, state: 'ended' });
+    adapter.destroy();
+  });
+
+  it('keeps a reset endpoint unknown when no playhead was observed', async () => {
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    instance.currentPlaybackDuration = 180;
+    instance.currentPlaybackTime = 0;
+    instance.playbackState = STATES.ended;
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: null, state: 'ended' });
+    adapter.destroy();
+  });
+
+  it('clears endpoint evidence before a backward seek', async () => {
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    instance.currentPlaybackTime = 179.9;
+    instance.playbackState = STATES.playing;
+    await adapter.getTransport();
+    await adapter.seek(0);
+    instance.currentPlaybackTime = 0;
+    instance.currentPlaybackDuration = 180;
+    instance.playbackState = STATES.ended;
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: null, state: 'ended' });
+    adapter.destroy();
+  });
+
+  it('uses the latest observed playhead rather than a high-water mark after a seek', async () => {
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    instance.currentPlaybackTime = 179.9;
+    instance.playbackState = STATES.playing;
+    await adapter.getTransport();
+    instance.currentPlaybackTime = 30;
+    await adapter.getTransport();
+    instance.currentPlaybackTime = 0;
+    instance.playbackState = STATES.ended;
+    instance.currentPlaybackDuration = 180;
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 30_000, state: 'ended' });
+    adapter.destroy();
+  });
+
+  it('clears a completed snapshot when the adapter stops and replays', async () => {
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    instance.currentPlaybackTime = 180;
+    instance.playbackState = STATES.ended;
+    await adapter.getTransport();
+    await adapter.stop();
+    await adapter.play();
+    instance.currentPlaybackTime = 0;
+    instance.playbackState = STATES.ended;
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: null, state: 'ended' });
+    adapter.destroy();
+  });
 
   it('converts MusicKit seconds to the millisecond contract', async () => {
     const instance = new FakeInstance();
@@ -532,4 +621,99 @@ describe('adversarial Apple play cancellation', () => {
     await replacement.play();
     replacement.destroy();
   });
+});
+
+// Replays the real 2026-10-04 MusicKit queue teardown through the actual adapter
+// and coordinator, so the runtime precision guard and job lifecycle are covered together.
+describe('Apple Music natural-boundary runtime regression', () => {
+  it.each([
+    { name: 'next track', endpoint: 223, hasNext: true, expected: 'buffering' },
+    { name: 'final track', endpoint: 223, hasNext: false, expected: 'ended' },
+    { name: 'genuinely early stream', endpoint: 30, hasNext: true, expected: 'error' },
+    { name: 'full-second mismatch', endpoint: 222.398, hasNext: true, expected: 'error' },
+  ])(
+    'handles $name without substituting source duration',
+    async ({
+      endpoint,
+      hasNext,
+      expected,
+    }: {
+      endpoint: number;
+      hasNext: boolean;
+      expected: string;
+    }) => {
+      vi.useFakeTimers();
+      const instance = new FakeInstance();
+      const first = makeEntry();
+      first.track.durationMs = first.track.baseDurationMs = 223_398;
+      const next = makeEntry({ providerTrackId: 'am-next' });
+      next.classTrackId = 'ct-next';
+      next.startOffsetMs = 223_398;
+      next.position = 1;
+      const payload: RunPayload = {
+        schemaVersion: 1,
+        class: {
+          id: 'boundary-fixture',
+          title: 'Boundary regression',
+          template: null,
+          targetDurationMs: null,
+          timelineMode: 'sequential',
+          totalDurationMs: 223_398 + (hasNext ? 180_000 : 0),
+        },
+        tracks: hasNext ? [first, next] : [first],
+        sections: [],
+      };
+      const positions: number[] = [];
+      const created: AppleMusicAdapter[] = [];
+      const coordinator = new RuntimePlaybackCoordinator(
+        payload,
+        [{ provider: 'apple_music', expiresAt: null, scope: null }],
+        {
+          now: Date.now(),
+          adapters: {
+            apple_music: (events) => {
+              const { adapter } = makeAdapter(instance, { events });
+              created.push(adapter);
+              return adapter;
+            },
+          },
+          onPosition: (value) => positions.push(value),
+        },
+      );
+      try {
+        await coordinator.start();
+        instance.currentPlaybackDuration = 223;
+        instance.currentPlaybackTime = endpoint;
+        instance.playbackState = STATES.playing;
+        await vi.advanceTimersByTimeAsync(250);
+        instance.playbackState = STATES.paused;
+        instance.emit(EVENTS.playbackStateDidChange, { state: STATES.paused });
+        instance.currentPlaybackTime = 0;
+        instance.playbackState = STATES.seeking;
+        instance.emit(EVENTS.playbackStateDidChange, { state: STATES.seeking });
+        instance.currentPlaybackDuration = 0;
+        instance.playbackState = STATES.ended;
+        instance.emit(EVENTS.playbackStateDidChange, { state: STATES.ended });
+        instance.playbackState = STATES.stopped;
+        instance.emit(EVENTS.playbackStateDidChange, { state: STATES.stopped });
+        instance.playbackState = STATES.completed;
+        instance.emit(EVENTS.playbackStateDidChange, { state: STATES.completed });
+        await vi.advanceTimersByTimeAsync(250);
+        expect(coordinator.getStatus().kind).toBe(expected);
+        expect(created).toHaveLength(hasNext && expected !== 'error' ? 2 : 1);
+        expect(positions.at(-1)).toBe(expected === 'error' ? Math.round(endpoint * 1000) : 223_398);
+        if (hasNext && expected !== 'error') {
+          // Playback resolution/reset telemetry cannot move teaching into the next song.
+          expect(coordinator.getStatus()).toMatchObject({ index: 1 });
+          instance.currentPlaybackTime = 2;
+          instance.playbackState = STATES.playing;
+          await vi.advanceTimersByTimeAsync(250);
+          expect(positions.at(-1)).toBe(225_398);
+        }
+      } finally {
+        coordinator.destroy();
+        vi.useRealTimers();
+      }
+    },
+  );
 });
