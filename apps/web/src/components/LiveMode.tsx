@@ -726,6 +726,7 @@ export function LiveMode({
     hasStarted &&
     ['idle', 'preparing', 'awaiting_authorization', 'buffering', 'error'].includes(playback.kind);
   const teachingPlaying = playing && !musicBlocked;
+  const previousMusicBlocked = useRef(musicBlocked);
   // Account for actual chrome height, including wrapped status and section text.
   // Scroll-to/focus and the recovery scrollport then share the same visible bounds.
   useLayoutEffect(() => {
@@ -749,18 +750,20 @@ export function LiveMode({
   // cleanup owns trigger restoration; only place focus if that trigger is gone.
   useEffect(() => {
     const dialogWasOpen = previousConnectionsOpen.current;
+    const becameReady = previousMusicBlocked.current && !musicBlocked;
+    previousMusicBlocked.current = musicBlocked;
     const viewChanged = previousView.current !== view;
     previousView.current = view;
     previousConnectionsOpen.current = connectionsOpen;
     if (phase !== 'live' || connectionsOpen) return;
+    const needsRecovery = musicBlocked || hasPlaybackFailure;
     if (
-      dialogWasOpen &&
+      (dialogWasOpen || (becameReady && !needsRecovery)) &&
       document.activeElement !== document.body &&
       liveShellRef.current?.contains(document.activeElement)
     ) {
       return;
     }
-    const needsRecovery = musicBlocked || hasPlaybackFailure;
     const target = needsRecovery ? recoveryRef.current : teachingRef.current;
     target?.scrollIntoView?.({ block: 'start' });
     // Switching views reveals their content while the selected tab retains focus.
@@ -902,8 +905,20 @@ export function LiveMode({
                 {fmt(elapsedMs)} / {fmt(payload.class.totalDurationMs)}
               </p>
             </div>
-            <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
+            <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end [@media(max-height:480px)_and_(max-width:390px)]:gap-1">
               <ViewToggle view={view} setView={setView} />
+              {/* The full metadata remains available to AT; short screens retain
+                  its timecode visually without adding height to the control bar. */}
+              <p
+                aria-hidden="true"
+                className="hidden shrink-0 text-center font-data text-[10px] leading-tight text-text-tertiary [@media(max-height:480px)]:block"
+              >
+                <span className="block [@media(min-width:480px)]:inline">{fmt(elapsedMs)}</span>
+                <span className="block [@media(min-width:480px)]:inline">
+                  {' / '}
+                  {fmt(payload.class.totalDurationMs)}
+                </span>
+              </p>
               <button
                 className="min-h-11 shrink-0 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive rf-focus-ring sm:rounded-pill"
                 onClick={onExit}

@@ -606,6 +606,32 @@ describe('LiveMode focus management', () => {
     expect(screen.getByRole('status', { name: 'Playback recovery' })).toBe(recovery);
   });
 
+  it.each(['Full List', 'Pause preparation'])(
+    'retains focus on %s when asynchronous preparation becomes ready',
+    async (controlName: string) => {
+      const pending = deferred<{ provider: 'soundcloud'; classTrackId: string }>();
+      vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+      vi.mocked(soundcloudAdapterFactory).mockImplementation(() => ({
+        ...workingAdapter(),
+        prepare: () => pending.promise,
+      }));
+      render(<LiveMode payload={payload} onExit={() => {}} />);
+      await screen.findByRole('list', { name: 'Track playback check' });
+      fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+      const control = screen.getByRole(controlName === 'Full List' ? 'tab' : 'button', {
+        name: controlName,
+      });
+      control.focus();
+      if (controlName === 'Full List') fireEvent.click(control);
+      await act(async () => {
+        pending.resolve({ provider: 'soundcloud', classTrackId: activeTrack.classTrackId });
+      });
+      await screen.findByRole('button', { name: /^Pause$/ });
+      expect(document.activeElement).toBe(control);
+      if (controlName === 'Full List') expect(control.getAttribute('aria-selected')).toBe('true');
+    },
+  );
+
   it('keeps focus in the music dialog when playback confirms and falls back if its trigger disappears', async () => {
     const pending = deferred<{ provider: 'soundcloud'; classTrackId: string }>();
     vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
