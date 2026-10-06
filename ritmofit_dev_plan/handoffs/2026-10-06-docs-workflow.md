@@ -2,10 +2,10 @@
 date: 2026-10-06
 tool: Claude Code (cloud)
 lane: solo (docs/workflow; a separate session continues dev work)
-branch: main (both PRs merged; this update via a close-session docs PR)
-head: bdbbc8d487d716ebe7e87ff994a61df525a186c6
+branch: claude/handoff-close-2026-10-06
+head: n/a (close-session update committed alone)
 base: bdbbc8d487d716ebe7e87ff994a61df525a186c6
-prs: ['#489 (merged, 7accd2d)', '#490 (merged, bdbbc8d)']
+prs: ['#489 (merged, 7accd2d)', '#490 (merged, bdbbc8d)', '#491 (this close-session update)']
 status: open
 ---
 
@@ -30,8 +30,8 @@ status: open
 
 Next session (any tool): run the new `start-session` and confirm it surfaces this handoff and the
 undeployed #488. Then follow the "Now" block in `DEVELOPMENT_PLAN.md` (deploy #488, re-run the
-natural-boundary acceptance). Retire this file once the iOS port has its own session (or is
-recorded in that repo).
+natural-boundary acceptance). Retire this file only when **both** the iOS port has its own
+session (or is recorded in that repo) **and** the two merged remote branches below are deleted.
 
 ## Blockers and owner decisions
 
