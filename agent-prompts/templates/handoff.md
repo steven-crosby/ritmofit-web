@@ -5,7 +5,7 @@ date: YYYY-MM-DD # absolute date of the session close
 tool: '' # e.g. Claude Code (cloud), Codex (local), Cursor
 lane: '' # solo | lane-<N>-<cluster> | orchestrator
 branch: ''
-head: '' # full SHA of the branch head at close
+head: '' # SHA of the last work commit before this handoff commit (a file cannot hold its own commit's SHA), or n/a
 base: '' # origin/main SHA the branch was last synced with
 prs: [] # e.g. ['#491 (draft)', '#492 (merged)']
 status: open # open = something is in flight or a next action is owed; closed = nothing owed

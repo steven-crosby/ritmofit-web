@@ -31,9 +31,11 @@
   still fails, capture the MusicKit error at Start/Retry via Safari Web Inspector), and the
   playlist-to-teaching-draft product decision (backlog).
 - **Owner decisions open:** playlist-derived teaching-draft policy; playback-liveness alerting; F-02
-  (D11 `createPattern`); NotFound/ErrorBoundary warmth; review/delete of `[QA]` production fixtures
-  (six from the [2026-10-03 audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md) plus
-  `bc488d5c…`) per [`prod-fixture-hygiene.md`](./prod-fixture-hygiene.md).
+  (D11 `createPattern`); NotFound/ErrorBoundary warmth; review/delete of every `[QA]` production fixture
+  still present — HISTORY records several sets left for review since 2026-09-28 (#468, #481, the
+  [2026-10-03 audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md) six plus four more seen
+  that day, goal-template, and `bc488d5c…`); inventory the live Classes list by the `[QA]` prefix /
+  `qa-fixture` tag rather than trusting any one list, per [`prod-fixture-hygiene.md`](./prod-fixture-hygiene.md).
 
 ---
 

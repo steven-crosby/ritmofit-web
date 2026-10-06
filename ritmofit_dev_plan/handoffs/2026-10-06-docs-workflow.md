@@ -3,7 +3,7 @@ date: 2026-10-06
 tool: Claude Code (cloud)
 lane: solo (docs/workflow; a separate session continues dev work)
 branch: claude/docs-plan-cleanup
-head: see PR
+head: n/a (handoff committed with the #490 work)
 base: 7accd2d8b1c236e0630f30af5c57372f706f554d
 prs: ['#489 (merged, 7accd2d)', '#490 (this PR; owner-approved squash merge)']
 status: open
