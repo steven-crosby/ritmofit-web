@@ -47,8 +47,8 @@ In practice, for current web PRs:
   against the fields the vendored `ios-snapshot/Core/Models/RunPayload.swift` DTOs decode. A *new* drift
   in either direction fails CI; a temporary, explicitly accepted additive lag can be tracked in the script's allowlist
   (`apps/api/src/lib/contract-parity.ts` → `CONTRACT_PARITY_ALLOWLIST`). Field-name presence only —
-  type/nullability/enum drift stays the job of the manual `agent-prompts/remote-prompts/technical/api-contract-parity.md`
-  pass. **Currently allowlisted: none.** Phase 0 added `timelineMode`; RPM/hold and clip/beat anchors;
+  type/nullability/enum drift is a manual review (the former `api-contract-parity` remote prompt is archived
+  at `archive/remote-loop/remote-prompts/technical/api-contract-parity.md`). **Currently allowlisted: none.** Phase 0 added `timelineMode`; RPM/hold and clip/beat anchors;
   move beat/bar; and stable section IDs to the iOS DTO. Verified 2026-07-24 against the current
   generated spec: **54 schemas · 55 paths**.
 - **Cross-repo drift is now gated from iOS CI.** The iOS check compares its vendored OpenAPI/docs,
@@ -129,7 +129,7 @@ Keep it as historical context for later iOS refinement and contract/design sync.
       (template first) + track count/runtime, bounded collage; Copy/View demoted to quiet footer
       actions (primary affordance remains opening the row). Presentation only. iOS library cards
       should adopt equivalent music-forward hierarchy + action quieting when the surface lands.
-      See `agent-reports/studio-redesign-prescription.md` #3. No contract change.
+      See `archive/remote-loop/agent-reports/studio-redesign-prescription.md` #3. No contract change.
   - Class-detail read mode (web Session 4): a read-only class view (songs + placed moves + cues + section
     bands, from the run-payload) reachable from a Library card "View" action, with "Open in builder".
     iOS should offer the same at-a-glance read view. No contract change (reuses `GET /run-payload`).
@@ -138,7 +138,7 @@ Keep it as historical context for later iOS refinement and contract/design sync.
     action when Songs-by-Move lands. No contract change.
 - **Explore** feed **(deferred community surface under D20)**
   - Dialog loading/empty-state polish (web — Studio redesign slice 4, see
-    `agent-reports/studio-redesign-prescription.md` #4): Explore, Connections, Teams, and
+    `archive/remote-loop/agent-reports/studio-redesign-prescription.md` #4): Explore, Connections, Teams, and
     Songs-by-Move now use compact state headers, surface-specific copy, and static structured
     placeholders (class cards, provider rows, team/member rows, move rows) instead of generic
     "Loading…" text. iOS should mirror this state-language pattern when these supporting dialogs land.
@@ -153,7 +153,7 @@ Keep it as historical context for later iOS refinement and contract/design sync.
   Full List) and hidden when a class has no sections. iOS live mode should surface the same
   current-section indicator. No contract change (reuses `GET /run-payload` `sections`).
 - **Live Mode performance re-stage** (web — Studio redesign slice 1, see
-  `agent-reports/studio-redesign-prescription.md` #1): the Cue-by-Cue prompter moved from a small
+  `archive/remote-loop/agent-reports/studio-redesign-prescription.md` #1): the Cue-by-Cue prompter moved from a small
   centered card to a split performance layout — a large focal current cue on the left, with next cue,
   BPM/effort, track/class timers, and provider handoff as a right-side instrument rail (stacked on
   narrow widths, current cue first and large). The single sanctioned beat-pulse now rides the BPM
@@ -161,7 +161,7 @@ Keep it as historical context for later iOS refinement and contract/design sync.
   glanceable hierarchy (huge current cue + BPM/effort/timers as the instrument). Presentation only — no
   contract change (same `GET /run-payload`).
 - **Builder energy-arc workbench** (web — Studio redesign slice 2, see
-  `agent-reports/studio-redesign-prescription.md` #2): the energy arc, timeline, and segment band were
+  `archive/remote-loop/agent-reports/studio-redesign-prescription.md` #2): the energy arc, timeline, and segment band were
   three stacked strips; they now form one "Class shape" workbench — the arc scaled up (~64→~128px) as
   the hero, with the timeline blocks/markers riding directly beneath it on one shared time axis (each
   block under its crest) and reduced card fragmentation. The arc stays static (no animation), height +

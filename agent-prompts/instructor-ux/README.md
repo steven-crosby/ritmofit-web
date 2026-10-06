@@ -32,7 +32,7 @@ community surface (D20).
 |---|---|---|---|
 | **`instructor-ux/`** (this pack) | Local dev, seeded, deterministic fixtures | One product principle, one journey, two instructor personas | PR + findings report (build); findings report only (challenge) |
 | [`../live-ux-deep-dive.md`](../live-ux-deep-dive.md) | **Production** (`ritmofit.studio`) | Design canon **+** modern standards (WCAG 2.2, CWV, SaaS conventions), all surfaces | Artifact, report-only |
-| [`../remote-prompts/technical/design-system.md`](../remote-prompts/technical/design-system.md) | Local, **unattended** | Canon drift only (tokens vs code vs render) | Committed report |
+| [`../design-system-drift.md`](../design-system-drift.md) | Local, attended or unattended | Canon drift only (tokens vs code vs render) | `docs/audits/` report on a docs PR |
 | [`../design-audit/`](../design-audit/) | Local, attended, hours | Full-product audit + redesign preview | A `docs/audits/` folder |
 
 None substitutes for another. This pack is the narrow one: one journey, one principle, judged by
@@ -52,6 +52,6 @@ This pack is the audit surface for that principle, not its source. It applies to
 
 ## Cadence
 
-Not on one. See [`../SCHEDULE.md`](../SCHEDULE.md) › Trigger map. Run the build pass when the
+Not on one (see the decision guide in [`../README.md`](../README.md)). Run the build pass when the
 creation journey is genuinely the concern; run the challenge pass once after a slice lands. Do not
 run either to keep a schedule full.

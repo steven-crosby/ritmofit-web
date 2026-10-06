@@ -1,37 +1,36 @@
-# Design-system deep audit — report-only
+# Design-system drift audit — report-only
 
-> **Local worktree, unattended, browser required.** This prompt is the exception in
-> `remote-prompts/`: it is written for an **isolated worktree on the owner's machine**
-> (`claude --worktree --permission-mode acceptEdits`), not a remote cloud sandbox, because
-> Phase 3 needs a real browser against a locally booted app. Everything else about the
-> operating model is unchanged: no human is watching, never block on interactive input, and
-> nothing survives unless it is committed and pushed — the deliverable is a **validated
-> agent report pushed on a branch**. Decisions that belong to the owner become written
-> recommendations.
-
-> **Follow the house rules** (`agent-prompts/remote-prompts/00-house-rules.md`) **with
-> these explicit deviations:**
+> **Local worktree, browser required, attended or unattended.** Run it in an isolated worktree
+> (or a dedicated checkout) on a machine that can boot the app locally, because Phase 3 needs a
+> real browser. It never blocks on interactive input: decisions that belong to the owner become
+> written recommendations. Nothing survives unless it is committed and pushed — the deliverable
+> is a **report folder pushed on a branch** (see Phase 4).
 >
-> 1. **Report-only. Zero code changes.** This prompt opens **no PR** and edits **no**
->    product code, tokens, docs, or mockups — not even an "obvious one-liner". Every fix,
->    however small, is a finding in the report. The only files this run may create are the
->    report and its curated screenshot assets under `agent-reports/`. (Like the planning
->    briefs, it pushes its validated report on a branch with no code PR.)
-> 2. **Timebox: 4 hours hard cap, 3 hours target** — not 45 minutes. Reserve the final
->    20 minutes for Phase 4 (report, validation, push, cleanup). Phase budgets and the
->    degradation ladder are at the bottom of this prompt.
-> 3. **Local machine safety** replaces sandbox isolation: stay inside the worktree, never
->    read or copy `apps/api/.dev.vars` (it holds real provider secrets), never hit
->    production (`ritmofit.studio`) or the remote D1, and kill every process you started
->    before you stop.
+> History: this prompt was `remote-prompts/technical/design-system.md` in the retired remote
+> maintenance loop (archived 2026-10-06 under `ritmofit_dev_plan/archive/remote-loop/`). It is
+> kept live because it is the only local canon-drift audit; `live-ux-deep-dive.md` and
+> `instructor-ux/` point here.
+>
+> **Rules for this run:**
+>
+> 1. **Report-only. Zero code changes.** Open **no code PR** and edit **no** product code,
+>    tokens, docs, or mockups — not even an "obvious one-liner". Every fix, however small, is a
+>    finding in the report. The only files this run may create are under its report folder.
+> 2. **Timebox: 4 hours hard cap, 3 hours target.** Reserve the final 20 minutes for Phase 4
+>    (report, push, cleanup). Phase budgets and the degradation ladder are at the bottom.
+> 3. **Local machine safety:** stay inside the worktree, never read or copy
+>    `apps/api/.dev.vars` (it holds real provider secrets), never hit production
+>    (`ritmofit.studio`) or the remote D1, and kill every process you started before you stop.
+> 4. Follow `AGENTS.md` and its "Session Workflow"; if run as a lane, the lane's handoff file
+>    links the report.
 
 **REPO:** `ritmofit-web`
 
 **Use when:** the weekly deep design pass is due; a large UI slice just landed; the UI
 "looks off" and you want the full picture; before a milestone or redesign decision.
-**Do not use when:** you only need a quick drift check on recent changes (the sentinel
-covers deltas); the main concern is WCAG interaction / assistive-technology behavior
-(→ `accessibility.md`); the concern is wording (→ `content-consistency.md`).
+**Do not use when:** you only need a quick drift check on one recent change (review that diff
+instead); the main concern is WCAG interaction / assistive-technology behavior or wording
+(record those as out-of-scope observations — the dedicated remote prompts are archived).
 
 ## Mission
 
@@ -49,15 +48,15 @@ not fixes. The owner dispatches remediation from the report.
 
 ## Out of scope — other pieces own these lanes
 
-- Deep WCAG interaction, screen-reader, and focus-order work → `accessibility.md`. This
+- Deep WCAG interaction, screen-reader, and focus-order work → out-of-scope observation. This
   audit checks design-system-level a11y invariants (contrast tokens, visible cyan focus,
   redundant encoding, reduced-motion, hit targets) but does not run an AT pass.
-- Microcopy, terminology, banned copy in **app** strings → `content-consistency.md`
+- Microcopy, terminology, banned copy in **app** strings → out-of-scope observation
   (banned copy inside the DS package itself is in scope — `lint-tokens` gates it).
 - iOS parity: `ios/RFTokens.swift` generation is in scope (Phase 1 gates it), but the
   iOS repo's hand-synced copy and native adoption are not — that seam is tracked in
   `ritmofit_dev_plan/web-ios-parity.md`. Do not read or edit the iOS repo.
-- Performance, bundle size, network behavior → `performance.md`.
+- Performance, bundle size, network behavior → out-of-scope observation.
 
 Incidental discoveries in these lanes go in the report's "Out-of-scope observations"
 appendix, addressed to the owning prompt. Do not investigate them.
@@ -115,8 +114,9 @@ plainly — a clean bill with proof of coverage is a valid, valuable outcome.
    | Light-theme glass legibility is NOT machine-gated — must be browser-verified | `README.md` § Tokens (light theme) |
    | Foundation language is modality-neutral (flag only; copy depth → content-consistency) | `README.md` § canon 11 |
 
-4. **Dedup before you hunt.** Read every prior `agent-reports/*/technical-design-system*.md`
-   and the latest `technical-accessibility*.md`; run `gh pr list` and `gh issue list`;
+4. **Dedup before you hunt.** Read every prior `docs/audits/design-system-drift-*/README.md`
+   (and, for older runs, `ritmofit_dev_plan/archive/remote-loop/agent-reports/*/technical-design-system*.md`
+   and the latest `technical-accessibility*.md` there); list open PRs and issues;
    skim `git log --oneline` for `ritmofit_design_system/` and `apps/web/src/` since the
    last design report. A known, tracked, unfixed issue gets one "still open, tracked at X"
    line — not a re-investigation. A previously-reported issue that has since been fixed
@@ -253,8 +253,8 @@ plainly — a clean bill with proof of coverage is a valid, valuable outcome.
 1. **Merge across phases.** The same defect seen statically and live is one finding with
    both evidence types (and higher confidence). A live-only finding must be traced back
    to `file:line` where feasible.
-2. **Rank P0–P3** per the report template's semantics. For each finding: canon cite,
-   evidence, impact, a one-line suggested-fix sketch, effort (S/M/L), and recommended
+2. **Rank P0–P3** (P0 ship-blocking / data-loss / auth / live-class → P3 minor). For each
+   finding: canon cite, evidence, impact, a one-line suggested-fix sketch, effort (S/M/L), and recommended
    owner. Order the backlog so the owner can execute it top-down.
 3. **Verdict.** One overall letter grade plus one per dimension — canon integrity /
    code adherence / rendered fidelity — each with a one-sentence justification. Compare
@@ -269,17 +269,16 @@ plainly — a clean bill with proof of coverage is a valid, valuable outcome.
    F. out-of-scope observations, each addressed to the prompt that owns the lane.
 5. **Screenshots policy.** The full capture set stays local in the worktree (it dies
    with the run). Commit at most ~12 **curated** images — only those that evidence a
-   P0–P2 finding — compressed to ≤200 KB each, under
-   `agent-reports/YYYY-MM-DD/design-system-assets/`, and reference them from the report
-   by relative path.
-6. **Report + push.** Write `agent-reports/YYYY-MM-DD/technical-design-system.md` from
-   `agent-reports/AGENT_REPORT_TEMPLATE.md`; run
-   `./agent-reports/validate-agent-report.sh` on it — the run is incomplete until it
-   passes. `completed: true` requires: the Phase 1 gate ran, the browser phase ran (or
-   its blocker is documented), and validation passed; the full CI gate is **not**
-   required — nothing was changed. Commit the report (+ assets) on branch
-   `auto/design-system-audit-YYYY-MM-DD` and push. **No PR** — the pushed report branch
-   is the deliverable.
+   P0–P2 finding — compressed to ≤200 KB each, under the report folder's `assets/`, and
+   reference them from the report by relative path.
+6. **Report + push.** Write `docs/audits/design-system-drift-YYYY-MM-DD/README.md` with
+   frontmatter (`date`, `tool`, `inspected_head`, `completed`, `phases_run`) and sections
+   Summary · Verdict · Findings (ranked) · Appendices A–F · Blockers. `completed: true`
+   requires that the Phase 1 gate ran and the browser phase ran (or its blocker is
+   documented); the full CI gate is **not** required — nothing was changed. Commit the folder
+   on branch `audit/design-system-drift-YYYY-MM-DD`, push, and open a **docs-only draft PR**
+   (report only; the owner decides whether to merge it). Add a one-line row to
+   `docs/audits/README.md` in the same commit.
 
 ## Time budget & degradation ladder
 

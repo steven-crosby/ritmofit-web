@@ -119,10 +119,13 @@ migrations **before** the code that depends on them.
   accessibility, motion, and layout guidance for UI work.
 - [`docs/onboarding/ritmofit-tutorial-video-cuts.md`](docs/onboarding/ritmofit-tutorial-video-cuts.md) —
   caption/cut specs for the landing-hero and onboarding tutorial videos.
-- [`agent-prompts/`](agent-prompts/) — session, maintenance, and remote-agent prompts, including the
-  agent-agnostic [design-audit pack](agent-prompts/design-audit/README.md);
-  [`agent-prompts/SCHEDULE.md`](agent-prompts/SCHEDULE.md) says when to run each one.
+- [`agent-prompts/`](agent-prompts/README.md) — the session workflow (start/close-session, parallel
+  lanes, handoff and lane-brief templates) plus attended audit packs, including the agent-agnostic
+  [design-audit pack](agent-prompts/design-audit/README.md).
+- [`ritmofit_dev_plan/handoffs/`](ritmofit_dev_plan/handoffs/README.md) — one handoff file per
+  session or lane: what is in flight and the next action, read by every start-session.
 - [`docs/audits/`](docs/audits/) — delivered design-audit runs (critique, prototype, screenshots, and
   proposed implementation prompts). Excluded from the format/lint gates.
 - [`ritmofit_dev_plan/archive/`](ritmofit_dev_plan/archive/) — archived launch-readiness review
-  (`REVIEW.md`/`REVIEW_HISTORY.md`), pre-launch audit reports, and superseded AI session prompts.
+  (`REVIEW.md`/`REVIEW_HISTORY.md`), pre-launch audit reports, superseded planning docs and AI session
+  prompts, and the retired remote maintenance loop (`archive/remote-loop/`).

@@ -2,7 +2,7 @@
 
 > Not a runnable prompt. This is the frame both passes inherit
 > ([`01-build-pass.md`](./01-build-pass.md), [`02-challenge-pass.md`](./02-challenge-pass.md)),
-> the same way every remote prompt inherits `remote-prompts/00-house-rules.md`. Read it in full
+> the way a lane inherits its brief. Read it in full
 > before either pass. If it conflicts with `AGENTS.md`, stop and report the stale instruction; repair
 > it only in a separately authorized docs change.
 
@@ -54,7 +54,7 @@ Both passes walk this journey, in this order, and stay inside it:
 
 **Out of scope here:** Live Mode performance, the Music workspace as a destination, Account,
 marketing/auth. Those belong to [`../live-ux-deep-dive.md`](../live-ux-deep-dive.md) (production,
-canon + modern standards) or `../remote-prompts/technical/design-system.md` (canon drift). Live
+canon + modern standards) or [`../design-system-drift.md`](../design-system-drift.md) (canon drift). Live
 *preflight* is in scope only as "the next meaningful step" endpoint of the journey.
 
 **Deferred surfaces stay deferred.** Teams, sharing, publishing, Explore, public class pages,
@@ -74,7 +74,7 @@ Verify every path below with `ls`/`grep` before relying on it — this list is a
 | Creation entry, ranking | `apps/web/src/components/ClassesHome.tsx`, `lib/readiness.ts`, `lib/class-ordering.ts` |
 | Scaffold vs empty | `components/CreateClassDialog.tsx` (185 ln), `lib/class-scaffold.ts` |
 | Plan blocks | `components/ClassPlanBlocks.tsx`, `lib/class-scaffold.ts` (`planBlockFit`, `planFitLabel`, `planBlockActualMs`, `tracksForPlanBlock`, `unassignedClassTracks`) |
-| Builder shell, track inspector | `components/Dashboard.tsx` (5161 lines; `TrackInspector` begins at L4457; clip-window inputs are at L4846–L4868), `components/ChoreographyEditor.tsx` |
+| Builder shell, track inspector | `components/Dashboard.tsx` (large file — search for `function TrackInspector`; the clip-window inputs are the `clipStart`/`clipEnd` state inside it), `components/ChoreographyEditor.tsx` |
 | Music search and assignment | `components/Dashboard.tsx` (`ReorderableTrackList`), `components/TrackSearch.tsx`, `components/TrackPreview.tsx`, `components/SourceList.tsx` |
 | Timing and shape | `components/TimelineStrip.tsx`, `components/IntensityRibbon.tsx`, `components/SegmentBand.tsx`, `components/IntensityReadout.tsx`, `lib/energy-arc.ts`, `lib/class-summary.ts` |
 | Readiness / next step | `components/ClassReadinessSummary.tsx`, `components/ClassPulse.tsx`, `components/LivePreflight.tsx`, `lib/live-readiness.ts` |

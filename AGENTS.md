@@ -7,6 +7,7 @@
 <!-- note (Codex, 2026-07-16): Restored stale-chunk recovery and real-browser playback verification guidance. -->
 <!-- note (Grok, 2026-07-22): Added short workspace-container block so nested-git sessions still see multi-checkout rules. -->
 <!-- note (Claude, 2026-07-24): Recorded the agent-agnostic design-audit pack v6 and its docs/audits deliverable path. -->
+<!-- note (Claude Code, 2026-10-06): Added Session Workflow (solo/lane/orchestrator roles, per-session handoff files under ritmofit_dev_plan/handoffs/), archived the unused remote maintenance loop (remote-prompts, SCHEDULE.md, agent-reports) to ritmofit_dev_plan/archive/remote-loop/, and added a CLAUDE.md that only imports this file — reversing the 2026-07-12 wrapper removal so the Claude Code CLI loads this canon; it carries no rules of its own. -->
 <!-- note (Claude, 2026-07-25): Replaced the hardcoded `~/repos/ritmostudio/` workspace path with portable discovery commands (split containers are now possible, and ritmofit-ios clones can live in either), noted cross-round machine contention, and pointed at the new parallel-round runbook. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
@@ -46,10 +47,11 @@ find . -mindepth 1 -maxdepth 3 -type d -name ritmofit-ios -exec test -e '{}/.git
 - `ritmofit_dev_plan/deployment-runbook.md`: production deploy, rollback, D1 recovery, and smoke tests.
 - `ritmofit_dev_plan/prod-fixture-hygiene.md`: naming/tagging convention and cleanup runbook for
   verification classes created in the production account during live playback/liveness checks.
-- `agent-prompts/SCHEDULE.md`: prompt cadence; use `agent-prompts/daily/start-session.md` and
-  `agent-prompts/daily/close-session.md` for interactive work blocks.
+- `ritmofit_dev_plan/handoffs/`: one handoff file per session or lane — what is in flight, the next
+  action, open owner decisions. Read at every start-session; see "Session Workflow".
 - `README.md`: setup, local dev, and broad repo orientation.
-- `agent-prompts/`: canonical session, maintenance, and remote-agent prompts.
+- `agent-prompts/`: canonical session workflow (start/close-session, parallel rounds, templates) and
+  attended audit packs; `agent-prompts/README.md` is the index.
 - `agent-prompts/design-audit/`: agent-agnostic full-product design audit. One owner authorization, one
   continuous run, one deliverable folder at `docs/audits/<agent>-design-audit-<YYYY-MM-DD>/`. The running
   agent makes no Git commits and no production code edits; implementation is a separate session, unlocked
@@ -102,7 +104,7 @@ owner confirmation. Substantial work includes features, architecture, schema/API
 design-system changes, infrastructure, deploys, and broad refactors. A useful plan names the goal, likely
 files, schema/migration/API impact, frontend impact, risks, open questions, and verification.
 
-Use `start-session` for orientation and `close-session` for wrap-up when the owner asks. Do not discard,
+Follow "Session Workflow" below for orientation, wrap-up, and handoffs. Do not discard,
 overwrite, stash, or silently include existing worktree changes. Prefer small vertical slices: shared
 contract, API/authz, UI states, then tests. Do not add infrastructure or revive deferred surfaces unless
 the request clearly calls for it.
@@ -117,6 +119,27 @@ flagging of assumptions and trade-offs, and tight written summaries (tables welc
 Ask focused clarifying questions before non-trivial changes rather than guessing, then act. Report
 outcomes plainly — including what was skipped, substituted, or failed.
 
+## Session Workflow
+
+Every session — any tool, local or cloud — runs `agent-prompts/daily/start-session.md` →
+plan (owner confirms substantial work) → execute on a branch + PR → `agent-prompts/daily/close-session.md`.
+The durable output is `main` plus a handoff file; chat and tool memory are scratch.
+
+- **Roles.** _Solo_: one session owns its PRs and merges its own green work at close. _Lane_: one
+  builder in a parallel round (`agent-prompts/orchestrate-parallel-round.md`); edits only the files its
+  brief assigns, opens its PR, writes its handoff, and **never merges**. _Orchestrator_: partitions the
+  round, writes untracked lane briefs from `agent-prompts/templates/lane-brief.md`, reconciles plans,
+  and runs the merge train with explicit owner authority; writes no product code.
+- **Handoffs.** Whenever anything is in flight, a next action is owed, an owner decision is open, or
+  `main` is ahead of production, the session writes `ritmofit_dev_plan/handoffs/YYYY-MM-DD-<slug>.md`
+  from `agent-prompts/templates/handoff.md` and commits it on its own PR. Only its author edits it;
+  a later close deletes it once its items are done or routed. Rules:
+  `ritmofit_dev_plan/handoffs/README.md`.
+- **Every change goes through a PR**, docs included; squash merge. Never push straight to `main`.
+- **Record what merged.** A merge that is not yet deployed, or a deploy, is recorded (HISTORY for
+  deploys, DEVELOPMENT_PLAN current focus for main-vs-production, a handoff for anything owed) in the
+  same session — start-session surfaces merges nobody recorded.
+
 ## Project Structure
 
 - `apps/web`: React/Vite/Tailwind SPA; components in `src/components`, helpers and tests in `src/lib`,
@@ -127,6 +150,8 @@ outcomes plainly — including what was skipped, substituted, or failed.
 - `packages/music`: provider adapters and music-domain helpers.
 - `ritmofit_design_system`: design tokens, component guidance, accessibility, motion, and layout rules.
 - `INBOX.md`: raw breadcrumb catcher; surface at start-session and route/delete at close-session.
+- `ritmofit_dev_plan/archive/`: superseded docs and the retired remote maintenance loop; read only for
+  provenance, never revive silently.
 
 ## Commands
 

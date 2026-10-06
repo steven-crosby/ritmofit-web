@@ -107,8 +107,8 @@ export function clampSectionStart(
  * The snap targets for track-range binding: the class start (0), each track's
  * start offset, and the class end — unique, in-range, ascending. Interior track
  * starts at/beyond the class bounds are ignored (clamped out). Snapping a section
- * boundary to one of these aligns segment bands to track edges (milestones.md:
- * "snapping boundaries to track starts").
+ * boundary to one of these aligns segment bands to track edges (HISTORY.md, design-system
+ * build log: "snapping boundaries to track starts").
  */
 export function trackBoundaries(trackStartsMs: ReadonlyArray<number>, totalMs: number): number[] {
   const total = Math.round(Math.max(0, totalMs));

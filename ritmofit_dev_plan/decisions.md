@@ -333,7 +333,7 @@ surface" and a "live surface." Every core instructor capability — **build & ch
 exists on **both**, expressed in **each platform's native idiom** (iOS gestures + bottom tab bar; web
 sidebar + keyboard). A surface may *lean* toward a context (web comfortable at a desk, iOS in the room),
 but is **never capability-limited**. This **supersedes** the earlier asymmetric-surfaces framing in
-`overview.md`, `DEVELOPMENT_PLAN.md`, and `08-ios-web-alignment.md`.
+`overview.md` (now archived), `DEVELOPMENT_PLAN.md`, and `08-ios-web-alignment.md`.
 
 **Why:** The product promise — "Spotify for instructors" — is that you pick up either device and do
 *everything*, intuitively. Spotify mirrors its core loop across mobile/desktop/web (platform-idiomatic,
@@ -599,7 +599,7 @@ implementation/release approvals remain in effect.
   concept only — no `class_sections` table. They were added in the design-system builder build
   (**slice 16, migration `0006`**, PR #31) as a `class_sections` table with a fixed `segmentType` enum
   (`warm_up`/`climb`/`sprint`/`recovery`/`cool_down`) plus an additive run-payload `sections[]`
-  (`schemaVersion` stayed 1). See `milestones.md` slice 16. *(So this is no longer "don't invent the
+  (`schemaVersion` stayed 1). See slice 16 in `HISTORY.md`. *(So this is no longer "don't invent the
   table" — the table exists; build against it.)*
 - **`class_snapshots`** (history/restore/iOS cache) — revisit when versioning is a real requirement. *(No active plan; revisit explicitly if undo/history becomes a product requirement.)*
 - **`color_role` on class_tracks** — color belongs to the design layer, not the data model. (`color`

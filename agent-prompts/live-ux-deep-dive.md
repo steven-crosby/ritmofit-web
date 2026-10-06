@@ -1,10 +1,13 @@
 # Live UX deep dive — production, canon + modern standards, published report
 
-> **INTERACTIVE, production-facing.** Paste this in a normal Claude Code session (not a
-> worktree, not unattended) when Steven wants a deep-dive UI/UX assessment of the **live**
+> **INTERACTIVE, production-facing. Claude-specific mechanics.** Written for a normal Claude Code
+> session (not a worktree, not unattended): it uses Claude-in-Chrome, forked subagents, and a
+> published Claude Artifact. Another tool can run it by substituting its own logged-in browser
+> automation, running the per-surface code reviews sequentially, and delivering a local Markdown
+> report (Step 0's alternative output). Use it when Steven wants a deep-dive UI/UX assessment of the **live**
 > app at `ritmofit.studio`, judged both against this repo's own design canon and against
 > general modern web standards. This is the complement to
-> [`remote-prompts/technical/design-system.md`](./remote-prompts/technical/design-system.md):
+> [`design-system-drift.md`](./design-system-drift.md):
 > that one audits **local**, canon-only, unattended, and commits a markdown report; this one
 > audits **production**, canon **+ modern standards**, is interactive (asks scope questions
 > up front, needs the human logged into Chrome), and its deliverable is a **published
@@ -22,9 +25,8 @@
 ## Do not use when
 
 - The ask is canon-drift only (tokens vs code vs render) with no live-site requirement — use
-  `remote-prompts/technical/design-system.md` instead.
-- The ask is a quick delta check on recent commits — use
-  `remote-prompts/daily/changed-code-sentinel.md`.
+  `design-system-drift.md` instead.
+- The ask is a quick check of one recent change — review that diff directly.
 - No human is available to confirm Chrome extension access / log into the live account —
   this prompt needs a person in the loop for that.
 
@@ -159,15 +161,14 @@ are for. Stay free to do the live pass while they run.
 - **Published Artifact (default):** load the `artifact-design` skill, then the general
   Artifact publishing flow — a single HTML report, sections per surface, findings tables,
   screenshots where they carry evidence, an executive summary up top. This is a
-  conversation-owned artifact, separate from `agent-reports/` (which is reserved for
-  unattended remote-prompt runs) — do not write it there.
+  conversation-owned artifact; do not commit it to the repo.
 - **Local markdown / inline:** honor whichever Steven picked in Step 0.
 
 ## What this prompt deliberately does not do
 
 - It does not open a PR or edit product code — this is report-only, same spirit as the
   local design-system audit's Phase-3 rule, just for a different environment.
-- It does not replace `remote-prompts/technical/design-system.md`'s canon-integrity sweep
+- It does not replace `design-system-drift.md`'s canon-integrity sweep
   (token lint, prose-vs-token drift, guard-gap analysis) — that's a different, narrower,
   more mechanical pass better suited to an unattended local run.
 - It does not commit anything to git. If a finding is worth turning into tracked work,

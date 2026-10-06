@@ -1,7 +1,7 @@
 # Ritmo Studio Web — Status / Deploy History
 
 Archived dated build & deploy log. The live docs ([`DEVELOPMENT_PLAN.md`](./DEVELOPMENT_PLAN.md),
-[`milestones.md`](./milestones.md)) keep current state + milestone definitions; this file is the
+[`milestones.md`](./archive/milestones.md)) keep current state + milestone definitions; this file is the
 chronological record (PRs, Worker version ids, migration steps, per-slice detail).
 
 > Append-only. Newest entries first within each section, as in the source docs.

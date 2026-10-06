@@ -1,5 +1,9 @@
 # Next session — plan the playlist-to-class-to-Live fixes
 
+> **Superseded restart point (2026-10-06).** The restart steps below were overtaken by later work
+> (#484, #486, #488). Session state now lives in `ritmofit_dev_plan/handoffs/`; read this file only
+> as evidence for the 2026-10-03 audit.
+
 Codex full-close handoff, 2026-10-03. Begin in Plan Mode with the repository's
 [start-session prompt](../../../agent-prompts/daily/start-session.md). This guide
 records evidence and planning priorities; it does not authorize implementation,

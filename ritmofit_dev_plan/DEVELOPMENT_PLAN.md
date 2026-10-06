@@ -175,7 +175,7 @@ availability. StructClub includes community/sharing concepts, but Ritmo Studio's
 is the solo creator loop: planning, music selection, choreography, organization, rehearsal, live prompting,
 and provider-authorized playback as one instructor workflow. The old point-in-time StructClub audit is
 archived for provenance; active launch checks and deferrals now live in
-[`web-launch-readiness.md`](./web-launch-readiness.md).
+[`web-launch-readiness.md`](./archive/web-launch-readiness.md).
 
 ---
 
@@ -242,13 +242,13 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
 ## Milestones (headline)
 
-Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
+Full breakdown + acceptance criteria in [`milestones.md`](./archive/milestones.md).
 
 > **Where current status lives** (to avoid drift, this map carries no dated status):
 > - **Milestone state** (M1–M4 and Web Launch Readiness done; provider-authorized playback complete;
->   solo creator refinement active) → [`milestones.md`](./milestones.md).
+>   solo creator refinement active) → [`milestones.md`](./archive/milestones.md).
 > - **Launch gate** (go/no-go checklist, verification plan, deferrals) →
->   [`web-launch-readiness.md`](./web-launch-readiness.md).
+>   [`web-launch-readiness.md`](./archive/web-launch-readiness.md).
 > - **Chronological deploy/build log** (PRs, Worker version ids, migration steps, and dated production
 >   findings) → [`HISTORY.md`](./HISTORY.md), newest entry first. It is not live-state authority; use the
 >   independent Worker-version, D1, and SPA-hash checks in [`deployment-runbook.md`](./deployment-runbook.md).
@@ -278,7 +278,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 - **Web Launch Readiness ✅ done:** full production web loop verified, launch-blocking polish and
   operational gaps closed, Apple Sign In/provider credentials deployed, and deferrals documented.
   Checklist:
-  [`web-launch-readiness.md`](./web-launch-readiness.md).
+  [`web-launch-readiness.md`](./archive/web-launch-readiness.md).
 
 ---
 
@@ -286,7 +286,7 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 
 | File | Purpose |
 |---|---|
-| [`overview.md`](./overview.md) | Product context, the user, the problem, StructClub reference |
+| [`overview.md`](./archive/overview.md) | Product context, the user, the problem, StructClub reference |
 | [`decisions.md`](./decisions.md) | Every locked decision with rationale + tradeoffs |
 | [`architecture.md`](./architecture.md) | Cloudflare-native stack, repo layout, data flow, deployment |
 | [`schema.md`](./schema.md) | Current data model (D1/SQLite): tables, columns, relationships |
@@ -296,8 +296,8 @@ Full breakdown + acceptance criteria in [`milestones.md`](./milestones.md).
 | [`provider-playback-implementation.md`](./provider-playback-implementation.md) | As-built player architecture: all three provider adapters (SoundCloud, Apple Music, Spotify) live-verified; Live Mode preflight/auto-advance and Builder preview wired |
 | [`editing-granularity-scoping.md`](./editing-granularity-scoping.md) | As-built record of trim / beat-snap / free-placement; the granularity boundary (D13) and open follow-ups |
 | [`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) | Owner-approved class-building UX direction: simple run of show, optional precision score, timed exercise steps, rehearsal/Live test, and open contract decisions |
-| [`milestones.md`](./milestones.md) | Milestone breakdown, M1 build order, acceptance criteria |
-| [`web-launch-readiness.md`](./web-launch-readiness.md) | Completed web launch gate, verification plan, and live deferrals |
+| [`milestones.md`](./archive/milestones.md) | Milestone breakdown, M1 build order, acceptance criteria |
+| [`web-launch-readiness.md`](./archive/web-launch-readiness.md) | Completed web launch gate, verification plan, and live deferrals |
 | [`deployment-runbook.md`](./deployment-runbook.md) | Production deploy + rollback/recovery procedure, secrets matrix, smoke checks |
 | [`conventions.md`](./conventions.md) | Code style, naming, env, wrangler/D1, git, testing |
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
@@ -323,7 +323,7 @@ Forward work lives in the solo creator loop. The **creator-workstation-shell sli
 shelves, liked/saved cards, playlist browsing, Cycle/Pilates/HIIT template narrowing, and the unified
 Classes / Music / Live / Account navigation — **shipped 2026-07-07 (Worker `9d0a5710`)**. Provider-authorized
 playback for all three providers shipped 2026-07-06. Historical
-web launch deferrals remain in [`web-launch-readiness.md`](./web-launch-readiness.md); the old
+web launch deferrals remain in [`web-launch-readiness.md`](./archive/web-launch-readiness.md); the old
 cross-surface parity record remains in [`web-ios-parity.md`](./web-ios-parity.md), but it is not the
 current planning queue.
 
