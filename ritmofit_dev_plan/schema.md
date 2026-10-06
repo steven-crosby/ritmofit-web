@@ -264,7 +264,7 @@ Time-anchored segment bands for the class overview and Live Mode.
 Sections are class-level markers, not track children. The current run-payload emits sections **without** a
 section `id`; the DB row has an `id` but it is not included in the payload shape. **Open decision:** expose
 `id` in the run-payload (additive, two-line code change + OpenAPI regen) or keep sections positional-only
-by design. Tracked in `DEVELOPMENT_PLAN.md` → "Known deferred post-launch features."
+by design. Tracked in `DEVELOPMENT_PLAN.md` → "Backlog / Open Items" → "Deferred (owner decision)."
 
 ---
 
