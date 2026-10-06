@@ -50,7 +50,10 @@ Never deploy from this prompt unless the owner grants it in this session. Deploy
 
 ## 2. PR hygiene
 
-List open PRs (`gh pr list --state open` or the session's GitHub integration). For each:
+List open PRs (`gh pr list --state open` or the session's GitHub integration). **Before merging
+anything, finish §5's handoff and docs updates on the same branch** — a squash merge deletes the
+branch, so there is nowhere to commit them afterwards. State that only arises after the merge (a
+deploy, a post-merge production check) goes in a follow-up `docs:` PR. For each PR:
 
 - **This session's PR, finished, gate green — Solo mode:** default to merge — **squash**, delete
   the branch (`gh pr ready <n>` if draft, then `gh pr merge <n> --squash --delete-branch`). State
@@ -84,7 +87,9 @@ gate from `AGENTS.md` (includes `theme-classes`).
 ## 5. Handoff, docs, and status sync
 
 - [ ] **Handoff.** Write `ritmofit_dev_plan/handoffs/YYYY-MM-DD-<lane-slug>.md` from
-  `agent-prompts/templates/handoff.md` and commit it on this session's branch/PR:
+  `agent-prompts/templates/handoff.md` and commit it on this session's branch/PR **before** §2's
+  merge (describe the state the merge will produce, for example "`main` ahead of production by
+  #N once merged"):
   - Lane and Orchestrator: always (an idle lane writes `status: closed` with its evidence).
   - Solo: whenever anything is in flight, a next action is owed, an owner decision is open, or
     `main` is ahead of production. Skip only when HISTORY/DEVELOPMENT_PLAN already say everything.

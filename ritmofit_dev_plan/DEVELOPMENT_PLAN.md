@@ -1,11 +1,41 @@
 # Ritmo Studio — Development Plan
 
-> **Read this first.** Entry point for any AI assistant (or human) working in this repo. It explains
-> what we're building, the decisions locked in, the platform realities that constrain every music
-> feature, and where to find detail. Deep context lives alongside this file; this is the map.
->
-> This plan began as the synthesis of earlier draft plans. The draft sources are no longer part of the
-> live documentation set; use the index below for current source-of-truth files.
+> **Read this first.** Entry point for any AI assistant (or human) working in this repo. **"Now"** is
+> the only dated block: current focus, the next step, open owner decisions, and `main` vs production.
+> The rest is the stable map — what we're building, locked decisions, hard constraints, and the
+> backlog. Shipped history lives in [`HISTORY.md`](./HISTORY.md); what a session or lane still owes
+> forward lives in [`handoffs/`](./handoffs/README.md). Keep "Now" under ~30 lines: when it changes,
+> move the superseded text into a HISTORY entry instead of letting it accumulate here.
+
+---
+
+## Now
+
+*Last updated 2026-10-06 (Claude Code docs-workflow session). Verify before relying on it.*
+
+- **Focus:** music-led Phase 1 ([D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30),
+  [plan](./music-led-instructor-workflow-plan.md)) — reliable, honest Apple Music Live playback,
+  desktop Chrome first (Cycle and Pilates), then iPhone. Spotify is tabled (owner, 2026-10-02).
+- **Production, last recorded 2026-10-04** ([HISTORY](./HISTORY.md)): source `efd542b`, Worker
+  `1053f665-ebf1-4d8c-be40-16ddfdea908f`, SPA `assets/index-B8JJicuF.js`, remote D1 no pending
+  migrations; rollback Worker `1ae3e216-89a6-4bbd-aec0-38f01bc600ff`. Not live-checked on
+  2026-10-06 (cloud session without production access).
+- **`main` is ahead:** [#488](https://github.com/steven-crosby/ritmofit-web/pull/488)
+  (`7c69786`, merged 2026-10-04, CI green) keeps Apple Music's observed endpoint through MusicKit's
+  queue teardown — the fix for the 3:43 natural-boundary failure seen in production on 2026-10-04.
+  Local real-Chrome first boundary passed; **not deployed, no production acceptance yet.**
+- **Next step:** deploy #488 per the [runbook](./deployment-runbook.md), then repeat the natural
+  first-song boundary and a full uninterrupted Cycle class in real Chrome with Apple Music on fixture
+  `bc488d5c-7dc5-4414-a7d2-4ef26601deae`; capture provider state/position/duration if it fails.
+- **Then:** iPhone Safari Apple Music investigation (fully close the Music app, reload, retry; if it
+  still fails, capture the MusicKit error at Start/Retry via Safari Web Inspector), and the
+  playlist-to-teaching-draft product decision (backlog).
+- **Owner decisions open:** playlist-derived teaching-draft policy; playback-liveness alerting; F-02
+  (D11 `createPattern`); NotFound/ErrorBoundary warmth; review/delete of every `[QA]` production fixture
+  still present — HISTORY records several sets left for review since 2026-09-28 (#468, #481, the
+  [2026-10-03 audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md) six plus four more seen
+  that day, goal-template, and `bc488d5c…`); inventory the live Classes list by the `[QA]` prefix /
+  `qa-fixture` tag rather than trusting any one list, per [`prod-fixture-hygiene.md`](./prod-fixture-hygiene.md).
 
 ---
 
@@ -37,127 +67,6 @@ Pilates, and HIIT.
   prompter-only path. API credentials are technical access, not proof of commercial or in-studio-use
   permission. Re-review provider terms and obtain any required written approval before public launch,
   monetization, or meaningful scale.
-- **Current operating focus (2026-10-04):** the Live zoom fix (#486) and natural
-  song-end precision fix (#484) are deployed. Released source is
-  `efd542b88552d29c94d7b0edad484f29f244d20c`, Worker
-  `1053f665-ebf1-4d8c-be40-16ddfdea908f`, SPA entry `assets/index-B8JJicuF.js`;
-  remote D1 has no pending migrations. Production Chrome at actual 200% zoom
-  measured 600×304 CSS pixels: current/Next guidance, compact timecode, transport,
-  view/Exit controls, and waiting recovery remained reachable. Full List retained
-  the entire manually authored long QA cue and kept controls visible at its bottom.
-  The natural Apple Music first-song transition **failed again at 3:43** in the
-  fresh Cycle QA fixture: music ended before the saved playback window. Teaching
-  time held and failure recovery remained visible. Full uninterrupted Cycle/Pilates
-  classes and audible acceptance remain unverified. Spotify testing
-  stays paused; iPhone and HIIT testing remain outside this desktop follow-up.
-  **Next step:** capture the Apple adapter’s final state/position/duration and
-  finish-event ordering, propose a regression-backed boundary fix without weakening
-  genuine early-end protection, then repeat natural desktop playback acceptance.
-  The later product decision is the editable playlist-derived teaching draft and Classes/Music creation
-  policy using the [audit and restart guide](../docs/audits/playlist-to-live-2026-10-03/NEXT_SESSION.md).
-  Empty blocks still disable Run live. No teaching-draft implementation, readiness
-  change, schema/API choice, or 15-song cap is authorized by this release.
-  See [`HISTORY.md`](./HISTORY.md).
-  Earlier #465 previews a recipe's exact blocks in the
-  create dialog and cleans up block guidance text. The recipe content review is resolved
-  and deployed (#470): new classes get `cycle_*_v2` (easy valley before a shorter
-  peak) and `hiit_45_v2`/`hiit_60_v2` (4-minute finisher at every length); v1 recipes are
-  frozen by a snapshot test. The block editor's first slice (#463)
-  edits planned block time and HIIT rounds/intervals inline, keeps the class
-  target fixed, and shows the target gap and any HIIT mismatch. PR #467 added
-  label, intensity, goal, and focus editing. Deployed PR #468 completes scaffold-block
-  add, reorder, and empty-block delete. See
-  [`class-template-handoff.md`](./class-template-handoff.md) for the settled rules.
-  **SPC-09 remains pending:** design the API signals that separate permission from
-  provider-error before adding those UI states.
-  PROD-HYGIENE is complete: four owner-confirmed fixtures were tagged and deleted
-  2026-09-28 (see [`HISTORY.md`](./HISTORY.md)). Full Pulse Check disposition lives in
-  [`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
-  **Prior Pulse Check deploys:** batch 2 PRs #420, #422 — Worker
-  `5d659102-3bff-4398-91ad-cdc1d165ccc1` from main `dd625b5` (recorded in #423);
-  batch 1 PRs #412, #414, #415 — Worker `edaa62b0-8957-486c-b953-24eae2b0fd33` from
-  main `38f8526` (recorded in #416), from the same-day [Studio Pulse
-  Check](https://claude.ai/code/artifact/28aaf27a-434f-46c5-a163-f301c0ab2238) live UX
-  audit (Intensity picker P0, AUTH-A11Y + OD-01, SOURCE-ARTWORK).
-  Prior deploy: **PRs #401–#403, #406** — Worker `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7` from
-  main `4031d5b`. Playback-liveness `classify()` now lets provider transport win over a
-  zero-tick host rAF loop instead of short-circuiting to a false `host_stalled` verdict
-  (`host_stalled` removed from `LivenessVerdict`); hono bumped to `4.13.7` (patches three
-  moderate GHSAs) with an unused `better-auth`→`vitest` peer stripped; the signup screen no
-  longer claims invitation-only copy in open-access mode (`Login.tsx` eyebrow/footer now
-  follow the same `inviteOnly` flag, #406); plus session-prompt doc tightening. Observer
-  remains inert (still observe, never alert, never call `fail()`). No schema, migration, or
-  shared-contract change; no remote D1 change. The six
-  2026-07-24 design-audit implementation slices already landed
-  and shipped (2026-07-27); they are not current work. Remaining owner calls: the
-  alerting half of playback liveness, and F-02 (D11 `createPattern`, still unconfirmed).
-  The class-cover decision is resolved (title-on-art, #454, deployed 2026-09-27). The product track remains the **D21 creator-workstation-shell
-  slice** — the first slice (Cycle/Pilates/HIIT templates,
-  readiness + discovery resting state, provider shelves) is deployed; the **saved-playlist browsing
-  sub-slice is now implemented and deployed (Worker `ded27a07`)** (new `GET
-  /providers/:provider/playlists` + `GET /providers/:provider/playlists/:playlistId/tracks`
-  endpoints; TrackSearch "Saved playlists" mode with per-playlist drill-in, individual track
-  preview/add, and "Import all N" bulk-import; resting shelf cards show live playlist counts and open
-  `PlaylistBrowserDialog` to create a class from any playlist; all three providers integrated —
-  Spotify OAuth, SoundCloud OAuth, Apple Music Music-User-Token). Alongside the
-  **provider-authorized playback initiative**. SoundCloud, Apple Music, and Spotify Web Playback SDK
-  adapters are now registered and live-verified for Builder clip-window preview (`TrackPreview.tsx`,
-  manual/single-track/no-auto-advance) and Live Mode. The **2026-07-06 batch made the player usable
-  across all three providers**: SoundCloud plays via the public Widget without a live connection,
-  Apple Music `authorize()` recovers instead of freezing, Spotify plays in-app for Premium users via
-  the official Web Playback SDK, older Spotify connections missing playback scopes surface a reconnect
-  action, and Spotify-only tracks can still be **resolved cross-provider** to a playable equivalent.
-  Teams, Sharing, Publish, and Explore stay hidden/dormant (D20). The **2026-07-07 workstation-shell
-  consolidation** then unified primary navigation to the four locked destinations — **Classes, Music,
-  Live, Account**: Music is a first-class provider/source workspace (saved-playlist *and* liked-tracks
-  browsing on its shelves), Live is a runnable-class queue with preflight readiness, and Account is an
-  in-page settings workspace (Profile, Preferences, Music Connections, Security). Liked-tracks browsing
-  (browse likes → create a class from likes) now appears in both the Classes resting state and the
-  Music workspace via a shared provider-browse hook. Earlier production application code
-  included the 2026-09-23 #450 Worker `b4ac663d` from `c2dbd75`, preceded by
-  the 2026-09-23 #440/#443–#448 Worker `4f5cfb73` from `c5531a0`, then
-  the 2026-09-19 #438 Classes-home Worker `b4a99062` from `54c3bf7`, then
-  the 2026-09-19 #429 Worker `3b39fac6` from main `51a6ade`, then the
-  2026-09-17 #417/#418/#419/#424/#425 Worker
-  `ad638215-6758-498c-8782-522e23a6d942` from main `4ddddeb`, then the 2026-09-13
-  #420/#422 Worker
-  `5d659102-3bff-4398-91ad-cdc1d165ccc1` from main `dd625b5`, then the 2026-09-13
-  #412/#414/#415 Worker `edaa62b0`, then the 2026-09-13 #406 Worker
-  `c77ba5c9-0ea2-43d4-8272-b98a1ac1d3e7` from main `4031d5b`,
-  and before that the 2026-09-13 #401–#403 Worker `8a6318e4-1f32-4c47-8651-6cde7416b9ca` from main `37c437d`,
-  and before that the 2026-09-06 #399 Worker `5ae8b540-ffe6-45cc-98a8-c82e5c3caa31` from main
-  `b340ddf`.
-  Earlier trail (not current alignment; deployment checkout `dc998dd`, application source
-  `68dfc27`, 2026-07-16): all-harden round 19 (#322–#324) is deployed in Worker
-  `9d144446-bd89-4792-9fda-64220eb122b9`, serving SPA asset `assets/index-BoLBQItP.js`; there was no
-  schema/migration change. The release fails closed on malformed later Apple saved-playlist pages,
-  refreshes class recency after non-empty playlist URL imports, and fails closed during racing Live
-  connection refreshes. The preceding mixed round 18 deployment was Worker
-  `85b139e3-981d-44a5-b3ff-29389d1e8ce4` from main `79be29c`. The preceding mixed round 17 deployment was Worker
-  `de9f5cc5-f697-4f40-89e3-a9ba5e48b37b` from main `31fbba1`. The preceding private-beta hardening deployment was Worker
-  `b4449c8d-5978-4298-9c6e-e222791a208f` from main `115b003`. The invite-only beta deployment was Worker
-  `2b390842-8f71-4086-a59a-6ea3050d4882` from main `3e21611`. The preceding deployed all-harden
-  release was Worker `4e009966-6a4c-47ef-8994-c88aa6613680` at `ad53541`: public-cover auth-contract
-  repair and class-copy OpenAPI correction (#297), strict Apple playlist pagination failure handling
-  (#298), mutually exclusive saved-playlist add actions (#299), and the clipped-placement
-  duration-shrink guard (#300). The prior coherent code deployment was
-  **2026-07-12 (Worker `a83a71d2`)** — twelfth parallel lane-agent round (mixed polish/harden,
-  THREE-lane round, D21 loop): three disjoint-lane slices — bound Spotify catalog `getPlaylist` paging
-  to 500 tracks (#288, BE); bound `offsetMsSchema` to `MAX_DURATION_MS` (#289, BE); and focus
-  management for adding tracks and inspector (#290, FE) — **no schema/migration** (supersedes `1a6c1d5a`).
-  The **eleventh parallel round (2026-07-11, polish-led mixed, D21 loop) deployed prior
-  (Worker `1a6c1d5a`, superseding `b0d0fe54`)**: return focus after removing a track (#286), surface
-  playback-reconnect state in Connections (#285), cancel pending provider purge on reconnect (#284),
-  and return 422 for an inverted clip window (#283) — **no schema/migration**.
-  The **ninth parallel round (2026-07-11, all-feature, D21 loop) deployed earlier the same session
-  (Worker `209a2a13`, superseding `b883cae9`)**: dragged track starts snap to the preceding track's
-  beat grid in free mode (#274), whole-class copy carries `timelineMode` + authored free-mode offsets
-  (#273), and playlist import-by-URL reaches parity — SoundCloud and Apple Music catalog playlists
-  join Spotify, with `providerCapabilities.playlistImport` now true for all three (#275) — **no
-  schema/migration**. Round-9 live provider checks (real SoundCloud/Apple catalog playlist-URL
-  imports, Apple library-link 400) remain owner-pending. For deployment chronology see
-  [`HISTORY.md`](./HISTORY.md), newest first; determine current production state with the independent
-  Worker-version and SPA-hash checks in [`deployment-runbook.md`](./deployment-runbook.md).
 
 **The core product insight:** today instructors build a playlist in Spotify/Apple Music/SoundCloud,
 then import it into a separate app (e.g. StructClub) to choreograph, then run it live in a third mode.
@@ -173,9 +82,8 @@ Ritmo Studio intentionally diverges where provider constraints require it: playb
 Ritmo Studio only through official provider SDKs/widgets, while providers still own the audio stream and
 availability. StructClub includes community/sharing concepts, but Ritmo Studio's current improvement target
 is the solo creator loop: planning, music selection, choreography, organization, rehearsal, live prompting,
-and provider-authorized playback as one instructor workflow. The old point-in-time StructClub audit is
-archived for provenance; active launch checks and deferrals now live in
-[`web-launch-readiness.md`](./archive/web-launch-readiness.md).
+and provider-authorized playback as one instructor workflow. The old point-in-time StructClub audit and the completed launch gate are archived for provenance
+([`archive/`](./archive/README.md)).
 
 ---
 
@@ -227,9 +135,9 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
 ## Working agreement for AI assistants
 
-1. **Plan before code.** For any feature, propose files, schema impact, API surface, frontend impact,
-   risks, and verification — then wait for confirmation. Use the plan→confirm template in
-   [`../AGENTS.md`](../AGENTS.md) → "Working Agreement".
+1. **Follow [`../AGENTS.md`](../AGENTS.md)** — it is canonical, including "Working Agreement" (plan →
+   confirm before substantial work) and "Session Workflow" (start-session → plan → PR → close-session
+   → handoff; lanes never merge).
 2. **Respect the hard constraints above.** Never cache audio, pull Spotify BPM, or mix audio in-app.
 3. **The shared package is the contract.** Entity shapes live once in `packages/shared`; don't
    redefine them in `apps/api` or `apps/web`.
@@ -242,43 +150,20 @@ Rationale + named tradeoffs for each: [`decisions.md`](./decisions.md).
 
 ## Milestones (headline)
 
-Full breakdown + acceptance criteria in [`milestones.md`](./archive/milestones.md).
+Backend **M1–M4 are complete and deployed**, the web launch gate is complete, and the app is live at
+`https://ritmofit.studio` (one Worker, single origin). Provider-authorized playback is complete for all
+three providers (2026-07-06). The active track is the solo creator loop (D20/D21) and, within it,
+music-led Phase 1 (D24). Community surfaces are dormant scaffolding, not active product.
 
-> **Where current status lives** (to avoid drift, this map carries no dated status):
-> - **Milestone state** (M1–M4 and Web Launch Readiness done; provider-authorized playback complete;
->   solo creator refinement active) → [`milestones.md`](./archive/milestones.md).
-> - **Launch gate** (go/no-go checklist, verification plan, deferrals) →
->   [`web-launch-readiness.md`](./archive/web-launch-readiness.md).
-> - **Chronological deploy/build log** (PRs, Worker version ids, migration steps, and dated production
->   findings) → [`HISTORY.md`](./HISTORY.md), newest entry first. It is not live-state authority; use the
->   independent Worker-version, D1, and SPA-hash checks in [`deployment-runbook.md`](./deployment-runbook.md).
-> - **Paused iOS parity record** → [`web-ios-parity.md`](./web-ios-parity.md) (kept for contract/design
->   sync context, not a current product gate).
-> - **Contributor + deployment instructions** → [`../AGENTS.md`](../AGENTS.md) and
->   [`deployment-runbook.md`](./deployment-runbook.md).
->
-> The headline: backend **M1–M4 complete and deployed**, the web launch gate is green, and the app is
-> live at `https://ritmofit.studio` (one Worker, single origin). The active track is solo creator
-> refinement. Provider-authorized playback is complete (all three adapters live as of 2026-07-06). Community surfaces are
-> preserved as dormant scaffolding, not active product.
-
-- **M1 ✅ done: Auth + class/cue data model — schema-complete, routes-lean.** Modeled the
-  expensive-to-retrofit relationships now (provider-agnostic tracks, many-to-many teams, owner+shares);
-  routes in builder-first order — class builder + cues/moves end-to-end (with a **mock-track seam**)
-  before teams/sharing routes. No provider API calls; BPM hand-entered. Versioned **run-payload** ships.
-- **M2 ✅ done: Music-provider integration.** SoundCloud first; search, provider-ID resolution, optional
-  third-party BPM, deep-link playback. SoundCloud, Spotify, and Apple Music catalog adapters are live
-  when production credentials are present; unsupported account-specific capabilities stay hidden by the
-  shared provider-capability matrix.
-- **M3 ✅ done: Live mode + iOS parity polish.** Cue prompter, interval timers; run-payload hardened.
-- **M4 ✅ done historically, now dormant: Explore / sharing UX** on the M1 `shares` model —
-  share-by-email, team-sharing, and the Explore feed (publish via `classes.visibility`, public VIEW
-  floor, `GET /explore`, save-a-copy). These routes/schema pieces remain in place, but the current web
-  product hides Teams, Sharing, Publish, and Explore while solo creator refinement is active.
-- **Web Launch Readiness ✅ done:** full production web loop verified, launch-blocking polish and
-  operational gaps closed, Apple Sign In/provider credentials deployed, and deferrals documented.
-  Checklist:
-  [`web-launch-readiness.md`](./archive/web-launch-readiness.md).
+- **M1 ✅ Auth + class/cue data model** — schema-complete, routes-lean, versioned run-payload.
+- **M2 ✅ Music-provider integration** — SoundCloud, Spotify, Apple Music catalog adapters; the shared
+  provider-capability matrix hides unsupported account-specific capabilities.
+- **M3 ✅ Live mode + run-payload hardening.**
+- **M4 ✅ historically, now dormant: Explore / sharing** — routes and schema remain; Teams, Sharing,
+  Publish, and Explore stay hidden (D20).
+- **Web Launch Readiness ✅** — gate and deferrals archived in
+  [`archive/web-launch-readiness.md`](./archive/web-launch-readiness.md); full milestone definitions in
+  [`archive/milestones.md`](./archive/milestones.md).
 
 ---
 
@@ -286,298 +171,102 @@ Full breakdown + acceptance criteria in [`milestones.md`](./archive/milestones.m
 
 | File | Purpose |
 |---|---|
-| [`overview.md`](./archive/overview.md) | Product context, the user, the problem, StructClub reference |
+| [`handoffs/`](./handoffs/README.md) | One file per session or lane: in flight, next action, open owner decisions |
+| [`HISTORY.md`](./HISTORY.md) | Dated build/deploy/verification log (PRs, Worker versions, migrations), newest first |
 | [`decisions.md`](./decisions.md) | Every locked decision with rationale + tradeoffs |
+| [`music-led-instructor-workflow-plan.md`](./music-led-instructor-workflow-plan.md) | D24 phased plan: connection/playback reliability → mobile teaching clarity → Builder speed/rehearsal |
+| [`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) | Owner-approved class-building UX direction: run of show, optional precision score, timed exercise steps |
+| [`class-template-handoff.md`](./class-template-handoff.md) | Settled scaffold/recipe rules for class templates (a product spec, not a session handoff) |
+| [`class-scaffold-contract.md`](./class-scaffold-contract.md) | Cross-lane contract for class scaffolds and the Classes home |
 | [`architecture.md`](./architecture.md) | Cloudflare-native stack, repo layout, data flow, deployment |
 | [`schema.md`](./schema.md) | Current data model (D1/SQLite): tables, columns, relationships |
 | [`api.md`](./api.md) | REST surface, run-payload, auth, error conventions |
 | [`authorization.md`](./authorization.md) | The ownership + sharing access model (app-level gate) |
 | [`music-providers.md`](./music-providers.md) | The three hard constraints; BPM/playback strategy |
-| [`provider-playback-implementation.md`](./provider-playback-implementation.md) | As-built player architecture: all three provider adapters (SoundCloud, Apple Music, Spotify) live-verified; Live Mode preflight/auto-advance and Builder preview wired |
-| [`editing-granularity-scoping.md`](./editing-granularity-scoping.md) | As-built record of trim / beat-snap / free-placement; the granularity boundary (D13) and open follow-ups |
-| [`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) | Owner-approved class-building UX direction: simple run of show, optional precision score, timed exercise steps, rehearsal/Live test, and open contract decisions |
-| [`milestones.md`](./archive/milestones.md) | Milestone breakdown, M1 build order, acceptance criteria |
-| [`web-launch-readiness.md`](./archive/web-launch-readiness.md) | Completed web launch gate, verification plan, and live deferrals |
-| [`deployment-runbook.md`](./deployment-runbook.md) | Production deploy + rollback/recovery procedure, secrets matrix, smoke checks |
+| [`provider-playback-implementation.md`](./provider-playback-implementation.md) | As-built player architecture for all three provider adapters, Live preflight/auto-advance, Builder preview |
+| [`editing-granularity-scoping.md`](./editing-granularity-scoping.md) | As-built trim / beat-snap / free-placement; the granularity boundary (D13) |
+| [`deployment-runbook.md`](./deployment-runbook.md) | Production deploy + rollback/recovery, secrets matrix, smoke checks |
+| [`prod-fixture-hygiene.md`](./prod-fixture-hygiene.md) | Naming/tagging and cleanup of `[QA]` fixtures created in production |
 | [`conventions.md`](./conventions.md) | Code style, naming, env, wrangler/D1, git, testing |
 | [`glossary.md`](./glossary.md) | Domain terms (cue, move, class_track, share, etc.) |
-| [`../agent-prompts/daily/close-session.md`](../agent-prompts/daily/close-session.md) | End-of-session runbook — say "run close-session" |
-| [`HISTORY.md`](./HISTORY.md) | Archived dated build/deploy log (PRs, Worker versions, migration steps) |
-| [`web-ios-parity.md`](./web-ios-parity.md) | Paused web ↔ iOS parity record: useful sync points and historical backlog, superseded as a current product gate by D20 |
-| [`archive/structclub-parity-audit.md`](./archive/structclub-parity-audit.md) | Archived point-in-time StructClub competitive audit; active takeaways are consolidated into `web-launch-readiness.md` |
+| [`web-ios-parity.md`](./web-ios-parity.md) | Paused web ↔ iOS parity record (sync context, not a current gate; D20) |
+| [`archive/`](./archive/README.md) | Superseded docs (overview, milestones, launch readiness, Classes-home proposal) and the retired remote maintenance loop |
+| [`../agent-prompts/README.md`](../agent-prompts/README.md) | Session workflow prompts: start/close-session, parallel rounds, templates, audit packs |
 
 ---
 
 ## Backlog / Open Items
 
-**Live zoom checkpoint (2026-10-04):** #486 merged as `eeec377add5294850a78334ef120374f26f23e14`
-and shipped in Worker `1053f665`. The full local gate and exact-commit CI passed. Production
-Chrome at actual 200% zoom (600×304 CSS pixels) passed cue/Next visibility, compact timecode,
-Full List text retention and bottom scrolling, persistent transport/view/Exit controls,
-keyboard Exit, waiting recovery, and a real natural-boundary failure panel. Local fixtures also passed at 320×304 CSS pixels and
-cover asynchronous readiness focus and failure recovery. This does not establish phone or
-full-class provider acceptance. Run-live readiness, teaching-draft policy, and playback
-behavior are unchanged by #486.
+Curated forward work. Shipped detail and evidence live in [`HISTORY.md`](./HISTORY.md); the
+2026-10-06 entry there preserves the narrative this section replaced.
 
-Forward work lives in the solo creator loop. The **creator-workstation-shell slice (D21)** — discovery
-shelves, liked/saved cards, playlist browsing, Cycle/Pilates/HIIT template narrowing, and the unified
-Classes / Music / Live / Account navigation — **shipped 2026-07-07 (Worker `9d0a5710`)**. Provider-authorized
-playback for all three providers shipped 2026-07-06. Historical
-web launch deferrals remain in [`web-launch-readiness.md`](./archive/web-launch-readiness.md); the old
-cross-surface parity record remains in [`web-ios-parity.md`](./web-ios-parity.md), but it is not the
-current planning queue.
+**Music-led workflow (D24) — active.** Phase 1 (1A connection recovery, 1B music-authoritative Live
+clock, 1C truthful preflight with explicit Apple browser authorization) shipped 2026-10-02 (#478).
+Remaining for Phase 1 acceptance: production natural boundaries and full uninterrupted classes
+(see Now), audible output, iPhone Safari behavior, and interruption handling; scenarios in the
+[acceptance record](../docs/audits/music-led-phase-1-acceptance/README.md). Later phases await owner
+approval.
 
-**Music-led implementation planning (2026-09-30):** [D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30)
-records the owner's decision: music drives class creation and instruction until the instructor
-explicitly chooses otherwise. Real-iPhone recordings exposed connection friction and silent Apple
-Music preparation while teaching time advanced. The [phased workflow plan](./music-led-instructor-workflow-plan.md)
-proposes connection/playback reliability and honest readiness first, mobile teaching/editing clarity
-next, then Builder speed/rehearsal and timed exercise steps. Phase 1 implementation is authorized, starting with 1A;
-release remains separately gated. SPC-09 remains open; replacing it as the next implementation focus
-is approved for Phase 1. Connection recovery (1A), the music-authoritative Live clock (1B), and truthful preflight with explicit Apple browser authorization (1C) were deployed on 2026-10-02 (#478, Worker `e4744ca1`). The dated first-round results are in the [acceptance record](../docs/audits/music-led-phase-1-acceptance/README.md): Apple Music was audible on the owner’s Mac test build, while iPhone Safari failed or hung. These observations do not establish acceptance of the October 4 release (#486). Real-device audible playback and interruption acceptance remain. Later phases await approval.
+**Playlist → class → Live teaching draft — product gap, owner decision.** Imports preserve source
+order but create no exercise blocks, generic cues, or notes; the Classes template path puts all songs
+into its first fixed block and leaves empty blocks that disable Run Live. Ranked fix sequence and QA
+fixture IDs: [desktop audit 2026-10-03](../docs/audits/playlist-to-live-2026-10-03/coverage.md).
+No teaching-draft, readiness, schema/API, or 15-song-cap change is authorized yet.
 
-**Spotify tabled (owner decision, 2026-10-02):** Spotify work and Spotify acceptance testing are
-paused until UI/UX and Live playback with Apple Music are completed and hardened. Spotify stays
-connected in the product but is not a release gate, and no Spotify-specific readiness claim should
-be made meanwhile. Known open item when it resumes: the connected Spotify account is rejected by the
-Spotify developer app ("The user is not registered for this application"), so every Spotify Web API
-call returns `403`.
+**Class-building direction.** The [class-score blueprint](./instructor-class-score-blueprint.md)
+proposes a 20-minute HIIT interaction prototype and contract proposal as its first slice; it does not
+authorize implementation. Recipe/scaffold rules: [`class-template-handoff.md`](./class-template-handoff.md).
 
-**Earlier iPhone investigation handoff (2026-10-02):** the proposed first check was to
-fully close the iOS Music app, reload Ritmo, and retry the Apple Music class. If the failure
-persists, use Safari Web Inspector to capture the MusicKit error at Start and Retry before
-choosing a web-adapter fix or native iOS playback plan. This remains unresolved; the October 3
-desktop audit and current focus above determine the next session’s immediate scope.
+**Instructor benchmark gaps (2026-09-29)** — findings only; evidence in
+[`docs/audits/instructor-benchmark-2026-09-29/evidence/`](../docs/audits/instructor-benchmark-2026-09-29/evidence/README.md):
 
-**Class-building design direction:** The owner-approved
-[`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) sets the target for a
-simple run of show with optional precision editing and named timed exercise steps in rehearsal/Live.
-Its first proposed slice is a 20-minute HIIT interaction prototype and contract proposal; it does not
-change the current recipe catalog or authorize implementation.
+- Verify Apple Music from web Live on a real iPhone for a full class (Bluetooth output, screen
+  locked/unlocked, one notification). The result decides web Live vs native iOS Live on the phone.
+- Ask the instructor what Struct Club's Live "Open" intensity means and where she sees a
+  beats-remaining count.
+- (P0) portrait-first glance screen; (P0) a class that finishes hands-free after one playback error;
+  (P1) cue plus per-cue note (schema change); (P1) beats-to-next-cue count; (P1) builder speed — mark a
+  cue at the playhead, copy a routine between songs; (P1) real rehearse mode; (P2) discipline-specific
+  effort words in Live.
 
-**Instructor benchmark (2026-09-29):** A benchmark of Ritmo's builder and Live against a Fitness+
-trainer's workflow and Struct Club, for the owner's household instructor. She teaches in person:
-Live on an iPhone for spin (portrait on the handlebars, glance-only, Apple Music over Bluetooth to
-the studio) and on an iPad for Pilates/HIIT, with classes built on a laptop. Scope is
-instructor-only. The evidence and findings are in
-[`docs/audits/instructor-benchmark-2026-09-29/evidence/`](../docs/audits/instructor-benchmark-2026-09-29/evidence/README.md);
-the full report is the owner's private artifact. This is findings only. It feeds the blueprint's
-prototype and authorizes no implementation. Open before any slice:
+**SPC-09 — provider permission vs provider error.** Design the API signals that separate a permission
+failure from a provider error before adding UI states (Studio Pulse Check; ledger:
+[`run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md)). Replaced as the
+next focus by Phase 1 (2026-09-30); still open.
 
-- Verify Apple Music playback from web Live on a real iPhone for a full class: Bluetooth output,
-  screen locked and unlocked, one notification during playback. MusicKit on the Web docs don't
-  address iOS Safari. The result decides whether the phone surface is web Live or native iOS Live
-  (which has no playback today).
-- Ask the instructor what Struct Club's Live "Open" intensity means, and where she sees a
-  beats-remaining count. None of her Struct Club evidence shows one.
-- Ranked gaps in web Live and the builder:
-  - (P0) a portrait-first glance screen. Landscape shows no cue text, and a long cue hides Next and
-    its countdown.
-  - (P0) a class that finishes hands-free. One playback error stops music until someone taps.
-  - (P1) cue plus a per-cue note. This is a schema change.
-  - (P1) a beats-to-next-cue count. Beat 1 can only be set to a whole second today.
-  - (P1) builder speed: mark a cue at the playhead, copy a routine between songs.
-  - (P1) a real rehearse mode.
-  - (P2) discipline-specific effort words in Live.
+**Spotify — tabled (owner, 2026-10-02)** until Apple Music UI/UX and Live playback are hardened. Stays
+connected, not a release gate, no readiness claims. Known issue when it resumes: the connected account
+is rejected by the Spotify developer app ("The user is not registered for this application"), so
+every Spotify Web API call returns `403`.
 
-**Design-audit implementation (2026-07-24) — landed, not current work:**
+**Open owner decisions:**
 
-The `claude` design-audit run is delivered and **owner-approved**: 18 backlog items disposition
-`approve`, and PDR-01/02/03 resolved (teaching-readiness default ordering · Music owns sourcing ·
-group-and-demote in the move library). All six implementation slices **already landed** (PRs
-#370, #375, #377, #378, #379, #380) and shipped 2026-07-27. They are not the active queue.
+- Alerting half of playback liveness (the observer still observes only; never alerts or calls `fail()`).
+- F-02: D11 `createPattern` remains unconfirmed
+  ([design-audit ledger](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md)).
+- `NotFound.tsx` / `ErrorBoundary.tsx` still use the heat-glow class that OD-01 removed from sign-in;
+  whether warmth should go there too was never decided.
 
-**Current application release (2026-10-04, after #486):** production serves released
-source `efd542b88552d29c94d7b0edad484f29f244d20c`. Application code is unchanged from
-merged `eeec377add5294850a78334ef120374f26f23e14`; the later #485/#480 merges contain
-only documentation. This includes Phase 1 (#478), ordered playlist-import recovery
-(#481), natural song-end precision (#484), and reachable Live teaching at 200% zoom (#486).
-Worker `1053f665-ebf1-4d8c-be40-16ddfdea908f` serves 100%; SPA entry
-`assets/index-B8JJicuF.js` matched three consecutive cache-busted fetches and the updated
-Chrome document. Remote D1 has no pending migrations. Rollback target:
-`1ae3e216-89a6-4bbd-aec0-38f01bc600ff`. All 12 local gate checks passed on the released
-source (1,528 unit tests and 184 integration tests). The paragraphs below retain the
-#481 verification and the October 3 audit that preceded #484/#486; their failures
-must not be presented as a test of the newly released build.
+**Pending live verification (non-blocking):**
 
-**Historical #481 and October 3 audit evidence:** CI and the full local gate
-passed on that release. Desktop Apple Music imports passed for Cycle/Pilates through Music and Classes-to-empty-class. A
-controlled response-loss test recovered the original ten placements after reload,
-and both disciplines passed prompter-only transport mechanics with accelerated
-completion. The October 3 desktop audit resolved browser sign-in and observed
-provider transport progress, pause/resume, seek/skip, manual notes/cues, and recovery.
-Both natural first-song transitions failed at 3:43 with “Music ended before the saved
-playback window.” Full uninterrupted completion is blocked by that defect; audible
-output remains unverified. No iPhone, Spotify, or HIIT testing was performed in this
-audit. These smokes do not establish universally reliable playback. The Phase 1 acceptance
-scenarios remain in
-[`docs/audits/music-led-phase-1-acceptance/`](../docs/audits/music-led-phase-1-acceptance/README.md).
+- Round-9 provider checks: real SoundCloud/Apple catalog playlist-URL imports and the Apple
+  library-link `400`.
+- Live-site SoundCloud audio: accept the PWA refresh and repeat audible Preview + Live pause/resume
+  once against a real public SoundCloud track.
 
-The playlist-based automatic teaching draft remains a product gap: source order is
-preserved, but imports create no exercise blocks, generic cues, or notes. The Classes
-template path imports all songs into its first fixed block and leaves empty blocks
-that disable Run Live. Six tagged QA fixtures remain for review; IDs, screenshots,
-scenario verdicts, and the ranked fix sequence are in the
-[desktop audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md).
-#470's v2 recipes remain deployed; a Worker rollback below `dd9a27e9` is unsafe once
-any v2-recipe class exists. The prior live Worker for this additive-migration
-release was `e4744ca1-11b0-4ad6-9382-ef8ad6f9b0a5`.
-See [`class-template-handoff.md`](./class-template-handoff.md). The alerting
-half of liveness remains an owner decision; F-02 (D11 `createPattern`) stays unconfirmed.
+**Deferred (owner decision):**
 
-- **Entry point:** [`docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md`](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md)
-- **Authority:** [`run-decisions.md`](../docs/audits/claude-design-audit-2026-07-24/run-decisions.md) —
-  the ledger, not any summary, is authoritative.
-- **Landed sequence:** [`implementation-sequence.md`](../docs/audits/claude-design-audit-2026-07-24/implementation-sequence.md).
-
-**Open production issues:**
-
-- None from the Studio Pulse Check P0. The Class Builder Intensity picker collapse
-  ([PR #412](https://github.com/steven-crosby/ritmofit-web/pull/412)) is merged and deployed with
-  AUTH-A11Y / OD-01 ([#414](https://github.com/steven-crosby/ritmofit-web/pull/414)) and
-  SOURCE-ARTWORK ([#415](https://github.com/steven-crosby/ritmofit-web/pull/415)) as Worker
-  `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
-  Batch 2 — LIVE-RUNTIME ([#420](https://github.com/steven-crosby/ritmofit-web/pull/420)) and
-  BUILDER-A11Y ([#422](https://github.com/steven-crosby/ritmofit-web/pull/422)) — is deployed as
-  Worker `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
-  Batch 3 — DESTRUCTIVE-CONTROLS ([#417](https://github.com/steven-crosby/ritmofit-web/pull/417)),
-  PROVIDER-TRUTH ([#418](https://github.com/steven-crosby/ritmofit-web/pull/418)),
-  RESPONSIVE-QA ([#419](https://github.com/steven-crosby/ritmofit-web/pull/419)),
-  semantic opacity ([#424](https://github.com/steven-crosby/ritmofit-web/pull/424)), and
-  LIVE-CONTROLS ([#425](https://github.com/steven-crosby/ritmofit-web/pull/425)) — is
-  deployed as Worker `ad638215` from main `4ddddeb`. LIVE-RUN-OF-SHOW
-  ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429)) shipped as
-  Worker `3b39fac6` from main `51a6ade`. **Current production is Worker
-  `1053f665` from `efd542b` (#486); see "Current application release" above
-  for the live state.**
-
-**Studio Pulse Check follow-up — batches 1–3 shipped; remaining open slices:**
-
-The other 21 findings have an authoritative disposition in
-[`docs/audits/studio-pulse-check-2026-09-13/run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md).
-Nineteen map to the ten scoped slices below. Three owner decisions are now resolved: the two original
-decision findings plus SPC-14's later implement-versus-docs decision.
-The two
-out-of-scope/unverified audit claims were independently checked before disposition. This list is the
-planning queue; the ledger preserves the finding-by-finding evidence and acceptance boundaries.
-
-- **LIVE-RUN-OF-SHOW — ✅ shipped ([#429](https://github.com/steven-crosby/ritmofit-web/pull/429); Worker `3b39fac6`):**
-  closes the minimum live-running gaps identified from Steven's 2026-09-19 StructClub recording and
-  same-day production verification. First distinguish a dead/unembeddable SoundCloud reference from a
-  coordinator or widget-transition defect: initial SoundCloud playback and automatic track advance
-  succeeded, and SoundCloud's public oEmbed endpoint returned `404` for the failed “CHOOSIN TEXAS…”
-  reference while returning `200` for the other three tracks in that class. No coordinator patch was
-  warranted. The merged implementation adds large, keyboard-accessible previous/next **track**
-  controls to the existing player rail and a compact rolling choreography queue that keeps the
-  current event plus three upcoming cues/moves and their derived interval durations visible without
-  displacing the cue-first hero. Intervals derive from existing event anchors and the track
-  boundary; there are no persisted duration fields or run-payload changes.
-  Preserve preflight, prompter-only mode, recovery, wake lock, provider-authoritative playback, and
-  the official-provider-only music constraints. Verified with 800 web tests, 151 integration tests,
-  typecheck/lint/build/design-system/theme/contract/audit gates, and local browser checks at desktop,
-  390px, and 320px; no Spotify playback was initialized. Steven approved this slice ahead of
-  ENERGY-RIBBON and approved its scoped implementation plan on 2026-09-19. Deployed 2026-09-19 as
-  Worker `3b39fac6` from main `51a6ade`.
-
-- **AUTH-A11Y (SPC-01–04) — ✅ shipped:** redundant auth status cues, one password
-  contract, reveal controls, and announced mode transitions. Bundled with the OD-01 implementation
-  below in [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414); deployed as Worker
-  `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
-- **PROVIDER-TRUTH (SPC-06, SPC-08) — ✅ shipped:** Dashboard Music/Account
-  headers use the centralized caution tone for “Session expired,” and connection-state marks
-  move to the shared `ConnectionStateMark` icon system in
-  [PR #418](https://github.com/steven-crosby/ritmofit-web/pull/418); deployed as Worker
-  `ad638215`. **SPC-09 is the next planning objective (owner, 2026-09-28)** —
-  permission/provider-error still need a backend-signal design before UI work.
-- **SOURCE-ARTWORK (SPC-07) — ✅ shipped:** new shared `TrackArt` component
-  (deterministic warm-gradient tile keyed by BPM band, or a stable identity hash when BPM is
-  unknown — never intensity, since Library rows must not infer class intensity) replaces the bare
-  note glyph. The audit named 2 sites (`SourceList.tsx`, `ClassSummaryView.tsx`); `Dashboard.tsx`
-  turned out to have 4 more instances of the identical pattern (including the class-cover
-  `ArtCollage` zero-art case) that weren't cited — all 6 fixed together in
-  [PR #415](https://github.com/steven-crosby/ritmofit-web/pull/415); deployed as Worker
-  `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
-- **DESTRUCTIVE-CONTROLS (SPC-10) — ✅ shipped:** Dashboard class deletion uses
-  the documented destructive pattern (transparent fill, ember text, mandatory error icon) for both
-  the initial and confirmation controls in
-  [PR #417](https://github.com/steven-crosby/ritmofit-web/pull/417); deployed as Worker
-  `ad638215`.
-- **BUILDER-A11Y (SPC-11–13, 15) — ✅ shipped:** restore focus, normalize mutation errors, and
-  announce validation and inline confirmations in
-  [PR #422](https://github.com/steven-crosby/ritmofit-web/pull/422); deployed as Worker
-  `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
-- **ENERGY-RIBBON (SPC-14) — ✅ shipped ([#432](https://github.com/steven-crosby/ritmofit-web/pull/432); Worker `29a72e1c`):**
-  documented hybrid ribbon — track intensity is the staircase baseline; placed-move intensity at
-  `anchorMs` holds until the next scored move or the track end. ClassPulse uses the same spans. No
-  schema change. Segment banding stays deferred. A scored placed move takes the class out of
-  provisional auto-shape. Steven approved the direction on 2026-09-19. Deployed 2026-09-19 as
-  Worker `29a72e1c` from `b70ded1`.
-- **LIVE-RUNTIME (SPC-16, 18) — ✅ shipped:** coalesce drag seeking and isolate animation-frame
-  rendering without changing provider-authoritative playback/liveness behavior in
-  [PR #420](https://github.com/steven-crosby/ritmofit-web/pull/420); deployed as Worker
-  `5d659102` (recorded in [PR #423](https://github.com/steven-crosby/ritmofit-web/pull/423)).
-- **LIVE-CONTROLS (SPC-19) — ✅ shipped:** disabled Live “Start class”
-  uses native `disabled` plus the documented ~40% opacity (never color-only) in
-  [PR #425](https://github.com/steven-crosby/ritmofit-web/pull/425); deployed as Worker
-  `ad638215`.
-- **RESPONSIVE-QA (SPC-20) — ✅ shipped:** stale narrow-width smoke locators
-  repaired, 390px intensity overflow and 320px tag-input overflow fixed, and
-  1280 / 953 / 680 / 390 / 320 plus 200% zoom verified (67/67) in
-  [PR #419](https://github.com/steven-crosby/ritmofit-web/pull/419); deployed as Worker
-  `ad638215`.
-- **Semantic color opacity — ✅ shipped:** Tailwind `/opacity` utilities on semantic
-  `var(--rf-*)` colors in [PR #424](https://github.com/steven-crosby/ritmofit-web/pull/424);
-  deployed as Worker `ad638215`.
-- **PROD-HYGIENE (SPC-21):** runbook landed in
-  [PR #426](https://github.com/steven-crosby/ritmofit-web/pull/426)
-  ([`prod-fixture-hygiene.md`](./prod-fixture-hygiene.md)). ✅ Live fixtures deleted
-  2026-09-28 with owner authorization (four classes; see [`HISTORY.md`](./HISTORY.md)).
-
-Resolved owner decisions (Steven, 2026-09-13):
-
-- **OD-01 / SPC-05 — sign-in warmth — ✅ shipped:** auth stays cool and quiet; the
-  heat glow is removed from `Login.tsx` and `ResetPassword.tsx` (both had it; only `Login.tsx` was
-  cited in the audit) in [PR #414](https://github.com/steven-crosby/ritmofit-web/pull/414); deployed
-  as Worker `edaa62b0` (recorded in [PR #416](https://github.com/steven-crosby/ritmofit-web/pull/416)).
-  `NotFound.tsx` and `ErrorBoundary.tsx` also use the same glow class and were deliberately left
-  alone — they're not "sign-in" and nobody decided about them; flagged for a separate owner call if
-  warmth should be removed there too.
-- **OD-02 / SPC-17 — Live data hero — ✅ docs in #425:** the next cue stays the visual
-  hero; BPM remains prominent but subordinate. Stale design docs and code comments that
-  still called BPM the 88px screenshot hero are updated here; no Live hierarchy rewrite.
-
-**Non-blocking production verification:**
-
-- **Live-site SoundCloud audio confirmation** — the owner heard the exact deployed code path locally
-  in both Preview and Live Mode, including full-track playback after the fixture correction. On the
-  next convenient live-site session, accept the PWA refresh and repeat audible Preview + Live
-  pause/resume once against a real public SoundCloud track; automated checks prove widget events and
-  production asset alignment, not human-heard production audio.
-
-**Known deferred post-launch features (not blocking, owner decision):**
-
-- **Google sign-in** — `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are unprovisioned; Google is excluded from the Login UI. See `deployment-runbook.md` for activation steps (owner deferral, 2026-06-28).
-- **Automatic BPM lookup (GetSongBPM)** — the adapter is built; `GETSONGBPM_API_KEY` is not provisioned in prod, so `POST /tracks/:id/bpm-lookup` returns `503`. Activate via `wrangler secret put GETSONGBPM_API_KEY`. (Owner deferral, 2026-06-28.)
-
-Recently closed (kept as pointers so the trail isn't lost):
-
-- **`sections[]` id in run-payload — ✅ shipped** (2026-07-10, PR #267, Worker `6b8e1a48`): the
-  run-payload section projection now carries the `class_sections` row `id` (additive, OpenAPI regen,
-  no migration), completing the id-everywhere pattern already applied to cues and moves so Live/editor
-  can correlate or deep-link a band even when two share a `type`. Server-derived `endOffsetMs` was
-  evaluated and deferred (no consumer needs it; iOS derives the band window client-side).
-
-- **Provider connect prerequisite for playback — ✅ verified** (2026-07-03, Worker
-  `94126954-0e61-408e-b404-bb380c338141`): Apple Music, SoundCloud, and Spotify production connect are
-  all verified working. SoundCloud required an OAuth request-shape fix; Spotify required registering
-  `https://ritmofit.studio/api/v1/providers/spotify/callback` in the Spotify app dashboard. See
-  [`deployment-runbook.md`](./deployment-runbook.md).
-- **"Songs by Move" / track-and-theme reverse search — ✅ shipped** (PRs #99; reverse move→songs search
-  + server-side class tag/theme search). See [`HISTORY.md`](./HISTORY.md).
-- **Cues vs. Notes — ✅ resolved + read-path shipped.** Decided *not* to split the schema; the
-  `class_tracks.notes` channel already existed end-to-end but was write-only, and Live mode now renders
-  it. If *anchored, per-moment* notes ever prove needed, add a `kind: 'cue' | 'note'` discriminator to
-  `cues` (additive) rather than a new table. Full decision (archived): [`archive/cues-vs-notes-decision.md`](./archive/cues-vs-notes-decision.md).
+- **Google sign-in** — `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` unprovisioned; Google is excluded
+  from the Login UI. Activation steps in `deployment-runbook.md` (deferred 2026-06-28).
+- **Automatic BPM lookup (GetSongBPM)** — adapter built; `GETSONGBPM_API_KEY` not provisioned, so
+  `POST /tracks/:id/bpm-lookup` returns `503`. Activate with `wrangler secret put GETSONGBPM_API_KEY`
+  (deferred 2026-06-28).
 - **Community surfaces** (Teams, Sharing, Publish, Explore, invites, collaborators, public class pages,
-  social discovery, marketplace/community browsing, share links, and rich Explore merchandising) are
-  explicitly deferred until the owner reopens them.
+  social discovery, share links, Explore merchandising) — deferred until the owner reopens them (D20).
+- **Cues vs notes split** — resolved as *don't split*; if anchored per-moment notes are ever needed,
+  add a `kind` discriminator to `cues` ([archived decision](./archive/cues-vs-notes-decision.md)).
+
+**Landed reference (not current work):** the 2026-07-24 design-audit implementation (six slices,
+shipped 2026-07-27; [kickoff](../docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md))
+and the Studio Pulse Check batches 1–3 (shipped through 2026-09-19; ledger above). #470's v2 recipes
+are deployed: a Worker rollback below `dd9a27e9` is unsafe once any v2-recipe class exists.

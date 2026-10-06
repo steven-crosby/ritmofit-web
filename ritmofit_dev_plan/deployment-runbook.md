@@ -48,7 +48,7 @@ of treating an old verification note as current state.
 set in prod, so `POST /tracks/:id/bpm-lookup` returns a `503` with an instructor-facing fallback
 message and manual BPM entry covers the loop. Set the key via
 `pnpm --filter @ritmofit/api exec wrangler secret put GETSONGBPM_API_KEY`
-post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). **BPM lookup is built but unprovisioned** (`GETSONGBPM_API_KEY` not set — activate at will); **Google sign-in is unprovisioned** (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` not set — activate when credentials are provisioned). Both tracked in `DEVELOPMENT_PLAN.md` → "Known deferred post-launch features."
+post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). **BPM lookup is built but unprovisioned** (`GETSONGBPM_API_KEY` not set — activate at will); **Google sign-in is unprovisioned** (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` not set — activate when credentials are provisioned). Both tracked in `DEVELOPMENT_PLAN.md` → "Backlog / Open Items" → "Deferred (owner decision)."
 
 ## Pre-deploy
 
