@@ -49,7 +49,7 @@ cues/placed moves. Wall-clock milliseconds is the provider-independent default.
 schema as a design concept, then **shipped** in the design-system builder build as the `class_sections`
 table (migration `0006`) with a fixed `segmentType` enum
 (`warm_up`/`climb`/`sprint`/`recovery`/`cool_down`); the run-payload carries an additive `sections[]`.
-See `decisions.md` and `milestones.md` slice 16.
+See `decisions.md` and slice 16 in `HISTORY.md`.
 
 **Team** — Dormant D20 scaffolding for a future studio/group workflow. Many-to-many with users via
 `team_memberships`. Team roles (owner/admin/member) govern *membership management*, not class access.

@@ -36,7 +36,8 @@ here** — an inbox you drain is the difference between capture and hoarding.
 | Breadcrumb is…                          | Route it to                                                  | Then                 |
 | --------------------------------------- | ------------------------------------------------------------ | -------------------- |
 | A decision or locked principle          | `ritmofit_dev_plan/decisions.md` (D-number, the D18 pattern) | delete the line      |
-| "Build / fix this next", scope          | `ritmofit_dev_plan/DEVELOPMENT_PLAN.md` / `milestones.md`    | delete the line      |
+| "Build / fix this next", scope          | `ritmofit_dev_plan/DEVELOPMENT_PLAN.md` backlog              | delete the line      |
+| In-flight state owed to a next session  | that session's `ritmofit_dev_plan/handoffs/` file            | delete the line      |
 | Forward parity work                     | `ritmofit_dev_plan/web-ios-parity.md`                        | delete the line      |
 | A non-obvious fact to outlive this work | the most specific durable doc in `ritmofit_dev_plan/`        | delete the line      |
 | A reusable workflow/prompt              | `agent-prompts/` (web) or the iOS copy                       | delete the line      |

@@ -1,244 +1,75 @@
 # agent-prompts (ritmofit-web)
 
-A library of reusable, paste-and-go prompts for working on **ritmofit-web** (the React/Vite
-SPA plus its Cloudflare Worker + D1 API). The default use is Steven's day-to-day loop:
-start a focused personal session, do the work, then close it cleanly. The same library also
-contains optional remote/background maintenance prompts for ephemeral agents that leave
-reviewable draft PRs or short operational reports under this repo's
-[`agent-reports/`](../agent-reports/). Reports are **repo-local and git-tracked** — every
-ritmofit-web report stays in this repo; the sibling iOS repo keeps its own archive. There
-is no shared workspace-level report folder.
+Reusable, tool-neutral prompts for working on **ritmofit-web** with any agent (Codex, Claude Code,
+Cursor), local or cloud, solo or in parallel lanes. `AGENTS.md` is canonical; on conflict it wins.
+The sibling `ritmofit-ios` repo keeps its own copy of the session and orchestration prompts — the
+method is shared, the partitions and gates are not.
 
-> This is the **web-scoped** copy of the library; the sibling **iOS** repo (`ritmofit-ios`)
-> keeps its own copy. `remote-prompts/technical/api-contract-parity` reads the iOS contract surface, vendored
-> read-only in [`ios-snapshot/`](../ios-snapshot/) — so it needs **no sibling iOS checkout**.
-> `remote-prompts/technical/content-consistency` runs its web-internal checks always and only compares copy
-> against iOS when a live `ritmofit-ios` checkout is present. Both branch only in this repo.
+## The workflow
 
-## How to use
+Every session — whatever the tool — runs the same loop, and its durable output is `main` plus a
+handoff file, never chat:
 
-### Personal sessions
+```
+start-session ──► plan ──► owner confirms ──► execute ──► close-session ──► handoff
+   (orient)         (substantial work only)     (PR)       (merge/record)   (owed forward)
+```
 
-1. At the start of any work block, paste `daily/start-session.md`.
-2. Review the baseline and plan. For substantial work, confirm the plan before implementation.
-3. At the end of the work block, paste `daily/close-session.md`.
+| Role | Start | Execute | Close | Merge authority |
+|---|---|---|---|---|
+| **Solo** — one session, one objective | `daily/start-session.md` | branch + PR | `daily/close-session.md` (Solo) | merges its own green PR at close (squash, owner gets a beat to object) |
+| **Lane** — one builder in a parallel round | lane brief → `daily/start-session.md` (Lane mode) | lane branch + PR, only owned files | `daily/close-session.md` (Lane) | **none** — the orchestrator merges |
+| **Orchestrator** — runs a parallel round | `orchestrate-parallel-round.md` | writes briefs, reconciles plans, no product code | Step 7 + `daily/close-session.md` (Orchestrator) | runs the merge train with explicit owner authority |
 
-Use these prompts repeatedly throughout the day. They are interactive and expect a person in
-the loop; they do not run unattended, merge, deploy, or make owner decisions.
+Where state lives (so the next session — any tool — can answer "what's next"):
 
-### Remote/background runs
-
-The `remote-prompts/` prompts are written for a **remote ephemeral sandbox** — an isolated,
-throwaway cloud container that clones the repo fresh and is discarded when the session ends.
-They assume no human is watching, so they only ever leave durable output (a pushed branch,
-a draft PR, or a committed report). The local launch below — an isolated worktree on your own
-machine — is an equivalent way to run the same prompts when you don't have a hosted sandbox.
-
-1. Keep the Mac awake. Confirm GitHub authentication and Node/pnpm before leaving.
-2. Launch an isolated agent worktree on this repository (the `claude` CLI shown here is the
-   reference launcher). Everything the prompts read is in-repo — reports under
-   `agent-reports/`, the API this repo owns, and the iOS client source for the parity prompts
-   in `ios-snapshot/` — so no `--add-dir` to a sibling repo is needed:
-
-   ```bash
-   cd /path/to/ritmofit-web
-   claude --worktree --permission-mode acceptEdits
-   ```
-
-   Configure the agent's permissions in advance for the required Git, GitHub CLI, build,
-   test, and agent-report commands. Do not use `--dangerously-skip-permissions` on a
-   networked development machine.
-3. Paste `remote-prompts/daily/changed-code-sentinel.md` into the session.
-4. After it finishes, run `remote-prompts/daily/command-brief.md` from this repo. Its 10-minute timebox
-   keeps the full workflow within one hour.
-5. Review the command brief and draft PRs. Agents never merge or deploy.
-
-Every remote prompt inherits [`remote-prompts/00-house-rules.md`](remote-prompts/00-house-rules.md)
-and **leaves a pushed branch**: isolated worktrees, one draft PR maximum, deduplication,
-verification, a 45-minute timebox, and validated agent reports. The technical prompts and
-`doc-drift` open a draft PR for the highest-value safe fix (`doc-drift` docs-only) — except
-`design-system`, which is a **report-only deep audit** run in a local worktree with a browser
-(4-hour timebox) that pushes its validated report with no code PR; `security`,
-`dependency-freshness`, and `observability` open a draft PR for low-risk fixes and keep
-auth/major-upgrade/infra decisions report-only. The briefs (`command-brief` and the planning
-prompts) push their validated agent report on a branch with no code PR, and `pr-triage` pushes
-safe rebases of trivially-stale green `auto-maintenance` branches (use `REPORT-ONLY` for a pure
-read-only pass). No prompt ever merges, deploys, migrates the remote D1, or changes secrets.
-
-## Folder
-- `orchestrate-parallel-round.md` — orchestrator runbook for a round of **concurrent lane-agents**
-  across the `ritmofit-web` checkouts. Paste it at the workspace container root, not inside a
-  checkout. Sits outside both the daily and remote loops: map state → disjoint-lane partition →
-  ephemeral briefs → plan gate → CI gate → merge/cleanup loop. The iOS repo keeps a counterpart for
-  its own clones; the method is shared, the partitions and gates are not.
-- `design-audit/` — **design-audit pack v6**: an agent-agnostic, repeatable full-product audit. Point any
-  capable agent at the folder; it assesses the objective, requests permission once, then runs
-  continuously: active-surface inventory and critique → ranked backlog → comprehensive navigable
-  desktop/mobile prototype → proposed implementation prompts. The deliverable is exactly one folder,
-  `docs/audits/<agent>-design-audit-<YYYY-MM-DD>/`, and the agent runs **no Git commands**. The owner gate
-  is at the end: nothing is implemented until dispositions are recorded in that run's `run-decisions.md`.
-  Runs are comparable because they bind to canonical `surface-ids.md` and build the deterministic
-  `fixtures.md` data. Start at [`design-audit/README.md`](./design-audit/README.md). Not unattended remote
-  maintenance — it needs a browser, a running local app, and an owner to say go.
-- `instructor-ux/` — the **creation-journey UX pack**: two attended, local-only passes that judge the
-  instructor class-creation journey (create → scaffold vs empty → Builder → plan blocks → assign
-  music → planned vs actual → playback windows → next step) against one product principle,
-  *Simple. Stupid. Swift.* `01-build-pass.md` diagnoses, gates a plan with the owner, ships one
-  slice as a PR, and publishes a conversation-owned findings report; `02-challenge-pass.md` is
-  **report-only** and runs afterwards in a fresh session to try to prove the journey still fails.
-  Both inherit `instructor-ux/00-frame.md` (principle, personas, scope, fixtures, verification floor).
-  Runs against local `dev:web`/`dev:api` on seeded D1 — never production, because it creates and
-  deletes real classes. Start at [`instructor-ux/README.md`](./instructor-ux/README.md).
-- `live-ux-deep-dive.md` — **interactive, production-facing** UI/UX assessment of the live
-  `ritmofit.studio` app via Claude-in-Chrome, judged against both the design canon and
-  general modern standards (WCAG 2.2, Core Web Vitals, current SaaS UX conventions). Asks
-  scope questions up front, forks one code-review agent per in-scope surface, does the live
-  browser pass itself, and publishes a Claude Artifact report — no PR, no committed report.
-  The production/interactive/modern-standards counterpart to
-  `remote-prompts/technical/design-system.md` (local/unattended/canon-only); the two don't
-  substitute for each other.
-- `browser-verification/` — a zero-dependency harness that measures the running app in real
-  Chrome over the DevTools Protocol: contrast (AAA on Live), focus rings, horizontal overflow,
-  and reduced motion. Tooling, not a prompt — use it to satisfy the "verify in a real browser"
-  requirement instead of eyeballing a screenshot. It ships with a self-test that validates it
-  against `tokens.json` and is itself verified to fail; **run that first, because the two
-  measurement mistakes it guards against produce plausible-looking wrong numbers rather than
-  obvious errors.** Start at [`browser-verification/README.md`](./browser-verification/README.md).
-- `daily/` — **interactive**, person-in-the-loop prompts that run on your own machine:
-  - `start-session` — interactive orientation before a personal work block.
-  - `close-session` — interactive wrap: light close by default; full close adds gates and a production reconcile.
-- `remote-prompts/` — prompts written to run **unattended in a remote ephemeral sandbox**
-  (an isolated, throwaway cloud container). Each opens with a sandbox banner, and every one
-  leaves its result as durable, committed-and-pushed output — a branch, a draft PR, or a
-  git-tracked report — because the container is discarded when the session ends.
-  - `remote-prompts/00-house-rules.md` — shared guardrails for all remote prompts (change prompts open draft PRs; briefs push report-only branches).
-  - `remote-prompts/daily/`:
-    - `changed-code-sentinel` — primary remote agent; reviews only the new commit delta.
-    - `command-brief` — turns the sentinel result into an actionable handoff for this repo.
-    - `hour-commute` — 60-minute variant: runs the sentinel + command-brief pair, then picks
-      up at most one specialist prompt only if the brief names a concrete signal, with a hard
-      stop and no busywork if it doesn't. For a remote background agent with a full hour
-      instead of just enough time for one run.
-  - `remote-prompts/technical/` — code + design:
-    - `stability`, `quality`, `design-system`, `security`, `performance`,
-      `api-contract-parity`, `accessibility`, `test-coverage`, `dependency-freshness`,
-      `content-consistency`, `observability`.
-  - `remote-prompts/planning/` — productivity / dev-planning:
-    - `pr-triage`, `next-slice-planner`, `roadmap-sync`, `release-readiness`, `doc-drift`.
-      (The completed D20 one-off `solo-first-reset-implementation` prompt is archived in
-      `ritmofit_dev_plan/archive/`.)
-
-## After-action reports
-
-Every **remote** prompt archives a validated report to
-[`agent-reports/`](../agent-reports/) (repo-local, git-tracked) and pushes it on its branch —
-including the planning briefs, whose pushed report is now their durable deliverable. Only the
-**interactive** daily prompts (where you are the record) skip the report. The mechanics live in
-[`remote-prompts/00-house-rules.md`](remote-prompts/00-house-rules.md) §9 and
-[`../agent-reports/README.md`](../agent-reports/README.md).
-
-| Prompt | Report? |
+| State | Home |
 |---|---|
-| `remote-prompts/daily/changed-code-sentinel`, `remote-prompts/daily/command-brief`, `remote-prompts/daily/hour-commute` | **Yes** (`hour-commute` via the prompts it runs) |
-| all `remote-prompts/technical/*` audits | **Yes** |
-| all `remote-prompts/planning/*` (`pr-triage`, `doc-drift`, `next-slice-planner`, `roadmap-sync`, `release-readiness`) | **Yes** |
-| `daily/start-session`, `daily/close-session` | No — interactive |
+| Owed forward: in flight, next action, open owner decisions | `ritmofit_dev_plan/handoffs/` — one file per session/lane ([rules](../ritmofit_dev_plan/handoffs/README.md)) |
+| Current focus, backlog, main vs production | `ritmofit_dev_plan/DEVELOPMENT_PLAN.md` |
+| What shipped and when (deploys, verification) | `ritmofit_dev_plan/HISTORY.md` |
+| Locked decisions | `ritmofit_dev_plan/decisions.md` |
+| Unshaped ideas | `INBOX.md` (drained at every close) |
 
-The exhaustive reports are intentionally more than anyone reads daily; a later
-reviewer/digest agent is meant to read the archive and surface only what matters.
+Nothing in this folder deploys, applies remote migrations, or changes secrets; those stay explicit
+owner decisions in the session that performs them (`ritmofit_dev_plan/deployment-runbook.md`).
 
-## Cadence
+## Contents
 
-**[`SCHEDULE.md`](SCHEDULE.md) is the single source of truth for cadence** — the personal-session
-loop, the remote/background loop, the weekly rotation, monthly checks, the release gate, the trigger
-map, and the anti-churn rules. This README describes *what each prompt is*; SCHEDULE.md says *when to
-run it*. (Do not duplicate the schedule tables here — they drifted once already.)
-
-The realistic daily minimum for personal work is `daily/start-session` and `daily/close-session`. Add
-the sentinel and command brief when you want a remote/background agent pass. Run deep prompts only
-when a session baseline, sentinel, or roadmap brief points to that dimension; avoid routine audit
-churn.
-
-## Operating model
-
-The remote prompts are designed like chess pieces: each has a **laser-focused scope** ("movement rules") so an agent running in a remote ephemeral environment has full autonomy to complete its job — investigate its lane, decide on a small fix or report, verify, and produce the deliverable (pushed branch + validated report, or report only) without needing you mid-run.
-
-You are the chess master. The agents execute their piece's legal moves and leave the results (branches and reports) for your review before any merge.
-
-### Chess Piece Mapping
-
-| Prompt | Chess Piece | Movement Rule (Laser Scope) |
-|--------|-------------|-----------------------------|
-| changed-code-sentinel | Capped Scout (Knight) | Surveys recent deltas only; surfaces issues; at most **one** small regression fix. Defers UI/design/perf/a11y to the right piece. |
-| command-brief | King's Advisor | Pure synthesis into prioritized handoff report. No code. |
-| stability | Rook | Attacks prod regressions, reliability threats, and core breakage directly. |
-| performance | Bishop | Measures/fixes along specific slowness lines (CWV, bundles, D1, caching). |
-| quality | Pawn (clean advance) | Behavior-preserving cleanup and rot removal only. |
-| test-coverage | Defensive Pawn | Adds tests on high-blast-radius paths only; hands bugs to stability. |
-| design-system | Bishop (visual lines) | Report-only deep audit: canon integrity, code adherence, rendered truth (tokens, components, typography, states). Local worktree + browser; no PR. |
-| accessibility | Knight (tricky squares) | Keyboard, screen-reader, contrast, focus, reduced-motion. |
-| content-consistency | Pawn | Terminology, labels, and microcopy only. |
-| api-contract-parity | Rook (contract lines) | Backend contracts, OpenAPI, iOS decoding. Mostly reports. |
-| security | Queen | High-value threats: secrets, auth, CVEs, unsafe patterns. |
-| dependency-freshness | Limited Pawn | Stale packages (ranked plan + rare safe bumps). |
-| observability | Bishop (diagnostic) | Logs, health, smoke coverage, error envelopes. |
-| roadmap-sync | Strategist | Weekly prioritization and focus recommendations. |
-| next-slice-planner | Tactical Planner | Turns one priority into a concrete, bounded slice + gap hunt. |
-| release-readiness | Inspector | Pre-release / pre-milestone go/no-go checklist. |
-| pr-triage | Endgame Sweeper | Verdicts + safe rebases of trivially-stale green auto PRs. |
-| doc-drift | Archivist | Written record vs actual code/docs; small docs-only fixes. |
-
-Think of the prompts as a small set of specialist teams, each with a clear owner and trigger:
-
-| Team | Prompt(s) | Use when |
-|---|---|---|
-| Daily workflow | `daily/start-session`, `daily/close-session` | You are opening or wrapping a personal work session. |
-| Command center | `remote-prompts/daily/changed-code-sentinel`, `remote-prompts/daily/command-brief` | You want a remote/background pass: inspect recent change risk, then receive a short owner handoff. |
-| Web reliability | `remote-prompts/technical/stability`, `remote-prompts/technical/performance` | Production behavior, runtime correctness, live-class reliability, or speed is the concern. |
-| Product quality | `remote-prompts/technical/quality`, `remote-prompts/technical/test-coverage` | You want maintainability cleanup or a stronger regression net without changing product behavior. |
-| Design systems | `remote-prompts/technical/design-system`, `remote-prompts/technical/accessibility`, `remote-prompts/technical/content-consistency` | UI fidelity, WCAG behavior, terminology, or cross-surface copy consistency needs attention. |
-| Platform/API | `remote-prompts/technical/api-contract-parity` | The backend contract, OpenAPI output, or iOS decode compatibility may have drifted. |
-| Security & supply chain | `remote-prompts/technical/security`, `remote-prompts/technical/dependency-freshness` | Secrets, auth/session risk, CVEs, or dependency upgrade posture needs review. |
-| Observability | `remote-prompts/technical/observability` | Logs, health checks, smoke coverage, or deploy evidence may be too thin to diagnose production issues. |
-| Product planning | `remote-prompts/planning/roadmap-sync`, `remote-prompts/planning/next-slice-planner` | You need to decide what to build next or turn a priority into a bounded slice. |
-| Release management | `remote-prompts/planning/release-readiness`, `remote-prompts/planning/pr-triage`, `daily/close-session` | You are preparing to ship, clear maintenance PRs, or wrap up a human-led session. |
-| Documentation ops | `remote-prompts/planning/doc-drift` | Docs, plans, or setup instructions may no longer match the repo. |
+| Path | What it is | Attended? | Output |
+|---|---|---|---|
+| [`daily/start-session.md`](daily/start-session.md) | Orientation: git, PRs, handoffs, unrecorded merges, trackers, production evidence, one recommended action | yes | chat baseline + plan |
+| [`daily/close-session.md`](daily/close-session.md) | Wrap: git/PR/branch hygiene, optional gates and deploy reconcile, handoff, docs sync | yes | PR merged or handed off + handoff file |
+| [`orchestrate-parallel-round.md`](orchestrate-parallel-round.md) | Run 3–4 concurrent lane-agents across sibling checkouts: map → partition → briefs → plan gate → CI gate → merge train → cleanup | yes (orchestrator) | merged lane PRs + round handoff |
+| [`templates/handoff.md`](templates/handoff.md) | Handoff file template | — | — |
+| [`templates/lane-brief.md`](templates/lane-brief.md) | Lane brief template (copied untracked per lane) | — | — |
+| [`design-system-drift.md`](design-system-drift.md) | Report-only canon-drift audit: design-system canon vs code vs rendered browser truth | either; local + browser | `docs/audits/design-system-drift-<date>/` on a docs PR |
+| [`live-ux-deep-dive.md`](live-ux-deep-dive.md) | Production UI/UX assessment vs canon + modern standards (Claude-specific mechanics, with fallbacks) | yes; production | published report, nothing committed |
+| [`design-audit/`](design-audit/README.md) | Full-product design audit → ranked backlog → navigable prototype → proposed implementation prompts | yes; hours | one `docs/audits/<agent>-design-audit-<date>/` folder, no Git commands |
+| [`instructor-ux/`](instructor-ux/README.md) | Creation-journey UX: build pass ships one slice; challenge pass tries to prove it still fails | yes; local only | PR + report (build), report only (challenge) |
+| [`browser-verification/`](browser-verification/README.md) | Zero-dependency Chrome DevTools harness: contrast, focus rings, overflow, reduced motion. Run its self-test first | tooling | measurements |
 
 ## Decision guide
 
-- **I am starting work:** use `daily/start-session`.
-- **I am stopping work:** use `daily/close-session`.
-- **I only have one unattended run:** use `remote-prompts/daily/changed-code-sentinel`; add
-  `remote-prompts/daily/command-brief` when you want the summary before reviewing.
-- **I have closer to a full hour for one unattended run** (e.g. a remote background agent):
-  use `remote-prompts/daily/hour-commute`.
-- **Recent code changed and I want regression coverage:** use `remote-prompts/daily/changed-code-sentinel`.
-- **I need to choose the next product slice:** use `remote-prompts/planning/roadmap-sync`, then
-  `remote-prompts/planning/next-slice-planner`.
-- **I am about to release or cut a milestone:** use `remote-prompts/planning/release-readiness`, then
-  `remote-prompts/planning/pr-triage`.
-- **The app feels broken or brittle:** use `remote-prompts/technical/stability`.
-- **The app feels slow:** use `remote-prompts/technical/performance`.
-- **A production issue would be hard to detect or diagnose:** use
-  `remote-prompts/technical/observability`.
-- **The UI looks off or inconsistent:** use `remote-prompts/technical/design-system`.
-- **Keyboard, screen reader, contrast, or motion behavior is the risk:** use
-  `remote-prompts/technical/accessibility`.
-- **The web API may break iOS:** use `remote-prompts/technical/api-contract-parity`.
-- **Copy or terminology differs between web and iOS:** use `remote-prompts/technical/content-consistency`.
-- **Auth, secrets, logs, or dependency CVEs are the risk:** use `remote-prompts/technical/security`.
-- **Packages are getting stale but not necessarily vulnerable:** use
-  `remote-prompts/technical/dependency-freshness`.
-- **You want useful tests without behavior changes:** use `remote-prompts/technical/test-coverage`.
-- **You want cleanup without behavior changes:** use `remote-prompts/technical/quality`.
-- **Docs look stale:** use `remote-prompts/planning/doc-drift`.
+- **Starting any work block:** `daily/start-session.md`. **Ending one:** `daily/close-session.md`.
+- **Several independent slices, several free checkouts:** `orchestrate-parallel-round.md` (from the
+  workspace container root, not inside a checkout).
+- **The UI drifted from the design system:** `design-system-drift.md`.
+- **You want an outside-eye pass on the live site:** `live-ux-deep-dive.md`.
+- **You want a full redesign-grade audit and prototype:** `design-audit/` (rare; hours; adds a
+  permanent `docs/audits/` folder).
+- **The class-creation journey feels slow or confusing:** `instructor-ux/01-build-pass.md`, then
+  `02-challenge-pass.md` once in a fresh session after the slice lands.
+- **"Verify in a real browser":** `browser-verification/`.
 
-## Running it "in the background while commuting"
-- Disable sleep for the run or use a machine that remains awake.
-- The normal run is one isolated worktree on this repository, so the source checkout stays
-  untouched.
-- Agents may push branches and open draft PRs. They may not merge, deploy, apply remote
-  migrations, or change secrets.
-- A completed run must produce an agent report based on this repo's
-  [`agent-reports/AGENT_REPORT_TEMPLATE.md`](../agent-reports/AGENT_REPORT_TEMPLATE.md) that
-  passes `./agent-reports/validate-agent-report.sh agent-reports/YYYY-MM-DD/<file>.md`.
+None of these run on a schedule. Run a specialist prompt only when a session baseline or handoff
+names a concrete signal for it.
+
+## Retired: the remote maintenance loop
+
+The unattended remote/background loop — `remote-prompts/` (sentinel, command brief, weekly
+technical and planning audits), `SCHEDULE.md`, and the `agent-reports/` archive with its template
+and validator — produced no reports after 2026-09-15 and was archived on 2026-10-06 to
+[`../ritmofit_dev_plan/archive/remote-loop/`](../ritmofit_dev_plan/archive/remote-loop/README.md).
+Its one prompt still in use, the design-system audit, lives on as `design-system-drift.md`. The
+archive README explains how to revive the loop if unattended runs become useful again.

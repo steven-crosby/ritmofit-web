@@ -3,16 +3,15 @@
 > **Paste this into a fresh session at the workspace container that holds the `ritmofit-web`
 > checkouts, to run concurrent lane-agents across them.** In this dynamic **you are the orchestrator,
 > not a product-code builder**: map state, recommend the builder count, partition the work, write each
-> lane's brief, reconcile plans, enforce owner gates, review reports, drive authorized merges, and
+> lane's brief, reconcile plans, enforce owner gates, review lane handoffs, drive authorized merges, and
 > clean up only the round-owned state. Use native delegation when it can provide enough isolated
-> builders; otherwise give the owner session-ready briefs to relay and accept their reports back.
+> builders; otherwise give the owner session-ready briefs to relay and accept their handoffs back (committed on each lane branch, not pasted in chat).
 > Do **not** write product code yourself in this role.
 >
 > **Active builders** means agents editing product code. It excludes the orchestrator, reviewers,
 > CI monitoring, and the serialized browser verifier.
 >
-> Canonical context lives in this repository's [`AGENTS.md`](../AGENTS.md) and the workspace container's
-> routing guide. This file is the provider-neutral canonical runbook for the durable orchestration
+> Canonical context lives in this repository's [`AGENTS.md`](../AGENTS.md) (› Session Workflow). This file is the provider-neutral canonical runbook for the durable orchestration
 > method and merge discipline; it must not depend on provider memory or a provider-specific command
 > deployment. On conflict, `AGENTS.md` wins.
 >
@@ -95,9 +94,9 @@ rewrite, move, or repurpose that work.
 
 Before a long round:
 
-- **Keep-awake:** while connected to AC, run the machine's keep-awake helper (for example
-  `~/.local/bin/awake status`). The battery guard should force stay-awake on for AC and off for
-  battery; if the observed state disagrees, stop and surface it.
+- **Keep-awake:** on a local machine, make sure it will not sleep for the length of the round
+  (use whatever keep-awake helper the machine has; this repo does not ship one). Cloud sessions
+  skip this.
 - **Runtime:** verify the repository-required Node version and that Corepack/pnpm can run. Resolve a
   missing bare `pnpm` before launching builders; workspace scripts invoke it internally.
 - **Browser/GUI:** discover the browser tooling actually available in the current session. Do not
@@ -130,11 +129,12 @@ eligible/blocked reason. This table determines whether four builders are current
 Inspect, in this order:
 
 1. Open PRs or unfinished round-owned branches that must be resolved first.
-2. The selected primary checkout's `INBOX.md`.
-3. `ritmofit_dev_plan/DEVELOPMENT_PLAN.md` current focus and backlog/open items.
-4. `ritmofit_dev_plan/milestones.md` and `ritmofit_dev_plan/web-launch-readiness.md`.
+2. Open handoffs in `ritmofit_dev_plan/handoffs/` on `origin/main` and in open PR heads — their next
+   actions, owner decisions, and touched shared zones (start-session steps 4–5).
+3. The selected primary checkout's `INBOX.md`.
+4. `ritmofit_dev_plan/DEVELOPMENT_PLAN.md` current focus and backlog/open items.
 5. Current code and tests in each candidate cluster.
-6. Prior lane briefs and follow-ups only as historical leads; verify every path and premise against
+6. Prior handoffs (git history) only as historical leads; verify every path and premise against
    the current tree before reusing it.
 
 For a possible fourth builder, identify two concrete FE candidates and confirm that one fits
@@ -168,12 +168,13 @@ a dirty checkout or manufacture a slice.
 
 ## Step 4 — Write one ephemeral brief per selected checkout
 
-Use a unique round identifier in each filename, for example
-`agent-prompts/daily/start-r<round>-lane<N>-<role>.md`. Leave briefs untracked. Do not overwrite an
-existing untracked file. Record the exact briefs created so cleanup can remove only those files after
-their reports are captured.
+Copy [`templates/lane-brief.md`](./templates/lane-brief.md) once per selected checkout to
+`agent-prompts/daily/start-r<round>-lane<N>-<role>.md` and fill it from the live tree. Leave briefs
+**untracked** — never commit one (the durable record is the lane's handoff). Do not overwrite an
+existing untracked file. Record the exact briefs created so cleanup can remove only those files
+after their handoffs land.
 
-Every brief includes, in this order:
+Every brief includes, in this order (the template's sections):
 
 1. **One-line role + "Do not implement until the batched plan is confirmed by the owner."**
 2. **Git start state** — exact checkout, branch, HEAD, relationship to `origin/main`, and the safe
@@ -194,8 +195,9 @@ Every brief includes, in this order:
 10. **Planning requirements, verification plan, acceptance criteria, and required pre-edit output.**
 11. **No-work exit** — if no safe, useful slice survives orientation, report that conclusion with
     evidence and remain idle.
-12. **After-action schema** — branch, commit, PR, files changed, shared-zone touches, tests/checks
-    run, skipped or failed verification, residual risks, deployment impact, and out-of-scope findings.
+12. **Close** — the lane runs `daily/close-session.md` in Lane mode: pushes, opens its PR, and
+    commits its after-action as `ritmofit_dev_plan/handoffs/YYYY-MM-DD-r<round>-lane<N>-<role>.md`
+    (from `templates/handoff.md`) on the lane branch. Lanes never merge.
 
 Hand the owner or delegated sessions the brief-to-checkout map and the preliminary explanation of why
 the proposed ownership is disjoint. That explanation is provisional until Step 5 reconciles the plans.
@@ -220,16 +222,16 @@ Present one concise combined packet to the owner:
 Wait for confirmation. Do not infer merge, deployment, branch deletion, or other later external
 actions from implementation approval.
 
-## Step 6 — Review reports and run the authorized merge train
+## Step 6 — Review lane handoffs and run the authorized merge train
 
-Review each after-action report against the actual diff, tests, and PR state. Do not rubber-stamp an
+Review each lane handoff (read it from the lane's PR head) against the actual diff, tests, and PR state. Do not rubber-stamp an
 agent finding. Recheck that shared-zone edits match the approved ownership matrix and that skipped
 verification is visible.
 
 Before merging, present the PR list, combined risk, dependency-aware merge order, and current CI state;
 request explicit merge authority. Re-read the repository's live merge settings and rules rather than
-treating historical GitHub policy as immutable. Project history prefers merge commits, but confirm the
-current allowed/enforced mechanisms.
+treating historical GitHub policy as immutable. The project convention is **squash merge** (matches
+`close-session.md` and `main`'s history); confirm it is still allowed before the train.
 
 For each authorized PR, sequentially:
 
@@ -251,13 +253,13 @@ request cleanup authority before acting.
 - Recheck branch and status in **only the round-owned checkouts** before switching anything.
 - Fast-forward an eligible round-owned checkout's `main` only when that does not disturb tracked,
   untracked, or intentional branch work.
-- Delete only the ephemeral briefs created by this round, after their relevant decisions and results
-  are recorded durably.
+- Delete only the ephemeral briefs created by this round, after each lane's handoff has landed on
+  `main` with its PR.
 - Remote-branch deletion is a separate destructive action: list the exact merged branches and obtain
   owner authorization before deleting them.
 - Once authorized, remote-branch deletion is a required round-close substep, not optional hygiene:
   delete each merged round branch, then verify it no longer appears in the remote branch list and record
-  that result in the after-action report. Never delete a branch with an open PR or a tip not proven to be
+  that result in the round handoff. Never delete a branch with an open PR or a tip not proven to be
   an ancestor of the intended `main`.
 - Return each round-owned checkout to reusable state after its branch is merged and the owner authorizes
   cleanup: fast-forward `main`, delete the now-merged **local** lane branch, and verify a clean worktree
@@ -284,9 +286,10 @@ request cleanup authority before acting.
    `ritmofit_dev_plan/HISTORY.md`. Treat docs edits, PR creation, merge, and any inbox deletion
    according to the owner's granted authority; docs-only changes still run the full combined CI check.
 
-4. **Record durably:** put required continuation state in repository planning/history files, not
-   provider-local memory. Promote only genuinely cross-project lessons when that maintenance is in
-   scope.
+4. **Record durably:** write the round handoff
+   `ritmofit_dev_plan/handoffs/YYYY-MM-DD-r<round>-orchestrator.md` (merged PRs, idle lanes,
+   pending verification, next action) on the docs PR, and delete lane handoffs whose items are now
+   recorded in HISTORY/DEVELOPMENT_PLAN. Never rely on provider-local memory for continuation state.
 
 5. **Surface what remains:** pending owner/live verification, failed or skipped checks, open PRs,
    parked findings, idle lanes, and unauthorized cleanup or deployment actions.
@@ -305,5 +308,5 @@ request cleanup authority before acting.
   authority explicitly granted for the exact target.
 - Never claim a `ritmofit-ios` clone found in this container without confirming no iOS round owns it.
 - Respect the non-negotiable music constraints and dormant-community D20 boundary.
-- Keep durable status in the repository's `ritmofit_dev_plan/` (including `HISTORY.md`) and `INBOX.md`,
-  not in scratch notes at the workspace container root.
+- Keep durable status in the repository — `ritmofit_dev_plan/handoffs/`, `HISTORY.md`,
+  `DEVELOPMENT_PLAN.md`, and `INBOX.md` — not in chat or scratch notes at the workspace container root.

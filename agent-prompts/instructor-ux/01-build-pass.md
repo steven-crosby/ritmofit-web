@@ -139,7 +139,7 @@ iOS called out.
 supports it; otherwise deliver equivalent structured Markdown in the conversation. Include an
 executive summary, the ranked findings table (surface · journey step · failing question · severity ·
 beginner impact · expert impact · disposition), screenshots that carry evidence, and the untouched
-backlog. Do **not** write it to `agent-reports/`, which is reserved for unattended remote runs, and
+backlog. Do **not** commit it to the repo, and
 do not add a `docs/audits/` folder.
 
 Then report to the owner, tightly:

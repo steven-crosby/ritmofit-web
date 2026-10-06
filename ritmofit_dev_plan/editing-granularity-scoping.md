@@ -163,7 +163,7 @@ feature needs a **beat grid**, which needs three things — and we have only one
    `GETSONGBPM_API_KEY` is provisioned; otherwise instructors enter BPM manually. Local mock mode still
    returns deterministic spin-band BPM for development.
 2. **Downbeat / phase offset** — **does not exist anywhere.** A constant grid from t=0 is wrong for
-   any track with an intro/lead-in. This is exactly why `milestones.md` calls beat/bar
+   any track with an intro/lead-in. This is exactly why the M1 milestone definition (`archive/milestones.md`) calls beat/bar
    "non-functional in M1 (no downbeat phase to derive from)."
 3. **Time signature** — assume 4/4 for MVP.
 

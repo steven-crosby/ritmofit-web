@@ -112,7 +112,7 @@ run.
 ## Step 5 — Deliver (conversation-owned report only)
 
 Publish one HTML artifact when the current tool supports it; otherwise deliver equivalent structured
-Markdown in the conversation. No commits, no PR, nothing written to `agent-reports/` or
+Markdown in the conversation. No commits, no PR, nothing written to
 `docs/audits/`.
 
 **Remaining failures** — for each important issue: surface and workflow · which of the six
