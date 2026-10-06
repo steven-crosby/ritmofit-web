@@ -3,7 +3,7 @@
 
 # Cues vs. Notes — decision & step-1 scope
 
-Resolves the Cues-vs-Notes open item formerly tracked in [`DEVELOPMENT_PLAN.md`](./DEVELOPMENT_PLAN.md).
+Resolves the Cues-vs-Notes open item formerly tracked in [`DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md).
 
 > **Outcome (2026-06-24):** decided **not** to split the schema; the step-1 **read path shipped** — Live
 > mode now surfaces the previously write-only `class_tracks.notes`. This doc is kept as the as-built
