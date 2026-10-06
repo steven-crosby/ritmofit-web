@@ -2,10 +2,10 @@
 date: 2026-10-06
 tool: Claude Code (cloud)
 lane: solo (docs/workflow; a separate session continues dev work)
-branch: claude/docs-plan-cleanup (stacked on claude/docs-workflow-handoffs)
+branch: claude/docs-plan-cleanup
 head: see PR
-base: 7c69786caf5631fca9d57c02e98c27e31c0345e2
-prs: ['#489 (draft) workflow + archive', 'docs(plan) PR stacked on #489 (draft)']
+base: 7accd2d8b1c236e0630f30af5c57372f706f554d
+prs: ['#489 (merged, 7accd2d)', '#490 (this PR; owner-approved squash merge)']
 status: open
 ---
 
@@ -13,28 +13,26 @@ status: open
 
 ## Done
 
-- #489: `ritmofit_dev_plan/handoffs/` + templates; start/close-session reworked (Solo/Lane/
+- #489 (merged 2026-10-06): `ritmofit_dev_plan/handoffs/` + templates; start/close-session reworked (Solo/Lane/
   Orchestrator modes, handoff read/write, unrecorded-merge check); orchestrate-parallel-round uses
   lane handoffs and squash; remote maintenance loop and superseded planning docs archived;
   `AGENTS.md` Session Workflow; `CLAUDE.md` imports `AGENTS.md`.
-- Stacked docs(plan) PR: `DEVELOPMENT_PLAN.md` 583 → ~270 lines with a "Now" block and curated
+- #490: `DEVELOPMENT_PLAN.md` 583 → ~270 lines with a "Now" block and curated
   backlog; replaced text preserved verbatim in the 2026-10-06 `HISTORY.md` entry; HISTORY header and
   section names fixed; `docs/audits/README.md` indexes all 7 folders.
 
 ## In flight
 
-- Both PRs are drafts awaiting owner review and CI. Merge order: #489 first, then the plan PR
-  (retarget it to `main` after #489 squash-merges; rebase onto `main` if GitHub shows conflicts).
+- None. Both PRs owner-approved for squash merge; #490 lands with this file.
 
 ## Next action
 
-Owner: review and squash-merge #489, then the plan PR. If the dev session merged changes to
-`DEVELOPMENT_PLAN.md` or `HISTORY.md` meanwhile, merge `main` into the plan branch and keep their
-new entries.
+Next session (any tool): run the new `start-session` and confirm it surfaces this handoff and the
+undeployed #488. Then follow the "Now" block in `DEVELOPMENT_PLAN.md` (deploy #488, re-run the
+natural-boundary acceptance). Retire this file once the iOS decision below is made.
 
 ## Blockers and owner decisions
 
-- Keep or drop `CLAUDE.md` (it reverses the 2026-07-12 "removed Claude-only wrappers" note).
 - The iOS repo's `orchestrate-parallel-round.md` and session prompts were not updated to the
   handoff model; decide whether to port it.
 
