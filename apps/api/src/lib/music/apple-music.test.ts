@@ -5,6 +5,7 @@ import {
   fetchAppleMusicLibraryPlaylists,
   fetchAppleMusicLibraryPlaylistTracks,
   AppleMusicUnauthorizedError,
+  ProviderError,
   type FetchLike,
 } from '@ritmofit/music';
 
@@ -25,6 +26,90 @@ function fakeFetch(handlers: Record<string, unknown>) {
 }
 
 const API_BASE = 'https://am.test/v1';
+
+describe.each([
+  { name: 'library songs', path: '/v1/me/library/songs', read: fetchAppleMusicLibrarySongs },
+  {
+    name: 'library playlists',
+    path: '/v1/me/library/playlists',
+    read: fetchAppleMusicLibraryPlaylists,
+  },
+  {
+    name: 'library playlist tracks',
+    path: '/v1/me/library/playlists/p.test/tracks',
+    read: fetchAppleMusicLibraryPlaylistTracks,
+  },
+])('Apple Music $name pagination', ({ path, read }) => {
+  const validResource = {
+    id: 'i.test',
+    attributes: { name: 'Test song', artistName: 'Test artist' },
+  };
+
+  function readPages(pages: Record<string, unknown>) {
+    const calls: string[] = [];
+    const fetchImpl: FetchLike = async (url) => {
+      calls.push(url);
+      // Bound the fixture even before the guard exists: a regression must fail,
+      // never leave the test runner spinning on an endlessly repeated page.
+      if (calls.length > Object.keys(pages).length) throw new Error('Pagination sentinel reached.');
+      if (!(url in pages)) throw new Error('Unexpected pagination request.');
+      return {
+        ok: true,
+        status: 200,
+        json: async () => pages[url],
+        text: async () => '',
+      };
+    };
+    const result = read({
+      developerToken: 'devtok',
+      musicUserToken: 'mut-1',
+      playlistId: 'p.test',
+      apiBase: API_BASE,
+      fetchImpl,
+    });
+    return { result, calls };
+  }
+
+  it('rejects a self-loop with nonempty unmappable rows before fetching the page twice', async () => {
+    const first = `${path}?limit=100`;
+    const { result, calls } = readPages({
+      [`https://am.test${first}`]: { data: [null], next: first },
+    });
+
+    await expect(result).rejects.toBeInstanceOf(ProviderError);
+    await expect(result).rejects.toThrow(
+      'Apple Music returned a repeated library pagination path.',
+    );
+    expect(calls).toEqual([`https://am.test${first}`]);
+  });
+
+  it('rejects a multi-page cycle without returning earlier valid results', async () => {
+    const first = `${path}?limit=100`;
+    const second = `${path}?offset=100`;
+    const { result, calls } = readPages({
+      [`https://am.test${first}`]: { data: [validResource], next: second },
+      [`https://am.test${second}`]: { data: [null], next: first },
+    });
+
+    await expect(result).rejects.toBeInstanceOf(ProviderError);
+    await expect(result).rejects.toThrow(
+      'Apple Music returned a repeated library pagination path.',
+    );
+    expect(calls).toEqual([`https://am.test${first}`, `https://am.test${second}`]);
+  });
+
+  it('continues past unmappable rows when the cursor advances', async () => {
+    const first = `${path}?limit=100`;
+    const second = `${path}?offset=100`;
+    const { result, calls } = readPages({
+      [`https://am.test${first}`]: { data: [null], next: second },
+      [`https://am.test${second}`]: { data: [validResource] },
+    });
+
+    await expect(result).resolves.toHaveLength(1);
+    expect(calls).toEqual([`https://am.test${first}`, `https://am.test${second}`]);
+  });
+});
 
 const AM_SONG = {
   id: '1440857781',
