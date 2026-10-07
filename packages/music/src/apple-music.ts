@@ -259,6 +259,17 @@ const amLibraryPlaylistSchema = z.object({
 
 const LIBRARY_PLAYLIST_PAGE_LIMIT = 100;
 
+/** A repeated cursor is upstream drift, not a complete or empty library. */
+function checkLibraryPaginationPath(path: string, visited: Set<string>): void {
+  if (visited.has(path)) {
+    throw new ProviderError(
+      'apple_music',
+      'Apple Music returned a repeated library pagination path.',
+    );
+  }
+  visited.add(path);
+}
+
 /**
  * Thrown when Apple Music rejects the **Music-User-Token** with 401/403 — the
  * signal `apps/api` uses to ask the user to reconnect. Unlike OAuth there is no
@@ -316,8 +327,10 @@ export async function fetchAppleMusicLibrarySongs(cfg: {
   // Apple returns a relative `next` path (e.g. `/v1/me/library/songs?offset=100`).
   const origin = base.replace(/\/v1$/, '');
   let path: string | null = `/v1/me/library/songs?limit=${LIBRARY_PAGE_LIMIT}`;
+  const visited = new Set<string>();
 
   while (path && out.length < cap) {
+    checkLibraryPaginationPath(path, visited);
     const res = await cfg.fetchImpl(`${origin}${path}`, {
       headers: {
         Authorization: `Bearer ${cfg.developerToken}`,
@@ -360,8 +373,10 @@ export async function fetchAppleMusicLibraryPlaylists(cfg: {
   const out: ProviderPlaylistSummary[] = [];
   const origin = base.replace(/\/v1$/, '');
   let path: string | null = `/v1/me/library/playlists?limit=${LIBRARY_PLAYLIST_PAGE_LIMIT}`;
+  const visited = new Set<string>();
 
   while (path && out.length < cap) {
+    checkLibraryPaginationPath(path, visited);
     const res = await cfg.fetchImpl(`${origin}${path}`, {
       headers: {
         Authorization: `Bearer ${cfg.developerToken}`,
@@ -424,8 +439,10 @@ export async function fetchAppleMusicLibraryPlaylistTracks(cfg: {
   const encodedId = encodeURIComponent(cfg.playlistId);
   let path: string | null =
     `/v1/me/library/playlists/${encodedId}/tracks?limit=${LIBRARY_PAGE_LIMIT}`;
+  const visited = new Set<string>();
 
   while (path && out.length < cap) {
+    checkLibraryPaginationPath(path, visited);
     const res = await cfg.fetchImpl(`${origin}${path}`, {
       headers: {
         Authorization: `Bearer ${cfg.developerToken}`,
