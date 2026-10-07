@@ -1,0 +1,652 @@
+[
+  {
+    "discipline": "cycle",
+    "startedAt": "2026-10-04T21:08:25.219Z",
+    "sourceSha": "7c69786caf5631fca9d57c02e98c27e31c0345e2",
+    "workerVersion": "18fe76cd-5273-4cd0-beae-d01b0a307693",
+    "asset": "index-CFcewXzm.js",
+    "result": "FAIL at fourth natural end",
+    "class": {
+      "id": "6d012025-0236-487d-94b2-1ed597ec8eab",
+      "title": "[QA] Apple boundary release 2026-10-04 Cycle",
+      "template": "cycle",
+      "targetDurationMs": 2700000,
+      "timelineMode": "sequential",
+      "totalDurationMs": 2390720
+    },
+    "tracks": [
+      {
+        "position": 0,
+        "title": "Abracadabra",
+        "trackId": "d2ecb377-3b69-4a60-adfe-2d7c22317a5d",
+        "classTrackId": "d3a8f4bb-7db8-4394-a5f2-59095528d9f9",
+        "startOffsetMs": 0,
+        "clipStartMs": 0,
+        "sourceDurationMs": 223398
+      },
+      {
+        "position": 1,
+        "title": "Bad Romance",
+        "trackId": "9f89728a-7409-45c1-8d49-de5b1ac2a7bf",
+        "classTrackId": "a4cafbc4-a70f-4cb7-9a0a-74747452e8e3",
+        "startOffsetMs": 223398,
+        "clipStartMs": 0,
+        "sourceDurationMs": 294504
+      },
+      {
+        "position": 2,
+        "title": "Die With A Smile",
+        "trackId": "9d8aa8c7-363e-4c9e-9206-7bab8556e16a",
+        "classTrackId": "284eb3d1-b761-40b1-90df-7adfe4b603e9",
+        "startOffsetMs": 517902,
+        "clipStartMs": 0,
+        "sourceDurationMs": 251668
+      },
+      {
+        "position": 3,
+        "title": "Telephone (feat. Beyoncé)",
+        "trackId": "f920263d-cdb9-48bc-9df2-c23dff53e01e",
+        "classTrackId": "8d20bbad-49c0-4960-8622-dbdc9c7fef32",
+        "startOffsetMs": 769570,
+        "clipStartMs": 0,
+        "sourceDurationMs": 220537
+      },
+      {
+        "position": 4,
+        "title": "Born This Way",
+        "trackId": "43b965a8-9d75-4d6a-8d2c-88418bcd9663",
+        "classTrackId": "d2b1ffa9-035e-4380-999f-c42ebfe3d3a3",
+        "startOffsetMs": 990107,
+        "clipStartMs": 0,
+        "sourceDurationMs": 260258
+      },
+      {
+        "position": 5,
+        "title": "RUNWAY",
+        "trackId": "bc92e831-ec28-4b76-969b-38405f37758a",
+        "classTrackId": "488f497d-9601-4b37-8649-fc105845ff1e",
+        "startOffsetMs": 1250365,
+        "clipStartMs": 0,
+        "sourceDurationMs": 171010
+      },
+      {
+        "position": 6,
+        "title": "Poker Face",
+        "trackId": "fcb03ed5-91a8-41f2-8796-70534bb21c96",
+        "classTrackId": "ffc16ef5-ee11-44b5-b71e-396e3b8c285b",
+        "startOffsetMs": 1421375,
+        "clipStartMs": 0,
+        "sourceDurationMs": 237078
+      },
+      {
+        "position": 7,
+        "title": "The Dead Dance",
+        "trackId": "63c08000-7914-4e17-b185-63763f449dca",
+        "classTrackId": "143d7484-f6fd-4a99-a915-94d809c6007e",
+        "startOffsetMs": 1658453,
+        "clipStartMs": 0,
+        "sourceDurationMs": 228519
+      },
+      {
+        "position": 8,
+        "title": "The Edge of Glory",
+        "trackId": "b06cf496-7ba5-4353-9a49-408b5be8e63a",
+        "classTrackId": "49b9f3a0-2614-4901-962a-59747773045b",
+        "startOffsetMs": 1886972,
+        "clipStartMs": 0,
+        "sourceDurationMs": 321545
+      },
+      {
+        "position": 9,
+        "title": "Rain On Me",
+        "trackId": "5b618daf-1074-49a9-af36-306e8ecc80ea",
+        "classTrackId": "0e617148-ebd3-44e8-91d1-665c8ee7c778",
+        "startOffsetMs": 2208517,
+        "clipStartMs": 0,
+        "sourceDurationMs": 182203
+      }
+    ],
+    "actions": [
+      {
+        "atMs": 603,
+        "kind": "click",
+        "name": "Start class"
+      }
+    ],
+    "uiTransitions": [
+      {
+        "atMs": 2,
+        "next": null,
+        "previous": null,
+        "error": false,
+        "complete": false,
+        "text": "Skip to main content\n[QA] Apple boundary release 2026-10-04 Cycle\nExit\n✓\nTrack checks passed\n\nPLAYBACK PREFLIGHT\n\n10 tracks checked · 0 need a decision\n\nProvider links and durations checked for 10 tracks. Playback availability and audible output are unverified.\n\nStart class\nRun without music\n\nApple Music authorized in this browser. Playback availability is still unverified.\n\nRecheck Apple Music authorization\n\nPROVIDER LINKS AND DURATIONS CHECKED\n\n10\n#1\n\nAbracadabra\n\n✓\nSelected: Apple Music\n#2\n\nBad Romance\n\n✓\nSelected: Apple Music\n#3\n\nDie With A Smile\n\n✓\nSelected: Apple Music\n#4\n\nTelephone (feat. Beyoncé)\n\n✓\nSelected: Apple Music\n#5\n\nBorn This Way\n\n✓\nSelected: Apple Music\n#6\n\nRUNWAY\n\n✓\nSelected: Apple Music\n#7\n\nPoker Face\n\n✓\nSelected: Apple Music\n#8\n\nThe Dead Dance\n\n✓\nSelected: Apple Music\n#9\n\nThe Edge of Glory\n\n✓\nSelected: Apple Music\n#10\n\nRain On Me\n\n✓\nSelected: Apple Music\n\nFIX OR CHOOSE PROMPTER-ONLY\n\n0\n\nNo tracks in this group.\n\nStart prepares the first track. The teaching clock waits for confirmed playback progress. Later tracks may still need recovery. Check your volume and audio output when music starts. Browser playback permission and each track’s availability may still require recovery when playback starts.\n\nManage connections\n\nApple Music connects here without leaving preflight. Spotify and SoundCloud authorization open a provider page; returning restores this class’s preflight without starting playback."
+      },
+      {
+        "atMs": 1003,
+        "next": "Next track, Bad Romance",
+        "previous": "Previous track",
+        "error": false,
+        "complete": false,
+        "text": "Skip to main content\n\nCue: Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and check that resistance supports control. Keep this coaching detail available in Full List while the teaching card stays readable. Continue a steady effort, check your form, and prepare to change pace when the next cue arrives.\n\nTEACHING PAUSED · WAITING FOR MUSIC · TRACK 1 OF 10\n\n[QA] Apple boundary release 2026-10-04 Cycle\n\n0:00 / 39:51\n\nCue-by-Cue\nFull List\nExit\nWaiting for music\n\nProvider playback has not confirmed progress.\n\nTeaching position is held.\n\nContinue without music\nManage music connection\nSkip track\n\nCURRENT CUE\n\nKeep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and check that resistance supports control. Keep this coaching detail available in Full List while the teaching card stays readable. Continue a steady effort, check your form, and prepare to change pace when the next cue arrives.\n\nNEXT\n\nNext: ease resistance and hold a controlled recovery pace.\n\n1:30\nEFFORT\nPUSH\n\nTempo missing\nPulse off\n\nCLASS PULSE\n◇ AUTO-SHAPED\n\nAuto-shaped from track order and length. Set a track’s intensity to refine.\n\nTRACK LEFT\n\n3:43\n\nCLASS LEFT\n\n39:51\n\nTRACK 1\n\nAbracadabra\n\nLady Gaga\n\nCHOREOGRAPHY QUEUE\n\nCurrent + next\n\nNOW\nKeep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and check that resistance supports control. Keep this coaching detail available in Full List while the teaching card stays readable. Continue a steady effort, check your form, and prepare to change pace when the next cue arrives.\nCUE\n1:30 left\nNEXT\nNext: ease resistance and hold a controlled recovery pace.\nCUE\n2:13\n\nUP NEXT\n\n9 tracks left\n\n2\nBad Romance\n4:55\n3\nDie With A Smile\n4:12\n4\nTelephone (feat. Beyoncé)\n3:41\n← Previous\nPause start\nNext →\n\n♪\nPlayback:\nPreparing Apple Music…\n\n◉\nDisplay:\nScreen awake\n\nReset\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n▲\n▲"
+      },
+      {
+        "atMs": 226571,
+        "next": "Next track, Die With A Smile",
+        "previous": "Previous track, Abracadabra",
+        "error": false,
+        "complete": false,
+        "text": "Skip to main content\n\nTrack 2: Bad Romance.\n\nTEACHING PAUSED · WAITING FOR MUSIC · TRACK 2 OF 10\n\n[QA] Apple boundary release 2026-10-04 Cycle\n\n3:43 / 39:51\n\nCue-by-Cue\nFull List\nExit\nWaiting for music\n\nProvider playback has not confirmed progress.\n\nTeaching position is held.\n\nContinue without music\nManage music connection\nSkip track\n\nCURRENT CUE\n\nLead this track\n\n♫\nBad Romance\n\nNEXT\n\nEnd of track\n\nEFFORT\nPUSH\n\nTempo missing\nPulse off\n\nCLASS PULSE\n◇ AUTO-SHAPED\n\nAuto-shaped from track order and length. Set a track’s intensity to refine.\n\nTRACK LEFT\n\n4:55\n\nCLASS LEFT\n\n36:07\n\nTRACK 2\n\nBad Romance\n\nLady Gaga\n\nUP NEXT\n\n8 tracks left\n\n3\nDie With A Smile\n4:12\n4\nTelephone (feat. Beyoncé)\n3:41\n5\nBorn This Way\n4:20\n← Previous\nPause start\nNext →\n\n♪\nPlayback:\nPreparing Apple Music…\n\n◉\nDisplay:\nScreen awake\n\nReset\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n▲\n▲"
+      },
+      {
+        "atMs": 522003,
+        "next": "Next track, Telephone (feat. Beyoncé)",
+        "previous": "Previous track, Bad Romance",
+        "error": false,
+        "complete": false,
+        "text": "Skip to main content\n\nTrack 3: Die With A Smile.\n\nTEACHING PAUSED · WAITING FOR MUSIC · TRACK 3 OF 10\n\n[QA] Apple boundary release 2026-10-04 Cycle\n\n8:38 / 39:51\n\nCue-by-Cue\nFull List\nExit\nWaiting for music\n\nProvider playback has not confirmed progress.\n\nTeaching position is held.\n\nContinue without music\nManage music connection\nSkip track\n\nCURRENT CUE\n\nLead this track\n\n♫\nDie With A Smile\n\nNEXT\n\nEnd of track\n\nEFFORT\nPUSH\n\nTempo missing\nPulse off\n\nCLASS PULSE\n◇ AUTO-SHAPED\n\nAuto-shaped from track order and length. Set a track’s intensity to refine.\n\nTRACK LEFT\n\n4:12\n\nCLASS LEFT\n\n31:13\n\nTRACK 3\n\nDie With A Smile\n\nLady Gaga & Bruno Mars\n\nUP NEXT\n\n7 tracks left\n\n4\nTelephone (feat. Beyoncé)\n3:41\n5\nBorn This Way\n4:20\n6\nRUNWAY\n2:51\n← Previous\nPause start\nNext →\n\n♪\nPlayback:\nPreparing Apple Music…\n\n◉\nDisplay:\nScreen awake\n\nReset\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n▲\n▲"
+      },
+      {
+        "atMs": 774967,
+        "next": "Next track, Born This Way",
+        "previous": "Previous track, Die With A Smile",
+        "error": false,
+        "complete": false,
+        "text": "Skip to main content\n\nTrack 3: Die With A Smile.\n\nTEACHING PAUSED · WAITING FOR MUSIC · TRACK 4 OF 10\n\n[QA] Apple boundary release 2026-10-04 Cycle\n\n12:50 / 39:51\n\nCue-by-Cue\nFull List\nExit\nWaiting for music\n\nProvider playback has not confirmed progress.\n\nTeaching position is held.\n\nContinue without music\nManage music connection\nSkip track\n\nCURRENT CUE\n\nLead this track\n\n♫\nTelephone (feat. Beyoncé)\n\nNEXT\n\nEnd of track\n\nEFFORT\nPUSH\n\nTempo missing\nPulse off\n\nCLASS PULSE\n◇ AUTO-SHAPED\n\nAuto-shaped from track order and length. Set a track’s intensity to refine.\n\nTRACK LEFT\n\n3:41\n\nCLASS LEFT\n\n27:01\n\nTRACK 4\n\nTelephone (feat. Beyoncé)\n\nLady Gaga\n\nUP NEXT\n\n6 tracks left\n\n5\nBorn This Way\n4:20\n6\nRUNWAY\n2:51\n7\nPoker Face\n3:57\n← Previous\nPause start\nNext →\n\n♪\nPlayback:\nMusic ready\n\n◉\nDisplay:\nScreen awake\n\nReset\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n▲\n▲"
+      },
+      {
+        "atMs": 998003,
+        "next": "Next track, Born This Way",
+        "previous": "Previous track, Die With A Smile",
+        "error": true,
+        "complete": false,
+        "text": "Skip to main content\n\nTrack 4: Telephone (feat. Beyoncé).\n\nTEACHING PAUSED · WAITING FOR MUSIC · TRACK 4 OF 10\n\n[QA] Apple boundary release 2026-10-04 Cycle\n\n16:30 / 39:51\n\nCue-by-Cue\nFull List\nExit\nPlayback stopped\n\nMusic ended before the saved playback window. Check its duration or skip this track.\n\nTeaching position is held.\n\nRetry playback\nContinue without music\nManage music connection\nSkip track\nOpen in music app\n\nCURRENT CUE\n\nLead this track\n\n♫\nTelephone (feat. Beyoncé)\n\nNEXT\n\nEnd of track\n\nEFFORT\nPUSH\n\nTempo missing\nPulse off\n\nCLASS PULSE\n◇ AUTO-SHAPED\n\nAuto-shaped from track order and length. Set a track’s intensity to refine.\n\nTRACK LEFT\n\n0:01\n\nCLASS LEFT\n\n23:21\n\nTRACK 4\n\nTelephone (feat. Beyoncé)\n\nLady Gaga\n\nUP NEXT\n\n6 tracks left\n\n5\nBorn This Way\n4:20\n6\nRUNWAY\n2:51\n7\nPoker Face\n3:57\n← Previous\nRetry music\nNext →\n\n⚠\nPlayback:\nPlayback error\n\n◉\nDisplay:\nScreen awake\n\nReset\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n▲\n▲"
+      }
+    ],
+    "finalUi": "- link \"Skip to main content\":\n  - /url: \"#main-content\"\n- paragraph\n- paragraph: \"Track 4: Telephone (feat. Beyoncé).\"\n- paragraph\n- banner:\n  - paragraph: Teaching paused · waiting for music · Track 4 of 10\n  - heading \"[QA] Apple boundary release 2026-10-04 Cycle\" [level=1]\n  - paragraph: 16:30 / 39:51\n  - tablist \"Prompter view\":\n    - tab \"Cue-by-Cue\" [selected]\n    - tab \"Full List\"\n  - button \"Exit\"\n- alert \"Playback recovery\" [active]:\n  - heading \"Playback stopped\" [level=2]\n  - paragraph: Music ended before the saved playback window. Check its duration or skip this track.\n  - paragraph: Teaching position is held.\n  - button \"Retry playback\"\n  - button \"Continue without music\"\n  - button \"Manage music connection\"\n  - button \"Skip track\"\n  - generic \"Open in music app\"\n- paragraph: Current cue\n- paragraph: Lead this track\n- paragraph:\n  - generic: ♫\n  - generic: Telephone (feat. Beyoncé)\n- paragraph: Next\n- paragraph: End of track\n- generic: Effort\n- generic \"Intensity Push\":\n  - generic: Push\n- paragraph:\n  - generic: Tempo missing\n  - generic: Pulse off\n- region \"Class Pulse\":\n  - generic: Class Pulse\n  - generic: ◇ auto-shaped\n  - 'img \"Class Pulse, auto-shaped from track order and length: easy, easy, moderate, moderate, moderate, hard, hard, hard, moderate, moderate. Auto-shaped from track order and length. Set a track’s intensity to refine.\"'\n  - paragraph: Auto-shaped from track order and length. Set a track’s intensity to refine.\n- paragraph: Track left\n- paragraph: 0:01\n- paragraph: Class left\n- paragraph: 23:21\n- paragraph: Track 4\n- paragraph: Telephone (feat. Beyoncé)\n- paragraph: Lady Gaga\n- paragraph: Up next\n- paragraph: 6 tracks left\n- list:\n  - generic: \"5\"\n  - generic: Born This Way\n  - generic: 4:20\n  - generic: \"6\"\n  - generic: RUNWAY\n  - generic: 2:51\n  - generic: \"7\"\n  - generic: Poker Face\n  - generic: 3:57\n- region \"Live transport\":\n  - button \"Previous track, Die With A Smile\": ← Previous\n  - button \"Retry music\"\n  - button \"Next track, Born This Way\": Next →\n  - paragraph:\n    - generic: ⚠\n    - generic: \"Playback:\"\n    - generic: Playback error\n  - status:\n    - generic: ◉\n    - generic: \"Display:\"\n    - generic: Screen awake\n  - button \"Reset\"\n  - slider \"Seek class timeline\":\n    - generic: \"1\"\n    - generic: \"2\"\n    - generic: \"3\"\n    - generic: \"4\"\n    - generic: \"5\"\n    - generic: \"6\"\n    - generic: \"7\"\n    - generic: \"8\"\n    - generic: \"9\"\n    - generic: \"10\"\n    - generic: ▲\n    - generic: ▲",
+    "audibleConfirmation": "Not received",
+    "transportTrace": "cycle-transport.jsonl",
+    "failureScreenshot": "cycle-failure.jpg",
+    "diagnostics": {
+      "sdkStateAndTimeObserver": true,
+      "observerRemoved": true
+    }
+  },
+  {
+    "discipline": "pilates",
+    "startedAt": "2026-10-04T21:26:49.834Z",
+    "sourceSha": "7c69786caf5631fca9d57c02e98c27e31c0345e2",
+    "workerVersion": "18fe76cd-5273-4cd0-beae-d01b0a307693",
+    "asset": "index-CFcewXzm.js",
+    "result": "FAIL at first natural end",
+    "class": {
+      "id": "39c679c0-597f-4fbe-a18d-193a080cb76c",
+      "title": "[QA] Apple boundary release 2026-10-04 Pilates",
+      "template": "sculpt",
+      "targetDurationMs": 2700000,
+      "timelineMode": "sequential",
+      "totalDurationMs": 2390720
+    },
+    "tracks": [
+      {
+        "position": 0,
+        "title": "Abracadabra",
+        "trackId": "d2ecb377-3b69-4a60-adfe-2d7c22317a5d",
+        "classTrackId": "acf0e294-04a8-4d9e-9b0f-4556eb726204",
+        "startOffsetMs": 0,
+        "clipStartMs": 0,
+        "sourceDurationMs": 223398
+      },
+      {
+        "position": 1,
+        "title": "Bad Romance",
+        "trackId": "9f89728a-7409-45c1-8d49-de5b1ac2a7bf",
+        "classTrackId": "05392416-1b62-41cc-b0d7-b5e4072f9885",
+        "startOffsetMs": 223398,
+        "clipStartMs": 0,
+        "sourceDurationMs": 294504
+      },
+      {
+        "position": 2,
+        "title": "Die With A Smile",
+        "trackId": "9d8aa8c7-363e-4c9e-9206-7bab8556e16a",
+        "classTrackId": "7757f321-7826-4087-bf6f-68db3f458083",
+        "startOffsetMs": 517902,
+        "clipStartMs": 0,
+        "sourceDurationMs": 251668
+      },
+      {
+        "position": 3,
+        "title": "Telephone (feat. Beyoncé)",
+        "trackId": "f920263d-cdb9-48bc-9df2-c23dff53e01e",
+        "classTrackId": "5a77b578-e25d-4cc8-8a75-d1722e45547d",
+        "startOffsetMs": 769570,
+        "clipStartMs": 0,
+        "sourceDurationMs": 220537
+      },
+      {
+        "position": 4,
+        "title": "Born This Way",
+        "trackId": "43b965a8-9d75-4d6a-8d2c-88418bcd9663",
+        "classTrackId": "01ea66e8-d4d0-4d0c-b42d-21ea521326d1",
+        "startOffsetMs": 990107,
+        "clipStartMs": 0,
+        "sourceDurationMs": 260258
+      },
+      {
+        "position": 5,
+        "title": "RUNWAY",
+        "trackId": "bc92e831-ec28-4b76-969b-38405f37758a",
+        "classTrackId": "4458d1de-0d2c-48ba-ae2d-a451738bfa67",
+        "startOffsetMs": 1250365,
+        "clipStartMs": 0,
+        "sourceDurationMs": 171010
+      },
+      {
+        "position": 6,
+        "title": "Poker Face",
+        "trackId": "fcb03ed5-91a8-41f2-8796-70534bb21c96",
+        "classTrackId": "8b872466-fe05-41e0-bebd-464129345c43",
+        "startOffsetMs": 1421375,
+        "clipStartMs": 0,
+        "sourceDurationMs": 237078
+      },
+      {
+        "position": 7,
+        "title": "The Dead Dance",
+        "trackId": "63c08000-7914-4e17-b185-63763f449dca",
+        "classTrackId": "bfe21200-9b94-4a1d-a7fb-1e7933857182",
+        "startOffsetMs": 1658453,
+        "clipStartMs": 0,
+        "sourceDurationMs": 228519
+      },
+      {
+        "position": 8,
+        "title": "The Edge of Glory",
+        "trackId": "b06cf496-7ba5-4353-9a49-408b5be8e63a",
+        "classTrackId": "c563cdf3-25cf-42b8-99c6-6cec025e2a0d",
+        "startOffsetMs": 1886972,
+        "clipStartMs": 0,
+        "sourceDurationMs": 321545
+      },
+      {
+        "position": 9,
+        "title": "Rain On Me",
+        "trackId": "5b618daf-1074-49a9-af36-306e8ecc80ea",
+        "classTrackId": "5a4363bf-b4cf-427b-9686-86fcb7477c43",
+        "startOffsetMs": 2208517,
+        "clipStartMs": 0,
+        "sourceDurationMs": 182203
+      }
+    ],
+    "actions": [
+      {
+        "atMs": 69,
+        "kind": "click",
+        "name": "Start class"
+      }
+    ],
+    "uiTransitions": [
+      {
+        "atMs": 1,
+        "next": null,
+        "previous": null,
+        "error": false,
+        "complete": false,
+        "text": "Skip to main content\n[QA] Apple boundary release 2026-10-04 Pilates\nExit\n✓\nTrack checks passed\n\nPLAYBACK PREFLIGHT\n\n10 tracks checked · 0 need a decision\n\nProvider links and durations checked for 10 tracks. Playback availability and audible output are unverified.\n\nStart class\nRun without music\n\nApple Music authorized in this browser. Playback availability is still unverified.\n\nRecheck Apple Music authorization\n\nPROVIDER LINKS AND DURATIONS CHECKED\n\n10\n#1\n\nAbracadabra\n\n✓\nSelected: Apple Music\n#2\n\nBad Romance\n\n✓\nSelected: Apple Music\n#3\n\nDie With A Smile\n\n✓\nSelected: Apple Music\n#4\n\nTelephone (feat. Beyoncé)\n\n✓\nSelected: Apple Music\n#5\n\nBorn This Way\n\n✓\nSelected: Apple Music\n#6\n\nRUNWAY\n\n✓\nSelected: Apple Music\n#7\n\nPoker Face\n\n✓\nSelected: Apple Music\n#8\n\nThe Dead Dance\n\n✓\nSelected: Apple Music\n#9\n\nThe Edge of Glory\n\n✓\nSelected: Apple Music\n#10\n\nRain On Me\n\n✓\nSelected: Apple Music\n\nFIX OR CHOOSE PROMPTER-ONLY\n\n0\n\nNo tracks in this group.\n\nStart prepares the first track. The teaching clock waits for confirmed playback progress. Later tracks may still need recovery. Check your volume and audio output when music starts. Browser playback permission and each track’s availability may still require recovery when playback starts.\n\nManage connections\n\nApple Music connects here without leaving preflight. Spotify and SoundCloud authorization open a provider page; returning restores this class’s preflight without starting playback."
+      },
+      {
+        "atMs": 374,
+        "next": "Next track, Bad Romance",
+        "previous": "Previous track",
+        "error": false,
+        "complete": false,
+        "text": "Skip to main content\n\nCue: QA: warm up with controlled movement.\n\nTEACHING PAUSED · WAITING FOR MUSIC · TRACK 1 OF 10\n\n[QA] Apple boundary release 2026-10-04 Pilates\n\n0:00 / 39:51\n\nCue-by-Cue\nFull List\nExit\nWaiting for music\n\nProvider playback has not confirmed progress.\n\nTeaching position is held.\n\nContinue without music\nManage music connection\nSkip track\n\nCURRENT CUE\n\nQA: warm up with controlled movement.\n\nNEXT\n\nQA: breathe steadily and keep shoulders relaxed.\n\n0:16\nEFFORT\nPUSH\n\nTempo missing\nPulse off\n\nCLASS PULSE\n◇ AUTO-SHAPED\n\nAuto-shaped from track order and length. Set a track’s intensity to refine.\n\nTRACK LEFT\n\n3:43\n\nCLASS LEFT\n\n39:51\n\nTRACK 1\n\nAbracadabra\n\nLady Gaga\n\nNOTES\n\nQA manual teaching note: shoulders relaxed; breathe through the work.\n\nCHOREOGRAPHY QUEUE\n\nCurrent + next\n\nNOW\nQA: warm up with controlled movement.\nCUE\n0:16 left\nNEXT\nQA: breathe steadily and keep shoulders relaxed.\nCUE\n3:27\n\nUP NEXT\n\n9 tracks left\n\n2\nBad Romance\n4:55\n3\nDie With A Smile\n4:12\n4\nTelephone (feat. Beyoncé)\n3:41\n← Previous\nPause start\nNext →\n\n♪\nPlayback:\nPreparing Apple Music…\n\n◉\nDisplay:\nScreen awake\n\nReset\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n▲\n▲"
+      },
+      {
+        "atMs": 225004,
+        "next": "Next track, Bad Romance",
+        "previous": "Previous track",
+        "error": true,
+        "complete": false,
+        "text": "Skip to main content\n\nCue: QA: breathe steadily and keep shoulders relaxed.\n\nTEACHING PAUSED · WAITING FOR MUSIC · TRACK 1 OF 10\n\n[QA] Apple boundary release 2026-10-04 Pilates\n\n3:43 / 39:51\n\nCue-by-Cue\nFull List\nExit\nPlayback stopped\n\nMusic ended before the saved playback window. Check its duration or skip this track.\n\nTeaching position is held.\n\nRetry playback\nContinue without music\nManage music connection\nSkip track\nOpen in music app\n\nCURRENT CUE\n\nQA: breathe steadily and keep shoulders relaxed.\n\nNEXT\n\nEnd of track\n\nEFFORT\nPUSH\n\nTempo missing\nPulse off\n\nCLASS PULSE\n◇ AUTO-SHAPED\n\nAuto-shaped from track order and length. Set a track’s intensity to refine.\n\nTRACK LEFT\n\n0:00\n\nCLASS LEFT\n\n36:08\n\nTRACK 1\n\nAbracadabra\n\nLady Gaga\n\nNOTES\n\nQA manual teaching note: shoulders relaxed; breathe through the work.\n\nCHOREOGRAPHY QUEUE\n\nCurrent + next\n\nNOW\nQA: breathe steadily and keep shoulders relaxed.\nCUE\n0:00 left\n\nUP NEXT\n\n9 tracks left\n\n2\nBad Romance\n4:55\n3\nDie With A Smile\n4:12\n4\nTelephone (feat. Beyoncé)\n3:41\n← Previous\nRetry music\nNext →\n\n⚠\nPlayback:\nPlayback error\n\n◉\nDisplay:\nScreen awake\n\nReset\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n▲\n▲"
+      }
+    ],
+    "finalUi": "- link \"Skip to main content\":\n  - /url: \"#main-content\"\n- paragraph: \"Cue: QA: breathe steadily and keep shoulders relaxed.\"\n- paragraph\n- paragraph\n- banner:\n  - paragraph: Teaching paused · waiting for music · Track 1 of 10\n  - heading \"[QA] Apple boundary release 2026-10-04 Pilates\" [level=1]\n  - paragraph: 3:43 / 39:51\n  - tablist \"Prompter view\":\n    - tab \"Cue-by-Cue\" [selected]\n    - tab \"Full List\"\n  - button \"Exit\"\n- alert \"Playback recovery\" [active]:\n  - heading \"Playback stopped\" [level=2]\n  - paragraph: Music ended before the saved playback window. Check its duration or skip this track.\n  - paragraph: Teaching position is held.\n  - button \"Retry playback\"\n  - button \"Continue without music\"\n  - button \"Manage music connection\"\n  - button \"Skip track\"\n  - generic \"Open in music app\"\n- paragraph: Current cue\n- paragraph: \"QA: breathe steadily and keep shoulders relaxed.\"\n- paragraph: Next\n- paragraph: End of track\n- generic: Effort\n- generic \"Intensity Push\":\n  - generic: Push\n- paragraph:\n  - generic: Tempo missing\n  - generic: Pulse off\n- region \"Class Pulse\":\n  - generic: Class Pulse\n  - generic: ◇ auto-shaped\n  - 'img \"Class Pulse, auto-shaped from track order and length: easy, easy, moderate, moderate, moderate, hard, hard, hard, moderate, moderate. Auto-shaped from track order and length. Set a track’s intensity to refine.\"'\n  - paragraph: Auto-shaped from track order and length. Set a track’s intensity to refine.\n- paragraph: Track left\n- paragraph: 0:00\n- paragraph: Class left\n- paragraph: 36:08\n- paragraph: Track 1\n- paragraph: Abracadabra\n- paragraph: Lady Gaga\n- paragraph: Notes\n- paragraph: \"QA manual teaching note: shoulders relaxed; breathe through the work.\"\n- paragraph: Choreography queue\n- paragraph: Current + next\n- list \"Choreography queue\":\n  - generic: Now\n  - generic: \"QA: breathe steadily and keep shoulders relaxed.\"\n  - generic: cue\n  - generic \"Time remaining in current choreography\": 0:00 left\n- paragraph: Up next\n- paragraph: 9 tracks left\n- list:\n  - generic: \"2\"\n  - generic: Bad Romance\n  - generic: 4:55\n  - generic: \"3\"\n  - generic: Die With A Smile\n  - generic: 4:12\n  - generic: \"4\"\n  - generic: Telephone (feat. Beyoncé)\n  - generic: 3:41\n- region \"Live transport\":\n  - button \"Previous track\" [disabled]: ← Previous\n  - button \"Retry music\"\n  - button \"Next track, Bad Romance\": Next →\n  - paragraph:\n    - generic: ⚠\n    - generic: \"Playback:\"\n    - generic: Playback error\n  - status:\n    - generic: ◉\n    - generic: \"Display:\"\n    - generic: Screen awake\n  - button \"Reset\"\n  - slider \"Seek class timeline\":\n    - generic: \"1\"\n    - generic: \"2\"\n    - generic: \"3\"\n    - generic: \"4\"\n    - generic: \"5\"\n    - generic: \"6\"\n    - generic: \"7\"\n    - generic: \"8\"\n    - generic: \"9\"\n    - generic: \"10\"\n    - generic: ▲\n    - generic: ▲",
+    "audibleConfirmation": "Not received",
+    "transportTrace": "pilates-transport.jsonl",
+    "failureScreenshot": "pilates-failure.jpg",
+    "endpointReads": [
+      {
+        "atMs": 136437,
+        "time": 0,
+        "state": 3,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at state (<anonymous>:1:1150)\n    at wrappedCallback (https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:382898)\n    at https://js-cdn.music.apple.com/musickit/v3/musickit.js:13:61795\n    at Array.forEach (<anonymous>)\n    at PubSub.publish (https://js-cdn.music.apple.com/musickit/v3/musickit.js:13:61783)\n    at AudioPlayer.setPlaybackState (https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:64492)\n    at https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:70701\n    at Generator.next (<anonymous>)"
+      },
+      {
+        "atMs": 136441,
+        "time": 0,
+        "state": 3,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at L.captureTransport (https://ritmofit.studio/assets/registry-DGeaYbDD.js:1:7608)\n    at https://ritmofit.studio/assets/registry-DGeaYbDD.js:1:4282\n    at wrappedCallback (https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:382898)\n    at https://js-cdn.music.apple.com/musickit/v3/musickit.js:13:61795\n    at Array.forEach (<anonymous>)\n    at PubSub.publish (https://js-cdn.music.apple.com/musickit/v3/musickit.js:13:61783)\n    at AudioPlayer.setPlaybackState (https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:64492)\n    at https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:70701\n    at Generator.next (<anonymous>)"
+      },
+      {
+        "atMs": 136514,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at state (<anonymous>:1:1150)\n    at wrappedCallback (https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:382898)\n    at https://js-cdn.music.apple.com/musickit/v3/musickit.js:13:61795\n    at Array.forEach (<anonymous>)\n    at PubSub.publish (https://js-cdn.music.apple.com/musickit/v3/musickit.js:13:61783)\n    at AudioPlayer.setPlaybackState (https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:64492)\n    at https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:67669\n    at Generator.next (<anonymous>)"
+      },
+      {
+        "atMs": 136514,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at state (<anonymous>:1:1150)\n    at wrappedCallback (https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:382898)\n    at https://js-cdn.music.apple.com/musickit/v3/musickit.js:13:61795\n    at Array.forEach (<anonymous>)\n    at PubSub.publish (https://js-cdn.music.apple.com/musickit/v3/musickit.js:13:61783)\n    at AudioPlayer.setPlaybackState (https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:64492)\n    at https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:67669\n    at Generator.next (<anonymous>)"
+      },
+      {
+        "atMs": 137079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 138079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 139079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 140079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 141078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 142079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 143079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 144079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 145078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 146079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 147079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 148079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 149079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 150077,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 151078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 152078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 153088,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 154078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 155079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 156079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 157079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 158078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 159078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 160077,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 161079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 162079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 163079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 164078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 165079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 166078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 167079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 168079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 169079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 170079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 171079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 172078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 173079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 174086,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 175078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 176078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 177078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 178079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 179078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 180079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 181079,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 182078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 183078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 184078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 185081,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      },
+      {
+        "atMs": 186078,
+        "time": 0,
+        "state": 4,
+        "stack": "Error\n    at MusicKitInstance.get (<anonymous>:1:767)\n    at record (<anonymous>:1:1050)\n    at <anonymous>:1:1487"
+      }
+    ],
+    "diagnostics": {
+      "numericGetterWrapper": true,
+      "originalGetterReturnValuesPreserved": true,
+      "wrapperRemoved": true,
+      "recordedReadOffset": "atMs in endpointReads is relative to wrapper installation; transport/UI atMs is relative to startedAt"
+    }
+  }
+]

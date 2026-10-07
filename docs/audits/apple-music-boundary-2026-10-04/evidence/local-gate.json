@@ -1,0 +1,77 @@
+{
+  "sha": "7c69786caf5631fca9d57c02e98c27e31c0345e2",
+  "checks": [
+    {
+      "name": "format",
+      "command": "pnpm format:check",
+      "exitCode": 0,
+      "seconds": 3.6
+    },
+    {
+      "name": "typecheck",
+      "command": "pnpm -r typecheck",
+      "exitCode": 0,
+      "seconds": 7.2
+    },
+    {
+      "name": "lint",
+      "command": "pnpm lint",
+      "exitCode": 0,
+      "seconds": 3.75
+    },
+    {
+      "name": "design-system",
+      "command": "npm run verify",
+      "exitCode": 0,
+      "seconds": 0.32
+    },
+    {
+      "name": "theme-classes",
+      "command": "pnpm --filter @ritmofit/web theme-classes",
+      "exitCode": 0,
+      "seconds": 0.53
+    },
+    {
+      "name": "unit",
+      "command": "pnpm test",
+      "exitCode": 0,
+      "seconds": 21.45
+    },
+    {
+      "name": "integration",
+      "command": "pnpm --filter @ritmofit/api test:integration",
+      "exitCode": 0,
+      "seconds": 20.4
+    },
+    {
+      "name": "build",
+      "command": "pnpm --filter @ritmofit/web build",
+      "exitCode": 0,
+      "seconds": 7.02
+    },
+    {
+      "name": "openapi",
+      "command": "pnpm --filter @ritmofit/api openapi",
+      "exitCode": 0,
+      "seconds": 0.49
+    },
+    {
+      "name": "openapi-diff",
+      "command": "git diff --exit-code apps/api/openapi/openapi.json",
+      "exitCode": 0,
+      "seconds": 0.02
+    },
+    {
+      "name": "contract-parity",
+      "command": "pnpm --filter @ritmofit/api contract-parity",
+      "exitCode": 0,
+      "seconds": 0.45
+    },
+    {
+      "name": "audit",
+      "command": "pnpm audit:ci",
+      "exitCode": 0,
+      "seconds": 0.72
+    }
+  ]
+}

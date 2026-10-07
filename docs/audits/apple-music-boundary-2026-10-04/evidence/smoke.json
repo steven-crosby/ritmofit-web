@@ -1,0 +1,96 @@
+[
+  {
+    "check": "spa-consecutive",
+    "index": 0,
+    "status": 200,
+    "asset": "/assets/index-CFcewXzm.js"
+  },
+  {
+    "check": "spa-consecutive",
+    "index": 1,
+    "status": 200,
+    "asset": "/assets/index-CFcewXzm.js"
+  },
+  {
+    "check": "spa-consecutive",
+    "index": 2,
+    "status": 200,
+    "asset": "/assets/index-CFcewXzm.js"
+  },
+  {
+    "check": "entry-bytes",
+    "status": 200,
+    "sha256": "2f55f7cd2ab49e3379d09e5973048c12630a9849c9d519b01d141f8704babb3d"
+  },
+  {
+    "path": "/api/v1/health",
+    "method": "GET",
+    "status": 200
+  },
+  {
+    "check": "security-headers",
+    "present": [
+      "strict-transport-security",
+      "content-security-policy",
+      "x-frame-options",
+      "x-content-type-options",
+      "referrer-policy",
+      "permissions-policy"
+    ]
+  },
+  {
+    "path": "/api/v1/classes",
+    "method": "GET",
+    "status": 401
+  },
+  {
+    "path": "/api/v1/explore",
+    "method": "GET",
+    "status": 401
+  },
+  {
+    "path": "/api/v1/teams",
+    "method": "GET",
+    "status": 401
+  },
+  {
+    "path": "/api/v1/classes/00000000-0000-4000-8000-000000000000/shares",
+    "method": "GET",
+    "status": 401
+  },
+  {
+    "path": "/api/v1/classes/00000000-0000-4000-8000-000000000000/import-playlist",
+    "method": "POST",
+    "status": 401
+  },
+  {
+    "path": "/api/v1/providers/apple_music/search?q=release-check",
+    "method": "GET",
+    "status": 401
+  },
+  {
+    "path": "/api/v1/providers/apple_music/playlists",
+    "method": "GET",
+    "status": 401
+  },
+  {
+    "path": "/api/v1/providers/track-import",
+    "method": "POST",
+    "status": 401
+  },
+  {
+    "path": "/api/v1/classes/00000000-0000-4000-8000-000000000000/cover",
+    "method": "POST",
+    "status": 401
+  },
+  {
+    "path": "/api/v1/classes/00000000-0000-4000-8000-000000000000/tags",
+    "method": "POST",
+    "status": 401
+  },
+  {
+    "path": "/api/v1/uploads/covers/invalid-release-check",
+    "method": "GET",
+    "status": 404
+  }
+]

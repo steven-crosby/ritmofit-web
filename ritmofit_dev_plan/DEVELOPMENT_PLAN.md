@@ -11,22 +11,27 @@
 
 ## Now
 
-*Last updated 2026-10-06 (Claude Code docs-workflow session). Verify before relying on it.*
+*Last updated 2026-10-06 (Claude Code docs-workflow session; production and next step reconciled the
+same day with the 2026-10-04 Codex release handoff). Verify before relying on it.*
 
 - **Focus:** music-led Phase 1 ([D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30),
   [plan](./music-led-instructor-workflow-plan.md)) — reliable, honest Apple Music Live playback,
   desktop Chrome first (Cycle and Pilates), then iPhone. Spotify is tabled (owner, 2026-10-02).
-- **Production, last recorded 2026-10-04** ([HISTORY](./HISTORY.md)): source `efd542b`, Worker
-  `1053f665-ebf1-4d8c-be40-16ddfdea908f`, SPA `assets/index-B8JJicuF.js`, remote D1 no pending
-  migrations; rollback Worker `1ae3e216-89a6-4bbd-aec0-38f01bc600ff`. Not live-checked on
-  2026-10-06 (cloud session without production access).
-- **`main` is ahead:** [#488](https://github.com/steven-crosby/ritmofit-web/pull/488)
-  (`7c69786`, merged 2026-10-04, CI green) keeps Apple Music's observed endpoint through MusicKit's
-  queue teardown — the fix for the 3:43 natural-boundary failure seen in production on 2026-10-04.
-  Local real-Chrome first boundary passed; **not deployed, no production acceptance yet.**
-- **Next step:** deploy #488 per the [runbook](./deployment-runbook.md), then repeat the natural
-  first-song boundary and a full uninterrupted Cycle class in real Chrome with Apple Music on fixture
-  `bc488d5c-7dc5-4414-a7d2-4ef26601deae`; capture provider state/position/duration if it fails.
+- **Production, last recorded 2026-10-04** ([HISTORY](./HISTORY.md)): source `7c69786`
+  ([#488](https://github.com/steven-crosby/ritmofit-web/pull/488), Apple Music endpoint retention),
+  Worker `18fe76cd-5273-4cd0-beae-d01b0a307693`, SPA `assets/index-CFcewXzm.js`, remote D1 no pending
+  migrations; rollback Worker `1053f665-ebf1-4d8c-be40-16ddfdea908f`. Not live-checked on
+  2026-10-06. `main` is ahead of production by docs only.
+- **Natural playback acceptance FAILED on #488 (P1):** Cycle passed three transitions, then stopped
+  at Telephone's natural end at `16:30`; Pilates stopped at its first end at `3:43`. MusicKit resets
+  to zero and emits another paused event before ended; the adapter overwrites its valid cached
+  endpoint with zero, so the runtime holds teaching time with the early-end error. Full
+  uninterrupted classes and audible acceptance remain unverified. Evidence and restart point:
+  [boundary handoff](../docs/audits/apple-music-boundary-2026-10-04/NEXT_SESSION.md).
+- **Next step:** propose a narrow Apple adapter/test fix, preserving the strict subsecond
+  finished-end guard and genuine early-end protection; wait for Steven's implementation approval,
+  then rerun the full gate and repeat natural desktop Cycle/Pilates acceptance after an approved
+  release.
 - **Then:** iPhone Safari Apple Music investigation (fully close the Music app, reload, retry; if it
   still fails, capture the MusicKit error at Start/Retry via Safari Web Inspector), and the
   playlist-to-teaching-draft product decision (backlog).
