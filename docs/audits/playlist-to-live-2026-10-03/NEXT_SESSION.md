@@ -9,6 +9,17 @@ Codex full-close handoff, 2026-10-03. Begin in Plan Mode with the repository's
 records evidence and planning priorities; it does not authorize implementation,
 Git publication, deployment, migrations, or fixture deletion.
 
+## Update — 2026-10-04
+
+For the active Apple Music boundary work, begin with the
+[current restart guide](../apple-music-boundary-2026-10-04/NEXT_SESSION.md) and
+current DEVELOPMENT_PLAN/HISTORY. #484, #486, and #488 are already merged/deployed;
+#480 was reconciled and merged. The current release still fails natural playback:
+Cycle at Telephone's fourth end and Pilates at its first end. The confirmed
+paused-at-zero teardown overwrite is the next proposed fix. Do not use the historical
+restart SHA, reopen the closed PR, or reapply completed fixes below. The original audit
+findings and later teaching-draft/creation-policy decisions remain historical context.
+
 ## Restart point
 
 1. Read `AGENTS.md`, inspect the actual checkout/branch/status, fetch origin, and

@@ -1,0 +1,53 @@
+{
+  "kind": "synthetic reproduction using unchanged deployed adapter; secondPause matches observed Pilates SDK event sequence",
+  "results": [
+    {
+      "pollReset": false,
+      "secondPause": false,
+      "paused": {
+        "state": "paused",
+        "positionMs": 221000
+      },
+      "resetReading": null,
+      "finished": {
+        "state": "ended",
+        "positionMs": 221000
+      },
+      "savedEndMs": 220537,
+      "guardFails": false
+    },
+    {
+      "pollReset": true,
+      "secondPause": false,
+      "paused": {
+        "state": "paused",
+        "positionMs": 221000
+      },
+      "resetReading": {
+        "state": "paused",
+        "positionMs": 0
+      },
+      "finished": {
+        "state": "ended",
+        "positionMs": 0
+      },
+      "savedEndMs": 220537,
+      "guardFails": true
+    },
+    {
+      "pollReset": false,
+      "secondPause": true,
+      "paused": {
+        "state": "paused",
+        "positionMs": 221000
+      },
+      "resetReading": null,
+      "finished": {
+        "state": "ended",
+        "positionMs": 0
+      },
+      "savedEndMs": 220537,
+      "guardFails": true
+    }
+  ]
+}

@@ -423,6 +423,60 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > </details>
 
 
+> **Session 2026-10-04 — PR #488 Apple Music endpoint retention deployed; natural playback acceptance FAILED.**
+> Squash merge/source `7c69786caf5631fca9d57c02e98c27e31c0345e2`, Worker
+> `18fe76cd-5273-4cd0-beae-d01b0a307693` at 100%, SPA `assets/index-CFcewXzm.js`.
+> Reviewed head `bdebd0348a2b16e6143d8b39599df9ccbacd88b1` and merged source have identical
+> trees. Owner approved squash merge, merged-branch deletion, main synchronization,
+> separate provider release, and natural desktop Cycle/Pilates verification.
+> Prior Worker `1053f665-ebf1-4d8c-be40-16ddfdea908f` retained as rollback reference;
+> no rollback performed. No schema, API, migration, shared-contract, OpenAPI,
+> configuration, or secret change; remote D1 reported no migrations to apply.
+>
+> #488 changes only the Apple Music adapter and its tests: capture SDK state/position
+> synchronously, retain the actual observed endpoint through queue reset, clear evidence
+> on lifecycle/seek/replay changes, and guard event handling by singleton ownership.
+> It does not substitute the source duration. Runtime's strict less-than-1,000-ms
+> finished-end reconciliation and genuine early-end protection remain unchanged.
+>
+> Verification: all 12 local gate checks passed on exact merged source, including
+> 1,538 unit tests and 184 integration tests. Main CI run `37234524900` passed on
+> that SHA. Three consecutive cache-busted SPA fetches matched the entry, served
+> bytes matched the build, SPA/health and protected/mounted routes passed, and six
+> security headers were present. Browser ran the matching production entry.
+>
+> **Natural acceptance: FAIL.** Cycle passed the first three natural transitions,
+> then failed at Telephone's end at class `16:30`; the SDK reached 221 seconds
+> against saved duration `220537` ms, reset to zero, and Live held teaching time
+> with the early-end error. Pilates failed its first natural end at `3:43`.
+> Its actual event sequence included paused at 223 seconds, seeking at zero,
+> another paused at zero, then ended/stopped/completed at zero. A numeric getter
+> observer preserved original values and captured the adapter's `captureTransport`
+> reading zero from that second paused callback. The paused zero overwrites the
+> valid cached endpoint before ended. Cycle's exact internal overwrite path was
+> not instrumented. A temporary reproduction using the unchanged deployed adapter
+> reproduced both paused-poll and second-paused overwrite paths; this synthetic
+> mechanism proof is separate from natural acceptance.
+>
+> Neither run used operator pause, seek, skip, reset, or retry before failure.
+> Full-class completion and later boundaries remain unverified; audible confirmation
+> was requested but not received. Spotify remains paused. No iPhone/HIIT, teaching
+> draft, readiness, music assignment, runtime, or UI change occurred in this slice.
+> [Restart guide and durable evidence](../docs/audits/apple-music-boundary-2026-10-04/NEXT_SESSION.md)
+> identify the P1 and proposed narrow adapter/test follow-up, which awaits owner approval.
+>
+> Three new tagged QA fixtures remain for owner review: boundary trace Cycle
+> `8eba970c-a742-4d25-9c77-befd1744b9bc`, release Cycle
+> `6d012025-0236-487d-94b2-1ed597ec8eab`, and release Pilates
+> `39c679c0-597f-4fbe-a18d-193a080cb76c`. Fresh duplicates retained source order,
+> all ten durations, and authored teaching details; no clips/readiness were changed.
+> Pending fixture deletion is handed to the owner; none were deleted. Both observers
+> removed, original SDK getter restored, playback stopped, Live exited, temporary
+> server/export tab closed. Merged feature branch deleted after a verified recovery
+> bundle; main synchronized, no open PRs at handoff preparation. Unrelated `.claude/`
+> preserved. The deploy record/handoff is documentation only; publication status
+> must be rechecked on GitHub before declaring close complete.
+
 > **Session 2026-10-04 — PR #486 Live zoom fix deployed; #485/#480 documentation reconciled.**
 > Released source `efd542b88552d29c94d7b0edad484f29f244d20c`, Worker
 > `1053f665-ebf1-4d8c-be40-16ddfdea908f` at 100%, SPA `assets/index-B8JJicuF.js`.

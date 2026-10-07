@@ -1,0 +1,33 @@
+{
+  "sourceSha": "7c69786caf5631fca9d57c02e98c27e31c0345e2",
+  "pr488": "merged",
+  "rollbackVersion": "1053f665-ebf1-4d8c-be40-16ddfdea908f",
+  "fullNaturalCyclePilates": "FAILED: Cycle track 4 at 16:30; Pilates track 1 at 3:43",
+  "audibleConfirmation": "Not received",
+  "asset": "/assets/index-CFcewXzm.js",
+  "localGate": "12/12 passed",
+  "remoteD1": "No migrations to apply",
+  "workerVersion": "18fe76cd-5273-4cd0-beae-d01b0a307693",
+  "workerTraffic": "100%",
+  "productionSmoke": "passed",
+  "entryByteMatch": true,
+  "mainCI": {
+    "result": "success",
+    "runId": 37234524900,
+    "sha": "7c69786caf5631fca9d57c02e98c27e31c0345e2"
+  },
+  "cycleFixtureId": "6d012025-0236-487d-94b2-1ed597ec8eab",
+  "pilatesFixtureId": "39c679c0-597f-4fbe-a18d-193a080cb76c",
+  "browserCleanup": {
+    "traceRemoved": true,
+    "sdkGetterRestored": true,
+    "playbackStopped": true,
+    "liveExited": true
+  },
+  "finding": "P1: paused zero-reset overwrites last observed endpoint before ended",
+  "observedDate": "2026-10-04",
+  "mainAtVerification": "7c69786caf5631fca9d57c02e98c27e31c0345e2",
+  "mainVsProduction": "Application code aligned at verification. A subsequent handoff-only merge does not require deployment.",
+  "rollbackPerformed": false,
+  "publicationAuthority": "This is a release-evidence snapshot. Recheck GitHub for handoff publication and current main at restart."
+}
