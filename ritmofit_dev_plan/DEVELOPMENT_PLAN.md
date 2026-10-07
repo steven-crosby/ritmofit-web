@@ -20,8 +20,9 @@ same day with the 2026-10-04 Codex release handoff). Verify before relying on it
 - **Production, last recorded 2026-10-04** ([HISTORY](./HISTORY.md)): source `7c69786`
   ([#488](https://github.com/steven-crosby/ritmofit-web/pull/488), Apple Music endpoint retention),
   Worker `18fe76cd-5273-4cd0-beae-d01b0a307693`, SPA `assets/index-CFcewXzm.js`, remote D1 no pending
-  migrations; rollback Worker `1053f665-ebf1-4d8c-be40-16ddfdea908f`. Not live-checked on
-  2026-10-06. `main` is ahead of production by docs only.
+  migrations; rollback Worker `1053f665-ebf1-4d8c-be40-16ddfdea908f`. Live-checked 2026-10-06:
+  that Worker at 100%, that SPA entry served, health 200 (D1 not rechecked). `main` is ahead of
+  production by docs only.
 - **Natural playback acceptance FAILED on #488 (P1):** Cycle passed three transitions, then stopped
   at Telephone's natural end at `16:30`; Pilates stopped at its first end at `3:43`. MusicKit resets
   to zero and emits another paused event before ended; the adapter overwrites its valid cached
