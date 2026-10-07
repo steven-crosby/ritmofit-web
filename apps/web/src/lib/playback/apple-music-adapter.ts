@@ -306,7 +306,10 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       };
       return this.finishedReading;
     }
-    if ((state === 'playing' || state === 'paused') && positionMs != null)
+    // MusicKit can reset the playhead to 0 and emit paused again before ended.
+    // That zero is not an endpoint. Keep the latest positive playhead so ended
+    // can fall back to it; an explicit seek/stop/replay still clears the cache.
+    if ((state === 'playing' || state === 'paused') && positionMs != null && positionMs > 0)
       this.lastPositionMs = positionMs;
     return { state, positionMs };
   }
