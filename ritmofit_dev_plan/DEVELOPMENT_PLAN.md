@@ -11,7 +11,7 @@
 
 ## Now
 
-*Last updated 2026-10-07 (Cursor close for #494). Production was last observed 2026-10-06 around
+*Last updated 2026-10-07 (Codex two-lane merge close). Production was last observed 2026-10-06 around
 8:04 PM MT and is not rechecked here.*
 
 - **Focus:** music-led Phase 1 ([D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30),
@@ -20,20 +20,21 @@
 - **Production, last observed 2026-10-06** ([HISTORY](./HISTORY.md)): source `7c69786`
   ([#488](https://github.com/steven-crosby/ritmofit-web/pull/488)), Worker
   `18fe76cd-5273-4cd0-beae-d01b0a307693`, SPA `assets/index-CFcewXzm.js`. Not rechecked since.
-  With [#494](https://github.com/steven-crosby/ritmofit-web/pull/494) squash-merged, `main` is ahead
-  of production by #494, application code (Apple Music zero-pause endpoint cache). No deploy this
-  session. Rollback Worker from the #488 record: `1053f665-ebf1-4d8c-be40-16ddfdea908f`.
+  Relative to that last observation, `main` contains application changes #494 (Apple Music
+  zero-pause endpoint cache) and [#495](https://github.com/steven-crosby/ritmofit-web/pull/495)
+  (library pagination cycle guard, source `8dc2e24`). Production alignment is unknown here: no
+  Cloudflare credentials; three SPA checks returned 403. No deploy this session. Rollback Worker from the #488 record: `1053f665-ebf1-4d8c-be40-16ddfdea908f`.
 - **Natural acceptance still pending.** [#494](https://github.com/steven-crosby/ritmofit-web/pull/494)
   implements the P1 from the failed #488 Cycle (`16:30`) and Pilates (`3:43`) runs: the adapter
   caches only a positive playhead and leaves the runtime early-end guard unchanged. Merged, not
   deployed. Evidence: [boundary record](../docs/audits/apple-music-boundary-2026-10-04/NEXT_SESSION.md).
-- **Next step:** owner deploy decision for #494 under [`deployment-runbook.md`](./deployment-runbook.md).
+- **Next step:** owner deploy decisions for #494 and the separate backend/provider slice #495 under [`deployment-runbook.md`](./deployment-runbook.md).
   After an approved deploy, natural desktop Cycle and Pilates acceptance: Start only, uninterrupted,
   with human listening confirmation.
 - **Then:** iPhone Safari Apple Music investigation (fully close the Music app, reload, retry; if it
   still fails, capture the MusicKit error at Start/Retry via Safari Web Inspector), and the
   playlist-to-teaching-draft product decision (backlog).
-- **Owner decisions open:** deploy #494; playlist-derived teaching-draft policy; playback-liveness alerting; F-02
+- **Owner decisions open:** deploy #494 and #495; playlist-derived teaching-draft policy; playback-liveness alerting; F-02
   (D11 `createPattern`); NotFound/ErrorBoundary warmth; review/delete of every `[QA]` production fixture
   still present — HISTORY records several sets left for review since 2026-09-28 (#468, #481, the
   [2026-10-03 audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md) six plus four more seen
