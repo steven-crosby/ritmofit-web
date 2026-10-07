@@ -466,6 +466,59 @@ describe('AppleMusicAdapter getLiveness', () => {
     adapter.destroy();
   });
 
+  it('retains the positive endpoint when MusicKit pauses at zero between seeking and ended', async () => {
+    // Production 2026-10-04: paused(223) -> seeking(0) -> paused(0) -> ended(0).
+    // The zero pause must not replace the playhead the runtime compares to the window.
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    instance.currentPlaybackDuration = 223;
+    instance.currentPlaybackTime = 223;
+    instance.playbackState = STATES.paused;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.paused });
+    instance.currentPlaybackTime = 0;
+    instance.playbackState = STATES.seeking;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.seeking });
+    instance.playbackState = STATES.paused;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.paused });
+    instance.currentPlaybackDuration = 0;
+    instance.playbackState = STATES.ended;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.ended });
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 223_000, state: 'ended' });
+    adapter.destroy();
+  });
+
+  it('does not let a paused-at-zero poll replace a positive playhead before ended', async () => {
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    instance.currentPlaybackDuration = 223;
+    instance.currentPlaybackTime = 223;
+    instance.playbackState = STATES.paused;
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 223_000, state: 'paused' });
+    instance.currentPlaybackTime = 0;
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 0, state: 'paused' });
+    instance.currentPlaybackDuration = 0;
+    instance.playbackState = STATES.ended;
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 223_000, state: 'ended' });
+    adapter.destroy();
+  });
+
+  it('reports a genuinely early playhead when the same zero pause precedes ended', async () => {
+    const instance = new FakeInstance();
+    const adapter = await playing(instance);
+    instance.currentPlaybackDuration = 180;
+    instance.currentPlaybackTime = 30;
+    instance.playbackState = STATES.paused;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.paused });
+    instance.currentPlaybackTime = 0;
+    instance.playbackState = STATES.seeking;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.seeking });
+    instance.playbackState = STATES.paused;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.paused });
+    instance.playbackState = STATES.ended;
+    await expect(adapter.getTransport()).resolves.toEqual({ positionMs: 30_000, state: 'ended' });
+    adapter.destroy();
+  });
+
   it('does not substitute the full source duration for a genuinely early endpoint', async () => {
     const instance = new FakeInstance();
     const adapter = await playing(instance);
@@ -631,16 +684,32 @@ describe('Apple Music natural-boundary runtime regression', () => {
     { name: 'final track', endpoint: 223, hasNext: false, expected: 'ended' },
     { name: 'genuinely early stream', endpoint: 30, hasNext: true, expected: 'error' },
     { name: 'full-second mismatch', endpoint: 222.398, hasNext: true, expected: 'error' },
+    {
+      name: 'next track after the production zero pause',
+      endpoint: 223,
+      hasNext: true,
+      expected: 'buffering',
+      pauseAtZero: true,
+    },
+    {
+      name: 'final track after the production zero pause',
+      endpoint: 223,
+      hasNext: false,
+      expected: 'ended',
+      pauseAtZero: true,
+    },
   ])(
     'handles $name without substituting source duration',
     async ({
       endpoint,
       hasNext,
       expected,
+      pauseAtZero,
     }: {
       endpoint: number;
       hasNext: boolean;
       expected: string;
+      pauseAtZero?: boolean;
     }) => {
       vi.useFakeTimers();
       const instance = new FakeInstance();
@@ -691,6 +760,12 @@ describe('Apple Music natural-boundary runtime regression', () => {
         instance.currentPlaybackTime = 0;
         instance.playbackState = STATES.seeking;
         instance.emit(EVENTS.playbackStateDidChange, { state: STATES.seeking });
+        if (pauseAtZero) {
+          // Production ordering, plus the transport poll that also reads the reset.
+          instance.playbackState = STATES.paused;
+          instance.emit(EVENTS.playbackStateDidChange, { state: STATES.paused });
+          await vi.advanceTimersByTimeAsync(250);
+        }
         instance.currentPlaybackDuration = 0;
         instance.playbackState = STATES.ended;
         instance.emit(EVENTS.playbackStateDidChange, { state: STATES.ended });
