@@ -756,6 +756,123 @@ describe('LiveMode playback failure', () => {
     expect(screen.getByText('Music off')).toBeTruthy();
   });
 
+  it('retries with a fresh adapter and holds teaching until fresh provider progress', async () => {
+    const failedDestroy = vi.fn();
+    const recovered = workingAdapter();
+    const prepare = vi.fn(recovered.prepare);
+    let positionMs = 0;
+    const getTransport = vi.fn(async () => ({ positionMs, state: 'playing' as const }));
+    vi.mocked(soundcloudAdapterFactory)
+      .mockImplementationOnce(() => ({
+        ...workingAdapter(),
+        prepare: async () => {
+          throw new Error('first preparation failed');
+        },
+        destroy: failedDestroy,
+      }))
+      .mockImplementationOnce(() => ({ ...recovered, prepare, getTransport }));
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(screen.getByRole('alert').textContent).toContain('first preparation failed');
+      expect(failedDestroy).toHaveBeenCalledOnce();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Retry playback' }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(soundcloudAdapterFactory).toHaveBeenCalledTimes(2);
+      expect(prepare).toHaveBeenCalledExactlyOnceWith(activeTrack, {
+        startMs: 0,
+        endMs: 180000,
+      });
+      expect(getTransport.mock.calls.length).toBeGreaterThanOrEqual(4);
+      expect(screen.getByText('0:00 / 3:00')).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Waiting for music' })).toBeTruthy();
+
+      positionMs = 2000;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(250);
+      });
+      expect(screen.getByText('0:02 / 3:00')).toBeTruthy();
+      expect(screen.getByText(/Now teaching · Track/)).toBeTruthy();
+      expect(screen.queryByLabelText('Playback recovery')).toBeNull();
+    } finally {
+      cleanup();
+      vi.useRealTimers();
+    }
+  });
+
+  it('skips a failed track and holds at the next boundary until fresh provider progress', async () => {
+    const nextTrack = {
+      ...activeTrack,
+      classTrackId: '00000000-0000-4000-8000-0000000000b2',
+      position: 1,
+      startOffsetMs: 180000,
+      clipStartMs: 30000,
+      track: { ...activeTrack.track, id: 'tr-skip', title: 'Second Track', durationMs: 120000 },
+    } satisfies RunPayloadTrackEntry;
+    const twoTracks = {
+      ...payload,
+      class: { ...payload.class, totalDurationMs: 300000 },
+      tracks: [activeTrack, nextTrack],
+    } satisfies RunPayload;
+    const failedDestroy = vi.fn();
+    const recovered = workingAdapter();
+    const prepare = vi.fn(recovered.prepare);
+    let positionMs = 30000;
+    const getTransport = vi.fn(async () => ({ positionMs, state: 'playing' as const }));
+    vi.mocked(soundcloudAdapterFactory)
+      .mockImplementationOnce(() => ({
+        ...workingAdapter(),
+        prepare: async () => {
+          throw new Error('first preparation failed');
+        },
+        destroy: failedDestroy,
+      }))
+      .mockImplementationOnce(() => ({ ...recovered, prepare, getTransport }));
+    render(<LiveMode payload={twoTracks} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(screen.getByRole('alert').textContent).toContain('first preparation failed');
+      expect(failedDestroy).toHaveBeenCalledOnce();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Skip track' }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(soundcloudAdapterFactory).toHaveBeenCalledTimes(2);
+      expect(prepare).toHaveBeenCalledExactlyOnceWith(nextTrack, {
+        startMs: 30000,
+        endMs: 150000,
+      });
+      expect(getTransport.mock.calls.length).toBeGreaterThanOrEqual(4);
+      expect(screen.getByText('3:00 / 5:00')).toBeTruthy();
+      expect(screen.getByText(/Teaching paused · waiting for music/)).toBeTruthy();
+
+      positionMs = 32000;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(250);
+      });
+      expect(screen.getByText('3:02 / 5:00')).toBeTruthy();
+      expect(screen.getByText(/Now teaching · Track/)).toBeTruthy();
+      expect(screen.queryByLabelText('Playback recovery')).toBeNull();
+    } finally {
+      cleanup();
+      vi.useRealTimers();
+    }
+  });
+
   it('keeps the current cue, count, clock, and recovery visible when a failure is paused', async () => {
     const countedCue = {
       ...payload,
