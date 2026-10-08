@@ -31,7 +31,7 @@ the same [`fixtures.md`](../../agent-prompts/design-audit/fixtures.md) data.
 | [`music-led-phase-1-acceptance`](music-led-phase-1-acceptance/) | Acceptance checklist + results | `README.md` | Phase 1 real-device acceptance; open. |
 | [`playlist-import-release-2026-10-02`](playlist-import-release-2026-10-02/) | Release smoke evidence | `uncertain-import.jpg` | Evidence for the #481/#482 playlist-import release record in `HISTORY.md`. |
 | [`playlist-to-live-2026-10-03`](playlist-to-live-2026-10-03/) | Desktop playlist→class→Live audit | `coverage.md` | Findings and QA fixture IDs; `NEXT_SESSION.md` is a superseded restart point. |
-| [`apple-music-boundary-2026-10-04`](apple-music-boundary-2026-10-04/) | Release + natural-playback acceptance evidence | `NEXT_SESSION.md` | #488 release record and the failed Cycle/Pilates natural-boundary acceptance (P1); evidence in `evidence/README.md`. The zero-pause fix is implemented in [#494](https://github.com/steven-crosby/ritmofit-web/pull/494), merged to `main`, not deployed; natural acceptance is still pending. |
+| [`apple-music-boundary-2026-10-04`](apple-music-boundary-2026-10-04/) | Release + natural-playback acceptance evidence | `NEXT_SESSION.md` | #488 release record and the failed Cycle/Pilates natural-boundary acceptance (P1); evidence in `evidence/README.md`. The zero-pause fix is implemented in [#494](https://github.com/steven-crosby/ritmofit-web/pull/494) and deployed 2026-10-07 (Worker `5f67d242-8956-42b7-9318-67b2797d3454`, SPA `assets/index-mZ1ypG4t.js`); natural acceptance is still pending. |
 
 Add a row when a run is delivered, and record the disposition outcome once the owner has filled that run's
 `run-decisions.md`.

@@ -13,6 +13,36 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-07 — PR #494 Apple Music zero-pause endpoint cache.** Owner approved a #494-only
+> release from local `main` at `e712274f8b0add74755bc97accff42f44405260f`, deliberately behind
+> `origin/main` (`c5fe7aa`, which also contains #495 and #496). Worker
+> `5f67d242-8956-42b7-9318-67b2797d3454` at 100%, created 2026-10-08T02:50:44Z (about 8:50 PM MT).
+> SPA `assets/index-mZ1ypG4t.js`. Rollback Worker `18fe76cd-5273-4cd0-beae-d01b0a307693` (#488,
+> SPA `assets/index-CFcewXzm.js`). No rollback performed.
+>
+> #494 changes the Apple Music web adapter and its tests: cache an endpoint only when
+> `positionMs > 0`, so a MusicKit pause at 0 before `ended` no longer replaces the real playhead.
+> `runtime.ts` is unchanged. A comment-only `SegmentBand.tsx` wording change from #489 rides along.
+> No schema, API, migration, shared-contract, OpenAPI, configuration, or secret change. #495
+> (Apple library pagination cycle guard) was not deployed.
+>
+> Pre-deploy: main CI run `37640210172` passed on `e712274`. The full local gate was not re-run
+> this session. Remote D1 migration list failed once with Cloudflare `7403`, then reported no
+> migrations to apply. `BETA_ALLOWED_EMAILS` is present (name only). SPA rebuilt from this SHA
+> (`assets/index-mZ1ypG4t.js`); service-worker `navigateFallbackDenylist` still excludes `/api/`.
+>
+> Post-deploy smoke: SPA, health `{"status":"ok"}`, and unauthenticated classes/explore/teams
+> returned 200/200/401/401/401. Security headers present (HSTS, CSP, Permissions-Policy,
+> Referrer-Policy, X-Content-Type-Options, X-Frame-Options). Shares, playlist import, provider
+> search, track import, cover upload, and tags reached their handlers (401). A missing cover
+> returned the public handler's `NOT_FOUND` / "Image not found." Spotify callback redirected
+> to `/?error=state_missing` (302), not a router 404. Six consecutive cache-busted fetches of `/`
+> agreed on `assets/index-mZ1ypG4t.js`. `wrangler deployments status` shows version
+> `5f67d242-8956-42b7-9318-67b2797d3454` at 100%.
+>
+> Natural desktop Cycle/Pilates listening acceptance was not run. It is the next step, on this
+> production build.
+
 > **Session 2026-10-06 — DEVELOPMENT_PLAN consolidation (docs only).** The plan's dated
 > "Current operating focus (2026-10-04)" bullet and its pre-2026-10-06 "Backlog / Open Items" section
 > were replaced by a short "Now" block and a curated backlog. Their full text is preserved verbatim
