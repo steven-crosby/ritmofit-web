@@ -670,6 +670,136 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
     expect(calls[1]?.url.match(/limit=/g)).toHaveLength(1);
   });
 
+  describe('catalog pagination termination', () => {
+    const PATH = '/v1/catalog/gb/playlists/pl.abc123/tracks';
+
+    function readPages(pages: { data: unknown[]; next?: string }[]) {
+      const calls: string[] = [];
+      const fetchImpl: FetchLike = async (url) => {
+        calls.push(url);
+        // A regression fails within a fixed fetch count rather than hanging.
+        const page = pages[calls.length - 1];
+        if (!page) throw new Error('Pagination sentinel reached.');
+        return {
+          ok: true,
+          status: 200,
+          json: async () => page,
+          text: async () => '',
+        };
+      };
+      const provider = createAppleMusicProvider({
+        developerToken: 'devtok',
+        fetchImpl,
+        apiBase: API_BASE,
+      });
+      return { result: provider.getPlaylist(REF), calls };
+    }
+
+    describe.each([
+      { name: 'valid songs', row: AM_SONG },
+      { name: 'unmappable songs', row: { id: 'unmappable', type: 'songs' } },
+      { name: 'non-song resources', row: { ...AM_SONG, type: 'music-videos' } },
+    ])('with $name', ({ row }) => {
+      it('rejects a repeated continuation without returning partial results', async () => {
+        // The first continuation normalizes to the initial URL and is allowed.
+        const { result, calls } = readPages([
+          { data: [row], next: PATH },
+          { data: [row], next: PATH },
+        ]);
+
+        await expect(result).rejects.toBeInstanceOf(ProviderError);
+        await expect(result).rejects.toThrow(
+          'Apple Music returned a repeated catalog pagination path.',
+        );
+        expect(calls).toEqual([`${TRACKS_URL}?limit=300`, `${TRACKS_URL}?limit=300`]);
+      });
+
+      it('rejects a multi-page continuation cycle before fetching again', async () => {
+        const firstNext = `${PATH}?offset=300`;
+        const secondNext = `${PATH}?offset=600`;
+        const { result, calls } = readPages([
+          { data: [AM_SONG], next: firstNext },
+          { data: [row], next: secondNext },
+          { data: [row], next: firstNext },
+        ]);
+
+        await expect(result).rejects.toBeInstanceOf(ProviderError);
+        await expect(result).rejects.toThrow(
+          'Apple Music returned a repeated catalog pagination path.',
+        );
+        expect(calls).toEqual([
+          `${TRACKS_URL}?limit=300`,
+          `${TRACKS_URL}?offset=300&limit=300`,
+          `${TRACKS_URL}?offset=600&limit=300`,
+        ]);
+      });
+    });
+
+    it.each([
+      { name: 'unmappable songs', row: { id: 'unmappable', type: 'songs' } },
+      { name: 'non-song resources', row: { ...AM_SONG, type: 'music-videos' } },
+    ])('preserves order through an advancing page of $name', async ({ row }) => {
+      const { result, calls } = readPages([
+        { data: [AM_SONG], next: `${PATH}?offset=300` },
+        { data: [row], next: `${PATH}?offset=600` },
+        { data: [{ ...AM_SONG, id: 'last' }] },
+      ]);
+
+      await expect(result).resolves.toMatchObject([
+        { providerTrackId: AM_SONG.id },
+        { providerTrackId: 'last' },
+      ]);
+      expect(calls).toHaveLength(3);
+    });
+
+    it('allows distinct raw continuations that normalize to the same fetch URL', async () => {
+      const { result, calls } = readPages([
+        { data: [AM_SONG], next: `${PATH}?offset=300&limit=100` },
+        { data: [{ ...AM_SONG, id: 'second' }], next: `${PATH}?offset=300&limit=200` },
+        { data: [{ ...AM_SONG, id: 'third' }] },
+      ]);
+
+      await expect(result).resolves.toMatchObject([
+        { providerTrackId: AM_SONG.id },
+        { providerTrackId: 'second' },
+        { providerTrackId: 'third' },
+      ]);
+      expect(calls).toEqual([
+        `${TRACKS_URL}?limit=300`,
+        `${TRACKS_URL}?offset=300&limit=300`,
+        `${TRACKS_URL}?offset=300&limit=300`,
+      ]);
+    });
+
+    it('stops at an empty page before checking its repeated continuation', async () => {
+      const next = `${PATH}?offset=300`;
+      const { result, calls } = readPages([
+        { data: [AM_SONG], next },
+        { data: [], next },
+      ]);
+
+      await expect(result).resolves.toMatchObject([{ providerTrackId: AM_SONG.id }]);
+      expect(calls).toHaveLength(2);
+    });
+
+    it('stops at the result cap mid-page before checking a repeated continuation', async () => {
+      const next = `${PATH}?offset=300`;
+      const { result, calls } = readPages([
+        { data: [AM_SONG], next },
+        {
+          data: Array.from({ length: 500 }, (_, i) => ({ ...AM_SONG, id: String(i) })),
+          next,
+        },
+      ]);
+
+      const tracks = await result;
+      expect(tracks).toHaveLength(500);
+      expect(tracks[0]?.providerTrackId).toBe(AM_SONG.id);
+      expect(tracks[499]?.providerTrackId).toBe('498');
+      expect(calls).toHaveLength(2);
+    });
+  });
+
   it('rejects a malformed later page instead of returning a partial playlist', async () => {
     const { provider } = makeProvider({
       [`${TRACKS_URL}?offset=300`]: { data: 'invalid' },
