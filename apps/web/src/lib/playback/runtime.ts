@@ -152,6 +152,10 @@ export class RuntimePlaybackCoordinator {
   private transportTimer: ReturnType<typeof setInterval> | null = null;
   private transportRead: { job: ActiveJob; promise: Promise<TransportReading> } | null = null;
   private samplingJob: ActiveJob | null = null;
+  /** When the in-flight read started. Cleared with `samplingJob`. */
+  private samplingStartedAt = 0;
+  /** True when that read began with progress already at least 10s stale. */
+  private samplingBeganStale = false;
   private progressAt = 0;
   private providerPosition = 0;
   private finishedJob: ActiveJob | null = null;
@@ -508,7 +512,14 @@ export class RuntimePlaybackCoordinator {
   private stopTransportTimer(): void {
     if (this.transportTimer != null) clearInterval(this.transportTimer);
     this.transportTimer = null;
+    this.clearSampling();
+  }
+
+  /** Drop the in-flight read marker so the next sample cannot inherit it. */
+  private clearSampling(): void {
     this.samplingJob = null;
+    this.samplingStartedAt = 0;
+    this.samplingBeganStale = false;
   }
 
   /** Diagnostics and operational polling share one SDK read per job. */
@@ -538,12 +549,21 @@ export class RuntimePlaybackCoordinator {
     if (!job || !this.running || !this.options.onPosition) return;
     // Do not infer a stall from time spent backgrounded before asking the SDK.
     if (this.samplingJob === job) {
-      if (Date.now() - this.progressAt >= 10_000)
-        this.transportFailure(job, 'Music stopped reporting progress.');
+      // A read that started while progress was fresh still fails once that
+      // progress is 10s stale. A read that started already past the budget is
+      // the first ask after a timer gap: wait it out, and fail only if this
+      // read itself stays in flight for 10s.
+      const stalled = this.samplingBeganStale
+        ? Date.now() - this.samplingStartedAt >= 10_000
+        : Date.now() - this.progressAt >= 10_000;
+      if (stalled) this.transportFailure(job, 'Music stopped reporting progress.');
       return;
     }
     const epoch = this.epoch;
+    const startedAt = Date.now();
     this.samplingJob = job;
+    this.samplingStartedAt = startedAt;
+    this.samplingBeganStale = startedAt - this.progressAt >= 10_000;
     const finishedWhenReadBegan = this.finishedJob === job;
     const revision = this.transportRevision;
     try {
@@ -603,7 +623,7 @@ export class RuntimePlaybackCoordinator {
         );
       }
     } finally {
-      if (this.samplingJob === job) this.samplingJob = null;
+      if (this.samplingJob === job) this.clearSampling();
     }
   }
 
