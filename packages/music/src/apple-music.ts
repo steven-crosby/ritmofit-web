@@ -125,6 +125,7 @@ class AppleMusicProvider implements MusicProvider {
     let path: string | null =
       `/v1/catalog/${encodeURIComponent(ref.storefront)}/playlists/` +
       `${encodeURIComponent(ref.playlistId)}/tracks?limit=${CATALOG_PLAYLIST_PAGE_LIMIT}`;
+    const seenContinuations = new Set<string>();
 
     while (path && out.length < IMPORT_TRACK_CAP) {
       const res = await fetchWithRetry(
@@ -152,10 +153,20 @@ class AppleMusicProvider implements MusicProvider {
         if (candidate) out.push(candidate);
         if (out.length >= IMPORT_TRACK_CAP) break;
       }
-      if (page.length === 0) break;
-      path = parsed.data.next
-        ? withCatalogPlaylistPageLimit(parsed.data.next, CATALOG_PLAYLIST_PAGE_LIMIT)
-        : null;
+      if (page.length === 0 || out.length >= IMPORT_TRACK_CAP) break;
+      const next = parsed.data.next;
+      if (next) {
+        // Track Apple's continuation before normalization: distinct raw paths may
+        // legitimately resolve to the same request URL after rewriting `limit`.
+        if (seenContinuations.has(next)) {
+          throw new ProviderError(
+            'apple_music',
+            'Apple Music returned a repeated catalog pagination path.',
+          );
+        }
+        seenContinuations.add(next);
+      }
+      path = next ? withCatalogPlaylistPageLimit(next, CATALOG_PLAYLIST_PAGE_LIMIT) : null;
     }
     return out;
   }
