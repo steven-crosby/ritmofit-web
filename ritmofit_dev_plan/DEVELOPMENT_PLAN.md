@@ -11,35 +11,30 @@
 
 ## Now
 
-*Last updated 2026-10-07 (Codex two-lane merge close). Production was last observed 2026-10-06 around
-8:04 PM MT and is not rechecked here.*
+*Last updated 2026-10-08 (Codex Cursor playback review). Production was independently checked
+this session; no deployment or production-data change occurred.*
 
 - **Focus:** music-led Phase 1 ([D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30),
   [plan](./music-led-instructor-workflow-plan.md)) — reliable, honest Apple Music Live playback,
-  desktop Chrome first (Cycle and Pilates), then iPhone. Spotify is tabled (owner, 2026-10-02).
-- **Production, last observed 2026-10-06** ([HISTORY](./HISTORY.md)): source `7c69786`
-  ([#488](https://github.com/steven-crosby/ritmofit-web/pull/488)), Worker
-  `18fe76cd-5273-4cd0-beae-d01b0a307693`, SPA `assets/index-CFcewXzm.js`. Not rechecked since.
-  Relative to that last observation, `main` contains application changes #494 (Apple Music
-  zero-pause endpoint cache) and [#495](https://github.com/steven-crosby/ritmofit-web/pull/495)
-  (library pagination cycle guard, source `8dc2e24`). Production alignment is unknown here: no
-  Cloudflare credentials; three SPA checks returned 403. No deploy this session. Rollback Worker from the #488 record: `1053f665-ebf1-4d8c-be40-16ddfdea908f`.
-- **Natural acceptance still pending.** [#494](https://github.com/steven-crosby/ritmofit-web/pull/494)
-  implements the P1 from the failed #488 Cycle (`16:30`) and Pilates (`3:43`) runs: the adapter
-  caches only a positive playhead and leaves the runtime early-end guard unchanged. Merged, not
-  deployed. Evidence: [boundary record](../docs/audits/apple-music-boundary-2026-10-04/NEXT_SESSION.md).
-- **Next step:** owner deploy decisions for #494 and the separate backend/provider slice #495 under [`deployment-runbook.md`](./deployment-runbook.md).
-  After an approved deploy, natural desktop Cycle and Pilates acceptance: Start only, uninterrupted,
-  with human listening confirmation.
-- **Then:** iPhone Safari Apple Music investigation (fully close the Music app, reload, retry; if it
-  still fails, capture the MusicKit error at Start/Retry via Safari Web Inspector), and the
-  playlist-to-teaching-draft product decision (backlog).
-- **Owner decisions open:** deploy #494 and #495; playlist-derived teaching-draft policy; playback-liveness alerting; F-02
-  (D11 `createPattern`); NotFound/ErrorBoundary warmth; review/delete of every `[QA]` production fixture
-  still present — HISTORY records several sets left for review since 2026-09-28 (#468, #481, the
-  [2026-10-03 audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md) six plus four more seen
-  that day, goal-template, and `bc488d5c…`); inventory the live Classes list by the `[QA]` prefix /
-  `qa-fixture` tag rather than trusting any one list, per [`prod-fixture-hygiene.md`](./prod-fixture-hygiene.md).
+  desktop Chrome first (Cycle and Pilates), then iPhone. Spotify remains tabled (owner, 2026-10-02).
+- **Production:** Worker `5f67d242-8956-42b7-9318-67b2797d3454` at 100%; three consecutive
+  cache-busted SPA checks served `assets/index-mZ1ypG4t.js`, matching the #494 release record
+  in open [#497](https://github.com/steven-crosby/ritmofit-web/pull/497), source `e712274`.
+  #494 is deployed. #497 still needs reconciliation against current main before merge.
+- **Main ahead:** `c953aa5` includes undeployed #495 (Apple library pagination guard), #499
+  (Apple catalog pagination guard), and [#501](https://github.com/steven-crosby/ritmofit-web/pull/501)
+  (first asynchronous transport read after a timer gap). #498 adds recovery tests, not product behavior.
+- **Natural acceptance pending:** complete desktop Cycle and Pilates runs on deployed #494,
+  Start only through final completion, with human listening confirmation. The positive-endpoint
+  fix preserves the runtime early-end guard; automated tests do not establish audible acceptance.
+- **Next step:** approve fresh QA fixtures and arrange attended desktop acceptance. Then investigate
+  iPhone Safari Apple Music (close the Music app, reload, retry; capture Start/Retry errors via Safari
+  Web Inspector if failure persists). See the [review handoff](./handoffs/2026-10-08-cursor-playback-review.md).
+- **Owner decisions open:** separate deployment decisions covering #495/#499 and #501;
+  playlist-derived teaching-draft policy; playback-liveness alerting; F-02 (D11 `createPattern`);
+  NotFound/ErrorBoundary warmth; review/delete of retained `[QA]` production fixtures. Inventory
+  the live Classes list by `[QA]` prefix / `qa-fixture` tag under
+  [`prod-fixture-hygiene.md`](./prod-fixture-hygiene.md); historical lists are not a current inventory.
 
 ---
 
