@@ -955,6 +955,34 @@ describe('music-led runtime authority', () => {
       error: { message: 'Music is paused, stalled, or its position cannot be verified.' },
     });
   });
+  it('fails a post-gap read that stays in flight for 10s', async () => {
+    const run = musicRun();
+    await run.coordinator.start();
+    run.report({ positionMs: 5_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([5_000]);
+    vi.setSystemTime(Date.now() + 60_000);
+    let finish!: (reading: import('./types.js').TransportReading) => void;
+    run.read.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.coordinator.getStatus().kind).not.toBe('error');
+    expect(run.created[0]!.calls).not.toContain('destroy');
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(run.coordinator.getStatus()).toMatchObject({
+      kind: 'error',
+      error: { message: 'Music stopped reporting progress.' },
+    });
+    expect(run.created[0]!.calls).toContain('destroy');
+    finish({ positionMs: 90_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(run.positions).toEqual([5_000]);
+  });
   it('uses clip-relative positions and stops at the saved window before a deliberate gap', async () => {
     const run = musicRun([
       makeEntry({ durationMs: 10_000, clipStartMs: 30_000 }),
