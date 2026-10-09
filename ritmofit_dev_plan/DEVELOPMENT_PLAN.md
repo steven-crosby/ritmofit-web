@@ -11,30 +11,15 @@
 
 ## Now
 
-*Last updated 2026-10-08 (Codex Cursor playback review). Production was independently checked
-this session; no deployment or production-data change occurred.*
+_Last updated 2026-10-09 (Codex UX round close and release-record reconciliation). No deployment occurred in this session._
 
-- **Focus:** music-led Phase 1 ([D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30),
-  [plan](./music-led-instructor-workflow-plan.md)) — reliable, honest Apple Music Live playback,
-  desktop Chrome first (Cycle and Pilates), then iPhone. Spotify remains tabled (owner, 2026-10-02).
-- **Production:** Worker `5f67d242-8956-42b7-9318-67b2797d3454` at 100%; three consecutive
-  cache-busted SPA checks served `assets/index-mZ1ypG4t.js`, matching the #494 release record
-  in open [#497](https://github.com/steven-crosby/ritmofit-web/pull/497), source `e712274`.
-  #494 is deployed. #497 still needs reconciliation against current main before merge.
-- **Main ahead:** `c953aa5` includes undeployed #495 (Apple library pagination guard), #499
-  (Apple catalog pagination guard), and [#501](https://github.com/steven-crosby/ritmofit-web/pull/501)
-  (first asynchronous transport read after a timer gap). #498 adds recovery tests, not product behavior.
-- **Natural acceptance pending:** complete desktop Cycle and Pilates runs on deployed #494,
-  Start only through final completion, with human listening confirmation. The positive-endpoint
-  fix preserves the runtime early-end guard; automated tests do not establish audible acceptance.
-- **Next step:** approve fresh QA fixtures and arrange attended desktop acceptance. Then investigate
-  iPhone Safari Apple Music (close the Music app, reload, retry; capture Start/Retry errors via Safari
-  Web Inspector if failure persists). See the [review handoff](./handoffs/2026-10-08-cursor-playback-review.md).
-- **Owner decisions open:** separate deployment decisions covering #495/#499 and #501;
-  playlist-derived teaching-draft policy; playback-liveness alerting; F-02 (D11 `createPattern`);
-  NotFound/ErrorBoundary warmth; review/delete of retained `[QA]` production fixtures. Inventory
-  the live Classes list by `[QA]` prefix / `qa-fixture` tag under
-  [`prod-fixture-hygiene.md`](./prod-fixture-hygiene.md); historical lists are not a current inventory.
+- **Focus:** music-led Phase 1 ([D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30)) — reliable Apple Music Live playback, desktop Cycle/Pilates first, then iPhone. Spotify remains tabled.
+- **Production:** #494 baseline, source `e712274`; Worker `5f67d242-8956-42b7-9318-67b2797d3454` at 100%, SPA `assets/index-mZ1ypG4t.js` on three consecutive cache-busted checks. The historical deployment record from #497 is retained in HISTORY; this reconciliation does not deploy code.
+- **Main ahead:** application tip `0ec1d10` includes undeployed #495/#499 (Apple library/catalog pagination guards), #501 (asynchronous transport-read handling), #503 (Builder clarity and keyboard rename focus), and #504 (Live timing/full guidance). #498 contributes recovery tests. Both UX PRs are merged; combined candidate CI and both post-merge main CI runs passed.
+- **Acceptance:** natural desktop Cycle/Pilates runs on deployed #494 still need retained results and human listening confirmation. Fresh Cycle/Pilates fixtures are prepared and tagged `qa-fixture`; neither has played, and attended playback waits for listener availability. Synthetic integrated Builder → Live → Builder checks passed and establish UI behavior only.
+- **Next step:** complete attended desktop acceptance with fresh tagged fixtures, then investigate iPhone Safari. Publish actual outcomes before claiming playback acceptance. See the [round close handoff](./handoffs/2026-10-09-ux-close-acceptance.md).
+- **Release decision:** choose an exact batch after acceptance. The [release proposal](./release-proposal-2026-10-09.md) prepares isolated provider candidate `0afa5c8` and a later main/web batch. Current main contains provider, runtime, and presentation changes; merging is not deployment. Provider changes require their own deliberate release scope and the deployment runbook's fresh SPA build, remote migration check, rollback anchor, and smoke tests.
+- **Owner decisions:** exact release batch and deployment; playlist-derived teaching-draft policy; liveness alerting; F-02/D11; NotFound/ErrorBoundary warmth; cleanup of retained QA fixtures/branches/worktrees. Fixture creation is authorized; deletion remains separate under [fixture hygiene](./prod-fixture-hygiene.md).
 
 ---
 

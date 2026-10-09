@@ -10,8 +10,10 @@ The full repository gate passed every step; see `gate-results.json`. Source was 
 
 Live checks confirmed full current/next strings and preserved line breaks, timers ahead of Class Pulse, notes outside disclosure, keyboard toggling, Full List focus, disclosure reset on view switching, and omission on a sparse track. Focused tests additionally verify progress-driven updates, sparse/gap focus restoration, unrelated focus, and urgent recovery priority. Full unit counts: web 1060, API 486, music 30; integration 184.
 
-Each lane passed independently. Combined-tree CI remains owed after authorized publication and sequential integration. These UI checks establish no audible playback or production acceptance.
+Each lane passed independently. The later combined-tree CI passed on `8023d74` (run [37895737330](https://github.com/steven-crosby/ritmofit-web/actions/runs/37895737330)); #504 squash-merged as `0ec1d10` with the same file tree. These UI checks establish no audible playback or production acceptance.
 
 ![Before at 390px](before-390.png)
 
 ![After at 390px](after-390.png)
+
+Current publication/merge state supersedes the original verification checkpoint. Both UX PRs are merged. The [fresh integrated audit](../integration-audit/README.md) retains page and Live-shell overflow fields for open as well as closed states. Production remains the #494 baseline; natural provider/listening acceptance remains open.

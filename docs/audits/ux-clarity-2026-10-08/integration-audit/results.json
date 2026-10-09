@@ -1,0 +1,149 @@
+{
+  "head": "8023d74baeb0b42b6e603a8678c1b63a382e1f85",
+  "base": "be6d71a8a63494863ac03b14f20de0d0c92888fc",
+  "kind": "synthetic local component harness, no provider audio",
+  "results": [
+    {
+      "phase": "builder-closed",
+      "detailsOpen": false,
+      "pageOverflow": 0,
+      "playbackOrderPresent": true
+    },
+    {
+      "phase": "builder-open",
+      "pageOverflow": 0,
+      "summaryHeight": 44
+    },
+    {
+      "phase": "builder-cancel",
+      "focused": "Rename class"
+    },
+    {
+      "phase": "live-desktop-closed",
+      "detailsOpen": false,
+      "fullCurrent": true,
+      "fullNext": true,
+      "height": 800,
+      "pageOverflow": 0,
+      "shellOverflow": 0,
+      "summaryHeight": 44,
+      "width": 1280
+    },
+    {
+      "phase": "live-desktop-open",
+      "detailsOpen": true,
+      "fullCurrent": true,
+      "fullNext": true,
+      "height": 800,
+      "pageOverflow": 0,
+      "shellOverflow": 0,
+      "summaryHeight": 44,
+      "width": 1280
+    },
+    {
+      "phase": "live-390-closed",
+      "detailsOpen": false,
+      "fullCurrent": true,
+      "fullNext": true,
+      "height": 844,
+      "pageOverflow": 0,
+      "shellOverflow": 0,
+      "summaryHeight": 44,
+      "width": 390
+    },
+    {
+      "phase": "live-390-open",
+      "detailsOpen": true,
+      "fullCurrent": true,
+      "fullNext": true,
+      "height": 844,
+      "pageOverflow": 0,
+      "shellOverflow": 0,
+      "summaryHeight": 44,
+      "width": 390
+    },
+    {
+      "phase": "live-320-closed",
+      "detailsOpen": false,
+      "fullCurrent": true,
+      "fullNext": true,
+      "height": 568,
+      "pageOverflow": 0,
+      "shellOverflow": 0,
+      "summaryHeight": 44,
+      "width": 320
+    },
+    {
+      "phase": "live-320-open",
+      "detailsOpen": true,
+      "fullCurrent": true,
+      "fullNext": true,
+      "height": 568,
+      "pageOverflow": 0,
+      "shellOverflow": 0,
+      "summaryHeight": 44,
+      "width": 320
+    },
+    {
+      "phase": "live-landscape-closed",
+      "detailsOpen": false,
+      "fullCurrent": true,
+      "fullNext": true,
+      "height": 390,
+      "pageOverflow": 0,
+      "shellOverflow": 0,
+      "summaryHeight": 44,
+      "width": 844
+    },
+    {
+      "phase": "live-landscape-open",
+      "detailsOpen": true,
+      "fullCurrent": true,
+      "fullNext": true,
+      "height": 390,
+      "pageOverflow": 0,
+      "shellOverflow": 0,
+      "summaryHeight": 44,
+      "width": 844
+    },
+    {
+      "phase": "live-short-closed",
+      "detailsOpen": false,
+      "fullCurrent": true,
+      "fullNext": true,
+      "height": 304,
+      "pageOverflow": 0,
+      "shellOverflow": 0,
+      "summaryHeight": 44,
+      "width": 600
+    },
+    {
+      "phase": "live-short-open",
+      "detailsOpen": true,
+      "fullCurrent": true,
+      "fullNext": true,
+      "height": 304,
+      "pageOverflow": 0,
+      "shellOverflow": 0,
+      "summaryHeight": 44,
+      "width": 600
+    },
+    {
+      "phase": "full-list",
+      "focused": "Full List"
+    },
+    {
+      "phase": "cue-view-reset",
+      "detailsOpen": false
+    },
+    {
+      "phase": "sparse-track",
+      "guidanceCount": 0
+    },
+    {
+      "phase": "exit-to-builder",
+      "classDetailsOpen": false,
+      "playbackOrderPresent": true
+    }
+  ]
+}
