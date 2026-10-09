@@ -26,4 +26,4 @@ After explicit batch-A approval, revalidate clean candidate/source identity, mig
 
 Batch B needs its own exact source/build/rollback preflight and approval. Targeted real SoundCloud asynchronous-transport verification remains relevant to #501; its automated tests and Apple’s synchronous transport do not establish that provider's live behavior. Spotify remains tabled. After the final delivered web build, repeat relevant Apple natural listening acceptance and then actual iPhone Safari investigation; earlier #494 results cannot be relabeled as acceptance of a later release.
 
-No batch is automatically authorized by code merge, a green gate, fixture creation, or this document. Branch/worktree and production-fixture deletion remain separate owner decisions.
+No batch is automatically authorized by code merge, a green gate, fixture creation, or this document. The close-session request authorizes completed Git branch/worktree cleanup. This unfinished candidate remains retained; its disposition and production-fixture deletion remain separate owner decisions.

@@ -13,6 +13,23 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Close-session 2026-10-09 — merged records reconciled; Git cleanup authorized.** #497
+> squash-merged as `46c2593` after exact-head CI `37949861335` on `bea5f88`; post-merge main CI
+> `37950232324` passed. The tested and merged trees matched, and local main fast-forwarded safely.
+> Completed remote branches for #503, #504, and #497 were removed after matching their merged PR
+> head identities. The unreleased Apple provider candidate `0afa5c8` remains retained.
+>
+> Retired ten superseded handoffs after routing their pending acceptance/release work to the
+> [current handoff](./handoffs/2026-10-09-ux-close-acceptance.md) and release proposal. Historical
+> merge facts: #494 `e712274` (deployed), #495 `8dc2e24`, #496 `c5fe7aa`, #498 `423218a`,
+> #499 `5aaa8c5`, #500 `6460182`, #501 `c953aa5`, #502 `aade146`, #503 `be6d71a`,
+> #504 `0ec1d10`, and #497 `46c2593`. Detailed original tests, limitations, and source identities
+> remain in [the immutable pre-cleanup handoff snapshot](https://github.com/steven-crosby/ritmofit-web/tree/46c2593fe518585d54a31c739210aa2b9255575a/ritmofit_dev_plan/handoffs)
+> and the retained UI evidence packets. Worktree archival is presently blocked by the pinned chat;
+> the author requested temporary unpinning/restoration. Untracked `.claude/` is preserved.
+> No deployment, playback, remote migration, secret mutation, or production-fixture deletion
+> occurred during this close; the prepared classes remain unplayed.
+
 > **Session 2026-10-09 — Builder/Live clarity merged, production unchanged.** #503 squash-merged
 > as `be6d71a8a63494863ac03b14f20de0d0c92888fc` after reviewed-head CI on `50b61fc`
 > ([37894990070](https://github.com/steven-crosby/ritmofit-web/actions/runs/37894990070)); post-merge
