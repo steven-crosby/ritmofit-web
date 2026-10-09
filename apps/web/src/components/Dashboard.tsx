@@ -4060,17 +4060,47 @@ export function ClassHeaderCard({
   const detailsSummaryRef = useRef<HTMLElement>(null);
   const renameButtonRef = useRef<HTMLButtonElement>(null);
   const renameFormRef = useRef<HTMLFormElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const renameReturnFocusRef = useRef(false);
+  const renameSubmissionOwnsFocusRef = useRef(false);
+  const renameFailureReturnFocusRef = useRef(false);
+  useEffect(() => {
+    if (!renaming) return;
+    const relinquishFocus = (event: FocusEvent) => {
+      // Disabling the submitted input/button can blur Chrome to body. A later
+      // deliberate focus move ends ownership, even if that control also blurs.
+      if (
+        event.target !== document.body &&
+        !renameFormRef.current?.contains(event.target as Node)
+      ) {
+        renameSubmissionOwnsFocusRef.current = false;
+        renameFailureReturnFocusRef.current = false;
+      }
+    };
+    document.addEventListener('focusin', relinquishFocus);
+    return () => document.removeEventListener('focusin', relinquishFocus);
+  }, [renaming]);
   useLayoutEffect(() => {
     if (editingTitle || !renameReturnFocusRef.current) return;
     renameReturnFocusRef.current = false;
     if (detailsRef.current?.open) renameButtonRef.current?.focus();
     else detailsSummaryRef.current?.focus();
   }, [editingTitle]);
+  useLayoutEffect(() => {
+    // A failed request keeps the form mounted. Wait until busy controls are
+    // enabled again before restoring a keyboard origin that blurred to body.
+    if (renaming || !renameFailureReturnFocusRef.current) return;
+    renameFailureReturnFocusRef.current = false;
+    if (document.activeElement !== document.body) return;
+    if (detailsRef.current?.open) renameInputRef.current?.focus();
+    else detailsSummaryRef.current?.focus();
+  }, [renaming]);
   const finishRename = () => {
     // An async save can finish after the instructor has moved elsewhere. Restore
     // only the focus owned by the form that is about to disappear.
-    renameReturnFocusRef.current = !!renameFormRef.current?.contains(document.activeElement);
+    renameReturnFocusRef.current =
+      !!renameFormRef.current?.contains(document.activeElement) ||
+      (document.activeElement === document.body && renameSubmissionOwnsFocusRef.current);
     setEditingTitle(false);
   };
   const averageBpm = payload ? avgBpm(payload) : null;
@@ -4098,14 +4128,28 @@ export function ClassHeaderCard({
   };
 
   const saveRename = () => {
+    if (renaming) return;
     const next = titleDraft.trim();
     if (next === '' || next === cls.title) {
       finishRename();
       return;
     }
+    // Capture the submission origin before busy controls disable and blur.
+    renameSubmissionOwnsFocusRef.current = !!renameFormRef.current?.contains(
+      document.activeElement,
+    );
+    renameFailureReturnFocusRef.current = false;
     void runRename(async () => {
-      onClassUpdated(await updateClass(cls.id, { title: next }));
-      finishRename();
+      try {
+        onClassUpdated(await updateClass(cls.id, { title: next }));
+        finishRename();
+      } catch (error) {
+        renameFailureReturnFocusRef.current =
+          document.activeElement === document.body && renameSubmissionOwnsFocusRef.current;
+        throw error;
+      }
+    }).finally(() => {
+      renameSubmissionOwnsFocusRef.current = false;
     });
   };
 
@@ -4282,6 +4326,7 @@ export function ClassHeaderCard({
                   </label>
                   <input
                     id="class-title-input"
+                    ref={renameInputRef}
                     autoFocus
                     disabled={renaming}
                     value={titleDraft}

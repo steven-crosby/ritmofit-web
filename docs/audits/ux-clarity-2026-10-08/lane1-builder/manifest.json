@@ -68,11 +68,11 @@
     },
     {
       "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/gate-results.json",
-      "sha256": "42423466e4c62f580b1227718ca484d3b141086a0f73e6c1e24d217c3b799ae6"
+      "sha256": "30968d40a44d458e79310c1fef6b553aaa729c31079bc725ec541df47cc25818"
     },
     {
       "path": "apps/web/src/components/Dashboard.tsx",
-      "sha256": "8f5901f31f10e5b597bc50c3c21b7bc883fd18c97930ee6f7a3a6cc2df64ed8a"
+      "sha256": "98d112acc08b03a35543b223b5d8b529766a0e744d3d6d90ac67a07fce7a3360"
     },
     {
       "path": "apps/web/src/components/Dashboard.test.tsx",
@@ -80,11 +80,19 @@
     },
     {
       "path": "apps/web/src/components/ClassHeaderCard.test.tsx",
-      "sha256": "f6421a7912ad176e364e46fdab76c407caa68ab1cb48b7ee8360822623abfac9"
+      "sha256": "f3e458cdb4ff092925a5d76bc51e656ba32c0eb9ac3af08c4a25479390a85495"
     },
     {
       "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/README.md",
-      "sha256": "33f27ecff1ecd505362b191deaf5641911a19dc175a5d1184be174e512247eb4"
+      "sha256": "ea8deec0ebdc82346202f2d3677f149fe765ce11445a23e9217448cc14ac5303"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/merge-review-focus.json",
+      "sha256": "2b43d50669373623e199ea3113f08ea86886805d469b3bfdabafd779af0e49d0"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/merge-review-keyboard-success.png",
+      "sha256": "b2ffe85c90e491078805d0fa051ce038bfb7774733fd9c3924c3dfaa876306f6"
     }
   ]
 }

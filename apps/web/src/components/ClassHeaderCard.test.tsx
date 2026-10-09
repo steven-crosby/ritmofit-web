@@ -242,6 +242,17 @@ function setClassDetailsOpen(open = true) {
   return { summary, details };
 }
 
+function modelChromeDisabledControlBlur() {
+  // jsdom's blur() is a no-op on a disabled focused control. Model the observed
+  // browser fallback explicitly, without visiting an unrelated focus target.
+  const previousTabIndex = document.body.getAttribute('tabindex');
+  document.body.tabIndex = -1;
+  document.body.focus();
+  if (previousTabIndex == null) document.body.removeAttribute('tabindex');
+  else document.body.setAttribute('tabindex', previousTabIndex);
+  expect(document.activeElement).toBe(document.body);
+}
+
 describe('ClassHeaderCard rename', () => {
   it('lets an owner rename the class inline through updateClass', async () => {
     const onClassUpdated = vi.fn();
@@ -532,6 +543,124 @@ describe('ClassHeaderCard class details', () => {
       expect(screen.queryByLabelText('Class name')).toBeNull();
       expect(document.activeElement).toBe(unrelated);
       expect(screen.getByText('Class details').closest('details')!.open).toBe(open);
+    },
+  );
+
+  it.each(['Enter', 'Save'] as const)(
+    'restores originating %s focus after Chrome blurs a disabled pending control to body',
+    async (submission: 'Enter' | 'Save') => {
+      let resolveRename!: (value: ClassWithAccess) => void;
+      vi.mocked(api.updateClass).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRename = resolve;
+        }),
+      );
+      render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit />);
+      setClassDetailsOpen();
+      fireEvent.click(screen.getByRole('button', { name: /rename class/i }));
+      const input = screen.getByLabelText('Class name');
+      fireEvent.change(input, { target: { value: 'Saved ride' } });
+      const submittedControl =
+        submission === 'Enter' ? input : screen.getByRole('button', { name: 'Save' });
+      submittedControl.focus();
+      if (submission === 'Enter') {
+        // jsdom does not implement Enter's native form submission.
+        fireEvent.submit(input.closest('form')!);
+      } else {
+        fireEvent.click(submittedControl);
+      }
+      expect(submittedControl).toHaveProperty('disabled', true);
+      // jsdom retains disabled-control focus; model Chrome's observed blur.
+      modelChromeDisabledControlBlur();
+      resolveRename({ ...cls, title: 'Saved ride' });
+      await waitFor(() =>
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: /rename class/i })),
+      );
+    },
+  );
+
+  it('relinquishes submission ownership after unrelated focus even if that control later blurs', async () => {
+    let resolveRename!: (value: ClassWithAccess) => void;
+    vi.mocked(api.updateClass).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRename = resolve;
+      }),
+    );
+    const onClassUpdated = vi.fn();
+    render(
+      <ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit onClassUpdated={onClassUpdated} />,
+    );
+    setClassDetailsOpen();
+    fireEvent.click(screen.getByRole('button', { name: /rename class/i }));
+    const input = screen.getByLabelText('Class name');
+    fireEvent.change(input, { target: { value: 'Saved ride' } });
+    input.focus();
+    fireEvent.submit(input.closest('form')!);
+    modelChromeDisabledControlBlur();
+    const tag = screen.getByRole('textbox', { name: 'Add tag' });
+    tag.focus();
+    tag.blur();
+    expect(document.activeElement).toBe(document.body);
+    resolveRename({ ...cls, title: 'Saved ride' });
+    await waitFor(() => expect(onClassUpdated).toHaveBeenCalled());
+    expect(screen.queryByLabelText('Class name')).toBeNull();
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it.each([true, false])(
+    'restores owned keyboard focus after deferred rename rejection with details open=%s',
+    async (open: boolean) => {
+      let rejectRename!: (reason: Error) => void;
+      vi.mocked(api.updateClass).mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectRename = reject;
+        }),
+      );
+      const onError = vi.fn();
+      render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit onError={onError} />);
+      setClassDetailsOpen();
+      fireEvent.click(screen.getByRole('button', { name: /rename class/i }));
+      const input = screen.getByLabelText('Class name');
+      fireEvent.change(input, { target: { value: 'Retry ride' } });
+      input.focus();
+      fireEvent.submit(input.closest('form')!);
+      modelChromeDisabledControlBlur();
+      if (!open) setClassDetailsOpen(false);
+      rejectRename(new Error('Rename unavailable'));
+      await waitFor(() => expect(onError).toHaveBeenCalledWith('Rename unavailable'));
+      expect(input).toHaveProperty('disabled', false);
+      expect(input).toHaveProperty('value', 'Retry ride');
+      expect(document.activeElement).toBe(open ? input : screen.getByText('Class details'));
+      expect(screen.getByText('Class details').closest('details')!.open).toBe(open);
+    },
+  );
+
+  it.each(['focused', 'then blurred'] as const)(
+    'preserves unrelated focus %s after deferred rename rejection',
+    async (destination: 'focused' | 'then blurred') => {
+      let rejectRename!: (reason: Error) => void;
+      vi.mocked(api.updateClass).mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectRename = reject;
+        }),
+      );
+      const onError = vi.fn();
+      render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit canRun onError={onError} />);
+      setClassDetailsOpen();
+      fireEvent.click(screen.getByRole('button', { name: /rename class/i }));
+      const input = screen.getByLabelText('Class name');
+      fireEvent.change(input, { target: { value: 'Retry ride' } });
+      input.focus();
+      fireEvent.submit(input.closest('form')!);
+      modelChromeDisabledControlBlur();
+      const unrelated = screen.getByRole('button', { name: /run live/i });
+      unrelated.focus();
+      if (destination === 'then blurred') unrelated.blur();
+      const expected = destination === 'then blurred' ? document.body : unrelated;
+      rejectRename(new Error('Rename unavailable'));
+      await waitFor(() => expect(onError).toHaveBeenCalledWith('Rename unavailable'));
+      expect(input).toHaveProperty('disabled', false);
+      expect(document.activeElement).toBe(expected);
     },
   );
 

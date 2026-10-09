@@ -2,55 +2,55 @@
   {
     "name": "format",
     "exit": 0,
-    "seconds": 4.49,
+    "seconds": 4.85,
     "command": ["pnpm", "format:check"]
   },
   {
     "name": "typecheck",
     "exit": 0,
-    "seconds": 9.66,
+    "seconds": 8.44,
     "command": ["pnpm", "-r", "typecheck"]
   },
   {
     "name": "lint",
     "exit": 0,
-    "seconds": 4.61,
+    "seconds": 4.06,
     "command": ["pnpm", "lint"]
   },
   {
     "name": "design-system",
     "exit": 0,
-    "seconds": 0.38,
+    "seconds": 0.31,
     "command": ["npm", "run", "verify"]
   },
   {
     "name": "theme-classes",
     "exit": 0,
-    "seconds": 0.62,
+    "seconds": 0.53,
     "command": ["pnpm", "--filter", "@ritmofit/web", "theme-classes"]
   },
   {
     "name": "unit-tests",
     "exit": 0,
-    "seconds": 38.44,
+    "seconds": 26.39,
     "command": ["pnpm", "test"]
   },
   {
     "name": "integration",
     "exit": 0,
-    "seconds": 27.5,
+    "seconds": 20.63,
     "command": ["pnpm", "--filter", "@ritmofit/api", "test:integration"]
   },
   {
     "name": "web-build",
     "exit": 0,
-    "seconds": 11.47,
+    "seconds": 7.84,
     "command": ["pnpm", "--filter", "@ritmofit/web", "build"]
   },
   {
     "name": "openapi",
     "exit": 0,
-    "seconds": 0.83,
+    "seconds": 0.48,
     "command": ["pnpm", "--filter", "@ritmofit/api", "openapi"]
   },
   {
@@ -62,13 +62,13 @@
   {
     "name": "contract-parity",
     "exit": 0,
-    "seconds": 0.72,
+    "seconds": 0.46,
     "command": ["pnpm", "--filter", "@ritmofit/api", "contract-parity"]
   },
   {
     "name": "audit",
     "exit": 0,
-    "seconds": 0.98,
+    "seconds": 0.73,
     "command": ["pnpm", "audit:ci"]
   }
 ]
