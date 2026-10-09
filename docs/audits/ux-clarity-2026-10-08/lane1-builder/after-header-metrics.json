@@ -1,0 +1,27 @@
+[
+  {
+    "label": "desktop",
+    "headerHeight": 503,
+    "overflow": 0
+  },
+  {
+    "label": "390",
+    "headerHeight": 723,
+    "overflow": 0
+  },
+  {
+    "label": "320",
+    "headerHeight": 759,
+    "overflow": 0
+  },
+  {
+    "label": "landscape",
+    "headerHeight": 503,
+    "overflow": 0
+  },
+  {
+    "label": "short",
+    "headerHeight": 653,
+    "overflow": 0
+  }
+]

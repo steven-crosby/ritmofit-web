@@ -234,6 +234,14 @@ const baseProps = {
   onDeleted: () => {},
 };
 
+function setClassDetailsOpen(open = true) {
+  const summary = screen.getByText('Class details');
+  const details = summary.closest('details')!;
+  details.open = open;
+  fireEvent(details, new Event('toggle'));
+  return { summary, details };
+}
+
 describe('ClassHeaderCard rename', () => {
   it('lets an owner rename the class inline through updateClass', async () => {
     const onClassUpdated = vi.fn();
@@ -242,6 +250,7 @@ describe('ClassHeaderCard rename', () => {
       <ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit onClassUpdated={onClassUpdated} />,
     );
 
+    setClassDetailsOpen();
     fireEvent.click(screen.getByRole('button', { name: /rename class/i }));
     fireEvent.change(screen.getByLabelText('Class name'), { target: { value: 'Tuesday Ride' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -250,10 +259,12 @@ describe('ClassHeaderCard rename', () => {
       expect(api.updateClass).toHaveBeenCalledWith(cls.id, { title: 'Tuesday Ride' }),
     );
     expect(onClassUpdated).toHaveBeenCalled();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /rename class/i }));
   });
 
   it('does not call updateClass when the name is unchanged or blank', () => {
     render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit />);
+    setClassDetailsOpen();
     fireEvent.click(screen.getByRole('button', { name: /rename class/i }));
     fireEvent.change(screen.getByLabelText('Class name'), { target: { value: '   ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -277,6 +288,7 @@ describe('ClassHeaderCard delete', () => {
   it('uses the canonical destructive treatment for the initial and confirm controls', () => {
     render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit />);
 
+    setClassDetailsOpen();
     const initial = screen.getByRole('button', { name: 'Delete this class' });
     expect(initial.className).toContain('bg-transparent');
     expect(initial.className).toContain('text-state-danger');
@@ -299,6 +311,7 @@ describe('ClassHeaderCard delete', () => {
 
   it('cancels confirmation without deleting', () => {
     render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit />);
+    setClassDetailsOpen();
     fireEvent.click(screen.getByRole('button', { name: 'Delete this class' }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
@@ -326,6 +339,7 @@ describe('ClassHeaderCard delete', () => {
         onError={onError}
       />,
     );
+    setClassDetailsOpen();
     fireEvent.click(screen.getByRole('button', { name: 'Delete this class' }));
     fireEvent.click(screen.getByRole('button', { name: 'Delete class' }));
 
@@ -355,6 +369,7 @@ describe('ClassHeaderCard delete', () => {
         onError={onError}
       />,
     );
+    setClassDetailsOpen();
     fireEvent.click(screen.getByRole('button', { name: 'Delete this class' }));
     fireEvent.click(screen.getByRole('button', { name: 'Delete class' }));
 
@@ -417,5 +432,214 @@ describe('ClassHeaderCard cover', () => {
       'https://example.com/c.jpg',
     );
     expect(container.querySelector('span[aria-hidden][style*="gradient"]')).toBeNull();
+  });
+});
+
+describe('ClassHeaderCard class details', () => {
+  it('starts closed while identity, metrics, readiness, and Run live stay outside', () => {
+    render(
+      <ClassHeaderCard {...baseProps} cls={cls} payload={payload} trackCount={1} isOwner canEdit />,
+    );
+    const details = screen.getByText('Class details').closest('details')!;
+    expect(details.open).toBe(false);
+    expect(details.contains(screen.getByRole('heading', { name: cls.title }))).toBe(false);
+    expect(details.contains(screen.getByRole('button', { name: /run live/i }))).toBe(false);
+    expect(details.contains(screen.getByText('1 track'))).toBe(false);
+    expect(details.contains(screen.getByText(/length to run/i))).toBe(false);
+    expect(details.contains(screen.getByText(/duration needed/i))).toBe(false);
+    setClassDetailsOpen();
+    expect(details.contains(screen.getByRole('button', { name: /rename class/i }))).toBe(true);
+    expect(details.contains(screen.getByRole('button', { name: 'Upload cover' }))).toBe(true);
+    expect(details.contains(screen.getByRole('textbox', { name: 'Add tag' }))).toBe(true);
+    expect(details.contains(screen.getByRole('button', { name: 'Delete this class' }))).toBe(true);
+  });
+
+  it('preserves rename and tag drafts through closing and returns focus from Cancel and Escape', () => {
+    render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit />);
+    setClassDetailsOpen();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Add tag' }), {
+      target: { value: 'summer' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /rename class/i }));
+    const name = screen.getByLabelText('Class name');
+    fireEvent.change(name, { target: { value: 'Draft ride' } });
+    name.focus();
+    const { summary } = setClassDetailsOpen(false);
+    expect(document.activeElement).toBe(summary);
+    setClassDetailsOpen();
+    expect(screen.getByLabelText('Class name')).toBe(name);
+    expect(name).toHaveProperty('value', 'Draft ride');
+    expect(screen.getByRole('textbox', { name: 'Add tag' })).toHaveProperty('value', 'summer');
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    cancel.focus();
+    fireEvent.click(cancel);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /rename class/i }));
+    fireEvent.click(screen.getByRole('button', { name: /rename class/i }));
+    fireEvent.keyDown(screen.getByLabelText('Class name'), { key: 'Escape' });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /rename class/i }));
+  });
+
+  it('returns a rename completed while closed to the summary without reopening', async () => {
+    let resolveRename!: (value: ClassWithAccess) => void;
+    vi.mocked(api.updateClass).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRename = resolve;
+      }),
+    );
+    render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit />);
+    setClassDetailsOpen();
+    fireEvent.click(screen.getByRole('button', { name: /rename class/i }));
+    fireEvent.change(screen.getByLabelText('Class name'), { target: { value: 'Saved ride' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    const { summary, details } = setClassDetailsOpen(false);
+    resolveRename({ ...cls, title: 'Saved ride' });
+    await waitFor(() => expect(document.activeElement).toBe(summary));
+    expect(details.open).toBe(false);
+  });
+
+  it.each([true, false])(
+    'preserves unrelated focus after deferred rename success with details open=%s',
+    async (open: boolean) => {
+      let resolveRename!: (value: ClassWithAccess) => void;
+      vi.mocked(api.updateClass).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRename = resolve;
+        }),
+      );
+      const onClassUpdated = vi.fn();
+      render(
+        <ClassHeaderCard
+          {...baseProps}
+          cls={cls}
+          isOwner
+          canEdit
+          canRun
+          onClassUpdated={onClassUpdated}
+        />,
+      );
+      setClassDetailsOpen();
+      fireEvent.click(screen.getByRole('button', { name: /rename class/i }));
+      fireEvent.change(screen.getByLabelText('Class name'), { target: { value: 'Saved ride' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      if (!open) setClassDetailsOpen(false);
+      const unrelated = open
+        ? screen.getByRole('textbox', { name: 'Add tag' })
+        : screen.getByRole('button', { name: /run live/i });
+      unrelated.focus();
+      expect(document.activeElement).toBe(unrelated);
+      resolveRename({ ...cls, title: 'Saved ride' });
+      await waitFor(() => expect(onClassUpdated).toHaveBeenCalled());
+      expect(screen.queryByLabelText('Class name')).toBeNull();
+      expect(document.activeElement).toBe(unrelated);
+      expect(screen.getByText('Class details').closest('details')!.open).toBe(open);
+    },
+  );
+
+  it('keeps failed rename drafts editable and reports failures outside the disclosure', async () => {
+    const onError = vi.fn();
+    vi.mocked(api.updateClass).mockRejectedValueOnce(new Error('Rename unavailable'));
+    render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit onError={onError} />);
+    setClassDetailsOpen();
+    fireEvent.click(screen.getByRole('button', { name: /rename class/i }));
+    fireEvent.change(screen.getByLabelText('Class name'), { target: { value: 'Retry ride' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(onError).toHaveBeenCalledWith('Rename unavailable'));
+    expect(screen.getByLabelText('Class name')).toHaveProperty('value', 'Retry ride');
+    expect(screen.getByLabelText('Class name')).toHaveProperty('disabled', false);
+  });
+
+  it('requires fresh delete confirmation after closing, but preserves pending protection', async () => {
+    let resolveDelete!: () => void;
+    vi.mocked(api.deleteClass).mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveDelete = resolve;
+      }),
+    );
+    render(<ClassHeaderCard {...baseProps} cls={cls} isOwner canEdit />);
+    setClassDetailsOpen();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete this class' }));
+    setClassDetailsOpen(false);
+    setClassDetailsOpen();
+    expect(screen.queryByRole('button', { name: 'Delete class' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete this class' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete class' }));
+    setClassDetailsOpen(false);
+    setClassDetailsOpen();
+    expect(screen.getByRole('button', { name: 'Delete class' })).toHaveProperty('disabled', true);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete class' }));
+    expect(api.deleteClass).toHaveBeenCalledTimes(1);
+    resolveDelete();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Delete class' })).toHaveProperty(
+        'disabled',
+        false,
+      ),
+    );
+  });
+
+  it('allows editor tag controls while reserving owner actions and gives viewers read-only tags', () => {
+    const { rerender } = render(
+      <ClassHeaderCard
+        {...baseProps}
+        cls={{ ...cls, accessLevel: 'edit', tags: ['cycle'] }}
+        isOwner={false}
+        canEdit
+      />,
+    );
+    setClassDetailsOpen();
+    expect(screen.getByRole('textbox', { name: 'Add tag' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Remove tag cycle' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /rename|cover|delete/i })).toBeNull();
+    rerender(
+      <ClassHeaderCard
+        {...baseProps}
+        cls={{ ...cls, accessLevel: 'view', tags: ['cycle'] }}
+        isOwner={false}
+        canEdit={false}
+      />,
+    );
+    expect(screen.getByText('#cycle')).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: 'Add tag' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Remove tag cycle' })).toBeNull();
+    rerender(
+      <ClassHeaderCard
+        {...baseProps}
+        cls={{ ...cls, accessLevel: 'view' }}
+        isOwner={false}
+        canEdit={false}
+      />,
+    );
+    expect(screen.queryByText('Class details')).toBeNull();
+  });
+
+  it('lets an owner retry the same cover file after an upload failure', async () => {
+    const onError = vi.fn();
+    const onClassUpdated = vi.fn();
+    vi.mocked(api.uploadClassCover)
+      .mockRejectedValueOnce(new Error('Cover unavailable'))
+      .mockResolvedValueOnce({ ...cls, coverImageUrl: 'https://example.com/new.jpg' });
+    const { container } = render(
+      <ClassHeaderCard
+        {...baseProps}
+        cls={cls}
+        isOwner
+        canEdit
+        onError={onError}
+        onClassUpdated={onClassUpdated}
+      />,
+    );
+    setClassDetailsOpen();
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const file = new File(['cover'], 'cover.png', { type: 'image/png' });
+    fireEvent.change(input, { target: { files: [file] } });
+    await waitFor(() => expect(onError).toHaveBeenCalledWith('Cover unavailable'));
+    expect(input.value).toBe('');
+    fireEvent.change(input, { target: { files: [file] } });
+    await waitFor(() =>
+      expect(onClassUpdated).toHaveBeenCalledWith(
+        expect.objectContaining({ coverImageUrl: 'https://example.com/new.jpg' }),
+      ),
+    );
+    expect(api.uploadClassCover).toHaveBeenCalledTimes(2);
   });
 });

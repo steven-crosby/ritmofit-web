@@ -1,0 +1,62 @@
+[
+  {
+    "label": "desktop",
+    "detailsOpen": false,
+    "height": 900,
+    "overflow": 0,
+    "width": 1440
+  },
+  {
+    "label": "desktop-open",
+    "overflow": 0,
+    "summaryHeight": 44
+  },
+  {
+    "label": "390",
+    "detailsOpen": false,
+    "height": 844,
+    "overflow": 0,
+    "width": 390
+  },
+  {
+    "label": "390-open",
+    "overflow": 0,
+    "summaryHeight": 44
+  },
+  {
+    "label": "320",
+    "detailsOpen": false,
+    "height": 568,
+    "overflow": 0,
+    "width": 320
+  },
+  {
+    "label": "320-open",
+    "overflow": 0,
+    "summaryHeight": 44
+  },
+  {
+    "label": "landscape",
+    "detailsOpen": false,
+    "height": 390,
+    "overflow": 0,
+    "width": 844
+  },
+  {
+    "label": "landscape-open",
+    "overflow": 0,
+    "summaryHeight": 44
+  },
+  {
+    "label": "short",
+    "detailsOpen": false,
+    "height": 304,
+    "overflow": 0,
+    "width": 600
+  },
+  {
+    "label": "short-open",
+    "overflow": 0,
+    "summaryHeight": 44
+  }
+]
