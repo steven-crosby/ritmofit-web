@@ -3805,8 +3805,17 @@ function ClassWorkspace({
             <div>
               <span className="rf-eyebrow">Run of show</span>
               <h3 className="mt-1 font-display text-lg font-semibold text-text-primary">
-                Track stack
+                Playback order
               </h3>
+              <p className="mt-1 font-ui text-sm leading-5 text-text-secondary">
+                {!payload && tracks.length > 0
+                  ? 'Playback details are unavailable. Reload the class to restore song timing and ordering.'
+                  : isFree
+                    ? 'Song timing is set in the timeline. Select a song to inspect it.'
+                    : canEdit
+                      ? 'Songs play in this order. Drag a grip or use its arrow keys to reorder.'
+                      : 'Songs play in this order. Select a song to inspect it.'}
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               {(showStackAddMusic || (sourceOpen && !assigningPlanBlock)) && (
@@ -3958,8 +3967,7 @@ function ClassWorkspace({
               Track inspector
             </p>
             <p className="font-ui text-sm text-text-tertiary">
-              Click a track in the Track stack list to edit its intensity, BPM, notes, cues, and
-              moves.
+              Select a song in Playback order to inspect its intensity, BPM, notes, cues, and moves.
             </p>
           </div>
         )}
@@ -4048,6 +4056,53 @@ export function ClassHeaderCard({
   const [titleDraft, setTitleDraft] = useState(cls.title);
   const [tagInput, setTagInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const detailsSummaryRef = useRef<HTMLElement>(null);
+  const renameButtonRef = useRef<HTMLButtonElement>(null);
+  const renameFormRef = useRef<HTMLFormElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const renameReturnFocusRef = useRef(false);
+  const renameSubmissionOwnsFocusRef = useRef(false);
+  const renameFailureReturnFocusRef = useRef(false);
+  useEffect(() => {
+    if (!renaming) return;
+    const relinquishFocus = (event: FocusEvent) => {
+      // Disabling the submitted input/button can blur Chrome to body. A later
+      // deliberate focus move ends ownership, even if that control also blurs.
+      if (
+        event.target !== document.body &&
+        !renameFormRef.current?.contains(event.target as Node)
+      ) {
+        renameSubmissionOwnsFocusRef.current = false;
+        renameFailureReturnFocusRef.current = false;
+      }
+    };
+    document.addEventListener('focusin', relinquishFocus);
+    return () => document.removeEventListener('focusin', relinquishFocus);
+  }, [renaming]);
+  useLayoutEffect(() => {
+    if (editingTitle || !renameReturnFocusRef.current) return;
+    renameReturnFocusRef.current = false;
+    if (detailsRef.current?.open) renameButtonRef.current?.focus();
+    else detailsSummaryRef.current?.focus();
+  }, [editingTitle]);
+  useLayoutEffect(() => {
+    // A failed request keeps the form mounted. Wait until busy controls are
+    // enabled again before restoring a keyboard origin that blurred to body.
+    if (renaming || !renameFailureReturnFocusRef.current) return;
+    renameFailureReturnFocusRef.current = false;
+    if (document.activeElement !== document.body) return;
+    if (detailsRef.current?.open) renameInputRef.current?.focus();
+    else detailsSummaryRef.current?.focus();
+  }, [renaming]);
+  const finishRename = () => {
+    // An async save can finish after the instructor has moved elsewhere. Restore
+    // only the focus owned by the form that is about to disappear.
+    renameReturnFocusRef.current =
+      !!renameFormRef.current?.contains(document.activeElement) ||
+      (document.activeElement === document.body && renameSubmissionOwnsFocusRef.current);
+    setEditingTitle(false);
+  };
   const averageBpm = payload ? avgBpm(payload) : null;
   // Readiness is derived from the run-payload (no new data): duration/tempo/
   // cues-moves/music, surfaced before Live instead of on stage (P0 #2).
@@ -4073,14 +4128,28 @@ export function ClassHeaderCard({
   };
 
   const saveRename = () => {
+    if (renaming) return;
     const next = titleDraft.trim();
     if (next === '' || next === cls.title) {
-      setEditingTitle(false);
+      finishRename();
       return;
     }
+    // Capture the submission origin before busy controls disable and blur.
+    renameSubmissionOwnsFocusRef.current = !!renameFormRef.current?.contains(
+      document.activeElement,
+    );
+    renameFailureReturnFocusRef.current = false;
     void runRename(async () => {
-      onClassUpdated(await updateClass(cls.id, { title: next }));
-      setEditingTitle(false);
+      try {
+        onClassUpdated(await updateClass(cls.id, { title: next }));
+        finishRename();
+      } catch (error) {
+        renameFailureReturnFocusRef.current =
+          document.activeElement === document.body && renameSubmissionOwnsFocusRef.current;
+        throw error;
+      }
+    }).finally(() => {
+      renameSubmissionOwnsFocusRef.current = false;
     });
   };
 
@@ -4125,14 +4194,12 @@ export function ClassHeaderCard({
     });
   };
 
+  // The instructor keeps class identity and readiness in view; occasional
+  // management lives in a native disclosure without unmounting its drafts.
   return (
     <div className="flex flex-col gap-3 rounded-card bg-bg-raised p-5 shadow-card">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-2">
-        {/* On phones, put the cover above the title so both can use their full width.
-            On sm+, reserve a readable title width beside the cover so actions wrap
-            instead of squeezing the truncating heading to zero width. */}
         <div className="flex min-w-0 flex-1 flex-col items-start gap-4 sm:min-w-[20rem] sm:flex-row">
-          {/* Cover image area */}
           <div className="relative shrink-0 flex flex-col items-center">
             {cls.coverImageUrl ? (
               <img
@@ -4147,156 +4214,12 @@ export function ClassHeaderCard({
               // across surfaces and renames. Never a bare placeholder glyph.
               <ClassCoverArt classId={cls.id} title={cls.title} />
             )}
-            {isOwner && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mt-2 min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10"
-                >
-                  {cls.coverImageUrl ? 'Change cover' : 'Upload cover'}
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png, image/jpeg, image/webp"
-                  className="sr-only"
-                  tabIndex={-1}
-                  onChange={handleFileChange}
-                />
-              </>
-            )}
           </div>
-          <div className="min-w-0 w-full flex-1 sm:w-auto">
-            {editingTitle ? (
-              <form
-                className="flex flex-wrap items-center gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  saveRename();
-                }}
-              >
-                <label className="sr-only" htmlFor="class-title-input">
-                  Class name
-                </label>
-                <input
-                  id="class-title-input"
-                  autoFocus
-                  value={titleDraft}
-                  onChange={(e) => setTitleDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') setEditingTitle(false);
-                  }}
-                  maxLength={200}
-                  className="min-h-11 min-w-0 flex-1 rounded-card border border-interactive/40 bg-bg-sunken px-2 font-display text-xl font-semibold text-text-primary"
-                />
-                <button
-                  type="submit"
-                  className="min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:rounded-pill"
-                  disabled={renaming}
-                >
-                  {renaming ? '…' : 'Save'}
-                </button>
-                <button
-                  type="button"
-                  className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary sm:rounded-pill"
-                  onClick={() => setEditingTitle(false)}
-                  disabled={renaming}
-                >
-                  Cancel
-                </button>
-              </form>
-            ) : (
-              // min-w-0 lets the h2's `truncate` engage so a long title shortens
-              // instead of overflowing the title block and colliding with actions.
-              <div className="flex items-center gap-2 min-w-0">
-                <h2 className="truncate font-display text-xl font-semibold text-text-primary">
-                  {cls.title}
-                </h2>
-                {isOwner && (
-                  <button
-                    className="min-h-11 shrink-0 rounded-control border border-interactive/40 px-2 font-ui text-xs text-text-secondary hover:text-text-primary sm:rounded-pill"
-                    onClick={startRename}
-                    aria-label="Rename class"
-                  >
-                    Rename
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Tags */}
-            <div className="mt-3 flex flex-wrap gap-2 items-center">
-              {cls.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 rounded-pill bg-interactive/15 px-2.5 py-1 font-ui text-xs text-text-primary border border-interactive/30"
-                >
-                  #{tag}
-                  {canEdit && (
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="ml-0.5 inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-text-secondary hover:text-state-danger"
-                      aria-label={`Remove tag ${tag}`}
-                    >
-                      ×
-                    </button>
-                  )}
-                </span>
-              ))}
-              {canEdit && (
-                <form
-                  onSubmit={handleTagSubmit}
-                  className="flex min-w-0 max-w-full flex-wrap items-center gap-1"
-                >
-                  <input
-                    type="text"
-                    placeholder="Add tag…"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    // min-w-0 + max-w-full: the default input min-width overflowed
-                    // the class header by 7px at a 320px viewport.
-                    className="min-h-11 min-w-0 max-w-full rounded-control border border-interactive/30 bg-bg-sunken px-2.5 font-ui text-xs text-text-primary sm:rounded-pill"
-                    maxLength={50}
-                  />
-                </form>
-              )}
-            </div>
-          </div>
+          <h2 className="min-w-0 max-w-full truncate font-display text-xl font-semibold text-text-primary">
+            {cls.title}
+          </h2>
         </div>
-        {/* Actions wrap below the title on narrow viewports instead of forcing
-            horizontal overflow; single row to the right of the title on sm+. */}
-        <div className="grid w-full grid-cols-2 items-center gap-2 sm:w-auto sm:flex sm:flex-wrap sm:shrink-0">
-          {/* Owner-only delete with inline confirm (no native confirm() dialog). */}
-          {isOwner &&
-            (confirmingDelete ? (
-              <span className="col-span-2 grid grid-cols-2 gap-1 sm:flex sm:items-center">
-                <DestructiveControl
-                  onClick={confirmDelete}
-                  busy={deleting}
-                  aria-label="Delete class"
-                >
-                  Delete class
-                </DestructiveControl>
-                <button
-                  type="button"
-                  className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary disabled:opacity-40 sm:rounded-pill"
-                  onClick={() => setConfirmingDelete(false)}
-                  disabled={deleting}
-                >
-                  Cancel
-                </button>
-              </span>
-            ) : (
-              <DestructiveControl
-                onClick={() => setConfirmingDelete(true)}
-                title="Delete this class"
-                aria-label="Delete this class"
-              >
-                Delete
-              </DestructiveControl>
-            ))}
+        <div className="flex w-full sm:w-auto sm:shrink-0">
           <button
             className={
               planLead
@@ -4368,6 +4291,170 @@ export function ClassHeaderCard({
           planLead={planLead}
           compact
         />
+      )}
+      {(isOwner || canEdit || cls.tags.length > 0) && (
+        <details
+          ref={detailsRef}
+          onToggle={(event) => {
+            if (event.currentTarget.open) return;
+            if (!deleting) setConfirmingDelete(false);
+            if (event.currentTarget.contains(document.activeElement)) {
+              detailsSummaryRef.current?.focus();
+            }
+          }}
+          className="border-t border-border-subtle pt-2"
+        >
+          <summary
+            ref={detailsSummaryRef}
+            className="min-h-11 cursor-pointer rounded-control px-2 py-3 font-ui text-sm font-semibold text-text-secondary rf-focus-ring"
+          >
+            Class details
+          </summary>
+          <div className="flex min-w-0 flex-col gap-3 pt-2">
+            {isOwner &&
+              (editingTitle ? (
+                <form
+                  ref={renameFormRef}
+                  className="flex flex-wrap items-center gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    saveRename();
+                  }}
+                >
+                  <label className="sr-only" htmlFor="class-title-input">
+                    Class name
+                  </label>
+                  <input
+                    id="class-title-input"
+                    ref={renameInputRef}
+                    autoFocus
+                    disabled={renaming}
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape' && !renaming) finishRename();
+                    }}
+                    maxLength={200}
+                    className="min-h-11 min-w-0 flex-1 rounded-card border border-interactive/40 bg-bg-sunken px-2 font-display text-xl font-semibold text-text-primary"
+                  />
+                  <button
+                    type="submit"
+                    className="min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:rounded-pill"
+                    disabled={renaming}
+                  >
+                    {renaming ? '…' : 'Save'}
+                  </button>
+                  <button
+                    type="button"
+                    className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary sm:rounded-pill"
+                    onClick={finishRename}
+                    disabled={renaming}
+                  >
+                    Cancel
+                  </button>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  className="min-h-11 self-start rounded-control border border-interactive/40 px-2 font-ui text-xs text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
+                  ref={renameButtonRef}
+                  onClick={startRename}
+                  aria-label="Rename class"
+                >
+                  Rename
+                </button>
+              ))}
+            {isOwner && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="min-h-11 self-start rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring"
+                >
+                  {cls.coverImageUrl ? 'Change cover' : 'Upload cover'}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  className="sr-only"
+                  tabIndex={-1}
+                  onChange={handleFileChange}
+                />
+              </>
+            )}
+
+            {/* Tags */}
+            <div className="mt-3 flex flex-wrap gap-2 items-center">
+              {cls.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-pill bg-interactive/15 px-2.5 py-1 font-ui text-xs text-text-primary border border-interactive/30"
+                >
+                  #{tag}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="ml-0.5 inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-text-secondary hover:text-state-danger"
+                      aria-label={`Remove tag ${tag}`}
+                    >
+                      ×
+                    </button>
+                  )}
+                </span>
+              ))}
+              {canEdit && (
+                <form
+                  onSubmit={handleTagSubmit}
+                  className="flex min-w-0 max-w-full flex-wrap items-center gap-1"
+                >
+                  <input
+                    type="text"
+                    placeholder="Add tag…"
+                    aria-label="Add tag"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    // min-w-0 + max-w-full: the default input min-width overflowed
+                    // the class header by 7px at a 320px viewport.
+                    className="min-h-11 min-w-0 max-w-full rounded-control border border-interactive/30 bg-bg-sunken px-2.5 font-ui text-xs text-text-primary sm:rounded-pill"
+                    maxLength={50}
+                  />
+                </form>
+              )}
+            </div>
+            {/* Owner-only delete with inline confirm (no native confirm() dialog). */}
+            {isOwner &&
+              (confirmingDelete ? (
+                <span className="col-span-2 grid grid-cols-2 gap-1 sm:flex sm:items-center">
+                  <DestructiveControl
+                    onClick={confirmDelete}
+                    busy={deleting}
+                    aria-label="Delete class"
+                  >
+                    Delete class
+                  </DestructiveControl>
+                  <button
+                    type="button"
+                    className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary disabled:opacity-40 sm:rounded-pill"
+                    onClick={() => setConfirmingDelete(false)}
+                    disabled={deleting}
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <DestructiveControl
+                  onClick={() => setConfirmingDelete(true)}
+                  busy={deleting}
+                  title="Delete this class"
+                  aria-label="Delete this class"
+                >
+                  Delete
+                </DestructiveControl>
+              ))}
+          </div>
+        </details>
       )}
     </div>
   );

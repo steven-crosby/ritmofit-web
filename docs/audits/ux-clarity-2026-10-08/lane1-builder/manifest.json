@@ -1,0 +1,98 @@
+{
+  "base": "aade146d7a1f1c42c4065c51faab36be3f3d7ed5",
+  "state": "verified implementation; tested source identity bound by SHA-256",
+  "files": [
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/before-desktop.png",
+      "sha256": "65a1ac2a831f02a6cfc653335bb6df06bd5df76ed87c83776d361e83a3b35c08"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/after-desktop.png",
+      "sha256": "357e01bc81696bd6f25e0e9f7e06bf0a5b52d8ecda1b75c62ec8828f4b1a11e3"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/before-390.png",
+      "sha256": "a649601730770c8461014e24a34ce82b19965bf5e8442945dfabb893cb8e75f0"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/after-390.png",
+      "sha256": "98edb17ac6218d98b1a0dbb1ec593091e1fcd5919e4f0ebd4d12d6ad0b6390b4"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/before-320.png",
+      "sha256": "bdaae12c5926c974f32e1fb2d60fdabbbc5b0d19991ac3bfeb081548ba946e11"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/after-320.png",
+      "sha256": "ceb718648c2275f7ec26384c13013c0f07755ee991ea5fde81156f0a5a9b1ef3"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/before-landscape.png",
+      "sha256": "cddea6d41f48e551c74846311227d887847f631d29dc18c77bcd967334acae32"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/after-landscape.png",
+      "sha256": "611030ace4565865ea9adf18b7f0f7cc8ca1f71141397b4db09c184ab70d39a3"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/before-short.png",
+      "sha256": "98e81d3b218db23a5362ac0cdc5ad90b1520cb8d1935cf5b8ccfb8962bb993b2"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/after-short.png",
+      "sha256": "a77a2fd1dd99fd6bd7385577adcd574fa744000e9aa45980b20af20a43251204"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/details-390.png",
+      "sha256": "f5f14307f37289f704f852ef18e0eb281d8aabcd28c50ef06880e44b60b5a39c"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/actual-200pct.png",
+      "sha256": "9b1b3cbec78efd3f5b15813177fa063eec23b7bc891f1741c4b0a68978b97cba"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/async-rename-focus.png",
+      "sha256": "6d16091c866812f9974e19a80d639ca04d359f574612fad39bc60335393ab2dc"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/native-metrics.json",
+      "sha256": "a93dc309f59e96a2d72d1014ef4a277b74ae36a04d56ab4fee145f793127f297"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/before-header-metrics.json",
+      "sha256": "2bc4692a9c2765df5db479aa8787522cf1e0d0fb7fa39ce80257e2f735d29fb9"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/after-header-metrics.json",
+      "sha256": "f5a54710cc3ea1cdbd4d3149168323d6f1d6ad86dc87fe7d2fd2e7725f5f2d5a"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/gate-results.json",
+      "sha256": "30968d40a44d458e79310c1fef6b553aaa729c31079bc725ec541df47cc25818"
+    },
+    {
+      "path": "apps/web/src/components/Dashboard.tsx",
+      "sha256": "98d112acc08b03a35543b223b5d8b529766a0e744d3d6d90ac67a07fce7a3360"
+    },
+    {
+      "path": "apps/web/src/components/Dashboard.test.tsx",
+      "sha256": "e673986c44ebacb47ee2cb1bca299d9ac737888b24d4177f8d1d9449cb876f17"
+    },
+    {
+      "path": "apps/web/src/components/ClassHeaderCard.test.tsx",
+      "sha256": "f3e458cdb4ff092925a5d76bc51e656ba32c0eb9ac3af08c4a25479390a85495"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/README.md",
+      "sha256": "ea8deec0ebdc82346202f2d3677f149fe765ce11445a23e9217448cc14ac5303"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/merge-review-focus.json",
+      "sha256": "2b43d50669373623e199ea3113f08ea86886805d469b3bfdabafd779af0e49d0"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane1-builder/merge-review-keyboard-success.png",
+      "sha256": "b2ffe85c90e491078805d0fa051ce038bfb7774733fd9c3924c3dfaa876306f6"
+    }
+  ]
+}
