@@ -996,6 +996,207 @@ describe('LiveMode runtime composition', () => {
     expect(within(focal).getByLabelText('Time to next cue')).toBeTruthy();
   });
 
+  it('leads the rail with timers and keeps notes ahead of the supporting class shape', async () => {
+    await renderLive({
+      ...threeTrack,
+      tracks: [
+        { ...threeTrack.tracks[0]!, notes: 'Watch the new rider\nOffer a seated option' },
+        ...threeTrack.tracks.slice(1),
+      ],
+    });
+    const trackTimer = screen.getByText('Track left').closest('div')!;
+    const classTimer = screen.getByText('Class left').closest('div')!;
+    const guidance = screen.getByText('Full guidance').closest('details')!;
+    const notes = screen.getByText(/Watch the new rider/);
+    const pulse = screen.getByRole('region', { name: 'Class Pulse' });
+    const queue = screen.getByRole('list', { name: 'Choreography queue' });
+    const upcoming = screen.getByText('Up next');
+    const precedes = (a: Element, b: Element) =>
+      !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(within(trackTimer).getByText('3:00')).toBeTruthy();
+    expect(within(classTimer).getByText('6:30')).toBeTruthy();
+    expect(precedes(trackTimer, guidance)).toBe(true);
+    expect(precedes(classTimer, guidance)).toBe(true);
+    expect(precedes(guidance, notes)).toBe(true);
+    expect(precedes(notes, pulse)).toBe(true);
+    expect(precedes(pulse, queue)).toBe(true);
+    expect(precedes(queue, upcoming)).toBe(true);
+    expect(notes.closest('details')).toBeNull();
+  });
+
+  it('reveals full current and next guidance without changing music transport or position', async () => {
+    const current = 'Hold the climb\nBreathe through the resistance.'.repeat(8);
+    const next = 'Stand and reach\nKeep the shoulders relaxed.'.repeat(8);
+    const adapter = workingAdapter();
+    const play = vi.spyOn(adapter, 'play');
+    const pause = vi.spyOn(adapter, 'pause');
+    const seek = vi.spyOn(adapter, 'seek');
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockReturnValue(adapter);
+    render(
+      <LiveMode
+        payload={{
+          ...payload,
+          tracks: [
+            {
+              ...activeTrack,
+              cues: [{ id: 'long', anchorMs: 0, beat: 1, bar: 1, text: current, color: null }],
+              moves: [
+                { id: 'next', anchorMs: 60000, beat: 1, bar: 2, name: next, intensity: 'hard' },
+              ],
+            },
+          ],
+        }}
+        onExit={() => {}}
+      />,
+    );
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    const summary = screen.getByText('Full guidance');
+    const details = summary.closest('details')!;
+    expect(details.open).toBe(false);
+    const before = [play.mock.calls.length, pause.mock.calls.length, seek.mock.calls.length];
+    const position = screen.getByRole('slider', { name: 'Seek class timeline' });
+    const beforePosition = position.getAttribute('aria-valuenow');
+    fireEvent.click(summary);
+    expect(details.open).toBe(true);
+    expect(within(details).getByText('Current cue')).toBeTruthy();
+    expect(within(details).getByText('Next move')).toBeTruthy();
+    for (const text of [current, next]) {
+      const full = within(details).getByText(
+        (_, node) => node?.tagName === 'P' && node.textContent === text,
+      );
+      expect(full.textContent).toBe(text);
+      expect(full.className).toContain('whitespace-pre-wrap');
+      expect(full.className).not.toMatch(/truncate|line-clamp/);
+    }
+    fireEvent.click(summary);
+    expect(details.open).toBe(false);
+    expect([play.mock.calls.length, pause.mock.calls.length, seek.mock.calls.length]).toEqual(
+      before,
+    );
+    expect(position.getAttribute('aria-valuenow')).toBe(beforePosition);
+    expect(within(details).queryByRole('button')).toBeNull();
+  });
+
+  it('updates open guidance across cue and track progression and resets on view switching', async () => {
+    await renderLive({
+      ...threeTrack,
+      tracks: [
+        threeTrack.tracks[0]!,
+        {
+          ...threeTrack.tracks[1]!,
+          moves: [
+            { id: 'm2', anchorMs: 0, beat: null, bar: null, name: 'Reach long', intensity: 'easy' },
+          ],
+        },
+        threeTrack.tracks[2]!,
+      ],
+    });
+    const summary = screen.getByText('Full guidance');
+    const details = summary.closest('details')!;
+    fireEvent.click(summary);
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    fireEvent.keyDown(slider, { key: 'PageUp' });
+    fireEvent.keyDown(slider, { key: 'PageUp' });
+    expect(details.open).toBe(true);
+    expect(within(details).getByText('Climb now')).toBeTruthy();
+    expect(within(details).queryByText('Settle in')).toBeNull();
+    expect(within(details).getByText('End of track')).toBeTruthy();
+    for (let i = 0; i < 4; i++) fireEvent.keyDown(slider, { key: 'PageUp' });
+    expect(screen.getByText('Full guidance').closest('details')).toBe(details);
+    expect(details.open).toBe(true);
+    expect(within(details).getByText('Current move')).toBeTruthy();
+    expect(within(details).getByText('Reach long')).toBeTruthy();
+    const fullList = screen.getByRole('tab', { name: 'Full List' });
+    fullList.focus();
+    fireEvent.click(fullList);
+    expect(document.activeElement).toBe(fullList);
+    expect(screen.queryByText('Full guidance')).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'Cue-by-Cue' }));
+    expect(screen.getByText('Full guidance').closest('details')!.open).toBe(false);
+  });
+
+  it('keeps the unknown-duration fallback and omits guidance for a sparse track', async () => {
+    await renderLive({
+      ...payload,
+      tracks: [{ ...activeTrack, track: { ...activeTrack.track, durationMs: null } }],
+    });
+    const timer = screen.getByText('Track left').closest('div')!;
+    expect(within(timer).getByText('—')).toBeTruthy();
+    expect(within(timer).getByText('No duration set')).toBeTruthy();
+    expect(screen.queryByText('Full guidance')).toBeNull();
+  });
+
+  it.each(['sparse track', 'intentional gap'] as const)(
+    'restores transport focus only when focused guidance disappears into a %s',
+    async (destination: 'sparse track' | 'intentional gap') => {
+      const shortRun: RunPayload = {
+        ...threeTrack,
+        class: { ...threeTrack.class, timelineMode: 'free', totalDurationMs: 4000 },
+        tracks: [
+          {
+            ...threeTrack.tracks[0]!,
+            track: { ...activeTrack.track, durationMs: 1000 },
+            cues: [
+              { id: 'short', anchorMs: 0, beat: null, bar: null, text: 'Stay tall', color: null },
+            ],
+          },
+          {
+            ...threeTrack.tracks[1]!,
+            startOffsetMs: destination === 'intentional gap' ? 3000 : 1000,
+            track: { ...threeTrack.tracks[1]!.track, durationMs: 1000 },
+          },
+        ],
+      };
+      await renderLive(shortRun);
+      vi.useFakeTimers();
+      try {
+        fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+        const summary = screen.getByText('Full guidance');
+        fireEvent.click(summary);
+        summary.focus();
+        expect(document.activeElement).toBe(summary);
+        act(() => vi.advanceTimersByTime(1200));
+        expect(screen.queryByText('Full guidance')).toBeNull();
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Pause' }));
+      } finally {
+        cleanup();
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it('does not steal unrelated focus when sparse-track progression removes guidance', async () => {
+    await renderLive(threeTrack);
+    const exit = screen.getByRole('button', { name: 'Exit' });
+    exit.focus();
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    for (let i = 0; i < 6; i++) fireEvent.keyDown(slider, { key: 'PageUp' });
+    expect(screen.queryByText('Full guidance')).toBeNull();
+    expect(document.activeElement).toBe(exit);
+  });
+
+  it('keeps urgent playback recovery focus ahead of a focused guidance disclosure', async () => {
+    let fail: NonNullable<AdapterEvents['onError']> = () => {};
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation((events: AdapterEvents) => {
+      fail = (error) => events.onError?.(error);
+      return workingAdapter();
+    });
+    render(<LiveMode payload={threeTrack} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    const summary = screen.getByText('Full guidance');
+    summary.focus();
+    act(() => fail({ message: 'Playback stopped during guidance' }));
+    expect(document.activeElement).toBe(
+      await screen.findByRole('alert', { name: 'Playback recovery' }),
+    );
+  });
+
   it('clamps a long cue inside the focal card and scrolls the live shell', async () => {
     const long = 'Hold the climb and breathe through the resistance.'.repeat(8);
     const scripted = {
