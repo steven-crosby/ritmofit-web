@@ -26,7 +26,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > squash-merged as `0ec1d1009c33a128150fbd58c36bf283f1f485da`. Both squash trees matched their
 > tested candidates. No API/schema/migration/auth/provider/runtime change in these UX slices.
 >
-> The subsequent integrated local browser audit exercised Builder → Run without music → Live →
+> The integrated local browser audit on candidate `8023d74` exercised Builder → Run without music → Live →
 > Builder with synthetic data and mocked APIs. Desktop, 390/320px portrait, short landscape,
 > and 600×304 CSS viewports passed closed/open page and Live-shell overflow checks, disclosure
 > focus/view reset, sparse-track handling, and return to Builder. These are UI checks, not

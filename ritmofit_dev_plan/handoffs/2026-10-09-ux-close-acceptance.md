@@ -14,14 +14,14 @@ status: open
 ## Done
 
 - #503 merged as `be6d71a` after green reviewed-head CI on `50b61fc`; post-merge main CI `37895313770` passed. Keyboard rename success/rejection and unrelated-focus protection were corrected and natively verified before merge.
-- #504 integrated Builder main without rewriting history, passed 197 combined focused tests and full CI `37895737330` on `8023d74`, then merged as `0ec1d1009c33a128150fbd58c36bf283f1f485da`. Both squash file trees matched tested candidates; original main fast-forwarded with `.claude/` preserved.
+- #504 integrated Builder main without rewriting history, passed 197 combined focused tests and full CI `37895737330` on `8023d74`, then merged as `0ec1d1009c33a128150fbd58c36bf283f1f485da`. Both squash file trees matched tested candidates; post-merge #504 main CI `37943142932` passed, and original main fast-forwarded with `.claude/` preserved.
 - Fresh integrated synthetic browser audit passed 17 records, including both page and Live-shell overflow metrics for five closed/open Live viewport pairs. Retained [integration evidence](../../docs/audits/ux-clarity-2026-10-08/integration-audit/README.md) distinguishes mocked UI from provider/device/listening acceptance.
 - #497's historical #494 deployment entry is preserved. Its current status is reconciled against the later code merges rather than overwriting them. Both lane authors updated their own handoffs. No new product code, API, schema, migration, provider integration, or configuration changed in this documentation reconciliation.
 
 ## In flight
 
 - This reconciliation updates existing #497 and must pass current-head CI before its authorized squash merge. No new deployment is part of that PR.
-- Fresh Cycle/Pilates fixture setup is approved. Current source playlist was browsed in the authenticated production account; it contains ten tracks. Listener availability is pending. Two fresh classes are prepared and tagged `qa-fixture`: Cycle `14849c7a-54ca-491d-8eea-c6fab47183d0`, Pilates `15547331-f97b-45ce-ae2c-78fbc6d2f7e0`; each has ten tracks and displays 39:50. Neither has started playback; no stale QA class is reused.
+- Fresh Cycle/Pilates fixture setup is complete. Current source playlist was browsed in the authenticated production account; it contains ten tracks. Listener availability is pending. Two fresh classes are prepared and tagged `qa-fixture`: Cycle `14849c7a-54ca-491d-8eea-c6fab47183d0`, Pilates `15547331-f97b-45ce-ae2c-78fbc6d2f7e0`; each has ten tracks and displays 39:50. Neither has started playback; no stale QA class is reused.
 - Natural desktop Cycle/Pilates completion and human listening are not established by UI checks. iPhone investigation follows desktop acceptance.
 
 ## Next action
