@@ -1,0 +1,72 @@
+[
+  {
+    "name": "enter-success",
+    "pending": {
+      "id": "",
+      "label": null,
+      "tag": "BODY"
+    },
+    "completed": {
+      "id": "",
+      "label": "Rename class",
+      "tag": "BUTTON"
+    },
+    "ok": true
+  },
+  {
+    "name": "save-success",
+    "pending": {
+      "id": "",
+      "label": null,
+      "tag": "BODY"
+    },
+    "completed": {
+      "id": "",
+      "label": "Rename class",
+      "tag": "BUTTON"
+    },
+    "ok": true
+  },
+  {
+    "name": "enter-failure",
+    "pending": {
+      "id": "",
+      "label": null,
+      "tag": "BODY"
+    },
+    "completed": {
+      "id": "class-title-input",
+      "label": null,
+      "tag": "INPUT"
+    },
+    "ok": true
+  },
+  {
+    "name": "success-unrelated",
+    "pending": {
+      "id": "",
+      "label": null,
+      "tag": "BODY"
+    },
+    "completed": {
+      "id": "",
+      "label": "Add tag",
+      "tag": "INPUT"
+    },
+    "ok": true
+  },
+  {
+    "name": "failure-unrelated",
+    "pending": {
+      "id": "",
+      "label": null,
+      "tag": "BODY"
+    },
+    "completed": {
+      "id": "",
+      "label": "Add tag",
+      "tag": "INPUT"
+    },
+    "ok": true
+  }
+]

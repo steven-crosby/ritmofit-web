@@ -1,0 +1,18 @@
+{
+  "cycle": {
+    "name": "[QA] Apple natural acceptance 2026-10-09 Cycle",
+    "id": "14849c7a-54ca-491d-8eea-c6fab47183d0",
+    "tracks": 10,
+    "duration": "39:50",
+    "tag": "qa-fixture",
+    "playbackStarted": false
+  },
+  "pilates": {
+    "name": "[QA] Apple natural acceptance 2026-10-09 Pilates",
+    "id": "15547331-f97b-45ce-ae2c-78fbc6d2f7e0",
+    "tracks": 10,
+    "duration": "39:50",
+    "tag": "qa-fixture",
+    "playbackStarted": false
+  }
+}

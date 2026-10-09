@@ -1947,6 +1947,16 @@ describe('Dashboard track focus management', () => {
     const notes = await screen.findByRole('textbox', { name: 'Creator notes' });
     fireEvent.change(notes, { target: { value: 'Hold this thought through every task.' } });
 
+    const details = screen.getByText('Class details').closest('details')!;
+    const firstRowBefore = rowSelectButton('ct-1');
+    details.open = true;
+    fireEvent(details, new Event('toggle'));
+    details.open = false;
+    fireEvent(details, new Event('toggle'));
+    expect(rowSelectButton('ct-1')).toBe(firstRowBefore);
+    expect(screen.getByRole('heading', { name: 'Playback order' })).toBeTruthy();
+    expect(screen.getByText(/Drag a grip or use its arrow keys/)).toBeTruthy();
+
     fireEvent.click(screen.getByRole('button', { name: 'Show timeline' }));
     expect(screen.getByRole('region', { name: 'Timeline precision' })).toBeTruthy();
 
@@ -1961,6 +1971,37 @@ describe('Dashboard track focus management', () => {
       (screen.getByRole('textbox', { name: 'Creator notes' }) as HTMLTextAreaElement).value,
     ).toBe('Hold this thought through every task.');
     expect(rowSelectButton('ct-1')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('explains free timeline timing without exposing sequential reorder controls', async () => {
+    const ride = installClassWithTracks('Free timeline ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+    ]);
+    vi.mocked(api.listClasses).mockResolvedValue(page([{ ...ride, timelineMode: 'free' }]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Free timeline ride/ }));
+    await screen.findByRole('heading', { name: 'Playback order' });
+    expect(
+      screen.getByText('Song timing is set in the timeline. Select a song to inspect it.'),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Reorder First Light/ })).toBeNull();
+    expect(rowSelectButton('ct-1')).toBeTruthy();
+  });
+
+  it('does not advertise reorder while playback details are unavailable', async () => {
+    installClassWithTracks('Unavailable details ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+    ]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('Payload unavailable'));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Unavailable details ride/ }));
+    await screen.findByRole('heading', { name: 'Playback order' });
+    expect(screen.getByText(/Playback details are unavailable/)).toBeTruthy();
+    expect(screen.queryByText(/Drag a grip or use its arrow keys/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Reorder First Light/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /run live/i })).toHaveProperty('disabled', true);
   });
 
   it('keeps compact cross-class orientation while a class is open', async () => {
@@ -2333,7 +2374,7 @@ describe('Dashboard track focus management', () => {
 
     // With no tracks left, focus moves to the (now focusable) inspector placeholder
     // rather than falling to <body>.
-    const placeholderText = await screen.findByText(/Click a track in the Track stack list/);
+    const placeholderText = await screen.findByText(/Select a song in Playback order/);
     const placeholder = placeholderText.parentElement as HTMLElement;
     await waitFor(() => {
       expect(document.activeElement).toBe(placeholder);

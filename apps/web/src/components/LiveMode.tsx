@@ -354,6 +354,10 @@ export function LiveMode({
   const transportRef = useRef<HTMLDivElement>(null);
   const previousConnectionsOpen = useRef(connectionsOpen);
   const previousView = useRef(view);
+  const restoreGuidanceFocus = useCallback(() => {
+    const button = primaryButtonRef.current;
+    if (button?.isConnected) button.focus({ preventScroll: true });
+  }, []);
 
   const refreshConnections = useCallback(async () => {
     const requestId = ++connectionsRequestId.current;
@@ -1016,6 +1020,7 @@ export function LiveMode({
               holding={musicBlocked || !!playbackFailure}
               hasStarted={hasStarted}
               gap={gap}
+              onGuidanceFocusLost={restoreGuidanceFocus}
             />
           ) : (
             <FullList
@@ -1259,6 +1264,7 @@ function CueByCue({
   holding,
   hasStarted,
   gap,
+  onGuidanceFocusLost,
 }: {
   payload: RunPayload;
   live: { entry: RunPayloadTrackEntry; index: number } | null;
@@ -1274,6 +1280,7 @@ function CueByCue({
   hasStarted: boolean;
   /** Free-mode silence between tracks: a countdown to the next track. */
   gap: { untilMs: number; nextTitle: string | null } | null;
+  onGuidanceFocusLost: () => void;
 }) {
   if (!live) {
     return (
@@ -1446,11 +1453,9 @@ function CueByCue({
         <FocalVitals entry={entry} playing={playing} />
       </div>
 
-      {/* RIGHT — the instrument rail: the shape, the timers, the track. The next
-          cue moved into the hero card, closer and larger. */}
+      {/* RIGHT — time and authored guidance lead; class shape supports them.
+          Current/next stay in the hero, with full text available without seeking. */}
       <div className="flex min-w-0 flex-col gap-3 lg:col-span-2 lg:gap-4">
-        <ClassPulse payload={payload} compact />
-
         {/* Timers — track + class countdowns, the performance's running clock. */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-card bg-bg-raised p-4 shadow-card">
@@ -1474,6 +1479,14 @@ function CueByCue({
           </div>
         </div>
 
+        {(currentEvent || nextEvent) && (
+          <FullGuidance
+            currentEvent={currentEvent}
+            nextEvent={nextEvent}
+            onFocusLost={onGuidanceFocusLost}
+          />
+        )}
+
         {/* Track identity (+ any instructor notes). Provider handoff links left
             this card for the playback-failure recovery surface (D19). */}
         <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
@@ -1496,6 +1509,8 @@ function CueByCue({
           )}
         </div>
 
+        <ClassPulse payload={payload} compact />
+
         <ChoreographyQueue
           events={events}
           elapsedMs={elapsedMs}
@@ -1509,6 +1524,59 @@ function CueByCue({
         <UpNextTracks payload={payload} liveIndex={live.index} />
       </div>
     </div>
+  );
+}
+
+/**
+ * Intent: let an instructor read complete authored instructions without seeking
+ * or losing the teaching hero. The existing raised ink surface, quiet shadow,
+ * subordinate UI type, data labels, and 4px spacing keep this a supporting control.
+ */
+function FullGuidance({
+  currentEvent,
+  nextEvent,
+  onFocusLost,
+}: {
+  currentEvent: TimelineEvent | null;
+  nextEvent: TimelineEvent | null;
+  onFocusLost: () => void;
+}) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  useLayoutEffect(
+    () => () => {
+      // Inspect focus before removal: after deletion, body focus no longer tells
+      // us whether this disclosure or an unrelated control owned it.
+      if (detailsRef.current?.contains(document.activeElement)) onFocusLost();
+    },
+    [onFocusLost],
+  );
+
+  return (
+    <details ref={detailsRef} className="rounded-card bg-bg-raised shadow-card">
+      <summary className="min-h-11 cursor-pointer rounded-control px-4 py-3 font-ui text-sm font-semibold text-text-secondary rf-focus-ring sm:px-5">
+        Full guidance
+      </summary>
+      <div className="flex min-w-0 flex-col gap-4 border-t border-interactive/15 p-4 sm:p-5">
+        {currentEvent && (
+          <div>
+            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+              {currentEvent.kind === 'move' ? 'Current move' : 'Current cue'}
+            </p>
+            <p className="mt-1 whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
+              {currentEvent.text}
+            </p>
+          </div>
+        )}
+        <div>
+          <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+            {nextEvent?.kind === 'move' ? 'Next move' : 'Next cue'}
+          </p>
+          <p className="mt-1 whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
+            {nextEvent?.text ?? 'End of track'}
+          </p>
+        </div>
+      </div>
+    </details>
   );
 }
 

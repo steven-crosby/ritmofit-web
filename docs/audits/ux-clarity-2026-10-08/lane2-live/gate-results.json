@@ -1,0 +1,74 @@
+[
+  {
+    "name": "format",
+    "exit": 0,
+    "seconds": 3.3,
+    "command": ["pnpm", "format:check"]
+  },
+  {
+    "name": "typecheck",
+    "exit": 0,
+    "seconds": 7.32,
+    "command": ["pnpm", "-r", "typecheck"]
+  },
+  {
+    "name": "lint",
+    "exit": 0,
+    "seconds": 3.73,
+    "command": ["pnpm", "lint"]
+  },
+  {
+    "name": "design-system",
+    "exit": 0,
+    "seconds": 0.3,
+    "command": ["npm", "run", "verify"]
+  },
+  {
+    "name": "theme-classes",
+    "exit": 0,
+    "seconds": 0.53,
+    "command": ["pnpm", "--filter", "@ritmofit/web", "theme-classes"]
+  },
+  {
+    "name": "unit-tests",
+    "exit": 0,
+    "seconds": 30.47,
+    "command": ["pnpm", "test"]
+  },
+  {
+    "name": "integration",
+    "exit": 0,
+    "seconds": 21.38,
+    "command": ["pnpm", "--filter", "@ritmofit/api", "test:integration"]
+  },
+  {
+    "name": "web-build",
+    "exit": 0,
+    "seconds": 7.98,
+    "command": ["pnpm", "--filter", "@ritmofit/web", "build"]
+  },
+  {
+    "name": "openapi",
+    "exit": 0,
+    "seconds": 0.55,
+    "command": ["pnpm", "--filter", "@ritmofit/api", "openapi"]
+  },
+  {
+    "name": "openapi-drift",
+    "exit": 0,
+    "seconds": 0.02,
+    "command": ["git", "diff", "--exit-code", "apps/api/openapi/openapi.json"]
+  },
+  {
+    "name": "contract-parity",
+    "exit": 0,
+    "seconds": 0.45,
+    "command": ["pnpm", "--filter", "@ritmofit/api", "contract-parity"]
+  },
+  {
+    "name": "audit",
+    "exit": 0,
+    "seconds": 0.77,
+    "command": ["pnpm", "audit:ci"]
+  }
+]

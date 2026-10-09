@@ -1,0 +1,78 @@
+{
+  "base": "aade146d7a1f1c42c4065c51faab36be3f3d7ed5",
+  "state": "verified implementation; tested source identity bound by SHA-256",
+  "files": [
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/before-desktop.png",
+      "sha256": "0adfab48dbb697820f82a8bf8860e4423846d98dfd9e69e6a18c45cefc0683df"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/after-desktop.png",
+      "sha256": "1f2363df61623b4b5be120b34fb89f62eaa9a64587c69be8d815197aac6c3408"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/before-390.png",
+      "sha256": "ae38cea6a56dd7b49a526d7b31f2b7a00018c2d1083f8f11b02b4c7093b30378"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/after-390.png",
+      "sha256": "5cb95ce20f244e74ef4b2e82ad099f778ffc4e25253a33f9275ac86c226f5a68"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/before-320.png",
+      "sha256": "e0d6afe1e389a0994b1f2366390048e3dad86060fdea598b1519c20bf0b3da16"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/after-320.png",
+      "sha256": "f1b3b9b69be24f1b3bc6f84c7190720009af75e0e4f05b28c965fe69f8d774c4"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/before-landscape.png",
+      "sha256": "af5d58ac78e0b42ae96cd3de11c7bec1f9fca71c1eff5d4fab23b859052280b2"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/after-landscape.png",
+      "sha256": "b259455486dbfedcbd772e0eb7517af3029c48a2d4e93327cc88be44af651f36"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/before-short.png",
+      "sha256": "91b34364fa5f4925b91a2bc26408970956385a8a8175ac22686047836463c98b"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/after-short.png",
+      "sha256": "65e90976af17b1e5ce40b998c4702f7ec3b80d79a1d91082a8a52f9218689987"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/guidance-390.png",
+      "sha256": "1a55461ba09fd9a59d2f60e24d4c8e1d3f958967403cc0497530f802a483c9f3"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/actual-200pct.png",
+      "sha256": "83202b5df5cce0af50f7f2cbe159d3424c9fd6396e422b903a28a2f30f08a2f3"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/native-metrics.json",
+      "sha256": "a6abe8a2c3ec900a9e219d087575240887f6c2edb7154af02ab5915bde0b2e78"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/actual-zoom.json",
+      "sha256": "35f3c972df375a6bd0abdbf90acb179440782bb8b889214f93caa46f5b2ee7c0"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/gate-results.json",
+      "sha256": "1d1cc22106f844192211f6d721528ba4f18bd73294a75d687b812b5ab9fe8687"
+    },
+    {
+      "path": "apps/web/src/components/LiveMode.tsx",
+      "sha256": "5ada2ffff745a4aa3d118db3243bc6244a7ca673db47d7eea2057df80273bcde"
+    },
+    {
+      "path": "apps/web/src/components/LiveMode.test.tsx",
+      "sha256": "212565ae2d5ab81a9761ed8bd8734cb94c0158a4a8d9a9c1cd161c4082300c9d"
+    },
+    {
+      "path": "docs/audits/ux-clarity-2026-10-08/lane2-live/README.md",
+      "sha256": "65cf2faa2b5f3a2a181d6c6b763d733f94c5e99d8714b140fe24aaa12bd5fa64"
+    }
+  ]
+}

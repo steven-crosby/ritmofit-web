@@ -13,6 +13,40 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Session 2026-10-09 — Builder/Live clarity merged, production unchanged.** #503 squash-merged
+> as `be6d71a8a63494863ac03b14f20de0d0c92888fc` after reviewed-head CI on `50b61fc`
+> ([37894990070](https://github.com/steven-crosby/ritmofit-web/actions/runs/37894990070)); post-merge
+> main CI [37895313770](https://github.com/steven-crosby/ritmofit-web/actions/runs/37895313770) passed.
+> Native Chrome merge review found disabled rename controls blurring keyboard focus to BODY;
+> the correction covers success/rejection and relinquishes ownership after unrelated focus.
+> Seven additional regressions, 113 focused tests, native delayed-response checks, and the full
+> gate passed. #504 integrated that main without history rewriting, passed 197 combined focused
+> tests and exact-head combined CI on `8023d74`
+> ([37895737330](https://github.com/steven-crosby/ritmofit-web/actions/runs/37895737330)), and
+> squash-merged as `0ec1d1009c33a128150fbd58c36bf283f1f485da`. Both squash trees matched their
+> tested candidates. No API/schema/migration/auth/provider/runtime change in these UX slices.
+>
+> The subsequent integrated local browser audit exercised Builder → Run without music → Live →
+> Builder with synthetic data and mocked APIs. Desktop, 390/320px portrait, short landscape,
+> and 600×304 CSS viewports passed closed/open page and Live-shell overflow checks, disclosure
+> focus/view reset, sparse-track handling, and return to Builder. These are UI checks, not
+> authenticated provider or listening acceptance. Retained evidence:
+> [integration audit](../docs/audits/ux-clarity-2026-10-08/integration-audit/README.md).
+>
+> Current production was rechecked as Worker `5f67d242-8956-42b7-9318-67b2797d3454` at 100%,
+> with three consecutive SPA entries `assets/index-mZ1ypG4t.js`, the recorded #494 release.
+> No deployment, remote migration, secret change, fixture deletion, or branch/worktree cleanup
+> occurred in the UX round. Main remains ahead by #495/#499/#501/#503/#504 application changes.
+> The #497 historical deployment record below is reconciled against this newer state rather than
+> replacing it. Natural desktop/iPhone acceptance and exact release decisions remain open.
+> Fresh owner-approved Cycle and Pilates fixtures were prepared through Apple saved-playlist import
+> on 2026-10-09, named `[QA] Apple natural acceptance 2026-10-09 Cycle` / `Pilates`, and tagged
+> `qa-fixture`; each displays ten tracks and 39:50. IDs and unstarted status are retained in the
+> [acceptance receipt](../docs/audits/apple-natural-acceptance-2026-10-09/README.md). No audio started,
+> no existing class was changed, and no fixture was deleted. Remote D1 migration list returned
+> 7403 once, then no migrations to apply on retry; no migrations were applied.
+
+
 > **Deploy 2026-10-07 — PR #494 Apple Music zero-pause endpoint cache.** Owner approved a #494-only
 > release from local `main` at `e712274f8b0add74755bc97accff42f44405260f`, deliberately behind
 > `origin/main` (`c5fe7aa`, which also contains #495 and #496). Worker
@@ -42,6 +76,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 >
 > Natural desktop Cycle/Pilates listening acceptance was not run. It is the next step, on this
 > production build.
+
 
 > **Session 2026-10-06 — DEVELOPMENT_PLAN consolidation (docs only).** The plan's dated
 > "Current operating focus (2026-10-04)" bullet and its pre-2026-10-06 "Backlog / Open Items" section
