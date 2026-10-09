@@ -125,6 +125,7 @@ class AppleMusicProvider implements MusicProvider {
     let path: string | null =
       `/v1/catalog/${encodeURIComponent(ref.storefront)}/playlists/` +
       `${encodeURIComponent(ref.playlistId)}/tracks?limit=${CATALOG_PLAYLIST_PAGE_LIMIT}`;
+    const seenContinuations = new Set<string>();
 
     while (path && out.length < IMPORT_TRACK_CAP) {
       const res = await fetchWithRetry(
@@ -152,10 +153,20 @@ class AppleMusicProvider implements MusicProvider {
         if (candidate) out.push(candidate);
         if (out.length >= IMPORT_TRACK_CAP) break;
       }
-      if (page.length === 0) break;
-      path = parsed.data.next
-        ? withCatalogPlaylistPageLimit(parsed.data.next, CATALOG_PLAYLIST_PAGE_LIMIT)
-        : null;
+      if (page.length === 0 || out.length >= IMPORT_TRACK_CAP) break;
+      const next = parsed.data.next;
+      if (next) {
+        // Track Apple's continuation before normalization: distinct raw paths may
+        // legitimately resolve to the same request URL after rewriting `limit`.
+        if (seenContinuations.has(next)) {
+          throw new ProviderError(
+            'apple_music',
+            'Apple Music returned a repeated catalog pagination path.',
+          );
+        }
+        seenContinuations.add(next);
+      }
+      path = next ? withCatalogPlaylistPageLimit(next, CATALOG_PLAYLIST_PAGE_LIMIT) : null;
     }
     return out;
   }
@@ -259,6 +270,17 @@ const amLibraryPlaylistSchema = z.object({
 
 const LIBRARY_PLAYLIST_PAGE_LIMIT = 100;
 
+/** A repeated cursor is upstream drift, not a complete or empty library. */
+function checkLibraryPaginationPath(path: string, visited: Set<string>): void {
+  if (visited.has(path)) {
+    throw new ProviderError(
+      'apple_music',
+      'Apple Music returned a repeated library pagination path.',
+    );
+  }
+  visited.add(path);
+}
+
 /**
  * Thrown when Apple Music rejects the **Music-User-Token** with 401/403 — the
  * signal `apps/api` uses to ask the user to reconnect. Unlike OAuth there is no
@@ -316,8 +338,10 @@ export async function fetchAppleMusicLibrarySongs(cfg: {
   // Apple returns a relative `next` path (e.g. `/v1/me/library/songs?offset=100`).
   const origin = base.replace(/\/v1$/, '');
   let path: string | null = `/v1/me/library/songs?limit=${LIBRARY_PAGE_LIMIT}`;
+  const visited = new Set<string>();
 
   while (path && out.length < cap) {
+    checkLibraryPaginationPath(path, visited);
     const res = await cfg.fetchImpl(`${origin}${path}`, {
       headers: {
         Authorization: `Bearer ${cfg.developerToken}`,
@@ -360,8 +384,10 @@ export async function fetchAppleMusicLibraryPlaylists(cfg: {
   const out: ProviderPlaylistSummary[] = [];
   const origin = base.replace(/\/v1$/, '');
   let path: string | null = `/v1/me/library/playlists?limit=${LIBRARY_PLAYLIST_PAGE_LIMIT}`;
+  const visited = new Set<string>();
 
   while (path && out.length < cap) {
+    checkLibraryPaginationPath(path, visited);
     const res = await cfg.fetchImpl(`${origin}${path}`, {
       headers: {
         Authorization: `Bearer ${cfg.developerToken}`,
@@ -424,8 +450,10 @@ export async function fetchAppleMusicLibraryPlaylistTracks(cfg: {
   const encodedId = encodeURIComponent(cfg.playlistId);
   let path: string | null =
     `/v1/me/library/playlists/${encodedId}/tracks?limit=${LIBRARY_PAGE_LIMIT}`;
+  const visited = new Set<string>();
 
   while (path && out.length < cap) {
+    checkLibraryPaginationPath(path, visited);
     const res = await cfg.fetchImpl(`${origin}${path}`, {
       headers: {
         Authorization: `Bearer ${cfg.developerToken}`,
