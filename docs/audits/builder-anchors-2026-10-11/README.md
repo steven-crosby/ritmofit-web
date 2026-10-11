@@ -1,6 +1,6 @@
 # Builder inspector zero anchors — 2026-10-11
 
-Round `r20261010b`, lane 2. Implementation commit `23a53a2611fa0fe4ffc84db18c18d076896685b1`, based on `14c8326db9390e09dfb193e97ffa3d4c1fdf89f7`. Steven approved implementation, isolated worktree use, commit, push, and a draft PR after the review packet. Merge and deployment remain separate decisions.
+Round `r20261010b`, lane 2. Implementation commit `23a53a2611fa0fe4ffc84db18c18d076896685b1`, based on `14c8326db9390e09dfb193e97ffa3d4c1fdf89f7`. Steven approved implementation, isolated worktree use, commit, push, and a draft PR after the review packet. Steven subsequently approved merge; #509 squash-merged as `4412c3c`. Deployment remains a separate decision.
 
 ## Behavior
 
@@ -27,6 +27,8 @@ Retained command transcripts remove terminal color codes and trailing whitespace
 
 The inspector error remains ordinary text rather than an alert/live region. The original lane brief's promise of an "announced error" was inaccurate; this PR retains validation behavior and explicitly defers that existing accessibility defect to the [BUILDER-A11Y findings](../studio-pulse-check-2026-09-13/run-decisions.md). Client-side upper-bound validation for downbeat/Start at, sub-second entry, and clip-end error wording also remain follow-up work. The server's bounds, overlap, plan-order, and cue/move preservation rules remain intact.
 
-## Restart point
+## Merge and restart point
 
-Review [draft PR #509](https://github.com/steven-crosby/ritmofit-web/pull/509) and exact-head CI. Merge is not authorized in this session. The [lane handoff](../../../ritmofit_dev_plan/handoffs/2026-10-11-r20261010b-builder-anchors.md) records the remaining action. The same PR carries [lane 1's synthetic no-work closure](../live-glance-2026-10-11/README.md).
+[PR #509](https://github.com/steven-crosby/ritmofit-web/pull/509) squash-merged as `4412c3c6231e9b8bfa6dad831c6100421c3adc04` after explicit owner approval and passing [reviewed-head CI](https://github.com/steven-crosby/ritmofit-web/actions/runs/38145254535) on `1050a7a`. [Post-merge main CI](https://github.com/steven-crosby/ritmofit-web/actions/runs/38147699980) passed on `4412c3c`. The complete squash tree equals the reviewed tree. The same PR carries [lane 1's synthetic no-work closure](../live-glance-2026-10-11/README.md).
+
+The original [Builder lane handoff](https://github.com/steven-crosby/ritmofit-web/blob/4412c3c6231e9b8bfa6dad831c6100421c3adc04/ritmofit_dev_plan/handoffs/2026-10-11-r20261010b-builder-anchors.md) is retained in Git history; its completed items are routed to HISTORY and this evidence packet. Remaining attended acceptance, real-iPhone investigation, and exact release selection are routed to [the round close handoff](../../../ritmofit_dev_plan/handoffs/2026-10-11-r20261010b-close.md). No deployment is authorized or performed in this round.
