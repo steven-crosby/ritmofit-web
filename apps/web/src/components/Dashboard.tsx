@@ -84,6 +84,7 @@ import { formatLastOpened } from '../lib/relative-time.js';
 import {
   canRunPayload,
   formatDurationInput,
+  parseClockToMs,
   parseDurationInput,
   runBlockedMessage,
 } from '../lib/duration.js';
@@ -4760,6 +4761,13 @@ function LeanTrackRow({ track }: { track: ClassTrack }) {
   );
 }
 
+/** Preserve stored precision on unrelated saves; typed anchors use the m:ss contract. */
+function parseInspectorAnchor(value: string, storedMs: number | null): number | null {
+  const displayed = storedMs ? formatDurationInput(storedMs) : '';
+  if (value === displayed) return storedMs ?? 0;
+  return value.trim() === '' ? 0 : parseClockToMs(value);
+}
+
 /**
  * The detail editor / inspector (design system `09-class-builder-guidelines.md`):
  * edit the selected track's intensity, display-BPM override, and notes — and
@@ -4953,7 +4961,7 @@ function TrackInspector({
     const roundedBaseDurationMs =
       baseDurationMs == null ? null : parseDurationInput(formatDurationInput(baseDurationMs));
     // Clip start: blank = 0 (from the beginning). Clip end: blank = null (to the end).
-    const clipStartMs = clipStart.trim() === '' ? 0 : parseDurationInput(clipStart);
+    const clipStartMs = parseInspectorAnchor(clipStart, track.clipStartMs);
     if (clipStartMs == null) {
       setError('Enter the clip start as minutes:seconds, for example 0:30 (or leave it blank).');
       return;
@@ -4968,7 +4976,7 @@ function TrackInspector({
       return;
     }
     // Downbeat: blank = 0 (grid starts at the track start).
-    const beatAnchorMs = downbeat.trim() === '' ? 0 : parseDurationInput(downbeat);
+    const beatAnchorMs = parseInspectorAnchor(downbeat, track.beatAnchorMs);
     if (beatAnchorMs == null) {
       setError('Enter the downbeat as minutes:seconds, for example 0:02 (or leave it blank).');
       return;
@@ -4976,7 +4984,7 @@ function TrackInspector({
     // Free-placement start (only sent in free mode; the server rejects it otherwise).
     let startOffsetMs: number | undefined;
     if (canPlaceFreely) {
-      const parsed = startAt.trim() === '' ? 0 : parseDurationInput(startAt);
+      const parsed = parseInspectorAnchor(startAt, track.startOffsetMs);
       if (parsed == null) {
         setError('Enter the start time as minutes:seconds, for example 3:20 (or leave it blank).');
         return;

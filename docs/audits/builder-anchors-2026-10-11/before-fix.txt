@@ -1,0 +1,4758 @@
+
+ RUN  v3.2.6 <repo-root>/apps/web
+
+ ❯ src/components/Dashboard.test.tsx (90 tests | 8 failed | 72 skipped) 8282ms
+   ↓ Dashboard class library states > shows the loading state, then the class list once it resolves
+   ↓ Dashboard class library states > meets a class before the creation preamble, and starts a class from the quiet header
+   ↓ Dashboard class library states > opens the create dialog from the empty Classes home
+   ↓ Dashboard class library states > creates a scaffold class from the isolated dialog
+   ↓ Dashboard class library states > focuses Add music after creating an empty class
+   ↓ Dashboard class library states > folds the rail’s create/filter controls away once a class is open
+   ↓ Dashboard class library states > shows a distinct error state when the class list fails to load, and retries
+   ↓ Dashboard class library states > shows the empty state when the library is genuinely empty
+   ↓ Dashboard class library states > guides a brand-new instructor with a first-run workspace when the library is empty
+   ↓ Dashboard class library states > opens connections from Music
+   ↓ Dashboard class library states > retries a Music catalog outage without changing the query
+   ↓ Dashboard class library states > searches, selects in instructor order, and starts a class from Music
+   ↓ Dashboard class library states > shows connected Spotify saved playlists in Music and opens the browser dialog
+   ↓ Dashboard class library states > omits the playlist track count when the provider does not report one
+   ↓ Dashboard class library states > shows connected Spotify liked tracks in Music and opens the likes browser
+   ↓ Dashboard class library states > does not create a class when the provider collection fetch fails
+   ↓ Dashboard class library states > disables class creation when a saved playlist contains no tracks
+   ↓ Dashboard class library states > does not create a class when a saved playlist becomes empty before submission
+   ↓ Dashboard class library states > reports partial imports and retries failures against the same class
+   ↓ Dashboard class library states > describes a response-lost Music playlist import as unconfirmed and confirms its exact operation
+   ↓ Dashboard class library states > removes stale Music browse controls after a provider disconnects
+   ↓ Dashboard class library states > keeps last-known shelves when a connection refresh fails without authoritative truth
+   ↓ Dashboard class library states > ignores late shelf responses after authoritative disconnect truth arrives
+   ↓ Dashboard class library states > creates a class from liked tracks (imports each, opens the builder)
+   ↓ Dashboard class library states > omits the redundant ownership chip on library cards (solo-first library is owner-only)
+   ↓ Dashboard class library states > keeps the top bar solo-first and hides classes owned by other users
+   ↓ Dashboard class library states > uses Classes, Music, Live, and Account as the primary destinations
+   ↓ Dashboard class library states > returns from a selected class to the run-of-show shelf through Classes
+   ↓ Dashboard class library states > surfaces classes with tracks from the Live destination and runs a ready one
+   ↓ Dashboard class library states > keeps the queue card compact by default and full readiness one disclosure away
+   ↓ Dashboard class library states > ranks the Live queue with the ordering chosen on Classes
+   ↓ Dashboard class library states > blocks a class that looks runnable by aggregate but has a track missing its duration
+   ↓ Dashboard class library states > surfaces a retry when a class run-payload fails to load, and keeps Run live disabled
+   ↓ Dashboard class library states > restores focus to the dashboard heading when Live Mode is exited
+   ↓ Dashboard class library states > browses a connected source from the Music workspace sidebar
+   ↓ Dashboard class library states > turns stale Music workspace browse paths into connection management after disconnect
+   ↓ Dashboard class library states > refreshes Account Music connections after Manage disconnect without leaving Account
+   ↓ Dashboard class library states > shows an honest retryable state when music connections fail to load
+   ↓ Dashboard connection-state headers > uses the caution tone for Session expired on Music and Account headers
+   ↓ Dashboard Account status ledger > keeps verified profile editing available when provider status fails
+   ↓ Dashboard Account status ledger > claims only that the profile loaded, never that an identity was verified
+   ↓ Dashboard Account status ledger > reports a failed profile read without leaking the upstream message
+   ↓ Dashboard Account status ledger > preserves session identity and disables only profile edits when the profile fails
+   ↓ Dashboard Account status ledger > preserves typed profile values and focuses a failed mutation
+   ↓ Dashboard Account status ledger > saves edited profile fields and propagates the new name to the shell
+   ↓ Dashboard Account status ledger > normalizes blank optional profile fields to null
+   ↓ Dashboard Account status ledger > recovers provider status without reloading or changing the profile
+   ↓ Dashboard onboarding video > opens the guided tutorial after first signup and dismisses it once
+   ↓ Dashboard onboarding video > does not show the tutorial without a pending signup marker
+   ↓ Dashboard class detail > opens a selected class into its workspace
+   ↓ Dashboard class detail > keeps the newly selected class when a slower prior load resolves late
+   ↓ Dashboard class detail > renders a retry affordance when a class detail fails, and reloads on retry
+   ↓ Dashboard class detail > updates the Library card aggregates in place once a class detail loads
+   ↓ Dashboard class detail > submits manually added track durations as parsed minutes and seconds
+   × Dashboard track focus management > accepts explicit 0:00 for 'clipStartMs' in the inspector 1198ms
+     → Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r2:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r2:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+   × Dashboard track focus management > accepts explicit 0:00 for 'beatAnchorMs' in the inspector 1078ms
+     → Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r7:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r7:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+   × Dashboard track focus management > accepts explicit 0:00 for 'startOffsetMs' in the inspector 1076ms
+     → Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rc:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rc:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+   × Dashboard track focus management > preserves untouched 499 ms inspector anchors when creator notes change 1075ms
+     → Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rh:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rh:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+   × Dashboard track focus management > preserves untouched 1250 ms inspector anchors when creator notes change 80ms
+     → expected "updateClassTrack" to be called with arguments: [ 'ct-1', ObjectContaining{…} ]
+
+Received:
+
+  1st updateClassTrack call:
+
+  [
+    "ct-1",
+-   ObjectContaining {
+-     "beatAnchorMs": 1250,
+-     "clipStartMs": 1250,
++   {
++     "beatAnchorMs": 1000,
++     "clipEndMs": null,
++     "clipStartMs": 1000,
++     "displayBpmOverride": null,
++     "displayRpm": null,
++     "holdCount": null,
++     "intensity": "mod",
+      "notes": "Only the notes changed.",
+-     "startOffsetMs": 1250,
++     "startOffsetMs": 1000,
+    },
+  ]
+
+
+Number of calls: 1
+
+   × Dashboard track focus management > resets edited inspector anchors with "0:00" 1054ms
+     → Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rr:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rr:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+   ✓ Dashboard track focus management > resets edited inspector anchors with "" 57ms
+   ✓ Dashboard track focus management > keeps blank inspector anchors at zero and a blank clip end at null 52ms
+   ✓ Dashboard track focus management > keeps Track length positive-only in the inspector 43ms
+   ✓ Dashboard track focus management > keeps Clip end (minutes:seconds) positive-only in the inspector 44ms
+   ✓ Dashboard track focus management > rejects malformed inspector timecodes for 'clipStartMs', including bare 0 72ms
+   ✓ Dashboard track focus management > rejects malformed inspector timecodes for 'beatAnchorMs', including bare 0 73ms
+   ✓ Dashboard track focus management > rejects malformed inspector timecodes for 'startOffsetMs', including bare 0 73ms
+   ✓ Dashboard track focus management > keeps clip end after clip start in the inspector 45ms
+   × Dashboard track focus management > omits inspector startOffsetMs in sequential mode 1049ms
+     → Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r28:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+           ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r28:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+           ...
+   × Dashboard track focus management > keeps an inspector draft unsaved when the server rejects its clip window 1074ms
+     → Unable to find an element with the text: Clip end must be after the latest cue or move at 90000ms.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r2d:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+           ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r2d:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+           ...
+   ↓ Dashboard track focus management > preserves the selected track and unsaved scoring while workbench tasks change
+   ↓ Dashboard track focus management > explains free timeline timing without exposing sequential reorder controls
+   ↓ Dashboard track focus management > does not advertise reorder while playback details are unavailable
+   ↓ Dashboard track focus management > keeps compact cross-class orientation while a class is open
+   ↓ Dashboard track focus management > keeps the selected track and draft stable through an optimistic reorder refresh
+   ✓ Dashboard track focus management > says whether the inspector matches what is stored, and gates Save on a change 75ms
+   ↓ Dashboard track focus management > seeds Track length from baseDurationMs and omits durationMsOverride when untouched
+   ↓ Dashboard track focus management > omits durationMsOverride on an untouched save even when the source duration is not a round second
+   ↓ Dashboard track focus management > sends durationMsOverride only when Track length is intentionally changed
+   ↓ Dashboard track focus management > commits a zone on the click, and typed fields on Enter
+   ↓ Dashboard track focus management > puts a zone back when its write fails, instead of showing a value that did not land
+   ↓ Dashboard track focus management > explains the zone words and what an empty BPM box falls back to
+   ↓ Dashboard track focus management > keeps a failed scoring save local, visible, and editable
+   ↓ Dashboard track focus management > returns focus to the nearest remaining track after removing one
+   ✓ Dashboard track focus management > returns focus to the inspector placeholder after removing the last track 61ms
+   ↓ Dashboard track focus management > focuses the newly added track row after adding a track manually
+   ↓ Dashboard track focus management > opens the first track’s cue box from readiness Write the first cue
+   ↓ Dashboard plan-first next step > leads a 0-track scaffold with the plan, not Live chrome or stack Add music
+   ↓ Dashboard plan-first next step > updates an open music picker destination when its block is renamed
+   ↓ Dashboard plan-first next step > stays on the next empty block after the first assign and keeps Pulse off
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > accepts explicit 0:00 for 'clipStartMs' in the inspector
+TestingLibraryElementError: Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r2:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r2:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/components/Dashboard.test.tsx:1984:23
+    1982|       });
+    1983|       fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    1984|       await inspector.findByText('Saved.');
+       |                       ^
+    1985|       expect(api.updateClassTrack).toHaveBeenCalledWith(
+    1986|         'ct-1',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > accepts explicit 0:00 for 'beatAnchorMs' in the inspector
+TestingLibraryElementError: Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r7:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r7:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/components/Dashboard.test.tsx:1984:23
+    1982|       });
+    1983|       fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    1984|       await inspector.findByText('Saved.');
+       |                       ^
+    1985|       expect(api.updateClassTrack).toHaveBeenCalledWith(
+    1986|         'ct-1',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > accepts explicit 0:00 for 'startOffsetMs' in the inspector
+TestingLibraryElementError: Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rc:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rc:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/components/Dashboard.test.tsx:1984:23
+    1982|       });
+    1983|       fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    1984|       await inspector.findByText('Saved.');
+       |                       ^
+    1985|       expect(api.updateClassTrack).toHaveBeenCalledWith(
+    1986|         'ct-1',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > preserves untouched 499 ms inspector anchors when creator notes change
+TestingLibraryElementError: Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rh:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rh:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/components/Dashboard.test.tsx:2004:23
+    2002|       });
+    2003|       fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    2004|       await inspector.findByText('Saved.');
+       |                       ^
+    2005|       expect(api.updateClassTrack).toHaveBeenCalledWith(
+    2006|         'ct-1',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > preserves untouched 1250 ms inspector anchors when creator notes change
+AssertionError: expected "updateClassTrack" to be called with arguments: [ 'ct-1', ObjectContaining{…} ]
+
+Received:
+
+  1st updateClassTrack call:
+
+  [
+    "ct-1",
+-   ObjectContaining {
+-     "beatAnchorMs": 1250,
+-     "clipStartMs": 1250,
++   {
++     "beatAnchorMs": 1000,
++     "clipEndMs": null,
++     "clipStartMs": 1000,
++     "displayBpmOverride": null,
++     "displayRpm": null,
++     "holdCount": null,
++     "intensity": "mod",
+      "notes": "Only the notes changed.",
+-     "startOffsetMs": 1250,
++     "startOffsetMs": 1000,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ src/components/Dashboard.test.tsx:2005:36
+    2003|       fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    2004|       await inspector.findByText('Saved.');
+    2005|       expect(api.updateClassTrack).toHaveBeenCalledWith(
+       |                                    ^
+    2006|         'ct-1',
+    2007|         expect.objectContaining({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > resets edited inspector anchors with "0:00"
+TestingLibraryElementError: Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rr:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":rr:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+            ...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/components/Dashboard.test.tsx:2027:21
+    2025|     }
+    2026|     fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    2027|     await inspector.findByText('Saved.');
+       |                     ^
+    2028|     expect(api.updateClassTrack).toHaveBeenCalledWith(
+    2029|       'ct-1',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > omits inspector startOffsetMs in sequential mode
+TestingLibraryElementError: Unable to find an element with the text: Saved.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r28:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+           ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r28:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+           ...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/components/Dashboard.test.tsx:2095:21
+    2093|     fireEvent.change(inspector.getByLabelText(/^Clip start/), { target…
+    2094|     fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    2095|     await inspector.findByText('Saved.');
+       |                     ^
+    2096|     expect(api.updateClassTrack).toHaveBeenCalledTimes(1);
+    2097|     expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).not.toH…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > keeps an inspector draft unsaved when the server rejects its clip window
+TestingLibraryElementError: Unable to find an element with the text: Clip end must be after the latest cue or move at 90000ms.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r2d:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+           ...
+
+Ignored nodes: comments, script, style
+<section
+  aria-label="Track inspector for Anchor Song"
+  class="flex flex-col gap-3 rounded-card border border-interactive/20 bg-bg-base p-4 outline-none rf-focus-ring"
+  tabindex="-1"
+>
+  <div
+    class="flex items-center justify-between gap-2"
+  >
+    <h3
+      class="truncate font-display text-sm font-semibold text-text-primary"
+    >
+      Anchor Song
+    </h3>
+    <span
+      class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
+    >
+      Track
+      1
+    </span>
+  </div>
+  <div
+    class="contents"
+  >
+    <label
+      class="flex flex-col gap-1"
+    >
+      <span
+        class="flex items-baseline justify-between gap-2"
+      >
+        <span
+          class="font-ui text-xs uppercase tracking-wide text-text-tertiary"
+        >
+          Intensity
+        </span>
+      </span>
+      <div
+        class="rf-zone-control"
+      >
+        <div
+          aria-describedby=":r2d:"
+          aria-label="Track intensity"
+          class="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+          role="group"
+        >
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="none"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              None
+            </span>
+            <span
+              class="sr-only"
+            >
+              None
+            </span>
+          </button>
+          <button
+            aria-pressed="false"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary"
+            data-zone="easy"
+            tabindex="-1"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              1
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 4px; opacity: 1;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 6px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 8px; opacity: 0.3;"
+              />
+              <span
+                class="w-0.5 rounded-[1px] bg-current"
+                style="height: 10px; opacity: 0.3;"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              class="rf-zone-word truncate"
+            >
+              Build
+            </span>
+            <span
+              class="sr-only"
+            >
+              Build
+            </span>
+          </button>
+          <button
+            aria-pressed="true"
+            class="rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 border-b-interactive bg-bg-raised font-semibold text-text-primary"
+            data-zone="mod"
+            tabindex="0"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="font-data"
+            >
+              Z
+              2
+            </span>
+            <span
+              aria-hidden="true"
+              class="flex items-end gap-px"
+            >
+              <span
+           ...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/components/Dashboard.test.tsx:2108:21
+    2106|     fireEvent.change(inspector.getByLabelText(/^Clip end/), { target: …
+    2107|     fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    2108|     await inspector.findByText('Clip end must be after the latest cue …
+       |                     ^
+    2109|     expect(inspector.queryByText('Saved.')).toBeNull();
+    2110|     expect(inspector.getByText(/Unsaved typing/)).toBeTruthy();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed | 10 passed | 72 skipped (90)
+   Start at  07:52:48
+   Duration  9.73s (transform 490ms, setup 0ms, collect 649ms, tests 8.28s, environment 533ms, prepare 59ms)
+
+undefined
+<repo-root>/apps/web:
+[ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL] Command failed with exit code 1: vitest run src/components/Dashboard.test.tsx -t inspector

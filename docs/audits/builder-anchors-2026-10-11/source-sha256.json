@@ -1,0 +1,9 @@
+{
+  "base": "14c8326db9390e09dfb193e97ffa3d4c1fdf89f7",
+  "baselineSourceSha256": "98d112acc08b03a35543b223b5d8b529766a0e744d3d6d90ac67a07fce7a3360",
+  "candidateSourceSha256": "21c661874c632e436928bacc726f02b195e2776c886429dccc2d5172d1130e0c",
+  "testSha256": "6fbea0f3c400a22b3a5887443a706f77f309e77a30de036ad8cd87bd2c53c189",
+  "baselineFailures": 8,
+  "candidateTests": 90,
+  "implementationCommit": "23a53a2611fa0fe4ffc84db18c18d076896685b1"
+}

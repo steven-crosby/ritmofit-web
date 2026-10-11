@@ -1,0 +1,32 @@
+{
+  "base": "14c8326db9390e09dfb193e97ffa3d4c1fdf89f7",
+  "sources": {
+    "apps/web/src/components/LiveMode.tsx": "5ada2ffff745a4aa3d118db3243bc6244a7ca673db47d7eea2057df80273bcde",
+    "apps/web/src/components/LiveTimeline.tsx": "d191373d43a9f4241dcc88b9a225b4ce12433ed21a3fea3bc18858e77330769c",
+    "apps/web/src/components/LivePreflight.tsx": "fdcc056390fc946e3da65ebbeabcf1f3f3624f7bd8d1cc84cc3afaaf72c6b641",
+    "apps/web/src/index.css": "6f7122bc884d14ab7193c1424211df9f68e3f59d6732d34529e8375eb8135084",
+    "apps/web/tailwind.config.js": "7e4b0b621d3faf17ab579a322f07730bb26b56c73d4620c8d9c405f91a45233c",
+    "ritmofit_design_system/tokens.json": "623634c5ec8b433a41d7df6f0f3c7bc32ef815eb94a78eaf3cbfd8c17f3ff8d6"
+  },
+  "artifacts": {
+    "320x568-long-count.png": "7646f6a8cca5cd920971a991b98712359c11f20dfcf7261791d53ad25feb1f07",
+    "320x568-long-holds.png": "e4aa8a190d88380a4d72e7b5ce3a488a4ea716dca91510492099b9247b4b5269",
+    "320x568-long-section-count-holds.png": "014de3518c3f6f2eefaf9a2ea7562bf5b906200fbb9e8878a8ae3134b555cbc4",
+    "320x568-long.png": "e4aa8a190d88380a4d72e7b5ce3a488a4ea716dca91510492099b9247b4b5269",
+    "320x568-short.png": "7af39c671ba6606b45cd96e1b42d55a4c73213304f07df884da5ee1fb2520b8c",
+    "375x635-long-count.png": "6f7a6928834bb5c84f8cabf6e2cc378d2ab2dc963fa06f96cc342c4beafd2955",
+    "375x635-long-holds.png": "f132c93730c23b3676c364b8e2e6e24b298e0438d493e1e9520383bad597945f",
+    "375x635-long-section-count-holds.png": "90dd39f93b41f4b863023c6f37a75651fdcaac88e30843a42ab12cfe47d655e4",
+    "375x635-long.png": "87361b25433ff4f75ab6f39325a3c9afd1ee84294cba67a5bde875388b2a73d6",
+    "375x635-short.png": "537a5c7d1640bf0fca2a862f9781e6871d5926c73599934d6dc812352d18c48b",
+    "375x812-long-count.png": "383f2003be622e97c09eae06253ec5d1f4ac1e8d3b29a2dbbb08ef7cc7904eeb",
+    "375x812-long-holds.png": "277d5ebd0674dcc2ee9e2bbdadba45fe853dcb362c51e8492ccf0f03a7467f3c",
+    "375x812-long-section-count-holds.png": "75bc3593520251e589ed74d8209c15e8d4ee90d006021b4a2c5231d007d81b5f",
+    "375x812-long.png": "6f7d0bc40cb006ec59ec06bf0caa021cbfbf4329a846e78090c128f382be5def",
+    "375x812-short.png": "4ac5e343e3f8b7c2bad457dfe38664134c33a5915336d38c74051c497b0fc1b0",
+    "capture.mjs": "d6afbbaf97aacba2203df29ee02ca8dd3b6e64d500a3846cdb9bb9ff10d01437",
+    "fixture.tsx": "f24a2fc1d562dae02877f2c3537f0c939f6835b4c79cbb5ed6bc02865584efbf",
+    "results.json": "2b2cb1155e3e6847d6155d0fc5f5ca4be3aa718b01b52578a00bf397ea1ee3e9",
+    "serve.mjs": "06fa6b58c4056ff078d7d9a173361672a8e855ed9816b0a16d3f4d1cf18b3089"
+  }
+}

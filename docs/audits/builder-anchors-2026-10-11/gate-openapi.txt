@@ -1,0 +1,2 @@
+$ tsx scripts/generate-openapi.ts
+Wrote <repo-root>/apps/api/openapi/openapi.json — 60 schemas, 60 paths.

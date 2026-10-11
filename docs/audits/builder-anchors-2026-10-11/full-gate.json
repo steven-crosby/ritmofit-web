@@ -1,0 +1,155 @@
+{
+  "checkedAtUtc": "2026-10-11T13:50:47.876495+00:00",
+  "base": "14c8326db9390e09dfb193e97ffa3d4c1fdf89f7",
+  "steps": [
+    {
+      "name": "format",
+      "command": [
+        "pnpm",
+        "format:check"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "seconds": 3.81,
+      "log": "gate-format.txt"
+    },
+    {
+      "name": "typecheck",
+      "command": [
+        "pnpm",
+        "-r",
+        "typecheck"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "seconds": 7.16,
+      "log": "gate-typecheck.txt"
+    },
+    {
+      "name": "lint",
+      "command": [
+        "pnpm",
+        "lint"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "seconds": 3.77,
+      "log": "gate-lint.txt"
+    },
+    {
+      "name": "design-system",
+      "command": [
+        "npm",
+        "run",
+        "verify"
+      ],
+      "cwd": "ritmofit_design_system",
+      "exitCode": 0,
+      "seconds": 0.32,
+      "log": "gate-design-system.txt"
+    },
+    {
+      "name": "theme-classes",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@ritmofit/web",
+        "theme-classes"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "seconds": 0.52,
+      "log": "gate-theme-classes.txt"
+    },
+    {
+      "name": "unit-tests",
+      "command": [
+        "pnpm",
+        "test"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "seconds": 19.63,
+      "log": "gate-unit-tests.txt"
+    },
+    {
+      "name": "integration",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@ritmofit/api",
+        "test:integration"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "seconds": 20.02,
+      "log": "gate-integration.txt"
+    },
+    {
+      "name": "web-build",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@ritmofit/web",
+        "build"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "seconds": 6.87,
+      "log": "gate-web-build.txt"
+    },
+    {
+      "name": "openapi",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@ritmofit/api",
+        "openapi"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "seconds": 0.53,
+      "log": "gate-openapi.txt"
+    },
+    {
+      "name": "openapi-drift",
+      "command": [
+        "git",
+        "diff",
+        "--exit-code",
+        "apps/api/openapi/openapi.json"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "seconds": 0.02,
+      "log": "gate-openapi-drift.txt"
+    },
+    {
+      "name": "contract-parity",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@ritmofit/api",
+        "contract-parity"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "seconds": 0.42,
+      "log": "gate-contract-parity.txt"
+    },
+    {
+      "name": "audit",
+      "command": [
+        "pnpm",
+        "audit:ci"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "seconds": 0.76,
+      "log": "gate-audit.txt"
+    }
+  ],
+  "complete": true,
+  "passed": true,
+  "implementationCommit": "23a53a2611fa0fe4ffc84db18c18d076896685b1"
+}

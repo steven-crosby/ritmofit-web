@@ -129,7 +129,12 @@ function liveRunPayload(
 function makeClassTrack(
   id: string,
   position: number,
-  over: Partial<Pick<ClassTrack, 'clipStartMs' | 'clipEndMs' | 'durationMsOverride'>> = {},
+  over: Partial<
+    Pick<
+      ClassTrack,
+      'clipStartMs' | 'clipEndMs' | 'durationMsOverride' | 'beatAnchorMs' | 'startOffsetMs'
+    >
+  > = {},
 ): ClassTrack {
   return {
     id,
@@ -143,8 +148,8 @@ function makeClassTrack(
     durationMsOverride: over.durationMsOverride ?? null,
     clipStartMs: over.clipStartMs ?? 0,
     clipEndMs: over.clipEndMs ?? null,
-    beatAnchorMs: null,
-    startOffsetMs: null,
+    beatAnchorMs: over.beatAnchorMs ?? null,
+    startOffsetMs: over.startOffsetMs ?? null,
     notes: null,
     createdAt: position,
     updatedAt: position,
@@ -1886,12 +1891,19 @@ describe('Dashboard track focus management', () => {
     clipStartMs?: number;
     clipEndMs?: number | null;
     durationMsOverride?: number | null;
+    beatAnchorMs?: number;
+    startOffsetMs?: number;
   };
 
   /** Wire the class-list + detail mocks around a mutable spec so a removal (which
    *  triggers a silent detail reload) resolves against the reduced track set. */
-  function installClassWithTracks(title: string, initial: TrackSpec[]) {
-    const ride = makeClass(title);
+  function installClassWithTracks(
+    title: string,
+    initial: TrackSpec[],
+    timelineMode: ClassWithAccess['timelineMode'] = 'sequential',
+  ) {
+    const ride: ClassListItem = makeClass(title);
+    ride.timelineMode = timelineMode;
     let spec = [...initial];
     vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
     vi.mocked(api.listClassTracks).mockImplementation(async () =>
@@ -1900,12 +1912,16 @@ describe('Dashboard track focus management', () => {
           clipStartMs: s.clipStartMs,
           clipEndMs: s.clipEndMs,
           durationMsOverride: s.durationMsOverride,
+          beatAnchorMs: s.beatAnchorMs,
+          startOffsetMs: s.startOffsetMs,
         }),
       ),
     );
-    vi.mocked(api.getRunPayload).mockImplementation(async () =>
-      liveRunPayload(spec.map((s) => ({ ...s, displayBpm: 120 }))),
-    );
+    vi.mocked(api.getRunPayload).mockImplementation(async () => {
+      const payload = liveRunPayload(spec.map((s) => ({ ...s, displayBpm: 120 })));
+      payload.class.timelineMode = timelineMode;
+      return payload;
+    });
     vi.mocked(api.deleteClassTrack).mockImplementation(async (trackId: string) => {
       spec = spec.filter((s) => s.classTrackId !== trackId);
     });
@@ -1928,6 +1944,173 @@ describe('Dashboard track focus management', () => {
 
   const rowSelectButton = (classTrackId: string) =>
     document.querySelector<HTMLElement>(`[data-track-select-id="${classTrackId}"]`);
+
+  async function openAnchorInspector(
+    timing: Partial<TrackSpec> = {},
+    timelineMode: ClassWithAccess['timelineMode'] = 'free',
+  ) {
+    installClassWithTracks(
+      'Anchor ride',
+      [{ classTrackId: 'ct-1', durationMs: 240000, title: 'Anchor Song', ...timing }],
+      timelineMode,
+    );
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateClassTrack).mockResolvedValue(makeClassTrack('ct-1', 0));
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Anchor ride/ }));
+    await screen.findByRole('heading', { name: 'Anchor ride' });
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for Anchor Song',
+    });
+    fireEvent.click(within(inspector).getByText('Advanced timing and placement'));
+    return within(inspector);
+  }
+
+  const anchorFields = [
+    { label: /^Clip start/, key: 'clipStartMs' },
+    { label: /^Downbeat/, key: 'beatAnchorMs' },
+    { label: /^Start at/, key: 'startOffsetMs' },
+  ] as const;
+
+  it.each(anchorFields)(
+    'accepts explicit 0:00 for $key in the inspector',
+    async ({ label, key }: (typeof anchorFields)[number]) => {
+      const inspector = await openAnchorInspector();
+      fireEvent.change(inspector.getByLabelText(label), {
+        target: { value: '0:00' },
+      });
+      fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+      await inspector.findByText('Saved.');
+      expect(api.updateClassTrack).toHaveBeenCalledWith(
+        'ct-1',
+        expect.objectContaining({ [key]: 0 }),
+      );
+    },
+  );
+
+  it.each([499, 1250])(
+    'preserves untouched %i ms inspector anchors when creator notes change',
+    async (ms: number) => {
+      const inspector = await openAnchorInspector({
+        clipStartMs: ms,
+        beatAnchorMs: ms,
+        startOffsetMs: ms,
+      });
+      fireEvent.change(inspector.getByLabelText('Creator notes'), {
+        target: { value: 'Only the notes changed.' },
+      });
+      fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+      await inspector.findByText('Saved.');
+      expect(api.updateClassTrack).toHaveBeenCalledWith(
+        'ct-1',
+        expect.objectContaining({
+          clipStartMs: ms,
+          beatAnchorMs: ms,
+          startOffsetMs: ms,
+          notes: 'Only the notes changed.',
+        }),
+      );
+    },
+  );
+
+  it.each(['0:00', ''])('resets edited inspector anchors with %j', async (value: string) => {
+    const inspector = await openAnchorInspector({
+      clipStartMs: 1250,
+      beatAnchorMs: 1250,
+      startOffsetMs: 1250,
+    });
+    for (const { label } of anchorFields) {
+      fireEvent.change(inspector.getByLabelText(label), { target: { value } });
+    }
+    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    await inspector.findByText('Saved.');
+    expect(api.updateClassTrack).toHaveBeenCalledWith(
+      'ct-1',
+      expect.objectContaining({ clipStartMs: 0, beatAnchorMs: 0, startOffsetMs: 0 }),
+    );
+  });
+
+  it('keeps blank inspector anchors at zero and a blank clip end at null', async () => {
+    const inspector = await openAnchorInspector();
+    fireEvent.change(inspector.getByLabelText('Creator notes'), {
+      target: { value: 'Blank defaults.' },
+    });
+    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    await inspector.findByText('Saved.');
+    expect(api.updateClassTrack).toHaveBeenCalledWith(
+      'ct-1',
+      expect.objectContaining({
+        clipStartMs: 0,
+        clipEndMs: null,
+        beatAnchorMs: 0,
+        startOffsetMs: 0,
+      }),
+    );
+  });
+
+  it.each(['Track length', 'Clip end (minutes:seconds)'])(
+    'keeps %s positive-only in the inspector',
+    async (label: string) => {
+      const inspector = await openAnchorInspector();
+      fireEvent.change(
+        inspector.getByLabelText(label === 'Track length' ? /^Track length/ : label),
+        {
+          target: { value: '0:00' },
+        },
+      );
+      fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+      expect(api.updateClassTrack).not.toHaveBeenCalled();
+      expect(inspector.getByText(/Enter (a positive duration|the clip end)/)).toBeTruthy();
+    },
+  );
+
+  it.each(anchorFields)(
+    'rejects malformed inspector timecodes for $key, including bare 0',
+    async ({ label }: (typeof anchorFields)[number]) => {
+      const inspector = await openAnchorInspector();
+      for (const value of ['0', '-0:01', '0:60']) {
+        fireEvent.change(inspector.getByLabelText(label), { target: { value } });
+        fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+        expect(api.updateClassTrack).not.toHaveBeenCalled();
+        expect(inspector.getByText(/Enter the (clip start|downbeat|start time)/)).toBeTruthy();
+      }
+    },
+  );
+
+  it('keeps clip end after clip start in the inspector', async () => {
+    const inspector = await openAnchorInspector();
+    fireEvent.change(inspector.getByLabelText(/^Clip start/), { target: { value: '0:30' } });
+    fireEvent.change(inspector.getByLabelText(/^Clip end/), { target: { value: '0:30' } });
+    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    expect(api.updateClassTrack).not.toHaveBeenCalled();
+    expect(inspector.getByText('Clip end must be after clip start.')).toBeTruthy();
+  });
+
+  it('omits inspector startOffsetMs in sequential mode', async () => {
+    const inspector = await openAnchorInspector({ startOffsetMs: 1250 }, 'sequential');
+    expect(inspector.queryByLabelText(/^Start at/)).toBeNull();
+    fireEvent.change(inspector.getByLabelText(/^Clip start/), { target: { value: '0:00' } });
+    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    await inspector.findByText('Saved.');
+    expect(api.updateClassTrack).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).not.toHaveProperty('startOffsetMs');
+  });
+
+  it('keeps an inspector draft unsaved when the server rejects its clip window', async () => {
+    const inspector = await openAnchorInspector();
+    vi.mocked(api.updateClassTrack).mockRejectedValue(
+      new Error('Clip end must be after the latest cue or move at 90000ms.'),
+    );
+    fireEvent.change(inspector.getByLabelText(/^Clip start/), { target: { value: '0:00' } });
+    fireEvent.change(inspector.getByLabelText(/^Clip end/), { target: { value: '0:30' } });
+    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    await inspector.findByText('Clip end must be after the latest cue or move at 90000ms.');
+    expect(inspector.queryByText('Saved.')).toBeNull();
+    expect(inspector.getByText(/Unsaved typing/)).toBeTruthy();
+    expect(inspector.getByRole('button', { name: 'Save' })).toHaveProperty('disabled', false);
+    expect(inspector.getByLabelText(/^Clip end/)).toHaveProperty('value', '0:30');
+  });
 
   it('preserves the selected track and unsaved scoring while workbench tasks change', async () => {
     installClassWithTracks('Context ride', [
