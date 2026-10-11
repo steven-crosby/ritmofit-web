@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { type MusicConnectionView, type Provider } from '@ritmofit/shared';
 import { listConnections, disconnectProvider } from '../lib/api.js';
+import { errMessage } from '../lib/errors.js';
 import { useProviderConnect } from '../lib/use-provider-connect.js';
 import { ProviderConnectAction } from './ProviderConnectAction.js';
 import {
@@ -59,7 +60,7 @@ export function ConnectionsDialog({
       setConnections(await listConnections());
       setStatusVerified(true);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not load your connections. Try again.'));
       setStatusVerified(false);
     }
   }, []);
@@ -104,7 +105,7 @@ export function ConnectionsDialog({
       await refresh();
       onConnectionsChanged?.();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not disconnect. Try again.'));
     } finally {
       setBusyProvider(null);
     }

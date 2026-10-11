@@ -286,6 +286,15 @@ describe('LiveMode preflight', () => {
     expect(screen.getByText('Music off')).toBeTruthy();
   });
 
+  it('still surfaces a connections failure when the rejection carries no message', async () => {
+    vi.mocked(listConnections).mockRejectedValueOnce(new Error(''));
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    expect(
+      await screen.findByText('Could not check your provider connections: the request failed.'),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
+  });
+
   it('surfaces a connections failure with a retry, keeping the prompter available', async () => {
     vi.mocked(listConnections)
       .mockRejectedValueOnce(new Error('network down'))
