@@ -2112,6 +2112,76 @@ describe('Dashboard track focus management', () => {
     expect(inspector.getByLabelText(/^Clip end/)).toHaveProperty('value', '0:30');
   });
 
+  const invalidFields = [
+    { label: /^Track length/, value: '0:00', message: /Enter a positive duration/ },
+    { label: /^Clip start/, value: '0', message: /Enter the clip start/ },
+    { label: /^Clip end/, value: '0:00', message: /Enter the clip end/ },
+    { label: /^Downbeat/, value: '0', message: /Enter the downbeat/ },
+    { label: /^Start at/, value: '0', message: /Enter the start time/ },
+  ] as const;
+
+  it.each(invalidFields)(
+    'announces an invalid inspector $label on the field itself',
+    async ({ label, value, message }: (typeof invalidFields)[number]) => {
+      const inspector = await openAnchorInspector();
+      const advanced = inspector
+        .getByText('Advanced timing and placement')
+        .closest('details') as HTMLDetailsElement;
+      advanced.open = false;
+      const field = inspector.getByLabelText(label);
+      fireEvent.change(field, { target: { value } });
+      fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+
+      const alert = inspector.getByRole('alert');
+      expect(alert.textContent).toMatch(message);
+      expect(field.getAttribute('aria-invalid')).toBe('true');
+      expect(field.getAttribute('aria-describedby')?.split(' ')).toContain(alert.id);
+      expect(document.activeElement).toBe(field);
+      // Downbeat and Start at are inside the collapsed group; it opens for them only.
+      expect(advanced.open).toBe(advanced.contains(field));
+      expect(alert.closest('section')?.querySelectorAll('[aria-invalid="true"]')).toHaveLength(1);
+      expect(api.updateClassTrack).not.toHaveBeenCalled();
+    },
+  );
+
+  it('marks clip end when it does not follow clip start, then clears it on a good save', async () => {
+    const inspector = await openAnchorInspector();
+    const clipEnd = inspector.getByLabelText(/^Clip end/);
+    fireEvent.change(inspector.getByLabelText(/^Clip start/), { target: { value: '0:30' } });
+    fireEvent.change(clipEnd, { target: { value: '0:30' } });
+    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    expect(clipEnd.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(clipEnd);
+
+    fireEvent.change(clipEnd, { target: { value: '0:45' } });
+    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    await inspector.findByText('Saved.');
+    expect(inspector.queryByRole('alert')).toBeNull();
+    expect(clipEnd.getAttribute('aria-invalid')).toBeNull();
+    expect(clipEnd.getAttribute('aria-describedby')).toBe('clip-help-ct-1');
+  });
+
+  it('announces a server rejection without blaming an inspector field', async () => {
+    const inspector = await openAnchorInspector();
+    vi.mocked(api.updateClassTrack).mockRejectedValue(
+      new Error('Clip end must be after the latest cue or move at 90000ms.'),
+    );
+    fireEvent.change(inspector.getByLabelText(/^Clip end/), { target: { value: '0:30' } });
+    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    const alert = await inspector.findByRole('alert');
+    expect(alert.textContent).toBe('Clip end must be after the latest cue or move at 90000ms.');
+    expect(alert.closest('section')?.querySelectorAll('[aria-invalid="true"]')).toHaveLength(0);
+  });
+
+  it('falls back to a readable message when an inspector save throws a non-Error', async () => {
+    const inspector = await openAnchorInspector();
+    vi.mocked(api.updateClassTrack).mockRejectedValue(undefined);
+    fireEvent.change(inspector.getByLabelText('Creator notes'), { target: { value: 'Push' } });
+    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    const alert = await inspector.findByRole('alert');
+    expect(alert.textContent).toBe('Could not save the track. Try again.');
+  });
+
   it('preserves the selected track and unsaved scoring while workbench tasks change', async () => {
     installClassWithTracks('Context ride', [
       { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },

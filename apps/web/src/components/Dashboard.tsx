@@ -4768,6 +4768,9 @@ function parseInspectorAnchor(value: string, storedMs: number | null): number | 
   return value.trim() === '' ? 0 : parseClockToMs(value);
 }
 
+/** The inspector's typed timing fields that Save validates before writing. */
+type InspectorField = 'duration' | 'clipStart' | 'clipEnd' | 'downbeat' | 'startAt';
+
 /**
  * The detail editor / inspector (design system `09-class-builder-guidelines.md`):
  * edit the selected track's intensity, display-BPM override, and notes — and
@@ -4841,6 +4844,37 @@ function TrackInspector({
   const [notes, setNotes] = useState(track.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The field a validation message is about: marked invalid, described by the
+  // message, and focused. Server and action failures leave it null.
+  const [errorField, setErrorField] = useState<InspectorField | null>(null);
+  const fieldRefs = useRef<Partial<Record<InspectorField, HTMLInputElement | null>>>({});
+  const advancedRef = useRef<HTMLDetailsElement>(null);
+  const errorId = `inspector-error-${track.id}`;
+  const clearError = () => {
+    setError(null);
+    setErrorField(null);
+  };
+  const rejectField = (field: InspectorField, message: string) => {
+    setError(message);
+    setErrorField(field);
+    // Downbeat and Start at sit in the collapsed Advanced group; open it so the
+    // field can take focus.
+    if ((field === 'downbeat' || field === 'startAt') && advancedRef.current) {
+      advancedRef.current.open = true;
+    }
+    fieldRefs.current[field]?.focus();
+  };
+  const fieldProps = (field: InspectorField, helpId: string) => ({
+    ref: (el: HTMLInputElement | null) => {
+      fieldRefs.current[field] = el;
+    },
+    'aria-invalid': errorField === field || undefined,
+    'aria-describedby': errorField === field ? `${helpId} ${errorId}` : helpId,
+  });
+  const timeFieldClass = (field: InspectorField, width: string) =>
+    `min-h-11 ${width} rounded-control border ${
+      errorField === field ? 'border-state-danger' : 'border-interactive/30'
+    } bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill`;
   // Typed fields only. Scoring a zone is a discrete, always-valid choice, so it
   // commits on click (see `chooseIntensity`) and reports next to its own
   // control; this draft is the text the instructor has entered and not yet
@@ -4889,7 +4923,7 @@ function TrackInspector({
     if (next == null || next === savedIntensity.current) return;
     if (mounted.current) {
       setZoneState('saving');
-      setError(null);
+      clearError();
     }
     try {
       await updateClassTrack(track.id, { intensity: next });
@@ -4901,7 +4935,7 @@ function TrackInspector({
       if (mounted.current) {
         setIntensity(savedIntensity.current);
         setZoneState('idle');
-        setError((e as Error).message);
+        setError(errMessage(e, 'Could not save the intensity. Try again.'));
       }
     }
   };
@@ -4933,7 +4967,7 @@ function TrackInspector({
   const lookupTrackBpm = async () => {
     setBpmBusy(true);
     setBpmStatus(null);
-    setError(null);
+    clearError();
     try {
       const updated = await lookupBpm(track.trackId);
       setBpmStatus(
@@ -4943,7 +4977,7 @@ function TrackInspector({
       );
       onSaved(); // reload so the resolved row/ribbon BPM reflects the new base
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not look up the BPM. Try again.'));
     } finally {
       setBpmBusy(false);
     }
@@ -4952,7 +4986,7 @@ function TrackInspector({
   const save = async () => {
     const parsedDuration = parseDurationInput(duration);
     if (parsedDuration == null) {
-      setError('Enter a positive duration as minutes:seconds, for example 3:45.');
+      rejectField('duration', 'Enter a positive duration as minutes:seconds, for example 3:45.');
       return;
     }
     // The field only expresses whole seconds, so compare against baseDurationMs
@@ -4963,22 +4997,31 @@ function TrackInspector({
     // Clip start: blank = 0 (from the beginning). Clip end: blank = null (to the end).
     const clipStartMs = parseInspectorAnchor(clipStart, track.clipStartMs);
     if (clipStartMs == null) {
-      setError('Enter the clip start as minutes:seconds, for example 0:30 (or leave it blank).');
+      rejectField(
+        'clipStart',
+        'Enter the clip start as minutes:seconds, for example 0:30 (or leave it blank).',
+      );
       return;
     }
     const clipEndMs = clipEnd.trim() === '' ? null : parseDurationInput(clipEnd);
     if (clipEnd.trim() !== '' && clipEndMs == null) {
-      setError('Enter the clip end as minutes:seconds, for example 2:15 (or leave it blank).');
+      rejectField(
+        'clipEnd',
+        'Enter the clip end as minutes:seconds, for example 2:15 (or leave it blank).',
+      );
       return;
     }
     if (clipEndMs != null && clipEndMs <= clipStartMs) {
-      setError('Clip end must be after clip start.');
+      rejectField('clipEnd', 'Clip end must be after clip start.');
       return;
     }
     // Downbeat: blank = 0 (grid starts at the track start).
     const beatAnchorMs = parseInspectorAnchor(downbeat, track.beatAnchorMs);
     if (beatAnchorMs == null) {
-      setError('Enter the downbeat as minutes:seconds, for example 0:02 (or leave it blank).');
+      rejectField(
+        'downbeat',
+        'Enter the downbeat as minutes:seconds, for example 0:02 (or leave it blank).',
+      );
       return;
     }
     // Free-placement start (only sent in free mode; the server rejects it otherwise).
@@ -4986,7 +5029,10 @@ function TrackInspector({
     if (canPlaceFreely) {
       const parsed = parseInspectorAnchor(startAt, track.startOffsetMs);
       if (parsed == null) {
-        setError('Enter the start time as minutes:seconds, for example 3:20 (or leave it blank).');
+        rejectField(
+          'startAt',
+          'Enter the start time as minutes:seconds, for example 3:20 (or leave it blank).',
+        );
         return;
       }
       startOffsetMs = parsed;
@@ -4995,7 +5041,7 @@ function TrackInspector({
     // status first, so a button-initiated save does not strand focus on <body>.
     if (document.activeElement === saveButtonRef.current) saveStatusRef.current?.focus();
     setBusy(true);
-    setError(null);
+    clearError();
     try {
       const trimmedBpm = bpm.trim();
       const trimmedRpm = rpm.trim();
@@ -5016,7 +5062,7 @@ function TrackInspector({
       setJustSaved(true);
       onSaved();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not save the track. Try again.'));
     } finally {
       setBusy(false);
     }
@@ -5024,12 +5070,12 @@ function TrackInspector({
 
   const remove = async () => {
     setBusy(true);
-    setError(null);
+    clearError();
     try {
       await deleteClassTrack(track.id);
       onRemoved();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not remove the track. Try again.'));
       setBusy(false);
     }
   };
@@ -5162,8 +5208,8 @@ function TrackInspector({
                 type="text"
                 inputMode="numeric"
                 placeholder="m:ss"
-                aria-describedby={`duration-help-${track.id}`}
-                className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                {...fieldProps('duration', `duration-help-${track.id}`)}
+                className={timeFieldClass('duration', 'w-32')}
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
               />
@@ -5182,8 +5228,8 @@ function TrackInspector({
                   inputMode="numeric"
                   placeholder="start"
                   aria-label="Clip start (minutes:seconds)"
-                  aria-describedby={`clip-help-${track.id}`}
-                  className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                  {...fieldProps('clipStart', `clip-help-${track.id}`)}
+                  className={timeFieldClass('clipStart', 'w-24')}
                   value={clipStart}
                   onChange={(e) => setClipStart(e.target.value)}
                 />
@@ -5195,8 +5241,8 @@ function TrackInspector({
                   inputMode="numeric"
                   placeholder="end"
                   aria-label="Clip end (minutes:seconds)"
-                  aria-describedby={`clip-help-${track.id}`}
-                  className="min-h-11 w-24 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                  {...fieldProps('clipEnd', `clip-help-${track.id}`)}
+                  className={timeFieldClass('clipEnd', 'w-24')}
                   value={clipEnd}
                   onChange={(e) => setClipEnd(e.target.value)}
                 />
@@ -5225,7 +5271,7 @@ function TrackInspector({
               filling every field before the shape is visible (design system 09
               §Inspector "score, don't fill"). Native <details>: the inputs stay
               mounted, so the single Save below still commits them while collapsed. */}
-            <details>
+            <details ref={advancedRef}>
               <summary className="flex min-h-11 cursor-pointer items-center font-ui text-xs font-semibold uppercase tracking-wide text-interactive hover:text-interactive-hover rf-focus-ring">
                 Advanced timing and placement
               </summary>
@@ -5284,8 +5330,8 @@ function TrackInspector({
                     type="text"
                     inputMode="numeric"
                     placeholder="m:ss"
-                    aria-describedby={`downbeat-help-${track.id}`}
-                    className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                    {...fieldProps('downbeat', `downbeat-help-${track.id}`)}
+                    className={timeFieldClass('downbeat', 'w-32')}
                     value={downbeat}
                     onChange={(e) => setDownbeat(e.target.value)}
                   />
@@ -5308,8 +5354,8 @@ function TrackInspector({
                       type="text"
                       inputMode="numeric"
                       placeholder="m:ss"
-                      aria-describedby={`startat-help-${track.id}`}
-                      className="min-h-11 w-32 rounded-control border border-interactive/30 bg-bg-sunken px-3 font-data text-sm text-text-primary sm:rounded-pill"
+                      {...fieldProps('startAt', `startat-help-${track.id}`)}
+                      className={timeFieldClass('startAt', 'w-32')}
                       value={startAt}
                       onChange={(e) => setStartAt(e.target.value)}
                     />
@@ -5325,7 +5371,11 @@ function TrackInspector({
               </div>
             </details>
 
-            {error && <p className="font-ui text-sm text-state-danger">{error}</p>}
+            {error && (
+              <p id={errorId} role="alert" className="font-ui text-sm text-state-danger">
+                {error}
+              </p>
+            )}
 
             {/* Whether the panel matches what is stored, said in words next to the
               control that resolves it. Glyph + word, never colour alone (07). */}
