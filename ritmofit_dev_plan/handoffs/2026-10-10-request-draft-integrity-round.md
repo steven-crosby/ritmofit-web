@@ -16,17 +16,17 @@ status: open
 - [PR #506](https://github.com/steven-crosby/ritmofit-web/pull/506) squash-merged as `b11f9f2eabd966ad763e23c64242a63b85a8caa2`: choreography read ordering, submitted draft ownership, delayed focus ownership, and mounted callbacks.
 - [PR #507](https://github.com/steven-crosby/ritmofit-web/pull/507) squash-merged as `fd3d16ac71c5dda2f71600146eab54b4343113bf`: replacement URL drafts, completion context guards, and pending same-song/destination ownership across browse changes.
 - [Updated-base #507 CI](https://github.com/steven-crosby/ritmofit-web/actions/runs/38107642198) passed at `84703d0bfc99326b2d9789da5c8f16d50e6c5b81`; [final application-main CI](https://github.com/steven-crosby/ritmofit-web/actions/runs/38107826711) passed at `fd3d16a`. Their Git trees are identical. All five tested source/test hashes and the integration artifact manifest match main.
-- Primary checkout is on main, synced with origin/main at `fd3d16a`, with no tracked edits. Only unrelated `.claude/launch.json` remains untracked and is preserved. There are no open PRs as observed before this documentation close PR.
+- Initial post-merge close audit confirmed primary main synced with origin/main at application commit `fd3d16a`, with no tracked edits. The documentation close temporarily uses the approved close branch in primary and returns to synced main after merge. Only unrelated `.claude/launch.json` remains untracked and is preserved. There are no open PRs as observed before this documentation close PR.
 - INBOX is empty. HISTORY remains unchanged because no deployment occurred. DEVELOPMENT_PLAN records the verified undeployed application batch.
 
 ## In flight
 
-- This documentation close corrects pre-merge conditional state and branch-dependent evidence links; Steven authorized its commit, push, PR, and green squash merge.
-- Round cleanup is proposed below and has not occurred. Completed lane handoffs are eligible for retirement after their evidence and remaining obligations are routed here; Steven explicitly authorized retiring these two files and the exact archival/branch scope below.
+- This documentation close corrects pre-merge conditional state and branch-dependent evidence links. Its commit, push, PR, green squash merge, and final close-branch deletion are authorized; CI and live PR state must be confirmed before merge.
+- Both lane changes are on main and undeployed. Attended acceptance, exact release selection, and actual native zoom remain open. This round’s managed worktree/lane-branch cleanup and handoff retirement are complete as recorded below.
 
 ## Next action
 
-Complete the approved documentation/cleanup close, then resume attended desktop Cycle/Pilates acceptance when Steven can listen. Use the fresh tagged fixtures and the [UX close handoff](./2026-10-09-ux-close-acceptance.md); record human listening and natural completion before a separately authorized exact release decision. Provider release selection is prepared in the [release proposal](../release-proposal-2026-10-09.md). No playback should start unattended.
+Resume attended desktop Cycle/Pilates acceptance when Steven can listen. If restarting before the documentation close PR finishes, confirm its live CI/merge state and complete the already authorized close-branch deletion first. Use the fresh tagged fixtures and the [UX close handoff](./2026-10-09-ux-close-acceptance.md); record human listening and natural completion before a separately authorized exact release decision. Provider release selection is prepared in the [release proposal](../release-proposal-2026-10-09.md). No playback should start unattended.
 
 ## Verification
 
@@ -41,16 +41,24 @@ Complete the approved documentation/cleanup close, then resume attended desktop 
 
 Fresh read-only close checks on 2026-10-10 Mountain confirmed Worker `5f67d242-8956-42b7-9318-67b2797d3454` at 100% and three consecutive cache-busted SPA entries `assets/index-mZ1ypG4t.js`. Production remains the recorded #494 baseline (`e712274`). Main contains undeployed #495/#499/#501/#503/#504/#506/#507 application work. No remote migration, deployment, production fixture creation/deletion, or listening occurred in this round.
 
-## Proposed cleanup and preservation
+## Completed cleanup and preservation
 
-- Archive only the attached round-owned managed worktrees `choreography-integrity`, `song-picker-integrity`, and `request-draft-combined` after close changes are committed on the named close branch and recoverable through Git. Continue the close PR from the primary checkout using that branch, then return primary to synced main after its merge. Managed archival saves a recoverable snapshot, including non-ignored untracked lane briefs and dependency symlinks. Reproducible ignored build outputs need no retention. If the app blocks a protected worktree, retain it and report the limitation; do not bypass protection.
-- After safe archival, delete only local/remote `codex/r20261010-lane1-choreography`, `codex/r20261010-lane2-song-picker`, and the merged close branch `codex/close-integrity-session-20261010`. Squash lane tips are not ancestors of main; each lane tip's full tree equals its recorded squash commit, and both squash commits are ancestors of main. Exact branch deletion therefore requires explicit authority for these verified squash-merged tips.
-- Retire only `2026-10-10-lane1-choreography-integrity.md` and `2026-10-10-lane2-song-picker-integrity.md` after approval. Lane verification is preserved in its evidence packet, PR, and this round handoff; no lane-specific implementation remains.
-- Preserve primary `.claude/`, the unfinished `apple-guards-release-candidate` at `0afa5c8`, previous `status-release-reconcile`/`ux-builder-clarity`/`ux-live-clarity` worktrees and branches, the local verification tag, all existing UX-close/release records, and all production QA fixtures. No general machine/tool cleanup is proposed. Former round QA ports 5183/9322 have no listening process as observed.
+- All three round worktrees are registered as archived attachments and absent from both the filesystem and active Git worktree list. Managed recoverable snapshots retain their branch history plus precisely the expected non-ignored lane briefs and dependency symlinks. No unexpected files were captured. Reproducible ignored build outputs need no retention.
+
+| Archived worktree        | Recovery snapshot commit                   |
+| ------------------------ | ------------------------------------------ |
+| `choreography-integrity` | `1633c0b9e358cdcc3b34fd0a9829cc653cda4101` |
+| `song-picker-integrity`  | `54332a96a6d2061fa287c9cea0c2ea25ba12b2c5` |
+| `request-draft-combined` | `dafb1238e7dcf0f418beef7f73036bb0bd1c566d` |
+
+- Local and remote `codex/r20261010-lane1-choreography` and `codex/r20261010-lane2-song-picker` are deleted and verified absent. Squash lane tips are not ancestors of main; each complete tip tree equals its recorded squash commit, and both squash commits are ancestors of main. Steven explicitly authorized deletion of these exact verified squash-merged tips.
+- `2026-10-10-lane1-choreography-integrity.md` and `2026-10-10-lane2-song-picker-integrity.md` are retired in this close PR. Their evidence and completed implementation remain preserved in lane audit packets, merged PRs, and this handoff. No relative links to the retired files remain.
+- Only the local/remote close branch `codex/close-integrity-session-20261010` remains pending deletion after this docs PR's green squash merge. Return primary to synced main first, then remove that exact branch and verify absence. The close PR metadata and final session summary will record its actual disposition.
+- Preservation checks compared primary `.claude/launch.json` bytes and every previous checkout's HEAD, tracked status, untracked names/bytes, and dependency symlink targets with the pre-cleanup baseline. All match: unfinished `apple-guards-release-candidate` at `0afa5c8`, previous `status-release-reconcile`/`ux-builder-clarity`/`ux-live-clarity`, the local verification tag, existing UX-close/release records, and production QA fixtures are preserved. No general machine/tool cleanup occurred. Former QA ports 5183/9322 have no listening process as observed.
 
 ## Owner decisions and boundaries
 
-Steven explicitly authorized documentation commit, push, PR, green squash merge, retirement of the two lane handoffs, archival of the three named worktrees, and deletion of the three named local/remote branches. Deployment and production-data deletion remain off-limits. When close actions complete, record their actual result here before the close PR merge; if an action is blocked, retain its exact restart point rather than claiming completion.
+Steven explicitly authorized documentation commit, push, PR, green squash merge, retirement of the two lane handoffs, archival of the three named worktrees, and deletion of the three named local/remote branches. Deployment and production-data deletion remain off-limits. Actual completed cleanup is recorded above; final close-branch disposition is recorded in the close PR and session summary after merge. No archive operation was blocked.
 
 ## Shared zones and iOS
 
