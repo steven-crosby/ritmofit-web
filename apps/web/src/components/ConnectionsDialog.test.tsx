@@ -65,6 +65,24 @@ describe('ConnectionsDialog capability gating', () => {
     expect(screen.getByRole('button', { name: 'Connect Apple Music' })).toBeTruthy();
   });
 
+  it('reports a readable message when loading connections throws a non-Error', async () => {
+    vi.mocked(api.listConnections).mockRejectedValue(undefined);
+    render(<ConnectionsDialog onClose={() => {}} />);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Could not load your connections. Try again.');
+  });
+
+  it('reports a readable message when a disconnect throws a non-Error', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([connection('soundcloud')]);
+    vi.mocked(api.disconnectProvider).mockRejectedValue(undefined);
+    render(<ConnectionsDialog onClose={() => {}} />);
+    expect(await screen.findByText('Connected')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect SoundCloud' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect SoundCloud' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Could not disconnect. Try again.');
+  });
+
   it('shows a success notice when an OAuth round-trip connected a provider', async () => {
     vi.mocked(api.listConnections).mockResolvedValue([connection('soundcloud')]);
 

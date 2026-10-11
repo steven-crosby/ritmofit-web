@@ -40,6 +40,7 @@ import { useProviderConnect } from '../lib/use-provider-connect.js';
 import type { MusicKitInstance } from '../lib/musickit.js';
 import { ProviderConnectAction } from './ProviderConnectAction.js';
 import { listConnections } from '../lib/api.js';
+import { errMessage } from '../lib/errors.js';
 import { preflightPayload } from '../lib/playback/coordinator.js';
 import { RuntimePlaybackCoordinator, type CoordinatorStatus } from '../lib/playback/runtime.js';
 import { LivenessObserver, publishLivenessInspector } from '../lib/playback/liveness.js';
@@ -369,7 +370,7 @@ export function LiveMode({
       setConnections(rows);
     } catch (e) {
       if (requestId !== connectionsRequestId.current) return;
-      setConnectionsError((e as Error).message);
+      setConnectionsError(errMessage(e, 'the request failed.'));
     }
   }, []);
   useEffect(() => {
