@@ -1,0 +1,26 @@
+
+ RUN  v3.2.6 <lane-checkout>/apps/web
+
+ ✓ src/lib/ordered-import.test.ts (8 tests) 217ms
+ ✓ src/components/TrackSearch.recovery.test.tsx (9 tests) 660ms
+ ✓ src/components/TrackSearch.test.tsx (56 tests) 6728ms
+   ✓ TrackSearch stale-result guard > retries a failed catalog search without changing the query  734ms
+   ✓ TrackSearch stale-result guard > does not let a search cleared mid-flight flash stale results under a new query  651ms
+   ✓ TrackSearch browse announcement (aria-live) > announces the settled result count in the live region  326ms
+   ✓ TrackSearch browse announcement (aria-live) > announces a settled empty result set, not a premature "No results"  314ms
+   ✓ TrackSearch result artwork > lazy-loads and async-decodes non-critical album thumbnails  322ms
+   ✓ TrackSearch SoundCloud library expiry > keeps catalog search working when SoundCloud library authorization is expired  317ms
+   ✓ TrackSearch plan-block assignment > assigns a chosen song to the targeted plan block  344ms
+   ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a provider change  315ms
+   ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a mode change  316ms
+   ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a destination change  315ms
+   ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a unmount change  313ms
+   ✓ TrackSearch submitted operation ownership > hides stale song failures in a different mode  315ms
+   ✓ TrackSearch submitted operation ownership > keeps different song adds concurrent and rejects a repeat click on a pending song  382ms
+   ✓ TrackSearch submitted operation ownership > does not submit the same pending song again after a browse-context round trip  630ms
+   ✓ TrackSearch submitted operation ownership > does not let an older song completion unlock a newer add of the same candidate  384ms
+
+ Test Files  3 passed (3)
+      Tests  73 passed (73)
+   Start at  20:32:27
+   Duration  7.65s (transform 324ms, setup 0ms, collect 830ms, tests 7.60s, environment 1.03s, prepare 139ms)

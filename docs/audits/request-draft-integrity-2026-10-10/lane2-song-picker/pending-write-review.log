@@ -1,0 +1,81 @@
+
+ RUN  v3.2.6 <lane-checkout>/apps/web
+
+ ❯ src/components/TrackSearch.test.tsx (56 tests | 1 failed | 55 skipped) 748ms
+   ↓ TrackSearch stale-result guard > retries a failed catalog search without changing the query
+   ↓ TrackSearch stale-result guard > does not let a search cleared mid-flight flash stale results under a new query
+   ↓ TrackSearch browse announcement (aria-live) > announces the settled result count in the live region
+   ↓ TrackSearch browse announcement (aria-live) > announces a settled empty result set, not a premature "No results"
+   ↓ browseAnnouncement (unit) > stays silent while idle or mid-fetch with no settled results
+   ↓ browseAnnouncement (unit) > distinguishes a settled empty array from a pending null
+   ↓ browseAnnouncement (unit) > singularizes the result count
+   ↓ TrackSearch destination > names the block and hides playlist import when dest is a plan block
+   ↓ TrackSearch destination > keeps Import Playlist URL when dest is the class
+   ↓ TrackSearch playlist-import provider gating > shows "Import Playlist URL" exactly for providers whose capability flag is on
+   ↓ TrackSearch playlist-import provider gating > falls back to search when leaving playlist mode for a provider that cannot import
+   ↓ TrackSearch saved-playlists drill-in > opens a saved playlist and loads its track preview list
+   ↓ TrackSearch saved-playlists drill-in > attributes the saved playlist to its provider
+   ↓ TrackSearch saved-playlists drill-in > shows "Import all N" button once tracks are loaded
+   ↓ TrackSearch saved-playlists drill-in > locks individual adds while a bulk import is pending
+   ↓ TrackSearch saved-playlists drill-in > locks bulk import while an individual add is pending
+   ↓ TrackSearch saved-playlists drill-in > import-all commits every source occurrence in one ordered operation and calls onAdded
+   ↓ TrackSearch saved-playlists drill-in > reports a partial import and retries only the remaining track
+   ↓ TrackSearch saved-playlists drill-in > describes an ambiguous commit as unconfirmed and replays it without importing again
+   ↓ TrackSearch saved-playlists drill-in > renders repeated playlist songs as independently added occurrences
+   ↓ TrackSearch saved-playlists drill-in > navigating back clears the drill-in track list
+   ↓ TrackSearch saved-playlists drill-in > surfaces a 403 forbidden drill-in as calm guidance, not a retryable error
+   ↓ TrackSearch saved-playlists drill-in > surfaces a generic drill-in failure as a retryable error and re-fetches on retry
+   ↓ TrackSearch saved-playlists drill-in > reads a truly empty opened playlist distinctly from a failed load
+   ↓ TrackSearch saved-playlists drill-in > distinguishes a failed playlist-index load from an empty library, with a retry
+   ↓ classifyPlaylistDrillInError (unit) > classifies the 403 ownership limitation as forbidden
+   ↓ classifyPlaylistDrillInError (unit) > prefers stable API codes over message wording
+   ↓ classifyPlaylistDrillInError (unit) > classifies REAUTH_REQUIRED and the capitalized NOT_CONNECTED string as reauth
+   ↓ classifyPlaylistDrillInError (unit) > falls back to generic for any other message
+   ↓ classifyProviderLibraryError (unit) > uses stable authorization codes and keeps generic failures retryable
+   ↓ TrackSearch result artwork > lazy-loads and async-decodes non-critical album thumbnails
+   ↓ TrackSearch provider readiness > uses the centralized caution mark and recovery action for an expired session
+   ↓ TrackSearch provider readiness > confirms a connected provider
+   ↓ TrackSearch provider readiness > shows catalog-only truth when the account is absent
+   ↓ TrackSearch provider readiness > refreshes connection truth after the centralized dialog changes it
+   ↓ TrackSearch SoundCloud library expiry > surfaces an expired likes fetch as caution with a real reconnect path
+   ↓ TrackSearch SoundCloud library expiry > surfaces an expired saved-playlist fetch as caution instead of a broken panel
+   ↓ TrackSearch SoundCloud library expiry > keeps catalog search working when SoundCloud library authorization is expired
+   ↓ TrackSearch plan-block assignment > assigns a chosen song to the targeted plan block
+   ↓ TrackSearch submitted operation ownership > clears only an unedited submitted URL draft: replacement
+   ↓ TrackSearch submitted operation ownership > clears only an unedited submitted URL draft: edit-away-and-back
+   ↓ TrackSearch submitted operation ownership > clears only an unedited submitted URL draft: unchanged
+   ↓ TrackSearch submitted operation ownership > retains the replacement URL and exposes a current-context failure
+   ↓ TrackSearch submitted operation ownership > ignores a URL import completion after leaving its provider context
+   ↓ TrackSearch submitted operation ownership > ignores a URL import completion after leaving its mode context
+   ↓ TrackSearch submitted operation ownership > ignores a URL import completion after leaving its destination context
+   ↓ TrackSearch submitted operation ownership > ignores a URL import completion after leaving its unmount context
+   ↓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a provider change
+   ↓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a mode change
+   ↓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a destination change
+   ↓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a unmount change
+   ↓ TrackSearch submitted operation ownership > hides stale song failures in a different mode
+   ↓ TrackSearch submitted operation ownership > hides stale URL failures in a different mode
+   ↓ TrackSearch submitted operation ownership > keeps different song adds concurrent and rejects a repeat click on a pending song
+   × TrackSearch submitted operation ownership > does not submit the same pending song again after a browse-context round trip 748ms
+     → expected "importTrack" to be called 1 times, but got 2 times
+   ↓ TrackSearch submitted operation ownership > does not let an older song completion unlock a newer add of the same candidate
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > does not submit the same pending song again after a browse-context round trip
+AssertionError: expected "importTrack" to be called 1 times, but got 2 times
+ ❯ src/components/TrackSearch.test.tsx:1117:29
+    1115|     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    1116|     fireEvent.click(await screen.findByRole('button', { name: 'Add Sta…
+    1117|     expect(api.importTrack).toHaveBeenCalledTimes(1);
+       |                             ^
+    1118|     await act(async () => { write.resolve(ADDED_CLASS_TRACK); await wr…
+    1119|     expect(onAdded).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 55 skipped (56)
+   Start at  20:32:15
+   Duration  1.74s (transform 161ms, setup 0ms, collect 281ms, tests 748ms, environment 308ms, prepare 46ms)

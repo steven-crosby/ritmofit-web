@@ -1,0 +1,378 @@
+
+ RUN  v3.2.6 <lane-checkout>/apps/web
+
+---------------------------------------xx··xxxxxxxxxxx
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 13 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > clears only an unedited submitted URL draft: replacement
+AssertionError: expected '' to be 'https://music.apple.com/us/playlist/n…' // Object.is equality
+
+- Expected
++ Received
+
+- https://music.apple.com/us/playlist/next/pl.next
+
+ ❯ src/components/TrackSearch.test.tsx:950:27
+    948|       input.focus();
+    949|       await act(async () => { write.resolve({ imported: 1 }); await wr…
+    950|       expect(input.value).toBe(change === 'replacement' ? nextUrl : ch…
+       |                           ^
+    951|       expect(document.activeElement).toBe(input);
+    952|       expect(api.importPlaylist).toHaveBeenCalledWith('c1', firstUrl);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯
+
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > clears only an unedited submitted URL draft: edit-away-and-back
+AssertionError: expected '' to be 'https://music.apple.com/us/playlist/f…' // Object.is equality
+
+- Expected
++ Received
+
+- https://music.apple.com/us/playlist/first/pl.first
+
+ ❯ src/components/TrackSearch.test.tsx:950:27
+    948|       input.focus();
+    949|       await act(async () => { write.resolve({ imported: 1 }); await wr…
+    950|       expect(input.value).toBe(change === 'replacement' ? nextUrl : ch…
+       |                           ^
+    951|       expect(document.activeElement).toBe(input);
+    952|       expect(api.importPlaylist).toHaveBeenCalledWith('c1', firstUrl);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/13]⎯
+
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > ignores a URL import completion after leaving its provider context
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > ignores a URL import completion after leaving its mode context
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > ignores a URL import completion after leaving its destination context
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > ignores a URL import completion after leaving its unmount context
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st spy call:
+
+    Array []
+
+
+Number of calls: 1
+
+ ❯ src/components/TrackSearch.test.tsx:990:27
+    988|         fireEvent.click(screen.getByRole('button', { name: 'Import Pla…
+    989|       await act(async () => { write.resolve({ imported: 1 }); await wr…
+    990|       expect(onAdded).not.toHaveBeenCalled();
+       |                           ^
+    991|       expect(api.importPlaylist).toHaveBeenCalledWith('c1', firstUrl);
+    992|       if (change !== 'unmount') {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/13]⎯
+
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a provider change
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a mode change
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a destination change
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a unmount change
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st spy call:
+
+    Array [
+      "ct-id",
+    ]
+
+
+Number of calls: 1
+
+ ❯ src/components/TrackSearch.test.tsx:1014:27
+    1012|         trackId: IMPORTED_TRACK.id, intensity: 'mod', planBlockId: 'b1…
+    1013|       }));
+    1014|       expect(onAdded).not.toHaveBeenCalled();
+       |                           ^
+    1015|       if (change !== 'unmount') expect(screen.queryByText(/added this …
+    1016|     },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/13]⎯
+
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > hides stale song failures in a different mode
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > hides stale URL failures in a different mode
+AssertionError: expected <p role="alert" …(1)></p> to be null
+
+- Expected:
+null
+
++ Received:
+<p
+  class="font-ui text-sm text-state-danger"
+  role="alert"
+>
+  Old operation failed
+</p>
+
+ ❯ src/components/TrackSearch.test.tsx:1029:41
+    1027|     const write = kind === 'song' ? song : list;
+    1028|     await act(async () => { write.reject(new Error('Old operation fail…
+    1029|     expect(screen.queryByRole('alert')).toBeNull();
+       |                                         ^
+    1030|     expect(onAdded).not.toHaveBeenCalled();
+    1031|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/13]⎯
+
+ FAIL  src/components/TrackSearch.test.tsx > TrackSearch submitted operation ownership > does not let an older song completion unlock a newer add of the same candidate
+AssertionError: expected "addTrack" to be called 2 times, but got 1 times
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-2 border-t border-interactive/20 pt-4"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"font-ui text-xs uppercase tracking-wide text-text-tertiary"[39m
+        [36m>[39m
+          [0mAdd a track[0m
+        [36m</p>[39m
+        [36m<div[39m
+          [33maria-label[39m=[32m"Music provider"[39m
+          [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+          [33mrole[39m=[32m"group"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"true"[39m
+            [33mclass[39m=[32m"min-h-11 rounded-pill border px-3 py-1 font-ui text-xs border-interactive bg-interactive/15 text-text-primary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mSoundCloud[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"false"[39m
+            [33mclass[39m=[32m"min-h-11 rounded-pill border px-3 py-1 font-ui text-xs border-interactive/30 text-text-secondary hover:text-text-primary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mSpotify[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"false"[39m
+            [33mclass[39m=[32m"min-h-11 rounded-pill border px-3 py-1 font-ui text-xs border-interactive/30 text-text-secondary hover:text-text-primary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mApple Music[0m
+          [36m</button>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex flex-wrap items-center gap-x-2 gap-y-1 font-ui text-xs"[39m
+          [33mrole[39m=[32m"status"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"inline-flex items-center gap-1.5 text-text-tertiary"[39m
+            [33mdata-connection-state[39m=[32m"catalog-only"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"h-3.5 w-3.5 shrink-0"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [36m>[39m
+              [36m<circle[39m
+                [33mcx[39m=[32m"12"[39m
+                [33mcy[39m=[32m"12"[39m
+                [33mr[39m=[32m"8"[39m
+              [36m/>[39m
+              [36m<circle[39m
+                [33mcx[39m=[32m"12"[39m
+                [33mcy[39m=[32m"12"[39m
+                [33mr[39m=[32m"3.5"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span>[39m
+              [0mCatalog only[0m
+            [36m</span>[39m
+          [36m</span>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"text-text-tertiary"[39m
+          [36m>[39m
+            [0mSoundCloud catalog search works without an account.[0m
+          [36m</span>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33maria-label[39m=[32m"SoundCloud capability summary"[39m
+          [33mclass[39m=[32m"grid gap-1 rounded-card border border-interactive/10 bg-bg-base p-2 sm:grid-cols-3"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex min-w-0 items-baseline justify-between gap-2 font-ui sm:block sm:text-center"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"shrink-0 text-[10px] uppercase tracking-wide text-text-tertiary"[39m
+            [36m>[39m
+              [0mCatalog[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"min-w-0 text-right text-[11px] sm:mt-0.5 sm:text-center text-state-positive"[39m
+            [36m>[39m
+              [0mBrowse catalog[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex min-w-0 items-baseline justify-between gap-2 font-ui sm:block sm:text-center"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"shrink-0 text-[10px] uppercase tracking-wide text-text-tertiary"[39m
+            [36m>[39m
+              [0mLibrary[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"min-w-0 text-right text-[11px] sm:mt-0.5 sm:text-center text-state-caution"[39m
+            [36m>[39m
+              [0mConnect account[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex min-w-0 items-baseline justify-between gap-2 font-ui sm:block sm:text-center"[39m
+          [36m>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"shrink-0 text-[10px] uppercase tracking-wide text-text-tertiary"[39m
+            [36m>[39m
+              [0mPlayback[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"min-w-0 text-right text-[11px] sm:mt-0.5 sm:text-center text-state-positive"[39m
+            [36m>[39m
+              [0mPublic widget ready[0m
+            [36m</p>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33maria-label[39m=[32m"Source"[39m
+          [33mclass[39m=[32m"flex flex-wrap gap-1.5"[39m
+          [33mrole[39m=[32m"group"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"false"[39m
+            [33mclass[39m=[32m"min-h-11 rounded-pill px-3 py-1 font-ui text-xs text-text-tertiary hover:text-text-secondary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mSearch[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"true"[39m
+            [33mclass[39m=[32m"min-h-11 rounded-pill px-3 py-1 font-ui text-xs bg-interactive/15 text-text-primary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mMy likes[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"false"[39m
+            [33mclass[39m=[32m"min-h-11 rounded-pill px-3 py-1 font-ui text-xs text-text-tertiary hover:text-text-secondary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mSaved playlists[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"false"[39m
+            [33mclass[39m=[32m"min-h-11 rounded-pill px-3 py-1 font-ui text-xs text-text-tertiary hover:text-text-secondary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mImport Playlist URL[0m
+          [36m</button>[39m
+        [36m</div>[39m
+        [36m<aside[39m
+          [33maria-label[39m=[32m"Track destination"[39m
+          [33mclass[39m=[32m"flex min-h-11 items-center justify-between gap-3 rounded-control border border-interactive/20 bg-interactive/5 px-3 py-2"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"font-ui text-xs uppercase tracking-wide text-text-tertiary"[39m
+          [36m>[39m
+            [0mDestination[0m
+          [36m</span>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"min-w-0 text-right font-ui text-xs text-text-secondary"[39m
+          [36m>[39m
+            [36m<strong[39m
+              [33mclass[39m=[32m"font-semibold text-text-primary"[39m
+            [36m>[39m
+              [0mCurrent class[0m
+            [36m</strong>[39m
+          [36m</span>[39m
+        [36m</aside>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"sr-only"[39m
+          [33mrole[39m=[32m"status"[39m
+        [36m>[39m
+          [0m1 liked track on SoundCloud.[0m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 "[39m
+        [36m>[39m
+          [36m<ul[39m
+            [33maria-label[39m=[32m"Music sources"[39m
+            [33mclass[39m=[32m"flex min-w-0 flex-col gap-1.5"[39m
+          [36m>[39m
+            [36m<li[39m
+              [33mclass[39m=[32m"min-w-0 gap-2 rounded-card px-2 py-1.5 sm:gap-3 grid grid-cols-[44px_minmax(0,1fr)] sm:flex sm:items-center border border-transparent bg-bg-base"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"shrink-0 rounded-card "[39m
+                [33mstyle[39m=[32m"width: 44px; height: 44px; background: linear-gradient(135deg, rgb(240, 151, 90), rgb(184, 58, 43));"[39m
+              [36m/>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"col-start-2 min-w-0 flex-1"[39m
+              [36m>[39m
+                [36m<p[39m
+                  [33mclass[39m=[32m"truncate font-ui text-sm font-semibold text-text-primary"[39m
+                [36m>[39m
+                  [0mStale Track[0m
+                [36m</p>[39m
+                [36m<p[39m
+                  [33mclass[39m=[32m"truncate font-ui text-xs text-text-secondary"[39m
+                [36m>[39m
+                  [0mGhost[0m
+                [36m</p>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3 col-start-2 items-start sm:shrink-0"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"font-data text-xs text-text-tertiary"[39m
+                [36m>[39m
+                  [0m0:01[0m
+                [36m</span>[39m
+              [36m</div>[39m
+              [36m<button[39m
+                [33maria-busy[39m=[32m"true"[39m
+                [33maria-label[39m=[32m"Add Stale Track by Ghost"[39m
+                [33mclass[39m=[32m"col-start-2 min-h-11 justify-self-start rounded-pill px-3 font-ui text-xs font-semibold rf-focus-ring disabled:opacity-60 sm:shrink-0 rf-btn-primary text-text-on-accent"[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [0mAdding…[0m
+              [36m</button>[39m
+            [36m</li>[39m
+          [36m</ul>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+ ❯ src/components/TrackSearch.test.tsx:1042:46
+    1040|     fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+    1041|     fireEvent.click(await screen.findByRole('button', { name: 'Add Sta…
+    1042|     await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(2));
+       |                                              ^
+    1043|     await act(async () => { first.resolve(ADDED_CLASS_TRACK); await fi…
+    1044|     expect((screen.getByRole('button', { name: 'Adding Stale Track…' }…
+ ❯ runWithExpensiveErrorDiagnosticsDisabled ../../../../../../repos/ritmofit-web/node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback ../../../../../../repos/ritmofit-web/node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback ../../../../../../repos/ritmofit-web/node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/13]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  13 failed | 2 passed | 39 skipped (54)
+   Start at  20:30:36
+   Duration  4.13s (transform 147ms, setup 0ms, collect 257ms, tests 3.28s, environment 291ms, prepare 50ms)

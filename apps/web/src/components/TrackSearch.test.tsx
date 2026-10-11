@@ -35,10 +35,12 @@ function soundcloudConnection(expiresAt: number | null): MusicConnectionView {
 /** A promise whose resolution we control, to model a slow in-flight request. */
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((r) => {
+  let reject!: (reason: Error) => void;
+  const promise = new Promise<T>((r, fail) => {
     resolve = r;
+    reject = fail;
   });
-  return { promise, resolve };
+  return { promise, resolve, reject };
 }
 
 function browseStatus(): HTMLElement {
@@ -331,6 +333,12 @@ const IMPORTED_TRACK = {
 
 const ADDED_CLASS_TRACK = {
   id: 'ct-id',
+  planBlockId: null,
+  clipStartMs: 0,
+  clipEndMs: null,
+  beatAnchorMs: 0,
+  displayRpm: null,
+  holdCount: null,
   classId: 'c1',
   trackId: 't-id',
   position: 0,
@@ -905,5 +913,240 @@ describe('TrackSearch plan-block assignment', () => {
     expect(await screen.findByRole('button', { name: 'Climb — Added' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Climb — Added' }).textContent).toMatch(/Added/);
     expect(screen.queryByRole('button', { name: /In Block/ })).toBeNull();
+  });
+});
+
+describe('TrackSearch submitted operation ownership', () => {
+  const firstUrl = 'https://music.apple.com/us/playlist/first/pl.first';
+  const nextUrl = 'https://music.apple.com/us/playlist/next/pl.next';
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.searchProvider).mockResolvedValue([staleResult]);
+    vi.mocked(api.listLikes).mockResolvedValue([staleResult]);
+    vi.mocked(api.importTrack).mockResolvedValue(IMPORTED_TRACK);
+    vi.mocked(api.addTrack).mockResolvedValue(ADDED_CLASS_TRACK);
+  });
+  function urlInput() {
+    fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+    const input = screen.getByRole('textbox', { name: 'Playlist URL' }) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: firstUrl } });
+    return input;
+  }
+  async function startSong() {
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'ghost' } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Stale Track by Ghost' }));
+  }
+  it.each(['replacement', 'edit-away-and-back', 'unchanged'] as const)(
+    'clears only an unedited submitted URL draft: %s',
+    async (change: string) => {
+      const write = deferred<Awaited<ReturnType<typeof api.importPlaylist>>>();
+      vi.mocked(api.importPlaylist).mockReturnValue(write.promise);
+      const onAdded = vi.fn();
+      render(<TrackSearch classId="c1" onAdded={onAdded} />);
+      const input = urlInput();
+      fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+      expect(input.disabled).toBe(false);
+      if (change !== 'unchanged') fireEvent.change(input, { target: { value: nextUrl } });
+      if (change === 'edit-away-and-back') fireEvent.change(input, { target: { value: firstUrl } });
+      input.focus();
+      await act(async () => {
+        write.resolve({ imported: 1 });
+        await write.promise;
+      });
+      expect(input.value).toBe(
+        change === 'replacement' ? nextUrl : change === 'unchanged' ? '' : firstUrl,
+      );
+      expect(document.activeElement).toBe(input);
+      expect(api.importPlaylist).toHaveBeenCalledWith('c1', firstUrl);
+      expect(onAdded).toHaveBeenCalledTimes(1);
+    },
+  );
+  it('retains the replacement URL and exposes a current-context failure', async () => {
+    const write = deferred<Awaited<ReturnType<typeof api.importPlaylist>>>();
+    vi.mocked(api.importPlaylist).mockReturnValue(write.promise);
+    render(<TrackSearch classId="c1" onAdded={vi.fn()} />);
+    const input = urlInput();
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    fireEvent.change(input, { target: { value: nextUrl } });
+    await act(async () => {
+      write.reject(new Error('Import failed'));
+      await write.promise.catch(() => {});
+    });
+    expect(input.value).toBe(nextUrl);
+    expect(screen.getByRole('alert').textContent).toBe('Import failed');
+    expect((screen.getByRole('button', { name: 'Import' }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+  it.each(['provider', 'mode', 'destination', 'unmount'] as const)(
+    'ignores a URL import completion after leaving its %s context',
+    async (change: string) => {
+      const write = deferred<Awaited<ReturnType<typeof api.importPlaylist>>>();
+      vi.mocked(api.importPlaylist).mockReturnValue(write.promise);
+      const onAdded = vi.fn();
+      const view = render(<TrackSearch classId="c1" onAdded={onAdded} />);
+      const input = urlInput();
+      fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+      fireEvent.change(input, { target: { value: nextUrl } });
+      if (change === 'provider') {
+        fireEvent.click(screen.getByRole('button', { name: 'SoundCloud' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
+      } else if (change === 'mode') {
+        fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+      } else if (change === 'destination') {
+        view.rerender(<TrackSearch classId="c2" onAdded={onAdded} />);
+        view.rerender(<TrackSearch classId="c1" onAdded={onAdded} />);
+      } else view.unmount();
+      if (change === 'provider' || change === 'mode')
+        fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+      await act(async () => {
+        write.resolve({ imported: 1 });
+        await write.promise;
+      });
+      expect(onAdded).not.toHaveBeenCalled();
+      expect(api.importPlaylist).toHaveBeenCalledWith('c1', firstUrl);
+      if (change !== 'unmount') {
+        expect(
+          (screen.getByRole('textbox', { name: 'Playlist URL' }) as HTMLInputElement).value,
+        ).toBe(nextUrl);
+        expect((screen.getByRole('button', { name: 'Import' }) as HTMLButtonElement).disabled).toBe(
+          false,
+        );
+      }
+    },
+  );
+  it.each(['provider', 'mode', 'destination', 'unmount'] as const)(
+    'finishes the submitted song write without a stale callback after a %s change',
+    async (change: string) => {
+      const write = deferred<Awaited<ReturnType<typeof api.importTrack>>>();
+      vi.mocked(api.importTrack).mockReturnValue(write.promise);
+      const onAdded = vi.fn();
+      const view = render(<TrackSearch classId="c1" planBlockId="b1" onAdded={onAdded} />);
+      await startSong();
+      if (change === 'provider')
+        fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
+      else if (change === 'mode') fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+      else if (change === 'destination')
+        view.rerender(<TrackSearch classId="c2" planBlockId="b2" onAdded={onAdded} />);
+      else view.unmount();
+      await act(async () => {
+        write.resolve(IMPORTED_TRACK);
+        await write.promise;
+      });
+      await waitFor(() =>
+        expect(api.addTrack).toHaveBeenCalledWith('c1', {
+          trackId: IMPORTED_TRACK.id,
+          intensity: 'mod',
+          planBlockId: 'b1',
+        }),
+      );
+      expect(onAdded).not.toHaveBeenCalled();
+      if (change !== 'unmount') expect(screen.queryByText(/added this session/)).toBeNull();
+    },
+  );
+  it.each(['song', 'URL'] as const)(
+    'hides stale %s failures in a different mode',
+    async (kind: string) => {
+      const song = deferred<Awaited<ReturnType<typeof api.importTrack>>>();
+      const list = deferred<Awaited<ReturnType<typeof api.importPlaylist>>>();
+      vi.mocked(api.importTrack).mockReturnValue(song.promise);
+      vi.mocked(api.importPlaylist).mockReturnValue(list.promise);
+      const onAdded = vi.fn();
+      render(<TrackSearch classId="c1" onAdded={onAdded} />);
+      if (kind === 'song') {
+        await startSong();
+        fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+      } else {
+        urlInput();
+        fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+      }
+      const write = kind === 'song' ? song : list;
+      await act(async () => {
+        write.reject(new Error('Old operation failed'));
+        await write.promise.catch(() => {});
+      });
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(onAdded).not.toHaveBeenCalled();
+    },
+  );
+  it('keeps different song adds concurrent and rejects a repeat click on a pending song', async () => {
+    const secondSong = { ...staleResult, providerTrackId: 't2', title: 'Another Track' };
+    vi.mocked(api.searchProvider).mockResolvedValue([staleResult, secondSong]);
+    const first = deferred<Awaited<ReturnType<typeof api.addTrack>>>();
+    const second = deferred<Awaited<ReturnType<typeof api.addTrack>>>();
+    vi.mocked(api.addTrack).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const onAdded = vi.fn();
+    render(<TrackSearch classId="c1" onAdded={onAdded} />);
+    await startSong();
+    await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Add Another Track by Ghost' }));
+    await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(2));
+    // The shared list displays one busy row; a repeat on the other pending row
+    // must still be ignored without stopping the distinct song's write.
+    fireEvent.click(screen.getByRole('button', { name: 'Add Stale Track by Ghost' }));
+    expect(api.importTrack).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      first.resolve(ADDED_CLASS_TRACK);
+      await first.promise;
+    });
+    expect(
+      (screen.getByRole('button', { name: 'Add Another Track by Ghost' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    await act(async () => {
+      second.resolve({ ...ADDED_CLASS_TRACK, id: 'ct-2' });
+      await second.promise;
+    });
+    expect(await screen.findByRole('button', { name: 'Another Track — Added' })).toBeTruthy();
+    expect(onAdded).toHaveBeenCalledTimes(2);
+  });
+  it('does not submit the same pending song again after a browse-context round trip', async () => {
+    const write = deferred<Awaited<ReturnType<typeof api.addTrack>>>();
+    vi.mocked(api.addTrack).mockReturnValue(write.promise);
+    const onAdded = vi.fn();
+    render(<TrackSearch classId="c1" onAdded={onAdded} />);
+    await startSong();
+    await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+    await screen.findByText('Stale Track');
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Stale Track by Ghost' }));
+    expect(api.importTrack).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      write.resolve(ADDED_CLASS_TRACK);
+      await write.promise;
+    });
+    expect(onAdded).not.toHaveBeenCalled();
+  });
+  it('does not let an older song completion unlock a newer add of the same candidate', async () => {
+    const first = deferred<Awaited<ReturnType<typeof api.addTrack>>>();
+    const second = deferred<Awaited<ReturnType<typeof api.addTrack>>>();
+    vi.mocked(api.addTrack).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const onAdded = vi.fn();
+    const view = render(<TrackSearch classId="c1" onAdded={onAdded} />);
+    await startSong();
+    await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(1));
+    view.rerender(<TrackSearch classId="c2" onAdded={onAdded} />);
+    fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Stale Track by Ghost' }));
+    await waitFor(() => expect(api.addTrack).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      first.resolve(ADDED_CLASS_TRACK);
+      await first.promise;
+    });
+    expect(
+      (screen.getByRole('button', { name: 'Add Stale Track by Ghost' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    expect(onAdded).not.toHaveBeenCalled();
+    await act(async () => {
+      second.resolve(ADDED_CLASS_TRACK);
+      await second.promise;
+    });
+    expect(await screen.findByRole('button', { name: 'Stale Track — Added' })).toBeTruthy();
+    expect(onAdded).toHaveBeenCalledTimes(1);
   });
 });

@@ -189,6 +189,8 @@ export function TrackSearch({
   const [libraryErrorCode, setLibraryErrorCode] = useState<string | undefined>();
   // Per-candidate import state: which key is busy, and which keys were added.
   const [importingKey, setImportingKey] = useState<string | null>(null);
+  const pendingSongAdds = useRef(new Set<string>());
+  const songAddRequest = useRef(0);
   const [addedKeys, setAddedKeys] = useState<Set<string>>(new Set());
   const playlistImport = useRef<OrderedImportSession | null>(null);
   const playlistGeneration = useRef(0);
@@ -202,6 +204,8 @@ export function TrackSearch({
   }
   const importBusy = useRef(false);
   const [playlistUrl, setPlaylistUrl] = useState('');
+  const playlistUrlRevision = useRef(0);
+  const urlImportBusy = useRef(false);
   const [importingPlaylist, setImportingPlaylist] = useState(false);
   const [savedPlaylists, setSavedPlaylists] = useState<ProviderPlaylistSummary[] | null>(null);
   const [selectedPlaylist, setSelectedPlaylist] = useState<ProviderPlaylistSummary | null>(null);
@@ -234,6 +238,11 @@ export function TrackSearch({
       playlistGeneration.current++;
     };
   }, []);
+  useEffect(() => {
+    // A row's pending marker belongs to the browsing context that submitted it.
+    // Its write may finish later, but must not lock a row in the next context.
+    setImportingKey(null);
+  }, [playlistContext]);
   useEffect(() => {
     setPendingImports(pendingOrderedImports(pendingPrefix));
   }, [pendingPrefix, mode]);
@@ -500,6 +509,14 @@ export function TrackSearch({
       return;
     }
     const key = candidateKey(candidate);
+    const generation = playlistGeneration.current;
+    // Browse changes invalidate presentation, but the pending write still owns
+    // this destination/song until it settles. A different destination is independent.
+    const operationKey = `${classId}:${planBlockId ?? 'class'}:${key}`;
+    if (pendingSongAdds.current.has(operationKey)) return;
+    pendingSongAdds.current.add(operationKey);
+    const request = ++songAddRequest.current;
+    const isCurrent = () => mounted.current && generation === playlistGeneration.current;
     setImportingKey(key);
     setError(null);
     try {
@@ -509,27 +526,39 @@ export function TrackSearch({
         intensity: 'mod',
         ...(planBlockId ? { planBlockId } : {}),
       });
-      setAddedKeys((prev) => new Set(prev).add(key));
-      onAdded(classTrack.id);
+      if (isCurrent()) {
+        setAddedKeys((prev) => new Set(prev).add(key));
+        onAdded(classTrack.id);
+      }
     } catch (e) {
-      setError((e as Error).message);
+      if (isCurrent()) setError((e as Error).message);
     } finally {
-      setImportingKey(null);
+      pendingSongAdds.current.delete(operationKey);
+      if (mounted.current && request === songAddRequest.current) setImportingKey(null);
     }
   };
 
   const importList = async () => {
-    if (!playlistUrl.trim()) return;
+    if (!playlistUrl.trim() || urlImportBusy.current) return;
+    urlImportBusy.current = true;
+    const generation = playlistGeneration.current;
+    const revision = playlistUrlRevision.current;
+    const isCurrent = () => mounted.current && generation === playlistGeneration.current;
     setImportingPlaylist(true);
     setError(null);
     try {
       await importPlaylist(classId, playlistUrl);
-      setPlaylistUrl('');
-      onAdded();
+      if (isCurrent()) {
+        // The field stays editable while importing. Clear only the submitted
+        // draft, including protection for editing away and back to the same URL.
+        if (revision === playlistUrlRevision.current) setPlaylistUrl('');
+        onAdded();
+      }
     } catch (e) {
-      setError((e as Error).message);
+      if (isCurrent()) setError((e as Error).message);
     } finally {
-      setImportingPlaylist(false);
+      urlImportBusy.current = false;
+      if (mounted.current) setImportingPlaylist(false);
     }
   };
 
@@ -956,7 +985,10 @@ export function TrackSearch({
             className="min-h-11 flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary"
             placeholder={`Paste a ${providerLabel(provider)} playlist URL…`}
             value={playlistUrl}
-            onChange={(e) => setPlaylistUrl(e.target.value)}
+            onChange={(e) => {
+              playlistUrlRevision.current++;
+              setPlaylistUrl(e.target.value);
+            }}
           />
           <button
             type="button"
