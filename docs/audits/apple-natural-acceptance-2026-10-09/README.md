@@ -1,6 +1,6 @@
 # Apple Music natural acceptance — 2026-10-09
 
-Status: Cycle attended transition spot-check completed 2026-10-11 (below) — **not** a natural run. The full untouched natural run is still outstanding for both fixtures; Pilates has not started.
+Status: **desktop acceptance closed by owner decision, 2026-10-11.** Steven accepted the attended Cycle transition spot-check below as sufficient and ruled Pilates covered by it. No untouched natural run was performed; the limits listed below still describe what was and was not observed.
 
 ## Release binding
 
@@ -60,4 +60,13 @@ Each boundary showed a brief "Waiting for music" hold (the playback-recovery sur
 - Owner feedback: Exit works well functionally; he prefers different wording (for example "End class"), a different location, and a different style. Next is disabled on the last track. Routed to `INBOX.md`.
 - The `[rf-liveness]` console line for every earlier track was re-printed, several times, at each new track start (for example tracks 0–3 four times at 20:23:45). Cause not investigated; the inspector summary itself was consistent.
 - Steven pressed Next early in the run without saying so; the agent first reported it as unexplained early endings. A future attended run should agree up front who touches the transport.
+
+## Owner decision — 2026-10-11
+
+After the spot-check, Steven decided (asked one decision at a time, recorded by Claude Code):
+
+- **Desktop Cycle acceptance: accepted on the spot-check.** The recommended alternative, one untouched 40-minute run, was declined. Natural hand-overs after long-playing songs and the class reaching its own end remain unobserved.
+- **Pilates: covered by the Cycle result.** Same ten songs through the same playback path; no separate run.
+
+This closes the desktop listening gate for the release decision. It is not evidence about iPhone Safari, Bluetooth output, or a full-length session.
 
