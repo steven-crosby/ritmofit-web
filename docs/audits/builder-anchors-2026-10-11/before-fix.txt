@@ -76,7 +76,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -236,7 +236,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -398,7 +398,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -558,7 +558,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -720,7 +720,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -880,7 +880,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -1042,7 +1042,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -1202,7 +1202,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -1347,7 +1347,7 @@ Ignored nodes: comments, script, style
    × Dashboard track focus management > preserves untouched 1250 ms inspector anchors when creator notes change 80ms
      → expected "updateClassTrack" to be called with arguments: [ 'ct-1', ObjectContaining{…} ]
 
-Received: 
+Received:
 
   1st updateClassTrack call:
 
@@ -1393,7 +1393,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -1553,7 +1553,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -1723,7 +1723,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -1883,7 +1883,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -2045,7 +2045,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -2205,7 +2205,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -2390,7 +2390,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -2550,7 +2550,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -2724,7 +2724,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -2884,7 +2884,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -3058,7 +3058,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -3218,7 +3218,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -3392,7 +3392,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -3552,7 +3552,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -3709,7 +3709,7 @@ Ignored nodes: comments, script, style
  FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > preserves untouched 1250 ms inspector anchors when creator notes change
 AssertionError: expected "updateClassTrack" to be called with arguments: [ 'ct-1', ObjectContaining{…} ]
 
-Received: 
+Received:
 
   1st updateClassTrack call:
 
@@ -3765,7 +3765,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -3925,7 +3925,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -4099,7 +4099,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -4259,7 +4259,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -4433,7 +4433,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>
@@ -4593,7 +4593,7 @@ Ignored nodes: comments, script, style
     <span
       class="shrink-0 font-ui text-xs uppercase tracking-wide text-text-tertiary"
     >
-      Track 
+      Track
       1
     </span>
   </div>

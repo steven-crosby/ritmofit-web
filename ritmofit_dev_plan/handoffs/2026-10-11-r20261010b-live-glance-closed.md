@@ -5,7 +5,7 @@ lane: lane-1-live-glance-closure
 branch: codex/r20261010b-builder-anchors
 head: 23a53a2611fa0fe4ffc84db18c18d076896685b1
 base: 14c8326db9390e09dfb193e97ffa3d4c1fdf89f7
-prs: ['draft PR on codex/r20261010b-builder-anchors']
+prs: ['#509 (draft)']
 status: closed
 ---
 

@@ -21,7 +21,7 @@ The regression cases cover each zero field, unrelated notes saves with 499 ms an
 
 These are local component and integration results. No provider audio, authenticated production write, real-device behavior, or natural class completion is established. No deployment occurred.
 
-Retained command transcripts remove terminal color codes and replace the machine-specific checkout prefix with `<repo-root>`; test outcomes and error text are unchanged.
+Retained command transcripts remove terminal color codes and trailing whitespace and replace the machine-specific checkout prefix with `<repo-root>`; test outcomes and error text are unchanged.
 
 ## Deferred issues
 
@@ -29,4 +29,4 @@ The inspector error remains ordinary text rather than an alert/live region. The 
 
 ## Restart point
 
-Review the draft PR and exact-head CI. Merge is not authorized in this session. The [lane handoff](../../../ritmofit_dev_plan/handoffs/2026-10-11-r20261010b-builder-anchors.md) records the remaining action. The same PR carries [lane 1's synthetic no-work closure](../live-glance-2026-10-11/README.md).
+Review [draft PR #509](https://github.com/steven-crosby/ritmofit-web/pull/509) and exact-head CI. Merge is not authorized in this session. The [lane handoff](../../../ritmofit_dev_plan/handoffs/2026-10-11-r20261010b-builder-anchors.md) records the remaining action. The same PR carries [lane 1's synthetic no-work closure](../live-glance-2026-10-11/README.md).
