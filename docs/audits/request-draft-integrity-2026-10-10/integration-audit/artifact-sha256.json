@@ -1,0 +1,15 @@
+{
+  "sourceBase": "ba92ceaf25a7b470eec23c33766df2658be287fb",
+  "files": {
+    "README.md": "74e4a8aa1968f62012d5211d1b5dd1f0ea8df00ee4fd942154b3d391356a87fe",
+    "combined-gate.json": "bd49260f5f5fc9b8f490f2dc1283b58a280bdb397c65034f572cc7377ff3d789",
+    "compact-zoom-equivalent.png": "5b860e5c41bf103736cc431ea01c5f693c0125016795cf4c6a9d5ef4ed32591f",
+    "desktop.png": "335488bb13d0cafc2b3c5d5f74ab4645cba109003b29e0f91a63806c11024943",
+    "gate-summary.json": "d8874e214e15283171055216987b0c7e3573030fdcdaf0d29155080b4f55ee69",
+    "landscape.png": "c17c20c175a37f0d86b8d1d0063f0efb468c87d78c8f28faa4ec95ce86cb7aa0",
+    "portrait-320.png": "2b17c6444744884b5027c6de201b7efcb801e1a023f3b3d389a874575025145e",
+    "portrait-390.png": "bf1e5966eb9d4f5d30bd44c426105a71c570d05406709faff3abbc08c07879f0",
+    "results.json": "b3673fd1408fbd72531ba7901e9655178370ce1f72ec088107e33fedc30d9190",
+    "source-sha256.json": "6a24c2d0fe377a538e3f3b62e85187a59bd36e7fb9e4837e01917144a753a78b"
+  }
+}

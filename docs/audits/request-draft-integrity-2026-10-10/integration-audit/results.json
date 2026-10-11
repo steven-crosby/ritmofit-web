@@ -1,0 +1,274 @@
+{
+  "kind": "synthetic-native-Chrome-components",
+  "base": "ba92ceaf25a7b470eec23c33766df2658be287fb",
+  "providerPlayback": false,
+  "actualBrowserZoom": false,
+  "results": [
+    {
+      "phase": "baseline",
+      "name": "older cue snapshot cannot hide refreshed save",
+      "pass": false,
+      "error": "Older snapshot removed saved cue"
+    },
+    {
+      "phase": "baseline",
+      "name": "new cue draft survives earlier add completion",
+      "pass": false,
+      "error": "Replacement cue draft cleared"
+    },
+    {
+      "phase": "baseline",
+      "name": "replacement playlist URL survives import completion",
+      "pass": false,
+      "error": "Replacement URL cleared"
+    },
+    {
+      "phase": "candidate",
+      "name": "older cue snapshot cannot hide refreshed save",
+      "pass": true,
+      "observed": {
+        "visible": true
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "new cue draft survives earlier add completion",
+      "pass": true,
+      "observed": {
+        "value": "Second cue draft",
+        "focus": "Cue text",
+        "callbacks": 1
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "replacement playlist URL survives import completion",
+      "pass": true,
+      "observed": {
+        "value": "https://music.apple.com/us/playlist/next/pl.next",
+        "focus": "playlist-url-input",
+        "callbacks": 1
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "new move draft survives earlier add completion",
+      "pass": true,
+      "observed": {
+        "value": "Second move draft",
+        "focus": "Custom move name",
+        "callbacks": 1
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "new inline cue draft stays open after save",
+      "pass": true,
+      "observed": {
+        "value": "New inline draft",
+        "focus": "Cue text"
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "delayed cue save honors deliberately moved focus",
+      "pass": true,
+      "observed": {
+        "focus": "outside-focus"
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "unchanged keyboard save restores cue Edit focus",
+      "pass": true,
+      "observed": {
+        "focus": "Edit cue Saved teaching cue"
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "delayed move delete honors deliberately moved focus",
+      "pass": true,
+      "observed": {
+        "focus": "outside-focus"
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "URL context roundtrip suppresses stale callback without cancelling write",
+      "pass": true,
+      "observed": {
+        "value": "https://music.apple.com/us/playlist/new/pl.new",
+        "callbacks": 0,
+        "writes": [
+          {
+            "path": "/api/v1/classes/synthetic-class/import-playlist",
+            "method": "POST",
+            "body": {
+              "url": "https://music.apple.com/us/playlist/first/pl.first"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "failed URL import preserves newer input and focus",
+      "pass": true,
+      "observed": {
+        "value": "https://music.apple.com/us/playlist/new/pl.new",
+        "focus": "playlist-url-input",
+        "error": true,
+        "callbacks": 0
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "unmounted cue completion cannot call parent refresh",
+      "pass": true,
+      "observed": {
+        "callbacks": 0
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "unchanged successful URL clears and allows another import",
+      "pass": true,
+      "observed": {
+        "value": "",
+        "callbacks": 1
+      }
+    },
+    {
+      "phase": "candidate",
+      "name": "layout desktop",
+      "pass": true,
+      "observed": {
+        "width": 1200,
+        "height": 900,
+        "pageOverflow": false,
+        "panels": [
+          {
+            "id": "cues-panel",
+            "scroll": 736,
+            "client": 736
+          },
+          {
+            "id": "search-panel",
+            "scroll": 736,
+            "client": 736
+          }
+        ],
+        "audioElements": 0
+      },
+      "screenshot": "desktop.png"
+    },
+    {
+      "phase": "candidate",
+      "name": "layout portrait-390",
+      "pass": true,
+      "observed": {
+        "width": 390,
+        "height": 844,
+        "pageOverflow": false,
+        "panels": [
+          {
+            "id": "cues-panel",
+            "scroll": 358,
+            "client": 358
+          },
+          {
+            "id": "search-panel",
+            "scroll": 358,
+            "client": 358
+          }
+        ],
+        "audioElements": 0
+      },
+      "screenshot": "portrait-390.png"
+    },
+    {
+      "phase": "candidate",
+      "name": "layout portrait-320",
+      "pass": true,
+      "observed": {
+        "width": 320,
+        "height": 568,
+        "pageOverflow": false,
+        "panels": [
+          {
+            "id": "cues-panel",
+            "scroll": 288,
+            "client": 288
+          },
+          {
+            "id": "search-panel",
+            "scroll": 288,
+            "client": 288
+          }
+        ],
+        "audioElements": 0
+      },
+      "screenshot": "portrait-320.png"
+    },
+    {
+      "phase": "candidate",
+      "name": "layout landscape",
+      "pass": true,
+      "observed": {
+        "width": 844,
+        "height": 390,
+        "pageOverflow": false,
+        "panels": [
+          {
+            "id": "cues-panel",
+            "scroll": 736,
+            "client": 736
+          },
+          {
+            "id": "search-panel",
+            "scroll": 736,
+            "client": 736
+          }
+        ],
+        "audioElements": 0
+      },
+      "screenshot": "landscape.png"
+    },
+    {
+      "phase": "candidate",
+      "name": "layout compact-zoom-equivalent",
+      "pass": true,
+      "observed": {
+        "width": 600,
+        "height": 304,
+        "pageOverflow": false,
+        "panels": [
+          {
+            "id": "cues-panel",
+            "scroll": 568,
+            "client": 568
+          },
+          {
+            "id": "search-panel",
+            "scroll": 568,
+            "client": 568
+          }
+        ],
+        "audioElements": 0
+      },
+      "screenshot": "compact-zoom-equivalent.png"
+    }
+  ],
+  "nativeBrowserAdditionalCheck": {
+    "kind": "extension-controlled visible Chrome tab",
+    "cueDraft": "Next cue draft stays editable",
+    "urlDraft": "https://music.apple.com/us/playlist/next/pl.next",
+    "focus": "playlist-url-input",
+    "pageOverflow": false,
+    "width": 1200,
+    "height": 787,
+    "result": "pass",
+    "actualBrowserZoom": "not verified; native app control unavailable"
+  }
+}

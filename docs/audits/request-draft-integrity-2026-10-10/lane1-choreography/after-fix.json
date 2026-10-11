@@ -1,0 +1,246 @@
+{
+  "evidenceClass": "synthetic component tests with deferred mocked API promises",
+  "stage": "after-fix",
+  "totals": {
+    "numTotalTests": 44,
+    "numPassedTests": 44,
+    "numFailedTests": 0
+  },
+  "suites": [
+    {
+      "name": "apps/web/src/components/ChoreographyEditor.test.ts",
+      "assertions": [
+        {
+          "name": "resolveFlashRowId returns null when there is no target",
+          "status": "passed",
+          "durationMs": 3.225749999999948
+        },
+        {
+          "name": "resolveFlashRowId prefers an exact id match \u2014 distinguishing two rows at the same anchor",
+          "status": "passed",
+          "durationMs": 0.4584579999999505
+        },
+        {
+          "name": "resolveFlashRowId falls back to the first row at the same anchor when the id is unknown",
+          "status": "passed",
+          "durationMs": 0.17300000000000182
+        },
+        {
+          "name": "resolveFlashRowId returns null when neither the id nor the anchor matches",
+          "status": "passed",
+          "durationMs": 0.15766600000006292
+        }
+      ]
+    },
+    {
+      "name": "apps/web/src/components/CuesSection.test.tsx",
+      "assertions": [
+        {
+          "name": "CuesSection \u2014 m:ss anchor entry parses the m:ss field to anchorMs when adding a cue",
+          "status": "passed",
+          "durationMs": 204.91216699999995
+        },
+        {
+          "name": "CuesSection \u2014 m:ss anchor entry accepts 0:00 (a cue at the very start)",
+          "status": "passed",
+          "durationMs": 20.003208000000086
+        },
+        {
+          "name": "CuesSection \u2014 m:ss anchor entry blocks Add cue on a malformed or out-of-range time and focuses the field",
+          "status": "passed",
+          "durationMs": 45.534167000000025
+        },
+        {
+          "name": "CuesSection \u2014 keyboard focus restoration returns focus to the invoking Edit control after cancel and save",
+          "status": "passed",
+          "durationMs": 67.22658299999989
+        },
+        {
+          "name": "CuesSection \u2014 keyboard focus restoration focuses the next row after delete, then the add control when the last row is deleted",
+          "status": "passed",
+          "durationMs": 104.98445800000013
+        },
+        {
+          "name": "CuesSection \u2014 keyboard focus restoration normalizes a non-Error mutation failure with local context",
+          "status": "passed",
+          "durationMs": 83.80366700000013
+        },
+        {
+          "name": "CuesSection \u2014 readiness first-cue handoff puts the caret in the cue text field when readiness asks to start entry",
+          "status": "passed",
+          "durationMs": 18.472833000000037
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership ignores a stale initial read success after the mutation refresh",
+          "status": "passed",
+          "durationMs": 70.50354199999992
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership ignores a stale initial read failure after the mutation refresh",
+          "status": "passed",
+          "durationMs": 91.99758299999985
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership preserves a replacement add draft after a pending create succeeds",
+          "status": "passed",
+          "durationMs": 99.47754199999963
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership keeps newer inline input editable after an earlier save succeeds",
+          "status": "passed",
+          "durationMs": 297.66899999999987
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership preserves deliberately moved focus after pending save",
+          "status": "passed",
+          "durationMs": 212.41579199999978
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership preserves deliberately moved focus after pending delete",
+          "status": "passed",
+          "durationMs": 56.56600000000026
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership retains a rejected add draft",
+          "status": "passed",
+          "durationMs": 40.56258300000036
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership reports a post-write refresh failure while notifying the parent of a confirmed write",
+          "status": "passed",
+          "durationMs": 46.2643750000002
+        },
+        {
+          "name": "CuesSection \u2014 section lifecycle does not refresh or notify the old parent after a pending add unmounts",
+          "status": "passed",
+          "durationMs": 44.240499999999884
+        },
+        {
+          "name": "CuesSection \u2014 section lifecycle does not refresh or notify the old parent after a pending save unmounts",
+          "status": "passed",
+          "durationMs": 53.2082919999998
+        },
+        {
+          "name": "CuesSection \u2014 section lifecycle does not refresh or notify the old parent after a pending delete unmounts",
+          "status": "passed",
+          "durationMs": 22.481667000000016
+        },
+        {
+          "name": "CuesSection \u2014 color draft ownership keeps a replacement color draft after a pending add succeeds",
+          "status": "passed",
+          "durationMs": 34.94574999999986
+        }
+      ]
+    },
+    {
+      "name": "apps/web/src/components/MovesSection.test.tsx",
+      "assertions": [
+        {
+          "name": "MovesSection \u2014 Songs-by-move entry shows the in-builder trigger and invokes the callback",
+          "status": "passed",
+          "durationMs": 144.5485000000001
+        },
+        {
+          "name": "MovesSection \u2014 Songs-by-move entry omits the trigger when no handler is provided",
+          "status": "passed",
+          "durationMs": 21.683833999999933
+        },
+        {
+          "name": "MovesSection \u2014 m:ss anchor entry parses the m:ss field to anchorMs when placing a move",
+          "status": "passed",
+          "durationMs": 23.910207999999784
+        },
+        {
+          "name": "MovesSection \u2014 m:ss anchor entry blocks Add move on a malformed or out-of-range time and focuses the field",
+          "status": "passed",
+          "durationMs": 17.20008299999995
+        },
+        {
+          "name": "MovesSection \u2014 keyboard focus restoration returns focus to the invoking Edit control after cancel and save",
+          "status": "passed",
+          "durationMs": 45.75391599999989
+        },
+        {
+          "name": "MovesSection \u2014 keyboard focus restoration focuses the next row after delete, then the add control when the last row is deleted",
+          "status": "passed",
+          "durationMs": 90.172458
+        },
+        {
+          "name": "MovesSection \u2014 keyboard focus restoration normalizes a non-Error mutation failure with local context",
+          "status": "passed",
+          "durationMs": 31.911082999999962
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership ignores a stale initial read success after the mutation refresh",
+          "status": "passed",
+          "durationMs": 33.765750000000025
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership ignores a stale initial read failure after the mutation refresh",
+          "status": "passed",
+          "durationMs": 31.295832999999902
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership preserves a replacement add draft after a pending create succeeds",
+          "status": "passed",
+          "durationMs": 21.715958
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership keeps newer inline input editable after an earlier save succeeds",
+          "status": "passed",
+          "durationMs": 40.95162499999992
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership preserves deliberately moved focus after pending save",
+          "status": "passed",
+          "durationMs": 94.34358299999985
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership preserves deliberately moved focus after pending delete",
+          "status": "passed",
+          "durationMs": 44.14066699999967
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership retains a rejected add draft",
+          "status": "passed",
+          "durationMs": 9.529625000000124
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership reports a post-write refresh failure while notifying the parent of a confirmed write",
+          "status": "passed",
+          "durationMs": 11.448207999999795
+        },
+        {
+          "name": "MovesSection \u2014 reusable move creation ownership places the submitted reusable move without replacing a newer picker draft",
+          "status": "passed",
+          "durationMs": 40.06358399999999
+        },
+        {
+          "name": "MovesSection \u2014 section lifecycle does not refresh or notify the old parent after a pending add unmounts",
+          "status": "passed",
+          "durationMs": 34.15654200000017
+        },
+        {
+          "name": "MovesSection \u2014 section lifecycle does not refresh or notify the old parent after a pending save unmounts",
+          "status": "passed",
+          "durationMs": 21.03570800000034
+        },
+        {
+          "name": "MovesSection \u2014 section lifecycle does not refresh or notify the old parent after a pending delete unmounts",
+          "status": "passed",
+          "durationMs": 12.037958000000344
+        },
+        {
+          "name": "MovesSection \u2014 reusable move refresh and retry ignores the older user-move library read after creating a reusable move",
+          "status": "passed",
+          "durationMs": 163.80683399999998
+        },
+        {
+          "name": "MovesSection \u2014 reusable move refresh and retry reuses the created ID after placement fails instead of creating the reusable move twice",
+          "status": "passed",
+          "durationMs": 261.50837500000034
+        }
+      ]
+    }
+  ]
+}
