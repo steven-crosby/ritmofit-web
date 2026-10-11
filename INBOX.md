@@ -52,6 +52,8 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 
 <!-- newest at top; one per line -->
 
+- [ ] (2026-10-11) Live: restyle the way to finish a class. Owner feedback from the attended Cycle spot-check: Exit works well functionally; he wants different wording (for example "End class"), a different location than the top-right corner, and a different visual style. On the last track Next is disabled, so nothing near the transport says how to finish early. Decide wording, placement, style, and whether it confirms — #idea #plan
+
 <!-- 2026-07-27: the two 2026-07-25 design-audit breadcrumbs were routed to
      docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md as F-01 (dead Tailwind
      color classes — the sweep found 12 uses across 5 files, not just AccountDialog) and F-02

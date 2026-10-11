@@ -5,7 +5,16 @@
     "tracks": 10,
     "duration": "39:50",
     "tag": "qa-fixture",
-    "playbackStarted": false
+    "playbackStarted": true,
+    "runs": [
+      {
+        "date": "2026-10-11",
+        "kind": "attended transition spot-check (manual Next); not a natural run",
+        "naturalBoundaries": 1,
+        "manualBoundaries": 8,
+        "endedBy": "Exit"
+      }
+    ]
   },
   "pilates": {
     "name": "[QA] Apple natural acceptance 2026-10-09 Pilates",
