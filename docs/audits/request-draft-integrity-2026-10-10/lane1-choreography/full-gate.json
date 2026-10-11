@@ -1,0 +1,95 @@
+{
+  "evidenceClass": "orchestrator-run local CI-equivalent repository gate on frozen lane1 source",
+  "date": "2026-10-10",
+  "dependencyConfiguration": {
+    "pnpm_config_verify_deps_before_run": "false"
+  },
+  "sourceSha256": {
+    "apps/web/src/components/ChoreographyEditor.tsx": "2a488c8feb597538df21011c8837c596f3f2d7fc53aeb9e7f2528cc1cf7ac36e",
+    "apps/web/src/components/CuesSection.test.tsx": "0265e9fbbae7b10385671680edaeb81dc09d8d7f0e104a76b09ee164c3e9f79d",
+    "apps/web/src/components/MovesSection.test.tsx": "b97895142e1506f4825628da9e120ce8cbfa6054d496908a0d48069f939f9206"
+  },
+  "totals": {
+    "webUnitTests": 1104,
+    "apiUnitTests": 486,
+    "musicUnitTests": 30,
+    "apiIntegrationTests": 184
+  },
+  "steps": [
+    {
+      "step": "format",
+      "command": ["pnpm", "format:check"],
+      "exit": 0,
+      "seconds": 3.88
+    },
+    {
+      "step": "typecheck",
+      "command": ["pnpm", "-r", "typecheck"],
+      "exit": 0,
+      "seconds": 10.16
+    },
+    {
+      "step": "lint",
+      "command": ["pnpm", "lint"],
+      "exit": 0,
+      "seconds": 4.24
+    },
+    {
+      "step": "design-system",
+      "command": ["npm", "run", "verify"],
+      "exit": 0,
+      "seconds": 0.3
+    },
+    {
+      "step": "theme-classes",
+      "command": ["pnpm", "--filter", "@ritmofit/web", "theme-classes"],
+      "exit": 0,
+      "seconds": 0.51
+    },
+    {
+      "step": "unit-tests",
+      "command": ["pnpm", "test"],
+      "exit": 0,
+      "seconds": 42.43
+    },
+    {
+      "step": "integration",
+      "command": ["pnpm", "--filter", "@ritmofit/api", "test:integration"],
+      "exit": 0,
+      "seconds": 23.12
+    },
+    {
+      "step": "web-build",
+      "command": ["pnpm", "--filter", "@ritmofit/web", "build"],
+      "exit": 0,
+      "seconds": 9.22
+    },
+    {
+      "step": "openapi",
+      "command": ["pnpm", "--filter", "@ritmofit/api", "openapi"],
+      "exit": 0,
+      "seconds": 0.56
+    },
+    {
+      "step": "openapi-diff",
+      "command": ["git", "diff", "--exit-code", "apps/api/openapi/openapi.json"],
+      "exit": 0,
+      "seconds": 0.05
+    },
+    {
+      "step": "contract-parity",
+      "command": ["pnpm", "--filter", "@ritmofit/api", "contract-parity"],
+      "exit": 0,
+      "seconds": 0.44
+    },
+    {
+      "step": "audit",
+      "command": ["pnpm", "audit:ci"],
+      "exit": 0,
+      "seconds": 0.74
+    }
+  ],
+  "audit": "Exit 0; existing ignored low and moderate advisories remain",
+  "openapi": "Regenerated output has no diff",
+  "contractParity": "Passed"
+}

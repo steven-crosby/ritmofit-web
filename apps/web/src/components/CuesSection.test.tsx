@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { CuesSection } from './ChoreographyEditor.js';
 import * as api from '../lib/api.js';
 
@@ -159,5 +159,199 @@ describe('CuesSection — readiness first-cue handoff', () => {
 
     rerender(<CuesSection classTrackId="ct-1" durationMs={240000} startEntryNonce={1} />);
     expect(document.activeElement).toBe(field);
+  });
+});
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+describe('CuesSection — pending request ownership', () => {
+  it.each(['success', 'failure'])(
+    'ignores a stale initial read %s after the mutation refresh',
+    async (outcome: string) => {
+      const initial = deferred<Awaited<ReturnType<typeof api.listCues>>>();
+      const saved = cue('saved', 'First');
+      vi.mocked(api.listCues).mockReturnValueOnce(initial.promise).mockResolvedValue([saved]);
+      vi.mocked(api.createCue).mockResolvedValue(saved);
+      render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+      fireEvent.change(screen.getByRole('textbox', { name: 'Cue text' }), {
+        target: { value: 'First' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
+      await screen.findByRole('button', { name: 'Edit cue First' });
+      await act(async () => {
+        if (outcome === 'success') initial.resolve([]);
+        else initial.reject(new Error('Old read failed'));
+      });
+      expect(screen.getByRole('button', { name: 'Edit cue First' })).toBeTruthy();
+      expect(screen.queryByRole('alert')).toBeNull();
+    },
+  );
+
+  it('preserves a replacement add draft after a pending create succeeds', async () => {
+    vi.mocked(api.listCues).mockResolvedValue([]);
+    const request = deferred<Awaited<ReturnType<typeof api.createCue>>>();
+    vi.mocked(api.createCue).mockReturnValue(request.promise);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+    const field = screen.getByRole('textbox', { name: 'Cue text' }) as HTMLInputElement;
+    const time = screen.getByRole('textbox', { name: 'Cue time (m:ss)' }) as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'First' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
+    fireEvent.change(field, { target: { value: 'Second' } });
+    fireEvent.change(time, { target: { value: '0:45' } });
+    await act(async () => request.resolve(cue('saved', 'First')));
+    expect(field.value).toBe('Second');
+    expect(time.value).toBe('0:45');
+    expect((screen.getByRole('button', { name: 'Add cue' }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
+  it('keeps newer inline input editable after an earlier save succeeds', async () => {
+    const first = cue('first', 'First');
+    vi.mocked(api.listCues).mockResolvedValue([first]);
+    const request = deferred<Awaited<ReturnType<typeof api.updateCue>>>();
+    vi.mocked(api.updateCue).mockReturnValue(request.promise);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit cue First' }));
+    const field = screen.getAllByRole('textbox', { name: 'Cue text' })[0] as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'Submitted' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.change(field, { target: { value: 'Newer' } });
+    await act(async () => request.resolve(first));
+    expect(field.isConnected).toBe(true);
+    expect(field.value).toBe('Newer');
+    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
+  it.each(['save', 'delete'])(
+    'preserves deliberately moved focus after pending %s',
+    async (operation: string) => {
+      const first = cue('first', 'First');
+      vi.mocked(api.listCues).mockResolvedValue([first]);
+      const request = deferred<Awaited<ReturnType<typeof api.updateCue>>>();
+      const deletion = deferred<void>();
+      vi.mocked(api.updateCue).mockReturnValue(request.promise);
+      vi.mocked(api.deleteCue).mockReturnValue(deletion.promise);
+      render(
+        <>
+          <CuesSection classTrackId="ct-1" durationMs={240000} />
+          <button>Outside</button>
+        </>,
+      );
+      if (operation === 'save') {
+        fireEvent.click(await screen.findByRole('button', { name: 'Edit cue First' }));
+        const save = screen.getByRole('button', { name: 'Save' });
+        save.focus();
+        fireEvent.click(save);
+      } else {
+        const remove = await screen.findByRole('button', { name: 'Delete cue First' });
+        remove.focus();
+        fireEvent.click(remove);
+      }
+      const outside = screen.getByRole('button', { name: 'Outside' });
+      outside.focus();
+      await act(async () => {
+        request.resolve(first);
+        deletion.resolve();
+      });
+      expect(document.activeElement).toBe(outside);
+    },
+  );
+
+  it('retains a rejected add draft', async () => {
+    vi.mocked(api.listCues).mockResolvedValue([]);
+    vi.mocked(api.createCue).mockRejectedValue(new Error('Write rejected'));
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+    const field = screen.getByRole('textbox', { name: 'Cue text' }) as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'Keep me' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
+    await screen.findByRole('alert');
+    expect(field.value).toBe('Keep me');
+  });
+
+  it('reports a post-write refresh failure while notifying the parent of a confirmed write', async () => {
+    vi.mocked(api.listCues)
+      .mockResolvedValueOnce([])
+      .mockRejectedValue(new Error('Refresh unavailable'));
+    vi.mocked(api.createCue).mockResolvedValue(cue('saved', 'First'));
+    const onChanged = vi.fn();
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} onChanged={onChanged} />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Cue text' }), {
+      target: { value: 'First' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
+    expect((await screen.findByRole('alert')).textContent).toBe('Refresh unavailable');
+    expect(onChanged).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('CuesSection — section lifecycle', () => {
+  it.each(['add', 'save', 'delete'])(
+    'does not refresh or notify the old parent after a pending %s unmounts',
+    async (operation: string) => {
+      const first = cue('first', 'First');
+      vi.mocked(api.listCues).mockResolvedValue([first]);
+      const create = deferred<Awaited<ReturnType<typeof api.createCue>>>();
+      const update = deferred<Awaited<ReturnType<typeof api.updateCue>>>();
+      const deletion = deferred<void>();
+      vi.mocked(api.createCue).mockReturnValue(create.promise);
+      vi.mocked(api.updateCue).mockReturnValue(update.promise);
+      vi.mocked(api.deleteCue).mockReturnValue(deletion.promise);
+      const onChanged = vi.fn();
+      const { unmount } = render(
+        <CuesSection classTrackId="ct-1" durationMs={240000} onChanged={onChanged} />,
+      );
+      await screen.findByRole('button', { name: 'Edit cue First' });
+      if (operation === 'add') {
+        fireEvent.change(screen.getByRole('textbox', { name: 'Cue text' }), {
+          target: { value: 'New' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
+      } else if (operation === 'save') {
+        fireEvent.click(screen.getByRole('button', { name: 'Edit cue First' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      } else {
+        fireEvent.click(screen.getByRole('button', { name: 'Delete cue First' }));
+      }
+      unmount();
+      await act(async () => {
+        create.resolve(first);
+        update.resolve(first);
+        deletion.resolve();
+      });
+      expect(onChanged).not.toHaveBeenCalled();
+      expect(api.listCues).toHaveBeenCalledTimes(1);
+    },
+  );
+});
+
+describe('CuesSection — color draft ownership', () => {
+  it('keeps a replacement color draft after a pending add succeeds', async () => {
+    vi.mocked(api.listCues).mockResolvedValue([]);
+    const request = deferred<Awaited<ReturnType<typeof api.createCue>>>();
+    vi.mocked(api.createCue).mockReturnValue(request.promise);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Cue text' }), {
+      target: { value: 'First' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copper' }));
+    await act(async () => request.resolve(cue('saved', 'First')));
+    expect(screen.getByRole('button', { name: 'Copper' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect((screen.getByRole('textbox', { name: 'Cue text' }) as HTMLInputElement).value).toBe(
+      'First',
+    );
   });
 });

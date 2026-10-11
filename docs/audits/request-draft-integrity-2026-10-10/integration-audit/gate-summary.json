@@ -1,0 +1,270 @@
+{
+  "runnerEnvironment": {
+    "pnpm_config_verify_deps_before_run": "false"
+  },
+  "lanes": {
+    "lane1": [
+      {
+        "step": "format",
+        "command": [
+          "pnpm",
+          "format:check"
+        ],
+        "exit": 0,
+        "seconds": 3.88
+      },
+      {
+        "step": "typecheck",
+        "command": [
+          "pnpm",
+          "-r",
+          "typecheck"
+        ],
+        "exit": 0,
+        "seconds": 10.16
+      },
+      {
+        "step": "lint",
+        "command": [
+          "pnpm",
+          "lint"
+        ],
+        "exit": 0,
+        "seconds": 4.24
+      },
+      {
+        "step": "design-system",
+        "command": [
+          "npm",
+          "run",
+          "verify"
+        ],
+        "exit": 0,
+        "seconds": 0.3
+      },
+      {
+        "step": "theme-classes",
+        "command": [
+          "pnpm",
+          "--filter",
+          "@ritmofit/web",
+          "theme-classes"
+        ],
+        "exit": 0,
+        "seconds": 0.51
+      },
+      {
+        "step": "unit-tests",
+        "command": [
+          "pnpm",
+          "test"
+        ],
+        "exit": 0,
+        "seconds": 42.43
+      },
+      {
+        "step": "integration",
+        "command": [
+          "pnpm",
+          "--filter",
+          "@ritmofit/api",
+          "test:integration"
+        ],
+        "exit": 0,
+        "seconds": 23.12
+      },
+      {
+        "step": "web-build",
+        "command": [
+          "pnpm",
+          "--filter",
+          "@ritmofit/web",
+          "build"
+        ],
+        "exit": 0,
+        "seconds": 9.22
+      },
+      {
+        "step": "openapi",
+        "command": [
+          "pnpm",
+          "--filter",
+          "@ritmofit/api",
+          "openapi"
+        ],
+        "exit": 0,
+        "seconds": 0.56
+      },
+      {
+        "step": "openapi-diff",
+        "command": [
+          "git",
+          "diff",
+          "--exit-code",
+          "apps/api/openapi/openapi.json"
+        ],
+        "exit": 0,
+        "seconds": 0.05
+      },
+      {
+        "step": "contract-parity",
+        "command": [
+          "pnpm",
+          "--filter",
+          "@ritmofit/api",
+          "contract-parity"
+        ],
+        "exit": 0,
+        "seconds": 0.44
+      },
+      {
+        "step": "audit",
+        "command": [
+          "pnpm",
+          "audit:ci"
+        ],
+        "exit": 0,
+        "seconds": 0.74
+      }
+    ],
+    "lane2": [
+      {
+        "step": "format",
+        "command": [
+          "pnpm",
+          "format:check"
+        ],
+        "exit": 0,
+        "seconds": 3.5
+      },
+      {
+        "step": "typecheck",
+        "command": [
+          "pnpm",
+          "-r",
+          "typecheck"
+        ],
+        "exit": 0,
+        "seconds": 10.43
+      },
+      {
+        "step": "lint",
+        "command": [
+          "pnpm",
+          "lint"
+        ],
+        "exit": 0,
+        "seconds": 4.56
+      },
+      {
+        "step": "design-system",
+        "command": [
+          "npm",
+          "run",
+          "verify"
+        ],
+        "exit": 0,
+        "seconds": 0.35
+      },
+      {
+        "step": "theme-classes",
+        "command": [
+          "pnpm",
+          "--filter",
+          "@ritmofit/web",
+          "theme-classes"
+        ],
+        "exit": 0,
+        "seconds": 0.64
+      },
+      {
+        "step": "unit-tests",
+        "command": [
+          "pnpm",
+          "test"
+        ],
+        "exit": 0,
+        "seconds": 41.91
+      },
+      {
+        "step": "integration",
+        "command": [
+          "pnpm",
+          "--filter",
+          "@ritmofit/api",
+          "test:integration"
+        ],
+        "exit": 0,
+        "seconds": 23.89
+      },
+      {
+        "step": "web-build",
+        "command": [
+          "pnpm",
+          "--filter",
+          "@ritmofit/web",
+          "build"
+        ],
+        "exit": 0,
+        "seconds": 9.68
+      },
+      {
+        "step": "openapi",
+        "command": [
+          "pnpm",
+          "--filter",
+          "@ritmofit/api",
+          "openapi"
+        ],
+        "exit": 0,
+        "seconds": 0.56
+      },
+      {
+        "step": "openapi-diff",
+        "command": [
+          "git",
+          "diff",
+          "--exit-code",
+          "apps/api/openapi/openapi.json"
+        ],
+        "exit": 0,
+        "seconds": 0.05
+      },
+      {
+        "step": "contract-parity",
+        "command": [
+          "pnpm",
+          "--filter",
+          "@ritmofit/api",
+          "contract-parity"
+        ],
+        "exit": 0,
+        "seconds": 0.44
+      },
+      {
+        "step": "audit",
+        "command": [
+          "pnpm",
+          "audit:ci"
+        ],
+        "exit": 0,
+        "seconds": 0.74
+      }
+    ]
+  },
+  "counts": {
+    "lane1": {
+      "web": 1104,
+      "api": 486,
+      "music": 30,
+      "integration": 184
+    },
+    "lane2": {
+      "web": 1095,
+      "api": 486,
+      "music": 30,
+      "integration": 184
+    }
+  },
+  "audit": "exit 0; existing ignored low and moderate advisories"
+}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MovesSection } from './ChoreographyEditor.js';
 import * as api from '../lib/api.js';
 
@@ -177,6 +177,271 @@ describe('MovesSection — keyboard focus restoration', () => {
 
     expect((await screen.findByRole('alert')).textContent).toBe(
       'Could not save the move. Try again.',
+    );
+  });
+});
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+describe('MovesSection — pending request ownership', () => {
+  it.each(['success', 'failure'])(
+    'ignores a stale initial read %s after the mutation refresh',
+    async (outcome: string) => {
+      mockEmptyLibrary();
+      const initial = deferred<Awaited<ReturnType<typeof api.listPlacedMoves>>>();
+      const saved = placedMove('saved', 'First');
+      vi.mocked(api.listPlacedMoves)
+        .mockReturnValueOnce(initial.promise)
+        .mockResolvedValue([saved]);
+      vi.mocked(api.placeMove).mockResolvedValue(saved);
+      render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+      fireEvent.change(screen.getByRole('textbox', { name: 'Custom move name' }), {
+        target: { value: 'First' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Add move' }));
+      await screen.findByRole('button', { name: 'Edit move First' });
+      await act(async () => {
+        if (outcome === 'success') initial.resolve([]);
+        else initial.reject(new Error('Old read failed'));
+      });
+      expect(screen.getByRole('button', { name: 'Edit move First' })).toBeTruthy();
+      expect(screen.queryByRole('alert')).toBeNull();
+    },
+  );
+
+  it('preserves a replacement add draft after a pending create succeeds', async () => {
+    mockEmptyLibrary();
+    vi.mocked(api.listPlacedMoves).mockResolvedValue([]);
+    const request = deferred<Awaited<ReturnType<typeof api.placeMove>>>();
+    vi.mocked(api.placeMove).mockReturnValue(request.promise);
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+    const field = screen.getByRole('textbox', { name: 'Custom move name' }) as HTMLInputElement;
+    const time = screen.getByRole('textbox', { name: 'Move time (m:ss)' }) as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'First' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add move' }));
+    fireEvent.change(field, { target: { value: 'Second' } });
+    fireEvent.change(time, { target: { value: '0:45' } });
+    await act(async () => request.resolve(placedMove('saved', 'First')));
+    expect(field.value).toBe('Second');
+    expect(time.value).toBe('0:45');
+    expect((screen.getByRole('button', { name: 'Add move' }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
+  it('keeps newer inline input editable after an earlier save succeeds', async () => {
+    mockEmptyLibrary();
+    const first = placedMove('first', 'First');
+    vi.mocked(api.listPlacedMoves).mockResolvedValue([first]);
+    const request = deferred<Awaited<ReturnType<typeof api.updatePlacedMove>>>();
+    vi.mocked(api.updatePlacedMove).mockReturnValue(request.promise);
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit move First' }));
+    const field = screen.getAllByRole('textbox', {
+      name: 'Custom move name',
+    })[0] as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'Submitted' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.change(field, { target: { value: 'Newer' } });
+    await act(async () => request.resolve(first));
+    expect(field.isConnected).toBe(true);
+    expect(field.value).toBe('Newer');
+    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
+  it.each(['save', 'delete'])(
+    'preserves deliberately moved focus after pending %s',
+    async (operation: string) => {
+      mockEmptyLibrary();
+      const first = placedMove('first', 'First');
+      vi.mocked(api.listPlacedMoves).mockResolvedValue([first]);
+      const request = deferred<Awaited<ReturnType<typeof api.updatePlacedMove>>>();
+      const deletion = deferred<void>();
+      vi.mocked(api.updatePlacedMove).mockReturnValue(request.promise);
+      vi.mocked(api.deletePlacedMove).mockReturnValue(deletion.promise);
+      render(
+        <>
+          <MovesSection classTrackId="ct-1" durationMs={240000} />
+          <button>Outside</button>
+        </>,
+      );
+      if (operation === 'save') {
+        fireEvent.click(await screen.findByRole('button', { name: 'Edit move First' }));
+        const save = screen.getByRole('button', { name: 'Save' });
+        save.focus();
+        fireEvent.click(save);
+      } else {
+        const remove = await screen.findByRole('button', { name: 'Delete move First' });
+        remove.focus();
+        fireEvent.click(remove);
+      }
+      const outside = screen.getByRole('button', { name: 'Outside' });
+      outside.focus();
+      await act(async () => {
+        request.resolve(first);
+        deletion.resolve();
+      });
+      expect(document.activeElement).toBe(outside);
+    },
+  );
+
+  it('retains a rejected add draft', async () => {
+    mockEmptyLibrary();
+    vi.mocked(api.listPlacedMoves).mockResolvedValue([]);
+    vi.mocked(api.placeMove).mockRejectedValue(new Error('Write rejected'));
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+    const field = screen.getByRole('textbox', { name: 'Custom move name' }) as HTMLInputElement;
+    fireEvent.change(field, { target: { value: 'Keep me' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add move' }));
+    await screen.findByRole('alert');
+    expect(field.value).toBe('Keep me');
+  });
+
+  it('reports a post-write refresh failure while notifying the parent of a confirmed write', async () => {
+    mockEmptyLibrary();
+    vi.mocked(api.listPlacedMoves)
+      .mockResolvedValueOnce([])
+      .mockRejectedValue(new Error('Refresh unavailable'));
+    vi.mocked(api.placeMove).mockResolvedValue(placedMove('saved', 'First'));
+    const onChanged = vi.fn();
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} onChanged={onChanged} />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Custom move name' }), {
+      target: { value: 'First' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add move' }));
+    expect((await screen.findByRole('alert')).textContent).toBe('Refresh unavailable');
+    expect(onChanged).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('MovesSection — reusable move creation ownership', () => {
+  it('places the submitted reusable move without replacing a newer picker draft', async () => {
+    mockEmptyLibrary();
+    const creation = deferred<Awaited<ReturnType<typeof api.createUserMove>>>();
+    vi.mocked(api.createUserMove).mockReturnValue(creation.promise);
+    vi.mocked(api.placeMove).mockResolvedValue(placedMove('saved', 'First'));
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+    const picker = screen.getByRole('combobox', { name: 'Move' }) as HTMLSelectElement;
+    fireEvent.change(picker, { target: { value: '__new__' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'New custom move name' }), {
+      target: { value: 'First' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add move' }));
+    fireEvent.change(picker, { target: { value: '__custom__' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Custom move name' }), {
+      target: { value: 'Second' },
+    });
+    await act(async () => creation.resolve({ id: 'reusable', name: 'First' } as never));
+    expect(api.placeMove).toHaveBeenCalledWith(
+      'ct-1',
+      expect.objectContaining({ userMoveId: 'reusable' }),
+    );
+    expect(picker.value).toBe('__custom__');
+    expect(
+      (screen.getByRole('textbox', { name: 'Custom move name' }) as HTMLInputElement).value,
+    ).toBe('Second');
+  });
+});
+
+describe('MovesSection — section lifecycle', () => {
+  it.each(['add', 'save', 'delete'])(
+    'does not refresh or notify the old parent after a pending %s unmounts',
+    async (operation: string) => {
+      mockEmptyLibrary();
+      const first = placedMove('first', 'First');
+      vi.mocked(api.listPlacedMoves).mockResolvedValue([first]);
+      const create = deferred<Awaited<ReturnType<typeof api.placeMove>>>();
+      const update = deferred<Awaited<ReturnType<typeof api.updatePlacedMove>>>();
+      const deletion = deferred<void>();
+      vi.mocked(api.placeMove).mockReturnValue(create.promise);
+      vi.mocked(api.updatePlacedMove).mockReturnValue(update.promise);
+      vi.mocked(api.deletePlacedMove).mockReturnValue(deletion.promise);
+      const onChanged = vi.fn();
+      const { unmount } = render(
+        <MovesSection classTrackId="ct-1" durationMs={240000} onChanged={onChanged} />,
+      );
+      await screen.findByRole('button', { name: 'Edit move First' });
+      if (operation === 'add') {
+        fireEvent.change(screen.getByRole('textbox', { name: 'Custom move name' }), {
+          target: { value: 'New' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Add move' }));
+      } else if (operation === 'save') {
+        fireEvent.click(screen.getByRole('button', { name: 'Edit move First' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      } else {
+        fireEvent.click(screen.getByRole('button', { name: 'Delete move First' }));
+      }
+      unmount();
+      await act(async () => {
+        create.resolve(first);
+        update.resolve(first);
+        deletion.resolve();
+      });
+      expect(onChanged).not.toHaveBeenCalled();
+      expect(api.listPlacedMoves).toHaveBeenCalledTimes(1);
+    },
+  );
+});
+
+describe('MovesSection — reusable move refresh and retry', () => {
+  it('ignores the older user-move library read after creating a reusable move', async () => {
+    mockEmptyLibrary();
+    const initial = deferred<Awaited<ReturnType<typeof api.listUserMoves>>>();
+    const created = { id: 'reusable', name: 'First' } as Awaited<
+      ReturnType<typeof api.createUserMove>
+    >;
+    vi.mocked(api.listUserMoves).mockReturnValueOnce(initial.promise).mockResolvedValue([created]);
+    vi.mocked(api.createUserMove).mockResolvedValue(created);
+    vi.mocked(api.placeMove).mockResolvedValue(placedMove('saved', 'First'));
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+    const picker = screen.getByRole('combobox', { name: 'Move' }) as HTMLSelectElement;
+    fireEvent.change(picker, { target: { value: '__new__' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'New custom move name' }), {
+      target: { value: 'First' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add move' }));
+    await waitFor(() => expect(picker.value).toBe('u:reusable'));
+    await act(async () => initial.resolve([]));
+    expect(picker.value).toBe('u:reusable');
+    expect(screen.getByRole('option', { name: 'First' })).toBeTruthy();
+  });
+
+  it('reuses the created ID after placement fails instead of creating the reusable move twice', async () => {
+    mockEmptyLibrary();
+    const created = { id: 'reusable', name: 'First' } as Awaited<
+      ReturnType<typeof api.createUserMove>
+    >;
+    vi.mocked(api.listUserMoves).mockResolvedValue([created]);
+    vi.mocked(api.createUserMove).mockResolvedValue(created);
+    vi.mocked(api.placeMove)
+      .mockRejectedValueOnce(new Error('Placement failed'))
+      .mockResolvedValue(placedMove('saved', 'First'));
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Move' }), {
+      target: { value: '__new__' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'New custom move name' }), {
+      target: { value: 'First' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add move' }));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'Add move' }));
+    await waitFor(() => expect(api.placeMove).toHaveBeenCalledTimes(2));
+    expect(api.createUserMove).toHaveBeenCalledTimes(1);
+    expect(api.placeMove).toHaveBeenLastCalledWith(
+      'ct-1',
+      expect.objectContaining({ userMoveId: 'reusable' }),
     );
   });
 });

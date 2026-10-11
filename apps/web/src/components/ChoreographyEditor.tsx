@@ -43,6 +43,20 @@ import { anchorFieldState, formatClockFromMs } from '../lib/duration.js';
 import { errMessage } from '../lib/errors.js';
 
 type RowMutationFocus = { kind: 'edit'; id: string } | { kind: 'add' };
+type PendingRowFocus = { target: RowMutationFocus; revision: number };
+
+/** A later focus choice wins over delayed save/delete restoration, even if it later blurs. */
+function useFocusRevision() {
+  const revision = useRef(0);
+  useEffect(() => {
+    const changed = () => {
+      revision.current += 1;
+    };
+    document.addEventListener('focusin', changed);
+    return () => document.removeEventListener('focusin', changed);
+  }, []);
+  return revision;
+}
 
 /** Prefer the next row, then the previous row, then the section's add control. */
 function focusAfterRowDelete<T extends { id: string }>(
@@ -288,7 +302,12 @@ export function CuesSection({
   const addTextRef = useRef<HTMLInputElement>(null);
   const editAnchorRef = useRef<HTMLInputElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [pendingFocus, setPendingFocus] = useState<RowMutationFocus | null>(null);
+  const [pendingFocus, setPendingFocus] = useState<PendingRowFocus | null>(null);
+  const focusRevision = useFocusRevision();
+  const addRevision = useRef(0);
+  const editRevision = useRef(0);
+  const active = useRef(false);
+  const loadRevision = useRef(0);
   const validationId = useId();
 
   const addAnchor = anchorFieldState(anchorClock, durationMs);
@@ -306,24 +325,38 @@ export function CuesSection({
 
   useEffect(() => {
     if (!pendingFocus) return;
+    if (pendingFocus.revision !== focusRevision.current) {
+      setPendingFocus(null);
+      return;
+    }
     const target =
-      pendingFocus.kind === 'edit'
-        ? editButtonRefs.current.get(pendingFocus.id)
+      pendingFocus.target.kind === 'edit'
+        ? editButtonRefs.current.get(pendingFocus.target.id)
         : addAnchorRef.current;
     if (!target) return;
     target.focus();
     setPendingFocus(null);
-  }, [pendingFocus, cues, editingId]);
+  }, [pendingFocus, cues, editingId, focusRevision]);
 
   const load = useCallback(async () => {
+    if (!active.current) return;
+    const revision = ++loadRevision.current;
     try {
-      setCues(await listCues(classTrackId));
+      const rows = await listCues(classTrackId);
+      if (active.current && revision === loadRevision.current) setCues(rows);
     } catch (e) {
-      setError(errMessage(e, 'Could not load cues. Try again.'));
+      if (active.current && revision === loadRevision.current) {
+        setError(errMessage(e, 'Could not load cues. Try again.'));
+      }
     }
   }, [classTrackId]);
   useEffect(() => {
+    active.current = true;
     void load();
+    return () => {
+      active.current = false;
+      loadRevision.current += 1;
+    };
   }, [load]);
 
   const startEdit = (cue: Cue) => {
@@ -341,6 +374,8 @@ export function CuesSection({
       return;
     }
     const savedId = editingId;
+    const submittedRevision = editRevision.current;
+    const submittedFocus = focusRevision.current;
     setBusy(true);
     setError(null);
     try {
@@ -351,14 +386,19 @@ export function CuesSection({
         text: editText.trim(),
         color: editColor,
       });
-      setEditingId(null);
+      if (!active.current) return;
+      const draftUnchanged = editRevision.current === submittedRevision;
+      if (draftUnchanged) setEditingId(null);
       await load();
-      setPendingFocus({ kind: 'edit', id: savedId });
+      if (!active.current) return;
+      if (draftUnchanged) {
+        setPendingFocus({ target: { kind: 'edit', id: savedId }, revision: submittedFocus });
+      }
       onChanged?.();
     } catch (e) {
-      setError(errMessage(e, 'Could not save the cue. Try again.'));
+      if (active.current) setError(errMessage(e, 'Could not save the cue. Try again.'));
     } finally {
-      setBusy(false);
+      if (active.current) setBusy(false);
     }
   };
 
@@ -368,6 +408,7 @@ export function CuesSection({
       if (anchorMs == null) addAnchorRef.current?.focus();
       return;
     }
+    const submittedRevision = addRevision.current;
     setBusy(true);
     setError(null);
     try {
@@ -376,31 +417,37 @@ export function CuesSection({
         text: text.trim(),
         color,
       });
-      setText('');
-      setAnchorClock('0:00');
-      setColor(null);
+      if (!active.current) return;
+      if (addRevision.current === submittedRevision) {
+        setText('');
+        setAnchorClock('0:00');
+        setColor(null);
+      }
       await load();
-      onChanged?.();
+      if (active.current) onChanged?.();
     } catch (e) {
-      setError(errMessage(e, 'Could not add the cue. Try again.'));
+      if (active.current) setError(errMessage(e, 'Could not add the cue. Try again.'));
     } finally {
-      setBusy(false);
+      if (active.current) setBusy(false);
     }
   };
 
   const remove = async (id: string) => {
     const nextFocus = focusAfterRowDelete(cues, id);
+    const submittedFocus = focusRevision.current;
     setBusy(true);
     setError(null);
     try {
       await deleteCue(id);
+      if (!active.current) return;
       await load();
-      setPendingFocus(nextFocus);
+      if (!active.current) return;
+      setPendingFocus({ target: nextFocus, revision: submittedFocus });
       onChanged?.();
     } catch (e) {
-      setError(errMessage(e, 'Could not delete the cue. Try again.'));
+      if (active.current) setError(errMessage(e, 'Could not delete the cue. Try again.'));
     } finally {
-      setBusy(false);
+      if (active.current) setBusy(false);
     }
   };
 
@@ -413,6 +460,9 @@ export function CuesSection({
           editingId === cue.id ? (
             <li
               key={cue.id}
+              onChangeCapture={() => {
+                editRevision.current += 1;
+              }}
               className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2"
             >
               <input
@@ -435,7 +485,13 @@ export function CuesSection({
                 aria-label="Cue text"
                 autoFocus
               />
-              <CueColorPicker value={editColor} onChange={setEditColor} />
+              <CueColorPicker
+                value={editColor}
+                onChange={(value) => {
+                  editRevision.current += 1;
+                  setEditColor(value);
+                }}
+              />
               <button
                 className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
                 onClick={saveEdit}
@@ -448,7 +504,12 @@ export function CuesSection({
                 onClick={() => {
                   const cancelledId = editingId;
                   setEditingId(null);
-                  if (cancelledId) setPendingFocus({ kind: 'edit', id: cancelledId });
+                  if (cancelledId) {
+                    setPendingFocus({
+                      target: { kind: 'edit', id: cancelledId },
+                      revision: focusRevision.current,
+                    });
+                  }
                 }}
                 disabled={busy}
               >
@@ -519,7 +580,12 @@ export function CuesSection({
           ),
         )}
       </ul>
-      <div className="flex flex-col gap-2">
+      <div
+        className="flex flex-col gap-2"
+        onChangeCapture={() => {
+          addRevision.current += 1;
+        }}
+      >
         <div className="flex items-center gap-2">
           <input
             ref={addAnchorRef}
@@ -562,7 +628,13 @@ export function CuesSection({
           </p>
         )}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <CueColorPicker value={color} onChange={setColor} />
+          <CueColorPicker
+            value={color}
+            onChange={(value) => {
+              addRevision.current += 1;
+              setColor(value);
+            }}
+          />
           <SnapToggle canSnap={canSnap} snap={snap} onChange={setSnap} />
         </div>
       </div>
@@ -627,7 +699,12 @@ export function MovesSection({
   const editButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const addAnchorRef = useRef<HTMLInputElement>(null);
   const editAnchorRef = useRef<HTMLInputElement>(null);
-  const [pendingFocus, setPendingFocus] = useState<RowMutationFocus | null>(null);
+  const [pendingFocus, setPendingFocus] = useState<PendingRowFocus | null>(null);
+  const focusRevision = useFocusRevision();
+  const addRevision = useRef(0);
+  const editRevision = useRef(0);
+  const active = useRef(false);
+  const loadRevision = useRef(0);
   const validationId = useId();
 
   const addAnchor = anchorFieldState(anchorClock, durationMs);
@@ -635,35 +712,57 @@ export function MovesSection({
 
   useEffect(() => {
     if (!pendingFocus) return;
+    if (pendingFocus.revision !== focusRevision.current) {
+      setPendingFocus(null);
+      return;
+    }
     const target =
-      pendingFocus.kind === 'edit'
-        ? editButtonRefs.current.get(pendingFocus.id)
+      pendingFocus.target.kind === 'edit'
+        ? editButtonRefs.current.get(pendingFocus.target.id)
         : addAnchorRef.current;
     if (!target) return;
     target.focus();
     setPendingFocus(null);
-  }, [pendingFocus, moves, editingId]);
+  }, [pendingFocus, moves, editingId, focusRevision]);
 
   const load = useCallback(async () => {
+    if (!active.current) return;
+    const revision = ++loadRevision.current;
     try {
-      setMoves(await listPlacedMoves(classTrackId));
+      const rows = await listPlacedMoves(classTrackId);
+      if (active.current && revision === loadRevision.current) setMoves(rows);
     } catch (e) {
-      setError(errMessage(e, 'Could not load moves. Try again.'));
+      if (active.current && revision === loadRevision.current) {
+        setError(errMessage(e, 'Could not load moves. Try again.'));
+      }
     }
   }, [classTrackId]);
   useEffect(() => {
+    active.current = true;
     void load();
+    return () => {
+      active.current = false;
+      loadRevision.current += 1;
+    };
   }, [load]);
   useEffect(() => {
     void loadMovesLibrary()
-      .then(setLibrary)
-      .catch(() => setLibrary([]));
+      .then((rows) => {
+        if (active.current) setLibrary(rows);
+      })
+      .catch(() => {
+        if (active.current) setLibrary([]);
+      });
   }, []);
+  const userMovesRevision = useRef(0);
   const loadUserMoves = useCallback(async () => {
+    if (!active.current) return;
+    const revision = ++userMovesRevision.current;
     try {
-      setUserMoves(await listUserMoves());
+      const rows = await listUserMoves();
+      if (active.current && revision === userMovesRevision.current) setUserMoves(rows);
     } catch {
-      setUserMoves([]);
+      if (active.current && revision === userMovesRevision.current) setUserMoves([]);
     }
   }, []);
   useEffect(() => {
@@ -760,6 +859,7 @@ export function MovesSection({
       if (anchorMs == null) addAnchorRef.current?.focus();
       return;
     }
+    const submittedRevision = addRevision.current;
     setBusy(true);
     setError(null);
     try {
@@ -769,7 +869,7 @@ export function MovesSection({
         // "Your moves" and select it so a repeat Add re-uses (not re-creates) it.
         const created = await createUserMove({ name: customName.trim() });
         await loadUserMoves();
-        setPick(`u:${created.id}`);
+        if (active.current && addRevision.current === submittedRevision) setPick(`u:${created.id}`);
         ref = { userMoveId: created.id, moveId: null, nameOverride: null };
       } else {
         ref = refFields(pick, customName);
@@ -780,15 +880,18 @@ export function MovesSection({
         ...ref,
       };
       await placeMove(classTrackId, body);
-      setCustomName('');
-      setAnchorClock('0:00');
-      setIntensity('');
+      if (!active.current) return;
+      if (addRevision.current === submittedRevision) {
+        setCustomName('');
+        setAnchorClock('0:00');
+        setIntensity('');
+      }
       await load();
-      onChanged?.();
+      if (active.current) onChanged?.();
     } catch (e) {
-      setError(errMessage(e, 'Could not add the move. Try again.'));
+      if (active.current) setError(errMessage(e, 'Could not add the move. Try again.'));
     } finally {
-      setBusy(false);
+      if (active.current) setBusy(false);
     }
   };
 
@@ -811,6 +914,8 @@ export function MovesSection({
       return;
     }
     const savedId = editingId;
+    const submittedRevision = editRevision.current;
+    const submittedFocus = focusRevision.current;
     setBusy(true);
     setError(null);
     try {
@@ -821,30 +926,38 @@ export function MovesSection({
         intensity: editIntensity === '' ? null : editIntensity,
         ...refFields(editPick, editCustom),
       });
-      setEditingId(null);
+      if (!active.current) return;
+      const draftUnchanged = editRevision.current === submittedRevision;
+      if (draftUnchanged) setEditingId(null);
       await load();
-      setPendingFocus({ kind: 'edit', id: savedId });
+      if (!active.current) return;
+      if (draftUnchanged) {
+        setPendingFocus({ target: { kind: 'edit', id: savedId }, revision: submittedFocus });
+      }
       onChanged?.();
     } catch (e) {
-      setError(errMessage(e, 'Could not save the move. Try again.'));
+      if (active.current) setError(errMessage(e, 'Could not save the move. Try again.'));
     } finally {
-      setBusy(false);
+      if (active.current) setBusy(false);
     }
   };
 
   const remove = async (id: string) => {
     const nextFocus = focusAfterRowDelete(moves, id);
+    const submittedFocus = focusRevision.current;
     setBusy(true);
     setError(null);
     try {
       await deletePlacedMove(id);
+      if (!active.current) return;
       await load();
-      setPendingFocus(nextFocus);
+      if (!active.current) return;
+      setPendingFocus({ target: nextFocus, revision: submittedFocus });
       onChanged?.();
     } catch (e) {
-      setError(errMessage(e, 'Could not delete the move. Try again.'));
+      if (active.current) setError(errMessage(e, 'Could not delete the move. Try again.'));
     } finally {
-      setBusy(false);
+      if (active.current) setBusy(false);
     }
   };
 
@@ -893,7 +1006,7 @@ export function MovesSection({
             // move name into placements), then reload the run-payload-derived views.
             await loadUserMoves();
             await load();
-            onChanged?.();
+            if (active.current) onChanged?.();
           }}
         />
       )}
@@ -905,6 +1018,9 @@ export function MovesSection({
           editingId === m.id ? (
             <li
               key={m.id}
+              onChangeCapture={() => {
+                editRevision.current += 1;
+              }}
               className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2"
             >
               <input
@@ -964,7 +1080,12 @@ export function MovesSection({
                 onClick={() => {
                   const cancelledId = editingId;
                   setEditingId(null);
-                  if (cancelledId) setPendingFocus({ kind: 'edit', id: cancelledId });
+                  if (cancelledId) {
+                    setPendingFocus({
+                      target: { kind: 'edit', id: cancelledId },
+                      revision: focusRevision.current,
+                    });
+                  }
                 }}
                 disabled={busy}
               >
@@ -1034,7 +1155,12 @@ export function MovesSection({
           ),
         )}
       </ul>
-      <div className="flex flex-wrap items-center gap-2">
+      <div
+        className="flex flex-wrap items-center gap-2"
+        onChangeCapture={() => {
+          addRevision.current += 1;
+        }}
+      >
         <input
           ref={addAnchorRef}
           className={anchorInputClass(addAnchor.invalid)}

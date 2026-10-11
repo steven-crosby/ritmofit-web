@@ -1,0 +1,27 @@
+[
+  {
+    "lane": 1,
+    "file": "apps/web/src/components/ChoreographyEditor.tsx",
+    "sha256": "2a488c8feb597538df21011c8837c596f3f2d7fc53aeb9e7f2528cc1cf7ac36e"
+  },
+  {
+    "lane": 1,
+    "file": "apps/web/src/components/CuesSection.test.tsx",
+    "sha256": "0265e9fbbae7b10385671680edaeb81dc09d8d7f0e104a76b09ee164c3e9f79d"
+  },
+  {
+    "lane": 1,
+    "file": "apps/web/src/components/MovesSection.test.tsx",
+    "sha256": "b97895142e1506f4825628da9e120ce8cbfa6054d496908a0d48069f939f9206"
+  },
+  {
+    "lane": 2,
+    "file": "apps/web/src/components/TrackSearch.tsx",
+    "sha256": "83f8edb98b9d8d0500d589cd0f36b6dc53553b0393e1059a91e622f925af2b8d"
+  },
+  {
+    "lane": 2,
+    "file": "apps/web/src/components/TrackSearch.test.tsx",
+    "sha256": "893b8f66723079e37e47e69cb3825d693adf1a46b628f6c718fac75a35ce3112"
+  }
+]

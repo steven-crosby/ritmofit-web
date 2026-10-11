@@ -1,0 +1,14 @@
+{
+  "sourceBase": "ba92ceaf25a7b470eec23c33766df2658be287fb",
+  "files": {
+    "compact-zoom-equivalent.png": "5b860e5c41bf103736cc431ea01c5f693c0125016795cf4c6a9d5ef4ed32591f",
+    "portrait-320.png": "2b17c6444744884b5027c6de201b7efcb801e1a023f3b3d389a874575025145e",
+    "desktop.png": "335488bb13d0cafc2b3c5d5f74ab4645cba109003b29e0f91a63806c11024943",
+    "landscape.png": "c17c20c175a37f0d86b8d1d0063f0efb468c87d78c8f28faa4ec95ce86cb7aa0",
+    "results.json": "b3673fd1408fbd72531ba7901e9655178370ce1f72ec088107e33fedc30d9190",
+    "portrait-390.png": "bf1e5966eb9d4f5d30bd44c426105a71c570d05406709faff3abbc08c07879f0",
+    "source-sha256.json": "6a24c2d0fe377a538e3f3b62e85187a59bd36e7fb9e4837e01917144a753a78b",
+    "README.md": "4af61ba9b443f2e710c4e934615497d08a85eeac0bad82fa36d85bef1f5ba8ea",
+    "gate-summary.json": "da3b971befdc9b6e25ebfc08d6d64856129ac06f17404e053be6d335450c008c"
+  }
+}
