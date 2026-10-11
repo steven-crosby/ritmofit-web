@@ -1,0 +1,99 @@
+{
+  "base": "ba92ceaf25a7b470eec23c33766df2658be287fb",
+  "lane1Implementation": "2d2e8078125e8a3ba3978a007019d01c7e65cb99",
+  "lane2Implementation": "53d2149ed9e52c0cd9d5d4d3498c1ab209f431ba",
+  "combinedCommit": "09a43d662ee814e04d110432f72826ac00b883e1",
+  "combinedTreeMethod": "Detached managed worktree at lane 1 implementation; clean cherry-pick of lane 2 implementation",
+  "sourceHashes": "All five source/test hashes match source-sha256.json",
+  "environment": {
+    "node": "26.7.0",
+    "pnpm": "11.4.0",
+    "pnpm_config_verify_deps_before_run": "false",
+    "dependencies": "Existing installed workspace dependencies linked temporarily; no install or lockfile change"
+  },
+  "tests": {
+    "web": 1121,
+    "api": 486,
+    "music": 30,
+    "workerIntegration": 184
+  },
+  "steps": [
+    {
+      "step": "format",
+      "command": ["pnpm", "format:check"],
+      "exit": 0,
+      "seconds": 3.23
+    },
+    {
+      "step": "typecheck",
+      "command": ["pnpm", "-r", "typecheck"],
+      "exit": 0,
+      "seconds": 6.94
+    },
+    {
+      "step": "lint",
+      "command": ["pnpm", "lint"],
+      "exit": 0,
+      "seconds": 3.47
+    },
+    {
+      "step": "design-system",
+      "command": ["npm", "run", "verify"],
+      "exit": 0,
+      "seconds": 0.29
+    },
+    {
+      "step": "theme-classes",
+      "command": ["pnpm", "--filter", "@ritmofit/web", "theme-classes"],
+      "exit": 0,
+      "seconds": 0.52
+    },
+    {
+      "step": "unit-tests",
+      "command": ["pnpm", "test"],
+      "exit": 0,
+      "seconds": 19.67
+    },
+    {
+      "step": "integration",
+      "command": ["pnpm", "--filter", "@ritmofit/api", "test:integration"],
+      "exit": 0,
+      "seconds": 20.06
+    },
+    {
+      "step": "web-build",
+      "command": ["pnpm", "--filter", "@ritmofit/web", "build"],
+      "exit": 0,
+      "seconds": 6.98
+    },
+    {
+      "step": "openapi",
+      "command": ["pnpm", "--filter", "@ritmofit/api", "openapi"],
+      "exit": 0,
+      "seconds": 0.51
+    },
+    {
+      "step": "openapi-diff",
+      "command": ["git", "diff", "--exit-code", "apps/api/openapi/openapi.json"],
+      "exit": 0,
+      "seconds": 0.01
+    },
+    {
+      "step": "contract-parity",
+      "command": ["pnpm", "--filter", "@ritmofit/api", "contract-parity"],
+      "exit": 0,
+      "seconds": 0.42
+    },
+    {
+      "step": "audit",
+      "command": ["pnpm", "audit:ci"],
+      "exit": 0,
+      "seconds": 0.73
+    }
+  ],
+  "limits": [
+    "Local combined-tree gate, separate from GitHub CI",
+    "No authenticated whole-app or provider/audio acceptance",
+    "Actual native 200% browser zoom remains unverified"
+  ]
+}

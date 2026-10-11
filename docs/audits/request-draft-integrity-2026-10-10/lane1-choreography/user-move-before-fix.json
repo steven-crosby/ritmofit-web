@@ -1,0 +1,121 @@
+{
+  "evidenceClass": "synthetic component tests with deferred mocked API promises",
+  "stage": "user-move-before-fix",
+  "totals": {
+    "numTotalTests": 21,
+    "numPassedTests": 20,
+    "numFailedTests": 1
+  },
+  "suites": [
+    {
+      "name": "apps/web/src/components/MovesSection.test.tsx",
+      "assertions": [
+        {
+          "name": "MovesSection \u2014 Songs-by-move entry shows the in-builder trigger and invokes the callback",
+          "status": "passed",
+          "durationMs": 81.92495800000006
+        },
+        {
+          "name": "MovesSection \u2014 Songs-by-move entry omits the trigger when no handler is provided",
+          "status": "passed",
+          "durationMs": 10.724707999999964
+        },
+        {
+          "name": "MovesSection \u2014 m:ss anchor entry parses the m:ss field to anchorMs when placing a move",
+          "status": "passed",
+          "durationMs": 17.28037500000005
+        },
+        {
+          "name": "MovesSection \u2014 m:ss anchor entry blocks Add move on a malformed or out-of-range time and focuses the field",
+          "status": "passed",
+          "durationMs": 15.031875000000014
+        },
+        {
+          "name": "MovesSection \u2014 keyboard focus restoration returns focus to the invoking Edit control after cancel and save",
+          "status": "passed",
+          "durationMs": 33.70733300000006
+        },
+        {
+          "name": "MovesSection \u2014 keyboard focus restoration focuses the next row after delete, then the add control when the last row is deleted",
+          "status": "passed",
+          "durationMs": 75.90391699999998
+        },
+        {
+          "name": "MovesSection \u2014 keyboard focus restoration normalizes a non-Error mutation failure with local context",
+          "status": "passed",
+          "durationMs": 17.167417
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership ignores a stale initial read success after the mutation refresh",
+          "status": "passed",
+          "durationMs": 16.450458000000026
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership ignores a stale initial read failure after the mutation refresh",
+          "status": "passed",
+          "durationMs": 16.897249999999985
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership preserves a replacement add draft after a pending create succeeds",
+          "status": "passed",
+          "durationMs": 7.135249999999928
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership keeps newer inline input editable after an earlier save succeeds",
+          "status": "passed",
+          "durationMs": 15.346166999999923
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership preserves deliberately moved focus after pending save",
+          "status": "passed",
+          "durationMs": 13.648459000000003
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership preserves deliberately moved focus after pending delete",
+          "status": "passed",
+          "durationMs": 10.643957999999884
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership retains a rejected add draft",
+          "status": "passed",
+          "durationMs": 7.766417000000047
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership reports a post-write refresh failure while notifying the parent of a confirmed write",
+          "status": "passed",
+          "durationMs": 7.9152500000000146
+        },
+        {
+          "name": "MovesSection \u2014 reusable move creation ownership places the submitted reusable move without replacing a newer picker draft",
+          "status": "passed",
+          "durationMs": 11.387958000000026
+        },
+        {
+          "name": "MovesSection \u2014 section lifecycle does not refresh or notify the old parent after a pending add unmounts",
+          "status": "passed",
+          "durationMs": 9.04600000000005
+        },
+        {
+          "name": "MovesSection \u2014 section lifecycle does not refresh or notify the old parent after a pending save unmounts",
+          "status": "passed",
+          "durationMs": 9.265041999999994
+        },
+        {
+          "name": "MovesSection \u2014 section lifecycle does not refresh or notify the old parent after a pending delete unmounts",
+          "status": "passed",
+          "durationMs": 7.519999999999982
+        },
+        {
+          "name": "MovesSection \u2014 reusable move refresh and retry ignores the older user-move library read after creating a reusable move",
+          "status": "failed",
+          "durationMs": 11.190166999999974
+        },
+        {
+          "name": "MovesSection \u2014 reusable move refresh and retry reuses the created ID after placement fails instead of creating the reusable move twice",
+          "status": "passed",
+          "durationMs": 13.529207999999926
+        }
+      ]
+    }
+  ]
+}

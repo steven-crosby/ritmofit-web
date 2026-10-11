@@ -1,0 +1,176 @@
+{
+  "evidenceClass": "synthetic component tests with deferred mocked API promises",
+  "stage": "before-fix",
+  "totals": {
+    "numTotalTests": 31,
+    "numPassedTests": 18,
+    "numFailedTests": 13
+  },
+  "suites": [
+    {
+      "name": "apps/web/src/components/CuesSection.test.tsx",
+      "assertions": [
+        {
+          "name": "CuesSection \u2014 m:ss anchor entry parses the m:ss field to anchorMs when adding a cue",
+          "status": "passed",
+          "durationMs": 107.97508300000004
+        },
+        {
+          "name": "CuesSection \u2014 m:ss anchor entry accepts 0:00 (a cue at the very start)",
+          "status": "passed",
+          "durationMs": 9.858334000000013
+        },
+        {
+          "name": "CuesSection \u2014 m:ss anchor entry blocks Add cue on a malformed or out-of-range time and focuses the field",
+          "status": "passed",
+          "durationMs": 17.257250000000113
+        },
+        {
+          "name": "CuesSection \u2014 keyboard focus restoration returns focus to the invoking Edit control after cancel and save",
+          "status": "passed",
+          "durationMs": 48.25820900000008
+        },
+        {
+          "name": "CuesSection \u2014 keyboard focus restoration focuses the next row after delete, then the add control when the last row is deleted",
+          "status": "passed",
+          "durationMs": 81.35566600000016
+        },
+        {
+          "name": "CuesSection \u2014 keyboard focus restoration normalizes a non-Error mutation failure with local context",
+          "status": "passed",
+          "durationMs": 21.520917000000054
+        },
+        {
+          "name": "CuesSection \u2014 readiness first-cue handoff puts the caret in the cue text field when readiness asks to start entry",
+          "status": "passed",
+          "durationMs": 5.250791000000163
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership ignores a stale initial read success after the mutation refresh",
+          "status": "failed",
+          "durationMs": 29.051500000000033
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership ignores a stale initial read failure after the mutation refresh",
+          "status": "failed",
+          "durationMs": 22.37216699999999
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership preserves a replacement add draft after a pending create succeeds",
+          "status": "failed",
+          "durationMs": 7.649374999999964
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership keeps newer inline input editable after an earlier save succeeds",
+          "status": "failed",
+          "durationMs": 19.059416000000056
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership preserves deliberately moved focus after pending save",
+          "status": "failed",
+          "durationMs": 21.504415999999992
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership preserves deliberately moved focus after pending delete",
+          "status": "failed",
+          "durationMs": 14.620583000000124
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership retains a rejected add draft",
+          "status": "passed",
+          "durationMs": 9.35304199999996
+        },
+        {
+          "name": "CuesSection \u2014 pending request ownership reports a post-write refresh failure while notifying the parent of a confirmed write",
+          "status": "passed",
+          "durationMs": 8.285416999999825
+        }
+      ]
+    },
+    {
+      "name": "apps/web/src/components/MovesSection.test.tsx",
+      "assertions": [
+        {
+          "name": "MovesSection \u2014 Songs-by-move entry shows the in-builder trigger and invokes the callback",
+          "status": "passed",
+          "durationMs": 97.1075420000002
+        },
+        {
+          "name": "MovesSection \u2014 Songs-by-move entry omits the trigger when no handler is provided",
+          "status": "passed",
+          "durationMs": 9.632416000000148
+        },
+        {
+          "name": "MovesSection \u2014 m:ss anchor entry parses the m:ss field to anchorMs when placing a move",
+          "status": "passed",
+          "durationMs": 16.023333000000093
+        },
+        {
+          "name": "MovesSection \u2014 m:ss anchor entry blocks Add move on a malformed or out-of-range time and focuses the field",
+          "status": "passed",
+          "durationMs": 19.74050000000011
+        },
+        {
+          "name": "MovesSection \u2014 keyboard focus restoration returns focus to the invoking Edit control after cancel and save",
+          "status": "passed",
+          "durationMs": 35.20495800000003
+        },
+        {
+          "name": "MovesSection \u2014 keyboard focus restoration focuses the next row after delete, then the add control when the last row is deleted",
+          "status": "passed",
+          "durationMs": 78.08224999999993
+        },
+        {
+          "name": "MovesSection \u2014 keyboard focus restoration normalizes a non-Error mutation failure with local context",
+          "status": "passed",
+          "durationMs": 17.20662500000003
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership ignores a stale initial read success after the mutation refresh",
+          "status": "failed",
+          "durationMs": 29.30616699999996
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership ignores a stale initial read failure after the mutation refresh",
+          "status": "failed",
+          "durationMs": 17.4264169999999
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership preserves a replacement add draft after a pending create succeeds",
+          "status": "failed",
+          "durationMs": 7.867291999999907
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership keeps newer inline input editable after an earlier save succeeds",
+          "status": "failed",
+          "durationMs": 15.38754199999994
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership preserves deliberately moved focus after pending save",
+          "status": "failed",
+          "durationMs": 15.756334000000152
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership preserves deliberately moved focus after pending delete",
+          "status": "failed",
+          "durationMs": 11.284167000000025
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership retains a rejected add draft",
+          "status": "passed",
+          "durationMs": 6.967750000000024
+        },
+        {
+          "name": "MovesSection \u2014 pending request ownership reports a post-write refresh failure while notifying the parent of a confirmed write",
+          "status": "passed",
+          "durationMs": 7.906583999999839
+        },
+        {
+          "name": "MovesSection \u2014 reusable move creation ownership places the submitted reusable move without replacing a newer picker draft",
+          "status": "failed",
+          "durationMs": 15.458957999999939
+        }
+      ]
+    }
+  ]
+}
