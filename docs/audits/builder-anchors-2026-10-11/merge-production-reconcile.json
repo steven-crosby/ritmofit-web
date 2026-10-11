@@ -1,0 +1,20 @@
+{
+  "observedAtUtc": "2026-10-11T14:33:38.669952+00:00",
+  "workerVersion": "5f67d242-8956-42b7-9318-67b2797d3454",
+  "workerTrafficPercent": 100,
+  "spaEntries": [
+    "assets/index-mZ1ypG4t.js",
+    "assets/index-mZ1ypG4t.js",
+    "assets/index-mZ1ypG4t.js"
+  ],
+  "recordedBaseline": {
+    "pr": 494,
+    "source": "e712274f8b0add74755bc97accff42f44405260f"
+  },
+  "applicationMerge": "4412c3c6231e9b8bfa6dad831c6100421c3adc04",
+  "reviewedHead": "1050a7a5309680798c249200d9aefa52ffbc99f4",
+  "completeTreesMatch": true,
+  "deployed": false,
+  "remoteMigrationsChecked": false,
+  "providerPlaybackStarted": false
+}

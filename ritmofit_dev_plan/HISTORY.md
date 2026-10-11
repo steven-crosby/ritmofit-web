@@ -13,6 +13,29 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Session 2026-10-11 — zero-anchor round merged; production unchanged.** [#509](https://github.com/steven-crosby/ritmofit-web/pull/509)
+> squash-merged as `4412c3c6231e9b8bfa6dad831c6100421c3adc04` after explicit owner merge approval and
+> [reviewed-head CI 38145254535](https://github.com/steven-crosby/ritmofit-web/actions/runs/38145254535)
+> passed on `1050a7a`. [Post-merge main CI 38147699980](https://github.com/steven-crosby/ritmofit-web/actions/runs/38147699980) passed on `4412c3c`;
+> the complete squash tree equals the reviewed tree. The inspector accepts
+> `0:00` for clip start, downbeat, and free-timeline Start at; untouched fields preserve exact stored
+> milliseconds. Sixteen new inspector tests and the full local gate pass (web 1137/API 486/music 30;
+> integration 184). [Evidence](../docs/audits/builder-anchors-2026-10-11/README.md) retains baseline
+> failures, passing results, and source hashes.
+>
+> The Live lane closed without code edits: five synthetic 375×812 variants passed at zero scroll.
+> Next truncation and count/section/hold pressure at shorter heights remain parked for real-iPhone
+> investigation. The OD-02 decision/design-system wording conflict is documented without changing
+> hierarchy. [Live evidence](../docs/audits/live-glance-2026-10-11/README.md) retains fifteen screenshots.
+>
+> Primary main fast-forwarded safely. Fresh read-only production checks at 2026-10-11 14:33 UTC
+> confirmed Worker `5f67d242-8956-42b7-9318-67b2797d3454` at 100% and three consecutive SPA entries
+> `assets/index-mZ1ypG4t.js`, matching the recorded #494 baseline. No deployment, remote migration,
+> secret change, provider playback, or fixture mutation occurred. Listener availability remains
+> pending. This round's branches/worktree and unrelated primary `.claude/` plus Claude briefs are
+> retained; no general cleanup or deletion authority is inferred from merge approval.
+
+
 > **Close-session 2026-10-09 — merged records reconciled; Git cleanup authorized.** #497
 > squash-merged as `46c2593` after exact-head CI `37949861335` on `bea5f88`; post-merge main CI
 > `37950232324` passed. The tested and merged trees matched, and local main fast-forwarded safely.
