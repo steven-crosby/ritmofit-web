@@ -13,6 +13,23 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Cleanup 2026-10-11 — zero-anchor round archived; exact merged branches removed.** After explicit
+> owner approval, the managed `builder-zero-anchors` worktree was recoverably archived. Its recovery
+> ref `refs/codex/snapshots/23fb169b941a0a0046ab593a2e536f15a5833cc3` retains commit `7d0240c`, whose
+> complete tree equals #510's squash `912433f`. Both PR attachments are retained with the archive.
+> Local/remote `codex/r20261010b-builder-anchors` and `codex/close-anchors-session-20261011` were
+> deleted only after matching their tips to the recorded squashes on main; absence was verified.
+>
+> Both original Claude briefs moved byte-for-byte from untracked daily scratch into
+> [historical evidence](../docs/audits/builder-anchors-2026-10-11/lane-briefs/README.md).
+> [The cleanup receipt](../docs/audits/builder-anchors-2026-10-11/cleanup-receipt.json) records hashes,
+> recovery identity, ref deletion, and preservation checks. Primary `.claude/` bytes, all four other
+> worktrees' HEAD/status/untracked bytes or symlink targets, and pre-existing tags match the baseline.
+> No release candidate, older worktree, production fixture, or other author's handoff was removed.
+> #510 final main CI `38148374555` passed at `912433f`; this follow-up changes documentation only.
+> No deployment, remote migration, secret change, or provider playback occurred.
+
+
 > **Session 2026-10-11 — zero-anchor round merged; production unchanged.** [#509](https://github.com/steven-crosby/ritmofit-web/pull/509)
 > squash-merged as `4412c3c6231e9b8bfa6dad831c6100421c3adc04` after explicit owner merge approval and
 > [reviewed-head CI 38145254535](https://github.com/steven-crosby/ritmofit-web/actions/runs/38145254535)
