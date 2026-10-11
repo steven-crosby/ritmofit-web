@@ -2,56 +2,64 @@
 date: 2026-10-10
 tool: Codex (local)
 lane: orchestrator
-branch: codex/r20261010-lane2-song-picker
-head: 2d2e8078125e8a3ba3978a007019d01c7e65cb99
-base: ba92ceaf25a7b470eec23c33766df2658be287fb
-prs: ['#506 (merged)', '#507 (merge authorized)']
+branch: codex/close-integrity-session-20261010
+head: fd3d16ac71c5dda2f71600146eab54b4343113bf
+base: fd3d16ac71c5dda2f71600146eab54b4343113bf
+prs: ['#506 (merged)', '#507 (merged)', 'close documentation PR authorized']
 status: open
 ---
 
-# Two-lane integrity round close; no deployment
+# Integrity round merged and verified; attended acceptance and release remain
 
 ## Done
 
-- Lane 1 implements stale cue/move/user-move read protection, submitted-draft ownership, delayed focus ownership, and mounted completion/callback guards in ChoreographyEditor and its existing cue/move tests.
-- Lane 2 implements submitted URL draft ownership and song/URL completion context guards, with same-destination pending-song ownership independent of browse generation, in TrackSearch and its existing tests.
-- Independent review confirmed disjoint source ownership. Dashboard, SourceList, ordered-import implementation, playback, API/auth/provider code, shared contracts, migrations, styles, and tokens are unchanged.
-- Both lanes independently passed the full local repository gate. PR #506 publishes implementation `2d2e807`; PR #507 publishes implementation `53d2149`. A clean combined committed tree passed the full local gate. Both published pre-merge heads passed hosted CI: [lane 1](https://github.com/steven-crosby/ritmofit-web/actions/runs/38106773124) and [lane 2](https://github.com/steven-crosby/ritmofit-web/actions/runs/38106736828). Steven authorized squash-merging #506 then #507. #506 merged at `b11f9f2eabd966ad763e23c64242a63b85a8caa2`; #507 has cleanly incorporated that main commit and remains subject to updated-head CI. No deployment occurred.
+- [PR #506](https://github.com/steven-crosby/ritmofit-web/pull/506) squash-merged as `b11f9f2eabd966ad763e23c64242a63b85a8caa2`: choreography read ordering, submitted draft ownership, delayed focus ownership, and mounted callbacks.
+- [PR #507](https://github.com/steven-crosby/ritmofit-web/pull/507) squash-merged as `fd3d16ac71c5dda2f71600146eab54b4343113bf`: replacement URL drafts, completion context guards, and pending same-song/destination ownership across browse changes.
+- [Updated-base #507 CI](https://github.com/steven-crosby/ritmofit-web/actions/runs/38107642198) passed at `84703d0bfc99326b2d9789da5c8f16d50e6c5b81`; [final application-main CI](https://github.com/steven-crosby/ritmofit-web/actions/runs/38107826711) passed at `fd3d16a`. Their Git trees are identical. All five tested source/test hashes and the integration artifact manifest match main.
+- Initial post-merge close audit confirmed primary main synced with origin/main at application commit `fd3d16a`, with no tracked edits. The documentation close temporarily uses the approved close branch in primary and returns to synced main after merge. Only unrelated `.claude/launch.json` remains untracked and is preserved. There are no open PRs as observed before this documentation close PR.
+- INBOX is empty. HISTORY remains unchanged because no deployment occurred. DEVELOPMENT_PLAN records the verified undeployed application batch.
 
 ## In flight
 
-- This handoff records the state produced by the authorized #507 merge: both integrity lanes on main, with provider listening/release and cleanup still owed. Until the merge completes, #507 remains in flight; verify its live PR state.
-- #507 contains the updated-base song-picker change, merged lane-1 source from origin/main, lane handoff close records, and the orchestrator-owned development-plan/round-handoff close record. Product source remains frozen; only close documentation was added after the initial green heads.
-- Worktree dependency symlinks and the two untracked lane briefs are round-created preparation artifacts. Exclude them from commits; preserve them until separate cleanup authority is granted.
+- This documentation close corrects pre-merge conditional state and branch-dependent evidence links. Its commit, push, PR, green squash merge, and final close-branch deletion are authorized; CI and live PR state must be confirmed before merge.
+- Both lane changes are on main and undeployed. Attended acceptance, exact release selection, and actual native zoom remain open. This round’s managed worktree/lane-branch cleanup and handoff retirement are complete as recorded below.
 
 ## Next action
 
-Finish updated-base [PR #507](https://github.com/steven-crosby/ritmofit-web/pull/507) CI, perform its authorized squash merge, and verify final main CI. Once complete, the next product action remains attended desktop Cycle/Pilates acceptance when Steven can listen, followed by the separately authorized exact release decision in the [UX close handoff](./2026-10-09-ux-close-acceptance.md). Confirm live GitHub checks when restarting; source hashes identify tested product code independently of documentation commits.
-
-## Blockers and owner decisions
-
-- Implementation, publication, and squash merges #506 then #507 are authorized. Deployment, branch/worktree/brief/dependency cleanup, and production-data deletion remain ungranted.
-- Actual native 200% browser zoom could not be controlled: Chrome app access timed out and tab shortcuts did not change the measured viewport. The compact 600×304 viewport is an approximation, not actual zoom acceptance.
-- Natural desktop Cycle/Pilates and iPhone/device/audio acceptance and exact release selection remain owed by the existing UX close handoff. No audio started in this round.
+Resume attended desktop Cycle/Pilates acceptance when Steven can listen. If restarting before the documentation close PR finishes, confirm its live CI/merge state and complete the already authorized close-branch deletion first. Use the fresh tagged fixtures and the [UX close handoff](./2026-10-09-ux-close-acceptance.md); record human listening and natural completion before a separately authorized exact release decision. Provider release selection is prepared in the [release proposal](../release-proposal-2026-10-09.md). No playback should start unattended.
 
 ## Verification
 
-- Lane 1 focused: 44 tests. Full gate: web 1104, API 486, music 30, integration 184.
-- Lane 2 focused: 73 tests. Full gate: web 1095, API 486, music 30, integration 184.
-- Each twelve-step local gate passed formatting, typecheck, lint, design-system verification, theme classes, unit/integration tests, SPA build, OpenAPI unchanged, contract parity, and audit. Audit retains existing ignored low/moderate advisories.
-- Shared synthetic Chrome component fixture imports both changed sources: three unchanged-main failures reproduced, twelve candidate behavioral cases passed, five viewport page/panel overflow checks passed. Additional visible Chrome test retained newer cue and URL drafts through simultaneous delayed completions.
-- [Integration evidence](../../docs/audits/request-draft-integrity-2026-10-10/integration-audit/README.md) binds source hashes, results, gate receipts, and screenshots. The browser evidence establishes component behavior only. The [combined committed-tree gate](../../docs/audits/request-draft-integrity-2026-10-10/integration-audit/combined-gate.json) passed all twelve steps at `09a43d6`, with web 1121/API 486/music 30/integration 184. Hosted CI, authenticated whole-app, provider, actual zoom, and listening evidence remain separate.
-- Existing dependencies are shared through temporary symlinks. `pnpm_config_verify_deps_before_run=false` prevents implicit installs. No packages or lockfiles changed.
+- Both lane-local twelve-step gates and the combined local gate passed. Combined counts: web 1121, API 486, music 30, Worker integration 184. [Combined gate receipt](../../docs/audits/request-draft-integrity-2026-10-10/integration-audit/combined-gate.json) identifies committed source `09a43d6` and all five source/test hashes.
+- Local tag `verification/request-draft-integrity-20261010` retains the combined verification history through `35e398d`; it is not pushed and is excluded from branch cleanup.
+- Serialized synthetic Chrome component verification reproduced three baseline failures and passed twelve candidate behaviors and five viewport checks. [Integration evidence](../../docs/audits/request-draft-integrity-2026-10-10/integration-audit/README.md) preserves screenshots, source hashes, results, and limits.
+- This close reuses completed full gates and passing hosted CI; no product source changes or repeated full local gate are needed. Documentation formatting, links, diff hygiene, and evidence hashes are checked separately before publication.
+- Actual native 200% zoom remains unverified; 600×304 is a compact viewport approximation. Authenticated whole-app, provider/device, and human audible acceptance remain separate. No audio started.
+- No dependency install occurred. Existing temporary dependency symlinks use `pnpm_config_verify_deps_before_run=false` to avoid implicit installation. No packages or lockfiles changed.
 
 ## Production as observed
 
-- Fresh read-only close checks showed Worker `5f67d242-8956-42b7-9318-67b2797d3454` at 100% and three consecutive cache-busted SPA entries `assets/index-mZ1ypG4t.js`.
-- Main contains #506 at `b11f9f2` and gains #507 upon this PR merge. It remains ahead of the recorded #494 production baseline by #495/#499/#501/#503/#504 plus this integrity round. Production is unchanged; local verification worktree `request-draft-combined` is retained with only dependency symlinks untracked. Its full product gate ran at detached `09a43d6`; later publication-documentation commits also integrated cleanly and passed formatting, links, and source/artifact hash checks.
+Fresh read-only close checks on 2026-10-10 Mountain confirmed Worker `5f67d242-8956-42b7-9318-67b2797d3454` at 100% and three consecutive cache-busted SPA entries `assets/index-mZ1ypG4t.js`. Production remains the recorded #494 baseline (`e712274`). Main contains undeployed #495/#499/#501/#503/#504/#506/#507 application work. No remote migration, deployment, production fixture creation/deletion, or listening occurred in this round.
 
-## Shared zones touched
+## Completed cleanup and preservation
 
-None. This orchestrator writes only its own integration evidence and handoff in Lane 1's branch.
+- All three round worktrees are registered as archived attachments and absent from both the filesystem and active Git worktree list. Managed recoverable snapshots retain their branch history plus precisely the expected non-ignored lane briefs and dependency symlinks. No unexpected files were captured. Reproducible ignored build outputs need no retention.
 
-## Notes for other lanes / iOS
+| Archived worktree        | Recovery snapshot commit                   |
+| ------------------------ | ------------------------------------------ |
+| `choreography-integrity` | `1633c0b9e358cdcc3b34fd0a9829cc653cda4101` |
+| `song-picker-integrity`  | `54332a96a6d2061fa287c9cea0c2ea25ba12b2c5` |
+| `request-draft-combined` | `dafb1238e7dcf0f418beef7f73036bb0bd1c566d` |
 
-No API/schema/run-payload or iOS contract change. HISTORY remains unchanged because no deployment occurred; DEVELOPMENT_PLAN records main-versus-production for this merge. INBOX is empty. Preserve the primary checkout's unrelated `.claude/`, the unfinished provider release candidate, and previous-round worktrees. Do not infer publication, merge, release, production-data, or cleanup authority from this implementation approval.
+- Local and remote `codex/r20261010-lane1-choreography` and `codex/r20261010-lane2-song-picker` are deleted and verified absent. Squash lane tips are not ancestors of main; each complete tip tree equals its recorded squash commit, and both squash commits are ancestors of main. Steven explicitly authorized deletion of these exact verified squash-merged tips.
+- `2026-10-10-lane1-choreography-integrity.md` and `2026-10-10-lane2-song-picker-integrity.md` are retired in this close PR. Their evidence and completed implementation remain preserved in lane audit packets, merged PRs, and this handoff. No relative links to the retired files remain.
+- Only the local/remote close branch `codex/close-integrity-session-20261010` remains pending deletion after this docs PR's green squash merge. Return primary to synced main first, then remove that exact branch and verify absence. The close PR metadata and final session summary will record its actual disposition.
+- Preservation checks compared primary `.claude/launch.json` bytes and every previous checkout's HEAD, tracked status, untracked names/bytes, and dependency symlink targets with the pre-cleanup baseline. All match: unfinished `apple-guards-release-candidate` at `0afa5c8`, previous `status-release-reconcile`/`ux-builder-clarity`/`ux-live-clarity`, the local verification tag, existing UX-close/release records, and production QA fixtures are preserved. No general machine/tool cleanup occurred. Former QA ports 5183/9322 have no listening process as observed.
+
+## Owner decisions and boundaries
+
+Steven explicitly authorized documentation commit, push, PR, green squash merge, retirement of the two lane handoffs, archival of the three named worktrees, and deletion of the three named local/remote branches. Deployment and production-data deletion remain off-limits. Actual completed cleanup is recorded above; final close-branch disposition is recorded in the close PR and session summary after merge. No archive operation was blocked.
+
+## Shared zones and iOS
+
+This close touches only documentation. Product source, API/auth/provider/playback, schema/migrations, contracts/OpenAPI, packages, tokens/styles, and iOS contracts remain unchanged. Natural acceptance and the exact deployment batch remain owner decisions.
