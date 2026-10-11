@@ -5,11 +5,11 @@ lane: solo
 branch: claude/owner-decisions-20261011
 head: 0eeddc5f7f528880aafe0436bac8834ab8caa10e
 base: 0eeddc5f7f528880aafe0436bac8834ab8caa10e
-prs: ['#512 (merged, f8f2fdd)', '#513 (merged, 3003656)', '#514 (merged, 0eeddc5)', 'owner-decisions record PR (merged at close)']
+prs: ['#512 (merged, f8f2fdd)', '#513 (merged, 3003656)', '#514 (merged, 0eeddc5)', '#515 (merged, 6eeccc0)', 'deploy record PR']
 status: open
 ---
 
-# Desktop acceptance closed by owner decision; all-of-main release preflight clean; deploy awaits go/no-go
+# Main deployed as one batch (Worker 9563d726); attended checks on the new build are owed
 
 This handoff replaces three retired Codex handoffs (2026-10-09 UX close, 2026-10-10 integrity round, 2026-10-11 r20261010b close), retired with Steven's explicit approval on 2026-10-11. Their text is preserved at [`0eeddc5`](https://github.com/steven-crosby/ritmofit-web/tree/0eeddc5f7f528880aafe0436bac8834ab8caa10e/ritmofit_dev_plan/handoffs); everything still owed from them is listed here.
 
@@ -25,7 +25,7 @@ This handoff replaces three retired Codex handoffs (2026-10-09 UX close, 2026-10
   - OD-02: the current cue is the Live hero ([ledger](../../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md)).
   - Live finish control: decide later (INBOX).
   - Retire the three Codex handoffs.
-- Read-only release preflight for current main (below).
+- Read-only release preflight for current main (below), then **deployed `main` `6eeccc0`** on Steven's explicit go: Worker `9563d726-bc4d-44f7-834a-d7dbcc388d19`, SPA `assets/index-DyruxT0m.js`. Recorded in HISTORY.
 
 ## In flight
 
@@ -33,44 +33,35 @@ None.
 
 ## Next action
 
-Owner go/no-go on deploying current main as one batch. On go: follow `deployment-runbook.md` — fresh full gate on `main`, build the SPA, deploy the Worker, then smoke. No migration step is needed as observed. Record the deploy in HISTORY and the plan on a docs PR.
+With Steven present, on the new production build: start an Apple Music class in Live and confirm audible playback and at least one natural end-of-song hand-over; run one Apple browse/import; run one real SoundCloud Preview or Live pause/resume for #501. If any of these fail, roll back with `wrangler rollback 5f67d242-8956-42b7-9318-67b2797d3454` per the runbook.
 
 ## Blockers and owner decisions
 
-- Deploy approval. The batch mixes provider code (#495/#499, `packages/music/src/apple-music.ts`) and playback runtime (#501) with web changes; the runbook default is to ship provider changes alone. Steven chose one batch for preflight; shipping it is a separate yes.
-- Post-deploy checks carried from the retired release proposal: targeted authenticated Apple browse/import, and a real asynchronous SoundCloud transport check for #501. Audible playback after deploy needs Steven.
+- The deployed batch mixes provider code (#495/#499) and playback runtime (#501) with web changes, by owner choice against the runbook default. Nothing audible or authenticated has been verified on the new build yet.
+- Post-deploy checks still owed: authenticated Apple browse/import, a real asynchronous SoundCloud transport check for #501, audible Apple playback, and the local browser smokes.
 - Real-iPhone Safari investigation (Bluetooth, lock/unlock, notification) is still open and needs the device.
 - Live finish control wording, location and style (INBOX breadcrumb; Exit works).
-- Disposition of preserved Codex state: provider candidate worktree and local/remote branch `codex/release-apple-guards-20261009` at `0afa5c8` (superseded if main ships as one batch); worktrees `status-release-reconcile`, `ux-builder-clarity`, `ux-live-clarity` and their local branches; local unpushed tag `verification/request-draft-integrity-20261010`. Nothing was removed.
+- Disposition of preserved Codex state: provider candidate worktree and local/remote branch `codex/release-apple-guards-20261009` at `0afa5c8` (superseded now that main shipped as one batch); worktrees `status-release-reconcile`, `ux-builder-clarity`, `ux-live-clarity` and their local branches; local unpushed tag `verification/request-draft-integrity-20261010`. Nothing was removed.
 - Production QA fixtures are all retained; deletion is unauthorized.
 - Song-to-song routine copy is not authorized; it needs a product decision and probably a server endpoint.
 - Carried, unverified: actual native 200% browser zoom on the Builder (only a compact-viewport approximation was tested on 2026-10-10); inspector upper bounds, sub-second entry and clip-end wording; thirteen other raw error casts in `Dashboard.tsx`; the `[rf-liveness]` console lines re-printing at each track start.
 - Later, separate repo: iOS handoff-model port. Spotify stays tabled.
 
-Now unparked by OD-02: Live at short viewports. Next cue and countdown fall behind the transport at 375×635 and 320×568 per the [live-glance packet](../../docs/audits/live-glance-2026-10-11/README.md); with the current cue confirmed as hero this is a synthetic-testable lane. Hold it until a release batch ships.
+Now unparked by OD-02: Live at short viewports. Next cue and countdown fall behind the transport at 375×635 and 320×568 per the [live-glance packet](../../docs/audits/live-glance-2026-10-11/README.md); with the current cue confirmed as hero this is a synthetic-testable lane. The release batch has shipped, so this is the strongest next code lane.
 
 ## Verification
 
 - #512/#513: full twelve-step local gate on each code commit, all pass (final: web 1148, API 486, music 30, Worker integration 184). Hosted CI passed on every PR head and on `main` after each merge. #512 was also checked in a local browser.
 - Spot-check: see the acceptance packet for the boundary table and limits.
-- This PR is docs only: formatting and links checked; hosted CI on the PR head.
+- Deploy: full twelve-step gate on `6eeccc0` passed before deploy; remote D1 nothing to apply; post-deploy unauthenticated smoke passed (SPA entry on three consecutive fetches, status codes, security headers).
 - Skipped: untouched natural run (declined by owner); real screen reader; real device.
 
 ## Production as observed
 
-- `main` ahead. Checked 2026-10-11 after the #514 merge: Worker `5f67d242-8956-42b7-9318-67b2797d3454` at 100% (created 2026-10-08), SPA `assets/index-mZ1ypG4t.js` on three consecutive cache-busted fetches. The #494 / `e712274` source label is from HISTORY.
-- Undeployed: #495/#499, #501, #503/#504, #506/#507, #509, #512, #513 (#498 is tests only).
-- Release preflight, read-only, 2026-10-11:
-
-| Check | Result |
-| --- | --- |
-| Application files changed since `e712274` (non-test) | Seven: `ChoreographyEditor.tsx`, `ConnectionsDialog.tsx`, `Dashboard.tsx`, `LiveMode.tsx`, `TrackSearch.tsx`, `lib/playback/runtime.ts`, `packages/music/src/apple-music.ts` |
-| Migrations, `wrangler.toml`, DB schema, dependencies, OpenAPI | No change |
-| Remote D1 migrations | None to apply |
-| `BETA_ALLOWED_EMAILS` secret | Present (name only) |
-| Rollback anchor | Worker `5f67d242-8956-42b7-9318-67b2797d3454` |
-| Baseline smoke | `/` 200, `/api/v1/health` 200, `/api/v1/classes` 401 |
-| Not done | Fresh gate on the exact deploy commit, SPA build and expected entry hash, deploy dry run |
+- Aligned for application code. Checked 2026-10-11 after deploy: Worker `9563d726-bc4d-44f7-834a-d7dbcc388d19` at 100% (created 2026-10-11T22:01:47Z); SPA `assets/index-DyruxT0m.js` on three consecutive cache-busted fetches, matching the local build of `main` `6eeccc0`.
+- Rollback anchor: Worker `5f67d242-8956-42b7-9318-67b2797d3454` (#494, SPA `assets/index-mZ1ypG4t.js`).
+- Remote D1: nothing to apply, checked immediately before deploy. No migration, config, dependency or secret change in the batch.
+- Smoke: `/` 200; health 200; classes/explore/teams 401 unauthenticated; security headers present. Unauthenticated 401s on provider and class routes do not by themselves prove mounting.
 
 ## Shared zones touched
 
