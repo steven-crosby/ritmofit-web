@@ -5,33 +5,29 @@ lane: lane-1-choreography
 branch: codex/r20261010-lane1-choreography
 head: 2d2e8078125e8a3ba3978a007019d01c7e65cb99
 base: ba92ceaf25a7b470eec23c33766df2658be287fb
-prs: ['#506 (open)']
-status: open
+prs: ['#506 (merged, b11f9f2)']
+status: closed
 ---
 
-# Choreography fixes published in PR #506; CI and combined gate in progress
+# Choreography fixes merged in PR #506; remaining round work routed
 
 ## Done
 
-- [PR #506](https://github.com/steven-crosby/ritmofit-web/pull/506) publishes implementation commit `2d2e8078125e8a3ba3978a007019d01c7e65cb99`: latest mounted cue/move reads, replacement Add/Save drafts, delayed focus ownership, user-move creation/picker ordering, and suppressed stale callbacks after section unmount. This implementation identity names the tested product source; later documentation commits do not alter it.
+- [PR #506](https://github.com/steven-crosby/ritmofit-web/pull/506) squash-merged as `b11f9f2eabd966ad763e23c64242a63b85a8caa2`, from verified final PR head `ede94a2f745ab67b156762a04ca27154e032a322` and tested implementation `2d2e8078125e8a3ba3978a007019d01c7e65cb99`: latest mounted cue/move reads, replacement Add/Save drafts, delayed focus ownership, user-move creation/picker ordering, and suppressed stale callbacks after section unmount. This implementation identity names the tested product source; later documentation commits do not alter it.
 - Reproductions and verification are retained in the [lane evidence](../../docs/audits/request-draft-integrity-2026-10-10/lane1-choreography/README.md). Confirmed writes and failed local refreshes retain separate meaning; rejected drafts remain editable.
-- Orchestrator independently passed all 12 repository gate steps on the frozen lane source and completed paired baseline/candidate synthetic browser verification. The orchestrator committed, pushed, and opened the lane PR under Steven's publication authority.
+- Orchestrator independently passed all 12 repository gate steps on the frozen lane source and completed paired baseline/candidate synthetic browser verification. The orchestrator committed, pushed, opened, and squash-merged the lane PR under Steven's explicit publication and merge authority. No deployment or deletion occurred.
 
 ## In flight
 
-- PR #506 CI is running; current-head results remain pending. The orchestrator serializes Git publication and CI reconciliation.
-- Product source and tests remain frozen at the verified [source hashes](../../docs/audits/request-draft-integrity-2026-10-10/lane1-choreography/source-sha256.json). The full gate passed all 12 steps against detached combined committed HEAD `09a43d662ee814e04d110432f72826ac00b883e1`, integrating both lanes through disjoint cherry-picks. This extends the earlier external-import browser harness. Hosted current-head CI remains pending final reconciliation; subsequent documentation commits trigger fresh CI.
-- Actual native 200% browser zoom was unavailable; the 600×304 compact viewport check passed and is not actual zoom acceptance.
-- The checkout remains on the lane branch with author-only publication-status documentation updates. Untracked brief and dependency symlinks remain preserved.
+None owned by this closed lane. Post-merge main CI, updated-base PR #507 checks and merge, actual native zoom follow-up, release selection, deployment decisions, and cleanup are routed to the [parent round handoff](./2026-10-10-request-draft-integrity-round.md). Natural Cycle/Pilates and device/audio acceptance remain routed to the [earlier UX close handoff](./2026-10-09-ux-close-acceptance.md).
 
 ## Next action
 
-The orchestrator should finish final current-head PR CI reconciliation, retain its results alongside the passed combined gate, and present the merge-ready disposition. Merge, deployment, and cleanup still require separate owner authority.
+Continue through the parent round handoff: reconcile #506 post-merge main CI and #507's updated-base CI before the already authorized second squash merge. This lane requires no additional implementation or publication work.
 
 ## Blockers and owner decisions
 
-- Implementation and staging/committing/pushing/opening one PR per lane are approved. The orchestrator serializes publication. Merge, deployment, and cleanup remain unauthorized.
-- Human listening is unavailable; natural provider playback acceptance remains separate.
+None retained by this lane. Steven authorized squash merges #506 then #507. Deployment, deletion, and cleanup remain ungranted and are routed to the parent round handoff. Human listening remains unavailable, and natural playback/release decisions remain with the earlier UX close handoff.
 
 ## Verification
 
@@ -41,12 +37,12 @@ The orchestrator should finish final current-head PR CI reconciliation, retain i
 - Shared paired browser run reproduced all three original round failures on unchanged main; 12 candidate behavior scenarios passed, eight exercising choreography. Page and measured cue/search panel overflow checks passed at desktop 1200×900, portrait 390×844 and 320×568, landscape 844×390, and compact 600×304.
 - Browser evidence is synthetic actual Blink/CDP keyboard/mouse component behavior with controlled API responses. It does not establish an authenticated whole-app audit, provider/audio acceptance, or actual 200% zoom. Native app control timed out; compact equivalent only. Shared evidence: [integration packet](../../docs/audits/request-draft-integrity-2026-10-10/integration-audit/README.md).
 - Combined committed-tree full gate passed all 12 steps at `09a43d662ee814e04d110432f72826ac00b883e1`: web 1121/API 486/music 30 unit tests, Worker integration 184; all five combined source/test hashes match the frozen receipts. [Combined gate receipt](../../docs/audits/request-draft-integrity-2026-10-10/integration-audit/combined-gate.json).
-- Hosted final current-head PR CI remains pending reconciliation; documentation commits trigger fresh CI. Hosted CI is not claimed green here.
+- [Final PR-head CI](https://github.com/steven-crosby/ritmofit-web/actions/runs/38106773124) passed on `ede94a2f745ab67b156762a04ca27154e032a322` before merge. [Post-merge main CI](https://github.com/steven-crosby/ritmofit-web/actions/runs/38107560080) on `b11f9f2eabd966ad763e23c64242a63b85a8caa2` was observed running on 2026-10-10 Mountain; its result is routed to the parent round handoff and is not claimed passed here.
 - pnpm dependency freshness is disabled for existing shared symlinks; no dependency installation occurred.
 
 ## Production as observed
 
-Not checked from this lane environment. No deployment occurred. Current production and outstanding listening/release work remain routed to the existing [round-close handoff](./2026-10-09-ux-close-acceptance.md); its dated facts were read as context and not reverified here.
+Not checked from this lane environment. PR #506 is merged on main but not deployed. Production observations and new main-vs-production bookkeeping belong to the parent round handoff; natural listening and release composition remain routed to the earlier UX close handoff. No production fixture deletion occurred.
 
 ## Shared zones touched
 
@@ -54,4 +50,4 @@ None. Dashboard, shared import helpers, provider/playback/auth/API code, contrac
 
 ## Notes for other lanes / iOS
 
-No API or iOS contract change. On a keyed section unmount, pending writes may still persist, but captured UI callbacks are suppressed; revisiting/reloading retrieves persisted results. Lane 2 owns TrackSearch independently.
+No API or iOS contract change. On a keyed section unmount, pending writes may still persist, but captured UI callbacks are suppressed; revisiting/reloading retrieves persisted results. Lane 2 owns TrackSearch independently. This author-only closed handoff update is delivered through #507 after the orchestrator cleanly integrated main into that lane; no choreography source/test or README edits accompany it.
