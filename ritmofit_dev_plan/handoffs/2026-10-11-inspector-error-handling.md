@@ -5,7 +5,7 @@ lane: solo
 branch: claude/live-connections-errmessage-20261011
 head: 314ea523e576cbf77e7766fc31a7a01a619d4436
 base: f8f2fdd5a635c3b8583f35c2ccc73c40a68cd154
-prs: ['#512 (merged, f8f2fdd)', '#513 (merged at close)']
+prs: ['#512 (merged, f8f2fdd)', '#513 (merged, 3003656)', 'spot-check record PR']
 status: open
 ---
 
@@ -15,6 +15,7 @@ status: open
 
 - [#512](https://github.com/steven-crosby/ritmofit-web/pull/512): track inspector validation errors render as an alert, mark the offending field `aria-invalid`, join its `aria-describedby`, and take focus; a rejected Downbeat or Start at opens the collapsed Advanced group first. The four inspector failure paths (zone save, BPM lookup, save, remove) use `errMessage` with per-action fallbacks. Only `Dashboard.tsx` and `Dashboard.test.tsx` changed.
 - [#513](https://github.com/steven-crosby/ritmofit-web/pull/513): the Live connections refresh and the Connections dialog load/disconnect failures use `errMessage`. A rejection with an empty message no longer leaves Live preflight with no error notice or Retry. Four files: `LiveMode.tsx`, `ConnectionsDialog.tsx`, and their tests.
+- Attended Cycle transition spot-check on production with Steven listening (2026-10-11, 20:16–20:32 UTC): nine hand-overs clean by ear, one natural and eight by manual Next; ended by Exit. Not a natural run. [Record](../../docs/audits/apple-natural-acceptance-2026-10-09/README.md).
 - Start-session baseline plus a read-only Live/Account audit for a second lane. Result: none worth running without an owner decision (table below).
 
 ## In flight
@@ -27,7 +28,8 @@ Unchanged from the open acceptance handoffs: attended natural desktop Cycle/Pila
 
 ## Blockers and owner decisions
 
-- Listener availability (Steven was not available for audio on 2026-10-11); no playback started.
+- The untouched natural Cycle and Pilates runs are still outstanding; the 2026-10-11 spot-check does not replace them unless Steven decides it does. Pilates was not started.
+- Live finish control: Exit works; owner wants different wording, location and style. Captured in `INBOX.md`.
 - OD-02: next cue or current cue as the Live hero. Deciding it turns the short-viewport Live issue into a synthetic-testable lane.
 - Song-to-song routine copy inside one class is not authorized (benchmark gaps are findings only). It needs a product decision on overwrite/append and re-timing, a track list passed from `TrackInspector` in `Dashboard.tsx`, and probably a server endpoint — the existing `POST /class-tracks/:id/copy` copies a track with its choreography into another class only.
 - Exact release batch and deployment remain separate decisions.
