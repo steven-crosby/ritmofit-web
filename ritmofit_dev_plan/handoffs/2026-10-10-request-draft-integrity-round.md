@@ -46,7 +46,7 @@ Complete final-head hosted CI for [PR #506](https://github.com/steven-crosby/rit
 ## Production as observed
 
 - Earlier read-only checks in this session showed Worker `5f67d242-8956-42b7-9318-67b2797d3454` at 100% and three consecutive cache-busted SPA entries `assets/index-mZ1ypG4t.js`.
-- Main remains `ba92cea`, ahead of the recorded #494 production baseline by previously merged #495/#499/#501/#503/#504 application work. This round changed neither main nor production. Both PRs remain open; local verification worktree `request-draft-combined` is retained at detached `09a43d6` with only dependency symlinks untracked.
+- Main remains `ba92cea`, ahead of the recorded #494 production baseline by previously merged #495/#499/#501/#503/#504 application work. This round changed neither main nor production. Both PRs remain open; local verification worktree `request-draft-combined` is retained with only dependency symlinks untracked. Its full product gate ran at detached `09a43d6`; later publication-documentation commits also integrated cleanly and passed formatting, links, and source/artifact hash checks.
 
 ## Shared zones touched
 
