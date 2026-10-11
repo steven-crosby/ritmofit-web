@@ -13,6 +13,39 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-11 — main as one batch (#495 through #513).** Owner approved deploying current
+> `main` at `6eeccc0` as a single batch after choosing an all-of-main preflight over the two-batch
+> release proposal. Worker `9563d726-bc4d-44f7-834a-d7dbcc388d19` at 100%, created
+> 2026-10-11T22:01:47Z. SPA `assets/index-DyruxT0m.js`. Rollback Worker
+> `5f67d242-8956-42b7-9318-67b2797d3454` (#494, SPA `assets/index-mZ1ypG4t.js`). No rollback
+> performed.
+>
+> Ships #495/#499 (Apple catalog and library pagination guards, `packages/music/src/apple-music.ts`),
+> #501 (first post-gap transport read, `lib/playback/runtime.ts`), #503/#504 (Builder and Live
+> clarity), #506/#507 (choreography and song-picker draft integrity), #509 (zero inspector anchors),
+> #512 (inspector errors announced on the field), and #513 (Live/Connections error messages). #498
+> is tests only. Provider, playback-runtime, and web changes shipped together by owner choice,
+> against the runbook default of shipping provider changes alone. No schema, migration, API,
+> shared-contract, OpenAPI, configuration, dependency, or secret change.
+>
+> Pre-deploy on `6eeccc0`: full twelve-step local gate passed (web 1148, API 486, music 30, Worker
+> integration 184; OpenAPI no drift; contract parity and audit pass); main CI `38178407528` passed.
+> Remote D1 migration list reported nothing to apply, immediately before deploy. `BETA_ALLOWED_EMAILS`
+> present by name. SPA built fresh before the Worker deploy.
+>
+> Post-deploy smoke: SPA entry matched the build on three consecutive cache-busted fetches after
+> two retries (about 20 seconds); `/` 200, health 200, classes/explore/teams 401 unauthenticated;
+> security headers present; entry asset and `sw.js` 200; unauthenticated probes of provider search,
+> class track import, cues, and provider connections returned 401 (auth runs before routing, so
+> this does not by itself prove each route is mounted). Not done: authenticated checks, the local
+> browser smokes, Apple browse/import, a real SoundCloud transport check for #501, and any audible
+> playback on the new build — these are owed with the owner present.
+>
+> Desktop acceptance basis: the owner accepted an attended Cycle transition spot-check on the
+> previous build (#494) earlier the same day and ruled Pilates covered by it
+> ([record](../docs/audits/apple-natural-acceptance-2026-10-09/README.md)). No untouched natural
+> run was performed on either build.
+
 > **Cleanup 2026-10-11 — zero-anchor round archived; exact merged branches removed.** After explicit
 > owner approval, the managed `builder-zero-anchors` worktree was recoverably archived. Its recovery
 > ref `refs/codex/snapshots/23fb169b941a0a0046ab593a2e536f15a5833cc3` retains commit `7d0240c`, whose
