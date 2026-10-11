@@ -1,0 +1,864 @@
+{
+  "kind": "synthetic-Chrome-viewport-emulation",
+  "providerPlayback": false,
+  "actualDevice": false,
+  "actualBrowserZoom": false,
+  "errors": [],
+  "results": [
+    {
+      "variant": "short",
+      "pass": true,
+      "screenshot": "375x812-short.png",
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "current": {
+        "text": "Find your rhythm",
+        "rect": {
+          "x": 32,
+          "y": 206.5,
+          "width": 311,
+          "height": 83.59375,
+          "bottom": 290.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 387.53125,
+          "width": 186.3125,
+          "height": 30,
+          "bottom": 417.53125
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 280.59375,
+          "y": 389.53125,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 413.53125
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 611,
+      "chromeHeight": 347,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long",
+      "pass": true,
+      "screenshot": "375x812-long.png",
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 206.5,
+          "width": 311,
+          "height": 83.59375,
+          "bottom": 290.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 387.53125,
+          "width": 186.3125,
+          "height": 30,
+          "bottom": 417.53125
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 280.59375,
+          "y": 389.53125,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 413.53125
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 611,
+      "chromeHeight": 347,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long-count",
+      "pass": true,
+      "screenshot": "375x812-long-count.png",
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 282.5,
+          "width": 311,
+          "height": 83.59375,
+          "bottom": 366.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 395.09375,
+          "width": 186.3125,
+          "height": 30,
+          "bottom": 425.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 280.59375,
+          "y": 397.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 421.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 611,
+      "chromeHeight": 347,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long-holds",
+      "pass": true,
+      "screenshot": "375x812-long-holds.png",
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 206.5,
+          "width": 311,
+          "height": 83.59375,
+          "bottom": 290.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 387.53125,
+          "width": 186.3125,
+          "height": 30,
+          "bottom": 417.53125
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 280.59375,
+          "y": 389.53125,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 413.53125
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 611,
+      "chromeHeight": 347,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long-section-count-holds",
+      "pass": true,
+      "screenshot": "375x812-long-section-count-holds.png",
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 319.5,
+          "width": 311,
+          "height": 83.59375,
+          "bottom": 403.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 432.09375,
+          "width": 186.3125,
+          "height": 30,
+          "bottom": 462.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 280.59375,
+          "y": 434.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 458.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 611,
+      "chromeHeight": 384,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "short",
+      "pass": true,
+      "screenshot": "375x635-short.png",
+      "viewport": {
+        "width": 375,
+        "height": 635
+      },
+      "current": {
+        "text": "Find your rhythm",
+        "rect": {
+          "x": 32,
+          "y": 206.5,
+          "width": 311,
+          "height": 83.59375,
+          "bottom": 290.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 319.09375,
+          "width": 186.3125,
+          "height": 30,
+          "bottom": 349.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 280.59375,
+          "y": 321.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 345.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 434,
+      "chromeHeight": 347,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long",
+      "pass": true,
+      "screenshot": "375x635-long.png",
+      "viewport": {
+        "width": 375,
+        "height": 635
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 206.5,
+          "width": 311,
+          "height": 83.59375,
+          "bottom": 290.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 319.09375,
+          "width": 186.3125,
+          "height": 30,
+          "bottom": 349.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 280.59375,
+          "y": 321.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 345.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 434,
+      "chromeHeight": 347,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long-count",
+      "pass": true,
+      "screenshot": "375x635-long-count.png",
+      "viewport": {
+        "width": 375,
+        "height": 635
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 282.5,
+          "width": 311,
+          "height": 83.59375,
+          "bottom": 366.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 395.09375,
+          "width": 186.3125,
+          "height": 30,
+          "bottom": 425.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 280.59375,
+          "y": 397.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 421.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 434,
+      "chromeHeight": 347,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long-holds",
+      "pass": true,
+      "screenshot": "375x635-long-holds.png",
+      "viewport": {
+        "width": 375,
+        "height": 635
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 206.5,
+          "width": 311,
+          "height": 83.59375,
+          "bottom": 290.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 319.09375,
+          "width": 186.3125,
+          "height": 30,
+          "bottom": 349.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 280.59375,
+          "y": 321.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 345.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 434,
+      "chromeHeight": 347,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long-section-count-holds",
+      "pass": false,
+      "screenshot": "375x635-long-section-count-holds.png",
+      "viewport": {
+        "width": 375,
+        "height": 635
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 319.5,
+          "width": 311,
+          "height": 83.59375,
+          "bottom": 403.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 432.09375,
+          "width": 186.3125,
+          "height": 30,
+          "bottom": 462.09375
+        },
+        "inViewport": true,
+        "aboveTransport": false,
+        "centerUnobscured": false,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 280.59375,
+          "y": 434.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 458.09375
+        },
+        "inViewport": true,
+        "aboveTransport": false,
+        "centerUnobscured": false,
+        "textTruncated": false
+      },
+      "transportTop": 434,
+      "chromeHeight": 384,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "short",
+      "pass": true,
+      "screenshot": "320x568-short.png",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "current": {
+        "text": "Find your rhythm",
+        "rect": {
+          "x": 32,
+          "y": 206.5,
+          "width": 256,
+          "height": 83.59375,
+          "bottom": 290.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 319.09375,
+          "width": 131.3125,
+          "height": 30,
+          "bottom": 349.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 225.59375,
+          "y": 321.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 345.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 353,
+      "chromeHeight": 361,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long",
+      "pass": true,
+      "screenshot": "320x568-long.png",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 206.5,
+          "width": 256,
+          "height": 83.59375,
+          "bottom": 290.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 319.09375,
+          "width": 131.3125,
+          "height": 30,
+          "bottom": 349.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 225.59375,
+          "y": 321.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 345.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 353,
+      "chromeHeight": 361,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long-count",
+      "pass": false,
+      "screenshot": "320x568-long-count.png",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 282.5,
+          "width": 256,
+          "height": 83.59375,
+          "bottom": 366.09375
+        },
+        "inViewport": true,
+        "aboveTransport": false,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 395.09375,
+          "width": 131.3125,
+          "height": 30,
+          "bottom": 425.09375
+        },
+        "inViewport": true,
+        "aboveTransport": false,
+        "centerUnobscured": false,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 225.59375,
+          "y": 397.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 421.09375
+        },
+        "inViewport": true,
+        "aboveTransport": false,
+        "centerUnobscured": false,
+        "textTruncated": false
+      },
+      "transportTop": 353,
+      "chromeHeight": 361,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long-holds",
+      "pass": true,
+      "screenshot": "320x568-long-holds.png",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 206.5,
+          "width": 256,
+          "height": 83.59375,
+          "bottom": 290.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 319.09375,
+          "width": 131.3125,
+          "height": 30,
+          "bottom": 349.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 225.59375,
+          "y": 321.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 345.09375
+        },
+        "inViewport": true,
+        "aboveTransport": true,
+        "centerUnobscured": true,
+        "textTruncated": false
+      },
+      "transportTop": 353,
+      "chromeHeight": 361,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    },
+    {
+      "variant": "long-section-count-holds",
+      "pass": false,
+      "screenshot": "320x568-long-section-count-holds.png",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "current": {
+        "text": "Keep shoulders relaxed, breathe steadily, and hold a smooth seated rhythm. Stay tall through the spine, soften your grip, keep knees tracking forward, and prepare to add resistance with control.",
+        "rect": {
+          "x": 32,
+          "y": 319.5,
+          "width": 256,
+          "height": 83.59375,
+          "bottom": 403.09375
+        },
+        "inViewport": true,
+        "aboveTransport": false,
+        "centerUnobscured": false,
+        "textTruncated": false
+      },
+      "next": {
+        "text": "Add a quarter turn and stay seated with a smooth, controlled cadence.",
+        "rect": {
+          "x": 82.28125,
+          "y": 432.09375,
+          "width": 131.3125,
+          "height": 30,
+          "bottom": 462.09375
+        },
+        "inViewport": true,
+        "aboveTransport": false,
+        "centerUnobscured": false,
+        "textTruncated": true
+      },
+      "countdown": {
+        "text": "1:30",
+        "rect": {
+          "x": 225.59375,
+          "y": 434.09375,
+          "width": 62.40625,
+          "height": 24,
+          "bottom": 458.09375
+        },
+        "inViewport": true,
+        "aboveTransport": false,
+        "centerUnobscured": false,
+        "textTruncated": false
+      },
+      "transportTop": 353,
+      "chromeHeight": 398,
+      "horizontalOverflow": 0,
+      "documentScrollTop": 0,
+      "liveShellScrollTop": 0,
+      "currentCueLineClamp": "2"
+    }
+  ]
+}

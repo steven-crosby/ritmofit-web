@@ -1,0 +1,15 @@
+
+ RUN  v3.2.6 <repo-root>/apps/web
+
+ ✓ src/components/Dashboard.test.tsx (90 tests) 5985ms
+   ✓ Dashboard class library states > retries a Music catalog outage without changing the query  655ms
+   ✓ Dashboard class library states > searches, selects in instructor order, and starts a class from Music  402ms
+   ✓ Dashboard track focus management > commits a zone on the click, and typed fields on Enter  475ms
+   ✓ Dashboard track focus management > puts a zone back when its write fails, instead of showing a value that did not land  492ms
+   ✓ Dashboard plan-first next step > stays on the next empty block after the first assign and keeps Pulse off  407ms
+
+ Test Files  1 passed (1)
+      Tests  90 passed (90)
+   Start at  07:52:58
+   Duration  7.39s (transform 527ms, setup 0ms, collect 619ms, tests 5.99s, environment 420ms, prepare 43ms)
+
