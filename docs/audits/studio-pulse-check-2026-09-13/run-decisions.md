@@ -97,6 +97,8 @@ implementation direction but do not authorize an implementation slice by themsel
 | OD-02 / SPC-17 | What is Live's primary data hero? | Keep cue-first hierarchy and update design docs plus stale code comments. | Restore BPM at the documented 88px hero scale. | **A** — the next teaching cue is more useful under pressure; BPM can remain prominent but subordinate. | **Resolved: A.** Approved by Steven, 2026-09-13. |
 | OD-03 / SPC-14 | Should the energy ribbon implement its documented placed-move refinement or should the docs be downgraded to track-only behavior? | Implement the hybrid curve from existing track and placed-move intensity data. | Amend the design system to make the track-only baseline canonical. | **A** — placed-move refinement makes the movement-first class shape real without a new schema. | **Resolved: A.** Approved by Steven, 2026-09-19. Implementation remains separately gated. |
 
+**OD-02 clarified, 2026-10-11 (Steven).** Cue-first stands. The *current* cue is the visual hero and the next cue is queued beneath it, as [layout guidance](../../../ritmofit_design_system/04-layout-and-surfaces.md) already says. This supersedes the "next cue" wording in SPC-17 and the OD-02 row above; BPM stays prominent but subordinate.
+
 ## Implementation status
 
 | Slice / decision | Status | PR |

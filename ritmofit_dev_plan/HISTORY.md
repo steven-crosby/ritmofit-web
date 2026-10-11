@@ -60,7 +60,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > head identities. The unreleased Apple provider candidate `0afa5c8` remains retained.
 >
 > Retired ten superseded handoffs after routing their pending acceptance/release work to the
-> [current handoff](./handoffs/2026-10-09-ux-close-acceptance.md) and release proposal. Historical
+> [current handoff](https://github.com/steven-crosby/ritmofit-web/blob/0eeddc5f7f528880aafe0436bac8834ab8caa10e/ritmofit_dev_plan/handoffs/2026-10-09-ux-close-acceptance.md) and release proposal. Historical
 > merge facts: #494 `e712274` (deployed), #495 `8dc2e24`, #496 `c5fe7aa`, #498 `423218a`,
 > #499 `5aaa8c5`, #500 `6460182`, #501 `c953aa5`, #502 `aade146`, #503 `be6d71a`,
 > #504 `0ec1d10`, and #497 `46c2593`. Detailed original tests, limitations, and source identities
