@@ -1,6 +1,6 @@
 # Two-lane request and draft integrity — integration verification
 
-Author: Codex orchestrator, 2026-10-10. Both lane branches started from `ba92ceaf25a7b470eec23c33766df2658be287fb`; changes are local and uncommitted.
+Author: Codex orchestrator, 2026-10-10. Both lane branches started from `ba92ceaf25a7b470eec23c33766df2658be287fb`; implementation changes are published in [PR #506](https://github.com/steven-crosby/ritmofit-web/pull/506) and [PR #507](https://github.com/steven-crosby/ritmofit-web/pull/507).
 
 ## Source and scope
 
@@ -41,6 +41,10 @@ Each frozen lane independently passed all twelve CI-equivalent gate steps; [gate
 
 The round uses existing dependencies through temporary worktree symlinks. `pnpm_config_verify_deps_before_run=false` suppresses automatic freshness installation without changing packages or lockfiles. The initial ordinary gate invocation aborted the implicit install attempt before checks; the subsequent complete run passed with this environment.
 
+## Combined committed-tree verification
+
+[combined-gate.json](./combined-gate.json) records all twelve local steps passing on committed HEAD `09a43d662ee814e04d110432f72826ac00b883e1`. The detached managed worktree started at Lane 1 implementation `2d2e8078125e8a3ba3978a007019d01c7e65cb99` and cleanly cherry-picked Lane 2 implementation `53d2149ed9e52c0cd9d5d4d3498c1ab209f431ba`. All five source/test hashes match the browser-tested candidates. Combined counts: web 1121, API 486, music 30, Worker integration 184. This local gate establishes the combined committed source tree; PR CI remains a separate hosted check.
+
 ## Remaining authority and acceptance
 
-No stage, commit, push, PR, merge, deploy, branch/worktree cleanup, or production mutation occurred. Main and production are unchanged. Commit/push/PR authority is required to deliver the local branches; their combined Git-tree/CI check remains part of the authorized merge train. Actual zoom and real provider/device/listening acceptance remain separate evidence gaps. These fixes introduce no playback, API, schema, migration, token, or iOS contract change.
+Steven authorized staging, committing, pushing, and one PR per lane, and both lane PRs are open. Merge, deployment, branch/worktree cleanup, and production mutation have not occurred. Main and production are unchanged. Hosted PR CI must be reconciled on the final published heads before a separately authorized merge. Actual zoom and real provider/device/listening acceptance remain separate evidence gaps. These fixes introduce no playback, API, schema, migration, token, or iOS contract change.

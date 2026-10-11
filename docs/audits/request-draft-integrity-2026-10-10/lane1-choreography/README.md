@@ -1,6 +1,6 @@
 # Choreography request and draft integrity — 2026-10-10
 
-Lane 1 on base `ba92ceaf25a7b470eec23c33766df2658be287fb` fixes deterministic cue and move request races. No playback or provider API behavior changed.
+Lane 1 on base `ba92ceaf25a7b470eec23c33766df2658be287fb` fixes deterministic cue and move request races. No playback or provider API behavior changed. [PR #506](https://github.com/steven-crosby/ritmofit-web/pull/506) publishes implementation `2d2e8078125e8a3ba3978a007019d01c7e65cb99`; this stable identity names the tested product source, independent of later documentation commits.
 
 ## Reproductions and resulting behavior
 
@@ -48,4 +48,4 @@ Synthetic Blink/CDP keyboard and mouse events exercised actual components with c
 
 ## Remaining verification and authority
 
-Combined Git-tree/CI verification still awaits separately authorized commit, push, and PR work; the current shared harness integrates source through external imports. Independent review is coordinated by the orchestrator. No production, human-listening, provider-playback, or device/audio acceptance follows from these checks. No stage, commit, push, PR, merge, deployment, production data mutation, or cleanup is authorized or performed by this lane.
+Steven authorized staging, committing, pushing, and opening one PR per lane. The orchestrator published PR #506 at implementation commit `2d2e8078125e8a3ba3978a007019d01c7e65cb99`; current-head PR CI is running. The full repository gate passed all 12 steps on detached combined committed HEAD `09a43d662ee814e04d110432f72826ac00b883e1`, integrating both lanes through disjoint cherry-picks. Combined counts were web 1121, API 486, music 30, and Worker integration 184; all five combined source/test hashes match the frozen receipts. The parent-authored [combined gate receipt](../integration-audit/combined-gate.json) retains exact commands, exits, and source identity. Hosted current-head PR CI still awaits final reconciliation; documentation commits trigger fresh CI. The earlier shared browser harness integrated actual source through external imports. Independent review is coordinated by the orchestrator. Product source/tests remain frozen at the retained hashes. No production, human-listening, provider-playback, or device/audio acceptance follows from these checks. Merge, deployment, and cleanup remain unauthorized; no production data mutation occurred.
