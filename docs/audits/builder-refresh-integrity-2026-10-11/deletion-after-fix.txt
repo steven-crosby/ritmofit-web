@@ -1,0 +1,36 @@
+
+ RUN  v3.2.6 /Users/stevencrosby/.codex/worktrees/builder-refresh-integrity/ritmofit-web/apps/web
+
+ ✓ src/lib/class-detail-state.test.ts (3 tests) 3ms
+ ✓ src/components/ReorderableTrackList.test.tsx (6 tests) 222ms
+ ✓ src/components/Dashboard.test.tsx (131 tests) 11025ms
+   ✓ Dashboard class library states > retries a Music catalog outage without changing the query  649ms
+   ✓ Dashboard class library states > searches, selects in instructor order, and starts a class from Music  400ms
+   ✓ Dashboard track focus management > preserves B’s inspector draft, focus and scoped read warning when A deletion completes  590ms
+   ✓ Dashboard track focus management > commits a zone on the click, and typed fields on Enter  473ms
+   ✓ Dashboard track focus management > puts a zone back when its write fails, instead of showing a value that did not land  488ms
+   ✓ Dashboard plan-first next step > stays on the next empty block after the first assign and keeps Pulse off  411ms
+
+ Test Files  3 passed (3)
+      Tests  140 passed (140)
+   Start at  20:56:23
+   Duration  12.47s (transform 662ms, setup 0ms, collect 1.31s, tests 11.25s, environment 1.13s, prepare 151ms)
+
+
+ RUN  v3.2.6 /Users/stevencrosby/.codex/worktrees/builder-refresh-integrity/ritmofit-web/apps/web
+
+ ✓ src/lib/class-detail-state.test.ts (3 tests) 3ms
+ ✓ src/components/ReorderableTrackList.test.tsx (6 tests) 217ms
+ ✓ src/components/Dashboard.test.tsx (132 tests) 11071ms
+   ✓ Dashboard class library states > retries a Music catalog outage without changing the query  656ms
+   ✓ Dashboard class library states > searches, selects in instructor order, and starts a class from Music  401ms
+   ✓ Dashboard track focus management > preserves B’s inspector draft, focus and scoped read warning when A deletion completes  613ms
+   ✓ Dashboard track focus management > commits a zone on the click, and typed fields on Enter  461ms
+   ✓ Dashboard track focus management > puts a zone back when its write fails, instead of showing a value that did not land  458ms
+   ✓ Dashboard plan-first next step > stays on the next empty block after the first assign and keeps Pulse off  414ms
+
+ Test Files  3 passed (3)
+      Tests  141 passed (141)
+   Start at  20:57:54
+   Duration  12.61s (transform 651ms, setup 0ms, collect 1.30s, tests 11.29s, environment 1.02s, prepare 174ms)
+

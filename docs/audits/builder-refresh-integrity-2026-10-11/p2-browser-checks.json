@@ -1,0 +1,55 @@
+{
+  "kind": "synthetic-Chrome-Live-preflight-return",
+  "providerPlayback": false,
+  "actualDevice": false,
+  "actualBrowserZoom": false,
+  "rows": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "pass": true,
+      "during": {
+        "logicalReads": 2,
+        "hasExit": true
+      },
+      "returned": {
+        "logicalReads": 3,
+        "mutations": 1,
+        "order": [
+          "00000000-0000-4000-8000-000000000102",
+          "00000000-0000-4000-8000-000000000101"
+        ],
+        "firstLightGrip": "Reorder First Light, position 2 of 2. Use arrow up and down.",
+        "warning": null,
+        "focusOnBody": false,
+        "focusText": "Ritmo Studio",
+        "horizontalOverflow": 0
+      }
+    },
+    {
+      "name": "narrow",
+      "width": 320,
+      "height": 812,
+      "pass": true,
+      "during": {
+        "logicalReads": 2,
+        "hasExit": true
+      },
+      "returned": {
+        "logicalReads": 3,
+        "mutations": 1,
+        "order": [
+          "00000000-0000-4000-8000-000000000102",
+          "00000000-0000-4000-8000-000000000101"
+        ],
+        "firstLightGrip": "Reorder First Light, position 2 of 2. Use arrow up and down.",
+        "warning": null,
+        "focusOnBody": false,
+        "focusText": "Ritmo Studio",
+        "horizontalOverflow": 0
+      }
+    }
+  ],
+  "errors": []
+}

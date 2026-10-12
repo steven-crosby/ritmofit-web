@@ -1,0 +1,18 @@
+{
+  "phase": "P2 Live-return correction",
+  "baselineHead": "7092c69164685d1d7648e3c90cdb57fbbd0d60a3",
+  "baselineSource": {
+    "apps/web/src/components/Dashboard.tsx": "2d0bbbef90a676099fdcf27384438640a5370806a5b204202b131b58465ce814",
+    "apps/web/src/components/Dashboard.test.tsx": "a9658a44d2c08840c01552185a6910b248cc1d25dbc6f63623518cd2f3fc50c0"
+  },
+  "candidateSource": {
+    "apps/web/src/components/Dashboard.tsx": "8b852990523a82dc6085e1737b17eb863354b6dc9f746a753b6cdbd426748fc1",
+    "apps/web/src/components/Dashboard.test.tsx": "4612e02b797ee8a1d081f82de615c3f32b5e120a1094d362d9dbdafa90574a71"
+  },
+  "supportingAndBrowserArtifacts": {
+    "docs/audits/builder-refresh-integrity-2026-10-11/p2-capture.mjs": "e1cbe359c92ba1afa20da9e3faacafcb4d9a9d95e073357fc31278884161f250",
+    "docs/audits/builder-refresh-integrity-2026-10-11/p2-browser-checks.json": "f8e1e5033303e417801577a3e5cb3f4cf059841a8045b6634e4b9a05aeebff00",
+    "docs/audits/builder-refresh-integrity-2026-10-11/p2-desktop-live-return.png": "73b729a555e3474adbb34eebab588fd5d283f96b44c83e3042e63234dc869012",
+    "docs/audits/builder-refresh-integrity-2026-10-11/p2-narrow-live-return.png": "c33f593c16cb9acaa129d4fae1491552e2dd7df5c09d2152b631bbb8ceef4c5a"
+  }
+}

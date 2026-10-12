@@ -1,0 +1,746 @@
+
+ RUN  v3.2.6 /Users/stevencrosby/.codex/worktrees/builder-refresh-integrity/ritmofit-web/apps/web
+
+ ❯ src/components/Dashboard.test.tsx (105 tests | 5 failed | 98 skipped) 1100ms
+   ↓ Dashboard class library states > shows the loading state, then the class list once it resolves
+   ↓ Dashboard class library states > meets a class before the creation preamble, and starts a class from the quiet header
+   ↓ Dashboard class library states > opens the create dialog from the empty Classes home
+   ↓ Dashboard class library states > creates a scaffold class from the isolated dialog
+   ↓ Dashboard class library states > focuses Add music after creating an empty class
+   ↓ Dashboard class library states > folds the rail’s create/filter controls away once a class is open
+   ↓ Dashboard class library states > shows a distinct error state when the class list fails to load, and retries
+   ↓ Dashboard class library states > shows the empty state when the library is genuinely empty
+   ↓ Dashboard class library states > guides a brand-new instructor with a first-run workspace when the library is empty
+   ↓ Dashboard class library states > opens connections from Music
+   ↓ Dashboard class library states > retries a Music catalog outage without changing the query
+   ↓ Dashboard class library states > searches, selects in instructor order, and starts a class from Music
+   ↓ Dashboard class library states > shows connected Spotify saved playlists in Music and opens the browser dialog
+   ↓ Dashboard class library states > omits the playlist track count when the provider does not report one
+   ↓ Dashboard class library states > shows connected Spotify liked tracks in Music and opens the likes browser
+   ↓ Dashboard class library states > does not create a class when the provider collection fetch fails
+   ↓ Dashboard class library states > disables class creation when a saved playlist contains no tracks
+   ↓ Dashboard class library states > does not create a class when a saved playlist becomes empty before submission
+   ↓ Dashboard class library states > reports partial imports and retries failures against the same class
+   ↓ Dashboard class library states > describes a response-lost Music playlist import as unconfirmed and confirms its exact operation
+   ↓ Dashboard class library states > removes stale Music browse controls after a provider disconnects
+   ↓ Dashboard class library states > keeps last-known shelves when a connection refresh fails without authoritative truth
+   ↓ Dashboard class library states > ignores late shelf responses after authoritative disconnect truth arrives
+   ↓ Dashboard class library states > creates a class from liked tracks (imports each, opens the builder)
+   ↓ Dashboard class library states > omits the redundant ownership chip on library cards (solo-first library is owner-only)
+   ↓ Dashboard class library states > keeps the top bar solo-first and hides classes owned by other users
+   ↓ Dashboard class library states > uses Classes, Music, Live, and Account as the primary destinations
+   ↓ Dashboard class library states > returns from a selected class to the run-of-show shelf through Classes
+   ↓ Dashboard class library states > surfaces classes with tracks from the Live destination and runs a ready one
+   ↓ Dashboard class library states > keeps the queue card compact by default and full readiness one disclosure away
+   ↓ Dashboard class library states > ranks the Live queue with the ordering chosen on Classes
+   ↓ Dashboard class library states > blocks a class that looks runnable by aggregate but has a track missing its duration
+   ↓ Dashboard class library states > surfaces a retry when a class run-payload fails to load, and keeps Run live disabled
+   ↓ Dashboard class library states > restores focus to the dashboard heading when Live Mode is exited
+   ↓ Dashboard class library states > browses a connected source from the Music workspace sidebar
+   ↓ Dashboard class library states > turns stale Music workspace browse paths into connection management after disconnect
+   ↓ Dashboard class library states > refreshes Account Music connections after Manage disconnect without leaving Account
+   ↓ Dashboard class library states > shows an honest retryable state when music connections fail to load
+   ↓ Dashboard connection-state headers > uses the caution tone for Session expired on Music and Account headers
+   ↓ Dashboard Account status ledger > keeps verified profile editing available when provider status fails
+   ↓ Dashboard Account status ledger > claims only that the profile loaded, never that an identity was verified
+   ↓ Dashboard Account status ledger > reports a failed profile read without leaking the upstream message
+   ↓ Dashboard Account status ledger > preserves session identity and disables only profile edits when the profile fails
+   ↓ Dashboard Account status ledger > preserves typed profile values and focuses a failed mutation
+   ↓ Dashboard Account status ledger > saves edited profile fields and propagates the new name to the shell
+   ↓ Dashboard Account status ledger > normalizes blank optional profile fields to null
+   ↓ Dashboard Account status ledger > recovers provider status without reloading or changing the profile
+   ↓ Dashboard onboarding video > opens the guided tutorial after first signup and dismisses it once
+   ↓ Dashboard onboarding video > does not show the tutorial without a pending signup marker
+   ↓ Dashboard class detail > opens a selected class into its workspace
+   ↓ Dashboard class detail > keeps the newly selected class when a slower prior load resolves late
+   ↓ Dashboard class detail > renders a retry affordance when a class detail fails, and reloads on retry
+   ↓ Dashboard class detail > updates the Library card aggregates in place once a class detail loads
+   ↓ Dashboard class detail > submits manually added track durations as parsed minutes and seconds
+   ↓ Dashboard track focus management > accepts explicit 0:00 for 'clipStartMs' in the inspector
+   ↓ Dashboard track focus management > accepts explicit 0:00 for 'beatAnchorMs' in the inspector
+   ↓ Dashboard track focus management > accepts explicit 0:00 for 'startOffsetMs' in the inspector
+   ↓ Dashboard track focus management > preserves untouched 499 ms inspector anchors when creator notes change
+   ↓ Dashboard track focus management > preserves untouched 1250 ms inspector anchors when creator notes change
+   ↓ Dashboard track focus management > resets edited inspector anchors with "0:00"
+   ↓ Dashboard track focus management > resets edited inspector anchors with ""
+   ↓ Dashboard track focus management > keeps blank inspector anchors at zero and a blank clip end at null
+   ↓ Dashboard track focus management > keeps Track length positive-only in the inspector
+   ↓ Dashboard track focus management > keeps Clip end (minutes:seconds) positive-only in the inspector
+   ↓ Dashboard track focus management > rejects malformed inspector timecodes for 'clipStartMs', including bare 0
+   ↓ Dashboard track focus management > rejects malformed inspector timecodes for 'beatAnchorMs', including bare 0
+   ↓ Dashboard track focus management > rejects malformed inspector timecodes for 'startOffsetMs', including bare 0
+   ↓ Dashboard track focus management > keeps clip end after clip start in the inspector
+   ↓ Dashboard track focus management > omits inspector startOffsetMs in sequential mode
+   ↓ Dashboard track focus management > keeps an inspector draft unsaved when the server rejects its clip window
+   ↓ Dashboard track focus management > announces an invalid inspector /^Track length/ on the field itself
+   ↓ Dashboard track focus management > announces an invalid inspector /^Clip start/ on the field itself
+   ↓ Dashboard track focus management > announces an invalid inspector /^Clip end/ on the field itself
+   ↓ Dashboard track focus management > announces an invalid inspector /^Downbeat/ on the field itself
+   ↓ Dashboard track focus management > announces an invalid inspector /^Start at/ on the field itself
+   ↓ Dashboard track focus management > marks clip end when it does not follow clip start, then clears it on a good save
+   ↓ Dashboard track focus management > announces a server rejection without blaming an inspector field
+   ↓ Dashboard track focus management > falls back to a readable message when an inspector save throws a non-Error
+   ↓ Dashboard track focus management > preserves the selected track and unsaved scoring while workbench tasks change
+   ↓ Dashboard track focus management > explains free timeline timing without exposing sequential reorder controls
+   ↓ Dashboard track focus management > does not advertise reorder while playback details are unavailable
+   ↓ Dashboard track focus management > keeps compact cross-class orientation while a class is open
+   ↓ Dashboard track focus management > keeps the selected track and draft stable through an optimistic reorder refresh
+   ✓ Dashboard track focus management > keeps the inspector and grip through rejected reorder, then retries one mutation 250ms
+   × Dashboard track focus management > announces saved-but-refresh-failed and retries reads without losing the draft 104ms
+     → expected null to be truthy
+   × Dashboard track focus management > does not publish a late refresh rejection after switch 166ms
+     → expected <p …(1)></p> to be null
+   × Dashboard track focus management > does not publish a late refresh rejection after all classes 168ms
+     → expected <p …(1)></p> to be null
+   × Dashboard track focus management > ignores a prior workspace mutation completing after A-to-B-to-A 103ms
+     → expected "listClassTracks" to be called 3 times, but got 4 times
+   × Dashboard track focus management > keeps newer failed refresh ownership when an older silent success arrives 200ms
+     → Found multiple elements with the text: Obsolete song title
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+[36m<button[39m
+  [33maria-label[39m=[32m"Fix music on Obsolete song title"[39m
+  [33mclass[39m=[32m"min-h-11 rounded-control border border-interactive/50 px-2.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"[39m
+  [33mtitle[39m=[32m"Open Obsolete song title in the track inspector"[39m
+  [33mtype[39m=[32m"button"[39m
+[36m>[39m
+  [0mObsolete song title[0m
+[36m</button>[39m
+
+Ignored nodes: comments, script, style
+[36m<h3[39m
+  [33mclass[39m=[32m"mt-1 truncate font-display text-base font-semibold text-text-primary"[39m
+[36m>[39m
+  [0mObsolete song title[0m
+[36m</h3>[39m
+
+Ignored nodes: comments, script, style
+[36m<p[39m
+  [33mclass[39m=[32m"truncate font-ui text-sm font-semibold text-text-primary"[39m
+[36m>[39m
+  [0mObsolete song title[0m
+[36m</p>[39m
+
+Ignored nodes: comments, script, style
+[36m<h3[39m
+  [33mclass[39m=[32m"truncate font-display text-sm font-semibold text-text-primary"[39m
+[36m>[39m
+  [0mObsolete song title[0m
+[36m</h3>[39m
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<main[39m
+      [33mclass[39m=[32m"flex min-h-screen flex-col"[39m
+      [33mid[39m=[32m"main-content"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"rf-topbar flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center gap-2.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33maria-hidden[39m=[32m"true"[39m
+            [33mclass[39m=[32m"rf-brand-mark"[39m
+          [36m>[39m
+            [0mR[0m
+          [36m</span>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"font-display text-xl font-bold tracking-[-0.01em] text-text-primary focus:outline-none"[39m
+            [33mtabindex[39m=[32m"-1"[39m
+          [36m>[39m
+            [0mRitmo Studio[0m
+          [36m</h1>[39m
+        [36m</div>[39m
+        [36m<nav[39m
+          [33mclass[39m=[32m"flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:flex-1 sm:flex-wrap sm:justify-end sm:overflow-visible sm:pb-0"[39m
+        [36m>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"hidden font-ui text-sm text-text-secondary sm:block"[39m
+          [36m>[39m
+            [0mTester[0m
+          [36m</p>[39m
+          [36m<button[39m
+            [33maria-current[39m=[32m"page"[39m
+            [33mclass[39m=[32m"min-h-11 shrink-0 rounded-control border px-3 font-ui text-xs font-semibold transition-colors sm:rounded-pill sm:px-4 sm:text-sm border-transparent bg-transparent text-text-primary underline decoration-interactive decoration-2 underline-offset-8"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mClasses[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-11 shrink-0 rounded-control border px-3 font-ui text-xs font-semibold transition-colors sm:rounded-pill sm:px-4 sm:text-sm border-transparent bg-transparent text-text-secondary hover:text-text-primary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mMusic[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-11 shrink-0 rounded-control border px-3 font-ui text-xs font-semibold transition-colors sm:rounded-pill sm:px-4 sm:text-sm border-transparent bg-transparent text-text-secondary hover:text-text-primary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mLive[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-11 shrink-0 rounded-control border px-3 font-ui text-xs font-semibold transition-colors sm:rounded-pill sm:px-4 sm:text-sm border-transparent bg-transparent text-text-secondary hover:text-text-primary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mAccount[0m
+          [36m</button>[39m
+        [36m</nav>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-4 font-ui text-sm text-state-danger"[39m
+        [36m>[39m
+          [0mSaved, but the latest class details could not be refreshed: Newest read unavailable[0m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start"[39m
+        [36m>[39m
+          [36m<aside[39m
+            [33mclass[39m=[32m"flex min-w-0 flex-col gap-3 xl:sticky xl:top-6 xl:col-start-1 xl:row-start-1 hidden xl:flex"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center justify-between"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"font-ui text-xs uppercase tracking-wide text-text-tertiary"[39m
+              [36m>[39m
+                [0mYour classes[0m
+              [36m</span>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"font-data text-xs text-text-tertiary"[39m
+              [36m>[39m
+                [0m2 loaded[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<details[39m
+              [33mclass[39m=[32m"rounded-control border border-border-subtle bg-bg-raised/40"[39m
+            [36m>[39m
+              [36m<summary[39m
+                [33mclass[39m=[32m"flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 font-ui text-xs font-semibold text-text-secondary rf-focus-ring"[39m
+              [36m>[39m
+                [36m<span>[39m
+                  [0mNew class, filters, and search[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"font-data text-[10px] text-text-tertiary"[39m
+                [36m>[39m
+                  [0m▸[0m
+                [36m</span>[39m
+              [36m</summary>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-col gap-3 border-t border-border-subtle p-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mNew class[0m
+                [36m</button>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex flex-col gap-1.5"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"relative"[39m
+                  [36m>[39m
+                    [36m<input[39m
+                      [33maria-label[39m=[32m"Search loaded classes by title or type"[39m
+                      [33mclass[39m=[32m"min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base pl-3 pr-12 font-ui text-xs text-text-primary sm:min-h-8 sm:rounded-pill sm:pr-9"[39m
+                      [33mplaceholder[39m=[32m"Search loaded classes…"[39m
+                      [33mrole[39m=[32m"searchbox"[39m
+                      [33mtype[39m=[32m"text"[39m
+                      [33mvalue[39m=[32m""[39m
+                    [36m/>[39m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"flex items-center gap-1.5"[39m
+                  [36m>[39m
+                    [36m<label[39m
+                      [33mclass[39m=[32m"font-ui text-[10px] uppercase tracking-wide text-text-tertiary"[39m
+                      [33mfor[39m=[32m":rq:"[39m
+                    [36m>[39m
+                      [0mSort[0m
+  ...
+   ✓ Dashboard track focus management > refreshes the active workspace when a pending intensity flush survives track switching 109ms
+   ↓ Dashboard track focus management > says whether the inspector matches what is stored, and gates Save on a change
+   ↓ Dashboard track focus management > seeds Track length from baseDurationMs and omits durationMsOverride when untouched
+   ↓ Dashboard track focus management > omits durationMsOverride on an untouched save even when the source duration is not a round second
+   ↓ Dashboard track focus management > sends durationMsOverride only when Track length is intentionally changed
+   ↓ Dashboard track focus management > commits a zone on the click, and typed fields on Enter
+   ↓ Dashboard track focus management > puts a zone back when its write fails, instead of showing a value that did not land
+   ↓ Dashboard track focus management > explains the zone words and what an empty BPM box falls back to
+   ↓ Dashboard track focus management > keeps a failed scoring save local, visible, and editable
+   ↓ Dashboard track focus management > returns focus to the nearest remaining track after removing one
+   ↓ Dashboard track focus management > returns focus to the inspector placeholder after removing the last track
+   ↓ Dashboard track focus management > focuses the newly added track row after adding a track manually
+   ↓ Dashboard track focus management > opens the first track’s cue box from readiness Write the first cue
+   ↓ Dashboard plan-first next step > leads a 0-track scaffold with the plan, not Live chrome or stack Add music
+   ↓ Dashboard plan-first next step > updates an open music picker destination when its block is renamed
+   ↓ Dashboard plan-first next step > stays on the next empty block after the first assign and keeps Pulse off
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > announces saved-but-refresh-failed and retries reads without losing the draft
+AssertionError: expected null to be truthy
+
+- Expected: 
+true
+
++ Received: 
+null
+
+ ❯ src/components/Dashboard.test.tsx:2361:48
+    2359|     fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    2360|     const warning = await screen.findByText(/Saved, but.*Latest read u…
+    2361|     expect(warning.closest('[role="status"]')).toBeTruthy();
+       |                                                ^
+    2362|     expect(document.activeElement).toBe(grip);
+    2363|     expect((notes as HTMLTextAreaElement).value).toBe('Keep this unsav…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > does not publish a late refresh rejection after switch
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > does not publish a late refresh rejection after all classes
+AssertionError: expected <p …(1)></p> to be null
+
+- Expected: 
+null
+
++ Received: 
+<p
+  class="mb-4 font-ui text-sm text-state-danger"
+>
+  Saved, but the latest class details could not be refreshed: Obsolete read
+</p>
+
+ ❯ src/components/Dashboard.test.tsx:2391:51
+    2389|       }
+    2390|       await act(async () => refresh.reject(new Error('Obsolete read'))…
+    2391|       expect(screen.queryByText(/Obsolete read/)).toBeNull();
+       |                                                   ^
+    2392|       // The first workspace's controls have actually been unmounted.
+    2393|       expect(grip.isConnected).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > ignores a prior workspace mutation completing after A-to-B-to-A
+AssertionError: expected "listClassTracks" to be called 3 times, but got 4 times
+ ❯ src/components/Dashboard.test.tsx:2409:33
+    2407|     const readsBeforeCompletion = vi.mocked(api.listClassTracks).mock.…
+    2408|     await act(async () => mutation.resolve([]));
+    2409|     expect(api.listClassTracks).toHaveBeenCalledTimes(readsBeforeCompl…
+       |                                 ^
+    2410|     expect(screen.getByRole('heading', { name: ride.title })).toBeTrut…
+    2411|     expect(screen.queryByText('Loading class…')).toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > keeps newer failed refresh ownership when an older silent success arrives
+TestingLibraryElementError: Found multiple elements with the text: Obsolete song title
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+[36m<button[39m
+  [33maria-label[39m=[32m"Fix music on Obsolete song title"[39m
+  [33mclass[39m=[32m"min-h-11 rounded-control border border-interactive/50 px-2.5 font-ui text-xs text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"[39m
+  [33mtitle[39m=[32m"Open Obsolete song title in the track inspector"[39m
+  [33mtype[39m=[32m"button"[39m
+[36m>[39m
+  [0mObsolete song title[0m
+[36m</button>[39m
+
+Ignored nodes: comments, script, style
+[36m<h3[39m
+  [33mclass[39m=[32m"mt-1 truncate font-display text-base font-semibold text-text-primary"[39m
+[36m>[39m
+  [0mObsolete song title[0m
+[36m</h3>[39m
+
+Ignored nodes: comments, script, style
+[36m<p[39m
+  [33mclass[39m=[32m"truncate font-ui text-sm font-semibold text-text-primary"[39m
+[36m>[39m
+  [0mObsolete song title[0m
+[36m</p>[39m
+
+Ignored nodes: comments, script, style
+[36m<h3[39m
+  [33mclass[39m=[32m"truncate font-display text-sm font-semibold text-text-primary"[39m
+[36m>[39m
+  [0mObsolete song title[0m
+[36m</h3>[39m
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<main[39m
+      [33mclass[39m=[32m"flex min-h-screen flex-col"[39m
+      [33mid[39m=[32m"main-content"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"rf-topbar flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center gap-2.5"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33maria-hidden[39m=[32m"true"[39m
+            [33mclass[39m=[32m"rf-brand-mark"[39m
+          [36m>[39m
+            [0mR[0m
+          [36m</span>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"font-display text-xl font-bold tracking-[-0.01em] text-text-primary focus:outline-none"[39m
+            [33mtabindex[39m=[32m"-1"[39m
+          [36m>[39m
+            [0mRitmo Studio[0m
+          [36m</h1>[39m
+        [36m</div>[39m
+        [36m<nav[39m
+          [33mclass[39m=[32m"flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:flex-1 sm:flex-wrap sm:justify-end sm:overflow-visible sm:pb-0"[39m
+        [36m>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"hidden font-ui text-sm text-text-secondary sm:block"[39m
+          [36m>[39m
+            [0mTester[0m
+          [36m</p>[39m
+          [36m<button[39m
+            [33maria-current[39m=[32m"page"[39m
+            [33mclass[39m=[32m"min-h-11 shrink-0 rounded-control border px-3 font-ui text-xs font-semibold transition-colors sm:rounded-pill sm:px-4 sm:text-sm border-transparent bg-transparent text-text-primary underline decoration-interactive decoration-2 underline-offset-8"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mClasses[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-11 shrink-0 rounded-control border px-3 font-ui text-xs font-semibold transition-colors sm:rounded-pill sm:px-4 sm:text-sm border-transparent bg-transparent text-text-secondary hover:text-text-primary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mMusic[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-11 shrink-0 rounded-control border px-3 font-ui text-xs font-semibold transition-colors sm:rounded-pill sm:px-4 sm:text-sm border-transparent bg-transparent text-text-secondary hover:text-text-primary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mLive[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"min-h-11 shrink-0 rounded-control border px-3 font-ui text-xs font-semibold transition-colors sm:rounded-pill sm:px-4 sm:text-sm border-transparent bg-transparent text-text-secondary hover:text-text-primary"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mAccount[0m
+          [36m</button>[39m
+        [36m</nav>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6"[39m
+      [36m>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"mb-4 font-ui text-sm text-state-danger"[39m
+        [36m>[39m
+          [0mSaved, but the latest class details could not be refreshed: Newest read unavailable[0m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start"[39m
+        [36m>[39m
+          [36m<aside[39m
+            [33mclass[39m=[32m"flex min-w-0 flex-col gap-3 xl:sticky xl:top-6 xl:col-start-1 xl:row-start-1 hidden xl:flex"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center justify-between"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"font-ui text-xs uppercase tracking-wide text-text-tertiary"[39m
+              [36m>[39m
+                [0mYour classes[0m
+              [36m</span>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"font-data text-xs text-text-tertiary"[39m
+              [36m>[39m
+                [0m2 loaded[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<details[39m
+              [33mclass[39m=[32m"rounded-control border border-border-subtle bg-bg-raised/40"[39m
+            [36m>[39m
+              [36m<summary[39m
+                [33mclass[39m=[32m"flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 font-ui text-xs font-semibold text-text-secondary rf-focus-ring"[39m
+              [36m>[39m
+                [36m<span>[39m
+                  [0mNew class, filters, and search[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"font-data text-[10px] text-text-tertiary"[39m
+                [36m>[39m
+                  [0m▸[0m
+                [36m</span>[39m
+              [36m</summary>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-col gap-3 border-t border-border-subtle p-3"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mNew class[0m
+                [36m</button>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex flex-col gap-1.5"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"relative"[39m
+                  [36m>[39m
+                    [36m<input[39m
+                      [33maria-label[39m=[32m"Search loaded classes by title or type"[39m
+                      [33mclass[39m=[32m"min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base pl-3 pr-12 font-ui text-xs text-text-primary sm:min-h-8 sm:rounded-pill sm:pr-9"[39m
+                      [33mplaceholder[39m=[32m"Search loaded classes…"[39m
+                      [33mrole[39m=[32m"searchbox"[39m
+                      [33mtype[39m=[32m"text"[39m
+                      [33mvalue[39m=[32m""[39m
+                    [36m/>[39m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"flex items-center gap-1.5"[39m
+                  [36m>[39m
+                    [36m<label[39m
+                      [33mclass[39m=[32m"font-ui text-[10px] uppercase tracking-wide text-text-tertiary"[39m
+                      [33mfor[39m=[32m":rq:"[39m
+                    [36m>[39m
+                      [0mSort[0m
+  ...
+ ❯ Object.getElementError ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ getElementError ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:20:35
+ ❯ getMultipleElementsFoundError ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:23:10
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:55:13
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/components/Dashboard.test.tsx:2430:19
+    2428|     await screen.findByText(/Newest read unavailable/);
+    2429|     await act(async () => older.resolve([makeClassTrack('ct-1', 0)]));
+    2430|     expect(screen.queryByText('Obsolete song title')).toBeNull();
+       |                   ^
+    2431|     expect(screen.getByRole('button', { name: /^Refresh ride.*2 tracks…
+    2432|     expect(screen.getByText(/Newest read unavailable/)).toBeTruthy();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 2 passed | 98 skipped (105)
+   Start at  18:47:59
+   Duration  2.72s (transform 535ms, setup 0ms, collect 701ms, tests 1.10s, environment 553ms, prepare 170ms)
+
+undefined
+/Users/stevencrosby/.codex/worktrees/builder-refresh-integrity/ritmofit-web/apps/web:
+[ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL] Command failed with exit code 1: vitest run src/components/Dashboard.test.tsx -t 'rejected reorder|saved-but-refresh|late refresh rejection|A-to-B-to-A|newer failed refresh|pending intensity flush'
+
+ RUN  v3.2.6 /Users/stevencrosby/.codex/worktrees/builder-refresh-integrity/ritmofit-web/apps/web
+
+ ❯ src/components/Dashboard.test.tsx (105 tests | 5 failed | 98 skipped) 1306ms
+   ↓ Dashboard class library states > shows the loading state, then the class list once it resolves
+   ↓ Dashboard class library states > meets a class before the creation preamble, and starts a class from the quiet header
+   ↓ Dashboard class library states > opens the create dialog from the empty Classes home
+   ↓ Dashboard class library states > creates a scaffold class from the isolated dialog
+   ↓ Dashboard class library states > focuses Add music after creating an empty class
+   ↓ Dashboard class library states > folds the rail’s create/filter controls away once a class is open
+   ↓ Dashboard class library states > shows a distinct error state when the class list fails to load, and retries
+   ↓ Dashboard class library states > shows the empty state when the library is genuinely empty
+   ↓ Dashboard class library states > guides a brand-new instructor with a first-run workspace when the library is empty
+   ↓ Dashboard class library states > opens connections from Music
+   ↓ Dashboard class library states > retries a Music catalog outage without changing the query
+   ↓ Dashboard class library states > searches, selects in instructor order, and starts a class from Music
+   ↓ Dashboard class library states > shows connected Spotify saved playlists in Music and opens the browser dialog
+   ↓ Dashboard class library states > omits the playlist track count when the provider does not report one
+   ↓ Dashboard class library states > shows connected Spotify liked tracks in Music and opens the likes browser
+   ↓ Dashboard class library states > does not create a class when the provider collection fetch fails
+   ↓ Dashboard class library states > disables class creation when a saved playlist contains no tracks
+   ↓ Dashboard class library states > does not create a class when a saved playlist becomes empty before submission
+   ↓ Dashboard class library states > reports partial imports and retries failures against the same class
+   ↓ Dashboard class library states > describes a response-lost Music playlist import as unconfirmed and confirms its exact operation
+   ↓ Dashboard class library states > removes stale Music browse controls after a provider disconnects
+   ↓ Dashboard class library states > keeps last-known shelves when a connection refresh fails without authoritative truth
+   ↓ Dashboard class library states > ignores late shelf responses after authoritative disconnect truth arrives
+   ↓ Dashboard class library states > creates a class from liked tracks (imports each, opens the builder)
+   ↓ Dashboard class library states > omits the redundant ownership chip on library cards (solo-first library is owner-only)
+   ↓ Dashboard class library states > keeps the top bar solo-first and hides classes owned by other users
+   ↓ Dashboard class library states > uses Classes, Music, Live, and Account as the primary destinations
+   ↓ Dashboard class library states > returns from a selected class to the run-of-show shelf through Classes
+   ↓ Dashboard class library states > surfaces classes with tracks from the Live destination and runs a ready one
+   ↓ Dashboard class library states > keeps the queue card compact by default and full readiness one disclosure away
+   ↓ Dashboard class library states > ranks the Live queue with the ordering chosen on Classes
+   ↓ Dashboard class library states > blocks a class that looks runnable by aggregate but has a track missing its duration
+   ↓ Dashboard class library states > surfaces a retry when a class run-payload fails to load, and keeps Run live disabled
+   ↓ Dashboard class library states > restores focus to the dashboard heading when Live Mode is exited
+   ↓ Dashboard class library states > browses a connected source from the Music workspace sidebar
+   ↓ Dashboard class library states > turns stale Music workspace browse paths into connection management after disconnect
+   ↓ Dashboard class library states > refreshes Account Music connections after Manage disconnect without leaving Account
+   ↓ Dashboard class library states > shows an honest retryable state when music connections fail to load
+   ↓ Dashboard connection-state headers > uses the caution tone for Session expired on Music and Account headers
+   ↓ Dashboard Account status ledger > keeps verified profile editing available when provider status fails
+   ↓ Dashboard Account status ledger > claims only that the profile loaded, never that an identity was verified
+   ↓ Dashboard Account status ledger > reports a failed profile read without leaking the upstream message
+   ↓ Dashboard Account status ledger > preserves session identity and disables only profile edits when the profile fails
+   ↓ Dashboard Account status ledger > preserves typed profile values and focuses a failed mutation
+   ↓ Dashboard Account status ledger > saves edited profile fields and propagates the new name to the shell
+   ↓ Dashboard Account status ledger > normalizes blank optional profile fields to null
+   ↓ Dashboard Account status ledger > recovers provider status without reloading or changing the profile
+   ↓ Dashboard onboarding video > opens the guided tutorial after first signup and dismisses it once
+   ↓ Dashboard onboarding video > does not show the tutorial without a pending signup marker
+   ↓ Dashboard class detail > opens a selected class into its workspace
+   ↓ Dashboard class detail > keeps the newly selected class when a slower prior load resolves late
+   ↓ Dashboard class detail > renders a retry affordance when a class detail fails, and reloads on retry
+   ↓ Dashboard class detail > updates the Library card aggregates in place once a class detail loads
+   ↓ Dashboard class detail > submits manually added track durations as parsed minutes and seconds
+   ↓ Dashboard track focus management > accepts explicit 0:00 for 'clipStartMs' in the inspector
+   ↓ Dashboard track focus management > accepts explicit 0:00 for 'beatAnchorMs' in the inspector
+   ↓ Dashboard track focus management > accepts explicit 0:00 for 'startOffsetMs' in the inspector
+   ↓ Dashboard track focus management > preserves untouched 499 ms inspector anchors when creator notes change
+   ↓ Dashboard track focus management > preserves untouched 1250 ms inspector anchors when creator notes change
+   ↓ Dashboard track focus management > resets edited inspector anchors with "0:00"
+   ↓ Dashboard track focus management > resets edited inspector anchors with ""
+   ↓ Dashboard track focus management > keeps blank inspector anchors at zero and a blank clip end at null
+   ↓ Dashboard track focus management > keeps Track length positive-only in the inspector
+   ↓ Dashboard track focus management > keeps Clip end (minutes:seconds) positive-only in the inspector
+   ↓ Dashboard track focus management > rejects malformed inspector timecodes for 'clipStartMs', including bare 0
+   ↓ Dashboard track focus management > rejects malformed inspector timecodes for 'beatAnchorMs', including bare 0
+   ↓ Dashboard track focus management > rejects malformed inspector timecodes for 'startOffsetMs', including bare 0
+   ↓ Dashboard track focus management > keeps clip end after clip start in the inspector
+   ↓ Dashboard track focus management > omits inspector startOffsetMs in sequential mode
+   ↓ Dashboard track focus management > keeps an inspector draft unsaved when the server rejects its clip window
+   ↓ Dashboard track focus management > announces an invalid inspector /^Track length/ on the field itself
+   ↓ Dashboard track focus management > announces an invalid inspector /^Clip start/ on the field itself
+   ↓ Dashboard track focus management > announces an invalid inspector /^Clip end/ on the field itself
+   ↓ Dashboard track focus management > announces an invalid inspector /^Downbeat/ on the field itself
+   ↓ Dashboard track focus management > announces an invalid inspector /^Start at/ on the field itself
+   ↓ Dashboard track focus management > marks clip end when it does not follow clip start, then clears it on a good save
+   ↓ Dashboard track focus management > announces a server rejection without blaming an inspector field
+   ↓ Dashboard track focus management > falls back to a readable message when an inspector save throws a non-Error
+   ↓ Dashboard track focus management > preserves the selected track and unsaved scoring while workbench tasks change
+   ↓ Dashboard track focus management > explains free timeline timing without exposing sequential reorder controls
+   ↓ Dashboard track focus management > does not advertise reorder while playback details are unavailable
+   ↓ Dashboard track focus management > keeps compact cross-class orientation while a class is open
+   ↓ Dashboard track focus management > keeps the selected track and draft stable through an optimistic reorder refresh
+   ✓ Dashboard track focus management > keeps the inspector and grip through rejected reorder, then retries one mutation  482ms
+   × Dashboard track focus management > announces saved-but-refresh-failed and retries reads without losing the draft 112ms
+     → expected null to be truthy
+   × Dashboard track focus management > does not publish a late refresh rejection after switch 152ms
+     → expected <p …(1)></p> to be null
+   × Dashboard track focus management > does not publish a late refresh rejection after all classes 164ms
+     → expected <p …(1)></p> to be null
+   × Dashboard track focus management > ignores a prior workspace mutation completing after A-to-B-to-A 102ms
+     → expected "listClassTracks" to be called 3 times, but got 4 times
+   × Dashboard track focus management > keeps newer failed refresh ownership when an older silent success arrives 188ms
+     → expected [ <button …(4)></button>, …(3) ] to have a length of +0 but got 4
+   ✓ Dashboard track focus management > refreshes the active workspace when a pending intensity flush survives track switching 105ms
+   ↓ Dashboard track focus management > says whether the inspector matches what is stored, and gates Save on a change
+   ↓ Dashboard track focus management > seeds Track length from baseDurationMs and omits durationMsOverride when untouched
+   ↓ Dashboard track focus management > omits durationMsOverride on an untouched save even when the source duration is not a round second
+   ↓ Dashboard track focus management > sends durationMsOverride only when Track length is intentionally changed
+   ↓ Dashboard track focus management > commits a zone on the click, and typed fields on Enter
+   ↓ Dashboard track focus management > puts a zone back when its write fails, instead of showing a value that did not land
+   ↓ Dashboard track focus management > explains the zone words and what an empty BPM box falls back to
+   ↓ Dashboard track focus management > keeps a failed scoring save local, visible, and editable
+   ↓ Dashboard track focus management > returns focus to the nearest remaining track after removing one
+   ↓ Dashboard track focus management > returns focus to the inspector placeholder after removing the last track
+   ↓ Dashboard track focus management > focuses the newly added track row after adding a track manually
+   ↓ Dashboard track focus management > opens the first track’s cue box from readiness Write the first cue
+   ↓ Dashboard plan-first next step > leads a 0-track scaffold with the plan, not Live chrome or stack Add music
+   ↓ Dashboard plan-first next step > updates an open music picker destination when its block is renamed
+   ↓ Dashboard plan-first next step > stays on the next empty block after the first assign and keeps Pulse off
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > announces saved-but-refresh-failed and retries reads without losing the draft
+AssertionError: expected null to be truthy
+
+- Expected: 
+true
+
++ Received: 
+null
+
+ ❯ src/components/Dashboard.test.tsx:2371:48
+    2369|     fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    2370|     const warning = await screen.findByText(/Saved, but.*Latest read u…
+    2371|     expect(warning.closest('[role="status"]')).toBeTruthy();
+       |                                                ^
+    2372|     expect(document.activeElement).toBe(grip);
+    2373|     expect((notes as HTMLTextAreaElement).value).toBe('Keep this unsav…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > does not publish a late refresh rejection after switch
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > does not publish a late refresh rejection after all classes
+AssertionError: expected <p …(1)></p> to be null
+
+- Expected: 
+null
+
++ Received: 
+<p
+  class="mb-4 font-ui text-sm text-state-danger"
+>
+  Saved, but the latest class details could not be refreshed: Obsolete read
+</p>
+
+ ❯ src/components/Dashboard.test.tsx:2401:51
+    2399|       }
+    2400|       await act(async () => refresh.reject(new Error('Obsolete read'))…
+    2401|       expect(screen.queryByText(/Obsolete read/)).toBeNull();
+       |                                                   ^
+    2402|       if (leave === 'switch') expect(screen.getByRole('button', { name…
+    2403|       // The first workspace's controls have actually been unmounted.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > ignores a prior workspace mutation completing after A-to-B-to-A
+AssertionError: expected "listClassTracks" to be called 3 times, but got 4 times
+ ❯ src/components/Dashboard.test.tsx:2420:33
+    2418|     const readsBeforeCompletion = vi.mocked(api.listClassTracks).mock.…
+    2419|     await act(async () => mutation.resolve([]));
+    2420|     expect(api.listClassTracks).toHaveBeenCalledTimes(readsBeforeCompl…
+       |                                 ^
+    2421|     expect(screen.getByRole('heading', { name: ride.title })).toBeTrut…
+    2422|     expect(screen.queryByText('Loading class…')).toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  src/components/Dashboard.test.tsx > Dashboard track focus management > keeps newer failed refresh ownership when an older silent success arrives
+AssertionError: expected [ <button …(4)></button>, …(3) ] to have a length of +0 but got 4
+
+- Expected
++ Received
+
+- 0
++ 4
+
+ ❯ src/components/Dashboard.test.tsx:2441:58
+    2439|     await screen.findByText(/Newest read unavailable/);
+    2440|     await act(async () => older.resolve([makeClassTrack('ct-1', 0)]));
+    2441|     expect(screen.queryAllByText('Obsolete song title')).toHaveLength(…
+       |                                                          ^
+    2442|     expect(screen.getByRole('button', { name: /^Refresh ride.*2 tracks…
+    2443|     expect(screen.getByText(/Newest read unavailable/)).toBeTruthy();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 2 passed | 98 skipped (105)
+   Start at  18:49:21
+   Duration  3.17s (transform 585ms, setup 0ms, collect 771ms, tests 1.31s, environment 567ms, prepare 64ms)
+
+undefined
+/Users/stevencrosby/.codex/worktrees/builder-refresh-integrity/ritmofit-web/apps/web:
+[ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL] Command failed with exit code 1: vitest run src/components/Dashboard.test.tsx -t 'rejected reorder|saved-but-refresh|late refresh rejection|A-to-B-to-A|newer failed refresh|pending intensity flush'
