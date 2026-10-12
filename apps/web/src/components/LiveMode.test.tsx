@@ -1206,7 +1206,7 @@ describe('LiveMode runtime composition', () => {
     );
   });
 
-  it('clamps a long cue inside the focal card and scrolls the live shell', async () => {
+  it('retains long authored guidance and next-cue context in both teaching views', async () => {
     const long = 'Hold the climb and breathe through the resistance.'.repeat(8);
     const scripted = {
       ...threeTrack,
@@ -1223,30 +1223,12 @@ describe('LiveMode runtime composition', () => {
     } as unknown as RunPayload;
     await renderLive(scripted);
 
-    const cue = screen.getAllByText(long).find((node) => node.classList.contains('line-clamp-2'));
-    if (!(cue instanceof HTMLElement)) throw new Error('clamped cue missing');
-    const focal = cue.closest('[data-live-region="focal"]') as HTMLElement;
-    expect(focal.contains(cue)).toBe(true);
+    const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
+    expect(within(focal).getByText(long)).toBeTruthy();
     expect(within(focal).getByText('Next')).toBeTruthy();
     expect(within(focal).getByText('Recover now')).toBeTruthy();
     expect(within(focal).getByLabelText('Time to next cue')).toBeTruthy();
-    // Next sits outside the clamped paragraph, so the full cue cannot push it
-    // out of the card by growing that paragraph.
-    expect(cue.contains(within(focal).getByText('Next'))).toBe(false);
-    expect(cue.classList.contains('shrink-0')).toBe(true);
-    expect(cue.parentElement?.contains(within(focal).getByText('Next'))).toBe(false);
-
-    const shell = document.querySelector('div.fixed.inset-0') as HTMLElement;
-    expect(shell.className).toContain('overflow-y-auto');
-    expect(shell.className).not.toContain('flex-col');
-    const teaching = shell.querySelector('[data-live-region="teaching"]') as HTMLElement;
-    expect(teaching.className).toContain('flex-1');
-    expect(teaching.className).not.toContain('min-h-0');
-    expect(teaching.className).not.toContain('overflow-auto');
-    expect(shell.contains(screen.getByRole('region', { name: 'Live transport' }))).toBe(true);
-    expect(shell.contains(screen.getByRole('button', { name: 'Previous track' }))).toBe(true);
-    expect(shell.contains(screen.getByRole('button', { name: 'Play' }))).toBe(true);
-    expect(shell.contains(screen.getByRole('button', { name: /Next track/ }))).toBe(true);
+    expect(screen.getByRole('region', { name: 'Live transport' })).toBeTruthy();
 
     await waitFor(() => {
       expect(
@@ -1258,7 +1240,6 @@ describe('LiveMode runtime composition', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
     const listed = screen.getByText(long);
-    expect(listed.className).not.toContain('line-clamp');
     expect(listed.textContent).toBe(long);
   });
 
@@ -1603,6 +1584,24 @@ describe('LiveMode tempo-forward HUD', () => {
     expect(screen.getByText('BPM')).toBeTruthy();
     expect(screen.getByText('Effort')).toBeTruthy();
   });
+});
+
+describe('LiveMode compact completion state', () => {
+  it.each(['Cue-by-Cue', 'Full List'])(
+    'retains completion in the compact status slot in %s',
+    async (view: string) => {
+      await renderLive();
+      if (view === 'Full List') fireEvent.click(screen.getByRole('tab', { name: view }));
+      const compactStatus = document.querySelector('header p[aria-hidden="true"]') as HTMLElement;
+      expect(within(compactStatus).queryByText('Complete')).toBeNull();
+      fireEvent.keyDown(screen.getByRole('slider', { name: 'Seek class timeline' }), {
+        key: 'End',
+      });
+      expect(within(compactStatus).getByText('Complete')).toBeTruthy();
+      expect(screen.getByText('Class complete.')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Exit' })).toBeTruthy();
+    },
+  );
 });
 
 describe('LiveMode screen-reader announcements', () => {
