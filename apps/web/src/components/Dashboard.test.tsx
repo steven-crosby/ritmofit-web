@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { StrictMode } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type {
   ClassPlanBlock,
@@ -2308,6 +2309,251 @@ describe('Dashboard track focus management', () => {
     ).toBe('Draft survives reorder.');
     expect(rowSelectButton('ct-1')?.getAttribute('aria-pressed')).toBe('true');
   });
+
+  async function openRefreshRide(strict = false) {
+    const ride = installClassWithTracks('Refresh ride', [
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+      { classTrackId: 'ct-2', durationMs: 180000, title: 'Second Song' },
+    ]);
+    const other = makeClass('Other ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride, other]));
+    const loadTracks = vi.mocked(api.listClassTracks).getMockImplementation()!;
+    const loadPayload = vi.mocked(api.getRunPayload).getMockImplementation()!;
+    vi.mocked(api.listClassTracks).mockImplementation((id: string) =>
+      id === other.id ? Promise.resolve([makeClassTrack('ct-other', 0)]) : loadTracks(id),
+    );
+    vi.mocked(api.getRunPayload).mockImplementation((id: string) =>
+      id === other.id
+        ? Promise.resolve(
+            liveRunPayload([{ classTrackId: 'ct-other', durationMs: 60000, title: 'Other song' }]),
+          )
+        : loadPayload(id),
+    );
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.reorderTracks).mockResolvedValue([]);
+    if (strict)
+      render(
+        <StrictMode>
+          <Dashboard userId="me" userName="Tester" />
+        </StrictMode>,
+      );
+    else renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Refresh ride/ }));
+    await screen.findByRole('heading', { name: 'Refresh ride' });
+    fireEvent.click(rowSelectButton('ct-1') as HTMLElement);
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for First Light',
+    });
+    const notes = within(inspector).getByRole('textbox', { name: 'Creator notes' });
+    fireEvent.change(notes, { target: { value: 'Keep this unsaved draft.' } });
+    const grip = screen.getByRole('button', { name: /Reorder First Light, position 1 of 2/i });
+    grip.focus();
+    return { ride, inspector, notes, grip };
+  }
+
+  it('keeps the inspector and grip through rejected reorder, then retries one mutation', async () => {
+    const { inspector, notes, grip } = await openRefreshRide();
+    const mutation = deferred<Awaited<ReturnType<typeof api.reorderTracks>>>();
+    vi.mocked(api.reorderTracks).mockReturnValueOnce(mutation.promise);
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    expect(grip.getAttribute('aria-label')).toContain('position 2 of 2');
+    await act(async () => mutation.reject(new Error('Reorder denied')));
+    expect(await screen.findByText('Reorder denied')).toBeTruthy();
+    expect(grip.getAttribute('aria-label')).toContain('position 1 of 2');
+    expect(document.activeElement).toBe(grip);
+    expect((notes as HTMLTextAreaElement).value).toBe('Keep this unsaved draft.');
+    expect(rowSelectButton('ct-1')?.getAttribute('aria-pressed')).toBe('true');
+    expect(api.listClassTracks).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+    expect(api.reorderTracks).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Reorder denied')).toBeNull();
+    expect(screen.getByRole('region', { name: 'Track inspector for First Light' })).toBe(inspector);
+    expect(document.activeElement).toBe(grip);
+  });
+
+  it('announces saved-but-refresh-failed and retries reads without losing the draft', async () => {
+    const { inspector, notes, grip } = await openRefreshRide();
+    vi.mocked(api.listClassTracks).mockRejectedValueOnce(new Error('Latest read unavailable'));
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    const warning = await screen.findByText(/Saved, but.*Latest read unavailable/);
+    expect(warning.closest('[role="status"]')).toBeTruthy();
+    expect(document.activeElement).toBe(grip);
+    expect((notes as HTMLTextAreaElement).value).toBe('Keep this unsaved draft.');
+    expect(screen.getByRole('region', { name: 'Track inspector for First Light' })).toBe(inspector);
+    const retry = screen.getByRole('button', { name: 'Refresh class details' });
+    retry.focus();
+    fireEvent.click(retry);
+    await waitFor(() => expect(screen.queryByText(/Saved, but/)).toBeNull());
+    expect(api.listClassTracks).toHaveBeenCalledTimes(3);
+    expect(api.reorderTracks).toHaveBeenCalledTimes(1);
+    expect((notes as HTMLTextAreaElement).value).toBe('Keep this unsaved draft.');
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
+  it('restores retry focus to a surviving row after fresh detail removes the selected track', async () => {
+    await openRefreshRide();
+    vi.mocked(api.listClassTracks).mockRejectedValueOnce(new Error('Read unavailable'));
+    fireEvent.keyDown(
+      screen.getByRole('button', { name: /Reorder First Light, position 1 of 2/i }),
+      { key: 'ArrowDown' },
+    );
+    await screen.findByText(/Saved, but/);
+    vi.mocked(api.listClassTracks).mockResolvedValueOnce([makeClassTrack('ct-2', 0)]);
+    vi.mocked(api.getRunPayload).mockResolvedValueOnce(
+      liveRunPayload([{ classTrackId: 'ct-2', durationMs: 180000, title: 'Second Song' }]),
+    );
+    const retry = screen.getByRole('button', { name: 'Refresh class details' });
+    retry.focus();
+    fireEvent.click(retry);
+    await waitFor(() => expect(screen.queryByText(/Saved, but/)).toBeNull());
+    expect(rowSelectButton('ct-1')).toBeNull();
+    expect(document.activeElement).toBe(rowSelectButton('ct-2'));
+  });
+
+  it.each(['switch', 'all classes', 'music'])(
+    'does not publish a late refresh rejection after %s',
+    async (leave: string) => {
+      const { grip } = await openRefreshRide();
+      const refresh = deferred<ClassTrack[]>();
+      vi.mocked(api.listClassTracks).mockReturnValueOnce(refresh.promise);
+      fireEvent.keyDown(grip, { key: 'ArrowDown' });
+      await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+      if (leave === 'switch') {
+        const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
+        fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+        await screen.findByRole('heading', { name: 'Other ride' });
+      } else if (leave === 'music') {
+        fireEvent.click(screen.getByRole('button', { name: 'Music' }));
+      } else {
+        fireEvent.click(screen.getByRole('button', { name: 'All classes' }));
+      }
+      await act(async () => refresh.reject(new Error('Obsolete read')));
+      expect(screen.queryByText(/Obsolete read/)).toBeNull();
+      if (leave === 'switch')
+        expect(screen.getByRole('button', { name: /Other song.*Artist/ })).toBeTruthy();
+      // The first workspace's controls have actually been unmounted.
+      expect(grip.isConnected).toBe(false);
+    },
+  );
+
+  it('ignores a prior workspace mutation completing after A-to-B-to-A', async () => {
+    const { ride, grip } = await openRefreshRide();
+    const mutation = deferred<Awaited<ReturnType<typeof api.reorderTracks>>>();
+    vi.mocked(api.reorderTracks).mockReturnValueOnce(mutation.promise);
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
+    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await screen.findByRole('heading', { name: 'Other ride' });
+    fireEvent.click(within(chooser).getByRole('button', { name: /^Refresh ride/ }));
+    await screen.findByRole('heading', { name: 'Refresh ride' });
+    const readsBeforeCompletion = vi.mocked(api.listClassTracks).mock.calls.length;
+    await act(async () => mutation.resolve([]));
+    expect(api.listClassTracks).toHaveBeenCalledTimes(readsBeforeCompletion);
+    expect(screen.getByRole('heading', { name: ride.title })).toBeTruthy();
+    expect(screen.queryByText('Loading class…')).toBeNull();
+  });
+
+  it('keeps newer failed refresh ownership when an older silent success arrives', async () => {
+    const { grip } = await openRefreshRide();
+    const older = deferred<ClassTrack[]>();
+    const newer = deferred<ClassTrack[]>();
+    vi.mocked(api.listClassTracks)
+      .mockReturnValueOnce(older.promise)
+      .mockReturnValueOnce(newer.promise);
+    const stalePayload = liveRunPayload([
+      { classTrackId: 'ct-1', durationMs: 60000, title: 'Obsolete song title' },
+    ]);
+    vi.mocked(api.getRunPayload).mockResolvedValueOnce(stalePayload);
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+    fireEvent.keyDown(grip, { key: 'ArrowUp' });
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(3));
+    await act(async () => newer.reject(new Error('Newest read unavailable')));
+    await screen.findByText(/Newest read unavailable/);
+    await act(async () => older.resolve([makeClassTrack('ct-1', 0)]));
+    expect(screen.queryAllByText('Obsolete song title')).toHaveLength(0);
+    expect(screen.getByRole('button', { name: /^Refresh ride.*2 tracks.*30:00/i })).toBeTruthy();
+    expect(screen.getByText(/Newest read unavailable/)).toBeTruthy();
+  });
+
+  it('ignores an older rejection after the newest silent read succeeds', async () => {
+    const { grip } = await openRefreshRide();
+    const older = deferred<ClassTrack[]>();
+    const newer = deferred<ClassTrack[]>();
+    vi.mocked(api.listClassTracks)
+      .mockReturnValueOnce(older.promise)
+      .mockReturnValueOnce(newer.promise);
+    const latest = liveRunPayload([
+      { classTrackId: 'ct-2', durationMs: 180000, title: 'Second Song' },
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'Latest First Light' },
+    ]);
+    latest.class.totalDurationMs = 420000;
+    vi.mocked(api.getRunPayload).mockResolvedValueOnce(latest).mockResolvedValueOnce(latest);
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+    fireEvent.keyDown(grip, { key: 'ArrowUp' });
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(3));
+    await act(async () => newer.resolve([makeClassTrack('ct-2', 0), makeClassTrack('ct-1', 1)]));
+    await screen.findByRole('region', { name: 'Track inspector for Latest First Light' });
+    await act(async () => older.reject(new Error('Older failure')));
+    expect(screen.queryByText(/Older failure/)).toBeNull();
+    expect(
+      screen.getByRole('region', { name: 'Track inspector for Latest First Light' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Refresh ride.*2 tracks.*7:00/i })).toBeTruthy();
+  });
+
+  it('does not change Library aggregates from a silent response after switching away', async () => {
+    const { grip } = await openRefreshRide();
+    const older = deferred<ClassTrack[]>();
+    const stalePayload = liveRunPayload([
+      { classTrackId: 'ct-1', durationMs: 60000, title: 'Obsolete song' },
+    ]);
+    stalePayload.class.totalDurationMs = 60000;
+    vi.mocked(api.listClassTracks).mockReturnValueOnce(older.promise);
+    vi.mocked(api.getRunPayload).mockResolvedValueOnce(stalePayload);
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
+    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await screen.findByRole('heading', { name: 'Other ride' });
+    await act(async () => older.resolve([makeClassTrack('ct-1', 0)]));
+    expect(screen.getByRole('button', { name: /^Refresh ride.*2 tracks.*30:00/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Other song.*Artist/ })).toBeTruthy();
+  });
+
+  it('clears only the read warning when refresh recovers after an unrelated mutation error', async () => {
+    const { grip } = await openRefreshRide();
+    vi.mocked(api.listClassTracks).mockRejectedValueOnce(new Error('Read unavailable'));
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    await screen.findByText(/Saved, but/);
+    fireEvent.click(screen.getByRole('button', { name: 'Show timeline' }));
+    vi.mocked(api.updateClass).mockRejectedValueOnce(new Error('Timeline mutation denied'));
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to free placement' }));
+    await screen.findByText('Timeline mutation denied');
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh class details' }));
+    await waitFor(() => expect(screen.queryByText(/Saved, but/)).toBeNull());
+    expect(screen.getByText('Timeline mutation denied')).toBeTruthy();
+    expect(api.reorderTracks).toHaveBeenCalledTimes(1);
+    expect(api.updateClass).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([false, true])(
+    'refreshes pending intensity after track switching (StrictMode %s)',
+    async (strict: boolean) => {
+      const { inspector } = await openRefreshRide(strict);
+      const mutation = deferred<Awaited<ReturnType<typeof api.updateClassTrack>>>();
+      vi.mocked(api.updateClassTrack).mockReturnValueOnce(mutation.promise);
+      fireEvent.click(within(inspector).getByRole('button', { name: 'Attack' }));
+      fireEvent.click(rowSelectButton('ct-2') as HTMLElement);
+      await screen.findByRole('region', { name: 'Track inspector for Second Song' });
+      expect(api.updateClassTrack).toHaveBeenCalledWith('ct-1', { intensity: 'hard' });
+      await act(async () => mutation.resolve(makeClassTrack('ct-1', 0)));
+      await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+      expect(screen.getByRole('region', { name: 'Track inspector for Second Song' })).toBeTruthy();
+    },
+  );
 
   it('says whether the inspector matches what is stored, and gates Save on a change', async () => {
     installClassWithTracks('Draft state ride', [

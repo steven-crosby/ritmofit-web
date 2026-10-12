@@ -1,0 +1,77 @@
+{
+  "kind": "synthetic-Chrome-viewport-emulation",
+  "actualBrowserZoom": false,
+  "actualDevice": false,
+  "providerPlayback": false,
+  "rows": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "pass": true,
+      "failed": {
+        "role": "status",
+        "text": "! Saved, but the latest class details could not be refreshed: Latest read unavailable Your current workbench remains open.Refresh class details",
+        "draft": "Unsaved browser draft.",
+        "selected": "true",
+        "focusBeforeRetry": "Reorder First Light, position 2 of 2. Use arrow up and down.",
+        "button": {
+          "width": 178.796875,
+          "height": 44,
+          "left": 1204.203125,
+          "right": 1383
+        },
+        "warning": {
+          "top": 93,
+          "bottom": 163,
+          "unobscured": true
+        },
+        "horizontalOverflow": 0,
+        "mutations": 1
+      },
+      "recovered": {
+        "draft": "Unsaved browser draft.",
+        "focusTrack": "00000000-0000-4000-8000-000000000101",
+        "focusOnBody": false,
+        "mutations": 1,
+        "trackReads": 3,
+        "horizontalOverflow": 0
+      }
+    },
+    {
+      "name": "narrow",
+      "width": 320,
+      "height": 812,
+      "pass": true,
+      "failed": {
+        "role": "status",
+        "text": "! Saved, but the latest class details could not be refreshed: Latest read unavailable Your current workbench remains open.Refresh class details",
+        "draft": "Unsaved browser draft.",
+        "selected": "true",
+        "focusBeforeRetry": "Reorder First Light, position 2 of 2. Use arrow up and down.",
+        "button": {
+          "width": 178.796875,
+          "height": 44,
+          "left": 29,
+          "right": 207.796875
+        },
+        "warning": {
+          "top": 135,
+          "bottom": 297,
+          "unobscured": true
+        },
+        "horizontalOverflow": 0,
+        "mutations": 1
+      },
+      "recovered": {
+        "draft": "Unsaved browser draft.",
+        "focusTrack": "00000000-0000-4000-8000-000000000101",
+        "focusOnBody": false,
+        "mutations": 1,
+        "trackReads": 3,
+        "horizontalOverflow": 0
+      }
+    }
+  ],
+  "runtimeExceptions": []
+}

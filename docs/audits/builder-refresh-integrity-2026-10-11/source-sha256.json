@@ -1,0 +1,16 @@
+{
+  "base": "6691c9d73adaf71bd488f3b1293146c8a9925e85",
+  "baselineSource": {
+    "apps/web/src/components/Dashboard.tsx": "e73347e2ee8920d29161778f5a40674b122dff8b714571a4f5be5f0ccba9d3bc",
+    "apps/web/src/components/Dashboard.test.tsx": "4172a96b700954c6ee44f08295819fa9156b39b9bfdb8eddd685c8ed56383e34"
+  },
+  "currentSource": {
+    "apps/web/src/components/Dashboard.tsx": "2d0bbbef90a676099fdcf27384438640a5370806a5b204202b131b58465ce814",
+    "apps/web/src/components/Dashboard.test.tsx": "a9658a44d2c08840c01552185a6910b248cc1d25dbc6f63623518cd2f3fc50c0"
+  },
+  "browserSupport": {
+    "docs/audits/builder-refresh-integrity-2026-10-11/fixture.tsx": "3ba94e2f7ce0d9ab66f592c4977334d683dabe694f8d329809ae5980f9981693",
+    "docs/audits/builder-refresh-integrity-2026-10-11/serve.mjs": "37ab37812b964f380242fab0b6dadf2818bc74a45e69bce02773ee73a87c54a0",
+    "docs/audits/builder-refresh-integrity-2026-10-11/capture.mjs": "39f1ae04a58ad6c625889f2f85a3a4cc84cb8a5fcf122ed6cd5c248562380ab3"
+  }
+}

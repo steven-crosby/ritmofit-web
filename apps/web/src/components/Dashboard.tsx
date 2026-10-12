@@ -219,6 +219,18 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [newEmptyClassId, setNewEmptyClassId] = useState<string | null>(null);
   const [detail, dispatchDetail] = useReducer(classDetailReducer, initialClassDetailState);
   const detailRequestId = useRef(0);
+  // A workspace lifetime is distinct from a read generation: reopening the same
+  // class must not revive callbacks belonging to its previous mounted instance.
+  const detailWorkspace = useRef<{ classId: string } | null>(null);
+  const workspaceOwner = detailWorkspace.current;
+  const [refreshWarning, setRefreshWarning] = useState<{
+    owner: { classId: string };
+    message: string;
+    retrying: boolean;
+  } | null>(null);
+  const refreshRetryRef = useRef<HTMLButtonElement>(null);
+  const restoreRefreshFocus = useRef(false);
+  const workspaceRef = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState<RunPayload | null>(null);
   // Live Mode is a full-tree swap (see the `if (live)` early return below), so the
   // control that opened it never survives to be refocused on exit — the dashboard
@@ -228,8 +240,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const restoreFocusOnExitRef = useRef(false);
   const exitLive = useCallback(() => {
     restoreFocusOnExitRef.current = true;
+    detailWorkspace.current = selected ? { classId: selected.id } : null;
     setLive(null);
-  }, []);
+  }, [selected]);
   useEffect(() => {
     if (live || !restoreFocusOnExitRef.current) return;
     restoreFocusOnExitRef.current = false;
@@ -355,58 +368,96 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   // until 'success' replaces it, so an in-place refresh (e.g. after a keyboard
   // reorder) never unmounts the workspace — preserving grip focus and the reorder
   // announcement. Only use it to refresh the class already open, never to switch.
-  const loadDetail = useCallback(async (classId: string, opts?: { silent?: boolean }) => {
-    const requestId = ++detailRequestId.current;
-    if (!opts?.silent) dispatchDetail({ type: 'begin', classId, requestId });
-    const [tracksResult, payloadResult] = await Promise.allSettled([
-      listClassTracks(classId),
-      getRunPayload(classId),
-    ]);
+  const loadDetail = useCallback(
+    async (classId: string, opts?: { silent?: boolean; owner?: { classId: string } | null }) => {
+      const owner = opts?.silent ? opts.owner : detailWorkspace.current;
+      // An old mutation may finish after switching away and even reopening this
+      // class. Reject its callback before it can become the newest read generation.
+      if (!owner || owner !== detailWorkspace.current || owner.classId !== classId) return;
+      const requestId = ++detailRequestId.current;
+      if (!opts?.silent) dispatchDetail({ type: 'begin', classId, requestId });
+      setRefreshWarning((current) =>
+        current?.owner === owner ? { ...current, retrying: true } : current,
+      );
+      const [tracksResult, payloadResult] = await Promise.allSettled([
+        listClassTracks(classId),
+        getRunPayload(classId),
+      ]);
 
-    if (tracksResult.status === 'rejected') {
-      const message =
-        tracksResult.reason instanceof Error
-          ? tracksResult.reason.message
-          : 'Could not load this class.';
-      // An in-place refresh follows a mutation that already succeeded. Keep the
-      // current workbench and any local inspector draft mounted if that refresh
-      // fails; the global alert reports the stale read without pretending the
-      // class disappeared or clearing the selected track.
-      if (opts?.silent) {
-        setError(`Saved, but the latest class details could not be refreshed: ${message}`);
+      // Silent reads do not dispatch begin, so the reducer alone cannot know that
+      // a newer read is pending. Guard every presentation effect, including cards.
+      if (owner !== detailWorkspace.current || requestId !== detailRequestId.current) return;
+
+      if (tracksResult.status === 'rejected') {
+        const message =
+          tracksResult.reason instanceof Error
+            ? tracksResult.reason.message
+            : 'Could not load this class.';
+        // An in-place refresh follows a mutation that already succeeded. Keep the
+        // current workbench and any local inspector draft mounted if that refresh
+        // fails; a scoped status reports the stale read without pretending the
+        // class disappeared or clearing the selected track.
+        if (opts?.silent) {
+          setRefreshWarning({
+            owner,
+            message: `Saved, but the latest class details could not be refreshed: ${message}`,
+            retrying: false,
+          });
+          return;
+        }
+        dispatchDetail({
+          type: 'failure',
+          classId,
+          requestId,
+          error: message,
+        });
         return;
       }
+
+      // Restore retry focus after the fresh detail commits: its selected song
+      // may disappear from the authoritative response, so the old DOM is unsafe.
+      if (document.activeElement === refreshRetryRef.current) restoreRefreshFocus.current = true;
+      setRefreshWarning((current) => (current?.owner === owner ? null : current));
+      const payload = payloadResult.status === 'fulfilled' ? payloadResult.value : null;
       dispatchDetail({
-        type: 'failure',
+        type: 'success',
         classId,
         requestId,
-        error: message,
+        tracks: tracksResult.value,
+        payload,
       });
-      return;
-    }
 
-    const payload = payloadResult.status === 'fulfilled' ? payloadResult.value : null;
-    dispatchDetail({
-      type: 'success',
-      classId,
-      requestId,
-      tracks: tracksResult.value,
-      payload,
-    });
+      // Keep this class's Library card in sync with its freshly loaded detail, so a
+      // track add/remove/edit updates the rail's count/runtime/collage immediately
+      // instead of waiting for the next full list reload. The run-payload yields the
+      // exact aggregates GET /classes computes; without it (a non-runnable class, e.g.
+      // a track missing duration) the track count is still authoritative.
+      const summary = payload
+        ? cardSummaryFromPayload(payload)
+        : { trackCount: tracksResult.value.length };
+      setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...summary } : c)));
+    },
+    [],
+  );
 
-    // Keep this class's Library card in sync with its freshly loaded detail, so a
-    // track add/remove/edit updates the rail's count/runtime/collage immediately
-    // instead of waiting for the next full list reload. The run-payload yields the
-    // exact aggregates GET /classes computes; without it (a non-runnable class, e.g.
-    // a track missing duration) the track count is still authoritative.
-    const summary = payload
-      ? cardSummaryFromPayload(payload)
-      : { trackCount: tracksResult.value.length };
-    setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...summary } : c)));
-  }, []);
+  useLayoutEffect(() => {
+    if (!restoreRefreshFocus.current) return;
+    restoreRefreshFocus.current = false;
+    // The reorder list mirrors payload in an effect, so its first committed DOM
+    // can still contain old rows. Focus only a row present in the fresh payload.
+    const currentIds = new Set(detail.payload?.tracks.map((entry) => entry.classTrackId));
+    const rows = workspaceRef.current?.querySelectorAll<HTMLElement>('[data-track-select-id]');
+    const survivingRows = Array.from(rows ?? []).filter((row) =>
+      currentIds.has(row.dataset.trackSelectId!),
+    );
+    const selectedRow = survivingRows.find((row) => row.getAttribute('aria-pressed') === 'true');
+    (selectedRow ?? survivingRows[0] ?? dashboardHeadingRef.current)?.focus();
+  }, [detail]);
 
   const openClass = useCallback(
     async (cls: ClassWithAccess) => {
+      detailWorkspace.current = { classId: cls.id };
+      setRefreshWarning(null);
       setSelected(cls);
       // Opening a class changes what the rail is for: the create/filter controls
       // belong to choosing a class, not to editing one, so they fold away rather
@@ -485,6 +536,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         setError(blocked);
         return;
       }
+      detailWorkspace.current = null;
+      setRefreshWarning(null);
       setLive(payload);
       setError(null);
     } catch (e) {
@@ -509,6 +562,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const handleClassDeleted = useCallback(
     (classId: string) => {
       setSelected((prev) => (prev && prev.id === classId ? null : prev));
+      detailWorkspace.current = null;
+      setRefreshWarning(null);
       dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
       void refreshClasses();
     },
@@ -601,6 +656,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     if (!importResult || importResult.failed.length === 0 || retryingImport) return;
     setRetryingImport(true);
     const detailGeneration = detailRequestId.current;
+    const owner = detailWorkspace.current;
     try {
       const failed = await importCollectionTracks(
         importResult.classId,
@@ -617,7 +673,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           : current,
       );
       if (selected?.id === importResult.classId && detailRequestId.current === detailGeneration) {
-        await loadDetail(importResult.classId, { silent: true });
+        await loadDetail(importResult.classId, { silent: true, owner });
       }
     } finally {
       setRetryingImport(false);
@@ -690,6 +746,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                     : 'border-transparent bg-transparent text-text-secondary hover:text-text-primary'
                 }`}
                 onClick={() => {
+                  detailWorkspace.current = null;
+                  setRefreshWarning(null);
                   setDestination(value);
                   if (value === 'classes') {
                     setSelected(null);
@@ -786,6 +844,31 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           !(destination === 'classes' && listStatus === 'error' && classes.length === 0) && (
             <p className="mb-4 font-ui text-sm text-state-danger">{error}</p>
           )}
+        {refreshWarning && refreshWarning.owner === workspaceOwner && destination === 'classes' && (
+          <section
+            role="status"
+            aria-label="Class detail refresh"
+            className="mb-4 flex min-w-0 flex-wrap items-center gap-3 rounded-card border border-state-caution/30 bg-state-caution/5 p-3 font-ui text-sm text-text-primary"
+          >
+            <p className="min-w-0 flex-[1_1_100%] sm:flex-1">
+              <span aria-hidden="true">! </span>
+              {refreshWarning.message} Your current workbench remains open.
+            </p>
+            <button
+              ref={refreshRetryRef}
+              type="button"
+              aria-disabled={refreshWarning.retrying}
+              onClick={() => {
+                if (!refreshWarning.retrying && selected) {
+                  void loadDetail(selected.id, { silent: true, owner: refreshWarning.owner });
+                }
+              }}
+              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+            >
+              {refreshWarning.retrying ? 'Refreshing class details…' : 'Refresh class details'}
+            </button>
+          </section>
+        )}
         {importResult && (
           <div
             role={importResult.failed.length > 0 ? 'alert' : 'status'}
@@ -841,7 +924,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               smaller laptops. The class workspace contributes the center + inspector
               columns; the library is the first column. The resting Classes home
               hides this rail so the ranked list is the page. */
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start">
+            <div
+              ref={workspaceRef}
+              className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start"
+            >
               <LibraryRail
                 className="hidden xl:flex"
                 creatorOpen={creatorOpen}
@@ -878,6 +964,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 selectedId={selected.id}
                 onOpen={openClass}
                 onShowAll={() => {
+                  detailWorkspace.current = null;
+                  setRefreshWarning(null);
                   setSelected(null);
                   dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
                 }}
@@ -890,11 +978,21 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                   tracks={detail.tracks}
                   payload={detail.payload}
                   onError={setError}
-                  onTrackChanged={() => void loadDetail(selected.id, { silent: true })}
-                  onTrackAdded={() => void loadDetail(selected.id, { silent: true })}
-                  onChoreographyChanged={() => void loadDetail(selected.id, { silent: true })}
-                  onReordered={() => void loadDetail(selected.id, { silent: true })}
-                  onTrackRemoved={() => void loadDetail(selected.id, { silent: true })}
+                  onTrackChanged={() =>
+                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                  }
+                  onTrackAdded={() =>
+                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                  }
+                  onChoreographyChanged={() =>
+                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                  }
+                  onReordered={() =>
+                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                  }
+                  onTrackRemoved={() =>
+                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                  }
                   onRun={() => runClass(selected.id)}
                   onClassUpdated={applyClassUpdate}
                   onClassDeleted={handleClassDeleted}
@@ -904,6 +1002,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                   focusAddMusic={newEmptyClassId === selected.id}
                   onFocusedAddMusic={() => setNewEmptyClassId(null)}
                   onBackToClasses={() => {
+                    detailWorkspace.current = null;
+                    setRefreshWarning(null);
                     setSelected(null);
                     dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
                   }}
