@@ -1586,6 +1586,24 @@ describe('LiveMode tempo-forward HUD', () => {
   });
 });
 
+describe('LiveMode compact completion state', () => {
+  it.each(['Cue-by-Cue', 'Full List'])(
+    'retains completion in the compact status slot in %s',
+    async (view: string) => {
+      await renderLive();
+      if (view === 'Full List') fireEvent.click(screen.getByRole('tab', { name: view }));
+      const compactStatus = document.querySelector('header p[aria-hidden="true"]') as HTMLElement;
+      expect(within(compactStatus).queryByText('Complete')).toBeNull();
+      fireEvent.keyDown(screen.getByRole('slider', { name: 'Seek class timeline' }), {
+        key: 'End',
+      });
+      expect(within(compactStatus).getByText('Complete')).toBeTruthy();
+      expect(screen.getByText('Class complete.')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Exit' })).toBeTruthy();
+    },
+  );
+});
+
 describe('LiveMode screen-reader announcements', () => {
   it('announces the live track when no cue is active', async () => {
     await renderLive();

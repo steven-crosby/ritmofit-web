@@ -1,132 +1,113 @@
-# Live short-viewport teaching clarity — 2026-10-11
+# Live short-viewport clarity: reviewed P2 corrections — 2026-10-11
 
-Round `r20261011c`, lane 1. Verified source, tests, evidence and handoff are locally
-committed and unpublished on `codex/r20261011c-live-short-viewport`, based on
-`6691c9d73adaf71bd488f3b1293146c8a9925e85`. Steven approved implementation, local
-verification and this local commit after orchestrator review. The untracked lane
-brief is excluded. Next action: obtain separate push/PR authority. Push, PR, merge,
-deployment and cleanup remain unauthorized.
+Round `r20261011c`, Lane 1, [draft PR #518](https://github.com/steven-crosby/ritmofit-web/pull/518).
+The published checkpoint is `9702fd0299063f02890a5d82ab990e047763afc7`, based on
+`6691c9d73adaf71bd488f3b1293146c8a9925e85`. Steven approved fixing the review findings,
+regression checks, local gates, follow-up commit/push, and renewed CI/review. The
+orchestrator owns staging, commit, push and CI; merge, deploy and cleanup remain
+unauthorized. The planning brief remains excluded.
 
-The current cue remains the hero, with Next queued below it. At short portrait
-sizes (height ≤700 CSS px and width ≤639 CSS px), the header uses its existing
-compact timecode presentation and preserves class/run metadata for assistive
-technology. Reset and the timeline move behind the existing More disclosure.
-Primary transport and playback/wake status remain visible. Narrow short-screen
-vitals use 8px rather than 24px horizontal gaps to keep BPM and holds from wrapping
-behind the dock. Existing ≤480px landscape behavior is preserved.
+## Reviewed behavior and correction
 
-No teaching typography, color, timing, provider integration, shared styles, API,
-schema or configuration changed. 375×812 retains its original layout.
+The first implementation compacted portrait chrome through 700 CSS px. Review
+found a gap immediately above that cutoff and a hidden completion label because
+all visible run-state metadata lived in the collapsed header. The initial capture
+checked completion DOM presence, which did not prove visual availability.
 
-## Fresh baseline and candidate
+The correction keeps portrait chrome compact through **800 CSS px** at widths
+≤639px. Fresh checks validate 799/800/801px at both 320px and 375px widths. The
+existing expanded 375×812 design remains intact. Existing ≤480px landscape
+compaction is retained. Current/next cue typography, colors, timing, primary
+transport and full guidance remain unchanged.
 
-The final harness reproduced the baseline before implementation and again against
-the original `LiveMode.tsx` from base `6691c9d`. It confirmed the retained teaching failures
-and additional vitals hidden by the dock. The older live-glance packet is unchanged.
+On completion, the compact clock slot also shows the existing **Complete** state
+in primary text. The normal header and existing screen-reader announcement remain
+available. Exit and finish-control behavior are unchanged; this is a visible state
+correction, not a finish-control redesign.
 
-| CSS viewport | Baseline failures out of five | Candidate failures out of five |
-| ------------ | ----------------------------- | ------------------------------ |
-| 375×812      | 0                             | 0                              |
-| 375×635      | 2                             | 0                              |
-| 320×568      | 5                             | 0                              |
+## Fresh P2 reproduction and candidate
 
-At 375×635, count-bearing cues hide BPM/effort; section/count/holds additionally
-hide Next/countdown/holds. At 320×568, every variant hides some vitals, and the two
-count-bearing variants also obscure teaching text or Next/countdown. These are
-synthetic CSS viewports, not observed iPhone Safari toolbar dimensions.
+The published `9702fd0` source was tested before product edits. All 90 viewport
+rows and 68 state rows completed with no page exception. The intentional baseline
+gate failed for four viewport rows:
 
-The fifteen required portrait cases check current summary, Next summary/countdown,
-authored count, BPM, timecode, effort/holds when present, primary transport, visible
-control targets ≥44×44 CSS px, zero horizontal overflow, clipping bounds and
-multiple hit-test points. Complete arbitrary authored text need not fit in the
-summary. Full guidance and Full List retain the complete string.
+- 375×701, section/count/holds: vitals behind transport.
+- 320×701, count and section/count/holds: vitals behind transport.
+- 320×740, section/count/holds: vitals behind transport.
 
-The five cue variants also run at 812×375 landscape and 1440×900 desktop. These ten
-rows gate primary transport/visible controls and horizontal overflow; supporting
-content may require scrolling. A separate representative stress-state check at
-each of the five viewports verifies that Next/countdown/BPM/holds, Full guidance
-and Full List are reachable through scrolling, More exposes a 44px Reset control,
-pause works, waiting/error recovery holds teaching position with reachable actions,
-and a short synthetic class reaches completion. All **25 viewport rows and 20
-state rows pass**. The initial error rows captured transient waiting; visual
-review corrected the harness to require the settled alert, Playback stopped,
-provider-load failure copy and Retry playback. The final rerun passed all five
-error rows, and its landscape error screenshot was inspected. Do not interpret the landscape/desktop row pass as all content
-visible simultaneously.
+Five completion rows also failed visible bounds/clipping/hit tests: 375×635,
+320×568, 812×375, 375×700 and 320×700. The remaining baseline cases passed.
 
-![Baseline: 320×568 section/count/holds](./baseline/320x568-long-section-count-holds.png)
+The corrected candidate passes **90/90 viewport rows and 68/68 state rows**.
+Eighty portrait rows require current/next summaries, countdown, authored count,
+BPM/timecode, meaningful effort/holds, visible 44px controls and zero horizontal
+page overflow at the teaching entry position. Landscape/desktop allow appropriate
+scrolling and separately check supporting content reachability.
 
-![Candidate: same stress variant](./candidate/320x568-long-section-count-holds.png)
+Boundary coverage at both portrait widths is 700/701/740/799/800/801px, plus the
+original target viewports and 320×812. State coverage exercises guidance, More,
+pause, Full List, waiting/error recovery and completion at 17 viewports. Completion
+must be visibly unobscured in **both Cue-by-Cue and Full List**, not merely present
+in the DOM. The capture waits for fonts and matching geometry samples and uses
+actual Chrome hit testing. No teaching type was shrunk.
 
-## Evidence method
+![Published cutoff failure, 320×740](./p2-baseline/320x740-long-section-count-holds.png)
 
-The fixture renders actual LiveMode, app CSS, generated tokens and self-hosted
-fonts, using synthetic instructor-authored payloads. Default fixtures have no
-provider references. Recovery fixtures use a Vite-only synthetic SoundCloud
-adapter that either remains pending or rejects; it never loads a widget, contacts
-a provider, or plays audio. Completion uses a 750ms synthetic track.
+![Corrected 320×740](./p2-candidate/320x740-long-section-count-holds.png)
 
-The new capture script imports the existing dependency-free CDP driver read-only
-and uses isolated installed Chrome. It waits for fonts, expected state and repeated
-matching geometry samples; identifies teaching content through labels, text and
-region markers; and does not require a particular clamp or CSS class. Pointer
-actions hit visible controls; scrolling is introduced only when an action/content
-requires it. Disabled transport controls are checked for bounds/clipping, not
-claimed to be operable. Enabled controls are hit-tested at interior points to avoid
-mistaking rounded transparent corners for occlusion.
+![Visible completion in Full List, 320×568](./p2-candidate/320x568-completion.png)
 
-`results.json` records outcomes and executed source/test hashes for each capture.
-`sha256.json` records final source and artifact hashes. Baseline source is the
-original HEAD; source snapshots in the hash records distinguish it from candidate.
-Small formatting refinements to evidence scripts occurred between captures.
+## Evidence identities and diagnostics
 
-This evidence is synthetic Chrome layout/interaction verification. It establishes
-neither provider/audio acceptance, screen-reader output nor real-device usability.
+The original `baseline/`, `candidate/`, `capture.mjs`, `results.json`,
+`full-gate.json` and `sha256.json` remain unchanged checkpoints. Their final source
+was `9702fd0`; their original completion pass does not prove visible completion.
+The original README is retained byte-for-byte in `p2-baseline/README.md`.
 
-## Native browser zoom limitation
+New `capture-p2.mjs`, `p2-results.json`, `p2-baseline/`, `p2-candidate/`,
+`p2-full-gate.json` and `p2-sha256.json` describe the corrections. The baseline
+executed harness is retained byte-for-byte as `p2-baseline/capture.mjs` (a source
+snapshot, not a relocated executable). Its hash matches the baseline receipt.
+Capture attempts are phase-labeled and retained. An initial baseline attempt
+missed a moving preflight control before fonts settled; it produced an incomplete
+matrix and was rejected. The corrected baseline completed all rows before edits.
 
-**Actual 200% native zoom remains unverified.** A dedicated headed Chrome profile
-was launched, CDP metric emulation cleared, and its normal 1200×843 CSS viewport
-confirmed. CUA app selection bound the active user-profile Chrome window rather
-than this isolated process. The orchestrator's separate test-tab attempt also met
-concurrent user activity and stopped before issuing a zoom command. Viewport
-emulation and CDP page scaling are not counted as native zoom. No user browser
-zoom setting was changed.
+The fixture renders actual LiveMode, app CSS/tokens and self-hosted fonts with
+synthetic instructor-authored payloads. Recovery uses a Vite-only pending/rejecting
+adapter; no widget, provider contact or audio stream is involved. Completion uses
+a 750ms synthetic track. All evidence is synthetic Chrome layout/interaction;
+it does not establish provider/audio, actual-device or screen-reader acceptance.
 
-The existing shell scrollport and focus/recovery logic are preserved, but native
-200% reflow/functionality remains an acceptance gap to resolve in a safely targeted
-attended session.
+## Local verification and next action
 
-## Local verification and restart
+- Focused LiveMode tests: **93/93 pass**, including compact completion in both views.
+- Complete CI-equivalent P2 gate: **all twelve effective checks pass**, with
+  browsers paused. Web **1150**, API **486**, music **30**, Worker integration **184**
+  tests pass. Build, OpenAPI/no-diff, contract parity and dependency audit pass.
+  `p2-full-gate.json` retains the initial test-parameter typecheck failure and the
+  passing format/typecheck/lint reruns after its explicit string annotation. Final
+  renderer/test hashes match the final capture and remain unchanged through the
+  completed gate.
+- Hosted CI passed on published checkpoint `9702fd0`. CI for the correction
+  follow-up head is pending at this record time; no future hosted pass is assumed.
+  Root has commit/push authority and will verify renewed CI/review on its resulting
+  exact PR head. The next owner action after those checks is separate merge
+  approval. Merge, deployment and cleanup remain unauthorized.
 
-- Frozen-lockfile dependency installation succeeded; no lockfile/package changes.
-- Focused `pnpm --filter @ritmofit/web exec vitest run src/components/LiveMode.test.tsx`:
-  **91/91 passed**. The previous CSS-string assertions were replaced with actual
-  long-guidance/Next/announcement behavior assertions; Chrome owns layout checks.
-- Full twelve-step CI-equivalent gate: **all pass** on the exact final source/test
-  hashes, with browsers paused. Web **1148**, API **486**, music **30**, Worker
-  integration **184** tests pass. Build, generated OpenAPI/no-diff, contract parity
-  and dependency audit also pass. The [receipt](./full-gate.json) preserves each
-  command/output, timings and identical source/test hashes before and after.
-- Capture hashes match the successful gate's final product/test hashes. Diagnostic
-  corrections are retained in `results.json`, including pre-correction error-PNG
-  hashes. Initial error PNG paths were superseded by the corrected captures; their
-  original pixels remain in the tool conversation, not this directory.
+Actual native **200% browser zoom remains unverified**. Dedicated headed Chrome
+was attempted previously, but native tooling bound the active user profile and a
+root test-tab attempt encountered concurrent user activity. No native zoom command
+was issued, and viewport emulation is not counted as native zoom. Real-iPhone and
+audible/provider obligations stay in the existing acceptance handoff.
 
-One mistaken `pnpm ... test -- <file>` invocation started the broader web suite;
-it was interrupted when its scope became visible and rerun with the explicit
-focused command above. The interrupted run is not a full-gate pass.
-
-Reproduce from this checkout after `pnpm install --frozen-lockfile` and
-`pnpm --filter @ritmofit/web tokens`, using an isolated Chrome process with a
-dedicated CDP port and profile:
+Reproduce from repo root with installed dependencies, generated web tokens and an
+isolated Chrome/CDP session under a browser lease:
 
 ```sh
 node docs/audits/live-short-viewport-2026-10-11/serve.mjs
-CDP_PORT=9235 CAPTURE_STAGE=candidate node docs/audits/live-short-viewport-2026-10-11/capture.mjs
+CDP_PORT=9235 CAPTURE_STAGE=p2-candidate node docs/audits/live-short-viewport-2026-10-11/capture-p2.mjs
 ```
 
-Default fixture port is 5185. Baseline capture uses `CAPTURE_STAGE=baseline`
-against the original base `6691c9d` source, and exits 1 for the demonstrated defects. Candidate capture exits 1 for any required
-viewport/state failure, incomplete matrix or page exception. Never rerun the old
-packet's scripts into its retained evidence directory.
+Default fixture port is 5185. `p2-baseline` labels captures of the original
+`9702fd0` source; its demonstrated failures are expected. Any required candidate
+failure, page exception or incomplete matrix returns exit 1.
