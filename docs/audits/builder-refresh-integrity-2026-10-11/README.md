@@ -2,7 +2,8 @@
 
 Round `r20261011c`, Lane 2. Base `6691c9d73adaf71bd488f3b1293146c8a9925e85`.
 Original verified work is published in draft [PR #519](https://github.com/steven-crosby/ritmofit-web/pull/519)
-at `7092c69164685d1d7648e3c90cdb57fbbd0d60a3`. The post-review P2 correction below is
+at `7092c69164685d1d7648e3c90cdb57fbbd0d60a3`. The Live-return P2 correction is published at
+`c3ccef457ef4e48de0eae7286ccfb59d23c69b24`; the later scoped-deletion correction below is
 prepared locally for the authorized follow-up commit/push and CI review. Neither phase establishes
 production acceptance. Merge, deployment and cleanup remain unauthorized.
 
@@ -150,3 +151,35 @@ The original fixture/scripts and original gate, browser and source-hash receipts
 The additive `p2-capture.mjs` normalizes `sections=[]` and sequential offsets in memory, consumes the
 fixture's one-shot failed-read seam, and holds a synthetic successful post-save response across Live.
 No provider adapter, account, authentication, playback runtime, shared helper, style or API changed.
+
+## Renewed review: class deletion completion ownership
+
+Renewed review of published `c3ccef4` found that delayed deletion of class A unconditionally invalidated
+B's current presentation and pending Live intent. The new intent guard then suppressed a valid B Run.
+Deferred regressions on that checkpoint reproduced **three failures**: B Run from Builder, B Run from
+the Live overview, and loss of B's inspector/draft/scoped warning. Three matching-A cases already
+passed: deletion rejected pending A Run from current Builder, reopened Builder and the owner-null overview.
+See `deletion-before-fix.txt`; no earlier checkpoint receipt was overwritten.
+
+The correction associates a pending Live request with its class ID and request ID. Deletion invalidates
+only a matching pending intent and a matching active/suspended class presentation. Its functional
+selection update still closes the authoritative deleted class, including a reopened A. Scoped read
+warning cleanup clears only the deleted class's warning. Unrelated B detail, draft, focus, warning and
+Run intent stay intact. Both normal and OAuth Live readiness clear their own pending metadata without
+clearing a newer request.
+
+The original `refreshClasses` call is retained: successful deletion still reconciles the Library first
+page/cursor and existing list/error policy. No Library/helper redesign was introduced. An additional
+regression verifies older classes reappear when the last loaded class is deleted with `hasMore`.
+
+- `deletion-after-fix.txt`: **141 focused tests pass** (Dashboard 132 and existing reorder/reducer 9).
+- `deletion-full-gate.json`: **all twelve checks pass** on unchanged source/test hashes. Exact root
+  unit gate: web **1182**, API **486**, music **30**; Worker integration **184**. No timeout, worker
+  limit, test/config or frozen-helper substitution was needed.
+- `deletion-source-sha256.json`: published `c3ccef4` baseline and final corrected source identity.
+
+This phase adds no layout, playback/provider, API, authentication, shared-helper or token changes.
+Deferred component regressions exercise the new asynchronous deletion ownership. The earlier P2
+browser captures remain evidence of their published `c3ccef4` checkpoint; no new browser acceptance
+is claimed for this later correction. Root owns the authorized commit/push and renewed CI/review.
+Merge, deployment and cleanup remain unauthorized.

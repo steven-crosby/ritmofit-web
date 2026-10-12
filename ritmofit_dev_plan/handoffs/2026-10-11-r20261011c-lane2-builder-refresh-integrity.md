@@ -3,7 +3,7 @@ date: 2026-10-11
 tool: Codex (local)
 lane: lane-2-builder-refresh-integrity
 branch: codex/r20261011c-builder-refresh-integrity
-head: 7092c69164685d1d7648e3c90cdb57fbbd0d60a3
+head: c3ccef457ef4e48de0eae7286ccfb59d23c69b24
 base: 6691c9d73adaf71bd488f3b1293146c8a9925e85
 prs: ['#519 (draft, published)']
 status: open
@@ -13,7 +13,14 @@ status: open
 
 ## Done
 
-- Original owner-approved work is published at `7092c69` in draft PR #519; the planning brief is excluded.
+- Original owner-approved work and Live-return correction are published through `c3ccef4` in draft
+  PR #519; the planning brief is excluded.
+- Renewed scoped-deletion correction preserves B’s presentation, scoped read warning and Run intent
+  when A deletion completes; matching A intents still reject, including the Live overview.
+- Final deletion-focused verification: 141 passing tests, including pagination refill after deleting
+  the last loaded class. Original Library refresh behavior is retained.
+- All twelve deletion-phase checks pass on unchanged final source/test hashes: web 1182, API 486,
+  music 30 and Worker integration 184 tests pass; receipts are additive to the `c3ccef4` checkpoint.
 - P2 review correction reconciles the logical Builder session on Exit from Live and after legitimate
   pending writes settle; exact presentation/latest-read ownership still rejects obsolete results.
 - Live entry intents reject duplicate/stale readiness completions, including overview and OAuth routes.
@@ -36,9 +43,9 @@ status: open
 
 ## In flight
 
-P2 correction and additive evidence are local on the existing PR #519 branch for the authorized
+Scoped-deletion correction and additive evidence are local on PR #519 over published `c3ccef4` for the authorized
 follow-up commit/push and CI review. Root owns staging, publication and CI polling. The original gate
-and browser evidence remain unchanged; additive P2 receipts identify the corrected source.
+and P2 browser evidence remain unchanged; additive deletion receipts identify the corrected source.
 
 ## Next action
 
@@ -62,6 +69,11 @@ P2 run: **all twelve checks pass** on identical before/after source/test hashes 
 including exact `pnpm test` (web 1175, API 486, music 30) and 184 Worker integration tests. Focused
 134-test gate and desktop/narrow actual-Live-preflight return checks pass. Original receipts remain
 unchanged; dedicated browser/server processes were stopped before the P2 full unit gate.
+
+Deletion run: focused 141 tests and all twelve required checks pass. Exact root unit gate: web 1182,
+API 486, music 30; Worker integration 184. `deletion-full-gate.json` and `deletion-source-sha256.json`
+identify unchanged final source/test hashes independently from the retained `c3ccef4` checkpoint.
+No fresh browser acceptance is claimed for this asynchronous ownership correction.
 
 Skipped: production/authenticated verification, real screen reader, provider/audible playback, actual
 device and actual 200% browser zoom. This lane provides synthetic ownership and browser UI evidence only.

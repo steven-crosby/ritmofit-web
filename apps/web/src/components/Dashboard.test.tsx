@@ -2311,7 +2311,7 @@ describe('Dashboard track focus management', () => {
     expect(rowSelectButton('ct-1')?.getAttribute('aria-pressed')).toBe('true');
   });
 
-  async function openRefreshRide(strict = false) {
+  async function openRefreshRide(strict = false, firstPageOnly = false) {
     vi.mocked(api.listClassTracks).mockReset();
     vi.mocked(api.getRunPayload).mockReset();
     vi.mocked(api.reorderTracks).mockReset();
@@ -2320,7 +2320,9 @@ describe('Dashboard track focus management', () => {
       { classTrackId: 'ct-2', durationMs: 180000, title: 'Second Song' },
     ]);
     const other = makeClass('Other ride');
-    vi.mocked(api.listClasses).mockResolvedValue(page([ride, other]));
+    vi.mocked(api.listClasses).mockResolvedValue(
+      firstPageOnly ? { items: [ride], nextCursor: 'older-classes' } : page([ride, other]),
+    );
     const loadTracks = vi.mocked(api.listClassTracks).getMockImplementation()!;
     const loadPayload = vi.mocked(api.getRunPayload).getMockImplementation()!;
     vi.mocked(api.listClassTracks).mockImplementation((id: string) =>
@@ -2352,7 +2354,7 @@ describe('Dashboard track focus management', () => {
     fireEvent.change(notes, { target: { value: 'Keep this unsaved draft.' } });
     const grip = screen.getByRole('button', { name: /Reorder First Light, position 1 of 2/i });
     grip.focus();
-    return { ride, inspector, notes, grip };
+    return { ride, other, inspector, notes, grip };
   }
 
   function liveReturnPayload(
@@ -2702,6 +2704,119 @@ describe('Dashboard track focus management', () => {
     await waitFor(() => expect(screen.queryByText(/Back in Builder, but/)).toBeNull());
     expect((notes as HTMLTextAreaElement).value).toBe('Draft typed after returning.');
     expect(document.activeElement).toBe(rowSelectButton('ct-1'));
+  });
+
+  async function startDeferredClassDelete() {
+    const deletion = deferred<void>();
+    vi.mocked(api.deleteClass).mockReset().mockReturnValueOnce(deletion.promise);
+    fireEvent.click(screen.getByText('Class details'));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete this class' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete class' }));
+    await waitFor(() => expect(api.deleteClass).toHaveBeenCalledTimes(1));
+    return deletion;
+  }
+
+  function otherLivePayload(other: ClassWithAccess) {
+    const payload = liveRunPayload([
+      { classTrackId: 'ct-other', durationMs: 60000, title: 'Other song' },
+    ]);
+    payload.class = { ...payload.class, id: other.id, title: other.title, totalDurationMs: 60000 };
+    payload.sections = [];
+    return payload;
+  }
+
+  it.each(['Builder', 'overview'])(
+    'preserves B’s pending %s Live request when an old A delete completes',
+    async (origin: string) => {
+      const { other } = await openRefreshRide();
+      const deletion = await startDeferredClassDelete();
+      const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
+      fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+      await screen.findByRole('heading', { name: 'Other ride' });
+      let run: HTMLElement;
+      if (origin === 'overview') {
+        fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+        run = await screen.findByRole('button', { name: 'Preflight Other ride' });
+        await waitFor(() => expect((run as HTMLButtonElement).disabled).toBe(false));
+      } else run = screen.getByRole('button', { name: /Run live/ });
+      const pending = deferred<RunPayload>();
+      vi.mocked(api.getRunPayload).mockReturnValueOnce(pending.promise);
+      fireEvent.click(run);
+      vi.mocked(api.listClasses).mockResolvedValue(page([other]));
+      await act(async () => deletion.resolve());
+      await act(async () => pending.resolve(otherLivePayload(other)));
+      await screen.findByRole('button', { name: 'Exit' });
+      expect(screen.getByRole('heading', { name: 'Other ride' })).toBeTruthy();
+    },
+  );
+
+  it.each(['current Builder', 'reopened Builder', 'overview'])(
+    'rejects a deleted A’s pending Live request from %s',
+    async (origin: string) => {
+      const { ride, other } = await openRefreshRide();
+      const deletion = await startDeferredClassDelete();
+      if (origin === 'reopened Builder') {
+        const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
+        fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+        await screen.findByRole('heading', { name: 'Other ride' });
+        fireEvent.click(within(chooser).getByRole('button', { name: /^Refresh ride/ }));
+        await screen.findByRole('heading', { name: 'Refresh ride' });
+      }
+      let run: HTMLElement;
+      if (origin === 'overview') {
+        fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+        run = await screen.findByRole('button', { name: 'Preflight Refresh ride' });
+        await waitFor(() => expect((run as HTMLButtonElement).disabled).toBe(false));
+      } else run = screen.getByRole('button', { name: /Run live/ });
+      const pending = deferred<RunPayload>();
+      vi.mocked(api.getRunPayload).mockReturnValueOnce(pending.promise);
+      fireEvent.click(run);
+      vi.mocked(api.listClasses).mockResolvedValue(page([other]));
+      await act(async () => deletion.resolve());
+      await act(async () => pending.resolve(liveReturnPayload(ride)));
+      expect(screen.queryByRole('button', { name: 'Exit' })).toBeNull();
+      expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^Refresh ride/ })).toBeNull();
+    },
+  );
+
+  it('refills the library after deleting its last loaded class when older classes remain', async () => {
+    const { other } = await openRefreshRide(false, true);
+    const deletion = await startDeferredClassDelete();
+    vi.mocked(api.listClasses).mockResolvedValue(page([other]));
+    await act(async () => deletion.resolve());
+    await screen.findByRole('button', { name: /^Other ride/ });
+    expect(api.listClasses).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('button', { name: /^Refresh ride/ })).toBeNull();
+    expect(screen.queryByText('Your first class starts here')).toBeNull();
+  });
+
+  it('preserves B’s inspector draft, focus and scoped read warning when A deletion completes', async () => {
+    const { other } = await openRefreshRide();
+    const deletion = await startDeferredClassDelete();
+    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
+    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await screen.findByRole('heading', { name: 'Other ride' });
+    fireEvent.click(rowSelectButton('ct-other')!);
+    const inspector = await screen.findByRole('region', { name: 'Track inspector for Other song' });
+    const notes = within(inspector).getByRole('textbox', { name: 'Creator notes' });
+    fireEvent.change(notes, { target: { value: 'Keep unrelated B draft.' } });
+    vi.mocked(api.updateClassTrack).mockResolvedValue({
+      ...makeClassTrack('ct-other', 0),
+      intensity: 'hard',
+    });
+    vi.mocked(api.listClassTracks).mockRejectedValueOnce(new Error('B latest read unavailable'));
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Attack' }));
+    await screen.findByText(/Saved, but.*B latest read unavailable/);
+    notes.focus();
+    vi.mocked(api.listClasses).mockResolvedValue(page([other]));
+    await act(async () => deletion.resolve());
+    expect(screen.getByRole('region', { name: 'Track inspector for Other song' })).toBe(inspector);
+    expect((notes as HTMLTextAreaElement).value).toBe('Keep unrelated B draft.');
+    expect(document.activeElement).toBe(notes);
+    expect(screen.getByText(/Saved, but.*B latest read unavailable/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Refresh class details' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^Refresh ride/ })).toBeNull();
   });
 
   it('keeps the inspector and grip through rejected reorder, then retries one mutation', async () => {

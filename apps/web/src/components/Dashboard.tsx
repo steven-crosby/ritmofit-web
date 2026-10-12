@@ -223,6 +223,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [detail, dispatchDetail] = useReducer(classDetailReducer, initialClassDetailState);
   const detailRequestId = useRef(0);
   const liveRequestId = useRef(0);
+  const pendingLiveRequest = useRef<{ classId: string; requestId: number } | null>(null);
   // Each class opening has a logical session; Live suspends its presentation.
   // Reopening A after visiting B creates another session, while returning from
   // Live must still reconcile legitimate writes from the suspended session.
@@ -476,6 +477,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     suspendedWorkspace.current = resumeBuilder ? detailWorkspace.current : null;
     detailWorkspace.current = null;
     setRefreshWarning(null);
+    pendingLiveRequest.current = null;
     setLive(payload);
   }, []);
 
@@ -526,6 +528,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             void openClass(cls);
             if (origin.destination === 'live') {
               const requestId = ++liveRequestId.current;
+              pendingLiveRequest.current = { classId: cls.id, requestId };
               const owner = detailWorkspace.current;
               void getRunPayload(cls.id)
                 .then((payload) => {
@@ -534,6 +537,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 })
                 .catch(() => {
                   if (requestId === liveRequestId.current) setDestination('classes');
+                })
+                .finally(() => {
+                  if (pendingLiveRequest.current?.requestId === requestId)
+                    pendingLiveRequest.current = null;
                 });
             }
           })
@@ -578,6 +585,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const runClass = useCallback(
     async (classId: string) => {
       const requestId = ++liveRequestId.current;
+      pendingLiveRequest.current = { classId, requestId };
       const owner = detailWorkspace.current;
       const current = () =>
         requestId === liveRequestId.current && owner === detailWorkspace.current;
@@ -593,6 +601,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         setError(null);
       } catch (e) {
         if (current()) setError((e as Error).message);
+      } finally {
+        if (pendingLiveRequest.current?.requestId === requestId) pendingLiveRequest.current = null;
       }
     },
     [enterLive],
@@ -614,11 +624,21 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   // the library list.
   const handleClassDeleted = useCallback(
     (classId: string) => {
-      liveRequestId.current += 1;
+      const ownsPresentation = detailWorkspace.current?.classId === classId;
+      const ownsSuspension = suspendedWorkspace.current?.classId === classId;
+      const ownsLiveRequest =
+        pendingLiveRequest.current?.classId === classId &&
+        pendingLiveRequest.current.requestId === liveRequestId.current;
+      // An authoritative deletion closes that class, including a reopened A.
+      // Its old callback must not invalidate B's detail, notice or pending Run.
+      if (ownsPresentation || ownsSuspension || ownsLiveRequest) liveRequestId.current += 1;
+      if (ownsLiveRequest) pendingLiveRequest.current = null;
+      if (ownsPresentation) detailWorkspace.current = null;
+      if (ownsSuspension) suspendedWorkspace.current = null;
       setSelected((prev) => (prev && prev.id === classId ? null : prev));
-      detailWorkspace.current = null;
-      setRefreshWarning(null);
-      dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
+      setRefreshWarning((current) => (current?.owner.classId === classId ? null : current));
+      if (ownsPresentation || ownsSuspension)
+        dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
       void refreshClasses();
     },
     [refreshClasses],
