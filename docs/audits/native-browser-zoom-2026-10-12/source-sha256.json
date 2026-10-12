@@ -1,0 +1,7 @@
+{
+  "head": "dbc8afbe8483502f13209d10729a199eb5e00780",
+  "files": {
+    "apps/web/src/components/Dashboard.tsx": "615f63c519a0b0589b7c7a95f17c02daab6c055fb53922e4ee941ba3fdf13e36",
+    "apps/web/src/components/LiveMode.tsx": "2ca362d623e22179093a34310c3252e71f2b545707ee680d613d9f983f393279"
+  }
+}

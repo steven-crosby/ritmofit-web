@@ -1,0 +1,162 @@
+{
+  "apple": {
+    "id": "75b7af90-141f-4f56-b02b-0bdd2c1c9dfe",
+    "title": "Ritmo Apple Music Test",
+    "totalDurationMs": 2390720,
+    "tracks": [
+      {
+        "position": 0,
+        "title": "Abracadabra",
+        "artist": "Lady Gaga",
+        "providers": [
+          {
+            "provider": "apple_music",
+            "providerTrackId": "1792667005"
+          }
+        ]
+      },
+      {
+        "position": 1,
+        "title": "Bad Romance",
+        "artist": "Lady Gaga",
+        "providers": [
+          {
+            "provider": "apple_music",
+            "providerTrackId": "1476727670"
+          }
+        ]
+      },
+      {
+        "position": 2,
+        "title": "Die With A Smile",
+        "artist": "Lady Gaga & Bruno Mars",
+        "providers": [
+          {
+            "provider": "apple_music",
+            "providerTrackId": "1762656732"
+          }
+        ]
+      },
+      {
+        "position": 3,
+        "title": "Telephone (feat. Beyoncé)",
+        "artist": "Lady Gaga",
+        "providers": [
+          {
+            "provider": "apple_music",
+            "providerTrackId": "1476727675"
+          }
+        ]
+      },
+      {
+        "position": 4,
+        "title": "Born This Way",
+        "artist": "Lady Gaga",
+        "providers": [
+          {
+            "provider": "apple_music",
+            "providerTrackId": "1440857424"
+          }
+        ]
+      },
+      {
+        "position": 5,
+        "title": "RUNWAY",
+        "artist": "Lady Gaga & Doechii",
+        "providers": [
+          {
+            "provider": "apple_music",
+            "providerTrackId": "1891472591"
+          }
+        ]
+      },
+      {
+        "position": 6,
+        "title": "Poker Face",
+        "artist": "Lady Gaga",
+        "providers": [
+          {
+            "provider": "apple_music",
+            "providerTrackId": "1476727864"
+          }
+        ]
+      },
+      {
+        "position": 7,
+        "title": "The Dead Dance",
+        "artist": "Lady Gaga",
+        "providers": [
+          {
+            "provider": "apple_music",
+            "providerTrackId": "1837298858"
+          }
+        ]
+      },
+      {
+        "position": 8,
+        "title": "The Edge of Glory",
+        "artist": "Lady Gaga",
+        "providers": [
+          {
+            "provider": "apple_music",
+            "providerTrackId": "1440858186"
+          }
+        ]
+      },
+      {
+        "position": 9,
+        "title": "Rain On Me",
+        "artist": "Lady Gaga & Ariana Grande",
+        "providers": [
+          {
+            "provider": "apple_music",
+            "providerTrackId": "1500952424"
+          }
+        ]
+      }
+    ]
+  },
+  "soundcloud": {
+    "id": "91c94386-5816-48f5-91aa-61e874abb05b",
+    "title": "[QA] SoundCloud transport 2026-10-12 Cycle",
+    "totalDurationMs": 262296,
+    "tracks": [
+      {
+        "position": 0,
+        "title": "St. Pepper Here To Be Alone",
+        "artist": "Chris Perez",
+        "providers": [
+          {
+            "provider": "soundcloud",
+            "providerTrackId": "soundcloud:tracks:760402459"
+          }
+        ]
+      }
+    ]
+  },
+  "appleFinalTitle": "[QA] Apple browse import 2026-10-12 Cycle",
+  "soundcloudFinalTitle": "[QA] SoundCloud transport 2026-10-12 Cycle",
+  "tag": "qa-fixture",
+  "tagEvidence": {
+    "apple": [
+      {
+        "requestId": "98344.1298",
+        "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe/tags",
+        "status": 201
+      }
+    ],
+    "soundcloud": [
+      {
+        "requestId": "98344.1505",
+        "url": "https://ritmofit.studio/api/v1/classes/91c94386-5816-48f5-91aa-61e874abb05b/tags",
+        "status": 201
+      }
+    ]
+  },
+  "retainForOwner": true,
+  "appleFinalNameResponse": {
+    "id": "75b7af90-141f-4f56-b02b-0bdd2c1c9dfe",
+    "title": "[QA] Apple browse import 2026-10-12 Cycle",
+    "status": 200
+  }
+}

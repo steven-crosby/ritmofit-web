@@ -1,0 +1,25 @@
+{
+  "recordedAtUtc": "2026-10-12T16:23:06.522766+00:00",
+  "classTitle": "[QA] Apple natural acceptance 2026-10-09 Pilates",
+  "ownerReport": {
+    "AbracadabraAudible": true,
+    "liveClockAdvancing": true,
+    "waitingOrRecoveryMessage": false,
+    "leftPlayingWithoutSeekingOrNext": true
+  },
+  "screenshotObservation": {
+    "track": "Abracadabra",
+    "trackNumber": "1 of 10",
+    "headerState": "Paused",
+    "transportButton": "Play",
+    "transportStatus": "Paused",
+    "elapsed": "0:10",
+    "total": "39:51",
+    "trackLeft": "3:33",
+    "classLeft": "39:41",
+    "recoveryMessageVisible": false
+  },
+  "assessment": "Audible start owner-confirmed. Screenshot paused-state conflicts with reported advancing clock; check 2 remains unresolved pending a fresh no-input observation. No playback defect or cause assigned from this single frame.",
+  "nextAction": "Without clicking controls, observe current Live clock for 10 seconds and report whether it advances while music remains audible, or stays at 0:10.",
+  "screenshotSha256": "a392c6590a835326565ab1737974fc0b69d47beedba2efdc38bfa2aa776db297"
+}

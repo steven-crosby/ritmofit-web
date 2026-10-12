@@ -1,0 +1,112 @@
+[
+  {
+    "requestId": "98344.1058",
+    "url": "https://ritmofit.studio/api/v1/classes",
+    "status": 201
+  },
+  {
+    "requestId": "98344.1060",
+    "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe/tracks",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1061",
+    "url": "https://ritmofit.studio/api/v1/providers/track-import",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1062",
+    "url": "https://ritmofit.studio/api/v1/providers/track-import",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1063",
+    "url": "https://ritmofit.studio/api/v1/providers/track-import",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1064",
+    "url": "https://ritmofit.studio/api/v1/providers/track-import",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1068",
+    "url": "https://ritmofit.studio/api/v1/providers/track-import",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1067",
+    "url": "https://ritmofit.studio/api/v1/providers/track-import",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1066",
+    "url": "https://ritmofit.studio/api/v1/providers/track-import",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1065",
+    "url": "https://ritmofit.studio/api/v1/providers/track-import",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1070",
+    "url": "https://ritmofit.studio/api/v1/providers/track-import",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1069",
+    "url": "https://ritmofit.studio/api/v1/providers/track-import",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1071",
+    "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe/tracks",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1072",
+    "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe/tracks/import",
+    "status": 201
+  },
+  {
+    "requestId": "98344.1074",
+    "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe/run-payload",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1073",
+    "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe/tracks",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1075",
+    "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe/run-payload",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1107",
+    "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe/run-payload",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1106",
+    "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe/tracks",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1287",
+    "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe/plan-blocks",
+    "status": 200
+  },
+  {
+    "requestId": "98344.1298",
+    "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe/tags",
+    "status": 201
+  },
+  {
+    "requestId": "98344.1299",
+    "url": "https://ritmofit.studio/api/v1/classes/75b7af90-141f-4f56-b02b-0bdd2c1c9dfe",
+    "status": 200
+  }
+]
