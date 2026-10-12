@@ -201,6 +201,9 @@ function LoadingScreen() {
   );
 }
 
+type DetailWorkspaceOwner = { classId: string; session: object };
+type DetailRefreshOrigin = 'mutation' | 'live-return';
+
 export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
   const [profileName, setProfileName] = useState(userName);
   const [destination, setDestination] = useState<DashboardDestination>('classes');
@@ -219,12 +222,16 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [newEmptyClassId, setNewEmptyClassId] = useState<string | null>(null);
   const [detail, dispatchDetail] = useReducer(classDetailReducer, initialClassDetailState);
   const detailRequestId = useRef(0);
-  // A workspace lifetime is distinct from a read generation: reopening the same
-  // class must not revive callbacks belonging to its previous mounted instance.
-  const detailWorkspace = useRef<{ classId: string } | null>(null);
+  const liveRequestId = useRef(0);
+  // Each class opening has a logical session; Live suspends its presentation.
+  // Reopening A after visiting B creates another session, while returning from
+  // Live must still reconcile legitimate writes from the suspended session.
+  const detailWorkspace = useRef<DetailWorkspaceOwner | null>(null);
+  const suspendedWorkspace = useRef<DetailWorkspaceOwner | null>(null);
   const workspaceOwner = detailWorkspace.current;
   const [refreshWarning, setRefreshWarning] = useState<{
-    owner: { classId: string };
+    owner: DetailWorkspaceOwner;
+    origin: DetailRefreshOrigin;
     message: string;
     retrying: boolean;
   } | null>(null);
@@ -238,11 +245,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   // deterministic-landmark discipline as #250's preflight entry-focus fix.
   const dashboardHeadingRef = useRef<HTMLHeadingElement>(null);
   const restoreFocusOnExitRef = useRef(false);
-  const exitLive = useCallback(() => {
-    restoreFocusOnExitRef.current = true;
-    detailWorkspace.current = selected ? { classId: selected.id } : null;
-    setLive(null);
-  }, [selected]);
   useEffect(() => {
     if (live || !restoreFocusOnExitRef.current) return;
     restoreFocusOnExitRef.current = false;
@@ -369,11 +371,26 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   // reorder) never unmounts the workspace — preserving grip focus and the reorder
   // announcement. Only use it to refresh the class already open, never to switch.
   const loadDetail = useCallback(
-    async (classId: string, opts?: { silent?: boolean; owner?: { classId: string } | null }) => {
-      const owner = opts?.silent ? opts.owner : detailWorkspace.current;
-      // An old mutation may finish after switching away and even reopening this
-      // class. Reject its callback before it can become the newest read generation.
-      if (!owner || owner !== detailWorkspace.current || owner.classId !== classId) return;
+    async (
+      classId: string,
+      opts?: {
+        silent?: boolean;
+        owner?: DetailWorkspaceOwner | null;
+        origin?: DetailRefreshOrigin;
+      },
+    ) => {
+      const requestedOwner = opts?.silent ? opts.owner : detailWorkspace.current;
+      const owner = detailWorkspace.current;
+      // A successful mutation from the session suspended by Live may complete
+      // after Exit. Reconcile through its current presentation, never revive an
+      // old class-opening session or publish a response from an old presentation.
+      if (
+        !requestedOwner ||
+        !owner ||
+        requestedOwner.session !== owner.session ||
+        owner.classId !== classId
+      )
+        return;
       const requestId = ++detailRequestId.current;
       if (!opts?.silent) dispatchDetail({ type: 'begin', classId, requestId });
       setRefreshWarning((current) =>
@@ -400,7 +417,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         if (opts?.silent) {
           setRefreshWarning({
             owner,
-            message: `Saved, but the latest class details could not be refreshed: ${message}`,
+            origin: opts.origin ?? 'mutation',
+            message: `${opts.origin === 'live-return' ? 'Back in Builder' : 'Saved'}, but the latest class details could not be refreshed: ${message}`,
             retrying: false,
           });
           return;
@@ -440,6 +458,27 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     [],
   );
 
+  const exitLive = useCallback(() => {
+    liveRequestId.current += 1;
+    restoreFocusOnExitRef.current = true;
+    const suspended = suspendedWorkspace.current;
+    suspendedWorkspace.current = null;
+    const owner =
+      suspended?.classId === selected?.id && suspended
+        ? { classId: suspended.classId, session: suspended.session }
+        : null;
+    detailWorkspace.current = owner;
+    setLive(null);
+    if (owner) void loadDetail(owner.classId, { silent: true, owner, origin: 'live-return' });
+  }, [selected, loadDetail]);
+
+  const enterLive = useCallback((payload: RunPayload, resumeBuilder = true) => {
+    suspendedWorkspace.current = resumeBuilder ? detailWorkspace.current : null;
+    detailWorkspace.current = null;
+    setRefreshWarning(null);
+    setLive(payload);
+  }, []);
+
   useLayoutEffect(() => {
     if (!restoreRefreshFocus.current) return;
     restoreRefreshFocus.current = false;
@@ -456,7 +495,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 
   const openClass = useCallback(
     async (cls: ClassWithAccess) => {
-      detailWorkspace.current = { classId: cls.id };
+      liveRequestId.current += 1;
+      detailWorkspace.current = { classId: cls.id, session: {} };
       setRefreshWarning(null);
       setSelected(cls);
       // Opening a class changes what the rail is for: the create/filter controls
@@ -485,9 +525,16 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           .then((cls) => {
             void openClass(cls);
             if (origin.destination === 'live') {
+              const requestId = ++liveRequestId.current;
+              const owner = detailWorkspace.current;
               void getRunPayload(cls.id)
-                .then(setLive)
-                .catch(() => setDestination('classes'));
+                .then((payload) => {
+                  if (requestId === liveRequestId.current && owner === detailWorkspace.current)
+                    enterLive(payload, false);
+                })
+                .catch(() => {
+                  if (requestId === liveRequestId.current) setDestination('classes');
+                });
             }
           })
           .catch(() => setDestination('classes'));
@@ -496,7 +543,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     setOauthResult({ connected: validProvider, error: errorReason ?? undefined });
     setConnectionsOpen(true);
     window.history.replaceState(null, '', window.location.pathname);
-  }, [userId, openClass]);
+  }, [userId, openClass, enterLive]);
 
   // Start a new class seeded from a previously choreographed song (Songs by Move):
   // create a blank class, then copy that class_track — with its cues and placed
@@ -528,22 +575,28 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     [classes, openClass],
   );
 
-  const runClass = useCallback(async (classId: string) => {
-    try {
-      const payload = await getRunPayload(classId);
-      const blocked = runBlockedMessage(payload);
-      if (blocked) {
-        setError(blocked);
-        return;
+  const runClass = useCallback(
+    async (classId: string) => {
+      const requestId = ++liveRequestId.current;
+      const owner = detailWorkspace.current;
+      const current = () =>
+        requestId === liveRequestId.current && owner === detailWorkspace.current;
+      try {
+        const payload = await getRunPayload(classId);
+        if (!current()) return;
+        const blocked = runBlockedMessage(payload);
+        if (blocked) {
+          setError(blocked);
+          return;
+        }
+        enterLive(payload);
+        setError(null);
+      } catch (e) {
+        if (current()) setError((e as Error).message);
       }
-      detailWorkspace.current = null;
-      setRefreshWarning(null);
-      setLive(payload);
-      setError(null);
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }, []);
+    },
+    [enterLive],
+  );
 
   // Merge an updated class into the list + the open detail pane (preserving the
   // caller's access level, which PATCH responses don't carry).
@@ -561,6 +614,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   // the library list.
   const handleClassDeleted = useCallback(
     (classId: string) => {
+      liveRequestId.current += 1;
       setSelected((prev) => (prev && prev.id === classId ? null : prev));
       detailWorkspace.current = null;
       setRefreshWarning(null);
@@ -655,7 +709,6 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const retryFailedImport = useCallback(async () => {
     if (!importResult || importResult.failed.length === 0 || retryingImport) return;
     setRetryingImport(true);
-    const detailGeneration = detailRequestId.current;
     const owner = detailWorkspace.current;
     try {
       const failed = await importCollectionTracks(
@@ -672,13 +725,15 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             }
           : current,
       );
-      if (selected?.id === importResult.classId && detailRequestId.current === detailGeneration) {
+      // A successful retry can settle after Live return advanced the read generation.
+      // Shared loadDetail validates its logical session before requesting fresh detail.
+      if (owner?.classId === importResult.classId) {
         await loadDetail(importResult.classId, { silent: true, owner });
       }
     } finally {
       setRetryingImport(false);
     }
-  }, [importCollectionTracks, importResult, loadDetail, retryingImport, selected?.id]);
+  }, [importCollectionTracks, importResult, loadDetail, retryingImport]);
 
   if (live)
     return (
@@ -746,6 +801,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                     : 'border-transparent bg-transparent text-text-secondary hover:text-text-primary'
                 }`}
                 onClick={() => {
+                  liveRequestId.current += 1;
                   detailWorkspace.current = null;
                   setRefreshWarning(null);
                   setDestination(value);
@@ -860,7 +916,11 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               aria-disabled={refreshWarning.retrying}
               onClick={() => {
                 if (!refreshWarning.retrying && selected) {
-                  void loadDetail(selected.id, { silent: true, owner: refreshWarning.owner });
+                  void loadDetail(selected.id, {
+                    silent: true,
+                    owner: refreshWarning.owner,
+                    origin: refreshWarning.origin,
+                  });
                 }
               }}
               className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
@@ -964,6 +1024,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 selectedId={selected.id}
                 onOpen={openClass}
                 onShowAll={() => {
+                  liveRequestId.current += 1;
                   detailWorkspace.current = null;
                   setRefreshWarning(null);
                   setSelected(null);
@@ -1002,6 +1063,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                   focusAddMusic={newEmptyClassId === selected.id}
                   onFocusedAddMusic={() => setNewEmptyClassId(null)}
                   onBackToClasses={() => {
+                    liveRequestId.current += 1;
                     detailWorkspace.current = null;
                     setRefreshWarning(null);
                     setSelected(null);

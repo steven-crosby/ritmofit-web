@@ -1,0 +1,45 @@
+
+ RUN  v3.2.6 /Users/stevencrosby/.codex/worktrees/builder-refresh-integrity/ritmofit-web/apps/web
+
+ ✓ src/lib/class-detail-state.test.ts (3 tests) 2ms
+ ✓ src/components/ReorderableTrackList.test.tsx (6 tests) 248ms
+ ✓ src/components/Dashboard.test.tsx (123 tests) 9540ms
+   ✓ Dashboard class library states > retries a Music catalog outage without changing the query  652ms
+   ✓ Dashboard class library states > searches, selects in instructor order, and starts a class from Music  405ms
+   ✓ Dashboard track focus management > commits a zone on the click, and typed fields on Enter  474ms
+   ✓ Dashboard track focus management > puts a zone back when its write fails, instead of showing a value that did not land  492ms
+   ✓ Dashboard plan-first next step > stays on the next empty block after the first assign and keeps Pulse off  385ms
+
+ Test Files  3 passed (3)
+      Tests  132 passed (132)
+   Start at  20:22:45
+   Duration  11.04s (transform 628ms, setup 0ms, collect 1.39s, tests 9.79s, environment 1.00s, prepare 137ms)
+
+
+ RUN  v3.2.6 /Users/stevencrosby/.codex/worktrees/builder-refresh-integrity/ritmofit-web/apps/web
+
+ ✓ src/components/Dashboard.test.tsx (125 tests | 123 skipped) 680ms
+   ✓ Dashboard track focus management > owns a pending collection import retry across Live return  502ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed | 123 skipped (125)
+   Start at  20:29:01
+   Duration  2.22s (transform 562ms, setup 0ms, collect 726ms, tests 680ms, environment 433ms, prepare 43ms)
+
+
+ RUN  v3.2.6 /Users/stevencrosby/.codex/worktrees/builder-refresh-integrity/ritmofit-web/apps/web
+
+ ✓ src/lib/class-detail-state.test.ts (3 tests) 2ms
+ ✓ src/components/ReorderableTrackList.test.tsx (6 tests) 234ms
+ ✓ src/components/Dashboard.test.tsx (125 tests) 9860ms
+   ✓ Dashboard class library states > retries a Music catalog outage without changing the query  654ms
+   ✓ Dashboard class library states > searches, selects in instructor order, and starts a class from Music  399ms
+   ✓ Dashboard track focus management > commits a zone on the click, and typed fields on Enter  474ms
+   ✓ Dashboard track focus management > puts a zone back when its write fails, instead of showing a value that did not land  487ms
+   ✓ Dashboard plan-first next step > stays on the next empty block after the first assign and keeps Pulse off  410ms
+
+ Test Files  3 passed (3)
+      Tests  134 passed (134)
+   Start at  20:33:33
+   Duration  11.51s (transform 646ms, setup 0ms, collect 1.38s, tests 10.10s, environment 1.12s, prepare 154ms)
+

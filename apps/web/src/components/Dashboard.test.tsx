@@ -12,6 +12,7 @@ import type {
 } from '@ritmofit/shared';
 import { Dashboard } from './Dashboard.js';
 import * as api from '../lib/api.js';
+import { rememberConnectionReturn } from '../lib/connection-return.js';
 import type { ClassListPage } from '../lib/api.js';
 import {
   hasDismissedOnboardingVideo,
@@ -2311,6 +2312,9 @@ describe('Dashboard track focus management', () => {
   });
 
   async function openRefreshRide(strict = false) {
+    vi.mocked(api.listClassTracks).mockReset();
+    vi.mocked(api.getRunPayload).mockReset();
+    vi.mocked(api.reorderTracks).mockReset();
     const ride = installClassWithTracks('Refresh ride', [
       { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
       { classTrackId: 'ct-2', durationMs: 180000, title: 'Second Song' },
@@ -2350,6 +2354,355 @@ describe('Dashboard track focus management', () => {
     grip.focus();
     return { ride, inspector, notes, grip };
   }
+
+  function liveReturnPayload(
+    ride: ClassWithAccess,
+    reverse = false,
+    intensity: 'mod' | 'hard' = 'mod',
+  ) {
+    const payload = liveRunPayload([
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+      { classTrackId: 'ct-2', durationMs: 180000, title: 'Second Song' },
+    ]);
+    payload.class = { ...payload.class, id: ride.id, title: ride.title, totalDurationMs: 420000 };
+    payload.sections = [];
+    if (reverse) payload.tracks.reverse();
+    let offset = 0;
+    payload.tracks.forEach((entry, position) => {
+      entry.position = position;
+      entry.startOffsetMs = offset;
+      if (entry.classTrackId === 'ct-1') entry.intensity = intensity;
+      offset += entry.track.durationMs ?? 0;
+    });
+    return payload;
+  }
+
+  async function enterLivePreflight() {
+    fireEvent.click(screen.getByRole('button', { name: /Run live/ }));
+    await screen.findByRole('button', { name: 'Exit' });
+  }
+
+  it('reconciles a saved reorder on Exit after its earlier read completes during Live', async () => {
+    const { ride, grip } = await openRefreshRide();
+    const freshTracks = [makeClassTrack('ct-2', 0), makeClassTrack('ct-1', 1)];
+    const heldRead = deferred<ClassTrack[]>();
+    vi.mocked(api.listClassTracks)
+      .mockReturnValueOnce(heldRead.promise)
+      .mockResolvedValue(freshTracks);
+    vi.mocked(api.getRunPayload).mockResolvedValue(liveReturnPayload(ride, true));
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+    await enterLivePreflight();
+    await act(async () => heldRead.resolve(freshTracks));
+    fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
+    await screen.findByRole('button', { name: /Reorder First Light, position 2 of 2/ });
+    expect(api.listClassTracks).toHaveBeenCalledTimes(3);
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Ritmo Studio' }));
+  });
+
+  it.each(['during Live', 'after Exit'])(
+    'reconciles a legitimate intensity write finishing %s',
+    async (completion: string) => {
+      const { ride, inspector } = await openRefreshRide();
+      let stored: 'mod' | 'hard' = 'mod';
+      const mutation = deferred<Awaited<ReturnType<typeof api.updateClassTrack>>>();
+      vi.mocked(api.updateClassTrack).mockReturnValueOnce(mutation.promise);
+      vi.mocked(api.listClassTracks).mockImplementation(async () => [
+        { ...makeClassTrack('ct-1', 0), intensity: stored },
+        makeClassTrack('ct-2', 1),
+      ]);
+      vi.mocked(api.getRunPayload).mockImplementation(async () =>
+        liveReturnPayload(ride, false, stored),
+      );
+      fireEvent.click(within(inspector).getByRole('button', { name: 'Attack' }));
+      await enterLivePreflight();
+      expect(api.updateClassTrack).toHaveBeenCalledWith('ct-1', { intensity: 'hard' });
+      if (completion === 'after Exit') {
+        fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
+        await screen.findByRole('heading', { name: 'Refresh ride' });
+        // Allow the automatic return read to complete before the write, if one exists.
+        await act(async () => {});
+      }
+      stored = 'hard';
+      await act(async () => mutation.resolve({ ...makeClassTrack('ct-1', 0), intensity: stored }));
+      if (completion === 'during Live')
+        fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
+      await waitFor(() =>
+        expect(within(rowSelectButton('ct-1')!).getByLabelText('Intensity Attack')).toBeTruthy(),
+      );
+      expect(api.updateClassTrack).toHaveBeenCalledTimes(1);
+      expect(api.listClassTracks).toHaveBeenCalledTimes(completion === 'after Exit' ? 3 : 2);
+    },
+  );
+
+  it.each(['success', 'failure'])(
+    'ignores delayed Live-return %s after switching classes',
+    async (outcome: string) => {
+      const { ride } = await openRefreshRide();
+      const loadPayload = vi.mocked(api.getRunPayload).getMockImplementation()!;
+      vi.mocked(api.getRunPayload).mockImplementation((id: string) =>
+        id === ride.id ? Promise.resolve(liveReturnPayload(ride)) : loadPayload(id),
+      );
+      await enterLivePreflight();
+      const returning = deferred<ClassTrack[]>();
+      vi.mocked(api.listClassTracks).mockReturnValueOnce(returning.promise);
+      fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
+      await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+      const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
+      fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+      await screen.findByRole('heading', { name: 'Other ride' });
+      await act(async () => {
+        if (outcome === 'success') returning.resolve([makeClassTrack('ct-1', 0)]);
+        else returning.reject(new Error('Obsolete Live return'));
+      });
+      expect(screen.queryByText(/Obsolete Live return/)).toBeNull();
+      expect(screen.getByRole('button', { name: /Other song.*Artist/ })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Other ride' })).toBeTruthy();
+    },
+  );
+
+  it('keeps a late write authoritative when its old Live-return read resolves afterward', async () => {
+    const { ride, inspector } = await openRefreshRide();
+    let stored: 'mod' | 'hard' = 'mod';
+    const mutation = deferred<Awaited<ReturnType<typeof api.updateClassTrack>>>();
+    vi.mocked(api.updateClassTrack).mockReturnValueOnce(mutation.promise);
+    vi.mocked(api.getRunPayload).mockImplementation(async () =>
+      liveReturnPayload(ride, false, stored),
+    );
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Attack' }));
+    await enterLivePreflight();
+    const oldReturn = deferred<ClassTrack[]>();
+    vi.mocked(api.listClassTracks)
+      .mockReturnValueOnce(oldReturn.promise)
+      .mockImplementation(async () => [
+        { ...makeClassTrack('ct-1', 0), intensity: stored },
+        makeClassTrack('ct-2', 1),
+      ]);
+    fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+    stored = 'hard';
+    await act(async () => mutation.resolve({ ...makeClassTrack('ct-1', 0), intensity: stored }));
+    await waitFor(() =>
+      expect(within(rowSelectButton('ct-1')!).getByLabelText('Intensity Attack')).toBeTruthy(),
+    );
+    await act(async () =>
+      oldReturn.resolve([makeClassTrack('ct-1', 0), makeClassTrack('ct-2', 1)]),
+    );
+    expect(within(rowSelectButton('ct-1')!).getByLabelText('Intensity Attack')).toBeTruthy();
+    expect(api.listClassTracks).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not reconcile a retained selection when Live started from its overview', async () => {
+    const { ride } = await openRefreshRide();
+    vi.mocked(api.getRunPayload).mockResolvedValue(liveReturnPayload(ride));
+    fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+    const preflight = await screen.findByRole('button', { name: 'Preflight Refresh ride' });
+    await waitFor(() => expect((preflight as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(preflight);
+    await screen.findByRole('button', { name: 'Exit' });
+    const reads = vi.mocked(api.listClassTracks).mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
+    await screen.findByText('Live queue');
+    expect(api.listClassTracks).toHaveBeenCalledTimes(reads);
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
+  });
+
+  it('returns OAuth Live entry to its overview without treating hydrated class data as suspended Builder', async () => {
+    const ride = { ...makeClass('OAuth ride'), trackCount: 2, totalDurationMs: 420000 };
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.getClass).mockResolvedValue(ride);
+    vi.mocked(api.listClassTracks).mockResolvedValue([
+      makeClassTrack('ct-1', 0),
+      makeClassTrack('ct-2', 1),
+    ]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(liveReturnPayload(ride));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    rememberConnectionReturn({
+      userId: 'me',
+      destination: 'live',
+      classId: ride.id,
+      provider: 'soundcloud',
+    });
+    window.history.replaceState(null, '', '/?connected=soundcloud');
+    renderDashboard();
+    await screen.findByRole('button', { name: 'Exit' });
+    const reads = vi.mocked(api.listClassTracks).mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
+    await screen.findByText('Live queue');
+    expect(api.listClassTracks).toHaveBeenCalledTimes(reads);
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
+  });
+
+  it('reconciles the suspended Builder after two pending Run live requests complete', async () => {
+    const { ride } = await openRefreshRide();
+    const first = deferred<RunPayload>();
+    const second = deferred<RunPayload>();
+    vi.mocked(api.getRunPayload)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    const run = screen.getByRole('button', { name: /Run live/ });
+    fireEvent.click(run);
+    fireEvent.click(run);
+    await act(async () => first.resolve(liveReturnPayload(ride)));
+    await act(async () => second.resolve(liveReturnPayload(ride)));
+    await screen.findByRole('button', { name: 'Exit' });
+    fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole('heading', { name: 'Refresh ride' })).toBeTruthy();
+  });
+
+  it('does not let an obsolete Run live response replace a newly selected class', async () => {
+    const { ride } = await openRefreshRide();
+    const pending = deferred<RunPayload>();
+    vi.mocked(api.getRunPayload).mockReturnValueOnce(pending.promise);
+    fireEvent.click(screen.getByRole('button', { name: /Run live/ }));
+    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
+    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await screen.findByRole('heading', { name: 'Other ride' });
+    await act(async () => pending.resolve(liveReturnPayload(ride)));
+    expect(screen.queryByRole('button', { name: 'Exit' })).toBeNull();
+    expect(screen.getByRole('button', { name: /Other song.*Artist/ })).toBeTruthy();
+  });
+
+  it('does not enter Live from a pending overview request after navigating to Music', async () => {
+    const { ride } = await openRefreshRide();
+    vi.mocked(api.getRunPayload).mockResolvedValue(liveReturnPayload(ride));
+    fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+    const run = await screen.findByRole('button', { name: 'Preflight Refresh ride' });
+    await waitFor(() => expect((run as HTMLButtonElement).disabled).toBe(false));
+    const pending = deferred<RunPayload>();
+    vi.mocked(api.getRunPayload).mockReturnValueOnce(pending.promise);
+    fireEvent.click(run);
+    fireEvent.click(screen.getByRole('button', { name: 'Music' }));
+    await act(async () => pending.resolve(liveReturnPayload(ride)));
+    expect(screen.queryByRole('button', { name: 'Exit' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
+  });
+
+  it.each(['Live return', 'A-to-B-to-A'])(
+    'owns a pending collection import retry across %s',
+    async (transition: string) => {
+      const candidates = ['One', 'Two'].map((title, index) => ({
+        provider: 'spotify' as const,
+        providerTrackId: `p2-import-${index}`,
+        providerUri: null,
+        title,
+        artist: 'Artist',
+        albumArtUrl: null,
+        durationMs: 180000,
+      }));
+      const created = makeClass('Spotify likes');
+      const other = makeClass('Import other ride');
+      let stored: ClassTrack[] = [];
+      const commit = deferred<Awaited<ReturnType<typeof api.importClassTracks>>>();
+      let nextRows: ClassTrack[] = [];
+      vi.mocked(api.listClasses).mockResolvedValue(page([created, other]));
+      vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+      vi.mocked(api.listLikes).mockResolvedValue(candidates);
+      vi.mocked(api.createClass).mockResolvedValue(created);
+      vi.mocked(api.importTrack)
+        .mockReset()
+        .mockResolvedValueOnce({ id: 'imported-1' } as Awaited<ReturnType<typeof api.importTrack>>)
+        .mockRejectedValueOnce(new Error('Resolve one track failed'))
+        .mockResolvedValueOnce({ id: 'imported-2' } as Awaited<ReturnType<typeof api.importTrack>>);
+      vi.mocked(api.importClassTracks).mockImplementation(
+        async (_id: string, body: Parameters<typeof api.importClassTracks>[1]) => {
+          const rows = body.orderedIds.map((id, position) => makeClassTrack(id, position));
+          if (stored.length) {
+            nextRows = rows;
+            return commit.promise;
+          }
+          stored = rows;
+          return rows;
+        },
+      );
+      vi.mocked(api.listClassTracks)
+        .mockReset()
+        .mockImplementation(async (id: string) =>
+          id === other.id ? [makeClassTrack('ct-import-other', 0)] : stored,
+        );
+      vi.mocked(api.getRunPayload)
+        .mockReset()
+        .mockImplementation(async (id: string) => {
+          const payload = liveRunPayload(
+            id === other.id
+              ? [{ classTrackId: 'ct-import-other', durationMs: 60000, title: 'Import other song' }]
+              : stored.map((row, index) => ({
+                  classTrackId: row.id,
+                  durationMs: 180000,
+                  title: candidates[index]!.title,
+                })),
+          );
+          payload.class = {
+            ...payload.class,
+            id,
+            title: id === other.id ? other.title : created.title,
+            totalDurationMs: payload.tracks.length * 180000,
+          };
+          payload.sections = [];
+          payload.tracks.forEach((entry, index) => {
+            entry.startOffsetMs = index * 180000;
+          });
+          return payload;
+        });
+      renderDashboard();
+      fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+      fireEvent.click(await screen.findByRole('button', { name: /Browse liked tracks/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'Create class from 2 liked tracks' }));
+      const retry = await screen.findByRole('button', { name: 'Retry 1 failed' });
+      await screen.findByRole('heading', { name: 'Spotify likes' });
+      fireEvent.click(retry);
+      await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(2));
+      if (transition === 'Live return') {
+        await enterLivePreflight();
+        fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
+        await screen.findByRole('heading', { name: 'Spotify likes' });
+        await act(async () => {});
+      } else {
+        const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
+        fireEvent.click(within(chooser).getByRole('button', { name: /^Import other ride/ }));
+        await screen.findByRole('heading', { name: 'Import other ride' });
+        fireEvent.click(within(chooser).getByRole('button', { name: /^Spotify likes/ }));
+        await screen.findByRole('heading', { name: 'Spotify likes' });
+      }
+      const readsBeforeCommit = vi.mocked(api.listClassTracks).mock.calls.length;
+      stored = nextRows;
+      await act(async () => commit.resolve(stored));
+      await screen.findByText(/All 2 tracks imported/);
+      if (transition === 'Live return') {
+        await screen.findByRole('button', { name: /Reorder Two, position 2 of 2/ });
+        expect(api.listClassTracks).toHaveBeenCalledTimes(readsBeforeCommit + 1);
+      } else {
+        expect(api.listClassTracks).toHaveBeenCalledTimes(readsBeforeCommit);
+        expect(screen.queryByRole('button', { name: /Reorder Two/ })).toBeNull();
+      }
+    },
+  );
+
+  it('retains truthful Live-return warning through failed read retry, then recovers focus', async () => {
+    const { ride } = await openRefreshRide();
+    vi.mocked(api.getRunPayload).mockResolvedValue(liveReturnPayload(ride));
+    await enterLivePreflight();
+    vi.mocked(api.listClassTracks).mockRejectedValueOnce(new Error('Return read unavailable'));
+    fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
+    await screen.findByText(/Back in Builder, but.*Return read unavailable/);
+    fireEvent.click(rowSelectButton('ct-1')!);
+    const inspector = await screen.findByRole('region', {
+      name: 'Track inspector for First Light',
+    });
+    const notes = within(inspector).getByRole('textbox', { name: 'Creator notes' });
+    fireEvent.change(notes, { target: { value: 'Draft typed after returning.' } });
+    vi.mocked(api.listClassTracks).mockRejectedValueOnce(new Error('Retry read unavailable'));
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh class details' }));
+    await screen.findByText(/Back in Builder, but.*Retry read unavailable/);
+    expect(screen.queryByText(/Saved, but/)).toBeNull();
+    const retry = screen.getByRole('button', { name: 'Refresh class details' });
+    retry.focus();
+    fireEvent.click(retry);
+    await waitFor(() => expect(screen.queryByText(/Back in Builder, but/)).toBeNull());
+    expect((notes as HTMLTextAreaElement).value).toBe('Draft typed after returning.');
+    expect(document.activeElement).toBe(rowSelectButton('ct-1'));
+  });
 
   it('keeps the inspector and grip through rejected reorder, then retries one mutation', async () => {
     const { inspector, notes, grip } = await openRefreshRide();
