@@ -897,8 +897,8 @@ export function LiveMode({
           {sectionAnnouncement}
         </p>
         <div ref={liveHeaderRef} className="sticky top-0 z-20 shrink-0 bg-bg-live">
-          <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-interactive/20 px-4 py-3 sm:px-6 [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-0.5">
-            <div className="min-w-0 [@media(max-height:480px)]:sr-only">
+          <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-interactive/20 px-4 py-3 sm:px-6 [@media(max-height:700px)_and_(max-width:639px)]:py-2 [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-0.5">
+            <div className="min-w-0 [@media(max-height:700px)_and_(max-width:639px)]:sr-only [@media(max-height:480px)]:sr-only">
               <p className="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
                 {runState}
                 {live ? ` · Track ${live.index + 1} of ${payload.tracks.length}` : ''}
@@ -916,7 +916,7 @@ export function LiveMode({
                   its timecode visually without adding height to the control bar. */}
               <p
                 aria-hidden="true"
-                className="hidden shrink-0 text-center font-data text-[10px] leading-tight text-text-tertiary [@media(max-height:480px)]:block"
+                className="hidden shrink-0 text-center font-data text-[10px] leading-tight text-text-tertiary [@media(max-height:700px)_and_(max-width:639px)]:block [@media(max-height:480px)]:block"
               >
                 <span className="block [@media(min-width:480px)]:inline">{fmt(elapsedMs)}</span>
                 <span className="block [@media(min-width:480px)]:inline">
@@ -1201,7 +1201,7 @@ function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void 
 function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing: boolean }) {
   const pulse = playing && entry.displayBpm != null;
   return (
-    <div className="relative mt-4 flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 border-t border-interactive/10 pt-3 sm:mt-6 sm:pt-4">
+    <div className="relative mt-4 flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 border-t border-interactive/10 pt-3 sm:mt-6 sm:pt-4 [@media(max-height:700px)_and_(max-width:639px)]:gap-x-2 [@media(max-height:700px)_and_(max-width:639px)]:gap-y-2">
       <div className="flex flex-col gap-1.5">
         <span className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
           Effort
@@ -1209,7 +1209,7 @@ function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing:
         <IntensityReadout intensity={entry.intensity} />
       </div>
       {entry.displayBpm != null ? (
-        <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-2 [@media(max-height:700px)_and_(max-width:639px)]:gap-x-2">
           {/* Tempo stays subordinate to the actionable cue/count under pressure. */}
           <p
             className={`flex items-baseline ${pulse ? 'rf-beat-pulse' : ''}`}
@@ -1876,11 +1876,11 @@ function Transport({
   return (
     <div
       ref={transportRef}
-      className="sticky bottom-0 z-10 shrink-0 border-t border-interactive/15 bg-bg-raised px-4 py-3 sm:px-6 sm:py-4 [@media(max-height:480px)]:py-2"
+      className="sticky bottom-0 z-10 shrink-0 border-t border-interactive/15 bg-bg-raised px-4 py-3 sm:px-6 sm:py-4 [@media(max-height:480px)]:py-2 [@media(max-height:700px)_and_(max-width:639px)]:py-2"
       role="region"
       aria-label="Live transport"
     >
-      <div className="grid min-w-0 grid-cols-3 gap-2 [@media(max-height:480px)]:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-3 gap-2 [@media(max-height:480px)]:grid-cols-4 [@media(max-height:700px)_and_(max-width:639px)]:grid-cols-4">
         <button
           className="min-h-11 rounded-control border border-interactive px-2 py-2 font-ui text-sm font-semibold text-interactive rf-focus-ring disabled:pointer-events-none disabled:opacity-40 sm:rounded-pill sm:px-4"
           onClick={onPreviousTrack}
@@ -1890,11 +1890,11 @@ function Transport({
           }
         >
           <span aria-hidden>← </span>
-          <span className="[@media(max-height:480px)_and_(max-width:390px)]:hidden">Previous</span>
+          <span className="[@media(max-height:700px)_and_(max-width:390px)]:hidden">Previous</span>
         </button>
         <button
           ref={primaryButtonRef}
-          className="min-h-11 rounded-control rf-btn-primary px-3 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill sm:px-6 [@media(max-height:480px)]:px-2"
+          className="min-h-11 rounded-control rf-btn-primary px-3 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill sm:px-6 [@media(max-height:480px)]:px-2 [@media(max-height:700px)_and_(max-width:639px)]:px-2"
           onClick={onToggle}
           aria-label={playing && musicBlocked ? 'Pause preparation' : undefined}
         >
@@ -1912,7 +1912,7 @@ function Transport({
           disabled={liveIndex < 0 || liveIndex >= payload.tracks.length - 1}
           aria-label={nextTrack ? `Next track, ${nextTrack.track.title}` : 'Next track'}
         >
-          <span className="[@media(max-height:480px)_and_(max-width:390px)]:hidden">Next</span>
+          <span className="[@media(max-height:700px)_and_(max-width:390px)]:hidden">Next</span>
           <span aria-hidden> →</span>
         </button>
         <button
@@ -1921,7 +1921,7 @@ function Transport({
           aria-controls="live-transport-more"
           aria-label={moreOpen ? 'Less controls' : 'More controls'}
           onClick={() => setMoreOpen((open) => !open)}
-          className="hidden min-h-11 rounded-control border border-interactive px-2 py-2 font-ui text-xs text-interactive rf-focus-ring [@media(max-height:480px)]:block"
+          className="hidden min-h-11 rounded-control border border-interactive px-2 py-2 font-ui text-xs text-interactive rf-focus-ring [@media(max-height:480px)]:block [@media(max-height:700px)_and_(max-width:639px)]:block"
         >
           {moreOpen ? 'Less' : 'More'}
         </button>
@@ -1932,7 +1932,7 @@ function Transport({
       </div>
       <div
         id="live-transport-more"
-        className={`mt-3 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 [@media(max-height:480px)]:max-h-[calc(100dvh-var(--live-top-height,0px)-6rem)] [@media(max-height:480px)]:overflow-y-auto ${moreOpen ? '' : '[@media(max-height:480px)]:hidden'}`}
+        className={`mt-3 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 [@media(max-height:480px)]:max-h-[calc(100dvh-var(--live-top-height,0px)-6rem)] [@media(max-height:700px)_and_(max-width:639px)]:max-h-[calc(100dvh-var(--live-top-height,0px)-6rem)] [@media(max-height:480px)]:overflow-y-auto [@media(max-height:700px)_and_(max-width:639px)]:overflow-y-auto ${moreOpen ? '' : '[@media(max-height:480px)]:hidden [@media(max-height:700px)_and_(max-width:639px)]:hidden'}`}
       >
         <button
           className="min-h-11 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive rf-focus-ring sm:rounded-pill sm:px-4"
