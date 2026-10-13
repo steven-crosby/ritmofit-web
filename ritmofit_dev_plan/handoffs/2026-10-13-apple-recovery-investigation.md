@@ -43,7 +43,8 @@ were removed in the first cleanup pass; their evidence remains on main.
 Second cleanup pass: the three superseded root-authored deployment, native-zoom and orchestrator
 handoffs are retired locally. SoundCloud QA `91c94386-5816-48f5-91aa-61e874abb05b` was deleted
 after final browser confirmation; authenticated re-read returned 404. Apple content fingerprint
-matched before/after deletion. Cleanup records await GitHub publication. [Cleanup restart point](./2026-10-13-session-cleanup.md).
+matched before/after deletion. Cleanup records are in [PR #523](https://github.com/steven-crosby/ritmofit-web/pull/523), with merge separate.
+[Cleanup restart point](./2026-10-13-session-cleanup.md).
 Apple fixture `[QA] Apple browse import 2026-10-12 Cycle`
 (`75b7af90-141f-4f56-b02b-0bdd2c1c9dfe`, ten tracks) is retained for the unresolved 5:18 recovery.
 Protected managed lane worktrees/branches/briefs, tags, .claude, original classes and playlists remain.
