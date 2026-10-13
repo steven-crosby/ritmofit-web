@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-10-13T14:47:58.385188+00:00",
+  "worker": "73493517-2006-4beb-bf7c-cdb1edf298fd",
+  "spa": "assets/index-C1EvvyLa.js",
+  "applicationSource": "4fd1ecd2e00967b0c14df295e28ae8fcf068b987",
+  "apple": {
+    "authorization": "human confirmed",
+    "initialAudibleStart": "human confirmed",
+    "naturalAudibleHandover": "human confirmed clean",
+    "transientWaitingPanel": "owner observed and screenshot retained; later cleared; duration unmeasured",
+    "exitSilence": "pending"
+  },
+  "soundcloud": {
+    "audibleStart": "pending",
+    "audiblePause": "pending",
+    "audibleResume": "pending",
+    "exitSilence": "pending"
+  },
+  "realIPhone": "pending"
+}

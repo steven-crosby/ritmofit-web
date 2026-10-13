@@ -4,7 +4,7 @@ updated: 2026-10-13
 tool: Codex (local)
 lane: orchestrator
 branch: codex/deployment-preflight-518-519-20261012
-head: 0775e5a413f38e3d19a83e8765aac0173de438bb
+head: e68c4352b933dd6275c1d4578defb5cd5255b20d
 base: 4fd1ecd2e00967b0c14df295e28ae8fcf068b987
 prs: ['#521']
 status: open
@@ -35,21 +35,25 @@ status: open
 
 ## In flight
 
-- PR #521 publishes the evidence and reconciled HISTORY/DEVELOPMENT_PLAN. The preceding head
-  `0775e5a` passed [CI 38353272052](https://github.com/steven-crosby/ritmofit-web/actions/runs/38353272052)
-  and review. Updated deployment-record head must pass renewed CI/review. Squash merge requires
+- PR #521 publishes the evidence and reconciled HISTORY/DEVELOPMENT_PLAN. The technical deployment-record head
+  `e68c435` passed [CI 38414448443](https://github.com/steven-crosby/ritmofit-web/actions/runs/38414448443)
+  and review. Updated attended-evidence head must pass renewed CI/review. Squash merge requires
   separate explicit owner authority; Git publication authorization was used for commit/push/PR.
-- Human audible acceptance remains open: Apple natural handover/Exit silence and SoundCloud
-  audible pause/resume/Exit are not established by this technical smoke. Earlier initial Apple
-  audible start remains historical evidence. Real iPhone and existing view-tab arrow-key gap remain.
-- Apple acceptance step 1 of 4 is pending: owner checks browser authorization and reports whether
-  Start is enabled. No music Start has been pressed by the agent. Production tab is parked at the
-  exact retained Apple QA class's preflight, with ten checked tracks and Start initially disabled.
+- Human audible acceptance remains partial: Steven confirmed Apple authorization, initial audible
+  start and clean natural Abracadabra → Bad Romance handover on the deployed build. A transient
+  Waiting for music panel appeared before the next song started; screenshot preserved, later
+  Now teaching track 2 observed. Duration unmeasured; presentation is a scoped UX follow-up.
+  Apple Exit silence and SoundCloud audible start/pause/resume/Exit remain pending. Real iPhone
+  and existing view-tab arrow-key gap remain. [Attended evidence](../../docs/audits/provider-acceptance-2026-10-13/README.md).
+- Apple acceptance step 4 of 4 is pending: owner clicks Exit while music is audible and confirms
+  silence and return to Builder. Playback was started by Steven and left untouched by the agent
+  through the natural handover; the production tab is retained for the owner's Exit confirmation.
+  Last agent observation was Live track 2 at 4:00; no human silence result has arrived.
 
 ## Next action
 
-Continue human Apple authorization → audible start → natural handover → Exit silence one step at
-one time when Steven responds, then SoundCloud listening checks. Separately authorize squash #521
+Complete the pending human Apple Exit silence check when Steven responds, then guide SoundCloud
+audible start → pause → resume → Exit one step at a time. Separately authorize squash #521
 once its current head has green CI/review, reconcile delivery identity and sync local main.
 
 ## Blockers and retained cleanup

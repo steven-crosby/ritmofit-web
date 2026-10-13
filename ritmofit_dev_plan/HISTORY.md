@@ -13,6 +13,21 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Attended Apple acceptance 2026-10-13 — deployed #518/#519, partial.** Steven confirmed browser
+> authorization, audible Abracadabra start with advancing clock/no recovery, and a clean natural
+> handover to Bad Romance in the exact retained Cycle QA class. The agent did not seek or press Next.
+> Steven also reported a momentary notification just before the next song began; his original PNG
+> shows Waiting for music / Teaching position held at 3:43, track 2. Later DOM observation shows
+> normal teaching track 2 at 4:00 with the banner cleared. No measured banner duration or
+> message-free transition claim. Source maps the panel to provider preparation/buffering before
+> confirmed progress; its presentation is recorded as a scoped UX follow-up without code changes.
+>
+> [Attended evidence](../docs/audits/provider-acceptance-2026-10-13/README.md) preserves exact human
+> reports and screenshot. Apple Exit silence and all SoundCloud audible checks remain pending; no
+> untouched full-class, fresh Pilates or real-iPhone run claimed. Worker remains `73493517`, SPA
+> `index-C1EvvyLa.js`, source `4fd1ecd`. No fixture deletion or additional deployment.
+
+
 > **Deploy 2026-10-13 — Builder / Live #518/#519.** Owner-approved application main `4fd1ecd`
 > deployed as Worker `73493517-2006-4beb-bf7c-cdb1edf298fd` at 100%, completed
 > 2026-10-13T14:23:43Z. SPA `assets/index-C1EvvyLa.js`; immediate rollback Worker

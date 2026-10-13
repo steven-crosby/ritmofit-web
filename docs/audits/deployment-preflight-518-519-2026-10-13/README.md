@@ -92,3 +92,11 @@ pinned/protected. Both lane branches, worktrees and untracked briefs remain. Exi
 are preserved. Protected worktrees are not removed manually. Human audible acceptance and real
 iPhone acceptance remain open; the pre-existing Live view-tab arrow-key issue remains separately
 scoped. No provider audio was captured, downloaded, cached, analyzed or proxied.
+
+## Subsequent attended Apple observations
+
+Steven subsequently confirmed browser authorization, audible Abracadabra start with advancing
+clock, and a clean natural handover to Bad Romance. He also captured a transient Waiting for music
+panel at the boundary; it later cleared. Exit silence and SoundCloud listening remain pending.
+[Separate attended evidence](../provider-acceptance-2026-10-13/README.md) preserves his reports and
+original screenshot. The authorization-pending state above describes the initial technical handoff.
