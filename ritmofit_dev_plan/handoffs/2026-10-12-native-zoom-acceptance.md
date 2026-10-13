@@ -3,7 +3,7 @@ date: 2026-10-12
 tool: Codex (local)
 lane: orchestrator
 branch: codex/verification-zoom-provider-20261012
-head: 6d1eb378446d21495adbe901b14b29ec880a3303
+head: b28cb82c83e79c5134209181c3eae6df0800dcda
 base: dbc8afbe8483502f13209d10729a199eb5e00780
 prs: ['#520 (published; CI/review pending at record commit)']
 status: open
@@ -43,7 +43,10 @@ and verifying hosted CI/review while human audible acceptance stays open. PR #52
 CI/review of its final head are pending at this record commit. The PR check/review state is
 authoritative afterward. Merge, deployment and cleanup remain separately unauthorized.
 The recorded head identifies the preceding evidence commit; base identifies verified application
-main. This publication follow-up changes only this orchestrator handoff.
+main. The initial publication follow-up changed only this handoff. Published-diff review then found
+JPEG-encoded browser screenshots named `.png`; this correction renames those to `.jpg`, updates
+references/manifests and preserves every original image byte. Owner-provided PNGs are unchanged.
+Final-head CI/review follows the corrective commit/push.
 
 ## Next action
 

@@ -60,7 +60,7 @@ by diagnostic probes. Playback controls were exercised through the application's
 - Resume at 39.821 s and later 78.944 s, widget paused=false, Live advancing to 1:19.
 - Exit removes the iframe and returns to Builder. Apple remains stopped/empty as well.
 
-PNG captures retain playing, paused, resumed, Exit and tagged fixture states.
+JPEG captures retain playing, paused, resumed, Exit and tagged fixture states.
 `verification-summary.json` asserts the observed outcomes and boundaries; `sha256.json` hashes
 this packet. Tool selector timeouts that occurred after a selection changed its accessible name
 were resolved from fresh DOM state without duplicate input. One natural-boundary wait timed out
@@ -87,3 +87,11 @@ stopped. Steven authorized a local commit of verification evidence and the hando
 human audible acceptance open. Push, PR, merge, deployment and cleanup remain separate.
 No product-code change was performed; the original observation receipts describe the verification
 pass before this separate local commit authorization.
+
+## Image encoding correction
+
+Published-diff review found browser-captured JPEG bytes under `.png` filenames.
+The browser captures now use `.jpg` extensions with exactly the same original bytes,
+not re-encoded or recaptured. References and the hash manifest follow the corrected names.
+Owner-supplied PNG screenshots retain their original names and bytes. The earlier
+filename snapshot remains available in evidence commit `6d1eb37`.

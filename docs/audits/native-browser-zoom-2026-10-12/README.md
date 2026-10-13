@@ -40,7 +40,7 @@ verification-only pass; route a scoped follow-up before claiming complete tab ke
 ## Evidence and boundaries
 
 `observations.json` records viewport, focus, preserved draft, completion visibility and recovery-hit
-measurements. PNGs show actual zoomed Builder and Live states. `source-sha256.json` identifies
+measurements. JPEGs show actual zoomed Builder and Live states. `source-sha256.json` identifies
 product source; `sha256.json` identifies this packet. Data and recovery adapter are local synthetic
 fixtures from the merged evidence harness. This does not establish real audio, real provider
 transport, screen-reader speech, real iPhone behavior, all browser/window sizes or production UI.
@@ -50,3 +50,11 @@ The Worker deployment identity was not rechecked during this pass. Subsequent Ap
 checks and their human/runtime boundaries are recorded in the
 [provider packet](../provider-acceptance-2026-10-12/README.md). Steven authorized a local commit
 of both packets and the handoff; push, PR, merge, deployment and cleanup remain separate.
+
+## Image encoding correction
+
+Published-diff review found browser-captured JPEG bytes under `.png` filenames.
+The browser captures now use `.jpg` extensions with exactly the same original bytes,
+not re-encoded or recaptured. References and the hash manifest follow the corrected names.
+Owner-supplied PNG screenshots retain their original names and bytes. The earlier
+filename snapshot remains available in evidence commit `6d1eb37`.
