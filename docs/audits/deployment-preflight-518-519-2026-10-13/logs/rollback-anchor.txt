@@ -1,0 +1,37 @@
+
+ ⛅️ wrangler 4.99.0 (update available 4.150.0)
+──────────────────────────────────────────────
+Version ID:  9563d726-bc4d-44f7-834a-d7dbcc388d19
+Created:     2026-10-11T22:01:46.030Z
+Author: <not retained>
+Source:      Unknown (version_upload)
+Tag:         -
+Message:     -
+
+Handlers:             fetch, scheduled
+Compatibility Date:   2024-11-06
+Compatibility Flags:  nodejs_compat
+Secrets:
+Secret Name:  APPLE_CLIENT_ID
+Secret Name:  APPLE_KEY_ID
+Secret Name:  APPLE_MUSIC_DEVELOPER_TOKEN
+Secret Name:  APPLE_MUSIC_KEY_ID
+Secret Name:  APPLE_MUSIC_PRIVATE_KEY
+Secret Name:  APPLE_MUSIC_TEAM_ID
+Secret Name:  APPLE_PRIVATE_KEY
+Secret Name:  APPLE_TEAM_ID
+Secret Name:  BETA_ALLOWED_EMAILS
+Secret Name:  BETTER_AUTH_SECRET
+Secret Name:  EMAIL_FROM
+Secret Name:  ENCRYPTION_KEY
+Secret Name:  RESEND_API_KEY
+Secret Name:  SOUNDCLOUD_CLIENT_ID
+Secret Name:  SOUNDCLOUD_CLIENT_SECRET
+Secret Name:  SPOTIFY_CLIENT_ID
+Secret Name:  SPOTIFY_CLIENT_SECRET
+Your Worker has access to the following bindings:
+Binding                                                         Resource
+env.DB (5bf15d82-10f5-4d03-b96e-6b8358334fc5)                   D1 Database
+env.IMAGES_BUCKET (ritmofit-images)                             R2 Bucket
+env.BETTER_AUTH_URL ("https://ritmofit.studio")                 Environment Variable
+env.WEB_ORIGIN ("https://ritmofit.studio")                      Environment Variable

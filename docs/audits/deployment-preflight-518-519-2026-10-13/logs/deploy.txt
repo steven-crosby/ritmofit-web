@@ -1,0 +1,40 @@
+
+ ⛅️ wrangler 4.99.0 (update available 4.150.0)
+──────────────────────────────────────────────
+🌀 Building list of assets...
+✨ Read 35 files from the assets directory <repo>/apps/web/dist
+🌀 Starting asset upload...
+🌀 Found 12 new or modified static assets to upload. Proceeding with upload...
++ /sw.js
++ /assets/SongsByMoveDialog-CWvYlvMO.js
++ /assets/TrackPreview-B0YNWvvf.js
++ /assets/index-GC8dtqlg.css
++ /index.html
++ /assets/ConnectionsDialog-BJoNvoNJ.js
++ /assets/registry-BGj66CYS.js
++ /assets/LiveMode-DT6yzoGA.js
++ /assets/DialogState-qi32VtiA.js
++ /assets/ClassSummaryView-DKGTgDtx.js
++ /assets/ChoreographyEditor-BTfSFeDI.js
++ /assets/index-C1EvvyLa.js
+Uploaded 4 of 12 assets
+Uploaded 8 of 12 assets
+Uploaded 12 of 12 assets
+✨ Success! Uploaded 12 files (19 already uploaded) (1.65 sec)
+
+Total Upload: 2892.47 KiB / gzip: 473.27 KiB
+Worker Startup Time: 98 ms
+Your Worker has access to the following bindings:
+Binding                                              Resource
+env.DB (ritmofit)                                    D1 Database
+env.IMAGES_BUCKET (ritmofit-images)                  R2 Bucket
+env.BETTER_AUTH_URL ("https://ritmofit.studio")      Environment Variable
+env.WEB_ORIGIN ("https://ritmofit.studio")           Environment Variable
+
+Uploaded ritmofit-api (6.85 sec)
+Deployed ritmofit-api triggers (0.98 sec)
+  https://ritmofit-api.steven-crosby09.workers.dev
+  ritmofit.studio (custom domain)
+  schedule: 17 3 * * *
+Current Version ID: 73493517-2006-4beb-bf7c-cdb1edf298fd
+$ wrangler deploy

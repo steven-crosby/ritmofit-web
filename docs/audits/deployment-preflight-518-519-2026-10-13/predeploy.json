@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-10-13T14:23:11.166333+00:00",
+  "candidate": "4fd1ecd2e00967b0c14df295e28ae8fcf068b987",
+  "sourceFilesUnchanged": 501,
+  "builtEntry": "assets/index-C1EvvyLa.js",
+  "builtEntrySha256": "9c8ac2825d5c5a2cf17be7b831949e6e60fbac192f1388a5cb9573882a25bb95",
+  "previousWorker": "9563d726-bc4d-44f7-834a-d7dbcc388d19",
+  "rollbackAvailable": true,
+  "migrationsPending": false,
+  "betaAllowedEmailsNamePresent": true,
+  "authorization": "Owner authorized deployment; pending browser coverage completed after manual unlock on October 13. Human audible acceptance remains open."
+}

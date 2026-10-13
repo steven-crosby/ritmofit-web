@@ -13,6 +13,35 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-13 — Builder / Live #518/#519.** Owner-approved application main `4fd1ecd`
+> deployed as Worker `73493517-2006-4beb-bf7c-cdb1edf298fd` at 100%, completed
+> 2026-10-13T14:23:43Z. SPA `assets/index-C1EvvyLa.js`; immediate rollback Worker
+> `9563d726-bc4d-44f7-834a-d7dbcc388d19`. No migrations pending or applied; no rollback or
+> secret/config changes. Application diff from the preceding deployed source `6eeccc0` is exactly
+> Dashboard.tsx / LiveMode.tsx and their two test files; API/provider/playback-runtime unchanged.
+>
+> All 501 source hashes still matched the full twelve-step local gate (web 1184, API 486,
+> music 30, integration 184). A fresh web build reproduced the prepared SPA and served JS hash.
+> After manual Mac unlock and Chrome restart, 75 local browser observations completed a measured
+> 12-surface × 5-width matrix plus native 200% and dialog inert/focus trapping/return. Completion
+> was synthetic in prompter-only mode; no human-audible or real-device claim.
+>
+> Post-deploy: new Worker identity checked independently; three consecutive cache-busted SPA
+> entries matched on the first settle attempt; served JS hash agrees; eleven HTTP probes and six
+> health security headers passed. Generic unauthenticated 401 confirms protection, not mounting.
+> Authenticated retained Apple QA class/track loading, prompter-only Live Cue/List at 390×844,
+> list/Exit/Builder return at 320×568 passed. The browser initially loaded the old cached SPA;
+> the prompted Reload now path switched it to the new asset. No class content edits or deletions.
+>
+> [Deployment/browser packet](../docs/audits/deployment-preflight-518-519-2026-10-13/README.md) and
+> [publication PR #521](https://github.com/steven-crosby/ritmofit-web/pull/521). Human Apple
+> authorization/listening and SoundCloud audible acceptance remain open; the named Apple QA
+> preflight is parked without starting audio. Real iPhone and the existing tab arrow-key gap remain
+> separate. Partial cleanup from October 12 is unchanged: verification branch removed; two managed
+> lane archives refused because pinned/protected. Their branches/briefs and both listening fixtures
+> remain preserved.
+
+
 > **Preflight/publication and partial cleanup 2026-10-12 — #518/#519.** Owner approved deployment,
 > Git publication, cleanup and guided human audible checks. The application candidate remains
 > `4fd1ecd`; all twelve local gates and Worker dry run passed, with explicit partial browser smoke.

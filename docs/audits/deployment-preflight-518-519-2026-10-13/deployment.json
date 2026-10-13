@@ -1,0 +1,15 @@
+{
+  "completedAt": "2026-10-13T14:23:43.787474+00:00",
+  "command": [
+    "pnpm",
+    "--filter",
+    "@ritmofit/api",
+    "run",
+    "deploy"
+  ],
+  "source": "4fd1ecd2e00967b0c14df295e28ae8fcf068b987",
+  "exitCode": 0,
+  "workerVersion": "73493517-2006-4beb-bf7c-cdb1edf298fd",
+  "migrationsApplied": false,
+  "humanAudibleAcceptance": "open"
+}

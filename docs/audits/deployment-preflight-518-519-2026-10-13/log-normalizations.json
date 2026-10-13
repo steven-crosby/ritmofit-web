@@ -1,0 +1,8 @@
+[
+  {
+    "path": "logs/rollback-anchor.txt",
+    "beforeSha256": "b804fb62200742177f236035ff8b0a7fd44807ce81b7a47731d91dbdb3ab39fb",
+    "afterSha256": "4fb34e36e08dca8db7e01f8cc5ac87852db2c712ce186a7e861730ebf2a8ebc7",
+    "reason": "Remove trailing blank lines from CLI output for whitespace checks."
+  }
+]

@@ -1,5 +1,9 @@
 # Deployment preflight for #518/#519 — 2026-10-12
 
+Historical October 12 capture. The blocked browser checks were completed and deployment performed
+on October 13; see [the completed browser/deployment packet](../deployment-preflight-518-519-2026-10-13/README.md).
+The partial status below describes this packet at capture time.
+
 Status: prepared; compile/infrastructure checks pass. Fresh local browser smoke is partial because
 Chrome DOM automation could not attach and the Mac locked during the native fallback.
 Owner authorized deployment, Git publication and cleanup after preparation. Browser coverage disposition

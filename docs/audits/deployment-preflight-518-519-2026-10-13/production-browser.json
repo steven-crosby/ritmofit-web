@@ -1,0 +1,208 @@
+[
+  {
+    "label": "first-browser-entry",
+    "checkedAt": "2026-10-13T14:25:32.210Z",
+    "scripts": [
+      "/assets/index-DyruxT0m.js"
+    ],
+    "note": "Production tab initially loaded previous cached SPA while independent edge checks already matched the new asset."
+  },
+  {
+    "label": "apple-qa-builder-after-pwa-update",
+    "checkedAt": "2026-10-13T14:26:18.675Z",
+    "observed": {
+      "focus": {
+        "label": null,
+        "text": "\n    Skip to main contentRRitmo StudioStevenClassesMusicLiveAccountYour classes24 loadedNew class, f"
+      },
+      "overflow": {
+        "clientWidth": 1440,
+        "scrollWidth": 1440
+      },
+      "scripts": [
+        "/assets/index-C1EvvyLa.js"
+      ],
+      "title": "[QA] Apple browse import 2026-10-12 Cycle - Ritmo Studio",
+      "url": "https://ritmofit.studio/",
+      "viewport": {
+        "dpr": 2,
+        "height": 651,
+        "width": 1440
+      }
+    },
+    "snapshot": "Initial selected QA class was loading; unrelated class chooser content was not retained."
+  },
+  {
+    "label": "apple-qa-builder-loaded",
+    "checkedAt": "2026-10-13T14:27:16.994Z",
+    "observed": {
+      "overflow": {
+        "clientWidth": 1440,
+        "scrollWidth": 1440
+      },
+      "scripts": [
+        "/assets/index-C1EvvyLa.js"
+      ],
+      "title": "[QA] Apple browse import 2026-10-12 Cycle - Ritmo Studio",
+      "url": "https://ritmofit.studio/",
+      "viewport": {
+        "dpr": 2,
+        "height": 651,
+        "width": 1440
+      }
+    },
+    "snapshot": "  - button \"▶ Run live\"\n  - generic: 10 tracks\n  - generic: ·\n  - generic: 39:50 total\n  - generic: ·\n  - generic: no BPM set\n  - region \"Class readiness\":\n    - generic: Readiness\n    - generic: Can run live · 2 things left\n    - paragraph: What Live needs from this class before you run it.\n    - list:\n      - generic: ✓\n      - paragraph: Durations set\n      - generic: \"!\"\n      - paragraph: No BPM set\n      - paragraph: Add BPM so the class keeps time — without it Live shows no beat.\n      - generic: \"Open to add BPM:\"\n      - button \"Fix BPM on Abracadabra\": Abracadabra\n      - button \"Fix BPM on Bad Romance\": Bad Romance\n      - button \"Show 8 more tracks to fix BPM\": +8 more\n      - generic: \"!\"\n      - paragraph: No cues or moves yet\n      - paragraph: Live will show tracks and time only — nothing to call out.\n      - button \"Write the first cue\"\n      - generic: ✓\n      - paragraph: Music ready\n  - generic \"Class details\"\n  - region \"Class Pulse\":\n    - generic: Class Pulse\n    - generic: ◇ auto-shaped\n    - paragraph: Effort over time, start to finish. Each bar is a track — wider is longer, taller is harder.\n    - 'img \"Class Pulse, auto-shaped from track order and length: easy, easy, moderate, moderate, moderate, hard, hard, hard, moderate, moderate. Auto-shaped from track order and length. Set a track’s intensity to refine.\"'\n    - generic: 0:00 start\n    - generic: 39:50 finish\n    - list:\n      - listitem: Z1 Build\n      - listitem: Z2 Push\n      - listitem: Z3 Attack\n    - paragraph: Auto-shaped from track order and length. Set a track’s intensity to refine.\n  - text: Run of show\n  - heading \"Playback order\" [level=3]\n  - paragraph: Songs play in this order. Drag a grip or use its arrow keys to reorder.\n  - button \"Add music\"\n  - button \"Show timeline\"\n  - list:\n    - button \"1 Abracadabra Lady Gaga Intensity Push No BPM set\":\n      - generic: \"1\"\n      - paragraph: Abracadabra\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Abracadabra, position 1 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"2 Bad Romance Lady Gaga Intensity Push No BPM set\":\n      - generic: \"2\"\n      - paragraph: Bad Romance\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Bad Romance, position 2 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"3 Die With A Smile Lady Gaga & Bruno Mars Intensity Push No BPM set\":\n      - generic: \"3\"\n      - paragraph: Die With A Smile\n      - paragraph: Lady Gaga & Bruno Mars\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Die With A Smile, position 3 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"4 Telephone (feat. Beyoncé) Lady Gaga Intensity Push No BPM set\":\n      - generic: \"4\"\n      - paragraph: Telephone (feat. Beyoncé)\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Telephone (feat. Beyoncé), position 4 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"5 Born This Way Lady Gaga Intensity Push No BPM set\":\n      - generic: \"5\"\n      - paragraph: Born This Way\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Born This Way, position 5 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"6 RUNWAY Lady Gaga & Doechii Intensity Push No BPM set\":\n      - generic: \"6\"\n      - paragraph: RUNWAY\n      - paragraph: Lady Gaga & Doechii\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder RUNWAY, position 6 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"7 Poker Face Lady Gaga Intensity Push No BPM set\":\n      - generic: \"7\"\n      - paragraph: Poker Face\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Poker Face, position 7 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"8 The Dead Dance Lady Gaga Intensity Push No BPM set\":\n      - generic: \"8\"\n      - paragraph: The Dead Dance\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder The Dead Dance, position 8 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"9 The Edge of Glory Lady Gaga Intensity Push No BPM set\":\n      - generic: \"9\"\n      - paragraph: The Edge of Glory\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder The Edge of Glory, position 9 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"10 Rain On Me Lady Gaga & Ariana Grande Intensity Push No BPM set\":\n      - generic: \"10\"\n      - paragraph: Rain On Me\n      - paragraph: Lady Gaga & Ariana Grande\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Rain On Me, position 10 of 10. Use arrow up and down.\": ⋮⋮\n  - paragraph\n  - paragraph\n  - complementary:\n    - paragraph: Track inspector\n    - paragraph: Select a song in Playback order to inspect its intensity, BPM, notes, cues, and moves."
+  },
+  {
+    "label": "apple-preflight",
+    "checkedAt": "2026-10-13T14:27:30.452Z",
+    "observed": {
+      "overflow": {
+        "clientWidth": 1440,
+        "scrollWidth": 1440
+      },
+      "scripts": [
+        "/assets/index-C1EvvyLa.js"
+      ],
+      "title": "[QA] Apple browse import 2026-10-12 Cycle - Ritmo Studio",
+      "url": "https://ritmofit.studio/",
+      "viewport": {
+        "dpr": 2,
+        "height": 651,
+        "width": 1440
+      }
+    },
+    "snapshot": "- link \"Skip to main content\":\n  - /url: \"#main-content\"\n- banner:\n  - heading \"[QA] Apple browse import 2026-10-12 Cycle\" [active] [level=1]\n  - button \"Exit\"\n- generic: \"!\"\n- generic: Browser authorization needed\n- paragraph: Playback preflight\n- heading \"10 tracks checked · 0 need a decision\" [level=2]\n- paragraph: Provider links and durations checked for 10 tracks. Playback availability and audible output are unverified.\n- button \"Start class\" [disabled]\n- button \"Run without music\"\n- status: Apple Music needs a browser authorization check before Start. This check does not play music.\n- button \"Check Apple Music authorization\"\n- list \"Track playback check\":\n  - paragraph: Provider links and durations checked\n  - generic: \"10\"\n  - list:\n    - generic: \"#1\"\n    - paragraph: Abracadabra\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#2\"\n    - paragraph: Bad Romance\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#3\"\n    - paragraph: Die With A Smile\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#4\"\n    - paragraph: Telephone (feat. Beyoncé)\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#5\"\n    - paragraph: Born This Way\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#6\"\n    - paragraph: RUNWAY\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#7\"\n    - paragraph: Poker Face\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#8\"\n    - paragraph: The Dead Dance\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#9\"\n    - paragraph: The Edge of Glory\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#10\"\n    - paragraph: Rain On Me\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n  - paragraph: Fix or choose prompter-only\n  - generic: \"0\"\n  - paragraph: No tracks in this group.\n- paragraph: Start prepares the first track. The teaching clock waits for confirmed playback progress. Later tracks may still need recovery. Check your volume and audio output when music starts. Browser playback permission and each track’s availability may still require recovery when playback starts.\n- button \"Manage connections\"\n- paragraph: Apple Music connects here without leaving preflight. Spotify and SoundCloud authorization open a provider page; returning restores this class’s preflight without starting playback."
+  },
+  {
+    "label": "live-cue-390",
+    "checkedAt": "2026-10-13T14:27:30.830Z",
+    "observed": {
+      "overflow": {
+        "clientWidth": 390,
+        "scrollWidth": 390
+      },
+      "scripts": [
+        "/assets/index-C1EvvyLa.js"
+      ],
+      "title": "[QA] Apple browse import 2026-10-12 Cycle - Ritmo Studio",
+      "url": "https://ritmofit.studio/",
+      "viewport": {
+        "dpr": 1,
+        "height": 844,
+        "width": 390
+      }
+    },
+    "snapshot": "- link \"Skip to main content\":\n  - /url: \"#main-content\"\n- paragraph\n- paragraph: \"Track 1: Abracadabra.\"\n- paragraph\n- banner:\n  - paragraph: Ready · Track 1 of 10\n  - heading \"[QA] Apple browse import 2026-10-12 Cycle\" [level=1]\n  - paragraph: 0:00 / 39:51\n  - tablist \"Prompter view\":\n    - tab \"Cue-by-Cue\" [selected]\n    - tab \"Full List\"\n  - button \"Exit\"\n- paragraph: First action\n- paragraph: Press play to start\n- paragraph:\n  - generic: ♫\n  - generic: Abracadabra\n- paragraph: Next\n- paragraph: End of track\n- generic: Effort\n- generic \"Intensity Push\":\n  - generic: Push\n- paragraph:\n  - generic: Tempo missing\n  - generic: Pulse off\n- paragraph: Track left\n- paragraph: 3:43\n- paragraph: Class left\n- paragraph: 39:51\n- paragraph: Track 1\n- paragraph: Abracadabra\n- paragraph: Lady Gaga\n- region \"Class Pulse\":\n  - generic: Class Pulse\n  - generic: ◇ auto-shaped\n  - 'img \"Class Pulse, auto-shaped from track order and length: easy, easy, moderate, moderate, moderate, hard, hard, hard, moderate, moderate. Auto-shaped from track order and length. Set a track’s intensity to refine.\"'\n  - paragraph: Auto-shaped from track order and length. Set a track’s intensity to refine.\n- paragraph: Up next\n- paragraph: 9 tracks left\n- list:\n  - generic: \"2\"\n  - generic: Bad Romance\n  - generic: 4:55\n  - generic: \"3\"\n  - generic: Die With A Smile\n  - generic: 4:12\n  - generic: \"4\"\n  - generic: Telephone (feat. Beyoncé)\n  - generic: 3:41\n- region \"Live transport\":\n  - button \"Previous track\" [disabled]: ← Previous\n  - button \"Play\" [active]\n  - button \"Next track, Bad Romance\": Next →\n  - paragraph:\n    - generic: ♪\n    - generic: \"Playback:\"\n    - generic: Music off\n  - button \"Reset\"\n  - slider \"Seek class timeline\":\n    - generic: \"1\"\n    - generic: \"2\"\n    - generic: \"3\"\n    - generic: \"4\"\n    - generic: \"5\"\n    - generic: \"6\"\n    - generic: \"7\"\n    - generic: \"8\"\n    - generic: \"9\"\n    - generic: \"10\"",
+    "screenshot": "production-live-cue-390.jpg"
+  },
+  {
+    "label": "live-list-390",
+    "checkedAt": "2026-10-13T14:27:31.192Z",
+    "observed": {
+      "overflow": {
+        "clientWidth": 390,
+        "scrollWidth": 390
+      },
+      "scripts": [
+        "/assets/index-C1EvvyLa.js"
+      ],
+      "title": "[QA] Apple browse import 2026-10-12 Cycle - Ritmo Studio",
+      "url": "https://ritmofit.studio/",
+      "viewport": {
+        "dpr": 1,
+        "height": 844,
+        "width": 390
+      }
+    },
+    "snapshot": "- link \"Skip to main content\":\n  - /url: \"#main-content\"\n- paragraph\n- paragraph: \"Track 1: Abracadabra.\"\n- paragraph\n- banner:\n  - paragraph: Ready · Track 1 of 10\n  - heading \"[QA] Apple browse import 2026-10-12 Cycle\" [level=1]\n  - paragraph: 0:00 / 39:51\n  - tablist \"Prompter view\":\n    - tab \"Cue-by-Cue\"\n    - tab \"Full List\" [active] [selected]\n  - button \"Exit\"\n- paragraph: Run of show\n- heading \"Track 1 of 10\" [level=2]\n- generic: ✓\n- generic: Current position\n- list:\n  - button \"Jump to track 1, Abracadabra\":\n    - generic: 0:00\n    - generic: \"1\"\n    - generic: Abracadabra\n    - generic: ▶ Current\n    - generic: Lady Gaga\n  - generic: 3:43\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 2, Bad Romance\":\n    - generic: 3:43\n    - generic: \"2\"\n    - generic: Bad Romance\n    - generic: Lady Gaga\n  - generic: 4:55\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 3, Die With A Smile\":\n    - generic: 8:38\n    - generic: \"3\"\n    - generic: Die With A Smile\n    - generic: Lady Gaga & Bruno Mars\n  - generic: 4:12\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 4, Telephone (feat. Beyoncé)\":\n    - generic: 12:50\n    - generic: \"4\"\n    - generic: Telephone (feat. Beyoncé)\n    - generic: Lady Gaga\n  - generic: 3:41\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 5, Born This Way\":\n    - generic: 16:30\n    - generic: \"5\"\n    - generic: Born This Way\n    - generic: Lady Gaga\n  - generic: 4:20\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 6, RUNWAY\":\n    - generic: 20:50\n    - generic: \"6\"\n    - generic: RUNWAY\n    - generic: Lady Gaga & Doechii\n  - generic: 2:51\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 7, Poker Face\":\n    - generic: 23:41\n    - generic: \"7\"\n    - generic: Poker Face\n    - generic: Lady Gaga\n  - generic: 3:57\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 8, The Dead Dance\":\n    - generic: 27:38\n    - generic: \"8\"\n    - generic: The Dead Dance\n    - generic: Lady Gaga\n  - generic: 3:49\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 9, The Edge of Glory\":\n    - generic: 31:27\n    - generic: \"9\"\n    - generic: The Edge of Glory\n    - generic: Lady Gaga\n  - generic: 5:22\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 10, Rain On Me\":\n    - generic: 36:49\n    - generic: \"10\"\n    - generic: Rain On Me\n    - generic: Lady Gaga & Ariana Grande\n  - generic: 3:02\n  - generic \"Intensity Push\":\n    - generic: Push\n- region \"Live transport\":\n  - button \"Previous track\" [disabled]: ← Previous\n  - button \"Play\"\n  - button \"Next track, Bad Romance\": Next →\n  - paragraph:\n    - generic: ♪\n    - generic: \"Playback:\"\n    - generic: Music off\n  - button \"Reset\"\n  - slider \"Seek class timeline\":\n    - generic: \"1\"\n    - generic: \"2\"\n    - generic: \"3\"\n    - generic: \"4\"\n    - generic: \"5\"\n    - generic: \"6\"\n    - generic: \"7\"\n    - generic: \"8\"\n    - generic: \"9\"\n    - generic: \"10\"",
+    "screenshot": "production-live-list-390.jpg"
+  },
+  {
+    "label": "live-list-320",
+    "checkedAt": "2026-10-13T14:27:31.287Z",
+    "observed": {
+      "overflow": {
+        "clientWidth": 320,
+        "scrollWidth": 320
+      },
+      "scripts": [
+        "/assets/index-C1EvvyLa.js"
+      ],
+      "title": "[QA] Apple browse import 2026-10-12 Cycle - Ritmo Studio",
+      "url": "https://ritmofit.studio/",
+      "viewport": {
+        "dpr": 1,
+        "height": 568,
+        "width": 320
+      }
+    },
+    "snapshot": "- link \"Skip to main content\":\n  - /url: \"#main-content\"\n- paragraph\n- paragraph: \"Track 1: Abracadabra.\"\n- paragraph\n- banner:\n  - paragraph: Ready · Track 1 of 10\n  - heading \"[QA] Apple browse import 2026-10-12 Cycle\" [level=1]\n  - paragraph: 0:00 / 39:51\n  - tablist \"Prompter view\":\n    - tab \"Cue-by-Cue\"\n    - tab \"Full List\" [active] [selected]\n  - paragraph:\n    - generic: 0:00\n    - generic: / 39:51\n  - button \"Exit\"\n- paragraph: Run of show\n- heading \"Track 1 of 10\" [level=2]\n- generic: ✓\n- generic: Current position\n- list:\n  - button \"Jump to track 1, Abracadabra\":\n    - generic: 0:00\n    - generic: \"1\"\n    - generic: Abracadabra\n    - generic: ▶ Current\n    - generic: Lady Gaga\n  - generic: 3:43\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 2, Bad Romance\":\n    - generic: 3:43\n    - generic: \"2\"\n    - generic: Bad Romance\n    - generic: Lady Gaga\n  - generic: 4:55\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 3, Die With A Smile\":\n    - generic: 8:38\n    - generic: \"3\"\n    - generic: Die With A Smile\n    - generic: Lady Gaga & Bruno Mars\n  - generic: 4:12\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 4, Telephone (feat. Beyoncé)\":\n    - generic: 12:50\n    - generic: \"4\"\n    - generic: Telephone (feat. Beyoncé)\n    - generic: Lady Gaga\n  - generic: 3:41\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 5, Born This Way\":\n    - generic: 16:30\n    - generic: \"5\"\n    - generic: Born This Way\n    - generic: Lady Gaga\n  - generic: 4:20\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 6, RUNWAY\":\n    - generic: 20:50\n    - generic: \"6\"\n    - generic: RUNWAY\n    - generic: Lady Gaga & Doechii\n  - generic: 2:51\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 7, Poker Face\":\n    - generic: 23:41\n    - generic: \"7\"\n    - generic: Poker Face\n    - generic: Lady Gaga\n  - generic: 3:57\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 8, The Dead Dance\":\n    - generic: 27:38\n    - generic: \"8\"\n    - generic: The Dead Dance\n    - generic: Lady Gaga\n  - generic: 3:49\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 9, The Edge of Glory\":\n    - generic: 31:27\n    - generic: \"9\"\n    - generic: The Edge of Glory\n    - generic: Lady Gaga\n  - generic: 5:22\n  - generic \"Intensity Push\":\n    - generic: Push\n  - button \"Jump to track 10, Rain On Me\":\n    - generic: 36:49\n    - generic: \"10\"\n    - generic: Rain On Me\n    - generic: Lady Gaga & Ariana Grande\n  - generic: 3:02\n  - generic \"Intensity Push\":\n    - generic: Push\n- region \"Live transport\":\n  - button \"Previous track\" [disabled]: ←\n  - button \"Play\"\n  - button \"Next track, Bad Romance\": →\n  - button \"More controls\": More\n  - paragraph:\n    - generic: ♪\n    - generic: \"Playback:\"\n    - generic: Music off",
+    "screenshot": "production-live-list-320.jpg"
+  },
+  {
+    "label": "apple-builder-return-320",
+    "checkedAt": "2026-10-13T14:27:31.698Z",
+    "observed": {
+      "overflow": {
+        "clientWidth": 320,
+        "scrollWidth": 320
+      },
+      "scripts": [
+        "/assets/index-C1EvvyLa.js"
+      ],
+      "title": "[QA] Apple browse import 2026-10-12 Cycle - Ritmo Studio",
+      "url": "https://ritmofit.studio/",
+      "viewport": {
+        "dpr": 1,
+        "height": 568,
+        "width": 320
+      }
+    },
+    "snapshot": "  - button \"▶ Run live\"\n  - generic: 10 tracks\n  - generic: ·\n  - generic: 39:50 total\n  - generic: ·\n  - generic: no BPM set\n  - region \"Class readiness\":\n    - generic: Readiness\n    - generic: Can run live · 2 things left\n    - paragraph: What Live needs from this class before you run it.\n    - list:\n      - generic: ✓\n      - paragraph: Durations set\n      - generic: \"!\"\n      - paragraph: No BPM set\n      - paragraph: Add BPM so the class keeps time — without it Live shows no beat.\n      - generic: \"Open to add BPM:\"\n      - button \"Fix BPM on Abracadabra\": Abracadabra\n      - button \"Fix BPM on Bad Romance\": Bad Romance\n      - button \"Show 8 more tracks to fix BPM\": +8 more\n      - generic: \"!\"\n      - paragraph: No cues or moves yet\n      - paragraph: Live will show tracks and time only — nothing to call out.\n      - button \"Write the first cue\"\n      - generic: ✓\n      - paragraph: Music ready\n  - generic \"Class details\"\n  - region \"Class Pulse\":\n    - generic: Class Pulse\n    - generic: ◇ auto-shaped\n    - paragraph: Effort over time, start to finish. Each bar is a track — wider is longer, taller is harder.\n    - 'img \"Class Pulse, auto-shaped from track order and length: easy, easy, moderate, moderate, moderate, hard, hard, hard, moderate, moderate. Auto-shaped from track order and length. Set a track’s intensity to refine.\"'\n    - generic: 0:00 start\n    - generic: 39:50 finish\n    - list:\n      - listitem: Z1 Build\n      - listitem: Z2 Push\n      - listitem: Z3 Attack\n    - paragraph: Auto-shaped from track order and length. Set a track’s intensity to refine.\n  - generic: ◌\n  - generic: Loading teaching plan\n  - text: Run of show\n  - heading \"Playback order\" [level=3]\n  - paragraph: Songs play in this order. Drag a grip or use its arrow keys to reorder.\n  - button \"Add music\"\n  - button \"Show timeline\"\n  - list:\n    - button \"1 Abracadabra Lady Gaga Intensity Push No BPM set\":\n      - generic: \"1\"\n      - paragraph: Abracadabra\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Abracadabra, position 1 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"2 Bad Romance Lady Gaga Intensity Push No BPM set\":\n      - generic: \"2\"\n      - paragraph: Bad Romance\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Bad Romance, position 2 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"3 Die With A Smile Lady Gaga & Bruno Mars Intensity Push No BPM set\":\n      - generic: \"3\"\n      - paragraph: Die With A Smile\n      - paragraph: Lady Gaga & Bruno Mars\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Die With A Smile, position 3 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"4 Telephone (feat. Beyoncé) Lady Gaga Intensity Push No BPM set\":\n      - generic: \"4\"\n      - paragraph: Telephone (feat. Beyoncé)\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Telephone (feat. Beyoncé), position 4 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"5 Born This Way Lady Gaga Intensity Push No BPM set\":\n      - generic: \"5\"\n      - paragraph: Born This Way\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Born This Way, position 5 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"6 RUNWAY Lady Gaga & Doechii Intensity Push No BPM set\":\n      - generic: \"6\"\n      - paragraph: RUNWAY\n      - paragraph: Lady Gaga & Doechii\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder RUNWAY, position 6 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"7 Poker Face Lady Gaga Intensity Push No BPM set\":\n      - generic: \"7\"\n      - paragraph: Poker Face\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Poker Face, position 7 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"8 The Dead Dance Lady Gaga Intensity Push No BPM set\":\n      - generic: \"8\"\n      - paragraph: The Dead Dance\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder The Dead Dance, position 8 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"9 The Edge of Glory Lady Gaga Intensity Push No BPM set\":\n      - generic: \"9\"\n      - paragraph: The Edge of Glory\n      - paragraph: Lady Gaga\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder The Edge of Glory, position 9 of 10. Use arrow up and down.\": ⋮⋮\n    - button \"10 Rain On Me Lady Gaga & Ariana Grande Intensity Push No BPM set\":\n      - generic: \"10\"\n      - paragraph: Rain On Me\n      - paragraph: Lady Gaga & Ariana Grande\n      - generic \"Intensity Push\":\n        - generic: Push\n      - generic: No BPM set\n    - button \"Reorder Rain On Me, position 10 of 10. Use arrow up and down.\": ⋮⋮\n  - paragraph\n  - paragraph\n  - complementary:\n    - paragraph: Track inspector\n    - paragraph: Select a song in Playback order to inspect its intensity, BPM, notes, cues, and moves."
+  },
+  {
+    "label": "apple-human-handoff",
+    "checkedAt": "2026-10-13T14:27:45.760Z",
+    "observed": {
+      "overflow": {
+        "clientWidth": 1440,
+        "scrollWidth": 1440
+      },
+      "scripts": [
+        "/assets/index-C1EvvyLa.js"
+      ],
+      "title": "[QA] Apple browse import 2026-10-12 Cycle - Ritmo Studio",
+      "url": "https://ritmofit.studio/",
+      "viewport": {
+        "dpr": 2,
+        "height": 651,
+        "width": 1440
+      }
+    },
+    "snapshot": "- link \"Skip to main content\":\n  - /url: \"#main-content\"\n- banner:\n  - heading \"[QA] Apple browse import 2026-10-12 Cycle\" [active] [level=1]\n  - button \"Exit\"\n- generic: ◌\n- generic: Checking readiness\n- paragraph: Playback preflight\n- heading \"Checking readiness\" [level=2]\n- paragraph: Checking stored connections, provider links, and track durations.\n- button \"Start class\" [disabled]\n- button \"Run without music\"\n- status: Checking provider connections…\n- button \"Manage connections\"",
+    "screenshot": "production-apple-human-handoff.jpg"
+  },
+  {
+    "label": "apple-human-preflight-settled",
+    "checkedAt": "2026-10-13T14:27:53.808Z",
+    "observed": {
+      "overflow": {
+        "clientWidth": 1440,
+        "scrollWidth": 1440
+      },
+      "scripts": [
+        "/assets/index-C1EvvyLa.js"
+      ],
+      "title": "[QA] Apple browse import 2026-10-12 Cycle - Ritmo Studio",
+      "url": "https://ritmofit.studio/",
+      "viewport": {
+        "dpr": 2,
+        "height": 651,
+        "width": 1440
+      }
+    },
+    "snapshot": "- link \"Skip to main content\":\n  - /url: \"#main-content\"\n- banner:\n  - heading \"[QA] Apple browse import 2026-10-12 Cycle\" [active] [level=1]\n  - button \"Exit\"\n- generic: \"!\"\n- generic: Browser authorization needed\n- paragraph: Playback preflight\n- heading \"10 tracks checked · 0 need a decision\" [level=2]\n- paragraph: Provider links and durations checked for 10 tracks. Playback availability and audible output are unverified.\n- button \"Start class\" [disabled]\n- button \"Run without music\"\n- status: Apple Music needs a browser authorization check before Start. This check does not play music.\n- button \"Check Apple Music authorization\"\n- list \"Track playback check\":\n  - paragraph: Provider links and durations checked\n  - generic: \"10\"\n  - list:\n    - generic: \"#1\"\n    - paragraph: Abracadabra\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#2\"\n    - paragraph: Bad Romance\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#3\"\n    - paragraph: Die With A Smile\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#4\"\n    - paragraph: Telephone (feat. Beyoncé)\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#5\"\n    - paragraph: Born This Way\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#6\"\n    - paragraph: RUNWAY\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#7\"\n    - paragraph: Poker Face\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#8\"\n    - paragraph: The Dead Dance\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#9\"\n    - paragraph: The Edge of Glory\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n    - generic: \"#10\"\n    - paragraph: Rain On Me\n    - generic: ✓\n    - text: \"Selected: Apple Music\"\n  - paragraph: Fix or choose prompter-only\n  - generic: \"0\"\n  - paragraph: No tracks in this group.\n- paragraph: Start prepares the first track. The teaching clock waits for confirmed playback progress. Later tracks may still need recovery. Check your volume and audio output when music starts. Browser playback permission and each track’s availability may still require recovery when playback starts.\n- button \"Manage connections\"\n- paragraph: Apple Music connects here without leaving preflight. Spotify and SoundCloud authorization open a provider page; returning restores this class’s preflight without starting playback.",
+    "screenshot": "production-apple-human-preflight-settled.jpg"
+  }
+]
