@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-10-13T05:45:41.431347+00:00",
+  "candidate": "4fd1ecd2e00967b0c14df295e28ae8fcf068b987",
+  "productionWorker": "9563d726-bc4d-44f7-834a-d7dbcc388d19",
+  "trafficPercent": 100,
+  "migrationPending": false,
+  "betaAllowedEmailsNamePresent": true,
+  "spaEntries": [
+    {
+      "status": 200,
+      "entry": "assets/index-DyruxT0m.js"
+    },
+    {
+      "status": 200,
+      "entry": "assets/index-DyruxT0m.js"
+    },
+    {
+      "status": 200,
+      "entry": "assets/index-DyruxT0m.js"
+    }
+  ],
+  "authorization": "Owner approved deployment, Git publication, cleanup, and guided human audible checks. Browser coverage disposition is still pending while Mac is locked. Human listening is not established by authorization.",
+  "deploymentPerformed": false,
+  "cleanupPerformed": false,
+  "httpMethodNote": "Python default user agent returned 403; canonical curl baseline succeeded."
+}

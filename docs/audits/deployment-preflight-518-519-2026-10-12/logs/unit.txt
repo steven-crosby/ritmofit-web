@@ -1,0 +1,205 @@
+$ pnpm -r --if-present test
+Scope: 4 of 5 workspace projects
+apps/web test$ vitest run
+packages/music test$ vitest run
+packages/music test:  RUN  v3.2.6 <repo>/packages/music
+apps/web test:  RUN  v3.2.6 <repo>/apps/web
+packages/music test:  ✓ src/identity.test.ts (4 tests) 4ms
+packages/music test:  ✓ src/playlist-url.test.ts (21 tests) 4ms
+packages/music test:  ✓ src/app-token.test.ts (5 tests) 5ms
+packages/music test:  Test Files  3 passed (3)
+packages/music test:       Tests  30 passed (30)
+packages/music test:    Start at  21:58:04
+packages/music test:    Duration  460ms (transform 112ms, setup 0ms, collect 189ms, tests 13ms, environment 0ms, prepare 293ms)
+packages/music test: Done
+apps/web test:  ✓ src/components/ReorderableTrackList.test.tsx (6 tests) 377ms
+apps/web test:  ✓ src/components/CuesSection.test.tsx (19 tests) 826ms
+apps/web test:  ✓ src/components/TrackSearch.recovery.test.tsx (9 tests) 1041ms
+apps/web test:  ✓ src/components/ClassPlanBlocks.test.tsx (42 tests) 1701ms
+apps/web test:    ✓ scaffold block management > authors a Cycle block, validates its ranges, and keeps the class target fixed  318ms
+apps/web test:  ✓ src/components/ClassSummaryView.test.tsx (5 tests) 252ms
+apps/web test: stderr | src/components/ClassHeaderCard.test.tsx > ClassHeaderCard cover > real cover art wins over the derived tile
+apps/web test: Warning: React does not recognize the `fetchPriority` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `fetchpriority` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+apps/web test:     at img
+apps/web test:     at div
+apps/web test:     at div
+apps/web test:     at div
+apps/web test:     at div
+apps/web test:     at ClassHeaderCard (<repo>/apps/web/src/components/Dashboard.tsx:5455:3)
+apps/web test:  ✓ src/components/ClassesHome.test.tsx (11 tests) 604ms
+apps/web test:  ✓ src/components/ClassHeaderCard.test.tsx (33 tests) 915ms
+apps/web test:  ✓ src/components/SegmentBand.test.tsx (13 tests) 450ms
+apps/web test:  ✓ src/components/MovesSection.test.tsx (21 tests) 918ms
+apps/web test:  ✓ src/components/SongsByMoveDialog.test.tsx (7 tests) 318ms
+apps/web test:  ✓ src/components/CreateClassDialog.test.tsx (11 tests) 609ms
+apps/web test:  ✓ src/App.test.tsx (8 tests) 275ms
+apps/web test:  ✓ src/components/TrackPreview.test.tsx (10 tests) 327ms
+apps/web test:  ✓ src/components/LiveMode.test.tsx (93 tests) 4945ms
+apps/web test:    ✓ LiveMode preflight > passes preflight with a connected provider and starts hands-free playback  343ms
+apps/web test:    ✓ LiveMode focus management > reveals teaching on entry and recovery on a new failure without stealing focus on updates  316ms
+apps/web test:    ✓ LiveMode focus management > keeps focus in the music dialog when playback confirms and falls back if its trigger disappears  300ms
+apps/web test:    ✓ LiveMode runtime composition > reveals full current and next guidance without changing music transport or position  304ms
+apps/web test:    ✓ LiveMode runtime composition > keeps urgent playback recovery focus ahead of a focused guidance disclosure  304ms
+apps/web test:    ✓ LiveMode runtime composition > moves to the next track while provider playback is running  562ms
+apps/web test:  ✓ src/components/Login.test.tsx (15 tests) 493ms
+apps/web test:  ✓ src/components/LibraryRail.test.tsx (20 tests) 575ms
+apps/web test:  ✓ src/components/CustomMovesDialog.test.tsx (5 tests) 407ms
+apps/web test:  ✓ src/components/ConnectionsDialog.test.tsx (14 tests) 485ms
+apps/web test:  ✓ src/components/ResetPassword.test.tsx (4 tests) 284ms
+apps/web test:  ✓ src/components/MovesPicker.test.tsx (6 tests) 244ms
+apps/web test:  ✓ src/lib/playback/soundcloud-adapter.test.ts (24 tests) 245ms
+apps/web test:  ✓ src/components/LiveTimeline.test.tsx (15 tests) 186ms
+apps/web test:  ✓ src/components/PendingList.test.tsx (2 tests) 102ms
+apps/web test:  ✓ src/components/ClassReadinessSummary.test.tsx (8 tests) 149ms
+apps/web test:  ✓ src/components/TrackSearch.test.tsx (56 tests) 7396ms
+apps/web test:    ✓ TrackSearch stale-result guard > retries a failed catalog search without changing the query  777ms
+apps/web test:    ✓ TrackSearch stale-result guard > does not let a search cleared mid-flight flash stale results under a new query  633ms
+apps/web test:    ✓ TrackSearch browse announcement (aria-live) > announces the settled result count in the live region  336ms
+apps/web test:    ✓ TrackSearch browse announcement (aria-live) > announces a settled empty result set, not a premature "No results"  315ms
+apps/web test:    ✓ TrackSearch result artwork > lazy-loads and async-decodes non-critical album thumbnails  337ms
+apps/web test:    ✓ TrackSearch SoundCloud library expiry > keeps catalog search working when SoundCloud library authorization is expired  314ms
+apps/web test:    ✓ TrackSearch plan-block assignment > assigns a chosen song to the targeted plan block  335ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a provider change  321ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a mode change  326ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a destination change  326ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a unmount change  331ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > hides stale song failures in a different mode  344ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > keeps different song adds concurrent and rejects a repeat click on a pending song  418ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > does not submit the same pending song again after a browse-context round trip  661ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > does not let an older song completion unlock a newer add of the same candidate  410ms
+apps/web test:  ✓ src/lib/use-wake-lock.test.ts (14 tests) 380ms
+apps/web test:  ✓ src/lib/use-provider-connect.test.tsx (6 tests) 328ms
+apps/web test:  ✓ src/components/IntensitySegmentedControl.test.tsx (11 tests) 441ms
+apps/web test:  ✓ src/components/UpdatePrompt.test.tsx (4 tests) 242ms
+apps/web test:  ✓ src/lib/use-spotify-activation.test.tsx (3 tests) 238ms
+apps/web test:  ✓ src/components/MarketingPage.test.tsx (2 tests) 269ms
+apps/web test:  ✓ src/components/OnboardingVideoDialog.test.tsx (1 test) 254ms
+apps/web test:  ✓ src/components/ShareDialog.test.tsx (2 tests) 286ms
+apps/web test:  ✓ src/components/TeamsDialog.test.tsx (2 tests) 234ms
+apps/web test:  ✓ src/components/TimelineStrip.test.tsx (8 tests) 211ms
+apps/web test:  ✓ src/lib/ordered-import.test.ts (8 tests) 221ms
+apps/web test:  ✓ src/components/Dialog.test.tsx (8 tests) 255ms
+apps/web test:  ✓ src/components/ClassPulse.test.tsx (8 tests) 204ms
+apps/web test:  ✓ src/components/PasswordField.test.tsx (4 tests) 151ms
+apps/web test:  ✓ src/components/SourceList.test.tsx (2 tests) 176ms
+apps/web test:  ✓ src/components/SharedState.test.tsx (12 tests) 183ms
+apps/web test:  ✓ src/components/IntensityRibbon.render.test.tsx (4 tests) 140ms
+apps/web test:  ✓ src/components/ErrorBoundary.test.tsx (3 tests) 194ms
+apps/web test:  ✓ src/components/LivePreflight.test.tsx (5 tests) 252ms
+apps/web test:  ✓ src/components/DialogState.test.tsx (4 tests) 141ms
+apps/web test:  ✓ src/components/TrackArt.test.tsx (7 tests) 128ms
+apps/web test:  ✓ src/components/NotFound.test.tsx (1 test) 149ms
+apps/web test:  ✓ src/components/PrivacyPage.test.tsx (1 test) 145ms
+apps/web test:  ✓ src/components/ProviderCapabilityLedger.test.tsx (2 tests) 36ms
+apps/web test:  ✓ src/lib/musickit.test.ts (4 tests) 25ms
+apps/web test:  ✓ src/components/ConnectionStateMark.test.tsx (11 tests) 68ms
+apps/web test:  ✓ src/lib/onboarding-video.test.ts (3 tests) 2ms
+apps/web test:  ✓ src/lib/playback/apple-music-adapter.test.ts (41 tests) 40ms
+apps/web test:  ✓ src/lib/playback/runtime.test.ts (58 tests) 136ms
+apps/web test:  ✓ src/lib/use-virtual-clock.test.ts (10 tests) 19ms
+apps/web test:  ✓ src/lib/readiness.test.ts (8 tests) 4ms
+apps/web test:  ✓ src/lib/connection-return.test.ts (3 tests) 5ms
+apps/web test:  ✓ src/lib/playback/preview.test.ts (21 tests) 20ms
+apps/web test:  ✓ src/components/TimelineStrip.test.ts (20 tests) 4ms
+apps/web test:  ✓ src/lib/class-ordering.test.ts (11 tests) 14ms
+apps/web test:  ✓ src/lib/library-state.test.ts (13 tests) 13ms
+apps/web test:  ✓ src/components/IntensityRibbon.test.ts (21 tests) 23ms
+apps/web test:  ✓ src/lib/playback/spotify-adapter.test.ts (23 tests) 18ms
+apps/web test:  ✓ src/lib/trailing-throttle.test.ts (6 tests) 7ms
+apps/web test:  ✓ src/lib/error-reference.test.ts (6 tests) 5ms
+apps/web test:  ✓ src/lib/playback/liveness.test.ts (18 tests) 6ms
+apps/web test:  ✓ src/lib/class-pulse.test.ts (12 tests) 5ms
+apps/web test:  ✓ src/lib/playback/coordinator.test.ts (27 tests) 6ms
+apps/web test:  ✓ src/lib/lazyWithReload.test.ts (3 tests) 5ms
+apps/web test:  ✓ src/lib/move-pick.test.ts (8 tests) 2ms
+apps/web test:  ✓ src/components/SegmentBand.test.ts (21 tests) 7ms
+apps/web test:  ✓ src/lib/reorder.test.ts (6 tests) 4ms
+apps/web test:  ✓ src/lib/class-summary.test.ts (9 tests) 4ms
+apps/web test:  ✓ src/lib/api.test.ts (2 tests) 7ms
+apps/web test:  ✓ src/lib/cue-colors.test.ts (6 tests) 3ms
+apps/web test:  ✓ src/lib/class-detail-state.test.ts (3 tests) 9ms
+apps/web test:  ✓ src/lib/providers.test.ts (27 tests) 4ms
+apps/web test:  ✓ src/lib/duration.test.ts (13 tests) 3ms
+apps/web test:  ✓ src/lib/class-scaffold.test.ts (20 tests) 4ms
+apps/web test:  ✓ src/lib/move-groups.test.ts (7 tests) 7ms
+apps/web test:  ✓ src/lib/live-readiness.test.ts (4 tests) 2ms
+apps/web test:  ✓ src/lib/energy-arc.test.ts (9 tests) 3ms
+apps/web test:  ✓ src/lib/errors.test.ts (4 tests) 3ms
+apps/web test:  ✓ src/lib/relative-time.test.ts (6 tests) 3ms
+apps/web test:  ✓ src/lib/creation-next-step.test.ts (5 tests) 3ms
+apps/web test:  ✓ src/components/ChoreographyEditor.test.ts (4 tests) 1ms
+apps/web test:  ✓ src/components/Dashboard.test.tsx (132 tests) 17535ms
+apps/web test:    ✓ Dashboard class library states > retries a Music catalog outage without changing the query  644ms
+apps/web test:    ✓ Dashboard class library states > searches, selects in instructor order, and starts a class from Music  375ms
+apps/web test:    ✓ Dashboard track focus management > preserves the selected track and unsaved scoring while workbench tasks change  347ms
+apps/web test:    ✓ Dashboard track focus management > reconciles a saved reorder on Exit after its earlier read completes during Live  326ms
+apps/web test:    ✓ Dashboard track focus management > reconciles a legitimate intensity write finishing during Live  496ms
+apps/web test:    ✓ Dashboard track focus management > keeps a late write authoritative when its old Live-return read resolves afterward  326ms
+apps/web test:    ✓ Dashboard track focus management > owns a pending collection import retry across Live return  306ms
+apps/web test:    ✓ Dashboard track focus management > retains truthful Live-return warning through failed read retry, then recovers focus  371ms
+apps/web test:    ✓ Dashboard track focus management > preserves B’s pending Builder Live request when an old A delete completes  317ms
+apps/web test:    ✓ Dashboard track focus management > preserves B’s pending overview Live request when an old A delete completes  364ms
+apps/web test:    ✓ Dashboard track focus management > rejects a deleted A’s pending Live request from current Builder  332ms
+apps/web test:    ✓ Dashboard track focus management > rejects a deleted A’s pending Live request from reopened Builder  340ms
+apps/web test:    ✓ Dashboard track focus management > rejects a deleted A’s pending Live request from overview  304ms
+apps/web test:    ✓ Dashboard track focus management > preserves B’s inspector draft, focus and scoped read warning when A deletion completes  856ms
+apps/web test:    ✓ Dashboard track focus management > commits a zone on the click, and typed fields on Enter  477ms
+apps/web test:    ✓ Dashboard track focus management > puts a zone back when its write fails, instead of showing a value that did not land  486ms
+apps/web test:    ✓ Dashboard plan-first next step > stays on the next empty block after the first assign and keeps Pulse off  414ms
+apps/web test:  Test Files  87 passed (87)
+apps/web test:       Tests  1184 passed (1184)
+apps/web test:    Start at  21:58:04
+apps/web test:    Duration  19.95s (transform 3.62s, setup 0ms, collect 18.64s, tests 47.41s, environment 30.28s, prepare 4.90s)
+apps/web test: Done
+apps/api test$ vitest run
+apps/api test:  RUN  v3.2.6 <repo>/apps/api
+apps/api test:  ✓ src/lib/crypto.test.ts (4 tests) 18ms
+apps/api test:  ✓ src/lib/music/soundcloud-oauth.test.ts (4 tests) 6ms
+apps/api test:  ✓ src/lib/music/soundcloud.test.ts (35 tests) 31ms
+apps/api test:  ✓ src/lib/music/spotify.test.ts (31 tests) 36ms
+apps/api test:  ✓ src/lib/music/apple-music.test.ts (49 tests) 62ms
+apps/api test:  ✓ src/lib/contract-parity.test.ts (14 tests) 6ms
+apps/api test:  ✓ src/lib/pkce.test.ts (3 tests) 14ms
+apps/api test:  ✓ src/lib/music/purge.test.ts (6 tests) 3ms
+apps/api test:  ✓ src/lib/scaffold-recipes.test.ts (31 tests) 16ms
+apps/api test:  ✓ src/lib/apple-jwt.test.ts (2 tests) 8ms
+apps/api test:  ✓ src/lib/music/bpm.test.ts (10 tests) 7ms
+apps/api test: stdout | src/lib/email.test.ts > sendEmail > falls back to logging (no fetch) when no API key is set
+apps/api test: [email:dev-fallback] to=user@example.com subject="Hi"
+apps/api test: Hi
+apps/api test:  ✓ src/lib/email.test.ts (6 tests) 11ms
+apps/api test:  ✓ src/lib/copy-class-track.test.ts (14 tests) 5ms
+apps/api test: stderr | src/routes/mock.test.ts > mock seam gate scoping > passes its own /mock/* routes through to auth when MOCK_PROVIDERS=true
+apps/api test: 2026-10-13T03:58:26.348Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+apps/api test:  ✓ src/routes/mock.test.ts (3 tests) 22ms
+apps/api test:  ✓ src/lib/member-target.test.ts (8 tests) 5ms
+apps/api test:  ✓ src/lib/share-target.test.ts (10 tests) 6ms
+apps/api test:  ✓ src/lib/music/user-likes.test.ts (19 tests) 14ms
+apps/api test:  ✓ src/lib/music/user-playlists.test.ts (21 tests) 19ms
+apps/api test:  ✓ src/lib/run-payload.test.ts (12 tests) 10ms
+apps/api test:  ✓ src/lib/music/retry.test.ts (9 tests) 23ms
+apps/api test:  ✓ src/lib/music/registry.test.ts (8 tests) 10ms
+apps/api test:  ✓ src/lib/same-song.test.ts (17 tests) 7ms
+apps/api test:  ✓ src/lib/music/spotify-oauth.test.ts (14 tests) 8ms
+apps/api test:  ✓ src/lib/class-cover.test.ts (2 tests) 3ms
+apps/api test:  ✓ src/lib/resolve-provider.test.ts (7 tests) 8ms
+apps/api test:  ✓ src/lib/sequencing.test.ts (9 tests) 2ms
+apps/api test:  ✓ src/lib/music/spotify-playback-token.test.ts (9 tests) 13ms
+apps/api test:  ✓ src/lib/errors.test.ts (3 tests) 2ms
+apps/api test:  ✓ src/lib/authz.test.ts (27 tests) 27ms
+apps/api test:  ✓ src/lib/duration.test.ts (24 tests) 4ms
+apps/api test:  ✓ src/lib/class-list-pagination.test.ts (4 tests) 22ms
+apps/api test:  ✓ src/lib/placed-move-invariant.test.ts (6 tests) 5ms
+apps/api test:  ✓ src/lib/beat.test.ts (17 tests) 6ms
+apps/api test:  ✓ src/lib/rate-limit.test.ts (5 tests) 2ms
+apps/api test:  ✓ src/lib/music/import-playlist.test.ts (8 tests) 6ms
+apps/api test:  ✓ src/lib/mock-catalog.test.ts (7 tests) 6ms
+apps/api test:  ✓ src/lib/plan-block-ordering.test.ts (2 tests) 5ms
+apps/api test:  ✓ src/lib/anchor.test.ts (8 tests) 2ms
+apps/api test:  ✓ src/lib/class-list-summary.test.ts (9 tests) 3ms
+apps/api test:  ✓ src/lib/auth-beta.test.ts (9 tests) 2ms
+apps/api test:  Test Files  40 passed (40)
+apps/api test:       Tests  486 passed (486)
+apps/api test:    Start at  21:58:24
+apps/api test:    Duration  3.67s (transform 1.15s, setup 0ms, collect 13.44s, tests 464ms, environment 8ms, prepare 2.60s)
+apps/api test: Done
