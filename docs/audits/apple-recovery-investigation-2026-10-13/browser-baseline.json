@@ -1,0 +1,20 @@
+{
+  "result": {
+    "type": "object",
+    "value": {
+      "hasFocus": true,
+      "isAuthorized": true,
+      "isPlaying": false,
+      "playbackState": 4,
+      "position": 0,
+      "scripts": [
+        "/assets/index-C1EvvyLa.js",
+        "https://js-cdn.music.apple.com/musickit/v3/musickit.js",
+        "https://w.soundcloud.com/player/api.js"
+      ],
+      "time": "2026-10-13T15:44:14.733Z",
+      "title": "[QA] Apple browse import 2026-10-12 Cycle - Ritmo Studio",
+      "visibility": "visible"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "result": {
+    "type": "object",
+    "value": {
+      "isPlaying": false,
+      "position": 0,
+      "probePresent": false,
+      "scripts": [
+        "/assets/index-C1EvvyLa.js",
+        "https://js-cdn.music.apple.com/musickit/v3/musickit.js"
+      ],
+      "state": 4,
+      "title": "[QA] Apple browse import 2026-10-12 Cycle - Ritmo Studio"
+    }
+  }
+}

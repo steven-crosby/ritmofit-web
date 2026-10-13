@@ -12,6 +12,11 @@ status: open
 
 # Builder / Live deployed; publication merge and human listening remain open
 
+Current routing (2026-10-13): #521 is merged as `26158c4` with green post-main CI. Its
+pre-merge publication wording below is historical. The later Apple investigation is now routed
+to [the current investigation handoff](./2026-10-13-apple-recovery-investigation.md); its controlled
+visible run was normal through 6:34, while the original unwitnessed cause remains open.
+
 ## Done
 
 - Owner authorized deployment, Git publication, cleanup and guided human audible checks. After

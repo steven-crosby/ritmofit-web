@@ -1,0 +1,39 @@
+{
+  "outcome": "NOT_REPRODUCED_IN_CONTROLLED_VISIBLE_FRESH_SESSION",
+  "maxClassSeconds": 394,
+  "badRomanceLastPlayingPositionSeconds": 171,
+  "samples": 243,
+  "sdkEvents": 18,
+  "mediaPlaybackErrorEvents": 0,
+  "recoveryAlertSamples": 0,
+  "sampleMedianGapSeconds": 1.0211500000000888,
+  "sampleMaxGapSeconds": 105.10400000000003,
+  "criticalWindow": {
+    "classSeconds": [
+      305,
+      340
+    ],
+    "samples": 35,
+    "maxSampleGapSeconds": 1.0267999999998136,
+    "allPlaying": true
+  },
+  "visibleFocusObservations": {
+    "visibility": [
+      "visible"
+    ],
+    "hasFocus": [
+      true
+    ]
+  },
+  "observerRemoved": {
+    "listeners": 5,
+    "removed": true
+  },
+  "sourceDetectionMechanism": "The exact old alert arises when fresh transport readings do not confirm increasing playable position for 10s. fail() destroys the adapter, whose destroy() calls MusicKit.stop(); old post-alert not-playing state cannot establish the initiating cause.",
+  "limits": [
+    "Fresh Chrome/MusicKit session; current user agent reports Chrome 155; original browser version/focus and pre-error state not captured.",
+    "Periodic samples have gaps between chunks, including 105.104s early and about 49s before Exit; callbacks stayed installed throughout. Critical original-failure window has about 1s samples.",
+    "Planned 6:00 exit occurred at observed 6:34 due to chunk/response gap; timing is reported as observed.",
+    "No background/lock/device-interruption, full-class, or real-iPhone acceptance. Original 5:18 cause remains open."
+  ]
+}

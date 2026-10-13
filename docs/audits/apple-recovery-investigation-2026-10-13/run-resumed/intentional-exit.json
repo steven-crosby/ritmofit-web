@@ -1,0 +1,19 @@
+{
+  "time": "2026-10-13T17:14:53.034Z",
+  "reason": "six-minute bound reached",
+  "last": {
+    "duration": 295,
+    "hasFocus": true,
+    "header": "NOW TEACHING · TRACK 2 OF 10\n\n[QA] Apple browse import 2026-10-12 Cycle\n\n6:34 / 39:51\n\nCue-by-Cue\nFull List\nExit",
+    "isPlaying": true,
+    "itemId": "1476727670",
+    "itemTitle": "Bad Romance",
+    "monotonicMs": 610346.7000000001,
+    "position": 171,
+    "state": 2,
+    "stateName": "playing",
+    "time": "2026-10-13T17:14:52.894Z",
+    "visibility": "visible",
+    "classSeconds": 394
+  }
+}
