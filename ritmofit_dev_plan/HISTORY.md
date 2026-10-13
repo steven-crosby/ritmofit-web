@@ -13,6 +13,26 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Close-session 2026-10-13 — Apple debugging tabled; deployment unnecessary.** Steven tabled
+> the Apple 5:18 investigation and requested main synchronization, obsolete-branch cleanup and
+> deployment only if needed. #523 is merged as `973db61` with full post-main CI `38460359795`.
+> Local main, origin/main and GitHub main agreed at that base. Completed publication branch
+> `codex/session-cleanup-pass2-20261013` was removed locally/remotely after its reviewed `eb202b2`
+> tree matched the squash. Both lane branches remain tied to protected worktrees; no unpin/archive
+> bypass or worktree/brief deletion occurred. All existing evidence, .claude, tags and fixtures stay.
+>
+> Fresh production: Worker `73493517-2006-4beb-bf7c-cdb1edf298fd` at 100%, three cache-busted SPA
+> entries `assets/index-C1EvvyLa.js`, served SHA-256 `9c8ac2825d5c5a2cf17be7b831949e6e60fbac192f1388a5cb9573882a25bb95`.
+> SPA/health 200; unauthenticated classes 401; remote D1 has no migrations pending. Application
+> source diff from `4fd1ecd` is empty, so no deployment was needed or performed.
+>
+> Apple fixture and open investigation handoff retained; the 5:18 cause is unresolved and diagnosis
+> resumes only on explicit owner instruction. Completed cleanup handoff marked closed and kept for
+> immutable audit links. Live finish-control breadcrumb moved intact in meaning to DEVELOPMENT_PLAN;
+> INBOX drained. No product change, new hearing claim or further production data cleanup.
+> [Close receipt](../docs/audits/session-close-2026-10-13/receipt.json).
+
+
 > **Session cleanup 2026-10-13 — both passes complete; records on the cleanup branch.**
 > Owner-authorized #522 squash is `9625ef9`; full post-main CI `38444410636` passed, and local,
 > origin and GitHub main matched. First pass removed the #521/#522 publication branches locally

@@ -28,6 +28,10 @@ No application/source change, deployment or fixture/branch/worktree cleanup occu
 
 ## Next action
 
+Steven tabled this debugging on 2026-10-13. No investigation is active; resume only on an explicit
+owner instruction. Retain this open handoff, the exact Apple fixture and all evidence while the
+5:18 initiating cause remains unresolved. The following diagnostic is a deferred proposal.
+
 If Steven wants the next diagnostic condition, run a short attended background-tab comparison
 within one browser/SDK session using event-only recording plus before/after samples. Test visibility
 and transport before recovery; do not assume background caused the original stop or weaken the
@@ -43,8 +47,9 @@ were removed in the first cleanup pass; their evidence remains on main.
 Second cleanup pass: the three superseded root-authored deployment, native-zoom and orchestrator
 handoffs are retired locally. SoundCloud QA `91c94386-5816-48f5-91aa-61e874abb05b` was deleted
 after final browser confirmation; authenticated re-read returned 404. Apple content fingerprint
-matched before/after deletion. Cleanup records are in [PR #523](https://github.com/steven-crosby/ritmofit-web/pull/523), with merge separate.
-[Cleanup restart point](./2026-10-13-session-cleanup.md).
+matched before/after deletion. Cleanup [PR #523](https://github.com/steven-crosby/ritmofit-web/pull/523) merged as `973db61`;
+full post-main CI `38460359795` passed. Its publication branch was removed locally/remotely at close.
+[Completed cleanup record](./2026-10-13-session-cleanup.md).
 Apple fixture `[QA] Apple browse import 2026-10-12 Cycle`
 (`75b7af90-141f-4f56-b02b-0bdd2c1c9dfe`, ten tracks) is retained for the unresolved 5:18 recovery.
 Protected managed lane worktrees/branches/briefs, tags, .claude, original classes and playlists remain.
@@ -53,7 +58,7 @@ Original later-stop alert and transient boundary-panel presentation remain open.
 and Live view-tab Right Arrow behavior remain unverified/unresolved in DEVELOPMENT_PLAN.
 Native Chrome 200% and bounded SoundCloud desktop hearing checks are complete; their limits and
 immutable observations remain in the audit packets. No full-class, screen-reader, reconnect or
-general provider stability acceptance is implied. Live finish wording/location/style remains in INBOX.
+general provider stability acceptance is implied. Live finish wording/location/style is routed to DEVELOPMENT_PLAN’s open owner decisions.
 
 ## Production as observed
 
