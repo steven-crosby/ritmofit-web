@@ -1,0 +1,63 @@
+{
+  "recordedAt": "2026-10-13T22:05:39.531053+00:00",
+  "baseMain": "973db612ec2e1cc1145d6281fe0eabefa0aac1b4",
+  "mainSyncVerified": true,
+  "mergedPR": 523,
+  "reviewedHead": "eb202b2f6fbee7668a4754f0681065c421c9d934",
+  "postMainCi": {
+    "id": 38460359795,
+    "conclusion": "success"
+  },
+  "deletedPublicationBranch": {
+    "name": "codex/session-cleanup-pass2-20261013",
+    "localAbsent": true,
+    "remoteAbsent": true,
+    "treeEqualsSquash": true
+  },
+  "retainedLaneBranches": [
+    "codex/r20261011c-live-short-viewport",
+    "codex/r20261011c-builder-refresh-integrity"
+  ],
+  "protectedWorktreesPreserved": true,
+  "appleInvestigation": {
+    "status": "unresolved",
+    "ownerDisposition": "tabled; resume only by explicit instruction",
+    "fixtureId": "75b7af90-141f-4f56-b02b-0bdd2c1c9dfe",
+    "fixtureMutatedThisClose": false
+  },
+  "cleanupHandoff": "closed, retained for audit links",
+  "inbox": "Live finish-control decision routed to DEVELOPMENT_PLAN",
+  "production": {
+    "worker": "73493517-2006-4beb-bf7c-cdb1edf298fd",
+    "trafficPercent": 100,
+    "spaEntries": [
+      "assets/index-C1EvvyLa.js",
+      "assets/index-C1EvvyLa.js",
+      "assets/index-C1EvvyLa.js"
+    ],
+    "servedAssetSha256": "9c8ac2825d5c5a2cf17be7b831949e6e60fbac192f1388a5cb9573882a25bb95",
+    "applicationSource": "4fd1ecd2e00967b0c14df295e28ae8fcf068b987",
+    "applicationDiffEmpty": true,
+    "http": {
+      "spa": 200,
+      "health": 200,
+      "unauthenticatedClasses": 401
+    },
+    "pendingMigrations": false,
+    "deploymentNeeded": false,
+    "deployed": false
+  },
+  "scope": "Documentation close only; no further production data mutation, archive/unpin or diagnostic run",
+  "publicationState": "Prepared locally; new close-record commit/push/PR/merge permissions not inferred from prior #523 approvals",
+  "publicationStateScope": "Historical preparation snapshot at recordedAt; subsequent delivery identity is supplied by Git and any close-record PR.",
+  "verification": {
+    "formatCheck": "passed after formatting routed INBOX entry",
+    "whitespace": "passed",
+    "touchedRelativeLinks": "passed",
+    "json": "passed",
+    "existingEvidenceAndCleanupArtifactHashes": "passed",
+    "protectedWorktreeHeadsStatusBriefsTagsAndClaude": "unchanged",
+    "applicationDiff": "empty",
+    "sourceCodeTests": "not rerun; full post-main gate 38460359795 already passed and this close changes only records"
+  }
+}
