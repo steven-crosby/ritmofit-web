@@ -134,3 +134,14 @@ Fresh candidate/source/production/migration/secret-name checks agree with the pr
 (`authorization-refresh.json`). Production fixtures remain needed for human listening and will be
 preserved. Cleanup candidates are the two finished managed lane worktrees and three finished
 lane/verification branches; exact identities and preservation receipts must be recorded first.
+
+## Cleanup execution — partial
+
+The owner-approved cleanup removed only `codex/verification-zoom-provider-20261012` locally and
+remotely after verifying its exact head `a4c909d`, merged #520, and complete-tree equality with
+main squash `4fd1ecd`. Both absences are verified. The two managed lane archive calls were refused
+because their worktrees are protected by a pinned task or workspace. No manual bypass was used;
+both worktrees, their local/remote branches and untracked briefs remain. Primary `.claude/`, existing
+tags, production QA fixtures and the local smoke state/server remain preserved. Exact baseline,
+branch and preservation identities are in `cleanup-receipt.json`. Untracked briefs are excluded
+from this PR; only their hashes and paths are recorded.

@@ -48,7 +48,9 @@ Recheck candidate/production/migrations immediately before any later approved de
   [the verification handoff](./2026-10-12-native-zoom-acceptance.md).
 - Owner approved deployment, Git publication and cleanup. Exact cleanup targets must be baselined;
   QA fixtures remain required for listening. Recovery execution requires an approved concrete target.
-  Production fixtures and all existing branches/worktrees/briefs/.claude are preserved.
+  Production fixtures, both lane branches/worktrees/briefs and .claude are preserved.
+  Finished verification branch was deleted locally/remotely after exact tree equality with #520.
+  Managed lane archive calls were refused because the worktrees are pinned/protected.
 
 ## Verification
 
@@ -65,8 +67,15 @@ the same Worker/SPA/no-migration state. Human listening has not resumed.
 
 ## Shared zones touched
 
-None; local-only build/test artifacts and draft preflight/handoff, no tracked product edits.
+Evidence/handoff and current planning/history records only; no tracked product edits.
 
 ## Notes for other lanes / iOS
 
 Human audible acceptance remains open. Real iPhone and existing view-tab arrow-key gap are separate.
+
+## Publication and cleanup execution
+
+Preflight committed as `52895f8` and pushed in [PR #521](https://github.com/steven-crosby/ritmofit-web/pull/521).
+CI/review are being verified on the updated head. Partial cleanup receipt is in the packet: finished
+verification branch removed locally/remotely, managed lane worktrees protected and retained.
+Deployment and human listening have not occurred. No production fixture was deleted.

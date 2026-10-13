@@ -13,6 +13,24 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Preflight/publication and partial cleanup 2026-10-12 — #518/#519.** Owner approved deployment,
+> Git publication, cleanup and guided human audible checks. The application candidate remains
+> `4fd1ecd`; all twelve local gates and Worker dry run passed, with explicit partial browser smoke.
+> Refreshed production remains Worker `9563d726-bc4d-44f7-834a-d7dbcc388d19` at 100%, three
+> cache-busted SPA entries `assets/index-DyruxT0m.js`, no remote D1 migrations pending and
+> `BETA_ALLOWED_EMAILS` present by name. No deployment occurred; Mac unlock or an explicit
+> browser coverage disposition is still needed. Human audible acceptance stays open.
+>
+> [PR #521](https://github.com/steven-crosby/ritmofit-web/pull/521) publishes the
+> [preflight packet](../docs/audits/deployment-preflight-518-519-2026-10-12/README.md) and handoff.
+> Finished verification branch `codex/verification-zoom-provider-20261012` was deleted locally and
+> remotely after exact head/merged-PR checks and full-tree equality between `a4c909d` and #520's
+> squash `4fd1ecd`. Both managed lane archive calls were refused because they are protected by a
+> pinned task or workspace; the worktrees, both lane branches and briefs remain. No bypass, fixture
+> deletion or unrelated cleanup occurred. Primary `.claude/`, tags and local smoke state are
+> preserved; [cleanup receipt](../docs/audits/deployment-preflight-518-519-2026-10-12/cleanup-receipt.json).
+
+
 > **Deploy 2026-10-11 — main as one batch (#495 through #513).** Owner approved deploying current
 > `main` at `6eeccc0` as a single batch after choosing an all-of-main preflight over the two-batch
 > release proposal. Worker `9563d726-bc4d-44f7-834a-d7dbcc388d19` at 100%, created
