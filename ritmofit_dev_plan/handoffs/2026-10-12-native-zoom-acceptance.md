@@ -11,6 +11,11 @@ status: open
 
 # Native zoom and unattended provider runtime checks complete; listening acceptance remains partial
 
+Historical October 12 verification record. Current deployment, publication, cleanup restrictions and
+listening restart point are reconciled in [the release handoff](./2026-10-12-deployment-preflight-518-519.md)
+and [October 13 packet](../../docs/audits/deployment-preflight-518-519-2026-10-13/README.md).
+Production/deployment/cleanup state below is the state at this original verification capture.
+
 ## Done
 
 - Owner authorized native 200% Builder/Live verification, initially guided provider acceptance,

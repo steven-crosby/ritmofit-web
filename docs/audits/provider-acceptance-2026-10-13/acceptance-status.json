@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-10-13T15:04:58.627423+00:00",
+  "worker": "73493517-2006-4beb-bf7c-cdb1edf298fd",
+  "spa": "assets/index-C1EvvyLa.js",
+  "applicationSource": "4fd1ecd2e00967b0c14df295e28ae8fcf068b987",
+  "apple": {
+    "authorization": "human confirmed",
+    "initialAudibleStart": "human confirmed",
+    "naturalAudibleHandover": "human confirmed clean",
+    "transientWaitingPanel": "owner observed and screenshot retained; later cleared; duration unmeasured",
+    "postExitSilenceAndBuilderReturn": "human confirmed",
+    "laterTransportAlert": "unresolved: UI recovery at 5:18; MusicKit isPlaying false, Bad Romance position 2 s; owner was not listening; no cause or uninterrupted run established",
+    "overall": "bounded hearing observations confirmed; stability investigation remains open"
+  },
+  "soundcloud": {
+    "audibleStart": "human confirmed",
+    "audiblePause": "human confirmed",
+    "audibleResume": "human confirmed from paused position",
+    "exitSilenceAndBuilderReturn": "human confirmed",
+    "overall": "bounded desktop widget acceptance complete"
+  },
+  "realIPhone": "pending",
+  "productionFixtures": "retained"
+}

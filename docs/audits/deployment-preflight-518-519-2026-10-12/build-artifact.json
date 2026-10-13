@@ -1,0 +1,28 @@
+{
+  "checkedAtUtc": "2026-10-13T04:00:11.308976+00:00",
+  "candidate": "4fd1ecd2e00967b0c14df295e28ae8fcf068b987",
+  "builtSpaAsset": "/assets/index-C1EvvyLa.js",
+  "builtSpaSha256": "9c8ac2825d5c5a2cf17be7b831949e6e60fbac192f1388a5cb9573882a25bb95",
+  "indexHtmlSha256": "a2f9dba98a817d8ceb132a9371e7a73e3d9ce177e5e8d5cb7c858fcbd38e8743",
+  "dryRunCommand": [
+    "pnpm",
+    "--filter",
+    "@ritmofit/api",
+    "exec",
+    "wrangler",
+    "deploy",
+    "--dry-run",
+    "--outdir",
+    ".wrangler/preflight-518-519",
+    "--metafile",
+    ".wrangler/preflight-518-519/metafile.json"
+  ],
+  "dryRunExitCode": 0,
+  "bundleFiles": {
+    "index.js": "12314a00a180a3c4ac1de664ab2a6465e8d055d651efe16d4693c525e620c4ac",
+    "README.md": "adbb32b0650238c88595fd9a518c6027a46e082ae5aa4d68562d0749541672c4",
+    "index.js.map": "6bc21d2445060f26f5395c6d94b4edd4400d0c5008efa22f94439fd299ef4c35",
+    "metafile.json": "cb5d16deaf9d1f8f8a71b6abcbca7b96c884163edca6889f2c909e55c29418ed"
+  },
+  "uploadPerformed": false
+}

@@ -1,0 +1,54 @@
+  - button "▶ Run live"
+  - generic: 1 track
+  - generic: ·
+  - generic: 4:22 total
+  - generic: ·
+  - generic: no BPM set
+  - region "Class readiness":
+    - generic: Readiness
+    - generic: Can run live · 2 things left
+    - paragraph: What Live needs from this class before you run it.
+    - list:
+      - generic: ✓
+      - paragraph: Durations set
+      - generic: "!"
+      - paragraph: No BPM set
+      - paragraph: Add BPM so the class keeps time — without it Live shows no beat.
+      - generic: "Open to add BPM:"
+      - button "Fix BPM on St. Pepper Here To Be Alone": St. Pepper Here To Be Alone
+      - generic: "!"
+      - paragraph: No cues or moves yet
+      - paragraph: Live will show tracks and time only — nothing to call out.
+      - button "Write the first cue"
+      - generic: ✓
+      - paragraph: Music ready
+  - generic "Class details"
+  - region "Class Pulse":
+    - generic: Class Pulse
+    - generic: from track efforts
+    - paragraph: Effort over time, start to finish. Each bar is a track — wider is longer, taller is harder.
+    - 'img "Class Pulse, derived from track order, duration, and effort: moderate. All track durations and efforts contribute."'
+    - generic: 0:00 start
+    - generic: 4:22 finish
+    - list:
+      - listitem: Z2 Push
+    - paragraph: All track durations and efforts contribute.
+  - text: Run of show
+  - heading "Playback order" [level=3]
+  - paragraph: Songs play in this order. Drag a grip or use its arrow keys to reorder.
+  - button "Add music"
+  - button "Show timeline"
+  - list:
+    - button "1 St. Pepper Here To Be Alone Chris Perez Intensity Push No BPM set":
+      - generic: "1"
+      - paragraph: St. Pepper Here To Be Alone
+      - paragraph: Chris Perez
+      - generic "Intensity Push":
+        - generic: Push
+      - generic: No BPM set
+    - button "Reorder St. Pepper Here To Be Alone, position 1 of 1. Use arrow up and down.": ⋮⋮
+  - paragraph
+  - paragraph
+  - complementary:
+    - paragraph: Track inspector
+    - paragraph: Select a song in Playback order to inspect its intensity, BPM, notes, cues, and moves.

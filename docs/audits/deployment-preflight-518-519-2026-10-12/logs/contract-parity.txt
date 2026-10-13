@@ -1,0 +1,6 @@
+$ tsx scripts/check-contract-parity.ts
+iOS ↔ backend run-payload contract parity
+  OpenAPI:  apps/api/openapi/openapi.json
+  iOS DTOs: ios-snapshot/Core/Models/RunPayload.swift
+
+✓ No untracked contract drift.

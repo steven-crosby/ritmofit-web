@@ -1,0 +1,37 @@
+{
+  "candidate": "4fd1ecd2e00967b0c14df295e28ae8fcf068b987",
+  "deployedRecordedSource": "6eeccc0",
+  "runtimeDiffFiles": [
+    "apps/web/src/components/Dashboard.test.tsx",
+    "apps/web/src/components/Dashboard.tsx",
+    "apps/web/src/components/LiveMode.test.tsx",
+    "apps/web/src/components/LiveMode.tsx"
+  ],
+  "APIAndContractsUnchanged": true,
+  "bundleInputCount": 832,
+  "excludedUntrackedWorkNotBundled": true,
+  "localSmokeSetup": "Fresh local-only Worker/D1/R2 config outside the repository; built SPA served at loopback; no real provider credentials; no production fixtures changed",
+  "localSmokeIncomplete": [
+    "Full List/Exit on this fresh local stack",
+    "Music and Account navigation",
+    "Connection dialog focus trap/return",
+    "Fresh full viewport/overflow matrix through DOM automation"
+  ],
+  "localSmokeBlockers": [
+    "Chrome DOM automation: Debugger unattached",
+    "Native Chrome continuation: Mac locked; manual unlock required"
+  ],
+  "completedLocalNativeSmoke": [
+    "Actual Chrome toolbar Zoom: 200%",
+    "Local signup and onboarding dismissal",
+    "Empty class creation with Cycle",
+    "Create-dialog Shift-Tab/Tab wrapping",
+    "Two manual tracks",
+    "Unsaved draft preserved through real API reorder",
+    "Keyboard-only grip focus preserved",
+    "Local Live preflight and prompter-only entry",
+    "More and keyboard seek to synthetic completion; visible Complete"
+  ],
+  "humanAudibleAcceptance": "OPEN",
+  "productionDeploymentExecuted": false
+}

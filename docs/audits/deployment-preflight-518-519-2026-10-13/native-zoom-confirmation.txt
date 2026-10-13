@@ -1,0 +1,4 @@
+The following is a diff from the previous accessibility tree for Window: "Account - Ritmo Studio" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~0 standard window Account - Ritmo Studio - Part of group 🔎 Release preflight - Google Chrome, URL: 127.0.0.1:8795/, Secondary Actions: Raise
+~					9 text field (settable) Address and search bar, Value: 127.0.0.1:8795, Placeholder: Ask Google or type a URL
++					111 button Zoom: 200%

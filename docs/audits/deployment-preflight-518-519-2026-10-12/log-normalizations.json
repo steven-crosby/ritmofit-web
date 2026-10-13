@@ -1,0 +1,14 @@
+[
+  {
+    "path": "logs/remote-migrations.txt",
+    "beforeSha256": "342245a448da45f6bf008b234d1011279dc3e0edc398af1ea19a3b089970c800",
+    "afterSha256": "c77d1df01e76cca032c32133aa4e7e9184c00e63975071fec274ccc7af9c3220",
+    "change": "Trim trailing whitespace from CLI output only."
+  },
+  {
+    "path": "logs/worker-dry-run.txt",
+    "beforeSha256": "d58026f61aa5c8cd6c9d46b79ae2964cd755255efd117d7b05c54cf0e360d510",
+    "afterSha256": "aea7c261f7c0c42f1882af2f2c211b16a2490689c28d01ae14c8092bbb74891e",
+    "change": "Trim trailing whitespace from CLI output only."
+  }
+]

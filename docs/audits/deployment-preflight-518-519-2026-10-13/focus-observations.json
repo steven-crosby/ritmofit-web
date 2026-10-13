@@ -1,0 +1,82 @@
+[
+  {
+    "label": "connections-open",
+    "result": {
+      "focusInDialog": true,
+      "focusLabel": "Close connections dialog",
+      "focusText": "✕",
+      "rootAriaHidden": "true",
+      "rootInert": true
+    }
+  },
+  {
+    "label": "connections-backward-wrap",
+    "result": {
+      "focusInDialog": true,
+      "focusLabel": null,
+      "focusText": "Connect Apple Music",
+      "rootAriaHidden": "true",
+      "rootInert": true
+    }
+  },
+  {
+    "label": "connections-forward-wrap",
+    "result": {
+      "focusInDialog": true,
+      "focusLabel": "Close connections dialog",
+      "focusText": "✕",
+      "rootAriaHidden": "true",
+      "rootInert": true
+    }
+  },
+  {
+    "label": "connections-escape-return",
+    "result": {
+      "focusInDialog": false,
+      "focusLabel": null,
+      "focusText": "Manage",
+      "rootAriaHidden": null,
+      "rootInert": false
+    }
+  },
+  {
+    "label": "create-dialog-open",
+    "result": {
+      "focusInDialog": true,
+      "focusLabel": null,
+      "focusText": "",
+      "rootAriaHidden": "true",
+      "rootInert": true
+    }
+  },
+  {
+    "label": "create-backward-wrap",
+    "result": {
+      "focusInDialog": true,
+      "focusLabel": null,
+      "focusText": "Use a teaching plan instead",
+      "rootAriaHidden": "true",
+      "rootInert": true
+    }
+  },
+  {
+    "label": "create-forward-wrap",
+    "result": {
+      "focusInDialog": true,
+      "focusLabel": "Close create class dialog",
+      "focusText": "✕",
+      "rootAriaHidden": "true",
+      "rootInert": true
+    }
+  },
+  {
+    "label": "create-escape-return",
+    "result": {
+      "focusInDialog": false,
+      "focusLabel": null,
+      "focusText": "Start empty",
+      "rootAriaHidden": null,
+      "rootInert": false
+    }
+  }
+]

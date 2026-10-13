@@ -1,0 +1,3 @@
+$ pnpm audit --prod
+2 vulnerabilities found
+Severity: 1 low (1 ignored) | 1 moderate (1 ignored)

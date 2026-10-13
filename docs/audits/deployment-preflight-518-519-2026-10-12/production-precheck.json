@@ -1,0 +1,238 @@
+{
+  "checkedAtUtc": "2026-10-13T03:58:35.669118+00:00",
+  "candidate": "4fd1ecd2e00967b0c14df295e28ae8fcf068b987",
+  "currentWorker": "9563d726-bc4d-44f7-834a-d7dbcc388d19",
+  "currentWorkerAt100Percent": true,
+  "rollbackPrimary": {
+    "id": "9563d726-bc4d-44f7-834a-d7dbcc388d19",
+    "number": 182,
+    "createdAt": "2026-10-11T22:01:46.030196Z",
+    "scriptEtag": "bd6748dcd56c8f6f33574e7549039db837cc07f79bf35a3b4139382fd2aac672",
+    "bindings": [
+      {
+        "name": "APPLE_CLIENT_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_KEY_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_MUSIC_DEVELOPER_TOKEN",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_MUSIC_KEY_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_MUSIC_PRIVATE_KEY",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_MUSIC_TEAM_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_PRIVATE_KEY",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_TEAM_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "BETA_ALLOWED_EMAILS",
+        "type": "secret_text"
+      },
+      {
+        "name": "BETTER_AUTH_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "BETTER_AUTH_URL",
+        "type": "plain_text"
+      },
+      {
+        "name": "DB",
+        "type": "d1"
+      },
+      {
+        "name": "EMAIL_FROM",
+        "type": "secret_text"
+      },
+      {
+        "name": "ENCRYPTION_KEY",
+        "type": "secret_text"
+      },
+      {
+        "name": "IMAGES_BUCKET",
+        "type": "r2_bucket"
+      },
+      {
+        "name": "RESEND_API_KEY",
+        "type": "secret_text"
+      },
+      {
+        "name": "SOUNDCLOUD_CLIENT_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "SOUNDCLOUD_CLIENT_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "SPOTIFY_CLIENT_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "SPOTIFY_CLIENT_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "WEB_ORIGIN",
+        "type": "plain_text"
+      }
+    ]
+  },
+  "rollbackOlderFallback": {
+    "id": "5f67d242-8956-42b7-9318-67b2797d3454",
+    "number": 181,
+    "createdAt": "2026-10-08T02:50:43.450812Z",
+    "scriptEtag": "a3ed1ab0776a0f97f0ced446c9034930b4081fdc534942e52c0196f591d0ee36",
+    "bindings": [
+      {
+        "name": "APPLE_CLIENT_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_KEY_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_MUSIC_DEVELOPER_TOKEN",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_MUSIC_KEY_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_MUSIC_PRIVATE_KEY",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_MUSIC_TEAM_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_PRIVATE_KEY",
+        "type": "secret_text"
+      },
+      {
+        "name": "APPLE_TEAM_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "BETA_ALLOWED_EMAILS",
+        "type": "secret_text"
+      },
+      {
+        "name": "BETTER_AUTH_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "BETTER_AUTH_URL",
+        "type": "plain_text"
+      },
+      {
+        "name": "DB",
+        "type": "d1"
+      },
+      {
+        "name": "EMAIL_FROM",
+        "type": "secret_text"
+      },
+      {
+        "name": "ENCRYPTION_KEY",
+        "type": "secret_text"
+      },
+      {
+        "name": "IMAGES_BUCKET",
+        "type": "r2_bucket"
+      },
+      {
+        "name": "RESEND_API_KEY",
+        "type": "secret_text"
+      },
+      {
+        "name": "SOUNDCLOUD_CLIENT_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "SOUNDCLOUD_CLIENT_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "SPOTIFY_CLIENT_ID",
+        "type": "secret_text"
+      },
+      {
+        "name": "SPOTIFY_CLIENT_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "WEB_ORIGIN",
+        "type": "plain_text"
+      }
+    ]
+  },
+  "remoteMigrationsPending": false,
+  "BETA_ALLOWED_EMAILSNamePresent": true,
+  "secretNamesOnly": true,
+  "spaEntries": [
+    [
+      "/assets/index-DyruxT0m.js"
+    ],
+    [
+      "/assets/index-DyruxT0m.js"
+    ],
+    [
+      "/assets/index-DyruxT0m.js"
+    ]
+  ],
+  "consecutiveSpaEntriesMatch": true,
+  "servedSpaAsset": "/assets/index-DyruxT0m.js",
+  "servedSpaSha256": "dde7b39711f6bc2f7cce1f9dc396c684854f95138d5ad90774b665f7928a529d",
+  "baselineStatusChecks": [
+    {
+      "path": "/",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/health",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/classes",
+      "status": 401
+    },
+    {
+      "path": "/api/v1/explore",
+      "status": 401
+    },
+    {
+      "path": "/api/v1/teams",
+      "status": 401
+    }
+  ],
+  "healthSecurityHeaders": {
+    "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+    "content-security-policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+    "x-frame-options": "DENY",
+    "x-content-type-options": "nosniff",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "permissions-policy": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+  },
+  "remoteMutationPerformed": false
+}

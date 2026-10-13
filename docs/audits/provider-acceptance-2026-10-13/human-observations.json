@@ -1,0 +1,68 @@
+[
+  {
+    "checkedAt": "2026-10-13T14:39:46.797Z",
+    "step": "Apple 1 of 4",
+    "source": "Steven text response",
+    "report": "Authorization complete; Start is enabled",
+    "acceptance": "browser authorization confirmed; not audible acceptance"
+  },
+  {
+    "checkedAt": "2026-10-13T14:39:46.797Z",
+    "step": "Apple 2 of 4",
+    "source": "Steven text response",
+    "report": "Abracadabra is audible; clock advances; no recovery",
+    "acceptance": "initial audible start confirmed; natural handover and Exit silence still pending"
+  },
+  {
+    "checkedAt": "2026-10-13T14:45:34.575381+00:00",
+    "step": "Apple 3 of 4",
+    "source": "Steven text response and attached screenshot",
+    "report": "clean audible handover to Bad Romance. There is a moment when notification appears just before the next song starts",
+    "acceptance": "clean audible natural handover confirmed; transient Waiting for music/held teaching-position banner observed, not a message-free transition",
+    "screenshot": "owner-apple-boundary-waiting.png",
+    "screenshotSha256": "339f5414fc7f2fae1c14e676d7f6c7c007b17adb7386e83994de86195a7bc430",
+    "limits": "No measured banner duration. Agent observed later Now teaching track 2 at 4:00 without a waiting banner. Exit silence still pending."
+  },
+  {
+    "checkedAt": "2026-10-13T15:04:58.627423+00:00",
+    "step": "Apple later alert context",
+    "source": "Steven text response",
+    "report": "I wasn\u2019t listening when it happened",
+    "acceptance": "Later 5:18 recovery has no human audible outcome or established cause."
+  },
+  {
+    "checkedAt": "2026-10-13T15:04:58.627423+00:00",
+    "step": "Apple 4 of 4",
+    "source": "Steven text response and screenshot",
+    "report": "Exit returned to Builder; music stopped and stayed silent",
+    "acceptance": "Owner confirmed Builder return and post-Exit silence; later unwitnessed stop remains open."
+  },
+  {
+    "checkedAt": "2026-10-13T15:04:58.627423+00:00",
+    "step": "SoundCloud 1 of 4",
+    "source": "Steven text response",
+    "report": "SoundCloud is audible; clock advances; no recovery",
+    "acceptance": "audible start confirmed"
+  },
+  {
+    "checkedAt": "2026-10-13T15:04:58.627423+00:00",
+    "step": "SoundCloud 2 of 4",
+    "source": "Steven text response",
+    "report": "Music is silent; the clock stays fixed",
+    "acceptance": "audible pause and held clock confirmed; owner instructed to wait about 10 seconds"
+  },
+  {
+    "checkedAt": "2026-10-13T15:04:58.627423+00:00",
+    "step": "SoundCloud 3 of 4",
+    "source": "Steven text response",
+    "report": "Music resumes from the paused position; clock advances; no recovery",
+    "acceptance": "audible resume from paused position confirmed"
+  },
+  {
+    "checkedAt": "2026-10-13T15:04:58.627423+00:00",
+    "step": "SoundCloud 4 of 4",
+    "source": "Steven text response",
+    "report": "Exit returned to Builder; music stopped and stayed silent",
+    "acceptance": "audible stop/Exit silence and Builder return confirmed"
+  }
+]

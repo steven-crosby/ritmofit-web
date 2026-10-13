@@ -13,6 +13,84 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Attended acceptance follow-up 2026-10-13 — SoundCloud complete; later Apple stop open.** After
+> the confirmed clean Apple handover, a separate recovery appeared at Live 5:18 / Bad Romance.
+> Official MusicKit getters reported not playing, item Bad Romance/time 2 s. Steven was not
+> listening at that moment; cause/audible result and attribution are unknown. No agent retry/seek/
+> Next or product change. Steven subsequently confirmed Apple Exit, Builder return and sustained
+> silence; SDK after Exit was not playing, time 0/no item. The earlier clean audio result stands,
+> but overall uninterrupted Apple playback/stability is not accepted from this run.
+>
+> Steven separately confirmed SoundCloud public-widget audible start, pause silence/held clock,
+> resume from paused position with clock progress, and Exit silence/Builder return. Post-Exit DOM
+> has no iframe. [Full attended record](../docs/audits/provider-acceptance-2026-10-13/README.md)
+> preserves both owner PNGs and distinct agent UI/SDK evidence. Both named fixtures remain;
+> investigation of the later Apple stop, real iPhone and scoped UI follow-ups remain open.
+> No additional deploy, fixture deletion or account reconnection.
+
+
+> **Attended Apple acceptance 2026-10-13 — deployed #518/#519, partial.** Steven confirmed browser
+> authorization, audible Abracadabra start with advancing clock/no recovery, and a clean natural
+> handover to Bad Romance in the exact retained Cycle QA class. The agent did not seek or press Next.
+> Steven also reported a momentary notification just before the next song began; his original PNG
+> shows Waiting for music / Teaching position held at 3:43, track 2. Later DOM observation shows
+> normal teaching track 2 at 4:00 with the banner cleared. No measured banner duration or
+> message-free transition claim. Source maps the panel to provider preparation/buffering before
+> confirmed progress; its presentation is recorded as a scoped UX follow-up without code changes.
+>
+> [Attended evidence](../docs/audits/provider-acceptance-2026-10-13/README.md) preserves exact human
+> reports and screenshot. Apple Exit silence and all SoundCloud audible checks remain pending; no
+> untouched full-class, fresh Pilates or real-iPhone run claimed. Worker remains `73493517`, SPA
+> `index-C1EvvyLa.js`, source `4fd1ecd`. No fixture deletion or additional deployment.
+
+
+> **Deploy 2026-10-13 — Builder / Live #518/#519.** Owner-approved application main `4fd1ecd`
+> deployed as Worker `73493517-2006-4beb-bf7c-cdb1edf298fd` at 100%, completed
+> 2026-10-13T14:23:43Z. SPA `assets/index-C1EvvyLa.js`; immediate rollback Worker
+> `9563d726-bc4d-44f7-834a-d7dbcc388d19`. No migrations pending or applied; no rollback or
+> secret/config changes. Application diff from the preceding deployed source `6eeccc0` is exactly
+> Dashboard.tsx / LiveMode.tsx and their two test files; API/provider/playback-runtime unchanged.
+>
+> All 501 source hashes still matched the full twelve-step local gate (web 1184, API 486,
+> music 30, integration 184). A fresh web build reproduced the prepared SPA and served JS hash.
+> After manual Mac unlock and Chrome restart, 75 local browser observations completed a measured
+> 12-surface × 5-width matrix plus native 200% and dialog inert/focus trapping/return. Completion
+> was synthetic in prompter-only mode; no human-audible or real-device claim.
+>
+> Post-deploy: new Worker identity checked independently; three consecutive cache-busted SPA
+> entries matched on the first settle attempt; served JS hash agrees; eleven HTTP probes and six
+> health security headers passed. Generic unauthenticated 401 confirms protection, not mounting.
+> Authenticated retained Apple QA class/track loading, prompter-only Live Cue/List at 390×844,
+> list/Exit/Builder return at 320×568 passed. The browser initially loaded the old cached SPA;
+> the prompted Reload now path switched it to the new asset. No class content edits or deletions.
+>
+> [Deployment/browser packet](../docs/audits/deployment-preflight-518-519-2026-10-13/README.md) and
+> [publication PR #521](https://github.com/steven-crosby/ritmofit-web/pull/521). Human Apple
+> authorization/listening and SoundCloud audible acceptance remain open; the named Apple QA
+> preflight is parked without starting audio. Real iPhone and the existing tab arrow-key gap remain
+> separate. Partial cleanup from October 12 is unchanged: verification branch removed; two managed
+> lane archives refused because pinned/protected. Their branches/briefs and both listening fixtures
+> remain preserved.
+
+
+> **Preflight/publication and partial cleanup 2026-10-12 — #518/#519.** Owner approved deployment,
+> Git publication, cleanup and guided human audible checks. The application candidate remains
+> `4fd1ecd`; all twelve local gates and Worker dry run passed, with explicit partial browser smoke.
+> Refreshed production remains Worker `9563d726-bc4d-44f7-834a-d7dbcc388d19` at 100%, three
+> cache-busted SPA entries `assets/index-DyruxT0m.js`, no remote D1 migrations pending and
+> `BETA_ALLOWED_EMAILS` present by name. No deployment occurred; Mac unlock or an explicit
+> browser coverage disposition is still needed. Human audible acceptance stays open.
+>
+> [PR #521](https://github.com/steven-crosby/ritmofit-web/pull/521) publishes the
+> [preflight packet](../docs/audits/deployment-preflight-518-519-2026-10-12/README.md) and handoff.
+> Finished verification branch `codex/verification-zoom-provider-20261012` was deleted locally and
+> remotely after exact head/merged-PR checks and full-tree equality between `a4c909d` and #520's
+> squash `4fd1ecd`. Both managed lane archive calls were refused because they are protected by a
+> pinned task or workspace; the worktrees, both lane branches and briefs remain. No bypass, fixture
+> deletion or unrelated cleanup occurred. Primary `.claude/`, tags and local smoke state are
+> preserved; [cleanup receipt](../docs/audits/deployment-preflight-518-519-2026-10-12/cleanup-receipt.json).
+
+
 > **Deploy 2026-10-11 — main as one batch (#495 through #513).** Owner approved deploying current
 > `main` at `6eeccc0` as a single batch after choosing an all-of-main preflight over the two-batch
 > release proposal. Worker `9563d726-bc4d-44f7-834a-d7dbcc388d19` at 100%, created

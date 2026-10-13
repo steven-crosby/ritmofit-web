@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-13T14:54:17.030Z",
+  "source": "Official MusicKit transport getters via supported CUA CDP; read-only, no audio or credentials",
+  "result": {
+    "result": {
+      "type": "object",
+      "value": {
+        "available": true,
+        "currentPlaybackDuration": 295,
+        "currentPlaybackTime": 2,
+        "isPlaying": false,
+        "itemId": "1476727670",
+        "itemTitle": "Bad Romance",
+        "playbackState": 3
+      }
+    }
+  }
+}

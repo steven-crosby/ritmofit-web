@@ -1,0 +1,11 @@
+[
+  {
+    "file": "logs/integration.txt",
+    "counts": {
+      "JWT": 110
+    },
+    "beforeSha256": "0bdf2f4fa609d65b03552146332a11883b86ab36bc885477ee97f37808ac78a4",
+    "afterSha256": "2fb7dfcc886addb47bcb9fc81acc35150be06481b499547ccf042a534fb5b579",
+    "reason": "Integration test/dev email output included generated credential-shaped values; removed from shareable preflight logs. No production secret values were read."
+  }
+]
