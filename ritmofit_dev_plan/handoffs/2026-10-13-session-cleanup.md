@@ -3,13 +3,13 @@ date: 2026-10-13
 tool: Codex (local)
 lane: solo
 branch: codex/session-cleanup-pass2-20261013
-head: 9625ef9504644a546e2eebcc9c9c9d6fc6ee0f09
+head: 88cd65f0900a4386413d679a20ba3c1834106871
 base: 9625ef9504644a546e2eebcc9c9c9d6fc6ee0f09
-prs: []
+prs: ['#523']
 status: open
 ---
 
-# Both cleanup passes complete; records await GitHub publication
+# Both cleanup passes complete; records on PR #523, merge remains separate
 
 ## Done
 
@@ -24,10 +24,11 @@ with ten tracks and unchanged content fingerprint. Library no longer lists the S
 
 ## Next action
 
-Owner authorized the cleanup-record commit. After recording it locally, obtain separate push/PR
-approval, then verify exact-head CI and review. Merge and deployment remain separate.
-The receipt records publication state at fixture verification; Git supplies the subsequent commit
-identity. No further production deletion or worktree archive is included.
+Owner authorized commit, then push/PR publication. [PR #523](https://github.com/steven-crosby/ritmofit-web/pull/523)
+contains the cleanup records. Verify CI and review on its final head; only separately approved
+squash merge may land it. PR head/check/merge fields supply subsequent delivery identity, so
+this file does not imply a new merge owed after one is confirmed. The receipt remains a historical
+fixture-verification snapshot. Deployment and further cleanup remain separate.
 
 ## Retained obligations
 
