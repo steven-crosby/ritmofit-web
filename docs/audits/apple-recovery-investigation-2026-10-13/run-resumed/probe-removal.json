@@ -1,0 +1,9 @@
+{
+  "result": {
+    "type": "object",
+    "value": {
+      "listeners": 5,
+      "removed": true
+    }
+  }
+}

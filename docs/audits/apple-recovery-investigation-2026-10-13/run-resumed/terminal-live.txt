@@ -1,0 +1,74 @@
+- link "Skip to main content":
+  - /url: "#main-content"
+- paragraph: "Track 2: Bad Romance."
+- paragraph
+- paragraph
+- banner:
+  - paragraph: Now teaching · Track 2 of 10
+  - heading "[QA] Apple browse import 2026-10-12 Cycle" [level=1]
+  - paragraph: 6:34 / 39:51
+  - tablist "Prompter view":
+    - tab "Cue-by-Cue" [selected]
+    - tab "Full List"
+  - button "Exit"
+- paragraph: Current cue
+- paragraph: Lead this track
+- paragraph:
+  - generic: ♫
+  - generic: Bad Romance
+- paragraph: Next
+- paragraph: End of track
+- generic: Effort
+- generic "Intensity Push":
+  - generic: Push
+- paragraph:
+  - generic: Tempo missing
+  - generic: Pulse off
+- paragraph: Track left
+- paragraph: 2:04
+- paragraph: Class left
+- paragraph: 33:16
+- paragraph: Track 2
+- paragraph: Bad Romance
+- paragraph: Lady Gaga
+- region "Class Pulse":
+  - generic: Class Pulse
+  - generic: ◇ auto-shaped
+  - 'img "Class Pulse, auto-shaped from track order and length: easy, easy, moderate, moderate, moderate, hard, hard, hard, moderate, moderate. Auto-shaped from track order and length. Set a track’s intensity to refine."'
+  - paragraph: Auto-shaped from track order and length. Set a track’s intensity to refine.
+- paragraph: Up next
+- paragraph: 8 tracks left
+- list:
+  - generic: "3"
+  - generic: Die With A Smile
+  - generic: 4:12
+  - generic: "4"
+  - generic: Telephone (feat. Beyoncé)
+  - generic: 3:41
+  - generic: "5"
+  - generic: Born This Way
+  - generic: 4:20
+- region "Live transport":
+  - button "Previous track, Abracadabra": ← Previous
+  - button "Pause" [active]
+  - button "Next track, Die With A Smile": Next →
+  - paragraph:
+    - generic: ♪
+    - generic: "Playback:"
+    - generic: Apple Music
+  - status:
+    - generic: ◉
+    - generic: "Display:"
+    - generic: Screen awake
+  - button "Reset"
+  - slider "Seek class timeline":
+    - generic: "1"
+    - generic: "2"
+    - generic: "3"
+    - generic: "4"
+    - generic: "5"
+    - generic: "6"
+    - generic: "7"
+    - generic: "8"
+    - generic: "9"
+    - generic: "10"

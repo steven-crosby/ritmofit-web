@@ -1,0 +1,15 @@
+{
+  "preparedAt": "2026-10-13T17:07:29.556840+00:00",
+  "gitHead": "26158c4a924bd34ac36a8e562567458d5bf0b2b0",
+  "sourceHashes": {
+    "apps/web/src/components/LiveMode.tsx": "2ca362d623e22179093a34310c3252e71f2b545707ee680d613d9f983f393279",
+    "apps/web/src/lib/playback/runtime.ts": "7df76676ba5277c48bc67c3bed2d2fb646a831f62a7f36b10fdaf47e45dd710b",
+    "apps/web/src/lib/playback/apple-music-adapter.ts": "7a1acd4dd960b4c45e1982ee4f5a57dc8b195cfecb3323038389f80298e2038f",
+    "apps/web/src/lib/musickit.ts": "abbbe1f6907534d43c0cbf0744f95d646c26f11c0b024566fee38649444cda8b"
+  },
+  "fixture": "75b7af90-141f-4f56-b02b-0bdd2c1c9dfe",
+  "fixtureTitle": "[QA] Apple browse import 2026-10-12 Cycle",
+  "protocol": "Continuous read-only transport samples and temporary SDK state/error event listeners; visible Chrome; no Pause/seek/Next/device changes; stop on recovery or after class elapsed 6:00. No audio or credentials recorded.",
+  "priorObservation": "Generic transport recovery held class at 5:18; old SDK read was after fail/adapter teardown and cannot establish initial cause.",
+  "mutations": "Browser authorization check reused current account. Five temporary observation listeners installed; removed at end. No source edits, deploy or fixture cleanup."
+}

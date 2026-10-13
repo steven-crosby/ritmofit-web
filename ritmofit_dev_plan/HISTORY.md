@@ -13,6 +13,27 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Scoped Apple investigation 2026-10-13 — not reproduced in fresh visible session.** Owner
+> approved attended diagnosis with code/deployment/cleanup separate. Exact retained Apple QA
+> class ran naturally from Abracadabra to Bad Romance; owner confirmed normal audio through 6:34
+> and silence after intentional agent Exit. No Pause/seek/Next/Retry. Planned 6:00 stop overshot
+> by 34 seconds; actual timing retained. Five temporary SDK/visibility listeners removed afterward.
+>
+> 243 periodic observations and 18 SDK events, no sampled recovery or mediaPlaybackError. The
+> 5:05–5:40 window has 35 playing/progress observations with max gap 1.027 s. The entire run has
+> inter-chunk gaps up to 105.104 s; SDK event recording stayed installed. All recorded observations
+> reported visible/focused. Chrome reopened after interruption; reduced UA reports Chrome 155.
+> No old-version/focus comparison or background/lock/device test. [Evidence](../docs/audits/apple-recovery-investigation-2026-10-13/README.md).
+>
+> Source shows fail destroys the adapter and calls MusicKit.stop(); the prior post-alert paused
+> SDK reading cannot establish initiating cause. Original 5:18 cause remains open; no code fix
+> justified by this negative controlled run. Next proposed condition: attended same-session
+> background-tab comparison with event-only recording to reduce observer effects.
+> Worker remains `73493517` at 100%, loaded SPA `index-C1EvvyLa.js`; source unchanged. Both QA
+> fixtures and protected lane worktrees/branches remain. #521 delivery is complete at `26158c4`,
+> post-main CI `38420265392` passed. No new deployment or cleanup.
+
+
 > **Attended acceptance follow-up 2026-10-13 — SoundCloud complete; later Apple stop open.** After
 > the confirmed clean Apple handover, a separate recovery appeared at Live 5:18 / Bad Romance.
 > Official MusicKit getters reported not playing, item Bad Romance/time 2 s. Steven was not
