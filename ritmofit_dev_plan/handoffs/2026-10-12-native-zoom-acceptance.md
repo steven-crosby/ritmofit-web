@@ -3,9 +3,9 @@ date: 2026-10-12
 tool: Codex (local)
 lane: orchestrator
 branch: codex/verification-zoom-provider-20261012
-head: dbc8afbe8483502f13209d10729a199eb5e00780
+head: 6d1eb378446d21495adbe901b14b29ec880a3303
 base: dbc8afbe8483502f13209d10729a199eb5e00780
-prs: []
+prs: ['#520 (published; CI/review pending at record commit)']
 status: open
 ---
 
@@ -37,10 +37,13 @@ status: open
 Human listening remains partial: audible Apple initial start is established; natural hand-over
 quality, Exit silence and SoundCloud audible pause/resume/Exit are unwitnessed. UI/SDK results do
 not close those gates. No complete natural full-class run or real iPhone acceptance claimed.
-Steven approved a local commit of both evidence packets and this handoff, keeping human audible
-acceptance open. This record lands on `codex/verification-zoom-provider-20261012`; push, PR, merge,
-deployment and cleanup remain separately unauthorized. The recorded head/base identify the verified
-application baseline; this commit changes documentation/evidence only.
+Both packets and this handoff were committed as `6d1eb37`. Steven subsequently authorized
+pushing the verification branch, opening [PR #520](https://github.com/steven-crosby/ritmofit-web/pull/520),
+and verifying hosted CI/review while human audible acceptance stays open. PR #520 is published;
+CI/review of its final head are pending at this record commit. The PR check/review state is
+authoritative afterward. Merge, deployment and cleanup remain separately unauthorized.
+The recorded head identifies the preceding evidence commit; base identifies verified application
+main. This publication follow-up changes only this orchestrator handoff.
 
 ## Next action
 
@@ -59,8 +62,9 @@ screenshot, and record a human outcome before marking audible acceptance complet
   `[QA] SoundCloud transport 2026-10-12 Cycle` (`91c94386-5816-48f5-91aa-61e874abb05b`, 1 track).
   Exact deletion remains separate and unauthorized. Original instructor/QA class content and
   source playlists are preserved; opening retained QA classes can update recency.
-- Local evidence/handoff commit is authorized. Push, PR, merge, deployment and cleanup remain
-  separate. No account reconnection, fixture deletion or product-code change occurred.
+- Local commit, push and PR authority were granted and exercised for this verification record.
+  Merge, deployment and cleanup remain separate. No account reconnection, fixture deletion
+  or product-code change occurred.
   Lane worktrees/branches/briefs and unrelated .claude/ remain preserved.
 
 ## Verification
@@ -69,7 +73,8 @@ Local native-zoom UI and actual production SDK/widget/API/UI evidence above. Rea
 only transport state/position/duration; no provider audio capture/download/cache/analysis/proxy.
 For the local documentation commit: receipt hashes/coverage, JSON parsing, relative links, source
 identities and credential-shaped text checks passed; format/whitespace checks run before commit.
-No product-code changes, new tests or CI reruns. No real-device, screen-reader or unwitnessed
+Hosted CI runs on the published PR; its final outcome is verified against the exact current head.
+No product-code changes or new tests. No real-device, screen-reader or unwitnessed
 human-audible acceptance claim. Original and final observations remain in separate receipts.
 
 ## Production as observed
