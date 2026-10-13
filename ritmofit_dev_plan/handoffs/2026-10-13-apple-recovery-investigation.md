@@ -35,11 +35,24 @@ and transport before recovery; do not assume background caused the original stop
 
 ## Delivery / retained state
 
-This docs-only follow-up uses existing evidence-publication authority. [PR #522](https://github.com/steven-crosby/ritmofit-web/pull/522)'s final head, CI and
-merge fields establish delivery identity; merge is separate. #521 is already merged as `26158c4`.
-The old handoff's pre-merge wording is superseded by verified GitHub delivery, not a new merge owed.
-Both QA fixtures, protected managed lane worktrees/branches/briefs, tags and .claude are preserved.
-Original later-stop alert, transient boundary panel, real iPhone and tab-arrow UX gap remain routed.
+[PR #522](https://github.com/steven-crosby/ritmofit-web/pull/522) merged as `9625ef9`; full
+[post-main CI](https://github.com/steven-crosby/ritmofit-web/actions/runs/38444410636) passed.
+#521 is merged as `26158c4`. The two publication branches and three approved temporary files
+were removed in the first cleanup pass; their evidence remains on main.
+
+Second cleanup pass: the three superseded root-authored deployment, native-zoom and orchestrator
+handoffs are retired locally. SoundCloud QA `91c94386-5816-48f5-91aa-61e874abb05b` was deleted
+after final browser confirmation; authenticated re-read returned 404. Apple content fingerprint
+matched before/after deletion. Cleanup records await GitHub publication. [Cleanup restart point](./2026-10-13-session-cleanup.md).
+Apple fixture `[QA] Apple browse import 2026-10-12 Cycle`
+(`75b7af90-141f-4f56-b02b-0bdd2c1c9dfe`, ten tracks) is retained for the unresolved 5:18 recovery.
+Protected managed lane worktrees/branches/briefs, tags, .claude, original classes and playlists remain.
+
+Original later-stop alert and transient boundary-panel presentation remain open. Real iPhone Safari
+and Live view-tab Right Arrow behavior remain unverified/unresolved in DEVELOPMENT_PLAN.
+Native Chrome 200% and bounded SoundCloud desktop hearing checks are complete; their limits and
+immutable observations remain in the audit packets. No full-class, screen-reader, reconnect or
+general provider stability acceptance is implied. Live finish wording/location/style remains in INBOX.
 
 ## Production as observed
 

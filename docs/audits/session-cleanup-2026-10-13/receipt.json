@@ -1,0 +1,104 @@
+{
+  "checkedAt": "2026-10-13T19:26:51.862Z",
+  "base": "9625ef9504644a546e2eebcc9c9c9d6fc6ee0f09",
+  "branch": "codex/session-cleanup-pass2-20261013",
+  "status": "LOCAL_CLEANUP_COMPLETE_UNCOMMITTED",
+  "publication": {
+    "staged": false,
+    "committed": false,
+    "pushed": false,
+    "pr": null,
+    "merged": false
+  },
+  "firstPass": {
+    "publicationBranches": [
+      "codex/apple-recovery-investigation-20261013",
+      "codex/deployment-preflight-518-519-20261012"
+    ],
+    "localAndRemoteAbsencePreviouslyVerified": true,
+    "temporaryFilesRemoved": [
+      "ritmofit-apple-investigation-pr.md",
+      "ritmofit-522-close-body.md",
+      "ritmofit-522-close-preservation.json"
+    ]
+  },
+  "fixturePreflight": "fixture-preflight.json",
+  "soundcloudDeletion": {
+    "id": "91c94386-5816-48f5-91aa-61e874abb05b",
+    "approved": true,
+    "finalBrowserConfirmation": "owner confirmed Delete this exact SoundCloud fixture now",
+    "deleted": true,
+    "postDeleteVerification": "fixture-post-delete.json",
+    "verifiedAt": "2026-10-13T19:26:51.862Z",
+    "mechanism": "normal production UI Delete class",
+    "authenticatedGetStatus": 404,
+    "absentFromLibrary": true
+  },
+  "retiredHandoffs": [
+    {
+      "path": "ritmofit_dev_plan/handoffs/2026-10-12-deployment-preflight-518-519.md",
+      "sourceCommit": "9625ef9504644a546e2eebcc9c9c9d6fc6ee0f09",
+      "sourceSha256": "53da430555f79728865ab40f7f8318d1f96e9042b229093a5b601a690eaf63f5",
+      "localAbsent": true
+    },
+    {
+      "path": "ritmofit_dev_plan/handoffs/2026-10-12-native-zoom-acceptance.md",
+      "sourceCommit": "9625ef9504644a546e2eebcc9c9c9d6fc6ee0f09",
+      "sourceSha256": "1e923e2252116f2e66a53d60c4d0d6849a33251ddb978c835251957d315509b4",
+      "localAbsent": true
+    },
+    {
+      "path": "ritmofit_dev_plan/handoffs/2026-10-11-r20261011c-orchestrator.md",
+      "sourceCommit": "9625ef9504644a546e2eebcc9c9c9d6fc6ee0f09",
+      "sourceSha256": "1c421acfa24374da6f6be4b3751381bcd73c378e6eb891c3c2ed501dcab39bcd",
+      "localAbsent": true
+    }
+  ],
+  "preservation": {
+    "existingEvidenceFileCount": 1194,
+    "allExistingEvidenceHashesMatch": true,
+    "otherAuthorHandoffsAndClaudeHashesMatch": true,
+    "protectedWorktrees": [
+      {
+        "name": "live-short-viewport",
+        "head": "a06e0e623372d04de41d62dcc407f9ed25095851",
+        "status": [
+          "?? agent-prompts/daily/start-r20261011c-lane1-live-short-viewport.md"
+        ],
+        "brief": "start-r20261011c-lane1-live-short-viewport.md",
+        "briefSha256": "ad5922d20ef0e0687569151ea9aa00a84c14fa2ee90b9c317e959f002ad1797c"
+      },
+      {
+        "name": "builder-refresh-integrity",
+        "head": "3d7bfd6436ff18d642de0d852a4f4fa87bf10c5f",
+        "status": [
+          "?? agent-prompts/daily/start-r20261011c-lane2-builder-refresh-integrity.md"
+        ],
+        "brief": "start-r20261011c-lane2-builder-refresh-integrity.md",
+        "briefSha256": "7c53af0f477904cbeb18af6f6b2302d9228198c5de909ecbd2f4e2178a4dd6c5"
+      }
+    ],
+    "tagsUnchanged": true,
+    "appleFixtureId": "75b7af90-141f-4f56-b02b-0bdd2c1c9dfe",
+    "appleContentSha256Before": "3acb5184fe151331d39e8ee4cdbdd5a674efe04d2b417dbe1e9ae859b82ba59c",
+    "appleAuthenticatedGetStatusAfter": 200,
+    "appleTrackCountAfter": 10,
+    "appleContentSha256After": "3acb5184fe151331d39e8ee4cdbdd5a674efe04d2b417dbe1e9ae859b82ba59c",
+    "appleContentUnchanged": true,
+    "contentFingerprintScope": "class id/title/tags/description plus run-payload tracks/sections; excludes recency timestamps"
+  },
+  "applicationChanged": false,
+  "deployed": false,
+  "localVerification": {
+    "formatCheck": "passed",
+    "gitDiffCheck": "passed",
+    "touchedRelativeLinks": "passed",
+    "jsonParsing": "passed",
+    "screenshotJpegMagic": "passed",
+    "applicationDiff": "empty",
+    "stagedFiles": [],
+    "credentialAndAbsoluteHomePathScan": "no matches",
+    "sourceCodeTests": "not rerun; documentation and exact production fixture cleanup only"
+  },
+  "publicationStateScope": "Historical snapshot at checkedAt fixture verification, before commit approval; current delivery state is in the cleanup handoff and Git."
+}

@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-10-13T19:26:51.862Z",
+  "fixtures": [
+    {
+      "id": "91c94386-5816-48f5-91aa-61e874abb05b",
+      "status": 404
+    },
+    {
+      "access": "owner",
+      "contentSha256": "3acb5184fe151331d39e8ee4cdbdd5a674efe04d2b417dbe1e9ae859b82ba59c",
+      "cueCount": 0,
+      "hasDescription": false,
+      "id": "75b7af90-141f-4f56-b02b-0bdd2c1c9dfe",
+      "moveCount": 0,
+      "notesCount": 0,
+      "payloadStatus": 200,
+      "sectionCount": 0,
+      "status": 200,
+      "tags": [
+        "qa-fixture"
+      ],
+      "title": "[QA] Apple browse import 2026-10-12 Cycle",
+      "trackCount": 10
+    }
+  ]
+}

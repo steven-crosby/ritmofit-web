@@ -13,6 +13,30 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Session cleanup 2026-10-13 — both passes complete; records on the cleanup branch.**
+> Owner-authorized #522 squash is `9625ef9`; full post-main CI `38444410636` passed, and local,
+> origin and GitHub main matched. First pass removed the #521/#522 publication branches locally
+> and remotely after exact head/tree checks, plus three named temporary PR/preservation files.
+> No production fixture deletion occurred in that pass.
+>
+> Second pass retires the superseded root deployment, native-zoom and orchestrator handoffs locally
+> after routing their remaining obligations. Exact SoundCloud QA class
+> `91c94386-5816-48f5-91aa-61e874abb05b` was freshly verified as owner-access/qa-fixture, one track,
+> no description, track notes, cues, moves or sections. After final action-time owner confirmation,
+> deleted through the normal UI. Authenticated re-read at `2026-10-13T19:26:51Z` returned 404;
+> the class disappeared from the library. Retained Apple class returned 200 with all ten tracks
+> and the same content fingerprint as before deletion. The content fingerprint covers class
+> identity/title/tags/description and run-payload tracks/sections, excluding recency timestamps.
+>
+> Apple QA `75b7af90-141f-4f56-b02b-0bdd2c1c9dfe` and the open investigation handoff remain;
+> original Apple 5:18 initiating cause is unresolved. All existing evidence, protected lane worktrees,
+> briefs/branches, tags, .claude and other authors' handoffs are retained. SoundCloud hearing evidence
+> remains immutable. No product/API/schema/config changes, playback or deployment.
+> [Cleanup record](../docs/audits/session-cleanup-2026-10-13/README.md).
+> Owner authorized the cleanup-record commit; push, PR and merge remain separate.
+> The cleanup handoff holds publication state; the receipt preserves fixture-verification capture state.
+
+
 > **Scoped Apple investigation 2026-10-13 — not reproduced in fresh visible session.** Owner
 > approved attended diagnosis with code/deployment/cleanup separate. Exact retained Apple QA
 > class ran naturally from Abracadabra to Bad Romance; owner confirmed normal audio through 6:34
