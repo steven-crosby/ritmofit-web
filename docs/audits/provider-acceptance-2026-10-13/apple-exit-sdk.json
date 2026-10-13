@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-13T14:58:08.052Z",
+  "source": "Official MusicKit getters after owner Exit; read-only",
+  "result": {
+    "result": {
+      "type": "object",
+      "value": {
+        "currentPlaybackTime": 0,
+        "isPlaying": false
+      }
+    }
+  }
+}

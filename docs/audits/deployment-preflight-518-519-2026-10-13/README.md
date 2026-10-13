@@ -100,3 +100,8 @@ clock, and a clean natural handover to Bad Romance. He also captured a transient
 panel at the boundary; it later cleared. Exit silence and SoundCloud listening remain pending.
 [Separate attended evidence](../provider-acceptance-2026-10-13/README.md) preserves his reports and
 original screenshot. The authorization-pending state above describes the initial technical handoff.
+
+Subsequent completion: Steven confirmed Apple post-Exit silence and all four SoundCloud listening
+checks. A separate later Apple recovery at 5:18 was unwitnessed and remains an open investigation;
+no uninterrupted Apple stability pass is claimed. The separate attended record supersedes the
+pending-check state above without altering the original technical observations.

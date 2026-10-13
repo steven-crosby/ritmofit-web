@@ -1,0 +1,54 @@
+- link "Skip to main content":
+  - /url: "#main-content"
+- paragraph
+- paragraph: "Track 1: St. Pepper Here To Be Alone."
+- paragraph
+- banner:
+  - paragraph: Now teaching · Track 1 of 1
+  - heading "[QA] SoundCloud transport 2026-10-12 Cycle" [level=1]
+  - paragraph: 0:36 / 4:22
+  - tablist "Prompter view":
+    - tab "Cue-by-Cue" [selected]
+    - tab "Full List"
+  - button "Exit"
+- paragraph: Current cue
+- paragraph: Lead this track
+- paragraph:
+  - generic: ♫
+  - generic: St. Pepper Here To Be Alone
+- paragraph: Next
+- paragraph: End of track
+- generic: Effort
+- generic "Intensity Push":
+  - generic: Push
+- paragraph:
+  - generic: Tempo missing
+  - generic: Pulse off
+- paragraph: Track left
+- paragraph: 3:46
+- paragraph: Class left
+- paragraph: 3:46
+- paragraph: Track 1
+- paragraph: St. Pepper Here To Be Alone
+- paragraph: Chris Perez
+- region "Class Pulse":
+  - generic: Class Pulse
+  - generic: from track efforts
+  - 'img "Class Pulse, derived from track order, duration, and effort: moderate. All track durations and efforts contribute."'
+  - paragraph: All track durations and efforts contribute.
+- region "Live transport":
+  - button "Previous track" [disabled]: ← Previous
+  - button "Pause" [active]
+  - button "Next track" [disabled]: Next →
+  - paragraph:
+    - generic: ♪
+    - generic: "Playback:"
+    - generic: SoundCloud
+  - status:
+    - generic: ◉
+    - generic: "Display:"
+    - generic: Screen awake
+  - button "Reset"
+  - slider "Seek class timeline":
+    - generic: "1"
+- iframe

@@ -13,6 +13,22 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Attended acceptance follow-up 2026-10-13 — SoundCloud complete; later Apple stop open.** After
+> the confirmed clean Apple handover, a separate recovery appeared at Live 5:18 / Bad Romance.
+> Official MusicKit getters reported not playing, item Bad Romance/time 2 s. Steven was not
+> listening at that moment; cause/audible result and attribution are unknown. No agent retry/seek/
+> Next or product change. Steven subsequently confirmed Apple Exit, Builder return and sustained
+> silence; SDK after Exit was not playing, time 0/no item. The earlier clean audio result stands,
+> but overall uninterrupted Apple playback/stability is not accepted from this run.
+>
+> Steven separately confirmed SoundCloud public-widget audible start, pause silence/held clock,
+> resume from paused position with clock progress, and Exit silence/Builder return. Post-Exit DOM
+> has no iframe. [Full attended record](../docs/audits/provider-acceptance-2026-10-13/README.md)
+> preserves both owner PNGs and distinct agent UI/SDK evidence. Both named fixtures remain;
+> investigation of the later Apple stop, real iPhone and scoped UI follow-ups remain open.
+> No additional deploy, fixture deletion or account reconnection.
+
+
 > **Attended Apple acceptance 2026-10-13 — deployed #518/#519, partial.** Steven confirmed browser
 > authorization, audible Abracadabra start with advancing clock/no recovery, and a clean natural
 > handover to Bad Romance in the exact retained Cycle QA class. The agent did not seek or press Next.

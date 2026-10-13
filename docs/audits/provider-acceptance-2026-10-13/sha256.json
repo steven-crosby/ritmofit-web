@@ -1,9 +1,18 @@
 {
-  "README.md": "650526acf95f9268b50eb4d0413d80e93c3d9d19069f8c100ab844e802a6c9af",
-  "acceptance-status.json": "86092978e71318c6dd478fe137140b461c5d83a64af0e84f43a95dc6ca94ec07",
+  "README.md": "d8087e2d869be3e5bbcc1107764e9bb60ae874a829feca8c90f0990baef24f99",
+  "acceptance-status.json": "7012216865bf39bba41113133cf74854a7f5a66ca47c917b98258204ac29c66f",
   "apple-awaiting-handover-ui.txt": "be2a03c51daf4cdfe97e85f7919da6eedfc81d4317cf9c201b2642240896f6d2",
+  "apple-exit-sdk.json": "4e122ef009d743c84e76aca6049e6df7228f24694b052ab9e77524c42c005553",
   "apple-initial-live.jpg": "693f4f50b23c8d2e4cf0e7efe246f9b67942b9fbc278b29fce76147f8dd7d539",
   "apple-initial-live.txt": "bdddc115a1515d0e562460c88006bb9702ed59c69ddb243eeb8e6eeb04923fec",
-  "human-observations.json": "b3441f331ea06a5d952cf4f058c4a9ba6a2674bf75f62ff7d63e6a5b9e21e0e3",
-  "owner-apple-boundary-waiting.png": "339f5414fc7f2fae1c14e676d7f6c7c007b17adb7386e83994de86195a7bc430"
+  "apple-later-recovery.jpg": "bbd92bbab1f3db15a667873f7022ee16846cab94c385b9f47e42bf8d6bf81be6",
+  "apple-later-recovery.txt": "818e2b345686bf484f5851dc18027ab35f3351ddf5cd28388d71dad3e3281d8b",
+  "apple-recovery-sdk.json": "461248ed267ecf5a762b71a2c75de3fbfdcf05b7ce16444053782b33dd9c9467",
+  "human-observations.json": "c5828abd3581dd1da2f292d1dae541cf6959707ac13ade9d553349a89961ef80",
+  "owner-apple-boundary-waiting.png": "339f5414fc7f2fae1c14e676d7f6c7c007b17adb7386e83994de86195a7bc430",
+  "owner-apple-exit-builder.png": "d9b0662bf61d65a6acc28c231edb8a93cc72b5c246cdb6a2c24a5d9057fabaa0",
+  "soundcloud-exit-builder-proof.jpg": "e03af2219d36ded29589e6c9f6dbde63c06070e52b129f840237e6869aa0cb00",
+  "soundcloud-exit-dom.json": "78caf7893d8e07fff5fc40e0f4a16579441b055796bb5f773a3f23d9ab213d6e",
+  "soundcloud-exit-ui.txt": "9fb37a6d6ca244fc16cbdd2e2b88d812e6ceefa232e7580a7937c3b201923206",
+  "soundcloud-initial-ui.txt": "622998f1ce1fc95ecb6613b4a87b474e872b07629737ac2902c2f94dd68968df"
 }

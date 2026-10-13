@@ -4,7 +4,7 @@ updated: 2026-10-13
 tool: Codex (local)
 lane: orchestrator
 branch: codex/deployment-preflight-518-519-20261012
-head: e68c4352b933dd6275c1d4578defb5cd5255b20d
+head: 01991dc6f6bb43b9b86589651897ae6f67f01e4f
 base: 4fd1ecd2e00967b0c14df295e28ae8fcf068b987
 prs: ['#521']
 status: open
@@ -39,22 +39,22 @@ status: open
   `e68c435` passed [CI 38414448443](https://github.com/steven-crosby/ritmofit-web/actions/runs/38414448443)
   and review. Updated attended-evidence head must pass renewed CI/review. Squash merge requires
   separate explicit owner authority; Git publication authorization was used for commit/push/PR.
-- Human audible acceptance remains partial: Steven confirmed Apple authorization, initial audible
-  start and clean natural Abracadabra → Bad Romance handover on the deployed build. A transient
-  Waiting for music panel appeared before the next song started; screenshot preserved, later
-  Now teaching track 2 observed. Duration unmeasured; presentation is a scoped UX follow-up.
-  Apple Exit silence and SoundCloud audible start/pause/resume/Exit remain pending. Real iPhone
-  and existing view-tab arrow-key gap remain. [Attended evidence](../../docs/audits/provider-acceptance-2026-10-13/README.md).
-- Apple acceptance step 4 of 4 is pending: owner clicks Exit while music is audible and confirms
-  silence and return to Builder. Playback was started by Steven and left untouched by the agent
-  through the natural handover; the production tab is retained for the owner's Exit confirmation.
-  Last agent observation was Live track 2 at 4:00; no human silence result has arrived.
+- Human observations: Apple authorization/start/clean natural handover/post-Exit silence confirmed;
+  SoundCloud audible start/pause/resume/Exit separately confirmed. A transient Apple boundary
+  waiting panel was captured and later cleared, duration unmeasured.
+- A separate later Apple recovery at 5:18 held track 2. Official SDK reported not playing, Bad
+  Romance time 2 s. Steven was not listening at that moment; cause/audible result are unknown.
+  No agent Retry, seek or Next. Do not close Apple stability or claim an uninterrupted run.
+  [Attended evidence](../../docs/audits/provider-acceptance-2026-10-13/README.md).
+- Owner subsequently performed both Exits and reported silence/Builder return. Apple SDK time 0,
+  not playing/no item after Exit; SoundCloud iframe absent. Production tab is left in the named
+  SoundCloud QA Builder. Real iPhone and existing tab arrow-key gap remain open.
 
 ## Next action
 
-Complete the pending human Apple Exit silence check when Steven responds, then guide SoundCloud
-audible start → pause → resume → Exit one step at a time. Separately authorize squash #521
-once its current head has green CI/review, reconcile delivery identity and sync local main.
+Plan a scoped attended investigation of the later Apple stop; distinguish external/provider pause
+from stale/unverifiable progress before assigning a cause or making product changes. Separately
+approve squash #521 after renewed current-head CI/review, reconcile records and sync local main.
 
 ## Blockers and retained cleanup
 

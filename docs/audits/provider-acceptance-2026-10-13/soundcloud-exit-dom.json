@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-13T15:02:32.922Z",
+  "source": "DOM inspection after owner Exit; not hearing evidence",
+  "observed": {
+    "iframes": [],
+    "scripts": [
+      "/assets/index-C1EvvyLa.js",
+      "https://js-cdn.music.apple.com/musickit/v3/musickit.js",
+      "https://w.soundcloud.com/player/api.js"
+    ],
+    "title": "[QA] SoundCloud transport 2026-10-12 Cycle - Ritmo Studio"
+  }
+}
