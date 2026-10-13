@@ -1,0 +1,44 @@
+{
+  "recordedAtUtc": "2026-10-12T17:05:37.767763+00:00",
+  "mode": "Owner authorized remaining browser checks without a witness; human audible acceptance kept separate",
+  "servedSpa": "assets/index-DyruxT0m.js",
+  "checks": {
+    "Apple preflight/browser authorization": "PASS owner screenshot and confirmation",
+    "Apple audible start": "PASS owner listening confirmation before departure",
+    "Apple current clock/player progress": "PASS UI plus sanitized MusicKit state, first paused screenshot timing unresolved",
+    "Apple natural track8-to9 handover": "PASS UI/MusicKit runtime only; audible quality UNWITNESSED",
+    "Apple Exit": "PASS Builder return, queue cleared/time 0/playing false; silence UNWITNESSED",
+    "Apple browse/import": "PASS real saved playlist, 10 tracks in source order, tagged named fresh class",
+    "SoundCloud Live pause/resume": "PASS real async widget getters and UI; audible quality UNWITNESSED",
+    "SoundCloud Exit": "PASS Builder return and iframe removed; silence UNWITNESSED"
+  },
+  "soundcloudPausedPositionDeltaMs": 0.29999999701976776,
+  "controls": "No Next/seek input during Apple natural boundary observation. SoundCloud Pause/Play/Exit via UI only. SDK use restricted to state/position getters.",
+  "finalPlayerState": {
+    "applePlaying": false,
+    "appleItem": null,
+    "appleTimeSeconds": 0,
+    "soundcloudIframeCount": 0
+  },
+  "fixturesRetained": [
+    {
+      "id": "75b7af90-141f-4f56-b02b-0bdd2c1c9dfe",
+      "title": "[QA] Apple browse import 2026-10-12 Cycle",
+      "tag": "qa-fixture",
+      "tracks": 10
+    },
+    {
+      "id": "91c94386-5816-48f5-91aa-61e874abb05b",
+      "title": "[QA] SoundCloud transport 2026-10-12 Cycle",
+      "tag": "qa-fixture",
+      "tracks": 1
+    }
+  ],
+  "stillOpen": [
+    "Human audible Apple handover and Exit stop",
+    "Human audible SoundCloud pause/resume and Exit stop",
+    "Actual iPhone acceptance",
+    "Pre-existing Live tab arrow-key gap; no product fix in this verification pass"
+  ],
+  "authorityBoundary": "No commit/push/PR/merge, deployment, account reconnection, fixture deletion or branch/worktree cleanup in this pass."
+}

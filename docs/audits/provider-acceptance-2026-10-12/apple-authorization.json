@@ -1,0 +1,13 @@
+{
+  "recordedAtUtc": "2026-10-12T16:20:26.876550+00:00",
+  "evidenceClass": "Owner screenshot and explicit confirmation",
+  "classTitle": "[QA] Apple natural acceptance 2026-10-09 Pilates",
+  "tracksChecked": 10,
+  "tracksNeedingDecision": 0,
+  "browserAuthorization": "complete in this browser",
+  "startClass": "enabled",
+  "playbackAvailability": "unverified",
+  "audibleOutput": "unverified",
+  "screenshotSha256": "41b9d59c9f0821f89e802eaf29058fec1c2c8fd6bd5c3da0a089a0d6971248de",
+  "nextAction": "Check 2 of 6: click Start class once; owner confirms audible first song and advancing Live clock."
+}

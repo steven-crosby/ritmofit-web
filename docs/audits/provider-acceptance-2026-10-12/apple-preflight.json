@@ -1,0 +1,14 @@
+{
+  "recordedAtUtc": "2026-10-12T16:19:02.022108+00:00",
+  "evidenceClass": "Owner-provided production screenshot and written confirmation",
+  "classTitle": "[QA] Apple natural acceptance 2026-10-09 Pilates",
+  "host": "ritmofit.studio",
+  "tracksChecked": 10,
+  "tracksNeedingDecision": 0,
+  "visibleProvider": "Apple Music",
+  "browserAuthorization": "needed",
+  "startClass": "disabled",
+  "audioAcceptance": "not established",
+  "screenshotSha256": "3e84c713fb4597c9f4ab47f3aab4c24befed58c8b8e1d26c5941c55e722428ec",
+  "nextAction": "Owner clicks Check Apple Music authorization, completes the Apple popup and reports whether Start becomes enabled; do not start audio yet."
+}

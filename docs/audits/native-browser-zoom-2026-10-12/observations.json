@@ -1,0 +1,175 @@
+{
+  "sourceHead": "dbc8afbe8483502f13209d10729a199eb5e00780",
+  "recordedAt": "2026-10-12T16:14:08.494Z",
+  "zoomProof": {
+    "ownerReport": "Chrome shows 200%",
+    "baseline": {
+      "devicePixelRatio": 2,
+      "width": 1200,
+      "height": 607
+    },
+    "verified": {
+      "devicePixelRatio": 4,
+      "width": 720,
+      "height": 325,
+      "visualViewportScale": 1
+    },
+    "method": "Owner set native Chrome menu zoom; agent observed layout through dedicated Chrome tab. No viewport/device-scale/page-scale/CSS zoom override was applied."
+  },
+  "rows": [
+    {
+      "stage": "builder-warning",
+      "observed": {
+        "dpr": 4,
+        "draft": "Native 200% zoom draft",
+        "focus": "Refresh class details",
+        "height": 325,
+        "overflow": 0,
+        "scale": 1,
+        "warning": "! Saved, but the latest class details could not be refreshed: Latest read unavailable Your current workbench remains open.Refresh class details",
+        "width": 720
+      }
+    },
+    {
+      "stage": "builder-recovered",
+      "observed": {
+        "dpr": 4,
+        "draft": "Native 200% zoom draft",
+        "focus": "2First LightSynthetic artistPush120BPM",
+        "height": 325,
+        "overflow": 0,
+        "warning": null,
+        "width": 720
+      }
+    },
+    {
+      "stage": "builder-inspector-cues",
+      "observed": {
+        "dpr": 4,
+        "focusLabel": "No color",
+        "focusTag": "BUTTON",
+        "height": 325,
+        "overflow": 0,
+        "width": 720
+      }
+    },
+    {
+      "stage": "live-cue-top",
+      "observed": {
+        "dpr": 4,
+        "height": 325,
+        "overflow": 0,
+        "scale": 1,
+        "scrollports": [
+          {
+            "height": 326,
+            "role": null,
+            "scrollHeight": 1203,
+            "tag": "DIV",
+            "top": 0
+          }
+        ],
+        "width": 720
+      }
+    },
+    {
+      "stage": "live-full-list-more",
+      "observed": {
+        "dpr": 4,
+        "focus": "Seek class timeline",
+        "height": 325,
+        "overflow": 0,
+        "text": true,
+        "value": null,
+        "width": 720
+      }
+    },
+    {
+      "stage": "live-complete-cue",
+      "observed": {
+        "complete": [
+          {
+            "height": 12.5,
+            "visible": true,
+            "width": 71.5,
+            "x": 207.15234375,
+            "y": 25
+          }
+        ],
+        "dpr": 4,
+        "height": 325,
+        "overflow": 0,
+        "width": 720
+      }
+    },
+    {
+      "stage": "live-error",
+      "observed": {
+        "buttons": [
+          {
+            "height": 44,
+            "label": "Retry playback",
+            "unobscured": true,
+            "width": 107.62890625,
+            "x": 8,
+            "y": 141
+          },
+          {
+            "height": 44,
+            "label": "Continue without music",
+            "unobscured": true,
+            "width": 164.1484375,
+            "x": 119.62890625,
+            "y": 141
+          },
+          {
+            "height": 44,
+            "label": "Manage music connection",
+            "unobscured": true,
+            "width": 175.94921875,
+            "x": 287.77734375,
+            "y": 141
+          },
+          {
+            "height": 44,
+            "label": "Skip track",
+            "unobscured": true,
+            "width": 76.90234375,
+            "x": 467.7265625,
+            "y": 141
+          }
+        ],
+        "dpr": 4,
+        "height": 325,
+        "overflow": 0,
+        "scale": 1,
+        "width": 720
+      }
+    },
+    {
+      "stage": "live-continued-without-music",
+      "observed": {
+        "dpr": 4,
+        "focus": "Pause",
+        "hasRecovery": false,
+        "height": 325,
+        "overflow": 0,
+        "width": 720
+      }
+    }
+  ],
+  "findings": [
+    {
+      "kind": "pre-existing keyboard accessibility gap",
+      "component": "LiveMode ViewToggle",
+      "observed": "Right Arrow on Cue-by-Cue did not move focus or selection. Tab then Enter switched to Full List.",
+      "baseline": "ViewToggle is byte-identical in 6691c9d and dbc8afb.",
+      "reference": "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/"
+    }
+  ],
+  "limits": [
+    "Synthetic local fixture data and synthetic recovery adapter; no provider/audio/device acceptance.",
+    "Native browser menu percentage was confirmed by Steven, not captured by agent native UI tooling.",
+    "One real desktop viewport at native 200%, not a complete accessibility audit."
+  ]
+}

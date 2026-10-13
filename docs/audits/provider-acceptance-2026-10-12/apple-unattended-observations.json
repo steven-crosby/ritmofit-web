@@ -1,0 +1,60 @@
+[
+  {
+    "stage": "before-natural-handover",
+    "at": "2026-10-12T16:53:23.542Z",
+    "sdk": {
+      "authorized": true,
+      "duration": 229,
+      "item": {
+        "id": "1837298858",
+        "title": "The Dead Dance",
+        "type": "song"
+      },
+      "playing": true,
+      "state": 2,
+      "time": 200
+    },
+    "ui": {
+      "banner": "NOW TEACHING · TRACK 8 OF 10\n\n[QA] Apple natural acceptance 2026-10-09 Pilates\n\n30:58 / 39:51\n\nCue-by-Cue\nFull List\nExit",
+      "recovery": null,
+      "transport": "← Previous\nPause\nNext →\n\n♪\nPlayback:\nApple Music\n\n◉\nDisplay:\nScreen awake\n\nReset\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
+    }
+  },
+  {
+    "stage": "boundary-observation",
+    "at": "2026-10-12T16:54:18.732Z",
+    "sdk": {
+      "authorized": true,
+      "duration": 322,
+      "item": {
+        "id": "1440858186",
+        "title": "The Edge of Glory",
+        "type": "song"
+      },
+      "playing": true,
+      "state": 2,
+      "time": 23
+    },
+    "ui": {
+      "banner": "NOW TEACHING · TRACK 9 OF 10\n\n[QA] Apple natural acceptance 2026-10-09 Pilates\n\n31:50 / 39:51\n\nCue-by-Cue\nFull List\nExit",
+      "recovery": null,
+      "transport": "← Previous\nPause\nNext →\n\n♪\nPlayback:\nApple Music\n\n◉\nDisplay:\nScreen awake\n\nReset\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
+    }
+  },
+  {
+    "stage": "after-exit",
+    "at": "2026-10-12T16:54:38.058Z",
+    "sdk": {
+      "authorized": true,
+      "duration": 0,
+      "item": null,
+      "playing": false,
+      "state": 4,
+      "time": 0
+    },
+    "ui": {
+      "banner": "R\nRitmo Studio\n\nSteven\n\nClasses\nMusic\nLive\nAccount",
+      "recovery": null
+    }
+  }
+]
