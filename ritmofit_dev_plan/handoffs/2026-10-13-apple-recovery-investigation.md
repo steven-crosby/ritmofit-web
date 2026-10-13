@@ -5,7 +5,7 @@ lane: solo
 branch: codex/apple-recovery-investigation-20261013
 head: 26158c4a924bd34ac36a8e562567458d5bf0b2b0
 base: 26158c4a924bd34ac36a8e562567458d5bf0b2b0
-prs: []
+prs: ['#522']
 status: open
 ---
 
@@ -35,7 +35,7 @@ and transport before recovery; do not assume background caused the original stop
 
 ## Delivery / retained state
 
-This docs-only follow-up uses existing evidence-publication authority. Its PR's final head, CI and
+This docs-only follow-up uses existing evidence-publication authority. [PR #522](https://github.com/steven-crosby/ritmofit-web/pull/522)'s final head, CI and
 merge fields establish delivery identity; merge is separate. #521 is already merged as `26158c4`.
 The old handoff's pre-merge wording is superseded by verified GitHub delivery, not a new merge owed.
 Both QA fixtures, protected managed lane worktrees/branches/briefs, tags and .claude are preserved.
