@@ -3,9 +3,9 @@ date: 2026-10-12
 tool: Codex (local)
 lane: orchestrator
 branch: codex/verification-zoom-provider-20261012
-head: b28cb82c83e79c5134209181c3eae6df0800dcda
+head: 9ef699789d7c30d4454ae116235fd345b9578a68
 base: dbc8afbe8483502f13209d10729a199eb5e00780
-prs: ['#520 (published; CI/review pending at record commit)']
+prs: ['#520 (owner-authorized squash; merge/check identities are on GitHub)']
 status: open
 ---
 
@@ -37,16 +37,17 @@ status: open
 Human listening remains partial: audible Apple initial start is established; natural hand-over
 quality, Exit silence and SoundCloud audible pause/resume/Exit are unwitnessed. UI/SDK results do
 not close those gates. No complete natural full-class run or real iPhone acceptance claimed.
-Both packets and this handoff were committed as `6d1eb37`. Steven subsequently authorized
-pushing the verification branch, opening [PR #520](https://github.com/steven-crosby/ritmofit-web/pull/520),
-and verifying hosted CI/review while human audible acceptance stays open. PR #520 is published;
-CI/review of its final head are pending at this record commit. The PR check/review state is
-authoritative afterward. Merge, deployment and cleanup remain separately unauthorized.
-The recorded head identifies the preceding evidence commit; base identifies verified application
-main. The initial publication follow-up changed only this handoff. Published-diff review then found
-JPEG-encoded browser screenshots named `.png`; this correction renames those to `.jpg`, updates
-references/manifests and preserves every original image byte. Owner-provided PNGs are unchanged.
-Final-head CI/review follows the corrective commit/push.
+Both packets and this handoff were committed as `6d1eb37`, then published in
+[PR #520](https://github.com/steven-crosby/ritmofit-web/pull/520). Review corrected JPEG browser
+capture extensions without re-encoding any image (`9ef6997`); owner PNGs remain byte-identical.
+Full hosted [CI 38338476638](https://github.com/steven-crosby/ritmofit-web/actions/runs/38338476638)
+passed on `9ef6997`, and renewed review found no remaining actionable findings.
+Steven authorized squash #520, session-record reconciliation and local-main sync, with human
+listening still open and deployment/cleanup separate. This reconciliation is committed before
+that authorized squash; only a green reviewed current head may land. The PR merge/check state
+supplies exact delivery identity afterward. Root verifies final main CI and local HEAD/origin/main/
+GitHub main equality. No branch/worktree/fixture deletion is included. The record's head is the
+preceding evidence commit and base is the verified application main, not this file's own commit.
 
 ## Next action
 
@@ -65,8 +66,8 @@ screenshot, and record a human outcome before marking audible acceptance complet
   `[QA] SoundCloud transport 2026-10-12 Cycle` (`91c94386-5816-48f5-91aa-61e874abb05b`, 1 track).
   Exact deletion remains separate and unauthorized. Original instructor/QA class content and
   source playlists are preserved; opening retained QA classes can update recency.
-- Local commit, push and PR authority were granted and exercised for this verification record.
-  Merge, deployment and cleanup remain separate. No account reconnection, fixture deletion
+- Local commit, push, PR and #520 squash authority were granted for this verification record.
+  Deployment and cleanup remain unauthorized. No account reconnection, fixture deletion
   or product-code change occurred.
   Lane worktrees/branches/briefs and unrelated .claude/ remain preserved.
 
@@ -76,20 +77,25 @@ Local native-zoom UI and actual production SDK/widget/API/UI evidence above. Rea
 only transport state/position/duration; no provider audio capture/download/cache/analysis/proxy.
 For the local documentation commit: receipt hashes/coverage, JSON parsing, relative links, source
 identities and credential-shaped text checks passed; format/whitespace checks run before commit.
-Hosted CI runs on the published PR; its final outcome is verified against the exact current head.
+Final reconciliation CI/review are verified against the exact updated PR head before squash;
+post-merge main CI is also checked. Earlier green evidence head is linked above.
 No product-code changes or new tests. No real-device, screen-reader or unwitnessed
 human-audible acceptance claim. Original and final observations remain in separate receipts.
 
 ## Production as observed
 
-Actual user tab loads assets/index-DyruxT0m.js, the prior deployed baseline. Main still contains
-undeployed #518/#519. Worker identity/migrations not rechecked in this verification pass.
+Actual verification tab loaded assets/index-DyruxT0m.js. A fresh read-only merge precheck on
+2026-10-12 confirms Worker 9563d726-bc4d-44f7-834a-d7dbcc388d19 at 100% and three independent
+cache-busted SPA entries assets/index-DyruxT0m.js. Main still contains undeployed #518/#519; #520
+adds evidence/status only. Recorded deployment source remains 6eeccc0. Remote migrations were
+not rechecked; this record changes no schema or migration.
 Production mutations are only the two fresh QA classes with named/tagged imports; playback/Exit
 use official SDK/widget paths. No deployment or existing class-content change.
 
 ## Shared zones touched
 
-None; additive evidence and this own handoff only, no product edits.
+No product/shared-zone edits. Reconciliation updates DEVELOPMENT_PLAN and the two root-authored
+orchestrator handoffs; other authors’ handoffs and original audit observation bytes remain preserved.
 
 ## Notes for other lanes / iOS
 
