@@ -13,6 +13,16 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **2026-10-19 — remote #518/#519 lane branches deleted.** Steven explicitly
+> approved deleting the two leftover origin branches after #525 merged.
+> `codex/r20261011c-live-short-viewport` was `a06e0e6` (#518, squash `ed00aed`)
+> and `codex/r20261011c-builder-refresh-integrity` was `3d7bfd6` (#519, squash
+> `dbc8afb`). No open PR used either head. Both refs were deleted from origin
+> and the local remote-tracking refs were pruned. No product, schema, or deploy
+> change. Same-day production check, before this delete: Worker
+> `73493517-2006-4beb-bf7c-cdb1edf298fd` at 100%; three cache-busted SPA entries
+> `assets/index-C1EvvyLa.js`; `/` 200, health 200, unauthenticated classes 401.
+
 > **Close-session 2026-10-19 — local lane worktrees removed.** No product change and no
 > deploy. Local worktrees and local branches for squash-merged #518
 > (`codex/r20261011c-live-short-viewport`, was `a06e0e6`) and #519
