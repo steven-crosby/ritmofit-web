@@ -13,6 +13,18 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Close-session 2026-10-19 — local lane worktrees removed.** No product change and no
+> deploy. Local worktrees and local branches for squash-merged #518
+> (`codex/r20261011c-live-short-viewport`, was `a06e0e6`) and #519
+> (`codex/r20261011c-builder-refresh-integrity`, was `3d7bfd6`) were removed after
+> confirming neither tree held product files missing from `main`. The orchestrator
+> handoff that still existed on the #519 branch was already retired on `main` in #523.
+> Untracked planning briefs were kept outside the repo. Both remote branches remain
+> on origin until an explicit delete. `.claude/`, the local verification tag, the
+> Apple fixture, and other authors' handoffs were not touched. Production was not
+> re-checked at this close; the 2026-10-18 observation was Worker
+> `73493517-2006-4beb-bf7c-cdb1edf298fd` at 100% and SPA `assets/index-C1EvvyLa.js`.
+
 > **Close-session 2026-10-13 — Apple debugging tabled; deployment unnecessary.** Steven tabled
 > the Apple 5:18 investigation and requested main synchronization, obsolete-branch cleanup and
 > deployment only if needed. #523 is merged as `973db61` with full post-main CI `38460359795`.
