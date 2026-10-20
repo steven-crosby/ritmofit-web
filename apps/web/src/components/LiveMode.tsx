@@ -24,6 +24,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent,
   type RefObject,
 } from 'react';
 import type {
@@ -1163,19 +1164,47 @@ function WakeRail({ status }: { status: WakeLockStatus }) {
   );
 }
 
+const VIEW_TABS = ['cue', 'list'] as const;
+
 function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void }) {
+  const tabRefs = useRef<Partial<Record<View, HTMLButtonElement | null>>>({});
+  // Manual tabs: arrows and Home/End move focus only. Enter and Space select.
+  // The selected tab stays the single Tab stop, so Tab still leaves the group.
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, current: View) => {
+    const index = VIEW_TABS.indexOf(current);
+    let next = index;
+    if (event.key === 'ArrowRight') next = (index + 1) % VIEW_TABS.length;
+    else if (event.key === 'ArrowLeft') next = (index - 1 + VIEW_TABS.length) % VIEW_TABS.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = VIEW_TABS.length - 1;
+    else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setView(current);
+      return;
+    } else return;
+    event.preventDefault();
+    tabRefs.current[VIEW_TABS[next]]?.focus();
+  };
+
   return (
     <div
       className="flex rounded-pill border border-interactive/30 p-0.5 [@media(max-height:480px)]:p-0"
       role="tablist"
       aria-label="Prompter view"
+      aria-orientation="horizontal"
     >
-      {(['cue', 'list'] as const).map((v) => (
+      {VIEW_TABS.map((v) => (
         <button
           key={v}
+          ref={(node) => {
+            tabRefs.current[v] = node;
+          }}
+          type="button"
           role="tab"
           aria-selected={view === v}
+          tabIndex={view === v ? 0 : -1}
           onClick={() => setView(v)}
+          onKeyDown={(event) => onKeyDown(event, v)}
           className={`min-h-11 rounded-pill px-3 py-2 font-ui text-sm rf-focus-ring ${
             view === v ? 'bg-interactive text-text-on-accent' : 'text-text-secondary'
           }`}
