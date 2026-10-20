@@ -13,6 +13,33 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Close-session 2026-10-20 — #527 merged and verified; deployment held.**
+> [#527](https://github.com/steven-crosby/ritmofit-web/pull/527) squash-merged as
+> `4ee691213ebd388c8c5e2dcbd8b4987102816c7d`. Live's Cue-by-Cue / Full List tabs now
+> support manual keyboard navigation; the follow-up narrows the indexed tab value to fix
+> TS2538. Hono is patched from 4.13.7 to 4.13.11, with no other package version changes
+> or new audit exceptions. Full local gate passed (web 1185, API 486, music 30,
+> Worker/D1 integration 184). Local Chrome verified arrows, Home/End, Enter/Space,
+> and Tab/Shift+Tab in synthetic prompter-only mode; no audio or real-device acceptance.
+> [Evidence](../docs/audits/live-tab-typecheck-2026-10-20/hono-verification.json).
+>
+> Final PR head `1710472` passed [CI 39470330713](https://github.com/steven-crosby/ritmofit-web/actions/runs/39470330713).
+> Exact squash `4ee6912` passed [post-main CI 39470831675](https://github.com/steven-crosby/ritmofit-web/actions/runs/39470831675).
+> Local and origin main were synchronized at that squash before preparing close records.
+> Main is ahead of production by #527. Steven explicitly held deployment. Read-only
+> post-merge production check: Worker `73493517-2006-4beb-bf7c-cdb1edf298fd` at 100%;
+> three consecutive cache-busted SPA entries `assets/index-C1EvvyLa.js`. No deployment,
+> remote migration, or production fixture mutation; remote migration state not checked.
+>
+> Close removes only local branch `cursor/r20261019-live-view-tabs` (`1710472`), after
+> its tree matched the squash and no worktree used it. Its remote branch is retained
+> pending separate deletion approval. Completed #527 lane handoff is retired after routing
+> its delivery state here and its local fixture notes to the retained
+> [session handoff](./handoffs/2026-10-20-live-tab-typecheck.md).
+> `.claude/`, the untracked planning brief, verification tag, local QA fixtures, Apple
+> production fixture, other authors' handoffs, and all existing evidence remain.
+> Apple 5:18 debugging remains tabled. Close-record publication is owed from the handoff.
+
 > **2026-10-19 — remote #518/#519 lane branches deleted.** Steven explicitly
 > approved deleting the two leftover origin branches after #525 merged.
 > `codex/r20261011c-live-short-viewport` was `a06e0e6` (#518, squash `ed00aed`)
