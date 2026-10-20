@@ -291,6 +291,9 @@ function LiveSectionBar({ section }: { section: LiveSection }) {
   );
 }
 
+/** Presentation delay before a post-playback handover gap mounts recovery. */
+const WAITING_PANEL_GRACE_MS = 2_000;
+
 export function LiveMode({
   payload,
   onExit,
@@ -733,6 +736,42 @@ export function LiveMode({
     ['idle', 'preparing', 'awaiting_authorization', 'buffering', 'error'].includes(playback.kind);
   const teachingPlaying = playing && !musicBlocked;
   const previousMusicBlocked = useRef(musicBlocked);
+  // Confirmed playback makes the next gap a handover. enter() reports idle while
+  // the previous adapter stops, then preparing and buffering until progress.
+  // A failure clears the confirmation so retry still presents waiting immediately.
+  const confirmedPlayingRef = useRef(false);
+  if (playback.kind === 'playing') confirmedPlayingRef.current = true;
+  if (playbackFailure != null) confirmedPlayingRef.current = false;
+  const suppressWaitingPanel =
+    musicBlocked &&
+    playbackFailure == null &&
+    (playback.kind === 'idle' || playback.kind === 'preparing' || playback.kind === 'buffering') &&
+    confirmedPlayingRef.current;
+  const waitingPanelDeadlineRef = useRef<number | null>(null);
+  if (!suppressWaitingPanel) waitingPanelDeadlineRef.current = null;
+  else if (waitingPanelDeadlineRef.current == null) {
+    waitingPanelDeadlineRef.current = Date.now() + WAITING_PANEL_GRACE_MS;
+  }
+  // Re-render when the grace elapses so the deadline is compared again.
+  const [waitingPanelNow, setWaitingPanelNow] = useState<number | null>(null);
+  useEffect(() => {
+    if (!suppressWaitingPanel) {
+      setWaitingPanelNow(null);
+      return;
+    }
+    const deadline = waitingPanelDeadlineRef.current;
+    if (deadline == null) return;
+    const timer = setTimeout(
+      () => setWaitingPanelNow(deadline),
+      Math.max(0, deadline - Date.now()),
+    );
+    return () => clearTimeout(timer);
+  }, [suppressWaitingPanel]);
+  const waitingPanelHeld =
+    suppressWaitingPanel &&
+    waitingPanelDeadlineRef.current != null &&
+    (waitingPanelNow == null || waitingPanelNow < waitingPanelDeadlineRef.current);
+  const showRecoveryPanel = (musicBlocked || hasPlaybackFailure) && !waitingPanelHeld;
   // Account for actual chrome height, including wrapped status and section text.
   // Scroll-to/focus and the recovery scrollport then share the same visible bounds.
   useLayoutEffect(() => {
@@ -762,7 +801,9 @@ export function LiveMode({
     previousView.current = view;
     previousConnectionsOpen.current = connectionsOpen;
     if (phase !== 'live' || connectionsOpen) return;
-    const needsRecovery = musicBlocked || hasPlaybackFailure;
+    // Handover grace keeps the teaching hold without mounting or focusing recovery.
+    if (musicBlocked && !showRecoveryPanel) return;
+    const needsRecovery = showRecoveryPanel;
     if (
       (dialogWasOpen || (becameReady && !needsRecovery)) &&
       document.activeElement !== document.body &&
@@ -779,7 +820,7 @@ export function LiveMode({
     } else {
       primaryButtonRef.current?.focus({ preventScroll: true });
     }
-  }, [phase, musicBlocked, hasPlaybackFailure, connectionsOpen, view]);
+  }, [phase, musicBlocked, hasPlaybackFailure, connectionsOpen, view, showRecoveryPanel]);
   const runState = ended
     ? 'Complete'
     : musicBlocked
@@ -938,7 +979,7 @@ export function LiveMode({
           {section && <LiveSectionBar section={section} />}
         </div>
 
-        {(musicBlocked || playbackFailure) && (
+        {showRecoveryPanel && (
           <section
             ref={recoveryRef}
             tabIndex={-1}

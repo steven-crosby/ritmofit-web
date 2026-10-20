@@ -1007,6 +1007,214 @@ describe('LiveMode playback failure', () => {
   });
 });
 
+describe('LiveMode waiting panel grace', () => {
+  function playingTransportAdapter(stalled: { current: boolean }) {
+    let positionMs = 0;
+    return {
+      provider: 'soundcloud' as const,
+      prepare: (entry: RunPayloadTrackEntry, window: { startMs: number }) => {
+        positionMs = window.startMs;
+        return Promise.resolve({
+          provider: 'soundcloud' as const,
+          classTrackId: entry.classTrackId,
+        });
+      },
+      getTransport: async () =>
+        stalled.current
+          ? { positionMs, state: 'paused' as const }
+          : { positionMs: ++positionMs, state: 'playing' as const },
+      play: () => Promise.resolve(),
+      pause: () => Promise.resolve(),
+      seek: async (ms: number) => {
+        positionMs = ms;
+      },
+      stop: () => Promise.resolve(),
+      destroy: () => {},
+    };
+  }
+
+  async function startTeaching(factory: (events: AdapterEvents) => PlaybackAdapter) {
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(factory);
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    vi.useFakeTimers();
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.getByText(/Now teaching · Track/)).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('keeps a sub-2s buffering gap off the recovery panel and leaves focus put', async () => {
+    const stalled = { current: false };
+    let transport: NonNullable<AdapterEvents['onTransportState']> = () => {};
+    await startTeaching((events) => {
+      transport = (state) => events.onTransportState?.(state);
+      return playingTransportAdapter(stalled);
+    });
+    const pause = screen.getByRole('button', { name: 'Pause' });
+    pause.focus();
+
+    stalled.current = true;
+    act(() => transport('buffering'));
+    expect(screen.getByText(/Teaching paused · waiting for music/)).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
+    expect(screen.queryByRole('status', { name: 'Playback recovery' })).toBeNull();
+    expect(document.activeElement).toBe(pause);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1999);
+    });
+    expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
+    expect(document.activeElement).toBe(pause);
+
+    stalled.current = false;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(250);
+    });
+    expect(screen.getByText(/Now teaching · Track/)).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
+    expect(document.activeElement).toBe(pause);
+  });
+
+  it('mounts the waiting section once a buffering gap lasts 2 seconds', async () => {
+    const stalled = { current: false };
+    let transport: NonNullable<AdapterEvents['onTransportState']> = () => {};
+    await startTeaching((events) => {
+      transport = (state) => events.onTransportState?.(state);
+      return playingTransportAdapter(stalled);
+    });
+
+    stalled.current = true;
+    act(() => transport('buffering'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1999);
+    });
+    expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    const recovery = screen.getByRole('status', { name: 'Playback recovery' });
+    expect(within(recovery).getByRole('heading', { name: 'Waiting for music' })).toBeTruthy();
+    expect(
+      within(recovery).getByText('Provider playback has not confirmed progress.'),
+    ).toBeTruthy();
+    expect(within(recovery).getByText('Teaching position is held.')).toBeTruthy();
+    expect(within(recovery).getByRole('button', { name: 'Continue without music' })).toBeTruthy();
+    expect(within(recovery).getByRole('button', { name: 'Manage music connection' })).toBeTruthy();
+    expect(document.activeElement).toBe(recovery);
+  });
+
+  it('shows Playback stopped immediately when confirmed playback errors', async () => {
+    let fail: NonNullable<AdapterEvents['onError']> = () => {};
+    await startTeaching((events) => {
+      fail = (error) => events.onError?.(error);
+      return playingTransportAdapter({ current: false });
+    });
+
+    act(() => fail({ message: 'Apple Music stopped' }));
+    const alert = screen.getByRole('alert', { name: 'Playback recovery' });
+    expect(within(alert).getByRole('heading', { name: 'Playback stopped' })).toBeTruthy();
+    expect(within(alert).getByText('Apple Music stopped')).toBeTruthy();
+    expect(document.activeElement).toBe(alert);
+  });
+
+  it('shows the waiting section immediately for authorization after playback', async () => {
+    let awaitAuthorization: NonNullable<AdapterEvents['onAwaitingAuthorization']> = () => {};
+    await startTeaching((events) => {
+      awaitAuthorization = () => events.onAwaitingAuthorization?.();
+      return playingTransportAdapter({ current: false });
+    });
+
+    act(() => awaitAuthorization());
+    const recovery = screen.getByRole('status', { name: 'Playback recovery' });
+    expect(within(recovery).getByRole('heading', { name: 'Waiting for music' })).toBeTruthy();
+    expect(
+      within(recovery).getByText('Complete the provider authorization to continue.'),
+    ).toBeTruthy();
+  });
+
+  it('holds a next-track prepare off the recovery panel until the grace elapses', async () => {
+    const nextTrack = {
+      ...activeTrack,
+      classTrackId: '00000000-0000-4000-8000-0000000000c2',
+      position: 1,
+      startOffsetMs: 180000,
+      track: { ...activeTrack.track, id: 'tr-grace', title: 'Second Track', durationMs: 120000 },
+    } satisfies RunPayloadTrackEntry;
+    const twoTracks = {
+      ...payload,
+      class: { ...payload.class, totalDurationMs: 300000 },
+      tracks: [activeTrack, nextTrack],
+    } satisfies RunPayload;
+    let prepares = 0;
+    const pending = deferred<{ provider: 'soundcloud'; classTrackId: string }>();
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation((): PlaybackAdapter => {
+      let positionMs = 0;
+      return {
+        provider: 'soundcloud',
+        prepare: (entry, window) => {
+          prepares += 1;
+          positionMs = window.startMs;
+          if (prepares > 1) return pending.promise;
+          return Promise.resolve({
+            provider: 'soundcloud',
+            classTrackId: entry.classTrackId,
+          });
+        },
+        getTransport: async () => ({ positionMs: ++positionMs, state: 'playing' as const }),
+        play: () => Promise.resolve(),
+        pause: () => Promise.resolve(),
+        seek: async (ms: number) => {
+          positionMs = ms;
+        },
+        stop: () => Promise.resolve(),
+        destroy: () => {},
+      };
+    });
+
+    render(<LiveMode payload={twoTracks} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    vi.useFakeTimers();
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.getByText(/Now teaching · Track 1 of 2/)).toBeTruthy();
+
+    const next = screen.getByRole('button', { name: 'Next track, Second Track' });
+    next.focus();
+    fireEvent.click(next);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText(/Teaching paused · waiting for music · Track 2 of 2/)).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
+    expect(document.activeElement).toBe(next);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1999);
+    });
+    expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    const recovery = screen.getByRole('status', { name: 'Playback recovery' });
+    expect(within(recovery).getByRole('heading', { name: 'Waiting for music' })).toBeTruthy();
+    expect(within(recovery).getByRole('button', { name: 'Continue without music' })).toBeTruthy();
+    expect(within(recovery).getByRole('button', { name: 'Manage music connection' })).toBeTruthy();
+  });
+});
+
 describe('LiveMode runtime composition', () => {
   const threeTrack = {
     ...payload,
