@@ -1,0 +1,194 @@
+[
+  {
+    "step": "ArrowRight focuses Full List without selection",
+    "focus": "Full List",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "true",
+        "tabIndex": 0
+      },
+      {
+        "name": "Full List",
+        "selected": "false",
+        "tabIndex": -1
+      }
+    ]
+  },
+  {
+    "step": "Enter selects Full List",
+    "focus": "Full List",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "false",
+        "tabIndex": -1
+      },
+      {
+        "name": "Full List",
+        "selected": "true",
+        "tabIndex": 0
+      }
+    ]
+  },
+  {
+    "step": "ArrowLeft focuses Cue-by-Cue without selection",
+    "focus": "Cue-by-Cue",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "false",
+        "tabIndex": -1
+      },
+      {
+        "name": "Full List",
+        "selected": "true",
+        "tabIndex": 0
+      }
+    ]
+  },
+  {
+    "step": "Space selects Cue-by-Cue",
+    "focus": "Cue-by-Cue",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "true",
+        "tabIndex": 0
+      },
+      {
+        "name": "Full List",
+        "selected": "false",
+        "tabIndex": -1
+      }
+    ]
+  },
+  {
+    "step": "End focuses Full List without selection",
+    "focus": "Full List",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "true",
+        "tabIndex": 0
+      },
+      {
+        "name": "Full List",
+        "selected": "false",
+        "tabIndex": -1
+      }
+    ]
+  },
+  {
+    "step": "Home focuses Cue-by-Cue without selection",
+    "focus": "Cue-by-Cue",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "true",
+        "tabIndex": 0
+      },
+      {
+        "name": "Full List",
+        "selected": "false",
+        "tabIndex": -1
+      }
+    ]
+  },
+  {
+    "step": "ArrowLeft wraps to Full List",
+    "focus": "Full List",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "true",
+        "tabIndex": 0
+      },
+      {
+        "name": "Full List",
+        "selected": "false",
+        "tabIndex": -1
+      }
+    ]
+  },
+  {
+    "step": "ArrowRight wraps to Cue-by-Cue",
+    "focus": "Cue-by-Cue",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "true",
+        "tabIndex": 0
+      },
+      {
+        "name": "Full List",
+        "selected": "false",
+        "tabIndex": -1
+      }
+    ]
+  },
+  {
+    "step": "Browser-tool Tab focus observation",
+    "focus": "Exit",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "true",
+        "tabIndex": 0
+      },
+      {
+        "name": "Full List",
+        "selected": "false",
+        "tabIndex": -1
+      }
+    ]
+  },
+  {
+    "step": "Shift+Tab returns to selected Cue-by-Cue",
+    "focus": "Cue-by-Cue",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "true",
+        "tabIndex": 0
+      },
+      {
+        "name": "Full List",
+        "selected": "false",
+        "tabIndex": -1
+      }
+    ]
+  },
+  {
+    "step": "Tab leaves selected Full List for Exit",
+    "focus": "Exit",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "false",
+        "tabIndex": -1
+      },
+      {
+        "name": "Full List",
+        "selected": "true",
+        "tabIndex": 0
+      }
+    ]
+  },
+  {
+    "step": "Shift+Tab returns to selected Full List",
+    "focus": "Full List",
+    "tabs": [
+      {
+        "name": "Cue-by-Cue",
+        "selected": "false",
+        "tabIndex": -1
+      },
+      {
+        "name": "Full List",
+        "selected": "true",
+        "tabIndex": 0
+      }
+    ]
+  }
+]

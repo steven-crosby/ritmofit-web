@@ -573,6 +573,50 @@ describe('LiveMode focus management', () => {
     }
   });
 
+  it('moves view-tab focus with arrows and selects on Enter or Space', async () => {
+    await renderLive();
+    const cue = screen.getByRole('tab', { name: 'Cue-by-Cue' });
+    const list = screen.getByRole('tab', { name: 'Full List' });
+    expect(cue.getAttribute('aria-selected')).toBe('true');
+    expect(cue.tabIndex).toBe(0);
+    expect(list.getAttribute('aria-selected')).toBe('false');
+    expect(list.tabIndex).toBe(-1);
+
+    cue.focus();
+    fireEvent.keyDown(cue, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(list);
+    expect(cue.getAttribute('aria-selected')).toBe('true');
+    expect(list.getAttribute('aria-selected')).toBe('false');
+
+    fireEvent.keyDown(list, { key: 'Enter' });
+    expect(list.getAttribute('aria-selected')).toBe('true');
+    expect(list.tabIndex).toBe(0);
+    expect(cue.tabIndex).toBe(-1);
+
+    fireEvent.keyDown(list, { key: 'ArrowLeft' });
+    expect(document.activeElement).toBe(cue);
+    expect(list.getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.keyDown(cue, { key: ' ' });
+    expect(cue.getAttribute('aria-selected')).toBe('true');
+    expect(list.getAttribute('aria-selected')).toBe('false');
+
+    fireEvent.keyDown(cue, { key: 'End' });
+    expect(document.activeElement).toBe(list);
+    expect(cue.getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.keyDown(list, { key: 'Home' });
+    expect(document.activeElement).toBe(cue);
+
+    fireEvent.keyDown(cue, { key: 'ArrowLeft' });
+    expect(document.activeElement).toBe(list);
+    expect(list.getAttribute('aria-selected')).toBe('false');
+
+    fireEvent.keyDown(list, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(cue);
+    expect(cue.getAttribute('aria-selected')).toBe('true');
+  });
+
   it('keeps secondary transport controls operable after switching to Full List', async () => {
     await renderLive();
     fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
