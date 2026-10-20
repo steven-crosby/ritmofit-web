@@ -1053,7 +1053,7 @@ describe('LiveMode waiting panel grace', () => {
 
   it('keeps a sub-2s buffering gap off the recovery panel and leaves focus put', async () => {
     const stalled = { current: false };
-    let transport: AdapterEvents['onTransportState'] = () => {};
+    let transport: NonNullable<AdapterEvents['onTransportState']> = () => {};
     await startTeaching((events) => {
       transport = (state) => events.onTransportState?.(state);
       return playingTransportAdapter(stalled);
@@ -1085,7 +1085,7 @@ describe('LiveMode waiting panel grace', () => {
 
   it('mounts the waiting section once a buffering gap lasts 2 seconds', async () => {
     const stalled = { current: false };
-    let transport: AdapterEvents['onTransportState'] = () => {};
+    let transport: NonNullable<AdapterEvents['onTransportState']> = () => {};
     await startTeaching((events) => {
       transport = (state) => events.onTransportState?.(state);
       return playingTransportAdapter(stalled);
@@ -1157,7 +1157,7 @@ describe('LiveMode waiting panel grace', () => {
     let prepares = 0;
     const pending = deferred<{ provider: 'soundcloud'; classTrackId: string }>();
     vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
-    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+    vi.mocked(soundcloudAdapterFactory).mockImplementation((): PlaybackAdapter => {
       let positionMs = 0;
       return {
         provider: 'soundcloud',
