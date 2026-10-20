@@ -13,6 +13,30 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-20 — #527–#530 on main `9e43307`.** Owner-approved production deploy at
+> 2026-10-20T22:44:21Z (4:44 PM MT). New Worker `cb549532-a8c6-4807-adbe-d8a6b36adf38`;
+> previous/rollback `73493517-2006-4beb-bf7c-cdb1edf298fd`. SPA entry
+> `assets/index-C_SFpl0g.js`, confirmed by three consecutive cache-busted fetches.
+> Pre-deploy full gate passed on `9e43307`. Remote D1 had no migrations to apply.
+> `BETA_ALLOWED_EMAILS` present.
+>
+> Deployed batch: [#527](https://github.com/steven-crosby/ritmofit-web/pull/527) (Live tab
+> keyboard navigation, Hono 4.13.7 → 4.13.11,
+> [GHSA-5r4p-p66f-jhc7](https://github.com/advisories/GHSA-5r4p-p66f-jhc7)),
+> [#528](https://github.com/steven-crosby/ritmofit-web/pull/528) (docs),
+> [#529](https://github.com/steven-crosby/ritmofit-web/pull/529) (class-route access and
+> run-payload contract integration tests), and
+> [#530](https://github.com/steven-crosby/ritmofit-web/pull/530) (2s presentation grace on
+> the Live Waiting for music panel).
+>
+> Smoke: `/` 200, `/api/v1/health` 200; unauthenticated `/api/v1/classes`, `/explore`, and
+> `/teams` 401. Six security headers present. Production matches main `9e43307`.
+>
+> Closed [the #527 session handoff](./handoffs/2026-10-20-live-tab-typecheck.md) and the
+> [r20261020 lane-2 handoff](./handoffs/2026-10-20-r20261020-lane2-runpayload-harden.md)
+> from #529 after both had merged and this deploy shipped them. #530 added no handoff.
+> The 2026-10-11 handoffs and the Apple 5:18 investigation handoff are unchanged.
+
 > **Close-session 2026-10-20 — #527 merged and verified; deployment held.**
 > [#527](https://github.com/steven-crosby/ritmofit-web/pull/527) squash-merged as
 > `4ee691213ebd388c8c5e2dcbd8b4987102816c7d`. Live's Cue-by-Cue / Full List tabs now

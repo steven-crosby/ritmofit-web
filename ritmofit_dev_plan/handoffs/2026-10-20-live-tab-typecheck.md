@@ -5,11 +5,11 @@ lane: solo
 branch: codex/session-close-20261020
 head: 4ee691213ebd388c8c5e2dcbd8b4987102816c7d
 base: 4ee691213ebd388c8c5e2dcbd8b4987102816c7d
-prs: ['#527 (merged; post-main CI passed)', 'close-record docs PR pending authorization']
-status: open
+prs: ['#527 (merged; deployed with main 9e43307)', '#528 (merged)']
+status: closed
 ---
 
-# #527 merged with green post-main CI; deployment held and close records pending publication
+# #527 is on production with main 9e43307; this handoff is closed
 
 ## Done
 
@@ -40,27 +40,34 @@ status: open
 - Completed Cursor #527 handoff retired after routing its delivery state and fixture notes.
   Other authors' remaining handoffs, untracked `.claude/` and lane brief, verification tag,
   existing audit evidence and fixtures remain untouched.
+- Hono 4.13.11 addresses
+  [GHSA-5r4p-p66f-jhc7](https://github.com/advisories/GHSA-5r4p-p66f-jhc7).
+  Existing audit exceptions were unchanged; no new exception was added.
+- Owner-approved production deploy on 2026-10-20 at 22:44:21Z (4:44 PM MT) shipped main
+  `9e43307`, which includes #527. Worker `cb549532-a8c6-4807-adbe-d8a6b36adf38`;
+  previous/rollback `73493517-2006-4beb-bf7c-cdb1edf298fd`. SPA entry
+  `assets/index-C_SFpl0g.js`, confirmed by three consecutive cache-busted fetches.
+  Pre-deploy full gate passed on `9e43307`. Remote D1 had no migrations to apply.
+  `BETA_ALLOWED_EMAILS` present. Smoke: `/` 200, `/api/v1/health` 200; unauthenticated
+  `/api/v1/classes`, `/explore`, and `/teams` 401; six security headers present.
+  Production matches main. This handoff is closed.
 
 ## In flight
 
-- Close records are local on `codex/session-close-20261020`, pending owner authorization
-  of commit scope, push, and a docs PR. No close-record publication or merge is claimed.
-- Full local gate now passes, including `pnpm audit:ci`. Hono 4.13.11 addresses
-  [GHSA-5r4p-p66f-jhc7](https://github.com/advisories/GHSA-5r4p-p66f-jhc7).
-  Existing audit exceptions were unchanged; no new exception was added.
+None.
 
 ## Next action
 
-Publish these close records through a docs PR after owner authorization. Once that record
-is on main, the next product action is Steven's separate deployment decision for #527.
-Deployment remains explicitly held; do not deploy from close-session.
+None. #527 is on production with main `9e43307`. The deploy record lives in HISTORY and
+DEVELOPMENT_PLAN.
 
 ## Blockers and owner decisions
 
-- No product verification blocker remains; final-head and post-main CI passed.
-- Close-record commit/push/PR scope needs owner approval. Remote branch deletion and fixture
-  deletion remain unauthorized. Deployment remains explicitly prohibited.
-- Apple 5:18 investigation remains tabled. Other authors' handoffs are unchanged.
+- None for this handoff. The deployment hold is closed by the owner-approved 2026-10-20 deploy.
+- Remote branch deletion and local fixture cleanup were outside this deploy record and are
+  unchanged here.
+- Apple 5:18 investigation remains tabled in its own handoff. The 2026-10-11 handoffs were
+  not edited.
 
 ## Verification
 
@@ -90,10 +97,11 @@ Deployment remains explicitly held; do not deploy from close-session.
   Worker `73493517-2006-4beb-bf7c-cdb1edf298fd` at 100%; three cache-busted SPA entries
   matched `assets/index-C1EvvyLa.js`, served SHA-256
   `9c8ac2825d5c5a2cf17be7b831949e6e60fbac192f1388a5cb9573882a25bb95`.
-- After #527 merged, fresh read-only Worker status and three consecutive cache-busted SPA
-  requests still matched those production identities. Main `4ee6912` is ahead of deployed
-  source `4fd1ecd` by #527's Live keyboard navigation and Hono patch. Deployment is explicitly
-  held. No migration files changed; remote migrations were not checked this session.
+- Owner-approved deploy on 2026-10-20 at 22:44:21Z (4:44 PM MT) of main `9e43307`.
+  Worker `cb549532-a8c6-4807-adbe-d8a6b36adf38`; previous/rollback
+  `73493517-2006-4beb-bf7c-cdb1edf298fd`. SPA `assets/index-C_SFpl0g.js` on three
+  consecutive cache-busted fetches. Remote D1 had no migrations to apply.
+  `BETA_ALLOWED_EMAILS` present. Production matches main.
 
 ## Shared zones touched
 
@@ -104,5 +112,5 @@ provider, playback-runtime, style, or token implementation changes.
 ## Notes for other lanes / iOS
 
 No API or shared-contract change. Earlier Cursor handoff is retired after completed delivery;
-its outstanding local fixture notes are retained above. This open handoff stays because main
-is ahead of production and close-record publication is owed.
+its outstanding local fixture notes are retained above. Closed after #527 deployed with main
+`9e43307`. Nothing in this handoff is owed forward.
