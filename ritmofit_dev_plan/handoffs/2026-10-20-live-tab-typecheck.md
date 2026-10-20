@@ -3,9 +3,9 @@ date: 2026-10-20
 tool: Codex (local)
 lane: solo
 branch: cursor/r20261019-live-view-tabs
-head: 09da1ceb3bbd4fb4da11e9d6f7f7f11d25b50079 (parent of the repair and verification commit)
+head: bb39e8270b3b8fc0f88594250da642f57111d2d2
 base: 089317d952af2fd855b7bd432aa760f23b6b3cc3
-prs: ['#527 (open; repair and verification publication authorized)']
+prs: ['#527 (published; merge and post-main CI authorized, deployment held)']
 status: open
 ---
 
@@ -26,27 +26,30 @@ status: open
 - The initial receipt retains its audit failure. Subsequent
   [Hono verification](../../docs/audits/live-tab-typecheck-2026-10-20/hono-verification.json)
   records the full passing gate and unchanged source hashes before/after that run.
+- Repair/dependency/evidence commit `bb39e82` is pushed to #527. Full
+  [hosted CI 39469521132](https://github.com/steven-crosby/ritmofit-web/actions/runs/39469521132)
+  passed on that exact head, including typecheck and dependency audit.
 
 ## In flight
 
-- Steven authorized committing and pushing the tab repair, Hono update, and verification records
-  to #527 on 2026-10-20, followed by checking hosted CI. This record accompanies that publication.
-  Hosted CI for the new head is pending at publication time; the prior published head failed
-  typecheck and is not evidence for these corrections.
+- Steven authorized squash-merging #527 and checking post-main CI on 2026-10-20, explicitly
+  holding deployment. This bookkeeping update records the undeployed batch before merge;
+  its new head requires a fresh CI check before the authorized merge.
 - Full local gate now passes, including `pnpm audit:ci`. Hono 4.13.11 addresses
   [GHSA-5r4p-p66f-jhc7](https://github.com/advisories/GHSA-5r4p-p66f-jhc7).
   Existing audit exceptions were unchanged; no new exception was added.
 
 ## Next action
 
-Confirm hosted CI on the exact published #527 head, then return its result to Steven for
-the separate merge decision. Steven explicitly prohibited merge and deployment in this step.
+Complete the authorized squash merge after the final PR head passes CI, then check hosted CI
+on the exact resulting main SHA. After that check, hold the undeployed #527 batch for Steven's
+separate deployment decision. Do not deploy.
 
 ## Blockers and owner decisions
 
-- No local verification blocker remains. Hosted CI for the publication is pending at record time.
-- Commit/push and CI inspection are authorized. Merge and deployment are explicitly prohibited;
-  fixture deletion remains unauthorized.
+- No product verification blocker remains. Final bookkeeping-head and post-main CI are owed.
+- Merge and CI inspection are authorized; deployment is explicitly prohibited.
+  Fixture deletion remains unauthorized.
 - Apple 5:18 investigation remains tabled. Other authors' handoffs are unchanged.
 
 ## Verification
@@ -72,7 +75,9 @@ the separate merge decision. Steven explicitly prohibited merge and deployment i
   Worker `73493517-2006-4beb-bf7c-cdb1edf298fd` at 100%; three cache-busted SPA entries
   matched `assets/index-C1EvvyLa.js`, served SHA-256
   `9c8ac2825d5c5a2cf17be7b831949e6e60fbac192f1388a5cb9573882a25bb95`.
-- #527 and this repair are not deployed. Remote migrations were not checked this session.
+- #527 is not deployed. Once the authorized merge completes, main is ahead of production by
+  #527's Live keyboard navigation and Hono patch. Deployment is explicitly held. No migration
+  files changed; remote migrations were not checked this session.
 
 ## Shared zones touched
 
