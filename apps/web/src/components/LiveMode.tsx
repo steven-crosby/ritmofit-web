@@ -1183,7 +1183,8 @@ function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void 
       return;
     } else return;
     event.preventDefault();
-    tabRefs.current[VIEW_TABS[next]]?.focus();
+    const nextView = VIEW_TABS[next];
+    if (nextView !== undefined) tabRefs.current[nextView]?.focus();
   };
 
   return (

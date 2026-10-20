@@ -1,0 +1,106 @@
+{
+  "date": "2026-10-20",
+  "honoVersion": "4.13.11",
+  "checks": [
+    {
+      "name": "format",
+      "command": ["pnpm", "format:check"],
+      "exit": 0,
+      "seconds": 3.9
+    },
+    {
+      "name": "typecheck",
+      "command": ["pnpm", "-r", "typecheck"],
+      "exit": 0,
+      "seconds": 7.8
+    },
+    {
+      "name": "lint",
+      "command": ["pnpm", "lint"],
+      "exit": 0,
+      "seconds": 4.0
+    },
+    {
+      "name": "design-system",
+      "command": ["npm", "run", "verify"],
+      "exit": 0,
+      "seconds": 0.3
+    },
+    {
+      "name": "theme-selftest",
+      "command": ["pnpm", "--filter", "@ritmofit/web", "theme-classes", "--selftest"],
+      "exit": 0,
+      "seconds": 0.6
+    },
+    {
+      "name": "theme-classes",
+      "command": ["pnpm", "--filter", "@ritmofit/web", "theme-classes"],
+      "exit": 0,
+      "seconds": 0.5
+    },
+    {
+      "name": "unit",
+      "command": ["pnpm", "test"],
+      "exit": 0,
+      "seconds": 27.1
+    },
+    {
+      "name": "integration",
+      "command": ["pnpm", "--filter", "@ritmofit/api", "test:integration"],
+      "exit": 0,
+      "seconds": 20.8
+    },
+    {
+      "name": "web-build",
+      "command": ["pnpm", "--filter", "@ritmofit/web", "build"],
+      "exit": 0,
+      "seconds": 7.2
+    },
+    {
+      "name": "openapi",
+      "command": ["pnpm", "--filter", "@ritmofit/api", "openapi"],
+      "exit": 0,
+      "seconds": 0.5
+    },
+    {
+      "name": "openapi-no-diff",
+      "command": ["git", "diff", "--exit-code", "apps/api/openapi/openapi.json"],
+      "exit": 0,
+      "seconds": 0.0
+    },
+    {
+      "name": "contract-parity",
+      "command": ["pnpm", "--filter", "@ritmofit/api", "contract-parity"],
+      "exit": 0,
+      "seconds": 0.5
+    },
+    {
+      "name": "audit",
+      "command": ["pnpm", "audit:ci"],
+      "exit": 0,
+      "seconds": 0.8
+    }
+  ],
+  "sourceHashesBefore": {
+    "apps/api/package.json": "94e06110d9e582c7c9b2343b1ea8552e108067db0ac4196b2911345cfec92df8",
+    "pnpm-lock.yaml": "55bf92f74ecc437f3fb3b8e77065d6ce1ead6421e0b364fbfcca083e8551f152",
+    "apps/web/src/components/LiveMode.tsx": "93eae9a54a51d7b7812dfef89d34b4ee8539b6b3d4bf37da56e74e7c1dbe609d",
+    "apps/web/src/components/LiveMode.test.tsx": "5128bc0da89389407228225b1fb6bc554caf3fdb59044bd72fcc5b21e0e05280"
+  },
+  "sourceHashesAfter": {
+    "apps/api/package.json": "94e06110d9e582c7c9b2343b1ea8552e108067db0ac4196b2911345cfec92df8",
+    "pnpm-lock.yaml": "55bf92f74ecc437f3fb3b8e77065d6ce1ead6421e0b364fbfcca083e8551f152",
+    "apps/web/src/components/LiveMode.tsx": "93eae9a54a51d7b7812dfef89d34b4ee8539b6b3d4bf37da56e74e7c1dbe609d",
+    "apps/web/src/components/LiveMode.test.tsx": "5128bc0da89389407228225b1fb6bc554caf3fdb59044bd72fcc5b21e0e05280"
+  },
+  "sourceUnchanged": true,
+  "unitTests": {
+    "web": 1185,
+    "api": 486,
+    "music": 30
+  },
+  "integrationTests": 184,
+  "auditOutput": "$ pnpm audit --prod\n2 vulnerabilities found\nSeverity: 1 low (1 ignored) | 1 moderate (1 ignored)\n",
+  "advisory": "https://github.com/advisories/GHSA-5r4p-p66f-jhc7",
+  "browserEvidence": "Prior keyboard observations retained in keyboard-results.json; no new browser run after the API dependency update."
+}
