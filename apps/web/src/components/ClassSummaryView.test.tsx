@@ -50,11 +50,11 @@ describe('ClassSummaryView', () => {
     expect(api.getRunPayload).toHaveBeenCalledTimes(2);
   });
 
-  it.each([
+  it.each<[string, unknown]>([
     ['an empty Error message', new Error('')],
     ['a non-Error rejection', { code: 1 }],
-  ])('shows the summary recovery panel for %s', async (_label, rejection) => {
-    vi.mocked(api.getRunPayload).mockRejectedValueOnce(rejection);
+  ])('shows the summary recovery panel for %s', async (_label: string, rejection: unknown) => {
+    vi.mocked(api.getRunPayload).mockImplementationOnce(() => Promise.reject(rejection));
 
     render(<ClassSummaryView classId="c1" onClose={() => {}} onCopied={() => {}} />);
 
