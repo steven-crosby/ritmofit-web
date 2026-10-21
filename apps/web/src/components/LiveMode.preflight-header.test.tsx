@@ -79,6 +79,12 @@ describe('LiveMode preflight header', () => {
     expect(heading.classList.contains('break-words')).toBe(true);
     expect(heading.textContent).toBe(unbreakableTitle);
 
+    const header = heading.closest('header');
+    const shell = header?.parentElement?.parentElement;
+    expect(shell?.classList.contains('overflow-y-auto')).toBe(true);
+    expect(header?.classList.contains('shrink-0')).toBe(true);
+    expect(header?.nextElementSibling?.classList.contains('min-h-0')).toBe(false);
+
     fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
     expect(onExit).toHaveBeenCalledTimes(1);
   });

@@ -83,7 +83,7 @@
         }
       ]
     },
-    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-320-qa.png"
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/before-320-qa.png"
   },
   {
     "phase": "before",
@@ -193,7 +193,7 @@
         }
       ]
     },
-    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-320-spaced.png"
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/before-320-spaced.png"
   },
   {
     "phase": "before",
@@ -279,7 +279,7 @@
         }
       ]
     },
-    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-320-unbreakable.png"
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/before-320-unbreakable.png"
   },
   {
     "phase": "before",
@@ -365,7 +365,7 @@
         }
       ]
     },
-    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-390-qa.png"
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/before-390-qa.png"
   },
   {
     "phase": "before",
@@ -467,7 +467,7 @@
         }
       ]
     },
-    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-390-spaced.png"
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/before-390-spaced.png"
   },
   {
     "phase": "before",
@@ -553,7 +553,7 @@
         }
       ]
     },
-    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-390-unbreakable.png"
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/before-390-unbreakable.png"
   },
   {
     "phase": "before",
@@ -639,7 +639,7 @@
         }
       ]
     },
-    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-1440-qa.png"
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/before-1440-qa.png"
   },
   {
     "phase": "before",
@@ -725,7 +725,7 @@
         }
       ]
     },
-    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-1440-spaced.png"
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/before-1440-spaced.png"
   },
   {
     "phase": "before",
@@ -811,6 +811,6 @@
         }
       ]
     },
-    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-1440-unbreakable.png"
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/before-1440-unbreakable.png"
   }
 ]
