@@ -13,6 +13,40 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-21 — #532, #535, and #536 on main `80b5e0f`.** Owner released the hold.
+> Production deploy at 2026-10-21T19:26:50Z (1:26 PM MT). New Worker
+> `d35db864-3d34-4803-9c4f-d560c859da4d`; previous/rollback
+> `cb549532-a8c6-4807-adbe-d8a6b36adf38`. SPA entry `assets/index-DDKy4C-k.js`
+> (CSS `assets/index-BME8DglN.css`), confirmed by three consecutive cache-busted
+> fetches on the first triple. Pre-deploy full gate passed on `80b5e0f` from a
+> clean detached worktree (format, typecheck, lint, design verify, theme-classes,
+> unit tests web 1215 / api 486 / music 30, Worker/D1 integration 196, web build,
+> OpenAPI no drift, contract-parity, audit:ci). The gate ran on Node v26.7.0;
+> `.nvmrc` is 22 and Node 22 is not installed on this Mac. Remote D1 had no
+> migrations to apply, and no migration files changed between production
+> `9e43307` and `80b5e0f`. `BETA_ALLOWED_EMAILS` present (name only).
+>
+> Deployed since production `9e43307`:
+> [#531](https://github.com/steven-crosby/ritmofit-web/pull/531) (docs),
+> [#532](https://github.com/steven-crosby/ritmofit-web/pull/532) (preserve
+> untouched clip-end precision, `421d0dc`),
+> [#534](https://github.com/steven-crosby/ritmofit-web/pull/534) (docs),
+> [#535](https://github.com/steven-crosby/ritmofit-web/pull/535) (builder failure
+> fallback when an error has no message, `3a1cc3f`), and
+> [#536](https://github.com/steven-crosby/ritmofit-web/pull/536) (Live preflight
+> Exit stays inside the header, `80b5e0f`).
+> [#533](https://github.com/steven-crosby/ritmofit-web/pull/533) was not merged
+> and was not deployed. The round handoff still describes the pre-deploy state
+> and was not edited.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 (`status: ok`, service `ritmofit-api`);
+> unauthenticated `/api/v1/classes`, `/explore`, and `/teams` 401. Six security
+> headers present. Unauthenticated class shares, playlist import, Spotify search,
+> saved playlists, track import, cover upload, tag add/remove, and moves returned
+> 401. `GET /api/v1/uploads/covers/smoke-missing.jpg` reached the handler as
+> 404 `NOT_FOUND` (Image not found). Worker status 100% on `d35db864`. Production
+> matches main `80b5e0f`.
+
 > **Close-session 2026-10-21 — #532 merged, undeployed; #533 left open.**
 > Round r20261021 (Codex, local), orchestrator light close.
 > [#532](https://github.com/steven-crosby/ritmofit-web/pull/532)
