@@ -842,7 +842,7 @@ export function LiveMode({
           <h1
             ref={headingRef}
             tabIndex={-1}
-            className="font-display text-lg font-semibold text-text-primary focus:outline-none"
+            className="min-w-0 break-words font-display text-lg font-semibold text-text-primary focus:outline-none"
           >
             {payload.class.title}
           </h1>

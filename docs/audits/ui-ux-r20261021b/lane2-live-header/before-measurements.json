@@ -1,0 +1,816 @@
+[
+  {
+    "phase": "before",
+    "width": 320,
+    "name": "qa",
+    "titleLength": 27,
+    "exitInsideHeader": true,
+    "exitInsideViewport": true,
+    "headerFitsViewport": true,
+    "titleCrossesExit": false,
+    "textCrossesExit": false,
+    "exitWideEnough": true,
+    "focusedName": "Exit",
+    "exited": true,
+    "pass": true,
+    "measured": {
+      "viewport": {
+        "width": 320,
+        "height": 800
+      },
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "h1Class": "font-display text-lg font-semibold text-text-primary focus:outline-none",
+      "exitClass": "min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring",
+      "titleText": "[QA] Preflight 15 r20261021",
+      "font": "600 18px / 28px \"Bricolage Grotesque\", \"SF Pro Display\", system-ui, sans-serif",
+      "overflowWrap": "normal",
+      "wordBreak": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "exitMinHeight": "44px",
+      "header": {
+        "left": 0,
+        "right": 320,
+        "top": 0,
+        "bottom": 68,
+        "width": 320,
+        "height": 68
+      },
+      "parent": {
+        "left": 0,
+        "right": 320,
+        "top": 0,
+        "bottom": 800,
+        "width": 320,
+        "height": 800
+      },
+      "title": {
+        "left": 16,
+        "right": 242.53125,
+        "top": 20,
+        "bottom": 48,
+        "width": 226.53125,
+        "height": 28
+      },
+      "exit": {
+        "left": 243.46875,
+        "right": 304,
+        "top": 12,
+        "bottom": 56,
+        "width": 60.53125,
+        "height": 44
+      },
+      "textLineCount": 1,
+      "textRects": [
+        {
+          "left": 16,
+          "right": 242.53125,
+          "top": 23,
+          "bottom": 45,
+          "width": 226.53125,
+          "height": 22
+        }
+      ],
+      "bricolage": [
+        {
+          "status": "loaded",
+          "weight": "200 800"
+        },
+        {
+          "status": "unloaded",
+          "weight": "200 800"
+        }
+      ]
+    },
+    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-320-qa.png"
+  },
+  {
+    "phase": "before",
+    "width": 320,
+    "name": "spaced",
+    "titleLength": 86,
+    "exitInsideHeader": true,
+    "exitInsideViewport": true,
+    "headerFitsViewport": true,
+    "titleCrossesExit": false,
+    "textCrossesExit": false,
+    "exitWideEnough": true,
+    "focusedName": "Exit",
+    "exited": true,
+    "pass": true,
+    "measured": {
+      "viewport": {
+        "width": 320,
+        "height": 800
+      },
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "h1Class": "font-display text-lg font-semibold text-text-primary focus:outline-none",
+      "exitClass": "min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring",
+      "titleText": "Saturday Morning Power Cycle Hills Repeats Climbs and Cadence Drills for the Long Room",
+      "font": "600 18px / 28px \"Bricolage Grotesque\", \"SF Pro Display\", system-ui, sans-serif",
+      "overflowWrap": "normal",
+      "wordBreak": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "exitMinHeight": "44px",
+      "header": {
+        "left": 0,
+        "right": 320,
+        "top": 0,
+        "bottom": 136,
+        "width": 320,
+        "height": 136
+      },
+      "parent": {
+        "left": 0,
+        "right": 320,
+        "top": 0,
+        "bottom": 800,
+        "width": 320,
+        "height": 800
+      },
+      "title": {
+        "left": 16,
+        "right": 243.46875,
+        "top": 12,
+        "bottom": 124,
+        "width": 227.46875,
+        "height": 112
+      },
+      "exit": {
+        "left": 243.46875,
+        "right": 304,
+        "top": 46,
+        "bottom": 90,
+        "width": 60.53125,
+        "height": 44
+      },
+      "textLineCount": 4,
+      "textRects": [
+        {
+          "left": 16,
+          "right": 231.609375,
+          "top": 15,
+          "bottom": 37,
+          "width": 215.609375,
+          "height": 22
+        },
+        {
+          "left": 16,
+          "right": 243.40625,
+          "top": 43,
+          "bottom": 65,
+          "width": 227.40625,
+          "height": 22
+        },
+        {
+          "left": 16,
+          "right": 238.921875,
+          "top": 71,
+          "bottom": 93,
+          "width": 222.921875,
+          "height": 22
+        },
+        {
+          "left": 16,
+          "right": 112.109375,
+          "top": 99,
+          "bottom": 121,
+          "width": 96.109375,
+          "height": 22
+        }
+      ],
+      "bricolage": [
+        {
+          "status": "loaded",
+          "weight": "200 800"
+        },
+        {
+          "status": "unloaded",
+          "weight": "200 800"
+        }
+      ]
+    },
+    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-320-spaced.png"
+  },
+  {
+    "phase": "before",
+    "width": 320,
+    "name": "unbreakable",
+    "titleLength": 200,
+    "exitInsideHeader": false,
+    "exitInsideViewport": false,
+    "headerFitsViewport": true,
+    "titleCrossesExit": false,
+    "textCrossesExit": false,
+    "exitWideEnough": true,
+    "focusedName": "Exit",
+    "exited": true,
+    "pass": false,
+    "measured": {
+      "viewport": {
+        "width": 320,
+        "height": 800
+      },
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "h1Class": "font-display text-lg font-semibold text-text-primary focus:outline-none",
+      "exitClass": "min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring",
+      "titleText": "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "font": "600 18px / 28px \"Bricolage Grotesque\", \"SF Pro Display\", system-ui, sans-serif",
+      "overflowWrap": "normal",
+      "wordBreak": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "exitMinHeight": "44px",
+      "header": {
+        "left": 0,
+        "right": 320,
+        "top": 0,
+        "bottom": 68,
+        "width": 320,
+        "height": 68
+      },
+      "parent": {
+        "left": 0,
+        "right": 320,
+        "top": 0,
+        "bottom": 800,
+        "width": 320,
+        "height": 800
+      },
+      "title": {
+        "left": 16,
+        "right": 3608.84375,
+        "top": 20,
+        "bottom": 48,
+        "width": 3592.84375,
+        "height": 28
+      },
+      "exit": {
+        "left": 3608.84375,
+        "right": 3669.375,
+        "top": 12,
+        "bottom": 56,
+        "width": 60.53125,
+        "height": 44
+      },
+      "textLineCount": 1,
+      "textRects": [
+        {
+          "left": 16,
+          "right": 3608.84375,
+          "top": 23,
+          "bottom": 45,
+          "width": 3592.84375,
+          "height": 22
+        }
+      ],
+      "bricolage": [
+        {
+          "status": "loaded",
+          "weight": "200 800"
+        },
+        {
+          "status": "unloaded",
+          "weight": "200 800"
+        }
+      ]
+    },
+    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-320-unbreakable.png"
+  },
+  {
+    "phase": "before",
+    "width": 390,
+    "name": "qa",
+    "titleLength": 27,
+    "exitInsideHeader": true,
+    "exitInsideViewport": true,
+    "headerFitsViewport": true,
+    "titleCrossesExit": false,
+    "textCrossesExit": false,
+    "exitWideEnough": true,
+    "focusedName": "Exit",
+    "exited": true,
+    "pass": true,
+    "measured": {
+      "viewport": {
+        "width": 390,
+        "height": 800
+      },
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "h1Class": "font-display text-lg font-semibold text-text-primary focus:outline-none",
+      "exitClass": "min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring",
+      "titleText": "[QA] Preflight 15 r20261021",
+      "font": "600 18px / 28px \"Bricolage Grotesque\", \"SF Pro Display\", system-ui, sans-serif",
+      "overflowWrap": "normal",
+      "wordBreak": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "exitMinHeight": "44px",
+      "header": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 68,
+        "width": 390,
+        "height": 68
+      },
+      "parent": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 800,
+        "width": 390,
+        "height": 800
+      },
+      "title": {
+        "left": 16,
+        "right": 242.53125,
+        "top": 20,
+        "bottom": 48,
+        "width": 226.53125,
+        "height": 28
+      },
+      "exit": {
+        "left": 313.46875,
+        "right": 374,
+        "top": 12,
+        "bottom": 56,
+        "width": 60.53125,
+        "height": 44
+      },
+      "textLineCount": 1,
+      "textRects": [
+        {
+          "left": 16,
+          "right": 242.53125,
+          "top": 23,
+          "bottom": 45,
+          "width": 226.53125,
+          "height": 22
+        }
+      ],
+      "bricolage": [
+        {
+          "status": "loaded",
+          "weight": "200 800"
+        },
+        {
+          "status": "unloaded",
+          "weight": "200 800"
+        }
+      ]
+    },
+    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-390-qa.png"
+  },
+  {
+    "phase": "before",
+    "width": 390,
+    "name": "spaced",
+    "titleLength": 86,
+    "exitInsideHeader": true,
+    "exitInsideViewport": true,
+    "headerFitsViewport": true,
+    "titleCrossesExit": false,
+    "textCrossesExit": false,
+    "exitWideEnough": true,
+    "focusedName": "Exit",
+    "exited": true,
+    "pass": true,
+    "measured": {
+      "viewport": {
+        "width": 390,
+        "height": 800
+      },
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "h1Class": "font-display text-lg font-semibold text-text-primary focus:outline-none",
+      "exitClass": "min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring",
+      "titleText": "Saturday Morning Power Cycle Hills Repeats Climbs and Cadence Drills for the Long Room",
+      "font": "600 18px / 28px \"Bricolage Grotesque\", \"SF Pro Display\", system-ui, sans-serif",
+      "overflowWrap": "normal",
+      "wordBreak": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "exitMinHeight": "44px",
+      "header": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 108,
+        "width": 390,
+        "height": 108
+      },
+      "parent": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 800,
+        "width": 390,
+        "height": 800
+      },
+      "title": {
+        "left": 16,
+        "right": 313.46875,
+        "top": 12,
+        "bottom": 96,
+        "width": 297.46875,
+        "height": 84
+      },
+      "exit": {
+        "left": 313.46875,
+        "right": 374,
+        "top": 32,
+        "bottom": 76,
+        "width": 60.53125,
+        "height": 44
+      },
+      "textLineCount": 3,
+      "textRects": [
+        {
+          "left": 16,
+          "right": 283.6875,
+          "top": 15,
+          "bottom": 37,
+          "width": 267.6875,
+          "height": 22
+        },
+        {
+          "left": 16,
+          "right": 308.046875,
+          "top": 43,
+          "bottom": 65,
+          "width": 292.046875,
+          "height": 22
+        },
+        {
+          "left": 16,
+          "right": 222.578125,
+          "top": 71,
+          "bottom": 93,
+          "width": 206.578125,
+          "height": 22
+        }
+      ],
+      "bricolage": [
+        {
+          "status": "loaded",
+          "weight": "200 800"
+        },
+        {
+          "status": "unloaded",
+          "weight": "200 800"
+        }
+      ]
+    },
+    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-390-spaced.png"
+  },
+  {
+    "phase": "before",
+    "width": 390,
+    "name": "unbreakable",
+    "titleLength": 200,
+    "exitInsideHeader": false,
+    "exitInsideViewport": false,
+    "headerFitsViewport": true,
+    "titleCrossesExit": false,
+    "textCrossesExit": false,
+    "exitWideEnough": true,
+    "focusedName": "Exit",
+    "exited": true,
+    "pass": false,
+    "measured": {
+      "viewport": {
+        "width": 390,
+        "height": 800
+      },
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "h1Class": "font-display text-lg font-semibold text-text-primary focus:outline-none",
+      "exitClass": "min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring",
+      "titleText": "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "font": "600 18px / 28px \"Bricolage Grotesque\", \"SF Pro Display\", system-ui, sans-serif",
+      "overflowWrap": "normal",
+      "wordBreak": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "exitMinHeight": "44px",
+      "header": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 68,
+        "width": 390,
+        "height": 68
+      },
+      "parent": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 800,
+        "width": 390,
+        "height": 800
+      },
+      "title": {
+        "left": 16,
+        "right": 3608.84375,
+        "top": 20,
+        "bottom": 48,
+        "width": 3592.84375,
+        "height": 28
+      },
+      "exit": {
+        "left": 3608.84375,
+        "right": 3669.375,
+        "top": 12,
+        "bottom": 56,
+        "width": 60.53125,
+        "height": 44
+      },
+      "textLineCount": 1,
+      "textRects": [
+        {
+          "left": 16,
+          "right": 3608.84375,
+          "top": 23,
+          "bottom": 45,
+          "width": 3592.84375,
+          "height": 22
+        }
+      ],
+      "bricolage": [
+        {
+          "status": "loaded",
+          "weight": "200 800"
+        },
+        {
+          "status": "unloaded",
+          "weight": "200 800"
+        }
+      ]
+    },
+    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-390-unbreakable.png"
+  },
+  {
+    "phase": "before",
+    "width": 1440,
+    "name": "qa",
+    "titleLength": 27,
+    "exitInsideHeader": true,
+    "exitInsideViewport": true,
+    "headerFitsViewport": true,
+    "titleCrossesExit": false,
+    "textCrossesExit": false,
+    "exitWideEnough": true,
+    "focusedName": "Exit",
+    "exited": true,
+    "pass": true,
+    "measured": {
+      "viewport": {
+        "width": 1440,
+        "height": 800
+      },
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "h1Class": "font-display text-lg font-semibold text-text-primary focus:outline-none",
+      "exitClass": "min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring",
+      "titleText": "[QA] Preflight 15 r20261021",
+      "font": "600 18px / 28px \"Bricolage Grotesque\", \"SF Pro Display\", system-ui, sans-serif",
+      "overflowWrap": "normal",
+      "wordBreak": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "exitMinHeight": "44px",
+      "header": {
+        "left": 0,
+        "right": 1440,
+        "top": 0,
+        "bottom": 68,
+        "width": 1440,
+        "height": 68
+      },
+      "parent": {
+        "left": 0,
+        "right": 1440,
+        "top": 0,
+        "bottom": 800,
+        "width": 1440,
+        "height": 800
+      },
+      "title": {
+        "left": 24,
+        "right": 250.53125,
+        "top": 20,
+        "bottom": 48,
+        "width": 226.53125,
+        "height": 28
+      },
+      "exit": {
+        "left": 1355.46875,
+        "right": 1416,
+        "top": 12,
+        "bottom": 56,
+        "width": 60.53125,
+        "height": 44
+      },
+      "textLineCount": 1,
+      "textRects": [
+        {
+          "left": 24,
+          "right": 250.53125,
+          "top": 23,
+          "bottom": 45,
+          "width": 226.53125,
+          "height": 22
+        }
+      ],
+      "bricolage": [
+        {
+          "status": "loaded",
+          "weight": "200 800"
+        },
+        {
+          "status": "unloaded",
+          "weight": "200 800"
+        }
+      ]
+    },
+    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-1440-qa.png"
+  },
+  {
+    "phase": "before",
+    "width": 1440,
+    "name": "spaced",
+    "titleLength": 86,
+    "exitInsideHeader": true,
+    "exitInsideViewport": true,
+    "headerFitsViewport": true,
+    "titleCrossesExit": false,
+    "textCrossesExit": false,
+    "exitWideEnough": true,
+    "focusedName": "Exit",
+    "exited": true,
+    "pass": true,
+    "measured": {
+      "viewport": {
+        "width": 1440,
+        "height": 800
+      },
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "h1Class": "font-display text-lg font-semibold text-text-primary focus:outline-none",
+      "exitClass": "min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring",
+      "titleText": "Saturday Morning Power Cycle Hills Repeats Climbs and Cadence Drills for the Long Room",
+      "font": "600 18px / 28px \"Bricolage Grotesque\", \"SF Pro Display\", system-ui, sans-serif",
+      "overflowWrap": "normal",
+      "wordBreak": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "exitMinHeight": "44px",
+      "header": {
+        "left": 0,
+        "right": 1440,
+        "top": 0,
+        "bottom": 68,
+        "width": 1440,
+        "height": 68
+      },
+      "parent": {
+        "left": 0,
+        "right": 1440,
+        "top": 0,
+        "bottom": 800,
+        "width": 1440,
+        "height": 800
+      },
+      "title": {
+        "left": 24,
+        "right": 798.765625,
+        "top": 20,
+        "bottom": 48,
+        "width": 774.765625,
+        "height": 28
+      },
+      "exit": {
+        "left": 1355.46875,
+        "right": 1416,
+        "top": 12,
+        "bottom": 56,
+        "width": 60.53125,
+        "height": 44
+      },
+      "textLineCount": 1,
+      "textRects": [
+        {
+          "left": 24,
+          "right": 798.765625,
+          "top": 23,
+          "bottom": 45,
+          "width": 774.765625,
+          "height": 22
+        }
+      ],
+      "bricolage": [
+        {
+          "status": "loaded",
+          "weight": "200 800"
+        },
+        {
+          "status": "unloaded",
+          "weight": "200 800"
+        }
+      ]
+    },
+    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-1440-spaced.png"
+  },
+  {
+    "phase": "before",
+    "width": 1440,
+    "name": "unbreakable",
+    "titleLength": 200,
+    "exitInsideHeader": false,
+    "exitInsideViewport": false,
+    "headerFitsViewport": true,
+    "titleCrossesExit": false,
+    "textCrossesExit": false,
+    "exitWideEnough": true,
+    "focusedName": "Exit",
+    "exited": true,
+    "pass": false,
+    "measured": {
+      "viewport": {
+        "width": 1440,
+        "height": 800
+      },
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "h1Class": "font-display text-lg font-semibold text-text-primary focus:outline-none",
+      "exitClass": "min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring",
+      "titleText": "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "font": "600 18px / 28px \"Bricolage Grotesque\", \"SF Pro Display\", system-ui, sans-serif",
+      "overflowWrap": "normal",
+      "wordBreak": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "exitMinHeight": "44px",
+      "header": {
+        "left": 0,
+        "right": 1440,
+        "top": 0,
+        "bottom": 68,
+        "width": 1440,
+        "height": 68
+      },
+      "parent": {
+        "left": 0,
+        "right": 1440,
+        "top": 0,
+        "bottom": 800,
+        "width": 1440,
+        "height": 800
+      },
+      "title": {
+        "left": 24,
+        "right": 3616.84375,
+        "top": 20,
+        "bottom": 48,
+        "width": 3592.84375,
+        "height": 28
+      },
+      "exit": {
+        "left": 3616.84375,
+        "right": 3677.375,
+        "top": 12,
+        "bottom": 56,
+        "width": 60.53125,
+        "height": 44
+      },
+      "textLineCount": 1,
+      "textRects": [
+        {
+          "left": 24,
+          "right": 3616.84375,
+          "top": 23,
+          "bottom": 45,
+          "width": 3592.84375,
+          "height": 22
+        }
+      ],
+      "bricolage": [
+        {
+          "status": "loaded",
+          "weight": "200 800"
+        },
+        {
+          "status": "unloaded",
+          "weight": "200 800"
+        }
+      ]
+    },
+    "screenshot": "/workspace/docs/audits/ui-ux-r20261021b/lane2-live-header/before-1440-unbreakable.png"
+  }
+]
