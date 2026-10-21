@@ -1,0 +1,84 @@
+{
+  "startedAt": "2026-10-21T12:18:09Z",
+  "finishedAt": "2026-10-21T12:19:23Z",
+  "exitCode": 0,
+  "performedBy": "Root serialized full-gate runner",
+  "results": [
+    {
+      "command": "pnpm format:check",
+      "exitCode": 0,
+      "durationSeconds": 4
+    },
+    {
+      "command": "pnpm -r typecheck",
+      "exitCode": 0,
+      "durationSeconds": 7
+    },
+    {
+      "command": "pnpm lint",
+      "exitCode": 0,
+      "durationSeconds": 4
+    },
+    {
+      "command": "(cd ritmofit_design_system && npm run verify)",
+      "exitCode": 0,
+      "durationSeconds": 1
+    },
+    {
+      "command": "pnpm --filter @ritmofit/web theme-classes --selftest",
+      "exitCode": 0,
+      "durationSeconds": 0
+    },
+    {
+      "command": "pnpm --filter @ritmofit/web theme-classes",
+      "exitCode": 0,
+      "durationSeconds": 1
+    },
+    {
+      "command": "pnpm test",
+      "exitCode": 0,
+      "durationSeconds": 26
+    },
+    {
+      "command": "pnpm --filter @ritmofit/api test:integration",
+      "exitCode": 0,
+      "durationSeconds": 22
+    },
+    {
+      "command": "pnpm --filter @ritmofit/web build",
+      "exitCode": 0,
+      "durationSeconds": 7
+    },
+    {
+      "command": "pnpm --filter @ritmofit/api openapi",
+      "exitCode": 0,
+      "durationSeconds": 1
+    },
+    {
+      "command": "git diff --exit-code apps/api/openapi/openapi.json",
+      "exitCode": 0,
+      "durationSeconds": 0
+    },
+    {
+      "command": "pnpm --filter @ritmofit/api contract-parity",
+      "exitCode": 0,
+      "durationSeconds": 0
+    },
+    {
+      "command": "pnpm audit:ci",
+      "exitCode": 0,
+      "durationSeconds": 1
+    }
+  ],
+  "commandsPassed": 13,
+  "attempts": 1,
+  "sourceSha256": {
+    "apps/web/src/components/Dashboard.tsx": "805e40fba22ef620f644d1ee27f04383802912a0193d0e1e8e86ee4611681554",
+    "apps/web/src/components/Dashboard.test.tsx": "f73cf9d6d59b155a025ca4a855e3bf7c9e282d7ef3cf1332ad9c0aff8a31fb75"
+  },
+  "sourceHashVerification": "Root reports gate ran on unchanged final source/test hashes; hashes also match focused/browser receipt.",
+  "testTotals": "Not attributed: raw per-command logs were not retained separately; shared log paths were overwritten by the subsequent other-lane gate. Do not infer aggregate totals. Focused Dashboard 143/143 is independently recorded in verification.json.",
+  "limits": [
+    "This local gate is not hosted CI, delivery, deployment, device, screen-reader or audible/provider acceptance."
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-21",
+  "base": "b716f8617c289bdb139e15b5130b494a8933e010",
+  "regressionBefore": {
+    "command": "pnpm --filter @ritmofit/web exec vitest run src/components/Dashboard.test.tsx -t 'preserves untouched .* clip end|preserves an untouched sub-second clip window'",
+    "exitCode": 1,
+    "failed": 5,
+    "skipped": 138,
+    "total": 143,
+    "observations": [
+      "Stored 1250ms end was sent as 1000ms for notes and BPM edits.",
+      "Stored 499ms end rejected notes and BPM edits before any write.",
+      "Stored 1250..1500ms window rejected an unrelated notes save before any write."
+    ]
+  },
+  "focusedAfter": {
+    "command": "pnpm --filter @ritmofit/web exec vitest run src/components/Dashboard.test.tsx",
+    "exitCode": 0,
+    "passed": 143,
+    "durationSeconds": 16.36
+  },
+  "initialInvocation": {
+    "command": "pnpm --filter @ritmofit/web test -- src/components/Dashboard.test.tsx -t 'preserves untouched .* clip end|preserves an untouched sub-second clip window'",
+    "result": "Interrupted with exit 130 after the argument separator caused broader web test selection; not a passing gate or focused result."
+  },
+  "sha256": {
+    "apps/web/src/components/Dashboard.tsx": "805e40fba22ef620f644d1ee27f04383802912a0193d0e1e8e86ee4611681554",
+    "apps/web/src/components/Dashboard.test.tsx": "f73cf9d6d59b155a025ca4a855e3bf7c9e282d7ef3cf1332ad9c0aff8a31fb75"
+  },
+  "pending": [
+    "Commit, push, PR creation",
+    "Hosted CI on published PR head",
+    "Owner merge decision"
+  ],
+  "limits": [
+    "Focused component tests use mocked API responses. Root browser separately verifies local D1 persistence.",
+    "No production probe, production fixture mutation, remote migration, merge or deployment.",
+    "Native 200% zoom, real device, screen reader and audible/provider acceptance remain unassessed."
+  ],
+  "browser": {
+    "receipt": "browser.json",
+    "performedBy": "Root serialized browser verifier",
+    "evidenceClass": "Local synthetic Chrome against local Worker/D1; persisted re-read and reload",
+    "passed": 13,
+    "pageErrors": 0,
+    "nativeZoom": "NOT_ASSESSED",
+    "nativeZoomReason": "CUA could not address the isolated QA Chrome process without targeting Steven\u2019s personal Chrome window. Only the Window menu was opened and dismissed; no native zoom command was issued. The actual Chrome layout at 320px passed, but is not native 200% zoom evidence."
+  },
+  "independentReview": "Root reports independent source review found no defects.",
+  "fullGate": {
+    "receipt": "full-gate.json",
+    "commandsPassed": 13,
+    "commandCount": 13,
+    "attempts": 1,
+    "exitCode": 0,
+    "startedAt": "2026-10-21T12:18:09Z",
+    "finishedAt": "2026-10-21T12:19:23Z",
+    "testTotals": "Not attributed; raw per-command logs were not retained separately."
+  }
+}
