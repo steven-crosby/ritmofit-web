@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { MusicConnectionView, RunPayloadTrackEntry } from '@ritmofit/shared';
+import type {
+  MusicConnectionView,
+  RunPayloadTrackEntry,
+  TrackSearchResult,
+} from '@ritmofit/shared';
 import { TrackPreview } from './TrackPreview.js';
 import * as api from '../lib/api.js';
 
@@ -307,4 +311,135 @@ describe('TrackPreview playback-window honesty', () => {
     expect(await screen.findByText(/Length not set/)).toBeTruthy();
     expect(screen.queryByText(/0:00–0:00/)).toBeNull();
   });
+});
+
+const resolveCandidate: TrackSearchResult = {
+  provider: 'spotify',
+  providerTrackId: 'cand-1',
+  providerUri: 'spotify:track:cand',
+  title: 'Manual Climb',
+  artist: 'Studio Notes',
+  albumArtUrl: null,
+  durationMs: 180_000,
+};
+
+describe('TrackPreview blank failure copy', () => {
+  it.each<[string, unknown]>([
+    ['an empty Error message', new Error('')],
+    ['a non-Error rejection', { code: 1 }],
+  ])('shows the connections fallback for %s', async (_label: string, rejection: unknown) => {
+    vi.mocked(api.listConnections).mockRejectedValue(rejection);
+
+    render(<TrackPreview entry={spotifyEntry} />);
+
+    const status = await screen.findByRole('status');
+    expect(status.textContent).toContain(
+      'Couldn’t check provider connections (Something went wrong.). Your class edit is unchanged.',
+    );
+    expect(screen.getByText('Playback unverified')).toBeTruthy();
+    expect(status.textContent).not.toContain('connections ().');
+  });
+
+  it('keeps a normal connections error message', async () => {
+    vi.mocked(api.listConnections).mockRejectedValue(new Error('connections down'));
+
+    render(<TrackPreview entry={spotifyEntry} />);
+
+    expect(await screen.findByText(/connections down/)).toBeTruthy();
+    expect(screen.getByText('Playback unverified')).toBeTruthy();
+    expect(screen.queryByText('Something went wrong.')).toBeNull();
+  });
+
+  it('does not mark playback unverified when connections load', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      spotifyConnection('user-library-read streaming'),
+    ]);
+
+    render(<TrackPreview entry={spotifyEntry} />);
+
+    expect(await screen.findByText('Preview ready')).toBeTruthy();
+    expect(screen.queryByText('Playback unverified')).toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it.each<[string, unknown, string]>([
+    ['an empty Error message', new Error(''), 'Something went wrong.'],
+    ['a non-Error rejection', { code: 1 }, 'Could not start "Legacy Grant".'],
+    ['a normal Error message', new Error('deck dropped'), 'deck dropped'],
+  ])(
+    'shows preview recovery for %s',
+    async (_label: string, rejection: unknown, expected: string) => {
+      vi.mocked(api.listConnections).mockResolvedValue([
+        spotifyConnection('user-library-read streaming'),
+      ]);
+      playbackMock.adapter.play.mockRejectedValue(rejection);
+
+      render(<TrackPreview entry={spotifyEntry} />);
+
+      const alert = await waitFor(() => {
+        const play = screen.queryByRole('button', { name: 'Play preview on Spotify' });
+        if (play) fireEvent.click(play);
+        const node = screen.getByRole('alert');
+        expect(node.textContent).toContain(expected);
+        expect(node.textContent).toContain('Preview interrupted');
+        return node;
+      });
+      expect(alert.textContent?.trim()).not.toBe('');
+      if (expected !== 'Something went wrong.') {
+        expect(alert.textContent).not.toContain('Something went wrong.');
+      }
+    },
+  );
+
+  it.each<[string, unknown]>([
+    ['an empty Error message', new Error('')],
+    ['a non-Error rejection', { code: 1 }],
+  ])(
+    'shows the search fallback in the alert for %s',
+    async (_label: string, rejection: unknown) => {
+      vi.mocked(api.listConnections).mockResolvedValue([
+        spotifyConnection('user-library-read streaming'),
+      ]);
+      vi.mocked(api.resolveTrackProvider).mockRejectedValue(rejection);
+
+      render(<TrackPreview entry={noRefEntry} />);
+
+      fireEvent.click(await screen.findByRole('button', { name: /Find on Spotify/i }));
+
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toContain('Search failed.');
+      expect(alert.textContent?.trim()).not.toBe('');
+      expect(screen.getByRole('button', { name: /Find on Spotify/i })).toBeTruthy();
+    },
+  );
+
+  it.each<[string, unknown, string]>([
+    ['an empty Error message', new Error(''), 'Could not attach.'],
+    ['a non-Error rejection', { code: 1 }, 'Could not attach.'],
+    ['a normal Error message', new Error('attach refused'), 'attach refused'],
+  ])(
+    'shows attach failure copy for %s',
+    async (_label: string, rejection: unknown, expected: string) => {
+      vi.mocked(api.listConnections).mockResolvedValue([
+        spotifyConnection('user-library-read streaming'),
+      ]);
+      vi.mocked(api.resolveTrackProvider).mockResolvedValue({
+        resolved: false,
+        candidates: [resolveCandidate],
+      });
+      vi.mocked(api.attachTrackProviderId).mockRejectedValue(rejection);
+
+      render(<TrackPreview entry={noRefEntry} />);
+
+      fireEvent.click(await screen.findByRole('button', { name: /Find on Spotify/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /Manual Climb — Studio Notes/ }));
+
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toContain(expected);
+      expect(alert.textContent?.trim()).not.toBe('');
+      if (expected !== 'Could not attach.') {
+        expect(alert.textContent).not.toContain('Could not attach.');
+      }
+    },
+  );
 });

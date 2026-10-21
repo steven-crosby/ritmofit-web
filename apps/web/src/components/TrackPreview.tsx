@@ -26,6 +26,7 @@ import {
   listConnections,
   resolveTrackProvider,
 } from '../lib/api.js';
+import { errMessage } from '../lib/errors.js';
 import { playbackWindowFor, selectProvider } from '../lib/playback/coordinator.js';
 import { PreviewPlaybackController, type PreviewStatus } from '../lib/playback/preview.js';
 import type { RunPayloadProviderRef, UnplayableReason } from '../lib/playback/types.js';
@@ -81,7 +82,9 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
         if (!cancelled) setConnections(c);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setConnectionsError((e as Error).message);
+        // A blank throw still has to become a sentence. The unverified chip and
+        // the status copy both read this string, and both ignore an empty one.
+        if (!cancelled) setConnectionsError(errMessage(e));
       });
     return () => {
       cancelled = true;
@@ -239,7 +242,7 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
             status={status}
             ready={connections != null && selection?.status === 'playable'}
             checked={connections != null}
-            unverified={connectionsError != null}
+            unverified={Boolean(connectionsError)}
             resumeFailed={resumeFailed}
           />
         </div>
@@ -300,7 +303,7 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
             label={resumeFailed ? 'Preview could not resume' : 'Preview interrupted'}
           />
           <p className="mt-2 font-ui text-sm font-semibold text-text-primary">
-            {status.error.message}
+            {errMessage(status.error.message)}
           </p>
           <p className="mt-1 font-ui text-xs text-text-secondary">
             Your class edit, selected track, and scoring changes are unchanged. Restart this clip or
@@ -480,9 +483,7 @@ function ResolveProviderAction({
           setState({ kind: 'none' });
         }
       })
-      .catch((e: unknown) =>
-        setState({ kind: 'error', message: e instanceof Error ? e.message : 'Search failed.' }),
-      );
+      .catch((e: unknown) => setState({ kind: 'error', message: errMessage(e, 'Search failed.') }));
   };
 
   const pick = (c: TrackSearchResult) => {
@@ -499,7 +500,7 @@ function ResolveProviderAction({
         ]),
       )
       .catch((e: unknown) =>
-        setState({ kind: 'error', message: e instanceof Error ? e.message : 'Could not attach.' }),
+        setState({ kind: 'error', message: errMessage(e, 'Could not attach.') }),
       );
   };
 
