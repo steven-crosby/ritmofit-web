@@ -2919,6 +2919,21 @@ describe('Dashboard track focus management', () => {
     expect(document.activeElement).toBe(grip);
   });
 
+  it('shows a reorder fallback without changing the assertive sentence', async () => {
+    const { grip } = await openRefreshRide();
+    vi.mocked(api.reorderTracks).mockRejectedValueOnce(new Error(''));
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+
+    expect(await screen.findByText('Something went wrong.')).toBeTruthy();
+    const announcement = screen.getByText(
+      'Couldn’t reorder — “First Light” moved back to position 1 of 2.',
+    );
+    expect(announcement.textContent).toBe(
+      'Couldn’t reorder — “First Light” moved back to position 1 of 2.',
+    );
+    expect(announcement.textContent).not.toContain('Something went wrong.');
+  });
+
   it('announces saved-but-refresh-failed and retries reads without losing the draft', async () => {
     const { inspector, notes, grip } = await openRefreshRide();
     vi.mocked(api.listClassTracks).mockRejectedValueOnce(new Error('Latest read unavailable'));
@@ -3652,5 +3667,152 @@ describe('Dashboard plan-first next step', () => {
       true,
     );
     expect(scrollIntoView).toHaveBeenCalled();
+  });
+});
+
+describe('Dashboard failure copy', () => {
+  const profile = {
+    id: 'me',
+    email: 'tester@example.com',
+    displayName: 'Tester',
+    imageUrl: null,
+    createdAt: 1,
+    updatedAt: 1,
+  } as const;
+
+  async function showLoadMoreFailure(reason: unknown, expected: string) {
+    vi.mocked(api.listClasses)
+      .mockResolvedValueOnce({ items: [makeClass('Morning ride')], nextCursor: 'page-2' })
+      .mockRejectedValueOnce(reason);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Load more classes' }));
+
+    expect(await screen.findByText(expected)).toBeTruthy();
+    expect(screen.queryByText('Class library unavailable')).toBeNull();
+    expect(screen.getAllByRole('button', { name: /Morning ride/ }).length).toBeGreaterThan(0);
+  }
+
+  it('shows the load-more fallback for a non-Error on a populated list', async () => {
+    // A thrown string is kept by errMessage. A non-Error object is the blank case.
+    await showLoadMoreFailure({ code: 'down' }, 'Something went wrong.');
+  });
+
+  it('shows the load-more fallback for an empty Error on a populated list', async () => {
+    await showLoadMoreFailure(new Error(''), 'Something went wrong.');
+  });
+
+  it('keeps a load-more Error message on a populated list', async () => {
+    await showLoadMoreFailure(new Error('page two failed'), 'page two failed');
+  });
+
+  async function failProfileSave(reason: unknown) {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.updateMe).mockRejectedValueOnce(reason);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+    expect(await screen.findByText('Profile loaded')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Save profile' }));
+    return screen.findByRole('alert');
+  }
+
+  it('shows the profile-save fallback for a non-Error', async () => {
+    const alert = await failProfileSave({ code: 'down' });
+    expect(alert.textContent).toContain('Profile was not changed');
+    expect(alert.textContent).toContain('Something went wrong.');
+    expect(alert.textContent).not.toContain('undefined');
+  });
+
+  it('shows the profile-save fallback for an empty Error', async () => {
+    const alert = await failProfileSave(new Error(''));
+    expect(alert.textContent).toContain('Profile was not changed');
+    expect(alert.textContent).toContain('Something went wrong.');
+  });
+
+  it('keeps a profile-save Error message', async () => {
+    const alert = await failProfileSave(new Error('save offline'));
+    expect(alert.textContent).toContain('Profile was not changed');
+    expect(alert.textContent).toContain('save offline');
+    expect(alert.textContent).not.toContain('Something went wrong.');
+  });
+
+  async function openFailedDetail(reason: unknown) {
+    const ride = makeClass('Broken ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    vi.mocked(api.listClassTracks).mockRejectedValueOnce(reason);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Broken ride/ }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent?.trim().length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Retry class' })).toBeTruthy();
+    return alert;
+  }
+
+  it('shows the class-detail fallback for a non-Error', async () => {
+    const alert = await openFailedDetail({ code: 'down' });
+    expect(alert.textContent?.trim()).toBe('Could not load this class.');
+  });
+
+  it('shows the class-detail fallback for an empty Error and not a blank alert', async () => {
+    const alert = await openFailedDetail(new Error(''));
+    expect(alert.textContent?.trim()).toBe('Could not load this class.');
+  });
+
+  it('keeps a class-detail Error message', async () => {
+    const alert = await openFailedDetail(new Error('detail boom'));
+    expect(alert.textContent?.trim()).toBe('detail boom');
+  });
+
+  it('shows playlist and likes shelf labels when those loads throw a non-Error', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockRejectedValue('playlist-down');
+    vi.mocked(api.listLikes).mockRejectedValue('likes-down');
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+
+    expect(await screen.findByText('Playlists unavailable')).toBeTruthy();
+    expect(screen.getByText('Likes unavailable')).toBeTruthy();
+    expect(screen.queryByText('playlist-down')).toBeNull();
+    expect(screen.queryByText('likes-down')).toBeNull();
+    expect(screen.queryByText('undefined')).toBeNull();
+  });
+
+  it('keeps the canned profile sentence and an ACC code for a non-Error', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockRejectedValue('profile-down');
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    expect(
+      await screen.findByText(/Ritmo could not read the profile\. Reference ACC-[0-9A-Z]+\./),
+    ).toBeTruthy();
+    expect(screen.queryByText('undefined')).toBeNull();
+    expect(screen.queryByText('profile-down')).toBeNull();
+  });
+
+  it('keeps the canned connections sentence and a CONN code for a non-Error', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+    vi.mocked(api.listConnections).mockRejectedValue('conn-down');
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    expect(
+      await screen.findByText(
+        /Ritmo could not read music connections\. Reference CONN-[0-9A-Z]+\./,
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText('undefined')).toBeNull();
+    expect(screen.queryByText('conn-down')).toBeNull();
   });
 });

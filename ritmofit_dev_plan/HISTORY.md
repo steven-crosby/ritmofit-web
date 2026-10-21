@@ -13,6 +13,30 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Close-session 2026-10-21 — #532 merged, undeployed; #533 left open.**
+> Round r20261021 (Codex, local), orchestrator light close.
+> [#532](https://github.com/steven-crosby/ritmofit-web/pull/532)
+> `fix(web): preserve untouched clip-end precision` squash-merged as
+> `421d0dc` on 2026-10-21. Not deployed.
+> [#533](https://github.com/steven-crosby/ritmofit-web/pull/533)
+> `fix(web): prioritize actionable Live preflight checks` (branch
+> `codex/r20261021-preflight`) remains open by owner decision. The branch
+> was updated with main (remote head `f172a36`), but GitHub's PR still
+> shows the old head `fdd2d26`, mergeability is stuck `unknown`, and no CI
+> ran on `f172a36`. Merge was rejected as `head branch out of date`.
+> Production as observed 2026-10-21 ~8:20 AM MT: Worker
+> `cb549532-a8c6-4807-adbe-d8a6b36adf38`, SPA `assets/index-C_SFpl0g.js`
+> (3/3 fetches), health 200. Main is ahead of production by #532. Deploy
+> held by owner. Neither lane got native 200% zoom verification
+> (NOT_ASSESSED). Apple 5:18 debugging and Spotify stay tabled.
+> Retired the completed #532 lane-1 builder-trim handoff, the #527 session
+> handoff, and the r20261020 lane-2 handoff. Links in the 2026-10-20 entries
+> below now point at `421d0dc`, the last main commit that still contains
+> those files. The 2026-10-11 handoffs, the 2026-10-13 handoffs, and the
+> r20261021 lane-2 preflight handoff were not edited; that lane-2 file lives
+> on #533's branch, not main.
+> [Round handoff](./handoffs/2026-10-21-r20261021-round-close.md).
+
 > **Deploy 2026-10-20 — #527–#530 on main `9e43307`.** Owner-approved production deploy at
 > 2026-10-20T22:44:21Z (4:44 PM MT). New Worker `cb549532-a8c6-4807-adbe-d8a6b36adf38`;
 > previous/rollback `73493517-2006-4beb-bf7c-cdb1edf298fd`. SPA entry
@@ -32,8 +56,8 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > Smoke: `/` 200, `/api/v1/health` 200; unauthenticated `/api/v1/classes`, `/explore`, and
 > `/teams` 401. Six security headers present. Production matches main `9e43307`.
 >
-> Closed [the #527 session handoff](./handoffs/2026-10-20-live-tab-typecheck.md) and the
-> [r20261020 lane-2 handoff](./handoffs/2026-10-20-r20261020-lane2-runpayload-harden.md)
+> Closed [the #527 session handoff](https://github.com/steven-crosby/ritmofit-web/blob/421d0dce4912fe88590c601f99902bdd62ebca05/ritmofit_dev_plan/handoffs/2026-10-20-live-tab-typecheck.md) and the
+> [r20261020 lane-2 handoff](https://github.com/steven-crosby/ritmofit-web/blob/421d0dce4912fe88590c601f99902bdd62ebca05/ritmofit_dev_plan/handoffs/2026-10-20-r20261020-lane2-runpayload-harden.md)
 > from #529 after both had merged and this deploy shipped them. #530 added no handoff.
 > The 2026-10-11 handoffs and the Apple 5:18 investigation handoff are unchanged.
 
@@ -59,7 +83,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > its tree matched the squash and no worktree used it. Its remote branch is retained
 > pending separate deletion approval. Completed #527 lane handoff is retired after routing
 > its delivery state here and its local fixture notes to the retained
-> [session handoff](./handoffs/2026-10-20-live-tab-typecheck.md).
+> [session handoff](https://github.com/steven-crosby/ritmofit-web/blob/421d0dce4912fe88590c601f99902bdd62ebca05/ritmofit_dev_plan/handoffs/2026-10-20-live-tab-typecheck.md).
 > `.claude/`, the untracked planning brief, verification tag, local QA fixtures, Apple
 > production fixture, other authors' handoffs, and all existing evidence remain.
 > Apple 5:18 debugging remains tabled. Close-record publication is owed from the handoff.

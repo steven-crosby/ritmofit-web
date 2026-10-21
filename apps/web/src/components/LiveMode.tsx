@@ -835,64 +835,72 @@ export function LiveMode({
   // in a dim studio — and stays dark in both themes (02/04-layout).
   if (phase === 'preflight') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-bg-live">
-        <header className="flex items-center justify-between bg-bg-raised/40 px-4 py-3 sm:px-6">
-          {/* Scripted focus target on entry (tabIndex -1, not keyboard-reachable);
+      // The shell is the scrollport. A fixed flex column with a min-h-0 body
+      // collapses that body to clientHeight 0 when a wrapped title makes the
+      // header taller than the viewport, and a zero-height box cannot scroll.
+      // The column grows with its content instead, so Start and Run without
+      // music stay reachable. Exit stays in the header; the full title stays
+      // in the heading.
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-bg-live">
+        <div className="flex min-h-full flex-col">
+          <header className="flex shrink-0 items-center justify-between bg-bg-raised/40 px-4 py-3 sm:px-6">
+            {/* Scripted focus target on entry (tabIndex -1, not keyboard-reachable);
               outline suppressed so a mouse entry never shows a stray ring. */}
-          <h1
-            ref={headingRef}
-            tabIndex={-1}
-            className="font-display text-lg font-semibold text-text-primary focus:outline-none"
-          >
-            {payload.class.title}
-          </h1>
-          <button
-            className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring"
-            onClick={onExit}
-          >
-            Exit
-          </button>
-        </header>
-        <div className="min-h-0 flex-1 overflow-auto">
-          <LivePreflight
-            preflight={preflight}
-            connectionsError={connectionsError}
-            onRetryConnections={() => void refreshConnections()}
-            onManageConnections={() => {
-              browserConnect.cancel();
-              setConnectionsOpen(true);
-            }}
-            onStart={startClass}
-            browserAuthorizationReady={browserAuthorizationReady}
-            browserAuthorization={
-              <>
-                {requiresSpotify && <SpotifyActivationAction flow={spotifyActivation} />}
-                {requiresApple ? (
-                  <div className="flex flex-col gap-2">
-                    <p className="font-ui text-sm text-text-secondary" role="status">
-                      {appleAuthorized
-                        ? 'Apple Music authorized in this browser. Playback availability is still unverified.'
-                        : 'Apple Music needs a browser authorization check before Start. This check does not play music.'}
-                    </p>
-                    <ProviderConnectAction
-                      provider="apple_music"
-                      label={
-                        appleAuthorized
-                          ? 'Recheck Apple Music authorization'
-                          : 'Check Apple Music authorization'
-                      }
-                      flow={browserConnect}
-                    />
-                  </div>
-                ) : null}
-              </>
-            }
-            onRunWithoutMusic={() => {
-              browserConnect.cancel();
-              spotifyActivation.cancel();
-              setPhase('live');
-            }}
-          />
+            <h1
+              ref={headingRef}
+              tabIndex={-1}
+              className="min-w-0 break-words font-display text-lg font-semibold text-text-primary focus:outline-none"
+            >
+              {payload.class.title}
+            </h1>
+            <button
+              className="min-h-11 rounded-pill border border-interactive px-4 py-2 font-ui text-sm text-interactive rf-focus-ring"
+              onClick={onExit}
+            >
+              Exit
+            </button>
+          </header>
+          <div className="flex-1">
+            <LivePreflight
+              preflight={preflight}
+              connectionsError={connectionsError}
+              onRetryConnections={() => void refreshConnections()}
+              onManageConnections={() => {
+                browserConnect.cancel();
+                setConnectionsOpen(true);
+              }}
+              onStart={startClass}
+              browserAuthorizationReady={browserAuthorizationReady}
+              browserAuthorization={
+                <>
+                  {requiresSpotify && <SpotifyActivationAction flow={spotifyActivation} />}
+                  {requiresApple ? (
+                    <div className="flex flex-col gap-2">
+                      <p className="font-ui text-sm text-text-secondary" role="status">
+                        {appleAuthorized
+                          ? 'Apple Music authorized in this browser. Playback availability is still unverified.'
+                          : 'Apple Music needs a browser authorization check before Start. This check does not play music.'}
+                      </p>
+                      <ProviderConnectAction
+                        provider="apple_music"
+                        label={
+                          appleAuthorized
+                            ? 'Recheck Apple Music authorization'
+                            : 'Check Apple Music authorization'
+                        }
+                        flow={browserConnect}
+                      />
+                    </div>
+                  ) : null}
+                </>
+              }
+              onRunWithoutMusic={() => {
+                browserConnect.cancel();
+                spotifyActivation.cancel();
+                setPhase('live');
+              }}
+            />
+          </div>
         </div>
         {connectionsOpen && (
           <ConnectionsDialog

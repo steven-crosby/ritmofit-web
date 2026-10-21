@@ -1,0 +1,227 @@
+[
+  {
+    "viewport": "320x568",
+    "before": {
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "shellClass": "fixed inset-0 z-50 overflow-y-auto bg-bg-live",
+      "shellClient": {
+        "width": 320,
+        "height": 568,
+        "scrollHeight": 1619
+      },
+      "header": {
+        "left": 0,
+        "right": 320,
+        "top": 0,
+        "bottom": 500,
+        "width": 320,
+        "height": 500
+      },
+      "title": {
+        "left": 16,
+        "right": 243.46875,
+        "top": 12,
+        "bottom": 488,
+        "width": 227.46875,
+        "height": 476
+      },
+      "titleTextLength": 200,
+      "exit": {
+        "left": 243.46875,
+        "right": 304,
+        "top": 228,
+        "bottom": 272,
+        "width": 60.53125,
+        "height": 44
+      },
+      "start": {
+        "left": 37,
+        "right": 170.890625,
+        "top": 777.5,
+        "bottom": 821.5,
+        "width": 133.890625,
+        "height": 44
+      },
+      "run": {
+        "left": 37,
+        "right": 205.21875,
+        "top": 829.5,
+        "bottom": 873.5,
+        "width": 168.21875,
+        "height": 44
+      },
+      "startDisabled": false,
+      "runDisabled": false,
+      "exitInHeader": true,
+      "exitInViewport": true,
+      "titleCrossesExit": false,
+      "exitSizeOk": true,
+      "startInView": false,
+      "runInView": false,
+      "bodyClientHeight": 1119
+    },
+    "afterScrollToRun": {
+      "startInView": true,
+      "runInView": true,
+      "shellScrollTop": 568
+    },
+    "started": true,
+    "exitFocused": "Exit",
+    "exited": true,
+    "ran": true,
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/short-320x568.png"
+  },
+  {
+    "viewport": "320x480",
+    "before": {
+      "viewport": {
+        "width": 320,
+        "height": 480
+      },
+      "shellClass": "fixed inset-0 z-50 overflow-y-auto bg-bg-live",
+      "shellClient": {
+        "width": 320,
+        "height": 480,
+        "scrollHeight": 1619
+      },
+      "header": {
+        "left": 0,
+        "right": 320,
+        "top": 0,
+        "bottom": 500,
+        "width": 320,
+        "height": 500
+      },
+      "title": {
+        "left": 16,
+        "right": 243.46875,
+        "top": 12,
+        "bottom": 488,
+        "width": 227.46875,
+        "height": 476
+      },
+      "titleTextLength": 200,
+      "exit": {
+        "left": 243.46875,
+        "right": 304,
+        "top": 228,
+        "bottom": 272,
+        "width": 60.53125,
+        "height": 44
+      },
+      "start": {
+        "left": 37,
+        "right": 170.890625,
+        "top": 777.5,
+        "bottom": 821.5,
+        "width": 133.890625,
+        "height": 44
+      },
+      "run": {
+        "left": 37,
+        "right": 205.21875,
+        "top": 829.5,
+        "bottom": 873.5,
+        "width": 168.21875,
+        "height": 44
+      },
+      "startDisabled": false,
+      "runDisabled": false,
+      "exitInHeader": true,
+      "exitInViewport": true,
+      "titleCrossesExit": false,
+      "exitSizeOk": true,
+      "startInView": false,
+      "runInView": false,
+      "bodyClientHeight": 1119
+    },
+    "afterScrollToRun": {
+      "startInView": true,
+      "runInView": true,
+      "shellScrollTop": 612
+    },
+    "started": true,
+    "exitFocused": "Exit",
+    "exited": true,
+    "ran": true,
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/short-320x480.png"
+  },
+  {
+    "viewport": "568x320",
+    "before": {
+      "viewport": {
+        "width": 568,
+        "height": 320
+      },
+      "shellClass": "fixed inset-0 z-50 overflow-y-auto bg-bg-live",
+      "shellClient": {
+        "width": 568,
+        "height": 320,
+        "scrollHeight": 1081
+      },
+      "header": {
+        "left": 0,
+        "right": 568,
+        "top": 0,
+        "bottom": 248,
+        "width": 568,
+        "height": 248
+      },
+      "title": {
+        "left": 16,
+        "right": 491.46875,
+        "top": 12,
+        "bottom": 236,
+        "width": 475.46875,
+        "height": 224
+      },
+      "titleTextLength": 200,
+      "exit": {
+        "left": 491.46875,
+        "right": 552,
+        "top": 102,
+        "bottom": 146,
+        "width": 60.53125,
+        "height": 44
+      },
+      "start": {
+        "left": 37,
+        "right": 170.890625,
+        "top": 445.5,
+        "bottom": 489.5,
+        "width": 133.890625,
+        "height": 44
+      },
+      "run": {
+        "left": 178.890625,
+        "right": 347.109375,
+        "top": 445.5,
+        "bottom": 489.5,
+        "width": 168.21875,
+        "height": 44
+      },
+      "startDisabled": false,
+      "runDisabled": false,
+      "exitInHeader": true,
+      "exitInViewport": true,
+      "titleCrossesExit": false,
+      "exitSizeOk": true,
+      "startInView": false,
+      "runInView": false,
+      "bodyClientHeight": 833
+    },
+    "afterScrollToRun": {
+      "startInView": true,
+      "runInView": true,
+      "shellScrollTop": 308
+    },
+    "started": true,
+    "exitFocused": "Exit",
+    "exited": true,
+    "ran": true,
+    "screenshot": "docs/audits/ui-ux-r20261021b/lane2-live-header/short-568x320.png"
+  }
+]
