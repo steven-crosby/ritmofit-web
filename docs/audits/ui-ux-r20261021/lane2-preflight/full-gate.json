@@ -1,0 +1,99 @@
+{
+  "startedAt": "2026-10-21T12:19:25Z",
+  "finishedAt": "2026-10-21T12:20:38Z",
+  "exitCode": 0,
+  "results": [
+    {
+      "command": "pnpm format:check",
+      "exitCode": 0,
+      "durationSeconds": 4
+    },
+    {
+      "command": "pnpm -r typecheck",
+      "exitCode": 0,
+      "durationSeconds": 7
+    },
+    {
+      "command": "pnpm lint",
+      "exitCode": 0,
+      "durationSeconds": 4
+    },
+    {
+      "command": "(cd ritmofit_design_system && npm run verify)",
+      "exitCode": 0,
+      "durationSeconds": 0
+    },
+    {
+      "command": "pnpm --filter @ritmofit/web theme-classes --selftest",
+      "exitCode": 0,
+      "durationSeconds": 1
+    },
+    {
+      "command": "pnpm --filter @ritmofit/web theme-classes",
+      "exitCode": 0,
+      "durationSeconds": 0
+    },
+    {
+      "command": "pnpm test",
+      "exitCode": 0,
+      "durationSeconds": 26
+    },
+    {
+      "command": "pnpm --filter @ritmofit/api test:integration",
+      "exitCode": 0,
+      "durationSeconds": 21
+    },
+    {
+      "command": "pnpm --filter @ritmofit/web build",
+      "exitCode": 0,
+      "durationSeconds": 7
+    },
+    {
+      "command": "pnpm --filter @ritmofit/api openapi",
+      "exitCode": 0,
+      "durationSeconds": 0
+    },
+    {
+      "command": "git diff --exit-code apps/api/openapi/openapi.json",
+      "exitCode": 0,
+      "durationSeconds": 0
+    },
+    {
+      "command": "pnpm --filter @ritmofit/api contract-parity",
+      "exitCode": 0,
+      "durationSeconds": 1
+    },
+    {
+      "command": "pnpm audit:ci",
+      "exitCode": 0,
+      "durationSeconds": 1
+    }
+  ],
+  "evidenceClass": "root-coordinated local CI-equivalent gate",
+  "attempt": 1,
+  "commandCount": 13,
+  "unitTests": {
+    "web": 1194,
+    "api": 486,
+    "music": 30
+  },
+  "workerIntegrationTests": 196,
+  "sourceHashesAfter": {
+    "apps/web/src/components/LivePreflight.tsx": "d6382343b9afb90c51203720720994c5219a8af28e4a68d13bc8d5f7fbd96ab4",
+    "apps/web/src/components/LivePreflight.test.tsx": "845c760bb1ac0859b1723deaa14bc760e9eefc353e2b233b79a17c9714b0cda6",
+    "apps/web/src/components/LiveMode.test.tsx": "728c2d2f3c8fdddc3eb248809688b1c1b0df5bde670554d7e8e57f15f5a20872"
+  },
+  "sourceHashesMatchBrowserReceipt": true,
+  "audit": {
+    "exitCode": 0,
+    "existingIgnoredFindings": {
+      "low": 1,
+      "moderate": 1
+    },
+    "exceptionsChanged": false
+  },
+  "notes": [
+    "Raw command logs are retained locally outside the reviewed PR payload.",
+    "The web build reported its existing large-chunk warning; all commands passed."
+  ]
+}

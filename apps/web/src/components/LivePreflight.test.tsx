@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import type { PreflightResult } from '../lib/playback/types.js';
 import { DISABLED_CONTROL_CLASS, LivePreflight } from './LivePreflight.js';
 
@@ -155,5 +155,81 @@ describe('truthful browser preflight', () => {
     ).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Manage connections' })).toBeTruthy();
     expect(screen.queryByText(/hands-free/)).toBeNull();
+  });
+});
+
+describe('actionable preflight results', () => {
+  it('counts all 15 checked tracks and puts the one needing attention before 14 passing tracks', () => {
+    const passing = Array.from({ length: 14 }, (_, position) => ({
+      ...ready.tracks[0]!,
+      classTrackId: `passing-${position}`,
+      position,
+      title: `Passing track ${position + 1}`,
+    }));
+    const needsAttention = { ...blocked.tracks[0]!, position: 14 };
+    renderPreflight({
+      ok: false,
+      tracks: [...passing, needsAttention],
+      unplayable: [needsAttention],
+    });
+
+    expect(
+      screen.getByRole('heading', {
+        name: '15 tracks checked · 14 passed · 1 needs attention',
+      }),
+    ).toBeTruthy();
+    const list = screen.getByRole('list', { name: 'Track playback check' });
+    const rows = within(list).getAllByRole('listitem');
+    // Query the track rows themselves rather than their containing groups.
+    expect(rows.find((row) => row.tagName === 'LI')?.textContent).toContain('Blocked Track');
+    expect(within(list).getByText('#15')).toBeTruthy();
+    const passedSummary = screen.getByText('14 tracks passed checks');
+    const disclosure = passedSummary.closest('details');
+    expect(disclosure).not.toBeNull();
+    expect(disclosure?.open).toBe(false);
+    expect(disclosure?.querySelectorAll('li')).toHaveLength(14);
+    expect(screen.getByText(/Run without music keeps your cues and timer/)).toBeTruthy();
+    expect(screen.queryByText(/prompter-only/i)).toBeNull();
+  });
+
+  it('keeps all-pass results inspectable without an empty needs-attention card', () => {
+    renderPreflight(ready);
+    expect(
+      screen.getByRole('heading', { name: '1 track checked · 1 passed · 0 need attention' }),
+    ).toBeTruthy();
+    expect(screen.getByText('1 track passed checks').closest('details')).not.toBeNull();
+    expect(screen.queryByText('Needs attention before music can start')).toBeNull();
+    expect(screen.queryByText('No tracks in this group.')).toBeNull();
+  });
+
+  it('counts an all-blocked class as checked and omits an empty passed group', () => {
+    renderPreflight(blocked);
+    expect(
+      screen.getByRole('heading', { name: '1 track checked · 0 passed · 1 needs attention' }),
+    ).toBeTruthy();
+    expect(screen.getByText('Needs attention before music can start')).toBeTruthy();
+    expect(screen.queryByText(/tracks? passed checks/)).toBeNull();
+    expect(screen.queryByText('No tracks in this group.')).toBeNull();
+  });
+
+  it('keeps connection loading and failure distinct from completed track checks', () => {
+    const { unmount } = render(
+      <LivePreflight
+        preflight={null}
+        connectionsError={null}
+        onRetryConnections={() => {}}
+        onManageConnections={() => {}}
+        onStart={() => {}}
+        onRunWithoutMusic={() => {}}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'Checking readiness' })).toBeTruthy();
+    expect(screen.queryByRole('list', { name: 'Track playback check' })).toBeNull();
+    unmount();
+
+    renderPreflight(null, 'network down');
+    expect(screen.getByRole('heading', { name: 'Runnable with warnings' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Retry check' })).toBeTruthy();
+    expect(screen.queryByRole('list', { name: 'Track playback check' })).toBeNull();
   });
 });

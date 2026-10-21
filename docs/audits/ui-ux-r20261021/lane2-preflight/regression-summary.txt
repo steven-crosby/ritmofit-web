@@ -1,0 +1,10 @@
+Initial regression invocation expanded to the full web suite because of an extra -- separator.
+The three LivePreflight failures are intended regressions; the SongsByMove timeout is unrelated.
+
+ FAIL  src/components/LivePreflight.test.tsx > actionable preflight results > counts all 15 checked tracks and puts the one needing attention before 14 passing tracks
+ FAIL  src/components/LivePreflight.test.tsx > actionable preflight results > keeps all-pass results inspectable without an empty needs-attention card
+ FAIL  src/components/LivePreflight.test.tsx > actionable preflight results > counts an all-blocked class as checked and omits an empty passed group
+ FAIL  src/components/SongsByMoveDialog.test.tsx > SongsByMoveDialog > searches on move pick and lists songs grouped with placements
+ Test Files  2 failed | 85 passed (87)
+      Tests  4 failed | 1190 passed (1194)
+   Duration  29.75s (transform 9.07s, setup 0ms, collect 36.12s, tests 73.74s, environment 50.72s, prepare 7.76s)

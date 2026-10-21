@@ -1,0 +1,16 @@
+
+ RUN  v3.2.6 <worktree>/apps/web
+
+ ✓ src/components/LivePreflight.test.tsx (9 tests) 743ms
+   ✓ LivePreflight Start class (SPC-19) > applies the documented 40% disabled treatment with native disabled semantics  422ms
+ ✓ src/components/LiveMode.test.tsx (99 tests) 5150ms
+   ✓ LiveMode preflight > shows a returned connection failure at preflight without starting playback  421ms
+   ✓ LiveMode preflight > passes preflight with a connected provider and starts hands-free playback  340ms
+   ✓ LiveMode focus management > moves focus to the Pause control after Start class  307ms
+   ✓ LiveMode focus management > reveals teaching on entry and recovery on a new failure without stealing focus on updates  328ms
+   ✓ LiveMode runtime composition > moves to the next track while provider playback is running  536ms
+
+ Test Files  2 passed (2)
+      Tests  108 passed (108)
+   Start at  00:25:32
+   Duration  8.45s (transform 1.10s, setup 0ms, collect 2.71s, tests 5.89s, environment 2.17s, prepare 506ms)
