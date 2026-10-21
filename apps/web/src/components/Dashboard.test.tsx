@@ -2016,6 +2016,85 @@ describe('Dashboard track focus management', () => {
     },
   );
 
+  it.each([
+    { clipEndMs: 499, field: 'notes' },
+    { clipEndMs: 1250, field: 'notes' },
+    { clipEndMs: 499, field: 'BPM' },
+    { clipEndMs: 1250, field: 'BPM' },
+  ])(
+    'preserves untouched $clipEndMs ms clip end when $field changes',
+    async ({ clipEndMs, field }: { clipEndMs: number; field: string }) => {
+      const inspector = await openAnchorInspector({ clipEndMs });
+      if (field === 'notes') {
+        fireEvent.change(inspector.getByLabelText('Creator notes'), {
+          target: { value: 'Keep the authored trim.' },
+        });
+      } else {
+        fireEvent.change(inspector.getAllByRole('spinbutton')[0] as HTMLElement, {
+          target: { value: '128' },
+        });
+      }
+      fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(api.updateClassTrack).toHaveBeenCalledTimes(1));
+      expect(api.updateClassTrack).toHaveBeenCalledWith(
+        'ct-1',
+        expect.objectContaining({
+          clipEndMs,
+          ...(field === 'notes'
+            ? { notes: 'Keep the authored trim.' }
+            : { displayBpmOverride: 128 }),
+        }),
+      );
+      await inspector.findByText('Saved.');
+    },
+  );
+
+  it('preserves an untouched sub-second clip window when notes change', async () => {
+    const inspector = await openAnchorInspector({ clipStartMs: 1250, clipEndMs: 1500 });
+    fireEvent.change(inspector.getByLabelText('Creator notes'), {
+      target: { value: 'A short authored window.' },
+    });
+    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(api.updateClassTrack).toHaveBeenCalledTimes(1));
+    expect(api.updateClassTrack).toHaveBeenCalledWith(
+      'ct-1',
+      expect.objectContaining({ clipStartMs: 1250, clipEndMs: 1500 }),
+    );
+    await inspector.findByText('Saved.');
+  });
+
+  it.each([
+    { value: '0:02', expected: 2000 },
+    { value: '', expected: null },
+    { value: '5:00', expected: 300000 },
+  ])(
+    'saves an intentional clip end edit of $value',
+    async ({ value, expected }: { value: string; expected: number | null }) => {
+      const inspector = await openAnchorInspector({ clipEndMs: 1250 });
+      fireEvent.change(inspector.getByLabelText(/^Clip end/), { target: { value } });
+      fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+      await inspector.findByText('Saved.');
+      expect(api.updateClassTrack).toHaveBeenCalledWith(
+        'ct-1',
+        expect.objectContaining({ clipEndMs: expected }),
+      );
+    },
+  );
+
+  it.each(['0:00', '0', '0:60'])(
+    'rejects and focuses an invalid clip end edit of %j',
+    async (value: string) => {
+      const inspector = await openAnchorInspector({ clipEndMs: 1250 });
+      const clipEnd = inspector.getByLabelText(/^Clip end/);
+      fireEvent.change(clipEnd, { target: { value } });
+      fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+      expect(api.updateClassTrack).not.toHaveBeenCalled();
+      expect(clipEnd.getAttribute('aria-invalid')).toBe('true');
+      expect(document.activeElement).toBe(clipEnd);
+      expect(inspector.getByRole('alert').textContent).toMatch(/Enter the clip end/);
+    },
+  );
+
   it.each(['0:00', ''])('resets edited inspector anchors with %j', async (value: string) => {
     const inspector = await openAnchorInspector({
       clipStartMs: 1250,

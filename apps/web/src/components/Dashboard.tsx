@@ -5185,7 +5185,14 @@ function TrackInspector({
       );
       return;
     }
-    const clipEndMs = clipEnd.trim() === '' ? null : parseDurationInput(clipEnd);
+    // Preserve a stored sub-second end when only another field changed, just as
+    // the other anchors do. Blank still resets to null; newly typed ends stay positive.
+    const clipEndMs =
+      clipEnd === (track.clipEndMs != null ? formatDurationInput(track.clipEndMs) : '')
+        ? track.clipEndMs
+        : clipEnd.trim() === ''
+          ? null
+          : parseDurationInput(clipEnd);
     if (clipEnd.trim() !== '' && clipEndMs == null) {
       rejectField(
         'clipEnd',
@@ -5431,7 +5438,8 @@ function TrackInspector({
               </div>
               <span id={`clip-help-${track.id}`} className="font-ui text-xs text-text-tertiary">
                 Start and end as minutes:seconds, for example 0:30 and 2:15. Previews and Live play
-                only this part. Leave either blank to use the track’s own start or end.
+                only this part. Leave start blank to begin at 0:00. Leave end blank to follow Track
+                length.
               </span>
             </fieldset>
 

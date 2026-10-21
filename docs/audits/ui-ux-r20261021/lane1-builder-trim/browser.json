@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-21",
+  "evidenceClass": "local synthetic Chrome form/request and local D1 persistence",
+  "checks": [
+    {
+      "name": "notes-only-save-retains-499ms",
+      "pass": true
+    },
+    {
+      "name": "reload-retains-499ms",
+      "pass": true
+    },
+    {
+      "name": "notes-only-save-retains-1250ms",
+      "pass": true
+    },
+    {
+      "name": "reload-retains-1250ms",
+      "pass": true
+    },
+    {
+      "name": "notes-only-save-retains-1500ms",
+      "pass": true
+    },
+    {
+      "name": "reload-retains-1500ms",
+      "pass": true
+    },
+    {
+      "name": "invalid-zero-focus-and-retained-draft",
+      "pass": true
+    },
+    {
+      "name": "no-horizontal-overflow-1440",
+      "pass": true
+    },
+    {
+      "name": "no-horizontal-overflow-390",
+      "pass": true
+    },
+    {
+      "name": "no-horizontal-overflow-320",
+      "pass": true
+    },
+    {
+      "name": "intentional-whole-second-end-edit",
+      "pass": true
+    },
+    {
+      "name": "blank-end-resets-null",
+      "pass": true
+    },
+    {
+      "name": "reduced-motion-form-remains-operable",
+      "pass": true
+    }
+  ],
+  "sourceHashesBefore": {
+    "apps/web/src/components/Dashboard.tsx": "805e40fba22ef620f644d1ee27f04383802912a0193d0e1e8e86ee4611681554",
+    "apps/web/src/components/Dashboard.test.tsx": "f73cf9d6d59b155a025ca4a855e3bf7c9e282d7ef3cf1332ad9c0aff8a31fb75"
+  },
+  "sourceHashesAfter": {
+    "apps/web/src/components/Dashboard.tsx": "805e40fba22ef620f644d1ee27f04383802912a0193d0e1e8e86ee4611681554",
+    "apps/web/src/components/Dashboard.test.tsx": "f73cf9d6d59b155a025ca4a855e3bf7c9e282d7ef3cf1332ad9c0aff8a31fb75"
+  },
+  "pageErrors": [],
+  "nativeZoom": "NOT_ASSESSED",
+  "limits": [
+    "No provider audio, real device or screen-reader acceptance."
+  ],
+  "fixtures": [
+    {
+      "classId": "224774a5-7ee2-4c7b-a7d7-c86b5e828304",
+      "classTrackId": "13f011a2-4ddf-48c0-92ec-57f4fed31aba",
+      "initialClipEndMs": 499
+    },
+    {
+      "classId": "a86ac390-1f04-44c9-9005-841f97c31ee1",
+      "classTrackId": "b5639cee-e9ff-49e2-95e0-8663e3f39b84",
+      "initialClipEndMs": 1250
+    },
+    {
+      "classId": "ee1d6d4c-86f6-4b8d-af2b-c2bd239291ee",
+      "classTrackId": "8af2e3e3-e4bb-4f76-919b-90d764c00220",
+      "initialClipEndMs": 1500
+    }
+  ],
+  "nativeZoomReason": "CUA could not address the isolated QA Chrome process without targeting Steven\u2019s personal Chrome window. Only the Window menu was opened and dismissed; no native zoom command was issued. The actual Chrome layout at 320px passed, but is not native 200% zoom evidence."
+}
