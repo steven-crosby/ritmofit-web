@@ -13,6 +13,38 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-21 — #533 and #538 on main `3ffb7e0`.** Owner asked to deploy.
+> Production deploy at 2026-10-21T22:20:04Z (4:20 PM MT). New Worker
+> `0b50b635-614e-4ed4-8cfe-e6aa2092e696`; previous/rollback
+> `d35db864-3d34-4803-9c4f-d560c859da4d`. SPA entry `assets/index-DPJbMvMh.js`
+> (CSS `assets/index-DmB9GctO.css`), confirmed by three consecutive cache-busted
+> fetches on the first triple. A further fetch returned the same JS and CSS.
+> Pre-deploy full gate passed on `3ffb7e0` from a clean detached worktree (format,
+> typecheck, lint, design verify, theme-classes, unit tests web 1221 / api 486 /
+> music 30, Worker/D1 integration 196, web build, OpenAPI no drift, contract-parity,
+> audit:ci). The gate ran on Node v26.7.0; `.nvmrc` is 22 and Node 22 is not
+> installed on this Mac. Remote D1 had no migrations to apply, and no migration
+> files changed between production `80b5e0f` and `3ffb7e0`. `BETA_ALLOWED_EMAILS`
+> present (name only). Post-deploy `migrations list --remote` still reported
+> nothing to apply.
+>
+> Deployed since production `80b5e0f`:
+> [#533](https://github.com/steven-crosby/ritmofit-web/pull/533) (prioritize
+> actionable Live preflight checks, `037199a`) and
+> [#538](https://github.com/steven-crosby/ritmofit-web/pull/538) (class summary
+> recovery for a blank load error, `3ffb7e0`). Docs record `8347ace` (the earlier
+> same-day Worker `d35db864` record) is in that tree and does not change runtime.
+> The #533 and #538 lane handoffs still describe those PRs as open and were not
+> edited. The round handoff still describes the earlier pre-deploy state.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 (`status: ok`, service `ritmofit-api`);
+> unauthenticated `/api/v1/classes`, `/explore`, and `/teams` 401. Six security
+> headers present. Unauthenticated class shares, playlist import, Spotify search,
+> saved playlists, track import, cover upload, tag add/remove, and moves returned
+> 401. `GET /api/v1/uploads/covers/smoke-missing.jpg` reached the handler as
+> 404 `NOT_FOUND`. Worker status 100% on `0b50b635`. Production matches main
+> `3ffb7e0`.
+
 > **Deploy 2026-10-21 — #532, #535, and #536 on main `80b5e0f`.** Owner released the hold.
 > Production deploy at 2026-10-21T19:26:50Z (1:26 PM MT). New Worker
 > `d35db864-3d34-4803-9c4f-d560c859da4d`; previous/rollback
