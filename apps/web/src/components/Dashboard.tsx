@@ -307,7 +307,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       setError(null);
     } catch (e) {
       setListStatus('error');
-      setError((e as Error).message);
+      setError(errMessage(e));
     }
   }, [mergeKnownTags, userId]);
 
@@ -336,7 +336,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       setNextClassCursor(page.nextCursor);
       mergeKnownTags(ownedItems);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e));
     } finally {
       setLoadingMoreClasses(false);
     }
@@ -407,10 +407,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       if (owner !== detailWorkspace.current || requestId !== detailRequestId.current) return;
 
       if (tracksResult.status === 'rejected') {
-        const message =
-          tracksResult.reason instanceof Error
-            ? tracksResult.reason.message
-            : 'Could not load this class.';
+        const message = errMessage(tracksResult.reason, 'Could not load this class.');
         // An in-place refresh follows a mutation that already succeeded. Keep the
         // current workbench and any local inspector draft mounted if that refresh
         // fails; a scoped status reports the stale read without pretending the
@@ -576,7 +573,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       try {
         await openClass(known ?? (await getClass(classId)));
       } catch (e) {
-        setError((e as Error).message);
+        setError(errMessage(e));
       }
     },
     [classes, openClass],
@@ -600,7 +597,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         enterLive(payload);
         setError(null);
       } catch (e) {
-        if (current()) setError((e as Error).message);
+        if (current()) setError(errMessage(e));
       } finally {
         if (pendingLiveRequest.current?.requestId === requestId) pendingLiveRequest.current = null;
       }
@@ -1670,7 +1667,7 @@ function useProviderBrowseState(connectionRevision = 0) {
           setPlaylistsError((prev) => ({ ...prev, [provider]: undefined }));
         } catch (e) {
           if (!alive || !connectedProvidersRef.current.has(provider)) return;
-          setPlaylistsError((prev) => ({ ...prev, [provider]: (e as Error).message }));
+          setPlaylistsError((prev) => ({ ...prev, [provider]: errMessage(e) }));
         } finally {
           if (alive && connectedProvidersRef.current.has(provider)) {
             setPlaylistsLoading((prev) => ({ ...prev, [provider]: false }));
@@ -1704,7 +1701,7 @@ function useProviderBrowseState(connectionRevision = 0) {
           setLikesError((prev) => ({ ...prev, [provider]: undefined }));
         } catch (e) {
           if (!alive || !connectedProvidersRef.current.has(provider)) return;
-          setLikesError((prev) => ({ ...prev, [provider]: (e as Error).message }));
+          setLikesError((prev) => ({ ...prev, [provider]: errMessage(e) }));
         } finally {
           if (alive && connectedProvidersRef.current.has(provider)) {
             setLikesLoading((prev) => ({ ...prev, [provider]: false }));
@@ -1879,7 +1876,7 @@ function MusicWorkspace({
         template,
       );
     } catch (error) {
-      setSearchError((error as Error).message);
+      setSearchError(errMessage(error));
       setCreating(false);
     }
   };
@@ -2610,7 +2607,7 @@ function AccountWorkspace({
       })
       .catch((e: unknown) => {
         if (!alive) return;
-        setProfileLoadError((e as Error).message);
+        setProfileLoadError(errMessage(e));
         setProfileStatus('error');
       });
     return () => {
@@ -2630,7 +2627,7 @@ function AccountWorkspace({
       })
       .catch((e: unknown) => {
         if (!alive) return;
-        setConnectionsLoadError((e as Error).message);
+        setConnectionsLoadError(errMessage(e));
         setConnectionsStatus('error');
       });
     return () => {
@@ -2659,7 +2656,7 @@ function AccountWorkspace({
       setNotice('Profile updated.');
       onProfileUpdated(updated);
     } catch (err) {
-      setSaveError((err as Error).message);
+      setSaveError(errMessage(err));
     } finally {
       setSaving(false);
     }
@@ -3199,7 +3196,7 @@ function PlaylistBrowserDialog({
     try {
       setTracks(await listPlaylistTracks(provider, playlist.playlistId));
     } catch (e) {
-      setRowError((e as Error).message);
+      setRowError(errMessage(e));
     } finally {
       setLoadingTracks(false);
     }
@@ -3211,7 +3208,7 @@ function PlaylistBrowserDialog({
     try {
       await onCreateClass(provider, playlist.playlistId, playlist.name, template);
     } catch (e) {
-      setRowError((e as Error).message);
+      setRowError(errMessage(e));
       setCreatingId(null);
     }
   };
@@ -3429,7 +3426,7 @@ function LikesBrowserDialog({
     try {
       await onCreateClass(tracks, title.trim(), template);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e));
       setCreating(false);
     }
   };
@@ -3705,7 +3702,7 @@ function ClassWorkspace({
       onClassUpdated(updated);
       onTrackChanged();
     } catch (e) {
-      onError((e as Error).message);
+      onError(errMessage(e));
     }
   };
 
@@ -4700,7 +4697,7 @@ export function ReorderableTrackList({
       onReordered(); // reload so the ribbon + offsets reflect the new order
     } catch (e) {
       setOrder(prev); // roll back
-      const message = (e as Error).message;
+      const message = errMessage(e);
       setError(message);
       if (announce) {
         setAssertiveMessage(
