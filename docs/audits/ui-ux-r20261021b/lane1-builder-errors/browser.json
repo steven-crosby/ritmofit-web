@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-21",
+  "evidenceClass": "local Chrome account save with an injected empty Error",
+  "productCommit": "7eed7acb28dc8f46bb4937778b88f2dd39d52b3b",
+  "sourceHashes": {
+    "apps/web/src/components/Dashboard.tsx": "c94951bac5e9ba95c8b1d67b5250b8f717099915b0f9c6d0c37314e7069ec5a1",
+    "apps/web/src/components/Dashboard.test.tsx": "894561a03168f2af7df6d63dc68288cbf070689a871e0e86924f73ff4b074f3a"
+  },
+  "checks": [
+    {
+      "width": 1440,
+      "text": "Profile was not changedSomething went wrong.Your entered values are still in the form.",
+      "blank": false,
+      "hasFallback": true,
+      "hasTitle": true,
+      "hasUndefined": false,
+      "scrollWidth": 1425,
+      "clientWidth": 1425,
+      "pass": true
+    },
+    {
+      "width": 390,
+      "text": "Profile was not changedSomething went wrong.Your entered values are still in the form.",
+      "blank": false,
+      "hasFallback": true,
+      "hasTitle": true,
+      "hasUndefined": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "pass": true
+    }
+  ],
+  "pageErrors": [],
+  "nativeZoom": "NOT_ASSESSED",
+  "limits": [
+    "The PATCH was forced to throw new Error(\"\") in page fetch. The API itself still throws ApiError with a message.",
+    "No provider audio, real device, or screen-reader acceptance.",
+    "Native 200% zoom was not performed."
+  ]
+}
