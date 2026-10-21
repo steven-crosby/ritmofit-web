@@ -44,9 +44,27 @@ describe('ClassSummaryView', () => {
 
     expect(await screen.findByText('The class summary could not load.')).toBeTruthy();
     expect(screen.getByText('summary offline')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Loading class…' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Try rehearsal again' }));
     expect(await screen.findByText('Opener')).toBeTruthy();
     expect(api.getRunPayload).toHaveBeenCalledTimes(2);
+  });
+
+  it.each<[string, unknown]>([
+    ['an empty Error message', new Error('')],
+    ['a non-Error rejection', { code: 1 }],
+  ])('shows the summary recovery panel for %s', async (_label: string, rejection: unknown) => {
+    vi.mocked(api.getRunPayload).mockImplementationOnce(() => Promise.reject(rejection));
+
+    render(<ClassSummaryView classId="c1" onClose={() => {}} onCopied={() => {}} />);
+
+    expect(
+      await screen.findByRole('heading', { name: 'The class summary could not load.' }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Loading class…' })).toBeNull();
+    expect(screen.queryByText('Loading class…')).toBeNull();
+    expect(screen.getByText('Something went wrong.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try rehearsal again' })).toBeTruthy();
   });
 
   it('names an auto-shaped pulse as a state, with nothing to confirm', async () => {

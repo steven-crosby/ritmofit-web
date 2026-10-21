@@ -7,6 +7,7 @@ import { useAsyncAction } from '../lib/use-async-action.js';
 import { SEGMENT_META } from './SegmentBand.js';
 import { INTENSITY_LABEL } from './IntensityReadout.js';
 import { classReadiness } from '../lib/readiness.js';
+import { errMessage } from '../lib/errors.js';
 import { ClassPulse } from './ClassPulse.js';
 import { TrackArt } from './TrackArt.js';
 import { ClassReadinessSummary } from './ClassReadinessSummary.js';
@@ -48,7 +49,7 @@ export function ClassSummaryView({
       const p = await getRunPayload(classId);
       setPayload(p);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e));
     } finally {
       setLoading(false);
     }
@@ -74,6 +75,9 @@ export function ClassSummaryView({
   const averageBpm = payload ? avgBpm(payload) : null;
   const templateLabel = payload ? formatTemplateLabel(payload.class.template) : null;
   const readiness = payload ? classReadiness(payload) : null;
+  // A failed load has no class title. Leave the loading heading only while the
+  // request is still in flight; RecoveryState names the failure after that.
+  const heading = payload ? payload.class.title : error ? 'Class summary' : 'Loading class…';
 
   return (
     <Dialog
@@ -87,7 +91,7 @@ export function ClassSummaryView({
             Read-only rehearsal view
           </p>
           <h2 className="mt-1 font-display text-2xl font-bold tracking-[-0.02em] text-text-primary sm:text-3xl">
-            {payload ? payload.class.title : 'Loading class…'}
+            {heading}
           </h2>
           {payload && (
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-data text-xs text-text-secondary">
