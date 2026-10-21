@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-21",
+  "base": "2914253833cf28761d23d2dfa3a0b0aa02b5bd3d",
+  "productCommits": ["d6d098374d54fd77659b20aa456a82e0cd35aa77"],
+  "sourceHashes": {
+    "apps/web/src/components/TrackPreview.tsx": "d449b58b16f028a0ffd7d5995db9ccd256d0975cb7a815d1d0c35499d718470d",
+    "apps/web/src/components/TrackPreview.test.tsx": "bd63d4c321ebba9fa4cc07e0cb0b11ed2fb8efdc872299a65a3730d128b6b9ea"
+  },
+  "focused": {
+    "after": "TrackPreview.test.tsx passed 22/22. new Error('') and a non-Error show a fallback in the connections status, the preview alert, the search alert, and the attach alert. new Error('deck dropped'), new Error('connections down'), and new Error('attach refused') keep those messages. A loaded connection does not show Playback unverified."
+  },
+  "gate": {
+    "start": "2026-10-21T22:40:26Z",
+    "end": "2026-10-21T22:42:17Z",
+    "result": "pass",
+    "steps": [
+      "pnpm format:check",
+      "pnpm -r typecheck",
+      "pnpm lint",
+      "cd ritmofit_design_system && npm run verify",
+      "pnpm --filter @ritmofit/web theme-classes",
+      "pnpm test",
+      "pnpm --filter @ritmofit/api test:integration",
+      "pnpm --filter @ritmofit/web build",
+      "pnpm --filter @ritmofit/api openapi",
+      "git diff --exit-code apps/api/openapi/openapi.json",
+      "pnpm --filter @ritmofit/api contract-parity",
+      "pnpm audit:ci"
+    ],
+    "counts": {
+      "music": 30,
+      "web": 1233,
+      "api": 486,
+      "integration": 196
+    }
+  },
+  "castGrep": "empty in apps/web/src/components/TrackPreview.tsx",
+  "emptyString": "not preserved. listConnections stores errMessage, and the unverified chip reads a non-empty string.",
+  "nativeZoom": "NOT_ASSESSED"
+}

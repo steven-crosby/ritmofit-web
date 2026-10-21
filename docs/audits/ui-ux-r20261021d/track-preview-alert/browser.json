@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-21",
+  "evidenceClass": "local Chrome builder preview with an injected empty Error and a non-Error",
+  "checks": [
+    {
+      "name": "empty-error-1440",
+      "width": 1440,
+      "alertText": "Preview interrupted. Something went wrong. Your class edit, selected track, and scoring changes are unchanged. Start clip again. Stop auditioning. Reconnect Spotify.",
+      "hasInterrupted": true,
+      "hasFallback": true,
+      "hasStartSentence": false,
+      "hasBlankAlert": false,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "innerWidth": 1440,
+      "pageErrors": []
+    },
+    {
+      "name": "empty-error-390",
+      "width": 390,
+      "alertText": "Preview interrupted. Something went wrong. Your class edit, selected track, and scoring changes are unchanged. Start clip again. Stop auditioning. Reconnect Spotify.",
+      "hasInterrupted": true,
+      "hasFallback": true,
+      "hasStartSentence": false,
+      "hasBlankAlert": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "innerWidth": 390,
+      "pageErrors": []
+    },
+    {
+      "name": "non-error-390",
+      "width": 390,
+      "alertText": "Preview interrupted. Could not start \"Titanium\". Your class edit, selected track, and scoring changes are unchanged. Start clip again. Stop auditioning. Reconnect Spotify.",
+      "hasInterrupted": true,
+      "hasFallback": false,
+      "hasStartSentence": true,
+      "hasBlankAlert": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "innerWidth": 390,
+      "pageErrors": []
+    },
+    {
+      "name": "non-error-1440",
+      "width": 1440,
+      "alertText": "Preview interrupted. Could not start \"Titanium\". Your class edit, selected track, and scoring changes are unchanged. Start clip again. Stop auditioning. Reconnect Spotify.",
+      "hasInterrupted": true,
+      "hasFallback": false,
+      "hasStartSentence": true,
+      "hasBlankAlert": false,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "innerWidth": 1440,
+      "pageErrors": []
+    }
+  ],
+  "nativeZoom": "NOT_ASSESSED",
+  "limits": [
+    "Signed in locally, created an empty Cycle class, and imported the mock catalog track Titanium. A local D1 row granted Spotify streaming scope so the preview control could start. That row is not in git.",
+    "Before Play, the page set window.Spotify.Player to throw new Error('') and, on a later load, { code: 1 }. The real Web Playback SDK did not run. No provider audio.",
+    "new Error('') showed Something went wrong. in the preview alert at 1440 and 390. The non-Error showed Could not start \"Titanium\". at 390 and 1440. No role=alert was blank. documentElement.scrollWidth matched the viewport at both widths. No page errors.",
+    "Native 200% zoom was not performed.",
+    "No real device or screen-reader acceptance."
+  ]
+}
