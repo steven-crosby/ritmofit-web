@@ -1,0 +1,100 @@
+{
+  "date": "2026-10-21",
+  "evidenceClass": "local Chrome class summary with an injected empty Error and a non-Error",
+  "signup": {
+    "status": 422
+  },
+  "created": {
+    "status": 201
+  },
+  "retried": true,
+  "checks": [
+    {
+      "name": "empty-error-1440",
+      "width": 1440,
+      "headings": [
+        "Ritmo Studio",
+        "Pick up where the energy left off.",
+        "Class summary",
+        "The class summary could not load."
+      ],
+      "hasTitle": true,
+      "hasFallback": true,
+      "hasRetry": true,
+      "hasLoadingHeading": false,
+      "loadingDetails": false,
+      "hasClassSummaryHeading": true,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "innerWidth": 1440,
+      "pageErrors": []
+    },
+    {
+      "name": "empty-error-390",
+      "width": 390,
+      "headings": [
+        "Ritmo Studio",
+        "Pick up where the energy left off.",
+        "Class summary",
+        "The class summary could not load."
+      ],
+      "hasTitle": true,
+      "hasFallback": true,
+      "hasRetry": true,
+      "hasLoadingHeading": false,
+      "loadingDetails": false,
+      "hasClassSummaryHeading": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "innerWidth": 390,
+      "pageErrors": []
+    },
+    {
+      "name": "non-error-390",
+      "width": 390,
+      "headings": [
+        "Ritmo Studio",
+        "Pick up where the energy left off.",
+        "Class summary",
+        "The class summary could not load."
+      ],
+      "hasTitle": true,
+      "hasFallback": true,
+      "hasRetry": true,
+      "hasLoadingHeading": false,
+      "loadingDetails": false,
+      "hasClassSummaryHeading": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "innerWidth": 390,
+      "pageErrors": []
+    },
+    {
+      "name": "non-error-1440",
+      "width": 1440,
+      "headings": [
+        "Ritmo Studio",
+        "Pick up where the energy left off.",
+        "Class summary",
+        "The class summary could not load."
+      ],
+      "hasTitle": true,
+      "hasFallback": true,
+      "hasRetry": true,
+      "hasLoadingHeading": false,
+      "loadingDetails": false,
+      "hasClassSummaryHeading": true,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "innerWidth": 1440,
+      "pageErrors": []
+    }
+  ],
+  "nativeZoom": "NOT_ASSESSED",
+  "limits": [
+    "getRunPayload was forced to reject in the page by wrapping window.fetch for /run-payload. The API itself still throws ApiError with a message.",
+    "Empty Error was checked at 1440 and 390. A non-Error ({ code: 1 }) was checked after Try rehearsal again, at 390 and 1440.",
+    "Native 200% zoom was not performed.",
+    "No provider audio, real device, or screen-reader acceptance."
+  ]
+}

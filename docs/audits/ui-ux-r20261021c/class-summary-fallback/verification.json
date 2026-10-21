@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-21",
+  "base": "037199a9d2e31188c9fdd3223dac06b29955c251",
+  "productCommits": [
+    "23a6d2d63a3a81c97641db5fa67ae32f192077a4",
+    "b3e19ed8dd2cb3f670e1e1513ce5d4efa0cba393"
+  ],
+  "sourceHashes": {
+    "apps/web/src/components/ClassSummaryView.tsx": "cf7f15e182a98f409bf665d0a2a2393b4c0d293b9a08266d44baeac0e1a56c81",
+    "apps/web/src/components/ClassSummaryView.test.tsx": "0291c361dc4709d240847012aebc4385d603cb1dc681ef66a989f89a8720991b"
+  },
+  "focused": {
+    "before": "On the previous ClassSummaryView, the empty Error case and the non-Error case failed. The dialog heading was Loading class… and The class summary could not load. was absent.",
+    "after": "ClassSummaryView.test.tsx passed 7/7. new Error('summary offline') still shows summary offline, and that heading is not Loading class…."
+  },
+  "gate": {
+    "start": "2026-10-21T20:15:00Z",
+    "end": "2026-10-21T20:16:42Z",
+    "result": "pass",
+    "steps": [
+      "pnpm format:check",
+      "pnpm -r typecheck",
+      "pnpm lint",
+      "cd ritmofit_design_system && npm run verify",
+      "pnpm --filter @ritmofit/web theme-classes",
+      "pnpm run test",
+      "pnpm --filter @ritmofit/api test:integration",
+      "pnpm --filter @ritmofit/web build",
+      "pnpm --filter @ritmofit/api openapi",
+      "git diff --exit-code apps/api/openapi/openapi.json",
+      "pnpm --filter @ritmofit/api contract-parity",
+      "pnpm audit:ci"
+    ],
+    "counts": {
+      "music": 30,
+      "web": 1221,
+      "api": 486,
+      "integration": 196
+    }
+  },
+  "castGrep": "empty in apps/web/src/components/ClassSummaryView.tsx",
+  "nativeZoom": "NOT_ASSESSED"
+}
