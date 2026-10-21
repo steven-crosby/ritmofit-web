@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-21",
+  "productCommit": "7eed7acb28dc8f46bb4937778b88f2dd39d52b3b",
+  "base": "23922e2b928b39038db1bc6a05925d43a915758f",
+  "sourceHashes": {
+    "apps/web/src/components/Dashboard.tsx": "c94951bac5e9ba95c8b1d67b5250b8f717099915b0f9c6d0c37314e7069ec5a1",
+    "apps/web/src/components/Dashboard.test.tsx": "894561a03168f2af7df6d63dc68288cbf070689a871e0e86924f73ff4b074f3a"
+  },
+  "focusedBeforeFix": {
+    "command": "vitest run src/components/Dashboard.test.tsx -t 'failure copy|reorder fallback'",
+    "dashboardSource": "origin/main 23922e2",
+    "result": "7 failed, 6 passed, 143 skipped",
+    "failed": [
+      "reorder fallback for new Error('')",
+      "load-more non-Error",
+      "load-more empty Error",
+      "profile-save non-Error",
+      "profile-save empty Error",
+      "class-detail empty Error",
+      "playlist and likes shelf labels for a non-Error"
+    ],
+    "passedOnOldSource": [
+      "load-more Error message",
+      "profile-save Error message",
+      "class-detail non-Error already used Could not load this class.",
+      "class-detail Error message",
+      "canned profile ACC code",
+      "canned connections CONN code"
+    ]
+  },
+  "focusedAfterFix": {
+    "command": "vitest run src/components/Dashboard.test.tsx -t 'failure copy|reorder fallback'",
+    "result": "13 passed, 143 skipped"
+  },
+  "grep": {
+    "castPattern": "empty",
+    "rawReasonMessage": "absent"
+  },
+  "gate": [
+    { "command": "pnpm format:check", "result": "pass", "utc": "17:07:47-17:07:52" },
+    { "command": "pnpm -r typecheck", "result": "pass", "utc": "17:07:52-17:08:07" },
+    { "command": "pnpm lint", "result": "pass", "utc": "17:08:07-17:08:12" },
+    { "command": "cd ritmofit_design_system && npm run verify", "result": "pass", "utc": "17:08:12-17:08:13" },
+    { "command": "pnpm --filter @ritmofit/web theme-classes", "result": "pass", "utc": "17:08:13-17:08:13" },
+    {
+      "command": "pnpm test",
+      "result": "pass",
+      "utc": "17:08:13-17:08:55",
+      "counts": "music 30, web 1214, api 486"
+    },
+    {
+      "command": "pnpm --filter @ritmofit/api test:integration",
+      "result": "pass",
+      "utc": "17:08:55-17:09:27",
+      "counts": "196"
+    },
+    { "command": "pnpm --filter @ritmofit/web build", "result": "pass", "utc": "17:09:27-17:09:38" },
+    { "command": "pnpm --filter @ritmofit/api openapi", "result": "pass", "utc": "17:09:38-17:09:39" },
+    {
+      "command": "git diff --exit-code apps/api/openapi/openapi.json",
+      "result": "pass",
+      "utc": "17:09:39-17:09:39"
+    },
+    { "command": "pnpm --filter @ritmofit/api contract-parity", "result": "pass", "utc": "17:09:39-17:09:39" },
+    { "command": "pnpm audit:ci", "result": "pass", "utc": "17:09:39-17:09:40" }
+  ],
+  "openapiDiff": "none",
+  "nativeZoom": "NOT_ASSESSED"
+}
