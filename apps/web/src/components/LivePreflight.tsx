@@ -142,15 +142,15 @@ export function LivePreflight({
             >
               {preflight == null
                 ? verdict.label
-                : `${passingCount} ${passingCount === 1 ? 'track checked' : 'tracks checked'} · ${unplayableCount} ${unplayableCount === 1 ? 'needs a decision' : 'need a decision'}`}
+                : `${trackCount} ${trackCount === 1 ? 'track checked' : 'tracks checked'} · ${passingCount} passed · ${unplayableCount} ${unplayableCount === 1 ? 'needs attention' : 'need attention'}`}
             </h2>
             <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
               {verdict.detail}
             </p>
             {preflight != null && !preflight.ok && (
               <p className="mt-2 font-ui text-sm font-semibold text-text-primary">
-                Prompter-only is ready now. Music can be fixed before the run or left off
-                deliberately.
+                Run without music keeps your cues and timer. Music can be fixed before the run or
+                left off deliberately.
               </p>
             )}
           </div>
@@ -197,16 +197,21 @@ export function LivePreflight({
           Checking provider connections…
         </p>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2" role="list" aria-label="Track playback check">
-          <PreflightGroup
-            title="Provider links and durations checked"
-            results={playableTracks ?? []}
-          />
-          <PreflightGroup
-            title="Fix or choose prompter-only"
-            results={unplayableTracks ?? []}
-            caution
-          />
+        <div className="flex flex-col gap-4" role="list" aria-label="Track playback check">
+          {unplayableCount > 0 && (
+            <PreflightGroup
+              title="Needs attention before music can start"
+              results={unplayableTracks ?? []}
+              caution
+            />
+          )}
+          {passingCount > 0 && (
+            <PreflightGroup
+              title={`${passingCount} ${passingCount === 1 ? 'track passed' : 'tracks passed'} checks`}
+              results={playableTracks ?? []}
+              disclosure
+            />
+          )}
         </div>
       )}
 
@@ -216,12 +221,6 @@ export function LivePreflight({
           Later tracks may still need recovery. Check your volume and audio output when music
           starts. Browser playback permission and each track’s availability may still require
           recovery when playback starts.
-        </p>
-      )}
-
-      {preflight != null && passingCount > 0 && !preflight.ok && (
-        <p className="px-1 font-ui text-xs text-text-tertiary">
-          {passingCount} {passingCount === 1 ? 'track passes' : 'tracks pass'} track checks.
         </p>
       )}
 
@@ -249,45 +248,57 @@ function PreflightGroup({
   title,
   results,
   caution = false,
+  disclosure = false,
 }: {
   title: string;
   results: PreflightTrackResult[];
   caution?: boolean;
+  disclosure?: boolean;
 }) {
+  const tracks = (
+    <ul className="divide-y divide-border-subtle">
+      {results.map((result) => (
+        <li
+          key={result.classTrackId}
+          className="grid min-h-16 gap-2 px-1 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,1fr)] sm:items-center"
+        >
+          <span className="min-w-0">
+            <span className="font-data text-xs text-text-tertiary">#{result.position + 1}</span>
+            <p className="break-words font-display font-semibold text-text-primary">
+              {result.title}
+            </p>
+          </span>
+          <Verdict result={result} />
+        </li>
+      ))}
+    </ul>
+  );
   return (
     <section
       role="listitem"
       className="rounded-card border border-border-subtle bg-bg-raised p-3 sm:p-4"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-1 pb-3">
-        <p className="font-data text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-          {title}
-        </p>
-        <span
-          className={`font-data text-sm ${caution ? 'text-state-caution' : 'text-state-positive'}`}
-        >
-          {results.length}
-        </span>
-      </div>
-      {results.length === 0 ? (
-        <p className="px-1 py-4 font-ui text-sm text-text-tertiary">No tracks in this group.</p>
+      {disclosure ? (
+        <details>
+          <summary className="min-h-11 cursor-pointer rounded-control px-1 py-3 font-ui text-sm font-semibold text-text-secondary rf-focus-ring">
+            {title}
+          </summary>
+          {tracks}
+        </details>
       ) : (
-        <ul className="divide-y divide-border-subtle">
-          {results.map((result) => (
-            <li
-              key={result.classTrackId}
-              className="grid min-h-16 gap-2 px-1 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,1fr)] sm:items-center"
+        <>
+          <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-1 pb-3">
+            <p className="font-data text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+              {title}
+            </p>
+            <span
+              className={`font-data text-sm ${caution ? 'text-state-caution' : 'text-state-positive'}`}
             >
-              <span className="min-w-0">
-                <span className="font-data text-xs text-text-tertiary">#{result.position + 1}</span>
-                <p className="break-words font-display font-semibold text-text-primary">
-                  {result.title}
-                </p>
-              </span>
-              <Verdict result={result} />
-            </li>
-          ))}
-        </ul>
+              {results.length}
+            </span>
+          </div>
+          {tracks}
+        </>
       )}
     </section>
   );

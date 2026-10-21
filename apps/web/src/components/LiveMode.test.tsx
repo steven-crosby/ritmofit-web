@@ -213,12 +213,12 @@ describe('LiveMode preflight', () => {
     expect(within(list).getByText('No connected provider can play this')).toBeTruthy();
     expect(screen.getByText('Blocked')).toBeTruthy();
     expect(
-      screen.getByRole('heading', { name: '0 tracks checked · 1 needs a decision' }),
+      screen.getByRole('heading', { name: '1 track checked · 0 passed · 1 needs attention' }),
     ).toBeTruthy();
     expect(screen.getByText('1 track needs a fix before starting with music.')).toBeTruthy();
     expect(
       screen.getByText(
-        'Prompter-only is ready now. Music can be fixed before the run or left off deliberately.',
+        'Run without music keeps your cues and timer. Music can be fixed before the run or left off deliberately.',
       ),
     ).toBeTruthy();
     const exceptionRow = within(list).getByText('Active Track').closest('li');
@@ -247,7 +247,7 @@ describe('LiveMode preflight', () => {
     expect(within(list).getByText('Selected: SoundCloud')).toBeTruthy();
     expect(screen.getByText('Track checks passed')).toBeTruthy();
     expect(
-      screen.getByRole('heading', { name: '1 track checked · 0 need a decision' }),
+      screen.getByRole('heading', { name: '1 track checked · 1 passed · 0 need attention' }),
     ).toBeTruthy();
     expect(
       screen.getByText(

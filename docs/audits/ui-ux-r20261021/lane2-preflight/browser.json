@@ -1,0 +1,110 @@
+{
+  "date": "2026-10-21",
+  "evidenceClass": "local synthetic Chrome and mounted local Worker/D1; one injected connection-error response",
+  "checks": [
+    {
+      "name": "mixed-count-and-problem-first",
+      "pass": true,
+      "detail": {
+        "firstTrack": "#15Needs music — Última canción 長い指導用タイトル⊘No provider linkAdd a music provider to this track in the builder."
+      }
+    },
+    {
+      "name": "no-horizontal-overflow-1440",
+      "pass": true
+    },
+    {
+      "name": "no-horizontal-overflow-390",
+      "pass": true
+    },
+    {
+      "name": "no-horizontal-overflow-320",
+      "pass": true
+    },
+    {
+      "name": "native-disclosure-enter-space-and-focus",
+      "pass": true,
+      "detail": {
+        "active": true,
+        "shadow": "none",
+        "outline": "rgb(116, 214, 229)",
+        "outlineWidth": "3px",
+        "outlineStyle": "solid",
+        "height": 44
+      }
+    },
+    {
+      "name": "blocked-start-and-explicit-without-music",
+      "pass": true
+    },
+    {
+      "name": "reduced-motion-disclosure",
+      "pass": true
+    },
+    {
+      "name": "without-music-enters-ready-without-starting",
+      "pass": true
+    },
+    {
+      "name": "all-pass-no-empty-attention-card",
+      "pass": true
+    },
+    {
+      "name": "all-blocked-no-empty-passed-card",
+      "pass": true
+    },
+    {
+      "name": "connection-error-preserves-retry-and-without-music",
+      "pass": true
+    }
+  ],
+  "sourceHashesBefore": {
+    "apps/web/src/components/LivePreflight.tsx": "d6382343b9afb90c51203720720994c5219a8af28e4a68d13bc8d5f7fbd96ab4",
+    "apps/web/src/components/LivePreflight.test.tsx": "845c760bb1ac0859b1723deaa14bc760e9eefc353e2b233b79a17c9714b0cda6",
+    "apps/web/src/components/LiveMode.test.tsx": "728c2d2f3c8fdddc3eb248809688b1c1b0df5bde670554d7e8e57f15f5a20872"
+  },
+  "sourceHashesAfter": {
+    "apps/web/src/components/LivePreflight.tsx": "d6382343b9afb90c51203720720994c5219a8af28e4a68d13bc8d5f7fbd96ab4",
+    "apps/web/src/components/LivePreflight.test.tsx": "845c760bb1ac0859b1723deaa14bc760e9eefc353e2b233b79a17c9714b0cda6",
+    "apps/web/src/components/LiveMode.test.tsx": "728c2d2f3c8fdddc3eb248809688b1c1b0df5bde670554d7e8e57f15f5a20872"
+  },
+  "pageErrors": [],
+  "nativeZoom": {
+    "status": "NOT_ASSESSED",
+    "reason": "CUA could not address the isolated QA Chrome process without targeting the owner personal Chrome window.",
+    "actions": "Opened and dismissed the Window menu; no zoom or page action was issued.",
+    "substituteEvidence": "The new preflight content reflowed without horizontal document overflow in real Chrome at 320px; this is not native 200% zoom acceptance."
+  },
+  "limits": [
+    "No provider playback started; without-music entered READY only.",
+    "Consent gate covered by component tests; no real consent or screen-reader/device acceptance.",
+    "At 320px the existing long class title in the frozen LiveMode header runs beneath Exit. The clean reflow claim covers new preflight content, not complete visibility of that header title."
+  ],
+  "fixture": {
+    "classId": "4b4b7ce0-4b15-4589-ae53-b4398ea92a88",
+    "title": "[QA] Preflight 15 r20261021",
+    "classTrackIds": [
+      "e335dc90-b252-498c-b64f-a9b523166b38",
+      "ef07d5de-4f7c-46bd-a34f-10a642e6f21f",
+      "1f6c404e-54d9-4b6c-9676-88312466a8d5",
+      "f9ee65cb-903f-4dfe-bd57-d6887e3efe12",
+      "d1c94b3e-9e5d-4cef-9357-adf4f43740b4",
+      "ac04f893-7a46-4890-87d2-2abe5fa3a5ba",
+      "5807dddb-eb51-4661-afea-f7b605786f15",
+      "f42f7f23-0b65-4b86-af7d-26bb97730ca2",
+      "d0caa98d-22b7-4498-a513-014b59dd861d",
+      "e485591a-cbfb-4ad8-a93f-d7eada6df8de",
+      "be05e59d-eaea-46fe-b134-99fcdc869bb9",
+      "76950152-0795-4b2c-bdd5-be90b9ae3cfb",
+      "f57de439-e6e6-4990-aa1e-90b6a28711e4",
+      "ec332600-6918-4df5-bc11-5213fbcb3473",
+      "50c15f4e-26da-4979-be54-a6dd4c0ad754"
+    ]
+  },
+  "review": {
+    "status": "PASS",
+    "result": "Independent source review found no actionable defects."
+  },
+  "assessedCheckCount": 11,
+  "passedCheckCount": 11
+}
