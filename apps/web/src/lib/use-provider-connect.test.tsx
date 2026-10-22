@@ -128,4 +128,34 @@ describe('provider connection lifecycle', () => {
     await screen.findByRole('button', { name: 'Connect Apple Music' });
     expect(authorize).toHaveBeenCalledTimes(2);
   });
+
+  async function expectConnectFallback() {
+    fireEvent.click(screen.getByRole('button', { name: 'Connect Apple Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Authorize Apple Music' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Could not connect. Try again.');
+    expect(alert.textContent?.trim()).toBe('Could not connect. Try again.');
+    expect(screen.queryByRole('button', { name: 'Cancel Apple Music connection' })).toBeNull();
+    expect(
+      (screen.getByRole('button', { name: 'Connect Apple Music' }) as HTMLButtonElement).disabled,
+    ).toBe(false);
+  }
+
+  it('shows the connect fallback when authorization throws an empty Error', async () => {
+    authorize.mockRejectedValueOnce(new Error(''));
+    render(<Harness />);
+    await expectConnectFallback();
+  });
+
+  it('shows the connect fallback when authorization throws a whitespace Error', async () => {
+    authorize.mockRejectedValueOnce(new Error('   '));
+    render(<Harness />);
+    await expectConnectFallback();
+  });
+
+  it('shows the connect fallback when authorization throws a non-Error', async () => {
+    authorize.mockRejectedValueOnce({ code: 1 });
+    render(<Harness />);
+    await expectConnectFallback();
+  });
 });
