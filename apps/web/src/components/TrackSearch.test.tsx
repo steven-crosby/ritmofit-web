@@ -724,16 +724,19 @@ describe('TrackSearch saved-playlists drill-in', () => {
   it.each([
     ['an empty Error', new Error('')],
     ['a non-Error', { reason: 'down' }],
-  ] as const)('shows the generic drill-in alert and Try again for %s', async (_label, thrown) => {
-    vi.mocked(api.listPlaylistTracks).mockRejectedValue(thrown);
-    await openFirstPlaylist();
+  ] as const)(
+    'shows the generic drill-in alert and Try again for %s',
+    async (_label: string, thrown: Error | { reason: string }) => {
+      vi.mocked(api.listPlaylistTracks).mockRejectedValue(thrown);
+      await openFirstPlaylist();
 
-    const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Something went wrong/);
-    expect(screen.getByRole('button', { name: /try again/i })).toBeTruthy();
-    expect(screen.queryByText(/This playlist has no tracks/)).toBeNull();
-    expect(screen.queryByText(/Loading tracks from/)).toBeNull();
-  });
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toMatch(/Something went wrong/);
+      expect(screen.getByRole('button', { name: /try again/i })).toBeTruthy();
+      expect(screen.queryByText(/This playlist has no tracks/)).toBeNull();
+      expect(screen.queryByText(/Loading tracks from/)).toBeNull();
+    },
+  );
 
   it('shows a sentence when an ordered import returns an empty error', async () => {
     vi.mocked(api.importTrack).mockResolvedValue(IMPORTED_TRACK);
@@ -1266,7 +1269,7 @@ describe('TrackSearch blank Add-music failures', () => {
     ['playlists', 'Couldn’t load your SoundCloud playlists.'],
   ] as const)(
     'keeps the canned %s sentence for a non-empty provider failure',
-    async (surface, sentence) => {
+    async (surface: 'search' | 'likes' | 'playlists', sentence: string) => {
       if (surface === 'search') {
         vi.mocked(api.searchProvider).mockRejectedValue(new Error('provider down'));
         render(<TrackSearch classId="c1" onAdded={() => {}} />);
@@ -1290,7 +1293,7 @@ describe('TrackSearch blank Add-music failures', () => {
 
   it.each(['likes', 'playlists'] as const)(
     'keeps the canned %s sentence for a plain empty Error',
-    async (surface) => {
+    async (surface: 'likes' | 'playlists') => {
       const sentence =
         surface === 'likes'
           ? 'Couldn’t load your SoundCloud likes.'
@@ -1313,7 +1316,7 @@ describe('TrackSearch blank Add-music failures', () => {
 
   it.each([new Error(''), { reason: 'down' }] as const)(
     'shows a sentence when adding a track throws %s',
-    async (thrown) => {
+    async (thrown: Error | { reason: string }) => {
       vi.mocked(api.searchProvider).mockResolvedValue([staleResult]);
       vi.mocked(api.importTrack).mockRejectedValue(thrown);
       render(<TrackSearch classId="c1" onAdded={() => {}} />);
@@ -1338,7 +1341,7 @@ describe('TrackSearch blank Add-music failures', () => {
 
   it.each([new Error(''), { reason: 'down' }] as const)(
     'shows a sentence when playlist URL import throws %s',
-    async (thrown) => {
+    async (thrown: Error | { reason: string }) => {
       vi.mocked(api.importPlaylist).mockRejectedValue(thrown);
       render(<TrackSearch classId="c1" onAdded={() => {}} />);
       fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
