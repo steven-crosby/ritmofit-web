@@ -6,6 +6,7 @@ import {
   type ClassPulseModel,
 } from '../lib/class-pulse.js';
 import { formatDuration } from '../lib/class-summary.js';
+import { computeSegmentBands, SEGMENT_META, SegmentIcon } from './SegmentBand.js';
 
 const HEIGHT: Record<NonNullable<ClassPulseModel['segments'][number]['effort']>, number> = {
   easy: 30,
@@ -33,17 +34,24 @@ export function ClassPulse({
   payload,
   compact = false,
   variant = 'card',
+  sectionTrack = false,
   className = '',
 }: {
   payload: RunPayload;
   compact?: boolean;
   variant?: 'card' | 'sparkline';
+  /**
+   * Draw authored sections under the graph. The builder turns this on.
+   * Compact, sparkline, and the summary keep their own surfaces.
+   */
+  sectionTrack?: boolean;
   className?: string;
 }) {
   return (
     <ClassPulseView
       model={classPulseFromPayload(payload)}
       totalDurationMs={payload.class.totalDurationMs}
+      sections={sectionTrack ? (payload.sections ?? []) : []}
       compact={compact}
       variant={variant}
       className={className}
@@ -54,6 +62,7 @@ export function ClassPulse({
 export function ClassPulseView({
   model,
   totalDurationMs,
+  sections = [],
   compact = false,
   variant = 'card',
   className = '',
@@ -61,6 +70,8 @@ export function ClassPulseView({
   model: ClassPulseModel;
   /** Class runtime, for the time axis under the chart. Omitted = no axis. */
   totalDurationMs?: number;
+  /** Authored `class_sections` from the run-payload. Empty draws no track. */
+  sections?: RunPayload['sections'];
   compact?: boolean;
   variant?: 'card' | 'sparkline';
   className?: string;
@@ -181,10 +192,57 @@ export function ClassPulseView({
         </div>
       )}
 
+      {/* Section banding shares the chart's width, so a band's left edge is the
+          same class time as the bar above it. Authored sections only — the
+          timeline editor still owns provisional bands and editing. */}
+      {!compact && model.segments.length > 0 && totalDurationMs != null && (
+        <PulseSectionTrack sections={sections} totalDurationMs={totalDurationMs} />
+      )}
+
       {!compact && model.segments.length > 0 && <PulseLegend model={model} />}
 
       <p className="mt-2 font-ui text-xs text-text-tertiary">{coverage}</p>
     </section>
+  );
+}
+
+/**
+ * Quiet section track under the class-shape graph (design system 09 §Segments,
+ * 10 §4, 02 §Segment track). Same icon, label, and tint as the timeline band,
+ * on a neutral rail — a tint, not an intensity fill, and not a paint of the bars.
+ */
+function PulseSectionTrack({
+  sections,
+  totalDurationMs,
+}: {
+  sections: RunPayload['sections'];
+  totalDurationMs: number;
+}) {
+  const bands = computeSegmentBands(sections, totalDurationMs);
+  if (bands.length === 0) return null;
+  const arc = bands.map((band) => SEGMENT_META[band.type].label).join(' → ');
+  return (
+    <div
+      className="relative mt-2 h-8 w-full overflow-hidden rounded-card bg-bg-base"
+      role="img"
+      aria-label={`Sections: ${arc}`}
+    >
+      {bands.map((band, index) => (
+        <div
+          key={`${band.type}:${band.leftPct}:${index}`}
+          aria-hidden
+          className="absolute top-0 flex h-full min-w-0 items-center gap-1 overflow-hidden px-1.5"
+          style={{ left: `${band.leftPct}%`, width: `${band.widthPct}%` }}
+        >
+          <span className="shrink-0" style={{ color: SEGMENT_META[band.type].tint }}>
+            <SegmentIcon type={band.type} />
+          </span>
+          <span className="min-w-0 truncate font-ui text-[11px] text-text-secondary">
+            {SEGMENT_META[band.type].label}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 
