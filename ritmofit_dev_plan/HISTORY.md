@@ -13,6 +13,36 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-21 — #540 on main `4770ab9`.** Owner asked to deploy.
+> Production deploy at 2026-10-22T00:10:18Z (6:10 PM MT). New Worker
+> `a7ce7cc4-b071-45a8-82b0-43f3cde1b482`; previous/rollback
+> `0b50b635-614e-4ed4-8cfe-e6aa2092e696`. SPA entry `assets/index-Db7wrScM.js`
+> (CSS `assets/index-DmB9GctO.css`), confirmed by three consecutive cache-busted
+> fetches on the first triple. A further fetch returned the same CSS.
+> Pre-deploy full gate passed on `4770ab9` from a clean detached worktree (format,
+> typecheck, lint, design verify, theme-classes, unit tests web 1233 / api 486 /
+> music 30, Worker/D1 integration 196, web build, OpenAPI no drift, contract-parity,
+> audit:ci). The gate ran on Node v26.7.0; `.nvmrc` is 22 and Node 22 is not
+> installed on this Mac. Remote D1 had no migrations to apply, and no migration
+> files changed between production `3ffb7e0` and `4770ab9`. `BETA_ALLOWED_EMAILS`
+> present (name only). Post-deploy `migrations list --remote` still reported
+> nothing to apply.
+>
+> Deployed since production `3ffb7e0`:
+> [#540](https://github.com/steven-crosby/ritmofit-web/pull/540) (fill blank
+> TrackPreview failure alerts, `4770ab9`). Docs record `2914253` (the earlier
+> same-day Worker `0b50b635` record) is in that tree and does not change runtime.
+> The #540 lane handoff still describes that PR as an open draft and was not
+> edited.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 (`status: ok`, service `ritmofit-api`);
+> unauthenticated `/api/v1/classes`, `/explore`, and `/teams` 401. Six security
+> headers present. Unauthenticated class shares, playlist import, Spotify search,
+> saved playlists, track import, cover upload, tag add/remove, and moves returned
+> 401. `GET /api/v1/uploads/covers/smoke-missing.jpg` reached the handler as
+> 404 `NOT_FOUND`. Worker status 100% on `a7ce7cc4`. Production matches main
+> `4770ab9`.
+
 > **Deploy 2026-10-21 — #533 and #538 on main `3ffb7e0`.** Owner asked to deploy.
 > Production deploy at 2026-10-21T22:20:04Z (4:20 PM MT). New Worker
 > `0b50b635-614e-4ed4-8cfe-e6aa2092e696`; previous/rollback
