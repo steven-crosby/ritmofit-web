@@ -23,6 +23,7 @@ import {
 import { segmentTypeValues, type ClassSection, type SegmentType } from '@ritmofit/shared';
 import { listSections, createSection, updateSection, deleteSection } from '../lib/api.js';
 import { formatDuration } from '../lib/class-summary.js';
+import { errMessage } from '../lib/errors.js';
 import { anchorFieldState, formatClockFromMs } from '../lib/duration.js';
 
 /** Presentation for each fixed segment type: label + a reinforcing tint (02-color-system). */
@@ -225,7 +226,7 @@ export function SegmentBand({
     try {
       setSections(await listSections(classId));
     } catch (e) {
-      setError((e as Error).message);
+      setError(errMessage(e, 'Could not load segments.'));
     }
   }, [classId]);
   useEffect(() => {
@@ -418,7 +419,7 @@ function SegmentHandle({
       await onCommit(section.id, next);
     } catch (e) {
       setDraftMs(section.startOffsetMs); // revert; server stays authoritative
-      onError((e as Error).message);
+      onError(errMessage(e, 'Could not save the segment boundary.'));
     }
   };
 
@@ -526,7 +527,7 @@ function SegmentEditor({
       setStartClock('0:00');
       await onChanged();
     } catch (e) {
-      onError((e as Error).message);
+      onError(errMessage(e, 'Could not add the segment.'));
     } finally {
       setBusy(false);
     }
@@ -547,7 +548,7 @@ function SegmentEditor({
       setEditingId(null);
       await onChanged();
     } catch (e) {
-      onError((e as Error).message);
+      onError(errMessage(e, 'Could not save the segment.'));
     } finally {
       setBusy(false);
     }
@@ -559,7 +560,7 @@ function SegmentEditor({
       await deleteSection(id);
       await onChanged();
     } catch (e) {
-      onError((e as Error).message);
+      onError(errMessage(e, 'Could not delete the segment.'));
     } finally {
       setBusy(false);
     }

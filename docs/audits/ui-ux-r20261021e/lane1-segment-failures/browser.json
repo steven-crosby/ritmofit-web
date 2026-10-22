@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-22",
+  "evidenceClass": "local Chrome segment editor with an injected empty Error and a normal Error",
+  "viewport": "1440x1000",
+  "checks": [
+    {
+      "name": "empty-error-1440",
+      "width": 1440,
+      "height": 1000,
+      "lineTag": "P",
+      "lineClass": "font-ui text-xs text-state-danger",
+      "lineText": "Could not load segments.",
+      "hasFallback": true,
+      "hasNormal": false,
+      "hasAddSegment": true,
+      "hasAlert": false,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "innerWidth": 1440,
+      "pageErrors": []
+    },
+    {
+      "name": "normal-message-1440",
+      "width": 1440,
+      "height": 1000,
+      "lineTag": "P",
+      "lineClass": "font-ui text-xs text-state-danger",
+      "lineText": "segment offline",
+      "hasFallback": false,
+      "hasNormal": true,
+      "hasAddSegment": true,
+      "hasAlert": false,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "innerWidth": 1440,
+      "pageErrors": []
+    }
+  ],
+  "nativeZoom": "NOT_ASSESSED",
+  "limits": [
+    "Signed in locally and opened a Cycle class with the mock catalog track Titanium. That local D1 row is not in git.",
+    "Before Show timeline, the page wrapped window.fetch so GET /sections threw new Error(''), then on a later open threw new Error('segment offline'). The API itself still throws ApiError with a message.",
+    "new Error('') showed Could not load segments. in the existing danger paragraph at 1440. new Error('segment offline') showed segment offline. Add segment stayed. No role=alert was added. documentElement.scrollWidth matched the viewport. No page errors.",
+    "390 and native 200% zoom were not performed (NOT_ASSESSED).",
+    "No provider audio, real device, or screen-reader acceptance."
+  ]
+}
