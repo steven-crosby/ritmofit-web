@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-22",
+  "base": "c466994c10813c8e1d4a34a05e229f1e5eda0c31",
+  "productCommits": ["289db1cdf0c9796b7410d40e39123d9334fa02a5"],
+  "sourceHashes": {
+    "apps/web/src/components/LiveMode.tsx": "6605046fc1a43a40c353a136ad604c617555b6f5b85bc088c232e451e75bf7c6",
+    "apps/web/src/components/LiveMode.test.tsx": "d862fa16bd28955e1cfe94e19ea981c33ec463c442901b1491d39ffdfaa31b17"
+  },
+  "focused": {
+    "before": "LiveMode.test.tsx: 2 failed, 2 passed. onError({ message: '' }) had no alert and the heading was Waiting for music. onError({ message: '   ' }) had an alert whose body was not Something went wrong. Apple Music stopped and the 2-second waiting panel already passed, including no Retry playback on the waiting panel.",
+    "after": "LiveMode.test.tsx passed 101/101. Empty and whitespace messages show role=alert Playback recovery, heading Playback stopped, body Something went wrong., and Retry playback. Apple Music stopped stays. The waiting panel stays Waiting for music with Provider playback has not confirmed progress. and no Retry playback."
+  },
+  "gate": {
+    "start": "2026-10-22T17:33:11Z",
+    "end": "2026-10-22T17:34:57Z",
+    "result": "pass",
+    "steps": [
+      "pnpm format:check",
+      "pnpm -r typecheck",
+      "pnpm lint",
+      "cd ritmofit_design_system && npm run verify",
+      "pnpm --filter @ritmofit/web theme-classes",
+      "pnpm test",
+      "pnpm --filter @ritmofit/api test:integration",
+      "pnpm --filter @ritmofit/web build",
+      "pnpm --filter @ritmofit/api openapi",
+      "git diff --exit-code apps/api/openapi/openapi.json",
+      "pnpm --filter @ritmofit/api contract-parity",
+      "pnpm audit:ci"
+    ],
+    "counts": {
+      "music": 30,
+      "web": 1260,
+      "api": 486,
+      "integration": 196
+    },
+    "audit": "2 vulnerabilities found. Severity: 1 low (1 ignored) | 1 moderate (1 ignored)."
+  },
+  "nativeZoom": "NOT_ASSESSED",
+  "width390": "NOT_ASSESSED"
+}
