@@ -13,6 +13,47 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-22 — #543, #544, #548, and #549 on main `2a85509`.** Owner asked to deploy.
+> Production deploy at 2026-10-22T18:39:45Z (12:39 PM MT). New Worker
+> `f559fcca-94db-45a9-93b1-774cfb99f812`; previous/rollback
+> `a7ce7cc4-b071-45a8-82b0-43f3cde1b482`. SPA entry `assets/index-D1PZXPS7.js`
+> (CSS `assets/index-DmB9GctO.css`), confirmed by three consecutive cache-busted
+> fetches on the first triple. A further fetch returned the same JS and CSS.
+> Pre-deploy full gate passed on `2a85509` from a clean detached worktree (format,
+> typecheck, lint, design verify, theme-classes, unit tests web 1263 / api 486 /
+> music 30, Worker/D1 integration 196, web build, OpenAPI no drift, contract-parity,
+> audit:ci). The gate ran on Node v26.7.0 (`/opt/homebrew/bin/node`). `.nvmrc` is
+> 22; Homebrew `node@22` and `~/.nvm` were not present. Remote D1 had no migrations
+> to apply, and no migration files changed between production `4770ab9` and
+> `2a85509`. `BETA_ALLOWED_EMAILS` present (name only). Post-deploy
+> `migrations list --remote` still reported nothing to apply.
+>
+> Deployed since production `4770ab9`:
+> [#541](https://github.com/steven-crosby/ritmofit-web/pull/541) (docs, `711c543`),
+> [#542](https://github.com/steven-crosby/ritmofit-web/pull/542) (docs, `d1236b0`),
+> [#543](https://github.com/steven-crosby/ritmofit-web/pull/543) (fill blank segment
+> failure lines, `decf9f7`),
+> [#544](https://github.com/steven-crosby/ritmofit-web/pull/544) (fill blank
+> Add-music failure copy, `910ecc1`),
+> [#545](https://github.com/steven-crosby/ritmofit-web/pull/545) (docs, `d9d2051`),
+> [#547](https://github.com/steven-crosby/ritmofit-web/pull/547) (docs, `c466994`),
+> [#549](https://github.com/steven-crosby/ritmofit-web/pull/549) (fill a blank Live
+> playback failure, `968379d`), and
+> [#548](https://github.com/steven-crosby/ritmofit-web/pull/548) (fill a blank Apple
+> connect failure, `2a85509`).
+> Draft [#546](https://github.com/steven-crosby/ritmofit-web/pull/546) was not on
+> `main` and was not deployed. The #548 and #549 lane handoffs still describe those
+> PRs as open drafts and were not edited. The 2026-10-22 close handoff still
+> describes the pre-deploy state.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 (`status: ok`, service `ritmofit-api`);
+> unauthenticated `/api/v1/classes`, `/explore`, and `/teams` 401. Six security
+> headers present. Unauthenticated class shares, playlist import, Spotify search,
+> saved playlists, track import, cover upload, tag add/remove, and moves returned
+> 401. `GET /api/v1/uploads/covers/smoke-missing.jpg` reached the handler as
+> 404 `NOT_FOUND`. Worker status 100% on `f559fcca`. Production matches main
+> `2a85509`.
+
 > **Deploy 2026-10-21 — #540 on main `4770ab9`.** Owner asked to deploy.
 > Production deploy at 2026-10-22T00:10:18Z (6:10 PM MT). New Worker
 > `a7ce7cc4-b071-45a8-82b0-43f3cde1b482`; previous/rollback
