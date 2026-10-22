@@ -3878,7 +3878,9 @@ function ClassWorkspace({
         {/* Slice 2 owns this derived presentation. Builder consumes it unchanged as
             the persistent class-shape instrument above the editable track score.
             While the plan is unfinished, keep Pulse/Preview off the first rest. */}
-        {payload && payload.tracks.length > 0 && !planLead && <ClassPulse payload={payload} />}
+        {payload && payload.tracks.length > 0 && !planLead && (
+          <ClassPulse payload={payload} sectionTrack />
+        )}
 
         {selectedEntry && !planLead && (
           <Suspense fallback={null}>

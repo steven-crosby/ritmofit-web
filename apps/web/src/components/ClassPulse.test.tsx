@@ -119,6 +119,149 @@ describe('ClassPulse', () => {
     expect(screen.getByText(/auto-shaped from track order and length/i)).toBeTruthy();
   });
 
+  it('puts authored sections on a quiet track under the graph without painting effort', () => {
+    const { rerender } = render(<ClassPulse payload={payload()} />);
+    const chart = () => screen.getByRole('img', { name: /class pulse/i });
+    const effort = () =>
+      Array.from(chart().querySelectorAll('rect')).map((rect) => ({
+        x: rect.getAttribute('x'),
+        y: rect.getAttribute('y'),
+        width: rect.getAttribute('width'),
+        height: rect.getAttribute('height'),
+        fill: rect.getAttribute('fill'),
+      }));
+    const before = effort();
+    expect(before.length).toBeGreaterThan(0);
+    expect(screen.queryByRole('img', { name: /sections:/i })).toBeNull();
+
+    rerender(
+      <ClassPulse
+        sectionTrack
+        payload={
+          {
+            ...payload(),
+            class: { totalDurationMs: 180_000, timelineMode: 'sequential' },
+            sections: [
+              { id: 'sec-warm', type: 'warm_up', startOffsetMs: 0 },
+              { id: 'sec-climb', type: 'climb', startOffsetMs: 60_000 },
+            ],
+          } as unknown as RunPayload
+        }
+      />,
+    );
+
+    expect(effort()).toEqual(before);
+    expect(chart().getAttribute('aria-label')).not.toMatch(/warm-up|climb/i);
+    const track = screen.getByRole('img', { name: 'Sections: Warm-up → Climb' });
+    expect(track.tagName).toBe('DIV');
+    expect(chart().contains(track)).toBe(false);
+    expect(chart().compareDocumentPosition(track) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    expect(track.textContent).toContain('Warm-up');
+    expect(track.textContent).toContain('Climb');
+    expect(track.querySelectorAll('svg')).toHaveLength(2);
+    // Back-to-back: the packed bars and the class duration are one axis.
+    expect(screen.getByText(/0:00 start/i)).toBeTruthy();
+    expect(screen.getByText(/3:00 finish/i)).toBeTruthy();
+  });
+
+  it('keeps a short section visible as a quiet tint when the icon and label cannot fit', () => {
+    // A 30s sprint in a 60-minute class is narrower than the padding plus the
+    // icon, so those clip. The tint still fills the band. The accessible name
+    // keeps the full label.
+    const totalDurationMs = 60 * 60 * 1000;
+    render(
+      <ClassPulse
+        sectionTrack
+        payload={
+          {
+            class: { totalDurationMs, timelineMode: 'sequential' },
+            tracks: [
+              {
+                classTrackId: 'hour',
+                position: 0,
+                intensity: 'mod',
+                track: { durationMs: totalDurationMs },
+              },
+            ],
+            sections: [
+              { id: 'sec-warm', type: 'warm_up', startOffsetMs: 0 },
+              { id: 'sec-sprint', type: 'sprint', startOffsetMs: totalDurationMs - 30_000 },
+            ],
+          } as unknown as RunPayload
+        }
+      />,
+    );
+
+    const track = screen.getByRole('img', { name: 'Sections: Warm-up → Sprint' });
+    const sprint = track.querySelectorAll(':scope > [aria-hidden="true"]')[1] as HTMLElement;
+    const marker = sprint.querySelector('span') as HTMLElement;
+    expect(Number.parseFloat(sprint.style.width)).toBeLessThan(1);
+    expect(marker.style.backgroundColor).toBe('var(--rf-color-segment-sprint)');
+    expect(marker.style.opacity).toBe('0.28');
+    expect(track.getAttribute('aria-label')).toContain('Sprint');
+  });
+
+  it('omits the section rail in free timeline, where the chart ignores start offsets', () => {
+    // PulseChart packs bars by summing durations and never reads startOffsetMs.
+    // Section percentages use totalDurationMs. A gap makes those two scales
+    // disagree, so free mode draws no rail rather than claiming one axis.
+    const free = {
+      ...payload(),
+      class: { totalDurationMs: 180_000, timelineMode: 'free' },
+      tracks: [
+        {
+          classTrackId: 'one',
+          position: 0,
+          startOffsetMs: 0,
+          intensity: 'easy',
+          track: { durationMs: 60_000 },
+        },
+        {
+          classTrackId: 'two',
+          position: 1,
+          startOffsetMs: 120_000,
+          intensity: 'hard',
+          track: { durationMs: 60_000 },
+        },
+      ],
+      sections: [
+        { id: 'sec-warm', type: 'warm_up', startOffsetMs: 0 },
+        { id: 'sec-climb', type: 'climb', startOffsetMs: 120_000 },
+      ],
+    } as unknown as RunPayload;
+
+    render(<ClassPulse payload={free} sectionTrack />);
+
+    expect(screen.queryByRole('img', { name: /sections:/i })).toBeNull();
+    const chart = screen.getByRole('img', { name: /class pulse/i });
+    const widths = Array.from(chart.querySelectorAll('rect')).map((rect) =>
+      rect.getAttribute('width'),
+    );
+    expect(widths).toEqual(['500', '500']);
+  });
+
+  it('omits the section track from compact and sparkline pulses and from a class with no sections', () => {
+    const withSections = {
+      ...payload(),
+      sections: [
+        { id: 'sec-warm', type: 'warm_up', startOffsetMs: 0 },
+        { id: 'sec-climb', type: 'climb', startOffsetMs: 60_000 },
+      ],
+    } as unknown as RunPayload;
+
+    const { rerender } = render(<ClassPulse payload={withSections} sectionTrack compact />);
+    expect(screen.queryByRole('img', { name: /sections:/i })).toBeNull();
+
+    rerender(<ClassPulse payload={withSections} sectionTrack variant="sparkline" />);
+    expect(screen.queryByRole('img', { name: /sections:/i })).toBeNull();
+
+    rerender(<ClassPulse payload={withSections} />);
+    expect(screen.queryByRole('img', { name: /sections:/i })).toBeNull();
+
+    rerender(<ClassPulse payload={payload()} sectionTrack />);
+    expect(screen.queryByRole('img', { name: /sections:/i })).toBeNull();
+  });
+
   it('keeps unscored tracks hatched even while deriving their height', () => {
     // An entirely unscored class still gets a shape, but nothing may imply the
     // instructor scored it: fill stays the hatch pattern, height comes from order.

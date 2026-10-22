@@ -25,7 +25,7 @@ Retained command transcripts remove terminal color codes and trailing whitespace
 
 ## Deferred issues
 
-The inspector error remains ordinary text rather than an alert/live region. The original lane brief's promise of an "announced error" was inaccurate; this PR retains validation behavior and explicitly defers that existing accessibility defect to the [BUILDER-A11Y findings](../studio-pulse-check-2026-09-13/run-decisions.md). Client-side upper-bound validation for downbeat/Start at, sub-second entry, and clip-end error wording also remain follow-up work. The server's bounds, overlap, plan-order, and cue/move preservation rules remain intact.
+The inspector error remains ordinary text rather than an alert/live region. The original lane brief's promise of an "announced error" was inaccurate; this PR retains validation behavior and explicitly defers that existing accessibility defect to the [BUILDER-A11Y findings](../studio-pulse-check-2026-09-13/run-decisions.md). Client-side upper-bound validation for downbeat/Start at, sub-second entry, and clip-end error wording also remain follow-up work. On 2026-10-22 the owner left those three fields on the current copy and the 24-hour server cap, and declined reusing the cue max. The server's bounds, overlap, plan-order, and cue/move preservation rules remain intact.
 
 ## Merge and restart point
 
