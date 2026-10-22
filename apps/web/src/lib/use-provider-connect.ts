@@ -129,7 +129,7 @@ export function useProviderConnect({
           provider,
           stage: previous?.stage ?? 'preparing',
           slow: false,
-          error: e instanceof Error ? e.message : 'Could not connect. Try again.',
+          error: (e instanceof Error ? e.message.trim() : '') || 'Could not connect. Try again.',
         }));
       }
     } finally {
