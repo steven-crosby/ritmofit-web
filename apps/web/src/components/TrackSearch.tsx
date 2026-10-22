@@ -37,6 +37,7 @@ import {
   searchProvider,
   ApiError,
 } from '../lib/api.js';
+import { errMessage } from '../lib/errors.js';
 import {
   DEFAULT_PROVIDER,
   PROVIDER_ORDER,
@@ -352,7 +353,7 @@ export function TrackSearch({
           setResults(null);
           setError(
             reauth
-              ? message
+              ? errMessage(e)
               : mode === 'likes'
                 ? `Couldn’t load your ${providerLabel(provider)} likes.`
                 : `Couldn’t search ${providerLabel(provider)} right now. Try again.`,
@@ -399,7 +400,9 @@ export function TrackSearch({
         const code = e instanceof ApiError ? e.code : undefined;
         const reauth = classifyProviderLibraryError(message, code) === 'reauth';
         setSavedPlaylists(null);
-        setError(reauth ? message : `Couldn’t load your ${providerLabel(provider)} playlists.`);
+        setError(
+          reauth ? errMessage(e) : `Couldn’t load your ${providerLabel(provider)} playlists.`,
+        );
         setLibraryErrorCode(code);
         if (reauth) {
           setLibraryReauthProvider(provider);
@@ -454,7 +457,7 @@ export function TrackSearch({
       if (!isCurrent()) return;
       const message = (e as Error).message;
       const code = e instanceof ApiError ? e.code : undefined;
-      setError((e as Error).message);
+      setError(errMessage(e));
       setLibraryErrorCode(code);
       if (classifyProviderLibraryError(message, code) === 'reauth') {
         setLibraryReauthProvider(provider);
@@ -479,7 +482,8 @@ export function TrackSearch({
         confirmOnly,
       });
       if (mounted.current && generation === playlistGeneration.current) {
-        setError(outcome.error);
+        // null clears a successful import. errMessage(null) is the fallback sentence.
+        setError(outcome.error === null ? null : errMessage(outcome.error));
         setAddedKeys(new Set(session.entries.filter((e) => e.added).map((e) => e.id)));
       }
       if (mounted.current && activePlaylistContext.current === playlistContext)
@@ -531,7 +535,7 @@ export function TrackSearch({
         onAdded(classTrack.id);
       }
     } catch (e) {
-      if (isCurrent()) setError((e as Error).message);
+      if (isCurrent()) setError(errMessage(e));
     } finally {
       pendingSongAdds.current.delete(operationKey);
       if (mounted.current && request === songAddRequest.current) setImportingKey(null);
@@ -555,7 +559,7 @@ export function TrackSearch({
         onAdded();
       }
     } catch (e) {
-      if (isCurrent()) setError((e as Error).message);
+      if (isCurrent()) setError(errMessage(e));
     } finally {
       urlImportBusy.current = false;
       if (mounted.current) setImportingPlaylist(false);

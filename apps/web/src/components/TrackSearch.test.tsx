@@ -16,7 +16,22 @@ import {
 } from './TrackSearch.js';
 import * as api from '../lib/api.js';
 
-vi.mock('../lib/api.js');
+vi.mock('../lib/api.js', async (original) => {
+  const actual = await original<typeof import('../lib/api.js')>();
+  return {
+    ...actual,
+    addTrack: vi.fn(),
+    importClassTracks: vi.fn(),
+    importPlaylist: vi.fn(),
+    importTrack: vi.fn(),
+    listClassTracks: vi.fn(),
+    listConnections: vi.fn(),
+    listLikes: vi.fn(),
+    listPlaylistTracks: vi.fn(),
+    listPlaylists: vi.fn(),
+    searchProvider: vi.fn(),
+  };
+});
 
 /** A SoundCloud connection view; `expiresAt` decides connected vs expired. */
 function soundcloudConnection(expiresAt: number | null): MusicConnectionView {
@@ -705,6 +720,51 @@ describe('TrackSearch saved-playlists drill-in', () => {
     fireEvent.click(screen.getByRole('button', { name: /try again/i }));
     expect(await screen.findByText('Warmup Ride')).toBeTruthy();
   });
+
+  it.each([
+    ['an empty Error', new Error('')],
+    ['a non-Error', { reason: 'down' }],
+  ] as const)('shows the generic drill-in alert and Try again for %s', async (_label, thrown) => {
+    vi.mocked(api.listPlaylistTracks).mockRejectedValue(thrown);
+    await openFirstPlaylist();
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Something went wrong/);
+    expect(screen.getByRole('button', { name: /try again/i })).toBeTruthy();
+    expect(screen.queryByText(/This playlist has no tracks/)).toBeNull();
+    expect(screen.queryByText(/Loading tracks from/)).toBeNull();
+  });
+
+  it('shows a sentence when an ordered import returns an empty error', async () => {
+    vi.mocked(api.importTrack).mockResolvedValue(IMPORTED_TRACK);
+    vi.mocked(api.importClassTracks).mockRejectedValueOnce(new Error(''));
+    await openPlaylistDrillIn();
+    fireEvent.click(screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Something went wrong/);
+  });
+
+  it('clears the alert when an ordered import returns null', async () => {
+    vi.mocked(api.importTrack).mockResolvedValue(IMPORTED_TRACK);
+    await openPlaylistDrillIn();
+    fireEvent.click(screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }));
+
+    expect(await screen.findByText('Added all 2 tracks.')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText('Something went wrong.')).toBeNull();
+  });
+
+  it('keeps the ordered-import recovery sentence', async () => {
+    const sentence =
+      'Previously imported songs were moved or removed. Add remaining songs at end to keep your current arrangement.';
+    vi.mocked(api.importTrack).mockResolvedValue(IMPORTED_TRACK);
+    vi.mocked(api.importClassTracks).mockRejectedValueOnce(new Error(sentence));
+    await openPlaylistDrillIn();
+    fireEvent.click(screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }));
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(sentence);
+  });
 });
 
 describe('classifyPlaylistDrillInError (unit)', () => {
@@ -1148,5 +1208,158 @@ describe('TrackSearch submitted operation ownership', () => {
     });
     expect(await screen.findByRole('button', { name: 'Stale Track — Added' })).toBeTruthy();
     expect(onAdded).toHaveBeenCalledTimes(1);
+  });
+});
+
+const BLANK_FALLBACK = 'Something went wrong.';
+
+function emptyReauthError(): api.ApiError {
+  return new api.ApiError('', 'REAUTH_REQUIRED', 409);
+}
+
+/** The span beside the Session expired label. The label alone is still a blank. */
+function messageBesideSessionExpired(alert: HTMLElement): string {
+  const beside = [...alert.children].find(
+    (node): node is HTMLElement =>
+      node instanceof HTMLElement && !node.hasAttribute('data-connection-state'),
+  );
+  return beside?.textContent?.trim() ?? '';
+}
+
+function expectSessionExpiredWithSentence(alert: HTMLElement) {
+  const text = (alert.textContent ?? '').replace(/\s+/g, ' ').trim();
+  expect(text).toMatch(/Session expired/);
+  expect(text).not.toBe('Session expired');
+  expect(messageBesideSessionExpired(alert)).toBe(BLANK_FALLBACK);
+}
+
+describe('TrackSearch blank Add-music failures', () => {
+  beforeEach(() => {
+    vi.mocked(api.listConnections).mockResolvedValue([soundcloudConnection(null)]);
+  });
+
+  it('shows a sentence beside Session expired when likes reauth has an empty message', async () => {
+    vi.mocked(api.listLikes).mockRejectedValue(emptyReauthError());
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+
+    const alert = await screen.findByRole('alert');
+    expectSessionExpiredWithSentence(alert);
+    expect(alert.textContent).not.toMatch(/Couldn’t load your SoundCloud likes/);
+    expect(screen.queryByText(/Loading your SoundCloud likes/)).toBeNull();
+  });
+
+  it('shows a sentence beside Session expired when the playlist index reauth message is empty', async () => {
+    vi.mocked(api.listPlaylists).mockRejectedValue(emptyReauthError());
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+
+    const alert = await screen.findByRole('alert');
+    expectSessionExpiredWithSentence(alert);
+    expect(screen.queryByText(/Loading your SoundCloud playlists/)).toBeNull();
+    expect(alert.textContent).not.toMatch(/Couldn’t load your SoundCloud playlists/);
+  });
+
+  it.each([
+    ['search', 'Couldn’t search SoundCloud right now. Try again.'],
+    ['likes', 'Couldn’t load your SoundCloud likes.'],
+    ['playlists', 'Couldn’t load your SoundCloud playlists.'],
+  ] as const)(
+    'keeps the canned %s sentence for a non-empty provider failure',
+    async (surface, sentence) => {
+      if (surface === 'search') {
+        vi.mocked(api.searchProvider).mockRejectedValue(new Error('provider down'));
+        render(<TrackSearch classId="c1" onAdded={() => {}} />);
+        fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'house' } });
+      } else if (surface === 'likes') {
+        vi.mocked(api.listLikes).mockRejectedValue(new Error('provider down'));
+        render(<TrackSearch classId="c1" onAdded={() => {}} />);
+        fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+      } else {
+        vi.mocked(api.listPlaylists).mockRejectedValue(new Error('provider down'));
+        render(<TrackSearch classId="c1" onAdded={() => {}} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+      }
+
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toMatch(sentence);
+      expect(screen.queryByText('provider down')).toBeNull();
+      expect(alert.textContent).not.toMatch(/Session expired/);
+    },
+  );
+
+  it.each(['likes', 'playlists'] as const)(
+    'keeps the canned %s sentence for a plain empty Error',
+    async (surface) => {
+      const sentence =
+        surface === 'likes'
+          ? 'Couldn’t load your SoundCloud likes.'
+          : 'Couldn’t load your SoundCloud playlists.';
+      if (surface === 'likes') {
+        vi.mocked(api.listLikes).mockRejectedValue(new Error(''));
+        render(<TrackSearch classId="c1" onAdded={() => {}} />);
+        fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+      } else {
+        vi.mocked(api.listPlaylists).mockRejectedValue(new Error(''));
+        render(<TrackSearch classId="c1" onAdded={() => {}} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+      }
+
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toMatch(sentence);
+      expect(screen.queryByText('Session expired')).toBeNull();
+    },
+  );
+
+  it.each([new Error(''), { reason: 'down' }] as const)(
+    'shows a sentence when adding a track throws %s',
+    async (thrown) => {
+      vi.mocked(api.searchProvider).mockResolvedValue([staleResult]);
+      vi.mocked(api.importTrack).mockRejectedValue(thrown);
+      render(<TrackSearch classId="c1" onAdded={() => {}} />);
+      fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'ghost' } });
+      fireEvent.click(await screen.findByRole('button', { name: 'Add Stale Track by Ghost' }));
+
+      expect((await screen.findByRole('alert')).textContent).toBe(BLANK_FALLBACK);
+    },
+  );
+
+  it('keeps a provider sentence when adding a track fails', async () => {
+    vi.mocked(api.searchProvider).mockResolvedValue([staleResult]);
+    vi.mocked(api.importTrack).mockRejectedValue(new Error('Track is unavailable on SoundCloud.'));
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'ghost' } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Stale Track by Ghost' }));
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Track is unavailable on SoundCloud.',
+    );
+  });
+
+  it.each([new Error(''), { reason: 'down' }] as const)(
+    'shows a sentence when playlist URL import throws %s',
+    async (thrown) => {
+      vi.mocked(api.importPlaylist).mockRejectedValue(thrown);
+      render(<TrackSearch classId="c1" onAdded={() => {}} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+      fireEvent.change(screen.getByLabelText('Playlist URL'), {
+        target: { value: 'https://soundcloud.com/sets/demo' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+      expect((await screen.findByRole('alert')).textContent).toBe(BLANK_FALLBACK);
+    },
+  );
+
+  it('keeps a provider sentence when playlist URL import fails', async () => {
+    vi.mocked(api.importPlaylist).mockRejectedValue(new Error('Playlist is private.'));
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+    fireEvent.change(screen.getByLabelText('Playlist URL'), {
+      target: { value: 'https://soundcloud.com/sets/demo' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    expect((await screen.findByRole('alert')).textContent).toBe('Playlist is private.');
   });
 });
