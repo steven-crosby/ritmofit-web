@@ -240,6 +240,9 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
           providerTrackId: p.providerTrackId,
           providerUri: p.providerUri,
         })),
+        // Builder-only cue columns (duration, BPM, intensity including Open,
+        // note, teaching position) stay off this contract. `text` remains the
+        // move name the existing prompter already reads.
         cues: (cuesByCt.get(ct.id) ?? []).map((cue) => ({
           id: cue.id,
           anchorMs: rebase(cue.anchorMs),
