@@ -41,17 +41,20 @@ export function ClassPulse({
   compact?: boolean;
   variant?: 'card' | 'sparkline';
   /**
-   * Draw authored sections under the graph. The builder turns this on.
+   * Draw authored sections under the graph in back-to-back mode. Free
+   * placement keeps the rail off: the chart packs bars by duration and ignores
+   * start offsets, so a class-time percentage would be a second scale.
    * Compact, sparkline, and the summary keep their own surfaces.
    */
   sectionTrack?: boolean;
   className?: string;
 }) {
+  const backToBack = payload.class.timelineMode !== 'free';
   return (
     <ClassPulseView
       model={classPulseFromPayload(payload)}
       totalDurationMs={payload.class.totalDurationMs}
-      sections={sectionTrack ? (payload.sections ?? []) : []}
+      sections={sectionTrack && backToBack ? (payload.sections ?? []) : []}
       compact={compact}
       variant={variant}
       className={className}
@@ -192,9 +195,9 @@ export function ClassPulseView({
         </div>
       )}
 
-      {/* Section banding shares the chart's width, so a band's left edge is the
-          same class time as the bar above it. Authored sections only — the
-          timeline editor still owns provisional bands and editing. */}
+      {/* Back-to-back only. The chart packs bars by summed duration, which matches
+          class time in that mode. Free mode passes no sections, so this rail
+          does not pretend to share an axis it does not have. */}
       {!compact && model.segments.length > 0 && totalDurationMs != null && (
         <PulseSectionTrack sections={sections} totalDurationMs={totalDurationMs} />
       )}
@@ -231,14 +234,23 @@ function PulseSectionTrack({
         <div
           key={`${band.type}:${band.leftPct}:${index}`}
           aria-hidden
-          className="absolute top-0 flex h-full min-w-0 items-center gap-1 overflow-hidden px-1.5"
+          className="absolute top-0 h-full overflow-hidden"
           style={{ left: `${band.leftPct}%`, width: `${band.widthPct}%` }}
         >
-          <span className="shrink-0" style={{ color: SEGMENT_META[band.type].tint }}>
-            <SegmentIcon type={band.type} />
-          </span>
-          <span className="min-w-0 truncate font-ui text-[11px] text-text-secondary">
-            {SEGMENT_META[band.type].label}
+          {/* The icon and label clip once the band is narrower than the padding
+              plus the glyph. The tint fills the band itself, so a short section
+              stays visible. The rail's accessible name still lists every label. */}
+          <span
+            className="absolute inset-0"
+            style={{ backgroundColor: SEGMENT_META[band.type].tint, opacity: 0.28 }}
+          />
+          <span className="relative flex h-full min-w-0 items-center gap-1 overflow-hidden px-1.5">
+            <span className="shrink-0" style={{ color: SEGMENT_META[band.type].tint }}>
+              <SegmentIcon type={band.type} />
+            </span>
+            <span className="min-w-0 truncate font-ui text-[11px] text-text-secondary">
+              {SEGMENT_META[band.type].label}
+            </span>
           </span>
         </div>
       ))}
