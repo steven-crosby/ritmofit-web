@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-22",
+  "base": "c466994c10813c8e1d4a34a05e229f1e5eda0c31",
+  "productCommits": ["74f479dfb13d01b77690469f7fbc8832ebc18119"],
+  "sourceHashes": {
+    "apps/web/src/lib/use-provider-connect.ts": "d41c05b64c0963c9a07ded9eca4eca9c6a8912dd60b5fd37dafd85d1b01de658",
+    "apps/web/src/lib/use-provider-connect.test.tsx": "ef19281f39f035abc002f9ae72a8b589e3e21fe8209685a04d5c30cde37c49a7"
+  },
+  "focused": {
+    "before": "use-provider-connect.test.tsx: 2 failed, 7 passed (9). new Error('') had no alert and left Cancel up. new Error('   ') showed a blank alert. Consent cancelled., did not finish, and a non-Error already passed.",
+    "after": "use-provider-connect.test.tsx passed 9/9. new Error('') and new Error('   ') show Could not connect. Try again., Cancel is absent, and Connect Apple Music is enabled. Consent cancelled. and did not finish stay. A non-Error still uses the same fallback."
+  },
+  "gate": {
+    "start": "2026-10-22T17:30:42Z",
+    "end": "2026-10-22T17:32:42Z",
+    "result": "pass",
+    "steps": [
+      "pnpm format:check",
+      "pnpm -r typecheck",
+      "pnpm lint",
+      "cd ritmofit_design_system && npm run verify",
+      "pnpm --filter @ritmofit/web theme-classes",
+      "pnpm test",
+      "pnpm --filter @ritmofit/api test:integration",
+      "pnpm --filter @ritmofit/web build",
+      "pnpm --filter @ritmofit/api openapi",
+      "git diff --exit-code apps/api/openapi/openapi.json",
+      "pnpm --filter @ritmofit/api contract-parity",
+      "pnpm audit:ci"
+    ],
+    "counts": {
+      "music": 30,
+      "web": 1261,
+      "api": 486,
+      "integration": 196
+    }
+  },
+  "nativeZoom": "NOT_ASSESSED",
+  "width390": "NOT_ASSESSED"
+}

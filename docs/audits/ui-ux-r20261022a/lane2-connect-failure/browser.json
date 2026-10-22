@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-22",
+  "evidenceClass": "local Chrome Music shelf with authorize rejecting new Error('')",
+  "viewport": "1440x1000",
+  "checks": [
+    {
+      "name": "empty-error-1440",
+      "width": 1440,
+      "height": 1000,
+      "alertTag": "P",
+      "alertText": "Could not connect. Try again.",
+      "hasCancel": false,
+      "connectText": "Connect Apple Music",
+      "connectDisabled": false,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "innerWidth": 1440,
+      "pageErrors": []
+    }
+  ],
+  "nativeZoom": "NOT_ASSESSED",
+  "width390": "NOT_ASSESSED",
+  "limits": [
+    "Signed in locally with a new account created in this pass. That local D1 user is not in git.",
+    "Before Connect Apple Music, the page set window.MusicKit so prepare resolved a stub whose authorize rejected with new Error(''). No Apple account was used and no token was logged. The API still served the mock developer-token config.",
+    "The alert read Could not connect. Try again. Cancel Apple Music connection was absent. Connect Apple Music was enabled. documentElement.scrollWidth matched the viewport. No page errors.",
+    "The first-run tutorial was dismissed with Skip before the screenshot so the Music shelf was visible.",
+    "390 and native 200% zoom were not performed (NOT_ASSESSED).",
+    "No provider audio, real device, or screen-reader acceptance."
+  ]
+}
