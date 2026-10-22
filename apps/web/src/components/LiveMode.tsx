@@ -549,7 +549,7 @@ export function LiveMode({
       onStatus: (next) => {
         setPlayback(next);
         if (next.kind === 'error') {
-          setPlaybackFailure(next.error.message);
+          setPlaybackFailure(errMessage(next.error.message));
           setPlaying(false);
           clockSeek(clockStore.getSnapshot());
         }
