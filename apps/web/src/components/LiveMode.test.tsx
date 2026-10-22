@@ -1109,6 +1109,7 @@ describe('LiveMode waiting panel grace', () => {
     expect(within(recovery).getByText('Teaching position is held.')).toBeTruthy();
     expect(within(recovery).getByRole('button', { name: 'Continue without music' })).toBeTruthy();
     expect(within(recovery).getByRole('button', { name: 'Manage music connection' })).toBeTruthy();
+    expect(within(recovery).queryByRole('button', { name: 'Retry playback' })).toBeNull();
     expect(document.activeElement).toBe(recovery);
   });
 
@@ -1123,7 +1124,42 @@ describe('LiveMode waiting panel grace', () => {
     const alert = screen.getByRole('alert', { name: 'Playback recovery' });
     expect(within(alert).getByRole('heading', { name: 'Playback stopped' })).toBeTruthy();
     expect(within(alert).getByText('Apple Music stopped')).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'Retry playback' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
     expect(document.activeElement).toBe(alert);
+  });
+
+  it('fills a blank confirmed playback error with the fallback sentence', async () => {
+    let fail: NonNullable<AdapterEvents['onError']> = () => {};
+    await startTeaching((events) => {
+      fail = (error) => events.onError?.(error);
+      return playingTransportAdapter({ current: false });
+    });
+
+    act(() => fail({ message: '' }));
+    const alert = screen.getByRole('alert', { name: 'Playback recovery' });
+    expect(within(alert).getByRole('heading', { name: 'Playback stopped' })).toBeTruthy();
+    const body = within(alert).getByText('Something went wrong.');
+    expect(body.textContent).toBe('Something went wrong.');
+    expect(within(alert).getByRole('button', { name: 'Retry playback' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
+    expect(screen.queryByRole('status', { name: 'Playback recovery' })).toBeNull();
+  });
+
+  it('fills a whitespace confirmed playback error with the fallback sentence', async () => {
+    let fail: NonNullable<AdapterEvents['onError']> = () => {};
+    await startTeaching((events) => {
+      fail = (error) => events.onError?.(error);
+      return playingTransportAdapter({ current: false });
+    });
+
+    act(() => fail({ message: '   ' }));
+    const alert = screen.getByRole('alert', { name: 'Playback recovery' });
+    expect(within(alert).getByRole('heading', { name: 'Playback stopped' })).toBeTruthy();
+    const body = within(alert).getByText('Something went wrong.');
+    expect(body.textContent).toBe('Something went wrong.');
+    expect(within(alert).getByRole('button', { name: 'Retry playback' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
   });
 
   it('shows the waiting section immediately for authorization after playback', async () => {
