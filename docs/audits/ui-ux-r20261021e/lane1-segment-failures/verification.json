@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-22",
+  "base": "d1236b0bd3d1623dfb01934145b33471e8fb97f9",
+  "productCommits": ["4924c48126edd12fc78b7c61f54d991d4c9cc922"],
+  "sourceHashes": {
+    "apps/web/src/components/SegmentBand.tsx": "5408ef1859ee1e1ba7b774adba78665ed06607d49726706236d00a154971a9c7",
+    "apps/web/src/components/SegmentBand.test.tsx": "3bb0ae62000b6056abc16b1387d7f07dc977ed4a810466d43e4616c760a185f7"
+  },
+  "focused": {
+    "before": "SegmentBand.test.tsx: 5 failed, 15 passed (20). The five failures were load, boundary, add, save, and delete for new Error('') and a non-Error. new Error('segment offline') and the view-only null return already passed.",
+    "after": "SegmentBand.test.tsx and SegmentBand.test.ts passed 41/41. Each of the five catches shows its fallback for new Error('') and for { code: 1 }. new Error('segment offline') stays segment offline. The editor stays. A view-only load still returns null."
+  },
+  "gate": {
+    "start": "2026-10-22T05:41:21Z",
+    "end": "2026-10-22T05:43:14Z",
+    "result": "pass",
+    "steps": [
+      "pnpm format:check",
+      "pnpm -r typecheck",
+      "pnpm lint",
+      "cd ritmofit_design_system && npm run verify",
+      "pnpm --filter @ritmofit/web theme-classes",
+      "pnpm test",
+      "pnpm --filter @ritmofit/api test:integration",
+      "pnpm --filter @ritmofit/web build",
+      "pnpm --filter @ritmofit/api openapi",
+      "git diff --exit-code apps/api/openapi/openapi.json",
+      "pnpm --filter @ritmofit/api contract-parity",
+      "pnpm audit:ci"
+    ],
+    "counts": {
+      "music": 30,
+      "web": 1240,
+      "api": 486,
+      "integration": 196
+    }
+  },
+  "nativeZoom": "NOT_ASSESSED",
+  "width390": "NOT_ASSESSED"
+}

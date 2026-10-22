@@ -218,3 +218,102 @@ describe('SegmentBand m:ss start-time entry', () => {
     ).toBe(false);
   });
 });
+
+describe('SegmentBand failure copy', () => {
+  // A thrown string is kept by errMessage. A non-Error object is the blank case.
+  const nonError = { code: 1 };
+
+  async function expectDanger(text: string) {
+    const line = await screen.findByText(text);
+    expect(line.tagName).toBe('P');
+    expect(line.className).toContain('text-state-danger');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add segment' })).toBeTruthy();
+    return line;
+  }
+
+  async function renderEditor() {
+    vi.mocked(api.listSections).mockResolvedValue(twoSections());
+    render(<SegmentBand classId={CLASS_ID} totalDurationMs={TOTAL} canEdit />);
+    await screen.findByRole('button', { name: 'Edit Warm-up segment' });
+  }
+
+  it('shows the load fallback for an empty Error and a non-Error', async () => {
+    for (const thrown of [new Error(''), nonError]) {
+      vi.mocked(api.listSections).mockRejectedValue(thrown);
+      const { unmount } = render(
+        <SegmentBand classId={CLASS_ID} totalDurationMs={TOTAL} canEdit />,
+      );
+      await expectDanger('Could not load segments.');
+      unmount();
+    }
+  });
+
+  it('keeps a normal load message and the editor', async () => {
+    vi.mocked(api.listSections).mockRejectedValue(new Error('segment offline'));
+    render(<SegmentBand classId={CLASS_ID} totalDurationMs={TOTAL} canEdit />);
+    await expectDanger('segment offline');
+    expect(screen.queryByText('Could not load segments.')).toBeNull();
+  });
+
+  it('shows the boundary fallback for an empty Error and a non-Error', async () => {
+    for (const thrown of [new Error(''), nonError]) {
+      await renderBand(true);
+      vi.mocked(api.updateSection).mockRejectedValueOnce(thrown);
+      const sprint = screen.getByRole('slider', { name: 'Sprint start' });
+      fireEvent.keyDown(sprint, { key: 'ArrowRight' });
+      fireEvent.blur(sprint);
+      await expectDanger('Could not save the segment boundary.');
+      expect(screen.getByRole('slider', { name: 'Sprint start' })).toBeTruthy();
+      cleanup();
+    }
+  });
+
+  it('shows the add fallback for an empty Error and a non-Error', async () => {
+    for (const thrown of [new Error(''), nonError]) {
+      vi.mocked(api.listSections).mockResolvedValue([]);
+      vi.mocked(api.createSection).mockRejectedValueOnce(thrown);
+      const { unmount } = render(
+        <SegmentBand classId={CLASS_ID} totalDurationMs={TOTAL} canEdit />,
+      );
+      fireEvent.click(await screen.findByRole('button', { name: 'Add segment' }));
+      await expectDanger('Could not add the segment.');
+      unmount();
+    }
+  });
+
+  it('shows the save fallback for an empty Error and a non-Error', async () => {
+    for (const thrown of [new Error(''), nonError]) {
+      await renderEditor();
+      vi.mocked(api.updateSection).mockRejectedValueOnce(thrown);
+      fireEvent.click(screen.getByRole('button', { name: 'Edit Warm-up segment' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await expectDanger('Could not save the segment.');
+      expect(screen.queryByText('Could not save the segment boundary.')).toBeNull();
+      cleanup();
+    }
+  });
+
+  it('shows the delete fallback for an empty Error and a non-Error', async () => {
+    for (const thrown of [new Error(''), nonError]) {
+      await renderEditor();
+      vi.mocked(api.deleteSection).mockRejectedValueOnce(thrown);
+      fireEvent.click(screen.getByRole('button', { name: 'Delete Warm-up segment' }));
+      await expectDanger('Could not delete the segment.');
+      cleanup();
+    }
+  });
+
+  it('returns nothing for a view-only load failure, including a normal message', async () => {
+    vi.mocked(api.listSections).mockRejectedValue(new Error('segment offline'));
+    const { container } = render(
+      <SegmentBand classId={CLASS_ID} totalDurationMs={TOTAL} canEdit={false} />,
+    );
+    await waitFor(() => expect(vi.mocked(api.listSections)).toHaveBeenCalled());
+    await vi.mocked(api.listSections).mock.results[0]?.value.catch(() => undefined);
+    expect(container.querySelector('figure')).toBeNull();
+    expect(screen.queryByText('segment offline')).toBeNull();
+    expect(screen.queryByText('Could not load segments.')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add segment' })).toBeNull();
+  });
+});
