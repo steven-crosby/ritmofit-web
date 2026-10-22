@@ -131,7 +131,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > those files. The 2026-10-11 handoffs, the 2026-10-13 handoffs, and the
 > r20261021 lane-2 preflight handoff were not edited; that lane-2 file lives
 > on #533's branch, not main.
-> [Round handoff](./handoffs/2026-10-21-r20261021-round-close.md).
+> [Round handoff](https://github.com/steven-crosby/ritmofit-web/blob/711c54339834b9c7ef3ddff312c9fd3cc744ce4e/ritmofit_dev_plan/handoffs/2026-10-21-r20261021-round-close.md).
 
 > **Deploy 2026-10-20 — #527–#530 on main `9e43307`.** Owner-approved production deploy at
 > 2026-10-20T22:44:21Z (4:44 PM MT). New Worker `cb549532-a8c6-4807-adbe-d8a6b36adf38`;
