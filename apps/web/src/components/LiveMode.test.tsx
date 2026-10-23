@@ -13,12 +13,15 @@ import {
 import { prepareAppleMusic } from '../lib/musickit.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
 import type { AdapterEvents, PlaybackAdapter } from '../lib/playback/types.js';
+import { classReadiness } from '../lib/readiness.js';
 import {
   choreographyQueueAt,
   eventCount,
   LiveMode,
   lastAtOrBefore,
   liveSectionAt,
+  TEACHING_PHONE_WIDTH_PX,
+  teachingUpcomingColumnPx,
   trackIndexAt,
   type TimelineEvent,
 } from './LiveMode.js';
@@ -2419,4 +2422,514 @@ it('requires an explicit Spotify activation tap before starting a mixed-provider
   await waitFor(() => expect(start.disabled).toBe(false));
   fireEvent.click(start);
   await waitFor(() => expect(soundcloudAdapterFactory).toHaveBeenCalledOnce());
+});
+
+function teachingCue(
+  id: string,
+  text: string,
+  anchorMs: number,
+  overrides: Partial<RunPayloadTrackEntry['cues'][number]> = {},
+): RunPayloadTrackEntry['cues'][number] {
+  return {
+    id,
+    anchorMs,
+    beat: 4,
+    bar: 2,
+    text,
+    color: null,
+    durationMs: 15_000,
+    bpm: 96,
+    intensity: 'easy',
+    position: 0,
+    ...overrides,
+  };
+}
+
+function seekTo(ms: number, totalMs: number) {
+  const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+  vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+    width: totalMs,
+    left: 0,
+    right: totalMs,
+    top: 0,
+    bottom: 40,
+    height: 40,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  } as DOMRect);
+  fireEvent.pointerDown(slider, { clientX: ms, pointerId: 1 });
+  fireEvent.pointerUp(slider);
+}
+
+/** Used font size from the inline clamp or rem the element actually ships. */
+function usedFontPx(node: HTMLElement, viewportPx: number): number {
+  const raw = node.getAttribute('style') ?? '';
+  const fontSize = /font-size:\s*([^;]+)/i.exec(raw)?.[1]?.trim() || node.style.fontSize;
+  const clamp = /^clamp\(([0-9.]+)rem,\s*([0-9.]+)vw,\s*([0-9.]+)rem\)$/.exec(fontSize);
+  if (clamp) {
+    const min = Number(clamp[1]) * 16;
+    const max = Number(clamp[3]) * 16;
+    const preferred = (Number(clamp[2]) / 100) * viewportPx;
+    return Math.min(max, Math.max(min, preferred));
+  }
+  const rem = /^([0-9.]+)rem$/.exec(fontSize);
+  if (rem) return Number(rem[1]) * 16;
+  throw new Error(`unmeasured font-size "${fontSize}"`);
+}
+
+describe('Cue-by-Cue teaching reading', () => {
+  const totalMs = 180_000;
+  const trackNote = 'Stay heavy through the corner and breathe.';
+  const cueNote = 'Keep the shoulders soft and long.';
+  const leftLeg: RunPayload = {
+    ...payload,
+    class: { ...payload.class, totalDurationMs: totalMs },
+    tracks: [
+      {
+        ...activeTrack,
+        displayBpm: 128,
+        intensity: 'mod',
+        notes: trackNote,
+        cues: [
+          {
+            ...teachingCue('00000000-0000-4000-8000-0000000000c1', 'Left Leg Lead', 0, {
+              position: 1,
+              intensity: 'easy',
+              bpm: 96,
+              durationMs: 15_000,
+            }),
+            note: cueNote,
+          },
+          teachingCue('00000000-0000-4000-8000-0000000000c2', 'Right Leg Lead', 48_000, {
+            position: 0,
+            intensity: 'open',
+            bpm: 110,
+            durationMs: 48_000,
+          }),
+        ],
+      },
+    ],
+  } as RunPayload;
+
+  function heroName() {
+    return document.querySelector('[data-teaching="hero-name"]') as HTMLElement | null;
+  }
+  function countdown() {
+    return document.querySelector('[data-teaching="countdown"]') as HTMLElement | null;
+  }
+  function scale() {
+    return document.querySelector('[data-teaching="hold-scale"]') as HTMLElement | null;
+  }
+  function playhead() {
+    return document.querySelector('[data-teaching="hold-playhead"]') as HTMLElement | null;
+  }
+
+  it('counts the stored hold, including the gap after it, and keeps that countdown the largest clock', async () => {
+    await renderLive(leftLeg);
+    const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
+    expect(heroName()?.textContent).toBe('Left Leg Lead');
+    expect(countdown()?.textContent).toBe('15s');
+    expect(scale()?.dataset.scaleMs).toBe('15000');
+    expect(playhead()?.dataset.filledMs).toBe('0');
+    expect(playhead()?.style.width).toBe('0%');
+
+    seekTo(20_000, totalMs);
+    expect(heroName()?.textContent).toBe('Left Leg Lead');
+    expect(countdown()?.textContent).toBe('0s');
+    expect(countdown()?.textContent).not.toMatch(/0:28|0:00|—|28s|0:48/);
+    expect(scale()?.dataset.scaleMs).toBe('15000');
+    expect(playhead()?.dataset.filledMs).toBe('15000');
+    expect(playhead()?.style.width).toBe('100%');
+    expect(within(focal).getByLabelText('Time to next cue').textContent).toBe('0:28');
+    expect(countdown()).not.toBe(within(focal).getByLabelText('Time to next cue'));
+
+    seekTo(10_000, totalMs);
+    expect(countdown()?.textContent).toBe('5s');
+    expect(Number(playhead()?.dataset.filledMs) / Number(scale()?.dataset.scaleMs)).toBeCloseTo(
+      10 / 15,
+    );
+    expect(scale()?.dataset.scaleMs).toBe('15000');
+
+    const beat = document.querySelector('[data-teaching="beat-count"]') as HTMLElement;
+    const trackLeft = document.querySelector('[data-teaching="track-left"]') as HTMLElement;
+    const nextGap = within(focal).getByLabelText('Time to next cue') as HTMLElement;
+    for (const viewport of [390, 1024, 1280, 1440]) {
+      const size = usedFontPx(countdown()!, viewport);
+      expect(size).toBeGreaterThan(usedFontPx(trackLeft, viewport));
+      expect(size).toBeGreaterThan(usedFontPx(nextGap, viewport));
+      expect(size).toBeGreaterThan(usedFontPx(beat, viewport));
+    }
+  });
+
+  it('shows 1.5s and a 400ms remainder as cue seconds, not the track clock', async () => {
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000e1', 'Half', 0, {
+              durationMs: 1_500,
+            }),
+          ],
+        },
+      ],
+    });
+    expect(countdown()?.textContent).toBe('1.5s');
+
+    cleanup();
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000e2', 'Short', 0, {
+              durationMs: 15_000,
+            }),
+          ],
+        },
+      ],
+    });
+    seekTo(14_600, payload.class.totalDurationMs);
+    expect(countdown()?.textContent).toBe('0.4s');
+    expect(countdown()?.textContent).not.toBe('0:00');
+  });
+
+  it('shifts the same hold by the second track startOffsetMs', async () => {
+    const total = 240_000;
+    const second: RunPayload = {
+      ...payload,
+      class: { ...payload.class, totalDurationMs: total },
+      tracks: [
+        {
+          ...activeTrack,
+          track: { ...activeTrack.track, durationMs: 60_000 },
+          cues: [],
+        },
+        {
+          ...activeTrack,
+          classTrackId: '00000000-0000-4000-8000-0000000000f2',
+          position: 1,
+          startOffsetMs: 60_000,
+          displayBpm: 128,
+          track: {
+            ...activeTrack.track,
+            id: '00000000-0000-4000-8000-0000000000f3',
+            title: 'Second Track',
+            durationMs: 180_000,
+          },
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000f4', 'Left Leg Lead', 0, {
+              durationMs: 15_000,
+              bpm: 96,
+            }),
+          ],
+        },
+      ],
+    };
+    await renderLive(second);
+    seekTo(10_000, total);
+    expect(heroName()?.textContent ?? '').not.toBe('Left Leg Lead');
+    expect(screen.queryByText('Left Leg Lead')).toBeNull();
+
+    seekTo(70_000, total);
+    expect(heroName()?.textContent).toBe('Left Leg Lead');
+    expect(countdown()?.textContent).toBe('5s');
+  });
+
+  it('keeps the hero and an empty scale when durationMs is unset', async () => {
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          displayBpm: 128,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000a8', 'Left Leg Lead', 0, {
+              durationMs: null,
+            }),
+            teachingCue('00000000-0000-4000-8000-0000000000a9', 'Later', 48_000, {
+              durationMs: 10_000,
+              position: 1,
+            }),
+          ],
+        },
+      ],
+    });
+    seekTo(10_000, totalMs);
+    expect(heroName()?.textContent).toBe('Left Leg Lead');
+    expect(countdown()?.textContent).toBe('—');
+    expect(countdown()?.textContent).not.toBe('0:38');
+    expect(playhead()).toBeNull();
+    expect(scale()?.dataset.scaleMs).toBe('');
+    expect(scale()?.dataset.scaleMs).not.toBe('180000');
+    expect(scale()?.dataset.scaleMs).not.toBe('48000');
+  });
+
+  it('gives the hero to the next anchor when a hold runs past it', async () => {
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000b1', 'First', 0, {
+              durationMs: 60_000,
+              position: 0,
+            }),
+            teachingCue('00000000-0000-4000-8000-0000000000b2', 'Second', 20_000, {
+              durationMs: 15_000,
+              position: 1,
+            }),
+          ],
+        },
+      ],
+    });
+    seekTo(10_000, totalMs);
+    expect(heroName()?.textContent).toBe('First');
+    seekTo(20_000, totalMs);
+    expect(heroName()?.textContent).toBe('Second');
+    expect(heroName()?.textContent).not.toBe('First');
+  });
+
+  it('heroes the reached cue, never a placed move or a later position', async () => {
+    const identity: RunPayload = {
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000d1', 'Now', 0, {
+              position: 1,
+              durationMs: 15_000,
+              bpm: 96,
+            }),
+            teachingCue('00000000-0000-4000-8000-0000000000d2', 'Later', 48_000, {
+              position: 0,
+              durationMs: 12_000,
+              bpm: 80,
+            }),
+          ],
+          moves: [
+            {
+              id: '00000000-0000-4000-8000-0000000000d3',
+              anchorMs: 5_000,
+              beat: 1,
+              bar: 2,
+              name: 'Squat',
+              intensity: 'hard',
+            },
+          ],
+        },
+      ],
+    };
+    await renderLive(identity);
+    expect(heroName()?.textContent).toBe('Now');
+    const upcoming = screen.getByRole('list', { name: 'Upcoming' });
+    expect(within(upcoming).getByText('Later')).toBeTruthy();
+    expect(within(upcoming).queryByText('Squat')).toBeNull();
+    expect(within(upcoming).queryByText('Now')).toBeNull();
+    expect(within(upcoming).getByText('80')).toBeTruthy();
+    expect(within(upcoming).getByText('12s')).toBeTruthy();
+
+    seekTo(5_000, totalMs);
+    expect(heroName()?.textContent).toBe('Now');
+    expect(within(screen.getByRole('list', { name: 'Upcoming' })).queryByText('Squat')).toBeNull();
+
+    seekTo(15_000, totalMs);
+    expect(heroName()?.textContent).toBe('Now');
+    expect(heroName()?.textContent).not.toBe('Later');
+
+    seekTo(20_000, totalMs);
+    expect(heroName()?.textContent).toBe('Now');
+
+    seekTo(48_000, totalMs);
+    expect(heroName()?.textContent).toBe('Later');
+  });
+
+  it('does not hero a cue before its anchor', async () => {
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000d4', 'Not yet', 30_000, {
+              position: 0,
+            }),
+          ],
+        },
+      ],
+    });
+    expect(heroName()).toBeNull();
+    expect(countdown()).toBeNull();
+    expect(screen.getByRole('list', { name: 'Upcoming' }).textContent).toContain('Not yet');
+  });
+
+  it('lists later cues by position with the stored duration and cue BPM', async () => {
+    await renderLive(leftLeg);
+    seekTo(10_000, totalMs);
+    const upcoming = screen.getByRole('list', { name: 'Upcoming' });
+    const row = within(upcoming).getByText('Right Leg Lead').closest('li') as HTMLElement;
+    expect(row.querySelector('[data-teaching="upcoming-bpm"]')?.textContent).toBe('110');
+    expect(row.querySelector('[data-teaching="upcoming-duration"]')?.textContent).toBe('48s');
+    expect(row.textContent).not.toContain('5s');
+    expect(row.textContent).not.toMatch(/\d:\d{2}/);
+    expect(within(upcoming).queryByText('Left Leg Lead')).toBeNull();
+    upcoming.focus();
+    expect(document.activeElement).toBe(upcoming);
+    expect(upcoming.className).toContain('rf-focus-ring');
+    expect(upcoming.tabIndex).toBe(0);
+
+    cleanup();
+    const five: RunPayload = {
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          displayBpm: 128,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-000000000101', 'A', 10_000, {
+              position: 1,
+              bpm: 90,
+              durationMs: 4_000,
+            }),
+            teachingCue('00000000-0000-4000-8000-000000000102', 'B', 20_000, {
+              position: 2,
+              bpm: null,
+              durationMs: 8_000,
+            }),
+            teachingCue('00000000-0000-4000-8000-000000000103', 'C', 30_000, {
+              position: 3,
+              bpm: 100,
+              durationMs: 3_000,
+            }),
+            teachingCue('00000000-0000-4000-8000-000000000104', 'D', 40_000, {
+              position: 4,
+              bpm: 104,
+              durationMs: 6_000,
+            }),
+            teachingCue('00000000-0000-4000-8000-000000000100', 'Next position', 50_000, {
+              position: 0,
+              bpm: 70,
+              durationMs: 9_000,
+            }),
+          ],
+        },
+      ],
+    };
+    await renderLive(five);
+    const rows = screen
+      .getAllByRole('listitem')
+      .filter((item) => item.closest('[aria-label="Upcoming"]'));
+    expect(rows.map((row) => row.querySelector('p')?.textContent)).toEqual([
+      'Next position',
+      'A',
+      'B',
+      'C',
+      'D',
+    ]);
+    const nullBpm = rows[2]!;
+    expect(nullBpm.querySelector('[data-teaching="upcoming-bpm"]')?.textContent).toBe('BPM —');
+    expect(nullBpm.textContent).not.toContain('128');
+    expect(nullBpm.querySelector('[data-teaching="upcoming-duration"]')?.textContent).toBe('8s');
+  });
+
+  it('uses the cue BPM for the hero numeral and the beat pulse', async () => {
+    await renderLive(leftLeg);
+    const bpm = document.querySelector('[data-teaching="hero-bpm"]') as HTMLElement;
+    expect(bpm.textContent).toContain('96');
+    expect(bpm.textContent).not.toContain('128');
+    expect(bpm.style.getPropertyValue('--rf-bpm')).toBe('96');
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    expect(bpm.className).toContain('rf-beat-pulse');
+    expect(bpm.style.getPropertyValue('--rf-bpm')).toBe('96');
+
+    cleanup();
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          displayBpm: 128,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000c9', 'Left Leg Lead', 0, {
+              bpm: null,
+            }),
+          ],
+        },
+      ],
+    });
+    const quiet = document.querySelector('[data-teaching="hero-bpm"]') as HTMLElement;
+    expect(quiet.textContent).toBe('BPM —');
+    expect(quiet.className).not.toContain('rf-beat-pulse');
+    expect(quiet.style.getPropertyValue('--rf-bpm')).toBe('');
+    expect(quiet.textContent).not.toContain('128');
+  });
+
+  it('places the hero beside upcoming from 1024px and stacks under that', async () => {
+    await renderLive(leftLeg);
+    const layout = document.querySelector('[data-teaching-layout="cue"]') as HTMLElement;
+    const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
+    const upcoming = document.querySelector('[data-teaching="upcoming"]') as HTMLElement;
+    expect(layout.className).toContain('flex-col');
+    expect(layout.className).toContain('min-[1024px]:grid-cols-2');
+    expect(layout.className).not.toContain('grid-cols-5');
+    expect(upcoming.className).toContain('min-[1024px]:min-w-[431px]');
+    expect(upcoming.className).not.toMatch(/max-w-/);
+    expect(focal.contains(upcoming)).toBe(false);
+    expect(focal.compareDocumentPosition(upcoming) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    for (const viewport of [1024, 1280, 1440]) {
+      expect(teachingUpcomingColumnPx(viewport)).toBeGreaterThan(TEACHING_PHONE_WIDTH_PX);
+    }
+    expect(teachingUpcomingColumnPx(390)).toBeNull();
+    expect(TEACHING_PHONE_WIDTH_PX).toBe(430);
+  });
+
+  it('keeps cue effort words and leaves coaching sentences off the hero', async () => {
+    await renderLive(leftLeg);
+    const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
+    expect(within(focal).getByText('Easy')).toBeTruthy();
+    expect(within(focal).queryByText('Build')).toBeNull();
+    expect(within(focal).queryByText('Push')).toBeNull();
+    expect(focal.textContent).not.toContain(trackNote);
+    expect(focal.textContent).not.toContain(cueNote);
+    expect(screen.getByText(trackNote)).toBeTruthy();
+    expect(screen.queryByText(cueNote)).toBeNull();
+
+    cleanup();
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          intensity: 'mod',
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000ca', 'Open hold', 0, {
+              intensity: 'open',
+            }),
+          ],
+        },
+      ],
+    });
+    const openFocal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
+    expect(within(openFocal).getByText('Open')).toBeTruthy();
+    expect(within(openFocal).queryByText('Build')).toBeNull();
+    expect(within(openFocal).queryByText('Push')).toBeNull();
+  });
+
+  it('adds no hero, upcoming row, or ghost line when the track has no cues', async () => {
+    const before = classReadiness(payload).dimensions.find((d) => d.key === 'choreography')!.detail;
+    await renderLive();
+    expect(heroName()).toBeNull();
+    expect(countdown()).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Upcoming' })).toBeNull();
+    expect(document.querySelector('[data-teaching="upcoming-row"]')).toBeNull();
+    expect(classReadiness(payload).dimensions.find((d) => d.key === 'choreography')!.detail).toBe(
+      before,
+    );
+    expect(before).not.toMatch(/1 cue/);
+  });
 });
