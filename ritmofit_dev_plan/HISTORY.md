@@ -13,6 +13,47 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-22 — #553 on main `a56e0ee`.** Owner asked to deploy.
+> Production deploy at 2026-10-23T00:34:49Z (6:34 PM MT). New Worker
+> `3b136b53-de16-450d-b4cd-3c220c893d65`; previous/rollback
+> `d5dc04f9-a793-47e8-9591-ce73b5379142`. SPA entry `assets/index-C7a2e70_.js`
+> (CSS `assets/index-DmB9GctO.css`), confirmed by three consecutive cache-busted
+> fetches on the first triple. The JS filename differs from the previous
+> production entry `assets/index-DbX6Q4N-.js`. The CSS filename is unchanged
+> from the `d5dc04f9` release. Asset responses were `text/javascript` and
+> `text/css`, both `Cache-Control: public, max-age=0, must-revalidate`.
+> Pre-deploy full gate passed on `a56e0ee` from a clean detached worktree (format,
+> typecheck, lint, design verify, theme-classes, unit tests web 1277 / api 491 /
+> music 30, Worker/D1 integration 198, web build, OpenAPI no drift, contract-parity,
+> audit:ci). The gate ran on Node v26.7.0 (`/opt/homebrew/bin/node`). `.nvmrc` is
+> 22; Homebrew `node@22` and `~/.nvm` were not present. Remote D1 had exactly one
+> pending migration, `0021_rainy_falcon.sql` (cues table rebuild: `position`
+> default 0, nullable `duration_ms`, `bpm`, `intensity`, `note`). It was read,
+> then applied before the Worker deploy (8 commands, success). Pre-apply
+> time-travel bookmark
+> `00000379-00000000-0000510d-f1115961aca3f44f84466b91e205e3f8`. After apply,
+> `cues` had 23 rows, the new columns, and `cues_class_track_id_idx`; no
+> pre-apply row count was captured. `BETA_ALLOWED_EMAILS` present (name only).
+> Post-deploy `migrations list --remote` reported nothing to apply. A Worker
+> rollback does not un-apply `0021`.
+>
+> Deployed since production `b644217`:
+> [#553](https://github.com/steven-crosby/ritmofit-web/pull/553) (teaching-order
+> cue list on a builder song, `a56e0ee`). Docs record `8541f9e` (the earlier
+> same-day Worker `d5dc04f9` record) is in that tree and does not change runtime.
+> Draft [#546](https://github.com/steven-crosby/ritmofit-web/pull/546) was not on
+> `main` and was not deployed. The cue-list handoff still describes #553 as an
+> open draft and was not edited.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 (`status: ok`, service `ritmofit-api`);
+> unauthenticated `/api/v1/classes`, `/explore`, and `/teams` 401. Six security
+> headers present. Unauthenticated class shares, playlist import, Spotify search,
+> saved playlists, track import, cover upload, tag add/remove, moves, and the
+> cue list returned 401. `GET /api/v1/uploads/covers/smoke-missing.jpg` reached
+> the handler as 404 `NOT_FOUND`. No Cloudflare challenge page. Worker status
+> 100% on `3b136b53`. Production matches main `a56e0ee` at deploy time. This
+> docs record is not in the deployed tree.
+
 > **Deploy 2026-10-22 — #551 on main `b644217`.** Owner asked to deploy.
 > Production deploy at 2026-10-22T21:39:16Z (3:39 PM MT). New Worker
 > `d5dc04f9-a793-47e8-9591-ce73b5379142`; previous/rollback
