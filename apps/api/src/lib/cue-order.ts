@@ -1,6 +1,7 @@
 /**
  * Next teaching-order slot for a song's cue list. A null max (no rows yet)
- * starts at 0. The builder lists by this; the run payload does not read it.
+ * starts at 0. The builder lists by this. The run payload copies `position`
+ * and still orders cues by `anchorMs`.
  */
 export function nextCuePosition(maxPosition: number | null): number {
   return (maxPosition ?? -1) + 1;

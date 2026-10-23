@@ -1,6 +1,7 @@
 /**
  * Builder cue list: teaching order and the fields the song editor stores.
- * The run payload keeps its existing cue shape.
+ * The run payload copies duration, BPM, intensity, and position, and still
+ * omits `note`. The cue array stays in `anchorMs` order.
  */
 import { describe, expect, it } from 'vitest';
 import { authed, signUpUser } from './helpers.js';
@@ -106,9 +107,26 @@ describe('builder cue list', () => {
     const cues = body.tracks[0]?.cues ?? [];
     expect(cues).toHaveLength(2);
     for (const cue of cues) {
-      expect(Object.keys(cue).sort()).toEqual(['anchorMs', 'bar', 'beat', 'color', 'id', 'text']);
+      expect(Object.keys(cue).sort()).toEqual([
+        'anchorMs',
+        'bar',
+        'beat',
+        'bpm',
+        'color',
+        'durationMs',
+        'id',
+        'intensity',
+        'position',
+        'text',
+      ]);
+      expect(cue).not.toHaveProperty('note');
     }
-    expect(cues.map((cue) => cue.text).sort()).toEqual(['Left Leg Lead', 'Recover']);
+    expect(
+      cues.map((cue) => [cue.text, cue.position, cue.durationMs, cue.bpm, cue.intensity]),
+    ).toEqual([
+      ['Recover', 1, 48_000, 110, 'easy'],
+      ['Left Leg Lead', 0, 31_000, 100, 'all_out'],
+    ]);
   });
 
   it('rejects Open on a track intensity write', async () => {

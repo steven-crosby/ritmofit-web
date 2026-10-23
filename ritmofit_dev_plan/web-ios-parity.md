@@ -48,7 +48,7 @@ In practice, for current web PRs:
   in either direction fails CI; a temporary, explicitly accepted additive lag can be tracked in the script's allowlist
   (`apps/api/src/lib/contract-parity.ts` → `CONTRACT_PARITY_ALLOWLIST`). Field-name presence only —
   type/nullability/enum drift is a manual review (the former `api-contract-parity` remote prompt is archived
-  at `archive/remote-loop/remote-prompts/technical/api-contract-parity.md`). **Currently allowlisted: none.** Phase 0 added `timelineMode`; RPM/hold and clip/beat anchors;
+  at `archive/remote-loop/remote-prompts/technical/api-contract-parity.md`). **Currently allowlisted:** `Cue.durationMs`, `Cue.bpm`, `Cue.intensity`, `Cue.position` — the shipped decoder ignores those keys; iOS teaching is a later refresh. Phase 0 added `timelineMode`; RPM/hold and clip/beat anchors;
   move beat/bar; and stable section IDs to the iOS DTO. Verified 2026-07-24 against the current
   generated spec: **54 schemas · 55 paths**.
 - **Cross-repo drift is now gated from iOS CI.** The iOS check compares its vendored OpenAPI/docs,

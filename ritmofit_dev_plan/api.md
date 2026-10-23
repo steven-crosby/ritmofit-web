@@ -259,7 +259,18 @@ class-authorized through `POST /classes/:id/cover`.
         { "provider": "soundcloud", "providerTrackId": "…", "providerUri": "…" }
       ],
       "cues": [
-        { "id": "…", "anchorMs": 45000, "beat": 1, "bar": 23, "text": "Prepare for the drop", "color": "#3AC0D4" }
+        {
+          "id": "…",
+          "anchorMs": 45000,
+          "beat": 1,
+          "bar": 23,
+          "text": "Prepare for the drop",
+          "color": "#3AC0D4",
+          "durationMs": 15000,
+          "bpm": 96,
+          "intensity": "open",
+          "position": 0
+        }
       ],
       "moves": [
         { "id": "…", "anchorMs": 30000, "beat": 1, "bar": 16, "name": "Climb", "intensity": "hard" }
@@ -282,7 +293,10 @@ class-authorized through `POST /classes/:id/cover`.
 > **`track.baseDurationMs`** (resolved length before clipping; `durationMs` stays the
 > already-clipped effective length). With trimming, cue/move `anchorMs` are **re-based to the clip start** (so the live
 > timeline lines up); `beat`/`bar` are derived from the original track-relative anchor + BPM + downbeat
-> (4/4), null without a tempo or before bar 1. Top-level **`class.timelineMode`** (`sequential` | `free`):
+> (4/4), null without a tempo or before bar 1. Each cue also carries **`durationMs`**, **`bpm`**,
+> **`intensity`** (the cue enum, including `open`; JSON `null` when unset), and **`position`**
+> (nonnegative integer). The cue array stays in `anchorMs` order. `note` stays off the payload.
+> Top-level **`class.timelineMode`** (`sequential` | `free`):
 > in `free` mode `startOffsetMs` is author-set with gaps, and `totalDurationMs` is the latest track end —
 > a consumer detects a gap wherever a track's `startOffsetMs` exceeds the previous track's end.
 
@@ -300,6 +314,11 @@ contract — one fetch so the iOS app isn't composing the live view from a dozen
   while any entry is null.
 - **move `name`** = `move.name ?? user_move.name ?? class_track_move.name_override` (resolve the library
   reference; fall back to the freeform name). Exactly one source is set per placement.
+- **cue `durationMs` / `bpm` / `intensity` / `position`** are copied from the stored cue. Unset
+  duration, BPM, and intensity are JSON `null` on a required key. `position` is the teaching-order
+  integer. The cue array stays in `anchorMs` order. `note` is not on the payload. Cue `bpm` does not
+  change derived `beat`/`bar` (those still use the track `displayBpm`). Clip re-base changes
+  `anchorMs` only; a stored `durationMs` is copied unchanged.
 - **`startOffsetMs`** is recomputed in `sequential` mode (back-to-back from preceding effective
   durations) and read from persisted authored offsets in `free` mode. Each entry runs `startOffsetMs` →
   `startOffsetMs + track.durationMs`.

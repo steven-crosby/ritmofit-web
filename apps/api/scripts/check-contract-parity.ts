@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
   CONTRACT_PARITY_ALLOWLIST,
+  assertRunPayloadCueContract,
   compareContractParity,
   extractOpenApiRunPayloadFields,
   extractSwiftStructFields,
@@ -67,6 +68,15 @@ if (staleAllowlist.length > 0) {
   for (const entry of staleAllowlist) {
     console.error(`  • ${entry.struct}.${entry.field}`);
   }
+  console.error('');
+}
+
+try {
+  assertRunPayloadCueContract(openapi);
+} catch (error) {
+  ok = false;
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`✗ ${message}`);
   console.error('');
 }
 

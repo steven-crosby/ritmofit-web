@@ -10,6 +10,8 @@
  *   - tracks in position order; the timeline (startOffsetMs + class totalDurationMs)
  *     is recomputed here (M3 hardening) so it is authoritative even if a persisted
  *     start_offset_ms ever drifts.
+ *   - cue durationMs, bpm, intensity, and position are copied as stored. `note`
+ *     stays off. Cues stay in `anchorMs` order. Beat/bar stay on the track tempo.
  */
 import { eq, inArray } from 'drizzle-orm';
 import {
@@ -240,15 +242,21 @@ export async function assembleRunPayload(db: Db, classId: string): Promise<RunPa
           providerTrackId: p.providerTrackId,
           providerUri: p.providerUri,
         })),
-        // Builder-only cue columns (duration, BPM, intensity including Open,
-        // note, teaching position) stay off this contract. `text` remains the
-        // move name the existing prompter already reads.
+        // Duration, BPM, intensity (including Open), and teaching position are
+        // copied as stored. `note` stays off. The array stays in `anchorMs`
+        // order; `position` is data on the object. `text` remains the move name
+        // the existing prompter already reads. Beat/bar stay on the track tempo,
+        // not the cue BPM. Clip re-base applies to `anchorMs` only.
         cues: (cuesByCt.get(ct.id) ?? []).map((cue) => ({
           id: cue.id,
           anchorMs: rebase(cue.anchorMs),
           ...beatAt(cue.anchorMs),
           text: cue.text,
           color: cue.color,
+          durationMs: cue.durationMs,
+          bpm: cue.bpm,
+          intensity: cue.intensity,
+          position: cue.position,
         })),
         moves: (movesByCt.get(ct.id) ?? []).map((m) => ({
           id: m.id,

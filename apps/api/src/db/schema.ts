@@ -386,10 +386,11 @@ export const cues = sqliteTable(
     bar: integer('bar'),
     // Move name. The run payload still projects this as cue text.
     text: text('text').notNull(),
-    // Builder-only. Not selected into the run payload.
+    // Copied onto the run payload. Null when she has not set it.
     durationMs: integer('duration_ms'),
     bpm: integer('bpm'),
     intensity: text('intensity', { enum: cueIntensityValues }),
+    // Coaching note. Not selected onto the run payload.
     note: text('note'),
     color: text('color'),
     ...timestamps(),
