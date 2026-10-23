@@ -3521,7 +3521,7 @@ describe('Dashboard track focus management', () => {
     const inspector = await screen.findByRole('region', {
       name: 'Track inspector for First Light',
     });
-    const cueField = await within(inspector).findByRole('textbox', { name: 'Cue text' });
+    const cueField = await within(inspector).findByRole('textbox', { name: 'Move name' });
     await waitFor(() => expect(document.activeElement).toBe(cueField));
   });
 });
