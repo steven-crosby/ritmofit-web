@@ -5,7 +5,7 @@ lane: solo
 branch: cursor/live-cue-teaching-dd2c
 head: d9c13e2b2e11d576559ab67ff79f485960ad0780
 base: 82b5b9d
-prs: []
+prs: ['#556']
 status: open
 ---
 
@@ -19,7 +19,7 @@ status: open
 
 ## In flight
 
-- PR on `cursor/live-cue-teaching-dd2c`. Not merged. Not deployed.
+- https://github.com/steven-crosby/ritmofit-web/pull/556 on `cursor/live-cue-teaching-dd2c`. Not merged. Not deployed.
 
 ## Next action
 
