@@ -10,16 +10,16 @@ import { z } from 'zod';
 
 /**
  * Effort level for a class_track, a plan block, or a placed move.
- * This enum is on the run payload. Do not add values here — a cue-only level
- * belongs on {@link cueIntensityValues} so the live contract stays unchanged.
+ * This enum is on the run payload for those objects. Do not add values here —
+ * a cue-only level belongs on {@link cueIntensityValues}.
  */
 export const intensityValues = ['none', 'easy', 'mod', 'hard', 'all_out'] as const;
 export const intensitySchema = z.enum(intensityValues);
 export type Intensity = z.infer<typeof intensitySchema>;
 
 /**
- * Effort on a builder cue. `open` is cue-only (StructClub's Open) and is not a
- * track, plan-block, placed-move, or run-payload intensity.
+ * Effort on a cue, including the run-payload cue. `open` is cue-only
+ * (StructClub's Open). It stays off {@link intensityValues}.
  */
 export const cueIntensityValues = ['none', 'easy', 'mod', 'hard', 'all_out', 'open'] as const;
 export const cueIntensitySchema = z.enum(cueIntensityValues);

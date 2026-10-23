@@ -140,3 +140,134 @@ describe('run-payload contract (integration)', () => {
     await expectEnvelope(missing, 404, 'NOT_FOUND');
   });
 });
+
+/**
+ * Acceptance checks for the four stored cue columns. A cue-list row that already
+ * shows the value does not pass these — only `GET /classes/:id/run-payload` does.
+ */
+describe('run-payload cue fields', () => {
+  let owner: TestUser;
+  let stranger: TestUser;
+  let classId: string;
+
+  beforeAll(async () => {
+    owner = await signUpUser();
+    stranger = await signUpUser();
+
+    const created = await authed(owner.cookie)('/api/v1/classes', {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Cue facts', template: 'cycle' }),
+    });
+    expect(created.status).toBe(201);
+    classId = ((await created.json()) as { id: string }).id;
+
+    const timed = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        track: { title: 'Hold', artist: 'Studio', durationMs: 180_000, displayBpm: 128 },
+        intensity: 'mod',
+      }),
+    });
+    expect(timed.status).toBe(201);
+    const timedId = ((await timed.json()) as { id: string }).id;
+
+    // Created first, later on the timeline. Position 0. Duration, BPM, and
+    // intensity left unset. The note is stored and must stay off the payload.
+    const later = await authed(owner.cookie)(`/api/v1/class-tracks/${timedId}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({
+        anchorMs: 48_000,
+        text: 'Second on the timeline',
+        note: 'Coaching',
+      }),
+    });
+    expect(later.status).toBe(201);
+
+    // Created second, earlier on the timeline. Position 1. A 15s hold whose
+    // next cue sits at 48000 — the payload duration is the stored hold.
+    const held = await authed(owner.cookie)(`/api/v1/class-tracks/${timedId}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({
+        anchorMs: 0,
+        text: 'Left Leg Lead',
+        durationMs: 15_000,
+        bpm: 96,
+        intensity: 'open',
+        note: 'Hold',
+      }),
+    });
+    expect(held.status).toBe(201);
+
+    const clipped = await authed(owner.cookie)(`/api/v1/classes/${classId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        track: { title: 'Clip', artist: 'Studio', durationMs: 180_000, displayBpm: 100 },
+        intensity: 'easy',
+      }),
+    });
+    expect(clipped.status).toBe(201);
+    const clippedId = ((await clipped.json()) as { id: string }).id;
+    const windowed = await authed(owner.cookie)(`/api/v1/class-tracks/${clippedId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ clipStartMs: 30_000 }),
+    });
+    expect(windowed.status).toBe(200);
+    const rebased = await authed(owner.cookie)(`/api/v1/class-tracks/${clippedId}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({
+        anchorMs: 60_000,
+        text: 'Rebased hold',
+        durationMs: 15_000,
+        note: 'Still stored',
+      }),
+    });
+    expect(rebased.status).toBe(201);
+  });
+
+  it('copies stored duration, bpm, intensity, and position, and leaves note off', async () => {
+    const res = await authed(owner.cookie)(`/api/v1/classes/${classId}/run-payload`);
+    expect(res.status).toBe(200);
+    const raw = (await res.json()) as {
+      schemaVersion: number;
+      tracks: Array<{
+        displayBpm: number | null;
+        intensity: string;
+        clipStartMs: number;
+        cues: Array<Record<string, unknown>>;
+      }>;
+    };
+
+    expect(raw.schemaVersion).toBe(1);
+    const timed = raw.tracks[0]!;
+    expect(timed.displayBpm).toBe(128);
+    expect(timed.intensity).toBe('mod');
+    expect(timed.cues.map((cue) => cue.anchorMs)).toEqual([0, 48_000]);
+
+    const held = timed.cues[0]!;
+    const blank = timed.cues[1]!;
+    expect(held.text).toBe('Left Leg Lead');
+    expect(held.durationMs).toBe(15_000);
+    expect(blank.anchorMs).toBe(48_000);
+    expect(held.bpm).toBe(96);
+    expect(held.intensity).toBe('open');
+    expect(held.position).toBe(1);
+    expect(blank.durationMs).toBeNull();
+    expect(blank.bpm).toBeNull();
+    expect(blank.intensity).toBeNull();
+    expect(blank.position).toBe(0);
+    expect(held).not.toHaveProperty('note');
+    expect(blank).not.toHaveProperty('note');
+
+    const clipped = raw.tracks[1]!;
+    expect(clipped.clipStartMs).toBe(30_000);
+    expect(clipped.cues[0]).toMatchObject({ anchorMs: 30_000, durationMs: 15_000 });
+    expect(clipped.cues[0]).not.toHaveProperty('note');
+
+    expect(runPayloadSchema.parse(raw).schemaVersion).toBe(1);
+  });
+
+  it('hides the cue-field payload from a stranger', async () => {
+    const hidden = await authed(stranger.cookie)(`/api/v1/classes/${classId}/run-payload`);
+    await expectEnvelope(hidden, 404, 'NOT_FOUND');
+  });
+});

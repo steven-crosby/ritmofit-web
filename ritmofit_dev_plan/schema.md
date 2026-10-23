@@ -339,12 +339,12 @@ prompter.
 | anchor_ms | int | Timestamp into the track, in milliseconds |
 | beat | int | Nullable; optional stored beat anchor. Beat-snapping derives beat/bar at read time from `anchor_ms` + the track's BPM + `beat_anchor_ms` (the run-payload populates them); these columns are **never written by the snapping flow** and are always null at rest. Reserved for a future explicit beat-anchor authoring path; do not write in new features. |
 | bar | int | Nullable; optional stored bar anchor. Same status as `beat` — always null at rest; derived at read time. |
-| text | text | Move name. The existing prompter still reads this line; duration, BPM, intensity, and note are not copied onto the run payload |
-| duration_ms | int | Nullable. How long the move is held, in milliseconds. She edits whole seconds in the builder. Not a run-payload field |
-| bpm | int | Nullable. BPM she sets on this cue. It may differ from the track and from the next cue. Never filled from Spotify or from the track's display BPM. Not a run-payload field |
-| intensity | text enum(`none`,`easy`,`mod`,`hard`,`all_out`,`open`) | Nullable. Cue effort. `open` stays here and is not added to the track, plan-block, placed-move, or run-payload intensity enum |
+| text | text | Move name. The existing prompter still reads this line. Duration, BPM, and intensity are copied onto the run payload; `note` is not |
+| duration_ms | int | Nullable. How long the move is held, in milliseconds. She edits whole seconds in the builder. Copied onto the run payload as `durationMs` (`null` when unset). Clip re-base does not change it |
+| bpm | int | Nullable. BPM she sets on this cue. It may differ from the track and from the next cue. Never filled from Spotify or from the track's display BPM. Copied onto the run payload as `bpm` (`null` when unset). Beat and bar still follow the track's display BPM |
+| intensity | text enum(`none`,`easy`,`mod`,`hard`,`all_out`,`open`) | Nullable. Cue effort. `open` is on the run-payload cue and is not added to the track, plan-block, or placed-move intensity enum. `null` when unset |
 | note | text | Nullable. Coaching note, separate from the move name (`text`). Not a run-payload field |
-| position | int | Teaching order on the song (0-based). The builder lists by `position`, then `anchor_ms`. The run payload still orders by `anchor_ms` and does not carry `position` |
+| position | int | Teaching order on the song (0-based). The builder lists by `position`, then `anchor_ms`. The run payload copies `position` and still orders the cue array by `anchor_ms` |
 | color | text | Nullable; free hex for visual tagging. The design system's cue-color picker **excludes the plasma range** (rationing is enforced in the UI, not the column) |
 | created_at / updated_at | int (ms) | |
 

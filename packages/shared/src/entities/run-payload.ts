@@ -6,9 +6,10 @@
  * computed during assembly — see `apps/api/src/lib/run-payload.ts`.
  */
 import { z } from 'zod';
-import { uuidSchema, offsetMsSchema, timestampMsSchema } from '../common.js';
+import { uuidSchema, offsetMsSchema, timestampMsSchema, MAX_DURATION_MS } from '../common.js';
 import {
   classTemplateSchema,
+  cueIntensitySchema,
   intensitySchema,
   providerSchema,
   segmentTypeSchema,
@@ -76,6 +77,20 @@ const runPayloadCueSchema = z.object({
   bar: z.int().nonnegative().nullable(),
   text: z.string().min(1),
   color: z.string().nullable(),
+  /**
+   * Stored hold length. Null when unset. Copied as stored — clip re-base changes
+   * `anchorMs` only. Additive to v1 (`schemaVersion` stays 1).
+   */
+  durationMs: z.int().positive().max(MAX_DURATION_MS).nullable(),
+  /** Cue BPM. Null when unset. Independent of the track's `displayBpm`. */
+  bpm: z.int().positive().nullable(),
+  /**
+   * Cue effort, including `open`. Null when unset. Not the track, plan-block, or
+   * placed-move intensity enum.
+   */
+  intensity: cueIntensitySchema.nullable(),
+  /** Teaching order on the song. The cue array stays in `anchorMs` order. */
+  position: z.int().nonnegative(),
 });
 
 const runPayloadMoveSchema = z.object({

@@ -17,8 +17,8 @@ export const cueSchema = z.object({
   classTrackId: uuidSchema,
   /**
    * Teaching order on this song. The builder lists cues by this, then by
-   * `anchorMs`. The run payload still orders by `anchorMs` and does not carry
-   * this field.
+   * `anchorMs`. The run payload copies this field and still orders cues by
+   * `anchorMs`.
    */
   position: z.int().nonnegative(),
   anchorMs: offsetMsSchema,
@@ -26,13 +26,22 @@ export const cueSchema = z.object({
   bar: z.int().nonnegative().nullable(),
   /** Move name. Still the line the existing prompter reads; not a separate live field. */
   text: z.string().min(1).max(1000),
-  /** How long she holds the move, in milliseconds. Null until she sets it. Builder-only. */
+  /**
+   * How long she holds the move, in milliseconds. Null until she sets it.
+   * Copied onto the run payload; clip re-base does not change it.
+   */
   durationMs: z.int().positive().max(MAX_DURATION_MS).nullable(),
-  /** BPM she sets on this cue. Never copied from the track or from Spotify. Builder-only. */
+  /**
+   * BPM she sets on this cue. Never copied from the track or from Spotify.
+   * Copied onto the run payload. Beat and bar still follow the track tempo.
+   */
   bpm: z.int().positive().nullable(),
-  /** Cue effort, including Open. Not the track/move intensity enum. Builder-only. */
+  /**
+   * Cue effort, including Open. Not the track, plan-block, or placed-move
+   * intensity enum. Copied onto the run payload (`null` when unset).
+   */
   intensity: cueIntensitySchema.nullable(),
-  /** Coaching note, separate from the move name. Builder-only. */
+  /** Coaching note, separate from the move name. Not a run-payload field. */
   note: z.string().max(1000).nullable(),
   color: z.string().max(64).nullable(),
   ...timestampsShape,
