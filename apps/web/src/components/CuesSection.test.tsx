@@ -471,6 +471,88 @@ describe('CuesSection — teaching list', () => {
       ),
     );
   });
+
+  it('does not save a cue when duration or BPM is not a whole number', async () => {
+    vi.mocked(api.listCues).mockResolvedValue([]);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Move name' }), {
+      target: { value: 'Left Leg Lead' },
+    });
+    const duration = screen.getByRole('textbox', { name: 'Duration (seconds)' });
+    fireEvent.change(duration, { target: { value: '1.5' } });
+    const add = screen.getByRole('button', { name: 'Add cue' });
+    add.focus();
+    fireEvent.click(add);
+
+    expect(api.createCue).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert').textContent).toBe('Use whole seconds, such as 15.');
+    expect(document.activeElement).toBe(duration);
+
+    fireEvent.change(duration, { target: { value: '15' } });
+    const bpm = screen.getByRole('textbox', { name: 'Cue BPM' });
+    fireEvent.change(bpm, { target: { value: '128.5' } });
+    add.focus();
+    fireEvent.click(add);
+
+    expect(api.createCue).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert').textContent).toBe('Use a whole BPM, such as 128.');
+    expect(document.activeElement).toBe(bpm);
+  });
+
+  it('does not save an edit when the duration is no longer a whole number', async () => {
+    const first = cue('cue-1', 'Press Tap', { durationMs: 15_000, bpm: 96, intensity: 'open' });
+    vi.mocked(api.listCues).mockResolvedValue([first]);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit cue Press Tap' }));
+    const duration = screen.getAllByRole('textbox', { name: 'Duration (seconds)' })[0]!;
+    fireEvent.change(duration, { target: { value: '0' } });
+    const save = screen.getByRole('button', { name: 'Save' });
+    save.focus();
+    fireEvent.click(save);
+
+    expect(api.updateCue).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert').textContent).toBe('Use whole seconds, such as 15.');
+    expect(document.activeElement).toBe(duration);
+  });
+
+  it('sends null when she clears duration, BPM, and intensity', async () => {
+    const first = cue('cue-1', 'Press Tap', {
+      durationMs: 15_000,
+      bpm: 96,
+      intensity: 'open',
+      note: 'Keep',
+    });
+    vi.mocked(api.listCues).mockResolvedValue([first]);
+    vi.mocked(api.updateCue).mockResolvedValue(first);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit cue Press Tap' }));
+    fireEvent.change(screen.getAllByRole('textbox', { name: 'Duration (seconds)' })[0]!, {
+      target: { value: '' },
+    });
+    fireEvent.change(screen.getAllByRole('textbox', { name: 'Cue BPM' })[0]!, {
+      target: { value: '' },
+    });
+    fireEvent.change(screen.getAllByRole('combobox', { name: 'Intensity' })[0]!, {
+      target: { value: '' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(vi.mocked(api.updateCue)).toHaveBeenCalledWith(
+        'cue-1',
+        expect.objectContaining({
+          text: 'Press Tap',
+          durationMs: null,
+          bpm: null,
+          intensity: null,
+          note: 'Keep',
+        }),
+      ),
+    );
+  });
 });
 
 describe('CuesSection — color draft ownership', () => {
