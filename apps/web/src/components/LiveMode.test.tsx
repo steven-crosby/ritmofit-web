@@ -1502,12 +1502,12 @@ describe('LiveMode runtime composition', () => {
 
   it('does not steal unrelated focus when sparse-track progression removes guidance', async () => {
     await renderLive(threeTrack);
-    const exit = screen.getByRole('button', { name: 'Exit' });
-    exit.focus();
+    const endClass = screen.getByRole('button', { name: 'End Class' });
+    endClass.focus();
     const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
     for (let i = 0; i < 6; i++) fireEvent.keyDown(slider, { key: 'PageUp' });
     expect(screen.queryByText('Full guidance')).toBeNull();
-    expect(document.activeElement).toBe(exit);
+    expect(document.activeElement).toBe(endClass);
   });
 
   it('keeps urgent playback recovery focus ahead of a focused guidance disclosure', async () => {
@@ -1926,14 +1926,36 @@ describe('LiveMode compact completion state', () => {
       if (view === 'Full List') fireEvent.click(screen.getByRole('tab', { name: view }));
       const compactStatus = document.querySelector('header p[aria-hidden="true"]') as HTMLElement;
       expect(within(compactStatus).queryByText('Complete')).toBeNull();
+      expect(screen.getByRole('button', { name: 'End Class' })).toBeTruthy();
+      expect(screen.queryByText("That's the class — great ride.")).toBeNull();
+      expect(screen.queryByText(/Class complete · Track/)).toBeNull();
       fireEvent.keyDown(screen.getByRole('slider', { name: 'Seek class timeline' }), {
         key: 'End',
       });
       expect(within(compactStatus).getByText('Complete')).toBeTruthy();
-      expect(screen.getByText('Class complete.')).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Exit' })).toBeTruthy();
+      expect(screen.getByText("That's the class — great ride.")).toBeTruthy();
+      expect(screen.getByText(/Class complete · Track 1 of 1/)).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'End Class' })).toBeTruthy();
     },
   );
+
+  it('says the last song is done when playback reaches the class end', async () => {
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    expect(screen.getByRole('button', { name: 'Exit' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    expect(await screen.findByRole('button', { name: 'End Class' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Exit' })).toBeNull();
+    expect(await screen.findByText('SoundCloud')).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole('slider', { name: 'Seek class timeline' }), { key: 'End' });
+    expect(await screen.findByText('Last song done')).toBeTruthy();
+    expect(screen.getByText("That's the class — great ride.")).toBeTruthy();
+    expect(screen.getByText(/Class complete · Track 1 of 1/)).toBeTruthy();
+    const compactStatus = document.querySelector('header p[aria-hidden="true"]') as HTMLElement;
+    expect(within(compactStatus).getByText('Complete')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'End Class' })).toBeTruthy();
+  });
 });
 
 describe('LiveMode screen-reader announcements', () => {

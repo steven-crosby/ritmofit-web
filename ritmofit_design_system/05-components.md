@@ -266,7 +266,7 @@ reset, scrubber) plus a compact
 playback rail chip that always states what the music is doing: `♪ {provider}` while playing,
 `♪ Preparing {provider}…`, `⏳ Waiting for {provider} authorization…` (consent sheet open — its own
 glyph, since the instructor must act in the provider's sheet), `♪ Silence` (intentional gaps),
-`♪ Paused`, `♪ Playback ended`, `⚠ Playback error`, and `♪ Music off` in prompter-only mode. Silence
+`♪ Paused`, `♪ Last song done`, `⚠ Playback error`, and `♪ Music off` in prompter-only mode. Silence
 must read as a choice, not a mystery. No provider branding walls, no marketing player: this is a performance tool for an instructor
 on stage. All transport controls stay keyboard accessible and visibly focused.
 

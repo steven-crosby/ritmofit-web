@@ -761,7 +761,7 @@ export function LiveMode({
   if (payload.tracks.length === 0) {
     announcement = '';
   } else if (ended) {
-    announcement = 'Class complete.';
+    announcement = "That's the class — great ride.";
   } else if (gap) {
     announcement = gap.nextTitle ? `Silence. Next track: ${gap.nextTitle}.` : 'Silence.';
   } else if (view === 'cue' && teachingHold) {
@@ -919,7 +919,7 @@ export function LiveMode({
     }
   }, [phase, musicBlocked, hasPlaybackFailure, connectionsOpen, view, showRecoveryPanel]);
   const runState = ended
-    ? 'Complete'
+    ? 'Class complete'
     : musicBlocked
       ? 'Teaching paused · waiting for music'
       : teachingPlaying
@@ -1076,7 +1076,7 @@ export function LiveMode({
                 className="min-h-11 shrink-0 rounded-control border border-interactive px-3 py-2 font-ui text-sm text-interactive rf-focus-ring sm:rounded-pill"
                 onClick={onExit}
               >
-                Exit
+                End Class
               </button>
             </div>
           </header>
@@ -1261,7 +1261,7 @@ function PlaybackRail({ status }: { status: CoordinatorStatus | null }) {
         text = 'Paused';
         break;
       case 'ended':
-        text = 'Playback ended';
+        text = 'Last song done';
         break;
       case 'error':
         text = 'Playback error';

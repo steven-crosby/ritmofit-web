@@ -391,7 +391,7 @@ async function checkSignedInSurfaces(page, suffix) {
     timeout: 10000,
   });
   await checkNoOverflow(page, `live-at-rest:${suffix}`);
-  await page.getByRole('button', { name: 'Exit' }).click();
+  await page.getByRole('button', { name: 'End Class', exact: true }).click();
   await page.getByRole('button', { name: 'Account', exact: true }).waitFor({ timeout: 10000 });
 }
 
@@ -582,7 +582,7 @@ try {
   else fail('live-at-rest:no-absence-lead', 'Live at rest still leads with "No cue set"');
   await checkNoOverflow(page, 'live-at-rest');
   await page.screenshot({ path: join(shotsDir, 'live-at-rest-390.png'), fullPage: true });
-  await page.getByRole('button', { name: 'Exit' }).click();
+  await page.getByRole('button', { name: 'End Class', exact: true }).click();
 
   // 8. Viewport matrix + 200% zoom. Resize the same authenticated session rather
   // than re-signing-up; overflow is a layout property of the current surface.
