@@ -78,9 +78,11 @@ describe('builder cue list', () => {
         durationMs: 48_000,
         bpm: 110,
         intensity: 'easy',
+        note: '  Still the move.  ',
       }),
     });
     expect(earlierOnTheClock.status).toBe(201);
+    expect(await earlierOnTheClock.json()).toMatchObject({ note: 'Still the move.' });
 
     const listed = await api(`/api/v1/class-tracks/${classTrackId}/cues`);
     const rows = (await listed.json()) as Array<{ text: string; position: number }>;

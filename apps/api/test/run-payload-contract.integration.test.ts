@@ -5,7 +5,7 @@
  * name, and stable section ids. A caller with no access gets 404 NOT_FOUND.
  */
 import { beforeAll, describe, expect, it } from 'vitest';
-import { runPayloadSchema, type RunPayload } from '@ritmofit/shared';
+import { beatPositionAt, runPayloadSchema, type RunPayload } from '@ritmofit/shared';
 import { authed, signUpUser, verifyUserEmail, type TestUser } from './helpers.js';
 
 const MISSING_ID = '00000000-0000-4000-8000-00000000b22e';
@@ -230,6 +230,7 @@ describe('run-payload cue fields', () => {
     const raw = (await res.json()) as {
       schemaVersion: number;
       tracks: Array<{
+        classTrackId: string;
         displayBpm: number | null;
         intensity: string;
         clipStartMs: number;
@@ -260,8 +261,49 @@ describe('run-payload cue fields', () => {
 
     const clipped = raw.tracks[1]!;
     expect(clipped.clipStartMs).toBe(30_000);
-    expect(clipped.cues[0]).toMatchObject({ anchorMs: 30_000, durationMs: 15_000 });
+    // Beat/bar use the track tempo at the stored anchor. Cue BPM is copied as
+    // its own field, and clip re-base changes `anchorMs` only.
+    const blankCount = beatPositionAt(48_000, timed.displayBpm, 0);
+    expect(beatPositionAt(48_000, null, 0)).toBeNull();
+    expect(blank.beat).toBe(blankCount?.beat);
+    expect(blank.bar).toBe(blankCount?.bar);
+
+    const fromStoredAnchor = beatPositionAt(60_000, clipped.displayBpm, 0);
+    const fromPayloadAnchor = beatPositionAt(30_000, clipped.displayBpm, 0);
+    expect(fromStoredAnchor).not.toEqual(fromPayloadAnchor);
+    expect(clipped.cues[0]).toMatchObject({
+      anchorMs: 30_000,
+      durationMs: 15_000,
+      beat: fromStoredAnchor?.beat,
+      bar: fromStoredAnchor?.bar,
+    });
     expect(clipped.cues[0]).not.toHaveProperty('note');
+
+    const cueAnchorMs = 10_000;
+    const cueBpm = 96;
+    const fromTrack = beatPositionAt(cueAnchorMs, timed.displayBpm, 0);
+    const fromCue = beatPositionAt(cueAnchorMs, cueBpm, 0);
+    expect(fromTrack).not.toEqual(fromCue);
+    const created = await authed(owner.cookie)(`/api/v1/class-tracks/${timed.classTrackId}/cues`, {
+      method: 'POST',
+      body: JSON.stringify({
+        anchorMs: cueAnchorMs,
+        text: 'Tempo stays on the track',
+        bpm: cueBpm,
+      }),
+    });
+    expect(created.status).toBe(201);
+    const again = await authed(owner.cookie)(`/api/v1/classes/${classId}/run-payload`);
+    expect(again.status).toBe(200);
+    const next = (await again.json()) as typeof raw;
+    const conflict = next.tracks[0]?.cues.find((cue) => cue.text === 'Tempo stays on the track');
+    expect(conflict).toMatchObject({
+      anchorMs: cueAnchorMs,
+      bpm: cueBpm,
+      beat: fromTrack?.beat,
+      bar: fromTrack?.bar,
+    });
+    expect(next.tracks[0]?.displayBpm).toBe(128);
 
     expect(runPayloadSchema.parse(raw).schemaVersion).toBe(1);
   });
