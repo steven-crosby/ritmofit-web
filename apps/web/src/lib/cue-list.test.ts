@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { createCueSchema } from '@ritmofit/shared';
 import {
   CUE_INTENSITY_LABEL,
   formatCueDurationInput,
   formatCueDurationLabel,
+  formatCueHoldCountdown,
   parseCueBpm,
   parseCueDurationSeconds,
   parseCueIntensity,
@@ -22,6 +24,20 @@ describe('parseCueDurationSeconds', () => {
     expect(parseCueDurationSeconds('0').ok).toBe(false);
     expect(parseCueDurationSeconds('1.5').ok).toBe(false);
     expect(parseCueDurationSeconds('fifteen').ok).toBe(false);
+    expect(parseCueDurationSeconds('01').ok).toBe(false);
+  });
+
+  it('trims a whole number and stops at the same 24-hour limit the cue contract uses', () => {
+    const day = parseCueDurationSeconds(' 86400 ');
+    const over = parseCueDurationSeconds('86401');
+    expect(day).toEqual({ ok: true, value: 86_400_000 });
+    expect(over).toEqual({ ok: false, message: 'Duration is too long.' });
+    expect(
+      createCueSchema.safeParse({ anchorMs: 0, text: 'Hold', durationMs: 86_400_000 }).success,
+    ).toBe(true);
+    expect(
+      createCueSchema.safeParse({ anchorMs: 0, text: 'Hold', durationMs: 86_401_000 }).success,
+    ).toBe(false);
   });
 });
 
@@ -30,8 +46,10 @@ describe('parseCueBpm', () => {
     expect(parseCueBpm('')).toEqual({ ok: true, value: null });
     expect(parseCueBpm('96')).toEqual({ ok: true, value: 96 });
     expect(parseCueBpm('128')).toEqual({ ok: true, value: 128 });
+    expect(parseCueBpm(' 96 ')).toEqual({ ok: true, value: 96 });
     expect(parseCueBpm('0').ok).toBe(false);
     expect(parseCueBpm('128.5').ok).toBe(false);
+    expect(parseCueBpm('9007199254740993')).toEqual({ ok: false, message: 'BPM is too large.' });
   });
 });
 
@@ -55,5 +73,22 @@ describe('duration display', () => {
     expect(formatCueDurationLabel(null)).toBeNull();
     expect(formatCueDurationInput(31_000)).toBe('31');
     expect(formatCueDurationInput(null)).toBe('');
+  });
+});
+
+describe('formatCueHoldCountdown', () => {
+  it('keeps whole seconds and a single tenth', () => {
+    expect(formatCueHoldCountdown(15_000)).toBe('15s');
+    expect(formatCueHoldCountdown(0)).toBe('0s');
+    expect(formatCueHoldCountdown(5_000)).toBe('5s');
+    expect(formatCueHoldCountdown(1_500)).toBe('1.5s');
+    expect(formatCueHoldCountdown(400)).toBe('0.4s');
+  });
+
+  it('rounds a fractional live remainder instead of printing the raw clock', () => {
+    expect(formatCueHoldCountdown(15_000 - 213.456789)).toBe('14.8s');
+    expect(formatCueHoldCountdown(15_000 - 213)).toBe('14.8s');
+    expect(formatCueHoldCountdown(0.8)).toBe('0s');
+    expect(formatCueHoldCountdown(Number.NaN)).toBe('0s');
   });
 });

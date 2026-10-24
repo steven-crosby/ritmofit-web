@@ -57,7 +57,11 @@ import { LivePreflight } from './LivePreflight.js';
 import { LiveTimeline } from './LiveTimeline.js';
 import { SEGMENT_META, SegmentIcon } from './SegmentBand.js';
 import { StatusLabel } from './SharedState.js';
-import { CUE_INTENSITY_LABEL, formatCueDurationLabel } from '../lib/cue-list.js';
+import {
+  CUE_INTENSITY_LABEL,
+  formatCueDurationLabel,
+  formatCueHoldCountdown,
+} from '../lib/cue-list.js';
 
 type View = 'cue' | 'list';
 
@@ -1524,7 +1528,7 @@ function CueByCue({
       })
     : null;
   const countdownLabel =
-    hold == null ? null : hold.remainingMs == null ? '—' : formatCueDurationLabel(hold.remainingMs);
+    hold == null ? null : hold.remainingMs == null ? '—' : formatCueHoldCountdown(hold.remainingMs);
   const effortLabel = hold
     ? hold.cue.intensity
       ? CUE_INTENSITY_LABEL[hold.cue.intensity]
@@ -1688,7 +1692,7 @@ function CueByCue({
           </p>
           {nextEvent && (
             <span
-              className="shrink-0 font-data text-[clamp(1.5rem,3vw,2.25rem)] leading-none text-interactive"
+              className="shrink-0 font-data text-[clamp(1.5rem,3vw,2.25rem)] leading-none text-text-secondary"
               style={{ fontSize: nextGapFont }}
               aria-label="Time to next cue"
             >
@@ -1916,9 +1920,9 @@ function ChoreographyQueue({
               </span>
               <span
                 className="shrink-0 font-data text-xs text-text-tertiary"
-                aria-label={current ? 'Time remaining in current choreography' : 'Duration'}
+                aria-label={current ? 'Time until the next cue' : 'Duration'}
               >
-                {intervalMs == null ? '—' : `${fmt(intervalMs)}${current ? ' left' : ''}`}
+                {intervalMs == null ? '—' : `${fmt(intervalMs)}${current ? ' until next' : ''}`}
               </span>
             </li>
           );

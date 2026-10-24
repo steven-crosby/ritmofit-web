@@ -1299,7 +1299,9 @@ describe('LiveMode runtime composition', () => {
     expect(within(focal).getByText('Settle in')).toBeTruthy();
     expect(within(focal).getByText('Next')).toBeTruthy();
     expect(within(focal).getByText('Climb now')).toBeTruthy();
-    expect(within(focal).getByLabelText('Time to next cue')).toBeTruthy();
+    const nextClock = within(focal).getByLabelText('Time to next cue');
+    expect(nextClock.classList.contains('text-text-secondary')).toBe(true);
+    expect(nextClock.classList.contains('text-interactive')).toBe(false);
   });
 
   it('leads the rail with timers and keeps notes ahead of the supporting class shape', async () => {
@@ -1598,7 +1600,8 @@ describe('LiveMode runtime composition', () => {
     const queue = screen.getByRole('list', { name: 'Choreography queue' });
     const current = within(queue).getByText('Settle in').closest('li');
     expect(current?.getAttribute('aria-current')).toBe('step');
-    expect(within(current as HTMLElement).getByText('0:30 left')).toBeTruthy();
+    const untilNext = within(current as HTMLElement).getByLabelText('Time until the next cue');
+    expect(untilNext.textContent).toBe('0:30 until next');
     expect(within(queue).getByText('Stand and climb')).toBeTruthy();
     expect(within(queue).getByText('Climb now')).toBeTruthy();
     expect(
@@ -1827,7 +1830,7 @@ describe('LiveMode sparse-data fallbacks', () => {
     } satisfies RunPayload;
     await renderLive(durationless);
 
-    const remaining = screen.getByLabelText('Time remaining in current choreography');
+    const remaining = screen.getByLabelText('Time until the next cue');
     expect(remaining.textContent).toBe('—');
   });
 });
@@ -2532,6 +2535,7 @@ describe('Cue-by-Cue teaching reading', () => {
     const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
     expect(heroName()?.textContent).toBe('Left Leg Lead');
     expect(countdown()?.textContent).toBe('15s');
+    expect(countdown()?.style.fontSize).toBe('6.5rem');
     expect(scale()?.dataset.scaleMs).toBe('15000');
     expect(playhead()?.dataset.filledMs).toBe('0');
     expect(playhead()?.style.width).toBe('0%');
@@ -2597,6 +2601,25 @@ describe('Cue-by-Cue teaching reading', () => {
     seekTo(14_600, payload.class.totalDurationMs);
     expect(countdown()?.textContent).toBe('0.4s');
     expect(countdown()?.textContent).not.toBe('0:00');
+  });
+
+  it('rounds a mid-hold remainder to one decimal instead of the raw clock', async () => {
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000e3', 'Hold', 0, {
+              durationMs: 15_000,
+            }),
+          ],
+        },
+      ],
+    });
+    seekTo(213, payload.class.totalDurationMs);
+    expect(countdown()?.textContent).toBe('14.8s');
+    expect(countdown()?.textContent).not.toMatch(/14\.787/);
   });
 
   it('shifts the same hold by the second track startOffsetMs', async () => {

@@ -13,6 +13,39 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-24 — #546, #557, #564, #565, #566 on main `ff24f46`.** Owner approved.
+> Production deploy at 2026-10-24T20:12:50Z (2:12 PM MT). New Worker
+> `baa4a420-562c-4988-969b-2bd1709a35a9`; previous/rollback
+> `7a2d5773-e807-4d49-9074-c21a8723723f`. SPA entry `assets/index-q9aP7Jrc.js`
+> (CSS `assets/index-DcqGkA5K.css`), confirmed by six consecutive cache-busted
+> fetches that matched the build. The JS filename differs from the previous
+> production entry `assets/index-Dzrd7d91.js`. The CSS filename is unchanged.
+> Pre-deploy full gate passed on `ff24f46` from a clean detached worktree on
+> Steven's MacBook (format, typecheck, lint, design verify, theme-classes, unit
+> tests web 1301 / api 496 / music 30, Worker/D1 integration 200, web build,
+> OpenAPI no drift, contract-parity, audit:ci). An earlier gate on `687e1ca`
+> failed one ordered-import test on Node 25; #566 fixed the test mock. Preflight
+> ran before the deploy: no remote D1 migrations pending (`0021` latest) and
+> `BETA_ALLOWED_EMAILS` present. No migration was applied.
+>
+> Deployed since production `4cc4121`:
+> [#546](https://github.com/steven-crosby/ritmofit-web/pull/546) (ordered-import
+> recovery tests, `e050c1c`),
+> [#557](https://github.com/steven-crosby/ritmofit-web/pull/557) (cue beat source
+> and builder field tests, `37ff209`),
+> [#564](https://github.com/steven-crosby/ritmofit-web/pull/564) (quiet the Live
+> next clock and queue interval, `97219bc`),
+> [#565](https://github.com/steven-crosby/ritmofit-web/pull/565) (lock pause
+> during an in-flight play, `687e1ca`), and
+> [#566](https://github.com/steven-crosby/ritmofit-web/pull/566) (deterministic
+> unreadable-sessionStorage test, `ff24f46`). Docs `6f5041b`
+> ([#561](https://github.com/steven-crosby/ritmofit-web/pull/561), the 2026-10-23
+> zod deploy record) is in that tree and does not change runtime.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 with security headers; unauthenticated
+> `/api/v1/classes`, `/explore`, and `/teams` 401. Production matches main
+> `ff24f46` code at deploy time. This docs record is not in the deployed tree.
+
 > **Deploy 2026-10-23 — #560 on main `4cc4121`.**
 > Production deploy at 2026-10-24T03:57:57Z (9:57 PM MT). New Worker
 > `7a2d5773-e807-4d49-9074-c21a8723723f`; previous/rollback
