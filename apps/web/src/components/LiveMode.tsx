@@ -57,6 +57,7 @@ import { LivePreflight } from './LivePreflight.js';
 import { LiveTimeline } from './LiveTimeline.js';
 import { SEGMENT_META, SegmentIcon } from './SegmentBand.js';
 import { StatusLabel } from './SharedState.js';
+import { CUE_INTENSITY_LABEL, formatCueDurationLabel } from '../lib/cue-list.js';
 
 type View = 'cue' | 'list';
 
@@ -89,6 +90,85 @@ export interface ChoreographyQueueItem {
 
 /** Stable empty reference so a track-less / pre-roll frame doesn't churn memos. */
 const NO_EVENTS: TimelineEvent[] = [];
+
+/**
+ * A column this wide or narrower is the phone column the teaching layout rejects.
+ * Side by side is two equal columns from 1024px up (Cue-by-Cue padding 32px, gap
+ * 24px), so 1024, 1280, and 1440 stay wider than this. 390 stacks.
+ */
+export const TEACHING_PHONE_WIDTH_PX = 430;
+export const TEACHING_SIDE_BY_SIDE_MIN_PX = 1024;
+
+/** Upcoming-column width at `viewportPx`, or null when the three regions stack. */
+export function teachingUpcomingColumnPx(viewportPx: number): number | null {
+  if (viewportPx < TEACHING_SIDE_BY_SIDE_MIN_PX) return null;
+  return (viewportPx - 32 * 2 - 24) / 2;
+}
+
+/**
+ * Glanceable hold. Fixed rems so the used size stays larger than Track left
+ * (1.5rem), the Next-cue gap (2.25rem), and the beat count (1.75rem) at 390,
+ * 1024, 1280, and 1440.
+ */
+export const TEACHING_COUNTDOWN_FONT_REM = 6.5;
+/** Next-cue gap. It stays a different clock from the hold. */
+export const TEACHING_NEXT_GAP_FONT_REM = 2.25;
+/** Beat count stays on the cue, under the hold countdown. */
+export const TEACHING_BEAT_FONT_REM = 1.75;
+export const TEACHING_TRACK_LEFT_FONT_REM = 1.5;
+
+type TeachingCue = RunPayloadTrackEntry['cues'][number];
+
+export interface TeachingHold {
+  cue: TeachingCue;
+  /** Milliseconds after the cue anchor. May run past `durationMs` once the hold ends. */
+  intoMs: number;
+  /** Time left in `durationMs`, floored at 0. Null when the hold length is unset. */
+  remainingMs: number | null;
+  /** Playhead along the `durationMs` scale, 0 at the anchor and 1 at the end. */
+  fill: number | null;
+}
+
+/**
+ * The last cue on this track whose anchor the playhead has reached. A later
+ * anchor wins when an earlier hold runs past it. Position is not the hero key.
+ */
+export function teachingHoldAt(
+  cues: readonly TeachingCue[],
+  trackElapsedMs: number,
+): TeachingHold | null {
+  let cue: TeachingCue | null = null;
+  for (const candidate of cues) {
+    if (candidate.anchorMs > trackElapsedMs) continue;
+    if (
+      cue == null ||
+      candidate.anchorMs > cue.anchorMs ||
+      (candidate.anchorMs === cue.anchorMs && candidate.position >= cue.position)
+    ) {
+      cue = candidate;
+    }
+  }
+  if (!cue) return null;
+  const intoMs = trackElapsedMs - cue.anchorMs;
+  if (cue.durationMs == null) return { cue, intoMs, remainingMs: null, fill: null };
+  return {
+    cue,
+    intoMs,
+    remainingMs: Math.max(0, cue.durationMs - intoMs),
+    fill: Math.min(1, Math.max(0, intoMs / cue.durationMs)),
+  };
+}
+
+/** Cues on this track whose anchors are still ahead, in teaching order. */
+export function upcomingTeachingCues(
+  cues: readonly TeachingCue[],
+  trackElapsedMs: number,
+): TeachingCue[] {
+  return cues
+    .filter((cue) => cue.anchorMs > trackElapsedMs)
+    .slice()
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || a.anchorMs - b.anchorMs);
+}
 
 /**
  * Provider handoff links — recovery-surface only (plan: "not a primary or
@@ -668,6 +748,11 @@ export function LiveMode({
   );
 
   const ended = payload.class.totalDurationMs > 0 && elapsedMs >= payload.class.totalDurationMs;
+  // Cue-by-Cue speaks the teaching cue, not a placed move that shares the timeline.
+  const teachingHold =
+    view === 'cue' && live && !gap
+      ? teachingHoldAt(live.entry.cues, elapsedMs - (live.entry.startOffsetMs ?? 0))
+      : null;
   let announcement = '';
   if (payload.tracks.length === 0) {
     announcement = '';
@@ -675,6 +760,10 @@ export function LiveMode({
     announcement = 'Class complete.';
   } else if (gap) {
     announcement = gap.nextTitle ? `Silence. Next track: ${gap.nextTitle}.` : 'Silence.';
+  } else if (view === 'cue' && teachingHold) {
+    announcement = `Cue: ${sentence(teachingHold.cue.text)}`;
+  } else if (view === 'cue' && live) {
+    announcement = `Track ${live.index + 1}: ${live.entry.track.title}.`;
   } else if (currentEvent) {
     announcement = `${currentEvent.kind === 'move' ? 'Move' : 'Cue'}: ${sentence(currentEvent.text)}`;
   } else if (live) {
@@ -703,11 +792,15 @@ export function LiveMode({
         ? 'ended'
         : gap
           ? `gap:${gap.nextTitle ?? ''}`
-          : currentEvent
-            ? `cue:${liveIndex}:${currentEvent.kind}:${currentEvent.atMs}`
-            : live
-              ? `track:${live.index}`
-              : '';
+          : view === 'cue' && teachingHold
+            ? `teach:${liveIndex}:${teachingHold.cue.id}`
+            : view === 'cue' && live
+              ? `teach-track:${live.index}`
+              : currentEvent
+                ? `cue:${liveIndex}:${currentEvent.kind}:${currentEvent.atMs}`
+                : live
+                  ? `track:${live.index}`
+                  : '';
 
   // Assertive live-region ping-pong. An aria-live region only re-announces when its
   // text content *changes*, so a single region stays silent when a cue repeats
@@ -1406,6 +1499,9 @@ function CueByCue({
     );
   }
   const { entry } = live;
+  const trackElapsedMs = elapsedMs - (entry.startOffsetMs ?? 0);
+  const hold = teachingHoldAt(entry.cues, trackElapsedMs);
+  const upcoming = upcomingTeachingCues(entry.cues, trackElapsedMs);
   // "The drop" (design system 10 §5): the one big motion spend, rationed to All-Out
   // tracks. On each cue advance there, a plasma glow blooms behind the focal cue and
   // the cue text cross-fades in. Reduced motion degrades both to an instant swap (CSS).
@@ -1413,21 +1509,46 @@ function CueByCue({
   // At rest before playback begins (a paused mid-class has elapsed > 0) with no cue
   // at this instant: lead with the affirmative ready state + a class-shape mini-map
   // instead of "No cue set" (alive at rest, design system 05 §Live). Once playing —
-  // or paused mid-class — the normal cue / no-cue prompter takes over.
-  const showReadyHero = !hasStarted && elapsedMs === 0 && currentEvent == null;
-  const count = eventCount(currentEvent);
+  // or paused mid-class — the normal cue / no-cue prompter takes over. A placed move
+  // never fills this gap.
+  const showReadyHero = !hasStarted && elapsedMs === 0 && hold == null;
+  const count = hold
+    ? eventCount({
+        atMs: (entry.startOffsetMs ?? 0) + hold.cue.anchorMs,
+        kind: 'cue',
+        text: hold.cue.text,
+        color: hold.cue.color,
+        intensity: null,
+        beat: hold.cue.beat,
+        bar: hold.cue.bar,
+      })
+    : null;
+  const countdownLabel =
+    hold == null ? null : hold.remainingMs == null ? '—' : formatCueDurationLabel(hold.remainingMs);
+  const effortLabel = hold
+    ? hold.cue.intensity
+      ? CUE_INTENSITY_LABEL[hold.cue.intensity]
+      : '—'
+    : null;
+  const pulse = Boolean(playing && hold?.cue.bpm != null);
+  const countdownFont = `${TEACHING_COUNTDOWN_FONT_REM}rem`;
+  const nextGapFont = `${TEACHING_NEXT_GAP_FONT_REM}rem`;
+  const beatFont = `${TEACHING_BEAT_FONT_REM}rem`;
   return (
-    <div className="flex min-h-full flex-col gap-4 p-4 sm:p-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:p-8 [@media(max-height:480px)]:p-1">
-      {/* LEFT — the focal cue: the one thing the instructor reads across the room.
-          Carries the All-Out drop; otherwise it holds still so it's always legible. */}
+    <div
+      data-teaching-layout="cue"
+      className="flex min-h-full flex-col gap-4 p-4 sm:p-6 min-[1024px]:grid min-[1024px]:grid-cols-2 min-[1024px]:gap-6 min-[1024px]:p-8 [@media(max-height:480px)]:p-1"
+    >
+      {/* Hero — the current cue, its hold countdown, and the durationMs bar.
+          Side by side with upcoming from 1024px. Stacks under that. */}
       <div
         data-live-region="focal"
-        className="relative flex min-h-[42vh] flex-col overflow-hidden rounded-card bg-bg-raised p-4 shadow-card sm:p-8 lg:col-span-3 lg:min-h-0 [@media(max-height:480px)]:p-1"
+        className="relative flex min-h-[42vh] flex-col overflow-hidden rounded-card bg-bg-raised p-4 shadow-card sm:p-8 min-[1024px]:min-h-0 [@media(max-height:480px)]:p-1"
       >
         {/* The drop's plasma bloom — keyed on the cue so it replays per advance. */}
-        {isAllOut && currentEvent && (
+        {isAllOut && hold && (
           <span
-            key={currentEvent.text}
+            key={hold.cue.text}
             aria-hidden
             className="rf-drop-bloom pointer-events-none absolute inset-0 rounded-card"
           />
@@ -1436,40 +1557,85 @@ function CueByCue({
             the tempo numeral and the cue read as one state-object. */}
         <div className="relative flex flex-1 flex-col justify-[safe_center]">
           <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary [@media(max-height:480px)]:leading-none">
-            {showReadyHero
-              ? 'First action'
-              : currentEvent?.kind === 'move'
-                ? 'Current move'
-                : 'Current cue'}
+            {showReadyHero ? 'First action' : 'Current cue'}
           </p>
-          {currentEvent ? (
+          {hold ? (
             <>
-              <div className="contents [@media(max-height:480px)]:flex [@media(max-height:480px)]:items-start [@media(max-height:480px)]:gap-2">
-                {count && (
-                  <p
-                    className={`relative mt-5 shrink-0 font-data font-bold leading-none tracking-[-0.05em] text-text-primary [@media(max-height:480px)]:mt-1 ${holding ? 'text-2xl sm:text-[clamp(3.5rem,9vw,7rem)]' : 'text-[clamp(3.5rem,9vw,7rem)]'}`}
-                    aria-label={
-                      currentEvent.bar == null ? `Count ${count}` : `Bar and count ${count}`
-                    }
-                  >
-                    {count}
-                  </p>
+              <p
+                key={hold.cue.id}
+                data-teaching="hero-name"
+                className={`relative mt-3 line-clamp-2 shrink-0 break-words font-display [@media(max-height:480px)]:mt-1 ${holding ? 'text-2xl sm:text-[clamp(2.75rem,7vw,5.5rem)]' : 'text-[clamp(2.75rem,7vw,5.5rem)]'} font-semibold leading-[0.95] text-text-primary ${
+                  isAllOut ? 'rf-drop-in' : ''
+                }`}
+                style={hold.cue.color ? { color: hold.cue.color } : undefined}
+              >
+                {hold.cue.text}
+              </p>
+              <p
+                data-teaching="countdown"
+                className="relative mt-2 font-data font-bold leading-none tracking-[-0.04em] text-text-primary"
+                style={{ fontSize: countdownFont }}
+              >
+                {countdownLabel}
+              </p>
+              <div
+                data-teaching="hold-scale"
+                data-scale-ms={hold.cue.durationMs == null ? '' : String(hold.cue.durationMs)}
+                className={`relative mt-4 h-2 w-full overflow-hidden rounded-pill ${
+                  hold.cue.durationMs == null ? '' : 'bg-interactive/15'
+                }`}
+              >
+                {hold.fill != null && hold.cue.durationMs != null && (
+                  <div
+                    data-teaching="hold-playhead"
+                    data-filled-ms={String(Math.min(hold.cue.durationMs, Math.max(0, hold.intoMs)))}
+                    className="absolute inset-y-0 left-0 bg-interactive"
+                    style={{ width: `${hold.fill * 100}%` }}
+                  />
                 )}
-                <p
-                  key={currentEvent.text}
-                  className={`relative mt-3 line-clamp-2 shrink-0 break-words font-display [@media(max-height:480px)]:mt-1 [@media(max-height:480px)]:min-w-0 [@media(max-height:480px)]:flex-1 ${holding ? 'text-2xl sm:text-[clamp(2.75rem,7vw,5.5rem)]' : 'text-[clamp(2.75rem,7vw,5.5rem)]'} font-semibold leading-[0.95] text-text-primary ${
-                    isAllOut ? 'rf-drop-in' : ''
-                  }`}
-                  style={currentEvent.color ? { color: currentEvent.color } : undefined}
-                >
-                  {currentEvent.text}
-                </p>
               </div>
-              {currentEvent.kind === 'move' && currentEvent.intensity && (
-                <div className="relative mt-5">
-                  <IntensityReadout intensity={currentEvent.intensity} />
-                </div>
+              {count && (
+                <p
+                  data-teaching="beat-count"
+                  className="relative mt-3 shrink-0 font-data font-bold leading-none tracking-[-0.05em] text-text-primary"
+                  style={{ fontSize: beatFont }}
+                  aria-label={hold.cue.bar == null ? `Count ${count}` : `Bar and count ${count}`}
+                >
+                  {count}
+                </p>
               )}
+              <p data-teaching="hero-effort" className="relative mt-4 flex items-baseline gap-3">
+                <span className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+                  Effort
+                </span>
+                <span className="font-data text-2xl font-semibold text-text-primary">
+                  {effortLabel}
+                </span>
+              </p>
+              <p
+                data-teaching="hero-bpm"
+                className={`relative mt-3 flex items-baseline ${pulse ? 'rf-beat-pulse' : ''}`}
+                style={
+                  hold.cue.bpm != null
+                    ? ({ '--rf-bpm': String(hold.cue.bpm) } as CSSProperties)
+                    : undefined
+                }
+              >
+                {hold.cue.bpm == null ? (
+                  <span className="font-data text-2xl font-semibold text-text-secondary">
+                    BPM —
+                  </span>
+                ) : (
+                  <>
+                    <span className="font-data text-3xl font-semibold text-text-secondary">
+                      {hold.cue.bpm}
+                    </span>
+                    <span className="ml-2 font-data text-sm uppercase tracking-wide text-text-tertiary">
+                      BPM
+                    </span>
+                  </>
+                )}
+              </p>
             </>
           ) : showReadyHero ? (
             // Live at rest leads with the affirmative ready state, never absence
@@ -1523,27 +1689,59 @@ function CueByCue({
           {nextEvent && (
             <span
               className="shrink-0 font-data text-[clamp(1.5rem,3vw,2.25rem)] leading-none text-interactive"
+              style={{ fontSize: nextGapFont }}
               aria-label="Time to next cue"
             >
               {fmt(nextEvent.atMs - elapsedMs)}
             </span>
           )}
         </div>
-        {/* Vitals footer — current effort + prominent (not 88px-hero) tempo,
-            paired with the cue. Cue stays the visual hero (OD-02). */}
-        <FocalVitals entry={entry} playing={playing} />
+        {/* Track tempo and zone stay the no-cue footer. A teaching cue carries its
+            own BPM and effort, and does not borrow the track readout. */}
+        {hold == null && <FocalVitals entry={entry} playing={playing} />}
       </div>
 
-      {/* RIGHT — time and authored guidance lead; class shape supports them.
-          Current/next stay in the hero, with full text available without seeking. */}
-      <div className="flex min-w-0 flex-col gap-3 lg:col-span-2 lg:gap-4">
+      {upcoming.length > 0 && (
+        <div data-teaching="upcoming" className="min-w-0 min-[1024px]:min-w-[431px]">
+          <ol
+            aria-label="Upcoming"
+            tabIndex={0}
+            className="flex h-full min-h-11 flex-col gap-3 rounded-card bg-bg-raised p-4 shadow-card rf-focus-ring sm:p-5"
+          >
+            {upcoming.map((cue) => (
+              <li key={cue.id} data-teaching="upcoming-row" className="min-w-0">
+                <p className="truncate font-display text-lg font-semibold text-text-primary">
+                  {cue.text}
+                </p>
+                <p className="mt-1 font-data text-sm text-text-secondary">
+                  <span data-teaching="upcoming-bpm">{cue.bpm == null ? 'BPM —' : cue.bpm}</span>
+                  <span className="mx-2 text-text-tertiary" aria-hidden>
+                    ·
+                  </span>
+                  <span data-teaching="upcoming-duration">
+                    {formatCueDurationLabel(cue.durationMs) ?? '—'}
+                  </span>
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {/* Timers, notes, and the gap queue stay under the teaching row. They are
+          not the hold countdown. */}
+      <div className="flex min-w-0 flex-col gap-3 min-[1024px]:col-span-2 min-[1024px]:gap-4">
         {/* Timers — track + class countdowns, the performance's running clock. */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-card bg-bg-raised p-4 shadow-card">
             <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
               Track left
             </p>
-            <p className="mt-1 font-data text-2xl text-text-primary">
+            <p
+              data-teaching="track-left"
+              className="mt-1 font-data text-2xl text-text-primary"
+              style={{ fontSize: `${TEACHING_TRACK_LEFT_FONT_REM}rem` }}
+            >
               {trackHasDuration ? fmt(trackEndMs - elapsedMs) : '—'}
             </p>
             {!trackHasDuration && (
