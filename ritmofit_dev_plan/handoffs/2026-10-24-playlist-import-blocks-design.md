@@ -3,7 +3,7 @@ date: 2026-10-24
 tool: Cursor (cloud)
 lane: solo
 branch: cursor/playlist-import-blocks-design-7e78
-head: cacd7a583dd4d64fa594bb299ee18bdbe101d489
+head: 6280f33
 base: a78f6f50ee379f81625b8750c28e7fdc73c8be7f
 prs: ['#571 (draft)']
 status: open
@@ -13,7 +13,7 @@ status: open
 
 ## Done
 
-- Draft [#571](https://github.com/steven-crosby/ritmofit-web/pull/571) records the 2026-10-24 owner decisions in `ritmofit_dev_plan/playlist-import-blocks-design.md` and moves the DEVELOPMENT_PLAN backlog item to decided.
+- Draft [#571](https://github.com/steven-crosby/ritmofit-web/pull/571) records the 2026-10-24 owner decisions in `ritmofit_dev_plan/playlist-import-blocks-design.md` and moves the DEVELOPMENT_PLAN backlog item to decided. A later commit on the same draft records the cap scope and paste-a-link.
 - Findings 1 and 2 were re-checked on `a78f6f5`. The Apple end mechanism is #484 plus #488 and #494. Live at 200% is #486. Neither is part of this design.
 
 ## In flight
@@ -22,12 +22,13 @@ status: open
 
 ## Next action
 
-Steven reviews the draft, including the two open questions (playlist-import cap versus every write, and whether URL paste stays deferred). Implementation starts only after that review: slice A (shared/API `songBlocks` commit, no migration), then slice B (picker and web import paths).
+Steven reviews the updated draft. Both questions from the first draft are decided. Implementation starts only after that review: slice A (shared/API `songBlocks` commit, no migration, paste-a-link route unchanged), then slice B (picker, web import paths, and the paste-a-link preview).
 
 ## Blockers and owner decisions
 
 - Decided 2026-10-24 and quoted in the design: blocks only, warm-up/cooldown labels, empty-template replace, 15-song picker with no silent truncate.
-- Still open in the design: whether 15 also caps manual adds, and whether URL paste must join slice B.
+- Also decided 2026-10-24: the cap is playlist import only (search, manual add, and Songs-by-Move copy stay uncapped). Paste-a-link uses the same blocks, labels, scaffold replacement, and picker, and replaces the reject-above-100 path.
+- No open questions remain in the design.
 
 ## Verification
 
@@ -40,7 +41,7 @@ Not checked from this environment. `origin/main` at session start was `a78f6f5`.
 
 ## Shared zones touched
 
-None. The design names a later additive field on `importClassTracksSchema` and edits to `ordered-class-import.ts`, `Dashboard.tsx`, and `TrackSearch.tsx`. Those files are not changed here.
+None. The design names a later additive field on `importClassTracksSchema`, a preview response on `POST /classes/:id/import-playlist`, and edits to `ordered-class-import.ts`, `Dashboard.tsx`, and `TrackSearch.tsx`. Those files are not changed here.
 
 ## Notes for other lanes / iOS
 

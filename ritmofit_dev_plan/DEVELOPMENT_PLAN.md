@@ -197,9 +197,12 @@ approval.
 **Playlist → class → Live — decided 2026-10-24.** Playlist import builds blocks only: one block per
 song, source order, no generated cues, notes, or teaching content. The first block is warm-up and the
 last block is cooldown. Importing into an empty Classes template replaces those scaffold blocks.
-Over 15 songs, the instructor picks a source-ordered subset before anything is created; the import
-never silently truncates. Design: [`playlist-import-blocks-design.md`](./playlist-import-blocks-design.md).
-Not implemented. Evidence: [desktop audit 2026-10-03](../docs/audits/playlist-to-live-2026-10-03/coverage.md).
+Over 15 songs, the instructor picks a source-ordered subset before the class or the import is written;
+the import never silently truncates. The cap is playlist import only: search, manual add, and
+Songs-by-Move copy stay uncapped. Paste-a-link uses the same blocks, labels, scaffold replacement,
+and picker, replacing the reject-above-100 path. Design:
+[`playlist-import-blocks-design.md`](./playlist-import-blocks-design.md). Not implemented. Evidence:
+[desktop audit 2026-10-03](../docs/audits/playlist-to-live-2026-10-03/coverage.md).
 
 **Class-building direction.** The [class-score blueprint](./instructor-class-score-blueprint.md)
 proposes a 20-minute HIIT interaction prototype and contract proposal as its first slice; it does not
