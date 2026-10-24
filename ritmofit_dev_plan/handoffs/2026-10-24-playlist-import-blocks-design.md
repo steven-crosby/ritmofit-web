@@ -1,0 +1,49 @@
+---
+date: 2026-10-24
+tool: Cursor (cloud)
+lane: solo
+branch: cursor/playlist-import-blocks-design-7e78
+head: f55c89c
+base: a78f6f50ee379f81625b8750c28e7fdc73c8be7f
+prs: ['#571 (draft)']
+status: open
+---
+
+# Playlist-import block design is drafted; nothing is implemented
+
+## Done
+
+- Draft [#571](https://github.com/steven-crosby/ritmofit-web/pull/571) records the 2026-10-24 owner decisions in `ritmofit_dev_plan/playlist-import-blocks-design.md` and moves the DEVELOPMENT_PLAN backlog item to decided. Later commits on the same draft record the cap scope, paste-a-link, the 100-occurrence early stop, the 8-second preview timeout, and the 2-second picker target.
+- Findings 1 and 2 were re-checked on `a78f6f5`. The Apple end mechanism is #484 plus #488 and #494. Live at 200% is #486. Neither is part of this design.
+
+## In flight
+
+- [#571](https://github.com/steven-crosby/ritmofit-web/pull/571) is draft. Docs only. Do not merge it from this session, and do not deploy.
+
+## Next action
+
+Steven reviews the updated draft. Implementation starts only after that review: slice A (shared/API `songBlocks` commit, no migration, paste-a-link route unchanged), then slice B (picker, web import paths, paste-a-link preview, early-stop, timeout, and the 100-song timing check).
+
+## Blockers and owner decisions
+
+- Decided 2026-10-24 and quoted in the design: blocks only, warm-up/cooldown labels, empty-template replace, 15-song picker with no silent truncate.
+- Also decided 2026-10-24: the cap is playlist import only (search, manual add, and Songs-by-Move copy stay uncapped). Paste-a-link uses the same blocks, labels, scaffold replacement, and picker, and replaces the reject-above-100 path.
+- Also decided 2026-10-24: paste-a-link cuts off above 100 occurrences with an early provider abort; the preview times out at 8 seconds as 504 `PROVIDER_TIMEOUT` with try-again UI and no write; a 100-song link opens the picker in under 2 seconds.
+- No open questions remain in the design.
+
+## Verification
+
+- Run: `pnpm exec prettier --check --ignore-path=/dev/null ritmofit_dev_plan/playlist-import-blocks-design.md` (pass, including after decisions 7–9). `git diff` on `DEVELOPMENT_PLAN.md` is the backlog, index, and owner-decisions clause only.
+- Skipped: root `pnpm format:check` (`.prettierignore` excludes `ritmofit_dev_plan/`; formatting that file reflows the whole plan), typecheck, lint, tests, build, OpenAPI, contract parity, integration tests, browser, deploy. No code changed.
+
+## Production as observed
+
+Not checked from this environment. `origin/main` at session start was `a78f6f5`. [#570](https://github.com/steven-crosby/ritmofit-web/pull/570) is an open docs PR recording a deploy of that SHA. This session did not probe the Worker or the SPA.
+
+## Shared zones touched
+
+None. The design names a later additive field on `importClassTracksSchema`, a preview response on `POST /classes/:id/import-playlist`, and edits to `ordered-class-import.ts`, `Dashboard.tsx`, and `TrackSearch.tsx`. Those files are not changed here.
+
+## Notes for other lanes / iOS
+
+No run-payload change. A future plan-block reader treats `recipeBlockKey === "playlist_song"` as structure and ignores stored guidance until an instructor edit clears the key. iOS stays halted.
