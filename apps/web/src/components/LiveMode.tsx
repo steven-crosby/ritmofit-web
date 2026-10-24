@@ -57,7 +57,11 @@ import { LivePreflight } from './LivePreflight.js';
 import { LiveTimeline } from './LiveTimeline.js';
 import { SEGMENT_META, SegmentIcon } from './SegmentBand.js';
 import { StatusLabel } from './SharedState.js';
-import { CUE_INTENSITY_LABEL, formatCueDurationLabel } from '../lib/cue-list.js';
+import {
+  CUE_INTENSITY_LABEL,
+  formatCueDurationLabel,
+  formatCueHoldCountdown,
+} from '../lib/cue-list.js';
 
 type View = 'cue' | 'list';
 
@@ -1524,7 +1528,7 @@ function CueByCue({
       })
     : null;
   const countdownLabel =
-    hold == null ? null : hold.remainingMs == null ? '—' : formatCueDurationLabel(hold.remainingMs);
+    hold == null ? null : hold.remainingMs == null ? '—' : formatCueHoldCountdown(hold.remainingMs);
   const effortLabel = hold
     ? hold.cue.intensity
       ? CUE_INTENSITY_LABEL[hold.cue.intensity]
