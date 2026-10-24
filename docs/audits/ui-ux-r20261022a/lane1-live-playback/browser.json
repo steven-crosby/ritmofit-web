@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-22",
+  "evidenceClass": "local headless Chrome Live playback; SoundCloud Widget.play throws new Error('')",
+  "viewport": "1440x1000",
+  "checks": [
+    {
+      "name": "blank-playback-1440",
+      "width": 1440,
+      "height": 1000,
+      "role": "alert",
+      "accessibleName": "Playback recovery",
+      "headings": ["Playback stopped"],
+      "body": ["Something went wrong.", "Teaching position is held."],
+      "retry": true,
+      "waitingHeading": false,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "innerWidth": 1440,
+      "pageErrors": []
+    }
+  ],
+  "nativeZoom": "NOT_ASSESSED",
+  "width390": "NOT_ASSESSED",
+  "audiblePlayback": false,
+  "limits": [
+    "Signed in locally and opened a Cycle class whose only track is the mock catalog song Baianá with a SoundCloud reference. That local D1 row is not in git.",
+    "Before Start class, the page set window.SC.Widget so play() threw new Error(''). The adapter rejects with that error, and the coordinator copies the empty message. No SoundCloud audio was played.",
+    "The recovery alert showed Playback stopped, Something went wrong., and Retry playback. There was no heading Waiting for music and no Provider playback has not confirmed progress. documentElement.scrollWidth matched the viewport. No page errors.",
+    "The existing run-state string still reads Teaching paused · waiting for music while music is blocked, including this error. This lane did not change that string.",
+    "390 and native 200% zoom were not performed (NOT_ASSESSED).",
+    "No provider audio, real device, or screen-reader acceptance."
+  ]
+}

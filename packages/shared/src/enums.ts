@@ -8,10 +8,22 @@
  */
 import { z } from 'zod';
 
-/** Effort level for a class_track or a placed move. */
+/**
+ * Effort level for a class_track, a plan block, or a placed move.
+ * This enum is on the run payload for those objects. Do not add values here —
+ * a cue-only level belongs on {@link cueIntensityValues}.
+ */
 export const intensityValues = ['none', 'easy', 'mod', 'hard', 'all_out'] as const;
 export const intensitySchema = z.enum(intensityValues);
 export type Intensity = z.infer<typeof intensitySchema>;
+
+/**
+ * Effort on a cue, including the run-payload cue. `open` is cue-only
+ * (StructClub's Open). It stays off {@link intensityValues}.
+ */
+export const cueIntensityValues = ['none', 'easy', 'mod', 'hard', 'all_out', 'open'] as const;
+export const cueIntensitySchema = z.enum(cueIntensityValues);
+export type CueIntensity = z.infer<typeof cueIntensitySchema>;
 
 /** Music providers. M1 hand-enters tracks; provider playback arrives in M2. */
 export const providerValues = ['spotify', 'apple_music', 'soundcloud'] as const;

@@ -4697,13 +4697,9 @@
                     ]
                   },
                   "isrc": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   }
                 },
@@ -4997,6 +4993,11 @@
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
           "anchorMs": {
             "type": "integer",
             "minimum": 0,
@@ -5031,6 +5032,59 @@
             "minLength": 1,
             "maxLength": 1000
           },
+          "durationMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 86400000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bpm": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "intensity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "easy",
+                  "mod",
+                  "hard",
+                  "all_out",
+                  "open"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "color": {
             "anyOf": [
               {
@@ -5056,10 +5110,15 @@
         "required": [
           "id",
           "classTrackId",
+          "position",
           "anchorMs",
           "beat",
           "bar",
           "text",
+          "durationMs",
+          "bpm",
+          "intensity",
+          "note",
           "color",
           "createdAt",
           "updatedAt"
@@ -5103,6 +5162,59 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 1000
+          },
+          "durationMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 86400000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bpm": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "intensity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "easy",
+                  "mod",
+                  "hard",
+                  "all_out",
+                  "open"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "color": {
             "anyOf": [
@@ -5159,6 +5271,59 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 1000
+          },
+          "durationMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 86400000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bpm": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "intensity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "easy",
+                  "mod",
+                  "hard",
+                  "all_out",
+                  "open"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "color": {
             "anyOf": [
@@ -5515,13 +5680,9 @@
             "minLength": 1
           },
           "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "template": {
@@ -5703,13 +5864,9 @@
                 ]
               },
               "isrc": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "createdAt": {
@@ -5960,13 +6117,9 @@
             ]
           },
           "isrc": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "createdAt": {
@@ -6044,13 +6197,9 @@
             ]
           },
           "isrc": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -6110,13 +6259,9 @@
             ]
           },
           "isrc": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -6149,13 +6294,9 @@
             "minLength": 1
           },
           "providerUri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "createdAt": {
@@ -6197,13 +6338,9 @@
             "minLength": 1
           },
           "providerUri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -6272,13 +6409,9 @@
             ]
           },
           "isrc": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "createdAt": {
@@ -6319,13 +6452,9 @@
                   "minLength": 1
                 },
                 "providerUri": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "createdAt": {
@@ -6384,13 +6513,9 @@
             "minLength": 1
           },
           "providerUri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "title": {
@@ -6559,13 +6684,9 @@
                     ]
                   },
                   "isrc": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "createdAt": {
@@ -6606,13 +6727,9 @@
                           "minLength": 1
                         },
                         "providerUri": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "createdAt": {
@@ -6687,13 +6804,9 @@
                       "minLength": 1
                     },
                     "providerUri": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "title": {
@@ -6773,23 +6886,15 @@
             ]
           },
           "providerUserId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "scope": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "expiresAt": {
@@ -6861,13 +6966,9 @@
             "minLength": 1
           },
           "storefront": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -6944,13 +7045,9 @@
             "minLength": 1
           },
           "ownerName": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "trackCount": {
@@ -7066,13 +7163,9 @@
                   ]
                 },
                 "isrc": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "createdAt": {
@@ -7113,13 +7206,9 @@
                         "minLength": 1
                       },
                       "providerUri": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "createdAt": {
@@ -7291,7 +7380,7 @@
               {
                 "type": "string",
                 "format": "email",
-                "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
               },
               {
                 "type": "null"
@@ -7331,19 +7420,15 @@
             "maximum": 9007199254740991
           },
           "displayName": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "email": {
             "type": "string",
             "format": "email",
-            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
           }
         },
         "required": [
@@ -7477,7 +7562,7 @@
               {
                 "type": "string",
                 "format": "email",
-                "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
               },
               {
                 "type": "null"
@@ -7671,13 +7756,9 @@
                   "maximum": 9007199254740991
                 },
                 "notes": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "track": {
@@ -7760,13 +7841,9 @@
                         "minLength": 1
                       },
                       "providerUri": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -7822,14 +7899,57 @@
                         "minLength": 1
                       },
                       "color": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "durationMs": {
                         "anyOf": [
                           {
-                            "type": "string"
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 86400000
                           },
                           {
                             "type": "null"
                           }
                         ]
+                      },
+                      "bpm": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "intensity": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "easy",
+                              "mod",
+                              "hard",
+                              "all_out",
+                              "open"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "position": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
                       }
                     },
                     "required": [
@@ -7838,7 +7958,11 @@
                       "beat",
                       "bar",
                       "text",
-                      "color"
+                      "color",
+                      "durationMs",
+                      "bpm",
+                      "intensity",
+                      "position"
                     ],
                     "additionalProperties": false
                   }
@@ -7989,16 +8113,12 @@
           "email": {
             "type": "string",
             "format": "email",
-            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
           },
           "displayName": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "imageUrl": {
@@ -8038,13 +8158,9 @@
         "type": "object",
         "properties": {
           "displayName": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "imageUrl": {

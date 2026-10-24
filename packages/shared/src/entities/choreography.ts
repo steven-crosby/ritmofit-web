@@ -2,8 +2,8 @@
  * Choreography anchored to a class_track — `cues`, `class_track_moves` (schema.md, D7).
  */
 import { z } from 'zod';
-import { uuidSchema, offsetMsSchema, timestampsShape } from '../common.js';
-import { intensitySchema } from '../enums.js';
+import { uuidSchema, offsetMsSchema, timestampsShape, MAX_DURATION_MS } from '../common.js';
+import { cueIntensitySchema, intensitySchema } from '../enums.js';
 
 /**
  * A coaching prompt tied to a moment in the track, shown in the live prompter.
@@ -15,10 +15,34 @@ import { intensitySchema } from '../enums.js';
 export const cueSchema = z.object({
   id: uuidSchema,
   classTrackId: uuidSchema,
+  /**
+   * Teaching order on this song. The builder lists cues by this, then by
+   * `anchorMs`. The run payload copies this field and still orders cues by
+   * `anchorMs`.
+   */
+  position: z.int().nonnegative(),
   anchorMs: offsetMsSchema,
   beat: z.int().nonnegative().nullable(),
   bar: z.int().nonnegative().nullable(),
+  /** Move name. Still the line the existing prompter reads; not a separate live field. */
   text: z.string().min(1).max(1000),
+  /**
+   * How long she holds the move, in milliseconds. Null until she sets it.
+   * Copied onto the run payload; clip re-base does not change it.
+   */
+  durationMs: z.int().positive().max(MAX_DURATION_MS).nullable(),
+  /**
+   * BPM she sets on this cue. Never copied from the track or from Spotify.
+   * Copied onto the run payload. Beat and bar still follow the track tempo.
+   */
+  bpm: z.int().positive().nullable(),
+  /**
+   * Cue effort, including Open. Not the track, plan-block, or placed-move
+   * intensity enum. Copied onto the run payload (`null` when unset).
+   */
+  intensity: cueIntensitySchema.nullable(),
+  /** Coaching note, separate from the move name. Not a run-payload field. */
+  note: z.string().max(1000).nullable(),
   color: z.string().max(64).nullable(),
   ...timestampsShape,
 });
@@ -60,6 +84,10 @@ const cueInputFields = z.object({
   beat: z.int().nonnegative().nullish(),
   bar: z.int().nonnegative().nullish(),
   text: z.string().min(1).max(1000),
+  durationMs: z.int().positive().max(MAX_DURATION_MS).nullish(),
+  bpm: z.int().positive().nullish(),
+  intensity: cueIntensitySchema.nullish(),
+  note: z.string().max(1000).nullish(),
   color: z.string().max(64).nullish(),
 });
 

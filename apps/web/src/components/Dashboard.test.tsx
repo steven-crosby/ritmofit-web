@@ -2307,6 +2307,42 @@ describe('Dashboard track focus management', () => {
     expect(rowSelectButton('ct-1')?.getAttribute('aria-pressed')).toBe('true');
   });
 
+  it('shows authored sections under Class Pulse while the timeline stays closed', async () => {
+    installClassWithTracks('Section ride', [
+      { classTrackId: 'ct-1', durationMs: 120000, title: 'First Light' },
+      { classTrackId: 'ct-2', durationMs: 120000, title: 'Second Song' },
+    ]);
+    vi.mocked(api.getRunPayload).mockImplementation(async () => {
+      const payload = liveRunPayload([
+        { classTrackId: 'ct-1', durationMs: 120000, title: 'First Light' },
+        { classTrackId: 'ct-2', durationMs: 120000, title: 'Second Song' },
+      ]);
+      payload.sections = [
+        { id: '00000000-0000-4000-8000-0000000000a1', type: 'warm_up', startOffsetMs: 0 },
+        { id: '00000000-0000-4000-8000-0000000000a2', type: 'sprint', startOffsetMs: 120000 },
+      ];
+      return payload;
+    });
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Section ride/ }));
+
+    const pulse = await screen.findByRole('region', { name: 'Class Pulse' });
+    const chart = within(pulse).getByRole('img', { name: /class pulse/i });
+    const track = within(pulse).getByRole('img', { name: 'Sections: Warm-up → Sprint' });
+    expect(chart.querySelectorAll('rect').length).toBeGreaterThan(0);
+    expect(chart.contains(track)).toBe(false);
+    expect(chart.compareDocumentPosition(track) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    expect(track.textContent).toContain('Warm-up');
+    expect(track.textContent).toContain('Sprint');
+    expect(
+      screen.getByRole('button', { name: 'Show timeline' }).getAttribute('aria-expanded'),
+    ).toBe('false');
+    expect(screen.queryByRole('region', { name: 'Timeline precision' })).toBeNull();
+    expect(api.listSections).not.toHaveBeenCalled();
+  });
+
   it('explains free timeline timing without exposing sequential reorder controls', async () => {
     const ride = installClassWithTracks('Free timeline ride', [
       { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
@@ -3485,7 +3521,7 @@ describe('Dashboard track focus management', () => {
     const inspector = await screen.findByRole('region', {
       name: 'Track inspector for First Light',
     });
-    const cueField = await within(inspector).findByRole('textbox', { name: 'Cue text' });
+    const cueField = await within(inspector).findByRole('textbox', { name: 'Move name' });
     await waitFor(() => expect(document.activeElement).toBe(cueField));
   });
 });

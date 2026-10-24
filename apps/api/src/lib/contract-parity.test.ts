@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CONTRACT_PARITY_ALLOWLIST,
+  assertRunPayloadCueContract,
   compareContractParity,
   extractOpenApiRunPayloadFields,
   extractSwiftStructFields,
@@ -192,15 +193,145 @@ describe('compareContractParity', () => {
     ]);
   });
 
-  it('requires Section.id now that the real parity allowlist is empty', () => {
+  it('treats a matched Section as no drift', () => {
     const result = compareContractParity(
       { Section: ['id', 'type', 'startOffsetMs'] },
       { Section: ['id', 'type', 'startOffsetMs'] },
-      CONTRACT_PARITY_ALLOWLIST,
+      [],
     );
     expect(result.failing).toEqual([]);
     expect(result.allowlisted).toEqual([]);
     expect(result.staleAllowlist).toEqual([]);
+  });
+
+  it('allowlists the four cue fields the shipped decoder ignores', () => {
+    expect(CONTRACT_PARITY_ALLOWLIST.map((entry) => `${entry.struct}.${entry.field}`)).toEqual([
+      'Cue.durationMs',
+      'Cue.bpm',
+      'Cue.intensity',
+      'Cue.position',
+    ]);
+    const server = {
+      Cue: [
+        'id',
+        'anchorMs',
+        'beat',
+        'bar',
+        'text',
+        'color',
+        'durationMs',
+        'bpm',
+        'intensity',
+        'position',
+      ],
+    };
+    const client = { Cue: ['id', 'anchorMs', 'beat', 'bar', 'text', 'color'] };
+    const result = compareContractParity(server, client);
+    expect(result.failing).toEqual([]);
+    expect(result.staleAllowlist).toEqual([]);
+    expect(result.allowlisted.map((drift) => drift.field)).toEqual([
+      'durationMs',
+      'bpm',
+      'intensity',
+      'position',
+    ]);
+  });
+});
+
+describe('assertRunPayloadCueContract', () => {
+  const trackIntensity = {
+    anyOf: [{ type: 'string', enum: ['none', 'easy', 'mod', 'hard', 'all_out'] }, { type: 'null' }],
+  };
+  const cueIntensity = {
+    anyOf: [
+      { type: 'string', enum: ['none', 'easy', 'mod', 'hard', 'all_out', 'open'] },
+      { type: 'null' },
+    ],
+  };
+
+  function doc(cueIntensitySchema: unknown, required: string[]): unknown {
+    return {
+      components: {
+        schemas: {
+          RunPayload: {
+            properties: {
+              tracks: {
+                items: {
+                  properties: {
+                    cues: {
+                      items: {
+                        properties: { intensity: cueIntensitySchema },
+                        required,
+                      },
+                    },
+                    moves: { items: { properties: { intensity: trackIntensity } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+  }
+
+  const required = [
+    'id',
+    'anchorMs',
+    'beat',
+    'bar',
+    'text',
+    'color',
+    'durationMs',
+    'bpm',
+    'intensity',
+    'position',
+  ];
+
+  it('accepts open on the cue and keeps it off the move', () => {
+    expect(() => assertRunPayloadCueContract(doc(cueIntensity, required))).not.toThrow();
+  });
+
+  it('fails while cue intensity is absent', () => {
+    expect(() => assertRunPayloadCueContract(doc(undefined, required))).toThrow(/include "open"/);
+  });
+
+  it('fails when the move intensity enum gains open', () => {
+    const opened = {
+      components: {
+        schemas: {
+          RunPayload: {
+            properties: {
+              tracks: {
+                items: {
+                  properties: {
+                    cues: {
+                      items: {
+                        properties: { intensity: cueIntensity },
+                        required,
+                      },
+                    },
+                    moves: { items: { properties: { intensity: cueIntensity } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+    expect(() => assertRunPayloadCueContract(opened)).toThrow(/move intensity/);
+  });
+
+  it('fails while a cue key is missing from required', () => {
+    expect(() =>
+      assertRunPayloadCueContract(
+        doc(
+          cueIntensity,
+          required.filter((key) => key !== 'durationMs'),
+        ),
+      ),
+    ).toThrow(/durationMs/);
   });
 });
 

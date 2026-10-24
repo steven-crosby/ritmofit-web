@@ -27,6 +27,7 @@ import {
   type AnySQLiteColumn,
 } from 'drizzle-orm/sqlite-core';
 import {
+  cueIntensityValues,
   intensityValues,
   providerValues,
   teamRoleValues,
@@ -378,14 +379,30 @@ export const cues = sqliteTable(
     classTrackId: text('class_track_id')
       .notNull()
       .references(() => classTracks.id, { onDelete: 'cascade' }),
+    // Teaching order. Existing rows default to 0 and keep anchor order as the tie-break.
+    position: integer('position').notNull().default(0),
     anchorMs: integer('anchor_ms').notNull(),
     beat: integer('beat'),
     bar: integer('bar'),
+    // Move name. The run payload still projects this as cue text.
     text: text('text').notNull(),
+    // Copied onto the run payload. Null when she has not set it.
+    durationMs: integer('duration_ms'),
+    bpm: integer('bpm'),
+    intensity: text('intensity', { enum: cueIntensityValues }),
+    // Coaching note. Not selected onto the run payload.
+    note: text('note'),
     color: text('color'),
     ...timestamps(),
   },
   (t) => [
+    check('cues_position_check', sql`${t.position} >= 0`),
+    check(
+      'cues_duration_ms_check',
+      sql`${t.durationMs} is null or (${t.durationMs} > 0 and ${t.durationMs} <= 86400000)`,
+    ),
+    check('cues_bpm_check', sql`${t.bpm} is null or ${t.bpm} > 0`),
+    enumCheck('cues_intensity_check', t.intensity, cueIntensityValues),
     // Hot path: cues are fetched per class_track when assembling the run-payload.
     index('cues_class_track_id_idx').on(t.classTrackId),
   ],

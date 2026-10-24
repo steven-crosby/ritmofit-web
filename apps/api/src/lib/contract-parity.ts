@@ -42,6 +42,59 @@ function propertyKeys(schema: unknown): string[] {
   return Object.keys(schemaProperties(schema));
 }
 
+/** String enum inside a property schema, including a nullable `anyOf` branch. */
+function enumValues(schema: unknown): string[] | null {
+  const obj = asObject(schema);
+  if (Array.isArray(obj.enum) && obj.enum.every((value) => typeof value === 'string')) {
+    return obj.enum as string[];
+  }
+  if (!Array.isArray(obj.anyOf)) return null;
+  for (const branch of obj.anyOf) {
+    const values = enumValues(branch);
+    if (values) return values;
+  }
+  return null;
+}
+
+const TRACK_INTENSITY = ['none', 'easy', 'mod', 'hard', 'all_out'] as const;
+const CUE_PAYLOAD_FIELDS = ['durationMs', 'bpm', 'intensity', 'position'] as const;
+
+/**
+ * Cue `intensity` on the inline run-payload object includes `open`. Move
+ * `intensity` stays the five track values. The four cue keys are required.
+ * Field-name parity cannot see this enum split.
+ */
+export function assertRunPayloadCueContract(doc: unknown): void {
+  const schemas = asObject(asObject(asObject(doc).components).schemas);
+  const trackEntryProps = schemaProperties(
+    schemaItems(schemaProperties(schemas.RunPayload).tracks),
+  );
+  const cueSchema = schemaItems(trackEntryProps.cues);
+  const cueProps = schemaProperties(cueSchema);
+  const moveProps = schemaProperties(schemaItems(trackEntryProps.moves));
+  const cue = enumValues(cueProps.intensity);
+  const move = enumValues(moveProps.intensity);
+  if (!cue?.includes('open')) {
+    throw new Error(`run-payload cue intensity must include "open"; got ${JSON.stringify(cue)}`);
+  }
+  const moveMatches =
+    move != null &&
+    move.length === TRACK_INTENSITY.length &&
+    move.every((value, index) => value === TRACK_INTENSITY[index]);
+  if (!moveMatches) {
+    throw new Error(
+      `run-payload move intensity must stay ${TRACK_INTENSITY.join('|')}; got ${JSON.stringify(move)}`,
+    );
+  }
+  const required = asObject(cueSchema).required;
+  const requiredKeys = Array.isArray(required) ? required : [];
+  for (const field of CUE_PAYLOAD_FIELDS) {
+    if (!requiredKeys.includes(field)) {
+      throw new Error(`run-payload cue required list is missing ${field}`);
+    }
+  }
+}
+
 /**
  * Extract the run-payload field sets from a generated OpenAPI document, keyed by
  * the **Swift struct name** the object maps to (so comparison is a 1:1 lookup).
@@ -207,14 +260,22 @@ export interface ParityResult {
 }
 
 /**
- * Temporary, tracked DTO lags. Phase 0 reconciled the iOS run-payload DTO with the
- * current contract, so the allowlist is intentionally empty. If an additive lag is
- * ever accepted again, document why and remove it as soon as iOS catches up (the
- * stale-allowlist guard enforces removal).
+ * Tracked DTO lags. The shipped iOS `Cue` decoder ignores four additive cue keys.
+ * Remove an entry when a refreshed snapshot decodes that key (the stale-allowlist
+ * guard enforces removal). iOS development is halted (2026-10-22); this list is
+ * the record a later iOS session uses. Do not edit `ios-snapshot/` to clear it.
  *
  * Source contract: `packages/shared/src/entities/run-payload.ts`.
  */
-export const CONTRACT_PARITY_ALLOWLIST: AllowlistEntry[] = [];
+const SHIPPED_CUE_LAG =
+  'The shipped iOS decoder ignores this key. iOS teaching is a later refresh.';
+
+export const CONTRACT_PARITY_ALLOWLIST: AllowlistEntry[] = [
+  { struct: 'Cue', field: 'durationMs', reason: SHIPPED_CUE_LAG },
+  { struct: 'Cue', field: 'bpm', reason: SHIPPED_CUE_LAG },
+  { struct: 'Cue', field: 'intensity', reason: SHIPPED_CUE_LAG },
+  { struct: 'Cue', field: 'position', reason: SHIPPED_CUE_LAG },
+];
 
 /**
  * Compare the contract the server advertises against what the iOS DTOs decode.

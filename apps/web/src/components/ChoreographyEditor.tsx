@@ -1,18 +1,21 @@
 /**
  * Cue + placed-move authoring for the selected track (design system
  * `09-class-builder-guidelines.md`: cues and moves are separate concepts, both
- * anchored to a class_track by `anchorMs`). This slice covers add / list / delete;
- * inline-editing existing entries and custom user-move creation are deferred.
+ * anchored to a class_track by `anchorMs`). Cues are an ordered teaching list:
+ * move name, duration, BPM she sets, intensity (including Open), and a note.
+ * The list starts empty. Nothing is copied from a recipe or from the track BPM.
  *
  * The run-payload's per-track cues/moves lack ids, so editing reads the real
  * `GET /class-tracks/:id/cues` + `/moves` (which carry ids).
  */
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type Ref } from 'react';
 import {
+  cueIntensityValues,
   intensityValues,
   snapToBeat,
   beatPositionAt,
   type Cue,
+  type CueIntensity,
   type ClassTrackMove,
   type ClassTemplate,
   type Move,
@@ -40,6 +43,14 @@ import { groupMovesByTemplate, moveOptionLabel } from '../lib/move-groups.js';
 import { formatTemplateLabel } from '../lib/class-summary.js';
 import { CustomMovesDialog } from './CustomMovesDialog.js';
 import { anchorFieldState, formatClockFromMs } from '../lib/duration.js';
+import {
+  CUE_INTENSITY_LABEL,
+  formatCueDurationInput,
+  formatCueDurationLabel,
+  parseCueBpm,
+  parseCueDurationSeconds,
+  parseCueIntensity,
+} from '../lib/cue-list.js';
 import { errMessage } from '../lib/errors.js';
 
 type RowMutationFocus = { kind: 'edit'; id: string } | { kind: 'add' };
@@ -260,6 +271,150 @@ function CueColorPicker({
   );
 }
 
+const labelClass = 'font-ui text-xs uppercase tracking-wide text-text-tertiary';
+
+/**
+ * Move, duration, BPM, intensity, and note for one cue draft. The time anchor
+ * stays outside this cluster so the existing timeline placement is unchanged.
+ * Fields start empty — this does not copy the track BPM or a recipe line.
+ */
+function CueListFields({
+  move,
+  onMove,
+  moveRef,
+  autoFocus = false,
+  duration,
+  onDuration,
+  durationRef,
+  durationInvalid,
+  durationMessage,
+  durationMessageId,
+  bpm,
+  onBpm,
+  bpmRef,
+  bpmInvalid,
+  bpmMessage,
+  bpmMessageId,
+  intensity,
+  onIntensity,
+  note,
+  onNote,
+}: {
+  move: string;
+  onMove: (value: string) => void;
+  moveRef?: Ref<HTMLInputElement>;
+  autoFocus?: boolean;
+  duration: string;
+  onDuration: (value: string) => void;
+  durationRef?: Ref<HTMLInputElement>;
+  durationInvalid: boolean;
+  durationMessage: string | null;
+  durationMessageId?: string;
+  bpm: string;
+  onBpm: (value: string) => void;
+  bpmRef?: Ref<HTMLInputElement>;
+  bpmInvalid: boolean;
+  bpmMessage: string | null;
+  bpmMessageId?: string;
+  intensity: CueIntensity | '';
+  onIntensity: (value: CueIntensity | '') => void;
+  note: string;
+  onNote: (value: string) => void;
+}) {
+  return (
+    <div className="flex min-w-0 flex-1 basis-full flex-col gap-2">
+      <label className="flex flex-col gap-1">
+        <span className={labelClass}>Move name</span>
+        <input
+          ref={moveRef}
+          className={`min-w-0 ${fieldClass}`}
+          value={move}
+          onChange={(e) => onMove(e.target.value)}
+          aria-label="Move name"
+          autoFocus={autoFocus}
+        />
+      </label>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1">
+            <span className={labelClass}>Duration</span>
+            <input
+              ref={durationRef}
+              className={`${fieldClass} font-data ${durationInvalid ? 'border-state-danger' : ''}`}
+              type="text"
+              inputMode="numeric"
+              value={duration}
+              onChange={(e) => onDuration(e.target.value)}
+              aria-label="Duration (seconds)"
+              aria-invalid={durationInvalid || undefined}
+              aria-describedby={durationMessage ? durationMessageId : undefined}
+            />
+          </label>
+          <span className="font-ui text-xs text-text-tertiary">Seconds</span>
+          {durationMessage && (
+            <p id={durationMessageId} className="font-ui text-xs text-state-danger" role="alert">
+              {durationMessage}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1">
+            <span className={labelClass}>BPM</span>
+            <input
+              ref={bpmRef}
+              className={`${fieldClass} font-data ${bpmInvalid ? 'border-state-danger' : ''}`}
+              type="text"
+              inputMode="numeric"
+              value={bpm}
+              onChange={(e) => onBpm(e.target.value)}
+              aria-label="Cue BPM"
+              aria-invalid={bpmInvalid || undefined}
+              aria-describedby={bpmMessage ? bpmMessageId : undefined}
+            />
+          </label>
+          <span className="font-ui text-xs text-text-tertiary">Set on this cue</span>
+          {bpmMessage && (
+            <p id={bpmMessageId} className="font-ui text-xs text-state-danger" role="alert">
+              {bpmMessage}
+            </p>
+          )}
+        </div>
+        <label className="flex flex-col gap-1">
+          <span className={labelClass}>Intensity</span>
+          <select
+            className={fieldClass}
+            value={intensity}
+            onChange={(e) => onIntensity(parseCueIntensity(e.target.value) ?? '')}
+            aria-label="Intensity"
+          >
+            <option value="">Not set</option>
+            {cueIntensityValues.map((value) => (
+              <option key={value} value={value}>
+                {CUE_INTENSITY_LABEL[value]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <label className="flex flex-col gap-1">
+        <span className={labelClass}>Note</span>
+        <input
+          className={`min-w-0 ${fieldClass}`}
+          value={note}
+          onChange={(e) => onNote(e.target.value)}
+          aria-label="Note"
+        />
+      </label>
+    </div>
+  );
+}
+
+function cueCountMessage(
+  result: { ok: true; value: number | null } | { ok: false; message: string },
+): string | null {
+  return result.ok ? null : result.message;
+}
+
 export function CuesSection({
   classTrackId,
   durationMs,
@@ -288,6 +443,10 @@ export function CuesSection({
   const [cues, setCues] = useState<Cue[] | null>(null);
   const { refRowId, flashRowId, rowRef } = useFlashFocus(focus, cues);
   const [text, setText] = useState('');
+  const [durationSeconds, setDurationSeconds] = useState('');
+  const [cueBpm, setCueBpm] = useState('');
+  const [intensity, setIntensity] = useState<CueIntensity | ''>('');
+  const [note, setNote] = useState('');
   const [anchorClock, setAnchorClock] = useState('0:00');
   const [color, setColor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -295,12 +454,20 @@ export function CuesSection({
   // Inline edit: at most one cue editable at a time, seeded from the persisted row.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [editDurationSeconds, setEditDurationSeconds] = useState('');
+  const [editCueBpm, setEditCueBpm] = useState('');
+  const [editIntensity, setEditIntensity] = useState<CueIntensity | ''>('');
+  const [editNote, setEditNote] = useState('');
   const [editAnchorClock, setEditAnchorClock] = useState('0:00');
   const [editColor, setEditColor] = useState<string | null>(null);
   const editButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const addAnchorRef = useRef<HTMLInputElement>(null);
   const addTextRef = useRef<HTMLInputElement>(null);
+  const addDurationRef = useRef<HTMLInputElement>(null);
+  const addBpmRef = useRef<HTMLInputElement>(null);
   const editAnchorRef = useRef<HTMLInputElement>(null);
+  const editDurationRef = useRef<HTMLInputElement>(null);
+  const editBpmRef = useRef<HTMLInputElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
   const [pendingFocus, setPendingFocus] = useState<PendingRowFocus | null>(null);
   const focusRevision = useFocusRevision();
@@ -312,6 +479,10 @@ export function CuesSection({
 
   const addAnchor = anchorFieldState(anchorClock, durationMs);
   const editAnchor = anchorFieldState(editAnchorClock, durationMs);
+  const addDuration = parseCueDurationSeconds(durationSeconds);
+  const addBpm = parseCueBpm(cueBpm);
+  const editDuration = parseCueDurationSeconds(editDurationSeconds);
+  const editBpm = parseCueBpm(editCueBpm);
 
   // Instant scroll, not smooth: this also has to land under
   // `prefers-reduced-motion`, and the arrival is the point, not the travel.
@@ -362,6 +533,10 @@ export function CuesSection({
   const startEdit = (cue: Cue) => {
     setEditingId(cue.id);
     setEditText(cue.text);
+    setEditDurationSeconds(formatCueDurationInput(cue.durationMs));
+    setEditCueBpm(cue.bpm == null ? '' : String(cue.bpm));
+    setEditIntensity(cue.intensity ?? '');
+    setEditNote(cue.note ?? '');
     setEditAnchorClock(formatClockFromMs(cue.anchorMs));
     setEditColor(cue.color);
     setError(null);
@@ -369,8 +544,10 @@ export function CuesSection({
 
   const saveEdit = async () => {
     const anchorMs = editAnchor.ms;
-    if (!editingId || !editText.trim() || anchorMs == null) {
+    if (!editingId || !editText.trim() || anchorMs == null || !editDuration.ok || !editBpm.ok) {
       if (anchorMs == null) editAnchorRef.current?.focus();
+      else if (!editDuration.ok) editDurationRef.current?.focus();
+      else if (!editBpm.ok) editBpmRef.current?.focus();
       return;
     }
     const savedId = editingId;
@@ -379,11 +556,16 @@ export function CuesSection({
     setBusy(true);
     setError(null);
     try {
-      // Always send `color` (hex or null) so a cleared tag persists (buildPatch
-      // sets explicit null; an omitted field would leave the old color).
+      // Always send the builder fields (including null) so a cleared duration,
+      // BPM, intensity, note, or color persists. An omitted field would leave
+      // the old value.
       await updateCue(editingId, {
         anchorMs: maybeSnap(anchorMs),
         text: editText.trim(),
+        durationMs: editDuration.value,
+        bpm: editBpm.value,
+        intensity: editIntensity === '' ? null : editIntensity,
+        note: editNote.trim() ? editNote.trim() : null,
         color: editColor,
       });
       if (!active.current) return;
@@ -404,22 +586,34 @@ export function CuesSection({
 
   const add = async () => {
     const anchorMs = addAnchor.ms;
-    if (!text.trim() || anchorMs == null) {
+    if (!text.trim() || anchorMs == null || !addDuration.ok || !addBpm.ok) {
       if (anchorMs == null) addAnchorRef.current?.focus();
+      else if (!addDuration.ok) addDurationRef.current?.focus();
+      else if (!addBpm.ok) addBpmRef.current?.focus();
       return;
     }
     const submittedRevision = addRevision.current;
     setBusy(true);
     setError(null);
     try {
+      // BPM is only what she typed. The track tempo (`bpm`) is for beat
+      // snapping and is never copied onto the cue.
       await createCue(classTrackId, {
         anchorMs: maybeSnap(anchorMs),
         text: text.trim(),
+        durationMs: addDuration.value,
+        bpm: addBpm.value,
+        intensity: intensity === '' ? null : intensity,
+        note: note.trim() ? note.trim() : null,
         color,
       });
       if (!active.current) return;
       if (addRevision.current === submittedRevision) {
         setText('');
+        setDurationSeconds('');
+        setCueBpm('');
+        setIntensity('');
+        setNote('');
         setAnchorClock('0:00');
         setColor(null);
       }
@@ -465,6 +659,27 @@ export function CuesSection({
               }}
               className="flex flex-wrap items-center gap-2 rounded-card bg-bg-raised px-3 py-2"
             >
+              <CueListFields
+                move={editText}
+                onMove={setEditText}
+                autoFocus
+                duration={editDurationSeconds}
+                onDuration={setEditDurationSeconds}
+                durationRef={editDurationRef}
+                durationInvalid={!editDuration.ok}
+                durationMessage={cueCountMessage(editDuration)}
+                durationMessageId={`${validationId}-edit-duration`}
+                bpm={editCueBpm}
+                onBpm={setEditCueBpm}
+                bpmRef={editBpmRef}
+                bpmInvalid={!editBpm.ok}
+                bpmMessage={cueCountMessage(editBpm)}
+                bpmMessageId={`${validationId}-edit-bpm`}
+                intensity={editIntensity}
+                onIntensity={setEditIntensity}
+                note={editNote}
+                onNote={setEditNote}
+              />
               <input
                 ref={editAnchorRef}
                 className={anchorInputClass(editAnchor.invalid)}
@@ -477,13 +692,6 @@ export function CuesSection({
                 aria-invalid={editAnchor.invalid || undefined}
                 aria-describedby={editAnchor.message ? `${validationId}-edit-anchor` : undefined}
                 title="Cue time (m:ss)"
-              />
-              <input
-                className={`min-w-0 flex-1 ${fieldClass}`}
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                aria-label="Cue text"
-                autoFocus
               />
               <CueColorPicker
                 value={editColor}
@@ -529,53 +737,84 @@ export function CuesSection({
             <li
               key={cue.id}
               ref={cue.id === refRowId ? rowRef : undefined}
-              className={`flex items-center gap-2 rounded-pill bg-bg-raised px-3 py-1.5 ${
+              className={`flex flex-col gap-1 rounded-card bg-bg-raised px-3 py-2 ${
                 cue.id === flashRowId ? 'ring-2 ring-interactive' : ''
               }`}
             >
-              {/* Color tag — decorative reinforcement; time + text always carry the meaning. */}
-              {cue.color && (
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: cue.color }}
-                  title={`${tagLabel(cue.color) ?? 'Color'} tag`}
-                  aria-hidden
-                />
-              )}
-              <span className="shrink-0 font-data text-xs text-text-tertiary">
-                {formatClockFromMs(cue.anchorMs)}
-              </span>
-              {beatLabel(cue.anchorMs, bpm, beatAnchorMs) && (
-                <span
-                  className="shrink-0 rounded-pill bg-bg-base px-1.5 font-data text-[10px] text-text-tertiary"
-                  title={`Bar ${beatLabel(cue.anchorMs, bpm, beatAnchorMs)?.split('.')[0]}, beat ${beatLabel(cue.anchorMs, bpm, beatAnchorMs)?.split('.')[1]}`}
-                >
-                  {beatLabel(cue.anchorMs, bpm, beatAnchorMs)}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Color tag — decorative reinforcement; the move name carries the meaning. */}
+                {cue.color && (
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: cue.color }}
+                    title={`${tagLabel(cue.color) ?? 'Color'} tag`}
+                    aria-hidden
+                  />
+                )}
+                <span className="shrink-0 font-data text-xs text-text-tertiary">
+                  {formatClockFromMs(cue.anchorMs)}
                 </span>
-              )}
-              <span className="min-w-0 flex-1 truncate font-ui text-sm text-text-primary">
-                {cue.text}
-              </span>
-              <button
-                ref={(node) => {
-                  if (node) editButtonRefs.current.set(cue.id, node);
-                  else editButtonRefs.current.delete(cue.id);
-                }}
-                className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
-                onClick={() => startEdit(cue)}
-                disabled={busy}
-                aria-label={`Edit cue ${cue.text}`}
-              >
-                Edit
-              </button>
-              <button
-                className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-state-danger disabled:opacity-40"
-                onClick={() => remove(cue.id)}
-                disabled={busy}
-                aria-label={`Delete cue ${cue.text}`}
-              >
-                Delete
-              </button>
+                {beatLabel(cue.anchorMs, bpm, beatAnchorMs) && (
+                  <span
+                    className="shrink-0 rounded-pill bg-bg-base px-1.5 font-data text-[10px] text-text-tertiary"
+                    title={`Bar ${beatLabel(cue.anchorMs, bpm, beatAnchorMs)?.split('.')[0]}, beat ${beatLabel(cue.anchorMs, bpm, beatAnchorMs)?.split('.')[1]}`}
+                  >
+                    {beatLabel(cue.anchorMs, bpm, beatAnchorMs)}
+                  </span>
+                )}
+                <span className="min-w-0 flex-1 break-words font-ui text-sm text-text-primary">
+                  {cue.text}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 font-ui text-xs text-text-secondary">
+                <span>
+                  Duration{' '}
+                  <span className="font-data text-text-primary">
+                    {formatCueDurationLabel(cue.durationMs) ?? '—'}
+                  </span>
+                </span>
+                <span>
+                  <span className="font-data text-text-primary">
+                    {cue.bpm == null ? 'BPM —' : `${cue.bpm} BPM`}
+                  </span>
+                </span>
+                <span>
+                  Intensity{' '}
+                  <span className="font-data text-text-primary">
+                    {cue.intensity ? CUE_INTENSITY_LABEL[cue.intensity] : '—'}
+                  </span>
+                </span>
+              </div>
+              {cue.note ? (
+                <p className="break-words font-ui text-sm text-text-primary">
+                  <span className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
+                    Note{' '}
+                  </span>
+                  <span>{cue.note}</span>
+                </p>
+              ) : null}
+              <div className="flex items-center gap-2">
+                <button
+                  ref={(node) => {
+                    if (node) editButtonRefs.current.set(cue.id, node);
+                    else editButtonRefs.current.delete(cue.id);
+                  }}
+                  className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-interactive disabled:opacity-40"
+                  onClick={() => startEdit(cue)}
+                  disabled={busy}
+                  aria-label={`Edit cue ${cue.text}`}
+                >
+                  Edit
+                </button>
+                <button
+                  className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs text-state-danger disabled:opacity-40"
+                  onClick={() => remove(cue.id)}
+                  disabled={busy}
+                  aria-label={`Delete cue ${cue.text}`}
+                >
+                  Delete
+                </button>
+              </div>
             </li>
           ),
         )}
@@ -586,30 +825,44 @@ export function CuesSection({
           addRevision.current += 1;
         }}
       >
-        <div className="flex items-center gap-2">
-          <input
-            ref={addAnchorRef}
-            className={anchorInputClass(addAnchor.invalid)}
-            type="text"
-            inputMode="numeric"
-            placeholder="m:ss"
-            value={anchorClock}
-            onChange={(e) => setAnchorClock(e.target.value)}
-            aria-label="Cue time (m:ss)"
-            aria-invalid={addAnchor.invalid || undefined}
-            aria-describedby={addAnchor.message ? `${validationId}-add-anchor` : undefined}
-            title="Cue time (m:ss)"
-          />
-          <input
-            ref={addTextRef}
-            className={`min-w-0 flex-1 ${fieldClass}`}
-            placeholder="Cue text"
-            // A placeholder is not a label: it leaves the field unnamed once
-            // typing starts, and unnamed to assistive tech throughout.
-            aria-label="Cue text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
+        <CueListFields
+          move={text}
+          onMove={setText}
+          moveRef={addTextRef}
+          duration={durationSeconds}
+          onDuration={setDurationSeconds}
+          durationRef={addDurationRef}
+          durationInvalid={durationSeconds.trim() !== '' && !addDuration.ok}
+          durationMessage={durationSeconds.trim() ? cueCountMessage(addDuration) : null}
+          durationMessageId={`${validationId}-add-duration`}
+          bpm={cueBpm}
+          onBpm={setCueBpm}
+          bpmRef={addBpmRef}
+          bpmInvalid={cueBpm.trim() !== '' && !addBpm.ok}
+          bpmMessage={cueBpm.trim() ? cueCountMessage(addBpm) : null}
+          bpmMessageId={`${validationId}-add-bpm`}
+          intensity={intensity}
+          onIntensity={setIntensity}
+          note={note}
+          onNote={setNote}
+        />
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-1">
+            <span className={labelClass}>Time</span>
+            <input
+              ref={addAnchorRef}
+              className={anchorInputClass(addAnchor.invalid)}
+              type="text"
+              inputMode="numeric"
+              placeholder="m:ss"
+              value={anchorClock}
+              onChange={(e) => setAnchorClock(e.target.value)}
+              aria-label="Cue time (m:ss)"
+              aria-invalid={addAnchor.invalid || undefined}
+              aria-describedby={addAnchor.message ? `${validationId}-add-anchor` : undefined}
+              title="Cue time (m:ss)"
+            />
+          </label>
           <button
             className="min-h-11 shrink-0 rounded-control border border-interactive px-3 font-ui text-sm text-interactive disabled:opacity-40 sm:rounded-pill"
             onClick={add}

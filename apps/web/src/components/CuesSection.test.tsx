@@ -11,8 +11,23 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-const cue = (id: string, text: string) =>
-  ({ id, text, anchorMs: 0, color: null }) as Awaited<ReturnType<typeof api.listCues>>[number];
+const cue = (
+  id: string,
+  text: string,
+  extra: Partial<Awaited<ReturnType<typeof api.listCues>>[number]> = {},
+) =>
+  ({
+    id,
+    text,
+    anchorMs: 0,
+    color: null,
+    durationMs: null,
+    bpm: null,
+    intensity: null,
+    note: null,
+    position: 0,
+    ...extra,
+  }) as Awaited<ReturnType<typeof api.listCues>>[number];
 
 describe('CuesSection — m:ss anchor entry', () => {
   it('parses the m:ss field to anchorMs when adding a cue', async () => {
@@ -23,7 +38,7 @@ describe('CuesSection — m:ss anchor entry', () => {
 
     const time = await screen.findByRole('textbox', { name: 'Cue time (m:ss)' });
     fireEvent.change(time, { target: { value: '2:05' } });
-    fireEvent.change(screen.getByPlaceholderText('Cue text'), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'Move name' }), {
       target: { value: 'Add resistance' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
@@ -44,7 +59,9 @@ describe('CuesSection — m:ss anchor entry', () => {
 
     // The field seeds to 0:00, so only text is needed for a start-of-track cue.
     const add = await screen.findByRole('button', { name: 'Add cue' });
-    fireEvent.change(screen.getByPlaceholderText('Cue text'), { target: { value: 'Go' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Move name' }), {
+      target: { value: 'Go' },
+    });
     fireEvent.click(add);
 
     await waitFor(() =>
@@ -60,7 +77,9 @@ describe('CuesSection — m:ss anchor entry', () => {
     render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
 
     const time = await screen.findByRole('textbox', { name: 'Cue time (m:ss)' });
-    fireEvent.change(screen.getByPlaceholderText('Cue text'), { target: { value: 'Cue' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Move name' }), {
+      target: { value: 'Cue' },
+    });
 
     time.focus();
     fireEvent.change(time, { target: { value: '125' } }); // raw seconds — no longer accepted
@@ -96,7 +115,10 @@ describe('CuesSection — keyboard focus restoration', () => {
     const cancel = screen.getByRole('button', { name: 'Cancel' });
     cancel.focus();
     fireEvent.click(cancel);
-    await waitFor(() => expect(document.activeElement).toBe(edit));
+    await waitFor(() => {
+      edit = screen.getByRole('button', { name: 'Edit cue Push' });
+      expect(document.activeElement).toBe(edit);
+    });
 
     fireEvent.click(edit);
     const save = screen.getByRole('button', { name: 'Save' });
@@ -154,7 +176,7 @@ describe('CuesSection — readiness first-cue handoff', () => {
     const { rerender } = render(
       <CuesSection classTrackId="ct-1" durationMs={240000} startEntryNonce={0} />,
     );
-    const field = await screen.findByRole('textbox', { name: 'Cue text' });
+    const field = await screen.findByRole('textbox', { name: 'Move name' });
     expect(document.activeElement).not.toBe(field);
 
     rerender(<CuesSection classTrackId="ct-1" durationMs={240000} startEntryNonce={1} />);
@@ -181,7 +203,7 @@ describe('CuesSection — pending request ownership', () => {
       vi.mocked(api.listCues).mockReturnValueOnce(initial.promise).mockResolvedValue([saved]);
       vi.mocked(api.createCue).mockResolvedValue(saved);
       render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
-      fireEvent.change(screen.getByRole('textbox', { name: 'Cue text' }), {
+      fireEvent.change(screen.getByRole('textbox', { name: 'Move name' }), {
         target: { value: 'First' },
       });
       fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
@@ -200,7 +222,7 @@ describe('CuesSection — pending request ownership', () => {
     const request = deferred<Awaited<ReturnType<typeof api.createCue>>>();
     vi.mocked(api.createCue).mockReturnValue(request.promise);
     render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
-    const field = screen.getByRole('textbox', { name: 'Cue text' }) as HTMLInputElement;
+    const field = screen.getByRole('textbox', { name: 'Move name' }) as HTMLInputElement;
     const time = screen.getByRole('textbox', { name: 'Cue time (m:ss)' }) as HTMLInputElement;
     fireEvent.change(field, { target: { value: 'First' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
@@ -221,7 +243,7 @@ describe('CuesSection — pending request ownership', () => {
     vi.mocked(api.updateCue).mockReturnValue(request.promise);
     render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Edit cue First' }));
-    const field = screen.getAllByRole('textbox', { name: 'Cue text' })[0] as HTMLInputElement;
+    const field = screen.getAllByRole('textbox', { name: 'Move name' })[0] as HTMLInputElement;
     fireEvent.change(field, { target: { value: 'Submitted' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     fireEvent.change(field, { target: { value: 'Newer' } });
@@ -272,7 +294,7 @@ describe('CuesSection — pending request ownership', () => {
     vi.mocked(api.listCues).mockResolvedValue([]);
     vi.mocked(api.createCue).mockRejectedValue(new Error('Write rejected'));
     render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
-    const field = screen.getByRole('textbox', { name: 'Cue text' }) as HTMLInputElement;
+    const field = screen.getByRole('textbox', { name: 'Move name' }) as HTMLInputElement;
     fireEvent.change(field, { target: { value: 'Keep me' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
     await screen.findByRole('alert');
@@ -286,7 +308,7 @@ describe('CuesSection — pending request ownership', () => {
     vi.mocked(api.createCue).mockResolvedValue(cue('saved', 'First'));
     const onChanged = vi.fn();
     render(<CuesSection classTrackId="ct-1" durationMs={240000} onChanged={onChanged} />);
-    fireEvent.change(screen.getByRole('textbox', { name: 'Cue text' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'Move name' }), {
       target: { value: 'First' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
@@ -313,7 +335,7 @@ describe('CuesSection — section lifecycle', () => {
       );
       await screen.findByRole('button', { name: 'Edit cue First' });
       if (operation === 'add') {
-        fireEvent.change(screen.getByRole('textbox', { name: 'Cue text' }), {
+        fireEvent.change(screen.getByRole('textbox', { name: 'Move name' }), {
           target: { value: 'New' },
         });
         fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
@@ -335,13 +357,129 @@ describe('CuesSection — section lifecycle', () => {
   );
 });
 
+describe('CuesSection — teaching list', () => {
+  it('stays empty until she adds a cue', async () => {
+    vi.mocked(api.listCues).mockResolvedValue([]);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} bpm={128} />);
+    expect(await screen.findByText('No cues yet.')).toBeTruthy();
+    expect(screen.queryByText('Left Leg Lead')).toBeNull();
+    expect(screen.queryByText('Press Throw')).toBeNull();
+    expect(screen.queryByText('Press Tap')).toBeNull();
+    expect((screen.getByRole('textbox', { name: 'Move name' }) as HTMLInputElement).value).toBe('');
+    expect((screen.getByRole('textbox', { name: 'Cue BPM' }) as HTMLInputElement).value).toBe('');
+    expect((screen.getByRole('combobox', { name: 'Intensity' }) as HTMLSelectElement).value).toBe(
+      '',
+    );
+  });
+
+  it('saves the move, duration, her BPM, Open, and the note without copying the track BPM', async () => {
+    vi.mocked(api.listCues).mockResolvedValue([]);
+    vi.mocked(api.createCue).mockResolvedValue({} as never);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} bpm={140} />);
+
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Move name' }), {
+      target: { value: 'Left Leg Lead' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Duration (seconds)' }), {
+      target: { value: '15' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Cue BPM' }), {
+      target: { value: '96' },
+    });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Intensity' }), {
+      target: { value: 'open' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Note' }), {
+      target: { value: 'This is our warm up.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
+
+    await waitFor(() =>
+      expect(vi.mocked(api.createCue)).toHaveBeenCalledWith('ct-1', {
+        anchorMs: 0,
+        text: 'Left Leg Lead',
+        durationMs: 15_000,
+        bpm: 96,
+        intensity: 'open',
+        note: 'This is our warm up.',
+        color: null,
+      }),
+    );
+  });
+
+  it('shows the saved row in teaching order, including Open and the note', async () => {
+    vi.mocked(api.listCues).mockResolvedValue([
+      cue('cue-1', 'Left Leg Lead', {
+        position: 0,
+        durationMs: 15_000,
+        bpm: 96,
+        intensity: 'open',
+        note: 'This is our warm up.',
+      }),
+      cue('cue-2', 'Recover', {
+        position: 1,
+        anchorMs: 1_000,
+        durationMs: 48_000,
+        bpm: 110,
+        intensity: 'easy',
+        note: null,
+      }),
+    ]);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+
+    const rows = await screen.findAllByRole('listitem');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.textContent).toContain('Left Leg Lead');
+    expect(rows[1]?.textContent).toContain('Recover');
+    expect(rows[0]?.textContent).toContain('15s');
+    expect(rows[0]?.textContent).toContain('96 BPM');
+    expect(rows[0]?.textContent).toContain('Open');
+    expect(rows[0]?.textContent).toContain('This is our warm up.');
+    expect(rows[1]?.textContent).toContain('48s');
+    expect(rows[1]?.textContent).toContain('Easy');
+    expect(screen.getByRole('option', { name: 'Open' })).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'All Out' })).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'None' })).toBeTruthy();
+  });
+
+  it('edits a row and can clear the note', async () => {
+    const first = cue('cue-1', 'Press Tap', {
+      durationMs: 3_000,
+      bpm: 120,
+      intensity: 'mod',
+      note: 'Old note',
+    });
+    vi.mocked(api.listCues).mockResolvedValue([first]);
+    vi.mocked(api.updateCue).mockResolvedValue(first);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit cue Press Tap' }));
+    const notes = screen.getAllByRole('textbox', { name: 'Note' });
+    fireEvent.change(notes[0]!, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(vi.mocked(api.updateCue)).toHaveBeenCalledWith(
+        'cue-1',
+        expect.objectContaining({
+          text: 'Press Tap',
+          durationMs: 3_000,
+          bpm: 120,
+          intensity: 'mod',
+          note: null,
+        }),
+      ),
+    );
+  });
+});
+
 describe('CuesSection — color draft ownership', () => {
   it('keeps a replacement color draft after a pending add succeeds', async () => {
     vi.mocked(api.listCues).mockResolvedValue([]);
     const request = deferred<Awaited<ReturnType<typeof api.createCue>>>();
     vi.mocked(api.createCue).mockReturnValue(request.promise);
     render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
-    fireEvent.change(screen.getByRole('textbox', { name: 'Cue text' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'Move name' }), {
       target: { value: 'First' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Add cue' }));
@@ -350,7 +488,7 @@ describe('CuesSection — color draft ownership', () => {
     expect(screen.getByRole('button', { name: 'Copper' }).getAttribute('aria-pressed')).toBe(
       'true',
     );
-    expect((screen.getByRole('textbox', { name: 'Cue text' }) as HTMLInputElement).value).toBe(
+    expect((screen.getByRole('textbox', { name: 'Move name' }) as HTMLInputElement).value).toBe(
       'First',
     );
   });
