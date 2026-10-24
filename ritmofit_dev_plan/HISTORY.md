@@ -13,6 +13,33 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-24 — #563 and #562 on main `7a505ae`.** Owner approved.
+> Production deploy at 2026-10-24T20:35:42Z (2:35 PM MT). New Worker
+> `9b471c26-c62f-41b2-9788-6eb49c1353fa`; previous/rollback
+> `baa4a420-562c-4988-969b-2bd1709a35a9`. SPA entry `assets/index-DtpLW965.js`
+> (CSS `assets/index-DcqGkA5K.css`), confirmed by six consecutive cache-busted
+> fetches that matched the build. The JS filename differs from the previous
+> production entry `assets/index-q9aP7Jrc.js`. The CSS filename is unchanged.
+> The served chunk `assets/cue-list-qsZtbLBj.js` contains the tenths-rounded
+> hold countdown from #563. Pre-deploy full gate passed on `7a505ae` from a
+> clean detached worktree on Steven's MacBook (format, typecheck, lint, design
+> verify, theme-classes, unit tests web 1309 / api 496 / music 30, Worker/D1
+> integration 200, web build, OpenAPI no drift, contract-parity, audit:ci).
+> Preflight ran before the deploy: no remote D1 migrations pending (`0021`
+> latest) and `BETA_ALLOWED_EMAILS` present. No migration was applied.
+>
+> Deployed since production `ff24f46`:
+> [#563](https://github.com/steven-crosby/ritmofit-web/pull/563) (round the
+> Cue-by-Cue hold countdown, `d4c67fd`) and
+> [#562](https://github.com/steven-crosby/ritmofit-web/pull/562) (lock cue-hold
+> selection when anchors tie, tests only, `7a505ae`). Docs `be24ac1`
+> ([#567](https://github.com/steven-crosby/ritmofit-web/pull/567), the earlier
+> 2026-10-24 deploy record) is in that tree and does not change runtime.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 with security headers; unauthenticated
+> `/api/v1/classes`, `/explore`, and `/teams` 401. Production matches main
+> `7a505ae` code at deploy time. This docs record is not in the deployed tree.
+
 > **Deploy 2026-10-24 — #546, #557, #564, #565, #566 on main `ff24f46`.** Owner approved.
 > Production deploy at 2026-10-24T20:12:50Z (2:12 PM MT). New Worker
 > `baa4a420-562c-4988-969b-2bd1709a35a9`; previous/rollback
