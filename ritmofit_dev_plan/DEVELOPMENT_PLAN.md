@@ -200,7 +200,9 @@ last block is cooldown. Importing into an empty Classes template replaces those 
 Over 15 songs, the instructor picks a source-ordered subset before the class or the import is written;
 the import never silently truncates. The cap is playlist import only: search, manual add, and
 Songs-by-Move copy stay uncapped. Paste-a-link uses the same blocks, labels, scaffold replacement,
-and picker, replacing the reject-above-100 path. Design:
+and picker. More than 100 occurrences is a 422 with no write, and the provider fetch stops as soon as
+the count exceeds 100. The preview times out after 8 seconds with a retryable error and no partial
+write. A 100-song link should open the picker in under 2 seconds. Design:
 [`playlist-import-blocks-design.md`](./playlist-import-blocks-design.md). Not implemented. Evidence:
 [desktop audit 2026-10-03](../docs/audits/playlist-to-live-2026-10-03/coverage.md).
 
