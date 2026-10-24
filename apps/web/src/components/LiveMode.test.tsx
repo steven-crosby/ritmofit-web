@@ -21,7 +21,9 @@ import {
   lastAtOrBefore,
   liveSectionAt,
   TEACHING_PHONE_WIDTH_PX,
+  teachingHoldAt,
   teachingUpcomingColumnPx,
+  upcomingTeachingCues,
   trackIndexAt,
   type TimelineEvent,
 } from './LiveMode.js';
@@ -2931,5 +2933,122 @@ describe('Cue-by-Cue teaching reading', () => {
       before,
     );
     expect(before).not.toMatch(/1 cue/);
+  });
+});
+
+describe('teachingHoldAt', () => {
+  it('keeps the higher teaching position when two cues share an anchor, in either row order', () => {
+    // The run payload orders cues by anchorMs only, so a shared anchor keeps
+    // whatever row order the query returned. Position is the tie-break.
+    const earlier = teachingCue('00000000-0000-4000-8000-000000000201', 'Settle', 20_000, {
+      position: 0,
+      durationMs: 15_000,
+    });
+    const later = teachingCue('00000000-0000-4000-8000-000000000202', 'Climb', 20_000, {
+      position: 4,
+      durationMs: 30_000,
+    });
+
+    for (const cues of [
+      [later, earlier],
+      [earlier, later],
+    ]) {
+      const atAnchor = teachingHoldAt(cues, 20_000);
+      expect(atAnchor?.cue.text).toBe('Climb');
+      expect(atAnchor).toMatchObject({ intoMs: 0, remainingMs: 30_000, fill: 0 });
+
+      const mid = teachingHoldAt(cues, 27_500);
+      expect(mid?.cue.text).toBe('Climb');
+      expect(mid?.intoMs).toBe(7_500);
+      expect(mid?.remainingMs).toBe(22_500);
+      expect(mid?.fill).toBeCloseTo(0.25);
+
+      const past = teachingHoldAt(cues, 65_000);
+      expect(past?.cue.text).toBe('Climb');
+      expect(past).toMatchObject({ intoMs: 45_000, remainingMs: 0, fill: 1 });
+    }
+  });
+
+  it('keeps the later row when the anchor and the teaching position both tie', () => {
+    const first = teachingCue('00000000-0000-4000-8000-000000000203', 'First row', 0, {
+      position: 2,
+      durationMs: 10_000,
+    });
+    const second = teachingCue('00000000-0000-4000-8000-000000000204', 'Second row', 0, {
+      position: 2,
+      durationMs: 10_000,
+    });
+    expect(teachingHoldAt([first, second], 0)?.cue.id).toBe(second.id);
+    expect(teachingHoldAt([second, first], 0)?.cue.id).toBe(first.id);
+  });
+
+  it('lets a later anchor replace a longer hold even when that cue is listed first', () => {
+    const held = teachingCue('00000000-0000-4000-8000-000000000205', 'Long hold', 0, {
+      position: 5,
+      durationMs: 60_000,
+    });
+    const next = teachingCue('00000000-0000-4000-8000-000000000206', 'Next move', 20_000, {
+      position: 0,
+      durationMs: 10_000,
+    });
+    expect(teachingHoldAt([], 0)).toBeNull();
+    expect(teachingHoldAt([next, held], -1)).toBeNull();
+    expect(teachingHoldAt([next, held], 19_999)?.cue.text).toBe('Long hold');
+    const replaced = teachingHoldAt([next, held], 20_000);
+    expect(replaced?.cue.text).toBe('Next move');
+    expect(replaced).toMatchObject({ intoMs: 0, remainingMs: 10_000, fill: 0 });
+  });
+
+  it('leaves the scale unset when the reached cue has no duration', () => {
+    const open = teachingCue('00000000-0000-4000-8000-000000000207', 'Open', 1_000, {
+      durationMs: null,
+      position: 0,
+    });
+    expect(teachingHoldAt([open], 4_000)).toEqual({
+      cue: open,
+      intoMs: 3_000,
+      remainingMs: null,
+      fill: null,
+    });
+  });
+});
+
+describe('upcomingTeachingCues', () => {
+  it('lists only strictly future anchors, by position then anchor, and does not reorder the source', () => {
+    const now = teachingCue('00000000-0000-4000-8000-000000000211', 'Now', 10_000, {
+      position: 1,
+    });
+    const sameAnchor = teachingCue('00000000-0000-4000-8000-000000000212', 'Also now', 10_000, {
+      position: 0,
+    });
+    const laterSlot = teachingCue('00000000-0000-4000-8000-000000000213', 'Later slot', 40_000, {
+      position: 3,
+    });
+    const sameSlotSooner = teachingCue(
+      '00000000-0000-4000-8000-000000000214',
+      'Same slot, sooner',
+      25_000,
+      { position: 3 },
+    );
+    const firstSlot = teachingCue('00000000-0000-4000-8000-000000000215', 'First slot', 50_000, {
+      position: 0,
+    });
+    const cues = [laterSlot, now, sameSlotSooner, firstSlot, sameAnchor];
+    const sourceOrder = cues.map((cue) => cue.id);
+
+    expect(teachingHoldAt(cues, 10_000)?.cue.text).toBe('Now');
+    expect(upcomingTeachingCues(cues, 10_000).map((cue) => cue.text)).toEqual([
+      'First slot',
+      'Same slot, sooner',
+      'Later slot',
+    ]);
+    expect(upcomingTeachingCues(cues, 9_999).map((cue) => cue.text)).toEqual([
+      'Also now',
+      'First slot',
+      'Now',
+      'Same slot, sooner',
+      'Later slot',
+    ]);
+    expect(cues.map((cue) => cue.id)).toEqual(sourceOrder);
   });
 });
