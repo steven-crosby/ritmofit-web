@@ -21,7 +21,7 @@ _Last updated 2026-10-24 (Cursor). Production Worker is main `7a505ae` (`9b471c2
 - **Human acceptance:** the earlier owner-approved desktop Cycle/Pilates spot-check remains historical ([record](../docs/audits/apple-natural-acceptance-2026-10-09/README.md)). On the 2026-10-13 build, Steven confirmed Apple authorization, audible start and clean natural handover to Bad Romance; a transient Waiting for music panel appeared and cleared. Apple post-Exit silence and all four SoundCloud hearing checks are now confirmed. A separate later Apple recovery at 5:18 was unwitnessed; stability/cause remain open. UI/SDK state, synthetic completion and deployment do not close these checks. Real iPhone Safari remains unverified.
 - **Next step:** Apple 5:18 debugging remains tabled; resume only on explicit owner instruction. [Retained investigation handoff](./handoffs/2026-10-13-apple-recovery-investigation.md). Spotify remains tabled. Real iPhone remains unverified. Neither r20261021 lane received native 200% zoom verification (NOT_ASSESSED).
 - **Cleanup:** #520–#523 completed publication branches removed locally/remotely after merge/tree checks. Three superseded root handoffs retired through #523. SoundCloud QA was deleted with its recorded 404; Apple fixture `75b7af90-141f-4f56-b02b-0bdd2c1c9dfe`, investigation handoff and all evidence stay. The completed cleanup handoff is closed and kept to preserve audit links. On 2026-10-19 the local worktrees and local branches for #518 and #519 were removed; neither tree had product files missing from `main`. Their untracked planning briefs were kept outside the repo. The same day, after an explicit owner yes, origin branches `codex/r20261011c-live-short-viewport` (`a06e0e6`) and `codex/r20261011c-builder-refresh-integrity` (`3d7bfd6`) were deleted. `.claude/`, the local verification tag, the Apple fixture, and original classes stay. [Close receipt](../docs/audits/session-close-2026-10-13/receipt.json).
-- **Owner decisions:** further fixture cleanup separately; Live finish placement, style, and confirmation still open (wording decided 2026-10-24: the live header control reads End Class, same handler, no confirmation); playlist-derived teaching-draft policy; liveness alerting; F-02/D11. Missing-page and error screens keep `rf-hero-glow` (owner, 2026-10-24). OD-02 resolved: current cue remains the Live hero.
+- **Owner decisions:** further fixture cleanup separately; Live finish placement, style, and confirmation still open (wording decided 2026-10-24: the live header control reads End Class, same handler, no confirmation); playlist import builds blocks only (decided 2026-10-24, [design](./playlist-import-blocks-design.md); not implemented); liveness alerting; F-02/D11. Missing-page and error screens keep `rf-hero-glow` (owner, 2026-10-24). OD-02 resolved: current cue remains the Live hero.
 
 ---
 
@@ -164,6 +164,7 @@ music-led Phase 1 (D24). Community surfaces are dormant scaffolding, not active 
 | [`instructor-class-score-blueprint.md`](./instructor-class-score-blueprint.md) | Owner-approved class-building UX direction: run of show, optional precision score, timed exercise steps |
 | [`class-template-handoff.md`](./class-template-handoff.md) | Settled scaffold/recipe rules for class templates (a product spec, not a session handoff) |
 | [`class-scaffold-contract.md`](./class-scaffold-contract.md) | Cross-lane contract for class scaffolds and the Classes home |
+| [`playlist-import-blocks-design.md`](./playlist-import-blocks-design.md) | Decided playlist-import block policy (2026-10-24); implementation not started |
 | [`architecture.md`](./architecture.md) | Cloudflare-native stack, repo layout, data flow, deployment |
 | [`schema.md`](./schema.md) | Current data model (D1/SQLite): tables, columns, relationships |
 | [`api.md`](./api.md) | REST surface, run-payload, auth, error conventions |
@@ -193,11 +194,12 @@ Remaining for Phase 1 acceptance: production natural boundaries and full uninter
 [acceptance record](../docs/audits/music-led-phase-1-acceptance/README.md). Later phases await owner
 approval.
 
-**Playlist → class → Live teaching draft — product gap, owner decision.** Imports preserve source
-order but create no exercise blocks, generic cues, or notes; the Classes template path puts all songs
-into its first fixed block and leaves empty blocks that disable Run Live. Ranked fix sequence and QA
-fixture IDs: [desktop audit 2026-10-03](../docs/audits/playlist-to-live-2026-10-03/coverage.md).
-No teaching-draft, readiness, schema/API, or 15-song-cap change is authorized yet.
+**Playlist → class → Live — decided 2026-10-24.** Playlist import builds blocks only: one block per
+song, source order, no generated cues, notes, or teaching content. The first block is warm-up and the
+last block is cooldown. Importing into an empty Classes template replaces those scaffold blocks.
+Over 15 songs, the instructor picks a source-ordered subset before anything is created; the import
+never silently truncates. Design: [`playlist-import-blocks-design.md`](./playlist-import-blocks-design.md).
+Not implemented. Evidence: [desktop audit 2026-10-03](../docs/audits/playlist-to-live-2026-10-03/coverage.md).
 
 **Class-building direction.** The [class-score blueprint](./instructor-class-score-blueprint.md)
 proposes a 20-minute HIIT interaction prototype and contract proposal as its first slice; it does not
