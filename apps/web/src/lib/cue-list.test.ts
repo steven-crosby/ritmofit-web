@@ -4,6 +4,7 @@ import {
   CUE_INTENSITY_LABEL,
   formatCueDurationInput,
   formatCueDurationLabel,
+  formatCueHoldCountdown,
   parseCueBpm,
   parseCueDurationSeconds,
   parseCueIntensity,
@@ -72,5 +73,22 @@ describe('duration display', () => {
     expect(formatCueDurationLabel(null)).toBeNull();
     expect(formatCueDurationInput(31_000)).toBe('31');
     expect(formatCueDurationInput(null)).toBe('');
+  });
+});
+
+describe('formatCueHoldCountdown', () => {
+  it('keeps whole seconds and a single tenth', () => {
+    expect(formatCueHoldCountdown(15_000)).toBe('15s');
+    expect(formatCueHoldCountdown(0)).toBe('0s');
+    expect(formatCueHoldCountdown(5_000)).toBe('5s');
+    expect(formatCueHoldCountdown(1_500)).toBe('1.5s');
+    expect(formatCueHoldCountdown(400)).toBe('0.4s');
+  });
+
+  it('rounds a fractional live remainder instead of printing the raw clock', () => {
+    expect(formatCueHoldCountdown(15_000 - 213.456789)).toBe('14.8s');
+    expect(formatCueHoldCountdown(15_000 - 213)).toBe('14.8s');
+    expect(formatCueHoldCountdown(0.8)).toBe('0s');
+    expect(formatCueHoldCountdown(Number.NaN)).toBe('0s');
   });
 });

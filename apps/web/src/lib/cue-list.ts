@@ -47,6 +47,19 @@ export function formatCueDurationLabel(durationMs: number | null | undefined): s
   return `${text}s`;
 }
 
+/**
+ * Glanceable hold remaining. Whole seconds stay `15s`; a tenth stays `1.5s`
+ * or `0.4s`. The live clock is fractional, so further digits are rounded off
+ * instead of printed on the hero.
+ */
+export function formatCueHoldCountdown(remainingMs: number): string {
+  if (!Number.isFinite(remainingMs)) return '0s';
+  const tenths = Math.max(0, Math.round(remainingMs / 100));
+  const whole = Math.floor(tenths / 10);
+  const frac = tenths % 10;
+  return frac === 0 ? `${whole}s` : `${whole}.${frac}s`;
+}
+
 export function formatCueDurationInput(durationMs: number | null | undefined): string {
   if (durationMs == null) return '';
   return String(durationMs / 1000);

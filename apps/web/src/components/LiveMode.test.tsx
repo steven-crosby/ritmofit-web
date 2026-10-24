@@ -2601,6 +2601,25 @@ describe('Cue-by-Cue teaching reading', () => {
     expect(countdown()?.textContent).not.toBe('0:00');
   });
 
+  it('rounds a mid-hold remainder to one decimal instead of the raw clock', async () => {
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000e3', 'Hold', 0, {
+              durationMs: 15_000,
+            }),
+          ],
+        },
+      ],
+    });
+    seekTo(213, payload.class.totalDurationMs);
+    expect(countdown()?.textContent).toBe('14.8s');
+    expect(countdown()?.textContent).not.toMatch(/14\.787/);
+  });
+
   it('shifts the same hold by the second track startOffsetMs', async () => {
     const total = 240_000;
     const second: RunPayload = {
