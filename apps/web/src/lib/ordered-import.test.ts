@@ -233,13 +233,21 @@ describe('ordered import recovery', () => {
 
   it('returns nothing when session storage cannot be read', () => {
     storedSession(`${prefix}playlist-a`, true);
-    const length = vi.spyOn(Storage.prototype, 'length', 'get').mockImplementation(() => {
-      throw new Error('storage disabled');
+    // Node 25 exposes sessionStorage by default, and Node 22+ does with
+    // --experimental-webstorage. Vitest does not replace that native object
+    // (sessionStorage is not a global it copies over), but it does replace
+    // Storage with jsdom's constructor. A spy on Storage.prototype.length
+    // therefore misses the object this helper reads, and the native length
+    // getter is non-configurable so it cannot be replaced in place.
+    vi.stubGlobal('sessionStorage', {
+      get length() {
+        throw new Error('storage disabled');
+      },
     });
     try {
       expect(pendingOrderedImports(prefix)).toEqual([]);
     } finally {
-      length.mockRestore();
+      vi.unstubAllGlobals();
     }
   });
 
