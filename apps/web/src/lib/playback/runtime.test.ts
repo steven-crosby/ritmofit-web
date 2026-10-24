@@ -1,4 +1,6 @@
+import { AppleMusicAdapter } from './apple-music-adapter.js';
 import { SpotifyAdapter } from './spotify-adapter.js';
+import type { MusicKitGlobal, MusicKitInstance } from '../musickit.js';
 import type { SpotifyPlayer } from '../spotify-playback.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Provider, RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
@@ -1263,6 +1265,97 @@ describe('real adapter boundary regression', () => {
     } finally {
       coordinator.destroy();
       vi.useRealTimers();
+    }
+  });
+
+  it('ends paused when the user pauses during an in-flight play, and music does not start when that play resolves', async () => {
+    let resolvePlay!: () => void;
+    const pendingPlay = new Promise<void>((resolve) => {
+      resolvePlay = resolve;
+    });
+    const calls: string[] = [];
+    let audible = false;
+    // A stop issued before play() settles does not stick. Late completion starts audio.
+    const instance = {
+      isAuthorized: true,
+      authorize: async () => 'music-user-token',
+      setQueue: async () => {
+        calls.push('setQueue');
+      },
+      play: () => {
+        calls.push('play');
+        return pendingPlay.then(() => {
+          audible = true;
+          calls.push('audible');
+        });
+      },
+      pause: async () => {
+        calls.push('pause');
+        audible = false;
+      },
+      stop: async () => {
+        calls.push('stop');
+        audible = false;
+      },
+      seekToTime: async () => {
+        calls.push('seek');
+      },
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    } as MusicKitInstance;
+    const music = {
+      configure: async () => instance,
+      getInstance: () => instance,
+      Events: {
+        playbackStateDidChange: 'playbackStateDidChange',
+        mediaPlaybackError: 'mediaPlaybackError',
+      },
+      PlaybackStates: { completed: 10, ended: 5, playing: 2, paused: 3, stopped: 4 },
+    } satisfies MusicKitGlobal;
+    const positions: number[] = [];
+    const statuses: CoordinatorStatus[] = [];
+    const coordinator = new RuntimePlaybackCoordinator(
+      makePayload([makeEntry({ providers: ['apple_music'] })]),
+      connections('apple_music'),
+      {
+        now: NOW,
+        onPosition: (ms) => positions.push(ms),
+        onStatus: (status) => statuses.push(status),
+        adapters: {
+          apple_music: (events) =>
+            new AppleMusicAdapter(events, {
+              loadMusicKit: async () => music,
+              requirePreauthorization: true,
+            }),
+        },
+      },
+    );
+    try {
+      const starting = coordinator.start(0);
+      for (let i = 0; i < 30 && !calls.includes('play'); i += 1) await Promise.resolve();
+      expect(calls).toContain('play');
+      expect(audible).toBe(false);
+
+      await coordinator.pause();
+      expect(coordinator.getStatus()).toEqual({ kind: 'paused' });
+
+      resolvePlay();
+      await starting;
+      for (let i = 0; i < 30 && !calls.includes('audible'); i += 1) await Promise.resolve();
+      expect(calls).toContain('audible');
+      for (let i = 0; i < 10; i += 1) await Promise.resolve();
+
+      // Late completion starts audio; pause must already have arranged for it to stop.
+      const audibleAt = calls.indexOf('audible');
+      expect(calls.slice(audibleAt + 1)).toContain('stop');
+      expect(audible).toBe(false);
+      expect(positions).toEqual([]);
+      expect(coordinator.getStatus()).toEqual({ kind: 'paused' });
+      const pausedAt = statuses.findIndex((status) => status.kind === 'paused');
+      expect(pausedAt).toBeGreaterThanOrEqual(0);
+      expect(statuses.slice(pausedAt).every((status) => status.kind === 'paused')).toBe(true);
+    } finally {
+      coordinator.destroy();
     }
   });
 });

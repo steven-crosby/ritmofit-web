@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createCueSchema } from '@ritmofit/shared';
 import {
   CUE_INTENSITY_LABEL,
   formatCueDurationInput,
@@ -23,6 +24,20 @@ describe('parseCueDurationSeconds', () => {
     expect(parseCueDurationSeconds('0').ok).toBe(false);
     expect(parseCueDurationSeconds('1.5').ok).toBe(false);
     expect(parseCueDurationSeconds('fifteen').ok).toBe(false);
+    expect(parseCueDurationSeconds('01').ok).toBe(false);
+  });
+
+  it('trims a whole number and stops at the same 24-hour limit the cue contract uses', () => {
+    const day = parseCueDurationSeconds(' 86400 ');
+    const over = parseCueDurationSeconds('86401');
+    expect(day).toEqual({ ok: true, value: 86_400_000 });
+    expect(over).toEqual({ ok: false, message: 'Duration is too long.' });
+    expect(
+      createCueSchema.safeParse({ anchorMs: 0, text: 'Hold', durationMs: 86_400_000 }).success,
+    ).toBe(true);
+    expect(
+      createCueSchema.safeParse({ anchorMs: 0, text: 'Hold', durationMs: 86_401_000 }).success,
+    ).toBe(false);
   });
 });
 
@@ -31,8 +46,10 @@ describe('parseCueBpm', () => {
     expect(parseCueBpm('')).toEqual({ ok: true, value: null });
     expect(parseCueBpm('96')).toEqual({ ok: true, value: 96 });
     expect(parseCueBpm('128')).toEqual({ ok: true, value: 128 });
+    expect(parseCueBpm(' 96 ')).toEqual({ ok: true, value: 96 });
     expect(parseCueBpm('0').ok).toBe(false);
     expect(parseCueBpm('128.5').ok).toBe(false);
+    expect(parseCueBpm('9007199254740993')).toEqual({ ok: false, message: 'BPM is too large.' });
   });
 });
 

@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClassTrack, ImportClassTracks, Provider, TrackSearchResult } from '@ritmofit/shared';
-import { createOrderedImport, runOrderedImport } from './ordered-import.js';
+import {
+  createOrderedImport,
+  pendingOrderedImports,
+  preserveImportArrangement,
+  reconcileOrderedImport,
+  runOrderedImport,
+} from './ordered-import.js';
 import * as api from './api.js';
 vi.mock('./api.js', async (original) => ({
   ...(await original<typeof import('./api.js')>()),
@@ -187,5 +193,168 @@ describe('ordered import orchestration', () => {
     expect((await runOrderedImport('class', restored)).error).toBeNull();
     expect(api.importTrack).toHaveBeenCalledTimes(2);
     expect(rows.map((r) => r.trackId)).toEqual(['library-A', 'library-B']);
+  });
+});
+
+describe('ordered import recovery', () => {
+  const prefix = 'ritmo-import:class-1:class:apple_music:';
+
+  function storedSession(key: string, pending: boolean) {
+    const session = createOrderedImport([candidate('A')], key);
+    if (pending) {
+      session.pending = {
+        operationId: crypto.randomUUID(),
+        expectedTracks: [],
+        placements: [{ id: session.entries[0]!.id, trackId: crypto.randomUUID() }],
+        orderedIds: [session.entries[0]!.id],
+      };
+    }
+    sessionStorage.setItem(key, JSON.stringify(session));
+    return session;
+  }
+
+  it('lists pending imports only when the storage key starts with the prefix', () => {
+    storedSession(`${prefix}playlist-a`, true);
+    storedSession(`${prefix}finished`, false);
+    storedSession('ritmo-import:class-2:class:apple_music:playlist-a', true);
+    storedSession('ritmo-import:class-10:class:apple_music:playlist-a', true);
+    storedSession('ritmo-import:class-1:block-9:apple_music:playlist-a', true);
+    storedSession('ritmo-import:class-1:class:spotify:playlist-a', true);
+    storedSession(`not-${prefix}playlist-a`, true);
+    sessionStorage.setItem(`${prefix}broken`, '{');
+    sessionStorage.setItem(`${prefix}invalid`, JSON.stringify({ entries: [{ id: 'x' }] }));
+
+    const pending = pendingOrderedImports(prefix);
+
+    expect(pending.map((session) => session.storageKey)).toEqual([`${prefix}playlist-a`]);
+    expect(pending[0]?.pending?.placements).toHaveLength(1);
+    expect(pendingOrderedImports('ritmo-import:class-1:')).toHaveLength(3);
+  });
+
+  it('returns nothing when session storage cannot be read', () => {
+    storedSession(`${prefix}playlist-a`, true);
+    // Node 25 exposes sessionStorage by default, and Node 22+ does with
+    // --experimental-webstorage. Vitest does not replace that native object
+    // (sessionStorage is not a global it copies over), but it does replace
+    // Storage with jsdom's constructor. A spy on Storage.prototype.length
+    // therefore misses the object this helper reads, and the native length
+    // getter is non-configurable so it cannot be replaced in place.
+    vi.stubGlobal('sessionStorage', {
+      get length() {
+        throw new Error('storage disabled');
+      },
+    });
+    try {
+      expect(pendingOrderedImports(prefix)).toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('keeps an uncertain server failure replayable without arrangement recovery', async () => {
+    vi.mocked(api.importClassTracks).mockRejectedValueOnce(
+      new api.ApiError('unavailable', 'UPSTREAM', 503),
+    );
+    const session = createOrderedImport([candidate('A')], 'uncertain-commit');
+    const outcome = await runOrderedImport('class', session);
+
+    expect(outcome.error).toBe('unavailable');
+    expect(session.needsRecovery).not.toBe(true);
+    expect(session.pending?.placements).toHaveLength(1);
+    expect(JSON.parse(sessionStorage.getItem('uncertain-commit')!).pending).toEqual(
+      session.pending,
+    );
+  });
+
+  it('confirms a saved commit without resolving songs that were not in that commit', async () => {
+    const session = createOrderedImport([candidate('A'), candidate('B')], 'confirm-only');
+    session.pending = {
+      operationId: crypto.randomUUID(),
+      expectedTracks: [],
+      placements: [{ id: session.entries[0]!.id, trackId: 'library-A' }],
+      orderedIds: [session.entries[0]!.id],
+    };
+
+    const outcome = await runOrderedImport('class', session, undefined, undefined, {
+      confirmOnly: true,
+    });
+
+    expect(outcome.error).toBeNull();
+    expect(api.importTrack).not.toHaveBeenCalled();
+    expect(api.importClassTracks).toHaveBeenCalledTimes(1);
+    expect(session.pending).toBeUndefined();
+    expect(session.entries.map((entry) => entry.added)).toEqual([true, false]);
+    expect(rows.map((row) => row.trackId)).toEqual(['library-A']);
+  });
+
+  it('appends remaining songs after the instructor keeps a changed arrangement', async () => {
+    const session = createOrderedImport(
+      [candidate('A'), candidate('B'), candidate('C')],
+      'recover-order',
+    );
+    await runOrderedImport(
+      'class',
+      session,
+      new Set([session.entries[0]!.id, session.entries[2]!.id]),
+    );
+    rows = rows.reverse().map((row, position) => ({ ...row, position }));
+
+    const blocked = await runOrderedImport('class', session);
+    expect(blocked.error).toMatch(/moved or removed/);
+    expect(session.needsRecovery).toBe(true);
+    expect(api.importClassTracks).toHaveBeenCalledTimes(1);
+    expect(rows.map((row) => row.trackId)).toEqual(['library-C', 'library-A']);
+
+    preserveImportArrangement(session);
+    const reloaded = createOrderedImport(
+      [candidate('A'), candidate('B'), candidate('C')],
+      'recover-order',
+    );
+    expect(reloaded.keepCurrentOrder).toBe(true);
+    expect(reloaded.needsRecovery).toBe(false);
+
+    const recovered = await runOrderedImport('class', reloaded);
+    expect(recovered.error).toBeNull();
+    expect(reloaded.needsRecovery).toBe(false);
+    expect(rows.map((row) => row.trackId)).toEqual(['library-C', 'library-A', 'library-B']);
+  });
+
+  it('marks a song the class no longer contains without asking to rebuild a matching order', async () => {
+    const session = createOrderedImport([candidate('A'), candidate('B')], 'removed-song');
+    await runOrderedImport('class', session);
+    rows = rows.filter((row) => row.trackId !== 'library-B');
+
+    await reconcileOrderedImport('class', session);
+
+    expect(
+      session.entries.map((entry) => [entry.candidate.title, entry.added, entry.removed]),
+    ).toEqual([
+      ['A', true, false],
+      ['B', false, true],
+    ]);
+    expect(session.needsRecovery).toBe(false);
+  });
+
+  it('asks for end-append recovery when an unfinished import is split by another song', async () => {
+    const session = createOrderedImport(
+      [candidate('A'), candidate('B'), candidate('C')],
+      'split-block',
+    );
+    await runOrderedImport(
+      'class',
+      session,
+      new Set([session.entries[0]!.id, session.entries[2]!.id]),
+    );
+    rows = [
+      rows[0]!,
+      { id: 'other', trackId: 'library-X', position: 1, updatedAt: 1 } as ClassTrack,
+      { ...rows[1]!, position: 2 },
+    ];
+
+    await reconcileOrderedImport('class', session);
+
+    expect(session.needsRecovery).toBe(true);
+    expect(session.entries.map((entry) => entry.added)).toEqual([true, false, true]);
+    expect(JSON.parse(sessionStorage.getItem('split-block')!).needsRecovery).toBe(true);
   });
 });
