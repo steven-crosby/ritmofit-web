@@ -13,9 +13,13 @@ allowBuilds:
 # esbuild/vite advisories below, both ARE fixable within the current majors:
 # undici 7.29.0 satisfies jsdom's ^7.25.0; nanoid 3.3.18 satisfies postcss's
 # ^3.3.17. Prefer the upgrade over an audit ignore (AGENTS.md).
+# zod <4.6.6 is GHSA-mrhx-c7xc-m3w5 (high). better-auth / @better-auth/core
+# depend on zod ^4.3.6, so a direct-dep bump leaves that copy on 4.4.3.
+# ^4.6.6 stays on zod 4 and satisfies every current range.
 overrides:
   undici: '^7.29.0'
   nanoid: '^3.3.18'
+  zod: '^4.6.6'
 # Dependency-audit exceptions (gate: `pnpm audit:ci`). All are dev/build-server
 # advisories (esbuild & vite dev servers, reached only via vitest/drizzle-kit) — none
 # reach the deployed Worker request handler or the browser bundle.
