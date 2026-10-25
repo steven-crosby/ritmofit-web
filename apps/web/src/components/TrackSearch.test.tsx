@@ -1575,6 +1575,25 @@ describe('TrackSearch playlist song picker', () => {
     expect(screen.queryByRole('button', { name: 'Import Playlist URL' })).toBeNull();
   });
 
+  it('opens paste-a-link without a SoundCloud-only placeholder and follows the pasted link', async () => {
+    vi.mocked(api.importPlaylist).mockResolvedValue(preview(2));
+    render(
+      <TrackSearch classId="c1" onAdded={() => {}} requestedMode="playlist" requestedModeKey={1} />,
+    );
+    const input = screen.getByLabelText('Playlist URL') as HTMLInputElement;
+    expect(input.placeholder).toBe('Paste a Spotify, Apple Music, or SoundCloud playlist link');
+    expect(screen.getByRole('button', { name: 'SoundCloud', pressed: true })).toBeTruthy();
+
+    fireEvent.change(input, { target: { value: 'not a url' } });
+    expect(screen.getByRole('button', { name: 'SoundCloud', pressed: true })).toBeTruthy();
+
+    const spotify = 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M';
+    fireEvent.change(input, { target: { value: spotify } });
+    expect(screen.getByRole('button', { name: 'Spotify', pressed: true })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    await waitFor(() => expect(api.importPlaylist).toHaveBeenCalledWith('c1', spotify));
+  });
+
   it('offers paste on the class picker when tracks already exist', () => {
     vi.mocked(api.listClassTracks).mockResolvedValue([
       { ...ADDED_CLASS_TRACK, id: 'existing-placement', position: 0, updatedAt: 4 },
