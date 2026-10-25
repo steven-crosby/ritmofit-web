@@ -41,6 +41,7 @@ import {
   ApiError,
 } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
+import { PLAYLIST_LINK_PLACEHOLDER, playlistProviderFromUrl } from '../lib/playlist-link.js';
 import {
   DEFAULT_PROVIDER,
   PROVIDER_ORDER,
@@ -1122,11 +1123,16 @@ export function TrackSearch({
             id="playlist-url-input"
             type="url"
             className="min-h-11 flex-1 rounded-pill border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary"
-            placeholder={`Paste a ${providerLabel(provider)} playlist URL…`}
+            placeholder={PLAYLIST_LINK_PLACEHOLDER}
             value={playlistUrl}
             onChange={(e) => {
               playlistUrlRevision.current++;
-              setPlaylistUrl(e.target.value);
+              const next = e.target.value;
+              setPlaylistUrl(next);
+              // The chip is a hint for connection copy. Import still posts the
+              // raw URL, so a link the detector misses keeps working.
+              const detected = playlistProviderFromUrl(next);
+              if (detected && detected !== provider) setProvider(detected);
             }}
           />
           <button
