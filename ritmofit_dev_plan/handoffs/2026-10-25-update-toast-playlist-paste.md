@@ -5,7 +5,7 @@ lane: solo
 branch: cursor/fix-update-toast-and-playlist-paste-f8d6
 head: 368be6d
 base: 2b3a79c9fb966dd6b72093e9005ef40f4fb2c10c
-prs: []
+prs: ['#582']
 status: open
 ---
 
@@ -17,11 +17,11 @@ status: open
 
 ## In flight
 
-- This branch's PR, base `main`. Do not merge from this handoff unless the owner asks. Do not deploy.
+- [#582](https://github.com/steven-crosby/ritmofit-web/pull/582), base `main`. Do not merge from this handoff unless the owner asks. Do not deploy.
 
 ## Next action
 
-Owner review and squash-merge. A real-browser check after the next production deploy should confirm Reload now leaves the new shell without the toast, and that the toast does not cover Import.
+Owner review and squash-merge of [#582](https://github.com/steven-crosby/ritmofit-web/pull/582). A real-browser check after the next production deploy should confirm Reload now leaves the new shell without the toast, and that the toast does not cover Import.
 
 ## Blockers and owner decisions
 
