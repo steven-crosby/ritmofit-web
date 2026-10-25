@@ -615,31 +615,23 @@ describe('Dashboard class library states', () => {
       trackCount: 1,
       coverImageUrl: null,
     };
-    const candidate = {
-      provider: 'spotify' as const,
-      providerTrackId: 'track-1',
-      providerUri: null,
-      title: 'Track One',
-      artist: 'Artist',
-      durationMs: 180000,
-      albumArtUrl: null,
-    };
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
     vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
-    vi.mocked(api.listPlaylistTracks)
-      .mockResolvedValueOnce([candidate])
-      .mockRejectedValueOnce(new Error('provider unavailable'));
+    vi.mocked(api.listPlaylistTracks).mockRejectedValueOnce(new Error('provider unavailable'));
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
     fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Open Fetch First' }));
-    await screen.findByText('Track One');
-    fireEvent.click(screen.getByRole('button', { name: 'Start class from Fetch First' }));
 
     expect(await screen.findByText('provider unavailable')).toBeTruthy();
+    const start = screen.getByRole('button', {
+      name: 'Start class from Fetch First',
+    }) as HTMLButtonElement;
+    expect(start.disabled).toBe(true);
     expect(api.createClass).not.toHaveBeenCalled();
+    expect(api.listPlaylistTracks).toHaveBeenCalledTimes(1);
   });
 
   it('disables class creation when a saved playlist contains no tracks', async () => {
@@ -670,7 +662,7 @@ describe('Dashboard class library states', () => {
     expect(api.createClass).not.toHaveBeenCalled();
   });
 
-  it('does not create a class when a saved playlist becomes empty before submission', async () => {
+  it('imports the playlist tracks already on screen without refetching', async () => {
     const playlist = {
       provider: 'spotify' as const,
       playlistId: 'pl-emptied',
@@ -682,19 +674,17 @@ describe('Dashboard class library states', () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
     vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
-    vi.mocked(api.listPlaylistTracks)
-      .mockResolvedValueOnce([
-        {
-          provider: 'spotify',
-          providerTrackId: 'track-1',
-          providerUri: null,
-          title: 'Track One',
-          artist: 'Artist',
-          durationMs: 180000,
-          albumArtUrl: null,
-        },
-      ])
-      .mockResolvedValueOnce([]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValueOnce([
+      {
+        provider: 'spotify',
+        providerTrackId: 'track-1',
+        providerUri: null,
+        title: 'Track One',
+        artist: 'Artist',
+        durationMs: 180000,
+        albumArtUrl: null,
+      },
+    ]);
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
@@ -703,12 +693,8 @@ describe('Dashboard class library states', () => {
     await screen.findByText('Track One');
     fireEvent.click(screen.getByRole('button', { name: 'Start class from Emptied Ride' }));
 
-    expect(
-      await screen.findByText(
-        'No tracks found in this playlist. Choose another playlist to start a class.',
-      ),
-    ).toBeTruthy();
-    expect(api.createClass).not.toHaveBeenCalled();
+    await waitFor(() => expect(api.createClass).toHaveBeenCalledTimes(1));
+    expect(api.listPlaylistTracks).toHaveBeenCalledTimes(1);
   });
 
   it('reports partial imports and retries failures against the same class', async () => {
@@ -3601,6 +3587,25 @@ describe('Dashboard plan-first next step', () => {
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
     expect(destCard?.contains(picker)).toBe(true);
+  });
+
+  it('opens class-level playlist import from a scaffold without assigning a block', async () => {
+    const ride = { ...makeClass('Plan ride'), scaffoldRecipeId: 'cycle_45_v1' as const };
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(liveRunPayload([]));
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([firstBlock, secondBlock]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Plan ride$/ }));
+    const open = await screen.findByRole('button', { name: 'Import a playlist as song blocks' });
+    expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
+    fireEvent.click(open);
+    const region = await screen.findByRole('region', { name: /Add music to Plan ride/ });
+    expect(within(region).getByRole('button', { name: 'Import Playlist URL' })).toBeTruthy();
+    expect(region.closest('[id^="plan-block-card-"]')).toBeNull();
   });
 
   it('updates an open music picker destination when its block is renamed', async () => {

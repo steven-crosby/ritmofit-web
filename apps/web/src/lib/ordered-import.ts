@@ -175,7 +175,7 @@ export async function runOrderedImport(
   session: OrderedImportSession,
   selectedIds?: Set<string>,
   planBlockId?: string | null,
-  options: { confirmOnly?: boolean } = {},
+  options: { confirmOnly?: boolean; songBlocks?: boolean } = {},
 ) {
   session.started = true;
   persist(session);
@@ -235,13 +235,14 @@ export async function runOrderedImport(
         }),
       );
     }
-    // Bound each commit to the existing per-import API limit, without imposing a
-    // new class-size policy. Every subsequent chunk still retains source order.
+    // Song-block commits are one request: the cap is 15 placements, and a
+    // planBlockId on the same body is rejected. Other commits keep 100-chunks.
     const placements = wanted
       .filter((e) => e.trackId)
       .map((e) => ({ id: e.id, trackId: e.trackId! }));
-    for (let i = 0; i < placements.length; i += 100) {
-      const chunk = placements.slice(i, i + 100);
+    const chunkSize = options.songBlocks ? Math.max(placements.length, 1) : 100;
+    for (let i = 0; i < placements.length; i += chunkSize) {
+      const chunk = placements.slice(i, i + chunkSize);
       const current = await listClassTracks(classId);
       session.pending = {
         operationId: crypto.randomUUID(),
@@ -253,7 +254,11 @@ export async function runOrderedImport(
               ...chunk.filter((p) => !current.some((row) => row.id === p.id)).map((p) => p.id),
             ]
           : mergeImportOrder(current, session.entries, chunk),
-        ...(planBlockId ? { planBlockId } : {}),
+        ...(options.songBlocks
+          ? { songBlocks: true as const }
+          : planBlockId
+            ? { planBlockId }
+            : {}),
       };
       await commitPending();
     }

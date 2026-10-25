@@ -5,10 +5,16 @@
  * (`apps/api`) selects an adapter per request and owns persistence; this package
  * never touches the DB or app auth. SoundCloud is first (music-providers.md).
  */
-export type { MusicProvider, FetchLike, PlaylistImportRef } from './provider.js';
+export type {
+  MusicProvider,
+  FetchLike,
+  PlaylistImportRef,
+  PlaylistReadOptions,
+  ProviderAbortSignal,
+} from './provider.js';
 export { providerTrackIdAliases } from './identity.js';
 export { parsePlaylistUrl, type ParsedPlaylistUrl } from './playlist-url.js';
-export { ProviderError } from './errors.js';
+export { ProviderError, PlaylistOverLimitError, abortError, isAbortError } from './errors.js';
 export {
   createSoundCloudProvider,
   fetchSoundCloudLikes,

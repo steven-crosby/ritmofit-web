@@ -161,7 +161,7 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 | DELETE | `/providers/:provider/connection` | Disconnect a provider and enqueue required provider-metadata purge work. |
 | GET | `/providers/apple_music/config` | Return the developer token and storefront used to configure MusicKit JS. |
 | POST | `/providers/apple_music/connection` | Store the Music-User-Token returned by MusicKit JS, encrypted at rest. |
-| POST | `/classes/:id/import-playlist` | Import a public Spotify, SoundCloud, or Apple Music catalog playlist URL directly into a class as `class_tracks`, gated by `providerCapabilities.playlistImport`. Separate from the saved-playlist browsing flow above. |
+| POST | `/classes/:id/import-playlist` | Preview a public Spotify, SoundCloud, or Apple Music catalog playlist URL. Returns ordered occurrences and writes nothing. Over 100 occurrences is 422. A preview that exceeds 8 seconds is 504 `PROVIDER_TIMEOUT` with no writes. Gated by `providerCapabilities.playlistImport`. |
 
 ## Provider playback tokens
 

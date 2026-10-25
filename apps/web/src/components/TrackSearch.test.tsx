@@ -989,6 +989,8 @@ describe('TrackSearch submitted operation ownership', () => {
     vi.mocked(api.listLikes).mockResolvedValue([staleResult]);
     vi.mocked(api.importTrack).mockResolvedValue(IMPORTED_TRACK);
     vi.mocked(api.addTrack).mockResolvedValue(ADDED_CLASS_TRACK);
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.importClassTracks).mockResolvedValue([ADDED_CLASS_TRACK]);
   });
   function urlInput() {
     fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
@@ -1015,15 +1017,30 @@ describe('TrackSearch submitted operation ownership', () => {
       if (change === 'edit-away-and-back') fireEvent.change(input, { target: { value: firstUrl } });
       input.focus();
       await act(async () => {
-        write.resolve({ imported: 1 });
+        write.resolve({
+          occurrences: [
+            {
+              index: 0,
+              title: 'First',
+              artist: 'QA',
+              durationMs: 180000,
+              provider: 'apple_music',
+              providerTrackId: 'pl-song',
+            },
+          ],
+        });
         await write.promise;
       });
+      await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
       expect(input.value).toBe(
         change === 'replacement' ? nextUrl : change === 'unchanged' ? '' : firstUrl,
       );
       expect(document.activeElement).toBe(input);
       expect(api.importPlaylist).toHaveBeenCalledWith('c1', firstUrl);
-      expect(onAdded).toHaveBeenCalledTimes(1);
+      expect(api.importClassTracks).toHaveBeenCalledWith(
+        'c1',
+        expect.objectContaining({ songBlocks: true }),
+      );
     },
   );
   it('retains the replacement URL and exposes a current-context failure', async () => {
@@ -1065,7 +1082,18 @@ describe('TrackSearch submitted operation ownership', () => {
       if (change === 'provider' || change === 'mode')
         fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
       await act(async () => {
-        write.resolve({ imported: 1 });
+        write.resolve({
+          occurrences: [
+            {
+              index: 0,
+              title: 'First',
+              artist: 'QA',
+              durationMs: 180000,
+              provider: 'apple_music',
+              providerTrackId: 'pl-song',
+            },
+          ],
+        });
         await write.promise;
       });
       expect(onAdded).not.toHaveBeenCalled();
@@ -1364,5 +1392,122 @@ describe('TrackSearch blank Add-music failures', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
     expect((await screen.findByRole('alert')).textContent).toBe('Playlist is private.');
+  });
+});
+
+describe('TrackSearch playlist song picker', () => {
+  const url = 'https://music.apple.com/us/playlist/demo/pl.demo';
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.importTrack).mockResolvedValue(IMPORTED_TRACK);
+    vi.mocked(api.importClassTracks).mockResolvedValue([ADDED_CLASS_TRACK]);
+  });
+
+  function preview(count: number) {
+    return {
+      occurrences: Array.from({ length: count }, (_, index) => ({
+        index,
+        title: `Song ${index + 1}`,
+        artist: 'QA',
+        durationMs: 180_000,
+        provider: 'apple_music' as const,
+        providerTrackId: `p-${index}`,
+      })),
+    };
+  }
+
+  function pasteUrl() {
+    fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+    fireEvent.change(screen.getByLabelText('Playlist URL'), { target: { value: url } });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+  }
+
+  it('commits a 10-song preview with songBlocks and no picker', async () => {
+    vi.mocked(api.importPlaylist).mockResolvedValue(preview(10));
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    pasteUrl();
+    await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
+    expect(api.importPlaylist).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog', { name: 'Choose songs' })).toBeNull();
+    expect(vi.mocked(api.importClassTracks).mock.calls[0]![1].songBlocks).toBe(true);
+    expect(vi.mocked(api.importClassTracks).mock.calls[0]![1].placements).toHaveLength(10);
+  });
+
+  it('opens the picker with the first 15 songs checked and commits that subset', async () => {
+    vi.mocked(api.importPlaylist).mockResolvedValue(preview(16));
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    pasteUrl();
+    const dialog = await screen.findByRole('dialog', { name: 'Choose songs' });
+    expect(api.importClassTracks).not.toHaveBeenCalled();
+    const boxes = dialog.querySelectorAll('input[type="checkbox"]');
+    expect(
+      Array.from(boxes)
+        .slice(0, 15)
+        .every((box) => (box as HTMLInputElement).checked),
+    ).toBe(true);
+    expect((boxes[15] as HTMLInputElement).checked).toBe(false);
+    const confirm = screen.getByRole('button', { name: 'Import 15 songs' }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(false);
+    fireEvent.click(confirm);
+    await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(api.importClassTracks).mock.calls[0]![1].placements).toHaveLength(15);
+    expect(vi.mocked(api.importClassTracks).mock.calls[0]![1].songBlocks).toBe(true);
+  });
+
+  it('opens 100 plain rows in under 2 seconds and does not commit until confirm', async () => {
+    vi.mocked(api.importPlaylist).mockResolvedValue(preview(100));
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    const started = performance.now();
+    pasteUrl();
+    const boxes = await screen.findAllByRole('checkbox');
+    expect(performance.now() - started).toBeLessThan(2_000);
+    expect(boxes).toHaveLength(100);
+    expect(api.importPlaylist).toHaveBeenCalledTimes(1);
+    expect(api.importClassTracks).not.toHaveBeenCalled();
+  });
+
+  it('shows the over-100 limit and does not open the picker', async () => {
+    vi.mocked(api.importPlaylist).mockRejectedValue(
+      new api.ApiError('Playlist has 140 songs. The limit is 100.', 'VALIDATION_ERROR', 422),
+    );
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    pasteUrl();
+    expect((await screen.findByRole('alert')).textContent).toContain('140');
+    expect(screen.queryByRole('dialog', { name: 'Choose songs' })).toBeNull();
+    expect(api.importClassTracks).not.toHaveBeenCalled();
+  });
+
+  it('shows the try-again message on PROVIDER_TIMEOUT and keeps the URL', async () => {
+    vi.mocked(api.importPlaylist).mockRejectedValue(
+      new api.ApiError('upstream', 'PROVIDER_TIMEOUT', 504),
+    );
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    pasteUrl();
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'The playlist took too long to load. Try again.',
+    );
+    expect((screen.getByLabelText('Playlist URL') as HTMLInputElement).value).toBe(url);
+    expect(screen.queryByRole('dialog', { name: 'Choose songs' })).toBeNull();
+    expect(api.importClassTracks).not.toHaveBeenCalled();
+  });
+
+  it('writes nothing when the picker is cancelled', async () => {
+    vi.mocked(api.importPlaylist).mockResolvedValue(preview(16));
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    pasteUrl();
+    await screen.findByRole('dialog', { name: 'Choose songs' });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog', { name: 'Choose songs' })).toBeNull();
+    expect(api.importClassTracks).not.toHaveBeenCalled();
+    expect((screen.getByLabelText('Playlist URL') as HTMLInputElement).value).toBe(url);
+  });
+
+  it('hides paste-a-link when the destination is a plan block', () => {
+    render(<TrackSearch classId="c1" planBlockId="block-1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
+    expect(screen.queryByRole('button', { name: 'Import Playlist URL' })).toBeNull();
   });
 });

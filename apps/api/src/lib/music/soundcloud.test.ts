@@ -634,7 +634,7 @@ describe('SoundCloudProvider.getPlaylist (URL import via /resolve)', () => {
     expect(resolveCall.init?.redirect).toBe('manual');
     expect(resolveCall.init?.headers?.Authorization).toBe('OAuth tok-1');
     const firstTracksCall = calls.find((c) => c.url.startsWith(TRACKS_URL))!;
-    expect(firstTracksCall.url).toContain('limit=200');
+    expect(firstTracksCall.url).toContain('limit=100');
     expect(firstTracksCall.url).toContain('linked_partitioning=true');
   });
 

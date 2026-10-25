@@ -143,27 +143,21 @@ describe('SpotifyProvider.getPlaylist', () => {
     ).toEqual([`${playlistUrl}?limit=50&offset=0`, `${playlistUrl}?limit=50&offset=50`]);
   });
 
-  it('caps at IMPORT_TRACK_CAP (500) and halts pagination for huge playlists', async () => {
+  it('rejects a playlist whose reported total is over 100 without another page', async () => {
     const fullPage = Array.from({ length: 50 }, (_, index) => ({
       item: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
     }));
     const playlistUrl = `${API_BASE}/playlists/playlist-id/items`;
+    const { provider, calls } = makeProvider({
+      [`${playlistUrl}?limit=50&offset=0`]: { items: fullPage, total: 1000 },
+      [`${playlistUrl}?limit=50&offset=50`]: { items: fullPage, total: 1000 },
+    });
 
-    // Provide responses for the first 10 pages (500 tracks). The total is 1000,
-    // but it should stop fetching after hitting the 500 track cap.
-    const handlers: Record<string, unknown> = {};
-    for (let i = 0; i < 10; i++) {
-      handlers[`${playlistUrl}?limit=50&offset=${i * 50}`] = { items: fullPage, total: 1000 };
-    }
-
-    const { provider, calls } = makeProvider(handlers);
-
-    const results = await provider.getPlaylist({ provider: 'spotify', playlistId: 'playlist-id' });
-
-    expect(results).toHaveLength(500);
-    // 500 / 50 = 10 calls. Should stop there instead of fetching all 20 pages.
+    await expect(
+      provider.getPlaylist({ provider: 'spotify', playlistId: 'playlist-id' }),
+    ).rejects.toThrow('Playlist has 1000 songs. The limit is 100.');
     const playlistCalls = calls.filter((call) => call.url.startsWith(playlistUrl));
-    expect(playlistCalls).toHaveLength(10);
+    expect(playlistCalls).toHaveLength(1);
   });
 
   it('rejects a malformed later page instead of returning a partial playlist', async () => {
@@ -630,6 +624,59 @@ describe('fetchSpotifyPlaylistTracks', () => {
         apiBase: API_BASE,
       }),
     ).resolves.toEqual([]);
+  });
+
+  it('does not request the next page once shouldStop trips on the current page', async () => {
+    const items = Array.from({ length: 101 }, (_, index) => ({
+      item: { ...SP_TRACK, id: `t-${index}`, uri: `spotify:track:t-${index}` },
+    }));
+    const { fetchImpl, calls } = fakeFetch({
+      [`${itemsUrl('pl-1')}?limit=50&offset=0`]: { items, total: 250 },
+      [`${itemsUrl('pl-1')}?limit=50&offset=101`]: { items: [{ item: SP_TRACK }], total: 250 },
+    });
+
+    const results = await fetchSpotifyPlaylistTracks({
+      accessToken: 'user-tok',
+      playlistId: 'pl-1',
+      fetchImpl,
+      apiBase: API_BASE,
+      maxTracks: 200,
+      shouldStop: (tracks) => tracks.length > 100,
+    });
+
+    expect(results).toHaveLength(101);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('keeps paging a duplicate-heavy playlist that is still under the distinct-song stop', async () => {
+    const repeat = (offset: number) =>
+      Array.from({ length: 50 }, (_, index) => ({
+        item: {
+          ...SP_TRACK,
+          id: `dup-${offset + index}`,
+          uri: `spotify:track:dup-${offset + index}`,
+          name: 'Same Song',
+        },
+      }));
+    const { fetchImpl, calls } = fakeFetch({
+      [`${itemsUrl('pl-1')}?limit=50&offset=0`]: { items: repeat(0), total: 100 },
+      [`${itemsUrl('pl-1')}?limit=50&offset=50`]: { items: repeat(50), total: 100 },
+    });
+
+    const results = await fetchSpotifyPlaylistTracks({
+      accessToken: 'user-tok',
+      playlistId: 'pl-1',
+      fetchImpl,
+      apiBase: API_BASE,
+      maxTracks: 200,
+      shouldStop: (tracks) => new Set(tracks.map((track) => track.title)).size > 100,
+    });
+
+    expect(results).toHaveLength(100);
+    expect(calls.map((call) => call.url)).toEqual([
+      `${itemsUrl('pl-1')}?limit=50&offset=0`,
+      `${itemsUrl('pl-1')}?limit=50&offset=50`,
+    ]);
   });
 });
 

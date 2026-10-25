@@ -357,4 +357,14 @@ describe('ordered import recovery', () => {
     expect(session.entries.map((entry) => entry.added)).toEqual([true, false, true]);
     expect(JSON.parse(sessionStorage.getItem('split-block')!).needsRecovery).toBe(true);
   });
+
+  it('sends one songBlocks commit and omits planBlockId', async () => {
+    const session = createOrderedImport([candidate('A'), candidate('B')], 'song-blocks');
+    await runOrderedImport('class', session, undefined, 'block-1', { songBlocks: true });
+    expect(api.importClassTracks).toHaveBeenCalledTimes(1);
+    const body = vi.mocked(api.importClassTracks).mock.calls[0]![1];
+    expect(body.songBlocks).toBe(true);
+    expect(body.planBlockId).toBeUndefined();
+    expect(body.placements).toHaveLength(2);
+  });
 });

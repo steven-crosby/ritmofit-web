@@ -18,14 +18,20 @@
  * live docs when real credentials land.
  */
 import {
+  PLAYLIST_URL_OCCURRENCE_LIMIT,
   providerPlaylistSummarySchema,
   trackSearchResultSchema,
   type ProviderPlaylistSummary,
   type TrackSearchResult,
 } from '@ritmofit/shared';
 import { z } from 'zod';
-import type { FetchLike, MusicProvider, PlaylistImportRef } from './provider.js';
-import { readJson, ProviderError } from './errors.js';
+import type {
+  FetchLike,
+  MusicProvider,
+  PlaylistImportRef,
+  PlaylistReadOptions,
+} from './provider.js';
+import { abortError, PlaylistOverLimitError, ProviderError, readJson } from './errors.js';
 import { AppTokenCache } from './app-token.js';
 import { fetchWithRetry, type RetryOptions } from './retry.js';
 
@@ -39,12 +45,9 @@ const DEFAULT_TOKEN_URL = 'https://secure.soundcloud.com/oauth/token';
 const SEARCH_LIMIT = 25;
 const LIKES_LIMIT = 50;
 const SOUNDCLOUD_PAGE_LIMIT = 50;
-// URL import reads with the app token: the docs allow up to 200 per page for the
-// playlist-track collection. The raw cap sits far above the 100-distinct-song
-// import limit, so a playlist truncated here always exceeds that limit after
-// dedup and is rejected as too large — never silently imported as if complete.
-const IMPORT_PAGE_LIMIT = 200;
-const IMPORT_TRACK_CAP = 500;
+// Paste-a-link pages at the occurrence ceiling. A longer playlist is rejected
+// from the page that crosses it — never silently truncated.
+const IMPORT_PAGE_LIMIT = 100;
 
 export interface SoundCloudConfig {
   clientId: string;
@@ -190,15 +193,19 @@ class SoundCloudProvider implements MusicProvider {
    * resolves to something that isn't a playlist (e.g. an on.soundcloud.com
    * short link to a track).
    */
-  async getPlaylist(ref: Extract<PlaylistImportRef, { provider: 'soundcloud' }>) {
+  async getPlaylist(
+    ref: Extract<PlaylistImportRef, { provider: 'soundcloud' }>,
+    read?: PlaylistReadOptions,
+  ) {
     try {
-      return await this.getPlaylistOnce(ref.permalinkUrl);
+      return await this.getPlaylistOnce(ref.permalinkUrl, read);
     } catch (err) {
       if (!(err instanceof SoundCloudUnauthorizedError)) throw err;
       // The cached app token went stale server-side; re-mint once and retry.
+      // Over-limit and preview abort are not authorization failures.
       this.tokens.invalidate();
       try {
-        return await this.getPlaylistOnce(ref.permalinkUrl);
+        return await this.getPlaylistOnce(ref.permalinkUrl, read);
       } catch (retryErr) {
         if (retryErr instanceof SoundCloudUnauthorizedError) {
           throw new ProviderError('soundcloud', 'SoundCloud rejected a fresh app token (401).');
@@ -208,26 +215,57 @@ class SoundCloudProvider implements MusicProvider {
     }
   }
 
-  private async getPlaylistOnce(permalinkUrl: string): Promise<TrackSearchResult[]> {
-    const urn = await this.resolvePlaylistUrn(permalinkUrl);
+  private async getPlaylistOnce(
+    permalinkUrl: string,
+    read?: PlaylistReadOptions,
+  ): Promise<TrackSearchResult[]> {
+    const urn = await this.resolvePlaylistUrn(permalinkUrl, read);
     if (urn === null) return [];
-    const rows = await fetchSoundCloudPagedCollection({
-      firstUrl:
-        `${this.apiBase}/playlists/${encodeURIComponent(urn)}/tracks` +
-        `?limit=${IMPORT_PAGE_LIMIT}&linked_partitioning=true`,
-      accessToken: await this.tokens.get(),
-      fetchImpl: this.fetchImpl,
-      parsePage: (json) => {
-        const parsed = scPagedTracksSchema.safeParse(json);
-        if (!parsed.success) return null;
-        if (Array.isArray(parsed.data)) return { rows: parsed.data, nextUrl: null };
-        return { rows: parsed.data.collection, nextUrl: parsed.data.next_href ?? null };
-      },
-      errorPath: '/playlists/:urn/tracks',
-      cap: IMPORT_TRACK_CAP,
-      allow404: true,
-    });
-    return rows.map((item) => toCandidate(item)).filter((r): r is TrackSearchResult => r !== null);
+    const out: TrackSearchResult[] = [];
+    let nextUrl: string | null =
+      `${this.apiBase}/playlists/${encodeURIComponent(urn)}/tracks` +
+      `?limit=${IMPORT_PAGE_LIMIT}&linked_partitioning=true`;
+    const retry = previewRetry(this.retry, read);
+
+    while (nextUrl) {
+      throwIfPreviewStopped(read);
+      const token = await this.tokens.get();
+      const res = await fetchWithRetry(
+        this.fetchImpl,
+        nextUrl,
+        { headers: { Authorization: `OAuth ${token}`, Accept: 'application/json' } },
+        retry,
+      );
+      if (res.status === 401) throw new SoundCloudUnauthorizedError();
+      if (res.status === 404) return [];
+      if (!res.ok) {
+        throw new ProviderError(
+          'soundcloud',
+          `SoundCloud API ${res.status} for /playlists/:urn/tracks`,
+        );
+      }
+      const page = parseSoundCloudTrackPage(await readJson(res, 'soundcloud'));
+      if (!page) {
+        throw new ProviderError(
+          'soundcloud',
+          'SoundCloud returned an invalid page for /playlists/:urn/tracks.',
+        );
+      }
+      for (const row of page.rows) {
+        const candidate = toCandidate(row);
+        if (!candidate) continue;
+        if (out.length >= PLAYLIST_URL_OCCURRENCE_LIMIT) {
+          throw new PlaylistOverLimitError(null, PLAYLIST_URL_OCCURRENCE_LIMIT);
+        }
+        out.push(candidate);
+      }
+      if (page.rows.length === 0) break;
+      if (out.length >= PLAYLIST_URL_OCCURRENCE_LIMIT && page.nextUrl) {
+        throw new PlaylistOverLimitError(null, PLAYLIST_URL_OCCURRENCE_LIMIT);
+      }
+      nextUrl = page.nextUrl;
+    }
+    return out;
   }
 
   /**
@@ -238,7 +276,11 @@ class SoundCloudProvider implements MusicProvider {
    * straight off the Location, no second request needed. A stack that followed
    * anyway hands us the resource body, so 200 JSON is accepted too.
    */
-  private async resolvePlaylistUrn(permalinkUrl: string): Promise<string | null> {
+  private async resolvePlaylistUrn(
+    permalinkUrl: string,
+    read?: PlaylistReadOptions,
+  ): Promise<string | null> {
+    throwIfPreviewStopped(read);
     const token = await this.tokens.get();
     const res = await fetchWithRetry(
       this.fetchImpl,
@@ -247,7 +289,7 @@ class SoundCloudProvider implements MusicProvider {
         headers: { Authorization: `OAuth ${token}`, Accept: 'application/json' },
         redirect: 'manual',
       },
-      this.retry,
+      previewRetry(this.retry, read),
     );
     if (res.status === 401) throw new SoundCloudUnauthorizedError();
     if (res.status === 404) return null;
@@ -377,10 +419,15 @@ export async function fetchSoundCloudPlaylistTracks(cfg: {
   maxTracks?: number;
   /** Page size override for tests; SoundCloud pages are bounded to 50. */
   limit?: number;
+  /**
+   * Saved-playlist import stop. Checked after a page, before the next request.
+   * When set, the browse cap does not apply.
+   */
+  shouldStop?: (tracks: TrackSearchResult[]) => boolean;
 }): Promise<TrackSearchResult[]> {
   const base = cfg.apiBase ?? DEFAULT_API_BASE;
   const id = encodeURIComponent(cfg.playlistId);
-  const cap = cfg.maxTracks ?? 200;
+  const cap = cfg.shouldStop ? Number.MAX_SAFE_INTEGER : (cfg.maxTracks ?? 200);
   const pageLimit = Math.min(cfg.limit ?? SOUNDCLOUD_PAGE_LIMIT, SOUNDCLOUD_PAGE_LIMIT, cap);
   // SoundCloud can truncate embedded playlist `tracks`; read the playlist-track
   // collection endpoint with linked partitioning so large playlists stay complete.
@@ -397,6 +444,14 @@ export async function fetchSoundCloudPlaylistTracks(cfg: {
     errorPath: '/playlists/:id/tracks',
     cap,
     allow404: true,
+    shouldStop: cfg.shouldStop
+      ? (rows) =>
+          cfg.shouldStop!(
+            rows
+              .map((item) => toCandidate(item))
+              .filter((row): row is TrackSearchResult => row !== null),
+          )
+      : undefined,
   });
 
   return rows
@@ -412,6 +467,8 @@ async function fetchSoundCloudPagedCollection(cfg: {
   errorPath: string;
   cap: number;
   allow404?: boolean;
+  /** After a full page, stop before requesting `next_href`. */
+  shouldStop?: (rows: unknown[]) => boolean;
 }): Promise<unknown[]> {
   const out: unknown[] = [];
   let nextUrl: string | null = cfg.firstUrl;
@@ -438,10 +495,33 @@ async function fetchSoundCloudPagedCollection(cfg: {
       if (out.length >= cfg.cap) break;
     }
     if (page.rows.length === 0) break;
+    if (cfg.shouldStop?.(out)) break;
     nextUrl = page.nextUrl;
   }
 
   return out;
+}
+
+function parseSoundCloudTrackPage(
+  json: unknown,
+): { rows: unknown[]; nextUrl: string | null } | null {
+  const parsed = scPagedTracksSchema.safeParse(json);
+  if (!parsed.success) return null;
+  if (Array.isArray(parsed.data)) return { rows: parsed.data, nextUrl: null };
+  return { rows: parsed.data.collection, nextUrl: parsed.data.next_href ?? null };
+}
+
+function previewRetry(
+  base: RetryOptions | undefined,
+  read?: PlaylistReadOptions,
+): RetryOptions | undefined {
+  if (!read?.signal && read?.deadlineAt == null) return base;
+  return { ...base, signal: read.signal, deadlineAt: read.deadlineAt };
+}
+
+function throwIfPreviewStopped(read?: PlaylistReadOptions): void {
+  if (read?.signal?.aborted) throw abortError();
+  if (read?.deadlineAt != null && Date.now() >= read.deadlineAt) throw abortError();
 }
 
 function toPlaylistSummary(raw: unknown): ProviderPlaylistSummary | null {

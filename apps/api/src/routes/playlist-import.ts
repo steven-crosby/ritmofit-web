@@ -1,26 +1,28 @@
 import { Hono } from 'hono';
-import { importPlaylistSchema, MAX_PLAYLIST_IMPORT_TRACKS } from '@ritmofit/shared';
-import { parsePlaylistUrl } from '@ritmofit/music';
+import {
+  importPlaylistSchema,
+  PLAYLIST_URL_OCCURRENCE_LIMIT,
+  playlistPreviewResponseSchema,
+  type PlaylistPreviewOccurrence,
+} from '@ritmofit/shared';
+import { parsePlaylistUrl, PlaylistOverLimitError } from '@ritmofit/music';
 import { requireSession } from '../middleware/auth.js';
 import { requireAccess } from '../lib/authz.js';
 import { rateLimit } from '../lib/rate-limit.js';
-import { createDb, type Db } from '../lib/db.js';
+import { createDb } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { getMusicProvider } from '../lib/music/registry.js';
-import { partitionSettledImports } from '../lib/music/import-playlist.js';
-import { importTrackFromCandidate } from '../lib/track-import.js';
-import { makeMatchKey } from '../lib/same-song.js';
-import { classTracks } from '../db/schema.js';
-import { resequence } from '../lib/sequencing.js';
-import { eq } from 'drizzle-orm';
+import {
+  loadPlaylistPreview,
+  PREVIEW_TIMEOUT_MESSAGE,
+  PreviewTimeoutError,
+} from '../lib/music/playlist-preview.js';
 import type { AppEnv } from '../lib/types.js';
-import { touchClassUpdatedAt } from '../lib/class-recency.js';
 
 export const playlistImportRoutes = new Hono<AppEnv>();
 playlistImportRoutes.use('*', requireSession);
 
-// Playlist import fans out one upstream lookup + import per distinct track, so it's
-// the most expensive provider route — cap it tightly per user.
+// Playlist preview can page a provider, so cap it tightly per user.
 const importLimiter = rateLimit({
   keyPrefix: 'playlist-import',
   windowMs: 60_000,
@@ -28,43 +30,11 @@ const importLimiter = rateLimit({
   key: (c) => c.get('userId'),
 });
 
-type ResolvedTrack = Awaited<ReturnType<typeof importTrackFromCandidate>>;
-type ResolvedTrackPlacement = { track: Pick<ResolvedTrack['track'], 'id'> };
-
-/** Append resolved playlist tracks and advance recency only when class material changed. */
-export async function appendImportedClassTracks(
-  db: Db,
-  classId: string,
-  resolved: ResolvedTrackPlacement[],
-): Promise<number> {
-  if (resolved.length === 0) return 0;
-
-  const existing = await db
-    .select({ id: classTracks.id })
-    .from(classTracks)
-    .where(eq(classTracks.classId, classId))
-    .all();
-
-  const now = Date.now();
-  let position = existing.length;
-  const trackInserts = resolved.map(({ track }) => ({
-    id: crypto.randomUUID(),
-    classId,
-    trackId: track.id,
-    position: position++,
-    intensity: 'none' as const,
-    displayBpmOverride: null,
-    durationMsOverride: null,
-    startOffsetMs: null,
-    notes: null,
-    createdAt: now,
-    updatedAt: now,
-  }));
-
-  await db.insert(classTracks).values(trackInserts);
-  await resequence(db, classId);
-  await touchClassUpdatedAt(db, classId);
-  return trackInserts.length;
+function overLimitMessage(error: PlaylistOverLimitError): string {
+  if (error.reportedTotal == null) {
+    return `Playlist has more than ${error.limit} songs.`;
+  }
+  return `Playlist has ${error.reportedTotal} songs. The limit is ${error.limit}.`;
 }
 
 playlistImportRoutes.post('/classes/:id/import-playlist', importLimiter, async (c) => {
@@ -94,51 +64,41 @@ playlistImportRoutes.post('/classes/:id/import-playlist', importLimiter, async (
   }
 
   const adapter = await getMusicProvider(parsed.ref.provider, c.env);
-  const candidates = await adapter.getPlaylist(parsed.ref);
+  let candidates;
+  try {
+    candidates = await loadPlaylistPreview((opts) => adapter.getPlaylist(parsed.ref, opts));
+  } catch (err) {
+    if (err instanceof PreviewTimeoutError) {
+      throw new HttpError(504, 'PROVIDER_TIMEOUT', PREVIEW_TIMEOUT_MESSAGE);
+    }
+    if (err instanceof PlaylistOverLimitError) {
+      throw new HttpError(422, 'VALIDATION_ERROR', overLimitMessage(err));
+    }
+    throw err;
+  }
 
   if (!candidates.length) {
     throw new HttpError(400, 'BAD_REQUEST', 'Playlist not found or is empty.');
   }
-
-  // Collapse same-song candidates by match key. importTrackFromCandidate already
-  // merges same-song imports in the library, so duplicates would only add work (or
-  // race when resolved concurrently); deduping first leaves distinct songs whose
-  // per-library dedup touches disjoint match-key buckets and is safe in parallel.
-  const seen = new Set<string>();
-  const uniqueCandidates = candidates.filter((cand) => {
-    const key = makeMatchKey(cand.title, cand.artist);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  // Bound the per-request fan-out (upstream lookups + D1 writes). A playlist with
-  // more distinct songs than the cap is rejected rather than silently truncated, so
-  // the instructor knows the class wasn't fully imported.
-  if (uniqueCandidates.length > MAX_PLAYLIST_IMPORT_TRACKS) {
+  if (candidates.length > PLAYLIST_URL_OCCURRENCE_LIMIT) {
     throw new HttpError(
       422,
       'VALIDATION_ERROR',
-      `Playlist has too many tracks to import at once (limit ${MAX_PLAYLIST_IMPORT_TRACKS}).`,
+      `Playlist has more than ${PLAYLIST_URL_OCCURRENCE_LIMIT} songs.`,
     );
   }
 
-  // Resolve with bounded concurrency rather than one sequential round-trip per track.
-  // Best-effort per track: a single racing failure (e.g. a 409 from a concurrent
-  // import of the same provider ref) must not abort the whole class import. Settle,
-  // then keep the tracks that landed — mirrors the saved-playlist path
-  // (`importUserPlaylist`), which counts a failed track as skipped, not fatal.
-  const CONCURRENCY = 5;
-  const resolved: Awaited<ReturnType<typeof importTrackFromCandidate>>[] = [];
-  for (let i = 0; i < uniqueCandidates.length; i += CONCURRENCY) {
-    const batch = uniqueCandidates.slice(i, i + CONCURRENCY);
-    const { fulfilled } = partitionSettledImports(
-      await Promise.allSettled(batch.map((cand) => importTrackFromCandidate(db, me, cand))),
-    );
-    resolved.push(...fulfilled);
-  }
+  const occurrences: PlaylistPreviewOccurrence[] = candidates.map((candidate, index) => ({
+    index,
+    title: candidate.title,
+    artist: candidate.artist,
+    durationMs:
+      typeof candidate.durationMs === 'number' && candidate.durationMs > 0
+        ? candidate.durationMs
+        : null,
+    provider: candidate.provider,
+    providerTrackId: candidate.providerTrackId,
+  }));
 
-  const imported = await appendImportedClassTracks(db, classId, resolved);
-
-  return c.json({ imported }, 201);
+  return c.json(playlistPreviewResponseSchema.parse({ occurrences }), 200);
 });

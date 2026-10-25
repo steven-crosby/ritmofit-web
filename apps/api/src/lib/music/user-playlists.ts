@@ -53,6 +53,7 @@ interface PlaylistAdapter {
     accessToken: string;
     playlistId: string;
     fetchImpl: typeof boundFetch;
+    shouldStop?: (tracks: TrackSearchResult[]) => boolean;
   }): Promise<TrackSearchResult[]>;
   refreshToken(cfg: {
     clientId: string;
@@ -148,6 +149,7 @@ export async function fetchUserPlaylistTracks(
   userId: string,
   provider: Provider,
   playlistId: string,
+  options?: { shouldStop?: (tracks: TrackSearchResult[]) => boolean },
 ): Promise<TrackSearchResult[]> {
   if (env.MOCK_PROVIDERS === 'true') return [];
   if (!providerCapabilities[provider].savedPlaylists) {
@@ -158,7 +160,7 @@ export async function fetchUserPlaylistTracks(
     );
   }
   if (provider === 'apple_music') {
-    return fetchAppleMusicPlaylistTracks(db, env, userId, playlistId);
+    return fetchAppleMusicPlaylistTracks(db, env, userId, playlistId, options?.shouldStop);
   }
 
   const adapter = PLAYLIST_ADAPTERS[provider];
@@ -176,7 +178,12 @@ export async function fetchUserPlaylistTracks(
     provider,
     adapter,
     read: (accessToken) =>
-      adapter.fetchPlaylistTracks({ accessToken, playlistId, fetchImpl: boundFetch }),
+      adapter.fetchPlaylistTracks({
+        accessToken,
+        playlistId,
+        fetchImpl: boundFetch,
+        ...(options?.shouldStop ? { shouldStop: options.shouldStop } : {}),
+      }),
   });
 }
 
@@ -293,6 +300,7 @@ async function fetchAppleMusicPlaylistTracks(
   env: Env,
   userId: string,
   playlistId: string,
+  shouldStop?: (tracks: TrackSearchResult[]) => boolean,
 ): Promise<TrackSearchResult[]> {
   const key = requireEncryptionKey(env);
   const { developerToken } = await appleMusicCreds(env);
@@ -311,6 +319,7 @@ async function fetchAppleMusicPlaylistTracks(
       musicUserToken,
       playlistId,
       fetchImpl: boundFetch,
+      ...(shouldStop ? { shouldStop } : {}),
     });
   } catch (err) {
     if (err instanceof AppleMusicUnauthorizedError) {

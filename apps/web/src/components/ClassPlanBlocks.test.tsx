@@ -1259,4 +1259,73 @@ describe('ClassPlanBlocks block editor', () => {
       expect(document.activeElement).toBe(screen.getByRole('button', { name: /^Edit Block/ })),
     );
   });
+
+  it('hides a playlist song teaching goal until the song key is cleared', async () => {
+    const song = {
+      ...block,
+      recipeBlockKey: 'playlist_song',
+      label: 'Warm-up',
+      teachingGoal: 'Hidden song title',
+      guidance: {
+        kind: 'cycle' as const,
+        posture: 'seated' as const,
+        cadenceMinRpm: 1,
+        cadenceMaxRpm: 1,
+        rpeMin: 1,
+        rpeMax: 1,
+      },
+    };
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([song]);
+    const props = {
+      classId: block.classId,
+      tracks: [] as ClassTrack[],
+      payload: null,
+      canEdit: true,
+      assigningPlanBlockId: null,
+      onChooseMusic: () => {},
+      onSelectTrack: () => {},
+      onTracksChanged: () => {},
+    };
+    const view = render(<ClassPlanBlocks {...props} />);
+    expect(await screen.findByRole('heading', { name: 'Warm-up' })).toBeTruthy();
+    expect(screen.queryByText('Hidden song title')).toBeNull();
+
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([
+      { ...song, recipeBlockKey: null, teachingGoal: 'Now visible' },
+    ]);
+    view.rerender(<ClassPlanBlocks {...props} tracks={[assignedTrack()]} />);
+    expect(await screen.findByText('Now visible')).toBeTruthy();
+  });
+
+  it('opens a playlist song editor with blank cadence instead of the stored 1–1', async () => {
+    const song = {
+      ...block,
+      recipeBlockKey: 'playlist_song',
+      label: 'Warm-up',
+      guidance: {
+        kind: 'cycle' as const,
+        posture: 'seated' as const,
+        cadenceMinRpm: 1,
+        cadenceMaxRpm: 1,
+        rpeMin: 1,
+        rpeMax: 1,
+      },
+    };
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([song]);
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[]}
+        payload={null}
+        canEdit
+        assigningPlanBlockId={null}
+        onChooseMusic={() => {}}
+        onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
+      />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /^Edit Block/ }));
+    expect((screen.getByLabelText('Cadence min (RPM)') as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText('Cadence max (RPM)') as HTMLInputElement).value).toBe('');
+  });
 });

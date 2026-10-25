@@ -14,25 +14,28 @@
  * calls; re-verify endpoints/shapes against live docs when a real token lands.
  */
 import {
+  PLAYLIST_URL_OCCURRENCE_LIMIT,
   providerPlaylistSummarySchema,
   trackSearchResultSchema,
   type ProviderPlaylistSummary,
   type TrackSearchResult,
 } from '@ritmofit/shared';
 import { z } from 'zod';
-import type { FetchLike, MusicProvider, PlaylistImportRef } from './provider.js';
-import { readJson, ProviderError } from './errors.js';
+import type {
+  FetchLike,
+  MusicProvider,
+  PlaylistImportRef,
+  PlaylistReadOptions,
+} from './provider.js';
+import { abortError, PlaylistOverLimitError, ProviderError, readJson } from './errors.js';
 import { fetchWithRetry, type RetryOptions } from './retry.js';
 
 const DEFAULT_API_BASE = 'https://api.music.apple.com/v1';
 const DEFAULT_STOREFRONT = 'us';
 const SEARCH_LIMIT = 25;
-// Catalog playlist-track pages allow up to 300 items. The raw cap sits far above
-// the 100-distinct-song import limit, so a playlist truncated here always exceeds
-// that limit after dedup and is rejected as too large — never silently imported
-// as if complete.
-const CATALOG_PLAYLIST_PAGE_LIMIT = 300;
-const IMPORT_TRACK_CAP = 500;
+// Paste-a-link pages at the occurrence ceiling. A longer playlist is rejected
+// from the first page that crosses it — never silently truncated.
+const CATALOG_PLAYLIST_PAGE_LIMIT = 100;
 
 export interface AppleMusicConfig {
   /** ES256 developer-token JWT (signed out of band from the `.p8` key). */
@@ -117,7 +120,10 @@ class AppleMusicProvider implements MusicProvider {
    * shared playlist its owner has since unshared. Library playlists never reach
    * here (the route rejects them; they're served by saved-playlist browsing).
    */
-  async getPlaylist(ref: Extract<PlaylistImportRef, { provider: 'apple_music' }>) {
+  async getPlaylist(
+    ref: Extract<PlaylistImportRef, { provider: 'apple_music' }>,
+    read?: PlaylistReadOptions,
+  ) {
     const out: TrackSearchResult[] = [];
     // Apple returns a relative `next` subpath (e.g. `/v1/catalog/us/…?offset=100`).
     // Some responses already include `limit`; always normalize to one page-size pair.
@@ -126,13 +132,15 @@ class AppleMusicProvider implements MusicProvider {
       `/v1/catalog/${encodeURIComponent(ref.storefront)}/playlists/` +
       `${encodeURIComponent(ref.playlistId)}/tracks?limit=${CATALOG_PLAYLIST_PAGE_LIMIT}`;
     const seenContinuations = new Set<string>();
+    const retry = previewRetry(this.retry, read);
 
-    while (path && out.length < IMPORT_TRACK_CAP) {
+    while (path) {
+      throwIfPreviewStopped(read);
       const res = await fetchWithRetry(
         this.fetchImpl,
         `${origin}${path}`,
         { headers: { Authorization: `Bearer ${this.developerToken}` } },
-        this.retry,
+        retry,
       );
       if (res.status === 404) return [];
       if (!res.ok) {
@@ -147,14 +155,20 @@ class AppleMusicProvider implements MusicProvider {
       }
       const page = parsed.data.data ?? [];
       for (const raw of page) {
-        // The tracks relationship can hold music videos too — import songs only.
+        // The tracks relationship can hold music videos too — songs count, videos don't.
         if (!isCatalogSong(raw)) continue;
         const candidate = this.toCandidate(raw);
-        if (candidate) out.push(candidate);
-        if (out.length >= IMPORT_TRACK_CAP) break;
+        if (!candidate) continue;
+        if (out.length >= PLAYLIST_URL_OCCURRENCE_LIMIT) {
+          throw new PlaylistOverLimitError(null, PLAYLIST_URL_OCCURRENCE_LIMIT);
+        }
+        out.push(candidate);
       }
-      if (page.length === 0 || out.length >= IMPORT_TRACK_CAP) break;
+      if (page.length === 0) break;
       const next = parsed.data.next;
+      if (out.length >= PLAYLIST_URL_OCCURRENCE_LIMIT && next) {
+        throw new PlaylistOverLimitError(null, PLAYLIST_URL_OCCURRENCE_LIMIT);
+      }
       if (next) {
         // Track Apple's continuation before normalization: distinct raw paths may
         // legitimately resolve to the same request URL after rewriting `limit`.
@@ -208,6 +222,19 @@ class AppleMusicProvider implements MusicProvider {
  * Strips any existing `limit` pairs (Apple sometimes includes its own default)
  * then sets the page size we want. Hand-rolled query join — no URL/URLSearchParams.
  */
+function previewRetry(
+  base: RetryOptions | undefined,
+  read?: PlaylistReadOptions,
+): RetryOptions | undefined {
+  if (!read?.signal && read?.deadlineAt == null) return base;
+  return { ...base, signal: read.signal, deadlineAt: read.deadlineAt };
+}
+
+function throwIfPreviewStopped(read?: PlaylistReadOptions): void {
+  if (read?.signal?.aborted) throw abortError();
+  if (read?.deadlineAt != null && Date.now() >= read.deadlineAt) throw abortError();
+}
+
 function withCatalogPlaylistPageLimit(nextPath: string, limit: number): string {
   const qIdx = nextPath.indexOf('?');
   const pathname = qIdx === -1 ? nextPath : nextPath.slice(0, qIdx);
@@ -442,9 +469,14 @@ export async function fetchAppleMusicLibraryPlaylistTracks(cfg: {
   fetchImpl: FetchLike;
   apiBase?: string;
   maxTracks?: number;
+  /**
+   * Saved-playlist import stop. Checked after a page, before the next request.
+   * When set, the browse cap does not apply.
+   */
+  shouldStop?: (tracks: TrackSearchResult[]) => boolean;
 }): Promise<TrackSearchResult[]> {
   const base = cfg.apiBase ?? DEFAULT_API_BASE;
-  const cap = cfg.maxTracks ?? 200;
+  const cap = cfg.shouldStop ? Number.MAX_SAFE_INTEGER : (cfg.maxTracks ?? 200);
   const out: TrackSearchResult[] = [];
   const origin = base.replace(/\/v1$/, '');
   const encodedId = encodeURIComponent(cfg.playlistId);
@@ -480,10 +512,11 @@ export async function fetchAppleMusicLibraryPlaylistTracks(cfg: {
     for (const raw of page) {
       const candidate = toLibraryCandidate(raw);
       if (candidate) out.push(candidate);
-      if (out.length >= cap) break;
+      if (!cfg.shouldStop && out.length >= cap) break;
     }
 
     if (page.length === 0) break;
+    if (cfg.shouldStop?.(out)) break;
     path = parsed.data.next ?? null;
   }
 
