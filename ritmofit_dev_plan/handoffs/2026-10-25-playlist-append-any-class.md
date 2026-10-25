@@ -37,6 +37,7 @@ Owner review of #578. After it merges, the real-browser smoke of paste-a-link on
 ## Production as observed
 
 - Not checked from this environment. This session did not deploy. `origin/main` at start was `2cfe4c0`.
+- Update 2026-10-25 9:29 AM MT: #577 (`6993f80`) and #578 (`2b3a79c`) deployed, Worker `2e4ded17-6b40-4168-96b7-a37424aecf60` (rollback `a3c6bc65-662d-4f2a-9149-c107171e8092`), SPA `assets/index-ypfiWW-x.js`. HTTP smoke green. Real-browser smoke is still owed. See HISTORY.
 
 ## Shared zones touched
 
