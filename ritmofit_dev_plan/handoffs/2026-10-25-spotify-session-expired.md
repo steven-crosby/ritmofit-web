@@ -5,7 +5,7 @@ lane: solo
 branch: cursor/spotify-session-expired-paste-a809
 head: 3225f4d3a30af4fe29af13cdf35b7a7ed90201b2
 base: 29145a9d8c99f85f55e544b761a394551cdf799a
-prs: []
+prs: ['#586']
 status: open
 ---
 
@@ -18,7 +18,7 @@ status: open
 
 ## In flight
 
-- This branch, not merged, not deployed. PR number is filled when the PR opens.
+- [#586](https://github.com/steven-crosby/ritmofit-web/pull/586) on `cursor/spotify-session-expired-paste-a809`. Not merged. Not deployed.
 
 ## Next action
 
