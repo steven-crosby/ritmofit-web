@@ -13,6 +13,7 @@ import {
   browseAnnouncement,
   classifyPlaylistDrillInError,
   classifyProviderLibraryError,
+  providerTrackKeysFromRun,
 } from './TrackSearch.js';
 import * as api from '../lib/api.js';
 
@@ -436,6 +437,29 @@ describe('TrackSearch saved-playlists drill-in', () => {
     expect(
       screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }),
     ).toBeTruthy();
+  });
+
+  it('opens the picker for a short saved playlist only when a song is already in class', async () => {
+    render(
+      <TrackSearch
+        classId="c1"
+        onAdded={() => {}}
+        existingProviderTrackKeys={new Set(['spotify:track-1'])}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+    expect(await screen.findByText('Warmup Ride')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    expect((await screen.findAllByText('Song One')).length).toBeGreaterThan(0);
+    expect(api.importClassTracks).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Import all 2 tracks from Warmup Ride/i }));
+    const dialog = await screen.findByRole('dialog', { name: 'Choose songs' });
+    expect(api.importClassTracks).not.toHaveBeenCalled();
+    expect(dialog.textContent).toContain('Already in class');
+    const boxes = dialog.querySelectorAll('input[type="checkbox"]');
+    expect((boxes[0] as HTMLInputElement).checked).toBe(false);
+    expect((boxes[1] as HTMLInputElement).checked).toBe(true);
   });
 
   it('locks individual adds while a bulk import is pending', async () => {
@@ -1579,6 +1603,84 @@ describe('TrackSearch playlist song picker', () => {
     expect(screen.queryByRole('button', { name: 'Import Playlist URL' })).toBeNull();
     expect(screen.queryByLabelText('Playlist URL')).toBeNull();
     expect(screen.getByRole('button', { name: 'Search', pressed: true })).toBeTruthy();
+  });
+
+  it('reads duplicate keys from tracks already on the run payload', () => {
+    expect(
+      providerTrackKeysFromRun([
+        { providerRefs: [{ provider: 'spotify', providerTrackId: 'abc' }] },
+        {},
+      ]),
+    ).toEqual(new Set(['spotify:abc']));
+    expect(providerTrackKeysFromRun(null).size).toBe(0);
+  });
+
+  it('imports a short playlist directly when none of its songs are already in class', async () => {
+    vi.mocked(api.importPlaylist).mockResolvedValue(preview(8));
+    render(
+      <TrackSearch
+        classId="c1"
+        onAdded={() => {}}
+        existingProviderTrackKeys={new Set(['apple_music:someone-else'])}
+      />,
+    );
+    pasteUrl();
+    await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('dialog', { name: 'Choose songs' })).toBeNull();
+    expect(vi.mocked(api.importClassTracks).mock.calls[0]![1].placements).toHaveLength(8);
+  });
+
+  it('opens the picker for a short playlist only when a song is already in class', async () => {
+    vi.mocked(api.importPlaylist).mockResolvedValue(preview(8));
+    render(
+      <TrackSearch
+        classId="c1"
+        onAdded={() => {}}
+        existingProviderTrackKeys={new Set(['apple_music:p-0'])}
+      />,
+    );
+    pasteUrl();
+    const dialog = await screen.findByRole('dialog', { name: 'Choose songs' });
+    expect(api.importClassTracks).not.toHaveBeenCalled();
+    expect(api.listClassTracks).not.toHaveBeenCalled();
+    expect(dialog.textContent).toContain('Already in class');
+    const boxes = dialog.querySelectorAll('input[type="checkbox"]');
+    expect((boxes[0] as HTMLInputElement).checked).toBe(false);
+    expect(
+      Array.from(boxes)
+        .slice(1)
+        .every((box) => (box as HTMLInputElement).checked),
+    ).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Import 7 songs' }));
+    await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
+    const body = vi.mocked(api.importClassTracks).mock.calls[0]![1];
+    expect(body.songBlocks).toBe(true);
+    expect(body.placements).toHaveLength(7);
+  });
+
+  it('keeps the 15 cap when a long playlist includes songs already in class', async () => {
+    vi.mocked(api.importPlaylist).mockResolvedValue(preview(16));
+    render(
+      <TrackSearch
+        classId="c1"
+        onAdded={() => {}}
+        existingProviderTrackKeys={new Set(['apple_music:p-0'])}
+      />,
+    );
+    pasteUrl();
+    const dialog = await screen.findByRole('dialog', { name: 'Choose songs' });
+    const boxes = dialog.querySelectorAll('input[type="checkbox"]');
+    expect(boxes).toHaveLength(16);
+    expect((boxes[0] as HTMLInputElement).checked).toBe(false);
+    expect(
+      Array.from(boxes)
+        .slice(1)
+        .every((box) => (box as HTMLInputElement).checked),
+    ).toBe(true);
+    fireEvent.click(boxes[0]!);
+    expect(screen.getByRole('alert').textContent).toBe('Choose at most 15 songs.');
+    expect((boxes[0] as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByRole('button', { name: 'Import 15 songs' })).toBeTruthy();
   });
 
   it('appends song blocks after existing placements and leaves their labels alone', async () => {

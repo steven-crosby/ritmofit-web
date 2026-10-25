@@ -1,8 +1,9 @@
 /**
- * Choose up to 15 songs from a playlist that is longer than one import.
- * The first 15 songs in source order start checked. The instructor can
- * uncheck and recheck. The 16th check is refused. Confirm returns the
- * chosen occurrence ids in source order.
+ * Choose up to 15 songs from a playlist that is longer than one import,
+ * or from a shorter playlist that already contains songs on the class.
+ * The first 15 songs that are not already in the class start checked.
+ * Songs already on the class stay unchecked until she opts in. The 16th
+ * check is refused. Confirm returns the chosen occurrence ids in source order.
  */
 import { useId, useState } from 'react';
 import { PLAYLIST_SONG_BLOCK_CAP } from '@ritmofit/shared';
@@ -15,6 +16,22 @@ export interface PlaylistSongPickerItem {
   title: string;
   artist: string;
   durationMs: number | null;
+  /** Already placed on this class. Shown, and left unchecked until she opts in. */
+  alreadyInClass?: boolean;
+}
+
+/** First `cap` songs that are not already on the class, in source order. */
+export function defaultCheckedPlaylistIds(
+  items: readonly Pick<PlaylistSongPickerItem, 'id' | 'alreadyInClass'>[],
+  cap = PLAYLIST_SONG_BLOCK_CAP,
+): string[] {
+  const ids: string[] = [];
+  for (const item of items) {
+    if (ids.length >= cap) break;
+    if (item.alreadyInClass) continue;
+    ids.push(item.id);
+  }
+  return ids;
 }
 
 function formatSongDuration(durationMs: number | null): string {
@@ -36,9 +53,7 @@ export function PlaylistSongPicker({
   onConfirm: (ids: string[]) => void;
   onCancel: () => void;
 }) {
-  const [selected, setSelected] = useState<string[]>(() =>
-    items.slice(0, PLAYLIST_SONG_BLOCK_CAP).map((item) => item.id),
-  );
+  const [selected, setSelected] = useState<string[]>(() => defaultCheckedPlaylistIds(items));
   const [refused, setRefused] = useState(false);
   const capId = useId();
   const orderedIds = items.filter((item) => selected.includes(item.id)).map((item) => item.id);
@@ -102,7 +117,11 @@ export function PlaylistSongPicker({
               type="checkbox"
               checked={selected.includes(item.id)}
               onChange={() => toggle(item.id)}
-              aria-label={`${item.position}. ${item.title}`}
+              aria-label={
+                item.alreadyInClass
+                  ? `${item.position}. ${item.title}, already in class`
+                  : `${item.position}. ${item.title}`
+              }
               className="rf-focus-ring"
             />
             <span className="w-8 shrink-0 font-data text-xs text-text-tertiary">
@@ -114,6 +133,11 @@ export function PlaylistSongPicker({
                 {item.artist}
               </span>
             </span>
+            {item.alreadyInClass && (
+              <span className="shrink-0 rounded-pill border border-border-subtle px-2 font-ui text-[11px] leading-5 text-text-tertiary">
+                Already in class
+              </span>
+            )}
             <span className="shrink-0 font-data text-xs text-text-secondary">
               {formatSongDuration(item.durationMs)}
             </span>
