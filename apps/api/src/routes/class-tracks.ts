@@ -12,6 +12,8 @@ import {
   reorderClassTracksSchema,
   copyClassTrackSchema,
   assignClassTrackPlanBlockSchema,
+  PLAYLIST_SONG_BLOCK_KEY,
+  playlistSongTargetMs,
 } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
@@ -90,6 +92,24 @@ export async function updateClassTrackWithinAnchorBounds(
     .set(patch)
     .where(and(eq(classTracks.id, classTrackId), notExists(exteriorCue), notExists(exteriorMove)))
     .returning();
+}
+
+/** While the placement's block is still a playlist-song block, planned time tracks the song. */
+async function syncPlaylistSongBlockTarget(
+  db: Db,
+  planBlockId: string | null,
+  effectiveMs: number | null,
+): Promise<void> {
+  if (!planBlockId) return;
+  await db
+    .update(classPlanBlocks)
+    .set({ targetDurationMs: playlistSongTargetMs(effectiveMs), updatedAt: Date.now() })
+    .where(
+      and(
+        eq(classPlanBlocks.id, planBlockId),
+        eq(classPlanBlocks.recipeBlockKey, PLAYLIST_SONG_BLOCK_KEY),
+      ),
+    );
 }
 
 /**
@@ -412,6 +432,7 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
   // When the patch mutates the effective window, keep the resolved half-open bounds
   // for the authoritative guarded UPDATE (same startMs/endMs as preflight).
   let proposedWindow: { startMs: number; endMs: number | null } | undefined;
+  let playlistSongDurationMs: number | null | undefined;
 
   if (touchesWindow || touchesOffset) {
     const [existing, anchors] = await Promise.all([
@@ -447,7 +468,15 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
       clipStartMs,
       clipEndMs,
     );
-    if (touchesWindow) proposedWindow = { startMs, endMs };
+    if (touchesWindow) {
+      proposedWindow = { startMs, endMs };
+      playlistSongDurationMs = effectiveDurationMs(
+        existing?.trackDurationMs ?? null,
+        durationMsOverride,
+        clipStartMs,
+        clipEndMs,
+      );
+    }
     // A clip start at/past the track length collapses the window to zero, which
     // later fails the run-payload's positive-duration contract and 422s the whole
     // class. Reject it here (the DB CHECK can't express the base bound).
@@ -560,6 +589,8 @@ classTrackRoutes.patch('/class-tracks/:id', async (c) => {
     );
     if (updated.length === 0) {
       await throwClipWindowWriteConflict(db, id, proposedWindow.startMs, proposedWindow.endMs);
+    } else if (playlistSongDurationMs !== undefined) {
+      await syncPlaylistSongBlockTarget(db, updated[0]!.planBlockId, playlistSongDurationMs);
     }
   } else {
     await db.update(classTracks).set(patch).where(eq(classTracks.id, id));

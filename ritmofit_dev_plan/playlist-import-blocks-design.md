@@ -1,8 +1,9 @@
 # Playlist import builds blocks only
 
 <!-- note (Grok, 2026-10-24): Design for the playlist → class → Live gap. Owner decisions recorded verbatim. No implementation in this change. -->
+<!-- note (Cursor, 2026-10-25): Owner decision 10. The 15-song cap is per import. Tracks already on the class do not count. -->
 
-**Status:** decided 2026-10-24. Not implemented. This change is the design only.
+**Status:** decided 2026-10-24. Cap clarified 2026-10-25 (decision 10): 15 songs per import; tracks already on the class do not count. Slice A is draft [#572](https://github.com/steven-crosby/ritmofit-web/pull/572) and is not merged. Slice B is not started.
 **Baseline inspected:** `main` `a78f6f5` (2026-10-24).
 **Evidence:** [playlist-to-class-to-Live audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md), findings 3 and 4, and the 15-song cap note.
 
@@ -27,6 +28,8 @@ Answers to the two questions this design had left open, also Steven, 2026-10-24:
 8. Provider fetch timeout: 8 seconds total for the import preview; on timeout return a clear retryable error (pick status code consistent with existing API conventions) and the UI shows a 'try again' message. No partial writes.
 
 9. Performance target: on a 100-song link the picker opens in under 2 seconds on a normal connection. Add a test/smoke measurement for it (and a 100-song fixture), and note picker rendering approach for 100 rows.
+
+10. The 15-song cap is per import only (Steven, 2026-10-25). Count only the songs in this `songBlocks` request (max 15). Do not count tracks already on the class. A class with 10 tracks may import 15 more. Manual add is uncapped, per-batch cost is what matters for performance, and the picker never needs remaining-slot math.
 
 ## Contract answer
 
@@ -134,13 +137,13 @@ Songs already placed in a recipe block stay in that block. This slice does not r
 
 ### Cap and picker
 
-`PLAYLIST_SONG_BLOCK_CAP` is 15. It counts occurrences in one song-block commit, plus tracks already on the class. Decision 5 limits that cap to playlist import, including saved playlists, Music Start class, likes, and paste-a-link. Search, manual add, and Songs-by-Move copy stay uncapped. A class can still pass 15 by those other writes.
+`PLAYLIST_SONG_BLOCK_CAP` is 15. It counts occurrences in this `songBlocks` request only. Tracks already on the class do not count, so a class with 10 tracks may import 15 more. Decision 5 limits that cap to playlist import, including saved playlists, Music Start class, likes, and paste-a-link. Search, manual add, and Songs-by-Move copy stay uncapped. Decision 10: manual add is uncapped, per-batch cost is what matters for performance, and the picker never needs remaining-slot math. A class can still pass 15 by those other writes, and by a later playlist import of up to 15 songs.
 
 The picker is a dialog the instructor must finish before `createClass` or, for a class that already exists, before the import commit:
 
 - Source list of 0: keep today's "no tracks" error. No class is created.
-- Source list of 1–15, and `existing tracks + source ≤ 15`: no picker. Import the whole list in source order.
-- Otherwise: checkbox per occurrence, source order fixed, repeats as separate rows. The accessible name includes the 1-based source position and the title. Nothing starts checked. Confirm stays disabled until the selection has 1 to N songs, where N is `min(15, 15 − existing tracks)`. Checking past N is refused in the control, with the message "Choose at most 15 songs." The confirm label includes the count ("Create class from 4 songs" or "Import 4 songs"). Cancel creates nothing.
+- Source list of 1–15: no picker, even when the class already has tracks. Import the whole list in source order.
+- Source list of 16 or more: checkbox per occurrence, source order fixed, repeats as separate rows. The accessible name includes the 1-based source position and the title. Nothing starts checked. Confirm stays disabled until the selection has 1 to 15 songs. N is 15. Checking past 15 is refused in the control, with the message "Choose at most 15 songs." The confirm label includes the count ("Create class from 4 songs" or "Import 4 songs"). Cancel creates nothing.
 - The chosen subset is committed in source order, not click order.
 
 Keyboard: the existing `Dialog` focus trap, checkboxes are real inputs, the cap message is `aria-describedby` on the group, and confirm is a button. Meaning does not depend on color.
@@ -151,11 +154,11 @@ Keyboard: the existing `Dialog` focus trap, checkboxes are real inputs, the cap 
 
 `POST /classes/:id/tracks/import` with `songBlocks: true`:
 
-- `placements.length` from 1 to 15, or 422 `VALIDATION_ERROR` and no write. The server does not drop the tail.
-- `placements.length + existing class_tracks > 15`: 422, no write. A class that is already over 15 is left as it is; this call does not add to it.
+- `placements.length` from 1 to 15, or 422 `VALIDATION_ERROR` and no write. The server does not drop the tail. Tracks already on the class do not count toward that 15.
+- A class that already has tracks, including one past 15, can still take another song-block import of up to 15.
 - `songBlocks` together with `planBlockId`: 422.
 - Unknown track, track owned by someone else, or a stale track/block snapshot: today's 404 / 409, no partial block insert.
-- The operation-id receipt covers the block inserts. The same body returns the stored track list and does not insert a second set of blocks. A new operation id after success is a new append and is subject to the cap.
+- The operation-id receipt covers the block inserts. The same body returns the stored track list and does not insert a second set of blocks. A new operation id after success is a new append of up to 15 placements.
 
 `requireAccess(..., 'edit')` stays the gate. No new route.
 
@@ -217,8 +220,8 @@ The status is **504** with code `PROVIDER_TIMEOUT` and message `The playlist too
 2. The server's 400 covers an empty playlist. No picker.
 3. 422 above 100: show the limit message. No picker and no write.
 4. 504 `PROVIDER_TIMEOUT`: show "The playlist took too long to load. Try again." No picker and no write.
-5. One to 15 occurrences, and existing tracks plus that count is at most 15: no picker. Resolve those occurrences with the existing per-track import and one `songBlocks` commit, in source order.
-6. 16–100: show `PlaylistSongPicker`. Nothing starts checked. N is `min(15, 15 − existing tracks)`. Confirm resolves only the selection and commits it in source order. Cancel writes nothing.
+5. One to 15 occurrences: no picker, even if the class already has tracks. Resolve those occurrences with the existing per-track import and one `songBlocks` commit, in source order.
+6. 16–100: show `PlaylistSongPicker`. Nothing starts checked. N is 15. Confirm resolves only the selection and commits it in source order. Cancel writes nothing.
 7. URL mode stays hidden while `planBlockId` is set, so Choose music on one block cannot paste a playlist into that block. The scaffold's class-level "Import a playlist as song blocks" control includes this URL field.
 8. The helper no longer says a paste imports every track at once.
 9. A song that fails to resolve stays unadded in the ordered-import session and can be retried. The commit does not drop it and close the gap the way `partitionSettledImports` does on the current URL handler.
@@ -233,7 +236,7 @@ Inspected files and the change each slice makes. "None" means leave the file alo
 
 | File                                                                                                                                    | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/shared/src/entities/classes.ts`                                                                                               | Slice A: `PLAYLIST_SONG_BLOCK_CAP = 15` and optional `songBlocks: z.literal(true)` on `importClassTracksSchema`. `superRefine`: when set, placements length is 1–15. The unconditional `.max(100)` stays for commits without the flag. Slice B: preview response schema and `PLAYLIST_URL_OCCURRENCE_LIMIT = 100` (occurrences, no dedupe). `MAX_PLAYLIST_IMPORT_TRACKS` stays 100 distinct songs for the library bulk route only                                                                                                                                                                                                           |
+| `packages/shared/src/entities/classes.ts`                                                                                               | Slice A: `PLAYLIST_SONG_BLOCK_CAP = 15` and optional `songBlocks: z.literal(true)` on `importClassTracksSchema`. `superRefine`: when set, placements length is 1–15 in this request. Tracks already on the class do not count. The unconditional `.max(100)` stays for commits without the flag. Slice B: preview response schema and `PLAYLIST_URL_OCCURRENCE_LIMIT = 100` (occurrences, no dedupe). `MAX_PLAYLIST_IMPORT_TRACKS` stays 100 distinct songs for the library bulk route only                                                                                                                                                                                                           |
 | `packages/shared/src/entities/class-plan-blocks.ts`                                                                                     | Export `PLAYLIST_SONG_BLOCK_KEY = 'playlist_song'`. Comment that those rows store structural titles and hidden guidance until an instructor edit clears the key                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `apps/api/src/lib/ordered-class-import.ts`                                                                                              | When `songBlocks`, apply replace or append inside the existing guarded batch, set each new row's `planBlockId` to its own block, and include the block writes in the operation receipt. Ignore a successful path's single `planBlockId` because the schema rejects the combination                                                                                                                                                                                                                                                                                                                                                          |
 | `apps/api/src/routes/class-tracks.ts`                                                                                                   | Import handler stays `POST /classes/:id/tracks/import`. On duration, override, and clip updates, while the assigned block is `playlist_song`, set `targetDurationMs` to the effective duration in that write                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -273,7 +276,7 @@ Existing ordered-import cases (repeat order, lost-response replay, 409, in-place
 **Integration** (`*.integration.test.ts`)
 
 - 10 occurrences → 10 blocks, positions 0–9, first `warm_up`, last `cool_down`, each track's `planBlockId` is its block, cue count 0, note null.
-- 15 accepted. 16 placements → 422 and the class is unchanged (block count and track count).
+- 15 accepted, including 15 new songs on a class that already has tracks. 16 placements in one request → 422 and the class is unchanged (block ids and track count).
 - `songBlocks` plus `planBlockId` → 422.
 - Untouched scaffold, zero tracks: recipe blocks are gone, song blocks are the plan, one batch.
 - Class with one track and one cue: append keeps that track, cue, and note; empty recipe blocks are deleted; instructor null-key empty block remains; new blocks are title-labeled, not warm-up/cooldown.
@@ -295,7 +298,7 @@ Existing ordered-import cases (repeat order, lost-response replay, 409, in-place
 - Cycle template, Apple saved playlist of about 10 songs: Import as song blocks, recipe blocks gone, Run Live enabled, Live shows titles and "Lead this track", no generated cues.
 - Playlist of 16 fixture rows: picker before the class exists; cancel leaves no class; confirm of 4 creates 4 blocks in source order.
 - 1-song and 2-song label check in the builder.
-- Class that already has a cue: import another playlist under the cap; the cue is still on its song; Run Live follows the rules above.
+- Class that already has a cue: import another playlist of at most 15 songs; the cue is still on its song; Run Live follows the rules above.
 - Block Choose music: Import all is absent; adding one searched song still assigns that block.
 - Paste a short public catalog URL into an empty Cycle template: recipe blocks replaced, Run Live enabled, no generated cues. A 16-row fixture does not 422; the picker lists all 16; confirming 4 writes 4 blocks.
 - 100-song fixture link: record the time from submit until the picker shows 100 usable checkboxes. Target under 2 seconds. Cancel writes nothing.
@@ -313,4 +316,4 @@ No deploy is part of either slice. Merging is not deploying.
 
 ## Open questions
 
-None. Decisions 5–9 are recorded above. The timeout status picked for decision 8 is 504 `PROVIDER_TIMEOUT`.
+None. Decisions 5–10 are recorded above. The timeout status picked for decision 8 is 504 `PROVIDER_TIMEOUT`.

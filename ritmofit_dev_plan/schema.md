@@ -151,7 +151,7 @@ ordered independently from the playlist so empty planned blocks remain represent
 |---|---|---|
 | id | text (PK) | UUID |
 | class_id | text (FK → classes.id) | Cascades on class delete |
-| recipe_block_key | text | Nullable; stable provenance key within the starter recipe. It is not a global template reference |
+| recipe_block_key | text | Nullable; stable provenance key within the starter recipe. It is not a global template reference. `playlist_song` is the playlist-import marker, not a recipe id |
 | position | int | Zero-based order within the class plan; unique with `class_id` |
 | segment_type | text enum(`warm_up`,`climb`,`sprint`,`recovery`,`cool_down`) | Nullable; populated only when the existing segment vocabulary describes the block honestly |
 | label | text | Instructor-facing block name |
