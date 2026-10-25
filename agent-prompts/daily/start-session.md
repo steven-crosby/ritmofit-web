@@ -27,7 +27,7 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
 
 ## Workflow
 
-1. Read `AGENTS.md` first (Claude Code loads it through `CLAUDE.md`). On conflict, `AGENTS.md` wins.
+1. Read `AGENTS.md` first. On conflict, `AGENTS.md` wins.
 2. Confirm the checkout, then inspect the tree:
    - repo root (`git rev-parse --show-toplevel`) and `git remote -v` — expect
      `steven-crosby/ritmofit-web`
