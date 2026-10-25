@@ -394,7 +394,8 @@ const doc = {
         summary:
           'Preview a public Spotify, SoundCloud, or Apple Music catalog playlist URL (edit). Writes nothing. ' +
           `Playlists over ${PLAYLIST_URL_OCCURRENCE_LIMIT} occurrences are rejected. ` +
-          'A preview that exceeds 8 seconds returns 504 PROVIDER_TIMEOUT.',
+          'A preview that exceeds 8 seconds returns 504 PROVIDER_TIMEOUT. ' +
+          "Spotify playlist items use the requesting instructor's connected Spotify user token.",
         requestBody: {
           required: true,
           content: {
@@ -413,6 +414,14 @@ const doc = {
             'Ordered occurrences for the song picker. No class or library writes.',
           ),
           '400': { description: 'Invalid or unsupported playlist URL, or empty playlist' },
+          '403': {
+            description:
+              'PROVIDER_FORBIDDEN — Spotify denied this playlist to the connected user. Reconnecting does not grant access. No writes.',
+          },
+          '409': {
+            description:
+              'NOT_CONNECTED — Connect Spotify to import this playlist. REAUTH_REQUIRED — Reconnect Spotify to import this playlist. No writes.',
+          },
           '422': {
             description: `Playlist has more than ${PLAYLIST_URL_OCCURRENCE_LIMIT} songs`,
           },

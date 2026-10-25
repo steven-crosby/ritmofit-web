@@ -577,7 +577,7 @@ describe('fetchSpotifyPlaylistTracks', () => {
     ).rejects.toBeInstanceOf(SpotifyUnauthorizedError);
   });
 
-  it('throws SpotifyPlaylistAccessDeniedError on a 403 — a playlist the user cannot open', async () => {
+  it('throws SpotifyForbiddenError on a 403 whose body is a scope or auth failure', async () => {
     const fetchImpl: FetchLike = async () => ({
       ok: false,
       status: 403,
@@ -592,7 +592,49 @@ describe('fetchSpotifyPlaylistTracks', () => {
         fetchImpl,
         apiBase: API_BASE,
       }),
+    ).rejects.toBeInstanceOf(SpotifyForbiddenError);
+  });
+
+  it('throws SpotifyPlaylistAccessDeniedError on a 403 that is not an auth failure', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({}),
+      text: async () => 'You can only open playlists you own or collaborate on.',
+    });
+
+    await expect(
+      fetchSpotifyPlaylistTracks({
+        accessToken: 'user-tok',
+        playlistId: 'pl-1',
+        fetchImpl,
+        apiBase: API_BASE,
+      }),
     ).rejects.toBeInstanceOf(SpotifyPlaylistAccessDeniedError);
+  });
+
+  it('stops a user-token preview when Spotify reports a total over 100', async () => {
+    const playlistUrl = `${itemsUrl('pl-1')}?limit=50&offset=0`;
+    const fullPage = Array.from({ length: 50 }, (_, index) => ({
+      item: { ...SP_TRACK, id: `track-${index}`, uri: `spotify:track:track-${index}` },
+    }));
+    const { fetchImpl, calls } = fakeFetch({
+      [playlistUrl]: { items: fullPage, total: 101 },
+      [`${itemsUrl('pl-1')}?limit=50&offset=50`]: { items: fullPage, total: 101 },
+    });
+
+    await expect(
+      fetchSpotifyPlaylistTracks({
+        accessToken: 'user-tok',
+        playlistId: 'pl-1',
+        fetchImpl,
+        apiBase: API_BASE,
+        occurrenceLimit: 100,
+      }),
+    ).rejects.toThrow('Playlist has 101 songs. The limit is 100.');
+    expect(calls.filter((call) => call.url.startsWith(itemsUrl('pl-1')))).toHaveLength(1);
+    expect(calls.some((call) => call.url.includes('accounts.spotify.com'))).toBe(false);
+    expect(calls[0]?.init?.headers?.Authorization).toBe('Bearer user-tok');
   });
 
   it('requests the /items endpoint, not the retired /tracks', async () => {

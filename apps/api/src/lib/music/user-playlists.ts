@@ -18,8 +18,10 @@ import {
   SpotifyPlaylistAccessDeniedError,
   AppleMusicUnauthorizedError,
   type OAuthTokens,
+  type PlaylistReadOptions,
 } from '@ritmofit/music';
 import {
+  PLAYLIST_URL_OCCURRENCE_LIMIT,
   providerCapabilities,
   type Provider,
   type ProviderPlaylistSummary,
@@ -83,7 +85,14 @@ interface ConnectedPlaylistRead<T> {
   provider: Provider;
   adapter: PlaylistAdapter;
   read(accessToken: string): Promise<T>;
+  /** Paste-a-link copy. Saved-playlist reads keep the generic connect/reconnect lines. */
+  notConnectedMessage?: string;
+  reauthMessage?: string;
 }
+
+export const SPOTIFY_PLAYLIST_PREVIEW_CONNECT_MESSAGE = 'Connect Spotify to import this playlist.';
+export const SPOTIFY_PLAYLIST_PREVIEW_RECONNECT_MESSAGE =
+  'Reconnect Spotify to import this playlist.';
 
 const PLAYLIST_ADAPTERS: Partial<Record<Provider, PlaylistAdapter>> = {
   spotify: {
@@ -188,6 +197,49 @@ export async function fetchUserPlaylistTracks(
 }
 
 /**
+ * Paste-a-link preview for a Spotify playlist. Spotify's playlist-items
+ * endpoint rejects the app's client-credentials token with 401 "Valid user
+ * authentication required". That failure is an auth problem, so this path
+ * does not fall back to the app token (a remint would surface as
+ * PROVIDER_UNAVAILABLE). The instructor's stored user token is refreshed with
+ * the same rules as saved-playlist reads.
+ */
+export async function fetchSpotifyPlaylistPreview(
+  db: Db,
+  env: Env,
+  userId: string,
+  playlistId: string,
+  read?: PlaylistReadOptions,
+): Promise<TrackSearchResult[]> {
+  if (env.MOCK_PROVIDERS === 'true') return [];
+  const adapter = PLAYLIST_ADAPTERS.spotify;
+  if (!adapter) {
+    throw new HttpError(
+      501,
+      'NOT_IMPLEMENTED',
+      "Provider 'spotify' saved playlists are not integrated.",
+    );
+  }
+  return readWithConnectedPlaylistToken({
+    db,
+    env,
+    userId,
+    provider: 'spotify',
+    adapter,
+    notConnectedMessage: SPOTIFY_PLAYLIST_PREVIEW_CONNECT_MESSAGE,
+    reauthMessage: SPOTIFY_PLAYLIST_PREVIEW_RECONNECT_MESSAGE,
+    read: (accessToken) =>
+      fetchSpotifyPlaylistTracks({
+        accessToken,
+        playlistId,
+        fetchImpl: boundFetch,
+        occurrenceLimit: PLAYLIST_URL_OCCURRENCE_LIMIT,
+        ...(read ? { read } : {}),
+      }),
+  });
+}
+
+/**
  * Map known provider playlist-read failures to stable HttpErrors so they never
  * leak as raw 5xx. Shared by the first read and the post-refresh retry.
  *
@@ -200,11 +252,12 @@ export async function fetchUserPlaylistTracks(
 function mapConnectedPlaylistReadError(
   adapter: PlaylistAdapter,
   err: unknown,
-  opts: { unauthorizedAsReauth?: boolean } = {},
+  opts: { unauthorizedAsReauth?: boolean; reauthMessage?: string } = {},
 ): never {
+  const reauth = opts.reauthMessage ?? `Reconnect your ${adapter.label} account.`;
   // A missing scope: no refresh can grant it — prompt reconnect, don't burn a cycle.
   if (adapter.isForbidden?.(err)) {
-    throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
+    throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
   }
   if (adapter.isPlaylistAccessDenied?.(err)) {
     throw new HttpError(
@@ -214,7 +267,7 @@ function mapConnectedPlaylistReadError(
     );
   }
   if (opts.unauthorizedAsReauth && adapter.isUnauthorized(err)) {
-    throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
+    throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
   }
   throw err;
 }
@@ -231,13 +284,17 @@ async function readWithConnectedPlaylistToken<T>(cfg: ConnectedPlaylistRead<T>):
     .get();
 
   if (!conn) {
-    throw new HttpError(409, 'NOT_CONNECTED', `Connect your ${cfg.adapter.label} account first.`);
+    throw new HttpError(
+      409,
+      'NOT_CONNECTED',
+      cfg.notConnectedMessage ?? `Connect your ${cfg.adapter.label} account first.`,
+    );
   }
 
   const expired = conn.expiresAt !== null && Date.now() > conn.expiresAt - EXPIRY_SKEW_MS;
   let refreshed = expired;
   let accessToken = expired
-    ? await refreshAndPersist(cfg.db, key, cfg.adapter, creds, conn)
+    ? await refreshAndPersist(cfg.db, key, cfg.adapter, creds, conn, cfg.reauthMessage)
     : await decryptSecret(conn.accessTokenEncrypted, key);
 
   try {
@@ -246,13 +303,16 @@ async function readWithConnectedPlaylistToken<T>(cfg: ConnectedPlaylistRead<T>):
     // Forbidden / access-denied map immediately. Other non-401 errors rethrow.
     // Unauthorized falls through for one reactive refresh when possible.
     if (!cfg.adapter.isUnauthorized(err)) {
-      mapConnectedPlaylistReadError(cfg.adapter, err);
+      mapConnectedPlaylistReadError(cfg.adapter, err, { reauthMessage: cfg.reauthMessage });
     }
     if (refreshed || !conn.refreshTokenEncrypted) {
-      mapConnectedPlaylistReadError(cfg.adapter, err, { unauthorizedAsReauth: true });
+      mapConnectedPlaylistReadError(cfg.adapter, err, {
+        unauthorizedAsReauth: true,
+        reauthMessage: cfg.reauthMessage,
+      });
     }
     refreshed = true;
-    accessToken = await refreshAndPersist(cfg.db, key, cfg.adapter, creds, conn);
+    accessToken = await refreshAndPersist(cfg.db, key, cfg.adapter, creds, conn, cfg.reauthMessage);
     try {
       // Note the `await`: without it the retry's rejection escapes this try/catch
       // and the second 401 would leak as a raw provider error instead of REAUTH.
@@ -260,7 +320,10 @@ async function readWithConnectedPlaylistToken<T>(cfg: ConnectedPlaylistRead<T>):
     } catch (retryErr) {
       // Post-refresh: same Forbidden/AccessDenied mapping as the first path, plus
       // a second 401 → REAUTH (grant is dead; do not refresh again).
-      mapConnectedPlaylistReadError(cfg.adapter, retryErr, { unauthorizedAsReauth: true });
+      mapConnectedPlaylistReadError(cfg.adapter, retryErr, {
+        unauthorizedAsReauth: true,
+        reauthMessage: cfg.reauthMessage,
+      });
     }
   }
 }
@@ -335,9 +398,11 @@ async function refreshAndPersist(
   adapter: PlaylistAdapter,
   creds: Creds,
   conn: typeof musicConnections.$inferSelect,
+  reauthMessage?: string,
 ): Promise<string> {
+  const reauth = reauthMessage ?? `Reconnect your ${adapter.label} account.`;
   if (!conn.refreshTokenEncrypted) {
-    throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
+    throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
   }
 
   let tokens;
@@ -350,7 +415,7 @@ async function refreshAndPersist(
       fetchImpl: boundFetch,
     });
   } catch {
-    throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
+    throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
   }
 
   await db

@@ -14,7 +14,13 @@ import {
   SpotifyForbiddenError,
   SpotifyPlaylistAccessDeniedError,
 } from '@ritmofit/music';
-import { fetchUserPlaylistTracks, fetchUserPlaylists } from './user-playlists.js';
+import {
+  fetchSpotifyPlaylistPreview,
+  fetchUserPlaylistTracks,
+  fetchUserPlaylists,
+  SPOTIFY_PLAYLIST_PREVIEW_CONNECT_MESSAGE,
+  SPOTIFY_PLAYLIST_PREVIEW_RECONNECT_MESSAGE,
+} from './user-playlists.js';
 import { HttpError } from '../errors.js';
 import type { Db } from '../db.js';
 import type { Env } from '../types.js';
@@ -300,6 +306,124 @@ describe('user playlist token helper', () => {
     } satisfies Partial<HttpError>);
     expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
     expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('fetchSpotifyPlaylistPreview', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(refreshSpotifyToken).mockResolvedValue({
+      accessToken: 'access-fresh',
+      refreshToken: 'refresh-fresh',
+      expiresInSec: 3600,
+      scope: 'playlist-read-private',
+    });
+    vi.mocked(fetchSpotifyPlaylistTracks).mockResolvedValue([]);
+  });
+
+  it('reads playlist items with the connected user token and the 100-song ceiling', async () => {
+    const { db } = makeDb(makeConnection());
+
+    await fetchSpotifyPlaylistPreview(db, env, 'user-1', 'playlist-1');
+
+    expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessToken: 'access-old',
+        playlistId: 'playlist-1',
+        occurrenceLimit: 100,
+      }),
+    );
+    expect(refreshSpotifyToken).not.toHaveBeenCalled();
+  });
+
+  it('throws NOT_CONNECTED with import copy when Spotify is not linked', async () => {
+    const { db } = makeDb(null);
+
+    await expect(
+      fetchSpotifyPlaylistPreview(db, env, 'user-1', 'playlist-1'),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'NOT_CONNECTED',
+      message: SPOTIFY_PLAYLIST_PREVIEW_CONNECT_MESSAGE,
+    } satisfies Partial<HttpError>);
+    expect(fetchSpotifyPlaylistTracks).not.toHaveBeenCalled();
+    expect(refreshSpotifyToken).not.toHaveBeenCalled();
+  });
+
+  it('maps a 401 with no refresh token to the import reconnect copy', async () => {
+    const { db } = makeDb(makeConnection({ refreshTokenEncrypted: null }));
+    vi.mocked(fetchSpotifyPlaylistTracks).mockRejectedValueOnce(new SpotifyUnauthorizedError());
+
+    await expect(
+      fetchSpotifyPlaylistPreview(db, env, 'user-1', 'playlist-1'),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'REAUTH_REQUIRED',
+      message: SPOTIFY_PLAYLIST_PREVIEW_RECONNECT_MESSAGE,
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).not.toHaveBeenCalled();
+    expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(1);
+  });
+
+  it('refreshes an expired user token before the playlist read', async () => {
+    const { db } = makeDb(makeConnection({ expiresAt: Date.now() - 1 }));
+
+    await fetchSpotifyPlaylistPreview(db, env, 'user-1', 'playlist-1');
+
+    expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
+    expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledWith(
+      expect.objectContaining({ accessToken: 'access-fresh', playlistId: 'playlist-1' }),
+    );
+  });
+
+  it('refreshes once after a 401 and retries with the new user token', async () => {
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifyPlaylistTracks)
+      .mockRejectedValueOnce(new SpotifyUnauthorizedError())
+      .mockResolvedValueOnce([]);
+
+    await fetchSpotifyPlaylistPreview(db, env, 'user-1', 'playlist-1');
+
+    expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
+    expect(fetchSpotifyPlaylistTracks).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ accessToken: 'access-old' }),
+    );
+    expect(fetchSpotifyPlaylistTracks).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ accessToken: 'access-fresh' }),
+    );
+  });
+
+  it('maps a second 401 to the import reconnect copy and does not refresh again', async () => {
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifyPlaylistTracks)
+      .mockRejectedValueOnce(new SpotifyUnauthorizedError())
+      .mockRejectedValueOnce(new SpotifyUnauthorizedError());
+
+    await expect(
+      fetchSpotifyPlaylistPreview(db, env, 'user-1', 'playlist-1'),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'REAUTH_REQUIRED',
+      message: SPOTIFY_PLAYLIST_PREVIEW_RECONNECT_MESSAGE,
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
+    expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(2);
+  });
+
+  it('maps a scope 403 to the import reconnect copy without refreshing', async () => {
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifyPlaylistTracks).mockRejectedValueOnce(new SpotifyForbiddenError());
+
+    await expect(
+      fetchSpotifyPlaylistPreview(db, env, 'user-1', 'playlist-1'),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'REAUTH_REQUIRED',
+      message: SPOTIFY_PLAYLIST_PREVIEW_RECONNECT_MESSAGE,
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).not.toHaveBeenCalled();
   });
 });
 
