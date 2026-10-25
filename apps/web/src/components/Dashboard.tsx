@@ -14,6 +14,7 @@ import {
   type Ref,
 } from 'react';
 import {
+  PLAYLIST_SONG_BLOCK_CAP,
   providerCapabilities,
   type Class,
   type ClassPlanBlock,
@@ -66,6 +67,7 @@ import {
 } from '../lib/ordered-import.js';
 import { useProviderConnect } from '../lib/use-provider-connect.js';
 import { ProviderConnectAction } from './ProviderConnectAction.js';
+import { PlaylistSongPicker } from './PlaylistSongPicker.js';
 import { consumeConnectionReturn, rememberConnectionReturn } from '../lib/connection-return.js';
 import { authClient } from '../lib/auth-client.js';
 import {
@@ -178,6 +180,8 @@ interface CollectionImportResult {
   total: number;
   failed: TrackSearchResult[];
   session: OrderedImportSession;
+  /** Replay song blocks on retry. Search and manual adds leave this unset. */
+  songBlocks?: boolean;
 }
 
 /**
@@ -642,9 +646,15 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   );
 
   const importCollectionTracks = useCallback(
-    async (classId: string, session: OrderedImportSession, confirmOnly = false) => {
+    async (
+      classId: string,
+      session: OrderedImportSession,
+      confirmOnly = false,
+      songBlocks = false,
+    ) => {
       const result = await runOrderedImport(classId, session, undefined, undefined, {
         confirmOnly,
+        songBlocks,
       });
       setError(result.error);
       return session.entries.filter((e) => !e.added).map((e) => e.candidate);
@@ -659,8 +669,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       playlistId: string,
       playlistName: string,
       template: ClassTemplate,
+      tracks: TrackSearchResult[],
     ) => {
-      const tracks = await listPlaylistTracks(provider, playlistId);
       if (tracks.length === 0) {
         throw new Error(
           'No tracks found in this playlist. Choose another playlist to start a class.',
@@ -681,7 +691,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         trackCount: tracks.length,
         coverImageUrl: null,
       };
-      const failed = await importCollectionTracks(cls.id, session);
+      const failed = await importCollectionTracks(cls.id, session, false, true);
       setImportResult({
         classId: cls.id,
         classTitle: cls.title,
@@ -689,6 +699,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         total: tracks.length,
         failed,
         session,
+        songBlocks: true,
       });
       setPlaylistBrowse(null);
       await openClass({ ...cls, accessLevel: 'owner' });
@@ -703,11 +714,16 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
    * Best-effort per track so a single failing song doesn't abort the import.
    */
   const handleCreateClassFromLikes = useCallback(
-    async (tracks: TrackSearchResult[], title: string, template: ClassTemplate) => {
+    async (
+      tracks: TrackSearchResult[],
+      title: string,
+      template: ClassTemplate,
+      songBlocks = false,
+    ) => {
       const cls = await createClass({ title, template });
       await applyTagFilter(null);
       const session = createOrderedImport(tracks);
-      const failed = await importCollectionTracks(cls.id, session);
+      const failed = await importCollectionTracks(cls.id, session, false, songBlocks);
       setImportResult({
         classId: cls.id,
         classTitle: cls.title,
@@ -715,6 +731,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         total: tracks.length,
         failed,
         session,
+        songBlocks,
       });
       setLikesBrowse(null);
       setDestination('classes');
@@ -732,6 +749,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         importResult.classId,
         importResult.session,
         !!importResult.session.pending,
+        importResult.songBlocks === true,
       );
       setImportResult((current) =>
         current?.session === importResult.session
@@ -3178,6 +3196,7 @@ function PlaylistBrowserDialog({
     playlistId: string,
     playlistName: string,
     template: ClassTemplate,
+    tracks: TrackSearchResult[],
   ) => Promise<void>;
 }) {
   const [template, setTemplate] = useState<ClassTemplate>('cycle');
@@ -3186,6 +3205,7 @@ function PlaylistBrowserDialog({
   const [loadingTracks, setLoadingTracks] = useState(false);
   const [creatingId, setCreatingId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
   const label = providerLabel(provider);
 
   const openPlaylist = async (playlist: ProviderPlaylistSummary) => {
@@ -3202,16 +3222,51 @@ function PlaylistBrowserDialog({
     }
   };
 
-  const handleCreate = async (playlist: ProviderPlaylistSummary) => {
+  const submitTracks = async (playlist: ProviderPlaylistSummary, chosen: TrackSearchResult[]) => {
     setCreatingId(playlist.playlistId);
+    setPicking(false);
     setRowError(null);
     try {
-      await onCreateClass(provider, playlist.playlistId, playlist.name, template);
+      await onCreateClass(provider, playlist.playlistId, playlist.name, template, chosen);
     } catch (e) {
       setRowError(errMessage(e));
       setCreatingId(null);
     }
   };
+
+  const handleCreate = async (playlist: ProviderPlaylistSummary) => {
+    if (!tracks?.length) {
+      setRowError('No tracks found in this playlist. Choose another playlist to start a class.');
+      return;
+    }
+    if (tracks.length > PLAYLIST_SONG_BLOCK_CAP) {
+      setPicking(true);
+      return;
+    }
+    await submitTracks(playlist, tracks);
+  };
+
+  if (picking && selectedPlaylist && tracks && tracks.length > PLAYLIST_SONG_BLOCK_CAP) {
+    return (
+      <PlaylistSongPicker
+        mode="create"
+        items={tracks.map((track, index) => ({
+          id: String(index),
+          position: index + 1,
+          title: track.title,
+          artist: track.artist,
+          durationMs: track.durationMs,
+        }))}
+        onCancel={() => setPicking(false)}
+        onConfirm={(ids) => {
+          const chosen = ids
+            .map((id) => tracks[Number(id)])
+            .filter((track): track is TrackSearchResult => track != null);
+          void submitTracks(selectedPlaylist, chosen);
+        }}
+      />
+    );
+  }
 
   return (
     <Dialog
@@ -3283,6 +3338,9 @@ function PlaylistBrowserDialog({
 
       {selectedPlaylist ? (
         <div className="flex flex-col gap-3">
+          <p className="font-ui text-xs text-text-secondary">
+            The playlist becomes the class blocks. The discipline sets the movement language.
+          </p>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <button
               type="button"
@@ -3290,6 +3348,7 @@ function PlaylistBrowserDialog({
                 setSelectedPlaylist(null);
                 setTracks(null);
                 setRowError(null);
+                setPicking(false);
               }}
               className="min-h-11 rounded-pill border border-interactive/30 px-3 font-ui text-xs text-text-secondary hover:text-text-primary"
             >
@@ -3411,6 +3470,7 @@ function LikesBrowserDialog({
     tracks: TrackSearchResult[],
     title: string,
     template: ClassTemplate,
+    songBlocks?: boolean,
   ) => Promise<void>;
 }) {
   const label = providerLabel(provider);
@@ -3418,18 +3478,51 @@ function LikesBrowserDialog({
   const [title, setTitle] = useState(`${label} likes`);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
 
-  const handleCreate = async () => {
+  const submit = async (chosen: TrackSearchResult[]) => {
     if (!title.trim() || creating) return;
+    setPicking(false);
     setCreating(true);
     setError(null);
     try {
-      await onCreateClass(tracks, title.trim(), template);
+      await onCreateClass(chosen, title.trim(), template, true);
     } catch (e) {
       setError(errMessage(e));
       setCreating(false);
     }
   };
+
+  const handleCreate = async () => {
+    if (!title.trim() || creating || tracks.length === 0) return;
+    if (tracks.length > PLAYLIST_SONG_BLOCK_CAP) {
+      setPicking(true);
+      return;
+    }
+    await submit(tracks);
+  };
+
+  if (picking) {
+    return (
+      <PlaylistSongPicker
+        mode="create"
+        items={tracks.map((track, index) => ({
+          id: String(index),
+          position: index + 1,
+          title: track.title,
+          artist: track.artist,
+          durationMs: track.durationMs,
+        }))}
+        onCancel={() => setPicking(false)}
+        onConfirm={(ids) => {
+          const chosen = ids
+            .map((id) => tracks[Number(id)])
+            .filter((track): track is TrackSearchResult => track != null);
+          void submit(chosen);
+        }}
+      />
+    );
+  }
 
   return (
     <Dialog
@@ -3512,7 +3605,9 @@ function LikesBrowserDialog({
 
       <div className="mb-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="font-ui text-xs text-text-secondary">
-          {tracks.length} liked {tracks.length === 1 ? 'track' : 'tracks'} will be imported
+          {tracks.length > PLAYLIST_SONG_BLOCK_CAP
+            ? 'Choose up to 15 songs. Liked songs become the class blocks.'
+            : `${tracks.length} liked ${tracks.length === 1 ? 'track' : 'tracks'} will become the class blocks.`}
         </p>
         <button
           type="button"
@@ -3614,6 +3709,7 @@ function ClassWorkspace({
   const assigningPlanBlockId = assigningPlanBlock?.id ?? null;
   const [assignStay, setAssignStay] = useState(false);
   const [planLead, setPlanLead] = useState<string | null>(null);
+  const [planReady, setPlanReady] = useState(false);
   const [planBlocks, setPlanBlocks] = useState<ClassPlanBlock[]>([]);
   const currentAssigningPlanBlock = assigningPlanBlock
     ? (planBlocks.find((block) => block.id === assigningPlanBlock.id) ?? assigningPlanBlock)
@@ -3865,7 +3961,7 @@ function ClassWorkspace({
           trackCount={payload?.tracks.length ?? tracks.length}
           isOwner={isOwner}
           canEdit={canEdit}
-          canRun={payload != null && canRunPayload(payload) && !planLead}
+          canRun={payload != null && canRunPayload(payload) && !planLead && planReady}
           onError={onError}
           onRun={onRun}
           onSelectTrack={setSelectedTrackId}
@@ -3918,6 +4014,7 @@ function ClassWorkspace({
           onSelectTrack={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
           onTracksChanged={onTrackChanged}
           onPlanNextStep={setPlanLead}
+          onPlanReady={setPlanReady}
           onHasPlanBlocks={setHasPlanBlocks}
           onPlanBlocks={setPlanBlocks}
         />
@@ -4000,6 +4097,19 @@ function ClassWorkspace({
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              {canEdit && cls.scaffoldRecipeId != null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAssigningPlanBlock(null);
+                    setSourceOpen(true);
+                  }}
+                  aria-expanded={sourceOpen && !assigningPlanBlock}
+                  className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+                >
+                  Import a playlist as song blocks
+                </button>
+              )}
               {(showStackAddMusic || (sourceOpen && !assigningPlanBlock)) && (
                 <button
                   ref={trackSourceToggleRef}

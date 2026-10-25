@@ -16,6 +16,7 @@ import {
   planFitLabel,
   nextEmptyPlanBlock,
   planNextStep,
+  playlistSongBlockDraft,
   scaffoldRecipeId,
   syncHiitSequenceFocus,
   tracksForPlanBlock,
@@ -373,5 +374,76 @@ describe('syncHiitSequenceFocus', () => {
     expect(syncHiitSequenceFocus(hiit, undefined)).toBe(hiit);
     expect(syncHiitSequenceFocus(hiit, 'Walk and breathe.')).toBe(hiit);
     expect(syncHiitSequenceFocus(cycle, 'Anything.')).toBe(cycle);
+  });
+});
+
+describe('playlistSongBlockDraft', () => {
+  it('labels one song Warm-up, two songs Warm-up then Cooldown, and cuts a long title', () => {
+    expect(
+      playlistSongBlockDraft({
+        title: 'Opener',
+        index: 0,
+        count: 1,
+        mode: 'replace',
+        durationMs: 180_000,
+        template: 'cycle',
+      }).label,
+    ).toBe('Warm-up');
+    const two = [0, 1].map(
+      (index) =>
+        playlistSongBlockDraft({
+          title: index === 0 ? 'Opener' : 'Last',
+          index,
+          count: 2,
+          mode: 'replace',
+          durationMs: 180_000,
+          template: 'cycle',
+        }).label,
+    );
+    expect(two).toEqual(['Warm-up', 'Cooldown']);
+    const long = 'A'.repeat(140);
+    expect(
+      playlistSongBlockDraft({
+        title: long,
+        index: 1,
+        count: 3,
+        mode: 'replace',
+        durationMs: 180_000,
+        template: 'cycle',
+      }).label,
+    ).toBe('A'.repeat(100));
+    expect(
+      playlistSongBlockDraft({
+        title: '   ',
+        index: 1,
+        count: 3,
+        mode: 'replace',
+        durationMs: null,
+        template: null,
+      }).label,
+    ).toBe('Song 2');
+  });
+});
+
+describe('planNextStep song blocks', () => {
+  const planBlock = (id: string, position: number, targetMs: number) =>
+    ({ id, position, targetDurationMs: targetMs }) as ClassPlanBlock;
+
+  it('returns null when song-block targets match their durations', () => {
+    const blocks = [planBlock(blockId, 0, 180_000)];
+    const payload = {
+      tracks: [
+        { classTrackId: '00000000-0000-4000-8000-0000000000a1', track: { durationMs: 180_000 } },
+      ],
+    } as RunPayload;
+    expect(
+      planNextStep(blocks, [track('00000000-0000-4000-8000-0000000000a1', blockId)], payload),
+    ).toBeNull();
+  });
+
+  it('still leads when an instructor block has no song', () => {
+    expect(planNextStep([planBlock(blockId, 0, 180_000)], [], null)).toBe(
+      'Block 1 still needs music',
+    );
   });
 });

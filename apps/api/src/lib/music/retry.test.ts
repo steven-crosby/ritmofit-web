@@ -112,4 +112,19 @@ describe('fetchWithRetry', () => {
     expect(res.status).toBe(200);
     expect(sleep).toHaveBeenCalledWith(1000);
   });
+
+  it('aborts instead of sleeping past the preview deadline', async () => {
+    const { fetchImpl, calls } = queuedFetch([503, 200]);
+    const sleep = vi.fn<(ms: number) => Promise<void>>();
+    await expect(
+      fetchWithRetry(fetchImpl, 'https://x/y', undefined, {
+        sleep,
+        now: () => 1_000,
+        deadlineAt: 1_100,
+        baseDelayMs: 200,
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(calls).toHaveLength(1);
+    expect(sleep).not.toHaveBeenCalled();
+  });
 });

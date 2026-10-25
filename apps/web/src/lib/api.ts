@@ -25,6 +25,7 @@ import type {
   ResolveProviderResult,
   Provider,
   MusicConnectionView,
+  PlaylistPreviewResponse,
   ProviderPlaylistSummary,
   ConnectProviderResponse,
   AppleMusicClientConfig,
@@ -178,7 +179,7 @@ export const uploadClassCover = async (classId: string, file: File): Promise<Cla
   return res.json() as Promise<Class>;
 };
 export const importPlaylist = (classId: string, url: string) =>
-  api<{ imported: number }>(`/classes/${classId}/import-playlist`, {
+  api<PlaylistPreviewResponse>(`/classes/${classId}/import-playlist`, {
     method: 'POST',
     body: JSON.stringify({ url }),
   });

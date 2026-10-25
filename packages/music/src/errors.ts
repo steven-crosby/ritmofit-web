@@ -29,6 +29,37 @@ export async function readJson(
   }
 }
 
+/**
+ * A playlist read crossed the paste-a-link occurrence ceiling. `reportedTotal`
+ * is the provider's own count when it published one (Spotify `total`); cursor
+ * providers leave it null so the message says "more than" the limit.
+ */
+export class PlaylistOverLimitError extends Error {
+  readonly reportedTotal: number | null;
+  readonly limit: number;
+  constructor(reportedTotal: number | null, limit: number) {
+    super(
+      reportedTotal == null
+        ? `Playlist has more than ${limit} songs.`
+        : `Playlist has ${reportedTotal} songs. The limit is ${limit}.`,
+    );
+    this.name = 'PlaylistOverLimitError';
+    this.reportedTotal = reportedTotal;
+    this.limit = limit;
+  }
+}
+
+/** Preview deadline or caller abort. Not a provider outage and not retried. */
+export function abortError(): Error {
+  const err = new Error('The playlist preview was aborted.');
+  err.name = 'AbortError';
+  return err;
+}
+
+export function isAbortError(err: unknown): boolean {
+  return err instanceof Error && err.name === 'AbortError';
+}
+
 /** Validate a provider payload, raising `ProviderError` (not a `ZodError`) on drift. */
 export function parseProvider<T>(schema: z.ZodType<T>, data: unknown, provider: string): T {
   const result = schema.safeParse(data);

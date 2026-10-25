@@ -88,7 +88,11 @@ export async function importUserPlaylist(
   provider: Provider,
   playlistId: string,
 ): Promise<PlaylistImportSummary> {
-  const candidates = await fetchUserPlaylistTracks(db, env, userId, provider, playlistId);
+  const candidates = await fetchUserPlaylistTracks(db, env, userId, provider, playlistId, {
+    // Page until distinct songs pass the cap, then stop. The browse max of 200
+    // must not cut off a duplicate-heavy playlist that is still under the cap.
+    shouldStop: (tracks) => dedupeByMatchKey(tracks).length > MAX_PLAYLIST_IMPORT_TRACKS,
+  });
   const unique = dedupeByMatchKey(candidates);
 
   if (unique.length > MAX_PLAYLIST_IMPORT_TRACKS) {

@@ -11,7 +11,7 @@
 
 ## Now
 
-_Last updated 2026-10-24 (Cursor). Production Worker is main `7a505ae` (`9b471c26-c62f-41b2-9788-6eb49c1353fa`). [#563](https://github.com/steven-crosby/ritmofit-web/pull/563) and [#562](https://github.com/steven-crosby/ritmofit-web/pull/562) are deployed. Apple 5:18 debugging stays tabled; Spotify stays tabled._
+_Last updated 2026-10-25 (Cursor). Production Worker is main `7a505ae` (`9b471c26-c62f-41b2-9788-6eb49c1353fa`). [#563](https://github.com/steven-crosby/ritmofit-web/pull/563) and [#562](https://github.com/steven-crosby/ritmofit-web/pull/562) are deployed. Apple 5:18 debugging stays tabled; Spotify stays tabled._
 
 - **Focus:** music-led Phase 1 ([D24](./decisions.md#d24--music-drives-creation-and-instruction-until-the-instructor-chooses-otherwise-resolved-2026-09-30)) — reliable Apple Music Live playback, desktop Cycle/Pilates first, then iPhone. Spotify remains tabled.
 - **Production:** last deploy is main `7a505ae` on 2026-10-24 at 2:35 PM MT (2026-10-24T20:35:42Z): Worker `9b471c26-c62f-41b2-9788-6eb49c1353fa`. Previous/rollback Worker `baa4a420-562c-4988-969b-2bd1709a35a9`. SPA `assets/index-DtpLW965.js` matched on six consecutive cache-busted fetches (6/6). Previous JS entry was `assets/index-q9aP7Jrc.js`. CSS `assets/index-DcqGkA5K.css` is unchanged. Preflight ran before the deploy: no migrations pending (`0021` latest), `BETA_ALLOWED_EMAILS` present. No migration was applied. Pre-deploy full gate passed on `7a505ae` from a clean detached worktree on Steven's MacBook. Smoke: `/` 200, `/api/v1/health` 200; unauthenticated `/api/v1/classes`, `/explore`, and `/teams` 401. [HISTORY](./HISTORY.md).
@@ -21,7 +21,7 @@ _Last updated 2026-10-24 (Cursor). Production Worker is main `7a505ae` (`9b471c2
 - **Human acceptance:** the earlier owner-approved desktop Cycle/Pilates spot-check remains historical ([record](../docs/audits/apple-natural-acceptance-2026-10-09/README.md)). On the 2026-10-13 build, Steven confirmed Apple authorization, audible start and clean natural handover to Bad Romance; a transient Waiting for music panel appeared and cleared. Apple post-Exit silence and all four SoundCloud hearing checks are now confirmed. A separate later Apple recovery at 5:18 was unwitnessed; stability/cause remain open. UI/SDK state, synthetic completion and deployment do not close these checks. Real iPhone Safari remains unverified.
 - **Next step:** Apple 5:18 debugging remains tabled; resume only on explicit owner instruction. [Retained investigation handoff](./handoffs/2026-10-13-apple-recovery-investigation.md). Spotify remains tabled. Real iPhone remains unverified. Neither r20261021 lane received native 200% zoom verification (NOT_ASSESSED).
 - **Cleanup:** #520–#523 completed publication branches removed locally/remotely after merge/tree checks. Three superseded root handoffs retired through #523. SoundCloud QA was deleted with its recorded 404; Apple fixture `75b7af90-141f-4f56-b02b-0bdd2c1c9dfe`, investigation handoff and all evidence stay. The completed cleanup handoff is closed and kept to preserve audit links. On 2026-10-19 the local worktrees and local branches for #518 and #519 were removed; neither tree had product files missing from `main`. Their untracked planning briefs were kept outside the repo. The same day, after an explicit owner yes, origin branches `codex/r20261011c-live-short-viewport` (`a06e0e6`) and `codex/r20261011c-builder-refresh-integrity` (`3d7bfd6`) were deleted. `.claude/`, the local verification tag, the Apple fixture, and original classes stay. [Close receipt](../docs/audits/session-close-2026-10-13/receipt.json).
-- **Owner decisions:** further fixture cleanup separately; Live finish placement, style, and confirmation still open (wording decided 2026-10-24: the live header control reads End Class, same handler, no confirmation); playlist import builds blocks only (decided 2026-10-24, [design](./playlist-import-blocks-design.md); slice A is draft [#572](https://github.com/steven-crosby/ritmofit-web/pull/572), not merged; the 15-song cap is per import, owner 2026-10-25); liveness alerting; F-02/D11. Missing-page and error screens keep `rf-hero-glow` (owner, 2026-10-24). OD-02 resolved: current cue remains the Live hero.
+- **Owner decisions:** further fixture cleanup separately; Live finish placement, style, and confirmation still open (wording decided 2026-10-24: the live header control reads End Class, same handler, no confirmation); playlist import builds blocks only (decided 2026-10-24, [design](./playlist-import-blocks-design.md); slice A merged as [#572](https://github.com/steven-crosby/ritmofit-web/pull/572) (`88128ef`); slice B, the picker and paste-a-link preview, is the draft on `cursor/playlist-import-slice-b-3a0a`; the 15-song cap is per import, owner 2026-10-25); liveness alerting; F-02/D11. Missing-page and error screens keep `rf-hero-glow` (owner, 2026-10-24). OD-02 resolved: current cue remains the Live hero.
 
 ---
 
@@ -207,8 +207,9 @@ blocks, labels, scaffold replacement, and picker. More than 100 occurrences is a
 and the provider fetch stops as soon as the count exceeds 100. The preview times out after 8 seconds
 with a retryable error and no partial write. A 100-song link should open the picker in under 2
 seconds. Design: [`playlist-import-blocks-design.md`](./playlist-import-blocks-design.md). Slice A
-(the `songBlocks` commit) is draft [#572](https://github.com/steven-crosby/ritmofit-web/pull/572) and
-is not merged. Slice B is not started. Evidence:
+(the `songBlocks` commit) merged as [#572](https://github.com/steven-crosby/ritmofit-web/pull/572)
+(`88128ef`). Slice B (picker, paste-a-link preview, scaffold labels) is the draft on
+`cursor/playlist-import-slice-b-3a0a`. Evidence:
 [desktop audit 2026-10-03](../docs/audits/playlist-to-live-2026-10-03/coverage.md).
 
 **Class-building direction.** The [class-score blueprint](./instructor-class-score-blueprint.md)

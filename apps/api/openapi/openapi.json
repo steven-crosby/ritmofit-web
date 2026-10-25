@@ -556,7 +556,7 @@
         }
       ],
       "post": {
-        "summary": "Import a public Spotify, SoundCloud, or Apple Music catalog playlist URL as class tracks (edit).",
+        "summary": "Preview a public Spotify, SoundCloud, or Apple Music catalog playlist URL (edit). Writes nothing. Playlists over 100 occurrences are rejected. A preview that exceeds 8 seconds returns 504 PROVIDER_TIMEOUT.",
         "requestBody": {
           "required": true,
           "content": {
@@ -577,26 +577,24 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Tracks imported",
+          "200": {
+            "description": "Ordered occurrences for the song picker. No class or library writes.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "imported": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "imported"
-                  ]
+                  "$ref": "#/components/schemas/PlaylistPreviewResponse"
                 }
               }
             }
           },
           "400": {
             "description": "Invalid or unsupported playlist URL, or empty playlist"
+          },
+          "422": {
+            "description": "Playlist has more than 100 songs"
+          },
+          "504": {
+            "description": "PROVIDER_TIMEOUT — the playlist took too long to load. Try again. No writes."
           }
         }
       }
@@ -4825,6 +4823,72 @@
           "expectedTracks",
           "placements",
           "orderedIds"
+        ],
+        "additionalProperties": false
+      },
+      "PlaylistPreviewResponse": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "occurrences": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "artist": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "durationMs": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "spotify",
+                    "apple_music",
+                    "soundcloud"
+                  ]
+                },
+                "providerTrackId": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "index",
+                "title",
+                "artist",
+                "durationMs",
+                "provider",
+                "providerTrackId"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "occurrences"
         ],
         "additionalProperties": false
       },

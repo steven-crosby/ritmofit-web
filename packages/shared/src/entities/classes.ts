@@ -10,6 +10,7 @@ import {
   timelineModeSchema,
   intensitySchema,
   accessLevelSchema,
+  providerSchema,
 } from '../enums.js';
 import { createTrackSchema } from './tracks.js';
 import { scaffoldRecipeIdSchema } from './class-plan-blocks.js';
@@ -306,12 +307,36 @@ export type CopyClassTrack = z.infer<typeof copyClassTrackSchema>;
 /**
  * Import a provider playlist into a class. The URL is length-bounded so a hostile
  * caller can't submit a megabyte string, and the server caps how many distinct
- * tracks one import resolves (`MAX_PLAYLIST_IMPORT_TRACKS`) to bound upstream
- * provider calls and D1 writes per request.
+ * tracks one saved-playlist import resolves (`MAX_PLAYLIST_IMPORT_TRACKS`) to bound
+ * upstream provider calls and D1 writes per request.
  */
 export const MAX_PLAYLIST_IMPORT_TRACKS = 100;
 export const importPlaylistSchema = z.object({ url: z.string().url().max(2000) });
 export type ImportPlaylist = z.infer<typeof importPlaylistSchema>;
+
+/**
+ * Paste-a-link preview ceiling. Counts playlist occurrences in source order,
+ * including repeated titles, not distinct match keys. Same number as
+ * `MAX_PLAYLIST_IMPORT_TRACKS`.
+ */
+export const PLAYLIST_URL_OCCURRENCE_LIMIT = 100;
+
+/** One song in a paste-a-link preview. Nothing is written to the class or library. */
+export const playlistPreviewOccurrenceSchema = z.object({
+  index: z.int().nonnegative(),
+  title: z.string().max(300),
+  artist: z.string().max(300),
+  durationMs: z.int().positive().nullable(),
+  provider: providerSchema,
+  providerTrackId: z.string().min(1),
+});
+export type PlaylistPreviewOccurrence = z.infer<typeof playlistPreviewOccurrenceSchema>;
+
+/** `POST /classes/:id/import-playlist` preview. 1–100 occurrences, source order. */
+export const playlistPreviewResponseSchema = z.object({
+  occurrences: z.array(playlistPreviewOccurrenceSchema).min(1).max(PLAYLIST_URL_OCCURRENCE_LIMIT),
+});
+export type PlaylistPreviewResponse = z.infer<typeof playlistPreviewResponseSchema>;
 
 /**
  * Copy a whole class into the caller's library (M4 slice 3b — "save a copy" from

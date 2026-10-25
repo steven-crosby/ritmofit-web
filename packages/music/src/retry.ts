@@ -9,7 +9,8 @@
  * the per-user likes path keep their own logic. The `sleep` seam is injectable so
  * the behavior is unit-tested without real timers.
  */
-import type { FetchLike } from './provider.js';
+import { abortError } from './errors.js';
+import type { FetchLike, ProviderAbortSignal } from './provider.js';
 
 // Available in the Workers runtime and Node (vitest). Declared here so the package
 // needs no DOM/Workers ambient lib (same pattern as `btoa` in app-token.ts).
@@ -26,10 +27,47 @@ export interface RetryOptions {
   sleep?: (ms: number) => Promise<void>;
   /** Clock seam for `Retry-After` HTTP-date math (defaults to `Date.now`). */
   now?: () => number;
+  /** Preview abort. Checked before each attempt and instead of sleeping past it. */
+  signal?: ProviderAbortSignal;
+  /** Absolute ms deadline. A retry sleep that would pass it aborts instead. */
+  deadlineAt?: number;
 }
 
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
+
+function throwIfAborted(signal?: ProviderAbortSignal, deadlineAt?: number, now?: number): void {
+  if (signal?.aborted) throw abortError();
+  if (deadlineAt != null && now != null && now >= deadlineAt) throw abortError();
+}
+
+/** Sleep, but reject immediately when the preview signal aborts. */
+async function sleepOrAbort(
+  sleep: (ms: number) => Promise<void>,
+  ms: number,
+  signal?: ProviderAbortSignal,
+): Promise<void> {
+  if (!signal) {
+    await sleep(ms);
+    return;
+  }
+  if (signal.aborted) throw abortError();
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', onAbort);
+      fn();
+    };
+    const onAbort = () => finish(() => reject(abortError()));
+    signal.addEventListener('abort', onAbort);
+    void Promise.resolve(sleep(ms)).then(
+      () => finish(resolve),
+      (err: unknown) => finish(() => reject(err)),
+    );
+  });
+}
 
 /** 429 (rate limited) and 5xx (upstream) are transient and safe to retry for a GET. */
 export function isTransientStatus(status: number): boolean {
@@ -71,13 +109,19 @@ export async function fetchWithRetry(
 
   let attempt = 0;
   for (;;) {
+    const clock = now();
+    throwIfAborted(opts.signal, opts.deadlineAt, clock);
     const res = await fetchImpl(input, init);
     if (res.ok || !isTransientStatus(res.status) || attempt >= maxRetries) {
       return res;
     }
     const headerMs = parseRetryAfterMs(res.headers?.get('retry-after'), now());
     const backoffMs = Math.min(maxDelayMs, baseDelayMs * 2 ** attempt);
-    await sleep(headerMs ?? backoffMs);
+    const wait = headerMs ?? backoffMs;
+    const after = now();
+    if (opts.deadlineAt != null && after + wait > opts.deadlineAt) throw abortError();
+    throwIfAborted(opts.signal, opts.deadlineAt, after);
+    await sleepOrAbort(sleep, wait, opts.signal);
     attempt += 1;
   }
 }

@@ -20,8 +20,11 @@ import {
   type OrderedImportSession,
 } from '../lib/ordered-import.js';
 import {
+  PLAYLIST_SONG_BLOCK_CAP,
   providerCapabilities,
   type MusicConnectionView,
+  type PlaylistPreviewOccurrence,
+  type PlaylistPreviewResponse,
   type ProviderPlaylistSummary,
   type Provider,
   type TrackSearchResult,
@@ -48,6 +51,7 @@ import {
 } from '../lib/providers.js';
 import { ConnectionStateMark, musicConnectionMark } from './ConnectionStateMark.js';
 import { SourceList, sourceCandidateKey } from './SourceList.js';
+import { PlaylistSongPicker } from './PlaylistSongPicker.js';
 
 /** A stable key for a candidate (provider + provider track id). */
 const candidateKey = sourceCandidateKey;
@@ -208,6 +212,8 @@ export function TrackSearch({
   const playlistUrlRevision = useRef(0);
   const urlImportBusy = useRef(false);
   const [importingPlaylist, setImportingPlaylist] = useState(false);
+  const [urlPreview, setUrlPreview] = useState<PlaylistPreviewResponse | null>(null);
+  const [savedSongPicker, setSavedSongPicker] = useState(false);
   const [savedPlaylists, setSavedPlaylists] = useState<ProviderPlaylistSummary[] | null>(null);
   const [selectedPlaylist, setSelectedPlaylist] = useState<ProviderPlaylistSummary | null>(null);
   const pendingPrefix = `ritmo-import:${classId}:${planBlockId ?? 'class'}:${provider}:`;
@@ -468,7 +474,11 @@ export function TrackSearch({
     }
   };
 
-  const importPlaylistOccurrences = async (selectedIds?: Set<string>, confirmOnly = false) => {
+  const importPlaylistOccurrences = async (
+    selectedIds?: Set<string>,
+    confirmOnly = false,
+    songBlocks = false,
+  ) => {
     if (importBusy.current || !playlistImport.current) return;
     importBusy.current = true;
     setImportingAllFromPlaylist(true);
@@ -480,6 +490,7 @@ export function TrackSearch({
     try {
       const outcome = await runOrderedImport(classId, session, selectedIds, planBlockId, {
         confirmOnly,
+        songBlocks,
       });
       if (mounted.current && generation === playlistGeneration.current) {
         // null clears a successful import. errMessage(null) is the fallback sentence.
@@ -502,8 +513,13 @@ export function TrackSearch({
   };
 
   const importAll = async () => {
+    if (planBlockId) return;
     if (!results?.length || importingKey !== null || importingAllFromPlaylist) return;
-    await importPlaylistOccurrences();
+    if (results.length > PLAYLIST_SONG_BLOCK_CAP) {
+      setSavedSongPicker(true);
+      return;
+    }
+    await importPlaylistOccurrences(undefined, false, true);
   };
 
   const add = async (candidate: TrackSearchResult, index: number) => {
@@ -542,6 +558,21 @@ export function TrackSearch({
     }
   };
 
+  const commitPreviewOccurrences = async (occurrences: PlaylistPreviewOccurrence[]) => {
+    const candidates = occurrences.map((occurrence) => ({
+      provider: occurrence.provider,
+      providerTrackId: occurrence.providerTrackId,
+      providerUri: null,
+      title: occurrence.title.trim() || `Song ${occurrence.index + 1}`,
+      artist: occurrence.artist.trim() || 'Unknown artist',
+      albumArtUrl: null,
+      durationMs: occurrence.durationMs,
+    }));
+    const session = createOrderedImport(candidates);
+    const outcome = await runOrderedImport(classId, session, undefined, null, { songBlocks: true });
+    if (outcome.error) throw new Error(outcome.error);
+  };
+
   const importList = async () => {
     if (!playlistUrl.trim() || urlImportBusy.current) return;
     urlImportBusy.current = true;
@@ -549,15 +580,50 @@ export function TrackSearch({
     const revision = playlistUrlRevision.current;
     const isCurrent = () => mounted.current && generation === playlistGeneration.current;
     setImportingPlaylist(true);
+    setUrlPreview(null);
     setError(null);
     try {
-      await importPlaylist(classId, playlistUrl);
-      if (isCurrent()) {
-        // The field stays editable while importing. Clear only the submitted
-        // draft, including protection for editing away and back to the same URL.
-        if (revision === playlistUrlRevision.current) setPlaylistUrl('');
-        onAdded();
+      const preview = await importPlaylist(classId, playlistUrl);
+      if (!isCurrent()) return;
+      if (preview.occurrences.length > PLAYLIST_SONG_BLOCK_CAP) {
+        setUrlPreview(preview);
+        return;
       }
+      await commitPreviewOccurrences(preview.occurrences);
+      if (!isCurrent()) return;
+      // The field stays editable while checking. Clear only the submitted draft.
+      if (revision === playlistUrlRevision.current) setPlaylistUrl('');
+      onAdded();
+    } catch (e) {
+      if (!isCurrent()) return;
+      if (e instanceof ApiError && (e.code === 'PROVIDER_TIMEOUT' || e.status === 504)) {
+        setError('The playlist took too long to load. Try again.');
+      } else {
+        setError(errMessage(e));
+      }
+    } finally {
+      urlImportBusy.current = false;
+      if (mounted.current) setImportingPlaylist(false);
+    }
+  };
+
+  const confirmUrlPreview = async (ids: string[]) => {
+    if (!urlPreview) return;
+    const chosen = urlPreview.occurrences.filter((occurrence) =>
+      ids.includes(`${occurrence.providerTrackId}:${occurrence.index}`),
+    );
+    const generation = playlistGeneration.current;
+    const revision = playlistUrlRevision.current;
+    const isCurrent = () => mounted.current && generation === playlistGeneration.current;
+    setUrlPreview(null);
+    urlImportBusy.current = true;
+    setImportingPlaylist(true);
+    setError(null);
+    try {
+      await commitPreviewOccurrences(chosen);
+      if (!isCurrent()) return;
+      if (revision === playlistUrlRevision.current) setPlaylistUrl('');
+      onAdded();
     } catch (e) {
       if (isCurrent()) setError(errMessage(e));
     } finally {
@@ -857,7 +923,7 @@ export function TrackSearch({
           <p className="min-w-0 flex-1 truncate font-ui text-xs text-text-secondary">
             {selectedPlaylist.name}
           </p>
-          {results && results.length > 0 && (
+          {results && results.length > 0 && !planBlockId && (
             <button
               type="button"
               onClick={() => void importAll()}
@@ -1000,7 +1066,7 @@ export function TrackSearch({
             disabled={importingPlaylist || !playlistUrl.trim()}
             className="min-h-11 rounded-pill rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40"
           >
-            {importingPlaylist ? 'Importing…' : 'Import'}
+            {importingPlaylist ? 'Checking playlist…' : 'Import'}
           </button>
         </div>
       )}
@@ -1037,7 +1103,8 @@ export function TrackSearch({
       {/* States. Idle (search, no query) invites; the rest reflect the fetch. */}
       {mode === 'playlist' ? (
         <p className="font-ui text-xs text-text-tertiary">
-          Paste the URL of a public playlist to import all its tracks at once.
+          Paste a public playlist link. Playlists longer than 15 songs let you choose which ones
+          become blocks.
         </p>
       ) : mode === 'saved_playlists' && !selectedPlaylist ? (
         // Playlist index: loading · load-failed (retryable) · list · truly-empty.
@@ -1150,6 +1217,37 @@ export function TrackSearch({
         </p>
       ) : (
         results && renderTrackList(results)
+      )}
+      {savedSongPicker && playlistImport.current && !planBlockId && (
+        <PlaylistSongPicker
+          mode="import"
+          items={playlistImport.current.entries.map((entry, index) => ({
+            id: entry.id,
+            position: index + 1,
+            title: entry.candidate.title,
+            artist: entry.candidate.artist,
+            durationMs: entry.candidate.durationMs,
+          }))}
+          onCancel={() => setSavedSongPicker(false)}
+          onConfirm={(ids) => {
+            setSavedSongPicker(false);
+            void importPlaylistOccurrences(new Set(ids), false, true);
+          }}
+        />
+      )}
+      {urlPreview && (
+        <PlaylistSongPicker
+          mode="import"
+          items={urlPreview.occurrences.map((occurrence) => ({
+            id: `${occurrence.providerTrackId}:${occurrence.index}`,
+            position: occurrence.index + 1,
+            title: occurrence.title.trim() || `Song ${occurrence.index + 1}`,
+            artist: occurrence.artist.trim() || 'Unknown artist',
+            durationMs: occurrence.durationMs,
+          }))}
+          onCancel={() => setUrlPreview(null)}
+          onConfirm={(ids) => void confirmUrlPreview(ids)}
+        />
       )}
     </div>
   );

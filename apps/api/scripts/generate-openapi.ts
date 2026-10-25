@@ -36,6 +36,8 @@ import {
   addClassTrackSchema,
   importClassTracksSchema,
   PLAYLIST_SONG_BLOCK_CAP,
+  PLAYLIST_URL_OCCURRENCE_LIMIT,
+  playlistPreviewResponseSchema,
   updateClassTrackSchema,
   reorderClassTracksSchema,
   copyClassTrackSchema,
@@ -99,6 +101,7 @@ const named: Record<string, z.ZodType> = {
   ClassTrack: classTrackSchema,
   AddClassTrack: addClassTrackSchema,
   ImportClassTracks: importClassTracksSchema,
+  PlaylistPreviewResponse: playlistPreviewResponseSchema,
   UpdateClassTrack: updateClassTrackSchema,
   ReorderClassTracks: reorderClassTracksSchema,
   CopyClassTrack: copyClassTrackSchema,
@@ -389,7 +392,9 @@ const doc = {
       parameters: [idParam],
       post: {
         summary:
-          'Import a public Spotify, SoundCloud, or Apple Music catalog playlist URL as class tracks (edit).',
+          'Preview a public Spotify, SoundCloud, or Apple Music catalog playlist URL (edit). Writes nothing. ' +
+          `Playlists over ${PLAYLIST_URL_OCCURRENCE_LIMIT} occurrences are rejected. ` +
+          'A preview that exceeds 8 seconds returns 504 PROVIDER_TIMEOUT.',
         requestBody: {
           required: true,
           content: {
@@ -403,19 +408,18 @@ const doc = {
           },
         },
         responses: {
-          '201': {
-            description: 'Tracks imported',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: { imported: { type: 'integer' } },
-                  required: ['imported'],
-                },
-              },
-            },
-          },
+          '200': jsonResp(
+            'PlaylistPreviewResponse',
+            'Ordered occurrences for the song picker. No class or library writes.',
+          ),
           '400': { description: 'Invalid or unsupported playlist URL, or empty playlist' },
+          '422': {
+            description: `Playlist has more than ${PLAYLIST_URL_OCCURRENCE_LIMIT} songs`,
+          },
+          '504': {
+            description:
+              'PROVIDER_TIMEOUT — the playlist took too long to load. Try again. No writes.',
+          },
         },
       },
     },

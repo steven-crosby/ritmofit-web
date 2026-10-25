@@ -21,6 +21,22 @@ export type PlaylistImportRef =
   | { provider: 'soundcloud'; permalinkUrl: string }
   | { provider: 'apple_music'; storefront: string; playlistId: string };
 
+/**
+ * Structural abort handle. Kept off `FetchLike` so this package stays free of
+ * DOM `AbortSignal` and `boundFetch` remains assignable.
+ */
+export interface ProviderAbortSignal {
+  readonly aborted: boolean;
+  addEventListener(type: 'abort', listener: () => void): void;
+  removeEventListener(type: 'abort', listener: () => void): void;
+}
+
+/** Deadline and abort for one paste-a-link preview, including every page. */
+export interface PlaylistReadOptions {
+  signal?: ProviderAbortSignal;
+  deadlineAt?: number;
+}
+
 export interface MusicProvider {
   /** Which provider this adapter speaks for. */
   readonly provider: Provider;
@@ -37,9 +53,11 @@ export interface MusicProvider {
   /**
    * Fetch a public playlist's tracks with app-level credentials, from a parsed
    * playlist-URL reference. Returns [] when the playlist doesn't exist (or the
-   * reference isn't a playlist) — the route maps that to a 400.
+   * reference isn't a playlist) — the route maps that to a 400. Throws
+   * `PlaylistOverLimitError` above the paste-a-link occurrence ceiling instead
+   * of truncating. `read` carries the preview deadline; callers omit it.
    */
-  getPlaylist(ref: PlaylistImportRef): Promise<TrackSearchResult[]>;
+  getPlaylist(ref: PlaylistImportRef, read?: PlaylistReadOptions): Promise<TrackSearchResult[]>;
 }
 
 /**

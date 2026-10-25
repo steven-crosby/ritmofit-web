@@ -19,6 +19,7 @@ import {
 } from 'react';
 import {
   MAX_DURATION_MS,
+  PLAYLIST_SONG_BLOCK_KEY,
   cyclePostureValues,
   hiitEquipmentValues,
   pilatesEquipmentValues,
@@ -97,6 +98,7 @@ export function ClassPlanBlocks({
   onPlanNextStep,
   onHasPlanBlocks,
   onPlanBlocks,
+  onPlanReady,
 }: {
   classId: string;
   /** Only scaffold classes gain add, reorder, and delete controls. */
@@ -118,6 +120,8 @@ export function ClassPlanBlocks({
   onPlanNextStep?: (label: string | null) => void;
   onHasPlanBlocks?: (hasBlocks: boolean) => void;
   onPlanBlocks?: (blocks: ClassPlanBlock[]) => void;
+  /** False until a plan-block fetch succeeds. A failed fetch does not publish []. */
+  onPlanReady?: (ready: boolean) => void;
 }) {
   const [blocks, setBlocks] = useState<ClassPlanBlock[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -140,26 +144,36 @@ export function ClassPlanBlocks({
         track.id === moveIntent.trackId ? { ...track, planBlockId: moveIntent.planBlockId } : track,
       )
     : tracks;
+  const assignmentKey = tracks.map((track) => `${track.id}:${track.planBlockId ?? ''}`).join('|');
+  const onPlanReadyRef = useRef(onPlanReady);
+  onPlanReadyRef.current = onPlanReady;
+  const loadedClassRef = useRef(classId);
 
   useEffect(() => {
     let alive = true;
+    if (loadedClassRef.current !== classId) {
+      loadedClassRef.current = classId;
+      setBlocks(null);
+      onPlanReadyRef.current?.(false);
+    }
     setError(null);
-    setBlocks(null);
     void (async () => {
       try {
         const rows = await listClassPlanBlocks(classId);
         if (!alive) return;
         setBlocks(Array.isArray(rows) ? rows : []);
+        onPlanReadyRef.current?.(true);
       } catch (e) {
         if (!alive) return;
+        // Keep the last successful plan. Publishing [] would look like an empty class.
         setError(errMessage(e));
-        setBlocks([]);
+        onPlanReadyRef.current?.(false);
       }
     })();
     return () => {
       alive = false;
     };
-  }, [classId, scaffoldRecipeId, reloadKey]);
+  }, [classId, reloadKey, assignmentKey]);
 
   useEffect(() => {
     if (blocks == null) return;
@@ -281,22 +295,21 @@ export function ClassPlanBlocks({
   }, [visibleTracks, moveIntent]);
 
   if (blocks == null) {
+    if (error) {
+      return (
+        <div
+          className="flex flex-col items-start gap-2 rounded-card bg-bg-raised p-4 shadow-card"
+          role="alert"
+        >
+          <StatusLabel kind="error" label="Couldn’t load the teaching plan" />
+          <p className="font-ui text-sm text-text-secondary">{error}</p>
+          <PendingList error={error} onRetry={() => setReloadKey((key) => key + 1)} />
+        </div>
+      );
+    }
     return (
       <div className="rounded-card bg-bg-raised p-4 shadow-card">
         <StatusLabel kind="loading" label="Loading teaching plan" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div
-        className="flex flex-col items-start gap-2 rounded-card bg-bg-raised p-4 shadow-card"
-        role="alert"
-      >
-        <StatusLabel kind="error" label="Couldn’t load the teaching plan" />
-        <p className="font-ui text-sm text-text-secondary">{error}</p>
-        <PendingList error={error} onRetry={() => setReloadKey((key) => key + 1)} />
       </div>
     );
   }
@@ -352,6 +365,13 @@ export function ClassPlanBlocks({
       <p className="sr-only" role="status" aria-live="polite">
         {announcement}
       </p>
+      {error && (
+        <div role="alert" className="flex flex-col items-start gap-2">
+          <StatusLabel kind="error" label="Couldn’t load the teaching plan" />
+          <p className="font-ui text-sm text-text-secondary">{error}</p>
+          <PendingList error={error} onRetry={() => setReloadKey((key) => key + 1)} />
+        </div>
+      )}
       {actionError && (
         <div role="alert" className="flex flex-col gap-1">
           <StatusLabel kind="error" label="Teaching plan needs attention" />
@@ -583,8 +603,12 @@ function PlanBlockCard({
         </div>
         <IntensityReadout intensity={block.intensity} />
       </div>
-      <p className="font-ui text-sm leading-5 text-text-secondary">{block.teachingGoal}</p>
-      <p className="font-ui text-xs leading-4 text-text-tertiary">{planBlockDetailLine(block)}</p>
+      {block.recipeBlockKey !== PLAYLIST_SONG_BLOCK_KEY && (
+        <p className="font-ui text-sm leading-5 text-text-secondary">{block.teachingGoal}</p>
+      )}
+      {block.recipeBlockKey !== PLAYLIST_SONG_BLOCK_KEY && (
+        <p className="font-ui text-xs leading-4 text-text-tertiary">{planBlockDetailLine(block)}</p>
+      )}
       <p className="font-data text-xs text-text-secondary">
         Planned {formatDuration(block.targetDurationMs)}
         {fit && (
@@ -961,6 +985,14 @@ function PlanBlockEditor({
 }) {
   const idBase = useId();
   const initialGuidance = block?.guidance;
+  const hideStoredSongGuidance = block?.recipeBlockKey === PLAYLIST_SONG_BLOCK_KEY;
+  const [guidanceEdited, setGuidanceEdited] = useState(false);
+  const touchGuidance =
+    <T,>(set: (value: T) => void) =>
+    (value: T) => {
+      setGuidanceEdited(true);
+      set(value);
+    };
   const initialHiit = initialGuidance?.kind === 'hiit' ? initialGuidance : null;
   const [label, setLabel] = useState(block?.label ?? '');
   const [intensity, setIntensity] = useState<Intensity>(block?.intensity ?? 'mod');
@@ -983,16 +1015,24 @@ function PlanBlockEditor({
     initialGuidance?.kind === 'cycle' ? initialGuidance.posture : 'seated',
   );
   const [cadenceMin, setCadenceMin] = useState(
-    initialGuidance?.kind === 'cycle' ? String(initialGuidance.cadenceMinRpm) : '',
+    !hideStoredSongGuidance && initialGuidance?.kind === 'cycle'
+      ? String(initialGuidance.cadenceMinRpm)
+      : '',
   );
   const [cadenceMax, setCadenceMax] = useState(
-    initialGuidance?.kind === 'cycle' ? String(initialGuidance.cadenceMaxRpm) : '',
+    !hideStoredSongGuidance && initialGuidance?.kind === 'cycle'
+      ? String(initialGuidance.cadenceMaxRpm)
+      : '',
   );
   const [rpeMin, setRpeMin] = useState(
-    initialGuidance?.kind === 'cycle' ? String(initialGuidance.rpeMin) : '',
+    !hideStoredSongGuidance && initialGuidance?.kind === 'cycle'
+      ? String(initialGuidance.rpeMin)
+      : '',
   );
   const [rpeMax, setRpeMax] = useState(
-    initialGuidance?.kind === 'cycle' ? String(initialGuidance.rpeMax) : '',
+    !hideStoredSongGuidance && initialGuidance?.kind === 'cycle'
+      ? String(initialGuidance.rpeMax)
+      : '',
   );
   const [optionalEquipment, setOptionalEquipment] = useState<
     (typeof pilatesEquipmentValues)[number][]
@@ -1027,6 +1067,7 @@ function PlanBlockEditor({
   const recoveryValue =
     guidanceKind === 'hiit' && timed ? parseWhole(recovery, 1, MAX_INTERVAL_SECONDS) : null;
   const preserveHiitTiming = block != null && initialHiit != null && !timingTouched;
+  const songGuidanceUntouched = hideStoredSongGuidance && !guidanceEdited;
   const cadenceMinValue = guidanceKind === 'cycle' ? parseWhole(cadenceMin, 1, 300) : null;
   const cadenceMaxValue = guidanceKind === 'cycle' ? parseWhole(cadenceMax, 1, 300) : null;
   const rpeMinValue = guidanceKind === 'cycle' ? parseWhole(rpeMin, 1, 10) : null;
@@ -1039,13 +1080,15 @@ function PlanBlockEditor({
     rounds: guidanceKind === 'hiit' && timed && !preserveHiitTiming && roundsValue == null,
     work: guidanceKind === 'hiit' && timed && !preserveHiitTiming && workValue == null,
     recovery: guidanceKind === 'hiit' && timed && !preserveHiitTiming && recoveryValue == null,
-    cadenceMin: guidanceKind === 'cycle' && cadenceMinValue == null,
+    cadenceMin: guidanceKind === 'cycle' && !songGuidanceUntouched && cadenceMinValue == null,
     cadenceMax:
       guidanceKind === 'cycle' &&
+      !songGuidanceUntouched &&
       (cadenceMaxValue == null || (cadenceMinValue != null && cadenceMinValue > cadenceMaxValue)),
-    rpeMin: guidanceKind === 'cycle' && rpeMinValue == null,
+    rpeMin: guidanceKind === 'cycle' && !songGuidanceUntouched && rpeMinValue == null,
     rpeMax:
       guidanceKind === 'cycle' &&
+      !songGuidanceUntouched &&
       (rpeMaxValue == null || (rpeMinValue != null && rpeMinValue > rpeMaxValue)),
   };
   let draftGuidance: ClassPlanBlockGuidance | null = null;
@@ -1117,7 +1160,8 @@ function PlanBlockEditor({
       refs[firstInvalid].current?.focus();
       return;
     }
-    if (!draftGuidance || plannedMs == null) return;
+    if (plannedMs == null) return;
+    if (!draftGuidance && !songGuidanceUntouched) return;
     const nextLabel = label.trim();
     const nextGoal = teachingGoal.trim();
     const nextFocus = movementFocus.trim();
@@ -1128,8 +1172,10 @@ function PlanBlockEditor({
       if (nextGoal !== block.teachingGoal) body.teachingGoal = nextGoal;
       if (nextFocus !== block.movementFocus) body.movementFocus = nextFocus;
       if (plannedMs !== block.targetDurationMs) body.targetDurationMs = plannedMs;
-      const guidance = syncHiitSequenceFocus(draftGuidance, body.movementFocus);
-      if (!sameGuidance(guidance, block.guidance)) body.guidance = guidance;
+      if (draftGuidance && !songGuidanceUntouched) {
+        const guidance = syncHiitSequenceFocus(draftGuidance, body.movementFocus);
+        if (!sameGuidance(guidance, block.guidance)) body.guidance = guidance;
+      }
       if (Object.keys(body).length === 0) {
         onCancel();
         return;
@@ -1144,7 +1190,7 @@ function PlanBlockEditor({
           setSaving(false);
         }
       })();
-    } else {
+    } else if (draftGuidance) {
       const body: CreateClassPlanBlock = {
         segmentType: null,
         label: nextLabel,
@@ -1341,7 +1387,7 @@ function PlanBlockEditor({
               id={`${idBase}-posture`}
               value={posture}
               disabled={saving}
-              onChange={(event) => setPosture(event.target.value as typeof posture)}
+              onChange={(event) => touchGuidance(setPosture)(event.target.value as typeof posture)}
               className="min-h-11 w-full rounded-control border border-border bg-bg-sunken px-3 font-ui text-sm text-text-primary rf-focus-ring disabled:opacity-40"
             >
               {cyclePostureValues.map((value) => (
@@ -1356,7 +1402,7 @@ function PlanBlockEditor({
               'cadenceMin',
               'Cadence min (RPM)',
               cadenceMin,
-              setCadenceMin,
+              touchGuidance(setCadenceMin),
               cadenceMinRef,
               'Use 1–300 RPM.',
             )}
@@ -1364,16 +1410,23 @@ function PlanBlockEditor({
               'cadenceMax',
               'Cadence max (RPM)',
               cadenceMax,
-              setCadenceMax,
+              touchGuidance(setCadenceMax),
               cadenceMaxRef,
               'Use 1–300 RPM, at least the minimum.',
             )}
-            {numberField('rpeMin', 'Effort min (RPE)', rpeMin, setRpeMin, rpeMinRef, 'Use 1–10.')}
+            {numberField(
+              'rpeMin',
+              'Effort min (RPE)',
+              rpeMin,
+              touchGuidance(setRpeMin),
+              rpeMinRef,
+              'Use 1–10.',
+            )}
             {numberField(
               'rpeMax',
               'Effort max (RPE)',
               rpeMax,
-              setRpeMax,
+              touchGuidance(setRpeMax),
               rpeMaxRef,
               'Use 1–10, at least the minimum.',
             )}
@@ -1394,13 +1447,14 @@ function PlanBlockEditor({
                 type="checkbox"
                 checked={optionalEquipment.includes(item)}
                 disabled={saving}
-                onChange={(event) =>
+                onChange={(event) => {
+                  setGuidanceEdited(true);
                   setOptionalEquipment((current) =>
                     event.target.checked
                       ? [...current, item]
                       : current.filter((value) => value !== item),
-                  )
-                }
+                  );
+                }}
                 className="rf-focus-ring"
               />
               {item === 'light_weights' ? 'Light weights' : item[0]!.toUpperCase() + item.slice(1)}
@@ -1420,7 +1474,9 @@ function PlanBlockEditor({
             id={`${idBase}-equipment`}
             value={hiitEquipment}
             disabled={saving}
-            onChange={(event) => setHiitEquipment(event.target.value as typeof hiitEquipment)}
+            onChange={(event) =>
+              touchGuidance(setHiitEquipment)(event.target.value as typeof hiitEquipment)
+            }
             className="min-h-11 w-full rounded-control border border-border bg-bg-sunken px-3 font-ui text-sm text-text-primary rf-focus-ring disabled:opacity-40"
           >
             {hiitEquipmentValues.map((item) => (
@@ -1444,6 +1500,7 @@ function PlanBlockEditor({
               onChange={(event) => {
                 setTimed(event.target.checked);
                 setTimingTouched(true);
+                setGuidanceEdited(true);
               }}
               className="rf-focus-ring"
             />
@@ -1458,6 +1515,7 @@ function PlanBlockEditor({
                 (value) => {
                   setRounds(value);
                   setTimingTouched(true);
+                  setGuidanceEdited(true);
                 },
                 roundsRef,
                 'Use 1–100.',
@@ -1469,6 +1527,7 @@ function PlanBlockEditor({
                 (value) => {
                   setWork(value);
                   setTimingTouched(true);
+                  setGuidanceEdited(true);
                 },
                 workRef,
                 'Use whole seconds.',
@@ -1480,6 +1539,7 @@ function PlanBlockEditor({
                 (value) => {
                   setRecovery(value);
                   setTimingTouched(true);
+                  setGuidanceEdited(true);
                 },
                 recoveryRef,
                 'Use whole seconds.',

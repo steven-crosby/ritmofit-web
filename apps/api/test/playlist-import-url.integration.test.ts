@@ -3,21 +3,16 @@
  * path, now provider-parity (Spotify + SoundCloud + Apple Music catalog).
  *
  * The suite-wide `MOCK_PROVIDERS='true'` mock adapter returns [] for any playlist,
- * so mounted-route tests cannot cross the upstream boundary. The shared
- * append/resequence/touch helper is exercised below against real Miniflare D1;
- * provider resolve/pagination/mapping stays covered by adapter unit tests and URL
- * classification by `packages/music/src/playlist-url.test.ts`. Here we also lock
+ * so mounted-route tests cannot cross the upstream boundary. Provider
+ * resolve/pagination/mapping stays covered by adapter unit tests and URL
+ * classification by `packages/music/src/playlist-url.test.ts`. Here we lock
  * wiring + the authz/validation/limiter error contract, including that a URL for
- * each shipped provider dispatches through the registry to an adapter.
- * The best-effort tally (a single racing per-track failure must not abort the
- * whole import) is likewise DB-free and locked in `import-playlist.test.ts`
- * (`partitionSettledImports`), since the happy path can't be reached here.
+ * each shipped provider dispatches through the registry to an adapter. A
+ * song-block commit (not this preview) is what moves class recency.
  */
 import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import type { ClassListItem } from '@ritmofit/shared';
-import { createDb } from '../src/lib/db.js';
-import { appendImportedClassTracks } from '../src/routes/playlist-import.js';
 import { authed, signUpUser, verifyUserEmail, call, type TestUser } from './helpers.js';
 
 const SPOTIFY_URL = 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M';
@@ -102,7 +97,7 @@ describe('POST /classes/:id/import-playlist (integration)', () => {
     }
   });
 
-  it('moves the class to the recent boundary only after a non-empty D1 append', async () => {
+  it('moves the class to the recent boundary after a song-block commit', async () => {
     const user = await signUpUser();
     await verifyUserEmail(user.userId);
     const api = authed(user.cookie);
@@ -117,6 +112,7 @@ describe('POST /classes/:id/import-playlist (integration)', () => {
     const olderId = await createClass('Older import target');
     const newerId = await createClass('Newer class');
     const trackId = crypto.randomUUID();
+    const placementId = crypto.randomUUID();
 
     await env.DB.batch([
       env.DB.prepare('update classes set updated_at = 100 where id = ?').bind(olderId),
@@ -131,10 +127,17 @@ describe('POST /classes/:id/import-playlist (integration)', () => {
     const before = (await (await api('/api/v1/classes?limit=2')).json()) as ClassListItem[];
     expect(before.map((row) => row.id)).toEqual([newerId, olderId]);
 
-    const imported = await appendImportedClassTracks(createDb(env), olderId, [
-      { track: { id: trackId } },
-    ]);
-    expect(imported).toBe(1);
+    const committed = await api(`/api/v1/classes/${olderId}/tracks/import`, {
+      method: 'POST',
+      body: JSON.stringify({
+        operationId: crypto.randomUUID(),
+        expectedTracks: [],
+        placements: [{ id: placementId, trackId }],
+        orderedIds: [placementId],
+        songBlocks: true,
+      }),
+    });
+    expect(committed.status).toBe(201);
     const placed = await env.DB.prepare(
       'select position, start_offset_ms from class_tracks where class_id = ?',
     )
@@ -145,18 +148,6 @@ describe('POST /classes/:id/import-playlist (integration)', () => {
     const after = (await (await api('/api/v1/classes?limit=2')).json()) as ClassListItem[];
     expect(after.map((row) => row.id)).toEqual([olderId, newerId]);
     expect(after[0]!.updatedAt).toBeGreaterThan(200);
-
-    await env.DB.batch([
-      env.DB.prepare('update classes set updated_at = 100 where id = ?').bind(olderId),
-      env.DB.prepare('update classes set updated_at = 200 where id = ?').bind(newerId),
-    ]);
-    expect(await appendImportedClassTracks(createDb(env), olderId, [])).toBe(0);
-    const unchanged = await env.DB.prepare('select updated_at from classes where id = ?')
-      .bind(olderId)
-      .first<{ updated_at: number }>();
-    expect(unchanged?.updated_at).toBe(100);
-    const afterEmpty = (await (await api('/api/v1/classes?limit=2')).json()) as ClassListItem[];
-    expect(afterEmpty.map((row) => row.id)).toEqual([newerId, olderId]);
   });
 
   it('429 once the per-user import limiter (max 5/min) is exceeded', async () => {

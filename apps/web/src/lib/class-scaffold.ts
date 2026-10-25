@@ -15,6 +15,8 @@ import {
 } from '@ritmofit/shared';
 import { formatDuration } from './class-summary.js';
 
+export { playlistSongBlockDraft } from '@ritmofit/shared';
+
 export const SCAFFOLD_DISCIPLINES = [
   { value: 'cycle', label: 'Cycle' },
   { value: 'sculpt', label: 'Pilates' },

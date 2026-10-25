@@ -5,6 +5,7 @@ import {
   fetchAppleMusicLibraryPlaylists,
   fetchAppleMusicLibraryPlaylistTracks,
   AppleMusicUnauthorizedError,
+  PlaylistOverLimitError,
   ProviderError,
   type FetchLike,
 } from '@ritmofit/music';
@@ -587,7 +588,7 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
     expect(results[0]?.providerTrackId).toBe('1440857781');
     const call = calls.find((c) => c.url.startsWith(TRACKS_URL))!;
     expect(call.url).toContain('/catalog/gb/');
-    expect(call.url).toContain('limit=300');
+    expect(call.url).toContain('limit=100');
     expect(call.init?.headers?.Authorization).toBe('Bearer devtok');
     expect(call.init?.headers?.['Music-User-Token']).toBeUndefined();
   });
@@ -596,7 +597,7 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
     const secondSong = { ...AM_SONG, id: '2' };
     const { provider, calls } = makeProvider({
       [`${TRACKS_URL}?offset=300`]: { data: [secondSong] },
-      [`${TRACKS_URL}?limit=300`]: {
+      [`${TRACKS_URL}?limit=100`]: {
         data: [AM_SONG],
         next: '/v1/catalog/gb/playlists/pl.abc123/tracks?offset=300',
       },
@@ -606,14 +607,14 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
 
     expect(results.map((r) => r.providerTrackId)).toEqual(['1440857781', '2']);
     const pageCalls = calls.filter((c) => c.url.startsWith(TRACKS_URL)).map((c) => c.url);
-    expect(pageCalls).toEqual([`${TRACKS_URL}?limit=300`, `${TRACKS_URL}?offset=300&limit=300`]);
+    expect(pageCalls).toEqual([`${TRACKS_URL}?limit=100`, `${TRACKS_URL}?offset=300&limit=100`]);
   });
 
-  it('normalizes next that already includes limit to a single limit=300', async () => {
+  it('normalizes next that already includes limit to a single limit=100', async () => {
     const secondSong = { ...AM_SONG, id: '2' };
     const { provider, calls } = makeProvider({
       [`${TRACKS_URL}?offset=300`]: { data: [secondSong] },
-      [`${TRACKS_URL}?limit=300`]: {
+      [`${TRACKS_URL}?limit=100`]: {
         data: [AM_SONG],
         // Apple sometimes echoes limit on `next` (same or different value).
         next: '/v1/catalog/gb/playlists/pl.abc123/tracks?offset=300&limit=100',
@@ -624,9 +625,9 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
 
     expect(results.map((r) => r.providerTrackId)).toEqual(['1440857781', '2']);
     const pageCalls = calls.filter((c) => c.url.startsWith(TRACKS_URL)).map((c) => c.url);
-    expect(pageCalls).toEqual([`${TRACKS_URL}?limit=300`, `${TRACKS_URL}?offset=300&limit=300`]);
+    expect(pageCalls).toEqual([`${TRACKS_URL}?limit=100`, `${TRACKS_URL}?offset=300&limit=100`]);
     expect(pageCalls[1]?.match(/limit=/g)).toHaveLength(1);
-    expect(pageCalls[1]).not.toContain('limit=100');
+    expect(pageCalls[1]).toContain('limit=100');
   });
 
   it('adds limit when next is a path with no query string', async () => {
@@ -666,7 +667,7 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
     const results = await provider.getPlaylist(REF);
 
     expect(results.map((r) => r.providerTrackId)).toEqual(['1440857781', '2']);
-    expect(calls.map((c) => c.url)).toEqual([`${TRACKS_URL}?limit=300`, `${TRACKS_URL}?limit=300`]);
+    expect(calls.map((c) => c.url)).toEqual([`${TRACKS_URL}?limit=100`, `${TRACKS_URL}?limit=100`]);
     expect(calls[1]?.url.match(/limit=/g)).toHaveLength(1);
   });
 
@@ -711,7 +712,7 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
         await expect(result).rejects.toThrow(
           'Apple Music returned a repeated catalog pagination path.',
         );
-        expect(calls).toEqual([`${TRACKS_URL}?limit=300`, `${TRACKS_URL}?limit=300`]);
+        expect(calls).toEqual([`${TRACKS_URL}?limit=100`, `${TRACKS_URL}?limit=100`]);
       });
 
       it('rejects a multi-page continuation cycle before fetching again', async () => {
@@ -728,9 +729,9 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
           'Apple Music returned a repeated catalog pagination path.',
         );
         expect(calls).toEqual([
-          `${TRACKS_URL}?limit=300`,
-          `${TRACKS_URL}?offset=300&limit=300`,
-          `${TRACKS_URL}?offset=600&limit=300`,
+          `${TRACKS_URL}?limit=100`,
+          `${TRACKS_URL}?offset=300&limit=100`,
+          `${TRACKS_URL}?offset=600&limit=100`,
         ]);
       });
     });
@@ -765,9 +766,9 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
         { providerTrackId: 'third' },
       ]);
       expect(calls).toEqual([
-        `${TRACKS_URL}?limit=300`,
-        `${TRACKS_URL}?offset=300&limit=300`,
-        `${TRACKS_URL}?offset=300&limit=300`,
+        `${TRACKS_URL}?limit=100`,
+        `${TRACKS_URL}?offset=300&limit=100`,
+        `${TRACKS_URL}?offset=300&limit=100`,
       ]);
     });
 
@@ -782,7 +783,7 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
       expect(calls).toHaveLength(2);
     });
 
-    it('stops at the result cap mid-page before checking a repeated continuation', async () => {
+    it('rejects a page that crosses 100 songs and does not fetch past it', async () => {
       const next = `${PATH}?offset=300`;
       const { result, calls } = readPages([
         { data: [AM_SONG], next },
@@ -792,10 +793,8 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
         },
       ]);
 
-      const tracks = await result;
-      expect(tracks).toHaveLength(500);
-      expect(tracks[0]?.providerTrackId).toBe(AM_SONG.id);
-      expect(tracks[499]?.providerTrackId).toBe('498');
+      await expect(result).rejects.toBeInstanceOf(PlaylistOverLimitError);
+      await expect(result).rejects.toThrow('Playlist has more than 100 songs.');
       expect(calls).toHaveLength(2);
     });
   });
@@ -803,7 +802,7 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
   it('rejects a malformed later page instead of returning a partial playlist', async () => {
     const { provider } = makeProvider({
       [`${TRACKS_URL}?offset=300`]: { data: 'invalid' },
-      [`${TRACKS_URL}?limit=300`]: {
+      [`${TRACKS_URL}?limit=100`]: {
         data: [AM_SONG],
         next: '/v1/catalog/gb/playlists/pl.abc123/tracks?offset=300',
       },

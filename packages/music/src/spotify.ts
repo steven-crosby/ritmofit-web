@@ -15,14 +15,20 @@
  * against live docs when real credentials land.
  */
 import {
+  PLAYLIST_URL_OCCURRENCE_LIMIT,
   providerPlaylistSummarySchema,
   trackSearchResultSchema,
   type ProviderPlaylistSummary,
   type TrackSearchResult,
 } from '@ritmofit/shared';
 import { z } from 'zod';
-import type { FetchLike, MusicProvider, PlaylistImportRef } from './provider.js';
-import { readJson, ProviderError } from './errors.js';
+import type {
+  FetchLike,
+  MusicProvider,
+  PlaylistImportRef,
+  PlaylistReadOptions,
+} from './provider.js';
+import { abortError, PlaylistOverLimitError, ProviderError, readJson } from './errors.js';
 import { AppTokenCache } from './app-token.js';
 import { fetchWithRetry, type RetryOptions } from './retry.js';
 
@@ -35,7 +41,6 @@ const SEARCH_LIMIT = 10;
 // Spotify's playlist-items endpoint currently caps pages at 50. Construct each
 // request from our API base + offset rather than following provider-supplied URLs.
 const PLAYLIST_PAGE_LIMIT = 50;
-const IMPORT_TRACK_CAP = 500;
 
 export interface SpotifyConfig {
   clientId: string;
@@ -140,30 +145,48 @@ class SpotifyProvider implements MusicProvider {
 
   async getPlaylist(
     ref: Extract<PlaylistImportRef, { provider: 'spotify' }>,
+    read?: PlaylistReadOptions,
   ): Promise<TrackSearchResult[]> {
     const encodedPlaylistId = encodeURIComponent(ref.playlistId);
     const candidates: TrackSearchResult[] = [];
     let offset = 0;
     let total = Number.POSITIVE_INFINITY;
 
-    while (offset < total && candidates.length < IMPORT_TRACK_CAP) {
+    while (offset < total) {
+      throwIfPreviewStopped(read);
       const json = await this.authedGet(
         `${this.apiBase}/playlists/${encodedPlaylistId}/items?limit=${PLAYLIST_PAGE_LIMIT}&offset=${offset}`,
+        read,
       );
       const parsed = spPlaylistPageSchema.safeParse(json);
       if (!parsed.success) {
         throw new ProviderError('spotify', 'Spotify returned an invalid playlist page.');
       }
 
+      // Spotify publishes `total`. Stop before another page, and before mapping
+      // a list the preview will reject.
+      if (parsed.data.total > PLAYLIST_URL_OCCURRENCE_LIMIT) {
+        throw new PlaylistOverLimitError(parsed.data.total, PLAYLIST_URL_OCCURRENCE_LIMIT);
+      }
+
       const pageItems = parsed.data.items;
-      candidates.push(
-        ...pageItems
-          .map((item) => this.toCandidate(item.item))
-          .filter((candidate): candidate is TrackSearchResult => candidate !== null),
-      );
+      for (const item of pageItems) {
+        const candidate = this.toCandidate(item.item);
+        if (!candidate) continue;
+        candidates.push(candidate);
+        if (candidates.length > PLAYLIST_URL_OCCURRENCE_LIMIT) {
+          throw new PlaylistOverLimitError(null, PLAYLIST_URL_OCCURRENCE_LIMIT);
+        }
+      }
       total = parsed.data.total;
       if (pageItems.length === 0) break;
       offset += pageItems.length;
+      if (candidates.length >= PLAYLIST_URL_OCCURRENCE_LIMIT && offset < total) {
+        throw new PlaylistOverLimitError(
+          total > PLAYLIST_URL_OCCURRENCE_LIMIT ? total : null,
+          PLAYLIST_URL_OCCURRENCE_LIMIT,
+        );
+      }
     }
 
     return candidates;
@@ -174,25 +197,26 @@ class SpotifyProvider implements MusicProvider {
     return toSpotifyCandidate(raw);
   }
 
-  private async authedGet(url: string): Promise<unknown> {
+  private async authedGet(url: string, read?: PlaylistReadOptions): Promise<unknown> {
+    const retry = previewRetry(this.retry, read);
     const token = await this.tokens.get();
     const res = await fetchWithRetry(
       this.fetchImpl,
       url,
       { headers: { Authorization: `Bearer ${token}` } },
-      this.retry,
+      retry,
     );
     if (!res.ok) {
       // One forced refresh on a 401 in case the cached token went stale early.
       if (res.status === 401) {
         this.tokens.invalidate();
-        const retry = await fetchWithRetry(
+        const retryRes = await fetchWithRetry(
           this.fetchImpl,
           url,
           { headers: { Authorization: `Bearer ${await this.tokens.get()}` } },
-          this.retry,
+          retry,
         );
-        if (retry.ok) return readJson(retry, 'spotify');
+        if (retryRes.ok) return readJson(retryRes, 'spotify');
       }
       // Surface the upstream message (truncated) so a 400/403 is diagnosable in logs.
       const detail = await res.text().catch(() => '');
@@ -376,9 +400,15 @@ export async function fetchSpotifyPlaylistTracks(cfg: {
   apiBase?: string;
   /** Stop after this many tracks so detail reads stay bounded. */
   maxTracks?: number;
+  /**
+   * Saved-playlist import stop. Checked after a page, before the next request.
+   * When set, the browse cap of 200 does not apply — duplicates under the
+   * distinct-song ceiling keep paging.
+   */
+  shouldStop?: (tracks: TrackSearchResult[]) => boolean;
 }): Promise<TrackSearchResult[]> {
   const base = cfg.apiBase ?? DEFAULT_API_BASE;
-  const cap = cfg.maxTracks ?? 200;
+  const cap = cfg.shouldStop ? Number.MAX_SAFE_INTEGER : (cfg.maxTracks ?? 200);
   const out: TrackSearchResult[] = [];
   let offset = 0;
   let total = Number.POSITIVE_INFINITY;
@@ -400,13 +430,27 @@ export async function fetchSpotifyPlaylistTracks(cfg: {
     for (const item of parsed.data.items) {
       const candidate = toSpotifyCandidate(item.item);
       if (candidate) out.push(candidate);
-      if (out.length >= cap) break;
+      if (!cfg.shouldStop && out.length >= cap) break;
     }
 
     total = parsed.data.total;
     if (parsed.data.items.length === 0) break;
     offset += parsed.data.items.length;
+    if (cfg.shouldStop?.(out)) break;
   }
 
   return out;
+}
+
+function previewRetry(
+  base: RetryOptions | undefined,
+  read?: PlaylistReadOptions,
+): RetryOptions | undefined {
+  if (!read?.signal && read?.deadlineAt == null) return base;
+  return { ...base, signal: read.signal, deadlineAt: read.deadlineAt };
+}
+
+function throwIfPreviewStopped(read?: PlaylistReadOptions): void {
+  if (read?.signal?.aborted) throw abortError();
+  if (read?.deadlineAt != null && Date.now() >= read.deadlineAt) throw abortError();
 }
