@@ -13,6 +13,32 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-25 — #582 on main `85204b9`.** Owner approved.
+> Production deploy at 2026-10-25T17:46Z (11:46 AM MT 2026-10-25). New Worker
+> `55ae3b1a-5850-4c28-bed3-ebbdfea0b029`; previous/rollback
+> `2e4ded17-6b40-4168-96b7-a37424aecf60`. SPA entry `assets/index-DWV4zBSM.js`
+> (CSS `assets/index-CSpFExJg.css`, was `assets/index-C8maPrOT.css`), confirmed
+> by three consecutive cache-busted fetches that matched the build. Previous
+> entry `assets/index-ypfiWW-x.js`. API and web shipped together in the single
+> Worker deploy. Pre-deploy full gate passed on `85204b9` from a clean detached
+> worktree on Steven's MacBook (format, typecheck, lint, design verify,
+> theme-classes, unit tests web 1361 / api 526 / music 30, Worker/D1
+> integration 224, web build, OpenAPI no drift, contract-parity, audit:ci).
+> The local gate ran on Node 26. Preflight ran before the deploy: no remote D1
+> migrations pending and `BETA_ALLOWED_EMAILS` present. No migration was applied.
+>
+> Deployed since production `2b3a79c`:
+> [#582](https://github.com/steven-crosby/ritmofit-web/pull/582) (update toast
+> reloads onto the new build; paste-a-link placeholder covers every provider,
+> `bb7e1cb`). Docs [#581](https://github.com/steven-crosby/ritmofit-web/pull/581)
+> (`85204b9`) is in that tree and does not change runtime.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 with security headers; unauthenticated
+> `/api/v1/classes`, `/explore`, and `/teams` 401; unauthenticated
+> `POST /api/v1/classes/:id/import-playlist` and `GET /classes/:id/shares` 401.
+> Real-browser check of the update toast (needs a real service-worker update
+> cycle) and playlist import is still owed.
+
 > **Deploy 2026-10-25 — #577 and #578 on main `2b3a79c`.** Owner approved.
 > Production deploy at 2026-10-25T15:29Z (9:29 AM MT 2026-10-25). New Worker
 > `2e4ded17-6b40-4168-96b7-a37424aecf60`; previous/rollback
