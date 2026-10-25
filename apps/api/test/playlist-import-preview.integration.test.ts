@@ -191,6 +191,41 @@ describe('paste-a-link playlist preview', () => {
     expect(await counts(classId, user.userId)).toEqual(before);
   });
 
+  it('omits a non-positive duration and keeps a missing duration as null', async () => {
+    const { user, classId } = await userWithClass();
+    await seedSpotify(user.userId);
+    installFetch(async (url) => {
+      if (url.startsWith('https://accounts.spotify.com/api/token')) {
+        return json({ error: 'app token must not be used' }, 500);
+      }
+      if (url.includes(`/playlists/${SPOTIFY_ID}/items`)) {
+        return json({
+          items: [
+            { item: { ...spotifyTrack(0, 'Zero'), duration_ms: 0 } },
+            { item: { ...spotifyTrack(1, 'Missing'), duration_ms: undefined } },
+            { item: { ...spotifyTrack(2, 'Negative'), duration_ms: -5 } },
+            { item: spotifyTrack(3, 'Kept') },
+          ],
+          total: 4,
+        });
+      }
+      return json({ error: 'unexpected' }, 500);
+    });
+
+    const res = await preview(user.cookie, classId, SPOTIFY_URL, {
+      SPOTIFY_CLIENT_ID: `cid-${crypto.randomUUID()}`,
+      SPOTIFY_CLIENT_SECRET: 'secret',
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      occurrences: { title: string; durationMs: number | null }[];
+    };
+    expect(body.occurrences.map((row) => [row.title, row.durationMs])).toEqual([
+      ['Missing', null],
+      ['Kept', 180_000],
+    ]);
+  });
+
   it('returns 100 songs from exactly two playlist pages in under 2 seconds', async () => {
     const { user, classId } = await userWithClass();
     await seedSpotify(user.userId);

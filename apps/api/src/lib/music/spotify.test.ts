@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   createSpotifyProvider,
   fetchSpotifyPlaylistTracks,
@@ -719,6 +719,39 @@ describe('fetchSpotifyPlaylistTracks', () => {
       `${itemsUrl('pl-1')}?limit=50&offset=0`,
       `${itemsUrl('pl-1')}?limit=50&offset=50`,
     ]);
+  });
+
+  it('does not request the next page once the preview deadline has passed', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(1_000_000);
+      const deadlineAt = 1_001_000;
+      let pages = 0;
+      const fetchImpl: FetchLike = async () => {
+        pages += 1;
+        if (pages > 1) throw new Error('page 2 must not be requested');
+        vi.setSystemTime(deadlineAt);
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ items: [{ item: SP_TRACK }], total: 2 }),
+          text: async () => '',
+        };
+      };
+
+      await expect(
+        fetchSpotifyPlaylistTracks({
+          accessToken: 'user-tok',
+          playlistId: 'pl-1',
+          fetchImpl,
+          apiBase: API_BASE,
+          read: { deadlineAt },
+        }),
+      ).rejects.toMatchObject({ name: 'AbortError' });
+      expect(pages).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

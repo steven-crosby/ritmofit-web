@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   createSoundCloudProvider,
   fetchSoundCloudLikes,
@@ -772,5 +772,34 @@ describe('SoundCloudProvider.getPlaylist (URL import via /resolve)', () => {
     });
     const [track] = await provider.getPlaylist(REF);
     expect(track?.providerTrackId).toBe('soundcloud:tracks:999');
+  });
+
+  it('does not request playlist tracks once the preview deadline has passed', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(1_000_000);
+      const deadlineAt = 1_001_000;
+      const { provider, calls } = makeUrlProvider((url) => {
+        if (url.startsWith(`${API_BASE}/resolve`)) {
+          vi.setSystemTime(deadlineAt);
+          return {
+            status: 302,
+            headers: { location: `${API_BASE}/playlists/${ENCODED_URN}` },
+          };
+        }
+        if (url.startsWith(TRACKS_URL)) {
+          return { status: 200, body: { collection: [SC_TRACK], next_href: null } };
+        }
+        return { status: 500 };
+      });
+
+      await expect(provider.getPlaylist(REF, { deadlineAt })).rejects.toMatchObject({
+        name: 'AbortError',
+      });
+      expect(calls.some((call) => call.url.startsWith(`${API_BASE}/resolve`))).toBe(true);
+      expect(calls.some((call) => call.url.startsWith(TRACKS_URL))).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
