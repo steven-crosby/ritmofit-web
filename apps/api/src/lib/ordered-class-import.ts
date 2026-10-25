@@ -485,6 +485,28 @@ export async function commitOrderedClassImport(
       ).bind(classId, now, now, JSON.stringify(blocksToInsert), body.operationId, token),
     );
   }
+  // Deletes leave gaps (a kept block can stay at position 2 while the new song
+  // block lands at 3). Add-block uses the row count as the next position, so a
+  // gap equal to that count hits the (class_id, position) unique index and the
+  // request 500s. Block numbers are also position+1, so the gap mislabels the
+  // class. Compact downward, low positions first, so each target slot is free.
+  if (songMode) {
+    const orderedBlocks = [
+      ...blocks
+        .filter((block) => !deleteBlockIdSet.has(block.id))
+        .sort((a, b) => a.position - b.position || compareId(a, b)),
+      ...blocksToInsert,
+    ];
+    orderedBlocks.forEach((block, index) => {
+      if (block.position === index) return;
+      blockStatements.push(
+        env.DB.prepare(
+          `UPDATE class_plan_blocks SET position = ?, updated_at = ?
+           WHERE class_id = ? AND id = ? AND ${guard}`,
+        ).bind(index, now, classId, block.id, body.operationId, token),
+      );
+    });
+  }
   statements.splice(1, 0, ...blockStatements);
   if (addition?.inlineTrack) {
     const query = db.insert(tracks).values(addition.inlineTrack).toSQL();

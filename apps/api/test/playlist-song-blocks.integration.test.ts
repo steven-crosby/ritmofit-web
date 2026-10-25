@@ -412,6 +412,52 @@ describe('playlist song-block commits (mounted Worker + migrated D1)', () => {
     );
   });
 
+  it('compacts leftover recipe positions so a later block can be added', async () => {
+    const id = await newClass({ mode: 'scaffold', recipeId: 'cycle_30_v1' });
+    const recipe = await listBlocks(id);
+    const kept = recipe[2]!;
+    expect(kept.position).toBe(2);
+    const added = await api(`/api/v1/classes/${id}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({ trackId: tracks[0]!.id, planBlockId: kept.id }),
+    });
+    expect(added.status).toBe(201);
+    const current = await listTracks(id);
+    expect((await commit(id, songBody(current, [tracks[1]!]))).status).toBe(201);
+
+    const blocks = await listBlocks(id);
+    expect(blocks.map((block) => block.id)[0]).toBe(kept.id);
+    expect(blocks.map((block) => block.position)).toEqual(blocks.map((_, index) => index));
+    expect(blocks[1]).toMatchObject({
+      recipeBlockKey: PLAYLIST_SONG_BLOCK_KEY,
+      label: tracks[1]!.title,
+    });
+
+    const created = await api(`/api/v1/classes/${id}/plan-blocks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        segmentType: null,
+        label: 'After import',
+        targetDurationMs: 120_000,
+        intensity: 'mod',
+        teachingGoal: 'Added after import',
+        movementFocus: 'Custom focus',
+        guidance: {
+          kind: 'cycle',
+          posture: 'seated',
+          cadenceMinRpm: 70,
+          cadenceMaxRpm: 90,
+          rpeMin: 4,
+          rpeMax: 6,
+        },
+      }),
+    });
+    expect(created.status).toBe(201);
+    expect(((await created.json()) as BlockView).position).toBe(blocks.length);
+    const after = await listBlocks(id);
+    expect(after.map((block) => block.position)).toEqual(after.map((_, index) => index));
+  });
+
   it('replays one operation without inserting a second set of blocks', async () => {
     const id = await newClass();
     const request = songBody([], tracks.slice(0, 3));
