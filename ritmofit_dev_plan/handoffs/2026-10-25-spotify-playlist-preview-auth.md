@@ -41,6 +41,7 @@ Owner review of #575. Merge only on an explicit yes. Ship the API and SPA togeth
 
 - Not checked from this environment. `curl https://ritmofit.studio/api/v1/health` returned 403, and `wrangler deployments status` has no `CLOUDFLARE_API_TOKEN`.
 - `DEVELOPMENT_PLAN` on `main` `990c12a` records production Worker `308a01a9-1972-4c5b-b046-f497c0c10d7e` at `c7110b4`. This fix is not in that tree.
+- Update 2026-10-24 11:18 PM MT: #575 squash-merged as `81b0a55` and deployed, Worker `a3c6bc65-662d-4f2a-9149-c107171e8092` (rollback `308a01a9-1972-4c5b-b046-f497c0c10d7e`). HTTP smoke green, including unauthenticated `POST /api/v1/classes/:id/import-playlist` 401. Real-browser check against a live Spotify playlist is still owed. See HISTORY.
 
 ## Shared zones touched
 

@@ -13,6 +13,32 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-24 — #575 on main `81b0a55`.** Owner approved.
+> Production deploy at 2026-10-25T05:18Z (11:18 PM MT 2026-10-24). New Worker
+> `a3c6bc65-662d-4f2a-9149-c107171e8092`; previous/rollback
+> `308a01a9-1972-4c5b-b046-f497c0c10d7e`. SPA entry `assets/index-Bmap-hv5.js`
+> (CSS `assets/index-C8maPrOT.css`, unchanged), confirmed by three consecutive
+> cache-busted fetches that matched the build. Previous entry
+> `assets/index-BDFuf20J.js`. API and web shipped together in the single Worker
+> deploy. Pre-deploy full gate passed on `81b0a55` from a clean detached
+> worktree on Steven's MacBook (format, typecheck, lint, design verify,
+> theme-classes, unit tests web 1328 / api 526 / music 30, Worker/D1
+> integration 223, web build, OpenAPI no drift, contract-parity, audit:ci).
+> The local gate ran on Node 26. Preflight ran before the deploy: no remote D1
+> migrations pending and `BETA_ALLOWED_EMAILS` present. No migration was applied.
+>
+> Deployed since production `c7110b4`:
+> [#575](https://github.com/steven-crosby/ritmofit-web/pull/575) (Spotify
+> paste-a-link preview uses the instructor's user token; `409 NOT_CONNECTED` /
+> `REAUTH_REQUIRED` instead of `502`, `81b0a55`). Docs
+> [#574](https://github.com/steven-crosby/ritmofit-web/pull/574) (`990c12a`) is
+> in that tree and does not change runtime.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 with security headers; unauthenticated
+> `/api/v1/classes`, `/explore`, and `/teams` 401; unauthenticated
+> `POST /api/v1/classes/:id/import-playlist` 401. Real-browser check against a
+> live Spotify playlist is still owed.
+
 > **Deploy 2026-10-24 — #572 and #573 on main `c7110b4`.** Owner approved.
 > Production deploy at 2026-10-25T04:28Z (10:28 PM MT 2026-10-24). New Worker
 > `308a01a9-1972-4c5b-b046-f497c0c10d7e`; previous/rollback
