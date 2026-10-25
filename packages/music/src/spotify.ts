@@ -143,6 +143,13 @@ class SpotifyProvider implements MusicProvider {
     return this.toCandidate(json);
   }
 
+  /**
+   * App-token playlist read. Paste-a-link must not call this. Spotify's
+   * playlist-items endpoint rejects a client-credentials token with 401
+   * "Valid user authentication required", and the remint below would hide
+   * that auth failure as a provider outage. Use `fetchSpotifyPlaylistTracks`
+   * with the instructor's user token instead.
+   */
   async getPlaylist(
     ref: Extract<PlaylistImportRef, { provider: 'spotify' }>,
     read?: PlaylistReadOptions,
@@ -406,6 +413,14 @@ export async function fetchSpotifyPlaylistTracks(cfg: {
    * distinct-song ceiling keep paging.
    */
   shouldStop?: (tracks: TrackSearchResult[]) => boolean;
+  /**
+   * Paste-a-link ceiling. When Spotify publishes `total` above this, stop
+   * before another page. A user token is required; this function never mints
+   * a client-credentials token.
+   */
+  occurrenceLimit?: number;
+  /** Preview deadline. Checked before each page; a late page is not started. */
+  read?: PlaylistReadOptions;
 }): Promise<TrackSearchResult[]> {
   const base = cfg.apiBase ?? DEFAULT_API_BASE;
   const cap = cfg.shouldStop ? Number.MAX_SAFE_INTEGER : (cfg.maxTracks ?? 200);
@@ -413,33 +428,68 @@ export async function fetchSpotifyPlaylistTracks(cfg: {
   let offset = 0;
   let total = Number.POSITIVE_INFINITY;
   const encodedPlaylistId = encodeURIComponent(cfg.playlistId);
+  const retry = cfg.read ? previewRetry(undefined, cfg.read) : undefined;
 
   while (offset < total && out.length < cap) {
-    const res = await cfg.fetchImpl(
-      `${base}/playlists/${encodedPlaylistId}/items?limit=${PLAYLIST_PAGE_LIMIT}&offset=${offset}`,
-      { headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' } },
-    );
+    throwIfPreviewStopped(cfg.read);
+    const url =
+      `${base}/playlists/${encodedPlaylistId}/items` +
+      `?limit=${PLAYLIST_PAGE_LIMIT}&offset=${offset}`;
+    const init = {
+      headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' },
+    };
+    const res = retry
+      ? await fetchWithRetry(cfg.fetchImpl, url, init, retry)
+      : await cfg.fetchImpl(url, init);
     if (res.status === 401) throw new SpotifyUnauthorizedError();
-    if (res.status === 403) throw new SpotifyPlaylistAccessDeniedError();
+    if (res.status === 403) {
+      const detail = await res.text().catch(() => '');
+      if (isSpotifyAuthFailure(detail)) throw new SpotifyForbiddenError();
+      throw new SpotifyPlaylistAccessDeniedError();
+    }
     if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for playlist items`);
     const parsed = spPlaylistPageSchema.safeParse(await readJson(res, 'spotify'));
     if (!parsed.success) {
       throw new ProviderError('spotify', 'Spotify returned an invalid saved-playlist track page.');
     }
 
+    if (cfg.occurrenceLimit != null && parsed.data.total > cfg.occurrenceLimit) {
+      throw new PlaylistOverLimitError(parsed.data.total, cfg.occurrenceLimit);
+    }
+
     for (const item of parsed.data.items) {
       const candidate = toSpotifyCandidate(item.item);
-      if (candidate) out.push(candidate);
-      if (!cfg.shouldStop && out.length >= cap) break;
+      if (!candidate) continue;
+      out.push(candidate);
+      if (cfg.occurrenceLimit != null && out.length > cfg.occurrenceLimit) {
+        throw new PlaylistOverLimitError(null, cfg.occurrenceLimit);
+      }
+      if (!cfg.shouldStop && cfg.occurrenceLimit == null && out.length >= cap) break;
     }
 
     total = parsed.data.total;
     if (parsed.data.items.length === 0) break;
     offset += parsed.data.items.length;
+    if (cfg.occurrenceLimit != null && out.length >= cfg.occurrenceLimit && offset < total) {
+      throw new PlaylistOverLimitError(
+        total > cfg.occurrenceLimit ? total : null,
+        cfg.occurrenceLimit,
+      );
+    }
     if (cfg.shouldStop?.(out)) break;
   }
 
   return out;
+}
+
+/**
+ * A 403 whose body is an auth or scope failure, not a denial of one playlist.
+ * Reconnecting can fix the former. It cannot fix the latter.
+ */
+function isSpotifyAuthFailure(detail: string): boolean {
+  return /insufficient client scope|insufficient scope|authentication required|invalid access token/i.test(
+    detail,
+  );
 }
 
 function previewRetry(

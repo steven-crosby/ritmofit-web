@@ -12,6 +12,7 @@ import { rateLimit } from '../lib/rate-limit.js';
 import { createDb } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
 import { getMusicProvider } from '../lib/music/registry.js';
+import { fetchSpotifyPlaylistPreview } from '../lib/music/user-playlists.js';
 import {
   loadPlaylistPreview,
   PREVIEW_TIMEOUT_MESSAGE,
@@ -63,10 +64,22 @@ playlistImportRoutes.post('/classes/:id/import-playlist', importLimiter, async (
     );
   }
 
-  const adapter = await getMusicProvider(parsed.ref.provider, c.env);
   let candidates;
   try {
-    candidates = await loadPlaylistPreview((opts) => adapter.getPlaylist(parsed.ref, opts));
+    if (parsed.ref.provider === 'spotify' && c.env.MOCK_PROVIDERS !== 'true') {
+      // Playlist items reject the app's client-credentials token with 401
+      // "Valid user authentication required". Reminting that token would mask
+      // the failure as PROVIDER_UNAVAILABLE, so there is no app-token fallback.
+      // Apple catalog playlists still use the developer token. SoundCloud
+      // public playlists still use the app token.
+      const playlistId = parsed.ref.playlistId;
+      candidates = await loadPlaylistPreview((opts) =>
+        fetchSpotifyPlaylistPreview(db, c.env, me, playlistId, opts),
+      );
+    } else {
+      const adapter = await getMusicProvider(parsed.ref.provider, c.env);
+      candidates = await loadPlaylistPreview((opts) => adapter.getPlaylist(parsed.ref, opts));
+    }
   } catch (err) {
     if (err instanceof PreviewTimeoutError) {
       throw new HttpError(504, 'PROVIDER_TIMEOUT', PREVIEW_TIMEOUT_MESSAGE);

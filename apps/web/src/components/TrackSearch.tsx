@@ -164,6 +164,15 @@ export function classifyPlaylistDrillInError(
   return classifyProviderLibraryError(message, code);
 }
 
+/**
+ * Spotify paste-a-link auth failures. The API copy is the alert text. The
+ * connections dialog is the reconnect affordance when the shell provides one.
+ */
+export function isPlaylistImportConnectError(message: string, code?: string): boolean {
+  if (code === 'NOT_CONNECTED' || code === 'REAUTH_REQUIRED') return true;
+  return /^(re)?connect spotify to import this playlist/i.test(message);
+}
+
 export function TrackSearch({
   classId,
   planBlockId = null,
@@ -192,6 +201,7 @@ export function TrackSearch({
   const [searchRetryKey, setSearchRetryKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [libraryErrorCode, setLibraryErrorCode] = useState<string | undefined>();
+  const [playlistErrorCode, setPlaylistErrorCode] = useState<string | undefined>();
   // Per-candidate import state: which key is busy, and which keys were added.
   const [importingKey, setImportingKey] = useState<string | null>(null);
   const pendingSongAdds = useRef(new Set<string>());
@@ -582,6 +592,7 @@ export function TrackSearch({
     setImportingPlaylist(true);
     setUrlPreview(null);
     setError(null);
+    setPlaylistErrorCode(undefined);
     try {
       const preview = await importPlaylist(classId, playlistUrl);
       if (!isCurrent()) return;
@@ -597,8 +608,11 @@ export function TrackSearch({
     } catch (e) {
       if (!isCurrent()) return;
       if (e instanceof ApiError && (e.code === 'PROVIDER_TIMEOUT' || e.status === 504)) {
+        setPlaylistErrorCode(undefined);
         setError('The playlist took too long to load. Try again.');
       } else {
+        const code = e instanceof ApiError ? e.code : undefined;
+        setPlaylistErrorCode(code);
         setError(errMessage(e));
       }
     } finally {
@@ -1075,7 +1089,24 @@ export function TrackSearch({
           so suppress the generic alert there to avoid a duplicate announcement. */}
       {error &&
         mode !== 'saved_playlists' &&
-        (mode === 'likes' && classifyProviderLibraryError(error, libraryErrorCode) === 'reauth' ? (
+        (mode === 'playlist' && isPlaylistImportConnectError(error, playlistErrorCode) ? (
+          <div
+            role="alert"
+            className="flex flex-col items-start gap-2 rounded-control border border-state-caution/35 bg-state-caution/10 p-3 font-ui text-sm text-state-caution"
+          >
+            <span>{error}</span>
+            {onOpenConnections && (
+              <button
+                type="button"
+                onClick={onOpenConnections}
+                className="min-h-11 rounded-pill border border-state-caution/40 px-3 font-ui text-xs font-semibold text-state-caution rf-focus-ring"
+              >
+                Manage connections
+              </button>
+            )}
+          </div>
+        ) : mode === 'likes' &&
+          classifyProviderLibraryError(error, libraryErrorCode) === 'reauth' ? (
           renderLibraryReauth(error)
         ) : (
           <div className="flex flex-wrap items-center gap-2">

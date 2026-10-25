@@ -6,6 +6,9 @@
 import { env, createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import worker from '../src/index.js';
+import { createDb } from '../src/lib/db.js';
+import { musicConnections } from '../src/db/schema.js';
+import { encryptSecret } from '../src/lib/crypto.js';
 import { authed, signUpUser, verifyUserEmail, type TestUser } from './helpers.js';
 
 const SPOTIFY_URL = 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M';
@@ -17,6 +20,21 @@ const SOUNDCLOUD_URL = 'https://soundcloud.com/some-artist/sets/summer-mix';
 const SOUNDCLOUD_URN = 'soundcloud:playlists:987';
 
 const calls: string[] = [];
+const requests: { url: string; authorization?: string; body?: string }[] = [];
+
+function headerValue(init: RequestInit | undefined, name: string): string | undefined {
+  const headers = init?.headers;
+  if (!headers) return undefined;
+  if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+    return headers.get(name) ?? undefined;
+  }
+  if (Array.isArray(headers)) {
+    const found = headers.find(([key]) => key.toLowerCase() === name.toLowerCase());
+    return found?.[1];
+  }
+  const record = headers as Record<string, string>;
+  return record[name] ?? record[name.toLowerCase()];
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -38,12 +56,45 @@ function spotifyTrack(index: number, title = `Song ${index + 1}`) {
 
 function installFetch(handler: (url: string, init?: RequestInit) => Promise<Response> | Response) {
   calls.length = 0;
+  requests.length = 0;
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
     const url =
       typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     calls.push(url);
+    requests.push({
+      url,
+      authorization: headerValue(init, 'Authorization'),
+      body: typeof init?.body === 'string' ? init.body : undefined,
+    });
     return handler(url, init);
   });
+}
+
+async function seedSpotify(
+  userId: string,
+  opts: { accessToken?: string; refreshToken?: string | null; expiresAt?: number | null } = {},
+): Promise<void> {
+  const now = Date.now();
+  await createDb(env)
+    .insert(musicConnections)
+    .values({
+      id: crypto.randomUUID(),
+      userId,
+      provider: 'spotify',
+      accessTokenEncrypted: await encryptSecret(
+        opts.accessToken ?? 'user-access',
+        env.ENCRYPTION_KEY!,
+      ),
+      refreshTokenEncrypted:
+        opts.refreshToken === null
+          ? null
+          : await encryptSecret(opts.refreshToken ?? 'user-refresh', env.ENCRYPTION_KEY!),
+      providerUserId: null,
+      scope: 'playlist-read-private',
+      expiresAt: opts.expiresAt === undefined ? now + 30 * 60_000 : opts.expiresAt,
+      createdAt: now,
+      updatedAt: now,
+    });
 }
 
 afterEach(() => {
@@ -104,10 +155,11 @@ describe('paste-a-link playlist preview', () => {
 
   it('returns 16 ordered occurrences, including a repeated title, and writes nothing', async () => {
     const { user, classId } = await userWithClass();
+    await seedSpotify(user.userId);
     const before = await counts(classId, user.userId);
     installFetch(async (url) => {
       if (url.startsWith('https://accounts.spotify.com/api/token')) {
-        return json({ access_token: 'tok', expires_in: 3600 });
+        return json({ error: 'app token must not be used' }, 500);
       }
       if (url.includes(`/playlists/${SPOTIFY_ID}/items`)) {
         const items = Array.from({ length: 16 }, (_, index) => ({
@@ -132,14 +184,19 @@ describe('paste-a-link playlist preview', () => {
     expect(body.occurrences.filter((row) => row.title === 'Repeated')).toHaveLength(2);
     expect(body.occurrences[0]?.providerTrackId).toBe('sp-0');
     expect(body.occurrences[15]?.providerTrackId).toBe('sp-15');
+    expect(
+      requests.filter((row) => row.url.includes('/items')).map((row) => row.authorization),
+    ).toEqual(['Bearer user-access']);
+    expect(calls.some((url) => url.startsWith('https://accounts.spotify.com/'))).toBe(false);
     expect(await counts(classId, user.userId)).toEqual(before);
   });
 
   it('returns 100 songs from exactly two playlist pages in under 2 seconds', async () => {
     const { user, classId } = await userWithClass();
+    await seedSpotify(user.userId);
     installFetch(async (url) => {
       if (url.startsWith('https://accounts.spotify.com/api/token')) {
-        return json({ access_token: 'tok', expires_in: 3600 });
+        return json({ error: 'app token must not be used' }, 500);
       }
       if (url.includes('offset=0')) {
         return json({
@@ -169,15 +226,20 @@ describe('paste-a-link playlist preview', () => {
     expect(body.occurrences[99]?.providerTrackId).toBe('sp-99');
     const playlistCalls = calls.filter((url) => url.includes('/items'));
     expect(playlistCalls).toHaveLength(2);
+    expect(
+      requests.filter((row) => row.url.includes('/items')).map((row) => row.authorization),
+    ).toEqual(['Bearer user-access', 'Bearer user-access']);
+    expect(calls.some((url) => url.startsWith('https://accounts.spotify.com/'))).toBe(false);
     expect(await counts(classId, user.userId)).toEqual({ tracks: 0, blocks: 0, library: 0 });
   });
 
   it('rejects a Spotify total over 100 after one playlist request', async () => {
     const { user, classId } = await userWithClass();
+    await seedSpotify(user.userId);
     const before = await counts(classId, user.userId);
     installFetch(async (url) => {
       if (url.startsWith('https://accounts.spotify.com/api/token')) {
-        return json({ access_token: 'tok', expires_in: 3600 });
+        return json({ error: 'app token must not be used' }, 500);
       }
       return json({
         items: Array.from({ length: 50 }, (_, index) => ({ item: spotifyTrack(index) })),
@@ -195,6 +257,10 @@ describe('paste-a-link playlist preview', () => {
     expect(body.error.message).toContain('101');
     expect(body.error.message).toBe('Playlist has 101 songs. The limit is 100.');
     expect(calls.filter((url) => url.includes('/items'))).toHaveLength(1);
+    expect(requests.find((row) => row.url.includes('/items'))?.authorization).toBe(
+      'Bearer user-access',
+    );
+    expect(calls.some((url) => url.startsWith('https://accounts.spotify.com/'))).toBe(false);
     expect(await counts(classId, user.userId)).toEqual(before);
   });
 
@@ -270,8 +336,130 @@ describe('paste-a-link playlist preview', () => {
     expect(await counts(classId, user.userId)).toEqual(before);
   });
 
+  it('returns 409 NOT_CONNECTED when the instructor has no Spotify connection', async () => {
+    const { user, classId } = await userWithClass();
+    installFetch(async () => json({ error: 'should not be called' }, 500));
+
+    const res = await preview(user.cookie, classId, SPOTIFY_URL, {
+      SPOTIFY_CLIENT_ID: `cid-${crypto.randomUUID()}`,
+      SPOTIFY_CLIENT_SECRET: 'secret',
+    });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: { code: string; message: string } };
+    expect(body.error).toEqual({
+      code: 'NOT_CONNECTED',
+      message: 'Connect Spotify to import this playlist.',
+    });
+    expect(calls).toEqual([]);
+  });
+
+  it('maps a user-token 401 to REAUTH_REQUIRED and does not mint an app token', async () => {
+    const { user, classId } = await userWithClass();
+    await seedSpotify(user.userId, { accessToken: 'stale-user', refreshToken: null });
+    installFetch(async (url) => {
+      if (url.startsWith('https://accounts.spotify.com/api/token')) {
+        return json({ error: 'app token must not be used' }, 500);
+      }
+      if (url.includes('/items')) {
+        return json({ error: { status: 401, message: 'The access token expired' } }, 401);
+      }
+      return json({ error: 'unexpected' }, 500);
+    });
+
+    const res = await preview(user.cookie, classId, SPOTIFY_URL, {
+      SPOTIFY_CLIENT_ID: `cid-${crypto.randomUUID()}`,
+      SPOTIFY_CLIENT_SECRET: 'secret',
+    });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: { code: string; message: string } };
+    expect(body.error).toEqual({
+      code: 'REAUTH_REQUIRED',
+      message: 'Reconnect Spotify to import this playlist.',
+    });
+    expect(requests.find((row) => row.url.includes('/items'))?.authorization).toBe(
+      'Bearer stale-user',
+    );
+    expect(calls.some((url) => url.startsWith('https://accounts.spotify.com/'))).toBe(false);
+  });
+
+  it('refreshes an expired Spotify user token and previews with the new token', async () => {
+    const { user, classId } = await userWithClass();
+    await seedSpotify(user.userId, {
+      accessToken: 'expired-access',
+      refreshToken: 'refresh-1',
+      expiresAt: Date.now() - 120_000,
+    });
+    installFetch(async (url, init) => {
+      if (url.startsWith('https://accounts.spotify.com/api/token')) {
+        const body = typeof init?.body === 'string' ? init.body : '';
+        if (body.includes('client_credentials')) {
+          return json({ error: 'app token must not be used' }, 500);
+        }
+        return json({
+          access_token: 'access-new',
+          refresh_token: 'refresh-2',
+          expires_in: 3600,
+          token_type: 'Bearer',
+        });
+      }
+      if (url.includes('/items')) return json({ items: [{ item: spotifyTrack(0) }], total: 1 });
+      return json({ error: 'unexpected' }, 500);
+    });
+
+    const res = await preview(user.cookie, classId, SPOTIFY_URL, {
+      SPOTIFY_CLIENT_ID: `cid-${crypto.randomUUID()}`,
+      SPOTIFY_CLIENT_SECRET: 'secret',
+    });
+    expect(res.status).toBe(200);
+    const tokenCalls = requests.filter((row) =>
+      row.url.startsWith('https://accounts.spotify.com/api/token'),
+    );
+    expect(tokenCalls).toHaveLength(1);
+    expect(tokenCalls[0]?.body).toContain('grant_type=refresh_token');
+    expect(tokenCalls[0]?.body).not.toContain('client_credentials');
+    expect(
+      requests.filter((row) => row.url.includes('/items')).map((row) => row.authorization),
+    ).toEqual(['Bearer access-new']);
+  });
+
+  it('refreshes after a 401 and retries the playlist read with the new user token', async () => {
+    const { user, classId } = await userWithClass();
+    await seedSpotify(user.userId, { accessToken: 'stale-user', refreshToken: 'refresh-1' });
+    let playlistHits = 0;
+    installFetch(async (url, init) => {
+      if (url.startsWith('https://accounts.spotify.com/api/token')) {
+        const body = typeof init?.body === 'string' ? init.body : '';
+        if (!body.includes('grant_type=refresh_token') || body.includes('client_credentials')) {
+          return json({ error: 'app token must not be used' }, 500);
+        }
+        return json({ access_token: 'access-new', expires_in: 3600, token_type: 'Bearer' });
+      }
+      if (url.includes('/items')) {
+        playlistHits += 1;
+        if (playlistHits === 1) {
+          return json({ error: { status: 401, message: 'The access token expired' } }, 401);
+        }
+        return json({ items: [{ item: spotifyTrack(0) }], total: 1 });
+      }
+      return json({ error: 'unexpected' }, 500);
+    });
+
+    const res = await preview(user.cookie, classId, SPOTIFY_URL, {
+      SPOTIFY_CLIENT_ID: `cid-${crypto.randomUUID()}`,
+      SPOTIFY_CLIENT_SECRET: 'secret',
+    });
+    expect(res.status).toBe(200);
+    expect(
+      requests.filter((row) => row.url.includes('/items')).map((row) => row.authorization),
+    ).toEqual(['Bearer stale-user', 'Bearer access-new']);
+    expect(
+      requests.filter((row) => row.url.startsWith('https://accounts.spotify.com/api/token')),
+    ).toHaveLength(1);
+  });
+
   it('returns 504 PROVIDER_TIMEOUT when the playlist never responds, with no writes', async () => {
     const { user, classId } = await userWithClass();
+    await seedSpotify(user.userId);
     const before = await counts(classId, user.userId);
     installFetch(
       (url) =>

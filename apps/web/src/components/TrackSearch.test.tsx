@@ -1480,6 +1480,46 @@ describe('TrackSearch playlist song picker', () => {
     expect(api.importClassTracks).not.toHaveBeenCalled();
   });
 
+  it('shows connect copy and Manage connections when Spotify is not linked', async () => {
+    const onOpenConnections = vi.fn();
+    vi.mocked(api.importPlaylist).mockRejectedValue(
+      new api.ApiError('Connect Spotify to import this playlist.', 'NOT_CONNECTED', 409),
+    );
+    render(<TrackSearch classId="c1" onAdded={() => {}} onOpenConnections={onOpenConnections} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+    fireEvent.change(screen.getByLabelText('Playlist URL'), {
+      target: { value: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Connect Spotify to import this playlist.');
+    fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
+    expect(onOpenConnections).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog', { name: 'Choose songs' })).toBeNull();
+  });
+
+  it('shows reconnect copy when Spotify rejects the user token', async () => {
+    const onOpenConnections = vi.fn();
+    vi.mocked(api.importPlaylist).mockRejectedValue(
+      new api.ApiError('Reconnect Spotify to import this playlist.', 'REAUTH_REQUIRED', 409),
+    );
+    render(<TrackSearch classId="c1" onAdded={() => {}} onOpenConnections={onOpenConnections} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+    fireEvent.change(screen.getByLabelText('Playlist URL'), {
+      target: { value: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Reconnect Spotify to import this playlist.');
+    expect(alert.className).toContain('text-state-caution');
+    fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
+    expect(onOpenConnections).toHaveBeenCalledTimes(1);
+  });
+
   it('shows the try-again message on PROVIDER_TIMEOUT and keeps the URL', async () => {
     vi.mocked(api.importPlaylist).mockRejectedValue(
       new api.ApiError('upstream', 'PROVIDER_TIMEOUT', 504),
