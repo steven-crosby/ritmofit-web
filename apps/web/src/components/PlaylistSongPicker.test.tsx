@@ -54,6 +54,27 @@ describe('PlaylistSongPicker', () => {
     expect(ids.indexOf('song-1')).toBeLessThan(ids.indexOf('song-19'));
   });
 
+  it('disables confirm when nothing is selected and clears the cap alert on uncheck', () => {
+    const onConfirm = vi.fn();
+    const rows = items(16).map((item, index) =>
+      index === 15 ? { ...item, durationMs: null } : item,
+    );
+    render(
+      <PlaylistSongPicker mode="import" items={rows} onConfirm={onConfirm} onCancel={() => {}} />,
+    );
+    expect(screen.getByText('Duration unknown')).toBeTruthy();
+    const boxes = screen.getAllByRole('checkbox');
+    fireEvent.click(boxes[15]!);
+    expect(screen.getByRole('alert').textContent).toBe('Choose at most 15 songs.');
+    fireEvent.click(boxes[0]!);
+    expect(screen.queryByRole('alert')).toBeNull();
+    for (const box of boxes.slice(1, 15)) fireEvent.click(box);
+    const confirm = screen.getByRole('button', { name: 'Import 0 songs' }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+    fireEvent.click(confirm);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
   it('mounts 100 plain rows without windowing in under 2 seconds', () => {
     const started = performance.now();
     render(

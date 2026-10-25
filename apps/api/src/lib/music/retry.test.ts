@@ -127,4 +127,51 @@ describe('fetchWithRetry', () => {
     expect(calls).toHaveLength(1);
     expect(sleep).not.toHaveBeenCalled();
   });
+
+  it('does not start a request once the preview deadline has passed', async () => {
+    const { fetchImpl, calls } = queuedFetch([200]);
+    await expect(
+      fetchWithRetry(fetchImpl, 'https://x/y', undefined, {
+        now: () => 2_000,
+        deadlineAt: 1_000,
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('does not fetch when the preview signal is already aborted', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const { fetchImpl, calls } = queuedFetch([200]);
+    await expect(
+      fetchWithRetry(fetchImpl, 'https://x/y', undefined, { signal: controller.signal }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('does not fetch again when the preview signal aborts during backoff', async () => {
+    const controller = new AbortController();
+    let fetches = 0;
+    const fetchImpl: FetchLike = async () => {
+      fetches += 1;
+      return {
+        ok: false,
+        status: 503,
+        json: async () => ({}),
+        text: async () => '',
+        headers: { get: () => null },
+      };
+    };
+    const sleep = vi.fn(async () => {
+      controller.abort();
+    });
+    await expect(
+      fetchWithRetry(fetchImpl, 'https://x/y', undefined, {
+        sleep,
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(fetches).toBe(1);
+    expect(sleep).toHaveBeenCalledTimes(1);
+  });
 });

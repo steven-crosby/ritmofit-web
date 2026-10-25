@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   createAppleMusicProvider,
   fetchAppleMusicLibrarySongs,
@@ -827,6 +827,42 @@ describe('AppleMusicProvider.getPlaylist (catalog URL import)', () => {
     const { provider } = makeProvider({ [TRACKS_URL]: { data: [video, AM_SONG] } });
     const results = await provider.getPlaylist(REF);
     expect(results.map((r) => r.providerTrackId)).toEqual(['1440857781']);
+  });
+
+  it('does not follow the next catalog page once the preview deadline has passed', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(1_000_000);
+      const deadlineAt = 1_001_000;
+      const calls: string[] = [];
+      const fetchImpl: FetchLike = async (url) => {
+        calls.push(url);
+        if (calls.length > 1) throw new Error(`unexpected page ${url}`);
+        vi.setSystemTime(deadlineAt);
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            data: [AM_SONG],
+            next: '/v1/catalog/gb/playlists/pl.abc123/tracks?offset=100',
+          }),
+          text: async () => '',
+        };
+      };
+      const provider = createAppleMusicProvider({
+        developerToken: 'devtok',
+        fetchImpl,
+        apiBase: API_BASE,
+        storefront: 'us',
+      });
+
+      await expect(provider.getPlaylist(REF, { deadlineAt })).rejects.toMatchObject({
+        name: 'AbortError',
+      });
+      expect(calls).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('surfaces a non-ok status as a ProviderError (bad developer token)', async () => {
