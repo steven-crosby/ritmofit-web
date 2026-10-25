@@ -13,6 +13,33 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-24 — #569 on main `a78f6f5`.** Owner approved.
+> Production deploy at 2026-10-24T23:02:31Z (5:02 PM MT). New Worker
+> `91e323c9-504c-4e60-8bde-47befd2ccb8c`; previous/rollback
+> `9b471c26-c62f-41b2-9788-6eb49c1353fa`. SPA entry `assets/index-B3YiofMb.js`
+> (CSS `assets/index-DcqGkA5K.css`), confirmed by six consecutive cache-busted
+> fetches that matched the build. The JS filename differs from the previous
+> production entry `assets/index-DtpLW965.js`. The CSS filename is unchanged.
+> The served chunk `assets/LiveMode-DaO4hU9g.js` contains the End Class label
+> from #569. Pre-deploy full gate passed on `a78f6f5` from a clean detached
+> worktree on Steven's MacBook (format, typecheck, lint, design verify,
+> theme-classes, unit tests web 1310 / api 496 / music 30, Worker/D1
+> integration 200, web build, OpenAPI no drift, contract-parity, audit:ci).
+> The local gate ran on Node 26 (Node 22 not installed there); CI on Node 22
+> passed on the PR head. Preflight ran before the deploy: no remote D1
+> migrations pending (`0021` latest) and `BETA_ALLOWED_EMAILS` present. No
+> migration was applied.
+>
+> Deployed since production `7a505ae`:
+> [#569](https://github.com/steven-crosby/ritmofit-web/pull/569) (Live End Class
+> and finished-class copy, `a78f6f5`). Docs `d5e7b7c`
+> ([#568](https://github.com/steven-crosby/ritmofit-web/pull/568), the earlier
+> 2026-10-24 deploy record) is in that tree and does not change runtime.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 with security headers; unauthenticated
+> `/api/v1/classes`, `/explore`, and `/teams` 401. Production matches main
+> `a78f6f5` code at deploy time. This docs record is not in the deployed tree.
+
 > **Deploy 2026-10-24 — #563 and #562 on main `7a505ae`.** Owner approved.
 > Production deploy at 2026-10-24T20:35:42Z (2:35 PM MT). New Worker
 > `9b471c26-c62f-41b2-9788-6eb49c1353fa`; previous/rollback
