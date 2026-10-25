@@ -13,6 +13,33 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-25 — #577 and #578 on main `2b3a79c`.** Owner approved.
+> Production deploy at 2026-10-25T15:29Z (9:29 AM MT 2026-10-25). New Worker
+> `2e4ded17-6b40-4168-96b7-a37424aecf60`; previous/rollback
+> `a3c6bc65-662d-4f2a-9149-c107171e8092`. SPA entry `assets/index-ypfiWW-x.js`
+> (CSS `assets/index-C8maPrOT.css`, unchanged), confirmed by three consecutive
+> cache-busted fetches that matched the build. Previous entry
+> `assets/index-Bmap-hv5.js`. API and web shipped together in the single Worker
+> deploy. Pre-deploy full gate passed on `2b3a79c` from a clean detached
+> worktree on Steven's MacBook (format, typecheck, lint, design verify,
+> theme-classes, unit tests web 1344 / api 526 / music 30, Worker/D1
+> integration 224, web build, OpenAPI no drift, contract-parity, audit:ci).
+> The local gate ran on Node 26. Preflight ran before the deploy: no remote D1
+> migrations pending and `BETA_ALLOWED_EMAILS` present. No migration was applied.
+>
+> Deployed since production `81b0a55`:
+> [#577](https://github.com/steven-crosby/ritmofit-web/pull/577) (add a playlist
+> on any editable class, `6993f80`) and
+> [#578](https://github.com/steven-crosby/ritmofit-web/pull/578) (skip songs
+> already in the class when importing a playlist, `2b3a79c`). Docs
+> [#576](https://github.com/steven-crosby/ritmofit-web/pull/576) (`2cfe4c0`) is
+> in that tree and does not change runtime.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 with security headers; unauthenticated
+> `/api/v1/classes`, `/explore`, and `/teams` 401; unauthenticated
+> `POST /api/v1/classes/:id/import-playlist`, `GET /classes/:id/shares`, and
+> provider search 401. Real-browser check of playlist import is still owed.
+
 > **Deploy 2026-10-24 — #575 on main `81b0a55`.** Owner approved.
 > Production deploy at 2026-10-25T05:18Z (11:18 PM MT 2026-10-24). New Worker
 > `a3c6bc65-662d-4f2a-9149-c107171e8092`; previous/rollback
