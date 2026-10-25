@@ -128,7 +128,7 @@ import { lazyWithReload } from '../lib/lazyWithReload.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 import { ClassReadinessSummary } from './ClassReadinessSummary.js';
-import { TrackSearch } from './TrackSearch.js';
+import { TrackSearch, providerTrackKeysFromRun } from './TrackSearch.js';
 import { CreateClassDialog, type CreateClassMode } from './CreateClassDialog.js';
 import { ClassPlanBlocks, planBlockOptionLabel, type PlanBlockTarget } from './ClassPlanBlocks.js';
 import { SourceList, sourceCandidateKey } from './SourceList.js';
@@ -3735,6 +3735,7 @@ function ClassWorkspace({
       ? `Adds after your current ${tracks.length} ${tracks.length === 1 ? 'song' : 'songs'}`
       : null;
   const playlistAppendNoteId = `playlist-append-note-${cls.id}`;
+  const existingProviderTrackKeys = providerTrackKeysFromRun(payload?.tracks);
 
   useEffect(() => {
     setHasPlanBlocks(cls.scaffoldRecipeId != null);
@@ -4024,6 +4025,7 @@ function ClassWorkspace({
                 onOpenConnections={onOpenConnections}
                 onAdded={handleMusicAdded}
                 onError={onError}
+                existingProviderTrackKeys={existingProviderTrackKeys}
               />
             ) : null
           }
@@ -4235,6 +4237,7 @@ function ClassWorkspace({
               onError={onError}
               requestedMode={classMusicMode}
               requestedModeKey={classMusicModeKey}
+              existingProviderTrackKeys={existingProviderTrackKeys}
             />
           ) : null}
         </div>
@@ -5796,6 +5799,7 @@ function BuilderMusicPicker({
   onError,
   requestedMode = null,
   requestedModeKey = 0,
+  existingProviderTrackKeys,
 }: {
   classId: string;
   classTitle: string;
@@ -5809,6 +5813,7 @@ function BuilderMusicPicker({
   onError: (msg: string | null) => void;
   requestedMode?: 'search' | 'playlist' | null;
   requestedModeKey?: number;
+  existingProviderTrackKeys: ReadonlySet<string>;
 }) {
   return (
     <section
@@ -5831,6 +5836,7 @@ function BuilderMusicPicker({
         onAdded={onAdded}
         requestedMode={assigningPlanBlock ? null : requestedMode}
         requestedModeKey={requestedModeKey}
+        existingProviderTrackKeys={existingProviderTrackKeys}
       />
       {/* Manual entry stays available but de-emphasized (search/import is the
           primary path; 09). For a track a provider can't return, or no creds. */}

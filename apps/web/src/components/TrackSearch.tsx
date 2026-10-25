@@ -58,6 +58,30 @@ const candidateKey = sourceCandidateKey;
 
 type Mode = 'search' | 'likes' | 'saved_playlists' | 'playlist';
 
+const EMPTY_PROVIDER_TRACK_KEYS: ReadonlySet<string> = new Set();
+
+/** Class membership key. Duplicate checks use songs already on the run payload. */
+export function providerTrackKey(provider: string, providerTrackId: string): string {
+  return `${provider}:${providerTrackId}`;
+}
+
+export function providerTrackKeysFromRun(
+  tracks:
+    | readonly {
+        providerRefs?: readonly { provider: string; providerTrackId: string }[];
+      }[]
+    | null
+    | undefined,
+): ReadonlySet<string> {
+  const keys = new Set<string>();
+  for (const entry of tracks ?? []) {
+    for (const ref of entry.providerRefs ?? []) {
+      keys.add(providerTrackKey(ref.provider, ref.providerTrackId));
+    }
+  }
+  return keys;
+}
+
 /**
  * A concise, screen-reader-only summary of the current browse outcome — mirrored
  * from the visible micro-labels plus the result *count* that sighted users read
@@ -182,6 +206,7 @@ export function TrackSearch({
   connectionRevision = 0,
   requestedMode = null,
   requestedModeKey = 0,
+  existingProviderTrackKeys = EMPTY_PROVIDER_TRACK_KEYS,
 }: {
   classId: string;
   planBlockId?: string | null;
@@ -201,6 +226,11 @@ export function TrackSearch({
   requestedMode?: Mode | null;
   /** Bump to re-apply `requestedMode` without remounting the picker. */
   requestedModeKey?: number;
+  /**
+   * Provider track ids already on this class, from the loaded run payload.
+   * Empty when playback details are unavailable — no extra fetch.
+   */
+  existingProviderTrackKeys?: ReadonlySet<string>;
 }) {
   const [provider, setProvider] = useState<Provider>(DEFAULT_PROVIDER);
   const [mode, setMode] = useState<Mode>(requestedMode && !planBlockId ? requestedMode : 'search');
@@ -538,10 +568,16 @@ export function TrackSearch({
     }
   };
 
+  const trackAlreadyInClass = (provider: string, providerTrackId: string) =>
+    existingProviderTrackKeys.has(providerTrackKey(provider, providerTrackId));
+
   const importAll = async () => {
     if (planBlockId) return;
     if (!results?.length || importingKey !== null || importingAllFromPlaylist) return;
-    if (results.length > PLAYLIST_SONG_BLOCK_CAP) {
+    const hasDuplicate = results.some((candidate) =>
+      trackAlreadyInClass(candidate.provider, candidate.providerTrackId),
+    );
+    if (results.length > PLAYLIST_SONG_BLOCK_CAP || hasDuplicate) {
       setSavedSongPicker(true);
       return;
     }
@@ -612,7 +648,10 @@ export function TrackSearch({
     try {
       const preview = await importPlaylist(classId, playlistUrl);
       if (!isCurrent()) return;
-      if (preview.occurrences.length > PLAYLIST_SONG_BLOCK_CAP) {
+      const hasDuplicate = preview.occurrences.some((occurrence) =>
+        trackAlreadyInClass(occurrence.provider, occurrence.providerTrackId),
+      );
+      if (preview.occurrences.length > PLAYLIST_SONG_BLOCK_CAP || hasDuplicate) {
         setUrlPreview(preview);
         return;
       }
@@ -1274,6 +1313,10 @@ export function TrackSearch({
             title: entry.candidate.title,
             artist: entry.candidate.artist,
             durationMs: entry.candidate.durationMs,
+            alreadyInClass: trackAlreadyInClass(
+              entry.candidate.provider,
+              entry.candidate.providerTrackId,
+            ),
           }))}
           onCancel={() => setSavedSongPicker(false)}
           onConfirm={(ids) => {
@@ -1291,6 +1334,7 @@ export function TrackSearch({
             title: occurrence.title.trim() || `Song ${occurrence.index + 1}`,
             artist: occurrence.artist.trim() || 'Unknown artist',
             durationMs: occurrence.durationMs,
+            alreadyInClass: trackAlreadyInClass(occurrence.provider, occurrence.providerTrackId),
           }))}
           onCancel={() => setUrlPreview(null)}
           onConfirm={(ids) => void confirmUrlPreview(ids)}
