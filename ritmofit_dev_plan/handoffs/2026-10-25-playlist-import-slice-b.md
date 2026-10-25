@@ -3,7 +3,7 @@ date: 2026-10-25
 tool: Cursor (cloud)
 lane: solo
 branch: cursor/playlist-import-slice-b-3a0a
-head: 2ecca6d034287a545a25629d6ca245112dcff50c
+head: 58a75ce68ee8a61cae5035e5827a79e1f4900186
 base: 88128effc58dccbaf1af016359f85a855e40c4d7
 prs: ['#573 (draft)']
 status: open
@@ -13,10 +13,10 @@ status: open
 
 ## Done
 
-- Draft [#573](https://github.com/steven-crosby/ritmofit-web/pull/573) on `cursor/playlist-import-slice-b-3a0a`. Work commit `2ecca6d`. Not merged. Not deployed.
+- Draft [#573](https://github.com/steven-crosby/ritmofit-web/pull/573) on `cursor/playlist-import-slice-b-3a0a`. Work commit `58a75ce`. Not merged. Not deployed.
 - Slice A remains merged as [#572](https://github.com/steven-crosby/ritmofit-web/pull/572) (`88128ef`). The 15-song cap is per import and does not count tracks already on the class.
 - Paste-a-link is a preview: 422 above 100 occurrences (Spotify reports the total; Apple and SoundCloud say more than 100), 504 `PROVIDER_TIMEOUT` after 8 seconds with `The playlist took too long to load. Try again.`, and no writes. OpenAPI documents 200, 422, and 504.
-- The picker (up to 15, nothing pre-checked, source order, 100 mounted rows) is wired into Music saved playlists, likes, class-level playlist import, and paste-a-link. Those commits send `songBlocks: true`. Search, manual add, Songs-by-Move, and a single saved-playlist row add do not.
+- The picker (up to 15, first 15 songs pre-checked in source order, 100 mounted rows) is wired into Music saved playlists, likes, class-level playlist import, and paste-a-link. The instructor can uncheck and recheck. A 16th check is refused. Confirm sends `songBlocks: true` in source order. Search, manual add, Songs-by-Move, and a single saved-playlist row add do not.
 - Warm-up / cooldown labels reuse `playlistSongBlockDraft` from shared, re-exported by `apps/web/src/lib/class-scaffold.ts`. No migration.
 
 ## In flight
@@ -29,11 +29,11 @@ Owner review of #573. Merge only on an explicit yes. Ship the API and SPA togeth
 
 ## Blockers and owner decisions
 
-- None. Decision 10 is already applied.
+- None. Decision 10 and decision 11 (pre-check the first 15 songs) are applied.
 
 ## Verification
 
-- Run: full gate on `2ecca6d`, green. `pnpm format:check`, `pnpm -r typecheck`, `pnpm lint`, design-system `npm run verify`, `theme-classes`, `pnpm test` (music 30, web 1326, api 517), `pnpm --filter @ritmofit/api test:integration` (219), web build, openapi with a clean diff, contract-parity (no untracked drift), `pnpm audit:ci` (2 ignored: 1 low, 1 moderate).
+- Run: full gate on `58a75ce`, green. `pnpm format:check`, `pnpm -r typecheck`, `pnpm lint`, design-system `npm run verify`, `theme-classes`, `pnpm test` (music 30, web 1326, api 517), `pnpm --filter @ritmofit/api test:integration` (219), web build, openapi with a clean diff, contract-parity (no untracked drift), `pnpm audit:ci` (2 ignored: 1 low, 1 moderate). Picker tests assert the first 15 boxes start checked and confirm is enabled immediately.
 - The 100-song stub preview returns in under 2 seconds with two Spotify page fetches. The picker mounts 100 rows with no virtualization in under 2 seconds.
 - Skipped: real-browser smoke and a live provider playlist timing check.
 
