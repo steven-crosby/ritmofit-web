@@ -1,5 +1,13 @@
 import { eq, inArray } from 'drizzle-orm';
-import type { AddClassTrack, ClassTrack, ImportClassTracks } from '@ritmofit/shared';
+import {
+  PLAYLIST_SONG_BLOCK_CAP,
+  playlistSongBlockDraft,
+  songBlockIdsToDelete,
+  songBlockWriteMode,
+  type AddClassTrack,
+  type ClassTrack,
+  type ImportClassTracks,
+} from '@ritmofit/shared';
 import { classPlanBlocks, classes, classTracks, tracks } from '../db/schema.js';
 import { createDb } from './db.js';
 import type { Env } from './types.js';
@@ -18,6 +26,102 @@ const conflict = () =>
     'CONFLICT',
     'The class changed during import. Retry to use its current order.',
   );
+
+const songBlockCapError = () =>
+  new HttpError(
+    422,
+    'VALIDATION_ERROR',
+    `Playlist import accepts at most ${PLAYLIST_SONG_BLOCK_CAP} songs, including songs already on the class.`,
+  );
+
+type ClassTrackRow = typeof classTracks.$inferSelect;
+
+/** Song-block commits append in placement order and do not reshuffle existing songs. */
+function layoutSongBlockCommit(input: {
+  orderedIds: string[];
+  existing: ClassTrackRow[];
+  existingIds: Set<string>;
+  newRows: ClassTrackRow[];
+  durations: Map<string, number>;
+  now: number;
+}): ClassTrack[] {
+  const existingOrdered = [...input.existing].sort((a, b) => a.position - b.position);
+  const orderedExisting = input.orderedIds.filter((id) => input.existingIds.has(id));
+  if (
+    orderedExisting.length !== existingOrdered.length ||
+    orderedExisting.some((id, index) => id !== existingOrdered[index]?.id)
+  ) {
+    throw conflict();
+  }
+  let offset = 0;
+  for (const row of existingOrdered) {
+    offset = Math.max(offset, (row.startOffsetMs ?? 0) + (input.durations.get(row.id) ?? 0));
+  }
+  const maxPosition = existingOrdered.reduce((max, row) => Math.max(max, row.position), -1);
+  const placedNew = input.newRows.map((row, index) => {
+    const startOffsetMs = offset;
+    offset += input.durations.get(row.id) ?? 0;
+    return serializeClassTrack({
+      ...row,
+      position: maxPosition + 1 + index,
+      startOffsetMs,
+      updatedAt: input.now,
+    });
+  });
+  return [...existingOrdered.map((row) => serializeClassTrack(row)), ...placedNew];
+}
+
+/** Today's ordered import: one plan block for the batch, playback follows plan order. */
+function layoutImportedTracks(input: {
+  orderedIds: string[];
+  byId: Map<string, ClassTrackRow>;
+  newRows: ClassTrackRow[];
+  blockPositions: ReadonlyMap<string, number>;
+  existing: ClassTrackRow[];
+  durations: Map<string, number>;
+  isFree: boolean;
+  now: number;
+}): ClassTrack[] {
+  let ordered = input.orderedIds.map((id, position) => ({ ...input.byId.get(id)!, position }));
+  const planned = orderTrackIdsByPlan(ordered, input.blockPositions);
+  ordered = planned.map((id, position) => ({ ...input.byId.get(id)!, position }));
+  if (
+    input.isFree &&
+    ordered
+      .filter((row) => !input.newRows.some((candidate) => candidate.id === row.id))
+      .some((row, index) => row.id !== input.existing[index]?.id)
+  ) {
+    throw conflict();
+  }
+  let offset = 0;
+  return ordered.map((row, index) => {
+    const isNew = input.newRows.some((candidate) => candidate.id === row.id);
+    const startOffsetMs = input.isFree && !isNew ? (row.startOffsetMs ?? 0) : offset;
+    const end = startOffsetMs + input.durations.get(row.id)!;
+    if (input.isFree && isNew) {
+      const next = ordered
+        .slice(index + 1)
+        .find((candidate) => !input.newRows.some((row) => row.id === candidate.id));
+      if (next && end > (next.startOffsetMs ?? 0)) {
+        throw new HttpError(
+          409,
+          'CONFLICT',
+          'There is no room for this song on the free timeline. Use sequential mode to restore playlist order.',
+        );
+      }
+    }
+    offset = Math.max(offset, end);
+    const old = input.byId.get(row.id)!;
+    return serializeClassTrack({
+      ...row,
+      startOffsetMs,
+      updatedAt:
+        old.position !== row.position || old.startOffsetMs !== startOffsetMs
+          ? Math.max(input.now, old.updatedAt + 1)
+          : old.updatedAt,
+    });
+  });
+}
 
 // These snapshots are evaluated again INSIDE the write batch. A read followed by
 // an unconditional batch would still lose concurrent appends / duration edits.
@@ -98,11 +202,26 @@ export async function commitOrderedClassImport(
       ]),
   );
   const blocks = await db
-    .select({ id: classPlanBlocks.id, position: classPlanBlocks.position })
+    .select({
+      id: classPlanBlocks.id,
+      position: classPlanBlocks.position,
+      recipeBlockKey: classPlanBlocks.recipeBlockKey,
+    })
     .from(classPlanBlocks)
     .where(eq(classPlanBlocks.classId, classId))
     .all();
   const blockPositions = new Map(blocks.map((b) => [b.id, b.position]));
+  if (body.songBlocks && body.planBlockId) {
+    throw new HttpError(422, 'VALIDATION_ERROR', 'songBlocks cannot be combined with planBlockId.');
+  }
+  if (
+    body.songBlocks &&
+    (body.placements.length < 1 ||
+      body.placements.length > PLAYLIST_SONG_BLOCK_CAP ||
+      existing.length + body.placements.length > PLAYLIST_SONG_BLOCK_CAP)
+  ) {
+    throw songBlockCapError();
+  }
   if (body.planBlockId && !blockPositions.has(body.planBlockId))
     throw new AccessError(404, 'NOT_FOUND', 'Not found.');
   const expectedBlocks = JSON.stringify([...blocks].sort(compareId).map((b) => [b.id, b.position]));
@@ -132,6 +251,72 @@ export async function commitOrderedClassImport(
   const expectedLibrary = JSON.stringify(
     [...library].sort(compareId).map((t) => [t.id, t.ownerUserId, t.durationMs, t.updatedAt]),
   );
+  const existingIds = new Set(existing.map((row) => row.id));
+  const tracksOnBlock = new Map<string, number>();
+  for (const row of existing) {
+    if (!row.planBlockId) continue;
+    tracksOnBlock.set(row.planBlockId, (tracksOnBlock.get(row.planBlockId) ?? 0) + 1);
+  }
+  const songMode = body.songBlocks ? songBlockWriteMode(existing.length, blocks) : null;
+  const deleteBlockIds =
+    songMode == null
+      ? []
+      : songBlockIdsToDelete(
+          songMode,
+          blocks.map((block) => ({
+            id: block.id,
+            recipeBlockKey: block.recipeBlockKey,
+            trackCount: tracksOnBlock.get(block.id) ?? 0,
+          })),
+        );
+  const deleteBlockIdSet = new Set(deleteBlockIds);
+  const nextBlockPosition =
+    blocks
+      .filter((block) => !deleteBlockIdSet.has(block.id))
+      .reduce((max, block) => Math.max(max, block.position), -1) + 1;
+  const newPlacements = body.placements.filter((placement) => !existingIds.has(placement.id));
+  const blockIdByPlacement = new Map<string, string>();
+  const blocksToInsert: {
+    id: string;
+    recipeBlockKey: string;
+    position: number;
+    segmentType: string | null;
+    label: string;
+    targetDurationMs: number;
+    intensity: string;
+    teachingGoal: string;
+    movementFocus: string;
+    guidanceKind: string;
+    guidanceJson: string;
+  }[] = [];
+  if (songMode) {
+    newPlacements.forEach((placement, index) => {
+      const track = library.find((row) => row.id === placement.trackId)!;
+      const draft = playlistSongBlockDraft({
+        title: track.title,
+        index,
+        count: newPlacements.length,
+        mode: songMode,
+        durationMs: track.durationMs,
+        template: cls.template,
+      });
+      const id = crypto.randomUUID();
+      blockIdByPlacement.set(placement.id, id);
+      blocksToInsert.push({
+        id,
+        recipeBlockKey: draft.recipeBlockKey,
+        position: nextBlockPosition + index,
+        segmentType: draft.segmentType,
+        label: draft.label,
+        targetDurationMs: draft.targetDurationMs,
+        intensity: draft.intensity,
+        teachingGoal: draft.teachingGoal,
+        movementFocus: draft.movementFocus,
+        guidanceKind: draft.guidance.kind,
+        guidanceJson: JSON.stringify(draft.guidance),
+      });
+    });
+  }
   const byId = new Map(existing.map((r) => [r.id, r]));
   const durations = new Map(
     joined.map(({ placement: r, duration }) => [
@@ -144,15 +329,15 @@ export async function commitOrderedClassImport(
   for (const p of body.placements) {
     const present = byId.get(p.id);
     if (present) {
-      if (present.trackId !== p.trackId || present.planBlockId !== (body.planBlockId ?? null))
-        throw conflict();
+      if (present.trackId !== p.trackId) throw conflict();
+      if (!body.songBlocks && present.planBlockId !== (body.planBlockId ?? null)) throw conflict();
       continue;
     }
     const row: typeof classTracks.$inferSelect = {
       id: p.id,
       classId,
       trackId: p.trackId,
-      planBlockId: body.planBlockId ?? null,
+      planBlockId: body.songBlocks ? blockIdByPlacement.get(p.id)! : (body.planBlockId ?? null),
       position: 0,
       intensity: addition ? (addition.fields.intensity ?? 'none') : 'mod',
       displayBpmOverride: addition?.fields.displayBpmOverride ?? null,
@@ -190,43 +375,25 @@ export async function commitOrderedClassImport(
       'Import order must include every class placement exactly once.',
     );
   }
-  let ordered = body.orderedIds.map((id, position) => ({ ...byId.get(id)!, position }));
-  const planned = orderTrackIdsByPlan(ordered, blockPositions);
-  ordered = planned.map((id, position) => ({ ...byId.get(id)!, position }));
-  const isFree = cls.timelineMode === 'free';
-  if (
-    isFree &&
-    ordered
-      .filter((r) => !newRows.some((n) => n.id === r.id))
-      .some((r, i) => r.id !== existing[i]?.id)
-  )
-    throw conflict();
-  let offset = 0;
-  const result = ordered.map((row, i) => {
-    const isNew = newRows.some((n) => n.id === row.id);
-    const startOffsetMs = isFree && !isNew ? (row.startOffsetMs ?? 0) : offset;
-    const end = startOffsetMs + durations.get(row.id)!;
-    if (isFree && isNew) {
-      const next = ordered.slice(i + 1).find((r) => !newRows.some((n) => n.id === r.id));
-      if (next && end > (next.startOffsetMs ?? 0)) {
-        throw new HttpError(
-          409,
-          'CONFLICT',
-          'There is no room for this song on the free timeline. Use sequential mode to restore playlist order.',
-        );
-      }
-    }
-    offset = Math.max(offset, end);
-    const old = byId.get(row.id)!;
-    return serializeClassTrack({
-      ...row,
-      startOffsetMs,
-      updatedAt:
-        old.position !== row.position || old.startOffsetMs !== startOffsetMs
-          ? Math.max(now, old.updatedAt + 1)
-          : old.updatedAt,
-    });
-  });
+  const result = body.songBlocks
+    ? layoutSongBlockCommit({
+        orderedIds: body.orderedIds,
+        existing,
+        existingIds,
+        newRows,
+        durations,
+        now,
+      })
+    : layoutImportedTracks({
+        orderedIds: body.orderedIds,
+        byId,
+        newRows,
+        blockPositions,
+        existing,
+        durations,
+        isFree: cls.timelineMode === 'free',
+        now,
+      });
   const token = crypto.randomUUID();
   const guard =
     'EXISTS (SELECT 1 FROM class_track_import_operations WHERE id = ? AND writer_token = ?)';
@@ -257,7 +424,8 @@ export async function commitOrderedClassImport(
       `INSERT INTO class_tracks
       (id, class_id, track_id, plan_block_id, position, intensity, start_offset_ms, created_at, updated_at,
        display_bpm_override, duration_ms_override, clip_start_ms, clip_end_ms, beat_anchor_ms, notes, display_rpm, hold_count)
-      SELECT json_extract(value, '$.id'), ?, json_extract(value, '$.trackId'), ?,
+      SELECT json_extract(value, '$.id'), ?, json_extract(value, '$.trackId'),
+        json_extract(value, '$.planBlockId'),
         json_extract(value, '$.position'), json_extract(value, '$.intensity'), json_extract(value, '$.startOffsetMs'), ?, json_extract(value, '$.updatedAt'),
         json_extract(value, '$.displayBpmOverride'), json_extract(value, '$.durationMsOverride'),
         json_extract(value, '$.clipStartMs'), json_extract(value, '$.clipEndMs'), json_extract(value, '$.beatAnchorMs'),
@@ -265,7 +433,6 @@ export async function commitOrderedClassImport(
       FROM json_each(?) WHERE ${guard}`,
     ).bind(
       classId,
-      body.planBlockId ?? null,
       now,
       JSON.stringify(result.filter((r) => newRows.some((n) => n.id === r.id))),
       body.operationId,
@@ -289,6 +456,38 @@ export async function commitOrderedClassImport(
       `UPDATE classes SET updated_at = max(updated_at + 1, ?) WHERE id = ? AND ${guard}`,
     ).bind(now, classId, body.operationId, token),
   ];
+  // Block deletes and inserts share the operation's snapshot guard, so a stale
+  // plan rolls the receipt and the new blocks back together.
+  const blockStatements: D1PreparedStatement[] = [];
+  if (deleteBlockIds.length > 0) {
+    blockStatements.push(
+      env.DB.prepare(
+        `DELETE FROM class_plan_blocks
+        WHERE class_id = ? AND id IN (SELECT value FROM json_each(?))
+          AND NOT EXISTS (
+            SELECT 1 FROM class_tracks WHERE class_tracks.plan_block_id = class_plan_blocks.id
+          )
+          AND ${guard}`,
+      ).bind(classId, JSON.stringify(deleteBlockIds), body.operationId, token),
+    );
+  }
+  if (blocksToInsert.length > 0) {
+    blockStatements.push(
+      env.DB.prepare(
+        `INSERT INTO class_plan_blocks
+        (id, class_id, recipe_block_key, position, segment_type, label, target_duration_ms,
+         intensity, teaching_goal, movement_focus, guidance_kind, guidance_json, created_at, updated_at)
+        SELECT json_extract(value, '$.id'), ?, json_extract(value, '$.recipeBlockKey'),
+          json_extract(value, '$.position'), json_extract(value, '$.segmentType'),
+          json_extract(value, '$.label'), json_extract(value, '$.targetDurationMs'),
+          json_extract(value, '$.intensity'), json_extract(value, '$.teachingGoal'),
+          json_extract(value, '$.movementFocus'), json_extract(value, '$.guidanceKind'),
+          json_extract(value, '$.guidanceJson'), ?, ?
+        FROM json_each(?) WHERE ${guard}`,
+      ).bind(classId, now, now, JSON.stringify(blocksToInsert), body.operationId, token),
+    );
+  }
+  statements.splice(1, 0, ...blockStatements);
   if (addition?.inlineTrack) {
     const query = db.insert(tracks).values(addition.inlineTrack).toSQL();
     statements.unshift(env.DB.prepare(query.sql).bind(...query.params));

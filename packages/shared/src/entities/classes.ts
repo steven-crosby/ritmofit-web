@@ -245,20 +245,48 @@ export const addClassTrackSchema = z.union([
 ]);
 export type AddClassTrack = z.infer<typeof addClassTrackSchema>;
 
+/**
+ * Playlist-import song blocks only. One commit accepts at most this many placements,
+ * and placements plus tracks already on the class cannot exceed it. Search, manual
+ * add, and Songs-by-Move copy stay uncapped.
+ */
+export const PLAYLIST_SONG_BLOCK_CAP = 15;
+
 /** Ordered playlist placements. IDs identify occurrences, not distinct library songs.
  * Reuse operationId and the exact body after an ambiguous response. A new attempt
  * uses a fresh snapshot and operationId, retaining the same occurrence IDs.
+ * `songBlocks` creates one plan block per new placement inside that same commit.
+ * Commits without the flag keep the 100-placement ceiling and a single planBlockId.
  */
-export const importClassTracksSchema = z.object({
-  operationId: uuidSchema,
-  expectedTracks: z.array(classTrackSchema.pick({ id: true, position: true, updatedAt: true })),
-  placements: z
-    .array(z.object({ id: uuidSchema, trackId: uuidSchema }))
-    .min(1)
-    .max(100),
-  orderedIds: z.array(uuidSchema),
-  planBlockId: uuidSchema.nullish(),
-});
+export const importClassTracksSchema = z
+  .object({
+    operationId: uuidSchema,
+    expectedTracks: z.array(classTrackSchema.pick({ id: true, position: true, updatedAt: true })),
+    placements: z
+      .array(z.object({ id: uuidSchema, trackId: uuidSchema }))
+      .min(1)
+      .max(100),
+    orderedIds: z.array(uuidSchema),
+    planBlockId: uuidSchema.nullish(),
+    songBlocks: z.literal(true).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.songBlocks) return;
+    if (value.planBlockId) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['planBlockId'],
+        message: 'songBlocks cannot be combined with planBlockId.',
+      });
+    }
+    if (value.placements.length > PLAYLIST_SONG_BLOCK_CAP) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['placements'],
+        message: `Playlist import accepts at most ${PLAYLIST_SONG_BLOCK_CAP} songs in one commit.`,
+      });
+    }
+  });
 export type ImportClassTracks = z.infer<typeof importClassTracksSchema>;
 
 /** Patch a class_track. `startOffsetMs` / `position` are server-derived, so not here. */

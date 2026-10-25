@@ -730,6 +730,9 @@
           },
           "409": {
             "description": "Stale snapshot or reused operation ID; standard error envelope"
+          },
+          "422": {
+            "description": "A songBlocks commit accepts at most 15 placements, refuses when those plus existing class tracks exceed 15, and rejects planBlockId, with no partial write."
           }
         }
       }
@@ -4811,6 +4814,10 @@
                 "type": "null"
               }
             ]
+          },
+          "songBlocks": {
+            "type": "boolean",
+            "const": true
           }
         },
         "required": [

@@ -9,6 +9,7 @@ import { and, eq, gte, sql } from 'drizzle-orm';
 import {
   classPlanBlockGuidanceSchema,
   createClassPlanBlockSchema,
+  playlistSongEditClearsKey,
   reorderClassPlanBlocksSchema,
   updateClassPlanBlockSchema,
   type ClassPlanBlockGuidance,
@@ -40,13 +41,20 @@ async function requireMatchingGuidance(
   db: ReturnType<typeof createDb>,
   classId: string,
   guidance: ClassPlanBlockGuidance,
+  // Playlist-song blocks on a class with no Cycle/HIIT/Pilates discipline store the
+  // Pilates object. Later instructor edits of that same object stay valid.
+  existingGuidanceKind?: string | null,
 ): Promise<void> {
   const cls = await db
     .select({ template: classes.template })
     .from(classes)
     .where(eq(classes.id, classId))
     .get();
-  if (!cls || !guidanceMatchesTemplate(guidance, cls.template)) {
+  const hiddenPilates =
+    guidance.kind === 'pilates' &&
+    existingGuidanceKind === 'pilates' &&
+    (cls?.template == null || cls.template === 'tread');
+  if (!cls || (!guidanceMatchesTemplate(guidance, cls.template) && !hiddenPilates)) {
     throw new HttpError(
       422,
       'VALIDATION_ERROR',
@@ -114,10 +122,22 @@ classPlanBlockRoutes.patch('/plan-blocks/:id', async (c) => {
   const existing = await db.select().from(classPlanBlocks).where(eq(classPlanBlocks.id, id)).get();
   if (!existing) throw new HttpError(404, 'NOT_FOUND', 'Not found.');
 
+  const storedGuidance = classPlanBlockGuidanceSchema.parse(JSON.parse(existing.guidanceJson));
   const guidance = body.guidance
     ? classPlanBlockGuidanceSchema.parse(body.guidance)
-    : classPlanBlockGuidanceSchema.parse(JSON.parse(existing.guidanceJson));
-  await requireMatchingGuidance(db, classId, guidance);
+    : storedGuidance;
+  await requireMatchingGuidance(db, classId, guidance, existing.guidanceKind);
+  const clearRecipeKey = playlistSongEditClearsKey(
+    {
+      recipeBlockKey: existing.recipeBlockKey,
+      teachingGoal: existing.teachingGoal,
+      movementFocus: existing.movementFocus,
+      intensity: existing.intensity,
+      targetDurationMs: existing.targetDurationMs,
+      guidance: storedGuidance,
+    },
+    body,
+  );
   const fields = {
     ...(body.segmentType !== undefined ? { segmentType: body.segmentType } : {}),
     ...(body.label !== undefined ? { label: body.label } : {}),
@@ -133,6 +153,7 @@ classPlanBlockRoutes.patch('/plan-blocks/:id', async (c) => {
       ...(body.guidance
         ? { guidanceKind: body.guidance.kind, guidanceJson: JSON.stringify(body.guidance) }
         : {}),
+      ...(clearRecipeKey ? { recipeBlockKey: null } : {}),
       updatedAt: Date.now(),
     })
     .where(eq(classPlanBlocks.id, id));

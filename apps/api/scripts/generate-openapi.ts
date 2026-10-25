@@ -35,6 +35,7 @@ import {
   classTrackSchema,
   addClassTrackSchema,
   importClassTracksSchema,
+  PLAYLIST_SONG_BLOCK_CAP,
   updateClassTrackSchema,
   reorderClassTracksSchema,
   copyClassTrackSchema,
@@ -455,6 +456,9 @@ const doc = {
         responses: {
           '201': arrayResp('ClassTrack', 'Committed class order'),
           '409': { description: 'Stale snapshot or reused operation ID; standard error envelope' },
+          '422': {
+            description: `A songBlocks commit accepts at most ${PLAYLIST_SONG_BLOCK_CAP} placements, refuses when those plus existing class tracks exceed ${PLAYLIST_SONG_BLOCK_CAP}, and rejects planBlockId, with no partial write.`,
+          },
         },
       },
     },
