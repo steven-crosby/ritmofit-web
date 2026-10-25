@@ -1730,3 +1730,111 @@ describe('TrackSearch playlist song picker', () => {
     updateBlock.mockRestore();
   });
 });
+
+describe('TrackSearch Spotify paste session snapshot', () => {
+  const spotifyUrl = 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M';
+
+  function spotifyConnection(expiresAt: number): MusicConnectionView {
+    return {
+      id: 'conn-spotify',
+      userId: 'u1',
+      provider: 'spotify',
+      providerUserId: null,
+      scope: 'user-library-read playlist-read-private streaming',
+      expiresAt,
+      createdAt: 1,
+      updatedAt: 1,
+    };
+  }
+
+  function spotifyPreview() {
+    return {
+      occurrences: [
+        {
+          index: 0,
+          title: 'Warmup',
+          artist: 'QA',
+          durationMs: 180_000,
+          provider: 'spotify' as const,
+          providerTrackId: 'sp-1',
+        },
+      ],
+    };
+  }
+
+  beforeEach(() => {
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.importTrack).mockResolvedValue(IMPORTED_TRACK);
+    vi.mocked(api.importClassTracks).mockResolvedValue([ADDED_CLASS_TRACK]);
+  });
+
+  async function openSpotifyPaste() {
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+    expect(await screen.findByText('Session expired')).toBeTruthy();
+  }
+
+  function submitSpotifyUrl() {
+    fireEvent.change(screen.getByLabelText('Playlist URL'), { target: { value: spotifyUrl } });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+  }
+
+  it('drops Session expired after a working Spotify paste import', async () => {
+    vi.mocked(api.listConnections)
+      .mockResolvedValueOnce([spotifyConnection(1)])
+      .mockResolvedValue([spotifyConnection(Date.now() + 3_600_000)]);
+    vi.mocked(api.importPlaylist).mockResolvedValue(spotifyPreview());
+
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    await openSpotifyPaste();
+    submitSpotifyUrl();
+
+    await waitFor(() => expect(api.importPlaylist).toHaveBeenCalledWith('c1', spotifyUrl));
+    expect(await screen.findByText('Connected')).toBeTruthy();
+    expect(screen.queryByText('Session expired')).toBeNull();
+    expect(screen.getByText(/Spotify library is available/i)).toBeTruthy();
+    expect(api.listConnections).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps Session expired when the Spotify paste import fails', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection(1)]);
+    vi.mocked(api.importPlaylist).mockRejectedValue(
+      new api.ApiError('Reconnect Spotify to import this playlist.', 'REAUTH_REQUIRED', 409),
+    );
+
+    render(<TrackSearch classId="c1" onAdded={() => {}} onOpenConnections={() => {}} />);
+    await openSpotifyPaste();
+    submitSpotifyUrl();
+
+    expect(await screen.findByText('Reconnect Spotify to import this playlist.')).toBeTruthy();
+    expect(screen.getByText('Session expired')).toBeTruthy();
+    expect(api.listConnections).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not reread connections after an Apple Music paste', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.importPlaylist).mockResolvedValue({
+      occurrences: [
+        {
+          index: 0,
+          title: 'Song 1',
+          artist: 'QA',
+          durationMs: 180_000,
+          provider: 'apple_music',
+          providerTrackId: 'am-1',
+        },
+      ],
+    });
+
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+    fireEvent.change(screen.getByLabelText('Playlist URL'), {
+      target: { value: 'https://music.apple.com/us/playlist/demo/pl.demo' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
+    expect(api.listConnections).toHaveBeenCalledTimes(1);
+  });
+});
