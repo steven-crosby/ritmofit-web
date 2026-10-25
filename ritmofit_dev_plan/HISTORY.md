@@ -13,6 +13,38 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-25 — #580 on main `7a8bc71`.** Owner approved; deployed
+> immediately as a production-bug fix. Production deploy at 2026-10-25T21:57Z
+> (3:57 PM MT 2026-10-25). New Worker `594b510a-dca2-4644-b87e-50fd86a83485`;
+> previous/rollback `55ae3b1a-5850-4c28-bed3-ebbdfea0b029`. SPA entry
+> `assets/index-DWV4zBSM.js` and CSS `assets/index-CSpFExJg.css` are unchanged
+> (API-only fix), confirmed by three consecutive cache-busted fetches that
+> matched the build; the Worker version is the deploy proof. Built and deployed
+> from a clean detached worktree at `7a8bc71` on Steven's MacBook. The full gate
+> passed on the rebased #580 head `0cdcb03`, whose tree is identical to
+> `7a8bc71` (`cfea335`), so it was not re-run (format, typecheck, lint, design
+> verify, theme-classes, unit tests web 1361 / api 526 / music 30, Worker/D1
+> integration 225, web build, OpenAPI no drift, contract-parity, audit:ci; Node
+> 24). Preflight: no remote D1 migrations pending and `BETA_ALLOWED_EMAILS`
+> present. No migration was applied.
+>
+> Deployed since production `85204b9`:
+> [#580](https://github.com/steven-crosby/ritmofit-web/pull/580) (compact
+> plan-block positions after a song-block import, `7a8bc71`). Before the fix, a
+> song-block import that kept some recipe blocks left position gaps (for example
+> `[2, 3]`), and a later `POST /classes/:id/plan-blocks` returned 500 on the
+> `(class_id, position)` unique index. Reproduced against main's unpatched code
+> in the Worker/D1 integration suite; not reproduced against production data.
+> Docs [#583](https://github.com/steven-crosby/ritmofit-web/pull/583) (`3280f99`)
+> is in that tree and does not change runtime.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 with security headers; unauthenticated
+> `/api/v1/classes`, `/explore`, `/teams`, and
+> `POST /api/v1/classes/:id/plan-blocks` 401. The fix compacts only on the next
+> song-block import (a block reorder also renumbers), so a read-only count ran
+> against remote D1 after the deploy: 0 classes had plan-block positions other
+> than `0..n-1`, so no data repair is needed.
+
 > **Deploy 2026-10-25 — #582 on main `85204b9`.** Owner approved.
 > Production deploy at 2026-10-25T17:46Z (11:46 AM MT 2026-10-25). New Worker
 > `55ae3b1a-5850-4c28-bed3-ebbdfea0b029`; previous/rollback
