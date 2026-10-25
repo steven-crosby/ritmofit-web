@@ -288,6 +288,9 @@ export function TrackSearch({
   const [connectionStatus, setConnectionStatus] = useState<'loading' | 'ready' | 'error'>(
     'loading',
   );
+  // Connection reads share one generation so a slow first snapshot cannot
+  // overwrite the reread that follows a Spotify paste.
+  const connectionFetchGen = useRef(0);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -312,24 +315,40 @@ export function TrackSearch({
     setError(null);
   }, [classId, planBlockId]);
   useEffect(() => {
+    const gen = ++connectionFetchGen.current;
     let alive = true;
     setLibraryReauthProvider(null);
     void (async () => {
       try {
         const c = await listConnections();
-        if (alive && c) {
-          setConnections(c);
-          setConnectionStatus('ready');
-        }
+        if (!alive || gen !== connectionFetchGen.current) return;
+        setConnections(c);
+        setConnectionStatus('ready');
       } catch {
         // Best-effort: readiness is a hint, not a blocker for catalog search.
-        if (alive) setConnectionStatus('error');
+        if (alive && gen === connectionFetchGen.current) setConnectionStatus('error');
       }
     })();
     return () => {
       alive = false;
     };
   }, [connectionRevision]);
+  // Paste preview refreshes a still-valid Spotify grant and stores a new
+  // access-token expiry. This snapshot was loaded before that write.
+  const reloadSpotifyConnectionSnapshot = () => {
+    const gen = ++connectionFetchGen.current;
+    void (async () => {
+      try {
+        const next = await listConnections();
+        if (!mounted.current || gen !== connectionFetchGen.current) return;
+        setConnections(next);
+        setConnectionStatus('ready');
+        setLibraryReauthProvider((current) => (current === 'spotify' ? null : current));
+      } catch {
+        // Leave the snapshot already on screen. A failed reread is not a new expiry.
+      }
+    })();
+  };
   const connection = connections?.find((row) => row.provider === provider);
   const effectiveConnection =
     connection && libraryReauthProvider === provider ? { ...connection, expiresAt: 0 } : connection;
@@ -648,6 +667,12 @@ export function TrackSearch({
     setPlaylistErrorCode(undefined);
     try {
       const preview = await importPlaylist(classId, playlistUrl);
+      if (
+        mounted.current &&
+        preview.occurrences.some((occurrence) => occurrence.provider === 'spotify')
+      ) {
+        reloadSpotifyConnectionSnapshot();
+      }
       if (!isCurrent()) return;
       const hasDuplicate = preview.occurrences.some((occurrence) =>
         trackAlreadyInClass(occurrence.provider, occurrence.providerTrackId),
