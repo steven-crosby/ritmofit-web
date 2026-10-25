@@ -40,6 +40,7 @@ Owner review of #573. Merge only on an explicit yes. Ship the API and SPA togeth
 ## Production as observed
 
 - `main` vs production: unknown from this session. Last recorded production Worker in DEVELOPMENT_PLAN is `7a505ae` (2026-10-24). This session did not deploy.
+- Update 2026-10-24 10:28 PM MT: slices A+B deployed on main `c7110b4`, Worker `308a01a9-1972-4c5b-b046-f497c0c10d7e` (rollback `91e323c9-504c-4e60-8bde-47befd2ccb8c`). HTTP smoke green, including unauthenticated `POST /api/v1/classes/:id/import-playlist` 401. Real-browser smoke of playlist import is still owed. See HISTORY.
 - Evidence: not checked from this environment.
 
 ## Shared zones touched
