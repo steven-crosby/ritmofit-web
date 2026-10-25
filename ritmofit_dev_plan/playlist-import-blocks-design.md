@@ -4,7 +4,7 @@
 <!-- note (Cursor, 2026-10-25): Owner decision 10. The 15-song cap is per import. Tracks already on the class do not count. -->
 <!-- note (Cursor, 2026-10-25): Slice A merged as #572 (`88128ef`). Slice B is the picker, paste-a-link preview, and scaffold labels. -->
 
-**Status:** decided 2026-10-24. Cap clarified 2026-10-25 (decision 10): 15 songs per import; tracks already on the class do not count. Slice A merged as [#572](https://github.com/steven-crosby/ritmofit-web/pull/572) (`88128ef`). Slice B is the draft on `cursor/playlist-import-slice-b-3a0a`.
+**Status:** decided 2026-10-24. Cap clarified 2026-10-25 (decision 10): 15 songs per import; tracks already on the class do not count. Slice A merged as [#572](https://github.com/steven-crosby/ritmofit-web/pull/572) (`88128ef`). Slice B is draft [#573](https://github.com/steven-crosby/ritmofit-web/pull/573).
 **Baseline inspected:** `main` `a78f6f5` (2026-10-24).
 **Evidence:** [playlist-to-class-to-Live audit](../docs/audits/playlist-to-live-2026-10-03/coverage.md), findings 3 and 4, and the 15-song cap note.
 
