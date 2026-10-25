@@ -457,7 +457,7 @@ const doc = {
           '201': arrayResp('ClassTrack', 'Committed class order'),
           '409': { description: 'Stale snapshot or reused operation ID; standard error envelope' },
           '422': {
-            description: `A songBlocks commit accepts at most ${PLAYLIST_SONG_BLOCK_CAP} placements, refuses when those plus existing class tracks exceed ${PLAYLIST_SONG_BLOCK_CAP}, and rejects planBlockId, with no partial write.`,
+            description: `A songBlocks commit accepts at most ${PLAYLIST_SONG_BLOCK_CAP} placements in that request. Tracks already on the class do not count. The commit rejects planBlockId, with no partial write.`,
           },
         },
       },

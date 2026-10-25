@@ -221,16 +221,44 @@ describe('playlist song-block commits (mounted Worker + migrated D1)', () => {
     expect(block!.segmentType).not.toBe('cool_down');
   });
 
-  it('accepts 15 songs and refuses a 16th placement or a class already at the cap', async () => {
+  it('accepts 15 songs on an empty class', async () => {
     const acceptedId = await newClass();
     expect((await commit(acceptedId, songBody([], tracks.slice(0, 15)))).status).toBe(201);
     expect(await listBlocks(acceptedId)).toHaveLength(15);
     expect(await listTracks(acceptedId)).toHaveLength(15);
-    const overflow = songBody(await listTracks(acceptedId), [tracks[15]!]);
-    expect((await commit(acceptedId, overflow)).status).toBe(422);
-    expect(await listBlocks(acceptedId)).toHaveLength(15);
-    expect(await listTracks(acceptedId)).toHaveLength(15);
+  });
 
+  it('imports 15 new songs onto a class that already has tracks', async () => {
+    const id = await newClass();
+    const seeded = songBody(
+      [],
+      Array.from({ length: 10 }, (_, index) => tracks[index % tracks.length]!),
+      { songBlocks: undefined },
+    );
+    expect((await commit(id, seeded)).status).toBe(201);
+    const before = await listTracks(id);
+    expect(before).toHaveLength(10);
+    expect(before.every((row) => row.planBlockId == null)).toBe(true);
+    expect(await listBlocks(id)).toEqual([]);
+
+    const more = Array.from({ length: 15 }, (_, index) => tracks[index % tracks.length]!);
+    expect((await commit(id, songBody(before, more))).status).toBe(201);
+    const placed = await listTracks(id);
+    const blocks = await listBlocks(id);
+    expect(placed).toHaveLength(25);
+    expect(blocks).toHaveLength(15);
+    expect(placed.slice(0, 10).map((row) => row.id)).toEqual(before.map((row) => row.id));
+    expect(placed.slice(0, 10).every((row) => row.planBlockId == null)).toBe(true);
+    expect(placed.slice(10).map((row) => row.planBlockId)).toEqual(blocks.map((block) => block.id));
+    expect(blocks.every((block) => block.recipeBlockKey === PLAYLIST_SONG_BLOCK_KEY)).toBe(true);
+    expect(blocks.every((block) => block.segmentType == null)).toBe(true);
+    expect(blocks[0]).toMatchObject({ label: more[0]!.title, segmentType: null });
+    expect(blocks.some((block) => block.label === 'Warm-up' || block.label === 'Cooldown')).toBe(
+      false,
+    );
+  });
+
+  it('rejects 16 placements in one request and leaves the class unchanged', async () => {
     const scaffoldId = await newClass({ mode: 'scaffold', recipeId: 'pilates_30_v1' });
     const beforeBlocks = await listBlocks(scaffoldId);
     const tooMany = songBody([], tracks);
@@ -248,23 +276,6 @@ describe('playlist song-block commits (mounted Worker + migrated D1)', () => {
         .bind(tooMany.operationId)
         .first(),
     ).toBeNull();
-
-    const fullId = await newClass();
-    const plain = songBody([], tracks);
-    expect(
-      (
-        await commit(fullId, {
-          ...plain,
-          songBlocks: undefined,
-        })
-      ).status,
-    ).toBe(201);
-    expect(await listTracks(fullId)).toHaveLength(16);
-    expect(await listBlocks(fullId)).toEqual([]);
-    const extra = songBody(await listTracks(fullId), [tracks[0]!]);
-    expect((await commit(fullId, extra)).status).toBe(422);
-    expect(await listTracks(fullId)).toHaveLength(16);
-    expect(await listBlocks(fullId)).toEqual([]);
   });
 
   it('rejects songBlocks combined with planBlockId before writing', async () => {

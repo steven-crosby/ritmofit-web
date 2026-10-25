@@ -220,7 +220,7 @@ describe('importClassTracksSchema songBlocks', () => {
     };
   };
 
-  it('accepts 15 song-block placements and still allows 100 without the flag', () => {
+  it('accepts 15 song-block placements in one request and still allows 100 without the flag', () => {
     expect(importClassTracksSchema.safeParse({ ...body(15), songBlocks: true }).success).toBe(true);
     expect(importClassTracksSchema.safeParse(body(16)).success).toBe(true);
     expect(importClassTracksSchema.safeParse(body(100)).success).toBe(true);

@@ -31,7 +31,7 @@ const songBlockCapError = () =>
   new HttpError(
     422,
     'VALIDATION_ERROR',
-    `Playlist import accepts at most ${PLAYLIST_SONG_BLOCK_CAP} songs, including songs already on the class.`,
+    `Playlist import accepts at most ${PLAYLIST_SONG_BLOCK_CAP} songs in one import.`,
   );
 
 type ClassTrackRow = typeof classTracks.$inferSelect;
@@ -216,9 +216,7 @@ export async function commitOrderedClassImport(
   }
   if (
     body.songBlocks &&
-    (body.placements.length < 1 ||
-      body.placements.length > PLAYLIST_SONG_BLOCK_CAP ||
-      existing.length + body.placements.length > PLAYLIST_SONG_BLOCK_CAP)
+    (body.placements.length < 1 || body.placements.length > PLAYLIST_SONG_BLOCK_CAP)
   ) {
     throw songBlockCapError();
   }

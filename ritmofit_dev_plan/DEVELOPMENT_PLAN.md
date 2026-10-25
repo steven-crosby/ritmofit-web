@@ -21,7 +21,7 @@ _Last updated 2026-10-24 (Cursor). Production Worker is main `7a505ae` (`9b471c2
 - **Human acceptance:** the earlier owner-approved desktop Cycle/Pilates spot-check remains historical ([record](../docs/audits/apple-natural-acceptance-2026-10-09/README.md)). On the 2026-10-13 build, Steven confirmed Apple authorization, audible start and clean natural handover to Bad Romance; a transient Waiting for music panel appeared and cleared. Apple post-Exit silence and all four SoundCloud hearing checks are now confirmed. A separate later Apple recovery at 5:18 was unwitnessed; stability/cause remain open. UI/SDK state, synthetic completion and deployment do not close these checks. Real iPhone Safari remains unverified.
 - **Next step:** Apple 5:18 debugging remains tabled; resume only on explicit owner instruction. [Retained investigation handoff](./handoffs/2026-10-13-apple-recovery-investigation.md). Spotify remains tabled. Real iPhone remains unverified. Neither r20261021 lane received native 200% zoom verification (NOT_ASSESSED).
 - **Cleanup:** #520–#523 completed publication branches removed locally/remotely after merge/tree checks. Three superseded root handoffs retired through #523. SoundCloud QA was deleted with its recorded 404; Apple fixture `75b7af90-141f-4f56-b02b-0bdd2c1c9dfe`, investigation handoff and all evidence stay. The completed cleanup handoff is closed and kept to preserve audit links. On 2026-10-19 the local worktrees and local branches for #518 and #519 were removed; neither tree had product files missing from `main`. Their untracked planning briefs were kept outside the repo. The same day, after an explicit owner yes, origin branches `codex/r20261011c-live-short-viewport` (`a06e0e6`) and `codex/r20261011c-builder-refresh-integrity` (`3d7bfd6`) were deleted. `.claude/`, the local verification tag, the Apple fixture, and original classes stay. [Close receipt](../docs/audits/session-close-2026-10-13/receipt.json).
-- **Owner decisions:** further fixture cleanup separately; Live finish placement, style, and confirmation still open (wording decided 2026-10-24: the live header control reads End Class, same handler, no confirmation); playlist import builds blocks only (decided 2026-10-24, [design](./playlist-import-blocks-design.md); not implemented); liveness alerting; F-02/D11. Missing-page and error screens keep `rf-hero-glow` (owner, 2026-10-24). OD-02 resolved: current cue remains the Live hero.
+- **Owner decisions:** further fixture cleanup separately; Live finish placement, style, and confirmation still open (wording decided 2026-10-24: the live header control reads End Class, same handler, no confirmation); playlist import builds blocks only (decided 2026-10-24, [design](./playlist-import-blocks-design.md); slice A is draft [#572](https://github.com/steven-crosby/ritmofit-web/pull/572), not merged; the 15-song cap is per import, owner 2026-10-25); liveness alerting; F-02/D11. Missing-page and error screens keep `rf-hero-glow` (owner, 2026-10-24). OD-02 resolved: current cue remains the Live hero.
 
 ---
 
@@ -197,13 +197,18 @@ approval.
 **Playlist → class → Live — decided 2026-10-24.** Playlist import builds blocks only: one block per
 song, source order, no generated cues, notes, or teaching content. The first block is warm-up and the
 last block is cooldown. Importing into an empty Classes template replaces those scaffold blocks.
-Over 15 songs, the instructor picks a source-ordered subset before the class or the import is written;
-the import never silently truncates. The cap is playlist import only: search, manual add, and
-Songs-by-Move copy stay uncapped. Paste-a-link uses the same blocks, labels, scaffold replacement,
-and picker. More than 100 occurrences is a 422 with no write, and the provider fetch stops as soon as
-the count exceeds 100. The preview times out after 8 seconds with a retryable error and no partial
-write. A 100-song link should open the picker in under 2 seconds. Design:
-[`playlist-import-blocks-design.md`](./playlist-import-blocks-design.md). Not implemented. Evidence:
+Over 15 songs in one import, the instructor picks a source-ordered subset before the class or the
+import is written; the import never silently truncates. The 15-song cap is per import (owner,
+2026-10-25): it counts only the songs in that `songBlocks` request. Tracks already on the class do
+not count, so a class with 10 tracks may import 15 more. Manual add is uncapped, per-batch cost is
+what matters for performance, and the picker does not compute remaining slots. The cap is playlist
+import only: search, manual add, and Songs-by-Move copy stay uncapped. Paste-a-link uses the same
+blocks, labels, scaffold replacement, and picker. More than 100 occurrences is a 422 with no write,
+and the provider fetch stops as soon as the count exceeds 100. The preview times out after 8 seconds
+with a retryable error and no partial write. A 100-song link should open the picker in under 2
+seconds. Design: [`playlist-import-blocks-design.md`](./playlist-import-blocks-design.md). Slice A
+(the `songBlocks` commit) is draft [#572](https://github.com/steven-crosby/ritmofit-web/pull/572) and
+is not merged. Slice B is not started. Evidence:
 [desktop audit 2026-10-03](../docs/audits/playlist-to-live-2026-10-03/coverage.md).
 
 **Class-building direction.** The [class-score blueprint](./instructor-class-score-blueprint.md)

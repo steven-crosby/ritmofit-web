@@ -246,9 +246,9 @@ export const addClassTrackSchema = z.union([
 export type AddClassTrack = z.infer<typeof addClassTrackSchema>;
 
 /**
- * Playlist-import song blocks only. One commit accepts at most this many placements,
- * and placements plus tracks already on the class cannot exceed it. Search, manual
- * add, and Songs-by-Move copy stay uncapped.
+ * Playlist-import song blocks only. One import accepts at most this many placements.
+ * Tracks already on the class do not count. Search, manual add, and Songs-by-Move
+ * copy stay uncapped.
  */
 export const PLAYLIST_SONG_BLOCK_CAP = 15;
 
@@ -283,7 +283,7 @@ export const importClassTracksSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['placements'],
-        message: `Playlist import accepts at most ${PLAYLIST_SONG_BLOCK_CAP} songs in one commit.`,
+        message: `Playlist import accepts at most ${PLAYLIST_SONG_BLOCK_CAP} songs in one import.`,
       });
     }
   });
