@@ -3,6 +3,7 @@
 <!-- note (Grok, 2026-10-24): Design for the playlist → class → Live gap. Owner decisions recorded verbatim. No implementation in this change. -->
 <!-- note (Cursor, 2026-10-25): Owner decision 10. The 15-song cap is per import. Tracks already on the class do not count. -->
 <!-- note (Cursor, 2026-10-25): Slice A merged as #572 (`88128ef`). Slice B is the picker, paste-a-link preview, and scaffold labels. -->
+<!-- note (Cursor, 2026-10-25): Owner decision 11. The 16–100 picker pre-checks the first 15 songs in source order. -->
 
 **Status:** decided 2026-10-24. Cap clarified 2026-10-25 (decision 10): 15 songs per import; tracks already on the class do not count. Slice A merged as [#572](https://github.com/steven-crosby/ritmofit-web/pull/572) (`88128ef`). Slice B is draft [#573](https://github.com/steven-crosby/ritmofit-web/pull/573).
 **Baseline inspected:** `main` `a78f6f5` (2026-10-24).
@@ -31,6 +32,8 @@ Answers to the two questions this design had left open, also Steven, 2026-10-24:
 9. Performance target: on a 100-song link the picker opens in under 2 seconds on a normal connection. Add a test/smoke measurement for it (and a 100-song fixture), and note picker rendering approach for 100 rows.
 
 10. The 15-song cap is per import only (Steven, 2026-10-25). Count only the songs in this `songBlocks` request (max 15). Do not count tracks already on the class. A class with 10 tracks may import 15 more. Manual add is uncapped, per-batch cost is what matters for performance, and the picker never needs remaining-slot math.
+
+11. In the 16–100 song picker, PRE-CHECK the first 15 songs in source order (instead of nothing checked) (Steven, 2026-10-25). The user can uncheck/recheck; the 16th check stays refused; confirm still sends `songBlocks: true` in source order. Rationale: instructors build playlists intentionally on Spotify (typically 13–14 songs) and Ritmo should respect that workflow with minimal taps.
 
 ## Contract answer
 
@@ -144,7 +147,7 @@ The picker is a dialog the instructor must finish before `createClass` or, for a
 
 - Source list of 0: keep today's "no tracks" error. No class is created.
 - Source list of 1–15: no picker, even when the class already has tracks. Import the whole list in source order.
-- Source list of 16 or more: checkbox per occurrence, source order fixed, repeats as separate rows. The accessible name includes the 1-based source position and the title. Nothing starts checked. Confirm stays disabled until the selection has 1 to 15 songs. N is 15. Checking past 15 is refused in the control, with the message "Choose at most 15 songs." The confirm label includes the count ("Create class from 4 songs" or "Import 4 songs"). Cancel creates nothing.
+- Source list of 16 or more: checkbox per occurrence, source order fixed, repeats as separate rows. The accessible name includes the 1-based source position and the title. The first 15 songs in source order start checked (decision 11). The instructor can uncheck and recheck. Confirm is enabled immediately and stays disabled only when the selection is empty. N is 15. Checking past 15 is refused in the control, with the message "Choose at most 15 songs." The confirm label includes the count ("Create class from 4 songs" or "Import 4 songs"). Cancel creates nothing.
 - The chosen subset is committed in source order, not click order.
 
 Keyboard: the existing `Dialog` focus trap, checkboxes are real inputs, the cap message is `aria-describedby` on the group, and confirm is a button. Meaning does not depend on color.
@@ -213,7 +216,7 @@ The status is **504** with code `PROVIDER_TIMEOUT` and message `The playlist too
 
 **Picker timing (decision 9).** On a 100-song link the picker is visible and its checkboxes are usable in under 2 seconds on a normal connection. The clock starts at submit and stops when the picker is interactive. The happy path is the playlist pages only (Spotify: two 50-item pages, no retry). Per-track resolve stays on confirm, outside this target. The automated check and the smoke measurement use a 100-song fixture and a stub provider. A live provider playlist is not the measurement.
 
-**100-row rendering.** Mount all 100 rows. Do not add a virtualization library. The list uses the same `max-h` and `overflow-y-auto` pattern as the other dialogs. Each row is a checkbox, the 1-based source index, title, artist, and duration. No album art on this list. `content-visibility: auto` and a stable row min-height keep off-screen rows from painting and keep the scrollbar still. Nothing starts checked, confirm stays disabled at 0, and the 16th check is refused.
+**100-row rendering.** Mount all 100 rows. Do not add a virtualization library. The list uses the same `max-h` and `overflow-y-auto` pattern as the other dialogs. Each row is a checkbox, the 1-based source index, title, artist, and duration. No album art on this list. `content-visibility: auto` and a stable row min-height keep off-screen rows from painting and keep the scrollbar still. The first 15 rows start checked, confirm is enabled immediately, and the 16th check is refused.
 
 `TrackSearch` `importList`, only when `planBlockId` is null:
 
@@ -222,7 +225,7 @@ The status is **504** with code `PROVIDER_TIMEOUT` and message `The playlist too
 3. 422 above 100: show the limit message. No picker and no write.
 4. 504 `PROVIDER_TIMEOUT`: show "The playlist took too long to load. Try again." No picker and no write.
 5. One to 15 occurrences: no picker, even if the class already has tracks. Resolve those occurrences with the existing per-track import and one `songBlocks` commit, in source order.
-6. 16–100: show `PlaylistSongPicker`. Nothing starts checked. N is 15. Confirm resolves only the selection and commits it in source order. Cancel writes nothing.
+6. 16–100: show `PlaylistSongPicker`. The first 15 songs in source order start checked. N is 15. Confirm resolves only the selection and commits it in source order. Cancel writes nothing.
 7. URL mode stays hidden while `planBlockId` is set, so Choose music on one block cannot paste a playlist into that block. The scaffold's class-level "Import a playlist as song blocks" control includes this URL field.
 8. The helper no longer says a paste imports every track at once.
 9. A song that fails to resolve stays unadded in the ordered-import session and can be retried. The commit does not drop it and close the gap the way `partitionSettledImports` does on the current URL handler.

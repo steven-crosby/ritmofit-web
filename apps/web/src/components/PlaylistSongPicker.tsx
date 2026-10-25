@@ -1,6 +1,7 @@
 /**
  * Choose up to 15 songs from a playlist that is longer than one import.
- * Nothing starts checked. The 16th check is refused. Confirm returns the
+ * The first 15 songs in source order start checked. The instructor can
+ * uncheck and recheck. The 16th check is refused. Confirm returns the
  * chosen occurrence ids in source order.
  */
 import { useId, useState } from 'react';
@@ -35,7 +36,9 @@ export function PlaylistSongPicker({
   onConfirm: (ids: string[]) => void;
   onCancel: () => void;
 }) {
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(() =>
+    items.slice(0, PLAYLIST_SONG_BLOCK_CAP).map((item) => item.id),
+  );
   const [refused, setRefused] = useState(false);
   const capId = useId();
   const orderedIds = items.filter((item) => selected.includes(item.id)).map((item) => item.id);

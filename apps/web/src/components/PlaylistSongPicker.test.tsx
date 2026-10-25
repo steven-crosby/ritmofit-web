@@ -16,7 +16,7 @@ function items(count: number): PlaylistSongPickerItem[] {
 }
 
 describe('PlaylistSongPicker', () => {
-  it('disables confirm at zero, refuses the 16th check, and confirms source order', () => {
+  it('pre-checks the first 15 songs, refuses a 16th check, and confirms source order', () => {
     const onConfirm = vi.fn();
     render(
       <PlaylistSongPicker
@@ -26,31 +26,32 @@ describe('PlaylistSongPicker', () => {
         onCancel={() => {}}
       />,
     );
-    const confirm = screen.getByRole('button', { name: 'Import 0 songs' }) as HTMLButtonElement;
-    expect(confirm.disabled).toBe(true);
     const boxes = screen.getAllByRole('checkbox');
     expect(boxes).toHaveLength(20);
     expect(screen.getAllByRole('checkbox', { name: /Repeat/ })).toHaveLength(2);
-    fireEvent.click(boxes[7]!);
-    fireEvent.click(boxes[1]!);
-    for (let index = 0; index < 15; index += 1) {
-      if (index === 1 || index === 7) continue;
-      fireEvent.click(boxes[index]!);
-    }
-    expect(
-      screen.getAllByRole('checkbox').filter((box) => (box as HTMLInputElement).checked),
-    ).toHaveLength(15);
+    expect(boxes.slice(0, 15).every((box) => (box as HTMLInputElement).checked)).toBe(true);
+    expect(boxes.slice(15).every((box) => (box as HTMLInputElement).checked)).toBe(false);
+    const confirm = screen.getByRole('button', { name: 'Import 15 songs' }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(false);
+    fireEvent.click(boxes[0]!);
+    expect((boxes[0] as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(boxes[0]!);
+    expect((boxes[0] as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(boxes[0]!);
     fireEvent.click(boxes[19]!);
+    expect((boxes[19] as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(boxes[18]!);
     expect(screen.getByRole('alert').textContent).toBe('Choose at most 15 songs.');
-    expect((boxes[19] as HTMLInputElement).checked).toBe(false);
+    expect((boxes[18] as HTMLInputElement).checked).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Import 15 songs' }));
     const ids = onConfirm.mock.calls[0]![0] as string[];
-    expect(ids.indexOf('song-1')).toBeLessThan(ids.indexOf('song-7'));
-    expect(ids).toEqual(
-      items(20)
-        .map((item) => item.id)
-        .filter((id) => ids.includes(id)),
-    );
+    expect(ids).toEqual([
+      ...items(20)
+        .slice(1, 15)
+        .map((item) => item.id),
+      'song-19',
+    ]);
+    expect(ids.indexOf('song-1')).toBeLessThan(ids.indexOf('song-19'));
   });
 
   it('mounts 100 plain rows without windowing in under 2 seconds', () => {
@@ -63,7 +64,13 @@ describe('PlaylistSongPicker', () => {
         onCancel={() => {}}
       />,
     );
-    expect(screen.getAllByRole('checkbox')).toHaveLength(100);
+    const boxes = screen.getAllByRole('checkbox');
+    expect(boxes).toHaveLength(100);
+    expect(boxes.slice(0, 15).every((box) => (box as HTMLInputElement).checked)).toBe(true);
+    expect(
+      (screen.getByRole('button', { name: 'Create class from 15 songs' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
     expect(performance.now() - started).toBeLessThan(2_000);
     expect(document.querySelector('[data-virtuoso-scroller]')).toBeNull();
   });

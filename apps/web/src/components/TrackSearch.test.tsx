@@ -1436,16 +1436,24 @@ describe('TrackSearch playlist song picker', () => {
     expect(vi.mocked(api.importClassTracks).mock.calls[0]![1].placements).toHaveLength(10);
   });
 
-  it('opens the picker for 16 songs and commits only the confirmed subset', async () => {
+  it('opens the picker with the first 15 songs checked and commits that subset', async () => {
     vi.mocked(api.importPlaylist).mockResolvedValue(preview(16));
     render(<TrackSearch classId="c1" onAdded={() => {}} />);
     pasteUrl();
     const dialog = await screen.findByRole('dialog', { name: 'Choose songs' });
     expect(api.importClassTracks).not.toHaveBeenCalled();
-    fireEvent.click(withinDialogCheckbox(dialog, 0));
-    fireEvent.click(screen.getByRole('button', { name: 'Import 1 songs' }));
+    const boxes = dialog.querySelectorAll('input[type="checkbox"]');
+    expect(
+      Array.from(boxes)
+        .slice(0, 15)
+        .every((box) => (box as HTMLInputElement).checked),
+    ).toBe(true);
+    expect((boxes[15] as HTMLInputElement).checked).toBe(false);
+    const confirm = screen.getByRole('button', { name: 'Import 15 songs' }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(false);
+    fireEvent.click(confirm);
     await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
-    expect(vi.mocked(api.importClassTracks).mock.calls[0]![1].placements).toHaveLength(1);
+    expect(vi.mocked(api.importClassTracks).mock.calls[0]![1].placements).toHaveLength(15);
     expect(vi.mocked(api.importClassTracks).mock.calls[0]![1].songBlocks).toBe(true);
   });
 
@@ -1503,7 +1511,3 @@ describe('TrackSearch playlist song picker', () => {
     expect(screen.queryByRole('button', { name: 'Import Playlist URL' })).toBeNull();
   });
 });
-
-function withinDialogCheckbox(dialog: HTMLElement, index: number): HTMLElement {
-  return dialog.querySelectorAll('input[type="checkbox"]')[index] as HTMLElement;
-}
