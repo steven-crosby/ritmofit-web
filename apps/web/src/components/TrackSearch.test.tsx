@@ -1586,11 +1586,13 @@ describe('TrackSearch playlist song picker', () => {
       { ...ADDED_CLASS_TRACK, id: 'existing-placement', position: 0, updatedAt: 4 },
     ]);
     vi.mocked(api.importPlaylist).mockResolvedValue(preview(2));
-    vi.mocked(api.importTrack).mockImplementation(async (_provider, providerTrackId) => ({
-      ...IMPORTED_TRACK,
-      id: `lib-${providerTrackId}`,
-      title: `Library ${providerTrackId}`,
-    }));
+    vi.mocked(api.importTrack).mockImplementation(
+      async (_provider: Provider, providerTrackId: string) => ({
+        ...IMPORTED_TRACK,
+        id: `lib-${providerTrackId}`,
+        title: `Library ${providerTrackId}`,
+      }),
+    );
     const updateBlock = vi.spyOn(api, 'updateClassPlanBlock');
     render(<TrackSearch classId="c1" onAdded={() => {}} />);
     pasteUrl();
@@ -1600,7 +1602,9 @@ describe('TrackSearch playlist song picker', () => {
     expect(body.planBlockId).toBeUndefined();
     expect(body.orderedIds[0]).toBe('existing-placement');
     expect(body.orderedIds).toHaveLength(3);
-    expect(body.placements.map((placement) => placement.id)).not.toContain('existing-placement');
+    expect(body.placements.map((placement: { id: string }) => placement.id)).not.toContain(
+      'existing-placement',
+    );
     expect(updateBlock).not.toHaveBeenCalled();
     updateBlock.mockRestore();
   });
