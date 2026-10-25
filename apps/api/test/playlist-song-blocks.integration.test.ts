@@ -258,6 +258,33 @@ describe('playlist song-block commits (mounted Worker + migrated D1)', () => {
     );
   });
 
+  it('keeps an existing Cooldown label when later songs append after it', async () => {
+    const id = await newClass();
+    expect((await commit(id, songBody([], tracks.slice(0, 2)))).status).toBe(201);
+    const beforeBlocks = await listBlocks(id);
+    const beforeTracks = await listTracks(id);
+    expect(beforeBlocks.map((block) => [block.label, block.segmentType])).toEqual([
+      ['Warm-up', 'warm_up'],
+      ['Cooldown', 'cool_down'],
+    ]);
+    const appended = tracks.slice(2, 4);
+    expect((await commit(id, songBody(beforeTracks, appended))).status).toBe(201);
+    const after = await listBlocks(id);
+    const cooldown = after.find((block) => block.id === beforeBlocks[1]!.id);
+    expect(cooldown).toMatchObject({
+      label: 'Cooldown',
+      segmentType: 'cool_down',
+      position: 1,
+    });
+    expect(after.map((block) => block.label)).toEqual([
+      'Warm-up',
+      'Cooldown',
+      appended[0]!.title,
+      appended[1]!.title,
+    ]);
+    expect(after[after.length - 1]!.label).not.toBe('Cooldown');
+  });
+
   it('rejects 16 placements in one request and leaves the class unchanged', async () => {
     const scaffoldId = await newClass({ mode: 'scaffold', recipeId: 'pilates_30_v1' });
     const beforeBlocks = await listBlocks(scaffoldId);

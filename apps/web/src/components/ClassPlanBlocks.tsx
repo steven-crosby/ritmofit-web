@@ -70,6 +70,46 @@ export type PlanBlockTarget = { id: string; label: string; position: number };
 export const planBlockOptionLabel = (block: { label: string; position: number }) =>
   `Block ${block.position + 1} · ${block.label}`;
 
+/**
+ * A Cooldown label stays where the instructor left it. Once that block is no
+ * longer last, say so once — she moves or renames it. Nothing here rewrites the label.
+ */
+function CooldownPlacementHint({
+  blocks,
+  canEdit,
+}: {
+  blocks: readonly { id: string; label: string }[];
+  canEdit: boolean;
+}) {
+  const misplacedIds = blocks
+    .filter((block, index) => block.label === 'Cooldown' && index < blocks.length - 1)
+    .map((block) => block.id);
+  const [dismissed, setDismissed] = useState<ReadonlySet<string>>(() => new Set());
+  const pending = misplacedIds.filter((id) => !dismissed.has(id));
+  if (!canEdit || pending.length === 0) return null;
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-control border border-border-subtle bg-bg-sunken px-3 py-2">
+      <p className="font-ui text-sm leading-5 text-text-secondary">
+        Cooldown is no longer the last block. Move it to the end, or give it a new name.
+      </p>
+      <button
+        type="button"
+        aria-label="Dismiss cooldown hint"
+        onClick={() =>
+          setDismissed((current) => {
+            const next = new Set(current);
+            for (const id of pending) next.add(id);
+            return next;
+          })
+        }
+        className="min-h-11 shrink-0 rounded-control px-2 font-ui text-xs font-semibold text-text-tertiary rf-focus-ring"
+      >
+        Dismiss
+      </button>
+    </div>
+  );
+}
+
 const isConflict = (error: unknown): boolean =>
   error instanceof ApiError
     ? error.status === 409
@@ -362,6 +402,7 @@ export function ClassPlanBlocks({
           )}
         </p>
       </div>
+      <CooldownPlacementHint blocks={blocks} canEdit={canEdit} />
       <p className="sr-only" role="status" aria-live="polite">
         {announcement}
       </p>

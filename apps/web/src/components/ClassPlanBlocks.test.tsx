@@ -489,6 +489,91 @@ describe('ClassPlanBlocks', () => {
   });
 });
 
+describe('Cooldown placement hint', () => {
+  const later = {
+    ...block,
+    id: '00000000-0000-4000-8000-0000000000b2',
+    position: 1,
+    label: 'Night Drive',
+    segmentType: null,
+    recipeBlockKey: 'playlist_song',
+  };
+  const cooldown = {
+    ...block,
+    id: '00000000-0000-4000-8000-0000000000b9',
+    position: 0,
+    label: 'Cooldown',
+    segmentType: 'cool_down' as const,
+    recipeBlockKey: 'playlist_song',
+  };
+
+  it('suggests moving a Cooldown that is no longer last, and dismissal hides it', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([cooldown, later]);
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[]}
+        payload={null}
+        canEdit
+        assigningPlanBlockId={null}
+        onChooseMusic={() => {}}
+        onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
+      />,
+    );
+    expect(
+      await screen.findByText(
+        'Cooldown is no longer the last block. Move it to the end, or give it a new name.',
+      ),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss cooldown hint' }));
+    expect(
+      screen.queryByText(
+        'Cooldown is no longer the last block. Move it to the end, or give it a new name.',
+      ),
+    ).toBeNull();
+  });
+
+  it('stays quiet when Cooldown is still the last block', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([
+      { ...block, label: 'Warm-up' },
+      { ...cooldown, position: 1 },
+    ]);
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[]}
+        payload={null}
+        canEdit
+        assigningPlanBlockId={null}
+        onChooseMusic={() => {}}
+        onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
+      />,
+    );
+    expect(await screen.findByRole('heading', { name: 'Cooldown' })).toBeTruthy();
+    expect(screen.queryByText(/no longer the last block/)).toBeNull();
+  });
+
+  it('hides the hint without edit access', async () => {
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([cooldown, later]);
+    render(
+      <ClassPlanBlocks
+        classId={block.classId}
+        tracks={[]}
+        payload={null}
+        canEdit={false}
+        assigningPlanBlockId={null}
+        onChooseMusic={() => {}}
+        onSelectTrack={() => {}}
+        onTracksChanged={() => {}}
+      />,
+    );
+    expect(await screen.findByRole('heading', { name: 'Cooldown' })).toBeTruthy();
+    expect(screen.queryByText(/no longer the last block/)).toBeNull();
+  });
+});
+
 describe('scaffold block management', () => {
   const second: ClassPlanBlock = {
     ...block,
