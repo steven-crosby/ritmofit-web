@@ -13,6 +13,36 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-24 — #572 and #573 on main `c7110b4`.** Owner approved.
+> Production deploy at 2026-10-25T04:28Z (10:28 PM MT 2026-10-24). New Worker
+> `308a01a9-1972-4c5b-b046-f497c0c10d7e`; previous/rollback
+> `91e323c9-504c-4e60-8bde-47befd2ccb8c`. SPA entry `assets/index-BDFuf20J.js`
+> (CSS `assets/index-C8maPrOT.css`), confirmed by six consecutive cache-busted
+> fetches that matched the build. Previous entry `assets/index-B3YiofMb.js`,
+> previous CSS `assets/index-DcqGkA5K.css`. API and web shipped together in the
+> single Worker deploy. Pre-deploy full gate passed on `c7110b4` from a clean
+> detached worktree on Steven's MacBook (format, typecheck, lint, design verify,
+> theme-classes, unit tests web 1326 / api 517 / music 30, Worker/D1
+> integration 219, web build, OpenAPI no drift, contract-parity, audit:ci).
+> The local gate ran on Node 26 (Node 22 not installed there). Preflight ran
+> before the deploy: no remote D1 migrations pending (`0021` latest) and
+> `BETA_ALLOWED_EMAILS` present. No migration was applied.
+>
+> Deployed since production `a78f6f5`:
+> [#572](https://github.com/steven-crosby/ritmofit-web/pull/572) (commit
+> playlist imports as one block per song, `88128ef`) and
+> [#573](https://github.com/steven-crosby/ritmofit-web/pull/573) (preview
+> playlist imports and pick up to 15 songs, `c7110b4`). Docs
+> [#571](https://github.com/steven-crosby/ritmofit-web/pull/571) (`15cf188`) is
+> in that tree and does not change runtime.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 with security headers; unauthenticated
+> `/api/v1/classes`, `/explore`, and `/teams` 401; unauthenticated
+> `POST /api/v1/classes/:id/import-playlist` 401 (route mounted, not 404).
+> **Owed:** real-browser smoke of playlist import preview, picker, and commit.
+> Production matches main `c7110b4` code at deploy time. This docs record is not
+> in the deployed tree.
+
 > **Deploy 2026-10-24 — #569 on main `a78f6f5`.** Owner approved.
 > Production deploy at 2026-10-24T23:02:31Z (5:02 PM MT). New Worker
 > `91e323c9-504c-4e60-8bde-47befd2ccb8c`; previous/rollback
