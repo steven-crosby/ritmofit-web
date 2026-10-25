@@ -13,6 +13,35 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-25 — #586 and #579 on main `5b006ec`.** Owner approved.
+> Production deploy at 2026-10-25T22:57Z (4:57 PM MT 2026-10-25). New Worker
+> `9248bbdf-cbd2-4b96-a2eb-ebd25e2a8afe`; previous/rollback
+> `594b510a-dca2-4644-b87e-50fd86a83485`. SPA entry `assets/index-1d_QF5nN.js`
+> (was `assets/index-DWV4zBSM.js`); CSS `assets/index-CSpFExJg.css` unchanged.
+> Three consecutive cache-busted fetches matched the build, and
+> `wrangler deployments status` shows the new Worker at 100%. Built and deployed
+> from a clean detached worktree at `5b006ec` on Steven's MacBook. Full gate
+> passed on `5b006ec` (format, typecheck, lint, design verify, theme-classes,
+> unit tests web 1365 / api 532 / music 30, Worker/D1 integration 226, web build,
+> OpenAPI no drift, contract-parity, audit:ci; Node 26). GitHub CI green on both
+> PR heads. Preflight: no remote D1 migrations pending and `BETA_ALLOWED_EMAILS`
+> present. No migration was applied.
+>
+> Deployed since production `7a8bc71`:
+> [#586](https://github.com/steven-crosby/ritmofit-web/pull/586) (after a
+> successful Spotify paste import, `TrackSearch` rereads provider connections so
+> the panel drops a stale "Session expired" mark, `5e9ec74`; web only) and
+> [#579](https://github.com/steven-crosby/ritmofit-web/pull/579) (tests for
+> playlist preview deadlines and empty song picks, `5b006ec`; no runtime
+> change). Docs [#584](https://github.com/steven-crosby/ritmofit-web/pull/584)
+> (`e6db697`) and [#585](https://github.com/steven-crosby/ritmofit-web/pull/585)
+> (`29145a9`) are in that tree and do not change runtime.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 with security headers; unauthenticated
+> `/api/v1/classes`, `/explore`, `/teams`, `/providers/spotify/connection`, and
+> `POST /api/v1/playlists/import-preview` 401. Real-browser check of the #586
+> fix is still owed.
+
 > **Deploy 2026-10-25 — #580 on main `7a8bc71`.** Owner approved; deployed
 > immediately as a production-bug fix. Production deploy at 2026-10-25T21:57Z
 > (3:57 PM MT 2026-10-25). New Worker `594b510a-dca2-4644-b87e-50fd86a83485`;
