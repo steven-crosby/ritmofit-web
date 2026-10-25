@@ -9,6 +9,7 @@
 <!-- note (Claude, 2026-07-24): Recorded the agent-agnostic design-audit pack v6 and its docs/audits deliverable path. -->
 <!-- note (Claude Code, 2026-10-06): Added Session Workflow (solo/lane/orchestrator roles, per-session handoff files under ritmofit_dev_plan/handoffs/), archived the unused remote maintenance loop (remote-prompts, SCHEDULE.md, agent-reports) to ritmofit_dev_plan/archive/remote-loop/, and added a CLAUDE.md that only imports this file — reversing the 2026-07-12 wrapper removal so the Claude Code CLI loads this canon; it carries no rules of its own. -->
 <!-- note (Claude, 2026-07-25): Replaced the hardcoded `~/repos/ritmostudio/` workspace path with portable discovery commands (split containers are now possible, and ritmofit-ios clones can live in either), noted cross-round machine contention, and pointed at the new parallel-round runbook. -->
+<!-- note (Cursor, 2026-10-25): Removed the tracked CLAUDE.md wrapper so AGENTS.md is the sole tracked instruction file; do not recreate CLAUDE.md. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
