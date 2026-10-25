@@ -180,6 +180,8 @@ export function TrackSearch({
   onAdded,
   onOpenConnections,
   connectionRevision = 0,
+  requestedMode = null,
+  requestedModeKey = 0,
 }: {
   classId: string;
   planBlockId?: string | null;
@@ -192,9 +194,16 @@ export function TrackSearch({
   onAdded: (classTrackId?: string) => void;
   onOpenConnections?: () => void;
   connectionRevision?: number;
+  /**
+   * Class-level entry can open on paste-a-link. A block destination ignores
+   * this and stays on search; that picker has no paste tab.
+   */
+  requestedMode?: Mode | null;
+  /** Bump to re-apply `requestedMode` without remounting the picker. */
+  requestedModeKey?: number;
 }) {
   const [provider, setProvider] = useState<Provider>(DEFAULT_PROVIDER);
-  const [mode, setMode] = useState<Mode>('search');
+  const [mode, setMode] = useState<Mode>(requestedMode && !planBlockId ? requestedMode : 'search');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -316,6 +325,13 @@ export function TrackSearch({
   const canUseLikes = providerCapabilities[provider].userLikes;
   const canImportPlaylist = providerCapabilities[provider].playlistImport;
   const canBrowseSavedPlaylists = providerCapabilities[provider].savedPlaylists;
+
+  // Class workspace asks for paste-a-link (or search) without remounting. A plan
+  // block never receives the paste tab, so ignore the request there.
+  useEffect(() => {
+    if (!requestedMode || planBlockId) return;
+    setMode(requestedMode);
+  }, [requestedMode, requestedModeKey, planBlockId]);
 
   // If the selected provider can't serve the current mode, fall back to catalog
   // search so we never fire a request that would 501.

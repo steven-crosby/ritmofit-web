@@ -3600,12 +3600,87 @@ describe('Dashboard plan-first next step', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: /^Plan ride$/ }));
-    const open = await screen.findByRole('button', { name: 'Import a playlist as song blocks' });
+    const open = await screen.findByRole('button', { name: 'Add a playlist' });
+    expect(screen.getAllByRole('button', { name: 'Add a playlist' })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Import a playlist as song blocks' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
+    expect(screen.queryByText(/Adds after your current/)).toBeNull();
     fireEvent.click(open);
     const region = await screen.findByRole('region', { name: /Add music to Plan ride/ });
-    expect(within(region).getByRole('button', { name: 'Import Playlist URL' })).toBeTruthy();
+    expect(
+      within(region).getByRole('button', { name: 'Import Playlist URL', pressed: true }),
+    ).toBeTruthy();
+    expect(within(region).getByLabelText('Playlist URL')).toBeTruthy();
+    expect(within(region).getByRole('button', { name: 'Search' })).toBeTruthy();
     expect(region.closest('[id^="plan-block-card-"]')).toBeNull();
+  });
+
+  it('shows Add a playlist on a non-recipe class after the first import', async () => {
+    const ride = makeClass('Imported ride');
+    const song = planBlock('00000000-0000-4000-8000-0000000000c1', 0, 'Baianá');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([makeClassTrack('ct-1', 0)]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([{ classTrackId: 'ct-1', durationMs: 180_000, title: 'Baianá' }]),
+    );
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([song]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Imported ride$/ }));
+    await screen.findByRole('heading', { name: 'Imported ride' });
+    expect(await screen.findByRole('button', { name: 'Add a playlist' })).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull());
+    expect(screen.queryByRole('button', { name: 'Import a playlist as song blocks' })).toBeNull();
+    expect(screen.getByText('Adds after your current 1 song')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add a playlist' }));
+    const region = await screen.findByRole('region', { name: /Add music to Imported ride/ });
+    expect(within(region).getByLabelText('Playlist URL')).toBeTruthy();
+    expect(within(region).getByRole('button', { name: 'Search' })).toBeTruthy();
+    expect(region.closest('[id^="plan-block-card-"]')).toBeNull();
+  });
+
+  it('shows one Add a playlist button on a recipe class that already has tracks', async () => {
+    const ride = { ...makeClass('Recipe ride'), scaffoldRecipeId: 'cycle_45_v1' as const };
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([
+      makeClassTrack('ct-1', 0),
+      makeClassTrack('ct-2', 1),
+    ]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([
+        { classTrackId: 'ct-1', durationMs: 180_000, title: 'Baianá' },
+        { classTrackId: 'ct-2', durationMs: 180_000, title: 'Night Drive' },
+      ]),
+    );
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([firstBlock, secondBlock]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Recipe ride$/ }));
+    await screen.findByRole('heading', { name: 'Recipe ride' });
+    expect(await screen.findAllByRole('button', { name: 'Add a playlist' })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Import a playlist as song blocks' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
+    expect(screen.getByText('Adds after your current 2 songs')).toBeTruthy();
+  });
+
+  it('hides Add a playlist without edit access', async () => {
+    const ride = makeClass('View ride', 'view', 'me');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([makeClassTrack('ct-1', 0)]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([{ classTrackId: 'ct-1', durationMs: 180_000, title: 'Baianá' }]),
+    );
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([firstBlock]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^View ride$/ }));
+    await screen.findByRole('heading', { name: 'View ride' });
+    expect(screen.queryByRole('button', { name: 'Add a playlist' })).toBeNull();
+    expect(screen.queryByText(/Adds after your current/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Import a playlist as song blocks' })).toBeNull();
   });
 
   it('updates an open music picker destination when its block is renamed', async () => {

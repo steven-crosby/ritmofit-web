@@ -1550,4 +1550,62 @@ describe('TrackSearch playlist song picker', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
     expect(screen.queryByRole('button', { name: 'Import Playlist URL' })).toBeNull();
   });
+
+  it('offers paste on the class picker when tracks already exist', () => {
+    vi.mocked(api.listClassTracks).mockResolvedValue([
+      { ...ADDED_CLASS_TRACK, id: 'existing-placement', position: 0, updatedAt: 4 },
+    ]);
+    render(
+      <TrackSearch classId="c1" onAdded={() => {}} requestedMode="playlist" requestedModeKey={1} />,
+    );
+    expect(screen.getByRole('button', { name: 'Import Playlist URL', pressed: true })).toBeTruthy();
+    expect(screen.getByLabelText('Playlist URL')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Search' })).toBeTruthy();
+  });
+
+  it('keeps paste off the block picker when tracks already exist', () => {
+    vi.mocked(api.listClassTracks).mockResolvedValue([
+      { ...ADDED_CLASS_TRACK, id: 'existing-placement', position: 0, updatedAt: 4 },
+    ]);
+    render(
+      <TrackSearch
+        classId="c1"
+        planBlockId="block-1"
+        onAdded={() => {}}
+        requestedMode="playlist"
+        requestedModeKey={1}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Import Playlist URL' })).toBeNull();
+    expect(screen.queryByLabelText('Playlist URL')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Search', pressed: true })).toBeTruthy();
+  });
+
+  it('appends song blocks after existing placements and leaves their labels alone', async () => {
+    vi.mocked(api.listClassTracks).mockResolvedValue([
+      { ...ADDED_CLASS_TRACK, id: 'existing-placement', position: 0, updatedAt: 4 },
+    ]);
+    vi.mocked(api.importPlaylist).mockResolvedValue(preview(2));
+    vi.mocked(api.importTrack).mockImplementation(
+      async (_provider: Provider, providerTrackId: string) => ({
+        ...IMPORTED_TRACK,
+        id: `lib-${providerTrackId}`,
+        title: `Library ${providerTrackId}`,
+      }),
+    );
+    const updateBlock = vi.spyOn(api, 'updateClassPlanBlock');
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    pasteUrl();
+    await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
+    const body = vi.mocked(api.importClassTracks).mock.calls[0]![1];
+    expect(body.songBlocks).toBe(true);
+    expect(body.planBlockId).toBeUndefined();
+    expect(body.orderedIds[0]).toBe('existing-placement');
+    expect(body.orderedIds).toHaveLength(3);
+    expect(body.placements.map((placement: { id: string }) => placement.id)).not.toContain(
+      'existing-placement',
+    );
+    expect(updateBlock).not.toHaveBeenCalled();
+    updateBlock.mockRestore();
+  });
 });

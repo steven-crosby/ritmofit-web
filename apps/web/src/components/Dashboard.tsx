@@ -3705,6 +3705,8 @@ function ClassWorkspace({
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
+  const [classMusicMode, setClassMusicMode] = useState<'search' | 'playlist'>('search');
+  const [classMusicModeKey, setClassMusicModeKey] = useState(0);
   const [assigningPlanBlock, setAssigningPlanBlock] = useState<PlanBlockTarget | null>(null);
   const assigningPlanBlockId = assigningPlanBlock?.id ?? null;
   const [assignStay, setAssignStay] = useState(false);
@@ -3728,6 +3730,11 @@ function ClassWorkspace({
   const canEdit = cls.accessLevel === 'owner' || cls.accessLevel === 'edit';
   const isFree = cls.timelineMode === 'free';
   const showStackAddMusic = canEdit && cls.scaffoldRecipeId == null && !hasPlanBlocks;
+  const playlistAppendNote =
+    tracks.length > 0
+      ? `Adds after your current ${tracks.length} ${tracks.length === 1 ? 'song' : 'songs'}`
+      : null;
+  const playlistAppendNoteId = `playlist-append-note-${cls.id}`;
 
   useEffect(() => {
     setHasPlanBlocks(cls.scaffoldRecipeId != null);
@@ -3870,7 +3877,16 @@ function ClassWorkspace({
       trackSourceRef.current?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
     });
   };
-  const focusTrackSources = () => setSourceOpen(true);
+  const openClassMusic = (mode: 'search' | 'playlist') => {
+    setAssigningPlanBlock(null);
+    setClassMusicMode(mode);
+    setClassMusicModeKey((key) => key + 1);
+    setSourceOpen(true);
+  };
+  const focusTrackSources = () => {
+    if (sourceOpen && !assigningPlanBlock) return;
+    openClassMusic('search');
+  };
   const chooseMusicForBlock = (block: PlanBlockTarget, options?: { stay?: boolean }) => {
     setAssigningPlanBlock(block);
     setAssignStay(Boolean(options?.stay));
@@ -3925,15 +3941,15 @@ function ClassWorkspace({
   };
 
   const toggleTrackSources = () => {
-    if (sourceOpen) {
+    if (sourceOpen && !assigningPlanBlock) {
       closeMusicSources();
       return;
     }
-    setSourceOpen(true);
+    openClassMusic('search');
   };
 
   const openManualEntry = () => {
-    setSourceOpen(true);
+    if (!sourceOpen || assigningPlanBlock) openClassMusic('search');
     requestAnimationFrame(() => {
       if (!manualEntryRef.current) return;
       manualEntryRef.current.open = true;
@@ -4096,19 +4112,25 @@ function ClassWorkspace({
                       : 'Songs play in this order. Select a song to inspect it.'}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {canEdit && cls.scaffoldRecipeId != null && (
+            <div className="flex flex-wrap items-center gap-2">
+              {canEdit && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setAssigningPlanBlock(null);
-                    setSourceOpen(true);
-                  }}
+                  onClick={() => openClassMusic('playlist')}
                   aria-expanded={sourceOpen && !assigningPlanBlock}
+                  aria-describedby={playlistAppendNote ? playlistAppendNoteId : undefined}
                   className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
                 >
-                  Import a playlist as song blocks
+                  Add a playlist
                 </button>
+              )}
+              {canEdit && playlistAppendNote && (
+                <p
+                  id={playlistAppendNoteId}
+                  className="font-ui text-xs leading-5 text-text-tertiary"
+                >
+                  {playlistAppendNote}
+                </p>
               )}
               {(showStackAddMusic || (sourceOpen && !assigningPlanBlock)) && (
                 <button
@@ -4211,6 +4233,8 @@ function ClassWorkspace({
               onOpenConnections={onOpenConnections}
               onAdded={handleMusicAdded}
               onError={onError}
+              requestedMode={classMusicMode}
+              requestedModeKey={classMusicModeKey}
             />
           ) : null}
         </div>
@@ -5770,6 +5794,8 @@ function BuilderMusicPicker({
   onOpenConnections,
   onAdded,
   onError,
+  requestedMode = null,
+  requestedModeKey = 0,
 }: {
   classId: string;
   classTitle: string;
@@ -5781,6 +5807,8 @@ function BuilderMusicPicker({
   onOpenConnections: () => void;
   onAdded: (classTrackId?: string) => void;
   onError: (msg: string | null) => void;
+  requestedMode?: 'search' | 'playlist' | null;
+  requestedModeKey?: number;
 }) {
   return (
     <section
@@ -5801,6 +5829,8 @@ function BuilderMusicPicker({
         onOpenConnections={onOpenConnections}
         connectionRevision={connectionRevision}
         onAdded={onAdded}
+        requestedMode={assigningPlanBlock ? null : requestedMode}
+        requestedModeKey={requestedModeKey}
       />
       {/* Manual entry stays available but de-emphasized (search/import is the
           primary path; 09). For a track a provider can't return, or no creds. */}
