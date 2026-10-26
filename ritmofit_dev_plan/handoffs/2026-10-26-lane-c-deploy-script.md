@@ -3,7 +3,7 @@ date: 2026-10-26
 tool: Cursor (cloud)
 lane: lane-c-deploy-script
 branch: cursor/deploy-script-a030
-head: e38fe02ff4cca7ac32143972dd290d0885a9598f
+head: ebeec3ffce69da882eaf75d45dfffc95ba515f38
 base: e01e96f4fe81b985bbbd3282e179e155384b5789
 prs: ['#592 (open)']
 status: open
@@ -14,7 +14,7 @@ status: open
 ## Done
 
 - [#592](https://github.com/steven-crosby/ritmofit-web/pull/592) adds `scripts/deploy.sh`, `scripts/required-secrets.txt`, and `scripts/production-smoke.txt`, and points the runbook pre-deploy, deploy, and post-deploy sections at the script.
-- The script refuses a dirty tree whose `HEAD` is not `origin/main` unless a SHA is passed, checks the Node major against `.nvmrc`, compares secret names only, then builds from a detached `/tmp/ritmofit-deploy.*` worktree.
+- The script always refuses a dirty tree, including when a SHA is passed. A SHA only allows a clean tree whose `HEAD` is not `origin/main`. It checks the Node major against `.nvmrc`, compares secret names only, then builds from a detached `/tmp/ritmofit-deploy.*` worktree.
 - Rollback is unchanged. No "Authed production smoke" section was added or removed.
 
 ## In flight
@@ -32,7 +32,7 @@ Review and squash-merge #592 after CI is green. A live deploy is a separate owne
 ## Verification
 
 - Run: `bash -n scripts/deploy.sh` — passed.
-- Run: `scripts/deploy.sh --self-check` — passed (node major, secret names without values, dirty and diverged git guards, `/tmp` worktree create/remove, 30-try hash failure, status-only smoke).
+- Run: `scripts/deploy.sh --self-check` — passed (node major, secret names without values, dirty tree refused with and without a SHA, clean non-`origin/main` SHA allowed, `/tmp` worktree create/remove, 30-try hash failure, status-only smoke).
 - Run: on this dirty branch, `scripts/deploy.sh` exited 1 (`git status --porcelain is not empty`) and created no worktree. `scripts/deploy.sh --not-a-deploy` exited 2.
 - Run: full CI-equivalent gate on the worktree before commit — passed (format, typecheck, lint, design-system verify, theme-classes, unit tests, API integration, web build, OpenAPI no drift, contract-parity, audit:ci).
 - Skipped: `wrangler deploy`, remote migrations, and secret list against production.
