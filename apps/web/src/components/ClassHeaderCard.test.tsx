@@ -772,3 +772,51 @@ describe('ClassHeaderCard class details', () => {
     expect(api.uploadClassCover).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('ClassHeaderCard builder focus', () => {
+  it('shows the class name and type, with Add a playlist beside the append note', () => {
+    const onAddPlaylist = vi.fn();
+    render(
+      <ClassHeaderCard
+        {...baseProps}
+        cls={cls}
+        isOwner
+        canEdit
+        trackCount={2}
+        addPlaylist={{
+          expanded: false,
+          note: 'Adds after your current 2 songs',
+          noteId: 'playlist-append-note-test',
+          onClick: onAddPlaylist,
+          buttonRef: { current: null as unknown as HTMLButtonElement },
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Monday Ride' })).toBeTruthy();
+    expect(screen.getByText('Cycle')).toBeTruthy();
+    const button = screen.getByRole('button', { name: 'Add a playlist' });
+    const note = screen.getByText('Adds after your current 2 songs');
+    expect(button.parentElement).toBe(note.parentElement);
+    expect(button.getAttribute('aria-describedby')).toBe('playlist-append-note-test');
+    fireEvent.click(button);
+    expect(onAddPlaylist).toHaveBeenCalledTimes(1);
+  });
+
+  it('names a sculpt class Pilates and omits Add a playlist until the header owns it', () => {
+    render(
+      <ClassHeaderCard
+        {...baseProps}
+        cls={{ ...cls, template: 'sculpt' }}
+        isOwner
+        canEdit
+        trackCount={0}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Monday Ride' })).toBeTruthy();
+    expect(screen.getByText('Pilates')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Add a playlist' })).toBeNull();
+    expect(screen.queryByText(/Adds after your current/)).toBeNull();
+  });
+});
