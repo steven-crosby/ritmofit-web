@@ -41,7 +41,11 @@ import {
   ApiError,
 } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
-import { PLAYLIST_LINK_PLACEHOLDER, playlistProviderFromUrl } from '../lib/playlist-link.js';
+import {
+  PLAYLIST_LINK_PLACEHOLDER,
+  playlistProviderFromUrl,
+  spotifyPlaylistLinkError,
+} from '../lib/playlist-link.js';
 import {
   DEFAULT_PROVIDER,
   PROVIDER_ORDER,
@@ -657,6 +661,16 @@ export function TrackSearch({
 
   const importList = async () => {
     if (!playlistUrl.trim() || urlImportBusy.current) return;
+    // A Spotify playlist id with the wrong shape never reaches the provider.
+    // A well-shaped id, including an editorial playlist, still does: a 403
+    // arrives as the ownership sentence, and a provider outage stays an outage.
+    const linkError = spotifyPlaylistLinkError(playlistUrl);
+    if (linkError) {
+      setUrlPreview(null);
+      setPlaylistErrorCode(undefined);
+      setError(linkError);
+      return;
+    }
     urlImportBusy.current = true;
     const generation = playlistGeneration.current;
     const revision = playlistUrlRevision.current;
