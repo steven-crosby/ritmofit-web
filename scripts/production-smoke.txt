@@ -1,0 +1,7 @@
+# Fixed post-deploy status checks. Lines are: URL STATUS
+# scripts/deploy.sh compares the HTTP status only. It does not print bodies.
+https://ritmofit.studio/ 200
+https://ritmofit.studio/api/v1/health 200
+https://ritmofit.studio/api/v1/classes 401
+https://ritmofit.studio/api/v1/explore 401
+https://ritmofit.studio/api/v1/teams 401
