@@ -17,11 +17,6 @@ export default tseslint.config(
       // Agent-authored design-audit deliverables: standalone prototype HTML/CSS/JS
       // that never ships. Prettier-ignored for the same reason (see .prettierignore).
       'docs/audits/**',
-      // Git-ignored Claude Code local state (settings + agent worktrees). Worktrees
-      // are full repo copies, so rooted ignores like `ritmofit_design_system/**`
-      // don't match their nested paths — without this, local `pnpm lint` diverges
-      // from CI whenever a worktree exists.
-      '.claude/**',
     ],
   },
   js.configs.recommended,

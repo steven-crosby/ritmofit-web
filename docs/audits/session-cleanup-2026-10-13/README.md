@@ -45,7 +45,7 @@ must have no dangling references. Other authors' handoffs remain byte-identical.
 Apple QA `75b7af90-141f-4f56-b02b-0bdd2c1c9dfe` (ten tracks),
 [investigation handoff](../../../ritmofit_dev_plan/handoffs/2026-10-13-apple-recovery-investigation.md),
 all existing audit evidence, both protected managed lane worktrees/branches/briefs, verification tag,
-.claude, original classes/playlists and local smoke state. The original 5:18 initiating cause stays
+original classes/playlists and local smoke state. The original 5:18 initiating cause stays
 unresolved. No general Apple stability, full-class, iPhone or screen-reader acceptance is claimed.
 
 ## Verification and restart
@@ -55,7 +55,7 @@ Authenticated deletion/absence and Apple preservation checks passed. The preflig
 Delete screenshot remain historical preparation evidence; the post-delete record supplies completion.
 Apple content fingerprint covers identity/title/tags/description and run-payload tracks/sections,
 excluding recency timestamps. All 1,194 pre-existing evidence-file hashes match; protected worktree
-HEADs/status/briefs, retained other-author handoffs, .claude and tags also match their baselines.
+HEADs/status/briefs, retained other-author handoffs and tags also match their baselines.
 Formatting, whitespace, touched relative links, JSON, screenshot formats and credential/portable-path
 checks pass. No product-source diff; code tests were not rerun for this docs/fixture-only cleanup.
 [Cleanup handoff](../../../ritmofit_dev_plan/handoffs/2026-10-13-session-cleanup.md) holds the

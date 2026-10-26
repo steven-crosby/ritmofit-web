@@ -19,8 +19,8 @@ is pending while the Mac remains locked; deployment has not run. Human audible a
   Dashboard.tsx, Dashboard.test.tsx, LiveMode.tsx and LiveMode.test.tsx.
   API, shared contracts, schema/migrations, auth/provider adapters, playback runtime,
   configuration, lockfile and dependencies are unchanged.
-- Source is tracked-clean. Existing untracked .claude/ and these local preflight records are
-  preserved and excluded from the 832-input Worker bundle and the static assets directory.
+- Source is tracked-clean. These local preflight records are preserved and excluded from the
+  832-input Worker bundle and the static assets directory.
 
 ## Completed checks
 
@@ -126,7 +126,7 @@ No deployment/upload, remote migration, secret/config change, production-data mu
 was performed by this preflight. Owner subsequently authorized Git publication; this packet is being
 published as a docs PR with the browser checks explicitly pending. Only local build/bundle artifacts,
 fresh local-only test state and draft evidence were created. Both previously retained production
-QA fixtures, lane/verification branches/worktrees/briefs and unrelated .claude/ remain untouched.
+QA fixtures and lane/verification branches/worktrees/briefs remain untouched.
 The local smoke stack/window and temporary database are retained for continuation after unlock.
 The temporary location pointer is outside the repo; runtime secrets are not in this evidence packet.
 
@@ -145,7 +145,7 @@ The owner-approved cleanup removed only `codex/verification-zoom-provider-202610
 remotely after verifying its exact head `a4c909d`, merged #520, and complete-tree equality with
 main squash `4fd1ecd`. Both absences are verified. The two managed lane archive calls were refused
 because their worktrees are protected by a pinned task or workspace. No manual bypass was used;
-both worktrees, their local/remote branches and untracked briefs remain. Primary `.claude/`, existing
+both worktrees, their local/remote branches and untracked briefs remain. Existing
 tags, production QA fixtures and the local smoke state/server remain preserved. Exact baseline,
 branch and preservation identities are in `cleanup-receipt.json`. Untracked briefs are excluded
 from this PR; only their hashes and paths are recorded.

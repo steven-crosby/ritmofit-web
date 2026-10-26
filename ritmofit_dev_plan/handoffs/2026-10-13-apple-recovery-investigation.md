@@ -52,7 +52,7 @@ full post-main CI `38460359795` passed. Its publication branch was removed local
 [Completed cleanup record](./2026-10-13-session-cleanup.md).
 Apple fixture `[QA] Apple browse import 2026-10-12 Cycle`
 (`75b7af90-141f-4f56-b02b-0bdd2c1c9dfe`, ten tracks) is retained for the unresolved 5:18 recovery.
-Protected managed lane worktrees/branches/briefs, tags, .claude, original classes and playlists remain.
+Protected managed lane worktrees/branches/briefs, tags, original classes and playlists remain.
 
 Original later-stop alert and transient boundary-panel presentation remain open. Real iPhone Safari
 and Live view-tab Right Arrow behavior remain unverified/unresolved in DEVELOPMENT_PLAN.

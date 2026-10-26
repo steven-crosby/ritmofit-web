@@ -39,7 +39,7 @@ real Chrome 200% zoom produced 600 × 304. Zoom restored to 100%.
 
 No iPhone, Spotify, HIIT, large-playlist import, source-playlist edit, deletion,
 application-code/schema/config edit, commit, push, or deployment in this audit.
-Only tagged audit QA classes were modified. Unrelated .claude/ work preserved.
+Only tagged audit QA classes were modified.
 
 ## Entry points and effort
 

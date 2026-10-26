@@ -24,10 +24,10 @@ findings and later teaching-draft/creation-policy decisions remain historical co
 
 1. Read `AGENTS.md`, inspect the actual checkout/branch/status, fetch origin, and
    inspect open PRs. Preserve unrelated work. At this close, main and origin/main
-   were `aa128e868819729b38237677791fbff495e905a8`; `.claude/` was unrelated untracked
-   work. The audit and four planning-doc updates are prepared locally, with Git
-   publication awaiting a separate owner decision. Recheck whether they have
-   since reached main before relying on this checkpoint.
+   were `aa128e868819729b38237677791fbff495e905a8`. The audit and four planning-doc
+   updates are prepared locally, with Git publication awaiting a separate owner
+   decision. Recheck whether they have since reached main before relying on this
+   checkpoint.
 2. Read [the audit](./coverage.md), [evidence notes](./evidence/README.md), the
    current focus in [DEVELOPMENT_PLAN](../../../ritmofit_dev_plan/DEVELOPMENT_PLAN.md),
    and the newest [HISTORY](../../../ritmofit_dev_plan/HISTORY.md) entry. Read the

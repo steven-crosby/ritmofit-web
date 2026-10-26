@@ -88,7 +88,7 @@ The current history, planning block and owned release handoff record actual prod
 The October 12 cleanup receipt remains authoritative: the finished #520 verification branch was
 removed locally/remotely; both managed lane archive calls were refused because their worktrees are
 pinned/protected. Both lane branches, worktrees and untracked briefs remain. Existing tags,
-`.claude/`, original classes/source playlists, the two listening QA fixtures and local smoke state
+original classes/source playlists, the two listening QA fixtures and local smoke state
 are preserved. Protected worktrees are not removed manually. Human audible acceptance and real
 iPhone acceptance remain open; the pre-existing Live view-tab arrow-key issue remains separately
 scoped. No provider audio was captured, downloaded, cached, analyzed or proxied.

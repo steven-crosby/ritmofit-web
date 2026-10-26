@@ -39,7 +39,7 @@ and the [open Apple investigation](./2026-10-13-apple-recovery-investigation.md)
 The 5:18 cause, transient waiting-panel presentation, real iPhone and view-tab arrow-key gap remain
 open. Live finish-control wording/location/style is routed to DEVELOPMENT_PLAN’s open owner decisions. SoundCloud bounded desktop
 hearing acceptance is complete; no reconnect, real-device or full-class acceptance is implied.
-Existing evidence, other authors' handoffs, protected lane worktrees/branches/briefs, tags, .claude,
+Existing evidence, other authors' handoffs, protected lane worktrees/branches/briefs, tags,
 original classes/source playlists and local smoke state are preserved. No archive/unpin or broad cleanup.
 
 ## Production
