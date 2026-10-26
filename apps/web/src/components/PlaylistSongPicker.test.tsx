@@ -16,6 +16,23 @@ function items(count: number): PlaylistSongPickerItem[] {
 }
 
 describe('PlaylistSongPicker', () => {
+  it('does not warn while 15 of 15 songs are selected', () => {
+    render(
+      <PlaylistSongPicker
+        mode="import"
+        items={items(20)}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+    expect(screen.getByText('15 of 15 selected. Songs stay in playlist order.')).toBeTruthy();
+    expect(screen.queryByText('Choose at most 15 songs.')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    fireEvent.click(screen.getAllByRole('checkbox')[15]!);
+    expect(screen.getByRole('alert').textContent).toBe('Choose at most 15 songs.');
+    expect((screen.getAllByRole('checkbox')[15] as HTMLInputElement).checked).toBe(false);
+  });
+
   it('pre-checks the first 15 songs, refuses a 16th check, and confirms source order', () => {
     const onConfirm = vi.fn();
     render(

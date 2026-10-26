@@ -1544,6 +1544,63 @@ describe('TrackSearch playlist song picker', () => {
     expect(onOpenConnections).toHaveBeenCalledTimes(1);
   });
 
+  it('rejects a malformed Spotify playlist id before the request', async () => {
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+    fireEvent.change(screen.getByLabelText('Playlist URL'), {
+      target: { value: 'https://open.spotify.com/playlist/invalid000000000000000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Unsupported playlist URL. Paste a public Spotify, SoundCloud, or Apple Music playlist link.',
+    );
+    expect(api.importPlaylist).not.toHaveBeenCalled();
+    expect(screen.queryByText('A music provider is temporarily unavailable.')).toBeNull();
+  });
+
+  it('shows the ownership sentence when Spotify forbids a well-shaped playlist', async () => {
+    vi.mocked(api.importPlaylist).mockRejectedValue(
+      new api.ApiError(
+        'Spotify only allows opening playlists you own or collaborate on.',
+        'PROVIDER_FORBIDDEN',
+        403,
+      ),
+    );
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+    fireEvent.change(screen.getByLabelText('Playlist URL'), {
+      target: { value: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Spotify only allows opening playlists you own or collaborate on.',
+    );
+    expect(api.importPlaylist).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('A music provider is temporarily unavailable.')).toBeNull();
+  });
+
+  it('keeps a provider outage sentence for a well-shaped Spotify playlist', async () => {
+    vi.mocked(api.importPlaylist).mockRejectedValue(
+      new api.ApiError('A music provider is temporarily unavailable.', 'PROVIDER_UNAVAILABLE', 502),
+    );
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
+    fireEvent.change(screen.getByLabelText('Playlist URL'), {
+      target: { value: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'A music provider is temporarily unavailable.',
+    );
+    expect(api.importPlaylist).toHaveBeenCalledTimes(1);
+  });
+
   it('shows the try-again message on PROVIDER_TIMEOUT and keeps the URL', async () => {
     vi.mocked(api.importPlaylist).mockRejectedValue(
       new api.ApiError('upstream', 'PROVIDER_TIMEOUT', 504),
