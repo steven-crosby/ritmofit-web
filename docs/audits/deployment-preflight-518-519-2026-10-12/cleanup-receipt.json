@@ -7,14 +7,8 @@
         "pathLabel": "primary",
         "head": "52895f866930dcf65f388b789ba0fa61dbf39b86",
         "branch": "codex/deployment-preflight-518-519-20261012",
-        "status": [
-          "?? .claude/"
-        ],
-        "untracked": {
-          ".claude/launch.json": {
-            "sha256": "aa68ce26e1c51861e853ba12d4753f0c2e784c1154c60ed4fb65289d13007ca0"
-          }
-        }
+        "status": [],
+        "untracked": {}
       },
       {
         "pathLabel": "builder-refresh-integrity",
@@ -46,7 +40,7 @@
     "tags": [
       "35e398d3beb02c7259b4d14dacfd3f1e8d947b3a refs/tags/verification/request-draft-integrity-20261010"
     ],
-    "scope": "Archive two completed managed lane worktrees recoverably; remove their two local/remote branches and the completed verification branch. Preserve untracked lane briefs in recovery snapshots, primary .claude, tags, production QA fixtures, local browser-smoke state/server and current publication branch."
+    "scope": "Archive two completed managed lane worktrees recoverably; remove their two local/remote branches and the completed verification branch. Preserve untracked lane briefs in recovery snapshots, tags, production QA fixtures, local browser-smoke state/server and current publication branch."
   },
   "deletedBranch": {
     "name": "codex/verification-zoom-provider-20261012",

@@ -679,7 +679,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > pending separate deletion approval. Completed #527 lane handoff is retired after routing
 > its delivery state here and its local fixture notes to the retained
 > [session handoff](https://github.com/steven-crosby/ritmofit-web/blob/421d0dce4912fe88590c601f99902bdd62ebca05/ritmofit_dev_plan/handoffs/2026-10-20-live-tab-typecheck.md).
-> `.claude/`, the untracked planning brief, verification tag, local QA fixtures, Apple
+> The untracked planning brief, verification tag, local QA fixtures, Apple
 > production fixture, other authors' handoffs, and all existing evidence remain.
 > Apple 5:18 debugging remains tabled. Close-record publication is owed from the handoff.
 
@@ -700,7 +700,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > confirming neither tree held product files missing from `main`. The orchestrator
 > handoff that still existed on the #519 branch was already retired on `main` in #523.
 > Untracked planning briefs were kept outside the repo. Both remote branches remain
-> on origin until an explicit delete. `.claude/`, the local verification tag, the
+> on origin until an explicit delete. The local verification tag, the
 > Apple fixture, and other authors' handoffs were not touched. Production was not
 > re-checked at this close; the 2026-10-18 observation was Worker
 > `73493517-2006-4beb-bf7c-cdb1edf298fd` at 100% and SPA `assets/index-C1EvvyLa.js`.
@@ -711,7 +711,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > Local main, origin/main and GitHub main agreed at that base. Completed publication branch
 > `codex/session-cleanup-pass2-20261013` was removed locally/remotely after its reviewed `eb202b2`
 > tree matched the squash. Both lane branches remain tied to protected worktrees; no unpin/archive
-> bypass or worktree/brief deletion occurred. All existing evidence, .claude, tags and fixtures stay.
+> bypass or worktree/brief deletion occurred. All existing evidence, tags and fixtures stay.
 >
 > Fresh production: Worker `73493517-2006-4beb-bf7c-cdb1edf298fd` at 100%, three cache-busted SPA
 > entries `assets/index-C1EvvyLa.js`, served SHA-256 `9c8ac2825d5c5a2cf17be7b831949e6e60fbac192f1388a5cb9573882a25bb95`.
@@ -742,7 +742,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 >
 > Apple QA `75b7af90-141f-4f56-b02b-0bdd2c1c9dfe` and the open investigation handoff remain;
 > original Apple 5:18 initiating cause is unresolved. All existing evidence, protected lane worktrees,
-> briefs/branches, tags, .claude and other authors' handoffs are retained. SoundCloud hearing evidence
+> briefs/branches, tags and other authors' handoffs are retained. SoundCloud hearing evidence
 > remains immutable. No product/API/schema/config changes, playback or deployment.
 > [Cleanup record](../docs/audits/session-cleanup-2026-10-13/README.md).
 > Owner authorized the cleanup-record commit; push, PR and merge remain separate.
@@ -844,7 +844,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > remotely after exact head/merged-PR checks and full-tree equality between `a4c909d` and #520's
 > squash `4fd1ecd`. Both managed lane archive calls were refused because they are protected by a
 > pinned task or workspace; the worktrees, both lane branches and briefs remain. No bypass, fixture
-> deletion or unrelated cleanup occurred. Primary `.claude/`, tags and local smoke state are
+> deletion or unrelated cleanup occurred. Tags and local smoke state are
 > preserved; [cleanup receipt](../docs/audits/deployment-preflight-518-519-2026-10-12/cleanup-receipt.json).
 
 
@@ -891,8 +891,8 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > Both original Claude briefs moved byte-for-byte from untracked daily scratch into
 > [historical evidence](../docs/audits/builder-anchors-2026-10-11/lane-briefs/README.md).
 > [The cleanup receipt](../docs/audits/builder-anchors-2026-10-11/cleanup-receipt.json) records hashes,
-> recovery identity, ref deletion, and preservation checks. Primary `.claude/` bytes, all four other
-> worktrees' HEAD/status/untracked bytes or symlink targets, and pre-existing tags match the baseline.
+> recovery identity, ref deletion, and preservation checks. The other four worktrees'
+> HEAD/status/untracked bytes or symlink targets, and pre-existing tags, match the baseline.
 > No release candidate, older worktree, production fixture, or other author's handoff was removed.
 > #510 final main CI `38148374555` passed at `912433f`; this follow-up changes documentation only.
 > No deployment, remote migration, secret change, or provider playback occurred.
@@ -917,8 +917,8 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > confirmed Worker `5f67d242-8956-42b7-9318-67b2797d3454` at 100% and three consecutive SPA entries
 > `assets/index-mZ1ypG4t.js`, matching the recorded #494 baseline. No deployment, remote migration,
 > secret change, provider playback, or fixture mutation occurred. Listener availability remains
-> pending. This round's branches/worktree and unrelated primary `.claude/` plus Claude briefs are
-> retained; no general cleanup or deletion authority is inferred from merge approval.
+> pending. This round's branches/worktree and Claude briefs are retained; no general cleanup
+> or deletion authority is inferred from merge approval.
 
 
 > **Close-session 2026-10-09 — merged records reconciled; Git cleanup authorized.** #497
@@ -934,7 +934,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > #504 `0ec1d10`, and #497 `46c2593`. Detailed original tests, limitations, and source identities
 > remain in [the immutable pre-cleanup handoff snapshot](https://github.com/steven-crosby/ritmofit-web/tree/46c2593fe518585d54a31c739210aa2b9255575a/ritmofit_dev_plan/handoffs)
 > and the retained UI evidence packets. Worktree archival is presently blocked by the pinned chat;
-> the author requested temporary unpinning/restoration. Untracked `.claude/` is preserved.
+> the author requested temporary unpinning/restoration.
 > No deployment, playback, remote migration, secret mutation, or production-fixture deletion
 > occurred during this close; the prepared classes remain unplayed.
 
@@ -1463,9 +1463,9 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > Pending fixture deletion is handed to the owner; none were deleted. Both observers
 > removed, original SDK getter restored, playback stopped, Live exited, temporary
 > server/export tab closed. Merged feature branch deleted after a verified recovery
-> bundle; main synchronized, no open PRs at handoff preparation. Unrelated `.claude/`
-> preserved. The deploy record/handoff is documentation only; publication status
-> must be rechecked on GitHub before declaring close complete.
+> bundle; main synchronized, no open PRs at handoff preparation. The deploy record/handoff
+> is documentation only; publication status must be rechecked on GitHub before declaring
+> close complete.
 
 > **Session 2026-10-04 — PR #486 Live zoom fix deployed; #485/#480 documentation reconciled.**
 > Released source `efd542b88552d29c94d7b0edad484f29f244d20c`, Worker
@@ -1511,8 +1511,8 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > Cleanup: a verified complete-history Git bundle preserves the exact deleted branch tips.
 > Deleted merged branches for #481/#482/#486/#485/#480 and the two corrupt Cursor branches;
 > the corrupt branches were never checked out or merged. No force push or remote change.
-> Unrelated `.claude/launch.json` was preserved. Historical device results and Spotify pause
-> from #480 were retained while newer release facts and desktop scope took precedence.
+> Historical device results and Spotify pause from #480 were retained while newer release
+> facts and desktop scope took precedence.
 
 > **Session 2026-10-03 (PR #484 — natural song-end precision) — deployed
 > (Worker `1ae3e216-89a6-4bbd-aec0-38f01bc600ff`); production playback acceptance
@@ -1594,7 +1594,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > Documentation formatting, diff whitespace, evidence parsing/hash/integrity,
 > relative links, and scoped credential-pattern checks passed. The matching
 > deployed application gate was not repeated for this docs-only close.
-> Unrelated `.claude/` work and pre-existing conflicting docs PR #480 were preserved.
+> Pre-existing conflicting docs PR #480 was preserved.
 
 > **Session 2026-10-02 (PR #481 — ordered playlist import and recovery) — deployed
 > (Worker `b74e4fe2-fbf3-4eb4-a617-ea6f45a04e03`).** Application source
@@ -3411,7 +3411,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > (narrow-viewport action density), the design-audit slices **#172–#176** (mockup refinements, builder
 > row hierarchy, compact builder mobile composition, Live next-cue anchored on the countdown, mobile
 > sign-in music identity), **#177** (builder mockup: duplicate `builder-layout` grid dropped from the
-> page wrapper), **#178** (ESLint now ignores git-ignored `.claude/` local state so local `pnpm lint`
+> page wrapper), **#178** (ESLint ignores git-ignored local tool state so local `pnpm lint`
 > matches CI when agent worktrees exist), and docs **#167** / **#169** (deploy-cadence policy).
 >
 > Rollback anchor: prior live `e8b83edf-e2f0-474f-9b66-ab827998a371`. Remote D1: **No migrations to

@@ -17,7 +17,6 @@ apps/api/migrations/
 ritmofit_dev_plan/
 ritmofit_design_system/
 design-system-audits/
-.claude/
 agent-prompts/
 
 # Agent-authored design-audit deliverables (prose, prototype HTML/CSS/JS, and

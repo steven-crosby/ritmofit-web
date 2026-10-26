@@ -9,9 +9,7 @@ commit, push, PR, merge, deployment, migrations, fixture deletion, or a second w
 
 - Checkout: the existing `ritmofit-web` checkout on this Mac; discover and verify its path.
   Do not clone a replacement. At preparation, branch `main` and `origin/main` were
-  `7c69786caf5631fca9d57c02e98c27e31c0345e2`, with only unrelated untracked `.claude/`.
-  Preserve `.claude/launch.json`; its SHA-256 is
-  `aa68ce26e1c51861e853ba12d4753f0c2e784c1154c60ed4fb65289d13007ca0`.
+  `7c69786caf5631fca9d57c02e98c27e31c0345e2`.
 - [PR #488](https://github.com/steven-crosby/ritmofit-web/pull/488) was squash-merged.
   Reviewed head was `bdebd0348a2b16e6143d8b39599df9ccbacd88b1`; the merged tree
   matched it exactly. Local/remote `codex/apple-music-natural-boundary` were deleted.
