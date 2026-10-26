@@ -9,6 +9,7 @@ import { createDb } from './lib/db.js';
 import { drainPurgeQueue, createD1PurgeStore } from './lib/music/purge.js';
 import { pruneRateLimits } from './lib/rate-limit.js';
 import { HttpError } from './lib/errors.js';
+import { healthHttpStatus, readHealth } from './lib/health.js';
 import { authRoutes } from './routes/auth.js';
 import { classRoutes } from './routes/classes.js';
 import { classTrackRoutes } from './routes/class-tracks.js';
@@ -143,13 +144,10 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => createAuth(c.env).handler(c.req.ra
 // Our REST surface under /api/v1.
 const api = app.basePath(`/api/${API_VERSION}`);
 
-api.get('/health', (c) =>
-  c.json({
-    status: 'ok',
-    service: 'ritmofit-api',
-    version: API_VERSION,
-  }),
-);
+api.get('/health', async (c) => {
+  const report = await readHealth(c.env);
+  return c.json(report, healthHttpStatus(report));
+});
 
 api.route('/auth', authRoutes);
 // Public capability-URL reads must be mounted before the root routers below:

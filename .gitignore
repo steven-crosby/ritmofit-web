@@ -20,6 +20,8 @@ yarn-error.log*
 .env.*.local
 .dev.vars
 **/.dev.vars
+# QA beta session token for the authed production smoke. Never commit.
+apps/api/.qa-beta-token
 
 # Cloudflare / wrangler
 .wrangler/
