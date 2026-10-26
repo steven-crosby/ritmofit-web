@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ZodError } from 'zod';
-import { API_VERSION, CLASS_LIST_NEXT_CURSOR_HEADER } from '@ritmofit/shared';
+import { API_VERSION, CLASS_LIST_NEXT_CURSOR_HEADER, uuidSchema } from '@ritmofit/shared';
 import { ProviderError } from '@ritmofit/music';
 import type { AppEnv, Env } from './lib/types.js';
 import { createAuth } from './lib/auth.js';
@@ -51,6 +51,21 @@ app.use('*', async (c, next) => {
   c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
 });
 
+// Nested `/api/v1/classes/:id/...` only. A non-UUID never names a class, but a
+// method with no handler falls through to Hono's text/plain notFound. The asset
+// layer (`not_found_handling = "single-page-application"`) serves that miss as
+// the SPA shell (200) on GET and 405 on POST/DELETE. Answer here, before auth,
+// with the same JSON 404 a hidden class already uses. A real UUID continues
+// through `requireAccess` so a missing or hidden class stays on that path.
+const nestedClassId = new RegExp(`^/api/${API_VERSION}/classes/([^/]+)/`);
+app.use('*', async (c, next) => {
+  const id = nestedClassId.exec(c.req.path)?.[1];
+  if (id !== undefined && !uuidSchema.safeParse(id).success) {
+    throw new HttpError(404, 'NOT_FOUND', 'Not found.');
+  }
+  await next();
+});
+
 // Map thrown errors to the standard `{ error: { code, message, details? } }`
 // envelope (conventions.md) so routes stay thin and let helpers throw.
 app.onError((err, c) => {
@@ -91,6 +106,18 @@ app.onError((err, c) => {
     { error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred.' } },
     500,
   );
+});
+
+// Any other `/api` miss (unknown path, or a real id with no handler for that
+// method) stays the JSON envelope too. A text/plain 404 is what the asset layer
+// replaces with the SPA. Non-API paths keep the plain 404 so the SPA fallback
+// still owns client routes.
+app.notFound((c) => {
+  const path = c.req.path;
+  if (path === '/api' || path.startsWith('/api/')) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Not found.' } }, 404);
+  }
+  return c.text('404 Not Found', 404);
 });
 
 // CORS for the SPA. Credentials are on for the Better Auth session cookie, so the
