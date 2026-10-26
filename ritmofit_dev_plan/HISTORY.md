@@ -13,6 +13,37 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-25 — #591 and #592 on main `5daee7a`.** Owner approved.
+> Production deploy at 2026-10-26T05:07Z (11:07 PM MT 2026-10-25), the first
+> deploy through `scripts/deploy.sh 5daee7a…` (run from a clean detached
+> worktree on Steven's MacBook; the script built and deployed from its own
+> `/tmp/ritmofit-deploy.*` worktree). New Worker
+> `45dd784f-23ce-4697-bd33-3ab04f8b458e` (message `5daee7a`); previous/rollback
+> `64bf0d19-fbce-4823-9bd8-e65230bdd2ca` (`6ee1454`). SPA entry
+> `assets/index-SlqjBWky.js` unchanged (no web change). Script gates all passed
+> on Node 22.23.4 (matches `.nvmrc`; the MacBook default is Node 26, so a
+> Node 22 binary was put first on PATH): `--self-check`, required-secret names
+> present, no remote D1 migrations pending, unit web 1371 / api 549 / music 30,
+> Worker/D1 integration 233, web build, OpenAPI no drift, contract-parity,
+> audit. No migration was applied.
+>
+> Deployed since production `6ee1454`:
+> [#591](https://github.com/steven-crosby/ritmofit-web/pull/591) (`/health`
+> runs D1 `SELECT 1` and reports required-secret presence as booleans; adds the
+> signed-in smoke `scripts/authed-production-smoke.ts`, `fe68689`; API) and
+> [#592](https://github.com/steven-crosby/ritmofit-web/pull/592) (guarded
+> `scripts/deploy.sh`, `5daee7a`; tooling/docs).
+>
+> Smoke (script): propagation 3/3 consecutive fetches on the built entry; `/`
+> 200, `/api/v1/health` 200 with all six security headers; `/classes`,
+> `/explore`, `/teams` 401. Health body: `status: ok`, `database: true`, every
+> required secret `true` (`APPLE_CLIENT_SECRET` `false` as expected — the
+> signing trio is set). Mounted routes reach handlers: `/shares`,
+> `/shares/x`, `/providers/spotify/search`, `/providers/track-import`, and
+> `/classes/<uuid>/{shares,import-playlist,tracks/import,cover,tags}` 401;
+> non-UUID class ids 404 JSON (#589). Authed smoke **skipped**:
+> `apps/api/.qa-beta-token` is not present in the main clone.
+
 > **Deploy 2026-10-25 — #588 and #589 on main `6ee1454`.** Owner approved.
 > Production deploy at 2026-10-26T03:24Z (9:24 PM MT 2026-10-25). New Worker
 > `64bf0d19-fbce-4823-9bd8-e65230bdd2ca`; previous/rollback
