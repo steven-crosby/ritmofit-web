@@ -44,8 +44,23 @@ async function errorOf(res: Response): Promise<{ code?: string; message?: string
 
 describe('POST /classes/:id/import-playlist (integration)', () => {
   it('401 when unauthenticated', async () => {
-    const res = await call('/api/v1/classes/some-id/import-playlist', { method: 'POST' });
+    // A real UUID still hits the session gate. A non-UUID is 404 before auth.
+    const res = await call('/api/v1/classes/00000000-0000-4000-8000-00000000a11e/import-playlist', {
+      method: 'POST',
+    });
     expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({
+      error: { code: 'UNAUTHORIZED', message: 'Authentication required.' },
+    });
+  });
+
+  it('404 JSON for a non-UUID class id', async () => {
+    const res = await call('/api/v1/classes/some-id/import-playlist', { method: 'POST' });
+    const text = await res.text();
+    expect(text.toLowerCase()).not.toMatch(/<!doctype html|<html/);
+    expect(res.status).toBe(404);
+    expect(res.headers.get('content-type') ?? '').toContain('application/json');
+    expect(JSON.parse(text)).toEqual({ error: { code: 'NOT_FOUND', message: 'Not found.' } });
   });
 
   it('404 for a class the caller cannot edit (hidden resource)', async () => {
