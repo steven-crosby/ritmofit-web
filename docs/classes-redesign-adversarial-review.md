@@ -16,7 +16,6 @@ Reviewed `docs/classes-redesign-plan.md` and Steven's Oct 26 decisions. Findings
 
 The original findings follow unchanged.
 
-
 ## Blocker
 
 None. Nothing here is unsafe to keep discussing. Several High items should be answered before pull request C is approved.

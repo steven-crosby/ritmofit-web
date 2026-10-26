@@ -46,7 +46,7 @@ Library shell. No schema, no new class type, no Live change.
 - Jump back in: up to four classes by last opened or taught, plus Show all. Skip names that start with `[QA]`. All still lists them.
 - Covers: stored cover, otherwise a gradient by type. No provider artwork.
 - Empty: the list says there are no classes yet. Templates stay. Jump back in is hidden.
-- + Create opens New class, From a template, and Import a playlist.
+- \+ Create opens New class, From a template, and Import a playlist.
 
 ## Pull request C, after A
 
