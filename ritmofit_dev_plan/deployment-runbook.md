@@ -139,6 +139,38 @@ For UI-affecting changes, also run the browser smokes against a local stack (see
 SPA entry hash matches the build. A matching Worker version does not prove static-asset alignment, and a
 matching SPA hash does not prove the API Worker is current.
 
+## Authed production smoke
+
+The curls above are unauthenticated. They do not prove a session, an authed D1 read, or that the
+dedicated QA beta account can still use Spotify. After that public smoke, run this check. It does
+not replace the deploy procedure.
+
+The session token for that account lives only in `apps/api/.qa-beta-token`. `.gitignore` lists
+`apps/api/.qa-beta-token`. Never commit the file, print the token, or paste it into a log. The file
+is one line: the `better-auth.session_token` cookie value, or a single
+`better-auth.session_token=<value>` assignment. Lines that start with `#` are comments. The account
+is an allowlisted beta user with a working Spotify connection, not a personal session.
+
+```bash
+pnpm --filter @ritmofit/api exec tsx scripts/authed-production-smoke.ts
+```
+
+`SMOKE_BASE_URL` overrides the default `https://ritmofit.studio`. The script sends the cookie and
+prints paths and status codes only. It exits non-zero unless both of these return 200:
+
+- `GET /api/v1/classes`
+- the Spotify connection check, `GET /api/v1/providers/spotify/playlists` (the stored grant can list
+  that account's playlists; the body is discarded)
+
+401 means the token is missing or expired. 409 on the Spotify check means that account needs to
+reconnect Spotify. A redirect is not followed and does not count as 200.
+
+`GET /api/v1/health` stays public. It runs D1 `SELECT 1` and includes `database` plus a `secrets`
+object of booleans for required-secret presence. It never returns secret values. A missing database
+binding or a failed `SELECT 1` responds **503** with `status: "unavailable"` and `database: false`,
+so it does not look healthy. HTTP 200 on `/api/v1/health` means the probe returned a row. A false
+secret boolean is reported as `false` and does not by itself change that status.
+
 ## Rollback / recovery
 
 Both paths are verified available for these production resources.
