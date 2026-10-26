@@ -5,8 +5,11 @@ set -euo pipefail
 # See ritmofit_dev_plan/deployment-runbook.md.
 #
 #   scripts/deploy.sh              # clean tree whose HEAD is origin/main
-#   scripts/deploy.sh <sha>        # that commit, even if this tree is dirty
+#   scripts/deploy.sh <sha>        # clean tree; HEAD may differ from origin/main
 #   scripts/deploy.sh --self-check # local guards only; does not deploy
+#
+# A dirty tree always refuses, including when a sha is passed. The sha only
+# permits a HEAD that is not origin/main.
 #
 # The script checks out a detached worktree under /tmp and builds there.
 # ritmofit_design_system has no lockfile and no dependencies: do not npm ci.
@@ -23,7 +26,8 @@ usage() {
   printf '%s\n' \
     "usage: scripts/deploy.sh [sha]" \
     "       scripts/deploy.sh --self-check" \
-    "With no sha, git status --porcelain must be empty and HEAD must equal origin/main."
+    "git status --porcelain must be empty. A dirty tree always refuses." \
+    "With no sha, HEAD must equal origin/main. A sha deploys that commit anyway."
 }
 
 nvmrc_major() {
@@ -75,16 +79,16 @@ assert_node_major() {
   printf '%s\n' "node major ${actual} matches .nvmrc"
 }
 
-# Prints the commit to deploy. With no argument, refuses a dirty tree or a
-# HEAD that is not origin/main. An explicit sha skips that refusal.
+# Prints the commit to deploy. A dirty tree always refuses. With no argument,
+# HEAD must equal origin/main. An explicit sha skips only that HEAD check.
 resolve_deploy_sha() {
-  if [[ $# -gt 0 && -n "${1:-}" ]]; then
-    git rev-parse --verify "${1}^{commit}"
-    return 0
-  fi
   if [[ -n "$(git status --porcelain)" ]]; then
     printf '%s\n' "refusing to deploy: git status --porcelain is not empty" >&2
     return 1
+  fi
+  if [[ $# -gt 0 && -n "${1:-}" ]]; then
+    git rev-parse --verify "${1}^{commit}"
+    return 0
   fi
   local head origin_main
   head="$(git rev-parse HEAD)"
@@ -538,8 +542,11 @@ EOF
     fi
   fi
 
-  local tmp wt sha
+  local tmp wt sha dirty_err dirty_sha_err diverge_err
   tmp="$(mktemp -d)"
+  dirty_err="$(mktemp)"
+  dirty_sha_err="$(mktemp)"
+  diverge_err="$(mktemp)"
   (
     set -euo pipefail
     cd "$tmp"
@@ -552,26 +559,36 @@ EOF
     git add a.txt
     git commit -m init >/dev/null
     git update-ref refs/remotes/origin/main HEAD
-    resolve_deploy_sha >/dev/null
+    if ! resolve_deploy_sha >/dev/null; then
+      printf '%s\n' "clean origin/main was refused" >&2
+      exit 1
+    fi
     echo dirty >dirty.txt
-    if resolve_deploy_sha >/dev/null 2>"$tmp/dirty.err"; then
+    if resolve_deploy_sha >/dev/null 2>"$dirty_err"; then
       printf '%s\n' "dirty tree was accepted" >&2
       exit 1
     fi
-    grep -q "not empty" "$tmp/dirty.err"
+    grep -q "not empty" "$dirty_err"
     sha="$(git rev-parse HEAD)"
-    resolve_deploy_sha "$sha" >/dev/null
+    if resolve_deploy_sha "$sha" >/dev/null 2>"$dirty_sha_err"; then
+      printf '%s\n' "dirty tree with a sha was accepted" >&2
+      exit 1
+    fi
+    grep -q "not empty" "$dirty_sha_err"
     git update-ref refs/remotes/origin/main HEAD~0
     # Move origin/main off HEAD without a second commit by using an empty tree parent.
     git commit --allow-empty -m second >/dev/null
     git update-ref refs/remotes/origin/main HEAD~1
     rm -f dirty.txt
-    if resolve_deploy_sha >/dev/null 2>"$tmp/diverge.err"; then
+    if resolve_deploy_sha >/dev/null 2>"$diverge_err"; then
       printf '%s\n' "diverged HEAD was accepted" >&2
       exit 1
     fi
-    grep -q "not origin/main" "$tmp/diverge.err"
-    resolve_deploy_sha HEAD >/dev/null
+    grep -q "not origin/main" "$diverge_err"
+    if ! resolve_deploy_sha HEAD >/dev/null; then
+      printf '%s\n' "clean tree with a sha was refused" >&2
+      exit 1
+    fi
     wt="$(create_deploy_worktree HEAD)"
     [[ "$(git -C "$wt" rev-parse HEAD)" == "$(git rev-parse HEAD)" ]]
     [[ "$(git -C "$wt" status --porcelain)" == "" ]]
@@ -689,7 +706,8 @@ EOF
     fail "production-smoke.txt drifted"
   fi
 
-  rm -f "$present" "$spec" "$committed_present" "$json_out" "$json_err" "$smoke_tmp" "$prop_out"
+  rm -f "$present" "$spec" "$committed_present" "$json_out" "$json_err" "$smoke_tmp" "$prop_out" \
+    "$dirty_err" "$dirty_sha_err" "$diverge_err"
   rm -rf "$tmp"
   if [[ "$fails" -ne 0 ]]; then
     printf '%s\n' "self-check failed: ${fails}" >&2

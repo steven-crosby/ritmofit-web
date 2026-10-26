@@ -58,11 +58,12 @@ by hand unless you are debugging the script itself.
 ```bash
 scripts/deploy.sh --self-check   # local guards only; does not deploy or call Cloudflare
 scripts/deploy.sh                 # clean tree whose HEAD is origin/main
-scripts/deploy.sh <sha>           # that commit, even if the invoking tree is dirty
+scripts/deploy.sh <sha>           # clean tree; HEAD may differ from origin/main
 ```
 
-With no SHA, the script fetches `origin main` and refuses unless `git status --porcelain` is empty
-and `HEAD` equals `origin/main`. An explicit SHA skips that refusal and deploys that commit.
+The script fetches `origin main` and refuses when `git status --porcelain` is not empty, with or
+without a SHA. A SHA does not override a dirty tree. With no SHA it also refuses unless `HEAD`
+equals `origin/main`. A SHA deploys that commit from a clean tree whose HEAD is not `origin/main`.
 
 The script then refuses unless `node -v`'s major matches `.nvmrc` (the file is `22`; Node 24 or 26
 does not pass). It compares `wrangler secret list --format json` **names** to
@@ -94,9 +95,9 @@ scripts/deploy.sh
 The script does not build the checkout you invoke it from. After it resolves the commit, it creates
 a detached worktree at `/tmp/ritmofit-deploy.<random>` (`git worktree add --detach`) and runs
 `pnpm install --frozen-lockfile`, the gates, the SPA build, and `wrangler deploy` there. On exit it
-`git worktree remove --force`s that path. A dirty lane tree cannot be what gets uploaded. With no
-SHA, the invoking checkout must still be clean and equal `origin/main`, so the commit you think you
-are on is the commit it deploys.
+`git worktree remove --force`s that path. A dirty tree always refuses, so a dirty lane checkout
+cannot be what gets uploaded. With no SHA, HEAD must also equal `origin/main`. A SHA is only how a
+clean checkout deploys a commit that is not `origin/main`.
 
 ### Design system
 
