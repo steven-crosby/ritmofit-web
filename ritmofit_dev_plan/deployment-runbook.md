@@ -90,6 +90,17 @@ pnpm --filter @ritmofit/api exec wrangler d1 migrations apply ritmofit --remote
 scripts/deploy.sh
 ```
 
+### Expand-only migrations
+
+Migrations only add tables, columns, or indexes. Apply them with the command above, then
+`scripts/deploy.sh`. The script only lists remote D1. It will not continue while any migration is
+unapplied, and it does not apply migrations.
+
+A drop, a rename, or a type change that loses data waits for a later deploy. Ship it only after the
+Worker that is running no longer depends on the old table, column, or type. The previous Worker has
+to keep running against the schema you just applied, so rolling back to that previous version is
+safe. Leave D1 where it is: `wrangler rollback` does not un-apply a migration.
+
 ### /tmp worktree
 
 The script does not build the checkout you invoke it from. After it resolves the commit, it creates
@@ -162,6 +173,33 @@ For UI-affecting changes, also run the browser smokes against a local stack (see
 SPA entry hash matches the build. A matching Worker version does not prove static-asset alignment, and a
 matching SPA hash does not prove the API Worker is current.
 
+## Tail watch
+
+After `scripts/deploy.sh` exits 0, watch live logs for about 5 minutes. The script does not tail.
+
+```bash
+pnpm --filter @ritmofit/api exec wrangler tail
+```
+
+Stop the tail (Ctrl-C) when those 5 minutes are up. Do not copy cookies, tokens, or authorization
+headers out of the output. Read the HTTP status on each event. A `5xx` the Worker returned still
+counts when the invocation did not throw. An uncaught error counts as an exception.
+
+Stop and roll the Worker back (see Rollback / recovery) when the tail shows any of these:
+
+- An exception.
+- A burst of `5xx` responses.
+- A failed health check. `/api/v1/health` has to stay `200`. `503` with `status: "unavailable"` is a
+  failed health check.
+- An auth failure that is not an expected unauthenticated `401`. Those `401`s are the smoke-list
+  routes with no session: `/api/v1/classes`, `/api/v1/explore`, and `/api/v1/teams`. A `401` on a
+  public route (`/` or `/api/v1/health`), or a failure from sign-in, a callback, or an authenticated
+  request, means stop and roll back.
+
+A quiet tail is not a substitute for the smoke checks above. The propagation loop, the status list
+in `scripts/production-smoke.txt`, and the security-header check still have to pass. The tail only
+shows requests that arrived while it was running.
+
 ## Authed production smoke
 
 The curls above are unauthenticated. They do not prove a session, an authed D1 read, or that the
@@ -198,9 +236,10 @@ secret boolean is reported as `false` and does not by itself change that status.
 
 Both paths are verified available for these production resources.
 
-### Worker code rollback (no schema change)
+### Worker code rollback
 
-Cloudflare retains prior Worker versions. To revert code to a known-good version:
+Cloudflare retains prior Worker versions. Use this after an expand-only migration too: the previous
+Worker still matches the new schema. To revert code to a known-good version:
 
 ```bash
 pnpm --filter @ritmofit/api exec wrangler deployments list     # find the last-good Version ID
@@ -222,13 +261,71 @@ pnpm --filter @ritmofit/api exec wrangler d1 time-travel restore ritmofit \
 ### Migration interaction (important)
 
 Drizzle migrations are **forward-only** and are never rewritten after application. A Worker rollback
-does **not** un-apply a migration. If a bad deploy included a migration:
+does **not** un-apply a migration. Follow the expand-only rule: the migration only added tables,
+columns, or indexes, so the previous Worker still runs on the new schema. Roll the **code** back to
+the prior version and leave D1 where it is.
 
-1. Roll the **code** back to the prior version (above) if the old code is compatible with the new schema
-   (additive migrations usually are), **or**
-2. If the schema change is breaking, restore D1 with Time Travel to just before the migration **and**
-   roll the code back — then fix forward with a corrected migration. Coordinate both so code and schema
-   stay compatible.
+If a migration was destructive anyway, and the previous Worker cannot read the new schema, restore
+D1 with Time Travel to just before that migration **and** roll the code back. Then fix forward with
+a corrected expand-only migration. Do both together so code and schema stay compatible.
+
+### Rollback rehearsal
+
+**Run this only when the owner asks.** It moves production back to an older Worker version, then
+deploys that commit forward again. It is not part of a normal deploy.
+
+`<previous-version-id>` is the Version ID to roll back to. Use the line `scripts/deploy.sh` printed
+as `current Worker version (rollback target)` before the deploy, or a row from
+`wrangler deployments list`. `<sha>` is the commit to put back in front, deployed from a clean tree
+with `scripts/deploy.sh`. Do not run `wrangler deploy` yourself.
+
+Roll the Worker back:
+
+```bash
+pnpm --filter @ritmofit/api exec wrangler deployments list
+pnpm --filter @ritmofit/api exec wrangler rollback <previous-version-id> -m "rollback rehearsal"
+```
+
+That re-publishes the named version's code and bindings. It does not touch D1, and it does not run
+the script's smoke. Run the smoke checks below before going forward. If they fail, stop.
+
+Deploy forward again:
+
+```bash
+scripts/deploy.sh <sha>
+```
+
+The script's upload line, which you do not run yourself, is:
+
+```bash
+pnpm --filter @ritmofit/api exec wrangler deploy --message <short-sha>
+```
+
+The script then runs the propagation loop, `scripts/production-smoke.txt`, and the security-header
+check. When it exits 0, confirm the smoke checks below and run the tail watch.
+
+#### Smoke checks after each direction
+
+Run these after the rollback, and again after the forward deploy:
+
+- `pnpm --filter @ritmofit/api exec wrangler deployments status` shows the version just published,
+  at 100%. After rollback that is `<previous-version-id>`. After the forward deploy it is the
+  version the script just uploaded.
+- The status list in `scripts/production-smoke.txt`: `/` and `/api/v1/health` return `200`;
+  `/api/v1/classes`, `/api/v1/explore`, and `/api/v1/teams` return `401`.
+- `GET /api/v1/health` carries the security-header names from Post-deploy smoke:
+  Strict-Transport-Security, Content-Security-Policy, X-Frame-Options, X-Content-Type-Options,
+  Referrer-Policy, Permissions-Policy.
+- Three consecutive cache-busted fetches of `https://ritmofit.studio/?cb=…` with
+  `Cache-Control: no-cache`, 10 seconds apart, agree on that version's SPA entry hash. After
+  rollback, the hash is the previous release's entry. One agreeing fetch is not enough.
+- When `apps/api/.qa-beta-token` is present, run the authed production smoke. Do not print the
+  token.
+
+On the way forward, `scripts/deploy.sh` already runs the status list, the header check, and the
+propagation loop before it exits. Still confirm `wrangler deployments status`, still run the authed
+smoke when the token file is present, and still watch the tail. On the way back, `wrangler rollback`
+runs none of those checks.
 
 ## References
 
