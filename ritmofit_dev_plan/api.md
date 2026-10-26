@@ -15,6 +15,9 @@ schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 - **Errors:** consistent JSON `{ error: { code, message, details? } }`.
   - `401` not authenticated · `403` authenticated but not authorized · `404` not found (or hidden for
     resources the user can't see) · `409` conflict · `422` validation.
+  - A class id that is not a UUID on a nested `/classes/:id/...` route is `404 NOT_FOUND` with this
+    JSON envelope. It is not the SPA shell. A UUID the caller cannot see stays on the path above
+    (`401` without a session, `404` once authenticated).
   - Common error codes: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `CONFLICT`,
     `RATE_LIMITED`, `INTERNAL_ERROR`. Provider routes also use stable domain codes including
     `PROVIDER_UNAVAILABLE`, `PROVIDER_FORBIDDEN`, `NOT_CONNECTED`, `REAUTH_REQUIRED`, and
