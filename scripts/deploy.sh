@@ -437,6 +437,20 @@ self_check() {
       fail "node 26 refusal message was: $out"
     fi
   fi
+  if out="$(assert_node_major $'# comment only\n\n' "v22.13.0" 2>&1)"; then
+    fail "comment-only .nvmrc should fail"
+  else
+    if [[ "$out" == *"no major version"* ]]; then
+      pass "comment-only .nvmrc is refused"
+    else
+      fail "comment-only .nvmrc output: $out"
+    fi
+  fi
+  if out="$(assert_node_major $'# pin\n\nv22.13.0\n' "V22.23.4" 2>&1)"; then
+    pass "commented .nvmrc matches node 22"
+  else
+    fail "commented .nvmrc should match ($out)"
+  fi
 
   local present spec
   present="$(mktemp)"
@@ -519,6 +533,17 @@ EOF
       fail "missing-name output: $out"
     fi
   fi
+  printf '%s\n' '|APPLE_CLIENT_SECRET' >"$spec"
+  printf '%s\n' APPLE_CLIENT_SECRET >"$present"
+  if out="$(check_required_secrets "$spec" "$present" 2>&1)"; then
+    fail "empty secret alternative should fail"
+  else
+    if [[ "$out" == *"empty name"* ]]; then
+      pass "empty secret alternative fails closed"
+    else
+      fail "empty secret alternative output: $out"
+    fi
+  fi
 
   local json_out json_err
   json_out="$(mktemp)"
@@ -539,6 +564,33 @@ EOF
       pass "non-json secret list is not printed"
     else
       fail "non-json secret list printed payload or the wrong error"
+    fi
+  fi
+  if printf '%s\n' 'wrangler: logged a warning' '[{"name":"BETA_ALLOWED_EMAILS","value":"SUPER_SECRET_DO_NOT_PRINT"}]' | secret_names_from_json >"$json_out" 2>"$json_err"; then
+    if [[ "$(cat "$json_out")" == "BETA_ALLOWED_EMAILS" ]] && ! grep -q "SUPER_SECRET_DO_NOT_PRINT" "$json_out" "$json_err"; then
+      pass "secret JSON ignores a log preamble"
+    else
+      fail "preamble secret JSON leaked or parsed wrong"
+    fi
+  else
+    fail "secret JSON should parse an array after a log preamble"
+  fi
+  if printf '%s\n' '[wrangler] ready' '[{"name":"BETA_ALLOWED_EMAILS","value":"SUPER_SECRET_DO_NOT_PRINT"}]' | secret_names_from_json >"$json_out" 2>"$json_err"; then
+    fail "a bracketed log line must not be parsed as the secret list"
+  else
+    if grep -q "refusing to print the response" "$json_err" && ! grep -q "SUPER_SECRET_DO_NOT_PRINT" "$json_out" "$json_err" && ! grep -q "BETA_ALLOWED_EMAILS" "$json_out"; then
+      pass "bracketed log line fails without printing the payload"
+    else
+      fail "bracketed log line printed the payload or the wrong error"
+    fi
+  fi
+  if printf '%s\n' '[{"name":"super-secret-do-not-print","value":"ALSO_DO_NOT_PRINT"}]' | secret_names_from_json >"$json_out" 2>"$json_err"; then
+    fail "unexpected secret name should fail"
+  else
+    if grep -q "unexpected name" "$json_err" && ! grep -q "super-secret-do-not-print" "$json_out" "$json_err" && ! grep -q "ALSO_DO_NOT_PRINT" "$json_out" "$json_err"; then
+      pass "unexpected secret name is not printed"
+    else
+      fail "unexpected secret name printed a name or value"
     fi
   fi
 
@@ -658,6 +710,19 @@ EOF
       pass "smoke reports status only"
     else
       fail "smoke output: $smoke_out"
+    fi
+  fi
+  printf '%s\n' 'https://example.test/ nope' >"$smoke_tmp"
+  leak_status() {
+    printf '%s' "SECRET_BODY"
+  }
+  if smoke_out="$(smoke_statuses "$smoke_tmp" leak_status 2>&1)"; then
+    fail "bad smoke line should fail"
+  else
+    if [[ "$smoke_out" == *"bad smoke line"* && "$smoke_out" != *"SECRET_BODY"* ]]; then
+      pass "bad smoke line fails before the request"
+    else
+      fail "bad smoke line output: $smoke_out"
     fi
   fi
 
