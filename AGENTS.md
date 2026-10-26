@@ -10,6 +10,7 @@
 <!-- note (Claude Code, 2026-10-06): Added Session Workflow (solo/lane/orchestrator roles, per-session handoff files under ritmofit_dev_plan/handoffs/), archived the unused remote maintenance loop (remote-prompts, SCHEDULE.md, agent-reports) to ritmofit_dev_plan/archive/remote-loop/, and added a CLAUDE.md that only imports this file — reversing the 2026-07-12 wrapper removal so the Claude Code CLI loads this canon; it carries no rules of its own. -->
 <!-- note (Claude, 2026-07-25): Replaced the hardcoded `~/repos/ritmostudio/` workspace path with portable discovery commands (split containers are now possible, and ritmofit-ios clones can live in either), noted cross-round machine contention, and pointed at the new parallel-round runbook. -->
 <!-- note (Cursor, 2026-10-25): Removed the tracked CLAUDE.md wrapper so AGENTS.md is the sole tracked instruction file; do not recreate CLAUDE.md. -->
+<!-- note (Grok, 2026-10-26): Agents leave other tools' local files unmentioned. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -109,6 +110,10 @@ Follow "Session Workflow" below for orientation, wrap-up, and handoffs. Do not d
 overwrite, stash, or silently include existing worktree changes. Prefer small vertical slices: shared
 contract, API/authz, UI states, then tests. Do not add infrastructure or revive deferred surfaces unless
 the request clearly calls for it.
+
+The owner works in Cursor and Grok Bot. Agents must not mention, record, or describe preserving
+other AI tools' local files or folders in chat, PRs, commits, handoffs, `HISTORY.md`, or docs.
+Untracked local files outside the task are simply left alone, silently.
 
 Work verified, not assumed. Before acting on a path, command, file, or instruction that comes from
 notes, memory, or a handoff, confirm it still exists in this repo rather than trusting it. Flag
