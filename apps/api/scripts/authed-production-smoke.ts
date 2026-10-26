@@ -4,7 +4,9 @@
  * Token file: apps/api/.qa-beta-token
  * Gitignore:  apps/api/.qa-beta-token
  *
- * The file is one `better-auth.session_token` value (or that cookie assignment).
+ * The file is one session-token value (or a `better-auth.session_token` /
+ * `__Secure-better-auth.session_token` assignment). Https sends the
+ * `__Secure-` name; http and localhost send the plain name.
  * Lines starting with `#` are comments. Never commit it.
  *
  *   pnpm --filter @ritmofit/api exec tsx scripts/authed-production-smoke.ts

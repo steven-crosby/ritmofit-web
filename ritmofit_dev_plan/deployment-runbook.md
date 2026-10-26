@@ -208,16 +208,19 @@ not replace the deploy procedure.
 
 The session token for that account lives only in `apps/api/.qa-beta-token`. `.gitignore` lists
 `apps/api/.qa-beta-token`. Never commit the file, print the token, or paste it into a log. The file
-is one line: the `better-auth.session_token` cookie value, or a single
-`better-auth.session_token=<value>` assignment. Lines that start with `#` are comments. The account
+is one line: the session cookie value, or a single assignment. Production https uses
+`__Secure-better-auth.session_token`. `http` and `localhost` use `better-auth.session_token`.
+Either name is accepted in the file. Lines that start with `#` are comments. The account
 is an allowlisted beta user with a working Spotify connection, not a personal session.
 
 ```bash
 pnpm --filter @ritmofit/api exec tsx scripts/authed-production-smoke.ts
 ```
 
-`SMOKE_BASE_URL` overrides the default `https://ritmofit.studio`. The script sends the cookie and
-prints paths and status codes only. It exits non-zero unless both of these return 200:
+`SMOKE_BASE_URL` overrides the default `https://ritmofit.studio`. The script sends
+`__Secure-better-auth.session_token` when that base URL is https, and
+`better-auth.session_token` for http and localhost. It prints paths and status codes only.
+It exits non-zero unless both of these return 200:
 
 - `GET /api/v1/classes`
 - the Spotify connection check, `GET /api/v1/providers/spotify/playlists` (the stored grant can list
