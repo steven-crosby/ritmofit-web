@@ -73,6 +73,13 @@ function page(items: ClassListItem[]): ClassListPage {
   return { items, nextCursor: null };
 }
 
+/** Leave the full-focus builder when it is open, then open a class from Classes. */
+async function openClassFromClasses(title: string) {
+  const back = screen.queryByRole('button', { name: 'Back to Classes' });
+  if (back) fireEvent.click(back);
+  fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^${title}$`) }));
+}
+
 /**
  * Build a run-payload for the Live queue's per-class readiness fetch. Override
  * `durationMs` (null = missing → blocks Live) and `providerRefs` per track to drive
@@ -302,7 +309,7 @@ describe('Dashboard class library states', () => {
     );
   });
 
-  it('focuses Add music after creating an empty class', async () => {
+  it('focuses Add a playlist after creating an empty class', async () => {
     const created = makeClass('Blank ride');
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.createClass).mockResolvedValue(
@@ -317,24 +324,26 @@ describe('Dashboard class library states', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
     fireEvent.click(screen.getByRole('button', { name: 'Create empty class' }));
 
-    const addMusic = await screen.findByRole('button', { name: 'Add music' });
-    await waitFor(() => expect(document.activeElement).toBe(addMusic));
+    const addPlaylist = await screen.findByRole('button', { name: 'Add a playlist' });
+    await waitFor(() => expect(document.activeElement).toBe(addPlaylist));
+    expect(addPlaylist.className).toContain('rf-btn-primary');
   });
 
-  it('folds the rail’s create/filter controls away once a class is open', async () => {
+  it('opens a class in full focus without the class list', async () => {
     const ride = makeClass('Morning ride');
     vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
     vi.mocked(api.listClassTracks).mockResolvedValue([]);
     renderDashboard();
 
-    fireEvent.click((await screen.findAllByRole('button', { name: /^Morning ride/ }))[0]!);
-    const disclosure = await screen.findByText('New class, filters, and search');
-    // Opening a class mounts the builder rail with create/filter folded away —
-    // those controls belong to picking a class, not to editing one.
-    expect(disclosure.closest('details')).toHaveProperty('open', false);
-    // ...and the rail names the card being edited, rather than leaving a ring to
-    // carry "what did I just click?".
-    expect(screen.getByText('Open')).toBeTruthy();
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Morning ride$/ }))[0]!);
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    expect(within(header).getByRole('heading', { name: 'Morning ride' })).toBeTruthy();
+    expect(within(header).getByText('Cycle')).toBeTruthy();
+    expect(within(header).getByRole('button', { name: 'Back to Classes' })).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
+    expect(screen.queryByText('Your classes')).toBeNull();
+    expect(screen.queryByText('New class, filters, and search')).toBeNull();
+    expect(screen.queryByText('Open')).toBeNull();
   });
 
   it('shows a distinct error state when the class list fails to load, and retries', async () => {
@@ -1754,6 +1763,39 @@ describe('Dashboard class detail', () => {
     expect(screen.getByRole('button', { name: 'Manual track' })).toBeTruthy();
   });
 
+  it('uses Add a playlist as the empty-music call to action', async () => {
+    const ride = makeClass('Sunset climb');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([] as ClassTrack[]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Sunset climb$/ }));
+
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    expect(within(header).getByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
+    expect(within(header).getByText('Cycle')).toBeTruthy();
+    expect(within(header).getByRole('button', { name: 'Back to Classes' })).toBeTruthy();
+    expect(within(header).queryByRole('button', { name: 'Add a playlist' })).toBeNull();
+    expect(screen.queryByText(/Adds after your current/)).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Build a class' })).toBeNull();
+
+    const empty = screen.getByText('Empty run of show').closest('div');
+    if (!empty) throw new Error('Expected the empty run of show.');
+    const [callToAction] = within(empty).getAllByRole('button');
+    expect(callToAction?.textContent).toBe('Add a playlist');
+    expect(callToAction?.className).toContain('rf-btn-primary');
+    fireEvent.click(callToAction!);
+
+    const region = await screen.findByRole('region', { name: /Add music to Sunset climb/ });
+    expect(
+      within(region).getByRole('button', { name: 'Import Playlist URL', pressed: true }),
+    ).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Add a playlist' })).toHaveLength(1);
+  });
+
   it('keeps the newly selected class when a slower prior load resolves late', async () => {
     const first = makeClass('First ride');
     const second = makeClass('Second ride');
@@ -1767,9 +1809,8 @@ describe('Dashboard class detail', () => {
 
     renderDashboard();
     // Select the slow class, then immediately switch to the fast one.
-    fireEvent.click(await screen.findByRole('button', { name: /^First ride/ }));
-    const chooser = await screen.findByRole('navigation', { name: 'Class chooser' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Second ride/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^First ride$/ }));
+    await openClassFromClasses('Second ride');
 
     expect(await screen.findByRole('heading', { name: 'Second ride' })).toBeTruthy();
 
@@ -1829,10 +1870,14 @@ describe('Dashboard class detail', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Stale card' }));
 
-    // After the detail (run-payload) loads, the builder rail card reflects 2 tracks · 7:00.
-    expect(
-      await screen.findByRole('button', { name: /^Stale card.*2 tracks.*7:00/i }),
-    ).toBeTruthy();
+    // The builder header shows the loaded shape. Back on Classes, the row keeps
+    // those aggregates without a builder class list.
+    await screen.findByRole('heading', { name: 'Stale card' });
+    expect(screen.getByText('2 tracks')).toBeTruthy();
+    expect(screen.getByText('7:00 total')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
+    expect(await screen.findByText('Cycle · 2 tracks · 7:00')).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
   });
 
   it('submits manually added track durations as parsed minutes and seconds', async () => {
@@ -2360,24 +2405,30 @@ describe('Dashboard track focus management', () => {
     expect(screen.getByRole('button', { name: /run live/i })).toHaveProperty('disabled', true);
   });
 
-  it('keeps compact cross-class orientation while a class is open', async () => {
+  it('returns to the Classes library from the builder back link', async () => {
     const first = installClassWithTracks('Saturday Heat', [
       { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
     ]);
+    first.template = 'sculpt';
     const second = makeClass('Sunrise Source');
     vi.mocked(api.listClasses).mockResolvedValue(page([first, second]));
 
     renderDashboard();
-    fireEvent.click(await screen.findByRole('button', { name: /^Saturday Heat/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Saturday Heat$/ }));
 
-    const chooser = await screen.findByRole('navigation', { name: 'Class chooser' });
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    expect(within(header).getByRole('heading', { name: 'Saturday Heat' })).toBeTruthy();
+    expect(within(header).getByText('Pilates')).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Build a class' })).toBeNull();
+
+    fireEvent.click(within(header).getByRole('button', { name: 'Back to Classes' }));
     expect(
-      within(chooser)
-        .getByRole('button', { name: /Saturday Heat/ })
-        .getAttribute('aria-current'),
-    ).toBe('page');
-    expect(within(chooser).getByRole('button', { name: /Sunrise Source/ })).toBeTruthy();
-    expect(within(chooser).getByRole('button', { name: 'All classes' })).toBeTruthy();
+      await screen.findByRole('heading', { name: 'Pick up where the energy left off.' }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Class builder' })).toBeNull();
+    expect(screen.getByRole('button', { name: /^Saturday Heat$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Sunrise Source$/ })).toBeTruthy();
   });
 
   it('keeps the selected track and draft stable through an optimistic reorder refresh', async () => {
@@ -2551,8 +2602,7 @@ describe('Dashboard track focus management', () => {
       vi.mocked(api.listClassTracks).mockReturnValueOnce(returning.promise);
       fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
       await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
-      const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-      fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+      await openClassFromClasses('Other ride');
       await screen.findByRole('heading', { name: 'Other ride' });
       await act(async () => {
         if (outcome === 'success') returning.resolve([makeClassTrack('ct-1', 0)]);
@@ -2659,8 +2709,7 @@ describe('Dashboard track focus management', () => {
     const pending = deferred<RunPayload>();
     vi.mocked(api.getRunPayload).mockReturnValueOnce(pending.promise);
     fireEvent.click(screen.getByRole('button', { name: /Run live/ }));
-    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await openClassFromClasses('Other ride');
     await screen.findByRole('heading', { name: 'Other ride' });
     await act(async () => pending.resolve(liveReturnPayload(ride)));
     expect(screen.queryByRole('button', { name: 'Exit' })).toBeNull();
@@ -2762,10 +2811,9 @@ describe('Dashboard track focus management', () => {
         await screen.findByRole('heading', { name: 'Spotify likes' });
         await act(async () => {});
       } else {
-        const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-        fireEvent.click(within(chooser).getByRole('button', { name: /^Import other ride/ }));
+        await openClassFromClasses('Import other ride');
         await screen.findByRole('heading', { name: 'Import other ride' });
-        fireEvent.click(within(chooser).getByRole('button', { name: /^Spotify likes/ }));
+        await openClassFromClasses('Spotify likes');
         await screen.findByRole('heading', { name: 'Spotify likes' });
       }
       const readsBeforeCommit = vi.mocked(api.listClassTracks).mock.calls.length;
@@ -2831,8 +2879,7 @@ describe('Dashboard track focus management', () => {
     async (origin: string) => {
       const { other } = await openRefreshRide();
       const deletion = await startDeferredClassDelete();
-      const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-      fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+      await openClassFromClasses('Other ride');
       await screen.findByRole('heading', { name: 'Other ride' });
       let run: HTMLElement;
       if (origin === 'overview') {
@@ -2857,10 +2904,9 @@ describe('Dashboard track focus management', () => {
       const { ride, other } = await openRefreshRide();
       const deletion = await startDeferredClassDelete();
       if (origin === 'reopened Builder') {
-        const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-        fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+        await openClassFromClasses('Other ride');
         await screen.findByRole('heading', { name: 'Other ride' });
-        fireEvent.click(within(chooser).getByRole('button', { name: /^Refresh ride/ }));
+        await openClassFromClasses('Refresh ride');
         await screen.findByRole('heading', { name: 'Refresh ride' });
       }
       let run: HTMLElement;
@@ -2895,8 +2941,7 @@ describe('Dashboard track focus management', () => {
   it('preserves B’s inspector draft, focus and scoped read warning when A deletion completes', async () => {
     const { other } = await openRefreshRide();
     const deletion = await startDeferredClassDelete();
-    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await openClassFromClasses('Other ride');
     await screen.findByRole('heading', { name: 'Other ride' });
     fireEvent.click(rowSelectButton('ct-other')!);
     const inspector = await screen.findByRole('region', { name: 'Track inspector for Other song' });
@@ -3004,13 +3049,12 @@ describe('Dashboard track focus management', () => {
       fireEvent.keyDown(grip, { key: 'ArrowDown' });
       await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
       if (leave === 'switch') {
-        const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-        fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+        await openClassFromClasses('Other ride');
         await screen.findByRole('heading', { name: 'Other ride' });
       } else if (leave === 'music') {
         fireEvent.click(screen.getByRole('button', { name: 'Music' }));
       } else {
-        fireEvent.click(screen.getByRole('button', { name: 'All classes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
       }
       await act(async () => refresh.reject(new Error('Obsolete read')));
       expect(screen.queryByText(/Obsolete read/)).toBeNull();
@@ -3026,10 +3070,9 @@ describe('Dashboard track focus management', () => {
     const mutation = deferred<Awaited<ReturnType<typeof api.reorderTracks>>>();
     vi.mocked(api.reorderTracks).mockReturnValueOnce(mutation.promise);
     fireEvent.keyDown(grip, { key: 'ArrowDown' });
-    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await openClassFromClasses('Other ride');
     await screen.findByRole('heading', { name: 'Other ride' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Refresh ride/ }));
+    await openClassFromClasses('Refresh ride');
     await screen.findByRole('heading', { name: 'Refresh ride' });
     const readsBeforeCompletion = vi.mocked(api.listClassTracks).mock.calls.length;
     await act(async () => mutation.resolve([]));
@@ -3057,7 +3100,8 @@ describe('Dashboard track focus management', () => {
     await screen.findByText(/Newest read unavailable/);
     await act(async () => older.resolve([makeClassTrack('ct-1', 0)]));
     expect(screen.queryAllByText('Obsolete song title')).toHaveLength(0);
-    expect(screen.getByRole('button', { name: /^Refresh ride.*2 tracks.*30:00/i })).toBeTruthy();
+    expect(screen.getByText('2 tracks')).toBeTruthy();
+    expect(screen.getByText('30:00 total')).toBeTruthy();
     expect(screen.getByText(/Newest read unavailable/)).toBeTruthy();
   });
 
@@ -3085,7 +3129,8 @@ describe('Dashboard track focus management', () => {
     expect(
       screen.getByRole('region', { name: 'Track inspector for Latest First Light' }),
     ).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Refresh ride.*2 tracks.*7:00/i })).toBeTruthy();
+    expect(screen.getByText('2 tracks')).toBeTruthy();
+    expect(screen.getByText('7:00 total')).toBeTruthy();
   });
 
   it('does not change Library aggregates from a silent response after switching away', async () => {
@@ -3099,12 +3144,13 @@ describe('Dashboard track focus management', () => {
     vi.mocked(api.getRunPayload).mockResolvedValueOnce(stalePayload);
     fireEvent.keyDown(grip, { key: 'ArrowDown' });
     await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
-    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await openClassFromClasses('Other ride');
     await screen.findByRole('heading', { name: 'Other ride' });
     await act(async () => older.resolve([makeClassTrack('ct-1', 0)]));
-    expect(screen.getByRole('button', { name: /^Refresh ride.*2 tracks.*30:00/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Other song.*Artist/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
+    expect(await screen.findByText('Cycle · 2 tracks · 30:00')).toBeTruthy();
+    expect(screen.queryByText('Cycle · 1 track · 1:00')).toBeNull();
   });
 
   it('clears only the read warning when refresh recovers after an unrelated mutation error', async () => {
@@ -3600,7 +3646,8 @@ describe('Dashboard plan-first next step', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: /^Plan ride$/ }));
-    const open = await screen.findByRole('button', { name: 'Add a playlist' });
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    const open = within(header).getByRole('button', { name: 'Add a playlist' });
     expect(screen.getAllByRole('button', { name: 'Add a playlist' })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Import a playlist as song blocks' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
@@ -3629,10 +3676,16 @@ describe('Dashboard plan-first next step', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: /^Imported ride$/ }));
     await screen.findByRole('heading', { name: 'Imported ride' });
-    expect(await screen.findByRole('button', { name: 'Add a playlist' })).toBeTruthy();
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    const playlist = await within(header).findByRole('button', { name: 'Add a playlist' });
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull());
     expect(screen.queryByRole('button', { name: 'Import a playlist as song blocks' })).toBeNull();
-    expect(screen.getByText('Adds after your current 1 song')).toBeTruthy();
+    const note = within(header).getByText('Adds after your current 1 song');
+    expect(playlist.parentElement).toBe(note.parentElement);
+    expect(within(header).getByRole('heading', { name: 'Imported ride' })).toBeTruthy();
+    expect(within(header).getByText('Cycle')).toBeTruthy();
+    const playback = screen.getByRole('heading', { name: 'Playback order' });
+    expect(playback.parentElement?.parentElement?.contains(playlist)).toBe(false);
 
     fireEvent.click(screen.getByRole('button', { name: 'Add a playlist' }));
     const region = await screen.findByRole('region', { name: /Add music to Imported ride/ });
@@ -3660,10 +3713,14 @@ describe('Dashboard plan-first next step', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: /^Recipe ride$/ }));
     await screen.findByRole('heading', { name: 'Recipe ride' });
-    expect(await screen.findAllByRole('button', { name: 'Add a playlist' })).toHaveLength(1);
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    const playlist = within(header).getByRole('button', { name: 'Add a playlist' });
+    expect(screen.getAllByRole('button', { name: 'Add a playlist' })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Import a playlist as song blocks' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
-    expect(screen.getByText('Adds after your current 2 songs')).toBeTruthy();
+    const note = within(header).getByText('Adds after your current 2 songs');
+    expect(playlist.parentElement).toBe(note.parentElement);
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
   });
 
   it('hides Add a playlist without edit access', async () => {

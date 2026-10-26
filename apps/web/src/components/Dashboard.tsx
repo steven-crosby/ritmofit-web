@@ -184,18 +184,6 @@ interface CollectionImportResult {
   songBlocks?: boolean;
 }
 
-/**
- * True on the xl 3-pane workstation, where the library rail is its own sticky
- * column. Read once for an initial state, never subscribed to: this decides
- * whether the rail's creation controls start expanded, and re-deciding it mid
- * session would reopen a disclosure the instructor deliberately closed. Absent
- * `matchMedia` (jsdom) it reports wide, so the controls default to visible.
- */
-function prefersWideWorkstation(): boolean {
-  if (typeof window === 'undefined' || !window.matchMedia) return true;
-  return window.matchMedia('(min-width: 1280px)').matches;
-}
-
 /** Full-screen Suspense fallback while a lazy chunk (e.g. Live mode) loads. */
 function LoadingScreen() {
   return (
@@ -276,17 +264,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [importResult, setImportResult] = useState<CollectionImportResult | null>(null);
   const [retryingImport, setRetryingImport] = useState(false);
 
-  /**
-   * The rail's creation + filtering controls collapse behind one affordance so the
-   * library does not become "a large preamble before the work" (canon 09) on a
-   * phone. They stay open on the wide 3-pane layout, where the rail is its own
-   * sticky column and costs the centre nothing.
-   */
-  const [creatorOpen, setCreatorOpen] = useState(prefersWideWorkstation);
   const [createDialogMode, setCreateDialogMode] = useState<CreateClassMode | null>(null);
   const createDialogOpen = createDialogMode != null;
   const focusClassCreator = useCallback((mode: CreateClassMode = 'scaffold') => {
-    setCreatorOpen(true);
     setCreateDialogMode(mode);
   }, []);
 
@@ -502,14 +482,20 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       detailWorkspace.current = { classId: cls.id, session: {} };
       setRefreshWarning(null);
       setSelected(cls);
-      // Opening a class changes what the rail is for: the create/filter controls
-      // belong to choosing a class, not to editing one, so they fold away rather
-      // than sitting expanded above the list while the instructor works.
-      setCreatorOpen(false);
       await loadDetail(cls.id);
     },
     [loadDetail],
   );
+
+  // Leave the full-focus builder for the Classes library. Bump the live and
+  // detail generations so a response still in flight cannot reopen this class.
+  const closeBuilder = useCallback(() => {
+    liveRequestId.current += 1;
+    detailWorkspace.current = null;
+    setRefreshWarning(null);
+    setSelected(null);
+    dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
+  }, []);
 
   // A provider OAuth round-trip returns the browser to "/?connected=…" or
   // "/?error=…". Open the connections dialog with that result, then strip the
@@ -1014,59 +1000,12 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 
         {destination === 'classes' ? (
           selected ? (
-            /* The 3-pane workstation (design system 09): library · class · inspector.
-              Collapses to a single stacked column below xl so it stays usable on
-              smaller laptops. The class workspace contributes the center + inspector
-              columns; the library is the first column. The resting Classes home
-              hides this rail so the ranked list is the page. */
+            /* Full-focus builder: the class and its inspector. The Classes library
+              stays on its own page, reached by the back link. */
             <div
               ref={workspaceRef}
-              className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start"
+              className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start"
             >
-              <LibraryRail
-                className="hidden xl:flex"
-                creatorOpen={creatorOpen}
-                onCreatorOpenChange={setCreatorOpen}
-                classes={classes}
-                status={listStatus}
-                hasMore={nextClassCursor !== null}
-                loadingMore={loadingMoreClasses}
-                selectedId={selected.id}
-                knownTags={knownTags}
-                activeTag={activeTag}
-                onSelectTag={applyTagFilter}
-                onError={setError}
-                onStartClass={focusClassCreator}
-                onDuplicate={async (cls) => {
-                  // Duplicate an owned class into the library, then refresh so the
-                  // new class appears and open it for immediate editing.
-                  const copy = await copyClass(cls.id);
-                  await applyTagFilter(null);
-                  await refreshClasses();
-                  await openClass({ ...copy, accessLevel: 'owner' });
-                }}
-                onOpen={openClass}
-                onPreview={(cls) => setCardPreview(cls)}
-                onLoadMore={loadMoreClasses}
-                onRetry={() => {
-                  setListStatus('loading');
-                  void refreshClasses();
-                }}
-              />
-
-              <CompactClassChooser
-                classes={classes}
-                selectedId={selected.id}
-                onOpen={openClass}
-                onShowAll={() => {
-                  liveRequestId.current += 1;
-                  detailWorkspace.current = null;
-                  setRefreshWarning(null);
-                  setSelected(null);
-                  dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
-                }}
-              />
-
               {detail.classId === selected.id && detail.status === 'ready' ? (
                 <ClassWorkspace
                   key={selected.id}
@@ -1097,30 +1036,30 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                   connectionRevision={connectionRevision}
                   focusAddMusic={newEmptyClassId === selected.id}
                   onFocusedAddMusic={() => setNewEmptyClassId(null)}
-                  onBackToClasses={() => {
-                    liveRequestId.current += 1;
-                    detailWorkspace.current = null;
-                    setRefreshWarning(null);
-                    setSelected(null);
-                    dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
-                  }}
+                  onBackToClasses={closeBuilder}
                 />
               ) : detail.classId === selected.id && detail.status === 'error' ? (
-                <section className="rounded-card bg-bg-raised p-8 shadow-card">
-                  <p className="font-ui text-sm text-state-danger" role="alert">
-                    {detail.error}
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-4 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
-                    onClick={() => void loadDetail(selected.id)}
-                  >
-                    Retry class
-                  </button>
+                <section className="flex min-w-0 flex-col gap-4">
+                  <BackToClassesButton onClick={closeBuilder} />
+                  <div className="rounded-card bg-bg-raised p-8 shadow-card">
+                    <p className="font-ui text-sm text-state-danger" role="alert">
+                      {detail.error}
+                    </p>
+                    <button
+                      type="button"
+                      className="mt-4 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
+                      onClick={() => void loadDetail(selected.id)}
+                    >
+                      Retry class
+                    </button>
+                  </div>
                 </section>
               ) : (
-                <section className="rounded-card bg-bg-raised p-8 shadow-card" aria-busy="true">
-                  <p className="font-ui text-text-tertiary">Loading class…</p>
+                <section className="flex min-w-0 flex-col gap-4" aria-busy="true">
+                  <BackToClassesButton onClick={closeBuilder} />
+                  <div className="rounded-card bg-bg-raised p-8 shadow-card">
+                    <p className="font-ui text-text-tertiary">Loading class…</p>
+                  </div>
                 </section>
               )}
             </div>
@@ -1183,66 +1122,61 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   );
 }
 
+/** Leaves the full-focus builder for the Classes library. */
+function BackToClassesButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-11 self-start rounded-control px-1 font-ui text-sm font-semibold text-interactive hover:text-interactive-hover rf-focus-ring"
+    >
+      <span aria-hidden="true">← </span>
+      Back to Classes
+    </button>
+  );
+}
+
 /**
- * Mobile Builder orientation. The full library remains the desktop rail; narrow
- * viewports get one compact, horizontally scrollable chooser so switching class
- * context never requires traversing the entire library below the active workbench.
+ * Add a playlist, with the append note beside the button when the class already
+ * has songs. New songs append; this control does not stretch blocks.
  */
-function CompactClassChooser({
-  classes,
-  selectedId,
-  onOpen,
-  onShowAll,
+function AddPlaylistControl({
+  buttonRef,
+  expanded,
+  note,
+  noteId,
+  onClick,
+  prominent = false,
 }: {
-  classes: ClassListItem[];
-  selectedId: string;
-  onOpen: (cls: ClassListItem) => void;
-  onShowAll: () => void;
+  buttonRef?: Ref<HTMLButtonElement>;
+  expanded: boolean;
+  note: string | null;
+  noteId: string;
+  onClick: () => void;
+  prominent?: boolean;
 }) {
   return (
-    <nav
-      aria-label="Class chooser"
-      className="order-0 min-w-0 rounded-card border border-border-subtle bg-bg-raised p-3 xl:hidden"
-    >
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">
-          Your classes
-        </span>
-        <button
-          type="button"
-          onClick={onShowAll}
-          className="min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive rf-focus-ring"
-        >
-          All classes
-        </button>
-      </div>
-      <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
-        {classes.map((cls) => {
-          const active = cls.id === selectedId;
-          return (
-            <button
-              key={cls.id}
-              type="button"
-              aria-current={active ? 'page' : undefined}
-              onClick={() => onOpen(cls)}
-              className={`min-h-16 min-w-[11rem] max-w-[15rem] shrink-0 rounded-control border p-3 text-left rf-focus-ring ${
-                active
-                  ? 'border-interactive bg-interactive/5'
-                  : 'border-border-subtle bg-bg-base hover:border-interactive/45'
-              }`}
-            >
-              <span className="block truncate font-ui text-sm font-semibold text-text-primary">
-                {cls.title}
-              </span>
-              <span className="mt-1 block truncate font-data text-[10px] text-text-tertiary">
-                {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount}{' '}
-                {cls.trackCount === 1 ? 'track' : 'tracks'}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </nav>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={onClick}
+        aria-expanded={expanded}
+        aria-describedby={note ? noteId : undefined}
+        className={
+          prominent
+            ? 'min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring'
+            : 'min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring'
+        }
+      >
+        Add a playlist
+      </button>
+      {note ? (
+        <p id={noteId} className="font-ui text-xs leading-5 text-text-tertiary">
+          {note}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -3647,8 +3581,8 @@ function LikesBrowserDialog({
 /**
  * The class workspace — the center column (header summary + energy ribbon +
  * track list + add-track) and the sticky right-hand inspector (design system
- * 09). Returns a fragment so both land as siblings of the library rail in the
- * 3-pane grid. Mounted with `key={cls.id}` by the parent, so opening another
+ * 09). Returns a fragment so both land as the two columns of the full-focus
+ * builder. Mounted with `key={cls.id}` by the parent, so opening another
  * class remounts it — clearing the track selection without an effect.
  */
 function ClassWorkspace({
@@ -3698,7 +3632,7 @@ function ClassWorkspace({
   /** A newly created empty class should land on its first useful action. */
   focusAddMusic: boolean;
   onFocusedAddMusic: () => void;
-  /** Narrow-layout return path when the selected class is shown before the library. */
+  /** Return from the full-focus builder to the Classes library. */
   onBackToClasses: () => void;
 }) {
   // The selected track (by class_track id) drives the inspector.
@@ -3735,6 +3669,12 @@ function ClassWorkspace({
       ? `Adds after your current ${tracks.length} ${tracks.length === 1 ? 'song' : 'songs'}`
       : null;
   const playlistAppendNoteId = `playlist-append-note-${cls.id}`;
+  // No music and no teaching plan: Add a playlist is the empty-state call to
+  // action. Otherwise it lives in the header, beside the append note.
+  const playlistInEmptyState =
+    canEdit && tracks.length === 0 && cls.scaffoldRecipeId == null && !hasPlanBlocks;
+  const playlistInHeader = canEdit && !playlistInEmptyState;
+  const playlistExpanded = sourceOpen && !assigningPlanBlock;
   const existingProviderTrackKeys = providerTrackKeysFromRun(payload?.tracks);
 
   useEffect(() => {
@@ -3750,15 +3690,16 @@ function ClassWorkspace({
   const trackListRef = useRef<HTMLDivElement | null>(null);
   const trackSourceRef = useRef<HTMLElement | null>(null);
   const trackSourceToggleRef = useRef<HTMLButtonElement | null>(null);
+  const addPlaylistRef = useRef<HTMLButtonElement>(null);
   const manualEntryRef = useRef<HTMLDetailsElement | null>(null);
   const inspectorPlaceholderRef = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
-    if (!focusAddMusic || !showStackAddMusic || tracks.length !== 0) return;
-    const addMusic = trackSourceToggleRef.current;
-    if (!addMusic) return;
-    addMusic.focus();
+    if (!focusAddMusic || tracks.length !== 0) return;
+    const addPlaylist = addPlaylistRef.current;
+    if (!addPlaylist) return;
+    addPlaylist.focus();
     onFocusedAddMusic();
-  }, [focusAddMusic, showStackAddMusic, tracks.length, onFocusedAddMusic]);
+  }, [focusAddMusic, tracks.length, onFocusedAddMusic, playlistInEmptyState, playlistInHeader]);
   const [pendingRowFocus, setPendingRowFocus] = useState<string | 'placeholder' | null>(null);
   useLayoutEffect(() => {
     if (pendingRowFocus === null) return;
@@ -3961,32 +3902,39 @@ function ClassWorkspace({
   const timelinePanelId = `builder-timeline-${cls.id}`;
   const sourcePanelId = `builder-source-${cls.id}`;
 
+  const addPlaylistAction = canEdit
+    ? {
+        expanded: playlistExpanded,
+        note: playlistAppendNote,
+        noteId: playlistAppendNoteId,
+        onClick: () => openClassMusic('playlist'),
+        buttonRef: addPlaylistRef,
+      }
+    : null;
+
   return (
     <>
       {/* ── Center column: header summary · energy ribbon · track list ── */}
-      <section className="order-1 flex min-w-0 flex-col gap-4 xl:col-start-2 xl:row-start-1">
-        <button
-          type="button"
-          onClick={onBackToClasses}
-          className="min-h-11 self-start rounded-control px-1 font-ui text-sm font-semibold text-interactive hover:text-interactive-hover xl:hidden"
-        >
-          ← Back to classes
-        </button>
-        <ClassHeaderCard
-          cls={cls}
-          payload={payload}
-          trackCount={payload?.tracks.length ?? tracks.length}
-          isOwner={isOwner}
-          canEdit={canEdit}
-          canRun={payload != null && canRunPayload(payload) && !planLead && planReady}
-          onError={onError}
-          onRun={onRun}
-          onSelectTrack={setSelectedTrackId}
-          onStartChoreography={startChoreography}
-          onClassUpdated={onClassUpdated}
-          onDeleted={() => onClassDeleted(cls.id)}
-          planLead={planLead}
-        />
+      <section className="order-1 flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
+        <div role="region" aria-label="Class builder" className="flex flex-col gap-3">
+          <BackToClassesButton onClick={onBackToClasses} />
+          <ClassHeaderCard
+            cls={cls}
+            payload={payload}
+            trackCount={payload?.tracks.length ?? tracks.length}
+            isOwner={isOwner}
+            canEdit={canEdit}
+            canRun={payload != null && canRunPayload(payload) && !planLead && planReady}
+            onError={onError}
+            onRun={onRun}
+            onSelectTrack={setSelectedTrackId}
+            onStartChoreography={startChoreography}
+            onClassUpdated={onClassUpdated}
+            onDeleted={() => onClassDeleted(cls.id)}
+            planLead={planLead}
+            addPlaylist={playlistInHeader ? addPlaylistAction : null}
+          />
+        </div>
 
         {/* Slice 2 owns this derived presentation. Builder consumes it unchanged as
             the persistent class-shape instrument above the editable track score.
@@ -4115,25 +4063,6 @@ function ClassWorkspace({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {canEdit && (
-                <button
-                  type="button"
-                  onClick={() => openClassMusic('playlist')}
-                  aria-expanded={sourceOpen && !assigningPlanBlock}
-                  aria-describedby={playlistAppendNote ? playlistAppendNoteId : undefined}
-                  className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
-                >
-                  Add a playlist
-                </button>
-              )}
-              {canEdit && playlistAppendNote && (
-                <p
-                  id={playlistAppendNoteId}
-                  className="font-ui text-xs leading-5 text-text-tertiary"
-                >
-                  {playlistAppendNote}
-                </p>
-              )}
               {(showStackAddMusic || (sourceOpen && !assigningPlanBlock)) && (
                 <button
                   ref={trackSourceToggleRef}
@@ -4162,15 +4091,18 @@ function ClassWorkspace({
           {tracks.length === 0 && cls.scaffoldRecipeId == null && (
             <div className="rounded-card border border-border-subtle bg-bg-sunken p-4">
               <StatusLabel kind="empty" label="Empty run of show" />
-              {/* This promised a ranking the layout does not provide — the four
-                  routes are presented as equals because they are (P1-05, D20). */}
               <h3 className="mt-2 font-display text-lg font-semibold text-text-primary">
-                Start this class any way you like.
+                This class has no music yet.
               </h3>
               <p className="mt-1 font-ui text-sm leading-5 text-text-secondary">
-                All four routes add to this class. The class shape appears once songs have a length
-                and an effort.
+                Add a playlist to start the run of show. New songs append after the songs already
+                here. Search, a move, or a manual track still add to this class.
               </p>
+              {playlistInEmptyState && addPlaylistAction && (
+                <div className="mt-3">
+                  <AddPlaylistControl {...addPlaylistAction} prominent />
+                </div>
+              )}
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
@@ -4244,7 +4176,7 @@ function ClassWorkspace({
       </section>
 
       {/* ── Right column: the sticky inspector for the selected track ── */}
-      <aside className="order-2 min-w-0 xl:sticky xl:top-6 xl:col-start-3 xl:row-start-1 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
+      <aside className="order-2 min-w-0 xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
         {selectedTrack ? (
           <div className="flex flex-col gap-3">
             <TrackInspector
@@ -4350,6 +4282,7 @@ export function ClassHeaderCard({
   onClassUpdated,
   onDeleted,
   planLead = null,
+  addPlaylist = null,
 }: {
   cls: ClassWithAccess;
   payload: RunPayload | null;
@@ -4366,6 +4299,14 @@ export function ClassHeaderCard({
   onDeleted: () => void;
   /** Plan-block next step, shown ahead of Live-readiness when the class can already run. */
   planLead?: string | null;
+  /** Header Add a playlist. Absent when the empty run of show owns that action. */
+  addPlaylist?: {
+    expanded: boolean;
+    note: string | null;
+    noteId: string;
+    onClick: () => void;
+    buttonRef: Ref<HTMLButtonElement>;
+  } | null;
 }) {
   const { run } = useAsyncAction(onError);
   const { busy: deleting, run: runDelete } = useAsyncAction(onError);
@@ -4440,6 +4381,7 @@ export function ClassHeaderCard({
       : trackCount === 0
         ? 'Add a track to run this class.'
         : 'Give every track a length to run.';
+  const templateLabel = formatTemplateLabel(cls.template);
 
   const startRename = () => {
     setTitleDraft(cls.title);
@@ -4534,11 +4476,25 @@ export function ClassHeaderCard({
               <ClassCoverArt classId={cls.id} title={cls.title} />
             )}
           </div>
-          <h2 className="min-w-0 max-w-full truncate font-display text-xl font-semibold text-text-primary">
-            {cls.title}
-          </h2>
+          <div className="min-w-0 max-w-full">
+            <h2 className="truncate font-display text-xl font-semibold text-text-primary">
+              {cls.title}
+            </h2>
+            {templateLabel && (
+              <p className="mt-1 font-ui text-sm text-text-secondary">{templateLabel}</p>
+            )}
+          </div>
         </div>
-        <div className="flex w-full sm:w-auto sm:shrink-0">
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:shrink-0 sm:items-end">
+          {addPlaylist && (
+            <AddPlaylistControl
+              buttonRef={addPlaylist.buttonRef}
+              expanded={addPlaylist.expanded}
+              note={addPlaylist.note}
+              noteId={addPlaylist.noteId}
+              onClick={addPlaylist.onClick}
+            />
+          )}
           <button
             className={
               planLead
