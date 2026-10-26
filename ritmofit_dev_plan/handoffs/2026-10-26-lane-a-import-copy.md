@@ -5,7 +5,7 @@ lane: lane-a-import-copy
 branch: cursor/import-error-copy-2761
 head: ecf7c34b4d5e2321bc1dd1df3ee448dbf9d23be9
 base: 38bb2d843acf6436e1f33f4fa407462661f67cf1
-prs: []
+prs: ['#588 (open)']
 status: open
 ---
 
@@ -19,7 +19,7 @@ status: open
 
 ## In flight
 
-- This branch's PR is open for review. Do not merge from this lane.
+- [#588](https://github.com/steven-crosby/ritmofit-web/pull/588) is open for review. Do not merge from this lane.
 
 ## Next action
 
