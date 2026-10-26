@@ -3,7 +3,8 @@
  * or from a shorter playlist that already contains songs on the class.
  * The first 15 songs that are not already in the class start checked.
  * Songs already on the class stay unchecked until she opts in. The 16th
- * check is refused. Confirm returns the chosen occurrence ids in source order.
+ * check is refused, and only that refusal shows the cap sentence. Fifteen
+ * selected is allowed. Confirm returns the chosen occurrence ids in source order.
  */
 import { useId, useState } from 'react';
 import { PLAYLIST_SONG_BLOCK_CAP } from '@ritmofit/shared';
@@ -99,14 +100,16 @@ export function PlaylistSongPicker({
           Cancel
         </button>
       </div>
-      <p
-        id={capId}
-        role={refused ? 'alert' : undefined}
-        className="font-ui text-sm text-text-secondary"
+      {refused && (
+        <p id={capId} role="alert" className="font-ui text-sm text-text-secondary">
+          Choose at most 15 songs.
+        </p>
+      )}
+      <div
+        role="group"
+        aria-describedby={refused ? capId : undefined}
+        className="max-h-80 overflow-y-auto"
       >
-        Choose at most 15 songs.
-      </p>
-      <div role="group" aria-describedby={capId} className="max-h-80 overflow-y-auto">
         {items.map((item) => (
           <label
             key={item.id}
