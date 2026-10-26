@@ -13,6 +13,35 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-25 — #588 and #589 on main `6ee1454`.** Owner approved.
+> Production deploy at 2026-10-26T03:24Z (9:24 PM MT 2026-10-25). New Worker
+> `64bf0d19-fbce-4823-9bd8-e65230bdd2ca`; previous/rollback
+> `9248bbdf-cbd2-4b96-a2eb-ebd25e2a8afe`. SPA entry `assets/index-SlqjBWky.js`
+> (was `assets/index-1d_QF5nN.js`); CSS `assets/index-CSpFExJg.css` unchanged.
+> Three consecutive cache-busted fetches matched the build, and
+> `wrangler deployments status` shows the new Worker at 100%. Built and deployed
+> from a clean detached worktree at `6ee1454` on Steven's MacBook. Full gate
+> passed on `6ee1454` (format, typecheck, lint, design verify, theme-classes,
+> unit tests web 1371 / api 532 / music 30, Worker/D1 integration 232, web build,
+> OpenAPI no drift, contract-parity, audit:ci; Node 26). Preflight: no remote D1
+> migrations pending and `BETA_ALLOWED_EMAILS` present. No migration was applied.
+>
+> Deployed since production `5b006ec`:
+> [#588](https://github.com/steven-crosby/ritmofit-web/pull/588) (the playlist
+> picker shows the 15-song warning only after a refused 16th song; a malformed
+> Spotify playlist id gets "Unsupported playlist URL" before the request,
+> `80b6f82`; web only) and
+> [#589](https://github.com/steven-crosby/ritmofit-web/pull/589) (nested routes
+> with a non-UUID class id return a JSON 404 instead of the SPA, `6ee1454`; API).
+> Docs [#587](https://github.com/steven-crosby/ritmofit-web/pull/587)
+> (`38bb2d8`) is in that tree and does not change runtime. The #586 "Session
+> expired" fix was verified in production in a real browser on 2026-10-25.
+>
+> Smoke: `/` 200, `/api/v1/health` 200 with security headers; unauthenticated
+> `/api/v1/classes`, `/explore`, `/teams`, `/shares/x`, `/imports/playlist`, and
+> `/providers/spotify/search` 401; `/api/v1/classes/not-a-uuid/tracks` 404
+> `application/json` (the #589 fix, live).
+
 > **Deploy 2026-10-25 — #586 and #579 on main `5b006ec`.** Owner approved.
 > Production deploy at 2026-10-25T22:57Z (4:57 PM MT 2026-10-25). New Worker
 > `9248bbdf-cbd2-4b96-a2eb-ebd25e2a8afe`; previous/rollback
