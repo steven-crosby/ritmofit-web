@@ -656,7 +656,19 @@ describe('Dashboard class library states', () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
     vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
-    vi.mocked(api.listPlaylistTracks).mockRejectedValueOnce(new Error('provider unavailable'));
+    vi.mocked(api.listPlaylistTracks)
+      .mockRejectedValueOnce(new Error('provider unavailable'))
+      .mockResolvedValueOnce([
+        {
+          provider: 'spotify',
+          providerTrackId: 'track-1',
+          providerUri: null,
+          title: 'Recovered Track',
+          artist: 'DJ Test',
+          durationMs: 180000,
+          albumArtUrl: null,
+        },
+      ]);
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
@@ -669,6 +681,14 @@ describe('Dashboard class library states', () => {
     expect(start.disabled).toBe(true);
     expect(api.createClass).not.toHaveBeenCalled();
     expect(api.listPlaylistTracks).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('No tracks found in this playlist.')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('Recovered Track')).toBeTruthy();
+    expect(api.createClass).not.toHaveBeenCalled();
+    expect(api.listPlaylistTracks).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.queryByRole('region', { name: 'Class builder' })).toBeNull();
   });
 
   it('disables class creation when a saved playlist contains no tracks', async () => {
@@ -730,6 +750,59 @@ describe('Dashboard class library states', () => {
 
     await waitFor(() => expect(api.createClass).toHaveBeenCalledTimes(1));
     expect(api.listPlaylistTracks).toHaveBeenCalledTimes(1);
+  });
+
+  it('navigates to the class builder after creating a class from a saved playlist', async () => {
+    const playlist = {
+      provider: 'spotify' as const,
+      playlistId: 'pl-warmup',
+      name: 'Warmup Ride',
+      ownerName: 'Steven',
+      trackCount: 1,
+      coverImageUrl: null,
+    };
+    const created = makeClass('Warmup Ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'track-1',
+        providerUri: 'spotify:track:track-1',
+        title: 'Climb Track',
+        artist: 'DJ Test',
+        durationMs: 180000,
+        albumArtUrl: null,
+      },
+    ]);
+    vi.mocked(api.createClass).mockResolvedValue(
+      created as Awaited<ReturnType<typeof api.createClass>>,
+    );
+    vi.mocked(api.importTrack).mockResolvedValue({ id: 'imported-track' } as Awaited<
+      ReturnType<typeof api.importTrack>
+    >);
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
+    await openSavedPlaylist('Spotify', 'Warmup Ride');
+    fireEvent.click(await screen.findByRole('button', { name: 'Start class from Warmup Ride' }));
+
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    expect(within(header).getByRole('heading', { name: 'Warmup Ride' })).toBeTruthy();
+    expect(within(header).getByRole('button', { name: 'Back to Classes' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Classes' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
+    expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Browse Spotify playlists' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Your library' })).toBeNull();
+    expect(document.title).toBe('Warmup Ride - Ritmo Studio');
+    expect(api.createClass).toHaveBeenCalledTimes(1);
+    expect(api.createClass).toHaveBeenCalledWith({ title: 'Warmup Ride', template: 'cycle' });
   });
 
   it('reports partial imports and retries failures against the same class', async () => {
@@ -1121,9 +1194,8 @@ describe('Dashboard class library states', () => {
     expect(soundcloud.className).not.toContain('border-interactive');
 
     fireEvent.click(screen.getByRole('button', { name: 'Live' }));
-    expect(
-      await screen.findByRole('heading', { name: 'What are you teaching next?' }),
-    ).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Teach a class' })).toBeTruthy();
+    expect(screen.getByText('Press Preflight on the one you want.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
     expect(await screen.findByText('Personal workspace')).toBeTruthy();
@@ -1244,10 +1316,14 @@ describe('Dashboard class library states', () => {
       name: 'Preflight Ready ride',
     })) as HTMLButtonElement;
     await waitFor(() => expect(runBtn.disabled).toBe(false));
-    expect(screen.getByRole('region', { name: 'Class Pulse' })).toBeTruthy();
-    // The queue's Pulse says where its shape came from instead of asking a
-    // read-only card to "confirm" anything.
-    expect(screen.getByText('from track efforts')).toBeTruthy();
+    const card = screen.getByRole('heading', { name: 'Ready ride' }).closest('article')!;
+    // The queue keeps the shape as a sparkline. The repeated "Class Pulse" label,
+    // derivation sentence, and Runnable badge are not on the row.
+    expect(within(card).getByRole('img', { name: /Class Pulse/ })).toBeTruthy();
+    expect(within(card).queryByRole('region', { name: 'Class Pulse' })).toBeNull();
+    expect(within(card).queryByText('from track efforts')).toBeNull();
+    expect(within(card).queryByText('Runnable')).toBeNull();
+    expect(screen.queryByText('Queue readiness')).toBeNull();
     // The mount already fetched the payload for readiness; isolate the run request.
     vi.mocked(api.getRunPayload).mockClear();
     fireEvent.click(runBtn);
@@ -1265,17 +1341,43 @@ describe('Dashboard class library states', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
     expect(await screen.findByText('Ready ride')).toBeTruthy();
 
-    // Shape, verdict, and the action are on the scan row; the four-dimension
+    // Name, sparkline, and the action are on the row; the four-dimension
     // readiness readout is collapsed until asked for.
     const card = (await screen.findByText('Ready ride')).closest('article') as HTMLElement;
     const disclosure = card.querySelector('details') as HTMLDetailsElement;
     expect(disclosure).toBeTruthy();
     expect(disclosure.open).toBe(false);
-    expect(screen.getByRole('region', { name: 'Class Pulse' })).toBeTruthy();
+    expect(within(card).getByRole('img', { name: /Class Pulse/ })).toBeTruthy();
+    expect(within(card).queryByText(/to finish/)).toBeNull();
+    expect(within(card).getByText('2 things left')).toBeTruthy();
 
     fireEvent.click(disclosure.querySelector('summary')!);
     await waitFor(() => expect(disclosure.open).toBe(true));
     expect(within(disclosure).getByText(/Durations set|Duration/)).toBeTruthy();
+  });
+
+  it('names a guessed class shape without repeating the auto-shaped sentence', async () => {
+    const shaped = {
+      ...makeClass('Guessed ride', 'owner', 'me'),
+      trackCount: 2,
+      totalDurationMs: 120000,
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([shaped]));
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([
+        { classTrackId: 'ct-1', durationMs: 60000 },
+        { classTrackId: 'ct-2', durationMs: 60000 },
+      ]),
+    );
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    const card = (await screen.findByText('Guessed ride')).closest('article') as HTMLElement;
+    expect(await within(card).findByText('◇ auto')).toBeTruthy();
+    expect(within(card).queryByText(/Auto-shaped from track order/)).toBeNull();
+    expect(within(card).queryByText('Class Pulse')).toBeNull();
+    expect(screen.queryByText('Queue readiness')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'What are you teaching next?' })).toBeNull();
   });
 
   it('ranks the Live queue with the ordering chosen on Classes', async () => {
@@ -1340,10 +1442,12 @@ describe('Dashboard class library states', () => {
     });
     // The primary points assistive tech at the reason it exists.
     expect(fixBtn.getAttribute('aria-describedby')).toBe(`live-blocked-${falseRunnable.id}`);
-    // Preflight rail counts it as blocked, not runnable.
-    const rail = screen.getByText('Queue readiness').closest('aside') as HTMLElement;
-    expect(within(rail).getByText('Needs a duration').nextSibling?.textContent).toBe('1');
-    expect(within(rail).getByText('Runnable').nextSibling?.textContent).toBe('0 of 1');
+    // The rollup card is gone. The class itself carries the block, and the
+    // page announces the count without a second "Runnable / Needs a duration" panel.
+    expect(screen.queryByText('Queue readiness')).toBeNull();
+    expect(screen.queryByText('Needs a duration')).toBeNull();
+    expect(screen.queryByText('All linked')).toBeNull();
+    expect(screen.getByText('0 of 1 class ready for Live.')).toBeTruthy();
   });
 
   it('surfaces a retry when a class run-payload fails to load, and keeps Run live disabled', async () => {
@@ -3036,7 +3140,7 @@ describe('Dashboard track focus management', () => {
     await screen.findByRole('button', { name: 'Exit' });
     const reads = vi.mocked(api.listClassTracks).mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
-    await screen.findByText('Live queue');
+    await screen.findByRole('heading', { name: 'Teach a class' });
     expect(api.listClassTracks).toHaveBeenCalledTimes(reads);
     expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
   });
@@ -3062,7 +3166,7 @@ describe('Dashboard track focus management', () => {
     await screen.findByRole('button', { name: 'Exit' });
     const reads = vi.mocked(api.listClassTracks).mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
-    await screen.findByText('Live queue');
+    await screen.findByRole('heading', { name: 'Teach a class' });
     expect(api.listClassTracks).toHaveBeenCalledTimes(reads);
     expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
   });

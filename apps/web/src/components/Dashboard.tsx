@@ -97,7 +97,6 @@ import {
   CLASS_ORDERING_OPTIONS,
   classNextStep,
   orderClassesBy,
-  orderingSummary,
   readStoredOrdering,
   storeOrdering,
   type ClassOrdering,
@@ -732,6 +731,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         songBlocks: true,
       });
       setPlaylistBrowse(null);
+      // The builder only mounts on Classes. Closing the dialog is not navigation.
+      setDestination('classes');
       await openClass({ ...cls, accessLevel: 'owner' });
     },
     [applyTagFilter, importCollectionTracks, openClass],
@@ -2648,7 +2649,6 @@ function LiveWorkspace({
       return s === 'ready' || s === 'error';
     });
   const summary = summarizeQueue(readyReadinesses);
-  const tilesReady = status === 'ready' && allResolved;
 
   // The queue ranks by the same rule Classes does, from the same module: a class
   // that leads the Classes shelf leads here too, and the choice is one session
@@ -2668,113 +2668,77 @@ function LiveWorkspace({
           : `${summary.runnable} of ${candidates.length} ${candidates.length === 1 ? 'class' : 'classes'} ready for Live.`;
 
   return (
-    <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
-      <div className="min-w-0">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="rf-eyebrow">Live queue</p>
-            <h2 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.03em] text-text-primary sm:text-4xl">
-              What are you teaching next?
-            </h2>
-            <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
-              {orderingSummary(ordering)} Scan, then enter preflight.
-            </p>
-          </div>
-          {/* Same two orderings, same session setting, same words as Classes — the
-              queue must not invent a second ranking vocabulary. */}
-          <div
-            role="group"
-            aria-label="Order the queue by"
-            className="flex shrink-0 flex-wrap gap-2"
-          >
-            {CLASS_ORDERING_OPTIONS.map((option) => {
-              const active = option.value === ordering;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => {
-                    setOrdering(option.value);
-                    storeOrdering(option.value);
-                  }}
-                  className={`min-h-11 rounded-control border px-4 font-ui text-sm font-semibold rf-focus-ring sm:rounded-pill ${
-                    active
-                      ? 'border-interactive bg-interactive/15 text-text-primary'
-                      : 'border-border-subtle text-text-secondary hover:border-interactive/45 hover:text-text-primary'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+    <section className="min-w-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="font-display text-2xl font-semibold tracking-[-0.02em] text-text-primary">
+            Teach a class
+          </h2>
+          <p className="mt-1 font-ui text-sm text-text-secondary">
+            Press Preflight on the one you want.
+          </p>
         </div>
-        <p className="sr-only" aria-live="polite" aria-atomic="true">
-          {liveStatus}
-        </p>
-
-        {/* Two columns from xl. A scan row cannot get shorter than the Class Pulse
-            block it carries (~156px floor, and the component is prompt 01's to
-            change, not this slice's), so the fourth card is bought with width
-            rather than by dropping the shape that makes the row worth scanning. */}
-        <div className="mt-5 grid gap-2 xl:grid-cols-2">
-          {status === 'loading' ? (
-            <p className="font-ui text-sm text-text-tertiary">Loading classes…</p>
-          ) : candidates.length === 0 ? (
-            <p className="font-ui text-sm text-text-tertiary">
-              No classes with tracks yet. Add tracks in Classes, then come back here.
-            </p>
-          ) : (
-            ordered.map((cls) => (
-              <LiveQueueCard
-                key={cls.id}
-                cls={cls}
-                state={payloads[cls.id]}
-                onRun={() => onRunClass(cls.id)}
-                onEdit={() => void onOpenClass(cls)}
-                onRetry={() => fetchOne(cls.id)}
-              />
-            ))
-          )}
+        {/* Same two orderings, same session setting, same words as Classes — the
+            queue must not invent a second ranking vocabulary. */}
+        <div role="group" aria-label="Order the queue by" className="flex shrink-0 flex-wrap gap-2">
+          {CLASS_ORDERING_OPTIONS.map((option) => {
+            const active = option.value === ordering;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  setOrdering(option.value);
+                  storeOrdering(option.value);
+                }}
+                className={`min-h-11 rounded-control border px-4 font-ui text-sm font-semibold rf-focus-ring sm:rounded-pill ${
+                  active
+                    ? 'border-interactive bg-interactive/15 text-text-primary'
+                    : 'border-border-subtle text-text-secondary hover:border-interactive/45 hover:text-text-primary'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
         </div>
       </div>
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {liveStatus}
+      </p>
 
-      <aside className="rounded-card border border-border-subtle bg-bg-sunken p-4 xl:sticky xl:top-6">
-        <p className="font-data text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-          Queue readiness
-        </p>
-        <div className="mt-3 grid gap-2">
-          <ReadinessTile
-            label="Runnable"
-            value={tilesReady ? `${summary.runnable} of ${candidates.length}` : '...'}
-          />
-          <ReadinessTile
-            label="Needs a duration"
-            value={tilesReady ? String(summary.blocked) : '...'}
-          />
-          <ReadinessTile
-            label="Music"
-            value={
-              tilesReady
-                ? summary.musicIncomplete === 0
-                  ? 'All linked'
-                  : `${summary.musicIncomplete} need a link`
-                : '...'
-            }
-          />
-        </div>
-      </aside>
+      {/* Short rows, two columns from lg. The shape is a sparkline on the row,
+          so a phone shows several classes instead of one tall card. */}
+      <div className="mt-4 grid gap-2 lg:grid-cols-2">
+        {status === 'loading' ? (
+          <p className="font-ui text-sm text-text-tertiary">Loading classes…</p>
+        ) : candidates.length === 0 ? (
+          <p className="font-ui text-sm text-text-tertiary">
+            No classes with tracks yet. Add tracks in Classes, then come back here.
+          </p>
+        ) : (
+          ordered.map((cls) => (
+            <LiveQueueCard
+              key={cls.id}
+              cls={cls}
+              state={payloads[cls.id]}
+              onRun={() => onRunClass(cls.id)}
+              onEdit={() => void onOpenClass(cls)}
+              onRetry={() => fetchOne(cls.id)}
+            />
+          ))
+        )}
+      </div>
     </section>
   );
 }
 
 /**
- * One class in the Live queue. Shows the real four-dimension readiness once the
- * run-payload loads (reusing `ClassReadinessSummary`), and gates "Run live" on the
- * same duration check Live Mode enforces — a blocked class shows the exact
- * `runBlockedMessage` the instructor would hit on click, tied to the disabled
- * button via `aria-describedby`.
+ * One class in the Live queue. A short row: name, shape, and the next action.
+ * Full readiness stays one disclosure away. "Run live" uses the same duration
+ * gate as Live Mode — a blocked class names the fix, and `aria-describedby`
+ * points at `runBlockedMessage`.
  */
 function LiveQueueCard({
   cls,
@@ -2803,111 +2767,81 @@ function LiveQueueCard({
   const step = classNextStep(state);
   const gapCount = state?.status === 'ready' ? state.readiness.attentionCount : 0;
 
+  const gapsLabel =
+    gapCount === 0 ? 'Details' : `${gapCount} ${gapCount === 1 ? 'thing' : 'things'} left`;
+
   return (
     <article
-      className="flex flex-col gap-2 rounded-card border border-border-subtle bg-bg-raised p-3 sm:p-4"
+      className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-3"
       aria-busy={state === undefined || state.status === 'loading'}
     >
-      {/* One scan row: verdict · name and shape facts · pulse · actions. Stacks
-          below sm, where there is no horizontal room to scan anyway. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <div className="shrink-0 sm:w-[124px]">
-          {state?.status === 'ready' ? (
-            <StatusLabel
-              kind={state.readiness.runnable ? 'recovered' : 'unavailable'}
-              label={state.readiness.runnable ? 'Runnable' : 'Needs a duration'}
-            />
-          ) : state?.status === 'error' ? (
-            <StatusLabel kind="unavailable" label="Readiness unavailable" />
-          ) : (
-            <StatusLabel kind="loading" label="Checking readiness" />
-          )}
-        </div>
-
+      <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-display text-lg font-semibold text-text-primary">
+          <h3 className="truncate font-display text-base font-semibold text-text-primary">
             {cls.title}
           </h3>
           <p className="truncate font-data text-xs text-text-tertiary">
-            {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount} tracks ·{' '}
-            {formatDuration(cls.totalDurationMs)}
+            {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount}{' '}
+            {cls.trackCount === 1 ? 'track' : 'tracks'} · {formatDuration(cls.totalDurationMs)}
+            {(state === undefined || state.status === 'loading') && ' · Checking…'}
           </p>
         </div>
+        {state?.status === 'ready' && (
+          <ClassPulse payload={state.payload} variant="sparkline" className="shrink-0" />
+        )}
+      </div>
 
-        <div className="flex shrink-0 flex-wrap gap-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={`Edit ${cls.title}`}
+          className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary rf-focus-ring"
+        >
+          Edit
+        </button>
+        {canRun ? (
+          <button
+            type="button"
+            onClick={onRun}
+            aria-label={`Preflight ${cls.title}`}
+            title="Run this class live"
+            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+          >
+            Preflight
+          </button>
+        ) : state?.status === 'ready' ? (
           <button
             type="button"
             onClick={onEdit}
-            aria-label={`Edit ${cls.title}`}
-            className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
+            aria-label={`${step.action} — ${cls.title}`}
+            aria-describedby={blockReason ? reasonId : undefined}
+            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
           >
-            Edit
+            {step.action}
           </button>
-          {canRun ? (
-            <button
-              type="button"
-              onClick={onRun}
-              aria-label={`Preflight ${cls.title}`}
-              title="Run this class live"
-              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring sm:rounded-pill"
-            >
-              Preflight
-            </button>
-          ) : state?.status === 'ready' ? (
-            <button
-              type="button"
-              onClick={onEdit}
-              aria-label={`${step.action} — ${cls.title}`}
-              aria-describedby={blockReason ? reasonId : undefined}
-              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring sm:rounded-pill"
-            >
-              {step.action}
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      {state === undefined || state.status === 'loading' ? (
-        <p className="font-ui text-xs text-text-tertiary">Checking readiness…</p>
-      ) : state.status === 'error' ? (
-        <p
-          id={reasonId}
-          role="alert"
-          className="flex items-center gap-2 font-ui text-xs text-state-caution"
-        >
-          <span aria-hidden className="font-data leading-none">
-            !
-          </span>
-          <span className="min-w-0">{blockReason}</span>
+        ) : state?.status === 'error' ? (
           <button
             type="button"
             onClick={onRetry}
             aria-label={`Retry readiness — ${cls.title}`}
-            className="ml-auto min-h-11 shrink-0 rounded-control border border-interactive/50 px-2.5 font-ui text-interactive hover:bg-interactive/10 rf-focus-ring sm:min-h-8 sm:rounded-pill"
+            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
           >
             Retry
           </button>
-        </p>
-      ) : (
-        <>
-          {/* The shape gets the card's full width: the Class Pulse's caption and
-              provenance marker are single lines at ~470px and wrap to five at 140,
-              which is what made the old card tall. */}
-          <ClassPulse payload={state.payload} compact />
-          {/* Full readiness is one disclosure away rather than four stacked detail
-              pages — the queue's job is choosing, not fixing. */}
-          <details className="group">
-            <summary className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 font-ui text-xs font-semibold text-interactive rf-focus-ring sm:min-h-8">
-              <span aria-hidden className="font-data text-[10px]">
-                ▸
-              </span>
-              {gapCount === 0
-                ? 'Readiness detail'
-                : `${gapCount} to finish — ${step.eyebrow.toLowerCase()}`}
+        ) : null}
+        {state?.status === 'ready' && (
+          <details className="ml-auto open:basis-full">
+            <summary
+              className="inline-flex min-h-11 min-w-11 cursor-pointer list-none items-center px-2 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+              aria-label={
+                gapCount === 0 ? `Readiness details, ${cls.title}` : `${gapsLabel}, ${cls.title}`
+              }
+            >
+              {gapsLabel}
             </summary>
             <div className="mt-2">
-              {/* Reuse the builder's readiness readout; the queue can't jump the
-                  inspector, so fix-chips stay off (canEdit=false). */}
+              {/* The queue cannot jump the inspector, so fix-chips stay off. */}
               <ClassReadinessSummary
                 readiness={state.readiness}
                 canEdit={false}
@@ -2916,18 +2850,24 @@ function LiveQueueCard({
               />
             </div>
           </details>
-          {blockReason && (
-            <p
-              id={reasonId}
-              className="flex items-center gap-1.5 font-ui text-xs text-state-caution"
-            >
-              <span aria-hidden className="font-data leading-none">
-                !
-              </span>
-              {blockReason}
-            </p>
-          )}
-        </>
+        )}
+      </div>
+
+      {state?.status === 'error' && (
+        <p id={reasonId} role="alert" className="mt-1 font-ui text-xs text-state-caution">
+          <span aria-hidden className="font-data">
+            !{' '}
+          </span>
+          {blockReason}
+        </p>
+      )}
+      {state?.status === 'ready' && blockReason && (
+        <p id={reasonId} className="mt-1 font-ui text-xs text-state-caution">
+          <span aria-hidden className="font-data">
+            !{' '}
+          </span>
+          {blockReason}
+        </p>
       )}
     </article>
   );
@@ -3315,15 +3255,6 @@ function AccountWorkspace({
   );
 }
 
-function ReadinessTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-bg-base p-3">
-      <p className="font-ui text-[11px] uppercase tracking-wide text-text-tertiary">{label}</p>
-      <p className="mt-1 font-data text-lg font-semibold text-text-primary">{value}</p>
-    </div>
-  );
-}
-
 export function ProviderShelfCard({
   provider,
   connection,
@@ -3692,9 +3623,20 @@ function PlaylistBrowserDialog({
       </div>
 
       {rowError && (
-        <p role="alert" className="mb-3 font-ui text-sm text-state-danger">
-          {rowError}
-        </p>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <p role="alert" className="font-ui text-sm text-state-danger">
+            {rowError}
+          </p>
+          {selectedPlaylist && tracks == null && !loadingTracks && (
+            <button
+              type="button"
+              onClick={() => void openPlaylist(selectedPlaylist)}
+              className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+            >
+              Try again
+            </button>
+          )}
+        </div>
       )}
 
       {selectedPlaylist ? (
@@ -3757,11 +3699,11 @@ function PlaylistBrowserDialog({
                   </li>
                 ))}
               </ol>
-            ) : (
+            ) : tracks && tracks.length === 0 ? (
               <p className="p-3 font-ui text-sm text-text-tertiary">
                 No tracks found in this playlist.
               </p>
-            )}
+            ) : null}
           </div>
         </div>
       ) : (

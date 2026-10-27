@@ -28,6 +28,7 @@ import { getAppleMusicConfig } from '../api.js';
 import {
   configureMusicKit,
   loadMusicKit,
+  selectSafariModernFairPlay,
   type MusicKitGlobal,
   type MusicKitInstance,
   type MusicKitPlaybackEvent,
@@ -159,6 +160,9 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   }
 
   private async configureAndCue(songId: string): Promise<void> {
+    // Before setQueue. MusicKit builds the FairPlay session on the first play
+    // of this page, and a cached player keeps whichever session it attached.
+    selectSafariModernFairPlay();
     const music = await (this.host.loadMusicKit ?? loadMusicKit)();
     if (this.destroyed) return;
     // Reuse the page singleton when it exists (e.g. connected earlier this
@@ -210,6 +214,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   }
 
   async play(): Promise<void> {
+    selectSafariModernFairPlay();
     const instance = this.requireInstance();
     // A pre-play seek (mid-track entry) re-cues here, since seekToTime has no
     // now-playing item to seek until playback has started. Bounded like the

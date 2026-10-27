@@ -1,8 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { MusicKitGlobal } from './musickit.js';
+import {
+  MUSICKIT_SAFARI_MODERN_EME_KEY,
+  selectSafariModernFairPlay,
+  type MusicKitGlobal,
+} from './musickit.js';
 afterEach(() => {
   delete window.MusicKit;
+  delete (window as Window & { WebKitMediaKeys?: unknown }).WebKitMediaKeys;
+  localStorage.removeItem(MUSICKIT_SAFARI_MODERN_EME_KEY);
   document.querySelectorAll('script').forEach((script) => script.remove());
   vi.useRealTimers();
   vi.resetModules();
@@ -72,4 +78,77 @@ it('keeps a timed-out configuration serialized through retry and late completion
   expect(await retry).toBe(singleton);
   expect(await prepareAppleMusic(config)).toBe(singleton);
   expect(configure).toHaveBeenCalledTimes(1);
+});
+
+describe('Safari modern FairPlay', () => {
+  it('writes the enabled value only when legacy WebKitMediaKeys exists', () => {
+    const storage = { setItem: vi.fn() };
+    selectSafariModernFairPlay(undefined, storage);
+    expect(storage.setItem).not.toHaveBeenCalled();
+
+    selectSafariModernFairPlay({ isTypeSupported: () => true }, storage);
+    expect(storage.setItem).toHaveBeenCalledTimes(1);
+    expect(storage.setItem).toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+  });
+
+  it('does not throw when reading localStorage throws', () => {
+    const original = Object.getOwnPropertyDescriptor(window, 'localStorage');
+    let reads = 0;
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        reads += 1;
+        throw new DOMException('The operation is insecure.', 'SecurityError');
+      },
+    });
+    try {
+      expect(() => selectSafariModernFairPlay(undefined)).not.toThrow();
+      expect(reads).toBe(0);
+      expect(() => selectSafariModernFairPlay({})).not.toThrow();
+      expect(reads).toBe(1);
+    } finally {
+      if (original) Object.defineProperty(window, 'localStorage', original);
+    }
+  });
+
+  it('ignores a storage write that Safari private mode rejects', () => {
+    expect(() =>
+      selectSafariModernFairPlay(
+        {},
+        {
+          setItem() {
+            throw new Error('denied');
+          },
+        },
+      ),
+    ).not.toThrow();
+  });
+
+  it('selects modern FairPlay before injecting the MusicKit script', async () => {
+    (window as Window & { WebKitMediaKeys?: object }).WebKitMediaKeys = {};
+    const append = vi.spyOn(document.head, 'appendChild').mockImplementation((node: Node) => {
+      expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBe('1');
+      return HTMLElement.prototype.appendChild.call(document.head, node);
+    });
+    const { loadMusicKit } = await import('./musickit.js');
+    const pending = loadMusicKit();
+    expect(append).toHaveBeenCalled();
+    const script = document.querySelector('script');
+    expect(script?.getAttribute('src')).toContain('musickit.js');
+    window.MusicKit = {} as MusicKitGlobal;
+    document.dispatchEvent(new Event('musickitloaded'));
+    await pending;
+    append.mockRestore();
+  });
+
+  it('does not set the FairPlay flag in a browser without WebKitMediaKeys', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    const { loadMusicKit } = await import('./musickit.js');
+    const pending = loadMusicKit();
+    expect(setItem).not.toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+    window.MusicKit = {} as MusicKitGlobal;
+    document.dispatchEvent(new Event('musickitloaded'));
+    await pending;
+    setItem.mockRestore();
+  });
 });
