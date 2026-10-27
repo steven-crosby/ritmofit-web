@@ -1,0 +1,283 @@
+$ pnpm -r --if-present test
+Scope: 5 of 6 workspace projects
+apps/web test$ vitest run
+packages/music test$ vitest run
+packages/music test:  RUN  v3.2.6 /tmp/wt-d/packages/music
+apps/web test:  RUN  v3.2.6 /tmp/wt-d/apps/web
+packages/music test:  ✓ src/identity.test.ts (4 tests) 3ms
+packages/music test:  ✓ src/playlist-url.test.ts (21 tests) 5ms
+packages/music test:  ✓ src/app-token.test.ts (5 tests) 6ms
+packages/music test:  Test Files  3 passed (3)
+packages/music test:       Tests  30 passed (30)
+packages/music test:    Start at  14:17:00
+packages/music test:    Duration  984ms (transform 216ms, setup 0ms, collect 365ms, tests 14ms, environment 0ms, prepare 673ms)
+packages/music test: Done
+apps/web test: stderr | src/components/Dashboard.test.tsx > Dashboard class library states > imports the playlist tracks already on screen without refetching
+apps/web test: Warning: Each child in a list should have a unique "key" prop.
+apps/web test: Check the render method of `ClassWorkspace`. See https://reactjs.org/link/warning-keys for more information.
+apps/web test:     at LeanTrackRow (/tmp/wt-d/apps/web/src/components/Dashboard.tsx:7075:25)
+apps/web test:     at ClassWorkspace (/tmp/wt-d/apps/web/src/components/Dashboard.tsx:5233:3)
+apps/web test:     at div
+apps/web test:     at ErrorBoundary (/tmp/wt-d/apps/web/src/components/ErrorBoundary.tsx:8:1)
+apps/web test:     at div
+apps/web test:     at main
+apps/web test:     at Dashboard (/tmp/wt-d/apps/web/src/components/Dashboard.tsx:130:3)
+apps/web test: stderr | src/components/Dashboard.test.tsx > Dashboard class library states > surfaces classes with tracks from the Live destination and runs a ready one
+apps/web test: TypeError: Cannot read properties of undefined (reading 'length')
+apps/web test:     at liveSectionAt (/tmp/wt-d/apps/web/src/components/LiveMode.tsx:388:16)
+apps/web test:     at /tmp/wt-d/apps/web/src/components/LiveMode.tsx:817:11
+apps/web test:     at mountMemo (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:16406:19)
+apps/web test:     at Object.useMemo (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:16851:16)
+apps/web test:     at Proxy.useMemo (/tmp/wt-d/node_modules/.pnpm/react@18.3.1/node_modules/react/cjs/react.development.js:1650:21)
+apps/web test:     at LiveMode (/tmp/wt-d/apps/web/src/components/LiveMode.tsx:816:19)
+apps/web test:     at renderWithHooks (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+apps/web test:     at updateFunctionComponent (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:19617:20)
+apps/web test:     at mountLazyComponent (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:19988:17)
+apps/web test:     at beginWork (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21632:16)
+apps/web test: TypeError: Cannot read properties of undefined (reading 'length')
+apps/web test:     at liveSectionAt (/tmp/wt-d/apps/web/src/components/LiveMode.tsx:388:16)
+apps/web test:     at /tmp/wt-d/apps/web/src/components/LiveMode.tsx:817:11
+apps/web test:     at mountMemo (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:16406:19)
+apps/web test:     at Object.useMemo (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:16851:16)
+apps/web test:     at Proxy.useMemo (/tmp/wt-d/node_modules/.pnpm/react@18.3.1/node_modules/react/cjs/react.development.js:1650:21)
+apps/web test:     at LiveMode (/tmp/wt-d/apps/web/src/components/LiveMode.tsx:816:19)
+apps/web test:     at renderWithHooks (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+apps/web test:     at updateFunctionComponent (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:19617:20)
+apps/web test:     at mountLazyComponent (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:19988:17)
+apps/web test:     at beginWork (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21632:16)
+apps/web test: The above error occurred in the <LiveMode> component:
+apps/web test:     at LiveMode (/tmp/wt-d/apps/web/src/components/LiveMode.tsx:331:3)
+apps/web test:     at Suspense
+apps/web test:     at ErrorBoundary (/tmp/wt-d/apps/web/src/components/ErrorBoundary.tsx:8:1)
+apps/web test:     at div
+apps/web test:     at div
+apps/web test:     at Dashboard (/tmp/wt-d/apps/web/src/components/Dashboard.tsx:130:3)
+apps/web test: React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+apps/web test: Render error caught by ErrorBoundary: TypeError: Cannot read properties of undefined (reading 'length')
+apps/web test:     at liveSectionAt (/tmp/wt-d/apps/web/src/components/LiveMode.tsx:388:16)
+apps/web test:     at /tmp/wt-d/apps/web/src/components/LiveMode.tsx:817:11
+apps/web test:     at mountMemo (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:16406:19)
+apps/web test:     at Object.useMemo (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:16851:16)
+apps/web test:     at Proxy.useMemo (/tmp/wt-d/node_modules/.pnpm/react@18.3.1/node_modules/react/cjs/react.development.js:1650:21)
+apps/web test:     at LiveMode (/tmp/wt-d/apps/web/src/components/LiveMode.tsx:816:19)
+apps/web test:     at renderWithHooks (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+apps/web test:     at updateFunctionComponent (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:19617:20)
+apps/web test:     at mountLazyComponent (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:19988:17)
+apps/web test:     at beginWork (/tmp/wt-d/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21632:16) 
+apps/web test:     at LiveMode (/tmp/wt-d/apps/web/src/components/LiveMode.tsx:331:3)
+apps/web test:     at Suspense
+apps/web test:     at ErrorBoundary (/tmp/wt-d/apps/web/src/components/ErrorBoundary.tsx:8:1)
+apps/web test:     at div
+apps/web test:     at div
+apps/web test:     at Dashboard (/tmp/wt-d/apps/web/src/components/Dashboard.tsx:130:3)
+apps/web test: stdout | src/components/LiveMode.test.tsx > LiveMode music failure mid-class > a stalled transport
+apps/web test: [rf-liveness] soundcloud track 0: start → exempt {
+apps/web test:   atMs: 2750,
+apps/web test:   provider: 'soundcloud',
+apps/web test:   trackIndex: 0,
+apps/web test:   verdict: 'exempt',
+apps/web test:   positionMs: null,
+apps/web test:   positionDeltaMs: null,
+apps/web test:   playing: null,
+apps/web test:   hostTicks: 0,
+apps/web test:   consecutiveMisses: 0
+apps/web test: }
+apps/web test:  ✓ src/components/LiveMode.test.tsx (136 tests) 6163ms
+apps/web test:    ✓ LiveMode preflight > passes preflight with a connected provider and starts hands-free playback  306ms
+apps/web test:    ✓ LiveMode focus management > reveals teaching on entry and recovery on a new failure without stealing focus on updates  325ms
+apps/web test:    ✓ LiveMode focus management > keeps focus in the music dialog when playback confirms and falls back if its trigger disappears  317ms
+apps/web test:    ✓ LiveMode runtime composition > moves to the next track while provider playback is running  542ms
+apps/web test:  ✓ src/components/ClassPlanBlocks.test.tsx (47 tests) 1488ms
+apps/web test:  ✓ src/components/TrackSearch.test.tsx (101 tests) 9809ms
+apps/web test:    ✓ TrackSearch stale-result guard > retries a failed catalog search without changing the query  775ms
+apps/web test:    ✓ TrackSearch stale-result guard > shows the quota sentence instead of the generic search failure  355ms
+apps/web test:    ✓ TrackSearch stale-result guard > does not let a search cleared mid-flight flash stale results under a new query  618ms
+apps/web test:    ✓ TrackSearch browse announcement (aria-live) > announces the settled result count in the live region  326ms
+apps/web test:    ✓ TrackSearch browse announcement (aria-live) > announces a settled empty result set, not a premature "No results"  309ms
+apps/web test:    ✓ TrackSearch result artwork > lazy-loads and async-decodes non-critical album thumbnails  313ms
+apps/web test:    ✓ TrackSearch SoundCloud library expiry > keeps catalog search working when SoundCloud library authorization is expired  315ms
+apps/web test:    ✓ TrackSearch plan-block assignment > assigns a chosen song to the targeted plan block  324ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a provider change  324ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a mode change  325ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a destination change  320ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > finishes the submitted song write without a stale callback after a unmount change  324ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > hides stale song failures in a different mode  337ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > keeps different song adds concurrent and rejects a repeat click on a pending song  394ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > does not submit the same pending song again after a browse-context round trip  636ms
+apps/web test:    ✓ TrackSearch submitted operation ownership > does not let an older song completion unlock a newer add of the same candidate  408ms
+apps/web test:    ✓ TrackSearch blank Add-music failures > keeps the canned search sentence for a non-empty provider failure  309ms
+apps/web test:    ✓ TrackSearch blank Add-music failures > shows a sentence when adding a track throws Error  316ms
+apps/web test:    ✓ TrackSearch blank Add-music failures > shows a sentence when adding a track throws { reason: 'down' }  321ms
+apps/web test:    ✓ TrackSearch blank Add-music failures > keeps a provider sentence when adding a track fails  318ms
+apps/web test: stderr | src/components/ClassHeaderCard.test.tsx > ClassHeaderCard cover > real cover art wins over the derived tile
+apps/web test: Warning: React does not recognize the `fetchPriority` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `fetchpriority` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+apps/web test:     at img
+apps/web test:     at div
+apps/web test:     at div
+apps/web test:     at div
+apps/web test:     at div
+apps/web test:     at ClassHeaderCard (/tmp/wt-d/apps/web/src/components/Dashboard.tsx:6048:3)
+apps/web test:  ✓ src/components/ClassHeaderCard.test.tsx (35 tests) 920ms
+apps/web test:  ✓ src/components/CuesSection.test.tsx (26 tests) 1125ms
+apps/web test:  ✓ src/components/MovesSection.test.tsx (21 tests) 658ms
+apps/web test:  ✓ src/components/TrackPreview.test.tsx (22 tests) 458ms
+apps/web test:  ✓ src/components/ClassesHome.test.tsx (21 tests) 746ms
+apps/web test:  ✓ src/lib/playback/soundcloud-adapter.test.ts (24 tests) 196ms
+apps/web test:  ✓ src/lib/ordered-import.test.ts (16 tests) 220ms
+apps/web test:  ✓ src/components/SegmentBand.test.tsx (20 tests) 604ms
+apps/web test:  ✓ src/components/LibraryRail.test.tsx (20 tests) 474ms
+apps/web test:  ✓ src/components/ClassPulse.test.tsx (12 tests) 187ms
+apps/web test:  ✓ src/components/LiveTimeline.test.tsx (15 tests) 144ms
+apps/web test:  ✓ src/components/TrackSearch.recovery.test.tsx (9 tests) 1011ms
+apps/web test:    ✓ reconciles deleted placements and permits an explicit re-add  302ms
+apps/web test:  ✓ src/components/LivePreflight.test.tsx (10 tests) 265ms
+apps/web test:  ✓ src/components/Dashboard.test.tsx (189 tests) 18466ms
+apps/web test:    ✓ Dashboard class library states > retries a Music catalog outage without changing the query  630ms
+apps/web test:    ✓ Dashboard class library states > searches, selects in instructor order, and starts a class from Music  382ms
+apps/web test:    ✓ Music tab library > searches a catalog when no account is connected  314ms
+apps/web test:    ✓ Dashboard track focus management > preserves B’s inspector draft, focus and scoped read warning when A deletion completes  707ms
+apps/web test:    ✓ Dashboard track focus management > commits a zone on the click, and typed fields on Enter  490ms
+apps/web test:    ✓ Dashboard track focus management > puts a zone back when its write fails, instead of showing a value that did not land  523ms
+apps/web test:    ✓ Dashboard plan-first next step > stays on the next empty block after the first assign and keeps Pulse off  424ms
+apps/web test:  ✓ src/components/Login.test.tsx (15 tests) 479ms
+apps/web test:  ✓ src/components/SongsByMoveDialog.test.tsx (7 tests) 305ms
+apps/web test:  ✓ src/components/ConnectionsDialog.test.tsx (14 tests) 496ms
+apps/web test:  ✓ src/components/CreateClassDialog.test.tsx (11 tests) 593ms
+apps/web test:  ✓ src/lib/use-wake-lock.test.ts (14 tests) 362ms
+apps/web test:  ✓ src/lib/use-provider-connect.test.tsx (9 tests) 297ms
+apps/web test:  ✓ src/components/PlaylistSongPicker.test.tsx (6 tests) 493ms
+apps/web test:  ✓ src/components/ClassReadinessSummary.test.tsx (8 tests) 202ms
+apps/web test:  ✓ src/lib/musickit.test.ts (9 tests) 29ms
+apps/web test:  ✓ src/components/IntensitySegmentedControl.test.tsx (11 tests) 310ms
+apps/web test:  ✓ src/App.test.tsx (12 tests) 399ms
+apps/web test:  ✓ src/components/MovesPicker.test.tsx (6 tests) 228ms
+apps/web test:  ✓ src/components/CustomMovesDialog.test.tsx (5 tests) 409ms
+apps/web test:  ✓ src/components/ClassSummaryView.test.tsx (7 tests) 308ms
+apps/web test:  ✓ src/lib/use-virtual-clock.test.ts (10 tests) 46ms
+apps/web test:  ✓ src/components/ReorderableTrackList.test.tsx (6 tests) 391ms
+apps/web test:  ✓ src/components/SourceList.test.tsx (3 tests) 183ms
+apps/web test:  ✓ src/components/TimelineStrip.test.tsx (8 tests) 263ms
+apps/web test:  ✓ src/components/UpdatePrompt.test.tsx (7 tests) 128ms
+apps/web test:  ✓ src/components/ResetPassword.test.tsx (6 tests) 311ms
+apps/web test:  ✓ src/components/SharedState.test.tsx (14 tests) 160ms
+apps/web test:  ✓ src/components/TrackArt.test.tsx (7 tests) 111ms
+apps/web test:  ✓ src/components/ConnectionStateMark.test.tsx (11 tests) 65ms
+apps/web test:  ✓ src/components/Dialog.test.tsx (8 tests) 186ms
+apps/web test:  ✓ src/components/IntensityRibbon.render.test.tsx (4 tests) 141ms
+apps/web test:  ✓ src/lib/use-spotify-activation.test.tsx (3 tests) 226ms
+apps/web test:  ✓ src/components/LiveMode.preflight-header.test.tsx (1 test) 132ms
+apps/web test:  ✓ src/components/PasswordField.test.tsx (4 tests) 145ms
+apps/web test:  ✓ src/components/TeamsDialog.test.tsx (2 tests) 234ms
+apps/web test:  ✓ src/components/MarketingPage.test.tsx (2 tests) 237ms
+apps/web test:  ✓ src/components/ErrorBoundary.test.tsx (4 tests) 155ms
+apps/web test:  ✓ src/lib/onboarding-video.test.ts (3 tests) 3ms
+apps/web test:  ✓ src/components/ShareDialog.test.tsx (2 tests) 167ms
+apps/web test:  ✓ src/components/DialogState.test.tsx (4 tests) 118ms
+apps/web test:  ✓ src/lib/connection-return.test.ts (3 tests) 4ms
+apps/web test:  ✓ src/components/ProviderCapabilityLedger.test.tsx (2 tests) 30ms
+apps/web test:  ✓ src/Root.test.tsx (2 tests) 130ms
+apps/web test:  ✓ src/components/NotFound.test.tsx (1 test) 107ms
+apps/web test:  ✓ src/components/PendingList.test.tsx (2 tests) 120ms
+apps/web test:  ✓ src/lib/use-online.test.ts (2 tests) 13ms
+apps/web test:  ✓ src/components/OnboardingVideoDialog.test.tsx (1 test) 152ms
+apps/web test:  ✓ src/components/PrivacyPage.test.tsx (1 test) 158ms
+apps/web test:  ✓ src/lib/playback/apple-music-adapter.test.ts (44 tests) 37ms
+apps/web test:  ✓ src/lib/playback/runtime.test.ts (59 tests) 45ms
+apps/web test:  ✓ src/lib/playback/spotify-adapter.test.ts (23 tests) 13ms
+apps/web test:  ✓ src/lib/class-scaffold.test.ts (23 tests) 6ms
+apps/web test:  ✓ src/lib/playback/preview.test.ts (21 tests) 24ms
+apps/web test:  ✓ src/lib/playback/coordinator.test.ts (27 tests) 7ms
+apps/web test:  ✓ src/lib/providers.test.ts (27 tests) 5ms
+apps/web test:  ✓ src/components/TimelineStrip.test.ts (20 tests) 6ms
+apps/web test:  ✓ src/components/IntensityRibbon.test.ts (21 tests) 10ms
+apps/web test:  ✓ src/lib/playback/liveness.test.ts (18 tests) 5ms
+apps/web test:  ✓ src/lib/class-pulse.test.ts (12 tests) 6ms
+apps/web test:  ✓ src/components/SegmentBand.test.ts (21 tests) 7ms
+apps/web test:  ✓ src/lib/applyServiceWorkerUpdate.test.ts (10 tests) 5ms
+apps/web test:  ✓ src/lib/music-library.test.ts (16 tests) 12ms
+apps/web test:  ✓ src/lib/readiness.test.ts (8 tests) 5ms
+apps/web test:  ✓ src/lib/class-ordering.test.ts (11 tests) 11ms
+apps/web test:  ✓ src/lib/duration.test.ts (13 tests) 5ms
+apps/web test:  ✓ src/lib/library-state.test.ts (13 tests) 9ms
+apps/web test:  ✓ src/lib/creation-next-step.test.ts (5 tests) 3ms
+apps/web test:  ✓ src/lib/playlist-link.test.ts (5 tests) 3ms
+apps/web test:  ✓ src/lib/cue-list.test.ts (8 tests) 6ms
+apps/web test:  ✓ src/lib/energy-arc.test.ts (9 tests) 4ms
+apps/web test:  ✓ src/lib/trailing-throttle.test.ts (6 tests) 7ms
+apps/web test:  ✓ src/lib/class-summary.test.ts (9 tests) 4ms
+apps/web test:  ✓ src/lib/move-groups.test.ts (7 tests) 4ms
+apps/web test:  ✓ src/lib/library-shell.test.ts (6 tests) 8ms
+apps/web test:  ✓ src/lib/cue-colors.test.ts (6 tests) 3ms
+apps/web test:  ✓ src/lib/class-detail-state.test.ts (3 tests) 2ms
+apps/web test:  ✓ src/lib/live-readiness.test.ts (4 tests) 2ms
+apps/web test:  ✓ src/lib/lazyWithReload.test.ts (3 tests) 4ms
+apps/web test:  ✓ src/lib/move-pick.test.ts (8 tests) 3ms
+apps/web test:  ✓ src/lib/error-reference.test.ts (6 tests) 3ms
+apps/web test:  ✓ src/lib/api.test.ts (4 tests) 5ms
+apps/web test:  ✓ src/lib/relative-time.test.ts (6 tests) 2ms
+apps/web test:  ✓ src/lib/reorder.test.ts (6 tests) 3ms
+apps/web test:  ✓ src/lib/errors.test.ts (4 tests) 2ms
+apps/web test:  ✓ src/components/ChoreographyEditor.test.ts (4 tests) 2ms
+apps/web test:  ✓ src/lib/pwa-config.test.ts (2 tests) 2ms
+apps/web test:  Test Files  97 passed (97)
+apps/web test:       Tests  1479 passed (1479)
+apps/web test:    Start at  14:17:00
+apps/web test:    Duration  38.07s (transform 3.81s, setup 0ms, collect 15.95s, tests 52.25s, environment 28.15s, prepare 5.82s)
+apps/web test: Done
+apps/api test$ vitest run
+apps/api test:  RUN  v3.2.6 /tmp/wt-d/apps/api
+apps/api test:  ✓ src/lib/music/soundcloud.test.ts (36 tests) 24ms
+apps/api test:  ✓ src/lib/music/spotify.test.ts (47 tests) 38ms
+apps/api test:  ✓ src/lib/music/apple-music.test.ts (50 tests) 41ms
+apps/api test:  ✓ src/lib/contract-parity.test.ts (19 tests) 9ms
+apps/api test:  ✓ src/lib/music/retry.test.ts (17 tests) 10ms
+apps/api test:  ✓ src/lib/music/user-playlists.test.ts (29 tests) 13ms
+apps/api test:  ✓ src/lib/music/user-likes.test.ts (20 tests) 11ms
+apps/api test:  ✓ src/lib/playlist-song-blocks.test.ts (14 tests) 8ms
+apps/api test:  ✓ src/lib/music/spotify-oauth.test.ts (14 tests) 7ms
+apps/api test:  ✓ src/lib/authed-smoke.test.ts (12 tests) 9ms
+apps/api test:  ✓ src/lib/authz.test.ts (27 tests) 4ms
+apps/api test:  ✓ src/lib/music/spotify-playback-token.test.ts (9 tests) 8ms
+apps/api test:  ✓ src/lib/copy-class-track.test.ts (14 tests) 4ms
+apps/api test:  ✓ src/lib/duration.test.ts (24 tests) 6ms
+apps/api test:  ✓ src/lib/music/bpm.test.ts (10 tests) 6ms
+apps/api test:  ✓ src/lib/class-list-summary.test.ts (9 tests) 4ms
+apps/api test:  ✓ src/lib/music/purge.test.ts (6 tests) 4ms
+apps/api test:  ✓ src/lib/scaffold-recipes.test.ts (31 tests) 29ms
+apps/api test:  ✓ src/lib/resolve-provider.test.ts (7 tests) 5ms
+apps/api test:  ✓ src/lib/health.test.ts (8 tests) 4ms
+apps/api test:  ✓ src/lib/run-payload.test.ts (12 tests) 3ms
+apps/api test:  ✓ src/lib/same-song.test.ts (17 tests) 5ms
+apps/api test: stdout | src/lib/email.test.ts > sendEmail > falls back to logging (no fetch) when no API key is set
+apps/api test: [email:dev-fallback] to=user@example.com subject="Hi"
+apps/api test: Hi
+apps/api test:  ✓ src/lib/email.test.ts (6 tests) 7ms
+apps/api test:  ✓ src/lib/beat.test.ts (17 tests) 5ms
+apps/api test:  ✓ src/lib/music/soundcloud-oauth.test.ts (4 tests) 6ms
+apps/api test:  ✓ src/lib/music/registry.test.ts (8 tests) 5ms
+apps/api test:  ✓ src/lib/music/import-playlist.test.ts (8 tests) 4ms
+apps/api test:  ✓ src/lib/share-target.test.ts (10 tests) 6ms
+apps/api test:  ✓ src/lib/auth-beta.test.ts (9 tests) 3ms
+apps/api test:  ✓ src/lib/music/playlist-preview.test.ts (4 tests) 10ms
+apps/api test:  ✓ src/lib/apple-jwt.test.ts (2 tests) 10ms
+apps/api test: stderr | src/routes/mock.test.ts > mock seam gate scoping > passes its own /mock/* routes through to auth when MOCK_PROVIDERS=true
+apps/api test: 2026-10-27T14:17:42.569Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+apps/api test:  ✓ src/routes/mock.test.ts (3 tests) 19ms
+apps/api test:  ✓ src/lib/cue-order.test.ts (5 tests) 5ms
+apps/api test:  ✓ src/lib/sequencing.test.ts (9 tests) 3ms
+apps/api test:  ✓ src/lib/placed-move-invariant.test.ts (6 tests) 4ms
+apps/api test:  ✓ src/lib/rate-limit.test.ts (5 tests) 2ms
+apps/api test:  ✓ src/lib/anchor.test.ts (8 tests) 2ms
+apps/api test:  ✓ src/lib/mock-catalog.test.ts (7 tests) 2ms
+apps/api test:  ✓ src/lib/class-cover.test.ts (2 tests) 4ms
+apps/api test:  ✓ src/lib/member-target.test.ts (8 tests) 4ms
+apps/api test:  ✓ src/lib/crypto.test.ts (4 tests) 9ms
+apps/api test:  ✓ src/lib/plan-block-ordering.test.ts (2 tests) 2ms
+apps/api test:  ✓ src/lib/class-list-pagination.test.ts (4 tests) 7ms
+apps/api test:  ✓ src/lib/errors.test.ts (3 tests) 2ms
+apps/api test:  ✓ src/lib/pkce.test.ts (3 tests) 5ms
+apps/api test:  Test Files  45 passed (45)
+apps/api test:       Tests  569 passed (569)
+apps/api test:    Start at  14:17:38
+apps/api test:    Duration  5.06s (transform 848ms, setup 0ms, collect 8.26s, tests 379ms, environment 11ms, prepare 2.14s)
+apps/api test: Done

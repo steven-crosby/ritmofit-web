@@ -1,0 +1,3 @@
+$ node scripts/check-theme-classes.mjs
+✓ semantic opacity utilities generate usable CSS (8 declarations)
+✓ no dead colour utilities (36 valid names from tailwind.config.js)

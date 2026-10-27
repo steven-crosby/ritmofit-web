@@ -1,0 +1,19 @@
+[WebServer] ▲ [WARNING] Scheduled Workers are not automatically triggered during local development.
+[WebServer] 
+[WebServer]   To manually trigger a scheduled event, run:
+[WebServer]     curl "http://localhost:8799/cdn-cgi/handler/scheduled"
+[WebServer]   For more details, see https://developers.cloudflare.com/workers/configuration/cron-triggers/#test-cron-triggers-locally
+[WebServer] 
+[WebServer] 
+
+Running 2 tests using 2 workers
+
+(node:19396) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:19395) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 [desktop-1440] › smoke.spec.ts:113:1 › signed-in core loop: build a class, run it live, End Class (9.5s)
+  ✓  1 [phone-390] › smoke.spec.ts:113:1 › signed-in core loop: build a class, run it live, End Class (10.1s)
+
+  2 passed (20.5s)
+rc=0

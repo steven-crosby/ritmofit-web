@@ -1,0 +1,33 @@
+[B-3a] edit field seeded with: 0:10
+[B-3a] stored anchorMs 10313 → PATCH anchorMs 9844
+[B-3b] stored anchorMs 12750 → PATCH anchorMs 13000
+[B-3c] stored startOffsetMs 241500 → PATCH startOffsetMs 242000
+   × Reviewer B repro: untouched anchors drift on edit > B-3a: a text-only cue edit keeps a beat-snapped anchor (128 BPM, snap on by default) 214ms
+   × Reviewer B repro: untouched anchors drift on edit > B-3b: an intensity-only placed-move edit keeps a sub-second anchor (no tempo) 29ms
+   × Reviewer B repro: untouched anchors drift on edit > B-3c: a type-only segment edit keeps a sub-second section start 36ms
+[B-6] #yoga pressed: true | classes shown: Hiit ride
+   × B-6: the class list matches the pressed tag after out-of-order responses 283ms
+[B-1] inspector Start at after drag: 1:00
+[B-1] notes Save PATCH startOffsetMs: 60000
+[B-1] server startOffsetMs after notes Save: 60000
+[B-2] inspector cue time field after marker drag: 0:10
+[B-2] text-only Save PATCH anchorMs: 10000
+[B-2] server cue anchorMs after text Save: 10000
+   × Reviewer B repro: builder lost updates against the timeline > B-1: saving inspector notes keeps a start the timeline just moved 505ms
+   × Reviewer B repro: builder lost updates against the timeline > B-2: editing a cue text keeps an anchor the timeline marker just moved 189ms
+[B-4a] notes after Back + reopen: ""
+[B-4b] notes after nav away + back: ""
+[B-4c] inspector still open after Exit: false | notes after reselect: ""
+ ✓ src/components/b-draft-loss.repro.test.tsx (3 tests) 761ms
+   ✓ Reviewer B repro: unsaved inspector typing is dropped on leave > B-4a: Back to Classes  325ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+     67|     console.info('[B-3a] stored anchorMs 10313 → PATCH anchorMs', sent…
+     93|     console.info('[B-3b] stored anchorMs 12750 → PATCH anchorMs', sent…
+    118|     console.info('[B-3c] stored startOffsetMs 241500 → PATCH startOffs…
+    233|     console.info('[B-1] notes Save PATCH startOffsetMs:', last.startOf…
+    234|     console.info('[B-1] server startOffsetMs after notes Save:', state…
+    269|     console.info('[B-2] text-only Save PATCH anchorMs:', last.anchorMs…
+    270|     console.info('[B-2] server cue anchorMs after text Save:', state.c…
+     89|   console.info('[B-6] #yoga pressed:', pressed, '| classes shown:', sh…
+ Test Files  3 failed | 1 passed (4)
+      Tests  6 failed | 3 passed (9)

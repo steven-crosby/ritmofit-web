@@ -1,0 +1,173 @@
+
+ RUN  v3.2.6 /tmp/wt-d/apps/api
+
+[vpw:debug] Adding `enable_nodejs_tty_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_fs_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_http_modules` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_perf_hooks_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:info] Starting single runtime for vitest.integration.config.ts...
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 50 tracks (duty id: false)
+[email:dev-fallback] to=u-d5d4b9de-df55-4737-ae0f-9f16803d3b19@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-d5d4b9de-df55-4737-ae0f-9f16803d3b19@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 50 tracks (duty id: false)
+D-PURGE n=50 duty=false ms=14 outcome=ok {"tracksCleared":50,"refsDeleted":50} remainingRefs=0
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 50 tracks (duty id: true)
+[email:dev-fallback] to=u-01103a6e-27ad-4b85-a709-19628686eaf4@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-01103a6e-27ad-4b85-a709-19628686eaf4@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 50 tracks (duty id: true)
+D-PURGE n=50 duty=true ms=7 outcome=ok {"tracksCleared":50,"refsDeleted":50} remainingRefs=0
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 95 tracks (duty id: false)
+[email:dev-fallback] to=u-830fc728-f54b-4296-9d5f-cfbfb6b76f6d@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-830fc728-f54b-4296-9d5f-cfbfb6b76f6d@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 95 tracks (duty id: false)
+D-PURGE n=95 duty=false ms=18 outcome=ok {"tracksCleared":95,"refsDeleted":95} remainingRefs=0
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 95 tracks (duty id: true)
+[email:dev-fallback] to=u-c4bd78ba-d5ec-4df5-9636-30ed5fda6ea2@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-c4bd78ba-d5ec-4df5-9636-30ed5fda6ea2@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 95 tracks (duty id: true)
+D-PURGE n=95 duty=true ms=11 outcome=ok {"tracksCleared":95,"refsDeleted":95} remainingRefs=0
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 99 tracks (duty id: false)
+[email:dev-fallback] to=u-40fac44d-5ef0-490c-a675-7560e8c55187@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-40fac44d-5ef0-490c-a675-7560e8c55187@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 99 tracks (duty id: false)
+D-PURGE n=99 duty=false ms=14 outcome=THROW too many SQL variables at offset 376: SQLITE_ERROR remainingRefs=99
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 99 tracks (duty id: true)
+[email:dev-fallback] to=u-d96e6fcd-1f1b-432c-a039-f968009b1c08@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-d96e6fcd-1f1b-432c-a039-f968009b1c08@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 99 tracks (duty id: true)
+D-PURGE n=99 duty=true ms=11 outcome=THROW too many SQL variables at offset 502: SQLITE_ERROR remainingRefs=99
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 100 tracks (duty id: false)
+[email:dev-fallback] to=u-147e798b-dc93-4f48-a262-a545ee3b4752@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-147e798b-dc93-4f48-a262-a545ee3b4752@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 100 tracks (duty id: false)
+D-PURGE n=100 duty=false ms=8 outcome=THROW too many SQL variables at offset 413: SQLITE_ERROR remainingRefs=100
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 100 tracks (duty id: true)
+[email:dev-fallback] to=u-dfc55a03-29c3-4224-bd96-18b47d288ad4@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-dfc55a03-29c3-4224-bd96-18b47d288ad4@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 100 tracks (duty id: true)
+D-PURGE n=100 duty=true ms=4 outcome=THROW too many SQL variables at offset 413: SQLITE_ERROR remainingRefs=100
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 150 tracks (duty id: false)
+[email:dev-fallback] to=u-645e3c2b-da89-43b1-863d-d0ed1b5e2c7c@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-645e3c2b-da89-43b1-863d-d0ed1b5e2c7c@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 150 tracks (duty id: false)
+D-PURGE n=150 duty=false ms=6 outcome=THROW too many SQL variables at offset 413: SQLITE_ERROR remainingRefs=150
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 150 tracks (duty id: true)
+[email:dev-fallback] to=u-1bba7c76-e5ee-4bc9-a2e0-a5a94cf4c0e9@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-1bba7c76-e5ee-4bc9-a2e0-a5a94cf4c0e9@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 150 tracks (duty id: true)
+D-PURGE n=150 duty=true ms=12 outcome=THROW too many SQL variables at offset 413: SQLITE_ERROR remainingRefs=150
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 500 tracks (duty id: false)
+[email:dev-fallback] to=u-c69ae45c-84a6-4fec-b370-56ac42c8df8b@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-c69ae45c-84a6-4fec-b370-56ac42c8df8b@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 500 tracks (duty id: false)
+D-PURGE n=500 duty=false ms=7 outcome=THROW too many SQL variables at offset 413: SQLITE_ERROR remainingRefs=500
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 500 tracks (duty id: true)
+[email:dev-fallback] to=u-ea0c9c67-404a-4837-9d5d-4d81e17fc4ee@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-ea0c9c67-404a-4837-9d5d-4d81e17fc4ee@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-purge-scale.integration.test.ts > d-audit purge scale > purge with 500 tracks (duty id: true)
+D-PURGE n=500 duty=true ms=9 outcome=THROW too many SQL variables at offset 413: SQLITE_ERROR remainingRefs=500
+
+ ✓ test/d-audit-purge-scale.integration.test.ts (12 tests) 1900ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  14:25:21
+   Duration  4.20s (transform 484ms, setup 1.68s, collect 56ms, tests 1.90s, environment 1ms, prepare 104ms)
+
+[vpw:debug] Shutting down runtimes...
+[vpw:debug] Disposing remote proxy sessions...

@@ -1,0 +1,30 @@
+### target 0005
+applied through: 0004_grey_iron_patriot.sql
+before: {'classes': 1, 'class_tracks': 1, 'cues': 1, 'moves': 1}
+apply 0005 exit=0 │ 0005_worried_harpoon.sql │ ✅ │
+after:  {'classes': 1, 'class_tracks': 0, 'cues': 0, 'moves': 0}
+### target 0010
+applied through: 0009_lumpy_jasper_sitwell.sql
+before: {'classes': 1, 'class_tracks': 1, 'cues': 1, 'moves': 1}
+apply 0010 exit=0 │ 0010_overconfident_corsair.sql │ ✅ │
+after:  {'classes': 1, 'class_tracks': 1, 'cues': 0, 'moves': 0}
+### target 0014
+applied through: 0013_daffy_secret_warriors.sql
+before: {'classes': 1, 'class_tracks': 1, 'cues': 1, 'moves': 1}
+apply 0014 exit=0 │ 0014_flaky_puppet_master.sql │ ✅ │
+after:  {'classes': 1, 'class_tracks': 1, 'cues': 0, 'moves': 0}
+### target 0016
+applied through: 0015_sleepy_zarek.sql
+before: {'classes': 1, 'class_tracks': 1, 'cues': 1, 'moves': 1}
+apply 0016 exit=0 │ 0016_motionless_shocker.sql │ ✅ │
+after:  {'classes': 1, 'class_tracks': 0, 'cues': 0, 'moves': 0}
+### target 0018
+applied through: 0017_ordinary_whistler.sql
+before: {'classes': 1, 'class_tracks': 1, 'cues': 1, 'moves': 1}
+apply 0018 exit=0 │ 0018_overjoyed_roxanne_simpson.sql │ ✅ │
+after:  {'classes': 1, 'class_tracks': 1, 'cues': 0, 'moves': 0}
+### target 0021
+applied through: 0020_secret_zaladane.sql
+before: {'classes': 1, 'class_tracks': 1, 'cues': 1, 'moves': 1}
+apply 0021 exit=0 │ 0021_rainy_falcon.sql │ ✅ │
+after:  {'classes': 1, 'class_tracks': 1, 'cues': 1, 'moves': 1}
