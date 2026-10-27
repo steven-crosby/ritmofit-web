@@ -1809,6 +1809,70 @@ describe('Music tab library', () => {
       expect(api.connectProvider).toHaveBeenCalledWith('soundcloud', expect.any(AbortSignal)),
     );
   });
+
+  it('shows a SoundCloud reconnect failure next to the button', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      {
+        id: 'conn-sc',
+        userId: 'me',
+        provider: 'soundcloud',
+        providerUserId: 'sc-user',
+        scope: null,
+        expiresAt: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ]);
+    vi.mocked(api.connectProvider).mockRejectedValue(new Error('SoundCloud sign-in did not open.'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reconnect SoundCloud' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('SoundCloud sign-in did not open.');
+    expect(
+      screen.getByRole('button', { name: 'SoundCloud connection' }).getAttribute('aria-expanded'),
+    ).toBe('false');
+    expect(screen.getByRole('button', { name: 'Reconnect SoundCloud' })).toBeTruthy();
+  });
+
+  it('shows a SoundCloud reconnect timeout next to the button', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      {
+        id: 'conn-sc',
+        userId: 'me',
+        provider: 'soundcloud',
+        providerUserId: 'sc-user',
+        scope: null,
+        expiresAt: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ]);
+    vi.mocked(api.connectProvider).mockImplementation(() => new Promise(() => {}));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const reconnect = await screen.findByRole('button', { name: 'Reconnect SoundCloud' });
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(reconnect);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(20_000);
+      });
+      expect(screen.getByRole('alert').textContent).toContain(
+        'SoundCloud did not finish connecting.',
+      );
+      expect(
+        screen.getByRole('button', { name: 'SoundCloud connection' }).getAttribute('aria-expanded'),
+      ).toBe('false');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('Dashboard connection-state headers', () => {

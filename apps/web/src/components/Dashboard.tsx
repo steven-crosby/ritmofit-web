@@ -2016,32 +2016,48 @@ function MusicWorkspace({
             const own = flow.operation?.provider === provider ? flow.operation : null;
             const busy = !!own && !own.error && own.stage !== 'ready';
             return (
-              <div key={provider} className={shell}>
-                <button
-                  type="button"
-                  aria-pressed={selected}
-                  aria-label={name}
-                  onClick={() => chooseProvider(provider)}
-                  className="flex min-h-11 min-w-0 flex-1 items-center px-3 text-left font-ui text-sm text-text-primary rf-focus-ring"
+              <div
+                key={provider}
+                className="flex w-full min-w-0 flex-col gap-1 sm:w-auto sm:min-w-[9.5rem] sm:flex-1"
+              >
+                <div
+                  className={`flex min-h-11 w-full items-center gap-2 rounded-pill border ${
+                    selected
+                      ? 'border-border-strong bg-bg-overlay font-semibold'
+                      : 'border-border-subtle bg-bg-base font-medium'
+                  }`}
                 >
-                  <span className="truncate">{name}</span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Reconnect ${name}`}
-                  disabled={busy}
-                  onClick={() => {
-                    chooseProvider(provider);
-                    void flow.start(provider);
-                  }}
-                  className="inline-flex min-h-11 shrink-0 items-center px-3 rf-focus-ring disabled:opacity-50"
-                >
-                  <ConnectionStateMark
-                    kind="expired"
-                    label={busy ? 'Reconnecting…' : 'Reconnect'}
-                    className="shrink-0 font-data text-[10px]"
-                  />
-                </button>
+                  <button
+                    type="button"
+                    aria-pressed={selected}
+                    aria-label={name}
+                    onClick={() => chooseProvider(provider)}
+                    className="flex min-h-11 min-w-0 flex-1 items-center px-3 text-left font-ui text-sm text-text-primary rf-focus-ring"
+                  >
+                    <span className="truncate">{name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Reconnect ${name}`}
+                    disabled={busy}
+                    onClick={() => {
+                      chooseProvider(provider);
+                      void flow.start(provider);
+                    }}
+                    className="inline-flex min-h-11 shrink-0 items-center px-3 rf-focus-ring disabled:opacity-50"
+                  >
+                    <ConnectionStateMark
+                      kind="expired"
+                      label={busy ? 'Reconnecting…' : 'Reconnect'}
+                      className="shrink-0 font-data text-[10px]"
+                    />
+                  </button>
+                </div>
+                {own?.error && (
+                  <p role="alert" className="px-1 font-ui text-xs text-state-danger">
+                    {own.error}
+                  </p>
+                )}
               </div>
             );
           }
