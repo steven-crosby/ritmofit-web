@@ -13,6 +13,53 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-26 — #598 and #599 on main `7163d71`.** Owner approved.
+> Production deploy at 2026-10-27T00:41:51Z (6:41 PM MT 2026-10-26) through
+> `scripts/deploy.sh` from a clean detached worktree (the main checkout had an
+> untracked `.claude/` directory, so it was left untouched). The script built and
+> deployed from its own `/tmp/ritmofit-deploy.qhHsRL` worktree. New Worker
+> `4fdba2fc-9292-4b6f-9658-582b3b27777b` (message `7163d71`); previous/rollback
+> `45dd784f-23ce-4697-bd33-3ab04f8b458e` (`5daee7a`). SPA entry
+> `assets/index-Bz3SPa2S.js` (was `assets/index-SlqjBWky.js`); CSS
+> `assets/index-BypEbwc1.css`. Three consecutive cache-busted fetches matched the
+> build on the first three tries, and `wrangler deployments status` shows the new
+> Worker at 100%. Script gates passed on Node 22.23.4 (matches `.nvmrc`):
+> required-secret names present, no remote D1 migrations pending, unit web 1375 /
+> api 552 / music 30, Worker/D1 integration 233, web build, OpenAPI no drift,
+> contract-parity, audit. No migration was applied.
+>
+> Runtime since production `5daee7a`:
+> [#598](https://github.com/steven-crosby/ritmofit-web/pull/598) (the class
+> builder takes the full Classes page, `34ab5c4`; web) and
+> [#599](https://github.com/steven-crosby/ritmofit-web/pull/599) (narrow Live,
+> Music, and landing polish, `7163d71`; web).
+> [#597](https://github.com/steven-crosby/ritmofit-web/pull/597) (https smoke
+> sends the `__Secure-` session cookie, `f82c3a0`) is in that tree and does not
+> change the served Worker. Docs [#593](https://github.com/steven-crosby/ritmofit-web/pull/593)
+> (`3b57f73`), [#595](https://github.com/steven-crosby/ritmofit-web/pull/595)
+> (`bc84c3b`), and the ignore cleanup [#594](https://github.com/steven-crosby/ritmofit-web/pull/594)
+> (`cd734ee`) do not change runtime.
+>
+> Smoke (script): propagation 3/3 on the built entry; `/` 200, `/api/v1/health`
+> 200 with all six security headers; `/classes`, `/explore`, `/teams` 401.
+> Health body: `status: ok`, `database: true`, every required secret `true`
+> (`APPLE_CLIENT_SECRET` `false` as expected — the signing trio is set).
+> Mounted routes reach handlers: `GET /shares`, `GET /shares/x`,
+> `GET /providers/spotify/search`, `POST /providers/track-import`, and
+> `GET /classes/<uuid>/shares`, `POST .../import-playlist`,
+> `POST .../tracks/import`, `GET .../cover`, `POST .../tags` 401;
+> `GET /classes/not-a-uuid/tracks` 404 JSON. Landing page in Chrome at 1280 and
+> 390: hero "Find the class inside the music.", Start building opens the email
+> field, Back to home returns, no horizontal overflow, no console errors, no
+> 5xx, and the page loaded `assets/index-Bz3SPa2S.js` plus
+> `assets/index-BypEbwc1.css`. Authed smoke failed: `GET /api/v1/classes` and
+> `GET /api/v1/providers/spotify/playlists` 401;
+> `GET /api/auth/get-session` 200 with a null body. The QA token file is present
+> and was not printed. Classes, the builder, Music, and Live at rest were not
+> opened. Tail for five minutes on `ritmofit-api`: five events, all outcome ok,
+> no exceptions and no 5xx (`GET /` 200 four times, `GET /api/v1/health` 200
+> once), from this session's own checks.
+
 > **Deploy 2026-10-25 — #591 and #592 on main `5daee7a`.** Owner approved.
 > Production deploy at 2026-10-26T05:07Z (11:07 PM MT 2026-10-25), the first
 > deploy through `scripts/deploy.sh 5daee7a…` (run from a clean detached
