@@ -20,13 +20,38 @@ describe('ResetPassword', () => {
     window.history.pushState({}, '', '/reset-password?error=INVALID_TOKEN');
     render(<ResetPassword />);
 
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'This reset link has expired' }),
+    ).toBeTruthy();
     const alert = screen.getByRole('alert');
-    expect(alert.textContent).toContain('invalid or has expired');
+    expect(alert.textContent).toContain('No password or saved work changed');
     expect(document.activeElement).toBe(alert);
-    expect(screen.getByText(/No password or saved work changed/)).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Back to sign in' }).getAttribute('href')).toBe(
       '/?auth=signin',
     );
+  });
+
+  it('drops the new-password heading and guidance when the link has no token', () => {
+    window.history.pushState({}, '', '/reset-password');
+    render(<ResetPassword />);
+
+    expect(screen.queryByText('Choose a new password')).toBeNull();
+    expect(screen.queryByText(/Use at least eight characters/)).toBeNull();
+    expect(screen.queryByLabelText('New password')).toBeNull();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'This reset link has expired' }),
+    ).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: 'Back to sign in' })).toHaveLength(1);
+  });
+
+  it('keeps the new-password heading and guidance for a valid link', () => {
+    window.history.pushState({}, '', '/reset-password?token=test-token');
+    render(<ResetPassword />);
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Choose a new password' })).toBeTruthy();
+    expect(screen.getByText(/Use at least eight characters/)).toBeTruthy();
+    expect(screen.queryByText('This reset link has expired')).toBeNull();
+    expect(screen.getByLabelText('New password')).toBeTruthy();
   });
 
   it('blocks mismatched confirmation without calling the auth client', async () => {
