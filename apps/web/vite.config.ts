@@ -1,47 +1,46 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
+import { VitePWA, type VitePWAOptions } from 'vite-plugin-pwa';
+
+export const pwaOptions = {
+  // 'prompt' (not 'autoUpdate'): a new deploy must not silently reload an
+  // instructor mid-edit or mid-Live-Mode. The generated SW waits; the app
+  // surfaces a "New version available — Refresh" toast (`UpdatePrompt`) and
+  // only calls `updateServiceWorker()` — which skips-waiting + reloads — when
+  // the instructor chooses to. See `components/UpdatePrompt.tsx`.
+  registerType: 'prompt',
+  workbox: {
+    // The SPA navigation fallback serves index.html for client-side routes,
+    // but it must NOT swallow top-level navigations to the same-origin API —
+    // OAuth redirect callbacks (`/api/v1/providers/:provider/callback`) and
+    // Better Auth social callbacks (`/api/auth/callback/*`) are real browser
+    // navigations the Worker must handle. Without this denylist the service
+    // worker returns the cached app shell for them, so the provider's `?code`
+    // never reaches the server and the connect flow dead-ends on the SPA 404.
+    navigateFallbackDenylist: [/^\/api\//],
+  },
+  manifest: {
+    name: 'Ritmo Studio',
+    short_name: 'Ritmo Studio',
+    description: 'Premium choreography and class-management tool for rhythm spin instructors.',
+    theme_color: '#1a110d',
+    icons: [
+      {
+        src: 'icons/logo-192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        src: 'icons/logo-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+      },
+    ],
+  },
+} satisfies Partial<VitePWAOptions>;
 
 export default defineConfig({
-  plugins: [
-    react(),
-    VitePWA({
-      // 'prompt' (not 'autoUpdate'): a new deploy must not silently reload an
-      // instructor mid-edit or mid-Live-Mode. The generated SW waits; the app
-      // surfaces a "New version available — Refresh" toast (`UpdatePrompt`) and
-      // only calls `updateServiceWorker()` — which skips-waiting + reloads — when
-      // the instructor chooses to. See `components/UpdatePrompt.tsx`.
-      registerType: 'prompt',
-      workbox: {
-        // The SPA navigation fallback serves index.html for client-side routes,
-        // but it must NOT swallow top-level navigations to the same-origin API —
-        // OAuth redirect callbacks (`/api/v1/providers/:provider/callback`) and
-        // Better Auth social callbacks (`/api/auth/callback/*`) are real browser
-        // navigations the Worker must handle. Without this denylist the service
-        // worker returns the cached app shell for them, so the provider's `?code`
-        // never reaches the server and the connect flow dead-ends on the SPA 404.
-        navigateFallbackDenylist: [/^\/api\//],
-      },
-      manifest: {
-        name: 'Ritmo Studio',
-        short_name: 'Ritmo Studio',
-        description: 'Premium choreography and class-management tool for rhythm spin instructors.',
-        theme_color: '#1a110d',
-        icons: [
-          {
-            src: 'icons/logo-192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: 'icons/logo-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-          },
-        ],
-      },
-    }),
-  ],
+  plugins: [react(), VitePWA(pwaOptions)],
   server: {
     port: 5173,
   },
