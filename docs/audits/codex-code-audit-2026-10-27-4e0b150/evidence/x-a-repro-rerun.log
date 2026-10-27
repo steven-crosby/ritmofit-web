@@ -1,0 +1,143 @@
+
+ RUN  v3.2.6 /tmp/wt-x/apps/api
+
+[vpw:debug] Adding `enable_nodejs_tty_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_fs_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_http_modules` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_perf_hooks_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:info] Starting single runtime for vitest.integration.config.ts...
+Cannot optimize dependency: vitest > @vitest/snapshot > magic-string, present in 'ssr.optimizeDeps.include'
+Cannot optimize dependency: vitest > @vitest/expect > chai, present in 'ssr.optimizeDeps.include'
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions
+[email:dev-fallback] to=<redacted>@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm <redacted>@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions
+[email:dev-fallback] to=<redacted>@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm <redacted>@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions
+[email:dev-fallback] to=<redacted>@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm <redacted>@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions
+[email:dev-fallback] to=<redacted>@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm <redacted>@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-1: an edit-share collaborator can publish the owner private class to Explore
+[A-1] collaborator PATCH visibility=public -> 200
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-1: an edit-share collaborator can publish the owner private class to Explore
+[A-1] stranger GET class -> 200 run-payload -> 200 copy -> 201 in explore -> true
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-2: any user can push a class into a verified stranger library; victim cannot remove it
+[A-2] stranger shares to victim email -> 201
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-2: any user can push a class into a verified stranger library; victim cannot remove it
+[A-2] appears in victim GET /classes -> true
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-2: any user can push a class into a verified stranger library; victim cannot remove it
+[A-2] victim DELETE share -> 403
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-2: any user can push a class into a verified stranger library; victim cannot remove it
+[A-2] stranger adds victim to team -> 201
+
+ ✓ test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-1: an edit-share collaborator can publish the owner private class to Explore 256ms
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-3: share/team-add responses are an account-existence and verification oracle
+[A-3] unknown email -> 422 VALIDATION_ERROR No user with that email.
+[A-3] registered-unverified email -> 422 EMAIL_NOT_VERIFIED That user must verify their email before receiving access.
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-3: share/team-add responses are an account-existence and verification oracle
+[A-3] registered-verified email -> 201 created
+
+ ✓ test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-2: any user can push a class into a verified stranger library; victim cannot remove it 151ms
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-4: a team admin can mint another owner-role member who can then manage the team
+[A-4] admin adds member with role=owner -> 201
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-4: a team admin can mint another owner-role member who can then manage the team
+[A-4] roles -> ["owner","admin","owner"]
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-4: a team admin can mint another owner-role member who can then manage the team
+[A-4] minted owner removes admin -> 204
+
+ ✓ test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-3: share/team-add responses are an account-existence and verification oracle 143ms
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-5: requireSession re-runs (one session lookup each) for every root router mounted earlier
+[A-5]
+GET /auth/me: status=200 sessionSelects=1 totalStatements=2
+GET /classes/:id: status=200 sessionSelects=1 totalStatements=5
+GET /classes/:id/tracks: status=200 sessionSelects=2 totalStatements=6
+GET /user-moves: status=200 sessionSelects=6 totalStatements=13
+GET /providers/connections: status=200 sessionSelects=1 totalStatements=3
+GET /teams: status=200 sessionSelects=9 totalStatements=19
+GET /explore: status=200 sessionSelects=11 totalStatements=23
+GET /nope (unknown path): status=404 sessionSelects=12 totalStatements=24
+GET /nope anonymous: status=401 sessionSelects=0 totalStatements=0
+
+ ✓ test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-4: a team admin can mint another owner-role member who can then manage the team 207ms
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-6: an edit collaborator cannot move an owner-placed user-move cue (422 on own class)
+[A-6] collaborator PATCH anchor only -> 422 {"error":{"code":"VALIDATION_ERROR","message":"userMoveId does not reference one of your moves."}}
+
+ ✓ test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-5: requireSession re-runs (one session lookup each) for every root router mounted earlier 199ms
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-8: an existing session survives a password reset
+[email:dev-fallback] to=<redacted>@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm <redacted>@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-8: an existing session survives a password reset
+[email:dev-fallback] to=<redacted>@example.com subject="Reset your Ritmo Studio password"
+Reset your Ritmo Studio password
+
+Someone (hopefully you) asked to reset the password for <redacted>@example.com. This link expires in 1 hour.
+
+Reset password: https://test.ritmofit.studio/api/auth/reset-password/ordRc5TIsm3fXK8YYa9J5WIR?callbackURL=https%3A%2F%2Ftest.ritmofit.studio%2Freset-password
+
+If you didn't request this, you can safely ignore this email.
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-8: an existing session survives a password reset
+[A-8] pre-reset session GET /auth/me after reset -> 200 sessions rows = 1
+
+stderr | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-8: an existing session survives a password reset
+2026-10-27T15:12:37.790Z ERROR [Better Auth]: Invalid redirectURL: https://evil.example/steal
+
+stdout | test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-8: an existing session survives a password reset
+[A-8] request-password-reset with foreign redirectTo -> 403
+
+ ✓ test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-6: an edit collaborator cannot move an owner-placed user-move cue (422 on own class) 154ms
+ ✓ test/a-repro.integration.test.ts > A-repro: authz and data-path reproductions > A-8: an existing session survives a password reset 175ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  15:12:34
+   Duration  3.54s (transform 369ms, setup 1.28s, collect 17ms, tests 1.68s, environment 0ms, prepare 111ms)
+
+[vpw:debug] Shutting down runtimes...
+[vpw:debug] Disposing remote proxy sessions...

@@ -1,0 +1,11 @@
+Scope: 5 of 6 workspace projects
+e2e typecheck$ tsc --noEmit
+packages/shared typecheck$ tsc --noEmit
+packages/shared typecheck: Done
+e2e typecheck: Done
+apps/web typecheck$ tsc --noEmit
+packages/music typecheck$ tsc --noEmit
+packages/music typecheck: Done
+apps/web typecheck: Done
+apps/api typecheck$ tsc --noEmit
+apps/api typecheck: Done

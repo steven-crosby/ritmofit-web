@@ -1,0 +1,57 @@
+
+> ritmofit-design-system@1.0.0 verify
+> node scripts/build-tokens.mjs --check && node scripts/build-tokens-ios.mjs --check && node scripts/lint-tokens.mjs && node scripts/check-contrast.mjs
+
+theme.css already in sync (128 root + 32 light tokens).
+ios/RFTokens.swift already in sync.
+✓ lint-tokens: clean (hex discipline, copy voice, token integrity).
+
+  DARK theme
+  ✓ 19.18:1  (need 4.5)  text/primary  [#FBF7F0 on #050403]
+  ✓ 11.15:1  (need 4.5)  text/secondary  [#C9BEAA on #050403]
+  ✓ 6.70:1  (need 4.5)  text/tertiary  [#9E927E on #050403]
+  ✓ 5.84:1  (need 4.5)  text/tertiary on raised  [#9E927E on #1A1712]
+  ✓ 5.34:1  (need 4.5)  eyebrow (brand-strong)  [#C8682A on #050403]
+  ✓ 9.43:1  (need 4.5)  link / cyan control text (interactive)  [#3AC0D4 on #050403]
+  ✓ 7.04:1  (need 4.5)  ink on copper fill  [#050403 on #E07E3C]
+  ✓ 9.43:1  (need 4.5)  text on solid cyan fill (skip-link)  [#050403 on #3AC0D4]
+  ✓ 11.40:1  (need 3)  caution icon  [#F2B838 on #050403]
+  ✓ 6.25:1  (need 3)  danger icon  [#E8654F on #050403]
+  ✓ 12.19:1  (need 3)  info icon  [#74D6E5 on #050403]
+  ✓ 7.04:1  (need 3)  brand-primary mark  [#E07E3C on #050403]
+  ✓ 12.19:1  (need 3)  interactive-hover icon  [#74D6E5 on #050403]
+
+  LIGHT theme
+  ✓ 17.58:1  (need 4.5)  text/primary  [#050403 on #F3EDE2]
+  ✓ 14.03:1  (need 4.5)  text/secondary  [#241F18 on #F3EDE2]
+  ✓ 8.81:1  (need 4.5)  text/tertiary  [#4A3F30 on #F3EDE2]
+  ✓ 9.62:1  (need 4.5)  text/tertiary on raised  [#4A3F30 on #FBF7F0]
+  ✓ 4.63:1  (need 4.5)  eyebrow (brand-strong)  [#A8521C on #F3EDE2]
+  ✓ 5.30:1  (need 4.5)  link / cyan control text (interactive)  [#0C6B7A on #F3EDE2]
+  ✓ 5.34:1  (need 4.5)  ink on copper fill  [#050403 on #C8682A]
+  ✓ 5.78:1  (need 4.5)  text on solid cyan fill (skip-link)  [#FBF7F0 on #0C6B7A]
+  ✓ 3.16:1  (need 3)  caution icon  [#B5790F on #F3EDE2]
+  ✓ 4.90:1  (need 3)  danger icon  [#B83A2B on #F3EDE2]
+  ✓ 5.30:1  (need 3)  info icon  [#0C6B7A on #F3EDE2]
+  ✓ 3.30:1  (need 3)  brand-primary mark  [#C8682A on #F3EDE2]
+  ✓ 4.21:1  (need 3)  interactive-hover icon  [#0E7C8C on #F3EDE2]
+
+  LIVE (AAA — 07-accessibility)
+  ✓ 16.73:1  (need 7)  LIVE text/primary on raised  [#FBF7F0 on #1A1712]
+  ✓ 9.73:1  (need 7)  LIVE text/secondary on raised  [#C9BEAA on #1A1712]
+  ✓ 9.73:1  (need 7)  LIVE supporting label on raised  [#C9BEAA on #1A1712]
+  ✓ 8.23:1  (need 7)  LIVE interactive on raised  [#3AC0D4 on #1A1712]
+  ✓ 9.95:1  (need 7)  LIVE state/caution on raised  [#F2B838 on #1A1712]
+  ✓ 8.23:1  (need 7)  LIVE state/positive on raised  [#3AC0D4 on #1A1712]
+  ✓ 7.04:1  (need 7)  LIVE danger (live re-map) on raised  [#EF8572 on #1A1712]
+  ✓ 19.44:1  (need 7)  LIVE text/primary  [#FBF7F0 on #020201]
+  ✓ 11.30:1  (need 7)  LIVE text/secondary  [#C9BEAA on #020201]
+  ✓ 11.30:1  (need 7)  LIVE supporting label (live re-map)  [#C9BEAA on #020201]
+  ✓ 9.56:1  (need 7)  LIVE interactive (cyan control text)  [#3AC0D4 on #020201]
+  ✓ 11.55:1  (need 7)  LIVE state/caution  [#F2B838 on #020201]
+  ✓ 9.56:1  (need 7)  LIVE state/positive  [#3AC0D4 on #020201]
+  ✓ 8.17:1  (need 7)  LIVE danger (live re-map)  [#EF8572 on #020201]
+  ✓ 7.04:1  (need 7)  LIVE ink on primary fill (darkest stop)  [#050403 on #E07E3C]
+  ✓ 7.14:1  (need 4.5)  LIVE brand-primary on live (large display)  [#E07E3C on #020201]
+
+✓ check-contrast: semantic pairs clear AA; Live pairs clear AAA.

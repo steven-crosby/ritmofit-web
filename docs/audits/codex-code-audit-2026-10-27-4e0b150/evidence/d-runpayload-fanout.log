@@ -1,0 +1,18 @@
+
+ RUN  v3.2.6 /tmp/wt-d/apps/web
+
+stdout | src/components/d-audit-fanout.test.tsx > d-audit run-payload fan-out > counts getRunPayload calls for a 5-class library
+D-FANOUT n=5 listClasses=1 runPayload: classesHome=5 +live=5 +classesAgain=5 +liveAgain=5 total=20 (shelf: home=5 all=10)
+
+stdout | src/components/d-audit-fanout.test.tsx > d-audit run-payload fan-out > counts getRunPayload calls for a 30-class library
+D-FANOUT n=30 listClasses=1 runPayload: classesHome=30 +live=30 +classesAgain=30 +liveAgain=30 total=120 (shelf: home=30 all=60)
+
+ ✓ src/components/d-audit-fanout.test.tsx (2 tests) 760ms
+   ✓ d-audit run-payload fan-out > counts getRunPayload calls for a 5-class library  354ms
+   ✓ d-audit run-payload fan-out > counts getRunPayload calls for a 30-class library  406ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  14:28:19
+   Duration  2.06s (transform 483ms, setup 0ms, collect 728ms, tests 760ms, environment 371ms, prepare 78ms)
+

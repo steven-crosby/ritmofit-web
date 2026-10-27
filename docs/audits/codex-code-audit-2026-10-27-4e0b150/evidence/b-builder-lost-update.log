@@ -1,0 +1,18 @@
+[B-1] inspector Start at after drag: 1:00
+[B-1] notes Save PATCH startOffsetMs: 60000
+[B-1] server startOffsetMs after notes Save: 60000
+[B-2] inspector cue time field after marker drag: 0:10
+[B-2] text-only Save PATCH anchorMs: 10000
+[B-2] server cue anchorMs after text Save: 10000
+   × Reviewer B repro: builder lost updates against the timeline > B-1: saving inspector notes keeps a start the timeline just moved 323ms
+   × Reviewer B repro: builder lost updates against the timeline > B-2: editing a cue text keeps an anchor the timeline marker just moved 193ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected 60000 to be 65000 // Object.is equality
+    233|     console.info('[B-1] notes Save PATCH startOffsetMs:', last.startOf…
+    234|     console.info('[B-1] server startOffsetMs after notes Save:', state…
+AssertionError: expected 10000 to be 11000 // Object.is equality
+    269|     console.info('[B-2] text-only Save PATCH anchorMs:', last.anchorMs…
+    270|     console.info('[B-2] server cue anchorMs after text Save:', state.c…
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+exit=1

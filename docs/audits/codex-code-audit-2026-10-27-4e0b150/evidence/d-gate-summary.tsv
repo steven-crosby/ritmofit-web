@@ -1,0 +1,16 @@
+step	exit	seconds	command
+01-format-check	0	5.3	pnpm format:check
+02-typecheck	0	12.9	pnpm -r typecheck
+03-lint	0	6.2	pnpm lint
+04-ds-verify	0	0.6	cd ritmofit_design_system && npm run verify
+05-theme-classes-selftest	0	0.7	pnpm --filter @ritmofit/web theme-classes --selftest
+06-theme-classes	0	0.6	pnpm --filter @ritmofit/web theme-classes
+07-test	0	44.6	pnpm test
+08-test-integration	0	53.3	pnpm --filter @ritmofit/api test:integration
+09-web-build	0	12.4	pnpm --filter @ritmofit/web build
+10-bundle-budget-selftest	0	0.4	pnpm --filter @ritmofit/web bundle-budget --selftest
+11-openapi	0	0.9	pnpm --filter @ritmofit/api openapi && git diff --stat --exit-code apps/api/openapi/openapi.json
+12-contract-parity	0	0.5	pnpm --filter @ritmofit/api contract-parity
+13-audit-ci	0	0.8	pnpm audit:ci
+14-worktree-status	0	0.0	git status --porcelain
+DONE

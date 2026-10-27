@@ -1,0 +1,12 @@
+$ tsx scripts/check-contract-parity.ts
+iOS ↔ backend run-payload contract parity
+  OpenAPI:  apps/api/openapi/openapi.json
+  iOS DTOs: ios-snapshot/Core/Models/RunPayload.swift
+
+Tracked lag (allowlisted, not failing) — 4:
+  • Cue.durationMs [missing-on-ios] — The shipped iOS decoder ignores this key. iOS teaching is a later refresh.
+  • Cue.bpm [missing-on-ios] — The shipped iOS decoder ignores this key. iOS teaching is a later refresh.
+  • Cue.intensity [missing-on-ios] — The shipped iOS decoder ignores this key. iOS teaching is a later refresh.
+  • Cue.position [missing-on-ios] — The shipped iOS decoder ignores this key. iOS teaching is a later refresh.
+
+✓ No untracked contract drift.
