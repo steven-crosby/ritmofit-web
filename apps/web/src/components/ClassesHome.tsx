@@ -2,6 +2,9 @@ import type { CreateClassMode } from './CreateClassDialog.js';
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { ClassListItem } from '@ritmofit/shared';
 import { getClassShelfPayload, listClassPlanBlocks, listClassTracks } from '../lib/api.js';
+import { deleteClassConfirmMessage } from '../lib/class-delete.js';
+import { errMessage } from '../lib/errors.js';
+import { Dialog } from './Dialog.js';
 import type { ClassDetailState } from '../lib/class-ordering.js';
 import { creationNextStep, type CreationPlanContext } from '../lib/creation-next-step.js';
 import { formatDuration, formatTemplateLabel } from '../lib/class-summary.js';
@@ -30,6 +33,7 @@ export function ClassesHome({
   onOpen,
   onPreview,
   onDuplicate,
+  onDelete,
   onSelectTag,
   onClearTag,
   onRetry,
@@ -48,6 +52,7 @@ export function ClassesHome({
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
+  onDelete: (cls: ClassListItem) => Promise<void>;
   onSelectTag: (tag: string | null) => void;
   onClearTag: () => void;
   onRetry: () => void;
@@ -127,6 +132,7 @@ export function ClassesHome({
       onOpen={onOpen}
       onPreview={onPreview}
       onDuplicate={onDuplicate}
+      onDelete={onDelete}
       onSelectTag={onSelectTag}
       onClearTag={onClearTag}
       onLoadMore={onLoadMore}
@@ -146,6 +152,7 @@ function LibraryShell({
   onOpen,
   onPreview,
   onDuplicate,
+  onDelete,
   onSelectTag,
   onClearTag,
   onLoadMore,
@@ -161,6 +168,7 @@ function LibraryShell({
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
+  onDelete: (cls: ClassListItem) => Promise<void>;
   onSelectTag: (tag: string | null) => void;
   onClearTag: () => void;
   onLoadMore: () => void;
@@ -170,7 +178,11 @@ function LibraryShell({
 }) {
   const searchId = useId();
   const recentsRef = useRef<HTMLElement>(null);
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<ClassListItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [discipline, setDiscipline] = useState<'all' | LibraryTemplate>('all');
   const [details, setDetails] = useState<Record<string, ClassDetailState>>({});
   const [plans, setPlans] = useState<Record<string, CreationPlanContext | null>>({});
@@ -250,6 +262,29 @@ function LibraryShell({
     const heading = recentsRef.current?.querySelector('h2');
     recentsRef.current?.scrollIntoView({ block: 'start' });
     if (heading instanceof HTMLElement) heading.focus();
+  };
+
+  const closeDelete = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+    setDeleteError(null);
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDelete || deleting) return;
+    const target = pendingDelete;
+    setDeleting(true);
+    setDeleteError(null);
+    void (async () => {
+      try {
+        await onDelete(target);
+        setPendingDelete(null);
+      } catch (error) {
+        setDeleteError(errMessage(error));
+      } finally {
+        setDeleting(false);
+      }
+    })();
   };
 
   return (
@@ -363,6 +398,10 @@ function LibraryShell({
                   onOpen={onOpen}
                   onPreview={onPreview}
                   onDuplicate={onDuplicate}
+                  onAskDelete={(target) => {
+                    setDeleteError(null);
+                    setPendingDelete(target);
+                  }}
                   onRetryDetails={() => setRetryRevision((revision) => revision + 1)}
                 />
               ))}
@@ -451,6 +490,43 @@ function LibraryShell({
           </section>
         )}
       </section>
+      {pendingDelete && (
+        <Dialog
+          onClose={closeDelete}
+          label={deleteClassConfirmMessage(pendingDelete.title)}
+          panelClassName="w-full max-w-md rounded-card bg-bg-raised p-5 shadow-lifted"
+          initialFocusRef={cancelDeleteRef}
+        >
+          <p className="font-ui text-base leading-6 text-text-primary">
+            {deleteClassConfirmMessage(pendingDelete.title)}
+          </p>
+          {deleteError && (
+            <p role="alert" className="mt-3 font-ui text-sm text-state-danger">
+              {deleteError}
+            </p>
+          )}
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={confirmDelete}
+              disabled={deleting}
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control bg-transparent px-3 font-ui text-sm text-state-danger hover:bg-state-danger/10 rf-focus-ring disabled:pointer-events-none disabled:opacity-40"
+            >
+              <DeleteIcon />
+              {deleting ? '…' : 'Delete class'}
+            </button>
+            <button
+              ref={cancelDeleteRef}
+              type="button"
+              onClick={closeDelete}
+              disabled={deleting}
+              className="min-h-11 rounded-control border border-border-subtle px-3 font-ui text-sm text-text-secondary rf-focus-ring disabled:opacity-40"
+            >
+              Cancel
+            </button>
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -589,6 +665,7 @@ function ClassRow({
   onOpen,
   onPreview,
   onDuplicate,
+  onAskDelete,
   onRetryDetails,
 }: {
   cls: ClassListItem;
@@ -597,6 +674,7 @@ function ClassRow({
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
+  onAskDelete: (cls: ClassListItem) => void;
   onRetryDetails: () => void;
 }) {
   const step = creationNextStep(cls, detail, plan);
@@ -644,6 +722,7 @@ function ClassRow({
           failed={detail?.status === 'error'}
           onPreview={onPreview}
           onDuplicate={onDuplicate}
+          onAskDelete={() => onAskDelete(cls)}
           onRetryDetails={onRetryDetails}
         />
       </div>
@@ -657,6 +736,7 @@ function RowMenu({
   failed,
   onPreview,
   onDuplicate,
+  onAskDelete,
   onRetryDetails,
 }: {
   cls: ClassListItem;
@@ -664,11 +744,30 @@ function RowMenu({
   failed: boolean;
   onPreview: (cls: ClassListItem) => void;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
+  onAskDelete: () => void;
   onRetryDetails: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
   return (
-    <div className="relative">
+    <div ref={menuRef} className="relative">
       <button
         type="button"
         aria-expanded={open}
@@ -706,6 +805,20 @@ function RowMenu({
               Duplicate
             </button>
           )}
+          {cls.accessLevel === 'owner' && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onAskDelete();
+              }}
+              aria-label={`Delete — ${cls.title}`}
+              className="flex min-h-11 w-full items-center gap-1.5 rounded-control px-3 text-left font-ui text-sm text-state-danger hover:bg-state-danger/10"
+            >
+              <DeleteIcon />
+              Delete
+            </button>
+          )}
           {failed && (
             <button
               type="button"
@@ -722,5 +835,13 @@ function RowMenu({
         </div>
       )}
     </div>
+  );
+}
+
+function DeleteIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+    </svg>
   );
 }
