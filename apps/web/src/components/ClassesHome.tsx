@@ -482,9 +482,9 @@ function LibraryShell({
                 Show all
               </button>
             </div>
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {jumpBack.map((cls) => (
-                <li key={cls.id}>
+                <li key={cls.id} className="min-w-0">
                   <button
                     type="button"
                     aria-label={`Jump back in to ${cls.title}`}
