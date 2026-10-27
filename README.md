@@ -76,6 +76,24 @@ pnpm --filter @ritmofit/api contract-parity
 pnpm audit:ci
 ```
 
+### End-to-end smoke (local only)
+
+`pnpm e2e` builds the SPA, boots the Worker on `http://localhost:8798` against a fresh local D1
+in `e2e/.state/` with mock providers, and drives the signed-in core loop in Playwright at 1440 and
+390 wide: sign up, create an empty Cycle class, add two mock tracks, write cues, Run live without
+music, play, End Class. Every destination is checked for sideways overflow and for WCAG 2.2 AA
+violations with axe. It takes about 30 seconds. It is not part of `pnpm test` or CI.
+
+```bash
+pnpm --filter @ritmofit/e2e exec playwright install chromium   # once per machine
+pnpm e2e
+E2E_CHANNEL=chrome pnpm e2e   # use the installed Google Chrome instead
+```
+
+It never reads your `apps/api/.dev.vars` or your local D1. Failure screenshots and traces land in
+`e2e/.state/test-results/`, and per-page screenshots in `e2e/.state/shots/`. Port 8798 must be
+free; set `E2E_PORT` to move it.
+
 ## Build
 
 ```bash
