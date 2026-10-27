@@ -4,6 +4,7 @@ import {
   filterLibrary,
   musicChipBadge,
   musicChipOffersReconnect,
+  musicConnectionNotice,
   musicLibraryFailure,
   musicLibraryKinds,
   orderLibrary,
@@ -106,5 +107,58 @@ describe('library rows', () => {
       'Warmup',
     ]);
     expect(filterLibrary(rows, 'warm', (row) => row.name)).toEqual([{ name: 'Warmup' }]);
+  });
+});
+
+describe('musicConnectionNotice', () => {
+  const base = {
+    label: 'Spotify',
+    fetchStatus: 'ready' as const,
+    connectionState: 'connected' as const,
+    libraryKind: 'playlists' as const,
+    scopeGap: null,
+    connectInFlight: false,
+  };
+
+  it('stays silent when the chip already says Connected', () => {
+    expect(musicConnectionNotice(base)).toBeNull();
+  });
+
+  it('leaves a failed status read to the page alert', () => {
+    expect(
+      musicConnectionNotice({ ...base, fetchStatus: 'error', connectionState: 'expired' }),
+    ).toBeNull();
+  });
+
+  it('offers Reconnect on a library shelf when the session expired', () => {
+    expect(musicConnectionNotice({ ...base, connectionState: 'expired' })).toEqual({
+      action: 'reconnect',
+      tone: 'caution',
+      message: 'Reconnect Spotify to see your library. Catalog search still works.',
+    });
+  });
+
+  it('offers Connect on a library shelf with no account', () => {
+    expect(
+      musicConnectionNotice({ ...base, connectionState: 'disconnected', libraryKind: 'songs' }),
+    ).toMatchObject({ action: 'connect', tone: 'neutral' });
+  });
+
+  it('keeps Catalog quiet without an account unless a connect is in flight', () => {
+    const catalog = {
+      ...base,
+      connectionState: 'disconnected' as const,
+      libraryKind: 'catalog' as const,
+    };
+    expect(musicConnectionNotice(catalog)).toBeNull();
+    expect(musicConnectionNotice({ ...catalog, connectInFlight: true })).toMatchObject({
+      action: 'connect',
+    });
+  });
+
+  it('names a missing scope on a linked account', () => {
+    expect(
+      musicConnectionNotice({ ...base, libraryKind: 'catalog', scopeGap: 'playback' }),
+    ).toMatchObject({ action: 'reconnect', message: 'Reconnect Spotify to play songs in Ritmo.' });
   });
 });
