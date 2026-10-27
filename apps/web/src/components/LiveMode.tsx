@@ -90,6 +90,15 @@ export interface ChoreographyQueueItem {
   durationMs: number | null;
   /** Only current choreography counts down; upcoming rows show their full interval. */
   remainingMs: number | null;
+  /** Zero-based track position when the row belongs to a later track, else null. */
+  laterTrackIndex: number | null;
+}
+
+/** The first later track that carries choreography, so a track's last cue still has a next. */
+export interface FollowingTrackEvents {
+  index: number;
+  events: TimelineEvent[];
+  trackEndMs: number | null;
 }
 
 /** Stable empty reference so a track-less / pre-roll frame doesn't churn memos. */
@@ -276,22 +285,59 @@ export function choreographyQueueAt(
   elapsedMs: number,
   trackEndMs: number | null,
   limit = 4,
+  following: FollowingTrackEvents | null = null,
 ): ChoreographyQueueItem[] {
-  if (events.length === 0 || limit <= 0) return [];
+  if (limit <= 0) return [];
+  // An interval ends at the next anchor on its own track, or at that track's end.
+  const rows = [
+    ...events.map((event, i) => ({
+      event,
+      boundaryMs: events[i + 1]?.atMs ?? trackEndMs,
+      laterTrackIndex: null,
+    })),
+    ...(following?.events ?? []).map((event, i, list) => ({
+      event,
+      boundaryMs: list[i + 1]?.atMs ?? following!.trackEndMs,
+      laterTrackIndex: following!.index,
+    })),
+  ];
+  if (rows.length === 0) return [];
   const currentIndex = lastAtOrBefore(events, elapsedMs);
   const firstIndex = Math.max(0, currentIndex);
-  return events.slice(firstIndex, firstIndex + limit).map((event, offset) => {
-    const index = firstIndex + offset;
-    const nextAtMs = events[index + 1]?.atMs ?? trackEndMs;
-    const endAtMs = nextAtMs == null ? null : Math.max(event.atMs, nextAtMs);
-    const isCurrent = index === currentIndex;
+  return rows
+    .slice(firstIndex, firstIndex + limit)
+    .map(({ event, boundaryMs, laterTrackIndex }, offset) => {
+      const endAtMs = boundaryMs == null ? null : Math.max(event.atMs, boundaryMs);
+      const isCurrent = firstIndex + offset === currentIndex;
+      return {
+        event,
+        state: isCurrent ? 'current' : 'upcoming',
+        durationMs: endAtMs == null ? null : endAtMs - event.atMs,
+        remainingMs: isCurrent && endAtMs != null ? Math.max(0, endAtMs - elapsedMs) : null,
+        laterTrackIndex,
+      };
+    });
+}
+
+/** The first track after `liveIndex` with any cue or move, or null at the end of the class. */
+export function followingTrackEvents(
+  payload: RunPayload,
+  eventsByTrack: TimelineEvent[][],
+  liveIndex: number,
+): FollowingTrackEvents | null {
+  if (liveIndex < 0) return null;
+  for (let index = liveIndex + 1; index < payload.tracks.length; index++) {
+    const events = eventsByTrack[index]!;
+    if (events.length === 0) continue;
+    const entry = payload.tracks[index]!;
+    const durationMs = entry.track.durationMs;
     return {
-      event,
-      state: isCurrent ? 'current' : 'upcoming',
-      durationMs: endAtMs == null ? null : endAtMs - event.atMs,
-      remainingMs: isCurrent && endAtMs != null ? Math.max(0, endAtMs - elapsedMs) : null,
+      index,
+      events,
+      trackEndMs: durationMs == null ? null : (entry.startOffsetMs ?? 0) + durationMs,
     };
-  });
+  }
+  return null;
 }
 
 /** All cues + moves of a track as class-absolute events, time-ordered. */
@@ -731,14 +777,19 @@ export function LiveMode({
     [payload, liveIndex],
   );
   const events = liveIndex >= 0 ? eventsByTrack[liveIndex]! : NO_EVENTS;
+  const following = useMemo(
+    () => followingTrackEvents(payload, eventsByTrack, liveIndex),
+    [payload, eventsByTrack, liveIndex],
+  );
   // One binary search over the stable, pre-sorted array yields both current and next.
+  // After the live track's last action, next is the first action of a later track.
   const { currentEvent, nextEvent } = useMemo(() => {
     const i = lastAtOrBefore(events, elapsedMs);
     return {
       currentEvent: i >= 0 ? events[i]! : null,
-      nextEvent: i + 1 < events.length ? events[i + 1]! : null,
+      nextEvent: i + 1 < events.length ? events[i + 1]! : (following?.events[0] ?? null),
     };
-  }, [events, elapsedMs]);
+  }, [events, elapsedMs, following]);
 
   // A track with no entered duration occupies zero timeline width, so a per-track
   // countdown would read a misleading 0:00. Track whether we have a real window.
@@ -1192,6 +1243,7 @@ export function LiveMode({
               currentEvent={currentEvent}
               nextEvent={nextEvent}
               events={events}
+              following={following}
               elapsedMs={elapsedMs}
               trackEndMs={trackEndMs}
               trackHasDuration={trackDurationMs != null}
@@ -1465,6 +1517,7 @@ function CueByCue({
   currentEvent,
   nextEvent,
   events,
+  following,
   elapsedMs,
   trackEndMs,
   trackHasDuration,
@@ -1480,6 +1533,7 @@ function CueByCue({
   currentEvent: TimelineEvent | null;
   nextEvent: TimelineEvent | null;
   events: TimelineEvent[];
+  following: FollowingTrackEvents | null;
   elapsedMs: number;
   trackEndMs: number;
   trackHasDuration: boolean;
@@ -1828,6 +1882,7 @@ function CueByCue({
 
         <ChoreographyQueue
           events={events}
+          following={following}
           elapsedMs={elapsedMs}
           trackEndMs={trackHasDuration ? trackEndMs : null}
         />
@@ -1903,14 +1958,16 @@ function FullGuidance({
  */
 function ChoreographyQueue({
   events,
+  following,
   elapsedMs,
   trackEndMs,
 }: {
   events: TimelineEvent[];
+  following: FollowingTrackEvents | null;
   elapsedMs: number;
   trackEndMs: number | null;
 }) {
-  const queue = choreographyQueueAt(events, elapsedMs, trackEndMs);
+  const queue = choreographyQueueAt(events, elapsedMs, trackEndMs, 4, following);
   if (queue.length === 0) return null;
   const hasCurrent = queue[0]?.state === 'current';
 
@@ -1923,7 +1980,7 @@ function ChoreographyQueue({
         <p className="font-data text-[11px] text-text-tertiary">Current + next</p>
       </div>
       <ol className="mt-3 flex flex-col gap-1" aria-label="Choreography queue">
-        {queue.map(({ event, state, durationMs, remainingMs }, index) => {
+        {queue.map(({ event, state, durationMs, remainingMs, laterTrackIndex }, index) => {
           const current = state === 'current';
           const upcomingIndex = index - (hasCurrent ? 1 : 0);
           const intervalMs = current ? remainingMs : durationMs;
@@ -1947,7 +2004,9 @@ function ChoreographyQueue({
                   {event.text}
                 </span>
                 <span className="block font-data text-[10px] uppercase tracking-wide text-text-tertiary">
-                  {event.kind}
+                  {laterTrackIndex == null
+                    ? event.kind
+                    : `${event.kind} · Track ${laterTrackIndex + 1}`}
                 </span>
               </span>
               <span
