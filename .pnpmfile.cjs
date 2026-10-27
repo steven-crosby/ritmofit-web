@@ -1,13 +1,13 @@
-// Force every postcss declaration onto the patched 8.5.23+ line
+// Force every postcss declaration onto the patched line, 8.5.31 or newer
 // (GHSA-fxqj-rqcc-2cmp; incomplete fix of GHSA-6g55-p6wh-862q).
 module.exports = {
   hooks: {
     readPackage(pkg) {
       if (pkg.dependencies && pkg.dependencies.postcss) {
-        pkg.dependencies.postcss = '^8.5.23';
+        pkg.dependencies.postcss = '^8.5.31';
       }
       if (pkg.devDependencies && pkg.devDependencies.postcss) {
-        pkg.devDependencies.postcss = '^8.5.23';
+        pkg.devDependencies.postcss = '^8.5.31';
       }
       // better-auth lists vitest as an optional peer for `better-auth/test`
       // helpers. We do not import those. Leaving the peer in place puts
