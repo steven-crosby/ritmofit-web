@@ -1,6 +1,7 @@
 import { getSpotifyPlayback } from '../lib/spotify-playback.js';
 // @vitest-environment jsdom
 import { StrictMode } from 'react';
+import liveModeSource from './LiveMode.tsx?raw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { MusicConnectionView, RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
@@ -2050,6 +2051,15 @@ describe('LiveMode sparse-data fallbacks', () => {
 
     const remaining = screen.getByLabelText('Time left in this track');
     expect(remaining.textContent).toBe('—');
+  });
+});
+
+describe('LiveMode type tokens', () => {
+  it('sets labels on the eyebrow and caption tokens, never below the 11px caption floor', () => {
+    expect(liveModeSource).not.toMatch(/text-\[1[01]px\]/);
+    expect(liveModeSource).not.toMatch(/tracking-\[0\.(18|22)em\]/);
+    expect(liveModeSource).toContain('rf-eyebrow');
+    expect(liveModeSource).toContain('text-caption');
   });
 });
 
