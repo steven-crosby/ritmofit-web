@@ -11,6 +11,7 @@
 <!-- note (Claude, 2026-07-25): Replaced the hardcoded `~/repos/ritmostudio/` workspace path with portable discovery commands (split containers are now possible, and ritmofit-ios clones can live in either), noted cross-round machine contention, and pointed at the new parallel-round runbook. -->
 <!-- note (Cursor, 2026-10-25): Removed the tracked CLAUDE.md wrapper so AGENTS.md is the sole tracked instruction file; do not recreate CLAUDE.md. -->
 <!-- note (Grok, 2026-10-26): Agents leave other tools' local files unmentioned. -->
+<!-- note (Cursor, 2026-10-27): Listed the web bundle budget that now ends the SPA build. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -169,7 +170,9 @@ Use Node `>=22.13` and pnpm `>=11.4`.
 - `pnpm build`: build all workspaces.
 - `pnpm format:check`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test`: core local gates.
 - `pnpm --filter @ritmofit/api test:integration`: Worker/D1 integration tests.
-- `pnpm --filter @ritmofit/web build`: production SPA build.
+- `pnpm --filter @ritmofit/web build`: production SPA build. It ends with the bundle budget, which
+  fails when the startup entry is over 180 kB gzip; `pnpm --filter @ritmofit/web bundle-budget`
+  re-checks an existing `dist/` (`--selftest` verifies the checker itself).
 - `pnpm --filter @ritmofit/web theme-classes`: fail on colour utilities Tailwind never generates
   (`--selftest` verifies the checker itself). `tsc` and ESLint cannot see these — a class is a string.
 - `pnpm --filter @ritmofit/api openapi`: regenerate `apps/api/openapi/openapi.json`.
