@@ -13,6 +13,34 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-27 — #634 on main `bf31706`.** Steven approved at 9:50 AM MT,
+> after the squash was on `origin/main`. Production deploy at
+> 2026-10-27T16:00:38Z (10:00 AM MT) through
+> `scripts/deploy.sh bf31706c64662a3c7e5306359c237b60cbed61c9` from a clean
+> detached worktree. The main checkout had an untracked `.claude/` directory
+> and was left untouched. Against the previous production tree `65d4deb`, the
+> runtime diff is [#634](https://github.com/steven-crosby/ritmofit-web/pull/634)
+> (`bf31706`): `musickit.ts`, `apple-music-adapter.ts`, and their tests.
+> Docs commits in `bf31706` that do not change runtime are
+> [#632](https://github.com/steven-crosby/ritmofit-web/pull/632) (`e470a84`) and
+> [#633](https://github.com/steven-crosby/ritmofit-web/pull/633) (`91a1e7f`, the
+> 4e0b150 code audit).
+> No migration file is in `65d4deb..bf31706`. The script reported none to
+> apply. None was applied. No production data was edited.
+>
+> New Worker `df90f169-a51d-4476-bb9a-d4fbf6ab3663` (message `bf31706`);
+> rollback `94e7003b-af7f-4d56-84e1-3288f0c3a813` (`65d4deb`). SPA
+> `assets/index-DvFKqouw.js` (was `assets/index-B1FRgRjm.js`); CSS
+> `assets/index-DGcMUSRx.css` unchanged. Propagation 3/3 on the first three
+> cache-busted fetches, and three later cache-busted fetches agreed.
+> `/` 200, `/api/v1/health` 200 with `database: true` and the six security
+> headers; `/classes`, `/explore`, `/teams` 401. `wrangler deployments status`
+> shows this Worker at 100%. Tail across two connects (3m54s, then 80s): four
+> events, all outcome ok, no exceptions and no 5xx (health 200, classes 401,
+> explore 401, teams 401), all on this Worker. #634 is now in production and
+> still awaits Steven's iPhone Apple Music check. This docs record is not in
+> the deployed tree.
+
 > **Deploy 2026-10-27 — #629 on main `65d4deb`.** Steven said go at 8:06 AM MT.
 > Production deploy at 2026-10-27T14:11:12Z (8:11 AM MT) through
 > `scripts/deploy.sh 65d4deb4aba90f26c6706a099351709680d11aee` from a clean
