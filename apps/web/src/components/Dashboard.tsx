@@ -74,6 +74,7 @@ import {
   ConnectionStateMark,
   accountConnectionMark,
   musicConnectionMark,
+  type ConnectionMarkKind,
 } from './ConnectionStateMark.js';
 import { moveItem } from '../lib/reorder.js';
 import {
@@ -119,6 +120,17 @@ import {
   providerConnectionState,
   providerLabel,
 } from '../lib/providers.js';
+import {
+  defaultLibraryKind,
+  filterLibrary,
+  musicChipBadge,
+  musicLibraryKinds,
+  orderLibrary,
+  playlistMetaLine,
+  songMetaLine,
+  type LibrarySort,
+  type MusicLibraryKind,
+} from '../lib/music-library.js';
 import { Dialog } from './Dialog.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 import { ClassPulse } from './ClassPulse.js';
@@ -251,6 +263,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [playlistBrowse, setPlaylistBrowse] = useState<{
     provider: Provider;
     playlists: ProviderPlaylistSummary[];
+    playlistId: string;
   } | null>(null);
   const [likesBrowse, setLikesBrowse] = useState<{
     provider: Provider;
@@ -891,6 +904,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           <PlaylistBrowserDialog
             provider={playlistBrowse.provider}
             playlists={playlistBrowse.playlists}
+            initialPlaylistId={playlistBrowse.playlistId}
             onClose={() => setPlaylistBrowse(null)}
             onCreateClass={handleCreateClassFromPlaylist}
           />
@@ -1095,7 +1109,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
             userId={userId}
             connectionRevision={connectionRevision}
             onOpenConnections={() => setConnectionsOpen(true)}
-            onBrowsePlaylists={(provider, playlists) => setPlaylistBrowse({ provider, playlists })}
+            onOpenPlaylist={(provider, playlists, playlistId) =>
+              setPlaylistBrowse({ provider, playlists, playlistId })
+            }
             onBrowseLikes={(provider, tracks) => setLikesBrowse({ provider, tracks })}
             onCreateClass={handleCreateClassFromLikes}
           />
@@ -1730,14 +1746,18 @@ function MusicWorkspace({
   userId,
   connectionRevision,
   onOpenConnections,
-  onBrowsePlaylists,
+  onOpenPlaylist,
   onBrowseLikes,
   onCreateClass,
 }: {
   userId: string;
   connectionRevision: number;
   onOpenConnections: () => void;
-  onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
+  onOpenPlaylist: (
+    provider: Provider,
+    playlists: ProviderPlaylistSummary[],
+    playlistId: string,
+  ) => void;
   onBrowseLikes: (provider: Provider, tracks: TrackSearchResult[]) => void;
   onCreateClass: (
     tracks: TrackSearchResult[],
@@ -1762,6 +1782,11 @@ function MusicWorkspace({
       rememberConnectionReturn({ userId, destination: 'music', provider }),
   });
   const [selectedProvider, setSelectedProvider] = useState<Provider>(PROVIDER_ORDER[0]!);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [libraryKind, setLibraryKind] = useState<MusicLibraryKind>('catalog');
+  const [libraryQuery, setLibraryQuery] = useState('');
+  const [sort, setSort] = useState<LibrarySort>('recents');
+  const typeTouched = useRef(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -1772,6 +1797,17 @@ function MusicWorkspace({
   const [template, setTemplate] = useState<ClassTemplate>('cycle');
   const [creating, setCreating] = useState(false);
   const requestId = useRef(0);
+
+  const libraryKindFor = (provider: Provider): MusicLibraryKind => {
+    const connection = connections.find((row) => row.provider === provider);
+    const connected = providerConnectionState(provider, connection, Date.now()) === 'connected';
+    return defaultLibraryKind(connected, musicLibraryKinds(provider));
+  };
+
+  useEffect(() => {
+    if (typeTouched.current || connectionsStatus === 'loading') return;
+    setLibraryKind(libraryKindFor(selectedProvider));
+  }, [connections, connectionsStatus, selectedProvider]);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -1833,183 +1869,285 @@ function MusicWorkspace({
     }
   };
 
+  const label = providerLabel(selectedProvider);
+  const connection = connections.find((row) => row.provider === selectedProvider);
+  const connectionState = providerConnectionState(selectedProvider, connection, Date.now());
+  const libraryFailed = Boolean(likesError[selectedProvider] || playlistsError[selectedProvider]);
+  const statusMark = musicConnectionMark(connectionsStatus, connectionState);
+  const truth = providerCapabilityTruth(
+    selectedProvider,
+    connection,
+    Date.now(),
+    connectionsStatus === 'ready' ? 'verified' : 'unverified',
+  );
+  if (libraryFailed) {
+    truth.library = { state: 'unverified', label: 'Library unavailable · retry' };
+  }
+  const savedPlaylists = playlists[selectedProvider] ?? null;
+  const likedTracks = likes[selectedProvider] ?? null;
+  const playlistRows = orderLibrary(
+    filterLibrary(
+      savedPlaylists ?? [],
+      libraryQuery,
+      (row) => `${row.name} ${row.ownerName ?? ''}`,
+    ),
+    sort,
+    (row) => row.name,
+  );
+  const songRows = orderLibrary(
+    filterLibrary(likedTracks ?? [], libraryQuery, (row) => `${row.title} ${row.artist}`),
+    sort,
+    (row) => row.title,
+  );
+  const chooseProvider = (provider: Provider) => {
+    if (flow.operation && flow.operation.provider !== provider) flow.cancel();
+    if (provider !== selectedProvider) {
+      typeTouched.current = false;
+      setLibraryQuery('');
+      setDetailsOpen(false);
+      setLibraryKind(libraryKindFor(provider));
+    }
+    setSelectedProvider(provider);
+  };
+  const chooseKind = (kind: MusicLibraryKind) => {
+    typeTouched.current = true;
+    setLibraryKind(kind);
+    setLibraryQuery('');
+  };
+
   return (
-    <section className="grid w-full min-w-0 gap-5 xl:grid-cols-[260px_minmax(0,1fr)] xl:items-start">
-      <aside className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-4 xl:sticky xl:top-6">
-        <p className="rf-eyebrow">Sources</p>
-        <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-3 xl:grid-cols-1">
-          {PROVIDER_ORDER.map((provider) => {
-            const connection = connections.find((row) => row.provider === provider);
-            const connectionState = providerConnectionState(provider, connection, Date.now());
-            const truth = providerCapabilityTruth(
-              provider,
-              connection,
-              Date.now(),
-              connectionsStatus === 'ready' ? 'verified' : 'unverified',
-            );
-            if (likesError[provider] || playlistsError[provider]) {
-              truth.library = { state: 'unverified', label: 'Library unavailable · retry' };
-            }
-            const selected = selectedProvider === provider;
-            const statusMark = musicConnectionMark(connectionsStatus, connectionState);
-            return (
-              <article
-                key={provider}
-                className={`min-w-0 rounded-control border p-2 ${
-                  selected
-                    ? 'border-border-strong bg-bg-overlay'
-                    : 'border-border-subtle bg-bg-base'
-                }`}
-              >
-                <button
-                  type="button"
-                  aria-label={`Browse ${providerLabel(provider)} catalog`}
-                  aria-pressed={selected}
-                  onClick={() => {
-                    if (flow.operation && flow.operation.provider !== provider) flow.cancel();
-                    setSelectedProvider(provider);
-                  }}
-                  className="flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-control px-1 text-left rf-focus-ring"
-                >
-                  <span
-                    className={`shrink-0 font-ui text-sm text-text-primary ${
-                      selected ? 'font-semibold' : 'font-medium'
-                    }`}
-                  >
-                    {providerLabel(provider)}
-                  </span>
-                  <ConnectionStateMark
-                    kind={statusMark.kind}
-                    label={statusMark.label}
-                    className="shrink-0 font-data text-[10px]"
-                  />
-                </button>
-                <ProviderCapabilityLedger provider={provider} truth={truth} compact />
-                {(connectionState === 'disconnected' || connectionState === 'expired') && (
-                  <div className="mt-2">
-                    <ProviderConnectAction
-                      provider={provider}
-                      label={`${connectionState === 'expired' ? 'Reconnect' : 'Connect'} ${providerLabel(provider)}`}
-                      flow={flow}
-                    />
-                  </div>
-                )}
-                {connectionState === 'connected' && (
-                  <button
-                    type="button"
-                    onClick={onOpenConnections}
-                    disabled={
-                      !!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready'
-                    }
-                    className="mt-2 min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
-                  >
-                    Manage {providerLabel(provider)} connection
-                  </button>
-                )}
-                {(likesError[provider] || playlistsError[provider]) && (
-                  <button
-                    type="button"
-                    onClick={retryConnections}
-                    className="mt-2 min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
-                  >
-                    Retry {providerLabel(provider)} library
-                  </button>
-                )}
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {likes[provider]?.length ? (
-                    <button
-                      type="button"
-                      aria-label={`Browse liked tracks on ${providerLabel(provider)}`}
-                      onClick={() => onBrowseLikes(provider, likes[provider]!)}
-                      className="min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring"
-                    >
-                      Liked tracks · {likes[provider]!.length}
-                    </button>
-                  ) : likesLoading[provider] ? (
-                    <span className="px-2 py-1 font-ui text-[11px] text-text-tertiary">
-                      Loading likes…
-                    </span>
-                  ) : likesError[provider] ? (
-                    <span className="px-2 py-1 font-ui text-[11px] text-state-caution">
-                      Likes unavailable
-                    </span>
-                  ) : null}
-                  {playlists[provider]?.length ? (
-                    <button
-                      type="button"
-                      aria-label={`Browse saved playlists on ${providerLabel(provider)}`}
-                      onClick={() => onBrowsePlaylists(provider, playlists[provider]!)}
-                      className="min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring"
-                    >
-                      Playlists · {playlists[provider]!.length}
-                    </button>
-                  ) : playlistsLoading[provider] ? (
-                    <span className="px-2 py-1 font-ui text-[11px] text-text-tertiary">
-                      Loading playlists…
-                    </span>
-                  ) : playlistsError[provider] ? (
-                    <span className="px-2 py-1 font-ui text-[11px] text-state-caution">
-                      Playlists unavailable
-                    </span>
-                  ) : providerCapabilities[provider].savedPlaylists &&
-                    connectionState === 'connected' ? (
-                    <span className="px-2 py-1 font-ui text-[11px] text-text-tertiary">
-                      No saved playlists
-                    </span>
-                  ) : null}
-                </div>
-              </article>
-            );
-          })}
-        </div>
-        <button
-          type="button"
-          onClick={onOpenConnections}
-          disabled={!!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready'}
-          className="mt-3 min-h-11 w-full rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring disabled:opacity-50"
+    <section data-music-layout="stack" className="flex w-full min-w-0 flex-col gap-4 lg:gap-5">
+      <header className="min-w-0">
+        <p className="rf-eyebrow">Music</p>
+        <h2 className="mt-2 font-display text-3xl font-bold tracking-[-0.03em] text-text-primary sm:text-4xl">
+          Your library
+        </h2>
+      </header>
+
+      <ProviderConnectionsLoadState
+        status={connectionsStatus}
+        hasKnownConnections={connections.length > 0}
+        onRetry={retryConnections}
+      />
+
+      <div
+        data-music-switcher=""
+        role="group"
+        aria-label="Music services"
+        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap"
+      >
+        {PROVIDER_ORDER.map((provider) => {
+          const row = connections.find((item) => item.provider === provider);
+          const state = providerConnectionState(provider, row, Date.now());
+          const chip = musicChipBadge({
+            fetchStatus: connectionsStatus,
+            connectionState: state,
+            libraryFailed: Boolean(likesError[provider] || playlistsError[provider]),
+          });
+          const selected = selectedProvider === provider;
+          const name = providerLabel(provider);
+          return (
+            <button
+              key={provider}
+              type="button"
+              aria-pressed={selected}
+              aria-label={`${name}, ${chip.label}`}
+              onClick={() => chooseProvider(provider)}
+              className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-pill border px-3 rf-focus-ring sm:w-auto sm:min-w-[9.5rem] sm:flex-1 ${
+                selected
+                  ? 'border-border-strong bg-bg-overlay font-semibold'
+                  : 'border-border-subtle bg-bg-base font-medium'
+              }`}
+            >
+              <span className="truncate font-ui text-sm text-text-primary">{name}</span>
+              <ConnectionStateMark
+                kind={chip.kind}
+                label={chip.label}
+                className="shrink-0 font-data text-[10px]"
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        aria-expanded={detailsOpen}
+        aria-controls="music-service-details"
+        onClick={() => setDetailsOpen((open) => !open)}
+        className="min-h-11 self-start rounded-control px-1 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+      >
+        {label} connection
+      </button>
+      {detailsOpen && (
+        <div
+          id="music-service-details"
+          className="rounded-card border border-border-subtle bg-bg-raised p-3"
         >
-          Manage connections
-        </button>
-      </aside>
+          <ConnectionStateMark
+            kind={statusMark.kind}
+            label={statusMark.label}
+            className="font-ui text-xs"
+          />
+          <ProviderCapabilityLedger provider={selectedProvider} truth={truth} compact />
+          {(connectionState === 'disconnected' || connectionState === 'expired') && (
+            <div className="mt-2">
+              <ProviderConnectAction
+                provider={selectedProvider}
+                label={`${connectionState === 'expired' ? 'Reconnect' : 'Connect'} ${label}`}
+                flow={flow}
+              />
+            </div>
+          )}
+          {connectionState === 'connected' && (
+            <button
+              type="button"
+              onClick={onOpenConnections}
+              disabled={
+                !!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready'
+              }
+              className="mt-2 min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
+            >
+              Manage {label} connection
+            </button>
+          )}
+          {libraryFailed && (
+            <button
+              type="button"
+              onClick={retryConnections}
+              className="mt-2 min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
+            >
+              Retry {label} library
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onOpenConnections}
+            disabled={!!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready'}
+            className="mt-2 min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring disabled:opacity-50"
+          >
+            Manage connections
+          </button>
+        </div>
+      )}
 
-      <div className="flex w-full min-w-0 flex-col gap-4">
-        <header className="min-w-0">
-          <p className="rf-eyebrow">Music</p>
-          <h2 className="mt-2 text-balance font-display text-3xl font-bold tracking-[-0.03em] text-text-primary sm:text-4xl">
-            Browse music, then shape it into class.
-          </h2>
-          <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
-            Provider catalogs are the raw material. Selection carries straight into a class.
-          </p>
-        </header>
+      <div role="group" aria-label="Library" className="flex flex-wrap gap-2">
+        {musicLibraryKinds(selectedProvider).map((kind) => {
+          const kindLabel =
+            kind === 'playlists' ? 'Playlists' : kind === 'songs' ? 'Songs' : 'Catalog';
+          const selected = libraryKind === kind;
+          return (
+            <button
+              key={kind}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => chooseKind(kind)}
+              className={`min-h-11 rounded-pill border px-3 font-ui text-sm rf-focus-ring ${
+                selected
+                  ? 'border-border-strong bg-bg-overlay font-semibold text-text-primary'
+                  : 'border-border-subtle font-medium text-text-secondary'
+              }`}
+            >
+              {kindLabel}
+            </button>
+          );
+        })}
+      </div>
 
-        <ProviderConnectionsLoadState
-          status={connectionsStatus}
-          hasKnownConnections={connections.length > 0}
-          onRetry={retryConnections}
+      {libraryKind !== 'catalog' &&
+        connectionState === 'connected' &&
+        !(libraryKind === 'playlists'
+          ? playlistsError[selectedProvider]
+          : likesError[selectedProvider]) && (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <label
+              htmlFor="music-library-search"
+              className="block min-w-0 flex-1 font-ui text-xs font-semibold text-text-secondary"
+            >
+              {libraryKind === 'playlists' ? 'Search playlists' : 'Search songs'}
+              <input
+                id="music-library-search"
+                type="search"
+                value={libraryQuery}
+                onChange={(event) => setLibraryQuery(event.target.value)}
+                className="mt-2 min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary rf-focus-ring sm:rounded-pill"
+              />
+            </label>
+            <div role="group" aria-label="Sort" className="flex gap-2">
+              {(
+                [
+                  ['recents', 'Recents'],
+                  ['name', 'Name'],
+                ] as const
+              ).map(([value, sortLabel]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={sort === value}
+                  onClick={() => setSort(value)}
+                  className={`min-h-11 rounded-pill border px-3 font-ui text-sm rf-focus-ring ${
+                    sort === value
+                      ? 'border-border-strong bg-bg-overlay font-semibold text-text-primary'
+                      : 'border-border-subtle font-medium text-text-secondary'
+                  }`}
+                >
+                  {sortLabel}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+      {libraryKind === 'playlists' ? (
+        <PlaylistShelf
+          label={label}
+          loading={Boolean(playlistsLoading[selectedProvider])}
+          error={playlistsError[selectedProvider] ?? null}
+          connected={connectionState === 'connected'}
+          statusMark={statusMark}
+          rows={playlistRows}
+          filtered={libraryQuery.trim() !== ''}
+          onOpen={(playlistId) => {
+            if (!savedPlaylists?.length) return;
+            onOpenPlaylist(selectedProvider, savedPlaylists, playlistId);
+          }}
         />
-
-        <section className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-3 sm:p-4">
+      ) : libraryKind === 'songs' ? (
+        <SongShelf
+          loading={Boolean(likesLoading[selectedProvider])}
+          error={likesError[selectedProvider] ?? null}
+          connected={connectionState === 'connected'}
+          statusMark={statusMark}
+          rows={songRows}
+          filtered={libraryQuery.trim() !== ''}
+          onCreateClass={
+            likedTracks && likedTracks.length > 0
+              ? () => onBrowseLikes(selectedProvider, likedTracks)
+              : null
+          }
+        />
+      ) : (
+        <section className="min-w-0">
           <label
             htmlFor="music-catalog-search"
             className="font-ui text-xs font-semibold text-text-secondary"
           >
-            Search {providerLabel(selectedProvider)} catalog
+            Search {label} catalog
           </label>
           <input
             id="music-catalog-search"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={`Track, artist, or remix on ${providerLabel(selectedProvider)}…`}
+            placeholder={`Track, artist, or remix on ${label}…`}
             className="mt-2 min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary rf-focus-ring sm:rounded-pill"
           />
 
           <p role="status" className="sr-only">
             {searching
-              ? `Searching ${providerLabel(selectedProvider)}…`
+              ? `Searching ${label}…`
               : results
-                ? `${results.length} ${results.length === 1 ? 'result' : 'results'} on ${providerLabel(selectedProvider)}.`
+                ? `${results.length} ${results.length === 1 ? 'result' : 'results'} on ${label}.`
                 : ''}
           </p>
 
@@ -2030,29 +2168,10 @@ function MusicWorkspace({
             </div>
           )}
 
-          {query.trim() === '' ? (
-            <div className="mt-3 flex min-h-80 items-center justify-center rounded-card bg-bg-base p-6 text-center">
-              <div>
-                <p className="font-display text-lg font-semibold text-text-primary">
-                  Start with the song in your head.
-                </p>
-                <p className="mt-2 max-w-md font-ui text-sm leading-6 text-text-tertiary">
-                  Catalog search works without connecting an account. Link a provider only when you
-                  want its likes, saved playlists, or playback.
-                </p>
-              </div>
-            </div>
-          ) : searching && results === null ? (
-            <p className="mt-3 min-h-80 p-4 font-ui text-sm text-text-tertiary">
-              Searching {providerLabel(selectedProvider)}…
-            </p>
+          {searching && results === null && query.trim() !== '' ? (
+            <p className="mt-3 font-ui text-sm text-text-tertiary">Searching {label}…</p>
           ) : results && results.length === 0 ? (
-            <div className="mt-3 min-h-80 rounded-card bg-bg-base p-6">
-              <p className="font-ui text-sm font-semibold text-text-primary">No matches yet.</p>
-              <p className="mt-1 font-ui text-sm text-text-tertiary">
-                Try the artist, a shorter title, or another provider.
-              </p>
-            </div>
+            <p className="mt-3 font-ui text-sm font-semibold text-text-primary">No matches yet.</p>
           ) : results && results.length > 0 ? (
             <div className="mt-3">
               {selectedTracks.length > 0 && (
@@ -2068,7 +2187,7 @@ function MusicWorkspace({
               )}
               <SourceList
                 tracks={results}
-                ariaLabel={`${providerLabel(selectedProvider)} catalog results`}
+                ariaLabel={`${label} catalog results`}
                 action={{
                   kind: 'selection',
                   selectedKeys,
@@ -2083,7 +2202,7 @@ function MusicWorkspace({
                         aria-label="New class template"
                         className="flex min-w-0 gap-1"
                       >
-                        {CREATE_TEMPLATE_OPTIONS.map(({ value, label }) =>
+                        {CREATE_TEMPLATE_OPTIONS.map(({ value, label: optionLabel }) =>
                           value ? (
                             <button
                               key={value}
@@ -2096,7 +2215,7 @@ function MusicWorkspace({
                                   : 'border-border-subtle text-text-secondary'
                               }`}
                             >
-                              {label}
+                              {optionLabel}
                             </button>
                           ) : null,
                         )}
@@ -2112,8 +2231,195 @@ function MusicWorkspace({
             </div>
           ) : null}
         </section>
-      </div>
+      )}
     </section>
+  );
+}
+
+function PlaylistShelf({
+  label,
+  loading,
+  error,
+  connected,
+  statusMark,
+  rows,
+  filtered,
+  onOpen,
+}: {
+  label: string;
+  loading: boolean;
+  error: string | null;
+  connected: boolean;
+  statusMark: { kind: ConnectionMarkKind; label: string };
+  rows: ProviderPlaylistSummary[];
+  filtered: boolean;
+  onOpen: (playlistId: string) => void;
+}) {
+  if (!connected) {
+    return (
+      <ConnectionStateMark
+        kind={statusMark.kind}
+        label={statusMark.label}
+        className="font-ui text-sm"
+      />
+    );
+  }
+  if (loading && rows.length === 0) {
+    return (
+      <p role="status" className="font-ui text-sm text-text-tertiary">
+        Loading playlists…
+      </p>
+    );
+  }
+  if (error) {
+    return (
+      <p role="alert" className="font-ui text-sm text-state-caution">
+        Playlists unavailable
+      </p>
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <p role="status" className="font-ui text-sm text-text-secondary">
+        {filtered ? 'No matches.' : 'No saved playlists'}
+      </p>
+    );
+  }
+  return (
+    <ul aria-label={`${label} playlists`} className="flex flex-col gap-1">
+      {rows.map((playlist, index) => {
+        const meta = playlistMetaLine(playlist.ownerName, playlist.trackCount, label);
+        const metaId = `playlist-meta-${index}`;
+        return (
+          <li
+            key={playlist.playlistId}
+            data-build-class-slot="playlist"
+            className="flex items-center"
+          >
+            {/* Build a class (pull request C) mounts as the next sibling of this row. */}
+            <button
+              type="button"
+              aria-label={`Open ${playlist.name}`}
+              aria-describedby={metaId}
+              onClick={() => onOpen(playlist.playlistId)}
+              className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-control px-1 text-left rf-focus-ring"
+            >
+              {playlist.coverImageUrl ? (
+                <img
+                  src={playlist.coverImageUrl}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-11 w-11 max-h-11 max-w-11 shrink-0 rounded-card object-cover"
+                />
+              ) : (
+                <TrackArt
+                  url={null}
+                  identity={playlist.name}
+                  size={44}
+                  className="max-h-11 max-w-11"
+                />
+              )}
+              <span className="min-w-0">
+                <span className="block truncate font-ui text-sm font-semibold text-text-primary">
+                  {playlist.name}
+                </span>
+                <span id={metaId} className="block truncate font-ui text-xs text-text-secondary">
+                  {meta}
+                </span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function SongShelf({
+  loading,
+  error,
+  connected,
+  statusMark,
+  rows,
+  filtered,
+  onCreateClass,
+}: {
+  loading: boolean;
+  error: string | null;
+  connected: boolean;
+  statusMark: { kind: ConnectionMarkKind; label: string };
+  rows: TrackSearchResult[];
+  filtered: boolean;
+  onCreateClass: (() => void) | null;
+}) {
+  if (!connected) {
+    return (
+      <ConnectionStateMark
+        kind={statusMark.kind}
+        label={statusMark.label}
+        className="font-ui text-sm"
+      />
+    );
+  }
+  if (loading && rows.length === 0) {
+    return (
+      <p role="status" className="font-ui text-sm text-text-tertiary">
+        Loading songs…
+      </p>
+    );
+  }
+  if (error) {
+    return (
+      <p role="alert" className="font-ui text-sm text-state-caution">
+        Likes unavailable
+      </p>
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <p role="status" className="font-ui text-sm text-text-secondary">
+        {filtered ? 'No matches.' : 'No liked songs'}
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      {onCreateClass && (
+        <button
+          type="button"
+          onClick={onCreateClass}
+          className="min-h-11 self-start rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+        >
+          Create class from liked songs
+        </button>
+      )}
+      <ul aria-label="Liked songs" className="flex flex-col gap-1">
+        {rows.map((track) => (
+          <li
+            key={`${track.provider}:${track.providerTrackId}`}
+            data-build-class-slot="song"
+            className="flex min-h-11 items-center gap-3 px-1"
+          >
+            {/* Build a class (pull request C) mounts at the end of this row. */}
+            <TrackArt
+              url={track.albumArtUrl}
+              identity={`${track.title}:${track.artist}`}
+              size={44}
+              className="max-h-11 max-w-11"
+            />
+            <span className="min-w-0">
+              <span className="block truncate font-ui text-sm font-semibold text-text-primary">
+                {track.title}
+              </span>
+              <span className="block truncate font-ui text-xs text-text-secondary">
+                {songMetaLine(track.artist, track.durationMs)}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -3114,11 +3420,14 @@ function playlistCountLabel(trackCount: number | null): string {
 function PlaylistBrowserDialog({
   provider,
   playlists,
+  initialPlaylistId = null,
   onClose,
   onCreateClass,
 }: {
   provider: Provider;
   playlists: ProviderPlaylistSummary[];
+  /** Open this playlist's tracks immediately. The library row already listed it. */
+  initialPlaylistId?: string | null;
   onClose: () => void;
   onCreateClass: (
     provider: Provider,
@@ -3137,19 +3446,31 @@ function PlaylistBrowserDialog({
   const [picking, setPicking] = useState(false);
   const label = providerLabel(provider);
 
-  const openPlaylist = async (playlist: ProviderPlaylistSummary) => {
-    setSelectedPlaylist(playlist);
-    setTracks(null);
-    setLoadingTracks(true);
-    setRowError(null);
-    try {
-      setTracks(await listPlaylistTracks(provider, playlist.playlistId));
-    } catch (e) {
-      setRowError(errMessage(e));
-    } finally {
-      setLoadingTracks(false);
-    }
-  };
+  const openPlaylist = useCallback(
+    async (playlist: ProviderPlaylistSummary) => {
+      setSelectedPlaylist(playlist);
+      setTracks(null);
+      setLoadingTracks(true);
+      setRowError(null);
+      try {
+        setTracks(await listPlaylistTracks(provider, playlist.playlistId));
+      } catch (e) {
+        setRowError(errMessage(e));
+      } finally {
+        setLoadingTracks(false);
+      }
+    },
+    [provider],
+  );
+
+  const openedInitial = useRef(false);
+  useEffect(() => {
+    if (openedInitial.current || !initialPlaylistId) return;
+    const playlist = playlists.find((row) => row.playlistId === initialPlaylistId);
+    if (!playlist) return;
+    openedInitial.current = true;
+    void openPlaylist(playlist);
+  }, [initialPlaylistId, openPlaylist, playlists]);
 
   const submitTracks = async (playlist: ProviderPlaylistSummary, chosen: TrackSearchResult[]) => {
     setCreatingId(playlist.playlistId);

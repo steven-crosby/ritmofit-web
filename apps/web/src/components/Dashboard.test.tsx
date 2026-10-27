@@ -182,6 +182,31 @@ function renderDashboard() {
   return render(<Dashboard userId="me" userName="Tester" />);
 }
 
+function openMusicConnectionDetails() {
+  const button = screen.getByRole('button', { name: / connection$/ });
+  if (button.getAttribute('aria-expanded') !== 'true') fireEvent.click(button);
+}
+
+function manageMusicConnections() {
+  openMusicConnectionDetails();
+  fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
+}
+
+async function selectMusicService(name: string) {
+  fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^${name},`) }));
+}
+
+async function openSavedPlaylist(service: string, playlistName: string) {
+  await selectMusicService(service);
+  fireEvent.click(await screen.findByRole('button', { name: `Open ${playlistName}` }));
+}
+
+async function openLikedSongs(service = 'Spotify') {
+  await selectMusicService(service);
+  fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Create class from liked songs' }));
+}
+
 function installLocalStorage() {
   const values = new Map<string, string>();
   const localStorage = {
@@ -398,7 +423,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
+    manageMusicConnections();
 
     expect(await screen.findByRole('dialog', { name: 'Music connections' })).toBeTruthy();
   });
@@ -523,15 +548,9 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    const browseBtn = await screen.findByRole('button', { name: /Browse saved playlists/i });
-    expect(browseBtn).toBeTruthy();
-
-    // Clicking opens the browse dialog, then a playlist detail before class creation.
-    fireEvent.click(browseBtn);
-    expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
-    expect(screen.getByText('Warmup Ride')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Open Warmup Ride' }));
-    expect(await screen.findByRole('heading', { name: 'Warmup Ride' })).toBeTruthy();
+    await openSavedPlaylist('Spotify', 'Warmup Ride');
+    const playlistDialog = await screen.findByRole('dialog', { name: 'Browse Spotify playlists' });
+    expect(within(playlistDialog).getByRole('heading', { name: 'Warmup Ride' })).toBeTruthy();
     expect(screen.getByText('Climb Track')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start class from Warmup Ride' })).toBeTruthy();
   });
@@ -563,14 +582,13 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
-    expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
+    await selectMusicService('Spotify');
 
     // No count claimed for the unknown one, and nothing anywhere reads "0 tracks".
-    expect(screen.getByText('Steven')).toBeTruthy();
+    expect(await screen.findByText('Playlist · Steven')).toBeTruthy();
     expect(screen.queryByText(/0 tracks/)).toBeNull();
     // A known count still renders, and singular stays singular.
-    expect(screen.getByText('Steven · 1 track')).toBeTruthy();
+    expect(screen.getByText('Playlist · Steven · 1 track')).toBeTruthy();
   });
 
   it('shows connected Spotify liked tracks in Music and opens the likes browser', async () => {
@@ -599,13 +617,15 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    const browseBtn = await screen.findByRole('button', { name: /Browse liked tracks/i });
-    expect(browseBtn).toBeTruthy();
+    await selectMusicService('Spotify');
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Levels')).toBeTruthy();
+    expect(screen.getByText('Song · Avicii · 3:20')).toBeTruthy();
 
-    // Clicking opens the likes browser with a track preview + create action.
-    fireEvent.click(browseBtn);
+    // The existing likes browser still holds class creation. Build a class does not.
+    fireEvent.click(screen.getByRole('button', { name: 'Create class from liked songs' }));
     const likesDialog = await screen.findByRole('dialog', { name: 'Browse Spotify likes' });
-    expect(screen.getByText('Levels')).toBeTruthy();
+    expect(within(likesDialog).getByText('Levels')).toBeTruthy();
     const createButton = within(likesDialog).getByRole('button', {
       name: 'Create class from 2 liked tracks',
     });
@@ -631,8 +651,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Open Fetch First' }));
+    await openSavedPlaylist('Spotify', 'Fetch First');
 
     expect(await screen.findByText('provider unavailable')).toBeTruthy();
     const start = screen.getByRole('button', {
@@ -660,8 +679,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Open Empty Ride' }));
+    await openSavedPlaylist('Spotify', 'Empty Ride');
 
     expect(await screen.findByText('No tracks found in this playlist.')).toBeTruthy();
     const createButton = screen.getByRole('button', {
@@ -697,8 +715,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Open Emptied Ride' }));
+    await openSavedPlaylist('Spotify', 'Emptied Ride');
     await screen.findByText('Track One');
     fireEvent.click(screen.getByRole('button', { name: 'Start class from Emptied Ride' }));
 
@@ -742,7 +759,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Browse liked tracks/i }));
+    await openLikedSongs();
     fireEvent.click(screen.getByRole('button', { name: 'Create class from 2 liked tracks' }));
 
     const retry = await screen.findByRole('button', { name: 'Retry 1 failed' });
@@ -800,10 +817,7 @@ describe('Dashboard class library states', () => {
       .mockImplementationOnce(async () => receipt);
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Browse saved playlists on Apple Music' }),
-    );
-    fireEvent.click(await screen.findByRole('button', { name: 'Open Unconfirmed draft' }));
+    await openSavedPlaylist('Apple Music', 'Unconfirmed draft');
     fireEvent.click(
       await screen.findByRole('button', { name: 'Start class from Unconfirmed draft' }),
     );
@@ -851,22 +865,22 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    expect(await screen.findByRole('button', { name: /Browse saved playlists/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Browse liked tracks/i })).toBeTruthy();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
-    expect(await screen.findByText('Connected')).toBeTruthy();
+    await selectMusicService('Spotify');
+    expect(await screen.findByRole('button', { name: 'Open Warmup Ride' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Levels')).toBeTruthy();
+    manageMusicConnections();
+    expect(
+      within(await screen.findByRole('dialog', { name: 'Music connections' })).getByText(
+        'Connected',
+      ),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
     await waitFor(() => {
-      expect(
-        screen.queryByRole('button', {
-          name: 'Connect this provider to browse saved playlists.',
-        }),
-      ).toBeNull();
-      expect(
-        screen.queryByRole('button', { name: 'Connect this provider to browse liked tracks.' }),
-      ).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Open Warmup Ride' })).toBeNull();
+      expect(screen.queryByText('Levels')).toBeNull();
     });
     expect(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Connect Spotify' }),
@@ -902,16 +916,21 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    expect(await screen.findByRole('button', { name: /Browse saved playlists/i })).toBeTruthy();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
-    expect(await screen.findByText('Connected')).toBeTruthy();
+    await selectMusicService('Spotify');
+    expect(await screen.findByRole('button', { name: 'Open Last Known Ride' })).toBeTruthy();
+    manageMusicConnections();
+    expect(
+      within(await screen.findByRole('dialog', { name: 'Music connections' })).getByText(
+        'Connected',
+      ),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('Couldn’t load music connections.');
     expect(alert.textContent).toContain('Showing your last known sources.');
-    expect(screen.getByRole('button', { name: /Browse saved playlists/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Open Last Known Ride' })).toBeTruthy();
   });
 
   it('ignores late shelf responses after authoritative disconnect truth arrives', async () => {
@@ -931,8 +950,12 @@ describe('Dashboard class library states', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
     await waitFor(() => expect(api.listPlaylists).toHaveBeenCalledWith('spotify'));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
-    expect(await screen.findByText('Connected')).toBeTruthy();
+    manageMusicConnections();
+    expect(
+      within(await screen.findByRole('dialog', { name: 'Music connections' })).getByText(
+        'Connected',
+      ),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
@@ -964,10 +987,13 @@ describe('Dashboard class library states', () => {
       await Promise.all([playlists.promise, likes.promise]);
     });
 
+    await selectMusicService('Spotify');
+    fireEvent.click(screen.getByRole('button', { name: 'Playlists' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
     expect(screen.queryByText(/Late Playlist/)).toBeNull();
     expect(screen.queryByText(/Late Track/)).toBeNull();
     expect(screen.queryByRole('button', { name: /Late Playlist/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Late Track/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Open Late Playlist/ })).toBeNull();
   });
 
   it('creates a class from liked tracks (imports each, opens the builder)', async () => {
@@ -1005,8 +1031,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    const browseBtn = await screen.findByRole('button', { name: /Browse liked tracks/i });
-    fireEvent.click(browseBtn);
+    await openLikedSongs();
     const createBtn = await screen.findByRole('button', {
       name: 'Create class from 2 liked tracks',
     });
@@ -1077,17 +1102,14 @@ describe('Dashboard class library states', () => {
     expect(screen.queryByRole('button', { name: 'Connections' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Music' }));
-    expect(
-      await screen.findByRole('heading', { name: 'Browse music, then shape it into class.' }),
-    ).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Your library' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
-    const soundcloud = screen.getByRole('button', { name: 'Browse SoundCloud catalog' });
+    const soundcloud = screen.getByRole('button', { name: 'SoundCloud, Catalog only' });
     expect(soundcloud.getAttribute('aria-pressed')).toBe('true');
-    const source = soundcloud.closest('article');
-    expect(source?.className).toContain('border-border-strong');
-    expect(source?.className).toContain('bg-bg-overlay');
-    expect(source?.className).not.toContain('bg-interactive');
-    expect(source?.className).not.toContain('border-interactive');
+    expect(soundcloud.className).toContain('border-border-strong');
+    expect(soundcloud.className).toContain('bg-bg-overlay');
+    expect(soundcloud.className).not.toContain('bg-interactive');
+    expect(soundcloud.className).not.toContain('border-interactive');
 
     fireEvent.click(screen.getByRole('button', { name: 'Live' }));
     expect(
@@ -1358,11 +1380,7 @@ describe('Dashboard class library states', () => {
     renderDashboard();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    // Saved collections remain directly reachable from the compact provider rail.
-    const sourceBtn = await screen.findByRole('button', {
-      name: 'Browse saved playlists on Spotify',
-    });
-    fireEvent.click(sourceBtn);
+    await openSavedPlaylist('Spotify', 'Warmup Ride');
     expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
   });
 
@@ -1399,21 +1417,25 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    expect(
-      await screen.findByRole('button', { name: 'Browse saved playlists on Spotify' }),
-    ).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Browse liked tracks/i })).toBeTruthy();
+    await selectMusicService('Spotify');
+    expect(await screen.findByRole('button', { name: 'Open Recovery Ride' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Levels')).toBeTruthy();
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
-    expect(await screen.findByText('Connected')).toBeTruthy();
+    manageMusicConnections();
+    expect(
+      within(await screen.findByRole('dialog', { name: 'Music connections' })).getByText(
+        'Connected',
+      ),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
-    expect(await screen.findByRole('button', { name: 'Browse Spotify catalog' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Spotify, Catalog only' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Catalog' }));
+    expect(screen.getByRole('searchbox', { name: 'Search Spotify catalog' })).toBeTruthy();
     await waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Browse saved playlists on Spotify' }),
-      ).toBeNull(),
+      expect(screen.queryByRole('button', { name: 'Open Recovery Ride' })).toBeNull(),
     );
     expect(
       screen.queryByRole('button', { name: 'Connect this provider to browse liked tracks.' }),
@@ -1495,17 +1517,164 @@ describe('Dashboard class library states', () => {
     expect(alert.textContent).toContain('Couldn’t load music connections.');
     expect(alert.textContent).toContain('Source status is unavailable.');
     expect(screen.queryByText('Connect this provider to browse liked tracks.')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Browse Spotify catalog' }).textContent).toContain(
-      'Unverified',
-    );
+    expect(screen.getByRole('button', { name: 'Spotify, Unavailable' })).toBeTruthy();
+    openMusicConnectionDetails();
     expect(screen.getAllByText('Status unavailable').length).toBeGreaterThan(0);
 
     fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
 
-    expect(
-      await screen.findByRole('button', { name: 'Browse saved playlists on Spotify' }),
-    ).toBeTruthy();
+    await selectMusicService('Spotify');
+    expect(await screen.findByRole('button', { name: 'Open Recovery Ride' })).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('Music tab library', () => {
+  it('uses compact service chips and keeps capability detail hidden until tap', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await screen.findByRole('button', { name: 'SoundCloud, Catalog only' });
+
+    const layout = document.querySelector('[data-music-layout="stack"]');
+    expect(layout?.className).toContain('flex-col');
+    expect(layout?.className).not.toContain('grid-cols');
+    const services = screen.getByRole('group', { name: 'Music services' });
+    expect(services.className).toContain('flex-col');
+    expect(services.className).toContain('sm:flex-row');
+    expect(services.className).not.toContain('grid-cols');
+    const chips = within(services).getAllByRole('button');
+    expect(chips.map((chip) => chip.getAttribute('aria-label'))).toEqual([
+      'SoundCloud, Catalog only',
+      'Spotify, Catalog only',
+      'Apple Music, Catalog only',
+    ]);
+    for (const chip of chips) {
+      expect(chip.className).toContain('min-h-11');
+      expect(chip.className).toContain('w-full');
+      expect(chip.className).toContain('sm:flex-1');
+    }
+    expect(screen.queryByText('Browse catalog')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Manage connections' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Connect SoundCloud' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'SoundCloud connection' }));
+    expect(document.querySelector('[aria-label="SoundCloud capabilities"]')).toBeTruthy();
+    expect(screen.getByText('Browse catalog')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Manage connections' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Connect SoundCloud' })).toBeTruthy();
+  });
+
+  it('shows library rows and opens playlist tracks without Build a class', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-1',
+        name: 'Warmup Ride',
+        ownerName: 'Steven',
+        trackCount: 24,
+        coverImageUrl: 'https://i.scdn.co/image/pl-1.jpg',
+      },
+    ]);
+    vi.mocked(api.listLikes).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'tr-1',
+        providerUri: 'spotify:track:tr-1',
+        title: 'Levels',
+        artist: 'Avicii',
+        albumArtUrl: 'https://i.scdn.co/image/tr-1.jpg',
+        durationMs: 200000,
+      },
+    ]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'track-1',
+        title: 'Climb Track',
+        artist: 'DJ Test',
+        durationMs: 180000,
+        albumArtUrl: null,
+        providerUri: 'spotify:track:track-1',
+      },
+    ]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService('Spotify');
+
+    const row = await screen.findByRole('button', { name: 'Open Warmup Ride' });
+    expect(screen.getByText('Playlist · Steven · 24 tracks')).toBeTruthy();
+    const cover = row.querySelector('img');
+    expect(cover?.getAttribute('src')).toBe('https://i.scdn.co/image/pl-1.jpg');
+    expect(cover?.className).toContain('max-h-11');
+    expect(cover?.className).toContain('max-w-11');
+    expect(row.closest('[data-build-class-slot="playlist"]')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Build a class/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Song · Avicii · 3:20')).toBeTruthy();
+    const songArt = document.querySelector('[data-build-class-slot="song"] img');
+    expect(songArt?.className).toContain('max-h-11');
+    expect(songArt?.className).toContain('max-w-11');
+    expect(screen.queryByRole('button', { name: /Build a class/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Playlists' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Warmup Ride' }));
+    expect(await screen.findByRole('heading', { name: 'Warmup Ride' })).toBeTruthy();
+    expect(screen.getByText('Climb Track')).toBeTruthy();
+  });
+
+  it('searches a catalog when no account is connected', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.searchProvider).mockResolvedValue([
+      {
+        provider: 'soundcloud',
+        providerTrackId: 'tr-1',
+        providerUri: 'https://soundcloud.com/ritmo/climb',
+        title: 'Climb',
+        artist: 'Artist',
+        albumArtUrl: null,
+        durationMs: 180000,
+      },
+    ]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const search = screen.getByRole('searchbox', { name: 'Search SoundCloud catalog' });
+    fireEvent.change(search, { target: { value: 'climb' } });
+
+    expect(await screen.findByText('Climb')).toBeTruthy();
+    expect(api.searchProvider).toHaveBeenCalledWith('soundcloud', 'climb');
+    expect(api.listLikes).not.toHaveBeenCalled();
+    expect(api.listPlaylists).not.toHaveBeenCalled();
+  });
+
+  it('keeps a failed Spotify library unavailable instead of showing rows', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockRejectedValue(new Error('Library unavailable'));
+    vi.mocked(api.listLikes).mockRejectedValue(new Error('Library unavailable'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const spotify = await screen.findByRole('button', { name: 'Spotify, Unavailable' });
+    fireEvent.click(spotify);
+    expect(screen.queryByRole('button', { name: /Open / })).toBeNull();
+    expect(await screen.findByText('Playlists unavailable')).toBeTruthy();
+    expect(screen.queryByText('Likes & playlists ready')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify connection' }));
+    expect(screen.getByText('Library unavailable · retry')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Retry Spotify library' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Catalog' }));
+    expect(screen.getByRole('searchbox', { name: 'Search Spotify catalog' })).toBeTruthy();
   });
 });
 
@@ -1527,15 +1696,18 @@ describe('Dashboard connection-state headers', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
 
+    const spotify = await screen.findByRole('button', { name: 'Spotify, Reconnect' });
+    const chipMark = spotify.querySelector('[data-connection-state="expired"]');
+    expect(chipMark?.className).toContain('text-state-caution');
+    expect(chipMark?.className).not.toContain('text-text-tertiary');
+    expect(chipMark?.querySelector('svg[aria-hidden]')).toBeTruthy();
+    fireEvent.click(spotify);
+    openMusicConnectionDetails();
     const musicExpired = await screen.findAllByText('Session expired');
     expect(musicExpired.length).toBeGreaterThan(0);
     expect(musicExpired.some((node) => node.closest('[data-connection-state="expired"]'))).toBe(
       true,
     );
-    const musicMark = document.querySelector('[data-connection-state="expired"]');
-    expect(musicMark?.className).toContain('text-state-caution');
-    expect(musicMark?.className).not.toContain('text-text-tertiary');
-    expect(musicMark?.querySelector('svg[aria-hidden]')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
     const accountSection = document.getElementById('account-music-connections');
@@ -2814,7 +2986,7 @@ describe('Dashboard track focus management', () => {
         });
       renderDashboard();
       fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-      fireEvent.click(await screen.findByRole('button', { name: /Browse liked tracks/i }));
+      await openLikedSongs();
       fireEvent.click(screen.getByRole('button', { name: 'Create class from 2 liked tracks' }));
       const retry = await screen.findByRole('button', { name: 'Retry 1 failed' });
       await screen.findByRole('heading', { name: 'Spotify likes' });
@@ -3967,9 +4139,11 @@ describe('Dashboard failure copy', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService('Spotify');
 
     expect(await screen.findByText('Playlists unavailable')).toBeTruthy();
-    expect(screen.getByText('Likes unavailable')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Likes unavailable')).toBeTruthy();
     expect(screen.queryByText('playlist-down')).toBeNull();
     expect(screen.queryByText('likes-down')).toBeNull();
     expect(screen.queryByText('undefined')).toBeNull();
