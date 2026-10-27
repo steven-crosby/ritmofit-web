@@ -1,12 +1,19 @@
 name: CI
 
-# Quality gate for the pnpm monorepo: typecheck + lint + unit tests. Deploys stay
-# manual by design (see AGENTS.md) — this workflow never deploys, it only blocks
-# regressions on PRs and pushes to main.
+# Quality gate for the pnpm monorepo. Deploys stay manual by design (see AGENTS.md) —
+# this workflow never deploys, it only blocks regressions on PRs and pushes to main.
+# Agents squash-merge their own PRs when this job is green (AGENTS.md › "Delegation And
+# Merge Policy"), so it is the whole automated review: keep it thorough.
 on:
   push:
     branches: [main]
   pull_request:
+    # labeled/unlabeled re-run the owner gate when `owner-approved` is added or removed.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
 
 # A newer push to the same ref cancels the in-flight run.
 concurrency:
@@ -31,6 +38,32 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      # Agents may merge on green, so owner-gated paths (migrations, auth, provider/playback,
+      # CI/deploy, agent rules) fail here until the owner adds `owner-approved`. Its own tests
+      # run first — a checker nobody has watched fail is not a gate. Runs early to fail fast.
+      - name: Owner gate self-test
+        run: pnpm owner-gate:test
+
+      - name: Owner gate (owner-gated paths need owner-approved)
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OWNER_GATE_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --name-only | node scripts/owner-gate.mjs
+
+      # Product changes (apps/, packages/, e2e/) must change an RF record that cites this PR, so
+      # every merge is traceable and a task reaches Done inside its own work PR.
+      - name: RF trace self-test
+        run: pnpm rf-trace:test
+
+      - name: RF trace (product PRs cite their RF record)
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --name-only | node scripts/rf-trace.mjs
 
       # Prettier owns code + top-level docs; generated artifacts and long-form
       # reference docs are excluded in .prettierignore.
@@ -83,6 +116,29 @@ jobs:
       # resolution), and deploys are manual — so catch build breaks in CI.
       - name: Build web
         run: pnpm --filter @ritmofit/web build
+
+      # Browser smoke against the build above: sign up, build a Cycle class with mock tracks,
+      # write cues, run Live, End Class — at 1440 and 390 wide, with overflow and axe WCAG 2.2
+      # AA checks. Mock providers and a throwaway D1; no secrets. It cannot prove real provider
+      # playback (AGENTS.md › "Music Constraints"); PRs name that check when it applies.
+      - name: Install Playwright Chromium
+        run: pnpm --filter @ritmofit/e2e exec playwright install --with-deps chromium
+
+      - name: End-to-end smoke (Playwright)
+        run: pnpm --filter @ritmofit/e2e e2e
+
+      # Per-page screenshots for PR review, plus traces on failure. Download from the run's
+      # Summary page (zip).
+      - name: Upload e2e screenshots and traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: |
+            e2e/.state/shots/
+            e2e/.state/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
 
       # The OpenAPI spec is generated from the shared Zod schemas; fail if the
       # committed spec has drifted from a fresh regen.
