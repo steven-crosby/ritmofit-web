@@ -3,14 +3,14 @@
   "id": "RF-89",
   "title": "Review core workflow regression coverage PR #625",
   "kind": "task",
-  "status": "review",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
     "Review delete-share, last-opened, sign-out, cue, and Spotify assertions against current main and run required checks before any separately authorized merge."
   ],
-  "nextAction": "Review #625 and resolve its disposition.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -18,8 +18,14 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/625",
       "summary": "Open non-draft; successful CI observed on 2026-10-27. CI does not authorize merge.",
       "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/625",
+      "summary": "Required CI passed on final head 7df6d78 (run 40600083283); merged with --match-head-commit as 0065eaf. Proves the merge and CI, not product acceptance.",
+      "checkedOn": "2026-10-27"
     }
   ],
-  "resolution": null,
+  "resolution": "Reviewed against current main on 2026-10-27: web 171, Spotify 49 and D1 integration 4 tests passed on the merged tree. Squash-merged as 0065eaf. Tests only; its handoff, whose sole action was this merge, is retired.",
   "followUps": []
 }

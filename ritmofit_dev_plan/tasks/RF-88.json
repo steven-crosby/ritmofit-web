@@ -3,14 +3,14 @@
   "id": "RF-88",
   "title": "Review deploy guard regression coverage PR #596",
   "kind": "task",
-  "status": "review",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
     "Review #596 against current main, confirm its self-checks remain meaningful, and run required checks before any separately authorized merge."
   ],
-  "nextAction": "Review the draft and determine whether it is ready or requires follow-up.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -18,8 +18,14 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/596",
       "summary": "Open draft; successful CI observed on 2026-10-27. CI does not authorize merge.",
       "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/596",
+      "summary": "Required CI passed on final head ab87320 (run 40600667157); merged with --match-head-commit as d76fbd3. Proves the merge and CI, not a deploy.",
+      "checkedOn": "2026-10-27"
     }
   ],
-  "resolution": null,
+  "resolution": "Reviewed against current main on 2026-10-27: the self-check assertions are meaningful (ran under macOS bash 3.2; no temp files or worktrees left). Typecheck failed on current dependencies because the test redeclared ImportMeta.url; that block was removed in c906cf4. Squash-merged as d76fbd3. Tests and self-check only; deploy behavior unchanged.",
   "followUps": []
 }
