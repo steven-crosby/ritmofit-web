@@ -1340,6 +1340,16 @@ describe('LiveMode runtime composition', () => {
       expect.stringMatching(/^NextSeated climbcue · Track 2/),
       expect.stringMatching(/^\+2Stand and pushcue · Track 2/),
     ]);
+    // One clock for the next cue: the Now row counts into the next track's first cue
+    // exactly like the hero, and upcoming rows count down to their own start.
+    expect(within(rows[0]!).getByLabelText('Time until the next cue').textContent).toBe(
+      '2:15 until next',
+    );
+    expect(
+      within(queue)
+        .getAllByLabelText('Time until this starts')
+        .map((node) => node.textContent),
+    ).toEqual(['in 2:15', 'in 2:45']);
   });
 
   it('still ends at the last cue of the class', async () => {
@@ -1358,6 +1368,9 @@ describe('LiveMode runtime composition', () => {
     expect(within(focal).getByText('End of track')).toBeTruthy();
     const queue = screen.getByRole('list', { name: 'Choreography queue' });
     expect(within(queue).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(queue).getByLabelText('Time left in this track').textContent).toMatch(
+      /^\d+:\d{2} left$/,
+    );
   });
 
   it('wraps an unbroken class title and notes so the phone shell cannot scroll sideways', async () => {
@@ -1679,9 +1692,10 @@ describe('LiveMode runtime composition', () => {
     expect(within(queue).getByText('Climb now')).toBeTruthy();
     expect(
       within(queue)
-        .getAllByLabelText('Duration')
+        .getAllByLabelText('Time until this starts')
         .map((node) => node.textContent),
-    ).toEqual(['0:30', '2:00']);
+    ).toEqual(['in 0:30', 'in 1:00']);
+    expect(within(queue).queryByLabelText('Duration')).toBeNull();
   });
 
   it('moves to the previous and next track from the primary transport', async () => {
@@ -1904,7 +1918,7 @@ describe('LiveMode sparse-data fallbacks', () => {
     } satisfies RunPayload;
     await renderLive(durationless);
 
-    const remaining = screen.getByLabelText('Time until the next cue');
+    const remaining = screen.getByLabelText('Time left in this track');
     expect(remaining.textContent).toBe('—');
   });
 });
@@ -1958,61 +1972,36 @@ describe('choreographyQueueAt', () => {
     },
   ];
 
-  it('shows upcoming choreography before the first anchor', () => {
+  it('counts upcoming choreography down to each start before the first anchor', () => {
     expect(choreographyQueueAt(events, 0, 90000, 2)).toEqual([
-      {
-        event: events[0],
-        state: 'upcoming',
-        durationMs: 20000,
-        remainingMs: null,
-        laterTrackIndex: null,
-      },
-      {
-        event: events[1],
-        state: 'upcoming',
-        durationMs: 30000,
-        remainingMs: null,
-        laterTrackIndex: null,
-      },
+      { event: events[0], state: 'upcoming', untilMs: 10000, laterTrackIndex: null },
+      { event: events[1], state: 'upcoming', untilMs: 30000, laterTrackIndex: null },
     ]);
   });
 
-  it('counts down the current interval and limits the forward window', () => {
+  it('counts the current row down to the next row and limits the forward window', () => {
     expect(choreographyQueueAt(events, 45000, 90000, 2)).toEqual([
-      {
-        event: events[1],
-        state: 'current',
-        durationMs: 30000,
-        remainingMs: 15000,
-        laterTrackIndex: null,
-      },
-      {
-        event: events[2],
-        state: 'upcoming',
-        durationMs: 30000,
-        remainingMs: null,
-        laterTrackIndex: null,
-      },
+      { event: events[1], state: 'current', untilMs: 15000, laterTrackIndex: null },
+      { event: events[2], state: 'upcoming', untilMs: 15000, laterTrackIndex: null },
     ]);
   });
 
-  it('does not invent a final interval when the track duration is unset', () => {
+  it('counts the final row to the track end, and invents nothing without a duration', () => {
+    expect(choreographyQueueAt(events, 70000, 90000)).toEqual([
+      { event: events[2], state: 'current', untilMs: 20000, laterTrackIndex: null },
+    ]);
     expect(choreographyQueueAt(events, 70000, null)).toEqual([
-      {
-        event: events[2],
-        state: 'current',
-        durationMs: null,
-        remainingMs: null,
-        laterTrackIndex: null,
-      },
+      { event: events[2], state: 'current', untilMs: null, laterTrackIndex: null },
     ]);
   });
 
-  it('continues into the next track after the last cue of this one', () => {
+  it("counts the last cue through the lead-in to the next track's first cue", () => {
     const nextTrack: TimelineEvent[] = [
       { ...events[0]!, atMs: 120000, text: 'Seated climb' },
       { ...events[0]!, atMs: 150000, text: 'Stand' },
     ];
+    // This track ends at 90s, but the next cue is at 120s: the Now row and the Next
+    // row both read 50s, the same value as the hero's Next countdown.
     expect(
       choreographyQueueAt(events, 70000, 90000, 3, {
         index: 1,
@@ -2020,27 +2009,9 @@ describe('choreographyQueueAt', () => {
         trackEndMs: 200000,
       }),
     ).toEqual([
-      {
-        event: events[2],
-        state: 'current',
-        durationMs: 30000,
-        remainingMs: 20000,
-        laterTrackIndex: null,
-      },
-      {
-        event: nextTrack[0],
-        state: 'upcoming',
-        durationMs: 30000,
-        remainingMs: null,
-        laterTrackIndex: 1,
-      },
-      {
-        event: nextTrack[1],
-        state: 'upcoming',
-        durationMs: 50000,
-        remainingMs: null,
-        laterTrackIndex: 1,
-      },
+      { event: events[2], state: 'current', untilMs: 50000, laterTrackIndex: null },
+      { event: nextTrack[0], state: 'upcoming', untilMs: 50000, laterTrackIndex: 1 },
+      { event: nextTrack[1], state: 'upcoming', untilMs: 80000, laterTrackIndex: 1 },
     ]);
   });
 
@@ -2048,15 +2019,7 @@ describe('choreographyQueueAt', () => {
     const nextTrack: TimelineEvent[] = [{ ...events[0]!, atMs: 120000, text: 'Seated climb' }];
     expect(
       choreographyQueueAt([], 10000, 90000, 4, { index: 2, events: nextTrack, trackEndMs: null }),
-    ).toEqual([
-      {
-        event: nextTrack[0],
-        state: 'upcoming',
-        durationMs: null,
-        remainingMs: null,
-        laterTrackIndex: 2,
-      },
-    ]);
+    ).toEqual([{ event: nextTrack[0], state: 'upcoming', untilMs: 110000, laterTrackIndex: 2 }]);
   });
 });
 

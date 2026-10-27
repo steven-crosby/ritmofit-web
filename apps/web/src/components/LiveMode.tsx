@@ -86,10 +86,11 @@ export interface TimelineEvent {
 export interface ChoreographyQueueItem {
   event: TimelineEvent;
   state: 'current' | 'upcoming';
-  /** Authored interval length, derived from the next anchor or track boundary. */
-  durationMs: number | null;
-  /** Only current choreography counts down; upcoming rows show their full interval. */
-  remainingMs: number | null;
+  /**
+   * Upcoming rows: time until the row starts. Current row: time until the next row
+   * starts (the hero Next countdown), or until the track ends when nothing follows.
+   */
+  untilMs: number | null;
   /** Zero-based track position when the row belongs to a later track, else null. */
   laterTrackIndex: number | null;
 }
@@ -277,8 +278,8 @@ export function lastAtOrBefore(events: TimelineEvent[], t: number): number {
 }
 
 /**
- * The glanceable run-of-show window for the active track. Durations stay derived
- * from authored anchors: no second duration truth is persisted in the payload.
+ * The glanceable run-of-show window for the active track. Every time is a countdown
+ * derived from authored anchors: no second duration truth is persisted in the payload.
  */
 export function choreographyQueueAt(
   events: TimelineEvent[],
@@ -288,35 +289,27 @@ export function choreographyQueueAt(
   following: FollowingTrackEvents | null = null,
 ): ChoreographyQueueItem[] {
   if (limit <= 0) return [];
-  // An interval ends at the next anchor on its own track, or at that track's end.
   const rows = [
-    ...events.map((event, i) => ({
-      event,
-      boundaryMs: events[i + 1]?.atMs ?? trackEndMs,
-      laterTrackIndex: null,
-    })),
-    ...(following?.events ?? []).map((event, i, list) => ({
-      event,
-      boundaryMs: list[i + 1]?.atMs ?? following!.trackEndMs,
-      laterTrackIndex: following!.index,
-    })),
+    ...events.map((event) => ({ event, laterTrackIndex: null })),
+    ...(following?.events ?? []).map((event) => ({ event, laterTrackIndex: following!.index })),
   ];
   if (rows.length === 0) return [];
   const currentIndex = lastAtOrBefore(events, elapsedMs);
   const firstIndex = Math.max(0, currentIndex);
-  return rows
-    .slice(firstIndex, firstIndex + limit)
-    .map(({ event, boundaryMs, laterTrackIndex }, offset) => {
-      const endAtMs = boundaryMs == null ? null : Math.max(event.atMs, boundaryMs);
-      const isCurrent = firstIndex + offset === currentIndex;
-      return {
-        event,
-        state: isCurrent ? 'current' : 'upcoming',
-        durationMs: endAtMs == null ? null : endAtMs - event.atMs,
-        remainingMs: isCurrent && endAtMs != null ? Math.max(0, endAtMs - elapsedMs) : null,
-        laterTrackIndex,
-      };
-    });
+  return rows.slice(firstIndex, firstIndex + limit).map(({ event, laterTrackIndex }, offset) => {
+    const isCurrent = firstIndex + offset === currentIndex;
+    // The current row ends where the next row starts, even across the lead-in into
+    // the next track, so it always matches the hero Next countdown.
+    const untilAtMs = isCurrent
+      ? (rows[firstIndex + offset + 1]?.event.atMs ?? trackEndMs)
+      : event.atMs;
+    return {
+      event,
+      state: isCurrent ? 'current' : 'upcoming',
+      untilMs: untilAtMs == null ? null : Math.max(0, untilAtMs - elapsedMs),
+      laterTrackIndex,
+    };
+  });
 }
 
 /** The first track after `liveIndex` with any cue or move, or null at the end of the class. */
@@ -1980,10 +1973,21 @@ function ChoreographyQueue({
         <p className="font-data text-[11px] text-text-tertiary">Current + next</p>
       </div>
       <ol className="mt-3 flex flex-col gap-1" aria-label="Choreography queue">
-        {queue.map(({ event, state, durationMs, remainingMs, laterTrackIndex }, index) => {
+        {queue.map(({ event, state, untilMs, laterTrackIndex }, index) => {
           const current = state === 'current';
           const upcomingIndex = index - (hasCurrent ? 1 : 0);
-          const intervalMs = current ? remainingMs : durationMs;
+          const hasNext = index + 1 < queue.length;
+          const timeLabel = !current
+            ? 'Time until this starts'
+            : hasNext
+              ? 'Time until the next cue'
+              : 'Time left in this track';
+          const timeText =
+            untilMs == null
+              ? '—'
+              : !current
+                ? `in ${fmt(untilMs)}`
+                : `${fmt(untilMs)} ${hasNext ? 'until next' : 'left'}`;
           return (
             <li
               key={`${event.kind}:${event.atMs}:${index}`}
@@ -2011,9 +2015,9 @@ function ChoreographyQueue({
               </span>
               <span
                 className="shrink-0 font-data text-xs text-text-tertiary"
-                aria-label={current ? 'Time until the next cue' : 'Duration'}
+                aria-label={timeLabel}
               >
-                {intervalMs == null ? '—' : `${fmt(intervalMs)}${current ? ' until next' : ''}`}
+                {timeText}
               </span>
             </li>
           );
