@@ -49,4 +49,21 @@ describe('ErrorBoundary', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Exit live mode' }));
     expect(onReset).toHaveBeenCalledTimes(1);
   });
+
+  it('renders the section variant inline with an h2 and focuses its reset', () => {
+    const onReset = vi.fn();
+    render(
+      <ErrorBoundary variant="section" resetLabel="Back to Classes" onReset={onReset}>
+        <Boom />
+      </ErrorBoundary>,
+    );
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'This page lost the beat.' }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('main')).toBeNull();
+    const reset = screen.getByRole('button', { name: 'Back to Classes' });
+    expect(document.activeElement).toBe(reset);
+    fireEvent.click(reset);
+    expect(onReset).toHaveBeenCalledTimes(1);
+  });
 });

@@ -1091,134 +1091,146 @@ export function Dashboard({
           </div>
         )}
 
-        {destination === 'classes' ? (
-          selected ? (
-            /* Full-focus builder: the class and its inspector. The Classes library
+        {/* A crash in one destination keeps the nav. Keyed so switching page or
+            class always starts with a fresh boundary. */}
+        <ErrorBoundary
+          key={`${destination}:${selected?.id ?? ''}`}
+          variant="section"
+          resetLabel="Back to Classes"
+          onReset={() => {
+            setDestination('classes');
+            closeBuilder();
+          }}
+        >
+          {destination === 'classes' ? (
+            selected ? (
+              /* Full-focus builder: the class and its inspector. The Classes library
               stays on its own page, reached by the back link. */
-            <div
-              ref={workspaceRef}
-              className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start"
-            >
-              {detail.classId === selected.id && detail.status === 'ready' ? (
-                <ClassWorkspace
-                  key={selected.id}
-                  cls={selected}
-                  tracks={detail.tracks}
-                  payload={detail.payload}
-                  onError={setError}
-                  onTrackChanged={() =>
-                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
-                  }
-                  onTrackAdded={() =>
-                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
-                  }
-                  onChoreographyChanged={() =>
-                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
-                  }
-                  onReordered={() =>
-                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
-                  }
-                  onTrackRemoved={() =>
-                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
-                  }
-                  onRun={() => runClass(selected.id)}
-                  onClassUpdated={applyClassUpdate}
-                  onClassDeleted={handleClassDeleted}
-                  onOpenSongsByMove={() => setSongsByMoveOpen(true)}
-                  onOpenConnections={() => setConnectionsOpen(true)}
-                  connectionRevision={connectionRevision}
-                  focusAddMusic={newEmptyClassId === selected.id}
-                  onFocusedAddMusic={() => setNewEmptyClassId(null)}
-                  onBackToClasses={closeBuilder}
-                  onRetryDetails={() => void loadDetail(selected.id)}
-                />
-              ) : detail.classId === selected.id && detail.status === 'error' ? (
-                <section className="flex min-w-0 flex-col gap-4">
-                  <BackToClassesButton onClick={closeBuilder} />
-                  <div className="rounded-card bg-bg-raised p-8 shadow-card">
-                    <p className="font-ui text-sm text-state-danger" role="alert">
-                      {detail.error}
-                    </p>
-                    <button
-                      type="button"
-                      className="mt-4 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
-                      onClick={() => void loadDetail(selected.id)}
-                    >
-                      Retry class
-                    </button>
-                  </div>
-                </section>
-              ) : (
-                <section className="flex min-w-0 flex-col gap-4" aria-busy="true">
-                  <BackToClassesButton onClick={closeBuilder} />
-                  <div className="rounded-card bg-bg-raised p-8 shadow-card">
-                    <p className="font-ui text-text-tertiary">Loading class…</p>
-                  </div>
-                </section>
-              )}
-            </div>
-          ) : (
-            <ClassesHome
+              <div
+                ref={workspaceRef}
+                className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start"
+              >
+                {detail.classId === selected.id && detail.status === 'ready' ? (
+                  <ClassWorkspace
+                    key={selected.id}
+                    cls={selected}
+                    tracks={detail.tracks}
+                    payload={detail.payload}
+                    onError={setError}
+                    onTrackChanged={() =>
+                      void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                    }
+                    onTrackAdded={() =>
+                      void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                    }
+                    onChoreographyChanged={() =>
+                      void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                    }
+                    onReordered={() =>
+                      void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                    }
+                    onTrackRemoved={() =>
+                      void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                    }
+                    onRun={() => runClass(selected.id)}
+                    onClassUpdated={applyClassUpdate}
+                    onClassDeleted={handleClassDeleted}
+                    onOpenSongsByMove={() => setSongsByMoveOpen(true)}
+                    onOpenConnections={() => setConnectionsOpen(true)}
+                    connectionRevision={connectionRevision}
+                    focusAddMusic={newEmptyClassId === selected.id}
+                    onFocusedAddMusic={() => setNewEmptyClassId(null)}
+                    onBackToClasses={closeBuilder}
+                    onRetryDetails={() => void loadDetail(selected.id)}
+                  />
+                ) : detail.classId === selected.id && detail.status === 'error' ? (
+                  <section className="flex min-w-0 flex-col gap-4">
+                    <BackToClassesButton onClick={closeBuilder} />
+                    <div className="rounded-card bg-bg-raised p-8 shadow-card">
+                      <p className="font-ui text-sm text-state-danger" role="alert">
+                        {detail.error}
+                      </p>
+                      <button
+                        type="button"
+                        className="mt-4 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
+                        onClick={() => void loadDetail(selected.id)}
+                      >
+                        Retry class
+                      </button>
+                    </div>
+                  </section>
+                ) : (
+                  <section className="flex min-w-0 flex-col gap-4" aria-busy="true">
+                    <BackToClassesButton onClick={closeBuilder} />
+                    <div className="rounded-card bg-bg-raised p-8 shadow-card">
+                      <p className="font-ui text-text-tertiary">Loading class…</p>
+                    </div>
+                  </section>
+                )}
+              </div>
+            ) : (
+              <ClassesHome
+                classes={classes}
+                status={listStatus}
+                libraryError={error}
+                activeTag={activeTag}
+                knownTags={knownTags}
+                hasMore={nextClassCursor !== null}
+                loadingMore={loadingMoreClasses}
+                onOpen={openClass}
+                onPreview={(cls) => setCardPreview(cls)}
+                onDuplicate={async (cls) => {
+                  const copy = await copyClass(cls.id);
+                  await applyTagFilter(null);
+                  await refreshClasses();
+                  await openClass({ ...copy, accessLevel: 'owner' });
+                }}
+                onDelete={async (cls) => {
+                  await deleteClass(cls.id);
+                  handleClassDeleted(cls.id);
+                }}
+                onSelectTag={applyTagFilter}
+                onClearTag={() => void applyTagFilter(null)}
+                onRetry={() => {
+                  setListStatus('loading');
+                  void refreshClasses();
+                }}
+                onLoadMore={loadMoreClasses}
+                onStartClass={focusClassCreator}
+                onStartTemplate={(template) => focusClassCreator('scaffold', template)}
+                onImportPlaylist={() => setDestination('music')}
+              />
+            )
+          ) : destination === 'music' ? (
+            <MusicWorkspace
+              userId={userId}
+              connectionRevision={connectionRevision}
+              onOpenConnections={() => setConnectionsOpen(true)}
+              onOpenPlaylist={(provider, playlists, playlistId) =>
+                setPlaylistBrowse({ provider, playlists, playlistId })
+              }
+              onBrowseLikes={(provider, tracks) => setLikesBrowse({ provider, tracks })}
+              onCreateClass={handleCreateClassFromLikes}
+            />
+          ) : destination === 'live' ? (
+            <LiveWorkspace
               classes={classes}
               status={listStatus}
-              libraryError={error}
-              activeTag={activeTag}
-              knownTags={knownTags}
-              hasMore={nextClassCursor !== null}
-              loadingMore={loadingMoreClasses}
-              onOpen={openClass}
-              onPreview={(cls) => setCardPreview(cls)}
-              onDuplicate={async (cls) => {
-                const copy = await copyClass(cls.id);
-                await applyTagFilter(null);
-                await refreshClasses();
-                await openClass({ ...copy, accessLevel: 'owner' });
+              onRunClass={runClass}
+              onOpenClass={async (cls) => {
+                setDestination('classes');
+                await openClass(cls);
               }}
-              onDelete={async (cls) => {
-                await deleteClass(cls.id);
-                handleClassDeleted(cls.id);
-              }}
-              onSelectTag={applyTagFilter}
-              onClearTag={() => void applyTagFilter(null)}
-              onRetry={() => {
-                setListStatus('loading');
-                void refreshClasses();
-              }}
-              onLoadMore={loadMoreClasses}
-              onStartClass={focusClassCreator}
-              onStartTemplate={(template) => focusClassCreator('scaffold', template)}
-              onImportPlaylist={() => setDestination('music')}
             />
-          )
-        ) : destination === 'music' ? (
-          <MusicWorkspace
-            userId={userId}
-            connectionRevision={connectionRevision}
-            onOpenConnections={() => setConnectionsOpen(true)}
-            onOpenPlaylist={(provider, playlists, playlistId) =>
-              setPlaylistBrowse({ provider, playlists, playlistId })
-            }
-            onBrowseLikes={(provider, tracks) => setLikesBrowse({ provider, tracks })}
-            onCreateClass={handleCreateClassFromLikes}
-          />
-        ) : destination === 'live' ? (
-          <LiveWorkspace
-            classes={classes}
-            status={listStatus}
-            onRunClass={runClass}
-            onOpenClass={async (cls) => {
-              setDestination('classes');
-              await openClass(cls);
-            }}
-          />
-        ) : (
-          <AccountWorkspace
-            profileName={profileName}
-            connectionRevision={connectionRevision}
-            onProfileUpdated={(user) => setProfileName(user.displayName ?? user.email)}
-            onOpenConnections={() => setConnectionsOpen(true)}
-          />
-        )}
+          ) : (
+            <AccountWorkspace
+              profileName={profileName}
+              connectionRevision={connectionRevision}
+              onProfileUpdated={(user) => setProfileName(user.displayName ?? user.email)}
+              onOpenConnections={() => setConnectionsOpen(true)}
+            />
+          )}
+        </ErrorBoundary>
       </div>
     </main>
   );
