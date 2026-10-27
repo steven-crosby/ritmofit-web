@@ -289,7 +289,8 @@ describe('Dashboard class library states', () => {
     renderDashboard();
     // The resting home is in its loading state until the first request resolves —
     // it must not flash the empty-library start first.
-    expect(screen.getByText('Loading your class library')).toBeTruthy();
+    expect(screen.getByRole('status', { name: 'Loading your classes' })).toBeTruthy();
+    expect(screen.queryByText(/Ritmo is checking classes/)).toBeNull();
 
     await act(async () => {
       classes.resolve(page([makeClass('Morning ride')]));
@@ -297,7 +298,7 @@ describe('Dashboard class library states', () => {
     });
 
     expect((await screen.findAllByText('Morning ride')).length).toBeGreaterThanOrEqual(1);
-    expect(screen.queryByText('Loading your class library')).toBeNull();
+    expect(screen.queryByRole('status', { name: 'Loading your classes' })).toBeNull();
     expect(screen.getByRole('heading', { name: 'Your Classes' })).toBeTruthy();
     expect(
       screen.queryByRole('heading', { name: 'Pick up where the energy left off.' }),
@@ -1028,7 +1029,7 @@ describe('Dashboard class library states', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toContain('Couldn’t load music connections.');
+    expect(alert.textContent).toContain("Music connections didn't load.");
     expect(alert.textContent).toContain('Showing your last known sources.');
     expect(screen.getByRole('button', { name: 'Open Last Known Ride' })).toBeTruthy();
   });
@@ -1897,12 +1898,12 @@ describe('Dashboard class library states', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toContain('Couldn’t load music connections.');
-    expect(alert.textContent).toContain('Source status is unavailable.');
+    expect(alert.textContent).toContain("Music connections didn't load.");
+    expect(alert.textContent).toContain('Source status is unavailable');
     expect(screen.queryByText('Connect this provider to browse liked tracks.')).toBeNull();
     expect(screen.getByRole('button', { name: 'Spotify, Unavailable' })).toBeTruthy();
 
-    fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
+    fireEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
 
     await selectMusicService('Spotify');
     expect(await screen.findByRole('button', { name: 'Open Recovery Ride' })).toBeTruthy();
@@ -2304,7 +2305,9 @@ describe('Dashboard Account status ledger', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
 
-    const panel = (await screen.findByText('Loading profile…')).closest('section')!;
+    const panel = (await screen.findByRole('status', { name: 'Loading profile' })).closest(
+      'section',
+    )!;
     expect(within(panel).queryByText(/unavailable/i)).toBeNull();
     expect(within(panel).queryByText(/Edits paused/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Save profile' })).toHaveProperty('disabled', true);
@@ -2590,7 +2593,8 @@ describe('Dashboard class detail', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^Broken ride/ }));
 
     expect(await screen.findByText('detail boom')).toBeTruthy();
-    const retry = screen.getByRole('button', { name: 'Retry class' });
+    expect(screen.getByRole('heading', { name: "This class didn't load." })).toBeTruthy();
+    const retry = screen.getByRole('button', { name: 'Retry' });
 
     fireEvent.click(retry);
 
@@ -4682,23 +4686,23 @@ describe('Dashboard failure copy', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^Broken ride/ }));
     const alert = await screen.findByRole('alert');
     expect(alert.textContent?.trim().length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Retry class' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
     return alert;
   }
 
   it('shows the class-detail fallback for a non-Error', async () => {
     const alert = await openFailedDetail({ code: 'down' });
-    expect(alert.textContent?.trim()).toBe('Could not load this class.');
+    expect(within(alert).getByText('Could not load this class.')).toBeTruthy();
   });
 
   it('shows the class-detail fallback for an empty Error and not a blank alert', async () => {
     const alert = await openFailedDetail(new Error(''));
-    expect(alert.textContent?.trim()).toBe('Could not load this class.');
+    expect(within(alert).getByText('Could not load this class.')).toBeTruthy();
   });
 
   it('keeps a class-detail Error message', async () => {
     const alert = await openFailedDetail(new Error('detail boom'));
-    expect(alert.textContent?.trim()).toBe('detail boom');
+    expect(within(alert).getByText('detail boom')).toBeTruthy();
   });
 
   it('shows playlist and likes shelf labels when those loads throw a non-Error', async () => {
@@ -4749,5 +4753,59 @@ describe('Dashboard failure copy', () => {
     ).toBeTruthy();
     expect(screen.queryByText('undefined')).toBeNull();
     expect(screen.queryByText('conn-down')).toBeNull();
+  });
+});
+
+describe('Dashboard loading and load-error states', () => {
+  it('shows a labelled skeleton, not a sentence, while the builder loads', async () => {
+    const ride = makeClass('Slow ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockReturnValue(new Promise(() => {}));
+    vi.mocked(api.getRunPayload).mockReturnValue(new Promise(() => {}));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Slow ride/ }));
+
+    expect(await screen.findByRole('status', { name: 'Loading class' })).toBeTruthy();
+    expect(screen.queryByText('Loading class…')).toBeNull();
+  });
+
+  it('shows a labelled skeleton while music connections load', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockReturnValue(new Promise(() => {}));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+
+    expect(await screen.findByRole('status', { name: 'Checking music connections' })).toBeTruthy();
+    expect(screen.queryByText('Checking music connections…')).toBeNull();
+  });
+
+  it('shows a labelled skeleton on the Live tab while classes load', async () => {
+    vi.mocked(api.listClasses).mockReturnValue(new Promise(() => {}));
+
+    renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+
+    expect(await screen.findByRole('status', { name: 'Loading classes' })).toBeTruthy();
+    expect(screen.queryByText('Loading classes…')).toBeNull();
+  });
+
+  it('shows the recovery card with Retry when the Live tab cannot read classes', async () => {
+    vi.mocked(api.listClasses)
+      .mockRejectedValueOnce(new Error('list offline'))
+      .mockResolvedValue(page([]));
+
+    renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByRole('heading', { name: "Your classes didn't load." })).toBeTruthy();
+    expect(screen.queryByText(/No classes with tracks yet/)).toBeNull();
+
+    fireEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
+    expect((await screen.findAllByText(/No classes with tracks yet/)).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(api.listClasses).toHaveBeenCalledTimes(2);
   });
 });

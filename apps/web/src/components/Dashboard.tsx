@@ -157,7 +157,7 @@ import {
 import { OnboardingVideoDialog } from './OnboardingVideoDialog.js';
 import { ClassesHome } from './ClassesHome.js';
 import { LibraryOrganizeControls, TagFilter } from './LibraryOrganize.js';
-import { RecoveryState, StatusLabel } from './SharedState.js';
+import { LoadingSkeleton, RecoveryState, StatusLabel } from './SharedState.js';
 import { ProviderCapabilityLedger } from './ProviderCapabilityLedger.js';
 import { ClassCoverArt, TrackArt } from './TrackArt.js';
 
@@ -1146,25 +1146,28 @@ export function Dashboard({
                 ) : detail.classId === selected.id && detail.status === 'error' ? (
                   <section className="flex min-w-0 flex-col gap-4">
                     <BackToClassesButton onClick={closeBuilder} />
-                    <div className="rounded-card bg-bg-raised p-8 shadow-card">
-                      <p className="font-ui text-sm text-state-danger" role="alert">
-                        {detail.error}
-                      </p>
-                      <button
-                        type="button"
-                        className="mt-4 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
-                        onClick={() => void loadDetail(selected.id)}
-                      >
-                        Retry class
-                      </button>
-                    </div>
+                    <RecoveryState
+                      kind="error"
+                      compact
+                      role="alert"
+                      title="This class didn't load."
+                      event={detail.error}
+                      safety="Your class is saved. Nothing changed."
+                      primaryAction={
+                        <button
+                          type="button"
+                          className={RETRY_BUTTON_CLASS}
+                          onClick={() => void loadDetail(selected.id)}
+                        >
+                          Retry
+                        </button>
+                      }
+                    />
                   </section>
                 ) : (
-                  <section className="flex min-w-0 flex-col gap-4" aria-busy="true">
+                  <section className="flex min-w-0 flex-col gap-4">
                     <BackToClassesButton onClick={closeBuilder} />
-                    <div className="rounded-card bg-bg-raised p-8 shadow-card">
-                      <p className="font-ui text-text-tertiary">Loading class…</p>
-                    </div>
+                    <LoadingSkeleton label="Loading class" shape="card" />
                   </section>
                 )}
               </div>
@@ -1216,6 +1219,10 @@ export function Dashboard({
             <LiveWorkspace
               classes={classes}
               status={listStatus}
+              onRetry={() => {
+                setListStatus('loading');
+                void refreshClasses();
+              }}
               onRunClass={runClass}
               onOpenClass={async (cls) => {
                 setDestination('classes');
@@ -1812,6 +1819,9 @@ function useProviderBrowseState(connectionRevision = 0) {
   };
 }
 
+const RETRY_BUTTON_CLASS =
+  'min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill';
+
 function ProviderConnectionsLoadState({
   status,
   hasKnownConnections,
@@ -1824,32 +1834,27 @@ function ProviderConnectionsLoadState({
   if (status === 'ready') return null;
 
   if (status === 'loading') {
-    return (
-      <p role="status" className="font-ui text-xs text-text-tertiary">
-        Checking music connections…
-      </p>
-    );
+    return <LoadingSkeleton label="Checking music connections" shape="line" />;
   }
 
   return (
-    <div
+    <RecoveryState
+      kind="unavailable"
+      compact
       role="alert"
-      className="flex flex-col items-start gap-2 rounded-control border border-state-danger/30 bg-state-danger/5 p-3 font-ui text-xs text-state-danger"
-    >
-      <p>
-        Couldn’t load music connections.
-        {hasKnownConnections
-          ? ' Showing your last known sources.'
-          : ' Source status is unavailable.'}
-      </p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
-      >
-        Try again
-      </button>
-    </div>
+      title="Music connections didn't load."
+      event={
+        hasKnownConnections
+          ? 'Showing your last known sources.'
+          : 'Source status is unavailable until Ritmo can check again.'
+      }
+      safety="No connection changed. Catalog search still works."
+      primaryAction={
+        <button type="button" onClick={onRetry} className={RETRY_BUTTON_CLASS}>
+          Retry
+        </button>
+      }
+    />
   );
 }
 
@@ -2643,11 +2648,13 @@ const noop = (): void => {};
 function LiveWorkspace({
   classes,
   status,
+  onRetry,
   onRunClass,
   onOpenClass,
 }: {
   classes: ClassListItem[];
   status: ListStatus;
+  onRetry: () => void;
   onRunClass: (classId: string) => void;
   onOpenClass: (cls: ClassListItem) => Promise<void>;
 }) {
@@ -2803,7 +2810,22 @@ function LiveWorkspace({
           so a phone shows several classes instead of one tall card. */}
       <div className="mt-4 grid gap-2 lg:grid-cols-2">
         {status === 'loading' ? (
-          <p className="font-ui text-sm text-text-tertiary">Loading classes…</p>
+          <LoadingSkeleton label="Loading classes" rows={3} className="lg:col-span-2" />
+        ) : status === 'error' ? (
+          <RecoveryState
+            kind="unavailable"
+            compact
+            role="alert"
+            title="Your classes didn't load."
+            event="Ritmo could not read the class list. This is not an empty account."
+            safety="No class was removed."
+            className="lg:col-span-2"
+            primaryAction={
+              <button type="button" className={RETRY_BUTTON_CLASS} onClick={onRetry}>
+                Retry
+              </button>
+            }
+          />
         ) : candidates.length === 0 ? (
           <p className="font-ui text-sm text-text-tertiary">
             No classes with tracks yet. Add tracks in Classes, then come back here.
@@ -2874,8 +2896,13 @@ function LiveQueueCard({
           <p className="truncate font-data text-xs text-text-tertiary">
             {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount}{' '}
             {cls.trackCount === 1 ? 'track' : 'tracks'} · {formatDuration(cls.totalDurationMs)}
-            {(state === undefined || state.status === 'loading') && ' · Checking…'}
           </p>
+          {(state === undefined || state.status === 'loading') && (
+            <span
+              aria-hidden="true"
+              className="mt-1.5 block h-2 w-24 rounded-pill bg-bg-sunken motion-safe:animate-pulse"
+            />
+          )}
         </div>
         {state?.status === 'ready' && (
           <ClassPulse payload={state.payload} variant="sparkline" className="shrink-0" />
@@ -3100,12 +3127,7 @@ function AccountWorkspace({
                 {profile?.displayName ?? profileName}
               </h2>
               {profileStatus === 'loading' ? (
-                <p
-                  role="status"
-                  className="mt-1 font-ui text-xs text-text-tertiary motion-safe:animate-pulse"
-                >
-                  Loading profile…
-                </p>
+                <LoadingSkeleton label="Loading profile" shape="line" className="mt-2" />
               ) : (
                 <p className="mt-1 break-all font-ui text-xs text-text-tertiary">
                   {profile?.email ?? 'Profile details unavailable'}

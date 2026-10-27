@@ -18,7 +18,7 @@ import {
   recentClasses,
   type LibraryTemplate,
 } from '../lib/library-shell.js';
-import { RecoveryState, StatusLabel } from './SharedState.js';
+import { LoadingSkeleton, RecoveryState } from './SharedState.js';
 
 const DETAIL_CONCURRENCY = 2;
 
@@ -65,24 +65,7 @@ export function ClassesHome({
 
   if (view === 'loading') {
     return (
-      <section
-        className="mx-auto min-w-0 w-full max-w-3xl rounded-card border border-border-subtle bg-bg-raised p-5 sm:p-6"
-        role="status"
-        aria-live="polite"
-        aria-busy="true"
-      >
-        <StatusLabel kind="loading" label="Loading your class library" />
-        <h2 className="mt-3 font-display text-2xl font-semibold text-text-primary">
-          Reading your next run of show…
-        </h2>
-        <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
-          Ritmo is checking classes before it suggests a next step.
-        </p>
-        <div aria-hidden="true" className="mt-5 flex flex-col gap-3">
-          <span className="h-16 rounded-card bg-bg-sunken" />
-          <span className="h-16 rounded-card bg-bg-sunken" />
-        </div>
-      </section>
+      <LoadingSkeleton label="Loading your classes" rows={3} className="mx-auto w-full max-w-3xl" />
     );
   }
 
