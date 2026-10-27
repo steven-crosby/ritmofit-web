@@ -5,7 +5,7 @@ vi.mock('./auth-client.js', () => ({
   authClient: { signOut: vi.fn() },
 }));
 
-import { deleteClass, getClass } from './api.js';
+import { ApiError, NETWORK_ERROR_MESSAGE, deleteClass, getClass } from './api.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -28,5 +28,24 @@ describe('api response handling', () => {
     );
 
     await expect(getClass('class-1')).resolves.toEqual({ id: 'class-1' });
+  });
+
+  it('turns a network failure into one plain sentence instead of "Failed to fetch"', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+
+    const error = await getClass('class-1').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).message).toBe(
+      "Can't reach Ritmo. Check your connection, then try again.",
+    );
+    expect((error as ApiError).message).toBe(NETWORK_ERROR_MESSAGE);
+    expect((error as ApiError).code).toBe('NETWORK_ERROR');
+  });
+
+  it('lets an abort through unchanged', async () => {
+    const abort = new DOMException('The operation was aborted.', 'AbortError');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(abort));
+
+    await expect(getClass('class-1')).rejects.toBe(abort);
   });
 });

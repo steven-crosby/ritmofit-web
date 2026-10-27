@@ -76,12 +76,22 @@ export class ApiError extends Error {
   }
 }
 
+export const NETWORK_ERROR_MESSAGE = "Can't reach Ritmo. Check your connection, then try again.";
+
 async function apiResponse(path: string, init?: RequestInit): Promise<Response> {
-  const res = await fetch(`${API_BASE_URL}/api/v1${path}`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/v1${path}`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      ...init,
+    });
+  } catch (e) {
+    // fetch rejects with a TypeError ("Failed to fetch", "Load failed") only when
+    // the request never got a response. An abort is a DOMException and passes through.
+    if (e instanceof TypeError) throw new ApiError(NETWORK_ERROR_MESSAGE, 'NETWORK_ERROR', 0);
+    throw e;
+  }
   if (!res.ok) {
     // Session expired or was revoked mid-use: clear it so App's useSession() flips
     // back to <Login> rather than dead-ending every action with a generic error.
