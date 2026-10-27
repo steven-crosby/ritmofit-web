@@ -114,6 +114,7 @@ import {
   type ClassSortKey,
   type ListStatus,
 } from '../lib/library-state.js';
+import { useOnline } from '../lib/use-online.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import {
   PROVIDER_ORDER,
@@ -260,6 +261,7 @@ export function Dashboard({
   const [live, setLive] = useState<RunPayload | null>(null);
   useEffect(() => setLiveActive(live != null), [live]);
   useEffect(() => () => setLiveActive(false), []);
+  const online = useOnline();
   // Live Mode is a full-tree swap (see the `if (live)` early return below), so the
   // control that opened it never survives to be refocused on exit — the dashboard
   // remounts fresh. Restore focus to the primary heading instead, the same
@@ -872,6 +874,17 @@ export function Dashboard({
           >
             Ritmo Studio
           </h1>
+          {!online && (
+            <span
+              role="status"
+              className="inline-flex items-center gap-1 rounded-pill border border-state-caution/40 px-2 py-0.5 font-ui text-xs font-semibold text-state-caution"
+            >
+              <span aria-hidden className="font-data leading-none">
+                !
+              </span>
+              Offline
+            </span>
+          )}
         </div>
         {/* Primary destinations — the same map on every viewport. Mobile compresses
             the rail horizontally; desktop breathes it into the top shell. */}
@@ -1117,6 +1130,7 @@ export function Dashboard({
                   focusAddMusic={newEmptyClassId === selected.id}
                   onFocusedAddMusic={() => setNewEmptyClassId(null)}
                   onBackToClasses={closeBuilder}
+                  onRetryDetails={() => void loadDetail(selected.id)}
                 />
               ) : detail.classId === selected.id && detail.status === 'error' ? (
                 <section className="flex min-w-0 flex-col gap-4">
@@ -4038,6 +4052,7 @@ function ClassWorkspace({
   focusAddMusic,
   onFocusedAddMusic,
   onBackToClasses,
+  onRetryDetails,
 }: {
   cls: ClassWithAccess;
   tracks: ClassTrack[];
@@ -4068,6 +4083,8 @@ function ClassWorkspace({
   onFocusedAddMusic: () => void;
   /** Return from the full-focus builder to the Classes library. */
   onBackToClasses: () => void;
+  /** Reload the whole class after its details failed to load. */
+  onRetryDetails: () => void;
 }) {
   // The selected track (by class_track id) drives the inspector.
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
@@ -4080,6 +4097,7 @@ function ClassWorkspace({
   const [assignStay, setAssignStay] = useState(false);
   const [planLead, setPlanLead] = useState<string | null>(null);
   const [planReady, setPlanReady] = useState(false);
+  const [planFailed, setPlanFailed] = useState(false);
   const [planBlocks, setPlanBlocks] = useState<ClassPlanBlock[]>([]);
   const currentAssigningPlanBlock = assigningPlanBlock
     ? (planBlocks.find((block) => block.id === assigningPlanBlock.id) ?? assigningPlanBlock)
@@ -4367,6 +4385,8 @@ function ClassWorkspace({
             onDeleted={() => onClassDeleted(cls.id)}
             planLead={planLead}
             addPlaylist={playlistInHeader ? addPlaylistAction : null}
+            detailsFailed={payload == null || planFailed}
+            onRetryDetails={onRetryDetails}
           />
         </div>
 
@@ -4415,6 +4435,7 @@ function ClassWorkspace({
           onTracksChanged={onTrackChanged}
           onPlanNextStep={setPlanLead}
           onPlanReady={setPlanReady}
+          onPlanFailed={setPlanFailed}
           onHasPlanBlocks={setHasPlanBlocks}
           onPlanBlocks={setPlanBlocks}
         />
@@ -4702,6 +4723,8 @@ function DestructiveControl({
  * run-payload — no new data), and the owner/run actions. Stats use label +
  * number, never color alone.
  */
+const CLASS_DETAILS_NOT_LOADED = "Class details didn't load.";
+
 export function ClassHeaderCard({
   cls,
   payload,
@@ -4717,6 +4740,8 @@ export function ClassHeaderCard({
   onDeleted,
   planLead = null,
   addPlaylist = null,
+  detailsFailed = false,
+  onRetryDetails,
 }: {
   cls: ClassWithAccess;
   payload: RunPayload | null;
@@ -4741,6 +4766,9 @@ export function ClassHeaderCard({
     onClick: () => void;
     buttonRef: Ref<HTMLButtonElement>;
   } | null;
+  /** The run payload or the plan blocks failed to load, so readiness is unknown. */
+  detailsFailed?: boolean;
+  onRetryDetails?: () => void;
 }) {
   const { run } = useAsyncAction(onError);
   const { busy: deleting, run: runDelete } = useAsyncAction(onError);
@@ -4807,6 +4835,8 @@ export function ClassHeaderCard({
   // "a track without a length". Especially matters for an empty class, where the
   // readiness panel isn't shown and the greyed button is the only signal.
   const runBlockedId = `run-blocked-${cls.id}`;
+  // A failed load says so; it never blames track lengths it could not read.
+  // While only the plan is still loading, the button stays quiet.
   const runEnabled = canRun && !planLead;
   const runBlockedReason = runEnabled
     ? null
@@ -4814,7 +4844,11 @@ export function ClassHeaderCard({
       ? planLead
       : trackCount === 0
         ? 'Add a track to run this class.'
-        : 'Give every track a length to run.';
+        : detailsFailed
+          ? CLASS_DETAILS_NOT_LOADED
+          : payload && canRunPayload(payload)
+            ? null
+            : 'Give every track a length to run.';
   const templateLabel = formatTemplateLabel(cls.template);
 
   const startRename = () => {
@@ -4955,6 +4989,15 @@ export function ClassHeaderCard({
             !
           </span>
           {runBlockedReason}
+          {runBlockedReason === CLASS_DETAILS_NOT_LOADED && onRetryDetails && (
+            <button
+              type="button"
+              onClick={onRetryDetails}
+              className="ml-1 min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:text-interactive-hover rf-focus-ring"
+            >
+              Retry
+            </button>
+          )}
         </p>
       )}
       {/* Summary stats — BPM/time weighted in the Azeret Mono data face. */}

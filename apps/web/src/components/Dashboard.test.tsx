@@ -1530,6 +1530,77 @@ describe('Dashboard class library states', () => {
     expect(screen.queryByRole('button', { name: /^Retry readiness/ })).toBeNull();
   });
 
+  it('says class details did not load, never blaming track lengths, after a failed payload read', async () => {
+    const cls = { ...makeClass('Offline ride', 'owner', 'me'), trackCount: 2 };
+    vi.mocked(api.listClasses).mockResolvedValue(page([cls]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([
+      makeClassTrack('ct-1', 0),
+      makeClassTrack('ct-2', 1),
+    ]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(
+      new api.ApiError(
+        "Can't reach Ritmo. Check your connection, then try again.",
+        'NETWORK_ERROR',
+        0,
+      ),
+    );
+
+    renderDashboard();
+    await openClassFromClasses('Offline ride');
+
+    expect(await screen.findByText("Class details didn't load.")).toBeTruthy();
+    expect(screen.queryByText('Give every track a length to run.')).toBeNull();
+    expect(screen.getByRole('button', { name: /Run live/ })).toHaveProperty('disabled', true);
+
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([
+        { classTrackId: 'ct-1', durationMs: 180000 },
+        { classTrackId: 'ct-2', durationMs: 180000 },
+      ]),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Run live/ })).toHaveProperty('disabled', false),
+    );
+    expect(screen.queryByText("Class details didn't load.")).toBeNull();
+  });
+
+  it('says class details did not load when the plan blocks fail', async () => {
+    const cls = { ...makeClass('Plan offline', 'owner', 'me'), trackCount: 1 };
+    vi.mocked(api.listClasses).mockResolvedValue(page([cls]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([makeClassTrack('ct-1', 0)]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([{ classTrackId: 'ct-1', durationMs: 180000 }]),
+    );
+    vi.mocked(api.listClassPlanBlocks).mockRejectedValue(new Error('offline'));
+
+    renderDashboard();
+    await openClassFromClasses('Plan offline');
+
+    expect(await screen.findByText("Class details didn't load.")).toBeTruthy();
+    expect(screen.queryByText('Give every track a length to run.')).toBeNull();
+  });
+
+  it('shows an Offline mark in the app header while the browser is offline', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      renderDashboard();
+      const header = (await screen.findByRole('heading', { name: 'Ritmo Studio' })).closest(
+        'header',
+      )!;
+      expect(within(header).getByText('Offline').getAttribute('role')).toBe('status');
+
+      onLine.mockReturnValue(true);
+      act(() => {
+        window.dispatchEvent(new Event('online'));
+      });
+      expect(within(header).queryByText('Offline')).toBeNull();
+    } finally {
+      onLine.mockRestore();
+    }
+  });
+
   function readyRidePayload(): RunPayload {
     return {
       schemaVersion: 1,

@@ -148,6 +148,7 @@ export function ClassPlanBlocks({
   onHasPlanBlocks,
   onPlanBlocks,
   onPlanReady,
+  onPlanFailed,
 }: {
   classId: string;
   /** Only scaffold classes gain add, reorder, and delete controls. */
@@ -171,6 +172,8 @@ export function ClassPlanBlocks({
   onPlanBlocks?: (blocks: ClassPlanBlock[]) => void;
   /** False until a plan-block fetch succeeds. A failed fetch does not publish []. */
   onPlanReady?: (ready: boolean) => void;
+  /** True while the latest plan-block fetch has failed, so the header can say why. */
+  onPlanFailed?: (failed: boolean) => void;
 }) {
   const [blocks, setBlocks] = useState<ClassPlanBlock[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -196,6 +199,8 @@ export function ClassPlanBlocks({
   const assignmentKey = tracks.map((track) => `${track.id}:${track.planBlockId ?? ''}`).join('|');
   const onPlanReadyRef = useRef(onPlanReady);
   onPlanReadyRef.current = onPlanReady;
+  const onPlanFailedRef = useRef(onPlanFailed);
+  onPlanFailedRef.current = onPlanFailed;
   const loadedClassRef = useRef(classId);
 
   useEffect(() => {
@@ -212,11 +217,13 @@ export function ClassPlanBlocks({
         if (!alive) return;
         setBlocks(Array.isArray(rows) ? rows : []);
         onPlanReadyRef.current?.(true);
+        onPlanFailedRef.current?.(false);
       } catch (e) {
         if (!alive) return;
         // Keep the last successful plan. Publishing [] would look like an empty class.
         setError(errMessage(e));
         onPlanReadyRef.current?.(false);
+        onPlanFailedRef.current?.(true);
       }
     })();
     return () => {
