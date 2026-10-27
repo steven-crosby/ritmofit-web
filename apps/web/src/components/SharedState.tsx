@@ -113,6 +113,56 @@ export function RecoveryState({
 }
 
 /**
+ * The one loading pattern for page content: a silhouette shaped like what is
+ * coming, with no explanatory sentence. The label is the accessible name and the
+ * polite announcement; the shapes are decorative. The pulse stops under reduced motion.
+ */
+export function LoadingSkeleton({
+  label,
+  shape = 'rows',
+  rows = 3,
+  className = '',
+}: {
+  label: string;
+  /** `rows` for lists, `card` for one workbench card, `line` for a single text line. */
+  shape?: 'rows' | 'card' | 'line';
+  rows?: number;
+  className?: string;
+}) {
+  const block = 'block rounded-card bg-bg-sunken motion-safe:animate-pulse';
+  return (
+    <div
+      role="status"
+      aria-label={label}
+      aria-busy="true"
+      aria-live="polite"
+      className={`min-w-0 ${className}`}
+    >
+      <span className="sr-only">{label}</span>
+      {shape === 'line' ? (
+        <span aria-hidden="true" className={`${block} h-3 w-40 max-w-full rounded-pill`} />
+      ) : shape === 'card' ? (
+        <div aria-hidden="true" className="rounded-card bg-bg-raised p-5 shadow-card sm:p-6">
+          <span className={`${block} h-6 w-1/2 rounded-pill`} />
+          <span className={`${block} mt-3 h-3 w-1/3 rounded-pill`} />
+          <span className={`${block} mt-6 h-11 w-full`} />
+          <span className={`${block} mt-3 h-24 w-full`} />
+        </div>
+      ) : (
+        <div aria-hidden="true" className="flex flex-col gap-3">
+          {Array.from({ length: rows }, (_, index) => (
+            <span
+              key={index}
+              className="block h-16 w-full rounded-card border border-border-subtle bg-bg-raised motion-safe:animate-pulse"
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * Session loading retains the silhouette of the creator workstation without
  * inventing classes, provider state, or account data before authentication is
  * known.
