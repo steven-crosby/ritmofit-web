@@ -121,21 +121,22 @@
     outline-offset: 2px;
   }
 
-  /* Intensity control — container-driven, because the inspector is ~280px wide at
-     every viewport including desktop. Below 320px of CONTAINER width the zone
-     word drops and the number + bars carry the value (canon 09 sanctions
-     "number + bars on compact rows"); the textual summary underneath keeps the
-     word present. Where container queries are unsupported the word simply stays
-     and truncates — the row never wraps either way. */
+  /* Intensity control fills the inspector. Zone words stay visible; the control
+     wraps to two columns instead of hiding or truncating them. */
   .rf-zone-control {
     width: 100%;
     min-width: 0;
-    overflow: hidden;
-    container-type: inline-size;
   }
-  @container (max-width: 319px) {
-    .rf-zone-word {
-      display: none;
+
+  /* Fragment targets clear the sticky header. Phone app chrome wraps to two
+     rows (~111px). Desktop is one row (~69px). Marketing stays one row on
+     phone; the larger offset still leaves that heading visible. */
+  .rf-anchor-offset {
+    scroll-margin-top: 7.25rem;
+  }
+  @media (min-width: 640px) {
+    .rf-anchor-offset {
+      scroll-margin-top: 4.75rem;
     }
   }
 

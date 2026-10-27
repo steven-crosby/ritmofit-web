@@ -1,14 +1,18 @@
 import { ClassPulseView } from './ClassPulse.js';
 import { deriveClassPulse } from '../lib/class-pulse.js';
+import { formatDuration } from '../lib/class-summary.js';
 
-const DEMO_PULSE = deriveClassPulse([
+const DEMO_TRACKS = [
   { classTrackId: 'demo-warmup', order: 0, durationMs: 240_000, effort: 'easy' },
   { classTrackId: 'demo-build', order: 1, durationMs: 300_000, effort: 'mod' },
   { classTrackId: 'demo-climb', order: 2, durationMs: 360_000, effort: 'hard' },
   { classTrackId: 'demo-recovery', order: 3, durationMs: 210_000, effort: 'easy' },
   { classTrackId: 'demo-peak', order: 4, durationMs: 270_000, effort: 'all_out' },
   { classTrackId: 'demo-finish', order: 5, durationMs: 240_000, effort: 'mod' },
-]);
+] as const;
+
+const DEMO_PULSE = deriveClassPulse(DEMO_TRACKS);
+const DEMO_DURATION_MS = DEMO_TRACKS.reduce((total, track) => total + track.durationMs, 0);
 
 const LOOP_STEPS = [
   ['Find', 'Source music'],
@@ -27,7 +31,7 @@ export function CreatorLoopProof({ compact = false, id }: { compact?: boolean; i
     <section
       id={id}
       aria-labelledby={id ? `${id}-heading` : undefined}
-      className="min-w-0 rounded-panel border border-border-subtle bg-bg-raised p-4 shadow-card sm:p-5"
+      className="rf-anchor-offset min-w-0 rounded-panel border border-border-subtle bg-bg-raised p-4 shadow-card sm:p-5"
     >
       <div className="flex min-w-0 items-start justify-between gap-4">
         <div className="min-w-0">
@@ -36,16 +40,21 @@ export function CreatorLoopProof({ compact = false, id }: { compact?: boolean; i
             id={id ? `${id}-heading` : undefined}
             className="mt-2 font-display text-xl font-semibold text-text-primary"
           >
-            Saturday Heat — 45
+            Example class
           </h2>
-          <p className="mt-1 font-ui text-xs text-text-tertiary">
-            Synthetic class · authored order, duration, and effort
-          </p>
         </div>
-        <span className="shrink-0 font-data text-lg font-semibold text-text-primary">40:50</span>
+        <span className="shrink-0 font-data text-lg font-semibold text-text-primary">
+          {formatDuration(DEMO_DURATION_MS)}
+        </span>
       </div>
 
-      <ClassPulseView model={DEMO_PULSE} compact={compact} className="mt-4" />
+      <ClassPulseView
+        model={DEMO_PULSE}
+        totalDurationMs={DEMO_DURATION_MS}
+        compact={compact}
+        derivationNotes={false}
+        className="mt-4"
+      />
 
       <ol className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border-subtle bg-border-subtle sm:grid-cols-4">
         {LOOP_STEPS.map(([verb, detail], index) => (
