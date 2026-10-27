@@ -17,6 +17,41 @@ import type { AppleMusicClientConfig } from '@ritmofit/shared';
 const MUSICKIT_SRC = 'https://js-cdn.music.apple.com/musickit/v3/musickit.js';
 
 /**
+ * MusicKit's BooleanDevFlag for Safari FairPlay. `enable()` writes `"1"`, and
+ * `enabled` is true only for `"1"` or `"true"`. The flag is read when the audio
+ * player attaches a key session, not when the script loads.
+ */
+export const MUSICKIT_SAFARI_MODERN_EME_KEY = 'mk-safari-modern-eme';
+
+type FairPlayStorage = { setItem(key: string, value: string): void };
+
+/**
+ * iOS Safari still exposes legacy `WebKitMediaKeys`. MusicKit takes that path
+ * for `com.apple.fps` unless this flag is set: `play()` is accepted, then the
+ * hidden `<audio id="apple-music-player">` errors and WebKit shows "Playback
+ * Error". Desktop Chrome has no `WebKitMediaKeys` and uses Widevine instead.
+ * The flag selects `requestMediaKeySystemAccess('com.apple.fps')`. If that
+ * access fails, MusicKit falls back to the legacy session on its own.
+ */
+export function selectSafariModernFairPlay(
+  webKitMediaKeys: unknown = typeof window === 'undefined'
+    ? undefined
+    : (window as Window & { WebKitMediaKeys?: unknown }).WebKitMediaKeys,
+  storage?: FairPlayStorage | null,
+): void {
+  // Chrome has no WebKitMediaKeys. Leave storage alone there: reading
+  // `localStorage` can throw, and that must not run before this check.
+  if (!webKitMediaKeys) return;
+  try {
+    const target = storage === undefined ? localStorage : storage;
+    if (!target) return;
+    target.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+  } catch {
+    // A blocked getter or a rejected write stays on legacy FairPlay.
+  }
+}
+
+/**
  * The slice of the MusicKit on the Web (v3) surface Ritmo Studio drives. Two callers
  * share it: the connect flow (`prepareAppleMusic`) needs `configure` +
  * `authorize`; the playback adapter (`playback/apple-music-adapter.ts`) also
@@ -115,6 +150,9 @@ let loadPromise: Promise<MusicKitGlobal> | null = null;
 
 /** Inject the MusicKit JS script once; resolve when its global is ready. */
 export function loadMusicKit(): Promise<MusicKitGlobal> {
+  // Before the script, and before a page that already has the singleton: the
+  // key session is created on the first play, and it reads this flag then.
+  selectSafariModernFairPlay();
   if (window.MusicKit) return Promise.resolve(window.MusicKit);
   if (loadPromise) return loadPromise;
 
@@ -153,6 +191,7 @@ export async function configureMusicKit(
   music: MusicKitGlobal,
   config: AppleMusicClientConfig,
 ): Promise<MusicKitInstance> {
+  selectSafariModernFairPlay();
   if (!configuration) {
     const existing = music.getInstance();
     if (existing) return existing;
