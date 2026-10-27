@@ -11,6 +11,7 @@ import type {
   RunPayload,
 } from '@ritmofit/shared';
 import { Dashboard } from './Dashboard.js';
+import { UpdatePrompt } from './UpdatePrompt.js';
 import * as api from '../lib/api.js';
 import { rememberConnectionReturn } from '../lib/connection-return.js';
 import { isLiveActive } from '../lib/session-guard.js';
@@ -21,6 +22,27 @@ import {
 } from '../lib/onboarding-video.js';
 
 vi.mock('../lib/api.js');
+
+// Lets one test crash the builder below Dashboard's destination boundary.
+const crash = vi.hoisted(() => ({ planBlocks: false }));
+vi.mock('./ClassPlanBlocks.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./ClassPlanBlocks.js')>();
+  return {
+    ...actual,
+    ClassPlanBlocks: (props: Parameters<typeof actual.ClassPlanBlocks>[0]) => {
+      if (crash.planBlocks) throw new Error('builder render crash');
+      return <actual.ClassPlanBlocks {...props} />;
+    },
+  };
+});
+
+vi.mock('virtual:pwa-register/react', () => ({
+  useRegisterSW: () => ({
+    needRefresh: [true, vi.fn()],
+    offlineReady: [false, vi.fn()],
+    updateServiceWorker: vi.fn(),
+  }),
+}));
 // Dashboard imports the auth client for "Sign out"; stub it so the module's
 // real network/session setup never runs under the test.
 vi.mock('../lib/auth-client.js', () => ({
@@ -250,6 +272,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  crash.planBlocks = false;
   vi.clearAllMocks();
   window.localStorage?.clear();
   // The class ordering is session state shared by Classes and Live, so it really
@@ -1654,6 +1677,40 @@ describe('Dashboard class library states', () => {
     vi.mocked(api.listConnections).mockResolvedValue([]);
     vi.mocked(api.getRunPayload).mockResolvedValue(readyRidePayload());
   }
+
+  it('keeps the nav and the update toast when the builder crashes, and recovers to Classes', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const cls = { ...makeClass('Crashing ride', 'owner', 'me'), trackCount: 1 };
+    vi.mocked(api.listClasses).mockResolvedValue(page([cls]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([makeClassTrack('ct-1', 0)]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([{ classTrackId: 'ct-1', durationMs: 180000 }]),
+    );
+    crash.planBlocks = true;
+
+    render(
+      <>
+        <Dashboard userId="me" userName="Tester" />
+        <UpdatePrompt />
+      </>,
+    );
+    await openClassFromClasses('Crashing ride');
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'This page lost the beat.' }),
+    ).toBeTruthy();
+    const back = screen.getByRole('button', { name: 'Back to Classes' });
+    expect(document.activeElement).toBe(back);
+    for (const name of ['Classes', 'Music', 'Live', 'Account'])
+      expect(screen.getByRole('button', { name })).toBeTruthy();
+    expect(screen.getByTestId('update-prompt')).toBeTruthy();
+
+    crash.planBlocks = false;
+    fireEvent.click(back);
+    expect(await screen.findByRole('button', { name: 'Crashing ride' })).toBeTruthy();
+    expect(screen.queryByText('This page lost the beat.')).toBeNull();
+    consoleError.mockRestore();
+  });
 
   it('restores focus to the dashboard heading when Live Mode is exited', async () => {
     mockReadyRide();
