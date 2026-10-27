@@ -728,6 +728,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         songBlocks: true,
       });
       setPlaylistBrowse(null);
+      // The builder only mounts on Classes. Closing the dialog is not navigation.
+      setDestination('classes');
       await openClass({ ...cls, accessLevel: 'owner' });
     },
     [applyTagFilter, importCollectionTracks, openClass],
@@ -3544,9 +3546,20 @@ function PlaylistBrowserDialog({
       </div>
 
       {rowError && (
-        <p role="alert" className="mb-3 font-ui text-sm text-state-danger">
-          {rowError}
-        </p>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <p role="alert" className="font-ui text-sm text-state-danger">
+            {rowError}
+          </p>
+          {selectedPlaylist && tracks == null && !loadingTracks && (
+            <button
+              type="button"
+              onClick={() => void openPlaylist(selectedPlaylist)}
+              className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+            >
+              Try again
+            </button>
+          )}
+        </div>
       )}
 
       {selectedPlaylist ? (
@@ -3609,11 +3622,11 @@ function PlaylistBrowserDialog({
                   </li>
                 ))}
               </ol>
-            ) : (
+            ) : tracks && tracks.length === 0 ? (
               <p className="p-3 font-ui text-sm text-text-tertiary">
                 No tracks found in this playlist.
               </p>
-            )}
+            ) : null}
           </div>
         </div>
       ) : (
