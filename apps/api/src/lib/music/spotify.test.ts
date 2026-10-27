@@ -6,6 +6,7 @@ import {
   fetchSpotifySavedTracks,
   SpotifyUnauthorizedError,
   SpotifyForbiddenError,
+  SpotifyDevelopmentModeError,
   SpotifyPlaylistAccessDeniedError,
   type FetchLike,
 } from '@ritmofit/music';
@@ -339,6 +340,31 @@ describe('fetchSpotifySavedTracks', () => {
       fetchSpotifySavedTracks({ accessToken: 'stale', fetchImpl, apiBase: API_BASE }),
     ).rejects.toBeInstanceOf(SpotifyUnauthorizedError);
   });
+
+  it('throws SpotifyDevelopmentModeError when /me/tracks says the user is not registered', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({}),
+      text: async () =>
+        'Check settings on developer.spotify.com/dashboard, the user may not be registered.',
+    });
+    await expect(
+      fetchSpotifySavedTracks({ accessToken: 'steven', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toBeInstanceOf(SpotifyDevelopmentModeError);
+  });
+
+  it('keeps a /me/tracks 403 that is not an allowlist denial as a provider error', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({}),
+      text: async () => 'Forbidden',
+    });
+    await expect(
+      fetchSpotifySavedTracks({ accessToken: 'steven', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toThrow('Spotify API 403 for /me/tracks');
+  });
 });
 
 describe('fetchSpotifySavedPlaylists', () => {
@@ -410,6 +436,25 @@ describe('fetchSpotifySavedPlaylists', () => {
     await expect(
       fetchSpotifySavedPlaylists({ accessToken: 'stale', fetchImpl, apiBase: API_BASE }),
     ).rejects.toBeInstanceOf(SpotifyUnauthorizedError);
+  });
+
+  it('throws SpotifyDevelopmentModeError when the 403 says the user is not registered', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({}),
+      text: async () =>
+        JSON.stringify({
+          error: {
+            status: 403,
+            message: 'The user is not registered for this application',
+          },
+        }),
+    });
+
+    await expect(
+      fetchSpotifySavedPlaylists({ accessToken: 'steven', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toBeInstanceOf(SpotifyDevelopmentModeError);
   });
 
   it('throws SpotifyForbiddenError on a 403 — a valid token missing the playlist scope', async () => {

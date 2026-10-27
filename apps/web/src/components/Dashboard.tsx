@@ -124,10 +124,13 @@ import {
   defaultLibraryKind,
   filterLibrary,
   musicChipBadge,
+  musicChipOffersReconnect,
+  musicLibraryFailure,
   musicLibraryKinds,
   orderLibrary,
   playlistMetaLine,
   songMetaLine,
+  SPOTIFY_ALLOWLIST_CODE,
   type LibrarySort,
   type MusicLibraryKind,
 } from '../lib/music-library.js';
@@ -1595,6 +1598,19 @@ function retainConnectedProviderState<T>(
   return next;
 }
 
+type ShelfFailure = { message: string; code?: string };
+
+function shelfFailure(error: unknown): ShelfFailure {
+  const code =
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof (error as { code?: unknown }).code === 'string'
+      ? (error as { code: string }).code
+      : undefined;
+  return { message: errMessage(error), ...(code ? { code } : {}) };
+}
+
 function useProviderBrowseState(connectionRevision = 0) {
   const [connections, setConnections] = useState<MusicConnectionView[]>([]);
   const [connectionsStatus, setConnectionsStatus] = useState<'loading' | 'ready' | 'error'>(
@@ -1605,10 +1621,10 @@ function useProviderBrowseState(connectionRevision = 0) {
     {},
   );
   const [playlistsLoading, setPlaylistsLoading] = useState<Partial<Record<Provider, boolean>>>({});
-  const [playlistsError, setPlaylistsError] = useState<Partial<Record<Provider, string>>>({});
+  const [playlistsError, setPlaylistsError] = useState<Partial<Record<Provider, ShelfFailure>>>({});
   const [likes, setLikes] = useState<Partial<Record<Provider, TrackSearchResult[]>>>({});
   const [likesLoading, setLikesLoading] = useState<Partial<Record<Provider, boolean>>>({});
-  const [likesError, setLikesError] = useState<Partial<Record<Provider, string>>>({});
+  const [likesError, setLikesError] = useState<Partial<Record<Provider, ShelfFailure>>>({});
   const connectedProvidersRef = useRef<ReadonlySet<Provider>>(new Set());
 
   useEffect(() => {
@@ -1670,7 +1686,7 @@ function useProviderBrowseState(connectionRevision = 0) {
           setPlaylistsError((prev) => ({ ...prev, [provider]: undefined }));
         } catch (e) {
           if (!alive || !connectedProvidersRef.current.has(provider)) return;
-          setPlaylistsError((prev) => ({ ...prev, [provider]: errMessage(e) }));
+          setPlaylistsError((prev) => ({ ...prev, [provider]: shelfFailure(e) }));
         } finally {
           if (alive && connectedProvidersRef.current.has(provider)) {
             setPlaylistsLoading((prev) => ({ ...prev, [provider]: false }));
@@ -1704,7 +1720,7 @@ function useProviderBrowseState(connectionRevision = 0) {
           setLikesError((prev) => ({ ...prev, [provider]: undefined }));
         } catch (e) {
           if (!alive || !connectedProvidersRef.current.has(provider)) return;
-          setLikesError((prev) => ({ ...prev, [provider]: errMessage(e) }));
+          setLikesError((prev) => ({ ...prev, [provider]: shelfFailure(e) }));
         } finally {
           if (alive && connectedProvidersRef.current.has(provider)) {
             setLikesLoading((prev) => ({ ...prev, [provider]: false }));
@@ -1907,7 +1923,13 @@ function MusicWorkspace({
   const label = providerLabel(selectedProvider);
   const connection = connections.find((row) => row.provider === selectedProvider);
   const connectionState = providerConnectionState(selectedProvider, connection, Date.now());
-  const libraryFailed = Boolean(likesError[selectedProvider] || playlistsError[selectedProvider]);
+  const libraryFailure = musicLibraryFailure([
+    playlistsError[selectedProvider],
+    likesError[selectedProvider],
+  ]);
+  const allowlistDetail = [playlistsError[selectedProvider], likesError[selectedProvider]].find(
+    (error) => error?.code === SPOTIFY_ALLOWLIST_CODE,
+  );
   const statusMark = musicConnectionMark(connectionsStatus, connectionState);
   const truth = providerCapabilityTruth(
     selectedProvider,
@@ -1915,7 +1937,12 @@ function MusicWorkspace({
     Date.now(),
     connectionsStatus === 'ready' ? 'verified' : 'unverified',
   );
-  if (libraryFailed) {
+  if (libraryFailure === 'spotify-allowlist') {
+    truth.library = {
+      state: 'action-required',
+      label: allowlistDetail?.message ?? 'Not on the Spotify app allowlist',
+    };
+  } else if (libraryFailure === 'unavailable') {
     truth.library = { state: 'unverified', label: 'Library unavailable · retry' };
   }
   const savedPlaylists = playlists[selectedProvider] ?? null;
@@ -1977,10 +2004,64 @@ function MusicWorkspace({
           const chip = musicChipBadge({
             fetchStatus: connectionsStatus,
             connectionState: state,
-            libraryFailed: Boolean(likesError[provider] || playlistsError[provider]),
+            libraryFailure: musicLibraryFailure([playlistsError[provider], likesError[provider]]),
           });
           const selected = selectedProvider === provider;
           const name = providerLabel(provider);
+          const shell = `flex min-h-11 w-full items-center gap-2 rounded-pill border sm:w-auto sm:min-w-[9.5rem] sm:flex-1 ${
+            selected
+              ? 'border-border-strong bg-bg-overlay font-semibold'
+              : 'border-border-subtle bg-bg-base font-medium'
+          }`;
+          if (musicChipOffersReconnect(chip.kind)) {
+            const own = flow.operation?.provider === provider ? flow.operation : null;
+            const busy = !!own && !own.error && own.stage !== 'ready';
+            return (
+              <div
+                key={provider}
+                className="flex w-full min-w-0 flex-col gap-1 sm:w-auto sm:min-w-[9.5rem] sm:flex-1"
+              >
+                <div
+                  className={`flex min-h-11 w-full items-center gap-2 rounded-pill border ${
+                    selected
+                      ? 'border-border-strong bg-bg-overlay font-semibold'
+                      : 'border-border-subtle bg-bg-base font-medium'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    aria-pressed={selected}
+                    aria-label={name}
+                    onClick={() => chooseProvider(provider)}
+                    className="flex min-h-11 min-w-0 flex-1 items-center px-3 text-left font-ui text-sm text-text-primary rf-focus-ring"
+                  >
+                    <span className="truncate">{name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Reconnect ${name}`}
+                    disabled={busy}
+                    onClick={() => {
+                      chooseProvider(provider);
+                      void flow.start(provider);
+                    }}
+                    className="inline-flex min-h-11 shrink-0 items-center px-3 rf-focus-ring disabled:opacity-50"
+                  >
+                    <ConnectionStateMark
+                      kind="expired"
+                      label={busy ? 'Reconnecting…' : 'Reconnect'}
+                      className="shrink-0 font-data text-[10px]"
+                    />
+                  </button>
+                </div>
+                {own?.error && (
+                  <p role="alert" className="px-1 font-ui text-xs text-state-danger">
+                    {own.error}
+                  </p>
+                )}
+              </div>
+            );
+          }
           return (
             <button
               key={provider}
@@ -1988,11 +2069,7 @@ function MusicWorkspace({
               aria-pressed={selected}
               aria-label={`${name}, ${chip.label}`}
               onClick={() => chooseProvider(provider)}
-              className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-pill border px-3 rf-focus-ring sm:w-auto sm:min-w-[9.5rem] sm:flex-1 ${
-                selected
-                  ? 'border-border-strong bg-bg-overlay font-semibold'
-                  : 'border-border-subtle bg-bg-base font-medium'
-              }`}
+              className={`${shell} justify-between px-3 rf-focus-ring`}
             >
               <span className="truncate font-ui text-sm text-text-primary">{name}</span>
               <ConnectionStateMark
@@ -2046,7 +2123,7 @@ function MusicWorkspace({
               Manage {label} connection
             </button>
           )}
-          {libraryFailed && (
+          {libraryFailure !== 'none' && (
             <button
               type="button"
               onClick={retryConnections}
@@ -2283,7 +2360,7 @@ function PlaylistShelf({
 }: {
   label: string;
   loading: boolean;
-  error: string | null;
+  error: ShelfFailure | null;
   connected: boolean;
   statusMark: { kind: ConnectionMarkKind; label: string };
   rows: ProviderPlaylistSummary[];
@@ -2309,7 +2386,7 @@ function PlaylistShelf({
   if (error) {
     return (
       <p role="alert" className="font-ui text-sm text-state-caution">
-        Playlists unavailable
+        {error.code === SPOTIFY_ALLOWLIST_CODE ? error.message : 'Playlists unavailable'}
       </p>
     );
   }
@@ -2381,7 +2458,7 @@ function SongShelf({
   onCreateClass,
 }: {
   loading: boolean;
-  error: string | null;
+  error: ShelfFailure | null;
   connected: boolean;
   statusMark: { kind: ConnectionMarkKind; label: string };
   rows: TrackSearchResult[];
@@ -2407,7 +2484,7 @@ function SongShelf({
   if (error) {
     return (
       <p role="alert" className="font-ui text-sm text-state-caution">
-        Likes unavailable
+        {error.code === SPOTIFY_ALLOWLIST_CODE ? error.message : 'Likes unavailable'}
       </p>
     );
   }

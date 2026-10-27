@@ -38,6 +38,7 @@ import {
   spotifyCreds,
   appleMusicCreds,
 } from './provider-config.js';
+import { throwIfSpotifyDevelopmentMode } from './spotify-development-mode.js';
 import { searchMockCatalog } from '../mock-catalog.js';
 import { musicConnections } from '../../db/schema.js';
 
@@ -126,6 +127,7 @@ export async function fetchUserLikes(
   try {
     return await adapter.fetchLikes({ accessToken, fetchImpl: boundFetch });
   } catch (err) {
+    throwIfSpotifyDevelopmentMode(err);
     if (!adapter.isUnauthorized(err)) throw err;
     // The provider rejected the token. If we already refreshed once this request,
     // the grant is dead (and `conn` now holds a SPENT refresh token — re-refreshing
@@ -140,6 +142,7 @@ export async function fetchUserLikes(
     } catch (retryErr) {
       // A 401 on the freshly-refreshed token means the grant is dead — reconnect,
       // don't leak the raw provider error as a 500/502. Anything else propagates.
+      throwIfSpotifyDevelopmentMode(retryErr);
       if (!adapter.isUnauthorized(retryErr)) throw retryErr;
       throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
     }

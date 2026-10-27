@@ -1839,7 +1839,9 @@ describe('Music tab library', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
     const spotify = await screen.findByRole('button', { name: 'Spotify, Unavailable' });
+    expect(screen.queryByRole('button', { name: 'Reconnect Spotify' })).toBeNull();
     fireEvent.click(spotify);
+    expect(api.connectProvider).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /Open / })).toBeNull();
     expect(await screen.findByText('Playlists unavailable')).toBeTruthy();
     expect(screen.queryByText('Likes & playlists ready')).toBeNull();
@@ -1850,6 +1852,130 @@ describe('Music tab library', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Catalog' }));
     expect(screen.getByRole('searchbox', { name: 'Search Spotify catalog' })).toBeTruthy();
+  });
+
+  it('says the Spotify account is not allowlisted instead of Unavailable', async () => {
+    const allowlist = Object.assign(
+      new Error(
+        'Spotify has not allowlisted this account. Add it under User Management in the Spotify developer dashboard, then retry.',
+      ),
+      { code: 'SPOTIFY_DEVELOPMENT_MODE' },
+    );
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockRejectedValue(allowlist);
+    vi.mocked(api.listLikes).mockRejectedValue(allowlist);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const spotify = await screen.findByRole('button', { name: 'Spotify, Not allowlisted' });
+    expect(screen.queryByRole('button', { name: 'Spotify, Unavailable' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reconnect Spotify' })).toBeNull();
+    fireEvent.click(spotify);
+    expect(api.connectProvider).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(/User Management in the Spotify developer dashboard/),
+    ).toBeTruthy();
+    expect(screen.queryByText('Playlists unavailable')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify connection' }));
+    expect(
+      screen.getAllByText(/User Management in the Spotify developer dashboard/).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText('Connected').length).toBeGreaterThan(0);
+    expect(screen.getByText('Authorized')).toBeTruthy();
+  });
+
+  it('starts SoundCloud OAuth from the Reconnect control', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      {
+        id: 'conn-sc',
+        userId: 'me',
+        provider: 'soundcloud',
+        providerUserId: 'sc-user',
+        scope: null,
+        expiresAt: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ]);
+    vi.mocked(api.connectProvider).mockImplementationOnce(() => new Promise(() => {}));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^SoundCloud$/ }));
+    expect(api.connectProvider).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'SoundCloud connection' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reconnect SoundCloud' }));
+    await waitFor(() =>
+      expect(api.connectProvider).toHaveBeenCalledWith('soundcloud', expect.any(AbortSignal)),
+    );
+  });
+
+  it('shows a SoundCloud reconnect failure next to the button', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      {
+        id: 'conn-sc',
+        userId: 'me',
+        provider: 'soundcloud',
+        providerUserId: 'sc-user',
+        scope: null,
+        expiresAt: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ]);
+    vi.mocked(api.connectProvider).mockRejectedValue(new Error('SoundCloud sign-in did not open.'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reconnect SoundCloud' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('SoundCloud sign-in did not open.');
+    expect(
+      screen.getByRole('button', { name: 'SoundCloud connection' }).getAttribute('aria-expanded'),
+    ).toBe('false');
+    expect(screen.getByRole('button', { name: 'Reconnect SoundCloud' })).toBeTruthy();
+  });
+
+  it('shows a SoundCloud reconnect timeout next to the button', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      {
+        id: 'conn-sc',
+        userId: 'me',
+        provider: 'soundcloud',
+        providerUserId: 'sc-user',
+        scope: null,
+        expiresAt: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ]);
+    vi.mocked(api.connectProvider).mockImplementation(() => new Promise(() => {}));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const reconnect = await screen.findByRole('button', { name: 'Reconnect SoundCloud' });
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(reconnect);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(20_000);
+      });
+      expect(screen.getByRole('alert').textContent).toContain(
+        'SoundCloud did not finish connecting.',
+      );
+      expect(
+        screen.getByRole('button', { name: 'SoundCloud connection' }).getAttribute('aria-expanded'),
+      ).toBe('false');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -1871,12 +1997,12 @@ describe('Dashboard connection-state headers', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
 
-    const spotify = await screen.findByRole('button', { name: 'Spotify, Reconnect' });
+    const spotify = await screen.findByRole('button', { name: 'Reconnect Spotify' });
     const chipMark = spotify.querySelector('[data-connection-state="expired"]');
     expect(chipMark?.className).toContain('text-state-caution');
     expect(chipMark?.className).not.toContain('text-text-tertiary');
     expect(chipMark?.querySelector('svg[aria-hidden]')).toBeTruthy();
-    fireEvent.click(spotify);
+    fireEvent.click(screen.getByRole('button', { name: /^Spotify$/ }));
     openMusicConnectionDetails();
     const musicExpired = await screen.findAllByText('Session expired');
     expect(musicExpired.length).toBeGreaterThan(0);

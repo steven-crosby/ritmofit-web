@@ -20,6 +20,29 @@ export type MusicChipBadgeKind =
   | 'checking'
   | 'catalog-only';
 
+export type MusicLibraryFailure = 'none' | 'unavailable' | 'spotify-allowlist';
+
+/** API code for a Spotify Development Mode allowlist refusal. Not a reconnect. */
+export const SPOTIFY_ALLOWLIST_CODE = 'SPOTIFY_DEVELOPMENT_MODE';
+
+/**
+ * Reconnect is the only chip word that is an action. Status words stay on the
+ * selector. The Reconnect control has to start OAuth; it cannot be a label
+ * inside the selector.
+ */
+export function musicChipOffersReconnect(kind: MusicChipBadgeKind): boolean {
+  return kind === 'expired';
+}
+
+export function musicLibraryFailure(
+  errors: ReadonlyArray<{ code?: string } | null | undefined>,
+): MusicLibraryFailure {
+  const present = errors.filter((error): error is { code?: string } => error != null);
+  if (present.length === 0) return 'none';
+  if (present.some((error) => error.code === SPOTIFY_ALLOWLIST_CODE)) return 'spotify-allowlist';
+  return 'unavailable';
+}
+
 export type MusicLibraryKind = 'playlists' | 'songs' | 'catalog';
 
 export type LibrarySort = 'recents' | 'name';
@@ -27,12 +50,17 @@ export type LibrarySort = 'recents' | 'name';
 export function musicChipBadge(input: {
   fetchStatus: 'loading' | 'ready' | 'error';
   connectionState: ProviderConnectionState;
-  libraryFailed: boolean;
+  libraryFailure?: MusicLibraryFailure;
 }): { kind: MusicChipBadgeKind; label: string } {
   if (input.fetchStatus === 'loading') return { kind: 'checking', label: 'Checking' };
+  // Allowlist is a specific block on a linked account. It is not "Unavailable"
+  // and it is not a reconnect action.
+  if (input.libraryFailure === 'spotify-allowlist') {
+    return { kind: 'unverified', label: 'Not allowlisted' };
+  }
   // A failed status read, or a library read that did not succeed, must not wear
   // a Connected badge. Spotify can be linked and still return no library.
-  if (input.fetchStatus === 'error' || input.libraryFailed) {
+  if (input.fetchStatus === 'error' || input.libraryFailure === 'unavailable') {
     return { kind: 'unverified', label: 'Unavailable' };
   }
   if (input.connectionState === 'connected') return { kind: 'connected', label: 'Connected' };

@@ -1749,6 +1749,9 @@
               }
             }
           },
+          "403": {
+            "description": "SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it."
+          },
           "409": {
             "description": "Not connected / reconnect required"
           },
@@ -1792,6 +1795,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it."
           },
           "409": {
             "description": "Not connected / reconnect required"
