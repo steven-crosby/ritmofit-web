@@ -13,6 +13,31 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-27 — #637 and #636 on main `535e61a`.** Production deploy at
+> 2026-10-27T20:06:15Z (2:06 PM MT) through
+> `scripts/deploy.sh 535e61aa9e940ca357f7d4d71ac5c65cdf3adf80` from a clean
+> detached worktree. `origin/main` was that commit: [#637](https://github.com/steven-crosby/ritmofit-web/pull/637)
+> (`2bd73e0`, better-auth 1.6.25 → 1.7.14) and
+> [#636](https://github.com/steven-crosby/ritmofit-web/pull/636)
+> (`535e61a`, FairPlay probe on iOS Safari without `WebKitMediaKeys`). The
+> main checkout had an untracked `.claude/` directory and was left untouched.
+> No migration file is in `bf31706..535e61a`. The auth-schema edit is a version
+> comment. The script reported none to apply. None was applied. No production
+> data was edited.
+>
+> New Worker `24cdedc9-8103-417c-a502-23b0846c0967` (message `535e61a`);
+> rollback `df90f169-a51d-4476-bb9a-d4fbf6ab3663` (`bf31706`). SPA
+> `assets/index-CClNobxY.js` (was `assets/index-DvFKqouw.js`); CSS
+> `assets/index-DGcMUSRx.css` unchanged. Propagation 3/3 on the first three
+> cache-busted fetches, and three later cache-busted fetches agreed.
+> `/` 200, `/api/v1/health` 200 with `database: true` and the six security
+> headers; `/classes`, `/explore`, `/teams` 401. `wrangler deployments status`
+> shows this Worker at 100%. Tail for five minutes: four events, all outcome
+> ok, no exceptions and no 5xx (health 200, classes 401, explore 401, teams
+> 401), all on this Worker. #636 is now in production and still awaits
+> Steven's iPhone Apple Music check. This docs record is not in the deployed
+> tree.
+
 > **Deploy 2026-10-27 — #634 on main `bf31706`.** Steven approved at 9:50 AM MT,
 > after the squash was on `origin/main`. Production deploy at
 > 2026-10-27T16:00:38Z (10:00 AM MT) through
