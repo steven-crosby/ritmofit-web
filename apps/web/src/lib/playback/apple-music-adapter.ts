@@ -264,9 +264,9 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     transportOwners.set(instance, this);
     try {
       try {
-        // Before play(), once per page, and only when WebKitMediaKeys exists.
-        // Absent that API the probe returns null and must not yield: a caller
-        // that destroys during play() has to find MusicKit's play still pending.
+        // Before play(), once per page, on iOS Safari or legacy WebKitMediaKeys.
+        // Other browsers get null and must not yield: a caller that destroys
+        // during play() has to find MusicKit's play still pending.
         const accessProbe = probeSafariModernFairPlayAccess();
         if (accessProbe) {
           await accessProbe;
