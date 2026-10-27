@@ -14,6 +14,7 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --if-present test",
+    "e2e": "pnpm --filter @ritmofit/web build && pnpm --filter @ritmofit/e2e e2e",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,json,md,css}\"",
