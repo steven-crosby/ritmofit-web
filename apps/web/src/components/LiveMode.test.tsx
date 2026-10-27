@@ -11,6 +11,10 @@ import {
   listConnections,
 } from '../lib/api.js';
 import { prepareAppleMusic } from '../lib/musickit.js';
+import {
+  appleMusicAuthorizationLostMessage,
+  appleMusicPlayRejectedMessage,
+} from '../lib/playback/apple-music-adapter.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
 import type { AdapterEvents, PlaybackAdapter } from '../lib/playback/types.js';
 import { classReadiness } from '../lib/readiness.js';
@@ -1258,6 +1262,131 @@ describe('LiveMode waiting panel grace', () => {
     expect(within(recovery).getByRole('heading', { name: 'Waiting for music' })).toBeTruthy();
     expect(within(recovery).getByRole('button', { name: 'Continue without music' })).toBeTruthy();
     expect(within(recovery).getByRole('button', { name: 'Manage music connection' })).toBeTruthy();
+  });
+});
+
+describe('LiveMode music failure mid-class', () => {
+  // The SoundCloud factory is mocked, so each case replays the exact sentence the
+  // real adapter or runtime produces; the adapter suites prove they produce it.
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function teach(factory: (events: AdapterEvents) => PlaybackAdapter) {
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(factory);
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    vi.useFakeTimers();
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+  }
+
+  const clock = () => screen.getByText(/^\d+:\d{2} \/ 3:00$/).textContent;
+
+  async function expectSentenceAndRecovery(sentence: string) {
+    const alert = screen.getByRole('alert', { name: 'Playback recovery' });
+    expect(within(alert).getByRole('heading', { name: 'Playback stopped' })).toBeTruthy();
+    // A sentence for the instructor: not blank, not a raw code, ends in a full stop.
+    expect(within(alert).getByText(sentence).textContent).toMatch(/^[A-Z"].{8,}\.$/);
+    expect(within(alert).queryByText(/^[A-Z_]+$/)).toBeNull();
+    expect(within(alert).getByRole('button', { name: 'Retry playback' })).toBeTruthy();
+    // One tap keeps the class going: the clock advances without music.
+    const held = clock();
+    fireEvent.click(within(alert).getByRole('button', { name: 'Continue without music' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2200);
+    });
+    expect(clock()).not.toBe(held);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('Music off')).toBeTruthy();
+  }
+
+  it('SoundCloud widget error', async () => {
+    let fail: NonNullable<AdapterEvents['onError']> = () => {};
+    await teach((events) => {
+      fail = (error) => events.onError?.(error);
+      return workingAdapter();
+    });
+    expect(screen.getByText(/Now teaching · Track/)).toBeTruthy();
+    act(() => fail({ message: 'SoundCloud playback failed for "Active Track".' }));
+    await expectSentenceAndRecovery('SoundCloud playback failed for "Active Track".');
+  });
+
+  it('SoundCloud ready timeout', async () => {
+    await teach(() => ({
+      ...workingAdapter(),
+      prepare: () =>
+        Promise.reject(new Error('The SoundCloud player timed out loading "Active Track".')),
+    }));
+    await expectSentenceAndRecovery('The SoundCloud player timed out loading "Active Track".');
+  });
+
+  it('a stalled transport', async () => {
+    const stalled = { current: false };
+    let positionMs = 0;
+    await teach(() => ({
+      ...workingAdapter(),
+      getTransport: () =>
+        stalled.current
+          ? new Promise(() => {})
+          : Promise.resolve({ positionMs: ++positionMs, state: 'playing' as const }),
+    }));
+    expect(screen.getByText(/Now teaching · Track/)).toBeTruthy();
+    stalled.current = true;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_500);
+    });
+    await expectSentenceAndRecovery('Music stopped reporting progress.');
+  });
+
+  it('Apple Music authorization revoked', async () => {
+    let fail: NonNullable<AdapterEvents['onError']> = () => {};
+    await teach((events) => {
+      fail = (error) => events.onError?.(error);
+      return workingAdapter();
+    });
+    act(() => fail({ message: appleMusicAuthorizationLostMessage() }));
+    await expectSentenceAndRecovery(appleMusicAuthorizationLostMessage());
+  });
+
+  it('Apple Music play rejected', async () => {
+    await teach(() => ({
+      ...workingAdapter(),
+      play: () => Promise.reject(new Error(appleMusicPlayRejectedMessage('Active Track'))),
+    }));
+    await expectSentenceAndRecovery(appleMusicPlayRejectedMessage('Active Track'));
+  });
+});
+
+describe('LiveMode offline mark', () => {
+  it('adds Offline to the status line while the browser has no network', async () => {
+    const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+    try {
+      render(<LiveMode payload={payload} onExit={() => {}} />);
+      await screen.findByRole('list', { name: 'Track playback check' });
+      fireEvent.click(screen.getByRole('button', { name: 'Run without music' }));
+      const transport = screen.getByRole('region', { name: 'Live transport' });
+      expect(within(transport).queryByText('Offline')).toBeNull();
+
+      onLine.mockReturnValue(false);
+      act(() => {
+        window.dispatchEvent(new Event('offline'));
+      });
+      const mark = within(transport).getByText('Offline').closest('[role="status"]');
+      expect(mark?.textContent).toBe('⊘Network: Offline');
+      expect(within(transport).getByText('Music off')).toBeTruthy();
+
+      onLine.mockReturnValue(true);
+      act(() => {
+        window.dispatchEvent(new Event('online'));
+      });
+      expect(within(transport).queryByText('Offline')).toBeNull();
+    } finally {
+      onLine.mockRestore();
+    }
   });
 });
 

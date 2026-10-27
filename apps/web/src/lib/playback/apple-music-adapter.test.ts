@@ -6,7 +6,11 @@ import type {
   MusicKitPlaybackEvent,
   MusicKitSetQueueOptions,
 } from '../musickit.js';
-import { AppleMusicAdapter } from './apple-music-adapter.js';
+import {
+  AppleMusicAdapter,
+  appleMusicAuthorizationLostMessage,
+  appleMusicPlayRejectedMessage,
+} from './apple-music-adapter.js';
 import type { AdapterEvents } from './types.js';
 import { RuntimePlaybackCoordinator } from './runtime.js';
 
@@ -291,6 +295,44 @@ describe('AppleMusicAdapter', () => {
 
     instance.emit(EVENTS.mediaPlaybackError);
     expect(errors).toEqual(['Apple Music playback failed for "Baiana".']);
+  });
+
+  it('names a revoked browser authorization when a playback error follows it', async () => {
+    const instance = new FakeInstance(true);
+    const errors: string[] = [];
+    const { adapter } = makeAdapter(instance, {
+      preconfigured: true,
+      events: { onError: ({ message }) => errors.push(message) },
+    });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    await adapter.play();
+
+    instance.isAuthorized = false;
+    instance.emit(EVENTS.mediaPlaybackError);
+    expect(errors).toEqual([appleMusicAuthorizationLostMessage()]);
+    expect(errors[0]).toMatch(/Manage music connection/);
+  });
+
+  it('turns a rejected play into a sentence with an action, not the raw MusicKit code', async () => {
+    const instance = new FakeInstance(true);
+    instance.playBehavior = () => Promise.reject(new Error('CONTENT_RESTRICTED'));
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+
+    const rejection = adapter.play();
+    await expect(rejection).rejects.toThrow(appleMusicPlayRejectedMessage('Baiana'));
+    await expect(rejection).rejects.not.toThrow(/CONTENT_RESTRICTED/);
+    await expect(rejection).rejects.toHaveProperty('cause.message', 'CONTENT_RESTRICTED');
+  });
+
+  it('names lost authorization when play is rejected after the browser was signed out', async () => {
+    const instance = new FakeInstance(true);
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    instance.isAuthorized = false;
+    instance.playBehavior = () => Promise.reject(new Error('UNAUTHORIZED'));
+
+    await expect(adapter.play()).rejects.toThrow(appleMusicAuthorizationLostMessage());
   });
 
   it('rejects prepare when the track queue fails to load', async () => {
