@@ -1447,9 +1447,9 @@ function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void 
  * object rather than a card buried in a side rail. The BPM readout still
  * carries the one on-beat pulse the rhythm system allows (10 §1–2) — a single
  * heartbeat while playing, needing a BPM to time the beat and removed under
- * reduced motion by CSS, so the cue stays steady. A missing tempo is a
- * readiness state stated on the caution channel, never quiet metadata
- * (audit P0 #3; rhythm-system §1a).
+ * reduced motion by CSS, so the cue stays steady. A missing tempo is stated on
+ * the caution channel with its glyph (audit P0 #3; rhythm-system §1a), at caption
+ * size so an absence never becomes the focal point (principle 3).
  */
 function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing: boolean }) {
   const pulse = playing && entry.displayBpm != null;
@@ -1495,9 +1495,9 @@ function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing:
           )}
         </div>
       ) : (
-        <p className="flex flex-col gap-0.5 text-right">
-          <span className="font-data text-2xl font-semibold text-state-caution">No BPM set</span>
-          <span className="font-ui text-xs text-text-tertiary">Live shows no beat</span>
+        <p className="flex items-center gap-1.5 font-ui text-xs text-state-caution">
+          <span aria-hidden>⊘</span>
+          No BPM set
         </p>
       )}
     </div>
@@ -1605,13 +1605,11 @@ function CueByCue({
         bar: hold.cue.bar,
       })
     : null;
+  // A cue without a stored hold, effort, or BPM drops that readout instead of
+  // printing a placeholder at hero size.
   const countdownLabel =
-    hold == null ? null : hold.remainingMs == null ? '—' : formatCueHoldCountdown(hold.remainingMs);
-  const effortLabel = hold
-    ? hold.cue.intensity
-      ? CUE_INTENSITY_LABEL[hold.cue.intensity]
-      : '—'
-    : null;
+    hold?.remainingMs == null ? null : formatCueHoldCountdown(hold.remainingMs);
+  const effortLabel = hold?.cue.intensity ? CUE_INTENSITY_LABEL[hold.cue.intensity] : null;
   const pulse = Boolean(playing && hold?.cue.bpm != null);
   const countdownFont = teachingCountdownFont();
   const nextGapFont = `${TEACHING_NEXT_GAP_FONT_REM}rem`;
@@ -1653,30 +1651,34 @@ function CueByCue({
               >
                 {hold.cue.text}
               </p>
-              <p
-                data-teaching="countdown"
-                className="relative mt-2 w-full min-w-0 max-w-full whitespace-nowrap font-data font-bold leading-none tracking-[-0.04em] text-text-primary [container-type:inline-size]"
-                data-countdown-size={countdownFont}
-                style={{ fontSize: countdownFont }}
-              >
-                {countdownLabel}
-              </p>
-              <div
-                data-teaching="hold-scale"
-                data-scale-ms={hold.cue.durationMs == null ? '' : String(hold.cue.durationMs)}
-                className={`relative mt-4 h-2 w-full overflow-hidden rounded-pill ${
-                  hold.cue.durationMs == null ? '' : 'bg-interactive/15'
-                }`}
-              >
-                {hold.fill != null && hold.cue.durationMs != null && (
+              {countdownLabel != null && hold.cue.durationMs != null && (
+                <>
+                  <p
+                    data-teaching="countdown"
+                    className="relative mt-2 w-full min-w-0 max-w-full whitespace-nowrap font-data font-bold leading-none tracking-[-0.04em] text-text-primary [container-type:inline-size]"
+                    data-countdown-size={countdownFont}
+                    style={{ fontSize: countdownFont }}
+                  >
+                    {countdownLabel}
+                  </p>
                   <div
-                    data-teaching="hold-playhead"
-                    data-filled-ms={String(Math.min(hold.cue.durationMs, Math.max(0, hold.intoMs)))}
-                    className="absolute inset-y-0 left-0 bg-interactive"
-                    style={{ width: `${hold.fill * 100}%` }}
-                  />
-                )}
-              </div>
+                    data-teaching="hold-scale"
+                    data-scale-ms={String(hold.cue.durationMs)}
+                    className="relative mt-4 h-2 w-full overflow-hidden rounded-pill bg-interactive/15"
+                  >
+                    {hold.fill != null && (
+                      <div
+                        data-teaching="hold-playhead"
+                        data-filled-ms={String(
+                          Math.min(hold.cue.durationMs, Math.max(0, hold.intoMs)),
+                        )}
+                        className="absolute inset-y-0 left-0 bg-interactive"
+                        style={{ width: `${hold.fill * 100}%` }}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
               {count && (
                 <p
                   data-teaching="beat-count"
@@ -1687,38 +1689,30 @@ function CueByCue({
                   {count}
                 </p>
               )}
-              <p data-teaching="hero-effort" className="relative mt-4 flex items-baseline gap-3">
-                <span className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-                  Effort
-                </span>
-                <span className="font-data text-2xl font-semibold text-text-primary">
-                  {effortLabel}
-                </span>
-              </p>
-              <p
-                data-teaching="hero-bpm"
-                className={`relative mt-3 flex items-baseline ${pulse ? 'rf-beat-pulse' : ''}`}
-                style={
-                  hold.cue.bpm != null
-                    ? ({ '--rf-bpm': String(hold.cue.bpm) } as CSSProperties)
-                    : undefined
-                }
-              >
-                {hold.cue.bpm == null ? (
-                  <span className="font-data text-2xl font-semibold text-text-secondary">
-                    BPM —
+              {effortLabel && (
+                <p data-teaching="hero-effort" className="relative mt-4 flex items-baseline gap-3">
+                  <span className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+                    Effort
                   </span>
-                ) : (
-                  <>
-                    <span className="font-data text-3xl font-semibold text-text-secondary">
-                      {hold.cue.bpm}
-                    </span>
-                    <span className="ml-2 font-data text-sm uppercase tracking-wide text-text-tertiary">
-                      BPM
-                    </span>
-                  </>
-                )}
-              </p>
+                  <span className="font-data text-2xl font-semibold text-text-primary">
+                    {effortLabel}
+                  </span>
+                </p>
+              )}
+              {hold.cue.bpm != null && (
+                <p
+                  data-teaching="hero-bpm"
+                  className={`relative mt-3 flex items-baseline ${pulse ? 'rf-beat-pulse' : ''}`}
+                  style={{ '--rf-bpm': String(hold.cue.bpm) } as CSSProperties}
+                >
+                  <span className="font-data text-3xl font-semibold text-text-secondary">
+                    {hold.cue.bpm}
+                  </span>
+                  <span className="ml-2 font-data text-sm uppercase tracking-wide text-text-tertiary">
+                    BPM
+                  </span>
+                </p>
+              )}
             </>
           ) : showReadyHero ? (
             // Live at rest leads with the affirmative ready state, never absence
@@ -1785,28 +1779,42 @@ function CueByCue({
       </div>
 
       {upcoming.length > 0 && (
-        <div data-teaching="upcoming" className="min-w-0 min-[1024px]:min-w-[431px]">
-          <ol
-            aria-label="Upcoming"
-            tabIndex={0}
-            className="flex h-full min-h-11 flex-col gap-3 rounded-card bg-bg-raised p-4 shadow-card rf-focus-ring sm:p-5"
+        <div
+          data-teaching="upcoming"
+          className="flex min-w-0 flex-col gap-3 rounded-card bg-bg-raised p-4 shadow-card sm:p-5 min-[1024px]:min-w-[431px]"
+        >
+          <p
+            id="live-coming-up-heading"
+            className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary"
           >
-            {upcoming.map((cue) => (
-              <li key={cue.id} data-teaching="upcoming-row" className="min-w-0">
-                <p className="truncate font-display text-lg font-semibold text-text-primary">
-                  {cue.text}
-                </p>
-                <p className="mt-1 font-data text-sm text-text-secondary">
-                  <span data-teaching="upcoming-bpm">{cue.bpm == null ? 'BPM —' : cue.bpm}</span>
-                  <span className="mx-2 text-text-tertiary" aria-hidden>
-                    ·
-                  </span>
-                  <span data-teaching="upcoming-duration">
-                    {formatCueDurationLabel(cue.durationMs) ?? '—'}
-                  </span>
-                </p>
-              </li>
-            ))}
+            Coming up
+          </p>
+          <ol
+            aria-labelledby="live-coming-up-heading"
+            tabIndex={0}
+            className="flex min-h-11 flex-1 flex-col gap-3 rounded-control rf-focus-ring"
+          >
+            {upcoming.map((cue) => {
+              const duration = formatCueDurationLabel(cue.durationMs);
+              return (
+                <li key={cue.id} data-teaching="upcoming-row" className="min-w-0">
+                  <p className="truncate font-display text-lg font-semibold text-text-primary">
+                    {cue.text}
+                  </p>
+                  {(cue.bpm != null || duration) && (
+                    <p className="mt-1 font-data text-sm text-text-secondary">
+                      {cue.bpm != null && <span data-teaching="upcoming-bpm">{cue.bpm}</span>}
+                      {cue.bpm != null && duration && (
+                        <span className="mx-2 text-text-tertiary" aria-hidden>
+                          ·
+                        </span>
+                      )}
+                      {duration && <span data-teaching="upcoming-duration">{duration}</span>}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         </div>
       )}

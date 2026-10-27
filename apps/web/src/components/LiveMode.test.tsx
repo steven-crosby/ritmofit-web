@@ -1873,14 +1873,17 @@ describe('LiveMode sparse-data fallbacks', () => {
     expect(screen.queryByText('—')).toBeNull();
   });
 
-  it('elevates a missing BPM to a readiness state, not quiet metadata', async () => {
+  it('states a missing BPM on the small caution channel, not as the focal point', async () => {
     const noBpm = {
       ...payload,
       tracks: [{ ...activeTrack, displayBpm: null }],
     } satisfies RunPayload;
     await renderLive(noBpm);
-    expect(screen.getByText('No BPM set')).toBeTruthy();
-    expect(screen.getByText('Live shows no beat')).toBeTruthy();
+    const caution = screen.getByText('No BPM set');
+    expect(caution.className).toContain('text-state-caution');
+    expect(caution.className).toContain('text-xs');
+    expect(caution.className).not.toMatch(/text-(2xl|3xl)/);
+    expect(caution.querySelector('[aria-hidden]')?.textContent).toBe('⊘');
     expect(screen.queryByText('Pulse off')).toBeNull();
     expect(screen.queryByText('Tempo missing')).toBeNull();
   });
@@ -2868,7 +2871,42 @@ describe('Cue-by-Cue teaching reading', () => {
     expect(countdown()?.textContent).toBe('5s');
   });
 
-  it('keeps the hero and an empty scale when durationMs is unset', async () => {
+  it('drops every empty readout from the focal card instead of printing a dash', async () => {
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000a6', 'Climb now', 0, {
+              durationMs: null,
+              bpm: null,
+              intensity: null,
+            }),
+            teachingCue('00000000-0000-4000-8000-0000000000a7', 'Recover', 48_000, {
+              durationMs: null,
+              bpm: null,
+              intensity: null,
+              position: 1,
+            }),
+          ],
+        },
+      ],
+    });
+    const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
+    expect(heroName()?.textContent).toBe('Climb now');
+    expect(focal.textContent).not.toContain('—');
+    expect(countdown()).toBeNull();
+    expect(focal.querySelector('[data-teaching="hero-effort"]')).toBeNull();
+    expect(focal.querySelector('[data-teaching="hero-bpm"]')).toBeNull();
+    expect(within(focal).getByText('Recover')).toBeTruthy();
+
+    const comingUp = screen.getByRole('list', { name: 'Coming up' });
+    expect(screen.getByText('Coming up', { selector: 'p' })).toBeTruthy();
+    expect(comingUp.textContent).toBe('Recover');
+  });
+
+  it('keeps the hero and drops the countdown and scale when durationMs is unset', async () => {
     await renderLive({
       ...payload,
       tracks: [
@@ -2889,12 +2927,9 @@ describe('Cue-by-Cue teaching reading', () => {
     });
     seekTo(10_000, totalMs);
     expect(heroName()?.textContent).toBe('Left Leg Lead');
-    expect(countdown()?.textContent).toBe('—');
-    expect(countdown()?.textContent).not.toBe('0:38');
+    expect(countdown()).toBeNull();
     expect(playhead()).toBeNull();
-    expect(scale()?.dataset.scaleMs).toBe('');
-    expect(scale()?.dataset.scaleMs).not.toBe('180000');
-    expect(scale()?.dataset.scaleMs).not.toBe('48000');
+    expect(scale()).toBeNull();
   });
 
   it('gives the hero to the next anchor when a hold runs past it', async () => {
@@ -2956,7 +2991,7 @@ describe('Cue-by-Cue teaching reading', () => {
     };
     await renderLive(identity);
     expect(heroName()?.textContent).toBe('Now');
-    const upcoming = screen.getByRole('list', { name: 'Upcoming' });
+    const upcoming = screen.getByRole('list', { name: 'Coming up' });
     expect(within(upcoming).getByText('Later')).toBeTruthy();
     expect(within(upcoming).queryByText('Squat')).toBeNull();
     expect(within(upcoming).queryByText('Now')).toBeNull();
@@ -2965,7 +3000,7 @@ describe('Cue-by-Cue teaching reading', () => {
 
     seekTo(5_000, totalMs);
     expect(heroName()?.textContent).toBe('Now');
-    expect(within(screen.getByRole('list', { name: 'Upcoming' })).queryByText('Squat')).toBeNull();
+    expect(within(screen.getByRole('list', { name: 'Coming up' })).queryByText('Squat')).toBeNull();
 
     seekTo(15_000, totalMs);
     expect(heroName()?.textContent).toBe('Now');
@@ -2994,13 +3029,13 @@ describe('Cue-by-Cue teaching reading', () => {
     });
     expect(heroName()).toBeNull();
     expect(countdown()).toBeNull();
-    expect(screen.getByRole('list', { name: 'Upcoming' }).textContent).toContain('Not yet');
+    expect(screen.getByRole('list', { name: 'Coming up' }).textContent).toContain('Not yet');
   });
 
   it('lists later cues by position with the stored duration and cue BPM', async () => {
     await renderLive(leftLeg);
     seekTo(10_000, totalMs);
-    const upcoming = screen.getByRole('list', { name: 'Upcoming' });
+    const upcoming = screen.getByRole('list', { name: 'Coming up' });
     const row = within(upcoming).getByText('Right Leg Lead').closest('li') as HTMLElement;
     expect(row.querySelector('[data-teaching="upcoming-bpm"]')?.textContent).toBe('110');
     expect(row.querySelector('[data-teaching="upcoming-duration"]')?.textContent).toBe('48s');
@@ -3052,7 +3087,7 @@ describe('Cue-by-Cue teaching reading', () => {
     await renderLive(five);
     const rows = screen
       .getAllByRole('listitem')
-      .filter((item) => item.closest('[aria-label="Upcoming"]'));
+      .filter((item) => item.closest('[data-teaching="upcoming"]'));
     expect(rows.map((row) => row.querySelector('p')?.textContent)).toEqual([
       'Next position',
       'A',
@@ -3061,7 +3096,8 @@ describe('Cue-by-Cue teaching reading', () => {
       'D',
     ]);
     const nullBpm = rows[2]!;
-    expect(nullBpm.querySelector('[data-teaching="upcoming-bpm"]')?.textContent).toBe('BPM —');
+    expect(nullBpm.querySelector('[data-teaching="upcoming-bpm"]')).toBeNull();
+    expect(nullBpm.textContent).not.toContain('—');
     expect(nullBpm.textContent).not.toContain('128');
     expect(nullBpm.querySelector('[data-teaching="upcoming-duration"]')?.textContent).toBe('8s');
   });
@@ -3091,11 +3127,10 @@ describe('Cue-by-Cue teaching reading', () => {
         },
       ],
     });
-    const quiet = document.querySelector('[data-teaching="hero-bpm"]') as HTMLElement;
-    expect(quiet.textContent).toBe('BPM —');
-    expect(quiet.className).not.toContain('rf-beat-pulse');
-    expect(quiet.style.getPropertyValue('--rf-bpm')).toBe('');
-    expect(quiet.textContent).not.toContain('128');
+    expect(document.querySelector('[data-teaching="hero-bpm"]')).toBeNull();
+    expect(document.querySelector('.rf-beat-pulse')).toBeNull();
+    const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
+    expect(focal.textContent).not.toContain('128');
   });
 
   it('places the hero beside upcoming from 1024px and stacks under that', async () => {
@@ -3183,7 +3218,7 @@ describe('Cue-by-Cue teaching reading', () => {
     await renderLive();
     expect(heroName()).toBeNull();
     expect(countdown()).toBeNull();
-    expect(screen.queryByRole('list', { name: 'Upcoming' })).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Coming up' })).toBeNull();
     expect(document.querySelector('[data-teaching="upcoming-row"]')).toBeNull();
     expect(classReadiness(payload).dimensions.find((d) => d.key === 'choreography')!.detail).toBe(
       before,
