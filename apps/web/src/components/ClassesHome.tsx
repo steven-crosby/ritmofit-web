@@ -179,6 +179,8 @@ function LibraryShell({
   const searchId = useId();
   const recentsRef = useRef<HTMLElement>(null);
   const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+  const deleteMenuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const restoreDeleteFocusRef = useRef(false);
   const [query, setQuery] = useState('');
   const [pendingDelete, setPendingDelete] = useState<ClassListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -266,6 +268,7 @@ function LibraryShell({
 
   const closeDelete = () => {
     if (deleting) return;
+    restoreDeleteFocusRef.current = true;
     setPendingDelete(null);
     setDeleteError(null);
   };
@@ -278,6 +281,8 @@ function LibraryShell({
     void (async () => {
       try {
         await onDelete(target);
+        restoreDeleteFocusRef.current = false;
+        deleteMenuButtonRef.current = null;
         setPendingDelete(null);
       } catch (error) {
         setDeleteError(errMessage(error));
@@ -286,6 +291,16 @@ function LibraryShell({
       }
     })();
   };
+
+  // Dialog restores whatever was focused when it opened (the menu item, which
+  // unmounts with the menu). After that cleanup, put focus back on the row's ⋯.
+  useEffect(() => {
+    if (pendingDelete || !restoreDeleteFocusRef.current) return;
+    restoreDeleteFocusRef.current = false;
+    const button = deleteMenuButtonRef.current;
+    deleteMenuButtonRef.current = null;
+    if (button?.isConnected) button.focus();
+  }, [pendingDelete]);
 
   return (
     <div
@@ -398,7 +413,9 @@ function LibraryShell({
                   onOpen={onOpen}
                   onPreview={onPreview}
                   onDuplicate={onDuplicate}
-                  onAskDelete={(target) => {
+                  onAskDelete={(target, menuButton) => {
+                    deleteMenuButtonRef.current = menuButton;
+                    restoreDeleteFocusRef.current = false;
                     setDeleteError(null);
                     setPendingDelete(target);
                   }}
@@ -674,7 +691,7 @@ function ClassRow({
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
-  onAskDelete: (cls: ClassListItem) => void;
+  onAskDelete: (cls: ClassListItem, menuButton: HTMLButtonElement) => void;
   onRetryDetails: () => void;
 }) {
   const step = creationNextStep(cls, detail, plan);
@@ -722,7 +739,7 @@ function ClassRow({
           failed={detail?.status === 'error'}
           onPreview={onPreview}
           onDuplicate={onDuplicate}
-          onAskDelete={() => onAskDelete(cls)}
+          onAskDelete={(menuButton) => onAskDelete(cls, menuButton)}
           onRetryDetails={onRetryDetails}
         />
       </div>
@@ -744,11 +761,12 @@ function RowMenu({
   failed: boolean;
   onPreview: (cls: ClassListItem) => void;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
-  onAskDelete: () => void;
+  onAskDelete: (menuButton: HTMLButtonElement) => void;
   onRetryDetails: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -769,6 +787,7 @@ function RowMenu({
   return (
     <div ref={menuRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         aria-expanded={open}
         aria-label={`More actions — ${cls.title}`}
@@ -810,7 +829,8 @@ function RowMenu({
               type="button"
               onClick={() => {
                 setOpen(false);
-                onAskDelete();
+                const menuButton = triggerRef.current;
+                if (menuButton) onAskDelete(menuButton);
               }}
               aria-label={`Delete — ${cls.title}`}
               className="flex min-h-11 w-full items-center gap-1.5 rounded-control px-3 text-left font-ui text-sm text-state-danger hover:bg-state-danger/10"

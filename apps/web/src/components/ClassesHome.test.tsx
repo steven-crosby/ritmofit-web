@@ -360,6 +360,27 @@ describe('ClassesHome library shell', () => {
     expect(screen.queryByRole('button', { name: 'Delete — Evening Ride' })).toBeNull();
   });
 
+  it('returns focus to the row menu when delete is cancelled or dismissed', () => {
+    renderHome([cls(1, { title: 'Morning Climb' })]);
+    const menu = screen.getByRole('button', { name: 'More actions — Morning Climb' });
+
+    menu.focus();
+    fireEvent.click(menu);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(menu);
+
+    fireEvent.click(menu);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete — Morning Climb' }));
+    fireEvent.keyDown(
+      screen.getByRole('dialog', { name: "Delete 'Morning Climb'? This can't be undone." }),
+      { key: 'Escape' },
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(menu);
+  });
+
   it('keeps the class listed when delete fails', async () => {
     const onDelete = vi.fn(async () => {
       throw new Error('still in a live set');
