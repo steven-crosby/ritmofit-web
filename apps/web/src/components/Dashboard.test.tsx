@@ -1324,6 +1324,62 @@ describe('Dashboard class library states', () => {
     await waitFor(() => expect(api.getRunPayload).toHaveBeenCalledWith(ready.id));
   });
 
+  it('removes a deleted class from Recents and the Live list', async () => {
+    const morning = {
+      ...makeClass('Morning Climb', 'owner', 'me'),
+      trackCount: 2,
+      totalDurationMs: 120_000,
+    };
+    const evening = {
+      ...makeClass('Evening Ride', 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([morning, evening]));
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]),
+    );
+    vi.mocked(api.deleteClass).mockResolvedValue(undefined);
+
+    renderDashboard();
+
+    const recents = await screen.findByRole('region', { name: 'Recents' });
+    expect(within(recents).getByRole('button', { name: 'Morning Climb' })).toBeTruthy();
+    expect(within(recents).getByRole('button', { name: 'Evening Ride' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+    expect(await screen.findByRole('heading', { name: 'Morning Climb' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Evening Ride' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Classes' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'More actions — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete — Morning Climb' }));
+    expect(
+      screen.getByRole('dialog', { name: "Delete 'Morning Climb'? This can't be undone." }),
+    ).toBeTruthy();
+    expect(api.deleteClass).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(api.deleteClass).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'More actions — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete — Morning Climb' }));
+    vi.mocked(api.listClasses).mockResolvedValue(page([evening]));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete class' }));
+    await waitFor(() => expect(api.deleteClass).toHaveBeenCalledWith(morning.id));
+
+    const recentsAfter = await screen.findByRole('region', { name: 'Recents' });
+    await waitFor(() =>
+      expect(within(recentsAfter).queryByRole('button', { name: 'Morning Climb' })).toBeNull(),
+    );
+    expect(within(recentsAfter).getByRole('button', { name: 'Evening Ride' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Morning Climb' })).toBeNull(),
+    );
+    expect(await screen.findByRole('heading', { name: 'Evening Ride' })).toBeTruthy();
+  });
+
   it('keeps the queue card compact by default and full readiness one disclosure away', async () => {
     const ready = { ...makeClass('Ready ride', 'owner', 'me'), trackCount: 1 };
     vi.mocked(api.listClasses).mockResolvedValue(page([ready]));

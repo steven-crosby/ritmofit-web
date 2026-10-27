@@ -308,8 +308,10 @@ describe('ClassHeaderCard delete', () => {
     expect(initial.className).not.toMatch(/(?:^|\s)bg-state-danger\//);
     expect(initial.querySelector('svg[aria-hidden]')).toBeTruthy();
 
+    expect(screen.queryByText("Delete 'Monday Ride'? This can't be undone.")).toBeNull();
     fireEvent.click(initial);
 
+    expect(screen.getByText("Delete 'Monday Ride'? This can't be undone.")).toBeTruthy();
     const confirm = screen.getByRole('button', { name: 'Delete class' });
     expect(confirm.className).toContain('bg-transparent');
     expect(confirm.className).toContain('text-state-danger');

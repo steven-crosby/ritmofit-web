@@ -103,6 +103,7 @@ import {
 } from '../lib/class-ordering.js';
 import { summarizeQueue } from '../lib/live-readiness.js';
 import { nextEmptyPlanBlock, type ScaffoldDiscipline } from '../lib/class-scaffold.js';
+import { deleteClassConfirmMessage } from '../lib/class-delete.js';
 import { errMessage } from '../lib/errors.js';
 import { errorReference } from '../lib/error-reference.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
@@ -670,6 +671,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       setRefreshWarning((current) => (current?.owner.classId === classId ? null : current));
       if (ownsPresentation || ownsSuspension)
         dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
+      setClasses((prev) => prev.filter((c) => c.id !== classId));
       void refreshClasses();
     },
     [refreshClasses],
@@ -1130,6 +1132,10 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
                 await applyTagFilter(null);
                 await refreshClasses();
                 await openClass({ ...copy, accessLevel: 'owner' });
+              }}
+              onDelete={async (cls) => {
+                await deleteClass(cls.id);
+                handleClassDeleted(cls.id);
               }}
               onSelectTag={applyTagFilter}
               onClearTag={() => void applyTagFilter(null)}
@@ -5102,22 +5108,27 @@ export function ClassHeaderCard({
             {/* Owner-only delete with inline confirm (no native confirm() dialog). */}
             {isOwner &&
               (confirmingDelete ? (
-                <span className="col-span-2 grid grid-cols-2 gap-1 sm:flex sm:items-center">
-                  <DestructiveControl
-                    onClick={confirmDelete}
-                    busy={deleting}
-                    aria-label="Delete class"
-                  >
-                    Delete class
-                  </DestructiveControl>
-                  <button
-                    type="button"
-                    className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary disabled:opacity-40 sm:rounded-pill"
-                    onClick={() => setConfirmingDelete(false)}
-                    disabled={deleting}
-                  >
-                    Cancel
-                  </button>
+                <span className="col-span-2 flex flex-col items-start gap-2">
+                  <p className="font-ui text-sm text-text-primary">
+                    {deleteClassConfirmMessage(cls.title)}
+                  </p>
+                  <span className="grid grid-cols-2 gap-1 sm:flex sm:items-center">
+                    <DestructiveControl
+                      onClick={confirmDelete}
+                      busy={deleting}
+                      aria-label="Delete class"
+                    >
+                      Delete class
+                    </DestructiveControl>
+                    <button
+                      type="button"
+                      className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary disabled:opacity-40 sm:rounded-pill"
+                      onClick={() => setConfirmingDelete(false)}
+                      disabled={deleting}
+                    >
+                      Cancel
+                    </button>
+                  </span>
                 </span>
               ) : (
                 <DestructiveControl

@@ -64,6 +64,7 @@ function renderHome(
     hasMore?: boolean;
     onOpen?: (cls: ClassListItem) => void;
     onPreview?: (cls: ClassListItem) => void;
+    onDelete?: (cls: ClassListItem) => Promise<void>;
     onStartClass?: (mode?: 'scaffold' | 'empty') => void;
     onStartTemplate?: (template: 'cycle' | 'sculpt') => void;
     onImportPlaylist?: () => void;
@@ -82,6 +83,7 @@ function renderHome(
       onOpen={options.onOpen ?? (() => {})}
       onPreview={options.onPreview ?? (() => {})}
       onDuplicate={async () => {}}
+      onDelete={options.onDelete ?? (async () => {})}
       onSelectTag={options.onSelectTag ?? (() => {})}
       onClearTag={() => {}}
       onRetry={() => {}}
@@ -329,5 +331,76 @@ describe('ClassesHome library shell', () => {
     releases[1]?.(payload('Second'));
     await screen.findAllByText('Needs tempo');
     expect(rowTitles()).toEqual(['First', 'Second']);
+  });
+
+  it('confirms with the class title before deleting', async () => {
+    const onDelete = vi.fn(async () => {});
+    renderHome([cls(1, { title: 'Morning Climb' }), cls(2, { title: 'Evening Ride' })], {
+      onDelete,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'More actions — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete — Morning Climb' }));
+    expect(
+      screen.getByRole('dialog', { name: "Delete 'Morning Climb'? This can't be undone." }),
+    ).toBeTruthy();
+    expect(screen.getByText("Delete 'Morning Climb'? This can't be undone.")).toBeTruthy();
+    expect(onDelete).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Morning Climb' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'More actions — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete class' }));
+    await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1));
+    expect(onDelete.mock.calls[0]?.[0]?.title).toBe('Morning Climb');
+    expect(screen.queryByRole('button', { name: 'Delete — Evening Ride' })).toBeNull();
+  });
+
+  it('returns focus to the row menu when delete is cancelled or dismissed', () => {
+    renderHome([cls(1, { title: 'Morning Climb' })]);
+    const menu = screen.getByRole('button', { name: 'More actions — Morning Climb' });
+
+    menu.focus();
+    fireEvent.click(menu);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(menu);
+
+    fireEvent.click(menu);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete — Morning Climb' }));
+    fireEvent.keyDown(
+      screen.getByRole('dialog', { name: "Delete 'Morning Climb'? This can't be undone." }),
+      { key: 'Escape' },
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(menu);
+  });
+
+  it('keeps the class listed when delete fails', async () => {
+    const onDelete = vi.fn(async () => {
+      throw new Error('still in a live set');
+    });
+    renderHome([cls(1, { title: 'Morning Climb' })], { onDelete });
+    fireEvent.click(screen.getByRole('button', { name: 'More actions — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete class' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('still in a live set');
+    expect(screen.getByText("Delete 'Morning Climb'? This can't be undone.")).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Morning Climb' })).toBeTruthy();
+  });
+
+  it('hides delete from an editor and a viewer', () => {
+    renderHome([cls(1, { title: 'Shared ride', accessLevel: 'edit' })]);
+    fireEvent.click(screen.getByRole('button', { name: 'More actions — Shared ride' }));
+    expect(screen.queryByRole('button', { name: 'Delete — Shared ride' })).toBeNull();
+    cleanup();
+    renderHome([cls(2, { title: 'Viewed ride', accessLevel: 'view' })]);
+    fireEvent.click(screen.getByRole('button', { name: 'More actions — Viewed ride' }));
+    expect(screen.queryByRole('button', { name: 'Delete — Viewed ride' })).toBeNull();
   });
 });
