@@ -1132,7 +1132,7 @@ export function LiveMode({
                 {runState}
                 {live ? ` · Track ${live.index + 1} of ${payload.tracks.length}` : ''}
               </p>
-              <h1 className="font-display text-lg font-semibold text-text-primary">
+              <h1 className="break-words font-display text-lg font-semibold text-text-primary">
                 {payload.class.title}
               </h1>
               <p className="font-data text-xs text-text-tertiary">
@@ -1871,7 +1871,7 @@ function CueByCue({
               <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
                 Notes
               </p>
-              <p className="mt-1 whitespace-pre-wrap font-ui text-sm text-text-secondary">
+              <p className="mt-1 whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
                 {entry.notes}
               </p>
             </div>

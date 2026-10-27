@@ -1360,6 +1360,22 @@ describe('LiveMode runtime composition', () => {
     expect(within(queue).getAllByRole('listitem')).toHaveLength(1);
   });
 
+  it('wraps an unbroken class title and notes so the phone shell cannot scroll sideways', async () => {
+    const title = 'Unbreakable_Supercalifragilisticexpialidocious_Class_Title_Without_Spaces';
+    const notes = 'https://open.spotify.com/playlist/37i9dQZF1DX76Wlfdnj7AP?si=abcdefghijklmnop';
+    await renderLive({
+      ...threeTrack,
+      class: { ...threeTrack.class, title },
+      tracks: [{ ...threeTrack.tracks[0]!, notes }, ...threeTrack.tracks.slice(1)],
+    });
+    // A long word that does not break widens the fixed Live shell's scroll area, so
+    // a sideways swipe moves End Class and the Next countdown off the screen edge.
+    expect(screen.getByRole('heading', { level: 1, name: title }).className).toContain(
+      'break-words',
+    );
+    expect(screen.getByText(notes).className).toContain('break-words');
+  });
+
   it('leads the rail with timers and keeps notes ahead of the supporting class shape', async () => {
     await renderLive({
       ...threeTrack,
