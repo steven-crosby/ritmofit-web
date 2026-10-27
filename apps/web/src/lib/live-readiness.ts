@@ -1,8 +1,8 @@
 /**
  * Live-queue readiness aggregation. The Live workspace fetches each queued class's
  * run-payload and computes per-class {@link ClassReadiness}; this pure helper rolls
- * those up into the counts the right-rail "Preflight checks" tiles display, so the
- * rail reflects real state instead of placeholders.
+ * those up into the count the page announces to assistive tech. Each class already
+ * shows its own next step, so the queue does not repeat the rollup as a card.
  *
  * Kept separate from the per-class `classReadiness` (readiness.ts) so the queue-level
  * math is unit-testable without React, and so the two never drift: a class is
