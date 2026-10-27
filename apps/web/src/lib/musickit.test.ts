@@ -2,9 +2,19 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   MUSICKIT_SAFARI_MODERN_EME_KEY,
+  isIosSafari,
   selectSafariModernFairPlay,
   type MusicKitGlobal,
 } from './musickit.js';
+
+const IOS_SAFARI_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1';
+const IOS_CHROME_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/131.0.6778.73 Mobile/15E148 Safari/604.1';
+const DESKTOP_CHROME_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+const DESKTOP_SAFARI_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15';
 
 const FAIRPLAY_AUDIO_ONLY = [
   {
@@ -90,15 +100,34 @@ it('keeps a timed-out configuration serialized through retry and late completion
   expect(configure).toHaveBeenCalledTimes(1);
 });
 
+describe('iOS Safari detection', () => {
+  it('matches iPhone Safari and an iPad on the desktop site', () => {
+    expect(isIosSafari(IOS_SAFARI_UA, 0)).toBe(true);
+    expect(isIosSafari(DESKTOP_SAFARI_UA, 5)).toBe(true);
+  });
+
+  it('does not match desktop browsers or iOS Chrome', () => {
+    expect(isIosSafari(DESKTOP_CHROME_UA, 0)).toBe(false);
+    expect(isIosSafari(DESKTOP_CHROME_UA, 5)).toBe(false);
+    expect(isIosSafari(DESKTOP_SAFARI_UA, 0)).toBe(false);
+    expect(isIosSafari(IOS_CHROME_UA, 5)).toBe(false);
+    expect(isIosSafari('', 5)).toBe(false);
+  });
+});
+
 describe('Safari modern FairPlay', () => {
-  it('writes the enabled value only when legacy WebKitMediaKeys exists', () => {
+  it('writes the enabled value for legacy WebKitMediaKeys and for iOS Safari', () => {
     const storage = { setItem: vi.fn() };
-    selectSafariModernFairPlay(undefined, storage);
+    selectSafariModernFairPlay(undefined, storage, false);
     expect(storage.setItem).not.toHaveBeenCalled();
 
-    selectSafariModernFairPlay({ isTypeSupported: () => true }, storage);
+    selectSafariModernFairPlay({ isTypeSupported: () => true }, storage, false);
     expect(storage.setItem).toHaveBeenCalledTimes(1);
     expect(storage.setItem).toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+
+    const iosStorage = { setItem: vi.fn() };
+    selectSafariModernFairPlay(undefined, iosStorage, true);
+    expect(iosStorage.setItem).toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
   });
 
   it('does not throw when reading localStorage throws', () => {
@@ -188,6 +217,26 @@ describe('Safari modern FairPlay', () => {
     });
   });
 
+  it('selects modern FairPlay on iOS Safari before the script loads, without WebKitMediaKeys', async () => {
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IOS_SAFARI_UA);
+    const append = vi.spyOn(document.head, 'appendChild').mockImplementation((node: Node) => {
+      expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBe('1');
+      return HTMLElement.prototype.appendChild.call(document.head, node);
+    });
+    try {
+      const { loadMusicKit } = await import('./musickit.js');
+      const pending = loadMusicKit();
+      expect(append).toHaveBeenCalled();
+      expect((window as Window & { WebKitMediaKeys?: unknown }).WebKitMediaKeys).toBeUndefined();
+      window.MusicKit = {} as MusicKitGlobal;
+      document.dispatchEvent(new Event('musickitloaded'));
+      await pending;
+    } finally {
+      append.mockRestore();
+      userAgent.mockRestore();
+    }
+  });
+
   it('does not set the FairPlay flag in a browser without WebKitMediaKeys', async () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem');
     const { loadMusicKit } = await import('./musickit.js');
@@ -216,12 +265,63 @@ describe('Safari modern FairPlay access probe', () => {
     Reflect.deleteProperty(navigator, 'requestMediaKeySystemAccess');
   });
 
-  it('does not request a key system when WebKitMediaKeys is absent', async () => {
+  it('does not request a key system on desktop Chrome when WebKitMediaKeys is absent', async () => {
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(DESKTOP_CHROME_UA);
     const request = vi.fn();
     installRequest(request);
-    const { probeSafariModernFairPlayAccess } = await import('./musickit.js');
-    expect(probeSafariModernFairPlayAccess()).toBeNull();
-    expect(request).not.toHaveBeenCalled();
+    try {
+      const { probeSafariModernFairPlayAccess } = await import('./musickit.js');
+      expect(probeSafariModernFairPlayAccess()).toBeNull();
+      expect(request).not.toHaveBeenCalled();
+    } finally {
+      userAgent.mockRestore();
+    }
+  });
+
+  it('probes com.apple.fps on iOS Safari when WebKitMediaKeys is gone', async () => {
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IOS_SAFARI_UA);
+    localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+    const createSession = vi.fn();
+    const createMediaKeys = vi.fn(async () => ({ createSession }));
+    const request = vi.fn(async () => ({ createMediaKeys }));
+    installRequest(request);
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      const { probeSafariModernFairPlayAccess } = await import('./musickit.js');
+      const first = probeSafariModernFairPlayAccess();
+      const second = probeSafariModernFairPlayAccess();
+      await expect(first).resolves.toBe('ok');
+      await expect(second).resolves.toBe('ok');
+      expect(first).toBe(second);
+      expect(request).toHaveBeenCalledTimes(1);
+      expect(request).toHaveBeenCalledWith('com.apple.fps', FAIRPLAY_AUDIO_ONLY);
+      expect(createMediaKeys).not.toHaveBeenCalled();
+      expect(createSession).not.toHaveBeenCalled();
+      expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme 1']]);
+    } finally {
+      info.mockRestore();
+      userAgent.mockRestore();
+    }
+  });
+
+  it('remembers the DOMException name on iOS Safari without logging it', async () => {
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IOS_SAFARI_UA);
+    const request = vi.fn(async () => {
+      throw new DOMException('music-user-token SECRETVALUE', 'NotSupportedError');
+    });
+    installRequest(request);
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      const { probeSafariModernFairPlayAccess, safariModernAccessWord } =
+        await import('./musickit.js');
+      await expect(probeSafariModernFairPlayAccess()).resolves.toBe('NotSupportedError');
+      expect(safariModernAccessWord()).toBe('NotSupportedError');
+      expect(JSON.stringify(info.mock.calls)).not.toContain('SECRETVALUE');
+      expect(JSON.stringify(info.mock.calls)).not.toContain('music-user-token');
+    } finally {
+      info.mockRestore();
+      userAgent.mockRestore();
+    }
   });
 
   it('probes com.apple.fps once, audio-only, and does not attach a session', async () => {

@@ -511,13 +511,103 @@ describe('Apple Music FairPlay probe', () => {
     return { adapter, instance, errors };
   }
 
-  it('leaves the playback-failed sentence unchanged when WebKitMediaKeys is absent', async () => {
-    const { adapter, instance, errors } = await prepared();
-    await adapter.play();
-    instance.emit(EVENTS.mediaPlaybackError);
-    expect(errors).toEqual(['Apple Music playback failed for "Baiana".']);
-    expect(request).not.toHaveBeenCalled();
-    expect(info).not.toHaveBeenCalled();
+  it('leaves the playback-failed sentence unchanged on desktop Chrome', async () => {
+    const userAgent = vi
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      );
+    try {
+      const { adapter, instance, errors } = await prepared();
+      await adapter.play();
+      instance.emit(EVENTS.mediaPlaybackError);
+      expect(errors).toEqual(['Apple Music playback failed for "Baiana".']);
+      expect(request).not.toHaveBeenCalled();
+      expect(info).not.toHaveBeenCalled();
+    } finally {
+      userAgent.mockRestore();
+    }
+  });
+
+  it('does not wait on the FairPlay probe in desktop Chrome', async () => {
+    const userAgent = vi
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      );
+    request.mockImplementation(() => new Promise(() => {}));
+    let played = false;
+    try {
+      const { adapter } = await prepared(async () => {
+        played = true;
+      });
+      const playedInTime = adapter.play();
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timedOut = new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error('play waited on the FairPlay probe')), 1000);
+      });
+      try {
+        await Promise.race([playedInTime, timedOut]);
+      } finally {
+        clearTimeout(timer);
+      }
+      expect(played).toBe(true);
+      expect(request).not.toHaveBeenCalled();
+    } finally {
+      userAgent.mockRestore();
+    }
+  });
+
+  it('probes iOS Safari without WebKitMediaKeys and names modern-access', async () => {
+    const userAgent = vi
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1',
+      );
+    const createSession = vi.fn();
+    const createMediaKeys = vi.fn(async () => ({ createSession }));
+    request.mockResolvedValue({ createMediaKeys });
+    try {
+      const { adapter, instance, errors } = await prepared();
+      await adapter.play();
+      instance.emit(EVENTS.mediaPlaybackError);
+      expect(webKitWindow.WebKitMediaKeys).toBeUndefined();
+      expect(request).toHaveBeenCalledTimes(1);
+      expect(request.mock.calls[0]?.[0]).toBe('com.apple.fps');
+      expect(request.mock.calls[0]?.[1]?.[0]?.videoCapabilities).toBeUndefined();
+      expect(createMediaKeys).not.toHaveBeenCalled();
+      expect(createSession).not.toHaveBeenCalled();
+      expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBe('1');
+      expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme 1']]);
+      expect(JSON.stringify(info.mock.calls)).not.toContain('dev-token');
+      expect(errors).toEqual(['Apple Music playback failed for "Baiana". modern-access: ok.']);
+    } finally {
+      userAgent.mockRestore();
+    }
+  });
+
+  it('puts the DOMException name on the iOS Safari sentence when WebKitMediaKeys is gone', async () => {
+    const userAgent = vi
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1',
+      );
+    request.mockRejectedValue(
+      new DOMException('music-user-token SECRETVALUE', 'NotSupportedError'),
+    );
+    try {
+      const { adapter, instance, errors } = await prepared();
+      await adapter.play();
+      instance.emit(EVENTS.mediaPlaybackError);
+      expect(errors).toEqual([
+        'Apple Music playback failed for "Baiana". modern-access: NotSupportedError.',
+      ]);
+      expect(errors[0]).not.toContain('SECRETVALUE');
+      expect(JSON.stringify(info.mock.calls)).not.toContain('SECRETVALUE');
+      expect(instance.calls).toContain('play');
+    } finally {
+      userAgent.mockRestore();
+    }
   });
 
   it('probes once before play and puts ok on the playback-failed sentence', async () => {

@@ -25,24 +25,60 @@ export const MUSICKIT_SAFARI_MODERN_EME_KEY = 'mk-safari-modern-eme';
 
 type FairPlayStorage = { setItem(key: string, value: string): void };
 
+function navigatorUserAgent(): string {
+  try {
+    return typeof navigator === 'undefined' ? '' : navigator.userAgent;
+  } catch {
+    return '';
+  }
+}
+
+function navigatorMaxTouchPoints(): number {
+  try {
+    return typeof navigator === 'undefined' ? 0 : navigator.maxTouchPoints;
+  } catch {
+    return 0;
+  }
+}
+
 /**
- * iOS Safari still exposes legacy `WebKitMediaKeys`. MusicKit takes that path
- * for `com.apple.fps` unless this flag is set: `play()` is accepted, then the
- * hidden `<audio id="apple-music-player">` errors. `configureMusicKit` passes
- * `suppressErrorDialog` so MusicKit does not also open its in-page OK box.
- * Desktop Chrome has no `WebKitMediaKeys` and uses Widevine instead.
- * The flag selects `requestMediaKeySystemAccess('com.apple.fps')`. If that
- * access fails, MusicKit falls back to the legacy session on its own.
+ * iPhone, iPad, and iPod Safari, including an iPad that reports a desktop Macintosh
+ * UA. Chrome, Firefox, and Edge on iOS identify themselves with CriOS, FxiOS, or
+ * EdgiOS and are not Safari. Desktop Chrome uses Widevine and must not match.
+ */
+export function isIosSafari(
+  userAgent: string = navigatorUserAgent(),
+  maxTouchPoints: number = navigatorMaxTouchPoints(),
+): boolean {
+  if (!userAgent || /CriOS|FxiOS|EdgiOS|OPiOS/.test(userAgent)) return false;
+  const iphoneFamily = /iPhone|iPad|iPod/.test(userAgent);
+  const ipadDesktopSite = /Macintosh/.test(userAgent) && maxTouchPoints > 1;
+  if (!iphoneFamily && !ipadDesktopSite) return false;
+  if (/Chrome|Chromium|Android/.test(userAgent)) return false;
+  return /Safari\//.test(userAgent);
+}
+
+/**
+ * MusicKit takes the legacy FairPlay path unless `mk-safari-modern-eme` is `"1"`.
+ * iOS 27 Safari can do that without exposing `WebKitMediaKeys`: `play()` is
+ * accepted, then the hidden `<audio id="apple-music-player">` errors.
+ * `configureMusicKit` passes `suppressErrorDialog` so MusicKit does not also
+ * open its in-page OK box. Desktop Chrome has no `WebKitMediaKeys` and uses
+ * Widevine, so this flag stays unset there. The flag selects
+ * `requestMediaKeySystemAccess('com.apple.fps')`. If that access fails,
+ * MusicKit falls back to the legacy session on its own.
  */
 export function selectSafariModernFairPlay(
   webKitMediaKeys: unknown = typeof window === 'undefined'
     ? undefined
     : (window as Window & { WebKitMediaKeys?: unknown }).WebKitMediaKeys,
   storage?: FairPlayStorage | null,
+  iosSafari: boolean = isIosSafari(),
 ): void {
-  // Chrome has no WebKitMediaKeys. Leave storage alone there: reading
-  // `localStorage` can throw, and that must not run before this check.
-  if (!webKitMediaKeys) return;
+  // Desktop Chrome is neither iOS Safari nor legacy WebKit. Leave storage
+  // alone there: reading `localStorage` can throw, and that must not run
+  // before this check.
+  if (!webKitMediaKeys && !iosSafari) return;
   try {
     const target = storage === undefined ? localStorage : storage;
     if (!target) return;
@@ -116,15 +152,15 @@ async function runSafariModernAccessProbe(): Promise<string | null> {
 }
 
 /**
- * One audio-only FairPlay probe for this page, and only when legacy
- * `WebKitMediaKeys` exists. Resolves to `"ok"`, a DOMException name, or null
- * when the call cannot be made or the rejection is not a DOMException.
- * A second call reuses the first result and does not request again.
- * Returns null (not a promise) when `WebKitMediaKeys` is absent, so `play()`
- * does not yield before MusicKit's own `play()`.
+ * One audio-only FairPlay probe for this page on iOS Safari, including iOS 27
+ * where `WebKitMediaKeys` is absent. Legacy WebKit still probes too.
+ * Resolves to `"ok"`, a DOMException name, or null when the call cannot be
+ * made or the rejection is not a DOMException. A second call reuses the first
+ * result and does not request again. Returns null (not a promise) on other
+ * browsers, so `play()` does not yield before MusicKit's own `play()`.
  */
 export function probeSafariModernFairPlayAccess(): Promise<string | null> | null {
-  if (!webKitMediaKeys()) return null;
+  if (!webKitMediaKeys() && !isIosSafari()) return null;
   if (!modernAccessProbe) {
     // A probe failure must not become "would not play". Remember the word, or null.
     modernAccessProbe = runSafariModernAccessProbe().then(
