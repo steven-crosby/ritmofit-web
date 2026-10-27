@@ -1,7 +1,7 @@
 /**
  * Error boundary (B3). A render-time throw anywhere below this unmounts only to
  * the fallback instead of white-screening the whole tree. Used twice: a global
- * net around <App/> (main.tsx), and a narrower one around LiveMode whose reset
+ * net around <App/> (Root.tsx), and a narrower one around LiveMode whose reset
  * exits live mode rather than reloading (Dashboard.tsx).
  *
  * Must be a class component — only class lifecycles (`getDerivedStateFromError` /
