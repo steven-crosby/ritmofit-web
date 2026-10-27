@@ -3078,7 +3078,7 @@ function AccountWorkspace({
     <section className="grid w-full min-w-0 gap-5 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
       <aside className="min-w-0 border-b border-border-subtle pb-4 xl:sticky xl:top-6 xl:border-r xl:border-b-0 xl:pr-4 xl:pb-0">
         <p className="rf-eyebrow">Account</p>
-        <nav className="mt-3 grid max-w-full grid-cols-2 gap-2 xl:flex xl:flex-col">
+        <nav className="mt-3 flex max-w-full gap-2 overflow-x-auto xl:flex-col xl:overflow-visible">
           {['Profile', 'Music connections', 'Security'].map((item) => (
             <a
               key={item}
@@ -3099,19 +3099,24 @@ function AccountWorkspace({
               <h2 className="break-words font-display text-3xl font-semibold text-text-primary">
                 {profile?.displayName ?? profileName}
               </h2>
-              <p className="mt-1 break-all font-ui text-xs text-text-tertiary">
-                {profile?.email ?? 'Signed-in identity · profile details unavailable'}
-              </p>
+              {profileStatus === 'loading' ? (
+                <p
+                  role="status"
+                  className="mt-1 font-ui text-xs text-text-tertiary motion-safe:animate-pulse"
+                >
+                  Loading profile…
+                </p>
+              ) : (
+                <p className="mt-1 break-all font-ui text-xs text-text-tertiary">
+                  {profile?.email ?? 'Profile details unavailable'}
+                </p>
+              )}
             </div>
             {/* This measures whether the profile payload loaded — nothing here
-                verifies an identity or an email address, and the label used to
-                read as though it did (P1-05). */}
-            {profileStatus === 'loading' ? (
-              <StatusLabel kind="loading" label="Loading profile" />
-            ) : profileStatus === 'error' ? (
+                verifies an identity or an email address (P1-05). A loaded profile
+                needs no mark; only a failed read does. */}
+            {profileStatus === 'error' && (
               <StatusLabel kind="unavailable" label="Profile unavailable" />
-            ) : (
-              <StatusLabel kind="recovered" label="Profile loaded" />
             )}
           </div>
         </header>
@@ -3168,7 +3173,7 @@ function AccountWorkspace({
                 Identity
               </h3>
             </div>
-            {!profileTrusted && (
+            {profileStatus === 'error' && (
               <StatusLabel kind="disabled" label="Edits paused until the profile loads" />
             )}
           </div>
@@ -3254,9 +3259,11 @@ function AccountWorkspace({
               <p className="mt-3 truncate font-ui text-sm font-semibold text-text-primary">
                 {profile?.displayName ?? profileName ?? 'Unnamed instructor'}
               </p>
-              <p className="break-all font-ui text-xs text-text-tertiary">
-                {profile?.email ?? 'Profile details unavailable'}
-              </p>
+              {profileStatus !== 'loading' && (
+                <p className="break-all font-ui text-xs text-text-tertiary">
+                  {profile?.email ?? 'Profile details unavailable'}
+                </p>
+              )}
             </div>
           </form>
         </section>
@@ -3274,7 +3281,8 @@ function AccountWorkspace({
                 Provider accounts
               </h3>
               <p className="mt-1 font-ui text-xs leading-5 text-text-tertiary">
-                Catalog, library, and playback remain separate capabilities.
+                Provider audio and authorization remain with the music service. Catalog, library,
+                and playback are separate capabilities.
               </p>
             </div>
             <button
@@ -3309,11 +3317,11 @@ function AccountWorkspace({
                       <p className="font-ui text-sm font-semibold text-text-primary">
                         {providerLabel(provider)}
                       </p>
-                      <p className="mt-1 font-ui text-xs text-text-tertiary">
-                        {connectionsStatus === 'error'
-                          ? 'Current account authorization could not be verified.'
-                          : 'Provider audio and authorization remain with the music service.'}
-                      </p>
+                      {connectionsStatus === 'error' && (
+                        <p className="mt-1 font-ui text-xs text-text-tertiary">
+                          Current account authorization could not be verified.
+                        </p>
+                      )}
                     </div>
                     <ConnectionStateMark
                       kind={statusMark.kind}
