@@ -1957,10 +1957,8 @@ describe('Music tab library', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('SoundCloud sign-in did not open.');
-    expect(
-      screen.getByRole('button', { name: 'SoundCloud connection' }).getAttribute('aria-expanded'),
-    ).toBe('false');
-    expect(screen.getByRole('button', { name: 'Reconnect SoundCloud' })).toBeTruthy();
+    expect(screen.getAllByText('SoundCloud sign-in did not open.')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Reconnect SoundCloud' })).toHaveLength(1);
   });
 
   it('shows a SoundCloud reconnect timeout next to the button', async () => {
@@ -1991,9 +1989,7 @@ describe('Music tab library', () => {
       expect(screen.getByRole('alert').textContent).toContain(
         'SoundCloud did not finish connecting.',
       );
-      expect(
-        screen.getByRole('button', { name: 'SoundCloud connection' }).getAttribute('aria-expanded'),
-      ).toBe('false');
+      expect(screen.getAllByRole('button', { name: 'Reconnect SoundCloud' })).toHaveLength(1);
     } finally {
       vi.useRealTimers();
     }

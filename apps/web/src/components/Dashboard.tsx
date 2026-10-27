@@ -1926,6 +1926,7 @@ function MusicWorkspace({
   const statusMark = musicConnectionMark(connectionsStatus, connectionState);
   const truth = providerCapabilityTruth(selectedProvider, connection, Date.now());
   const connectBusy = !!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready';
+  const ownOperation = flow.operation?.provider === selectedProvider ? flow.operation : null;
   const notice = musicConnectionNotice({
     label: providerLabel(selectedProvider),
     fetchStatus: connectionsStatus,
@@ -1939,8 +1940,12 @@ function MusicWorkspace({
           : truth.playback.state === 'action-required'
             ? 'playback'
             : null,
-    connectInFlight: flow.operation?.provider === selectedProvider,
+    connectInFlight: !!ownOperation,
   });
+  // The expired chip already carries Reconnect and its error; the notice only
+  // adds the in-flight steps (progress, Cancel, Authorize Apple Music).
+  const chipOwnsReconnect =
+    connectionState === 'expired' && (!ownOperation || !!ownOperation.error);
   const noticeBlock = notice && (
     <div
       data-music-connection-notice=""
@@ -1960,11 +1965,13 @@ function MusicWorkspace({
         )}
         <span className="text-text-secondary">{notice.message}</span>
       </p>
-      <ProviderConnectAction
-        provider={selectedProvider}
-        label={`${notice.action === 'reconnect' ? 'Reconnect' : 'Connect'} ${providerLabel(selectedProvider)}`}
-        flow={flow}
-      />
+      {!chipOwnsReconnect && (
+        <ProviderConnectAction
+          provider={selectedProvider}
+          label={`${notice.action === 'reconnect' ? 'Reconnect' : 'Connect'} ${providerLabel(selectedProvider)}`}
+          flow={flow}
+        />
+      )}
     </div>
   );
   const savedPlaylists = playlists[selectedProvider] ?? null;
