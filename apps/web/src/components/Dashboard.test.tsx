@@ -182,13 +182,7 @@ function renderDashboard() {
   return render(<Dashboard userId="me" userName="Tester" />);
 }
 
-function openMusicConnectionDetails() {
-  const button = screen.getByRole('button', { name: / connection$/ });
-  if (button.getAttribute('aria-expanded') !== 'true') fireEvent.click(button);
-}
-
 function manageMusicConnections() {
-  openMusicConnectionDetails();
   fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
 }
 
@@ -1693,8 +1687,6 @@ describe('Dashboard class library states', () => {
     expect(alert.textContent).toContain('Source status is unavailable.');
     expect(screen.queryByText('Connect this provider to browse liked tracks.')).toBeNull();
     expect(screen.getByRole('button', { name: 'Spotify, Unavailable' })).toBeTruthy();
-    openMusicConnectionDetails();
-    expect(screen.getAllByText('Status unavailable').length).toBeGreaterThan(0);
 
     fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
 
@@ -1705,7 +1697,7 @@ describe('Dashboard class library states', () => {
 });
 
 describe('Music tab library', () => {
-  it('uses compact service chips and keeps capability detail hidden until tap', async () => {
+  it('puts library tabs under compact service chips with one Manage connections', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([]);
 
@@ -1732,14 +1724,50 @@ describe('Music tab library', () => {
       expect(chip.className).toContain('sm:flex-1');
     }
     expect(screen.queryByText('Browse catalog')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Manage connections' })).toBeNull();
+    expect(document.querySelector('[aria-label="SoundCloud capabilities"]')).toBeNull();
+    expect(screen.queryByRole('button', { name: /connection$/ })).toBeNull();
+    expect(screen.getAllByRole('button', { name: /^Manage .*connection/ })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Connect SoundCloud' })).toBeNull();
+    expect(services.nextElementSibling).toBe(screen.getByRole('group', { name: 'Library' }));
+    expect(screen.getByRole('group', { name: 'Library' }).nextElementSibling).toBe(
+      screen.getByRole('searchbox', { name: 'Search SoundCloud catalog' }).closest('section'),
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: 'SoundCloud connection' }));
-    expect(document.querySelector('[aria-label="SoundCloud capabilities"]')).toBeTruthy();
-    expect(screen.getByText('Browse catalog')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Manage connections' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Playlists' }));
+    expect(screen.getByText(/Connect SoundCloud to see your playlists/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Connect SoundCloud' })).toBeTruthy();
+  });
+
+  it('shows no connection panel or duplicate Connected for a healthy service', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      spotifyConnection('user-library-read playlist-read-private streaming'),
+    ]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    vi.mocked(api.listLikes).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService('Spotify');
+    expect(await screen.findByRole('button', { name: 'Spotify, Connected' })).toBeTruthy();
+    expect(await screen.findByText('No saved playlists')).toBeTruthy();
+    expect(screen.getAllByText('Connected')).toHaveLength(1);
+    expect(document.querySelector('[data-music-connection-notice]')).toBeNull();
+    expect(screen.queryByText('Authorized')).toBeNull();
+  });
+
+  it('names a missing playlist scope on a linked Spotify account', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    vi.mocked(api.listLikes).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService('Spotify');
+    expect(await screen.findByText('Reconnect Spotify to load your playlists.')).toBeTruthy();
+    expect(screen.getByText('Reconnect needed')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reconnect Spotify' })).toBeTruthy();
   });
 
   it('shows library rows and opens playlist tracks without Build a class', async () => {
@@ -1845,10 +1873,8 @@ describe('Music tab library', () => {
     expect(screen.queryByRole('button', { name: /Open / })).toBeNull();
     expect(await screen.findByText('Playlists unavailable')).toBeTruthy();
     expect(screen.queryByText('Likes & playlists ready')).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Spotify connection' }));
-    expect(screen.getByText('Library unavailable · retry')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Retry Spotify library' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry Spotify library' }));
+    await waitFor(() => expect(api.listConnections).toHaveBeenCalledTimes(2));
 
     fireEvent.click(screen.getByRole('button', { name: 'Catalog' }));
     expect(screen.getByRole('searchbox', { name: 'Search Spotify catalog' })).toBeTruthy();
@@ -1877,13 +1903,9 @@ describe('Music tab library', () => {
       await screen.findByText(/User Management in the Spotify developer dashboard/),
     ).toBeTruthy();
     expect(screen.queryByText('Playlists unavailable')).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Spotify connection' }));
-    expect(
-      screen.getAllByText(/User Management in the Spotify developer dashboard/).length,
-    ).toBeGreaterThan(0);
-    expect(screen.getAllByText('Connected').length).toBeGreaterThan(0);
-    expect(screen.getByText('Authorized')).toBeTruthy();
+    expect(screen.queryByText('Connected')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Retry Spotify library' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Manage connections' })).toBeTruthy();
   });
 
   it('starts SoundCloud OAuth from the Reconnect control', async () => {
@@ -1906,7 +1928,6 @@ describe('Music tab library', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
     fireEvent.click(await screen.findByRole('button', { name: /^SoundCloud$/ }));
     expect(api.connectProvider).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'SoundCloud connection' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Reconnect SoundCloud' }));
     await waitFor(() =>
@@ -2003,7 +2024,8 @@ describe('Dashboard connection-state headers', () => {
     expect(chipMark?.className).not.toContain('text-text-tertiary');
     expect(chipMark?.querySelector('svg[aria-hidden]')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /^Spotify$/ }));
-    openMusicConnectionDetails();
+    fireEvent.click(screen.getByRole('button', { name: 'Playlists' }));
+    expect(screen.getByText(/Reconnect Spotify to see your library/)).toBeTruthy();
     const musicExpired = await screen.findAllByText('Session expired');
     expect(musicExpired.length).toBeGreaterThan(0);
     expect(musicExpired.some((node) => node.closest('[data-connection-state="expired"]'))).toBe(

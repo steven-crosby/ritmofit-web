@@ -45,6 +45,65 @@ export function musicLibraryFailure(
 
 export type MusicLibraryKind = 'playlists' | 'songs' | 'catalog';
 
+export type MusicConnectionNotice = {
+  action: 'connect' | 'reconnect';
+  tone: 'neutral' | 'caution';
+  message: string;
+};
+
+/**
+ * The one line the Music tab shows about the selected service's account, or
+ * null when the service chip already says everything. Library read failures
+ * belong to their shelf, and a failed status read to the page-level alert.
+ * Catalog search never needs an account, so a missing link stays quiet there
+ * unless a connect attempt is in flight and needs somewhere to report.
+ */
+export function musicConnectionNotice(input: {
+  label: string;
+  fetchStatus: 'loading' | 'ready' | 'error';
+  connectionState: ProviderConnectionState;
+  libraryKind: MusicLibraryKind;
+  scopeGap: 'playlists' | 'playback' | null;
+  connectInFlight: boolean;
+}): MusicConnectionNotice | null {
+  const { label } = input;
+  if (input.fetchStatus !== 'ready') return null;
+  const quietOnCatalog = input.libraryKind === 'catalog' && !input.connectInFlight;
+  if (input.connectionState === 'expired') {
+    if (quietOnCatalog) return null;
+    return {
+      action: 'reconnect',
+      tone: 'caution',
+      message: `Reconnect ${label} to see your library. Catalog search still works.`,
+    };
+  }
+  if (input.connectionState === 'disconnected') {
+    if (quietOnCatalog) return null;
+    const shelf =
+      input.libraryKind === 'songs'
+        ? 'liked songs'
+        : input.libraryKind === 'playlists'
+          ? 'playlists'
+          : 'playlists and liked songs';
+    return {
+      action: 'connect',
+      tone: 'neutral',
+      message: `Connect ${label} to see your ${shelf}. Catalog search works without an account.`,
+    };
+  }
+  if (input.scopeGap) {
+    return {
+      action: 'reconnect',
+      tone: 'caution',
+      message:
+        input.scopeGap === 'playlists'
+          ? `Reconnect ${label} to load your playlists.`
+          : `Reconnect ${label} to play songs in Ritmo.`,
+    };
+  }
+  return null;
+}
+
 export type LibrarySort = 'recents' | 'name';
 
 export function musicChipBadge(input: {
