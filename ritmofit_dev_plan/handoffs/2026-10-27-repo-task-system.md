@@ -3,13 +3,13 @@ date: 2026-10-27
 tool: Codex (local)
 lane: solo
 branch: codex/repo-task-system
-head: n/a (local changes, not committed)
+head: 7e01d1fdc8e48b4a7c53abf39197f6813c651820
 base: f35d5d5992035c3895b948b3dc90e96ea6eaffa1
-prs: []
-status: open
+prs: ['#640']
+status: closed # describes the state after #640 merges
 ---
 
-# Repository-owned RF tasks verified; publication authorized
+# Repository-owned RF tasks complete; #640 publishes the result
 
 ## Tasks
 
@@ -32,12 +32,16 @@ status: open
 
 ## In flight
 
-- Local reviewable diff on the branch above. Do not regenerate legacy snapshots from an external
-  board. The new repo records are canonical once this work is published.
+- [#640](https://github.com/steven-crosby/ritmofit-web/pull/640) publishes this work. After its squash
+  merge, this session owes no implementation or deployment action. The new repo records are canonical.
+- The initial HTTPS push was refused because the local OAuth token lacks workflow scope. The
+  existing GitHub connector published the same commit without changing credentials or remotes.
 
 ## Next action
 
-Publish through a PR and squash-merge after final-head CI passes. Do not deploy this task-system change.
+After #640 merges, use the RF records directly. Remaining work is already routed to RF-29,
+RF-80 and RF-87–94/96. The next recommended product action remains the owner retry in RF-29.
+No task-system deployment is needed.
 
 ## Blockers and owner decisions
 
@@ -67,6 +71,8 @@ Publish through a PR and squash-merge after final-head CI passes. Do not deploy 
 
 - Worker API read 2026-10-27: version 24cdedc9-8103-417c-a502-23b0846c0967 at 100%, message 535e61a.
 - Base main f35d5d5 is ahead of that deployed commit by two docs-only commits (#638 and #639).
+  After #640 merges, main also contains task tooling, CI and documentation changes; no application
+  runtime diff is introduced and no deployment is owed for them.
 - Three cache-busted public SPA reads returned 403 here. Served-bundle parity and public health
   are not verified from this environment. D1 migration state was not re-checked.
 

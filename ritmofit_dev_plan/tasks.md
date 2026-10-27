@@ -10,7 +10,7 @@ to commit, push, merge, deploy, send, delete, or access production data.
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-94 tasks. backlog: 3 · ready: 0 · in_progress: 0 · blocked: 3 · review: 11 · done: 77 · cancelled: 0.
+94 tasks. backlog: 3 · ready: 0 · in_progress: 0 · blocked: 3 · review: 10 · done: 78 · cancelled: 0.
 
 ## In progress
 
@@ -36,7 +36,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-88](tasks/RF-88.json) Review deploy guard regression coverage PR #596 | P2 / task | — | Review the draft and determine whether it is ready or requires follow-up. | recorded |
 | [RF-89](tasks/RF-89.json) Review core workflow regression coverage PR #625 | P2 / task | — | Review #625 and resolve its disposition. | recorded |
 | [RF-94](tasks/RF-94.json) Disposition the remaining engineering audit findings | P2 / plan | — | Review the remaining ranked findings with Steven before scheduling implementation. | recorded |
-| [RF-95](tasks/RF-95.json) Implement the repository-owned RF task system | P2 / task | — | Publish the approved task-system change through a PR and squash-merge only after final-head CI passes. No deployment. | checked 2026-10-27 |
 | [RF-96](tasks/RF-96.json) Disposition legacy planning and handoff obligations | P2 / plan | — | Triage legacy planning and handoffs without treating their old approval or merge instructions as current authority. | recorded |
 | [RF-16](tasks/RF-16.json) Editorial Spotify playlist 404 still shares the outage envelope | untriaged / investigation | — | Reconfirm the 404/error mapping against current code; Spotify implementation remains tabled until reopened. | recorded |
 | [RF-23](tasks/RF-23.json) Health check touches D1 and an authed smoke uses a gitignored token | untriaged / verification | — | Reconcile the merged implementation with its outstanding review/verification; current public probes returned 403 and do not certify production health. | recorded; checked 2026-10-27 |
@@ -60,6 +59,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
+| [RF-95](tasks/RF-95.json) Implement the repository-owned RF task system | P2 / task | — | Repository-owned task tooling and migration completed; all acceptance checks passed locally. PR #640 publishes this result once merged. No deployment is required. | checked 2026-10-27 |
 | [RF-1](tasks/RF-1.json) Desktop hold, BPM, and effort recorded on the QA cycle song | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded |
 | [RF-2](tasks/RF-2.json) Teaching-screen deploy record on main | untriaged / documentation | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
 | [RF-3](tasks/RF-3.json) Teaching screen live | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
