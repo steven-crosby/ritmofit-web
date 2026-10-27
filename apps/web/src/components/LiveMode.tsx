@@ -1122,7 +1122,7 @@ export function LiveMode({
         <div ref={liveHeaderRef} className="sticky top-0 z-20 shrink-0 bg-bg-live">
           <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-interactive/20 px-4 py-3 sm:px-6 [@media(max-height:800px)_and_(max-width:639px)]:py-2 [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-0.5">
             <div className="min-w-0 [@media(max-height:800px)_and_(max-width:639px)]:sr-only [@media(max-height:480px)]:sr-only">
-              <p className="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+              <p className="rf-eyebrow font-semibold text-text-tertiary">
                 {runState}
                 {live ? ` · Track ${live.index + 1} of ${payload.tracks.length}` : ''}
               </p>
@@ -1139,7 +1139,7 @@ export function LiveMode({
                   its timecode and completion state visually in the control bar. */}
               <p
                 aria-hidden="true"
-                className="hidden shrink-0 text-center font-data text-[10px] leading-tight text-text-tertiary [@media(max-height:800px)_and_(max-width:639px)]:block [@media(max-height:480px)]:block"
+                className="hidden shrink-0 text-center font-data text-caption leading-tight text-text-tertiary [@media(max-height:800px)_and_(max-width:639px)]:block [@media(max-height:480px)]:block"
               >
                 <span className="block [@media(min-width:480px)]:inline">{fmt(elapsedMs)}</span>
                 <span className="block [@media(min-width:480px)]:inline">
@@ -1477,9 +1477,7 @@ function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing:
   return (
     <div className="relative mt-4 flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 border-t border-interactive/10 pt-3 sm:mt-6 sm:pt-4 [@media(max-height:800px)_and_(max-width:639px)]:gap-x-2 [@media(max-height:800px)_and_(max-width:639px)]:gap-y-2">
       <div className="flex flex-col gap-1.5">
-        <span className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-          Effort
-        </span>
+        <span className="rf-eyebrow text-text-tertiary">Effort</span>
         <IntensityReadout intensity={entry.intensity} />
       </div>
       {entry.displayBpm != null ? (
@@ -1570,18 +1568,14 @@ function CueByCue({
     return (
       <div className="flex min-h-full flex-col items-center justify-center gap-8 p-6 text-center sm:p-10">
         <div className="flex flex-col items-center gap-2">
-          <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
-            Silence
-          </p>
+          <p className="rf-eyebrow text-text-tertiary">Silence</p>
           <p className="font-display text-[clamp(2.25rem,6vw,4.5rem)] font-semibold leading-[0.95] text-text-secondary">
             No track playing
           </p>
         </div>
         <div className="flex w-full max-w-md flex-col gap-3">
           <div className="rounded-card bg-bg-raised p-5 shadow-card">
-            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-              Next track
-            </p>
+            <p className="rf-eyebrow text-text-tertiary">Next track</p>
             <div className="mt-2 flex items-baseline justify-between gap-3">
               <p className="min-w-0 break-words font-display text-lg font-semibold text-text-primary">
                 {gap.nextTitle ?? '—'}
@@ -1657,7 +1651,7 @@ function CueByCue({
         {/* The cue itself holds the center; the vitals footer pins to the bottom so
             the tempo numeral and the cue read as one state-object. */}
         <div className="relative flex flex-1 flex-col justify-[safe_center]">
-          <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary [@media(max-height:480px)]:leading-none">
+          <p className="rf-eyebrow text-text-tertiary [@media(max-height:480px)]:leading-none">
             {showReadyHero ? 'First action' : 'Current cue'}
           </p>
           {hold ? (
@@ -1712,9 +1706,7 @@ function CueByCue({
               )}
               {effortLabel && (
                 <p data-teaching="hero-effort" className="relative mt-4 flex items-baseline gap-3">
-                  <span className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-                    Effort
-                  </span>
+                  <span className="rf-eyebrow text-text-tertiary">Effort</span>
                   <span className="font-data text-2xl font-semibold text-text-primary">
                     {effortLabel}
                   </span>
@@ -1778,9 +1770,7 @@ function CueByCue({
             wraps instead of truncating. The assertive announcement and Full List
             keep the full string. The flex-1 cue block still centres short cues. */}
         <div className="relative mt-4 flex min-w-0 shrink-0 items-start gap-3 border-t border-interactive/15 pt-3 sm:mt-6 sm:pt-4 [@media(max-height:480px)]:mt-1 [@media(max-height:480px)]:pt-1">
-          <p className="shrink-0 font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
-            Next
-          </p>
+          <p className="shrink-0 rf-eyebrow text-text-tertiary">Next</p>
           <p className="min-w-0 flex-1 break-words font-display text-[clamp(1.25rem,2.5vw,1.875rem)] font-semibold text-text-secondary">
             {nextEvent ? nextEvent.text : 'End of track'}
           </p>
@@ -1804,10 +1794,7 @@ function CueByCue({
           data-teaching="upcoming"
           className="flex min-w-0 flex-col gap-3 rounded-card bg-bg-raised p-4 shadow-card sm:p-5 min-[1024px]:min-w-[431px]"
         >
-          <p
-            id="live-coming-up-heading"
-            className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary"
-          >
+          <p id="live-coming-up-heading" className="rf-eyebrow text-text-tertiary">
             Coming up
           </p>
           <ol
@@ -1846,9 +1833,7 @@ function CueByCue({
         {/* Timers — track + class countdowns, the performance's running clock. */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-card bg-bg-raised p-4 shadow-card">
-            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-              Track left
-            </p>
+            <p className="rf-eyebrow text-text-tertiary">Track left</p>
             <p
               data-teaching="track-left"
               className="mt-1 font-data text-2xl text-text-primary"
@@ -1861,9 +1846,7 @@ function CueByCue({
             )}
           </div>
           <div className="rounded-card bg-bg-raised p-4 shadow-card">
-            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-              Class left
-            </p>
+            <p className="rf-eyebrow text-text-tertiary">Class left</p>
             <p className="mt-1 font-data text-2xl text-text-primary">
               {fmt(classTotalMs - elapsedMs)}
             </p>
@@ -1881,18 +1864,14 @@ function CueByCue({
         {/* Track identity (+ any instructor notes). Provider handoff links left
             this card for the playback-failure recovery surface (D19). */}
         <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
-          <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-            Track {live.index + 1}
-          </p>
+          <p className="rf-eyebrow text-text-tertiary">Track {live.index + 1}</p>
           <p className="mt-1 break-words font-display text-lg font-semibold text-text-primary">
             {entry.track.title}
           </p>
           <p className="truncate font-ui text-sm text-text-secondary">{entry.track.artist}</p>
           {entry.notes && (
             <div className="mt-3 border-t border-interactive/15 pt-3">
-              <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-                Notes
-              </p>
+              <p className="rf-eyebrow text-text-tertiary">Notes</p>
               <p className="mt-1 whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
                 {entry.notes}
               </p>
@@ -1951,7 +1930,7 @@ function FullGuidance({
       <div className="flex min-w-0 flex-col gap-4 border-t border-interactive/15 p-4 sm:p-5">
         {currentEvent && (
           <div>
-            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+            <p className="rf-eyebrow text-text-tertiary">
               {currentEvent.kind === 'move' ? 'Current move' : 'Current cue'}
             </p>
             <p className="mt-1 whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
@@ -1960,7 +1939,7 @@ function FullGuidance({
           </div>
         )}
         <div>
-          <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+          <p className="rf-eyebrow text-text-tertiary">
             {nextEvent?.kind === 'move' ? 'Next move' : 'Next cue'}
           </p>
           <p className="mt-1 whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
@@ -1996,10 +1975,8 @@ function ChoreographyQueue({
   return (
     <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-          Choreography queue
-        </p>
-        <p className="font-data text-[11px] text-text-tertiary">Current + next</p>
+        <p className="rf-eyebrow text-text-tertiary">Choreography queue</p>
+        <p className="font-data text-caption text-text-tertiary">Current + next</p>
       </div>
       <ol className="mt-3 flex flex-col gap-1" aria-label="Choreography queue">
         {queue.map(({ event, state, untilMs, laterTrackIndex }, index) => {
@@ -2026,7 +2003,7 @@ function ChoreographyQueue({
               }`}
             >
               <span
-                className={`font-data text-[10px] font-semibold uppercase tracking-wide ${
+                className={`font-data text-caption font-semibold uppercase ${
                   current ? 'text-interactive' : 'text-text-tertiary'
                 }`}
               >
@@ -2036,7 +2013,7 @@ function ChoreographyQueue({
                 <span className="block truncate font-ui text-sm font-semibold text-text-secondary">
                   {event.text}
                 </span>
-                <span className="block font-data text-[10px] uppercase tracking-wide text-text-tertiary">
+                <span className="block font-data text-caption uppercase text-text-tertiary">
                   {laterTrackIndex == null
                     ? event.kind
                     : `${event.kind} · Track ${laterTrackIndex + 1}`}
@@ -2070,11 +2047,9 @@ function UpNextTracks({ payload, liveIndex }: { payload: RunPayload; liveIndex: 
   return (
     <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-          Up next
-        </p>
+        <p className="rf-eyebrow text-text-tertiary">Up next</p>
         {remaining > upcoming.length && (
-          <p className="font-data text-[11px] text-text-tertiary">{remaining} tracks left</p>
+          <p className="font-data text-caption text-text-tertiary">{remaining} tracks left</p>
         )}
       </div>
       <ol className="mt-2 flex flex-col gap-2">
@@ -2113,9 +2088,7 @@ function FullList({
     <section className="mx-auto w-full max-w-5xl p-4 sm:p-6">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-            Run of show
-          </p>
+          <p className="rf-eyebrow text-text-tertiary">Run of show</p>
           <h2 className="mt-1 font-display text-2xl font-semibold text-text-primary">
             {liveIndex >= 0
               ? `Track ${liveIndex + 1} of ${payload.tracks.length}`
@@ -2153,7 +2126,7 @@ function FullList({
                         {t.track.title}
                       </span>
                       {isLive && (
-                        <span className="font-data text-[10px] font-semibold uppercase tracking-wide text-interactive">
+                        <span className="font-data text-caption font-semibold uppercase text-interactive">
                           ▶ Current
                         </span>
                       )}
@@ -2181,7 +2154,7 @@ function FullList({
                   <div className="min-w-0">
                     {t.notes && (
                       <p className="whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
-                        <span className="mr-1 font-data text-[10px] uppercase tracking-wide text-text-tertiary">
+                        <span className="mr-1 font-data text-caption uppercase text-text-tertiary">
                           Notes
                         </span>
                         {t.notes}
@@ -2201,7 +2174,7 @@ function FullList({
                                 past ? 'text-text-tertiary line-through' : 'text-text-secondary'
                               }`}
                             >
-                              <span className="shrink-0 font-data text-[10px] text-text-tertiary">
+                              <span className="shrink-0 font-data text-caption text-text-tertiary">
                                 {fmt(e.atMs - start)} · {e.kind}
                               </span>
                               <span className="break-words">{e.text}</span>
