@@ -28,8 +28,9 @@ type FairPlayStorage = { setItem(key: string, value: string): void };
 /**
  * iOS Safari still exposes legacy `WebKitMediaKeys`. MusicKit takes that path
  * for `com.apple.fps` unless this flag is set: `play()` is accepted, then the
- * hidden `<audio id="apple-music-player">` errors and WebKit shows "Playback
- * Error". Desktop Chrome has no `WebKitMediaKeys` and uses Widevine instead.
+ * hidden `<audio id="apple-music-player">` errors. `configureMusicKit` passes
+ * `suppressErrorDialog` so MusicKit does not also open its in-page OK box.
+ * Desktop Chrome has no `WebKitMediaKeys` and uses Widevine instead.
  * The flag selects `requestMediaKeySystemAccess('com.apple.fps')`. If that
  * access fails, MusicKit falls back to the legacy session on its own.
  */
@@ -49,6 +50,102 @@ export function selectSafariModernFairPlay(
   } catch {
     // A blocked getter or a rejected write stays on legacy FairPlay.
   }
+}
+
+/** MusicKit's FairPlay key system. The probe and MusicKit both request this one. */
+const FAIRPLAY_KEY_SYSTEM = 'com.apple.fps';
+
+/**
+ * MusicKit's audio capability (`audio/mp4;codecs="mp4a.40.2"`). MusicKit also
+ * sends that type as a video capability. This probe leaves video out.
+ */
+const FAIRPLAY_AUDIO_CONTENT_TYPE = 'audio/mp4;codecs="mp4a.40.2"';
+
+/** Succeeded `requestMediaKeySystemAccess`. Anything else remembered is a DOMException name. */
+const SAFARI_MODERN_ACCESS_OK = 'ok';
+
+const CONSOLE_PREFIX = '[ritmo apple-music]';
+
+let modernAccessWord: string | null = null;
+let modernAccessProbe: Promise<string | null> | null = null;
+
+function webKitMediaKeys(): unknown {
+  if (typeof window === 'undefined') return undefined;
+  return (window as Window & { WebKitMediaKeys?: unknown }).WebKitMediaKeys;
+}
+
+/** MusicKit's modern FairPlay configuration with the video capability removed. */
+function audioOnlyFairPlayConfiguration(): MediaKeySystemConfiguration {
+  return {
+    initDataTypes: ['skd'],
+    audioCapabilities: [{ contentType: FAIRPLAY_AUDIO_CONTENT_TYPE, robustness: '' }],
+    distinctiveIdentifier: 'not-allowed',
+    persistentState: 'not-allowed',
+    sessionTypes: ['temporary'],
+  };
+}
+
+function domExceptionName(error: unknown): string | null {
+  if (!(error instanceof DOMException)) return null;
+  return /^[A-Za-z][A-Za-z0-9]*$/.test(error.name) ? error.name : null;
+}
+
+/** Log whether our flag write stuck. Never log the stored value, a token, or an exception message. */
+function logSafariModernEmeFlag(): void {
+  let enabled = false;
+  try {
+    enabled = localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY) === '1';
+  } catch {
+    enabled = false;
+  }
+  console.info(`${CONSOLE_PREFIX} mk-safari-modern-eme ${enabled ? '1' : 'not-1'}`);
+}
+
+async function runSafariModernAccessProbe(): Promise<string | null> {
+  logSafariModernEmeFlag();
+  const request = navigator.requestMediaKeySystemAccess;
+  if (typeof request !== 'function') return null;
+  try {
+    // The access object is intentionally discarded. Creating media keys or a
+    // session here would attach a key session this page does not control.
+    await request(FAIRPLAY_KEY_SYSTEM, [audioOnlyFairPlayConfiguration()]);
+    return SAFARI_MODERN_ACCESS_OK;
+  } catch (error) {
+    return domExceptionName(error);
+  }
+}
+
+/**
+ * One audio-only FairPlay probe for this page, and only when legacy
+ * `WebKitMediaKeys` exists. Resolves to `"ok"`, a DOMException name, or null
+ * when the call cannot be made or the rejection is not a DOMException.
+ * A second call reuses the first result and does not request again.
+ * Returns null (not a promise) when `WebKitMediaKeys` is absent, so `play()`
+ * does not yield before MusicKit's own `play()`.
+ */
+export function probeSafariModernFairPlayAccess(): Promise<string | null> | null {
+  if (!webKitMediaKeys()) return null;
+  if (!modernAccessProbe) {
+    // A probe failure must not become "would not play". Remember the word, or null.
+    modernAccessProbe = runSafariModernAccessProbe().then(
+      (word) => {
+        modernAccessWord = word;
+        return word;
+      },
+      () => null,
+    );
+  }
+  return modernAccessProbe;
+}
+
+/** The probe word already remembered, or null before the probe settles or when it was skipped. */
+export function safariModernAccessWord(): string | null {
+  return modernAccessWord;
+}
+
+export function resetSafariModernAccessProbeForTests(): void {
+  modernAccessWord = null;
+  modernAccessProbe = null;
 }
 
 /**
@@ -108,6 +205,11 @@ export interface MusicKitGlobal {
     developerToken: string;
     app: { name: string; build: string };
     storefrontId?: string;
+    /**
+     * When true, MusicKit sets `_playbackErrorDialog` false and does not present
+     * its in-page "Playback Error" OK box. The adapter banner remains the report.
+     */
+    suppressErrorDialog?: boolean;
   }): Promise<MusicKitInstance>;
   /** The configured page singleton, or null before the first `configure`. */
   getInstance(): MusicKitInstance | null;
@@ -200,6 +302,7 @@ export async function configureMusicKit(
         developerToken: config.developerToken,
         app: { name: 'Ritmo Studio', build: '1.0.0' },
         ...(config.storefront ? { storefrontId: config.storefront } : {}),
+        suppressErrorDialog: true,
       }),
     );
     configuration = pending;
