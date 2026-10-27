@@ -13,6 +13,68 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-26 — #604–#613 on main `c07bba3`.** Owner approved.
+> Production deploy at 2026-10-27T04:59:26Z (10:59 PM MT 2026-10-26) through
+> `scripts/deploy.sh c07bba3cc41f720b5e7cf485b640cb443f54f5c0` from a clean
+> detached worktree (the main checkout had an untracked `.claude/` directory,
+> so it was left untouched). The script built and deployed from its own
+> `/tmp/ritmofit-deploy.00lWlF` worktree. New Worker
+> `60dcbb9d-0310-4c86-939b-3201c36498ae` (message `c07bba3`); previous/rollback
+> `e7104e5d-bede-4871-82fb-f69eb8a0db20` (`cbb8496`). SPA entry
+> `assets/index-68HtGOrR.js` (was `assets/index-dMUWppKG.js`); CSS
+> `assets/index-DfzOPjzL.css` (was `assets/index-BI9aa-sY.css`). Three
+> consecutive cache-busted fetches matched the build on the first three tries,
+> and `wrangler deployments status` shows the new Worker at 100%. Script gates
+> passed on Node 22.23.4 (matches `.nvmrc`): `--self-check`, required-secret
+> names present, no remote D1 migrations pending, unit web 1437 / api 557 /
+> music 30, Worker/D1 integration 235, web build, OpenAPI no drift,
+> contract-parity (four allowlisted iOS cue-field lags, no untracked drift),
+> audit (2 ignored). No migration was applied. The range adds no migration
+> file. One preflight `wrangler d1 migrations list` returned Cloudflare 7403;
+> the retry and the deploy script both reported nothing to apply. No production
+> data was edited.
+>
+> Runtime since production `cbb8496`:
+> [#604](https://github.com/steven-crosby/ritmofit-web/pull/604) (modern FairPlay
+> for Safari Apple Music, `9fb1091`; web),
+> [#605](https://github.com/steven-crosby/ritmofit-web/pull/605) (obvious compact
+> Live queue, `e84aab7`; web),
+> [#606](https://github.com/steven-crosby/ritmofit-web/pull/606) (name the Spotify
+> development-mode allowlist and start reconnect; OpenAPI gains a 403
+> description on the existing Spotify routes, `c52cad4`),
+> [#607](https://github.com/steven-crosby/ritmofit-web/pull/607) (open the class
+> builder after a Music playlist create, `d35c5cc`; web),
+> [#608](https://github.com/steven-crosby/ritmofit-web/pull/608) (delete a class
+> from its row, `18557ed`; web, plus a class-delete integration test),
+> [#609](https://github.com/steven-crosby/ritmofit-web/pull/609) (quieter Music
+> connection area, `2d51112`; web),
+> [#610](https://github.com/steven-crosby/ritmofit-web/pull/610) (keep the update
+> toast up when the app shell crashes, `f4d23f5`; web),
+> [#611](https://github.com/steven-crosby/ritmofit-web/pull/611) (show the next
+> track's first cue after a track's last cue, `d787491`; web),
+> [#612](https://github.com/steven-crosby/ritmofit-web/pull/612) (wrap long Live
+> titles and notes so the phone shell cannot scroll sideways, `ccb3460`; web),
+> and [#613](https://github.com/steven-crosby/ritmofit-web/pull/613) (phone
+> Cue-by-Cue first-screen test, `c07bba3`; tests only).
+>
+> Smoke (script): propagation 3/3 on the built entry; `/` 200, `/api/v1/health`
+> 200 with all six security headers; `/classes`, `/explore`, `/teams` 401.
+> Health body: `status: ok`, `database: true`, every required secret `true`
+> (`APPLE_CLIENT_SECRET` `false` as expected — the signing trio is set).
+> Mounted routes reach handlers: `GET /shares`, `GET /shares/x`,
+> `GET /providers/spotify/search`, `POST /providers/track-import`, and
+> `GET /classes/<uuid>/shares`, `POST .../import-playlist`,
+> `POST .../tracks/import`, `GET .../cover`, `POST .../tags` 401;
+> `GET /classes/not-a-uuid/tracks` 404 `application/json`. Landing HTML is 200
+> and serves `assets/index-68HtGOrR.js` plus `assets/index-DfzOPjzL.css`.
+> Authed smoke failed: `GET /api/v1/classes` and
+> `GET /api/v1/providers/spotify/playlists` 401. The QA token file is present
+> and was not printed. Classes, the builder, Music, and Live at rest were not
+> opened. Tail for five minutes on `ritmofit-api`: 18 events, all outcome ok,
+> no exceptions and no 5xx, every event on Worker `60dcbb9d`, all from this
+> session's own checks (health 200, the unauthenticated 401s above, the 404,
+> and the two authed-smoke 401s).
+
 > **Deploy 2026-10-26 — #598 and #599 on main `7163d71`.** Owner approved.
 > Production deploy at 2026-10-27T00:41:51Z (6:41 PM MT 2026-10-26) through
 > `scripts/deploy.sh` from a clean detached worktree (the main checkout had an
