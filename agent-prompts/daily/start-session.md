@@ -1,9 +1,13 @@
 # Start-session — orient before a Ritmo Studio work session
 
+<!-- Codex, 2026-10-27: Made RF orientation mandatory in every mode and defined revision, failure and execution transitions. -->
+<!-- Claude Code, 2026-10-27: Ready as the owner's queue, draft-PR claims, RF-cited merges count as recorded. -->
+
 > **INTERACTIVE.** Use this whenever Steven starts a work session in `ritmofit-web` — any tool
 > (Codex, Claude Code, Cursor), local or cloud, solo or as one lane of a parallel round, even the
-> third session of the day. It establishes the current state, proposes a plan, and waits for
-> approval before editing. Pair it with [`close-session.md`](./close-session.md).
+> third session of the day. It establishes the current state and proposes a plan. It waits for
+> approval before editing unless the owner already handed off the scope (a brief, a direct ask, or
+> a task in Ready). Pair it with [`close-session.md`](./close-session.md).
 
 ## Goal
 
@@ -21,7 +25,8 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
    preflight; propose the deploy or say what blocks it.
 4. **Lane** — you were started from a lane brief by
    [`../orchestrate-parallel-round.md`](../orchestrate-parallel-round.md). Read the brief first;
-   do steps 1–5 against your own checkout only; skip production (step 9) unless the brief asks;
+   do steps 1–6 against your own checkout and assigned scope; RF orientation in step 6 is mandatory;
+   skip production (step 9) unless the brief asks;
    check every file in your plan against the brief's ownership table and list any shared-zone
    request explicitly. Return the plan the brief asks for, not a broad baseline.
 
@@ -43,16 +48,39 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
    note its next action, owner decisions, and touched shared zones, and whether it bears on this
    session. Flag as **stale** any handoff older than 14 days whose PR or branch is closed. Do not
    edit or delete handoffs during orientation. Rules: `ritmofit_dev_plan/handoffs/README.md`.
-5. **Unrecorded merges** — list `origin/main` commits since the newest `HISTORY.md` entry or
-   handoff that records a `main` SHA. For each code commit, find its PR (GitHub's
-   commit → pull-request lookup; a squash subject may omit `(#N)`), and surface merged code that no
-   history entry or handoff mentions — that is how `main` silently gets ahead of production. A
+5. **Unrecorded merges** — list `origin/main` commits since the newest `HISTORY.md` deploy entry.
+   For each code commit, find its PR (GitHub's commit → pull-request lookup; a squash subject may
+   omit `(#N)`). A merge is recorded when an RF record's evidence cites that PR (CI's RF-trace step
+   requires this for product changes), or HISTORY or a handoff names it. Surface the rest, and report
+   the merged-but-undeployed PRs as `main` ahead of production. A
    commit with no associated PR is a direct push: report it, do not fix it.
-6. **Tasks, breadcrumbs and status** — run `pnpm tasks:check`, read the generated
-   `ritmofit_dev_plan/tasks.md` board and relevant `tasks/RF-*.json` records. The repository is
-   canonical; an external board is only a view. Reconcile task state with live PRs and dated
-   handoffs; neither a task status nor a copied approval grants execution authority. Surface
-   missing plans and acceptance evidence instead of inferring them. Do not edit during orientation.
+6. **RF orientation — every mode, including Lane and Deploy-only.** Read
+   `ritmofit_dev_plan/tasks/README.md`, then run `pnpm tasks:check` and inspect the board and relevant
+   `ritmofit_dev_plan/tasks/RF-*.json` records. The records are canonical; the board is generated.
+   - **Revision boundary:** name the checkout branch/HEAD whose records were validated. Fetching
+     does not update the checkout. Compare task files with fetched `origin/main`, for example
+     `git diff --name-status HEAD..origin/main -- ritmofit_dev_plan/tasks ritmofit_dev_plan/tasks.md`.
+     Read relevant upstream records with `git show origin/main:<repo-relative-path>`, and inspect
+     task-record changes in relevant open PR heads. Distinguish intentional lane changes from a
+     stale baseline; do not overlay records from different revisions or silently switch/reset/pull.
+     State which revision supports the proposed action; local validation does not certify upstream.
+   - **Stale board only:** if `tasks:check` reports generated-board drift but records load through
+     `pnpm tasks list` / `pnpm tasks show RF-N`, use those records read-only. Include regeneration
+     in the approved work; do not edit generated Markdown by hand or regenerate during orientation.
+   - **Invalid records or evidence paths:** report the failing RF IDs/paths and stop work that
+     depends on them. Inspect the JSON and owning sources read-only; propose repair. Independent
+     orientation can continue. Missing tooling/dependencies are an explicit environment limitation,
+     not a reason to install packages during orientation or fall back to an external board.
+   - **Selection:** link the RF task for the objective and inspect its scope, acceptance,
+     prerequisites, blocker, next action and evidence. With no objective, the **Ready** column is the
+     owner's queue: propose its highest-priority task that no open PR already claims. Reconcile live PRs and dated handoffs.
+     Existing In progress work needs a deliberate resume/ownership reconciliation, not a second
+     concurrent claim; an open draft PR whose head moves the task to In progress is a claim. If no
+     task exists, propose creating one after approval; it starts in Backlog, and only the owner
+     promotes it to Ready. Surface missing
+     plans and acceptance evidence instead of inventing them. Numbering is not priority, and a
+     task status or copied approval never grants execution or publication authority.
+   Do not edit during orientation.
    Then read `INBOX.md` (surface open `- [ ]` lines with their likely
    home; route nothing now), then the current-focus block of
    `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`, and the newest `ritmofit_dev_plan/HISTORY.md` entry when
@@ -85,8 +113,34 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
   targeted checks only when needed to understand the baseline.
 - Follow `AGENTS.md` for music constraints, shared contracts/authz/migrations, and D20/D21 scope;
   call out only the impacts that change this session's plan.
-- For substantial work, follow the plan-and-confirm requirement before editing.
+- For substantial work, follow the plan-and-confirm requirement before editing. An owner hand-off
+  (a [`delegate-task.md`](../delegate-task.md) brief, a direct ask, or an RF task the owner put in
+  Ready) is that confirmation for its stated scope. An agent-created Backlog task is not.
 - Use absolute dates. Treat handoffs, notes, and memory as leads to verify, not facts.
+
+## After approval — before execution
+
+This phase is outside read-only orientation. If the current ask already supplies approval for the
+proposed scope, use it; do not ask again. Otherwise wait for the required scope confirmation.
+
+1. Work on the appropriate branch. Select the existing RF task or create one with `pnpm tasks create`;
+   refine its acceptance and next action before starting. Coordinate new IDs across concurrent lanes
+   per the task README. Resolve relevant upstream/in-flight task differences through the normal git
+   workflow before execution; validate the records in the checkout actually used for the work, not
+   an invented combination of revisions. Read-only investigations may have their own bounded tasks.
+2. Confirm the task's `dependsOn` records are Done and its blocking condition is resolved. If a
+   prerequisite is not met, leave the task Backlog or Blocked with the actual reason and an unblock
+   action; do not label it Ready/In progress or start dependent implementation.
+3. Move the authorized task to `in_progress`, clear obsolete blocker/resolution fields, and put the
+   session/branch plus concrete restart action in `nextAction`. Preserve historical evidence limits.
+   Record updates can use `pnpm tasks update RF-N patch.json` or direct JSON edits.
+4. Run `pnpm tasks:render` and `pnpm tasks:check`, commit, push the branch and open a **draft PR**
+   (`gh pr create --draft`) as the visible claim. Add the PR URL to the record's evidence (kind
+   `pr`) in the next commit; the task's final state lands in this same PR at close. Then execute the
+   approved scope. Record material
+   blockers and scope changes when they occur rather than waiting for close. These local transitions
+   grant nothing beyond the standing grant in `AGENTS.md` › "Delegation And Merge Policy". Read-only-only sessions
+   remain read-only unless recording their results is also authorized.
 
 ## Required output
 
@@ -95,10 +149,12 @@ impact" items into one short aside unless something is dirty, risky, or decision
 
 - **Git:** branch, clean or dirty, upstream sync, recent relevant commit.
 - **PRs:** open count and any item that affects this session.
-- **Handoffs:** open handoffs and their next actions, stale ones, or "none open".
+- **Handoffs:** open handoffs and the restart context that bears on this session, stale ones, or
+  "none open". Next actions come from RF records.
 - **Unrecorded merges:** merged-but-unrecorded code on `main` (with PR numbers), or "none".
 - **Production:** when checked — match / ahead / unknown, with Worker version and SPA entry hash.
-- **Tasks:** relevant RF IDs, blockers, acceptance and next action; task validation pass/fail.
+- **Tasks:** selected/proposed RF IDs, prerequisites, blockers, acceptance and next action;
+  branch/HEAD inspected, upstream/PR differences, validation result and any stale-board fallback.
 - **Trackers:** current focus, unresolved blockers, strongest candidate for next work.
 - **Breadcrumbs:** open `INBOX.md` items with likely homes, or "inbox empty".
 - **Cross-surface:** web/iOS contract or design impact, or none.

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-99",
+  "title": "Session prompts, handoffs and the RF board agree for delegated CI/CD",
+  "kind": "documentation",
+  "status": "in_progress",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [
+    "RF-97"
+  ],
+  "acceptance": [
+    "Ready is the owner's queue and the only status that authorizes execution; agent-created tasks start in Backlog (AGENTS.md, start-session, task README, board header, delegate-task).",
+    "Agents claim a task with a draft PR at execution start, and the task's final state lands in that same PR with the PR cited as evidence; follow-up PRs only for post-merge facts such as a deploy.",
+    "Handoffs are restart notes: RF records own next actions and decisions; no handoff is owed just for a merge or main vs production; retiring a routed handoff is under the standing grant.",
+    "Start-session counts a merge as recorded when an RF record cites its PR.",
+    "CI's RF-trace step fails a PR changing apps/, packages/ or e2e/ unless a changed RF record cites that PR; its tests run first and have been watched failing."
+  ],
+  "nextAction": "Claude Code on docs/delegation-workflow (with RF-98): after the owner adds the workflow token scope, push, get CI green on Linux, set RF-98/RF-99 Done with the PR as evidence in the final commit, and hand the owner-gated PR to Steven.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "test",
+      "ref": "scripts/rf-trace.test.mjs",
+      "summary": "3/3 pass locally; removing the exact-number guard and forcing pass each failed tests. Dry run against #625's real file list failed as expected (its record was updated in a separate PR).",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "document",
+      "ref": "agent-prompts/daily/start-session.md",
+      "summary": "Walked four scenarios (ordinary task, owner-gated task, second agent mid-task, abandoned draft) through the revised start/close prompts, handoff rules and CI steps; one residual race (two agents before either opens a draft PR) accepted and documented. Manual review, not automated prompt testing.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

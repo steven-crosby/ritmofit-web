@@ -16,7 +16,7 @@ pnpm --filter @ritmofit/web exec vitest run src/lib/readiness.test.ts   # one we
 pnpm --filter @ritmofit/api exec vitest run src/lib/authz.test.ts -t "owner"   # one API test by name
 pnpm --filter @ritmofit/api exec vitest run --config vitest.integration.config.ts test/authz.integration.test.ts
 pnpm --filter @ritmofit/music test
-pnpm e2e   # local-only Playwright smoke (mock providers, port 8798); see README
+pnpm e2e   # Playwright smoke (mock providers, port 8798); also a required CI step
 ```
 
 Web tests are configured in `apps/web/vite.config.ts` and default to the node environment. Component
@@ -91,3 +91,10 @@ Auth tables are in `auth-schema.ts`. `ritmofit_dev_plan/schema.md` must agree wi
 Domain vocabulary (class, plan block, section, cue, placed move, clip window): see
 `ritmofit_dev_plan/glossary.md`. Locked decisions such as D20/D21/D22: `decisions.md`. Access model:
 `authorization.md`. API surface: `api.md`. Provider capabilities and policy: `music-providers.md`.
+
+## Delegating with Claude Code subagents
+
+To run an owner brief from `agent-prompts/delegate-task.md`, spawn an `Agent` with
+`isolation: "worktree"` and pass the brief plus "Follow agent-prompts/delegate-task.md" verbatim.
+The worktree keeps it off any other session's uncommitted changes. Each subagent ends in its own PR.
+They must merge one at a time (see the merge policy), so do not ask several to merge simultaneously.

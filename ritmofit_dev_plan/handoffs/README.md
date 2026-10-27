@@ -9,8 +9,12 @@ One file per session or lane: `YYYY-MM-DD-<lane-slug>.md` (for example
 `2026-10-06-docs-workflow.md`, `2026-10-07-r3-lane2-class-api.md`). Start from
 [`../../agent-prompts/templates/handoff.md`](../../agent-prompts/templates/handoff.md).
 
-A handoff records **state owed forward**: what is in flight, the one next action, open owner
-decisions, verification run or skipped, and `main` vs production as observed. It is not a log —
+<!-- Claude Code, 2026-10-27: Handoffs are restart notes; RF records own next actions and decisions. -->
+
+A handoff is a **restart note**: context a successor needs that an RF record cannot hold, such as
+unfinished branch state, dated observations, or a device check in flight. The RF record owns the next
+action, owner decisions and evidence; `DEVELOPMENT_PLAN.md` owns `main` vs production. Write one only
+when that context exists (lanes and orchestrators always write one); never just to record a merge. It is not a log —
 shipped facts go to [`../HISTORY.md`](../HISTORY.md), current focus to
 [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md), decisions to [`../decisions.md`](../decisions.md).
 
@@ -34,13 +38,16 @@ copy mutable task statuses into new handoffs or infer approval from a task label
    is still owed forward. Do not push a handoff straight to `main`.
 4. **Reading.** `start-session` reads every handoff on `origin/main` **and** every handoff file in
    the head of an open PR (in-flight lanes are visible before they merge).
-5. **Status.** `status: open` while anything is in flight or a next action is owed;
-   `status: closed` when nothing is owed (an idle lane, a finished session whose facts already live
-   in HISTORY/DEVELOPMENT_PLAN).
-6. **Retiring.** A later `close-session` deletes a handoff once every item in it is done or routed
-   to its real home (HISTORY, DEVELOPMENT_PLAN, decisions, INBOX, a PR). `start-session` flags any
+5. **Evidence references.** Before an authorized retirement, preserve any evidence cited by RF
+   records in a durable repo document or immutable commit link and update those references without
+   claiming new verification. Final task rendering/validation follows all handoff and docs edits.
+6. **Status.** `status: open` while its restart context still matters; `status: closed` when nothing
+   is owed (an idle lane, a finished session whose facts already live in RF records/HISTORY).
+7. **Retiring.** Under the standing grant (`AGENTS.md` › "Delegation And Merge Policy"), a later
+   `close-session` deletes a handoff in a PR once every item in it is done or routed
+   to its real home (an RF record, HISTORY, DEVELOPMENT_PLAN, decisions, INBOX). `start-session` flags any
    handoff older than 14 days whose PR or branch is closed as **stale**; the next close routes and
    deletes it. Git history keeps every deleted handoff.
-7. **Facts, not inference.** Production state is "as observed" with evidence (Worker version,
+8. **Facts, not inference.** Production state is "as observed" with evidence (Worker version,
    served SPA hash) or explicitly "not checked from this environment". Absolute dates only.
-8. **No secrets.** Never paste tokens, cookies, provider credentials, or production user data.
+9. **No secrets.** Never paste tokens, cookies, provider credentials, or production user data.

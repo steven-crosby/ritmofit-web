@@ -5,18 +5,21 @@
 The repository owns this board. [Workflow and record format](tasks/README.md).
 
 **Status is not authorization.** A task, dependency, or green check never grants permission
-to commit, push, merge, deploy, send, delete, or access production data.
+to commit, push, merge, deploy, send, delete, or access production data. **Ready** is the
+owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md ›
+"Delegation And Merge Policy". An open draft PR moving a task to In progress is its claim.
 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-94 tasks. backlog: 3 · ready: 0 · in_progress: 0 · blocked: 3 · review: 8 · done: 80 · cancelled: 0.
+97 tasks. backlog: 3 · ready: 0 · in_progress: 2 · blocked: 3 · review: 8 · done: 81 · cancelled: 0.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-98](tasks/RF-98.json) Delegated PRs merge on a thorough required CI gate with owner-gated exceptions | P1 / task | needs RF-97 | Claude Code on docs/delegation-workflow (with RF-99): after the owner adds the workflow token scope, push, get CI green on Linux, set Done with the PR as evidence in the final commit, and hand the owner-gated PR to Steven. | checked 2026-10-27 |
+| [RF-99](tasks/RF-99.json) Session prompts, handoffs and the RF board agree for delegated CI/CD | P1 / documentation | needs RF-97 | Claude Code on docs/delegation-workflow (with RF-98): after the owner adds the workflow token scope, push, get CI green on Linux, set RF-98/RF-99 Done with the PR as evidence in the final commit, and hand the owner-gated PR to Steven. | checked 2026-10-27 |
 
 ## Blocked / waiting
 
@@ -60,6 +63,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-88](tasks/RF-88.json) Review deploy guard regression coverage PR #596 | P2 / task | — | Reviewed against current main on 2026-10-27: the self-check assertions are meaningful (ran under macOS bash 3.2; no temp files or worktrees left). Typecheck failed on current dependencies because the test redeclared ImportMeta.url; that block was removed in c906cf4. Squash-merged as d76fbd3. Tests and self-check only; deploy behavior unchanged. | recorded; checked 2026-10-27 |
 | [RF-89](tasks/RF-89.json) Review core workflow regression coverage PR #625 | P2 / task | — | Reviewed against current main on 2026-10-27: web 171, Spotify 49 and D1 integration 4 tests passed on the merged tree. Squash-merged as 0065eaf. Tests only; its handoff, whose sole action was this merge, is retired. | recorded; checked 2026-10-27 |
 | [RF-95](tasks/RF-95.json) Implement the repository-owned RF task system | P2 / task | — | Repository-owned task tooling and migration completed; all acceptance checks passed locally. PR #640 publishes this result once merged. No deployment is required. | checked 2026-10-27 |
+| [RF-97](tasks/RF-97.json) Align session prompts with the canonical RF task lifecycle | P2 / task | follow-ups RF-98 | Codex's six corrections were reviewed and carried into the RF-98 branch from main on 2026-10-27 with their substance intact. Their 'permissions already granted' wording now resolves to the standing grant in AGENTS.md › Delegation And Merge Policy. Publication is tracked by RF-98. | checked 2026-10-27 |
 | [RF-1](tasks/RF-1.json) Desktop hold, BPM, and effort recorded on the QA cycle song | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded |
 | [RF-2](tasks/RF-2.json) Teaching-screen deploy record on main | untriaged / documentation | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
 | [RF-3](tasks/RF-3.json) Teaching screen live | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |

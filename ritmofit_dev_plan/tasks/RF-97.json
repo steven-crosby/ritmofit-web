@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-97",
+  "title": "Align session prompts with the canonical RF task lifecycle",
+  "kind": "task",
+  "status": "done",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Every start mode reads RF records with an explicit revision boundary and distinguishes stale generated output from invalid records.",
+    "After scope approval, sessions select or create a task, check prerequisites and record In progress before implementation.",
+    "Close-session finalizes records, evidence and handoff/document edits before final rendering, validation and publication.",
+    "Publication, merge and deletion instructions in the prompts and matching guidance honor separate permissions already granted.",
+    "Walk through the six reviewed failure scenarios, validate task records/board, check documentation links and run formatting."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "agent-prompts/daily/start-session.md",
+      "summary": "Steven approved the six-finding prompt/guidance correction on 2026-10-27. Implementation is local; publication permissions are separate.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "document",
+      "ref": "agent-prompts/daily/close-session.md",
+      "summary": "Codex walked the six reviewed scenarios through the revised start/close instructions and ran formatting, task validation and local link checks (manual prompt review, not automated behavior tests). Its local handoff was not published; this entry replaces that reference.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Codex's six corrections were reviewed and carried into the RF-98 branch from main on 2026-10-27 with their substance intact. Their 'permissions already granted' wording now resolves to the standing grant in AGENTS.md › Delegation And Merge Policy. Publication is tracked by RF-98.",
+  "followUps": [
+    "RF-98"
+  ]
+}

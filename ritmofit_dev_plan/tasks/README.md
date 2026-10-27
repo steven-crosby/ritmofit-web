@@ -65,8 +65,8 @@ until its claimed behavior is actually verified. Never date a copied claim as fr
 | State | Meaning / exit condition |
 | --- | --- |
 | Backlog | Captured; scope, priority or approval may still be missing. |
-| Ready | Scope and acceptance are clear, prerequisites Done, and required implementation authority has been established in the session. |
-| In progress | Someone is actively executing an authorized scope. State the restart action. |
+| Ready | The owner's queue. Scope and acceptance are clear and prerequisites Done; the owner (or an agent at the owner's explicit request) set it, so any agent may execute it. An agent never promotes its own task. |
+| In progress | A session is executing it, claimed by an open draft PR. State the session/branch and restart action. |
 | Blocked | Waiting for a device check, document, account, decision or other condition; state who/what unblocks it. |
 | For review | A plan, change or bounded result awaits review. This is not approval. |
 | Done | This task's acceptance is met, evidence and resolution are present, all children are closed, and prerequisites are Done. |
@@ -79,9 +79,10 @@ completion bars. Never close a playback outcome just because a proposed fix ship
 implementation is done while acceptance remains, name a verification follow-up and keep the
 product acceptance task open. Reopen a task by clearing its resolution and supplying a next action.
 
-**Status is not authorization.** Task records never replace Steven's separate permissions for
-commit, push, PR, merge, release, deploy, send, delete, or production access. A Ready label copied
-from another session is not proof of current authority. Record the boundary in the next action.
+**Status is not authorization.** Task records never replace Steven's permissions for commit, push,
+PR, merge, release, deploy, send, delete, or production access. The standing grant in `AGENTS.md` ›
+"Delegation And Merge Policy" is where commit, push, PR and non-owner-gated merge come from. Ready is the only status that
+grants anything (execution of that scope); a Ready label an agent set for itself grants nothing. Record the boundary in the next action.
 
 ## Authority, sync and concurrent work
 
@@ -92,8 +93,21 @@ from another session is not proof of current authority. Record the boundary in t
   their mutable statuses. Historical observations keep their dates and are not live authority.
 - `HISTORY.md` owns deployment and shipped-event evidence. Plans and decisions keep the detailed
   rationale; tasks point to tracked plans instead of embedding divergent copies.
-- Start-session reads the board and relevant records, then reconciles PR and handoff facts with
-  live sources. Close-session updates those records and re-renders the board before publishing.
+- [Start-session](../../agent-prompts/daily/start-session.md) reads relevant records in every mode,
+  names their revision and compares upstream/in-flight changes. Orientation is read-only. A stale
+  generated board can be bypassed using valid JSON records read-only; invalid records/paths block
+  dependent work. Neither case makes an external view authoritative.
+- After scope approval, select/create the task, confirm prerequisites, and record In progress with
+  the session/branch and restart action, then render, validate and open a draft PR as the visible
+  claim. Add its URL as `pr` evidence. New tasks start in Backlog; only the owner sets Ready.
+- [Close-session](../../agent-prompts/daily/close-session.md) reconciles acceptance and remaining work,
+  finishes evidence/handoff/docs edits and authorized retirements, then renders and validates the
+  final records before any publication. A later file edit repeats final validation. The final state
+  (usually Done) lands in the work PR itself, so merging publishes it; CI's RF-trace step requires a
+  product PR to change a record citing it. Merging follows the standing grant and final-head checks.
+- Before retiring a document used as task evidence, preserve its evidence in a durable repo file
+  or immutable commit link and update the reference without upgrading its verification status.
+  Final validation must run after retirement, not just before it.
 - External views may be generated from these records. They must not introduce their own
   authoritative states or require a snapshot to resume work. No two-way remote sync is included.
 

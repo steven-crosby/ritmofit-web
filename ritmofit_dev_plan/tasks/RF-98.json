@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-98",
+  "title": "Delegated PRs merge on a thorough required CI gate with owner-gated exceptions",
+  "kind": "task",
+  "status": "in_progress",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [
+    "RF-97"
+  ],
+  "acceptance": [
+    "AGENTS.md states the owner's standing grant: agents branch, commit, push, open a PR and squash-merge their own PR when the final head is green, except owner-gated paths; deploys, deletion and owner-approved stay ungranted.",
+    "The required CI job fails a PR touching owner-gated paths unless it carries owner-approved, and its own tests run first and have been watched failing.",
+    "The required CI job runs the Playwright e2e smoke and uploads per-page screenshots as an artifact, green on Linux on the PR's final head.",
+    "agent-prompts/delegate-task.md and .github/pull_request_template.md give a hand-off brief and PR evidence sections, linked from the prompt index, README and CLAUDE.md.",
+    "Codex's RF-97 session corrections are carried forward intact and point at the standing grant."
+  ],
+  "nextAction": "Claude Code on docs/delegation-workflow (with RF-99): after the owner adds the workflow token scope, push, get CI green on Linux, set Done with the PR as evidence in the final commit, and hand the owner-gated PR to Steven.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "test",
+      "ref": "scripts/owner-gate.test.mjs",
+      "summary": "4/4 pass locally; two deliberate mutations (dropping the AGENTS.md gate, forcing pass) each failed 3/4. Dry run against PR #641's real file list failed without the label and passed with it.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "test",
+      "ref": "e2e/smoke.spec.ts",
+      "summary": "pnpm e2e passed 2/2 (desktop-1440, phone-390) in 16s on macOS with 10 screenshots after installing Chromium. Not yet run on Linux CI.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
