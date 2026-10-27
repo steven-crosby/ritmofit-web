@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-10",
+  "title": "Nested class routes return JSON 404 for a non-UUID class id, merged as 6ee1454",
+  "kind": "task",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Historical scope: Nested class routes return JSON 404 for a non-UUID class id, merged as 6ee1454. Review original evidence before relying on broader product acceptance."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L91",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/589",
+      "summary": "GitHub state MERGED; mergedAt 2026-10-26T03:22:15Z. This checks PR state only.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Recorded complete on the imported board; product behavior was not re-tested during task migration.",
+  "followUps": [],
+  "imported": {
+    "status": "Done",
+    "title": "[#589](https://github.com/steven-crosby/ritmofit-web/pull/589) Nested class routes return JSON 404 for a non-UUID class id, merged as 6ee1454"
+  }
+}

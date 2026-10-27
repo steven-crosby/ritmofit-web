@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-95",
+  "title": "Implement the repository-owned RF task system",
+  "kind": "task",
+  "status": "done",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "All 84 imported task records preserve IDs and provenance, with explicit reconciliation and evidence limits.",
+    "Task commands validate records, references, dependency cycles, completion evidence, and generated-board drift.",
+    "Session instructions route work to repo records; focused task tests and CI-equivalent gates pass."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/tasks/README.md",
+      "summary": "Steven approved local implementation and subsequently authorized commit, push, PR creation and squash merge on 2026-10-27. Deployment is not authorized.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "test",
+      "ref": "ritmofit_dev_plan/handoffs/2026-10-27-repo-task-system.md",
+      "summary": "Full CI-equivalent local gate passed; 10 task-tool tests passed. All 84 original records preserve exact IDs, statuses and titles. No product acceptance is claimed.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/640",
+      "summary": "Publication PR opened under explicit owner authorization. Squash merge follows final-head CI; this entry does not claim a merge has already occurred.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Repository-owned task tooling and migration completed; all acceptance checks passed locally. PR #640 publishes this result once merged. No deployment is required.",
+  "followUps": []
+}

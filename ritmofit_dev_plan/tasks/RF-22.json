@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-22",
+  "title": "Refuse dirty-tree deployment even when a SHA is supplied",
+  "kind": "task",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Dirty-tree guard is merged in #592; subsequent production behavior is a separate verification claim."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L19",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/592",
+      "summary": "GitHub state MERGED; mergedAt 2026-10-26T04:29:23Z. This checks PR state only.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Implementation merged in #592. Additional deploy guard regression tests remain open in #596 (RF-88).",
+  "followUps": [
+    "RF-88"
+  ],
+  "imported": {
+    "status": "In Progress",
+    "title": "[#592](https://github.com/steven-crosby/ritmofit-web/pull/592) A dirty tree refuses even with a SHA"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-51",
+  "title": "Phone Cue-by-Cue fixes, one pull request each",
+  "kind": "group",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Historical scope: Phone Cue-by-Cue fixes, one pull request each. Review original evidence before relying on broader product acceptance."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L60",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": "Recorded complete on the imported board; product behavior was not re-tested during task migration.",
+  "followUps": [],
+  "imported": {
+    "status": "Done",
+    "title": "Phone Cue-by-Cue fixes, one pull request each"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-86",
+  "title": "Close the session with a handoff for the local agent",
+  "kind": "documentation",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The iPhone failure handoff and task snapshot are on main through #639."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L17",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/639",
+      "summary": "GitHub state MERGED; mergedAt 2026-10-27T20:48:56Z. This checks PR state only.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Handoff merged in #639 at f35d5d5; RF-29 retains the unresolved iPhone acceptance.",
+  "followUps": [],
+  "imported": {
+    "status": "In Progress",
+    "title": "Close the session with a handoff for the local agent [#639](https://github.com/steven-crosby/ritmofit-web/pull/639)"
+  }
+}

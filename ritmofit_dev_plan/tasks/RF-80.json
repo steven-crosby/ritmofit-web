@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-80",
+  "title": "Define device playback verification before Start",
+  "kind": "plan",
+  "status": "blocked",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Recover the actual preflight and root-cause documents into tracked repo paths with provenance, then review them.",
+    "Owner approves provider/device scope, behavior after success or failure, and the audible verification procedure before implementation."
+  ],
+  "nextAction": "Recover the original plan and root-cause document into the repo, then request owner review. This task does not authorize preflight implementation.",
+  "blocker": "Full plan and root-cause document exist only in the prior tool project store; contents are not available in git.",
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L9",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": [],
+  "imported": {
+    "status": "For Review",
+    "title": "Preflight verifies playback on this device before Start [Plan](/cursor/stores/bc-22530555-6204-4e0e-bf89-4a3cbeeddcf2/docs/preflight-playback-plan.md)"
+  }
+}

@@ -13,6 +13,8 @@
 <!-- note (Grok, 2026-10-26): Agents leave other tools' local files unmentioned. -->
 <!-- note (Cursor, 2026-10-27): Listed the web bundle budget that now ends the SPA build. -->
 
+<!-- note (Codex, 2026-10-27): Made repository RF records canonical and added task validation gates. -->
+
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
 to it, identify the agent and date in a short HTML comment.
@@ -44,7 +46,11 @@ find . -mindepth 1 -maxdepth 3 -type d -name ritmofit-ios -exec test -e '{}/.git
 
 ## Source Of Truth
 
-- `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`: current product focus, milestone state, and open work.
+- `ritmofit_dev_plan/tasks/RF-*.json`: canonical actionable work, status, dependencies, acceptance,
+  and evidence, independent of any tool. `ritmofit_dev_plan/tasks.md` is the generated board;
+  `ritmofit_dev_plan/tasks/README.md` defines the workflow. Task state never grants action permissions.
+- `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`: product direction, milestone map, and current focus;
+  reference RF tasks for actionable work rather than maintaining another backlog.
 - `ritmofit_dev_plan/decisions.md`: locked product and architecture decisions, including D20.
 - `ritmofit_dev_plan/conventions.md`: detailed naming, style, env, logging, CORS, and DB conventions.
 - `ritmofit_dev_plan/deployment-runbook.md`: production deploy, rollback, D1 recovery, and smoke tests.
@@ -142,6 +148,10 @@ The durable output is `main` plus a handoff file; chat and tool memory are scrat
   from `agent-prompts/templates/handoff.md` and commits it on its own PR. Only its author edits it;
   a later close deletes it once its items are done or routed. Rules:
   `ritmofit_dev_plan/handoffs/README.md`.
+- **Task sync.** Read the generated RF board and relevant records at start. Reconcile live facts,
+  update the canonical records with bounded acceptance/evidence and outstanding next actions, then
+  run `pnpm tasks:render` and `pnpm tasks:check` before publication. Handoffs reference RF IDs; they
+  retain session context rather than duplicating mutable task state. External boards are views only.
 - **Every change goes through a PR**, docs included; squash merge. Never push straight to `main`.
 - **Record what merged.** A merge that is not yet deployed, or a deploy, is recorded (HISTORY for
   deploys, DEVELOPMENT_PLAN current focus for main-vs-production, a handoff for anything owed) in the
@@ -168,6 +178,9 @@ Use Node `>=22.13` and pnpm `>=11.4`.
 - `pnpm dev:api`: run the Worker locally at `http://localhost:8787`.
 - `pnpm dev:web`: generate tokens and run Vite at `http://localhost:5173`.
 - `pnpm build`: build all workspaces.
+- `pnpm tasks`: list/show/create/update RF tasks; see the task README for arguments.
+- `pnpm tasks:render`, `pnpm tasks:check`, `pnpm tasks:test`: render the board, validate records and
+  board drift, and test task tooling using isolated fixtures.
 - `pnpm format:check`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test`: core local gates.
 - `pnpm --filter @ritmofit/api test:integration`: Worker/D1 integration tests.
 - `pnpm --filter @ritmofit/web build`: production SPA build. It ends with the bundle budget, which
@@ -243,6 +256,8 @@ Before submitting code, run the CI-equivalent gate unless the owner accepts a na
 
 ```bash
 pnpm format:check
+pnpm tasks:test
+pnpm tasks:check
 pnpm -r typecheck
 pnpm lint
 (cd ritmofit_design_system && npm run verify)

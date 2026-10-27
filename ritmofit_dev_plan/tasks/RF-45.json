@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-45",
+  "title": "Open the builder after Build a class succeeds",
+  "kind": "task",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": "RF-49",
+  "dependsOn": [
+    "RF-37"
+  ],
+  "acceptance": [
+    "Historical scope: Open the builder after Build a class succeeds. Review original evidence before relying on broader product acceptance."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L72",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/607",
+      "summary": "GitHub state MERGED; mergedAt 2026-10-27T03:34:05Z. This checks PR state only.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Recorded complete on the imported board; product behavior was not re-tested during task migration.",
+  "followUps": [],
+  "imported": {
+    "status": "Done",
+    "title": "Open the builder after Build a class succeeds [#607](https://github.com/steven-crosby/ritmofit-web/pull/607)"
+  }
+}
