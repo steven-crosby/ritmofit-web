@@ -253,9 +253,7 @@ describe('LiveMode preflight', () => {
     render(<LiveMode payload={{ ...payload, tracks: [soundcloudOnly] }} onExit={() => {}} />);
     const list = await screen.findByRole('list', { name: 'Track playback check' });
     expect(within(list).getByText('Selected: SoundCloud')).toBeTruthy();
-    expect(screen.getByText('Track checks passed')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Start class' })).toBeTruthy();
-    expect(screen.getByText('1 track checked · 1 passed · 0 need attention')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '1 of 1 track ready' })).toBeTruthy();
     expect(
       screen.getByText(
         'Provider links and durations checked for 1 track. Playback availability and audible output are unverified.',

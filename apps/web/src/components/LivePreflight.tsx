@@ -107,8 +107,12 @@ export function LivePreflight({
   const unplayableTracks = preflight?.tracks.filter(
     (result) => result.selection.status === 'unplayable',
   );
+  // Everything passed: one status line and one Start class, no repeated "passed".
+  const allPass = preflight?.ok === true && browserAuthorizationReady && !connectionsError;
   const counts =
-    preflight == null ? null : trackCheckSummary(trackCount, passingCount, unplayableCount);
+    preflight == null || allPass
+      ? null
+      : trackCheckSummary(trackCount, passingCount, unplayableCount);
   const blockedLead = `${unplayableCount} ${unplayableCount === 1 ? 'track needs' : 'tracks need'} a fix before starting with music.`;
   const lead = connectionsError
     ? 'Retry the connection check'
@@ -118,7 +122,7 @@ export function LivePreflight({
         ? blockedLead
         : !browserAuthorizationReady
           ? (authorizationLead ?? 'Check music authorization to start')
-          : 'Start class';
+          : `${passingCount} of ${trackCount} ${trackCount === 1 ? 'track' : 'tracks'} ready`;
   const verdict = connectionsError
     ? {
         label: 'Runnable with warnings',
@@ -131,9 +135,7 @@ export function LivePreflight({
         }
       : preflight.ok
         ? {
-            label: browserAuthorizationReady
-              ? 'Track checks passed'
-              : 'Browser authorization needed',
+            label: browserAuthorizationReady ? 'Ready' : 'Browser authorization needed',
             tone: browserAuthorizationReady ? 'text-state-positive' : 'text-state-caution',
           }
         : {
@@ -144,17 +146,20 @@ export function LivePreflight({
   return (
     <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-center gap-5 p-4 sm:p-6 lg:p-8">
       <section className="rounded-card border border-border-subtle bg-bg-raised/70 p-5 sm:p-6">
-        <StatusLabel
-          kind={
-            connectionsError || (preflight != null && (!preflight.ok || !browserAuthorizationReady))
-              ? 'unavailable'
-              : preflight == null
-                ? 'loading'
-                : 'recovered'
-          }
-          label={verdict.label}
-        />
-        <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        {!allPass && (
+          <StatusLabel
+            kind={
+              connectionsError ||
+              (preflight != null && (!preflight.ok || !browserAuthorizationReady))
+                ? 'unavailable'
+                : 'loading'
+            }
+            label={verdict.label}
+          />
+        )}
+        <div
+          className={`${allPass ? '' : 'mt-3 '}flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between`}
+        >
           <div className="min-w-0">
             <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
               Playback preflight
@@ -162,6 +167,11 @@ export function LivePreflight({
             <h2
               className={`mt-1 text-balance font-display text-2xl font-semibold sm:text-3xl ${verdict.tone}`}
             >
+              {allPass && (
+                <span aria-hidden className="mr-2">
+                  ✓
+                </span>
+              )}
               {lead}
             </h2>
             {counts && <p className="mt-2 font-ui text-sm text-text-secondary">{counts}</p>}
@@ -259,7 +269,11 @@ export function LivePreflight({
           )}
           {passingCount > 0 && (
             <PreflightGroup
-              title={`${passingCount} ${passingCount === 1 ? 'track passed' : 'tracks passed'} checks`}
+              title={
+                allPass
+                  ? 'Track details'
+                  : `${passingCount} ${passingCount === 1 ? 'track passed' : 'tracks passed'} checks`
+              }
               results={playableTracks ?? []}
               disclosure
             />
