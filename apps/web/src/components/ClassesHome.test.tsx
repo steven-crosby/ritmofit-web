@@ -191,6 +191,20 @@ describe('ClassesHome library shell', () => {
     expect(screen.getByRole('button', { name: 'Ride 1' })).toBeTruthy();
   });
 
+  it('keeps a long title inside its Jump back in card on a phone', () => {
+    const long = 'Supercalifragilisticexpialidociousridethatneverendsandkeepsgoingforever';
+    renderHome([cls(1, { title: long, lastOpenedAt: 10 })]);
+    const jump = screen.getByRole('region', { name: 'Jump back in' });
+    const list = within(jump).getByRole('list');
+    // jsdom cannot measure layout. A zero-minimum column is what lets `truncate` clip:
+    // the implicit `auto` column grows to the title's full width and widens the page.
+    expect(list.className.split(' ')).toContain('grid-cols-1');
+    expect(list.className.split(' ')).toContain('sm:grid-cols-2');
+    const item = within(list).getByRole('listitem');
+    expect(item.className.split(' ')).toContain('min-w-0');
+    expect(within(item).getByText(long).className).toContain('truncate');
+  });
+
   it('keeps templates and hides Jump back in when there are no classes yet', () => {
     renderHome([]);
     expect(screen.getByText('There are no classes yet.')).toBeTruthy();
