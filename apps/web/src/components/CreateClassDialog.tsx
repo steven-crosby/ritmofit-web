@@ -29,11 +29,13 @@ export type CreateClassMode = 'scaffold' | 'empty';
 
 export function CreateClassDialog({
   mode: initialMode = 'scaffold',
+  discipline: initialDiscipline = null,
   onClose,
   onCreated,
   onError,
 }: {
   mode?: CreateClassMode;
+  discipline?: ScaffoldDiscipline | null;
   onClose: () => void;
   onCreated: (cls: Class) => void;
   onError: (msg: string | null) => void;
@@ -42,7 +44,7 @@ export function CreateClassDialog({
   const emptyFirst = mode === 'empty';
   const titleRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
-  const [discipline, setDiscipline] = useState<ScaffoldDiscipline | null>(null);
+  const [discipline, setDiscipline] = useState<ScaffoldDiscipline | null>(initialDiscipline);
   const [duration, setDuration] = useState<ScaffoldDuration>(DEFAULT_SCAFFOLD_DURATION);
   const { busy, run } = useAsyncAction(onError);
   const [missing, setMissing] = useState<'title' | 'discipline' | null>(null);

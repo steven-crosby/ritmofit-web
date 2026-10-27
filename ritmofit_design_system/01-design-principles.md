@@ -1,10 +1,14 @@
 # 01 — Design Principles
 
-Principle 0 is the first instructor-facing comprehension test; eight principles follow it. When two
-otherwise-correct workflow treatments are defensible, choose the one that makes the instructor think
-less about the software.
+Principle 0 is the first instructor-facing comprehension test; eight principles follow it. §0 opens
+with the hard pass/fail bar for every page and card. When two otherwise-correct workflow treatments
+are defensible, choose the one that makes the instructor think less about the software.
 
 ## 0. Simple. Stupid. Swift. — the standing test
+
+**Hard pass/fail bar.** Every page and every card must pass this test: within 5–10 seconds, the user
+knows the WHAT and the HOW — what it is and how to use it — without hesitation. Any longer means the
+developers and engineers failed to a degree.
 
 Ritmo Studio helps an instructor understand where she is, what matters right now, what she can do next,
 and what just happened — with as little interpretation, reading, configuration, and navigation as
@@ -34,9 +38,10 @@ Helper text is rung 5, not the default fix.
 
 ### Where it yields
 
-Apply this test on instructor working surfaces. Campaign treatments still follow principle 6. This test
-never relaxes principles 3, 4, or 8, accessibility, schema-honest labels, or the music constraints;
-those are correctness floors.
+The hard pass/fail bar applies to every page and every card. The six questions apply on instructor
+working surfaces. Campaign treatments still follow principle 6. The bar and the questions never relax
+principles 3, 4, or 8, accessibility, schema-honest labels, or the music constraints; those are
+correctness floors.
 
 ### Both instructors
 
