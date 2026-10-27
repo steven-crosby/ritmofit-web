@@ -2096,6 +2096,33 @@ describe('followingTrackEvents', () => {
     expect(followingTrackEvents(tracks, [[], [], [cue(400000, 'Sprint')]], 2)).toBeNull();
     expect(followingTrackEvents({ ...payload, tracks: [] }, [], -1)).toBeNull();
   });
+
+  it('ignores earlier tracks and uses duration alone when the next track has no offset', () => {
+    expect(
+      followingTrackEvents(
+        tracks,
+        [[cue(0, 'Past')], [cue(200000, 'Now')], [cue(400000, 'Sprint')]],
+        1,
+      )?.index,
+    ).toBe(2);
+
+    const unplaced = {
+      ...tracks,
+      tracks: [
+        activeTrack,
+        {
+          ...activeTrack,
+          startOffsetMs: null,
+          track: { ...activeTrack.track, durationMs: 180000 },
+        },
+      ],
+    } satisfies RunPayload;
+    expect(followingTrackEvents(unplaced, [[], [cue(0, 'First')]], 0)).toEqual({
+      index: 1,
+      events: [cue(0, 'First')],
+      trackEndMs: 180000,
+    });
+  });
 });
 
 describe('LiveMode tempo-forward HUD', () => {
