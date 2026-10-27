@@ -3,7 +3,7 @@ date: 2026-10-27
 tool: Cursor
 lane: solo
 branch: cursor/library-shell-f450
-head: 567997b2ea118acaa3cdf164f2922f662397563f
+head: 997eaeca0cedc5a0618f2519fe97be4a96a04d92
 base: 7163d71e6b6af99e6f3cca5645ea96f6fec915cb
 prs: ['#601']
 status: open
