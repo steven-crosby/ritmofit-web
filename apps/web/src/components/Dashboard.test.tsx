@@ -255,29 +255,36 @@ describe('Dashboard class library states', () => {
 
     expect((await screen.findAllByText('Morning ride')).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('Loading your class library')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Your Classes' })).toBeTruthy();
     expect(
-      screen.getByRole('heading', { name: 'Pick up where the energy left off.' }),
-    ).toBeTruthy();
+      screen.queryByRole('heading', { name: 'Pick up where the energy left off.' }),
+    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ready to teach' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Needs work' })).toBeNull();
   });
 
-  it('meets a class before the creation preamble, and starts a class from the quiet header', async () => {
+  it('puts templates before the class list and keeps Create on the first screen', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([makeClass('Morning ride')]));
     renderDashboard();
 
-    const list = await screen.findByRole('heading', {
-      name: 'Pick up where the energy left off.',
-    });
-    const creator = screen.getByRole('button', { name: 'Start a class' });
-    // The library must not be "a large preamble before the work" (canon 09): on a
-    // phone this is one column, so document order is what the instructor scrolls.
-    expect(list.compareDocumentPosition(creator) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const templates = (
+      await screen.findByRole('heading', { name: 'Start from a template' })
+    ).closest('section');
+    const recents = screen.getByRole('heading', { name: 'Recents' }).closest('section');
+    const create = screen.getByRole('button', { name: 'Create' });
+    expect(create.closest('header')?.className).toContain('order-1');
+    expect(templates?.className).toContain('order-2');
+    expect(recents?.className).toContain('order-3');
+    expect(create.closest('header')?.className).toContain('sticky');
+    expect(screen.getByRole('button', { name: 'Morning ride' })).toBeTruthy();
   });
 
   it('opens the create dialog from the empty Classes home', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     renderDashboard();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Start a class' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Create' }));
+    fireEvent.click(screen.getByRole('button', { name: 'From a template' }));
     await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Class title')));
     expect(screen.getByRole('dialog', { name: 'Create a class' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '45 min' }).getAttribute('aria-pressed')).toBe(
@@ -295,10 +302,12 @@ describe('Dashboard class library states', () => {
     vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
     renderDashboard();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Start a class' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Create' }));
+    fireEvent.click(screen.getByRole('button', { name: 'From a template' }));
     fireEvent.change(screen.getByLabelText('Class title'), { target: { value: 'Saturday ride' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Create class' }));
+    const dialog = screen.getByRole('dialog', { name: 'Create a class' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cycle' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create class' }));
 
     await waitFor(() =>
       expect(api.createClass).toHaveBeenCalledWith({
@@ -319,10 +328,12 @@ describe('Dashboard class library states', () => {
     vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
     renderDashboard();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Start empty' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Create' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New class' }));
     fireEvent.change(screen.getByLabelText('Class title'), { target: { value: 'Blank ride' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Create empty class' }));
+    const dialog = screen.getByRole('dialog', { name: 'Create a class' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cycle' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create empty class' }));
 
     const addPlaylist = await screen.findByRole('button', { name: 'Add a playlist' });
     await waitFor(() => expect(document.activeElement).toBe(addPlaylist));
@@ -369,25 +380,23 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
 
-    expect(
-      await screen.findByRole('heading', {
-        name: 'Pick a discipline. Ritmo lays out the class. You bring the music.',
-      }),
-    ).toBeTruthy();
+    expect(await screen.findByText('There are no classes yet.')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Start from a template' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Jump back in' })).toBeNull();
   });
 
-  it('guides a brand-new instructor with a first-run workspace when the library is empty', async () => {
+  it('guides a brand-new instructor with templates when the library is empty', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
 
     renderDashboard();
 
-    expect(
-      await screen.findByRole('heading', {
-        name: 'Pick a discipline. Ritmo lays out the class. You bring the music.',
-      }),
-    ).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Start a class' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Start empty' })).toBeTruthy();
+    expect(await screen.findByText('There are no classes yet.')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Start from a template' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start from the Cycle template' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start from the Pilates template' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /HIIT/ })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Jump back in' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Create' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Find a track or source/ })).toBeNull();
     expect(screen.queryByText('Select a class to keep building.')).toBeNull();
   });
@@ -1118,9 +1127,71 @@ describe('Dashboard class library states', () => {
     expect(await screen.findByRole('heading', { name: 'Return path ride' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Classes' }));
-    expect(
-      await screen.findByRole('heading', { name: 'Pick up where the energy left off.' }),
-    ).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Your Classes' })).toBeTruthy();
+  });
+
+  it('puts an opened class ahead of one that was only edited', async () => {
+    const edited = { ...makeClass('Edited ride'), updatedAt: 9_000, lastOpenedAt: null };
+    const quiet = { ...makeClass('Quiet ride'), updatedAt: 1, lastOpenedAt: null };
+    vi.mocked(api.listClasses).mockResolvedValue(page([edited, quiet]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    vi.mocked(api.markClassOpened).mockResolvedValue({ ...quiet, lastOpenedAt: 50_000 });
+    renderDashboard();
+
+    const recentsTitles = () => {
+      const recents = screen.getByRole('region', { name: 'Recents' });
+      return within(recents)
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label'))
+        .filter((name) => name === 'Edited ride' || name === 'Quiet ride');
+    };
+
+    expect(await screen.findByRole('button', { name: 'Edited ride' })).toBeTruthy();
+    expect(recentsTitles()).toEqual(['Edited ride', 'Quiet ride']);
+    fireEvent.click(screen.getByRole('button', { name: 'Quiet ride' }));
+    expect(await screen.findByRole('heading', { name: 'Quiet ride' })).toBeTruthy();
+    expect(api.markClassOpened).toHaveBeenCalledWith(quiet.id);
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
+    expect(await screen.findByRole('heading', { name: 'Your Classes' })).toBeTruthy();
+    expect(recentsTitles()).toEqual(['Quiet ride', 'Edited ride']);
+  });
+
+  it('stamps last opened when Live starts, not when the queue is only listed', async () => {
+    const alpha = {
+      ...makeClass('Alpha ride', 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+      lastOpenedAt: 10,
+    };
+    const beta = {
+      ...makeClass('Beta ride', 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+      lastOpenedAt: 20,
+    };
+    const payload = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    payload.class.id = alpha.id;
+    payload.sections = [];
+    vi.mocked(api.listClasses).mockResolvedValue(page([alpha, beta]));
+    vi.mocked(api.getRunPayload).mockResolvedValue(payload);
+    vi.mocked(api.markClassOpened).mockResolvedValue({ ...alpha, lastOpenedAt: 80_000 });
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    const run = await screen.findByRole('button', { name: 'Preflight Alpha ride' });
+    await waitFor(() => expect(run).toHaveProperty('disabled', false));
+    expect(api.markClassOpened).not.toHaveBeenCalled();
+    fireEvent.click(run);
+    await waitFor(() => expect(api.markClassOpened).toHaveBeenCalledWith(alpha.id));
+    fireEvent.click(await screen.findByRole('button', { name: 'Exit' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Classes' }));
+    const recents = await screen.findByRole('region', { name: 'Recents' });
+    const titles = within(recents)
+      .getAllByRole('button')
+      .map((button) => button.getAttribute('aria-label'))
+      .filter((name) => name === 'Alpha ride' || name === 'Beta ride');
+    expect(titles).toEqual(['Alpha ride', 'Beta ride']);
   });
 
   it('surfaces classes with tracks from the Live destination and runs a ready one', async () => {
@@ -1752,9 +1823,7 @@ describe('Dashboard onboarding video', () => {
 
     renderDashboard();
 
-    await screen.findByRole('heading', {
-      name: 'Pick a discipline. Ritmo lays out the class. You bring the music.',
-    });
+    await screen.findByRole('heading', { name: 'Start from a template' });
     expect(screen.queryByRole('dialog', { name: 'New instructor tutorial video' })).toBeNull();
   });
 });
@@ -1880,8 +1949,9 @@ describe('Dashboard class detail', () => {
 
     renderDashboard();
     // Initially the home row shows 0 tracks (the list response's aggregate).
+    // Jump back in repeats the same row, so the meta is on both surfaces.
     expect(await screen.findByRole('button', { name: 'Stale card' })).toBeTruthy();
-    expect(screen.getByText(/0 tracks/)).toBeTruthy();
+    expect(screen.getAllByText(/0 tracks/).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: 'Stale card' }));
 
@@ -1891,7 +1961,7 @@ describe('Dashboard class detail', () => {
     expect(screen.getByText('2 tracks')).toBeTruthy();
     expect(screen.getByText('7:00 total')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
-    expect(await screen.findByText('Cycle · 2 tracks · 7:00')).toBeTruthy();
+    expect((await screen.findAllByText('Cycle · 2 tracks · 7:00')).length).toBeGreaterThan(0);
     expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
   });
 
@@ -2438,9 +2508,7 @@ describe('Dashboard track focus management', () => {
     expect(screen.queryByRole('button', { name: 'Build a class' })).toBeNull();
 
     fireEvent.click(within(header).getByRole('button', { name: 'Back to Classes' }));
-    expect(
-      await screen.findByRole('heading', { name: 'Pick up where the energy left off.' }),
-    ).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Your Classes' })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Class builder' })).toBeNull();
     expect(screen.getByRole('button', { name: /^Saturday Heat$/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /^Sunrise Source$/ })).toBeTruthy();
@@ -3164,7 +3232,7 @@ describe('Dashboard track focus management', () => {
     await act(async () => older.resolve([makeClassTrack('ct-1', 0)]));
     expect(screen.getByRole('button', { name: /Other song.*Artist/ })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
-    expect(await screen.findByText('Cycle · 2 tracks · 30:00')).toBeTruthy();
+    expect((await screen.findAllByText('Cycle · 2 tracks · 30:00')).length).toBeGreaterThan(0);
     expect(screen.queryByText('Cycle · 1 track · 1:00')).toBeNull();
   });
 
