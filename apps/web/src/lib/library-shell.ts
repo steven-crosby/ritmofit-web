@@ -1,7 +1,7 @@
 /**
  * Classes library shell (pull request A). Recents and Jump back in share one
  * clock: last opened or taught, including starting Live. Last edited is not
- * that clock. The library reads `lastOpenedAt`; it does not invent a second one.
+ * that clock. The library reads `lastOpenedAt`, which open and Live start write.
  */
 import type { ClassTemplate } from '@ritmofit/shared';
 import type { ClassNextStep } from './class-ordering.js';

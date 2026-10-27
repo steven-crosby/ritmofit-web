@@ -150,6 +150,27 @@ classRoutes.get('/', async (c) => {
  * VIEW access; assembles class + ordered tracks + provider refs + cues + moves
  * with server-resolved displayBpm / move names (lib/run-payload.ts).
  */
+/**
+ * POST /classes/:id/opened — the class was opened or Live was started.
+ * Writes the existing `last_opened_at` only. `updated_at` stays the edit clock.
+ * View access is enough: opening and teaching are not edits.
+ */
+classRoutes.post('/:id/opened', async (c) => {
+  const db = createDb(c.env);
+  const id = c.req.param('id');
+  await requireAccess(db, c.get('userId'), id, 'view');
+  const now = Date.now();
+  await db.update(classes).set({ lastOpenedAt: now }).where(eq(classes.id, id));
+  const row = await db.select().from(classes).where(eq(classes.id, id)).get();
+  if (!row) throw new HttpError(404, 'NOT_FOUND', 'Not found.');
+  const tagsRow = await db
+    .select({ tag: classTags.tag })
+    .from(classTags)
+    .where(eq(classTags.classId, id))
+    .all();
+  return c.json(serializeClass({ ...row, tags: tagsRow.map((tag) => tag.tag) }));
+});
+
 classRoutes.get('/:id/run-payload', async (c) => {
   const db = createDb(c.env);
   const id = c.req.param('id');

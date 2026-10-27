@@ -1130,6 +1130,70 @@ describe('Dashboard class library states', () => {
     expect(await screen.findByRole('heading', { name: 'Your Classes' })).toBeTruthy();
   });
 
+  it('puts an opened class ahead of one that was only edited', async () => {
+    const edited = { ...makeClass('Edited ride'), updatedAt: 9_000, lastOpenedAt: null };
+    const quiet = { ...makeClass('Quiet ride'), updatedAt: 1, lastOpenedAt: null };
+    vi.mocked(api.listClasses).mockResolvedValue(page([edited, quiet]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    vi.mocked(api.markClassOpened).mockResolvedValue({ ...quiet, lastOpenedAt: 50_000 });
+    renderDashboard();
+
+    const recentsTitles = () => {
+      const recents = screen.getByRole('region', { name: 'Recents' });
+      return within(recents)
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label'))
+        .filter((name) => name === 'Edited ride' || name === 'Quiet ride');
+    };
+
+    expect(await screen.findByRole('button', { name: 'Edited ride' })).toBeTruthy();
+    expect(recentsTitles()).toEqual(['Edited ride', 'Quiet ride']);
+    fireEvent.click(screen.getByRole('button', { name: 'Quiet ride' }));
+    expect(await screen.findByRole('heading', { name: 'Quiet ride' })).toBeTruthy();
+    expect(api.markClassOpened).toHaveBeenCalledWith(quiet.id);
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
+    expect(await screen.findByRole('heading', { name: 'Your Classes' })).toBeTruthy();
+    expect(recentsTitles()).toEqual(['Quiet ride', 'Edited ride']);
+  });
+
+  it('stamps last opened when Live starts, not when the queue is only listed', async () => {
+    const alpha = {
+      ...makeClass('Alpha ride', 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+      lastOpenedAt: 10,
+    };
+    const beta = {
+      ...makeClass('Beta ride', 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+      lastOpenedAt: 20,
+    };
+    const payload = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    payload.class.id = alpha.id;
+    payload.sections = [];
+    vi.mocked(api.listClasses).mockResolvedValue(page([alpha, beta]));
+    vi.mocked(api.getRunPayload).mockResolvedValue(payload);
+    vi.mocked(api.markClassOpened).mockResolvedValue({ ...alpha, lastOpenedAt: 80_000 });
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    const run = await screen.findByRole('button', { name: 'Preflight Alpha ride' });
+    await waitFor(() => expect(run).toHaveProperty('disabled', false));
+    expect(api.markClassOpened).not.toHaveBeenCalled();
+    fireEvent.click(run);
+    await waitFor(() => expect(api.markClassOpened).toHaveBeenCalledWith(alpha.id));
+    fireEvent.click(await screen.findByRole('button', { name: 'Exit' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Classes' }));
+    const recents = await screen.findByRole('region', { name: 'Recents' });
+    const titles = within(recents)
+      .getAllByRole('button')
+      .map((button) => button.getAttribute('aria-label'))
+      .filter((name) => name === 'Alpha ride' || name === 'Beta ride');
+    expect(titles).toEqual(['Alpha ride', 'Beta ride']);
+  });
+
   it('surfaces classes with tracks from the Live destination and runs a ready one', async () => {
     const ready = {
       ...makeClass('Ready ride', 'owner', 'me'),

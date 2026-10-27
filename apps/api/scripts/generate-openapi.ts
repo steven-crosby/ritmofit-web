@@ -275,6 +275,18 @@ const doc = {
         responses: { '204': { description: 'Deleted' } },
       },
     },
+    '/classes/{id}/opened': {
+      parameters: [idParam],
+      post: {
+        summary: 'Record that the class was opened or that Live started',
+        description:
+          'Sets lastOpenedAt to the server clock. Does not change updatedAt, so Recents stays independent of edits. View access is enough.',
+        responses: {
+          '200': jsonResp('Class', 'Class with lastOpenedAt set'),
+          '404': { description: 'Not found / hidden' },
+        },
+      },
+    },
     '/classes/{id}/run-payload': {
       parameters: [idParam],
       get: {
