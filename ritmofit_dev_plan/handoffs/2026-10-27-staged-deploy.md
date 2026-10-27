@@ -5,7 +5,7 @@ lane: solo
 branch: cursor/record-staged-deploy-2f76
 head: 4e0b15096995c125b3941bf374a6a580e2ff52f8
 base: 4e0b15096995c125b3941bf374a6a580e2ff52f8
-prs: []
+prs: ['#631 (open)']
 status: open
 ---
 
@@ -18,7 +18,7 @@ status: open
 
 ## In flight
 
-- This docs branch records the deploys. It is not merged, and it is not in the deployed tree.
+- [#631](https://github.com/steven-crosby/ritmofit-web/pull/631) records the deploys. It is not merged, and it is not in the deployed tree.
 - The local deploy branch `cursor/staged-deploy-4e0b150-2f76` was not pushed.
 
 ## Next action
