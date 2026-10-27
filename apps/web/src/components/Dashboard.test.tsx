@@ -2281,7 +2281,7 @@ describe('Dashboard Account status ledger', () => {
     expect(within(musicSection!).getAllByText('Status unavailable').length).toBeGreaterThan(0);
   });
 
-  it('claims only that the profile loaded, never that an identity was verified', async () => {
+  it('shows no status mark for a loaded profile and never claims it was verified', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.getMe).mockResolvedValue(profile);
     vi.mocked(api.listConnections).mockResolvedValue([]);
@@ -2289,10 +2289,44 @@ describe('Dashboard Account status ledger', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
 
-    // `profile !== null` means the payload arrived. Nothing here checks an email
-    // or an identity, so nothing may say "verified" (P1-05).
-    expect(await screen.findByText('Profile loaded')).toBeTruthy();
+    // Nothing here checks an email or an identity, so nothing may say "verified"
+    // (P1-05). A loaded profile is the normal state and needs no chip.
+    expect((await screen.findAllByText('tester@example.com')).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Profile loaded')).toBeNull();
     expect(screen.queryByText('Profile verified')).toBeNull();
+  });
+
+  it('says only "Loading profile…" while the profile loads', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockReturnValue(new Promise(() => {}));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    const panel = (await screen.findByText('Loading profile…')).closest('section')!;
+    expect(within(panel).queryByText(/unavailable/i)).toBeNull();
+    expect(within(panel).queryByText(/Edits paused/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Save profile' })).toHaveProperty('disabled', true);
+  });
+
+  it('says the provider sentence once and keeps the Account sub-nav on one scrolling row', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    const musicSection = await waitFor(() => document.getElementById('account-music-connections')!);
+    expect(
+      within(musicSection).getAllByText(/Provider audio and authorization remain with the music/),
+    ).toHaveLength(1);
+    const subNav = screen.getByRole('link', { name: 'Profile' }).closest('nav')!;
+    // jsdom cannot measure layout: assert one flex row that scrolls, not a wrapping grid.
+    expect(subNav.className).toContain('flex');
+    expect(subNav.className).toContain('overflow-x-auto');
+    expect(subNav.className).not.toContain('grid-cols-2');
   });
 
   it('reports a failed profile read without leaking the upstream message', async () => {
@@ -2320,7 +2354,8 @@ describe('Dashboard Account status ledger', () => {
 
     expect(await screen.findByText('Some account status is unavailable')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Tester' })).toBeTruthy();
-    expect(screen.getByText('Signed-in identity · profile details unavailable')).toBeTruthy();
+    expect(screen.getAllByText('Profile details unavailable').length).toBeGreaterThan(0);
+    expect(screen.getByText('Edits paused until the profile loads')).toBeTruthy();
     expect(screen.getByLabelText('Display name')).toHaveProperty('disabled', true);
     expect(screen.getByRole('button', { name: 'Save profile' })).toHaveProperty('disabled', true);
     expect(screen.getByRole('button', { name: 'Sign out' })).toHaveProperty('disabled', false);
@@ -4607,7 +4642,12 @@ describe('Dashboard failure copy', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
-    expect(await screen.findByText('Profile loaded')).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save profile' })).toHaveProperty(
+        'disabled',
+        false,
+      ),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Save profile' }));
     return screen.findByRole('alert');
   }
